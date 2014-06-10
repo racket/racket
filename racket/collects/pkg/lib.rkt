@@ -1294,7 +1294,8 @@
               (remove-extra-directory-layer pkg-dir)]
              [#"zip"
               (unzip pkg-path (make-filesystem-entry-reader #:dest pkg-dir)
-                     #:preserve-timestamps? #t)
+                     #:preserve-timestamps? #t
+                     #:utc-timestamps? #t)
               (remove-extra-directory-layer pkg-dir)]
              [#"plt"
               (make-directory* pkg-dir)
@@ -2660,7 +2661,9 @@
               (apply zip pkg/complete content
                      #:path-prefix (and (add-directory-layer? content)
                                         pkg-name)
-                     #:get-timestamp file-or-directory-timestamp)))]
+                     #:get-timestamp file-or-directory-timestamp
+                     #:utc-timestamps? #t
+                     #:round-timestamps-down? #t)))]
          ['plt
           (define dest pkg/complete)
           (when (pkg-single-collection #:name pkg-name dir)
