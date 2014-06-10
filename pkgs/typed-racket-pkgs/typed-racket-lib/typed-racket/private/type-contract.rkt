@@ -452,7 +452,7 @@
                 (t->sc fty #:recursive-values (hash-set
                                                 recursive-values
                                                 nm (recursive-sc-use nm*)))))
-            (recursive-sc (list nm*) (list (struct/sc nm (ormap values mut?) fields))
+            (recursive-sc (list nm*) (list (struct/sc nm acc-ids (ormap values mut?) fields))
                                 (recursive-sc-use nm*))]
            [else (flat/sc #`(flat-named-contract '#,(syntax-e pred?) #,pred?))])]
         [(Syntax: (Base: 'Symbol _ _ _)) identifier?/sc]
