@@ -284,7 +284,7 @@
        ;; otherwise, error
        [else
         (tc-error/expr "Expected the same number of values, but got ~a and ~a"
-                         (length res1) (length res2))])])
+                         (length results1) (length results2))])])
 
   (for/fold ([res (ret -Bottom)]) ([res2 (in-list results)])
     (merge-two-results res res2)))
