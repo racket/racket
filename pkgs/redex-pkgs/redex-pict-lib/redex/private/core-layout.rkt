@@ -708,6 +708,7 @@
                                                pink-code-font
                                                (default-font-size)))))]
       [(and (symbol? atom)
+            (not (equal? atom '_))
             (regexp-match #rx"^([^_^]*)_([^^]*)\\^?(.*)$" (symbol->string atom)))
        =>
        (match-lambda

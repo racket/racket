@@ -121,11 +121,12 @@
   [(T x x) 
    (any_1 any_2)
    (where any_1 2)
-   (where any_2 2)])
+   (where any_2 2)]
+  [(T _ _ _) 1234])
 
-;; in this test, the metafunction has 2 clauses 
+;; in this test, the metafunction has 3 clauses 
 ;; with a side-condition on the first clause
-;; and a 'where' in the second clause
+;; a 'where' in the second clause, and an underscore
 (btest (parameterize ([metafunction-cases '("first-one" 1)])
          (render-metafunction T))
        "metafunction-T.png")
@@ -425,5 +426,4 @@
           (render-judgment-form typeof))
          "stlc.png"))  
 
-(printf "bitmap-test.rkt: ")
 (done)
