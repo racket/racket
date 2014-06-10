@@ -3250,14 +3250,11 @@
                state-catalog))
   ;; Take a snapshot of the source catalog:
   (define temp-catalog-file (make-temporary-file "pkg~a.sqlite"))
-  (pkg-catalog-update-local #:catalogs (append (map url-or-path->url-string
-                                                    (map src->url-or-path src-catalogs))
-                                               (if from-config?
-                                                   (pkg-config-catalogs)
-                                                   null))
-                            #:set-catalogs? #t
-                            #:catalog-file temp-catalog-file
-                            #:quiet? quiet?)
+  (pkg-catalog-copy (map url-or-path->url-string
+                         (map src->url-or-path src-catalogs))
+                    temp-catalog-file
+                    #:force? #t ; replaces temporary file
+                    #:from-config? from-config?)
   (define pkgs
     (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
       (db:get-pkgs)))
