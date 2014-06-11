@@ -4,7 +4,7 @@
          racket/match
          math/statistics
          math/distributions
-         plot
+         plot/no-gui
          "logging.rkt")
 
 (provide type-colors)
@@ -195,18 +195,18 @@
                    [plot-x-label ""])
       
       (if (output-file)
-          (plot
+          (plot-file
            (for/list ([t (if (empty? (types)) all-types (types))]
                       [n (in-naturals)])
              (plot-type t n))
+           (output-file)
+           'pdf
            #:x-min 0
            #:y-min (min-y)
            #:y-max (if (max-t)
                        (* 60 (max-t))
                        (+ 5 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000)))
-           #:x-max (+ 0.5 (length (hash-keys name-avgs)))
-           #:out-file (output-file)
-           #:out-kind 'jpeg)
+           #:x-max (+ 0.5 (length (hash-keys name-avgs))))
           (plot-pict
            (for/list ([t (if (empty? (types)) all-types (types))]
                       [n (in-naturals)])

@@ -6,6 +6,7 @@
                "compiler-lib"
                "rackunit-lib"
                "redex-lib"
+               "redex-examples"
                "math-lib"
                "plot-lib"))
 
