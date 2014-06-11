@@ -117,7 +117,10 @@
 ;; Helpers
 
 (define (single p) (if p (list p) null))
-(define (extra a l) (if (and a (not (member a l))) (cons a l) l))
+(define (extra a l) (if (and a (not (member (path->directory-path a)
+                                            (map path->directory-path l))))
+                        (append l (list a))
+                        l))
 (define (combine-search l default)
   ;; Replace #f in list with default path:
   (if l
