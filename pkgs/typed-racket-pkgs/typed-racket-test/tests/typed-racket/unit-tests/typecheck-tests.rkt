@@ -3020,7 +3020,8 @@
           (define (f) (values "foo" 'bar))
           (f))
         #:ret (ret (list (t:Un -String -Void) (t:Un -Symbol -Void)))]
-
+       [tc-e (syntax->datum #`(#,(lambda (x) x)))
+             #:ret (ret Univ)]
         )
 
   (test-suite

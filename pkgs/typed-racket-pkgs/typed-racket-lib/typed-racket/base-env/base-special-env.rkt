@@ -173,7 +173,7 @@
    (-> Univ Univ Univ)]
   ;; from the expansion of `with-syntax'
   [(make-template-identifier 'apply-pattern-substitute 'racket/private/stxcase)
-   (->* (list (-Syntax Univ) Univ) Univ Any-Syntax)]
+   (->* (list (-Syntax Univ) Univ) Univ (-Syntax Univ))]
   ;; same
   [(make-template-identifier 'with-syntax-fail 'racket/private/with-stx)
    (-> (-Syntax Univ) (Un))]
