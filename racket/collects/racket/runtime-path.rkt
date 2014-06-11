@@ -3,7 +3,7 @@
 ;; Library for accessing paths relative to a source file at runtime
 
 (require racket/list
-         setup/dirs
+         "private/so-search.rkt"
          "private/this-expression-source-directory.rkt"
          (only-in "private/runtime-path-table.rkt" table)
          (for-syntax racket/base))
@@ -95,42 +95,8 @@
                (path->complete-path p base)]
               [(string? p) (string->path p)]
               [(path? p) p]
-              [(and (list? p)
-                    (or (= 2 (length p))
-                        (= 3 (length p)))
-                    (eq? 'so (car p))
-                    (string? (cadr p))
-                    (or (= 2 (length p))
-                        (let ([s (caddr p)])
-                          (define (vers? s) (or (not s) (string? s)))
-                          (or (vers? s)
-                              (and (list? s) (andmap vers? s))))))
-               (or (ormap (lambda (vers)
-                            (define (path-extra-suffix p sfx)
-                              (let-values ([(base name dir?) (split-path p)])
-                                (let ([name (bytes->path (bytes-append (path->bytes name) sfx))])
-                                  (if (path? base)
-                                      (build-path base name)
-                                      name))))
-                            (let ([f (if (eq? vers 'no-suffix)
-                                         (cadr p)
-                                         (path-extra-suffix (cadr p)
-                                                            (if vers
-                                                                (bytes-append #"."
-                                                                              (string->bytes/utf-8 vers)
-                                                                              (system-type 'so-suffix))
-                                                                (system-type 'so-suffix))))])
-                              (ormap (lambda (p)
-                                       (let ([p (build-path p f)])
-                                         (and (file-exists? p)
-                                              p)))
-                                     (get-lib-search-dirs))))
-                          (cons 'no-suffix
-                                (if (= (length p) 3)
-                                    (let ([s (caddr p)])
-                                      (if (list? s) s (list s)))
-                                    '(#f))))
-                   (cadr p))]
+              [(so-spec? p) (or (so-find p)
+                                (cadr p))]
               [(and (list? p)
                     ((length p) . > . 1)
                     (eq? 'lib (car p))

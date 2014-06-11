@@ -11,6 +11,7 @@
          setup/dirs
          setup/variant
          file/ico
+         racket/private/so-search
          "private/winsubsys.rkt"
          "private/macfw.rkt"
          "private/mach-o.rkt"
@@ -989,16 +990,6 @@
               full-path)))]
    [else (mk-full path)]))
 
-(define (path-extra-suffix p sfx)
-  ;; Library names may have a version number preceded
-  ;; by a ".", which looks like a suffix, so add the
-  ;; shared-library suffix using plain-old bytes append:
-  (let-values ([(base name dir?) (split-path p)])
-    (let ([name (bytes->path (bytes-append (path->bytes name) sfx))])
-      (if (path? base)
-          (build-path base name)
-          name))))
-
 ;; Write a module bundle that can be loaded with 'load' (do not embed it
 ;; into an executable). The bundle is written to the current output port.
 (define (do-write-module-bundle outp verbose? modules 
@@ -1137,31 +1128,7 @@
                                                                          p)))
                                                            (let ([p (cond
                                                                      [(bytes? p) (bytes->path p)]
-                                                                     [(and (list? p)
-                                                                           (or (= 2 (length p)) 
-                                                                               (= 3 (length p)))
-                                                                           (eq? 'so (car p)))
-                                                                      (ormap (lambda (vers)
-                                                                               (let ([f (if (eq? vers 'no-suffix)
-                                                                                            (cadr p)
-                                                                                            (path-extra-suffix 
-                                                                                             (cadr p)
-                                                                                             (if (string? vers)
-                                                                                                 (bytes-append #"."
-                                                                                                               (string->bytes/utf-8 vers)
-                                                                                                               (system-type 'so-suffix))
-                                                                                                 (system-type 'so-suffix))))])
-                                                                                 (ormap (lambda (p)
-                                                                                          (let ([p (build-path p f)])
-                                                                                            (and (or (file-exists? p)
-                                                                                                     (directory-exists? p))
-                                                                                                 p)))
-                                                                                        (get-lib-search-dirs))))
-                                                                             (cons 'no-suffix
-                                                                                   (if (= (length p) 3)
-                                                                                       (let ([s (caddr p)])
-                                                                                         (if (list? s) s (list s)))
-                                                                                       '(#f))))]
+                                                                     [(so-spec? p) (so-find p)]
                                                                      [(and (list? p)
                                                                            (eq? 'lib (car p)))
                                                                       (let ([p (if (null? (cddr p))

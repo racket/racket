@@ -616,14 +616,13 @@ absolute path; it is an absolute path when searching in the
 Racket-specific shared-object library directories (as determined by
 @racket[get-lib-search-dirs]) locates the path. In this way, shared-object
 libraries that are installed specifically for Racket get carried
-along in distributions. The search tries using @racket[_str] directly,
+along in distributions. The search tries each directory in order;
+within a directory, the search tries using @racket[_str] directly,
 then it tries adding each version specified by @racket[_vers]---which defaults
 to @racket['(#f)]---along with
 a platform-specific shared-library extension---as produced by
 @racket[(system-type 'so-suffix)]. A @racket[_vers]
-can be a string, or it can be a list of strings and @racket[#f]; in the
-latter case, the versions are tried in order, where @racket[#f] omits
-the addition of the version.
+can be a string, or it can be a list of strings and @racket[#f].
 
 If @racket[expr] produces a list of the form @racket[(list 'module
 _module-path _var-ref)] or @racket[(list 'so _str (list
