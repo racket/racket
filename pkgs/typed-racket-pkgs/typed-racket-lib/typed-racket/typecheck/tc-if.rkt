@@ -25,7 +25,7 @@
       ;; otherwise, this code is unreachable
       ;; and the resulting type should be the empty type
       [(check-unreachable-code?)
-       (tc-expr/check expr Univ)
+       (tc-expr expr)
        (ret (Un))]
       [else (ret (Un))]))
   (match (single-value tst)
