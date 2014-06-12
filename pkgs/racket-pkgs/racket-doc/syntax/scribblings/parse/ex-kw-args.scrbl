@@ -66,7 +66,7 @@ is like an ordinary syntax class but for head patterns.
 (define-syntax (mycond stx)
 
   (define-splicing-syntax-class maybe-fallthrough-option
-    (pattern (~seq #:error-on-fallthough who:expr)
+    (pattern (~seq #:error-on-fallthrough who:expr)
              #:with error? #'#t)
     (pattern (~seq)
              #:with error? #'#f
