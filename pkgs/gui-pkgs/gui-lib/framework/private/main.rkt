@@ -390,7 +390,7 @@
                λ lambda let let* letrec recur
                lambda/kw
                letrec-values
-               with-syntax
+               with-syntax with-syntax*
                with-continuation-mark
                module module* module+
                match match-let match-let* match-letrec
