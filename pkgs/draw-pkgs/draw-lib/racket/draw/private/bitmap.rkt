@@ -196,17 +196,22 @@
                                               (max (*i scale h) 1))])
            (cairo_surface_flush s)
            (cond
-            [b&w?
-             ;; Init transparent white:
-             (transparent-white! s w h)]
-            [alpha?
-             ;; Init transparent:
-             (bytes-fill! (cairo_image_surface_get_data s) 0)]
+            [(cairo_image_surface_get_data s)
+             (cond
+              [b&w?
+               ;; Init transparent white:
+               (transparent-white! s w h)]
+              [alpha?
+               ;; Init transparent:
+               (bytes-fill! (cairo_image_surface_get_data s) 0)]
+              [else
+               ;; Init all white, 255 alpha:
+               (bytes-fill! (cairo_image_surface_get_data s) 255)])
+             (cairo_surface_mark_dirty s)
+             s]
             [else
-             ;; Init all white, 255 alpha:
-             (bytes-fill! (cairo_image_surface_get_data s) 255)])
-           (cairo_surface_mark_dirty s)
-           s)
+             ;; bitmap creation failed
+             #f]))
          #f
          (* 1.0 scale))]
        [([(make-alts path-string? input-port?) filename]
