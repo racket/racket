@@ -363,7 +363,7 @@
                                           #:allow-declare? #t
                                           #:decls decls0
                                           #:context ctx)])
-    (let* ([pattern0 (parse-whole-pattern p-stx decls splicing? #:context ctx)]
+    (let* ([pattern0 (parse-whole-pattern p-stx decls splicing? #:context ctx #:kind 'main)]
            [pattern (combine-pattern+sides pattern0 sides splicing?)])
       (values rest pattern defs))))
 
@@ -375,7 +375,9 @@
         (list (clause:attr-attr c)))))
 
 ;; parse-whole-pattern : stx DeclEnv boolean -> Pattern
+;; kind is either 'main or 'with, indicates what kind of pattern declare affects
 (define (parse-whole-pattern stx decls [splicing? #f]
+                             #:kind kind
                              #:context [ctx (current-syntax-context)])
   (parameterize ((current-syntax-context ctx))
     (define pattern
@@ -385,8 +387,12 @@
     (define pvars (map attr-name (pattern-attrs pattern)))
     (define excess-domain (declenv-domain-difference decls pvars))
     (when (pair? excess-domain)
-      (wrong-syntax #f "declared pattern variables do not appear in pattern"
-                    #:extra excess-domain))
+      (wrong-syntax (car excess-domain)
+                    (string-append
+                     "identifier in #:declare clause does not appear in pattern"
+                     (case kind
+                       [(main) ""] ;; ";\n this #:declare clause affects only the main pattern"]
+                       [(with) ";\n this #:declare clause affects only the preceding #:with pattern"]))))
     pattern))
 
 ;; combine-pattern+sides : Pattern (listof SideClause) -> Pattern
@@ -1141,10 +1147,10 @@
   (match chunks
     [(cons (list '#:declare declare-stx _ _) rest)
      (wrong-syntax declare-stx
-                   "#:declare can only follow pattern or #:with clause")]
+                   "#:declare can only appear immediately after pattern or #:with clause")]
     [(cons (list '#:role role-stx _) rest)
      (wrong-syntax role-stx
-                   "#:role can only follow immediately after #:declare clause")]
+                   "#:role can only appear immediately after #:declare clause")]
     [(cons (list '#:fail-when fw-stx when-condition expr) rest)
      (cons (make clause:fail when-condition expr)
            (parse-pattern-sides rest decls))]
@@ -1158,7 +1164,7 @@
     [(cons (list '#:with with-stx pattern expr) rest)
      (let-values ([(decls2 rest) (grab-decls rest decls)])
        (let-values ([(decls2a defs) (decls-create-defs decls2)])
-         (cons (make clause:with (parse-whole-pattern pattern decls2a) expr defs)
+         (cons (make clause:with (parse-whole-pattern pattern decls2a #:kind 'with) expr defs)
                (parse-pattern-sides rest decls))))]
     [(cons (list '#:attr attr-stx a expr) rest)
      (cons (make clause:attr a expr)
