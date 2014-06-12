@@ -72,4 +72,17 @@
    '(let ()
       (struct doll (contents))
       (letrec ([doll-ctc2 (or/c 'center (struct/c doll (recursive-contract doll-ctc2 #:flat)))])
-        (contract doll-ctc2 (doll 4) 'pos 'neg)))))
+        (contract doll-ctc2 (doll 4) 'pos 'neg))))
+
+  (test/spec-passed
+   'recursive-contract12
+   '(let ()
+      (define c
+        (recursive-contract
+         (or/c #f (cons/c c c))
+         #:flat))
+      (define ph (make-placeholder #f))
+      (placeholder-set! ph (cons ph ph))
+      (contract c (make-reader-graph ph) 'pos 'neg)
+      (void)))
+  )
