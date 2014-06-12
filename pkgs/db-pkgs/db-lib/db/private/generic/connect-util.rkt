@@ -151,6 +151,10 @@
              [c (send mgr call (lambda () (get key)))])
         (cond [(and c (send c connected?)) c]
               [create?
+               (log-db-debug
+                (if c
+                    "virtual-connection: refreshing connection (old is disconnected)"
+                    "virtual-connection: creating new connection"))
                (let ([c* (parameterize ((current-custodian custodian))
                            (connector))])
                  (send mgr call
@@ -245,21 +249,25 @@
     (define idle-list null)
 
     (define/private (lease* key)
-      (let* ([take-idle? (pair? idle-list)]
-             [raw-c
-              (cond [take-idle?
-                     (begin0 (car idle-list)
-                       (set! idle-list (cdr idle-list)))]
-                    [else (new-connection)])]
+      (let* ([reused-c (try-take-idle)]
+             [raw-c (or reused-c (new-connection))]
              [proxy-number (begin0 proxy-counter (set! proxy-counter (add1 proxy-counter)))]
              [c (new proxy-connection% (pool this) (connection raw-c) (number proxy-number))])
         (log-db-debug "connection-pool: leasing connection #~a (~a @~a)"
                       proxy-number
-                      (if take-idle? "idle" "new")
+                      (if reused-c "idle" "new")
                       (hash-ref actual=>number raw-c "???"))
         (hash-set! proxy=>evt c (wrap-evt key (lambda (_e) c)))
         (set! assigned-connections (add1 assigned-connections))
         c))
+
+    (define/private (try-take-idle)
+      (and (pair? idle-list)
+           (let ([c (car idle-list)])
+             (set! idle-list (cdr idle-list))
+             (if (send c connected?)
+                 c
+                 (try-take-idle)))))
 
     (define/private (release* proxy raw-c why)
       (log-db-debug "connection-pool: releasing connection #~a (~a, ~a)"
