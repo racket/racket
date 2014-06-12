@@ -2952,17 +2952,21 @@ other tools that combine @racketmodname[pict]s together.
 }
 
 @deftogether[[
-@defform[(render-metafunction metafunction-name)]{}
+@defform[(render-metafunction metafunction-name maybe-contract)]{}
 @defform/none[#:literals (render-metafunction)
-              (render-metafunction metafunction-name filename)]{}
-@defform[(render-metafunctions metafunction-name ...)]{}
-@defform/none[#:literals (render-metafunctions)
-              (render-metafunctions metafunction-name ... #:file filename)]{}]]{
+              (render-metafunction metafunction-name filename maybe-contract)]{}
+@defform[(render-metafunctions metafunction-name ... maybe-filename maybe-contract)
+          #:grammar ([maybe-filename (code:line) (code:line #:file filename)]
+                     [maybe-contract? (code:line) (code:line #:contract? bool-expr)])]{}]]{
 Like @racket[render-reduction-relation] but for metafunctions.
 
 Similarly, @racket[render-metafunctions] accepts multiple 
 metafunctions and renders them together, lining up all of the
 clauses together.
+
+If the metafunctions have contracts, they are typeset as the first
+lines of the output, unless the expression following @racket[#:contract?]
+evaluates to @racket[#f].
 
 This function sets @racket[dc-for-text-size]. See also
 @racket[metafunction->pict] and
@@ -3146,10 +3150,10 @@ precede ellipses that represent argument sequences; when it is
   are rendered on two lines and which are rendered on one.
   
   If its value is a list, the length of the list must match
-  the number of cases and each boolean indicates if that
-  case has a linebreak or not.
+  the number of cases plus one if there is a contract. 
+  Each boolean indicates if that case has a linebreak or not.
   
-  This influences the @racket['left/right] styles only.
+  This parameter's value influences the @racket['left/right] styles only.
 }
 
 @defparam[metafunction-cases 

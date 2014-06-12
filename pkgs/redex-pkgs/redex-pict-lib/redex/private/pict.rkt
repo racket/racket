@@ -5,7 +5,7 @@
          racket/match
          racket/pretty
          racket/set
-         (only-in racket/list drop-right last partition)
+         (only-in racket/list drop-right last partition add-between)
          
          texpict/mrpict
          texpict/utils
@@ -21,7 +21,8 @@
          (prefix-in lw/rt: redex/private/loc-wrapper-rt))
 
 (require (for-syntax racket/base
-                     redex/private/term-fn))
+                     redex/private/term-fn
+                     syntax/parse))
 
 (provide render-term 
          term->pict
@@ -261,7 +262,6 @@
         (apply
          vl-append
          (add-between
-          (blank 0 (reduction-relation-rule-separation))
           (map (λ (rp)
                  (side-condition-combiner
                   (vl-append
@@ -274,7 +274,8 @@
                      (rp->pict-label rp)))
                    (rule-pict-rhs rp))
                   (rp->side-condition-pict rp +inf.0)))
-               rps))))))
+               rps)
+          (blank 0 (reduction-relation-rule-separation)))))))
 
 (define compact-vertical-min-width (make-parameter 0))
 
@@ -352,14 +353,14 @@
                 (apply 
                  hbl-append
                  (add-between
-                  (basic-text ", " (default-style))
-                  fresh-vars))
+                  fresh-vars
+                  (basic-text ", " (default-style))))
                 (basic-text " fresh" (default-style)))))]
          [lst (add-between
-               'comma
                (append
                 pattern-binds/sc
-                frsh))])
+                frsh)
+               'comma)])
     (if (null? lst)
         (blank)
         (let ([where ((where-make-prefix-pict))])
@@ -413,14 +414,6 @@
    ((current-text) " [" (label-style) (label-font-size))
    label
    ((current-text) "]" (label-style) (label-font-size))))
-
-(define (add-between i l)
-  (cond
-    [(null? l) l]
-    [else 
-     (cons (car l)
-           (apply append 
-                  (map (λ (x) (list i x)) (cdr l))))]))
 
 (define (make-horiz-space picts) (blank (pict-width (apply cc-superimpose picts)) 0))
 
@@ -773,11 +766,11 @@
      #'(metafunctions->pict name)]))
 
 (define-syntax (metafunctions->pict stx)
-  (syntax-case stx ()
-    [(_ name1 name2 ...)
-     (and (identifier? #'name1)
-          (andmap identifier? (syntax->list #'(name2 ...))))
-     #'(metafunctions->pict/proc (list (metafunction name1) (metafunction name2) ...) 'metafunctions->pict)]))
+  (syntax-parse stx 
+    [(_ name1:id name2:id ... (~optional (~seq #:contract? contract-e:expr) #:defaults ([contract-e #'#t])))
+     #'(metafunctions->pict/proc (list (metafunction name1) (metafunction name2) ...)
+                                 contract-e
+                                 'metafunctions->pict)]))
 
 (define-syntax (relation->pict stx)
   (syntax-case stx ()
@@ -786,24 +779,39 @@
      #'(inference-rules-pict/relation 'form (metafunction name1))]))
 
 (define-syntax (render-metafunctions stx)
-  (syntax-case stx ()
-    [(_ name1 name2 ...)
-     (and (identifier? #'name)
-          (andmap identifier? (syntax->list #'(name2 ...))))
-     #'(render-metafunction/proc (list (metafunction name1) (metafunction name2) ...) #f 'render-metafunctions)]
-    [(_ name1 name2 ... #:file filename)
-     (and (identifier? #'name1)
-          (andmap identifier? (syntax->list #'(name2 ...))))
-     #'(render-metafunction/proc (list (metafunction name1) (metafunction name2) ...) filename 'render-metafunctions)]))
+  (syntax-parse stx
+    [(_ name1:id name2:id ... (~seq k:keyword e:expr) ...)
+     (define filename #'#f)
+     (define contract? #'#t)
+     (for ([kwd (in-list (syntax->list #'(k ...)))]
+           [e (in-list (syntax->list #'(e ...)))])
+       (cond
+         [(equal? '#:filename (syntax-e kwd))
+          (set! filename e)]
+         [(equal? '#:contract? (syntax-e kwd))
+          (set! contract? e)]
+         [else
+          (raise-syntax-error #f "unexpected keyword" stx kwd)]))
+     #`(render-metafunction/proc 
+        (list (metafunction name1) (metafunction name2) ...)
+        #,contract?
+        #,filename
+        'render-metafunctions)]))
 
 (define-syntax (render-metafunction stx)
-  (syntax-case stx ()
-    [(_ name)
-     (identifier? #'name)
-     #'(render-metafunction/proc (list (metafunction name)) #f 'render-metafunction)]
-    [(_ name file)
-     (identifier? #'name)
-     #'(render-metafunction/proc (list (metafunction name)) file 'render-metafunction)]))
+  (syntax-parse stx
+    [(_ name:id
+        (~optional file:expr #:defaults ([file #'#f]))
+        (~optional (~seq k:keyword e:expr)))
+     #`(render-metafunction/proc (list (metafunction name))
+                                 #,(cond
+                                     [(not (attribute k)) #'#f]
+                                     [(and (equal? (syntax-e (attribute k)) '#:contract?))
+                                      #'e]
+                                     [else
+                                      (raise-syntax-error #f "unknown keyword" stx #'k)])
+                                 file
+                                 'render-metafunction)]))
 
 (define-syntax (render-relation stx)
   (syntax-case stx ()
@@ -814,7 +822,7 @@
 
 (define metafunction-pict-style (make-parameter 'left-right))
 (define metafunction-cases (make-parameter #f))
-(define (select-mf-cases eqns case-labelss)
+(define (select-mf-cases contracts eqns case-labelss)
   (define mf-cases (metafunction-cases))
   (cond
     [mf-cases
@@ -824,21 +832,29 @@
      (apply 
       append
       (for/list ([eqns (in-list eqns)]
+                 [contract (in-list contracts)]
                  [case-labels (in-list case-labelss)])
         (filter
          values
-         (for/list ([eqn (in-list eqns)]
-                    [case-label (in-list case-labels)])
-           (begin0
-             (cond
-               [(and (pair? sorted-cases) (= i (car sorted-cases)))
-                (set! sorted-cases (cdr sorted-cases))
-                eqn]
-               [(set-member? named-cases case-label)
-                eqn]
-               [else #f])
-             (set! i (+ i 1)))))))]
-    [else (apply append eqns)]))
+         (cons 
+          contract
+          (for/list ([eqn (in-list eqns)]
+                     [case-label (in-list case-labels)])
+            (begin0
+              (cond
+                [(and (pair? sorted-cases) (= i (car sorted-cases)))
+                 (set! sorted-cases (cdr sorted-cases))
+                 eqn]
+                [(set-member? named-cases case-label)
+                 eqn]
+                [else #f])
+              (set! i (+ i 1))))))))]
+    [else (apply append 
+                 (for/list ([eqns (in-list eqns)]
+                            [contract (in-list contracts)])
+                   (if contract
+                       (cons contract eqns)
+                       eqns)))]))
 
 (define judgment-form-cases (make-parameter #f))
 (define (select-jf-cases eqns conclusions eqn-names)
@@ -877,9 +893,9 @@
       [else
        (cons (car l) (loop (cdr l)))])))
 
-(define (metafunctions->pict/proc mfs name)
-  (unless (andmap (λ (mf) (eq? (metafunc-proc-lang (metafunction-proc (car mfs)))
-                               (metafunc-proc-lang (metafunction-proc mf))))
+(define (metafunctions->pict/proc mfs contract? name)
+  (unless (andmap (λ (mf) (equal? (metafunc-proc-lang (metafunction-proc (car mfs)))
+                                  (metafunc-proc-lang (metafunction-proc mf))))
                   mfs)
     (error name "expected metafunctions that are all drawn from the same language"))
   (define current-linebreaks (linebreaks))
@@ -887,22 +903,39 @@
   (define sep 2)
   (define style (metafunction-pict-style))
   (define (wrapper->pict lw) (lw->pict all-nts lw))
-  (define all-eqns (map (λ (mf) (metafunc-proc-pict-info (metafunction-proc mf))) mfs))
+  (define contracts (for/list ([mf (in-list mfs)]) 
+                      (define lws (list-ref (metafunc-proc-pict-info (metafunction-proc mf)) 0))
+                      (cond
+                        [(and contract? lws)
+                         (define doms (list-ref lws 0))
+                         (define rngs (list-ref lws 1))
+                         (render-metafunction-contract
+                          (metafunc-proc-lang (metafunction-proc mf))
+                          (metafunc-proc-name (metafunction-proc mf))
+                          doms
+                          rngs)]
+                        [else #f])))
+  (define all-eqns (map (λ (mf) (list-ref (metafunc-proc-pict-info (metafunction-proc mf)) 1)) mfs))
   (define all-lhss 
-    (map (λ (mf)
-           (map (lambda (eqn) 
-                  (wrapper->pict
-                   (metafunction-call (metafunc-proc-name (metafunction-proc mf))
-                                      (list-ref eqn 0))))
-                (metafunc-proc-pict-info (metafunction-proc mf))))
-         mfs))
+    (for/list ([mf (in-list mfs)])
+      (for/list ([eqn (in-list (list-ref (metafunc-proc-pict-info (metafunction-proc mf)) 1))])
+        (wrapper->pict
+         (metafunction-call (metafunc-proc-name (metafunction-proc mf))
+                            (list-ref eqn 0))))))
   (define case-labels (map (λ (mf) (metafunc-proc-clause-names (metafunction-proc mf))) mfs))
-  (define eqns (select-mf-cases all-eqns case-labels))
-  (define lhss (select-mf-cases all-lhss case-labels))
-  (define rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 2))) eqns))
+  (define eqns (select-mf-cases contracts all-eqns case-labels))
+  (define lhs/contracts (select-mf-cases contracts all-lhss case-labels))
+  (define rhss (for/list ([eqn/contract (in-list eqns)])
+                 (if (pict? eqn/contract)
+                     'contract
+                     (wrapper->pict (list-ref eqn/contract 2)))))
   (unless (or (not current-linebreaks)
               (= (length current-linebreaks) (length eqns)))
-    (error 'metafunction->pict "expected the current-linebreaks parameter to be a list whose length matches the number of cases in the metafunction (~a), but got ~s"
+    (error 'metafunction->pict
+           (string-append
+            "expected the current-linebreaks parameter to be a list"
+            " whose length matches the number of cases in the metafunction"
+            " plus one if there is a contract (~a), but got ~s")
            (length eqns)
            current-linebreaks))
   (define linebreak-list (or current-linebreaks
@@ -923,45 +956,55 @@
                   left-right*/compact-side-conditions)))
   (define max-line-w/pre-sc (and
                              compact-side-conditions?
-                             (apply
-                              max
-                              (map (lambda (lhs rhs linebreak?)
-                                     (cond
-                                      [(eq? mode 'vertical)
-                                       (max (+ (pict-width lhs) (pict-width =-pict))
-                                            (pict-width rhs))]
-                                      [linebreak?
-                                       (max (pict-width lhs)
-                                            (+ (pict-width rhs) sep (pict-width =-pict)))]
-                                      [else
-                                       (+ (pict-width lhs) (pict-width rhs) (pict-width =-pict)
-                                          (* 2 sep))]))
-                                   lhss rhss linebreak-list))))
+                             (for/fold ([biggest 0]) ([lhs/contract (in-list lhs/contracts)]
+                                                      [rhs (in-list rhss)]
+                                                      [linebreak? (in-list linebreak-list)])
+                               (cond
+                                 [(equal? rhs 'contract)
+                                  ;; this is a contract
+                                  (max biggest (pict-width lhs/contract))]
+                                 [(eq? mode 'vertical)
+                                  (max biggest
+                                       (+ (pict-width lhs/contract) (pict-width =-pict))
+                                       (pict-width rhs))]
+                                 [linebreak?
+                                  (max biggest
+                                       (pict-width lhs/contract)
+                                       (+ (pict-width rhs) sep (pict-width =-pict)))]
+                                 [else
+                                  (max biggest
+                                       (+ (pict-width lhs/contract) (pict-width rhs) (pict-width =-pict)
+                                          (* 2 sep)))]))))
   (define scs (for/list ([eqn (in-list eqns)])
-                (let ([scs (reverse (list-ref eqn 1))])
-                  (if (null? scs)
-                      #f
-                      (let-values ([(fresh where/sc) (partition metafunc-extra-fresh? scs)])
-                        (side-condition-pict (foldl (λ (clause picts) 
-                                                      (foldr (λ (l ps) (cons (wrapper->pict l) ps))
-                                                             picts (metafunc-extra-fresh-vars clause)))
-                                                    '() fresh)
-                                             (map (match-lambda
-                                                    [(struct metafunc-extra-where (lhs rhs))
-                                                     (where-pict (wrapper->pict lhs) (wrapper->pict rhs))]
-                                                    [(struct metafunc-extra-side-cond (expr))
-                                                     (wrapper->pict expr)])
-                                                  where/sc)
-                                             (cond
-                                               [vertical-side-conditions? 
-                                                ;; maximize line breaks:
-                                                0]
-                                               [compact-side-conditions?
-                                                ;; maximize line break as needed:
-                                                max-line-w/pre-sc]
-                                               [else 
-                                                ;; no line breaks:
-                                                +inf.0])))))))
+                (cond
+                  [(pict? eqn) #f]
+                  [else
+                   (define scs (reverse (list-ref eqn 1)))
+                   (cond
+                     [(null? scs) #f]
+                     [else
+                      (define-values (fresh where/sc) (partition metafunc-extra-fresh? scs))
+                      (side-condition-pict 
+                       (foldl (λ (clause picts) 
+                                (foldr (λ (l ps) (cons (wrapper->pict l) ps))
+                                       picts (metafunc-extra-fresh-vars clause)))
+                              '() fresh)
+                       (map (match-lambda
+                              [(struct metafunc-extra-where (lhs rhs))
+                               (where-pict (wrapper->pict lhs) (wrapper->pict rhs))]
+                              [(struct metafunc-extra-side-cond (expr))
+                               (wrapper->pict expr)])
+                            where/sc)
+                       (cond
+                         [vertical-side-conditions? 
+                          ;; maximize line breaks:
+                          0]
+                         [compact-side-conditions?
+                          ;; maximize line break as needed:
+                          max-line-w/pre-sc]
+                         [else 
+                          ;; no line breaks:
+                          +inf.0]))])])))
   (case mode
     [(horizontal)
      (define (adjust-for-fills rows)
@@ -1000,47 +1043,60 @@
      (table 3
             (adjust-for-fills
              (apply append
-                    (map (lambda (lhs sc rhs linebreak?)
-                           (append
-                            (list
-                             (cond
-                               [linebreak?
-                                (list lhs 'fill 'fill)]
-                               [(and sc (eq? style 'left-right/beside-side-conditions))
-                                (list lhs =-pict (htl-append 10 rhs sc))]
-                               [else
-                                (list lhs =-pict rhs)]))
-                            (if linebreak?
-                                (list
-                                 (list (htl-append sep =-pict rhs)
-                                       'fill
-                                       'fill))
-                                null)
-                            (if (or (not sc)
-                                    (and (not linebreak?)
-                                         (eq? style 'left-right/beside-side-conditions)))
-                                null
-                                (list
-                                 (list sc 'fill 'fill)))))
-                         lhss
-                         scs
-                         rhss
-                         linebreak-list)))
+                    (for/list ([lhs/contract (in-list lhs/contracts)]
+                               [sc (in-list scs)]
+                               [rhs (in-list rhss)]
+                               [linebreak? (in-list linebreak-list)])
+                      (append
+                       (list
+                        (cond
+                          [(equal? rhs 'contract) ;; contract
+                           (list lhs/contract 'fill 'fill)]
+                          [linebreak?
+                           (list lhs/contract 'fill 'fill)]
+                          [(and sc (eq? style 'left-right/beside-side-conditions))
+                           (list lhs/contract =-pict (htl-append 10 rhs sc))]
+                          [else
+                           (list lhs/contract =-pict rhs)]))
+                       (if linebreak?
+                           (list
+                            (list (htl-append sep =-pict rhs)
+                                  'fill
+                                  'fill))
+                           null)
+                       (if (or (not sc)
+                               (and (not linebreak?)
+                                    (eq? style 'left-right/beside-side-conditions)))
+                           null
+                           (list
+                            (list sc 'fill 'fill)))))))
             ltl-superimpose ltl-superimpose
             sep sep)]
     [(vertical)
      (apply vl-append
             sep
             (apply append
-                   (map (lambda (lhs sc rhs)
-                          (cons
-                           (vl-append (htl-append lhs =-pict) rhs)
-                           (if (not sc)
-                               null
-                               (list sc))))
-                        lhss
-                        scs
-                        rhss)))]))
+                   (for/list ([lhs/contract (in-list lhs/contracts)]
+                              [sc (in-list scs)]
+                              [rhs (in-list rhss)])
+                     (cond
+                       [(equal? rhs 'contract) ;; contract
+                        (list lhs/contract)]
+                       [else
+                        (cons
+                         (vl-append (htl-append lhs/contract =-pict) rhs)
+                         (if (not sc)
+                             null
+                             (list sc)))]))))]))
+
+(define (render-metafunction-contract lang name doms rngs)
+  (hbl-append (basic-text (format "~a" name) (metafunction-style))
+              (basic-text " : " (default-style))
+              (apply hbl-append (add-between (map (λ (x) (lw->pict lang x)) doms) 
+                                             (basic-text " " (default-style))))
+              (basic-text " → " (default-style))
+              (apply hbl-append (add-between (map (λ (x) (lw->pict lang x)) rngs)
+                                             (basic-text " " (default-style))))))
 
 (define (metafunction-call name an-lw)
   (struct-copy lw an-lw
@@ -1122,14 +1178,14 @@
                                (basic-text "]" (default-style)))])]
     [else x]))
 
-(define (render-metafunction/proc mfs filename name)
+(define (render-metafunction/proc mfs contract? filename name)
   (cond
     [filename
-     (save-as-ps/pdf (λ () (metafunctions->pict/proc mfs name))
+     (save-as-ps/pdf (λ () (metafunctions->pict/proc mfs contract? name))
                      filename)]
     [else
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
-       (metafunctions->pict/proc mfs name))]))
+       (metafunctions->pict/proc mfs contract? name))]))
 
 (define (render-pict make-pict filename)
   (cond

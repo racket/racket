@@ -407,7 +407,7 @@
      (begin
        (unless (identifier? #'lang)
          (raise-syntax-error #f "expected an identifier in the language position" stx #'lang))
-       (define-values (contract-name dom-ctcs codom-contracts pats)
+       (define-values (contract-name dom-ctcs pre-condition codom-contracts pats)
          (split-out-contract stx (syntax-e #'def-form-id) #'body #t))
        (with-syntax* ([((name trms ...) rest ...) (car pats)]
                       [(mode-stx ...) #`(#:mode (name I))]
@@ -416,7 +416,7 @@
                                          #'())]
                       [(clauses ...) pats]
                       [new-body #`(mode-stx ... ctc-stx ... clauses ...)])
-                     (do-extended-judgment-form #'lang (syntax-e #'def-form-id) #'new-body #f stx #t)))]))
+         (do-extended-judgment-form #'lang (syntax-e #'def-form-id) #'new-body #f stx #t)))]))
 
 ;; if relation? is true, then the contract is a list of redex patterns
 ;; if relation? is false, then the contract is a single redex pattern
@@ -425,7 +425,7 @@
   ;; initial test determines if a contract is specified or not
   (cond
     [(pair? (syntax-e (car (syntax->list rest))))
-     (values #f #f (list #'any) (check-clauses stx syn-error-name (syntax->list rest) relation?))]
+     (values #f #f #f (list #'any) (check-clauses stx syn-error-name (syntax->list rest) relation?))]
     [else
      (syntax-case rest ()
        [(id separator more ...)
@@ -438,7 +438,7 @@
                (raise-syntax-error syn-error-name 
                                    "expected clause definitions to follow domain contract"
                                    stx))
-             (values #'id contract (list #'any) (check-clauses stx syn-error-name clauses #t)))]
+             (values #'id contract #f (list #'any) (check-clauses stx syn-error-name clauses #t)))]
           [else
            (unless (eq? ': (syntax-e #'separator))
              (raise-syntax-error syn-error-name "expected a colon to follow the meta-function's name" stx #'separator))
@@ -481,10 +481,9 @@
                                      #t)])])])))
                 (let ([doms (reverse dom-pats)]
                       [clauses (check-clauses stx syn-error-name raw-clauses relation?)])
-                  (values #'id 
-                          (if relation?
-                              doms
-                              #`(side-condition #,doms (term #,pre-condition)))
+                  (values #'id
+                          doms
+                          (if relation? #f pre-condition)
                           (reverse rev-codomains)
                           clauses))]
                [else

@@ -96,6 +96,7 @@
          "red-with-where-name.png"))
 
 (define-metafunction lang
+  S : x v e -> e
   [(S x v e) e])
 
 (btest (render-metafunction S)
