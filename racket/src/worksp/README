@@ -43,7 +43,7 @@ As always, please report bugs via one of the following:
 Building Racket and GRacket
 ---------------------------
 
-If you're using MSVC 2008, and if `cl.exe' and either `devenv.exe'
+If you're using Visual Studio, and if `cl.exe' and either `devenv.exe'
 or `vcexpress.exe' is in your path, then you can just run
     racket\src\worksp\build.bat
 from its own directory to perform all steps up to "Versioning",
@@ -66,7 +66,13 @@ Building RacketCGC and GRacketCGC
 
 The CGC source code for RacketCGC and GRacketCGC is split into several
 projects that are grouped into a few solutions.  To build the `X'
-solution with Visual Studio, open the file racket\src\worksp\X\X.sln.
+solution with Visual Studio, open the file racket\src\worksp\X\X.sln,
+but add `9' before ".sln" if you're using Visual Studio 2008 (i.e.,
+version 9.0).
+
+ [The .vcproj files are used by the ...9.sln solutions, while the
+  .vcxproj files are used by the other .sln solutions. The latter
+  are compatible with Visual Studio 2010 and up.]
 
 To build RacketCGC, build the Racket solution in
   racket\src\worksp\racket - makes racket\RacketCGC.exe

@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="libmzgc"
-	ProjectGUID="{66548E7B-294E-40EF-B7C0-C8D6D7E6234F}"
+	Name="MzCOM"
+	ProjectGUID="{36F31050-55C6-41A3-A23E-3008EBFC1273}"
 	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
@@ -21,17 +21,21 @@
 			Name="Debug|Win32"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="Debug"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
 			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
+			/>
+			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_BUILD;MD_LIB_MAIN;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,GC_DLL"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -42,36 +46,44 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
+				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="delayimp.lib"
+				OutputFile="..\..\..\lib\$(ProjectName)CGC.exe"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
+				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
 			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
+			/>
+			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_BUILD;MD_LIB_MAIN;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,GC_DLL"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -82,19 +94,22 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
+				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:X64"
-				AdditionalDependencies="User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="delayimp.lib"
+				OutputFile="..\..\..\lib\$(ProjectName)CGC.exe"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
+				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
 				TargetMachine="17"
 			/>
 		</Configuration>
@@ -102,19 +117,23 @@
 			Name="Release|Win32"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="Release"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
 			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
+			/>
+			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_BUILD;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -128,36 +147,45 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
+				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="delayimp.lib"
+				OutputFile="..\..\..\lib\$(ProjectName)CGC.exe"
+				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
+				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
 			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
+			/>
+			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_BUILD;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -171,36 +199,45 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
+				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				AdditionalOptions="/DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="delayimp.lib"
+				OutputFile="..\..\..\lib\$(ProjectName)CGC.exe"
+				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="..\..\..\lib\$(ProjectName)CGC.pdb"
+				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
 				TargetMachine="17"
 			/>
 		</Configuration>
 		<Configuration
-			Name="SGC|Win32"
+			Name="3m|Win32"
 			OutputDirectory="..\..\..\lib"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="2"
+			IntermediateDirectory="3m"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
 			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
+			/>
+			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_BUILD;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL,MZCOM_3M"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -214,36 +251,46 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
+				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				LinkLibraryDependencies="false"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracket3mxxxxxxx.dll"
+				AdditionalDependencies="delayimp.lib ..\..\..\lib\msvc\libracket3mxxxxxxx.lib"
+				OutputFile="..\..\..\lib\$(ProjectName).exe"
+				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="..\..\..\lib\$(ProjectName).pdb"
+				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
 			/>
 		</Configuration>
 		<Configuration
-			Name="SGC|x64"
+			Name="3m|x64"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
 			>
 			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
+			/>
+			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_BUILD;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..,..\..\racket\include,."
+				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL,MZCOM_3M"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -257,16 +304,22 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
+				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				LinkLibraryDependencies="false"
+				AdditionalOptions="/DELAYLOAD:libracket3mxxxxxxx.dll"
+				AdditionalDependencies="delayimp.lib ..\..\..\lib\msvc\libracket3mxxxxxxx.lib"
+				OutputFile="..\..\..\lib\$(ProjectName).exe"
+				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="..\..\..\lib\$(ProjectName).pdb"
+				SubSystem="2"
+                                StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
 				TargetMachine="17"
 			/>
 		</Configuration>
@@ -279,75 +332,19 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\Racket\Gc\Allchblk.c"
+				RelativePath="..\..\mzcom\mzcom.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Alloc.c"
+				RelativePath="..\..\mzcom\com_glue.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Blacklst.c"
+				RelativePath="..\..\mzcom\mzcom.idl"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Dyn_load.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Finalize.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Headers.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mach_dep.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Malloc.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mallocx.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mark.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mark_rts.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Misc.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\New_hblk.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Obj_map.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Os_dep.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Reclaim.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Stubborn.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\win32_threads.c"
+				RelativePath="..\..\mzcom\mzobj.cxx"
 				>
 			</File>
 		</Filter>
@@ -355,11 +352,27 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl"
 			>
+			<File
+				RelativePath="..\..\mzcom\mzobj.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\mzcom\com_glue.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 			>
+			<File
+				RelativePath=".\mzcom.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\mzcom.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

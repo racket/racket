@@ -311,10 +311,9 @@
         (cmd "cd " (q dir)
              " && git pull"))
    (cmd "cd " (q dir)
-        " && \"c:\\Program Files" (if (= bits 64) " (x86)" "") "\\Microsoft Visual Studio 9.0\\vc\\vcvarsall.bat\""
-        " " vc
+        " && racket\\src\\worksp\\msvcprep.bat " vc
         " && nmake win32-client" 
-       " JOB_OPTIONS=\"-j " j "\""
+        " JOB_OPTIONS=\"-j " j "\""
         (client-args c server server-port platform readme))))
 
 (define (client-build c)

@@ -1437,6 +1437,9 @@
           (cond
             [(pragma? (car e))
              (list (car e))]
+
+	    [(compiler-pragma? e)
+	     e]
             
             ;; START_XFORM_SKIP and END_XFORM_SKIP:
             [(end-skip? e)
@@ -1615,6 +1618,13 @@
         (define (empty-decl? e)
           (and (= 1 (length e))
                (eq? '|;| (tok-n (car e)))))
+
+	(define (compiler-pragma? e)
+	  ;; MSVC uses __pragma() to control compiler warnings
+	  (and (pair? e)
+	       (eq? '__pragma (tok-n (car e)))
+	       (pair? (cdr e))
+	       (parens? (cadr e))))
         
         (define (start-skip? e)
           (and (pair? e)
@@ -3962,6 +3972,10 @@
                         (pragma-s (car e))
                         (pragma-file (car e)) (pragma-line (car e))))
                (values (list (car e)) (cdr e))]
+              [(compiler-pragma? e)
+               (unless (null? result)
+                 (error 'pragma "unexpected MSVC compiler pragma"))
+               (values (list (car e) (cadr e)) (cddr e))]
               [(eq? semi (tok-n (car e)))
                (values (reverse (cons (car e) result)) (cdr e))]
               [(and (eq? '|,| (tok-n (car e))) comma-sep?)
