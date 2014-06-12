@@ -702,9 +702,14 @@ horizontal or vertical placement of each cell in the column or row.
 @defproc*[([(scale [pict pict?] [factor real?]) pict?]
            [(scale [pict pict?] [w-factor real?] [h-factor real?]) pict?])]{
 
-Scales a pict drawing, as well as its @tech{bounding box}. The drawing
-is scaled by adjusting the destination @racket[dc<%>]'s scale while
-drawing the original @racket[pict].}
+Scales a pict drawing, as well as its @tech{bounding box}, by multiplying
+it current size by @racket[factor] (if two arguments are supplied)
+or by multiplying the current width by @racket[w-factor] and current height by
+@racket[h-factor] (if three arguments are supplied).
+
+The drawing is scaled by adjusting the destination @racket[dc<%>]'s
+scale while drawing the original @racket[pict].}
+
 
 @defproc*[([(scale-to-fit [pict pict?] [size-pict pict?]) pict?]
            [(scale-to-fit [pict pict?] [width real?] [height real?]) pict?])]{
@@ -718,6 +723,7 @@ drawing the original @racket[pict].}
          (or @racket[width] by @racket[height] box), but not necessarily
          both.
 }
+
 
 @defproc[(rotate [pict pict?] [theta real?]) pict?]{
 
