@@ -103,6 +103,8 @@
     (define/private (recv-message fsym)
       (let ([r (raw-recv)])
         (cond [(ErrorResponse? r)
+               ;; No need to check for FATAL errors here and disconnect, because
+               ;; followed by EOF, handled by check-ready-for-query.
                (check-ready-for-query fsym #t)
                (raise-backend-error fsym r)]
               [(or (NoticeResponse? r)
@@ -128,7 +130,8 @@
                                  ((idle) #f)
                                  ((transaction) #t)
                                  ((failed) 'invalid)))]
-              [(and or-eof? (eof-object? r)) (void)]
+              [(and or-eof? (eof-object? r))
+               (disconnect* #f)]
               [else (error/comm fsym "expecting ready-for-query")])))
 
     ;; == Asynchronous messages
