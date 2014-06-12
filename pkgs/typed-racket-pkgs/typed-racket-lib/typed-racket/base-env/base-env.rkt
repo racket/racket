@@ -2772,7 +2772,7 @@
 ;; Syntax Manual
 ;; Section 2.1 (syntax/stx)
 ;; Needed for `with-syntax'
-[stx->list (-> (-Syntax Univ) (-lst (-Syntax Univ)))]
+[stx->list (-> (-Syntax Univ) (Un (-lst (-Syntax Univ)) (-val #f)))]
 [stx-list? (-> (-Syntax Univ) -Boolean)]
 
 ;; Keyword functions moved back to here:

@@ -283,6 +283,7 @@
   racket/tcp
   racket/udp
   racket/vector
+  syntax/stx
 
   (except-in typed-racket/utils/utils private)
   ;; Needed for bindings of types and TR primitives in expressions
@@ -3022,6 +3023,8 @@
         #:ret (ret (list (t:Un -String -Void) (t:Un -Symbol -Void)))]
        [tc-e (syntax->datum #`(#,(lambda (x) x)))
              #:ret (ret Univ)]
+       [tc-e (stx->list #'(a . b))
+             #:ret (ret (t:Un (-lst (-Syntax Univ)) (-val #f)))]
         )
 
   (test-suite
