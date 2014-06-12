@@ -214,6 +214,14 @@
     (define h (pict-height p))
     (define bm (make-bitmap (max 1 (inexact->exact (ceiling w)))
                             (max 1 (inexact->exact (ceiling h)))))
+    (unless (send bm ok?)
+      (error 'pict->bitmap
+             (string-append "bitmap creation failed\n"
+                            "  possible reason: out of memory\n"
+                            "  pict width: ~a\n"
+                            "  pict height: ~a")
+             w
+             h))
     (define dc (make-object bitmap-dc% bm))
     (send dc set-smoothing smoothing)
     (draw-pict p dc 0 0)
