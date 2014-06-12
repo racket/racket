@@ -708,8 +708,15 @@ or by multiplying the current width by @racket[w-factor] and current height by
 @racket[h-factor] (if three arguments are supplied).
 
 The drawing is scaled by adjusting the destination @racket[dc<%>]'s
-scale while drawing the original @racket[pict].}
+scale while drawing the original @racket[pict].
 
+@examples[#:eval
+          ss-eval
+          (filled-rectangle 80 40)
+          (scale (filled-rectangle 40 20) 2)
+          (scale (filled-rectangle 20 20) 4 2)]
+
+}
 
 @defproc*[([(scale-to-fit [pict pict?] [size-pict pict?]) pict?]
            [(scale-to-fit [pict pict?] [width real?] [height real?]) pict?])]{
