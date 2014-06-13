@@ -3,8 +3,8 @@
 # planet-compat
 rsync -a --progress -h --delete --exclude root --exclude static-gen --exclude static-gen.gz --exclude compiled --exclude doc ../../meta/pkg-index/ plt-etc:local/new-plt/pkgs/plt-services/meta/pkg-index/
 
-rsync -a --progress -h --delete plt-etc:local/galaxy-roots/planet-compat/ ~/Dev/local/pkg.rlo.planet-compat/root/
-rsync -a --progress -h --delete plt-etc:local/galaxy-roots/official/ ~/Dev/local/pkg.rlo.official/root/
+rsync -a --progress -h --delete plt-etc:local/galaxy-roots/planet-compat/ ~/Dev/local/pkg.rlo/planet-compat/root/
+rsync -a --progress -h --delete plt-etc:local/galaxy-roots/official/ ~/Dev/local/pkg.rlo/official/root/
 
 rsync -a --progress -h --delete plt-etc:local/new-plt/pkgs/plt-services/meta/pkg-index//official/static-gen/ official/static-gen 
 rsync -a --progress -h --delete plt-etc:local/new-plt/pkgs/plt-services/meta/pkg-index//official/static-gen.gz/ official/static-gen.gz
