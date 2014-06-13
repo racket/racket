@@ -296,7 +296,10 @@
                                         (if win?
                                             '("libiconv")
                                             '()))
-                      #:env path-flags
+                      #:env (append path-flags
+                                    ;; Disable Valgrind support, which particularly
+                                    ;; goes wrong for 64-bit Windows builds.
+                                    (list (list "CPPFLAGS" "-DNVALGRIND=1")))
                       #:patches (if (and win? m32?)
                                     (list rand-patch)
                                     null))]
