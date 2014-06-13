@@ -198,6 +198,28 @@ syntax classes, which cannot be expressed using the ``colon''
 notation. The @racket[arg]s are evaluated in the scope where the
 @racket[pvar-id] occurs in the pattern. Keyword arguments are
 supported, using the same syntax as in @racket[#%app].
+
+If a @racket[#:with] directive appears between the main pattern (e.g., in a 
+@racket[syntax-parse] or @racket[define-syntax-class] clause) and a 
+@racket[#:declare], then only pattern variables from the @racket[#:with] 
+pattern may be declared.
+
+@myexamples[
+(syntax-parse #'P
+  [x
+   #:declare x id
+   #'x])
+(syntax-parse #'L
+  [x
+   #:with y #'x
+   #:declare x id
+   #'x])
+(syntax-parse #'T
+  [x
+   #:with y #'x
+   #:declare y id
+   #'x])
+]
 }
 
 @specsubform[(code:line #:with syntax-pattern stx-expr)]{
