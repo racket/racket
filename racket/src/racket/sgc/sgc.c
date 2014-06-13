@@ -836,7 +836,7 @@ static void sgc_fprintf(int, const char *, ...);
 #if CHECK_FREES
 static void free_error(const char *msg)
 {
-  FPRINTF(STDERR, msg);
+  FPRINTF(STDERR, "%s", msg);
 }
 #endif
 
@@ -4867,7 +4867,7 @@ void GC_store_path(void *v, uintptr_t src, void *path_data)
   if (len) {
     uintptr_t prev = 0;
 
-    trace_path_buffer[trace_path_buffer_pos++] = (void *)(len + 2);
+    trace_path_buffer[trace_path_buffer_pos++] = (void *)(intptr_t)(len + 2);
     trace_path_buffer[trace_path_buffer_pos++] = current_trace_source;
     trace_path_buffer[trace_path_buffer_pos++] = 0;
     for (i = 1; len--; i += 3) {

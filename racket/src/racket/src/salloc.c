@@ -2166,11 +2166,11 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 #ifdef MZ_PRECISE_GC
   int skip_summary = 0;
   int trace_for_tag = 0;
-  int flags = 0;
+  int dump_flags = 0;
   GC_for_each_found_proc for_each_found = NULL;
 # else
 #  define skip_summary 0
-#  define flags 0
+#  define dump_flags 0
 #  define trace_for_tag 0
 #  define for_each_found NULL
 #endif
@@ -2458,7 +2458,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
           found_counter = 0;
           for_each_found = increment_found_counter;
           trace_for_tag = i;
-          flags |= GC_DUMP_SUPPRESS_SUMMARY;
+          dump_flags |= GC_DUMP_SUPPRESS_SUMMARY;
           skip_summary = 1;
           break;
         }
@@ -2484,13 +2484,13 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
       tn = scheme_get_type_name_or_null(i);
       if (tn && !strcmp(tn, s)) {
 	trace_for_tag = i;
-	flags |= GC_DUMP_SHOW_TRACE;
+	dump_flags |= GC_DUMP_SHOW_TRACE;
 	break;
       }
     }
 
     if (!strcmp("fnl", s))
-      flags |= GC_DUMP_SHOW_FINALS;
+      dump_flags |= GC_DUMP_SHOW_FINALS;
 
     if (!strcmp("struct", s)) {
       for_each_struct = count_struct_instance;
@@ -2529,7 +2529,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
     }
   } else if (c && SCHEME_INTP(p[0])) {
     trace_for_tag = SCHEME_INT_VAL(p[0]);
-    flags |= GC_DUMP_SHOW_TRACE;
+    dump_flags |= GC_DUMP_SHOW_TRACE;
   } else if (c && SCHEME_THREADP(p[0])) {
     Scheme_Thread *t = (Scheme_Thread *)p[0];
     void **var_stack, *limit;
@@ -2564,7 +2564,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   else if ((c > 1) && SCHEME_SYMBOLP(p[1]) && !strcmp("cons", SCHEME_SYM_VAL(p[1]))) {
     for_each_found = cons_onto_list;
     cons_accum_result = scheme_null;
-    flags -= (flags & GC_DUMP_SHOW_TRACE);
+    dump_flags -= (dump_flags & GC_DUMP_SHOW_TRACE);
   }
 #endif
 
@@ -2572,7 +2572,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
     scheme_console_printf("Begin Dump\n");
 
 # ifdef MZ_PRECISE_GC
-  GC_dump_with_traces(flags, 
+  GC_dump_with_traces(dump_flags,
 		      scheme_get_type_name_or_null,
 		      for_each_found,
 		      trace_for_tag, trace_for_tag,
@@ -2960,7 +2960,7 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
     break;
   case scheme_prim_type:
     {
-      if (((Scheme_Primitive_Proc *)root)->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
+      if (SCHEME_PRIM_PROC_FLAGS(root) & SCHEME_PRIM_IS_MULTI_RESULT)
 	s = sizeof(Scheme_Prim_W_Result_Arity);
       else
 	s = sizeof(Scheme_Primitive_Proc);
@@ -2982,7 +2982,7 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
     break;
   case scheme_closed_prim_type:
     {
-      if (((Scheme_Closed_Primitive_Proc *)root)->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
+      if (SCHEME_PRIM_PROC_FLAGS(root) & SCHEME_PRIM_IS_MULTI_RESULT)
 	s = sizeof(Scheme_Closed_Prim_W_Result_Arity);
       else
 	s = sizeof(Scheme_Closed_Primitive_Proc);
