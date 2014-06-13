@@ -10,6 +10,14 @@
          pkg/lib
          pkg/path)
 
+;; Find packages in a directory tree ("info.rkt" indicates a package)
+;; and link the packages into an installation. The packages are linked
+;; in a "devel-pkgs" scope to isolate them from packages at
+;; "installation" scope, so that the set of linked packages can be
+;; updated when the directory content changes.
+
+;; Used by the top-level Makefile in the main Racket repository.
+
 (define config-dir-path (build-path "racket" "etc"))
 (define config-file-path (build-path config-dir-path "config.rktd"))
 (define devel-pkgs-rel-dir (build-path "devel-pkgs"))

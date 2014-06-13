@@ -261,10 +261,6 @@ REQUIRED_PKGS = racket-lib
 # Packages needed for building distribution:
 DISTRO_BUILD_PKGS = distro-build-lib
 
-# To bootstrap, we use some "distro-build" libraries directly,
-# instead of from an installed package:
-DISTBLD = pkgs/distro-build-pkgs/distro-build-server
-
 SVR_PRT = $(SERVER):$(SERVER_PORT)
 
 SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
@@ -367,11 +363,11 @@ PACK_NATIVE = --native --pack build/native/pkgs \
               ++catalog build/native/catalog \
 	      ++catalog build/local/catalog
 native-catalog:
-	$(RACKET) $(DISTBLD)/pack-and-catalog.rkt $(PACK_NATIVE) native-pkgs
+	$(RACKET) racket/src/pack-all.rkt $(PACK_NATIVE) native-pkgs
 
 # Create a catalog for all packages in this directory:
 local-source-catalog:
-	$(RACKET) $(DISTBLD)/pack-and-catalog.rkt ++catalog build/local/catalog pkgs
+	$(RACKET) racket/src/pack-all.rkt ++catalog build/local/catalog pkgs
 
 # Clear out a package build in "build/user", and then install
 # packages:

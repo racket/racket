@@ -12,7 +12,10 @@
          pkg/lib
          setup/getinfo)
 
-(module test racket/base)
+;; Find packages in the same way as "link-all.rkt", but packs
+;; them into ".zip" files and adds them to a catalog.
+
+;; Used by the top-level Makefile in the main Racket repository.
 
 (define pack-dest-dir #f)
 (define catalog-dirs null)

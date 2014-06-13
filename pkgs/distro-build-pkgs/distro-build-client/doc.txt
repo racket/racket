@@ -92,14 +92,16 @@ Each Windows client needs the following:
     Windows command line (like freeSSHd) or bash with access to
     cmd.exe (like Cygwin's opensshd)
   * git (unless the working directory is ready)
-  * Microsoft Visual Studio 9.0 (2008), installed in the
-    default folder:
-     C:\Program Files\Microsoft Visual Studio 9.0       (32-bit host)
-     C:\Program Files (x86)\Microsoft Visual Studio 9.0 (64-bit host)
+  * Microsoft Visual Studio (version >= 9.0, <= 12.0), installed
+    in the default folder:
+     C:\Program Files\Microsoft Visual Studio <vers>
+    or
+     C:\Program Files (x86)\Microsoft Visual Studio <vers>
   * Nullsoft Scriptable Install System (NSIS) verstion 2.x, installed
     in the default folder:
      C:\Program Files\NSIS\makensis.exe
-     or  C:\Program Files (x86)\NSIS\makensis.exe
+    or
+     C:\Program Files (x86)\NSIS\makensis.exe
     or installed so that `makensis' in your PATH.
 
 Site Configuration
@@ -211,10 +213,10 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
 
   #:configure '(<string> ...) --- arguments to `configure'
 
-  #:bits <integer> --- 32 or 64, affects Visual Studio path
+  #:bits <integer> --- 32 or 64, affects Visual Studio mode
 
-  #:vc <string*> --- "x86" or "x64" to select the Visual C build mode;
-    default depends on `#:bits'
+  #:vc <string*> --- "x86" or "x64" to select the Visual Studio build
+    mode; default depends on `#:bits'
 
   #:sign-identity <string> --- provides an identity to be passed to
     `codesign` for code signing on Mac OS X (for all executables in a
