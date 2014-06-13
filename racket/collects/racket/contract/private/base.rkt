@@ -144,7 +144,8 @@
          =>
          (λ (ht)
            (cond
-             [(hash-ref ht val #f) val]
+             [(hash-ref ht val #f)
+              (raise-blame-error blame val '(given: "a value with a cycle"))]
              [else
               (hash-set! ht val #t)
               ((orig-projection blame) val)]))]
@@ -158,7 +159,7 @@
          =>
          (λ (ht)
            (cond
-             [(hash-ref ht val #f) #t]
+             [(hash-ref ht val #f) #f]
              [else
               (hash-set! ht val #t)
               (orig-first-order val)]))]
