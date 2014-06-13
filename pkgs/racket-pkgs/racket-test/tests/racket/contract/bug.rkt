@@ -38,4 +38,20 @@ of the desired behavior.
      (and (exn:fail:contract:blame? x)
           (regexp-match? #rx"blaming: top-level"
                          ;; the regexp should be #rx"blaming: bad1-client"
-                         (exn-message x))))))
+                         (exn-message x)))))
+  
+  ;; this is a case where recursive-contract cannot easily tell 
+  ;; that it has found a cycle. It's currently supposed to detect
+  ;; cycles and signal errors, but it doesn't detect this one.
+  (test/spec-passed
+   'recursive-contract14
+   '(let ()
+      (struct s (x) #:mutable)
+      (define an-s (s #f))
+      (set-s-x! an-s an-s)
+      
+      (define c
+        (recursive-contract
+         (struct/c s c)))
+      
+      (s-x (s-x (contract c an-s 'pos 'neg))))))
