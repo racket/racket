@@ -2965,7 +2965,7 @@ metafunctions and renders them together, lining up all of the
 clauses together.
 
 If the metafunctions have contracts, they are typeset as the first
-lines of the output, unless the expression following @racket[#:contract?]
+lines of the output when the expression following @racket[#:contract?]
 evaluates to @racket[#f].
 
 This function sets @racket[dc-for-text-size]. See also

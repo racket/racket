@@ -256,7 +256,7 @@
 
 
 ;; make sure two metafunctions simultaneously rewritten line up properly
-(btest (render-metafunctions S T TL) "metafunctions-multiple.png")
+(btest (render-metafunctions S T TL #:contract? #t) "metafunctions-multiple.png")
 
 ;; make sure that the ellipses don't have commas before them.
 (define-metafunction lang

@@ -741,21 +741,41 @@
                 (loop snd (cdr rst))))])))
 
 
-;                                                                                                          
-;                                                                                                          
-;                                                                                                          
-;                            ;              ;;;                                 ;    ;;                    
-;                           ;;             ;;;;                                ;;    ;;                    
-;  ;;;;;;; ;;;;    ;;;    ;;;;; ;;;;;;;   ;;;;; ;;;; ;;;; ;;;; ;;;    ;;;;;  ;;;;;        ;;;;   ;;;; ;;;  
-;  ;;;;;;;;;;;;;  ;;;;;  ;;;;;; ;;;;;;;;  ;;;;  ;;;; ;;;; ;;;;;;;;;  ;;;;;; ;;;;;; ;;;;  ;;;;;;  ;;;;;;;;; 
-;  ;;;; ;;; ;;;; ;;;; ;;  ;;;;      ;;;; ;;;;;; ;;;; ;;;; ;;;; ;;;; ;;;;;;;  ;;;;  ;;;; ;;;;;;;; ;;;; ;;;; 
-;  ;;;; ;;; ;;;; ;;;;;;;  ;;;;   ;;;;;;; ;;;;;; ;;;; ;;;; ;;;; ;;;; ;;;;     ;;;;  ;;;; ;;;; ;;; ;;;; ;;;; 
-;  ;;;; ;;; ;;;; ;;;;;    ;;;;; ;;  ;;;;  ;;;;  ;;;; ;;;; ;;;; ;;;; ;;;;;;;  ;;;;; ;;;; ;;;;;;;; ;;;; ;;;; 
-;  ;;;; ;;; ;;;;  ;;;;;;  ;;;;; ;;;;;;;;  ;;;;  ;;;;;;;;; ;;;; ;;;;  ;;;;;;  ;;;;; ;;;;  ;;;;;;  ;;;; ;;;; 
-;  ;;;; ;;; ;;;;   ;;;;    ;;;;  ;; ;;;;  ;;;;   ;;; ;;;; ;;;; ;;;;   ;;;;;   ;;;; ;;;;   ;;;;   ;;;; ;;;; 
-;                                                                                                          
-;                                                                                                          
-;                                                                                                          
+;                                       
+;                                       
+;                                       
+;                                       
+;                        ;              
+;                      ;;;              
+;  ;;; ;; ;;;    ;;;;  ;;;;  ;;;;;      
+;  ;;;;;;;;;;;  ;; ;;; ;;;; ;;;;;;;     
+;  ;;; ;;; ;;; ;;; ;;; ;;;  ;;  ;;;     
+;  ;;; ;;; ;;; ;;;;;;; ;;;    ;;;;; ;;;;
+;  ;;; ;;; ;;; ;;;     ;;;  ;;; ;;; ;;;;
+;  ;;; ;;; ;;;  ;;;;;; ;;;; ;;; ;;;     
+;  ;;; ;;; ;;;   ;;;;   ;;;  ;;;;;;     
+;                                       
+;                                       
+;                                       
+;                                       
+;                                                        
+;                                                        
+;                                                        
+;                                                        
+;   ;;;;                          ;  ;;;                 
+;  ;;;                          ;;;                      
+;  ;;;; ;;; ;;; ;;; ;;    ;;;   ;;;; ;;;   ;;;   ;;; ;;  
+;  ;;;; ;;; ;;; ;;;;;;;  ;;;;;  ;;;; ;;;  ;;;;;  ;;;;;;; 
+;  ;;;  ;;; ;;; ;;; ;;; ;;;  ;; ;;;  ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;; ;;; ;;; ;;; ;;;     ;;;  ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;; ;;; ;;; ;;; ;;;  ;; ;;;  ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;;;;;; ;;; ;;;  ;;;;;  ;;;; ;;;  ;;;;;  ;;; ;;; 
+;  ;;;   ;; ;;; ;;; ;;;   ;;;    ;;; ;;;   ;;;   ;;; ;;; 
+;                                                        
+;                                                        
+;                                                        
+;                                                        
+
 
 (define (make-=) (basic-text " = " (default-style)))
 
@@ -767,7 +787,8 @@
 
 (define-syntax (metafunctions->pict stx)
   (syntax-parse stx 
-    [(_ name1:id name2:id ... (~optional (~seq #:contract? contract-e:expr) #:defaults ([contract-e #'#t])))
+    [(_ name1:id name2:id ... 
+        (~optional (~seq #:contract? contract-e:expr) #:defaults ([contract-e #'#f])))
      #'(metafunctions->pict/proc (list (metafunction name1) (metafunction name2) ...)
                                  contract-e
                                  'metafunctions->pict)]))
@@ -782,7 +803,7 @@
   (syntax-parse stx
     [(_ name1:id name2:id ... (~seq k:keyword e:expr) ...)
      (define filename #'#f)
-     (define contract? #'#t)
+     (define contract? #'#f)
      (for ([kwd (in-list (syntax->list #'(k ...)))]
            [e (in-list (syntax->list #'(e ...)))])
        (cond
@@ -941,9 +962,15 @@
   (define linebreak-list (or current-linebreaks
                              (map (lambda (x) #f) eqns)))
   (define mode (case style
-                 [(left-right left-right/vertical-side-conditions left-right/compact-side-conditions left-right/beside-side-conditions)
+                 [(left-right 
+                   left-right/vertical-side-conditions
+                   left-right/compact-side-conditions
+                   left-right/beside-side-conditions)
                   'horizontal]
-                 [(up-down up-down/vertical-side-conditions up-down/compact-side-conditions) 'vertical]
+                 [(up-down
+                   up-down/vertical-side-conditions
+                   up-down/compact-side-conditions)
+                  'vertical]
                  [else (error 'metafunctions->pict "unknown mode")]))
   (define =-pict (make-=))
   (define vertical-side-conditions?
@@ -973,7 +1000,9 @@
                                        (+ (pict-width rhs) sep (pict-width =-pict)))]
                                  [else
                                   (max biggest
-                                       (+ (pict-width lhs/contract) (pict-width rhs) (pict-width =-pict)
+                                       (+ (pict-width lhs/contract)
+                                          (pict-width rhs)
+                                          (pict-width =-pict)
                                           (* 2 sep)))]))))
   (define scs (for/list ([eqn (in-list eqns)])
                 (cond
