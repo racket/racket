@@ -125,7 +125,8 @@
                 (box-wrapper val
                              (λ (b v) (pos-elem-proj v))
                              (λ (b v) (neg-elem-proj v))
-                             impersonator-prop:contracted ctc))))))))
+                             impersonator-prop:contracted ctc
+                             impersonator-prop:blame blame))))))))
 
 (define (ho-val-first-projection chaperone/impersonate-box)
   (λ (ctc)
@@ -141,10 +142,12 @@
             (if (and (immutable? val) (not (chaperone? val)))
                 (λ (neg-party) (box-immutable ((pos-elem-proj (unbox val)) neg-party)))
                 (λ (neg-party)
-                  (chaperone/impersonate-box val
-                                             (λ (b v) ((pos-elem-proj v) neg-party))
-                                             (λ (b v) ((neg-elem-proj v) neg-party))
-                                             impersonator-prop:contracted ctc))))))))
+                  (chaperone/impersonate-box 
+                   val
+                   (λ (b v) ((pos-elem-proj v) neg-party))
+                   (λ (b v) ((neg-elem-proj v) neg-party))
+                   impersonator-prop:contracted ctc
+                   impersonator-prop:blame (blame-add-missing-party blame neg-party)))))))))
 
 (define-struct (chaperone-box/c base-box/c) ()
   #:property prop:custom-write custom-write-property-proc

@@ -31,6 +31,7 @@
          contracted-function?
          contracted-function-proc
          contracted-function-ctc
+         contracted-function-blame
          make-contracted-function
          matches-arity-exactly?
          keywords-match
@@ -53,9 +54,10 @@
       (list id)
       null))
 
-(define-struct contracted-function (proc ctc)
+(define-struct contracted-function (proc ctc blame)
   #:property prop:procedure 0
-  #:property prop:contracted 1)
+  #:property prop:contracted 1
+  #:property prop:blame 2)
 
 (define contract-key (gensym 'contract-key))
 

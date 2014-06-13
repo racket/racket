@@ -155,11 +155,13 @@
        f
        checker
        impersonator-prop:contracted ctc
+       impersonator-prop:blame blame
        impersonator-prop:application-mark (cons contract-key same-rngs))
       (wrapper
        f
        checker
-       impersonator-prop:contracted ctc)))
+       impersonator-prop:contracted ctc
+       impersonator-prop:blame blame)))
 
 (define (raise-no-keywords-error f blame)
   (λ (kwds kwd-args . args)

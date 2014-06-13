@@ -177,7 +177,8 @@
                   val
                   (checked-ref neg-party)
                   (checked-set neg-party)
-                  impersonator-prop:contracted ctc))))))))
+                  impersonator-prop:contracted ctc
+                  impersonator-prop:blame (blame-add-missing-party blame neg-party)))))))))
 
 (define-values (prop:neg-blame-party prop:neg-blame-party? prop:neg-blame-party-get)
   (make-impersonator-property 'prop:neg-blame-party))
@@ -212,7 +213,8 @@
                   val
                   checked-ref
                   checked-set
-                  impersonator-prop:contracted ctc))))))))
+                  impersonator-prop:contracted ctc
+                  impersonator-prop:blame blame))))))))
 
 (define-struct (chaperone-vectorof base-vectorof) ()
   #:property prop:custom-write custom-write-property-proc
@@ -374,7 +376,8 @@
                     (with-continuation-mark
                      contract-continuation-mark-key blame
                      ((vector-ref elem-neg-projs i) val)))
-                  impersonator-prop:contracted ctc))))))))
+                  impersonator-prop:contracted ctc
+                  impersonator-prop:blame blame))))))))
 
 (define-struct (chaperone-vector/c base-vector/c) ()
   #:property prop:chaperone-contract

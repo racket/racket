@@ -24,10 +24,10 @@
          contract-first-order
          contract-first-order-passes?
          
-         prop:contracted
-         impersonator-prop:contracted
-         has-contract?
-         value-contract
+         prop:contracted prop:blame
+         impersonator-prop:contracted impersonator-prop:blame
+         has-contract? value-contract
+         has-blame? value-blame
          
          ;; for opters
          check-flat-contract
@@ -70,6 +70,18 @@
      (get-impersonator-prop:contracted v)]
     [else #f]))
 
+(define (has-blame? v)
+  (or (has-prop:blame? v)
+      (has-impersonator-prop:blame? v)))
+
+(define (value-blame v)
+  (cond
+    [(has-prop:blame? v)
+     (get-prop:blame v)]
+    [(has-impersonator-prop:blame? v)
+     (get-impersonator-prop:blame v)]
+    [else #f]))
+
 (define-values (prop:contracted has-prop:contracted? get-prop:contracted)
   (let-values ([(prop pred get)
                 (make-struct-type-property
@@ -81,8 +93,26 @@
                        (lambda (s) v))))])
     (values prop pred (λ (v) ((get v) v)))))
 
-(define-values (impersonator-prop:contracted has-impersonator-prop:contracted? get-impersonator-prop:contracted)
+(define-values (prop:blame has-prop:blame? get-prop:blame)
+  (let-values ([(prop pred get)
+                (make-struct-type-property
+                 'prop:blame
+                 (lambda (v si)
+                   (if (number? v)
+                       (let ([ref (cadddr si)])
+                         (lambda (s) (ref s v)))
+                       (lambda (s) v))))])
+    (values prop pred (λ (v) ((get v) v)))))
+
+(define-values (impersonator-prop:contracted 
+                has-impersonator-prop:contracted? 
+                get-impersonator-prop:contracted)
   (make-impersonator-property 'impersonator-prop:contracted))
+
+(define-values (impersonator-prop:blame
+                has-impersonator-prop:blame? 
+                get-impersonator-prop:blame)
+  (make-impersonator-property 'impersonator-prop:blame))
 
 (define (contract-first-order c)
   (contract-struct-first-order

@@ -192,7 +192,8 @@
                  (neg-dom-proj k))
                (λ (h k)
                  (pos-dom-proj k))
-               impersonator-prop:contracted ctc)))))))
+               impersonator-prop:contracted ctc
+               impersonator-prop:blame blame)))))))
 
 (define-struct (chaperone-hash/c base-hash/c) ()
   #:omit-define-syntaxes

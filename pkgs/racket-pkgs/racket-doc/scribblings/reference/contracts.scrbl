@@ -2250,6 +2250,17 @@ is expected to be the contract on the value).
 }
 
 @deftogether[(
+@defthing[prop:blame struct-type-property?]
+@defthing[impersonator-prop:blame impersonator-property?]
+)]{
+These properties attach a blame information to the protected structure,
+chaperone, or impersonator value.  The function @racket[blame-contract?]
+returns @racket[#t] for values that have one of these properties, and
+@racket[blame-contract] extracts the value from the property (which
+is expected to be the blame record for the contract on the value).
+}
+
+@deftogether[(
 @defproc[(build-flat-contract-property
           [#:name
            get-name
@@ -2625,7 +2636,7 @@ Produces the name used to describe the contract in error messages.
   Returns the contract attached to @racket[v], if recorded.
   Otherwise it returns @racket[#f].
 
-  To support @racket[value-contract] and @racket[has-contract?]
+  To support @racket[value-contract] and @racket[value-contract]
   in your own contract combinators, use @racket[prop:contracted] or
   @racket[impersonator-prop:contracted].
 }
@@ -2633,13 +2644,24 @@ Produces the name used to describe the contract in error messages.
 @defproc[(has-contract? [v any/c]) boolean?]{
   Returns @racket[#t] if @racket[v] is a value that
   has a recorded contract attached to it.
-
-  See also @racket[value-contract].
 }
 
+@defproc[(value-blame [v has-blame?]) (or/c blame? #f)]{
+  Returns the blame object for the contract attached
+  to @racket[v], if recorded. Otherwise it returns @racket[#f].
+  
+  To support @racket[value-contract] and @racket[value-blame]
+  in your own contract combinators, use @racket[prop:blame] or
+  @racket[impersonator-prop:blame].
+}
+
+@defproc[(has-blame? [v any/c]) boolean?]{
+  Returns @racket[#t] if @racket[v] is a value that
+  has a contract with blame information attached to it.
+}
 
 @defproc[(contract-projection [c contract?]) (-> blame? (-> any/c any/c))]{
-Produces the projection defining a contract's behavior on protected values.
+  Produces the projection defining a contract's behavior on protected values.
 }
 
 @defproc[(make-none/c [sexp-name any/c]) contract?]{

@@ -356,11 +356,13 @@
                 (chaperone-or-impersonate-procedure
                  val
                  chap/imp-func
-                 impersonator-prop:contracted ctc)
+                 impersonator-prop:contracted ctc
+                 impersonator-prop:blame (blame-add-missing-party orig-blame neg-party))
                 (chaperone-or-impersonate-procedure
                  val
                  chap/imp-func
                  impersonator-prop:contracted ctc
+                 impersonator-prop:blame (blame-add-missing-party orig-blame neg-party)
                  impersonator-prop:application-mark (cons arrow:contract-key 
                                                           ;; is this right?
                                                           partial-ranges))))])

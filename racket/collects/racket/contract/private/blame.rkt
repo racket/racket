@@ -15,7 +15,7 @@
          blame-update ;; used for option contract transfers
          blame-add-context
          blame-add-unknown-context
-         blame-context 
+         blame-context
          
          blame-add-missing-party
          

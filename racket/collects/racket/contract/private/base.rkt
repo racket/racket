@@ -84,7 +84,10 @@
           ;;     in arrow.rkt to make-contracted-function
           (make-contracted-function 
            (procedure-rename (contracted-function-proc new-val) vs-name)
-           (contracted-function-ctc new-val))]
+           (contracted-function-ctc new-val)
+           (if cvfp
+               (blame-add-missing-party blame neg)
+               blame))]
          [else
           (procedure-rename new-val vs-name)])]
       [else new-val])))

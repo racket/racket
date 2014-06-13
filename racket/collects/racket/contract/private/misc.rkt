@@ -1130,7 +1130,8 @@
          (contract-name ctc)
          val))
       (proxy val proj1 proj2 call/cc-guard call/cc-proxy
-             impersonator-prop:contracted ctc))))
+             impersonator-prop:contracted ctc
+             impersonator-prop:blame blame))))
 
 (define ((prompt-tag/c-val-first-proj chaperone?) ctc)
   (define proxy (if chaperone? chaperone-prompt-tag impersonate-prompt-tag))
@@ -1169,7 +1170,8 @@
            (proxy val
                   proj1 proj2
                   call/cc-guard call/cc-proxy
-                  impersonator-prop:contracted ctc))]
+                  impersonator-prop:contracted ctc
+                  impersonator-prop:blame (blame-add-missing-party blame neg-party)))]
         [else
          (λ (neg-party)
            (raise-blame-error
@@ -1238,7 +1240,8 @@
          (contract-name ctc)
          val))
       (proxy val proj1 proj2
-             impersonator-prop:contracted ctc))))
+             impersonator-prop:contracted ctc
+             impersonator-prop:blame blame))))
 
 (define ((continuation-mark-key/c-val-first-proj proxy) ctc)
   (define ho-proj
@@ -1254,7 +1257,8 @@
            (proxy val 
                   (λ (v) ((proj1 v) neg-party))
                   (λ (v) ((proj2 v) neg-party))
-                  impersonator-prop:contracted ctc))]
+                  impersonator-prop:contracted ctc
+                  impersonator-prop:blame blame))]
         [else 
          (λ (neg-party)
            (unless (contract-first-order-passes? ctc val)
@@ -1390,7 +1394,8 @@
          (contract-name ctc)
          val))
       (proxy val proj1 proj2
-             impersonator-prop:contracted ctc))))
+             impersonator-prop:contracted ctc
+             impersonator-prop:blame blame))))
 
 (define ((channel/c-val-first-proj proxy) ctc)
   (define ho-proj
@@ -1407,7 +1412,8 @@
            (proxy val 
                   (proj1 neg-party)
                   (proj2 neg-party)
-                  impersonator-prop:contracted ctc))]
+                  impersonator-prop:contracted ctc
+                  impersonator-prop:blame blame))]
         [else
          (λ (neg-party)
            (raise-blame-error

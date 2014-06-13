@@ -733,7 +733,8 @@
                (with-continuation-mark
                    contract-continuation-mark-key blame
                  (apply arg-checker args))))
-            impersonator-prop:contracted ctc))))))
+            impersonator-prop:contracted ctc
+            impersonator-prop:blame blame))))))
 
 (define-for-syntax (arg/res-to-indy-var indy-arg-vars ordered-args indy-res-vars ordered-ress var)
   (define (try vars ordered)

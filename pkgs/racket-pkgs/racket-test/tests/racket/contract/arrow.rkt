@@ -355,4 +355,6 @@
    '(let ()
       (struct x (a))
       (eq? (contract predicate/c x? 'pos 'neg) x?))
-   #t))
+   #t)
+  
+  )
