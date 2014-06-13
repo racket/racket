@@ -85,4 +85,12 @@
       (placeholder-set! ph (cons ph ph))
       (contract c (make-reader-graph ph) 'pos 'neg)
       (void)))
-  )
+  
+  (test/spec-passed
+   'recursive-contract13
+   '(let ()
+      (define c
+        (recursive-contract
+         (or/c #f (cons/c c c))))
+      (define x (cons #f #f))
+      (contract c (cons (cons x x) (cons x x)) 'pos 'neg))))
