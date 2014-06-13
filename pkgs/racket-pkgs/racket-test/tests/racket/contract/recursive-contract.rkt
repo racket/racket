@@ -74,7 +74,7 @@
       (letrec ([doll-ctc2 (or/c 'center (struct/c doll (recursive-contract doll-ctc2 #:flat)))])
         (contract doll-ctc2 (doll 4) 'pos 'neg))))
 
-  (test/pos-blame
+  (test/spec-passed
    'recursive-contract12
    '(let ()
       (define c
