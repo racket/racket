@@ -294,9 +294,10 @@ configuration file there and omit the `CONFIG' argument to
 `make'. Supply `CONFIG_MODE=...' to pass a configuration mode on to
 your site-configuration module (accessible via the `current-mode'
 parameter). Supply `CLEAN_MODE=--clean' to make the default `#:clean?'
-configuration for a client #t instead of #f, and supply
+configuration for a client #t instead of #f, supply
 `RELEASE_MODE=--release' to make thde default `#:release?'
-configuration #t.
+configuration #t, and supply `SOURCE_MODE=--source to make the default
+`#:source?' configuration #t.
 
 A configuration file can specify the packages to include, host address
 of the server, distribution name, installer directory, and
@@ -473,6 +474,9 @@ In more detail:
      defaults that are suitable for infrequently updated release
      installations, as opposed to frequently updated snapshot
      installations.
+
+     To create a source archive, provide `SOURCE_MODE' as "--source"
+     to `make'.
 
      To change the human-readable name of the distribution as embedded
      in the installer, provide `DIST_NAME' to `make'. The default

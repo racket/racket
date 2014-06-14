@@ -24,6 +24,7 @@
 ;; ----------------------------------------
 
 (define default-release? #f)
+(define default-source? #f)
 (define default-clean? #f)
 (define dry-run #f)
 
@@ -37,6 +38,8 @@
    #:once-each
    [("--release") "Create release-mode installers"
     (set! default-release? #t)]
+   [("--source") "Create source installers"
+    (set! default-source? #t)]
    [("--clean") "Erase client directories before building"
     (set! default-clean? #t)]
    [("--dry-run") mode
@@ -235,7 +238,7 @@
   (define dist-catalogs (choose-catalogs c '("")))
   (define sign-identity (get-opt c '#:sign-identity ""))
   (define release? (get-opt c '#:release? default-release?))
-  (define source? (get-opt c '#:source? #f))
+  (define source? (get-opt c '#:source? default-source?))
   (define source-pkgs? (get-opt c '#:source-pkgs? source?))
   (define source-runtime? (get-opt c '#:source-runtime? source?))
   (define mac-pkg? (get-opt c '#:mac-pkg? #f))
@@ -336,6 +339,7 @@
                            rdme
                            (rdme (add-defaults c
                                                '#:release? default-release?
+                                               '#:source? default-source?
                                                '#:pkgs (string-split default-pkgs)
                                                '#:install-name (if (get-opt c '#:release? default-release?)
                                                                    ""
