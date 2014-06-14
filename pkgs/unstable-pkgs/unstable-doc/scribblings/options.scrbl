@@ -4,10 +4,16 @@
 @(define the-eval (make-base-eval))
 @(the-eval '(require racket/contract unstable/options))
 
-@title[#:tag "options"]{Options}
+@title[#:tag "options"]{Option Contracts}
 @unstable-header[]
 
 @defmodule[unstable/options]
+
+This module introduces @defterm{option contracts}, a flavor of behavioral
+software contracts. With option contracts developers control in a
+programmatic manner whether, when, and how often contracts are
+checked. Using this flavor of contracts, Racketeers can mimic any compiler
+flag system but also create run-time informed checking systems. 
 
 @defproc[(option/c [c contract?]
                    [#:with-contract with boolean? #f]
@@ -82,7 +88,7 @@ is a predicate. In any other case, the result is a contract error.
 
 @defproc[(exercise-option [x any/c]) any/c]{
 
-Returns @racket[x] with contract ckecking enabled if an @racket[option/c] guards
+Returns @racket[x] with contract checking enabled if an @racket[option/c] guards
 @racket[x]. In any other case it returns @racket[x]. The result of @racket[exercise-option]
 loses the guard related to @racket[option/c], if it has one to begin with, and thus its contract checking status cannot change further.
                                             
