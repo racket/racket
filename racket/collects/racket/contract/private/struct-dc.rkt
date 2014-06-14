@@ -896,7 +896,7 @@
                       [(#:depends-on-state . more-stuff) (loop #'more-stuff lazy? type #t)]
                       [(#:lazy . more-stuff) (loop #'more-stuff #t type depends-on-state?)]
                       [_ (raise-syntax-error 'struct/dc "could not parse clause" stx clause)])))
-                (when (and lazy? (equal? '#:flat (syntax-e type)))
+                (when (and lazy? type (equal? '#:flat (syntax-e type)))
                   (raise-syntax-error 'struct/dc
                                       "cannot have #:lazy on a flat contract field"
                                       stx
