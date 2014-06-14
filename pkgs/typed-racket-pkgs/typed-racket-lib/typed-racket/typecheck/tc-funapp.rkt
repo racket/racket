@@ -3,6 +3,7 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          racket/match syntax/stx
          (prefix-in c: (contract-req))
+         (env tvar-env)
          (for-syntax syntax/parse racket/base)
          (types utils union subtype resolve abbrev
                 substitute classes)
@@ -78,17 +79,18 @@
       ;; in filters/objects). Note that we have to use argtys-t here, since
       ;; argtys is a list of tc-results.
       (λ (dom rng rest drest a)
-        (cond
-         [drest
-          (infer/dots
-           fixed-vars dotted-var argtys-t dom (car drest) rng (fv rng)
-           #:expected (and expected (tc-results->values expected)))]
-         [rest
-          (infer/vararg fixed-vars (list dotted-var) argtys-t dom rest rng
-                        (and expected (tc-results->values expected)))]
-         ;; no rest or drest
-         [else (infer fixed-vars (list dotted-var) argtys-t dom rng
-                      (and expected (tc-results->values expected)))]))
+        (extend-tvars vars
+          (cond
+           [drest
+            (infer/dots
+             fixed-vars dotted-var argtys-t dom (car drest) rng (fv rng)
+             #:expected (and expected (tc-results->values expected)))]
+           [rest
+            (infer/vararg fixed-vars (list dotted-var) argtys-t dom rest rng
+                          (and expected (tc-results->values expected)))]
+           ;; no rest or drest
+           [else (infer fixed-vars (list dotted-var) argtys-t dom rng
+                        (and expected (tc-results->values expected)))])))
       t argtys expected)]
     ;; regular polymorphic functions without dotted rest, 
     ;; we do not choose any instantiations with mandatory keyword arguments
@@ -109,8 +111,9 @@
       ;; in filters/objects). Note that we have to use argtys-t here, since
       ;; argtys is a list of tc-results.
       (λ (dom rng rest kw? a)
-         (infer/vararg vars null argtys-t dom rest rng
-                       (and expected (tc-results->values expected))))
+         (extend-tvars vars
+           (infer/vararg vars null argtys-t dom rest rng
+                         (and expected (tc-results->values expected)))))
       t argtys expected)]
     ;; Row polymorphism. For now we do really dumb inference that only works
     ;; in very restricted cases, but is probably enough for most cases in
