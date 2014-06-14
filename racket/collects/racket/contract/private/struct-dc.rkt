@@ -736,6 +736,8 @@
       [else (error 'struct-dc.rkt "internal error")]))
   (cond
     [(and (andmap flat-subcontract? subcontracts)
+          (not (ormap lazy-immutable? subcontracts))
+          (not (ormap dep-lazy-immutable? subcontracts))
           (not (ormap subcontract-mutable-field? subcontracts)))
      (make-flat-struct/dc subcontracts constructor pred struct-name here name-info struct/c?)]
     [(ormap impersonator-subcontract? subcontracts)
@@ -894,6 +896,11 @@
                       [(#:depends-on-state . more-stuff) (loop #'more-stuff lazy? type #t)]
                       [(#:lazy . more-stuff) (loop #'more-stuff #t type depends-on-state?)]
                       [_ (raise-syntax-error 'struct/dc "could not parse clause" stx clause)])))
+                (when (and lazy? (equal? '#:flat (syntax-e type)))
+                  (raise-syntax-error 'struct/dc
+                                      "cannot have #:lazy on a flat contract field"
+                                      stx
+                                      type))
                 (dep-clause ctc-exp lazy?
                             #'sel-name (name->sel-id #'id #'sel-name)
                             (if type (syntax-e type) '#:chaperone)
