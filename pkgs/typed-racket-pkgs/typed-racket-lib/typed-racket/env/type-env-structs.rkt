@@ -64,7 +64,9 @@
 
 (r:define/cond-contract (env-map f e)
   ((any/c any/c . -> . any/c) env? . -> . env?)
-  (mk-env e (dict-map f (env-l e))))
+  (mk-env e
+    (for/fold ([d (env-l e)]) ([(k v) (in-dict (env-l e))])
+      (dict-set d k (f k v)))))
 
 ;; extend that works on single arguments
 (define (extend e k v)

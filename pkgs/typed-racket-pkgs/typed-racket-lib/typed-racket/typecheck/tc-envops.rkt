@@ -66,17 +66,22 @@
 ;; sets the flag box to #f if anything becomes (U)
 (define (env+ env fs flag)
   (define-values (props atoms) (combine-props fs (env-props env) flag))
-  (for/fold ([Γ (replace-props env (append atoms props))]) ([f (in-list atoms)])
-    (match f
-      [(Bot:) (set-box! flag #f) (env-map (lambda (k v) (Un)) Γ)]
-      [(or (TypeFilter: ft lo x) (NotTypeFilter: ft lo x))
-       (update-type/lexical
-         (lambda (x t) (let ([new-t (update t ft (TypeFilter? f) lo)])
-                         (when (type-equal? new-t -Bottom)
-                           (set-box! flag #f))
-                         new-t))
-         x Γ)]
-      [_ Γ])))
+  (define (maybe-clear-all Γ)
+    (if (unbox flag)
+        Γ
+        (env-map (lambda (k v) (Un)) Γ)))
+  (maybe-clear-all
+    (for/fold ([Γ (replace-props env (append atoms props))]) ([f (in-list atoms)])
+      (match f
+        [(Bot:) (set-box! flag #f) Γ]
+        [(or (TypeFilter: ft lo x) (NotTypeFilter: ft lo x))
+         (update-type/lexical
+           (lambda (x t) (let ([new-t (update t ft (TypeFilter? f) lo)])
+                           (when (type-equal? new-t -Bottom)
+                             (set-box! flag #f))
+                           new-t))
+           x Γ)]
+        [_ Γ]))))
 
 ;; run code in an extended env and with replaced props. Requires the body to return a tc-results.
 ;; TODO make this only add the new prop instead of the entire environment once tc-id is fixed to
