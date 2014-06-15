@@ -170,37 +170,16 @@
       [(_ seq) #'(app List->seq (? values seq))])))
 
 
-;; Maps dotted vars (combined with dotted types, to ensure global uniqueness)
-;; to "fresh" symbols.
-;; That way, we can share the same "fresh" variables between the elements of a
-;; cset if they're talking about the same dotted variable.
-;; This makes it possible to reduce the size of the csets, since we can detect
-;; identical elements that would otherwise differ only by these fresh vars.
-;; The domain of this map is pairs (var . dotted-type).
-;; The range is this map is a list of symbols generated on demand, as we need
-;; more dots.
-(define dotted-var-store (make-hash))
-;; Take (generate as needed) n symbols that correspond to variable var used in
-;; the context of type t.
-(define (var-store-take var t n)
-  (let* ([key (cons var t)]
-         [res (hash-ref dotted-var-store key '())])
-    (if (>= (length res) n)
-        ;; there are enough symbols already, take n
-        (take res n)
-        ;; we need to generate more
-        (let* ([new (build-list (- n (length res))
-                                (lambda (x) (gensym var)))]
-               [all (append res new)])
-          (hash-set! dotted-var-store key all)
-          all))))
-
-(define (generate-dbound-prefix v ty n)
-  (define vars (var-store-take v ty n))
+;; generate-dbound-prefix: Symbol Type/c Natural Symbol -> (Values (Listof Symbol) (Listof Type/c))
+;; Substitutes n fresh new variables, replaces dotted occurences of v in t with the variables (and
+;; maybe new-end), and then for each variable substitutes it in for regular occurences of v.
+(define (generate-dbound-prefix v ty n new-end)
+  (define vars (build-list n (lambda (x) (gensym v))))
+  (define ty* (substitute-dots (map make-F vars) (and new-end (make-F new-end)) v ty))
   (values
     vars
     (for/list ([var (in-list vars)])
-      (substitute (make-F var) v ty))))
+      (substitute (make-F var) v ty*))))
 
 
 (define/cond-contract (cgen/filter V X Y s t)
@@ -257,7 +236,7 @@
      #f
      #:return-unless (<= (length ss) (length ts))
      #f
-     (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ts) (length ss))))
+     (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ts) (length ss)) #f))
      (% move-vars-to-dmap (cgen/list V (append vars X) Y (append ss new-tys) ts) dbound vars)]
     ;; dotted above, nothing below
     [((seq ss (null-end))
@@ -266,7 +245,7 @@
      #f
      #:return-unless (<= (length ts) (length ss))
      #f
-     (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ss) (length ts))))
+     (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ss) (length ts)) #f))
      (% move-vars-to-dmap (cgen/list V (append vars X) Y ss (append ts new-tys)) dbound vars)]
 
     ;; same dotted bound
@@ -305,10 +284,12 @@
      #f
      #:return-unless (<= (length ts) (length ss))
      #f
-     (define-values (vars new-tys) (generate-dbound-prefix dbound t-dty (- (length ss) (length ts))))
+     (define new-bound (gensym dbound))
+     (define-values (vars new-tys) (generate-dbound-prefix dbound t-dty (- (length ss) (length ts))
+                                                           new-bound))
      (% move-vars+rest-to-dmap
         (% cset-meet
-           (cgen/list V (append vars X) Y ss (append ts new-tys))
+           (cgen/list (cons new-bound V) (append vars X) (cons new-bound Y) ss (append ts new-tys))
            (cgen V (cons dbound X) Y s-rest t-dty))
         vars dbound #:exact #t)]
 
@@ -316,11 +297,12 @@
       (seq ts (uniform-end t-rest)))
      (cond
        [(memq dbound Y)
+        (define new-bound (gensym dbound))
         (define-values (vars new-tys)
-          (generate-dbound-prefix dbound s-dty (max 0 (- (length ts) (length ss)))))
+          (generate-dbound-prefix dbound s-dty (max 0 (- (length ts) (length ss))) new-bound))
         (% move-vars+rest-to-dmap
            (% cset-meet
-              (cgen/list V (append vars X) Y (append ss new-tys) (extend ss ts t-rest))
+              (cgen/list (cons new-bound V) (append vars X) (cons new-bound Y) (append ss new-tys) (extend ss ts t-rest))
               (cgen V (cons dbound X) Y s-dty t-rest))
            vars dbound)]
        [else
@@ -799,11 +781,8 @@
    (define cs-short (cgen/list null X (list dotted-var) short-S T
                                #:expected-cset expected-cset))
    #:return-unless cs-short #f
-   (define new-vars (var-store-take dotted-var T-dotted (length rest-S)))
-   (define new-Ts (for/list ([v (in-list new-vars)])
-                            (substitute (make-F v) dotted-var
-                                        (substitute-dots (map make-F new-vars)
-                                                         #f dotted-var T-dotted))))
+   (define-values (new-vars new-Ts)
+     (generate-dbound-prefix dotted-var T-dotted (length rest-S) #f))
    (define cs-dotted (cgen/list null (append new-vars X) (list dotted-var) rest-S new-Ts
                                 #:expected-cset expected-cset))
    #:return-unless cs-dotted #f

@@ -3037,6 +3037,35 @@
          (t:-> Univ -String
                : (-FS (-and (-filter -String '(0 0)) (-not-filter (-val #f) '(0 0))) -bot)
                : (make-Path null '(0 0)))]
+
+       ;; PR 14576
+       [tc-e
+         (let: ([foo : (All (b ...) ((List (b ... b -> b) ... b) -> Void)) (lambda (x) (void))])
+           (foo (list (λ: ([x : String] [y : Symbol]) x) (λ: ([x : String] [y : Symbol]) y))))
+         -Void]
+
+       ;; PR 14579
+       [tc-e
+        (let: ([foo : (All (b ...) ((List (List b ... b) ... b) -> (List (List b ... b) ... b)))
+                 (lambda (x) x)])
+          (foo (list (list "string"))))
+        (-lst* (-lst* -String))]
+
+       ;; PR 14577
+       [tc-err
+        (let: ([foo : (All (b ...) ((List (List b ... b) ... b) -> (List (List b ... b) ... b)))
+                 (lambda (x) x)])
+          (foo (list (list))))
+        #:ret (ret -Bottom)]
+
+       ;; PR 14580
+       [tc-err
+        (let: ([foo : (All (b ...) ((List (List b ... b) ... b) -> (List (List b ... b) ... b)))
+                 (lambda (x) x)])
+          (foo (list (list "string" 'symbol))))
+        #:ret (ret (-lst* (-lst* -String)))
+        #:expected (ret (-lst* (-lst* -String)))]
+
         )
 
   (test-suite
