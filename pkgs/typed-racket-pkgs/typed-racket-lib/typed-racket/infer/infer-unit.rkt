@@ -432,6 +432,10 @@
            #:when (subtype a b)
            empty]
 
+          ;; Lists delegate to sequences
+          [((ListSeq: s-seq) (ListSeq: t-seq))
+           (cgen/seq V X Y s-seq t-seq)]
+
           ;; refinements are erased to their bound
           [((Refinement: S _) T)
            (cg S T)]
@@ -554,10 +558,6 @@
            (cgen/list V X Y (list k v) (list k* v*))]
           [((Set: t) (Sequence: (list t*)))
            (cg t t*)]
-
-          ;; Lists delegate to sequences
-          [((ListSeq: s-seq) (ListSeq: t-seq))
-           (cgen/seq V X Y s-seq t-seq)]
 
           ;; if we have two mu's, we rename them to have the same variable
           ;; and then compare the bodies
