@@ -230,23 +230,48 @@
           (λ () (thunk))
           (λ () (cursor-off))))])))
 
-(define unsaved-warning
-  (lambda (filename action-anyway (can-save-now? #f) (parent #f) [cancel? #t])
-    (let ([mb-res (message-box/custom 
-                   (string-constant warning)
-                   (format (string-constant file-is-not-saved) filename)
-                   (string-constant save)
-                   (and cancel? (string-constant cancel))
-                   action-anyway
-                   parent
-                   (if can-save-now?
-                       '(default=1 caution)
-                       '(default=2 caution))
-                   2)])
+(define (unsaved-warning filename action-anyway [can-save-now? #f] [parent #f] [cancel? #t])
+  (define key-closed #f)
+  (define (unsaved-warning-mixin %)
+    (class %
+      (inherit show)
+      (define/override (on-subwindow-char receiver evt)
+        (define (is-menu-key? char)
+          (and (send evt get-meta-down)
+               (equal? (send evt get-key-code) char)))
+        (cond
+          [(is-menu-key? #\d)
+           (set! key-closed 'continue)
+           (show #f)]
+          [(is-menu-key? #\s)
+           (set! key-closed 'save)
+           (show #f)]
+          [(is-menu-key? #\c)
+           (set! key-closed 'cancel)
+           (show #f)]
+          [else
+           (super on-subwindow-char receiver evt)]))
+      (super-new)))
+  (define mb-res 
+    (message-box/custom 
+     (string-constant warning)
+     (format (string-constant file-is-not-saved) filename)
+     (string-constant save)
+     (and cancel? (string-constant cancel))
+     action-anyway
+     parent
+     (if can-save-now?
+         '(default=1 caution)
+         '(default=2 caution))
+     2
+     #:dialog-mixin (if (equal? (system-type) 'macosx)
+                        unsaved-warning-mixin
+                        values)))
+  (or key-closed
       (case mb-res
         [(1) 'save]
         [(2) 'cancel]
-        [(3) 'continue]))))
+        [(3) 'continue])))
 
 (define get-choice
   (lambda (message 
