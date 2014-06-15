@@ -2259,8 +2259,9 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
     scheme_contract_error("syntax-local-lift-expression",
                           "no lift target",
                           NULL);
-  
-  expr = scheme_add_remove_mark(expr, local_mark);
+
+  if (local_mark)
+    expr = scheme_add_remove_mark(expr, local_mark);
 
   /* We don't really need a new symbol each time, since the mark
      will generate new bindings. But lots of things work better or faster
@@ -2294,7 +2295,8 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
   rev_ids = scheme_null;
   for (; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
-    id = scheme_add_remove_mark(id, local_mark);
+    if (local_mark)
+      id = scheme_add_remove_mark(id, local_mark);
     rev_ids = scheme_make_pair(id, rev_ids);
   }
   ids = scheme_reverse(rev_ids);
@@ -2341,7 +2343,8 @@ scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, 
                           " an expression within a module declaration",
                           NULL);
   
-  expr = scheme_add_remove_mark(expr, local_mark);
+  if (local_mark)
+    expr = scheme_add_remove_mark(expr, local_mark);
   orig_expr = expr;
 
   pr = scheme_make_pair(expr, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3]);
@@ -2395,9 +2398,11 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
   req_form = form;
 
   form = orig_form;
-  form = scheme_add_remove_mark(form, local_mark);
+  if (local_mark)
+    form = scheme_add_remove_mark(form, local_mark);
   form = scheme_add_remove_mark(form, mark);
-  form = scheme_add_remove_mark(form, local_mark);
+  if (local_mark)
+    form = scheme_add_remove_mark(form, local_mark);
 
   SCHEME_EXPAND_OBSERVE_LIFT_REQUIRE(scheme_get_expand_observe(), req_form, orig_form, form);
 
@@ -2426,7 +2431,8 @@ Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *loc
                           "not expanding in a module run-time body",
                           NULL);
   
-  form = scheme_add_remove_mark(form, local_mark);
+  if (local_mark)
+    form = scheme_add_remove_mark(form, local_mark);
   form = scheme_datum_to_syntax(scheme_make_pair(scheme_datum_to_syntax(scheme_intern_symbol("#%provide"), 
                                                                         scheme_false, scheme_sys_wraps(env), 
                                                                         0, 0),

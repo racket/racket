@@ -998,5 +998,39 @@
 (test (list #t 10 10) consistency-free-id)
 
 ;; ----------------------------------------
+;; Check `syntax-local-lift...` outside of macro:
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval `(module m racket/base
+           (require (for-syntax racket/base))
+           (let-syntax ([x (syntax-local-lift-expression #'(display "hi\n"))])
+             (void))))
+  (define o (open-output-bytes))
+  (parameterize ([current-output-port o])
+    (eval `(require 'm)))
+  (test "hi\n" get-output-string o))
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval `(module m racket/base
+           (require (for-syntax racket/base))
+           (define x 10)
+           (let-syntax ([x (syntax-local-lift-provide #'x)])
+             (void))))
+  (test 10 eval `(dynamic-require ''m 'x)))
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval `(module m racket/base
+           (require (for-syntax racket/base))
+           (let-syntax ([x (let ([x (syntax-local-lift-require #'racket/fixnum
+                                                               #'(displayln (fx+ 1 1)))])
+                             (syntax-local-lift-expression x)
+                             (void))])
+             (void))))
+  (define o (open-output-bytes))
+  (parameterize ([current-output-port o])
+    (eval `(require 'm)))
+  (test "2\n" get-output-string o))
+
+;; ----------------------------------------
 
 (report-errs)
