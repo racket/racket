@@ -48,6 +48,8 @@
                                   n))
                            (* 4 60 60))) ; default: wait at most 4 hours
 
+(define test-exe-name (string->symbol (short-program+command-name)))
+
 ;; Stub for running a test in a process:
 (module process racket/base
   (require rackunit/log
@@ -169,9 +171,9 @@
                   (set! done? #t)))))
            (unless (thread? (sync/timeout timeout t))
              (set! timeout? #t)
-             (error 'test "timeout after ~a seconds" timeout))
+             (error test-exe-name "timeout after ~a seconds" timeout))
            (unless done?
-             (error 'test "test raised an exception"))
+             (error test-exe-name "test raised an exception"))
            (define post (test-log #:display? #f #:exit? #f))
            (values 0
                    (cons (- (car post) (car pre))
@@ -192,7 +194,7 @@
            ;; Wait for the place to finish:
            (unless (sync/timeout timeout (place-dead-evt pl))
              (set! timeout? #t)
-             (error 'test "timeout after ~a seconds" timeout))
+             (error test-exe-name "timeout after ~a seconds" timeout))
 
            ;; Get result code and test results:
            (values (place-wait pl)
@@ -235,7 +237,7 @@
            
            (unless (sync/timeout timeout (thread (lambda () (proc 'wait))))
              (set! timeout? #t)
-             (error 'test "timeout after ~a seconds" timeout))
+             (error test-exe-name "timeout after ~a seconds" timeout))
 
            (define results
              (with-handlers ([exn:fail:read? (lambda () #f)])
@@ -260,9 +262,9 @@
                   (or (equal? #"" s)
                       (ormap (lambda (p) (regexp-match? p s))
                              ignore-stderr-patterns)))
-          (error 'test "non-empty stderr: ~e" (get-output-bytes e))))
+          (error test-exe-name "non-empty stderr: ~e" (get-output-bytes e))))
       (unless (zero? result-code)
-        (error 'test "non-zero exit: ~e" result-code))
+        (error test-exe-name "non-zero exit: ~e" result-code))
       (cond
        [test-results
         (summary (car test-results) (cdr test-results) (current-label) #f 0)]
@@ -276,7 +278,7 @@
          (build-path lock-file-dir lock-name)
          'exclusive
          go
-         (lambda () (error 'test "could not obtain lock: ~s" lock-name)))
+         (lambda () (error test-exe-name "could not obtain lock: ~s" lock-name)))
         (go))))
 
 ;; For recording stderr while also propagating to the original stderr:
@@ -311,7 +313,7 @@
 (define (add-submod mod sm)
   (if (and (pair? mod) (eq? 'submod (car mod)))
       (append mod '(config))
-      (error 'test "cannot add test-config submodule to path: ~s" mod)))
+      (error test-exe-name "cannot add test-config submodule to path: ~s" mod)))
 
 (define (dynamic-require* p d
                           #:id id
@@ -530,8 +532,7 @@
                             #:sema s))
               (directory-list p)
               #:sema continue-sema)))]
-       [(and (file-exists? p)
-             (or (not check-suffix?)
+       [(and (or (not check-suffix?)
                  (regexp-match rx:default-suffixes p)
                  (get-cmdline p #f #:check-info? #t))
              (or (not check-suffix?)
@@ -592,8 +593,6 @@
                (list
                 (and (and run-anyways? something-wasnt-declared?)
                      (test-this-module file-name #f))))))))]
-       [(not (file-exists? p))
-        (error 'test "given path ~e does not exist" p)]
        [else (summary 0 0 #f null 0)])]))
 
 (module paths racket/base
@@ -669,7 +668,10 @@
     [collections?
      (match (collection-paths e)
        [(list)
-        (error 'test "Collection ~e is not installed" e)]
+        (error test-exe-name
+               (string-append "collection not found\n"
+                              "  collection name: ~a")
+               e)]
        [l
         (with-summary
          `(collection ,e)
@@ -680,7 +682,11 @@
        (define p (resolved-module-path-name rmp))
        (and (file-exists? p) p))
      (match (find (string->symbol e))
-       [#f (error 'test "Library ~e does not exist" e)]
+       [#f
+        (error test-exe-name
+               (string-append "module not found\n"
+                              "  module path: ~a")
+               e)]
        [l
         (with-summary
          `(library ,l)
@@ -691,8 +697,17 @@
        (with-summary
         `(package ,e)
         (test-files pd #:sema continue-sema))
-       (error 'test "Package ~e is not installed" e))]
+       (error test-exe-name
+              (string-append "no such installed package\n"
+                             "  package name: ~a")
+              e))]
     [else
+     (unless (or (file-exists? e)
+                 (directory-exists? e))
+       (error test-exe-name
+              (string-append "no such file or directory\n"
+                             "  path: ~a")
+              e))
      (test-files e
                  #:check-suffix? check-suffix? 
                  #:sema continue-sema)]))
