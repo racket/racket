@@ -18,8 +18,8 @@
 (= (f2c -40) -40)
 
 ;; ----------------------------------------------------------------------------
-(define IN "convert-in.dat")
-(define OUT "convert-out.dat")
+(define IN (build-path (find-system-path 'temp-dir) "convert-in.dat"))
+(define OUT (build-path (find-system-path 'temp-dir) "convert-out.dat"))
 
 (define (create-convert-in)
   (printf "212 32\n-40\n"))
