@@ -54,10 +54,14 @@ plain-in-place:
 	$(MAKE) pkg-links $(PKG_LINK_COPY_ARGS)
 	$(PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
+# For Windows: set up the following collections first, so that native
+# libraries are in place for use by a full setup:
+LIB_PRE_COLLECTS = racket db com
+
 win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-pkg-links $(PKG_LINK_COPY_ARGS)
-	$(WIN32_PLAIN_RACKET) $(LIBSETUP) -nxiID $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) racket
+	$(WIN32_PLAIN_RACKET) $(LIBSETUP) -nxiID $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) $(LIB_PRE_COLLECTS)
 	$(WIN32_PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 again:
