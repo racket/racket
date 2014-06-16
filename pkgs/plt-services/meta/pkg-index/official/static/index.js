@@ -1,4 +1,4 @@
-var dynamic_host = "pkg.racket-lang.org";
+var dynamic_host = "pkgd.racket-lang.org";
 var dynamic_port = 443;
 
 function dynamic_url ( u ) {
