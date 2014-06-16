@@ -31,6 +31,7 @@
 (define table? #f)
 (define fresh-user? #f)
 (define empty-input? #f)
+(define heartbeat-secs #f)
 (define ignore-stderr-patterns null)
 
 (define jobs 0) ; 0 mean "default"
@@ -490,6 +491,24 @@
                              (format " ~s" (format "~a" a)))))
             (flush-output))
           id)))
+     (define heartbeat-sema (make-semaphore))
+     (define heartbeat-t
+       (and heartbeat-secs
+            (thread (lambda ()
+                      (let loop ()
+                        (unless (sync/timeout heartbeat-secs heartbeat-sema)
+                          (call-with-semaphore
+                           ids-lock
+                           (lambda ()
+                             (printf "raco test: ~a[still on ~s]\n"
+                                     (if (jobs . <= . 1)
+                                         ""
+                                         (format "~a " id))
+                                     (let ([m (normalize-module-path p)])
+                                       (if (and (pair? mod) (eq? 'submod (car mod)))
+                                           (list* 'submod m (cddr mod))
+                                           m)))))
+                          (loop)))))))
      (begin0
       (dynamic-require* mod 0
                         #:id (if (jobs . <= . 1)
@@ -501,6 +520,9 @@
                         #:responsible responsible
                         #:lock-name lock-name
                         #:random? random?)
+      (when heartbeat-t
+        (semaphore-post heartbeat-sema)
+        (sync heartbeat-t))
       (call-with-semaphore
        ids-lock
        (lambda ()
@@ -972,6 +994,9 @@
  [("--quiet" "-q")
   "Suppress `raco test: ...' message"
   (set! quiet? #t)]
+ [("--heartbeat")
+  "Periodically report that a test is still running"
+  (set! heartbeat-secs 5)]
  [("--table" "-t")
   "Print a summary table"
   (set! table? #t)]

@@ -120,23 +120,27 @@ The @exec{raco test} command accepts several flags:
       example) does @emph{not} change for each test process.}
 
  @item{@DFlag{empty-stdin}
-       --- provide an empty stdin to each test program.}
+       --- Provide an empty stdin to each test program.}
 
  @item{@Flag{Q} or @DFlag{quiet-program}
-       --- suppresses output from each test program.}
+       --- Suppresses output from each test program.}
 
  @item{@Flag{e} or @DFlag{check-stderr}
-       --- count any stderr output as a test failure.}
+       --- Count any stderr output as a test failure.}
 
  @item{@DPFlag{ignore-stderr} @nonterm{pattern}
-       --- don't count stderr output as a test failure if it matches
+       --- Don't count stderr output as a test failure if it matches
        @nonterm{pattern}.  This flag can be used multiple times, and
        stderr output is treated as success as long as it matches any
        one @nonterm{pattern}.}
 
  @item{@Flag{q} or @DFlag{quiet}
-       --- suppresses output of progress information, responsible
+       --- Suppresses output of progress information, responsible
        parties, and varying output (see @secref["test-responsible"]).}
+
+ @item{@DFlag{heartbeat}
+       --- Periodically report that a test is still running after
+       the test has been running at least 5 seconds.}
 
  @item{@DFlag{table} or @Flag{t}
        --- Print a summary table after all tests. If a test uses
