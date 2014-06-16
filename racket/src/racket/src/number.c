@@ -428,7 +428,7 @@ scheme_init_number (Scheme_Env *env)
 
 #ifdef MZ_LONG_DOUBLE
   scheme_long_floating_point_zero = get_long_double_zero();
-#if defined(HUGE_VALL) && !defined(USE_DIVIDE_MAKE_INFINITY)
+#if defined(HUGE_VALL) && !defined(USE_DIVIDE_MAKE_INFINITY) && !defined(MZ_LONG_DOUBLE_API_IS_EXTERNAL)
   scheme_long_infinity_val = HUGE_VALL;
 #else
 #ifndef USE_LONG_INFINITY_FUNC
