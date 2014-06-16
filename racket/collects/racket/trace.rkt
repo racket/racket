@@ -313,20 +313,6 @@
       (let-values ([(name def) (normalize-definition stx #'lambda)])
         #`(begin (define #,name #,def) (trace #,name)))]))
 
-  (module+ test
-    (require
-      rackunit
-      (submod ".." ".." trace-et-al))
-    (parameterize ([current-trace-notify (let ([x (current-output-port)])
-                                          (lambda (s) (display s x)
-                                            (newline x)))])
-      (trace-define (verbose-fact x)
-        (if (zero? x)
-          (begin (display 1) 1)
-          (begin (display (* x (verbose-fact (sub1 x))))
-                (* x (verbose-fact (sub1 x))))))
-      (check-not-equal? (string-ref (with-output-to-string (thunk (verbose-fact 5))) 0) ">")))
-
   (define-syntax trace-let
     (syntax-rules ()
       [(_ name ([x* e*] ...) body ...)
@@ -337,15 +323,6 @@
     (syntax-parse stx
       [(_ (~optional (~seq #:name name:id) #:defaults ([name #`#,(syntax-local-infer-name stx)])) args body:expr ...)
       #'(let ([name (lambda args body ...)]) (trace name) name)]))
-
-  (module+ test
-    (require racket)
-    (check-equal?
-      (with-output-to-string (thunk ((trace-lambda #:name fact (x) x) 120)))
-      ">(fact 120)\n<120\n")
-    (check-regexp-match
-      #px">\\(.+\\.rkt:\\d+:\\d+ 120\\)\n<120\n"
-      (with-output-to-string (thunk ((trace-lambda (x) x) 120)))))
 
   (define-syntax (trace-define-syntax stx)
     (syntax-case stx ()
