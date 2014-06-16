@@ -82,9 +82,9 @@ On Windows, Unix-style install is not supported.
 A Unix-style install leaves no reference to this source directory.
 
 To split the build and install steps of a Unix-style installation,
-supply `DESTDIR=<dest-dir>` with `make unix-style PREFIX=<dir>", which
-assembles the installation in <dest-dir>. Then, copy the content of
-`<dest-dir>` to `<dir>`.
+supply `DESTDIR=<dest-dir>` with `make unix-style PREFIX=<dir>`, which
+assembles the installation in "<dest-dir>". Then, copy the content of
+"<dest-dir>" to the target root.
 
 See "More Instructions: Building Racket" below for more information.
 

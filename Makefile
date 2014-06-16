@@ -76,6 +76,7 @@ PREFIX =
 
 CONFIG_PREFIX_ARGS = --prefix="$(PREFIX)" --enable-macprefix
 UNIX_RACO_ARGS = $(JOB_OPTIONS) --catalog build/local/catalog --auto -i
+UNIX_BASE_ARGS = SELF_FLAGS_qq="" SKIP_DESTDIR_FIX="skip"
 
 unix-style:
 	if [ "$(CPUS)" = "" ] ; \
@@ -87,9 +88,10 @@ cpus-unix-style:
 
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
-	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' SELF_FLAGS_qq=""
-	$(MAKE) local-catalog-maybe-native RACKET="$(PREFIX)/bin/racket"
-	"$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
+	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' $(UNIX_BASE_ARGS)
+	$(MAKE) local-catalog-maybe-native RACKET="$(DESTDIR)$(PREFIX)/bin/racket"
+	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
+	cd racket/src/build; $(MAKE) fix-paths
 
 error-need-prefix:
 	: ================================================================
