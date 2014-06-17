@@ -145,23 +145,41 @@
         (dict-set d prefix (arg-diff prefix e))
         (dict-set d e empty))))
 
-(define (inner-kw-convert arrs split?)
+;; remove-missing-kws : (Listof Keyword) LambdaKeywords -> (Listof Keyword)
+;; Remove keywords in the given list that aren't in the actual lambda
+;; keywords list. This allows the typechecker to check some branches of the
+;; type that match the actual kws.
+(define (remove-missing-kws kws actual-kws)
+  (match-define (lambda-kws actual-mands actual-opts) actual-kws)
+  (filter
+   (λ (kw) (or (member (Keyword-kw kw) actual-mands)
+               (member (Keyword-kw kw) actual-opts)))
+   kws))
+
+;; inner-kw-convert : (Listof arr) (Option LambdaKeywords) Boolean -> Type
+(define (inner-kw-convert arrs actual-kws split?)
   (define table (find-prefixes arrs))
   (define fns
     (for/set ([(k v) (in-dict table)])
       (match k
         [(arr: mand rng rest drest kws)
-         (convert kws mand v rng rest drest split?)])))
+         (define kws* (if actual-kws
+                          (remove-missing-kws kws actual-kws)
+                          kws))
+         (convert kws* mand v rng rest drest split?)])))
   (apply cl->* (set->list fns)))
 
-(define (kw-convert ft #:split [split? #f])
-    (match ft
-      [(Function: arrs)
-       (inner-kw-convert arrs split?)]
-      [(Poly-names: names f)
-       (make-Poly names (kw-convert f #:split split?))]
-      [(PolyDots-names: names f)
-       (make-PolyDots names (kw-convert f #:split split?))]))
+;; kw-convert : Type (Option LambdaKeywords) [Boolean] -> Type
+;; Given an ordinary function type, convert it to a type that matches the keyword
+;; function protocol
+(define (kw-convert ft actual-kws #:split [split? #f])
+  (match ft
+    [(Function: arrs)
+     (inner-kw-convert arrs actual-kws split?)]
+    [(Poly-names: names f)
+     (make-Poly names (kw-convert f actual-kws #:split split?))]
+    [(PolyDots-names: names f)
+     (make-PolyDots names (kw-convert f actual-kws #:split split?))]))
 
 ;; kw-unconvert : Type (Listof Syntax) (Listof Keyword) (Listof Keyword) -> Type
 ;; Given a type for a core keyword function, unconvert it to a
@@ -240,7 +258,7 @@
 ;;
 ;; Check if the TR lambda property listing the keywords matches up with
 ;; the type that we've given. Allows for better error messages than just
-;; relying on tc-expr. Return #f if any keywords were missing, otherwise #t.
+;; relying on tc-expr. Return #f if the function shouldn't be checked.
 (define (check-kw-arity kw-prop f-type)
   (match-define (lambda-kws actual-mands actual-opts) kw-prop)
   (define arrs
@@ -255,17 +273,19 @@
                                    (set-subtract opt-kws actual-opts)))
     ;; extra optional keywords are okay
     (define extra-kws (set-subtract actual-mands mand-kws))
-    ;; empty     => don't error, return #t
-    ;; non-empty => error, return #f
     (and
+     ;; if keywords are missing, the body can be checked anyway so
+     ;; error but return #t
      (or (set-empty? missing-kws)
          (tc-error/expr/fields
           "type mismatch"
           #:more "function is missing keyword arguments"
-          #:return #f
+          #:return #t
           "missing keywords"
           (string-join (map ~a missing-kws))
           "expected type" f-type))
+     ;; if there are too many mandatory keywords, there is no point in
+     ;; trying to check the body
      (or (set-empty? extra-kws)
          (tc-error/expr/fields
           "type mismatch"
