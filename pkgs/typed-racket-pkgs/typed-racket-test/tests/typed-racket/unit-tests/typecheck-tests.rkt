@@ -3073,6 +3073,13 @@
           (tr:define (f #:foo x) 0)
           (error "dummy"))
         #:msg #rx"missing keyword arguments.*#:foo"]
+
+       [tc-err
+        (let ()
+          (: f (-> [#:foo Any] Zero))
+          (tr:define (f #:foo [foo 'foo] #:bar bar) 0)
+          (error "dummy"))
+        #:msg #rx"too many mandatory keyword arguments.*#:foo"]
         )
 
   (test-suite

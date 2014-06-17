@@ -253,16 +253,27 @@
     (define opt-kws (map Keyword-kw opt-kw-types))
     (define missing-kws (set-union (set-subtract mand-kws actual-mands)
                                    (set-subtract opt-kws actual-opts)))
+    ;; extra optional keywords are okay
+    (define extra-kws (set-subtract actual-mands mand-kws))
     ;; empty     => don't error, return #t
     ;; non-empty => error, return #f
-    (or (set-empty? missing-kws)
-        (tc-error/expr/fields
-         "type mismatch"
-         #:more "function is missing keyword arguments"
-         #:return #f
-         "missing keywords"
-         (string-join (map ~a (set->list missing-kws)))
-         "expected type" f-type))))
+    (and
+     (or (set-empty? missing-kws)
+         (tc-error/expr/fields
+          "type mismatch"
+          #:more "function is missing keyword arguments"
+          #:return #f
+          "missing keywords"
+          (string-join (map ~a missing-kws))
+          "expected type" f-type))
+     (or (set-empty? extra-kws)
+         (tc-error/expr/fields
+          "type mismatch"
+          #:more "function has too many mandatory keyword arguments"
+          #:return #f
+          "extra keywords"
+          (string-join (map ~a extra-kws))
+          "expected type" f-type)))))
 
 ;; compute-kws : (Listof Keyword) (Listof Keyword) (Listof Type)
 ;;               -> (Listof make-Keyword)
