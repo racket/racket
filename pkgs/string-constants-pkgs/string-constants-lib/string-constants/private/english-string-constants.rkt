@@ -1804,6 +1804,10 @@ please adhere to these guidelines:
   ; puts the path to the spell program in the ~a and then the error message
   ; is put following this string (with a blank line in between)
   (spell-program-wrote-to-stderr-on-startup "The spell program (~a) printed an error message:")
+  (spell-skip-to-next-misspelled-word "Skip to Next Mispelled Word") ;; menu item
+  (spell-suggest-corrections "Suggest Spelling Corrections...") ;; menu item
+  (spell-correction-suggestions "Spelling Correction Suggestions") ;; dialog title
+  (spell-choose-replacement-word "Select a replacement word") ;; label in dialog 
   
   ;; GUI for installing a pkg package; available via File|Install Package...
   (install-pkg-install-by-source "Do What I Mean")         ; tab label
