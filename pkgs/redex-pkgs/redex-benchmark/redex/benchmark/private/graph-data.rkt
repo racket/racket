@@ -2,23 +2,53 @@
 
 (require racket/list
          racket/match
+         racket/function
          math/statistics
          math/distributions
          plot/no-gui
+         (only-in plot/utils known-point-symbols)
          "logging.rkt")
 
-(provide type-colors)
+(provide type-colors
+         type-names
+         type-symbols
+         extract-data/log-directory
+         extract-log-data
+         plot/log-directory
+         extract-log-names
+         extract-names/log-directory
+         process-data)
 
-(define all-types '(grammar search enum ordered))
-(define colors  '(1 2 3 4))    
 (define type-colors
-  (for/hash ([t all-types] [c colors])
-    (values t c)))
+  (make-parameter (let ([cur-c 0]
+                        [cur-tcs (make-hash)])
+                    (λ (type)
+                      (hash-ref! cur-tcs type
+                                 (begin0
+                                   cur-c
+                                   (set! cur-c (add1 cur-c))))))))
+
+(define type-symbols
+  (make-parameter (let ([syms (drop known-point-symbols 3)]
+                        [cur-tss (make-hash)])
+                    (λ (type)
+                      (hash-ref! cur-tss type
+                                 (if (empty? syms)
+                                     (error 'type-symbols "no more symbols available!")
+                                     (begin0 (car syms)
+                                             (set! syms (cdr syms)))))))))
+
+(define type-names (make-parameter symbol->string))
 
 (define (plot/log-directory path)
   (make-plot
    (extract-data/log-directory path)
    (extract-names/log-directory path)))
+
+(define (plot/log-data data)
+  (make-plot
+   (extract-log-data data)
+   (extract-log-names data)))
 
 (define (extract-log-data ld-list)
   (for/list ([d (in-list (filter
@@ -37,77 +67,131 @@
          (directory-list dir-path
                          #:build? dir-path)))))
 
-(define (extract-log-name ld-list)
-  (match (filter (make-event-filter 'finished) ld-list)
-    [(list fin)
-     ((datum-selector '#:model) fin)]))
+(define (extract-log-names ld-list)
+  (remove-duplicates
+   (map ((curry datum-selector) '#:model)
+        (filter (make-event-filter 'finished) ld-list))))
 
 (define (extract-names/log-directory dir-path)
   (remove-duplicates
-   (map
-    extract-log-name
+   (append-map
+    extract-log-names
     (map read-logfile 
          (filter
           file-exists?
           (directory-list dir-path
-                         #:build? dir-path))))))
-
+                          #:build? dir-path))))))
 (define (make-plot data all-names)
+  (define-values (data-stats name-avgs)
+    (process-data data all-names))
+  (define name-order (make-name-order name-avgs))
+  (define (tlabel pre-tick)
+    (define v (pre-tick-value pre-tick))
+    (define label-list
+      (filter
+       (λ (n) (= (name-order n) v))
+       (hash-keys name-avgs)))
+    (if (empty? label-list) 
+        ""
+        (car label-list)))
   (parameterize ([plot-x-tick-label-angle 75]
                  [plot-x-tick-label-anchor 'right]
                  [error-bar-width 12]
                  [plot-y-transform (axis-transform-bound log-transform 0.00001 +inf.0)]
-                 [plot-legend-anchor 'bottom-right])
-    
-    (define (error-bar times)
-      (define sdev (stddev times #:bias #t))
-      (define this-z (if (> (length times) 30)
-                         z
-                         (hash-ref t-inv-cdf-97.5 (sub1 (length times)))))
-      (if (confidence-interval)
-          (/ (* z sdev) (sqrt (length times)))
-          (/ (stddev times #:bias #t) (sqrt (length times)))))
-    
-    (define name-avgs (make-hash))
+                 [plot-legend-anchor 'bottom-right]
+                 [plot-x-ticks (ticks (linear-ticks-layout #:number 30 #:base 10
+                                              #:divisors '(1))
+                         (λ (_1 _2 pts) (map tlabel pts)))]
+                 [plot-y-ticks (log-ticks #:number 20 #:base 10)])
+    (plot-pict
+     (make-plot-renderers/internal data-stats name-avgs)
+     #:x-min 0
+     #:y-min 0.01
+     #:y-max (* 1.1 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000))
+     #:x-max (+ 0.5 (length all-names)))))
+
+(define (make-plot-renderers data all-names)
+  (define-values (data-stats name-avgs)
+    (process-data data all-names))
+  (make-plot-renderers/internal data-stats name-avgs))
+
+(define (make-plot-renderers/internal data-stats name-avgs)
   
-    (define (rewrite-name n)
-      (regexp-replace #rx"verification-" n "rvm-"))
-    
-    (for ([b (in-list all-names)])
-      (hash-set! name-avgs (rewrite-name b) '()))
-    
-    (define data-stats
-      (let loop ([d data]
-                 [sorted-times (hash)])
-        (match d
-          [(cons (list name type time) rest)
-           (loop rest
-                 (hash-set sorted-times (cons name type)
-                           (cons (/ time 1000)
-                                 (hash-ref sorted-times (cons name type)
-                                           (λ () '())))))]
-          ['()
-           (for/list ([(name/type times) (in-hash sorted-times)]
-                      #:unless (and ((length times) . < . (min-trials))
-                                    (not (equal? (cdr name/type) 'ordered))))
-             (define name (rewrite-name (last (regexp-split #rx"/" (car name/type)))))
-             (cond 
-               [(equal? (cdr name/type) (order-by))
-                (hash-set! name-avgs name (mean times))]
-               [(list? (hash-ref name-avgs name '()))
-                (hash-set! name-avgs 
-                           name
-                           (cons (mean times) (hash-ref name-avgs name '())))]) 
-             (list (car name/type)
-                   (cdr name/type)
-                   (mean times)
-                   (if (equal? (cdr name/type) 'ordered)
-                       0
-                       (error-bar times))))])))
-    
-    
-  (define name-order 
-    ;; this function is mysteriously called a LOT...
+  (define types (remove-duplicates
+                 (map second data-stats)))
+  
+  (define name-order (make-name-order name-avgs))
+  
+  (define (plot-type type n)
+    (define this-type
+      (map (λ (d)
+             (define name (rewrite-name (last (regexp-split #rx"/" (car d)))))
+             (cons name (cdr d)))
+           (filter
+            (λ (l)
+              (and (equal? type (list-ref l 1))
+                   (list-ref l 2)))
+            data-stats)))
+    (define ps
+      (points
+       (map
+        (λ (l)
+          (list (name-order (list-ref l 0)) (list-ref l 2)))
+        this-type)
+       #:label (string-append ((type-names) type)
+                              (format " (~s successes)" (length this-type)))
+       #:sym ((type-symbols) type)
+       #:size (* (point-size) 1.5)
+       #:color ((type-colors) type)))
+    (if (equal? type 'ordered)
+        ps
+        (list (error-bars
+               (map (λ (d)
+                      (list (name-order (list-ref d 0)) 
+                            (list-ref d 2)
+                            (list-ref d 3)))
+                    this-type)
+               #:y-min 0.01
+               #:color "dark gray")
+              ps)))
+  
+  (for/list ([t (in-list types)]
+             [n (in-naturals)])
+    (plot-type t n)))
+
+
+(define (process-data data all-names)
+  (define name-avgs (make-hash))
+  (for ([b (in-list all-names)])
+    (hash-set! name-avgs (rewrite-name b) '()))
+  (define d-stats
+    (let loop ([d data]
+               [sorted-times (hash)])
+      (match d
+        [(cons (list name type time) rest)
+         (loop rest
+               (hash-set sorted-times (cons name type)
+                         (cons (/ time 1000)
+                               (hash-ref sorted-times (cons name type)
+                                         (λ () '())))))]
+        ['()
+         (for/list ([(name/type times) (in-hash sorted-times)]
+                    #:unless (and ((length times) . < . Min-Trials)
+                                  (not (equal? (cdr name/type) 'ordered))))
+           (define name (rewrite-name (last (regexp-split #rx"/" (car name/type)))))
+           (hash-set! name-avgs 
+                      name
+                      (cons (mean times) (hash-ref name-avgs name '()))) 
+           (list (car name/type)
+                 (cdr name/type)
+                 (mean times)
+                 (if (equal? (cdr name/type) 'ordered)
+                     0
+                     (error-bar times))))])))
+  (values d-stats
+          name-avgs))
+
+(define (make-name-order name-avgs)
     (let ([memo (make-hash)])
       (λ (name)
         (hash-ref memo name
@@ -129,161 +213,20 @@
                         '())))
                     (hash-set! memo name ans)
                     ans)))))
-    
-    (define (get-name-num name n)
-      (+ (if (offset?)
-             (+ (/ n 12)
-                (- (/ (sub1 (length (types))) 12)))
-             0)
-         (name-order name)))
-    
-    (define (plot-type type n)
-      (define this-type
-        (map (λ (d)
-               (define name (rewrite-name (last (regexp-split #rx"/" (car d)))))
-               (cons name (cdr d)))
-             (filter
-              (λ (l)
-                (and (equal? type (list-ref l 1))
-                     (list-ref l 2)))
-              data-stats)))
-      (define ps
-        (points
-         (map
-          (λ (l)
-            (list (get-name-num (list-ref l 0) n) (list-ref l 2)))
-          this-type)
-         #:label (string-append (hash-ref type-names type)
-                                (format " (~s successes)" (length this-type)))
-         #:sym (hash-ref type-symbols type)
-         #:size (* (point-size) 1.5)
-         #:color (hash-ref type-colors type)))
-      (if (equal? type 'ordered)
-          ps
-          (list (error-bars
-                 (map (λ (d)
-                        (list (get-name-num (list-ref d 0) n) 
-                              (list-ref d 2)
-                              (list-ref d 3)))
-                      this-type)
-                 #:y-min 0.01
-                 #:color "dark gray")
-                ps)))
-    
-    (define (zero->neg n)
-      (if (zero? n)
-          (- 500)
-          n))
-    
-    (define (tlabel pre-tick)
-      (define v (pre-tick-value pre-tick))
-      (define label-list
-        (filter
-         (λ (n) (= (name-order n) v))
-         (hash-keys name-avgs)))
-      (if (empty? label-list) 
-          ""
-          (car label-list)))
-    
-    (parameterize ([plot-x-ticks 
-                    (ticks (linear-ticks-layout #:number 30 #:base 10
-                                                #:divisors '(1))
-                           (λ (_1 _2 pts) (map tlabel pts)))]
-                   [plot-y-ticks 
-                    (log-ticks #:number 20 #:base 10)]
-                   [plot-y-label "Average Number of Seconds to Find Each Bug"]
-                   [plot-x-label ""])
-      
-      (if (output-file)
-          (plot-file
-           (for/list ([t (if (empty? (types)) all-types (types))]
-                      [n (in-naturals)])
-             (plot-type t n))
-           (output-file)
-           'pdf
-           #:x-min 0
-           #:y-min (min-y)
-           #:y-max (if (max-t)
-                       (* 60 (max-t))
-                       (+ 5 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000)))
-           #:x-max (+ 0.5 (length (hash-keys name-avgs))))
-          (plot-pict
-           (for/list ([t (if (empty? (types)) all-types (types))]
-                      [n (in-naturals)])
-             (plot-type t n))
-           #:x-min 0
-           #:y-min (min-y)
-           #:y-max (if (max-t)
-                       (* 60 (max-t))
-                       (+ 5 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000)))
-           #:x-max (+ 0.5 (length (hash-keys name-avgs))))))))
 
-#;
-(define (process-data data)
-  (let loop ([d data]
-             [sorted-times (hash)]) 
-    (match d
-      [(cons (list name type time) rest)
-       (loop rest
-             (hash-set sorted-times (cons name type)
-                       (cons (/ time 1000)
-                             (hash-ref sorted-times (cons name type)
-                                       (λ () '())))))]
-      ['()
-       (for/fold ([dstats '()] [name-avgs (for/hash ([b (in-list all-names)])
-                                            (values b '()))])
-         ([(name/type times) (in-hash sorted-times)]
-          #:unless (and ((length times) . < . (min-trials))
-                        (not (equal? (cdr name/type) 'ordered))))
-         (define name (last (regexp-split #rx"/" (car name/type))))
-         (values
-          (cons (list (car name/type)
-                      (cdr name/type)
-                      (mean times)
-                      (if (equal? (cdr name/type) 'ordered)
-                          0
-                          (error-bar times))) dstats)
-          (cond 
-            [(equal? (cdr name/type) (order-by))
-             (hash-set name-avgs name (mean times))]
-            [(list? (hash-ref name-avgs name '()))
-             (hash-set name-avgs 
-                       name
-                       (cons (mean times) (hash-ref name-avgs name '())))]
-            [else name-avgs])))])))
+(define (rewrite-name n)
+  (regexp-replace #rx"verification-" n "rvm-"))
 
-(define min-trials (make-parameter 2))
+(define Min-Trials 2)
+
 (define (error-bar times)
   (define sdev (stddev times #:bias #t))
   (define this-z (if (> (length times) 30)
                      z
                      (hash-ref t-inv-cdf-97.5 (sub1 (length times)))))
-  (if (confidence-interval)
-      (/ (* this-z sdev) (sqrt (length times)))
-      (/ (stddev times #:bias #t) (sqrt (length times)))))
-
-
-(define types (make-parameter '()))
-(define names '("adhoc random" "search" "uniform random"
-                               "in-order enumeration"))
-(define symbols '(circle triangle diamond plus))
-(define type-names
-  (for/hash ([t all-types] [n names])
-    (values t n)))
-(define type-symbols
-  (for/hash ([t all-types] [s symbols])
-    (values t s)))
-
-(define confidence-interval (make-parameter #f))
-(define order-by (make-parameter #f))
-(define max-t (make-parameter #f))
-(define offset? (make-parameter #f))
-(define min-y (make-parameter 0.01))
-
-(define output-file (make-parameter #f))
+  (/ (* this-z sdev) (sqrt (length times))))
 
 (define z (inv-cdf (normal-dist) 0.975))
-
 
 (define t-inv-cdf-97.5
   (hash 1 12.706
