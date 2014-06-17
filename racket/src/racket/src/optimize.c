@@ -3383,6 +3383,11 @@ static void add_types(Scheme_Object *t, Optimize_Info *info, int fuel)
   }
 }
 
+static Scheme_Object *make_sequence_2(Scheme_Object *a, Scheme_Object *b)
+{
+  return scheme_make_sequence_compilation(scheme_make_pair(a, scheme_make_pair(b, scheme_null)), 1);
+}
+
 static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_Branch_Rec *b;
@@ -3428,6 +3433,48 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
       break;
   }
 
+  /* Try to lift out `let`s and `begin`s around a test: */
+  {
+    Scheme_Object *inside = NULL, *t2 = t;
+
+    while (1) {
+      if (SAME_TYPE(SCHEME_TYPE(t2), scheme_compiled_let_void_type)) {
+        Scheme_Let_Header *head = (Scheme_Let_Header *)t2;
+        int i;
+        inside = t2;
+        t2 = head->body;
+        for (i = head->num_clauses; i--; ) {
+          inside = t2;
+          t2 = ((Scheme_Compiled_Let_Value *)t2)->body;
+        }
+      } if (SAME_TYPE(SCHEME_TYPE(t2), scheme_sequence_type)) {
+        Scheme_Sequence *seq = (Scheme_Sequence *)t2;
+        if (seq->count) {
+          inside = t2;
+          t2 = seq->array[seq->count-1];
+        } else
+          break;
+      } else
+        break;
+    }
+
+    if (inside && (SCHEME_TYPE(t2) > _scheme_compiled_values_types_)) {
+      b->test = t2;
+      if (SAME_TYPE(SCHEME_TYPE(inside), scheme_sequence_type)) {
+        /* Special case to keep things flat: immediate (begin x #<void>) => x */
+        if (SAME_OBJ(t, inside) && (((Scheme_Sequence *)t)->count == 2))
+          t = ((Scheme_Sequence *)t)->array[0];
+        else
+          ((Scheme_Sequence *)inside)->array[((Scheme_Sequence *)inside)->count-1] = scheme_void;
+      } else if (SAME_TYPE(SCHEME_TYPE(inside), scheme_compiled_let_void_type))
+        ((Scheme_Let_Header *)inside)->body = scheme_void;
+      else
+        ((Scheme_Compiled_Let_Value *)inside)->body = scheme_void;
+      return make_sequence_2(t,
+                             scheme_optimize_expr((Scheme_Object *)b, info, context));
+    }
+  }
+  
   info->vclock += 1; /* model branch as clock increment */
   init_kclock = info->kclock;
 
@@ -3444,13 +3491,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
       info->size -= 1; /* could be more precise for better for procedure size */
       return tb;
     } else {
-      Scheme_Sequence *s2;
-      s2 = scheme_malloc_sequence(2);
-      s2->so.type = scheme_sequence_type;
-      s2->count = 2;
-      s2->array[0] = t;
-      s2->array[1] = tb;
-      return (Scheme_Object *)s2;
+      return make_sequence_2(t, tb);
     }
   }
 
@@ -6301,9 +6342,10 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
       } else if (context & OPT_CONTEXT_BOOLEAN) {
         Scheme_Object *pred;
         pred = optimize_get_predicate(pos, info);
-        if (pred)
-           return scheme_true;
-           /* all predicates recognize non-#f things */
+        if (pred) {
+          /* all predicates recognize non-#f things */
+          return scheme_true;
+        }
       }
 
       delta = optimize_info_get_shift(info, pos);
