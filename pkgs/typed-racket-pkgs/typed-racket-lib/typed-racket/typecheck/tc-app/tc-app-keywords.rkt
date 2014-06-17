@@ -28,26 +28,25 @@
     #:declare cpce (id-from 'checked-procedure-check-and-extract 'racket/private/kw)
     #:declare s-kp (id-from 'struct:keyword-procedure 'racket/private/kw)
     #:declare kpe  (id-from 'keyword-procedure-extract 'racket/private/kw)
-    (match (tc-expr #'fn)
-      [(tc-result1:
-        (Poly: vars
-               (Function: (list (and ar (arr: dom rng (and rest #f) (and drest #f) kw-formals))))))
+    (match (tc-expr/t #'fn)
+      [(Poly: vars
+              (Function: (list (and ar (arr: dom rng (and rest #f) (and drest #f) kw-formals)))))
        (=> fail)
        (unless (set-empty? (fv/list kw-formals))
          (fail))
-       (match (stx-map single-value #'pos-args)
-         [(list (tc-result1: argtys-t) ...)
+       (match (stx-map tc-expr/t #'pos-args)
+         [(list argtys-t ...)
           (let* ([subst (infer vars null argtys-t dom rng
                                (and expected (tc-results->values expected)))])
             (unless subst (fail))
             (tc-keywords #'form (list (subst-all subst ar))
                          (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected))])]
-      [(tc-result1: (Function: arities))
+      [(Function: arities)
        (tc-keywords #'(#%plain-app . form) arities (type->list (tc-expr/t #'kws))
                     #'kw-arg-list #'pos-args expected)]
-      [(tc-result1: (Poly: _ (Function: _)))
+      [(Poly: _ (Function: _))
        (tc-error/expr "Inference for polymorphic keyword functions not supported")]
-      [(tc-result1: t)
+      [t
        (tc-error/expr "Cannot apply expression of type ~a, since it is not a function type" t)])))
 
 (define (tc-keywords/internal arity kws kw-args error?)
