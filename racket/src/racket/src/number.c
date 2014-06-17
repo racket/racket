@@ -4276,9 +4276,9 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
             if (v2 < (sizeof(intptr_t) * 8)) {
               if (SCHEME_INTP(so)) {
                 if (v1 < (sizeof(intptr_t) * 8)) {
-                  intptr_t res;
-                  res = ((SCHEME_INT_VAL(so) >> v1) & (((intptr_t)1 << v2) - 1));
-                  return scheme_make_integer(res);
+                  uintptr_t res;
+                  res = ((uintptr_t)(SCHEME_INT_VAL(so) >> v1) & (((uintptr_t)1 << v2) - 1));
+                  return scheme_make_integer_value_from_unsigned(res);
                 } else if (SCHEME_INT_VAL(so) > 0) 
                   return scheme_make_integer(0);
               } else if (SCHEME_BIGPOS(so)) {
@@ -4297,7 +4297,7 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
                   d |= (((Scheme_Bignum *)so)->digits[vd + 1] << avail);
                 }
                 d = (d & (((bigdig)1 << v2) - 1));
-                return scheme_make_integer(d);
+                return scheme_make_integer_value_from_unsigned(d);
               }
             }
           }
