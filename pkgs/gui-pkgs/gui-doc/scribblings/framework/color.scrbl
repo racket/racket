@@ -225,6 +225,15 @@
     If the result is @racket[#f], then the default dictionary is used.
   }
   
+  @defmethod[(get-spell-suggestions [pos exact-nonnegative-integer?])
+             (or/c #f (list/c exact-nonnegative-integer?
+                              exact-nonnegative-integer?
+                              (listof string?)))]{
+    Returns suggested spelling corrections (and the span of the entire word)
+    to replace the word at @racket[pos]. If the word is spelled correctly or
+    spell checking is disabled, returns @racket[#f].
+  }
+  
   @defmethod[(get-regions) (listof (list/c exact-nonnegative-integer? (or/c exact-nonnegative-integer? 'end)))]{
     This returns the list of regions that are currently being colored in the
     editor.

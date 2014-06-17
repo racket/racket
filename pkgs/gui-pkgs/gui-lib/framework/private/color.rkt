@@ -13,6 +13,7 @@ added get-regions
          syntax-color/default-lexer
          syntax-color/lexer-contract
          string-constants
+         data/interval-map
          "../preferences.rkt"
          "sig.rkt"
          "aspell.rkt"
@@ -69,7 +70,8 @@ added get-regions
     get-spell-check-strings
     set-spell-check-text
     get-spell-check-text
-    get-spell-current-dict))
+    get-spell-current-dict
+    get-spell-suggestions))
 
 (define text-mixin
   (mixin (text:basic<%>) (-text<%>)
@@ -425,15 +427,36 @@ added get-regions
                      (define err (car spellos))
                      (define err-start (list-ref err 0))
                      (define err-len (list-ref err 1))
-                     (add-coloring misspelled-color (+ pos err-start) (+ pos err-start err-len))
-                     (add-coloring color (+ pos lp) (+ pos err-start))
+                     (define suggestions (list-ref err 2))
+                     (add-coloring/spell suggestions
+                                         misspelled-color
+                                         (+ pos err-start)
+                                         (+ pos err-start err-len))
+                     (add-coloring/spell #f
+                                         color
+                                         (+ pos lp)
+                                         (+ pos err-start))
                      (loop (cdr spellos) (+ err-start err-len))]))
                 (loop (cdr strs)
                       (+ pos (string-length str) 1))))]
            [else
-            (add-coloring color sp ep)])]
+            (add-coloring/spell color sp ep)])]
         [else
-         (add-coloring color sp ep)]))
+         (add-coloring/spell #f color sp ep)]))
+    
+    (define/private (add-coloring/spell suggestions color start end)
+      (add-coloring color start end)
+      (unless misspelled-regions
+        (when suggestions
+          (set! misspelled-regions (make-interval-map))))
+      (unless (= start end)
+        (when misspelled-regions
+          (interval-map-set! misspelled-regions start end
+                             (and suggestions
+                                  (list start end suggestions))))))
+    (define misspelled-regions #f)
+    (define/public (get-spell-suggestions position)
+      (and misspelled-regions (interval-map-ref misspelled-regions position #f)))
     
     (define/private (add-coloring color sp ep) 
       (change-style color sp ep #f))
