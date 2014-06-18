@@ -1335,6 +1335,9 @@
                 (quote-syntax no!))
            ''ok)
 
+(test-comp '(lambda (x) (not (if x #f 2)))
+           '(lambda (x) (not (if x #f #t))))
+
 (test-comp '(lambda (x) (if x x #f))
            '(lambda (x) x))
 (test-comp '(lambda (x) (if (cons 1 x) 78 78))

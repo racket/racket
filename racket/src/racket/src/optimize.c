@@ -2724,7 +2724,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   if (le)
     return le;
 
-  le = scheme_optimize_expr(app->rator, info, sub_context);
+  le = scheme_optimize_expr(app->rator, info, 0);
   app->rator = le;
 
   {
@@ -2734,9 +2734,13 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
       return le;
   }
 
-  ty = wants_local_type_arguments(app->rator, 0);
-  if (ty)
-    sub_context |= (ty << OPT_CONTEXT_TYPE_SHIFT);
+  if (SAME_PTR(scheme_not_prim, app->rator)){
+    sub_context = OPT_CONTEXT_BOOLEAN;
+  } else {
+    ty = wants_local_type_arguments(app->rator, 0);
+    if (ty)
+      sub_context |= (ty << OPT_CONTEXT_TYPE_SHIFT);
+  }
 
   le = scheme_optimize_expr(app->rand, info, sub_context);
   app->rand = le;
