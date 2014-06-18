@@ -2511,7 +2511,8 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
 /* Change (pair? (list X complex-Y Z)) => (begin complex-Y #t), etc.
    So much more could be done with type inference, but we're checking some
    known predicates against the results of some known constructors, because
-   it's especially nice to avoid the constructions. */
+   it's especially nice to avoid the constructions.
+   Also change (not (list X complex-Y Z)) => (begin complex-Y #f) */
 {
   int i, count, matches;
   Scheme_Object *arg, *pred;
@@ -2520,7 +2521,8 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
   if (!SCHEME_PRIMP(arg_rator))
     return NULL;
 
-  if (!relevant_predicate(rator))
+  if (!relevant_predicate(rator)
+      && !SAME_PTR(scheme_not_prim, rator))
     return NULL;
 
   if (arg_app2)
