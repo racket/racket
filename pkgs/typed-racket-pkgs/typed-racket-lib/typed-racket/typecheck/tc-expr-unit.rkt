@@ -181,8 +181,8 @@
          [(tc-result1: (and f (or (Function: _)
                                   (Poly: _ (Function: _)))))
           (define actual-kws (attribute kw.value))
-          (when (check-kw-arity actual-kws f)
-            (tc-expr/check/type #'fun (kw-convert f actual-kws #:split #t)))
+          (check-kw-arity actual-kws f)
+          (tc-expr/check/type #'fun (kw-convert f actual-kws #:split #t))
           (ret f -true-filter)]
          [(or (tc-results: _) (tc-any-results: _))
           (tc-expr/check form #f)])]

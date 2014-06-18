@@ -2,18 +2,12 @@
 
 (require "abbrev.rkt" "../rep/type-rep.rkt"
          "../utils/tc-utils.rkt"
+         "../base-env/annotate-classes.rkt"
          "tc-error.rkt"
          "tc-result.rkt"
          racket/list racket/set racket/dict racket/match
          racket/format racket/string
          syntax/parse)
-
-;; Data definitions
-;; ----------------
-;;
-;; A LambdaKeywords is a
-;;   #s(lambda-kws (Listof Keyword) (Listof Keyword))
-(struct lambda-kws (mand opt) #:prefab)
 
 ;;
 ;; interp.
@@ -145,18 +139,27 @@
         (dict-set d prefix (arg-diff prefix e))
         (dict-set d e empty))))
 
-;; remove-missing-kws : (Listof Keyword) LambdaKeywords -> (Listof Keyword)
+;; handle-extra-or-missing-kws : (Listof Keyword) LambdaKeywords
+;;                               -> (Listof Keyword)
 ;; Remove keywords in the given list that aren't in the actual lambda
 ;; keywords list. This allows the typechecker to check some branches of the
-;; type that match the actual kws.
-(define (remove-missing-kws kws actual-kws)
+;; type that match the actual kws. Add extra actual mandatory keywords
+;; with Bottom type.
+(define (handle-extra-or-missing-kws kws actual-kws)
   (match-define (lambda-kws actual-mands actual-opts) actual-kws)
-  (filter
-   (λ (kw) (or (member (Keyword-kw kw) actual-mands)
-               (member (Keyword-kw kw) actual-opts)))
-   kws))
+  (define expected-mands (map Keyword-kw (filter Keyword-required? kws)))
+  (define missing-removed
+    (filter
+     (λ (kw) (or (member (Keyword-kw kw) actual-mands)
+                 (member (Keyword-kw kw) actual-opts)))
+     kws))
+  (append missing-removed
+          (for/list ([kw (in-list (set-subtract actual-mands expected-mands))])
+            (make-Keyword kw -Bottom #t))))
 
 ;; inner-kw-convert : (Listof arr) (Option LambdaKeywords) Boolean -> Type
+;; Helper function that converts each arr to a Function type and then
+;; merges them into a single Function type.
 (define (inner-kw-convert arrs actual-kws split?)
   (define table (find-prefixes arrs))
   (define fns
@@ -164,7 +167,7 @@
       (match k
         [(arr: mand rng rest drest kws)
          (define kws* (if actual-kws
-                          (remove-missing-kws kws actual-kws)
+                          (handle-extra-or-missing-kws kws actual-kws)
                           kws))
          (convert kws* mand v rng rest drest split?)])))
   (apply cl->* (set->list fns)))
@@ -254,7 +257,7 @@
            [else (int-err "unsupported arrs in keyword function type")])]
     [_ (int-err "unsupported keyword function type")]))
 
-;; check-kw-arity : LambdaKeywords Type -> Boolean
+;; check-kw-arity : LambdaKeywords Type -> Void
 ;;
 ;; Check if the TR lambda property listing the keywords matches up with
 ;; the type that we've given. Allows for better error messages than just
@@ -273,27 +276,22 @@
                                    (set-subtract opt-kws actual-opts)))
     ;; extra optional keywords are okay
     (define extra-kws (set-subtract actual-mands mand-kws))
-    (and
-     ;; if keywords are missing, the body can be checked anyway so
-     ;; error but return #t
-     (or (set-empty? missing-kws)
-         (tc-error/expr/fields
-          "type mismatch"
-          #:more "function is missing keyword arguments"
-          #:return #t
-          "missing keywords"
-          (string-join (map ~a missing-kws))
-          "expected type" f-type))
-     ;; if there are too many mandatory keywords, there is no point in
-     ;; trying to check the body
-     (or (set-empty? extra-kws)
-         (tc-error/expr/fields
-          "type mismatch"
-          #:more "function has too many mandatory keyword arguments"
-          #:return #f
-          "extra keywords"
-          (string-join (map ~a extra-kws))
-          "expected type" f-type)))))
+    (unless (set-empty? missing-kws)
+      (tc-error/fields
+       #:delayed? #t
+       "type mismatch"
+       #:more "function is missing keyword arguments"
+       "missing keywords"
+       (string-join (map ~a missing-kws))
+       "expected type" f-type))
+    (unless (set-empty? extra-kws)
+      (tc-error/fields
+       #:delayed? #t
+       "type mismatch"
+       #:more "function has too many mandatory keyword arguments"
+       "extra keywords"
+       (string-join (map ~a extra-kws))
+       "expected type" f-type))))
 
 ;; compute-kws : (Listof Keyword) (Listof Keyword) (Listof Type)
 ;;               -> (Listof make-Keyword)

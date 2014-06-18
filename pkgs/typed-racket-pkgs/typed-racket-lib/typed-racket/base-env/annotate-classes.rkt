@@ -7,6 +7,13 @@
          (for-label "colon.rkt"))
 (provide (all-defined-out))
 
+;; Data definitions
+;; ----------------
+;;
+;; A LambdaKeywords is a
+;;   (lambda-kws (Listof Keyword) (Listof Keyword))
+(struct lambda-kws (mand opt))
+
 (define-literal-set colon #:for-label (:))
 
 (define-splicing-syntax-class annotated-name
@@ -241,7 +248,7 @@
                       (~bind [rest.form #'()])))
            #:attr kw-property
            ;; separate raw keywords into mandatory and optional and
-           ;; put them in a prefab for later use by tc-expr
+           ;; put them in a struct for later use by tc-expr
            (let ([kws (append (attribute mand.kw)
                               (attribute opt.kw))]
                  [opt?s (append (attribute mand.default)
@@ -257,7 +264,7 @@
                      (values (cons (syntax-e kw) mand-kws) opt-kws))))
              (and (or (not (null? mand-kws))
                       (not (null? opt-kws)))
-                  (make-prefab-struct 'lambda-kws mand-kws opt-kws)))
+                  (lambda-kws mand-kws opt-kws)))
            #:attr opt-property
            (list (length (attribute mand)) (length (attribute opt)))
            #:attr erased
