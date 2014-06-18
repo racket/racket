@@ -14,18 +14,18 @@
 
 (provide/contract 
  [run-gen-and-check/mods
-  (-> module-path?
-      module-path?
-      natural-number/c
-      #:name string?
-      run-results?)]
+  (->* (module-path?
+        module-path?
+        natural-number/c)
+       (#:name string?)
+       run-results?)]
  [run-gen-and-check
-  (-> (-> (-> any/c))
-      (-> any/c boolean?)
-      natural-number/c
-      #:name string?
-      #:type symbol?
-      run-results?)])
+  (->* ((-> (-> any/c))
+        (-> any/c boolean?)
+        natural-number/c)
+       (#:name string?
+        #:type symbol?)
+       run-results?)])
 
 (define (run-gen-and-check/mods gen-mod-path check-mod-path seconds #:name [name "unknown"])
   (define get-gen (dynamic-require gen-mod-path 'get-generator))

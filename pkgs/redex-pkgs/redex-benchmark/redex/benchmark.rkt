@@ -11,4 +11,5 @@
          run-gen-and-check/mods
          bmark-log-directory
          benchmark-logging-to
-         bmark-log)
+         bmark-log
+         (struct-out run-results))
