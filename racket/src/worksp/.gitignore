@@ -11,6 +11,7 @@
 */*.ncb
 */*.suo
 */*.sdf
+*/*.sln.cache
 
 checkvs9.obj
 checkvs9.exe
