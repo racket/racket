@@ -1603,6 +1603,11 @@
       =>
       (to-img (make-object image-snip% green-blue-20x10-bitmap)))
 
+(let ([b (freeze (beside (rectangle 4 8 "solid" "blue") (rectangle 4 8 "solid" "red")))])
+  (test (flip-vertical (rotate 90 b))
+        =>
+        (rotate -90 b)))
+
 ;; make sure that raw image snips are equal to image snips
 (let ([i1 (make-object image-snip% (collection-file-path "bug09.png" "icons"))]
       [i2 (make-object image-snip% (collection-file-path "bug09.png" "icons"))])

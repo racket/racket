@@ -775,10 +775,9 @@
            [flipped? (flip-flipped? atomic-shape)])
        (make-flip flipped? 
                   (make-ibitmap (ibitmap-raw-bitmap bitmap)
-                                (bring-between (if flipped? 
-                                                   (- (ibitmap-angle bitmap) θ)
-                                                   (+ (ibitmap-angle bitmap) θ))
-                                               360)
+                                (bring-between 
+                                 (+ (ibitmap-angle bitmap) θ)
+                                 360)
                                 (ibitmap-x-scale bitmap)
                                 (ibitmap-y-scale bitmap)
                                 (make-hash))))]))
@@ -911,8 +910,13 @@
     [(text? atomic-shape)
      (error 'flip "cannot flip shapes that contain text")]
     [(flip? atomic-shape)
+     (define bitmap (flip-shape atomic-shape))
      (make-flip (not (flip-flipped? atomic-shape))
-                (flip-shape atomic-shape))]))
+                (make-ibitmap (ibitmap-raw-bitmap bitmap)
+                              (bring-between (- (ibitmap-angle bitmap)) 360)
+                              (ibitmap-x-scale bitmap)
+                              (ibitmap-y-scale bitmap)
+                              (make-hash)))]))
 
 (define (flip-point point) (make-point (point-x point) (- (point-y point))))
 (define (flip-points points) (map flip-point points))
