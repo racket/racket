@@ -245,7 +245,7 @@ variations of the special filenames (e.g., @racket["LPT1"],
 
 @defproc[(link-exists? [path path-string?]) boolean?]{
 
-Returns @racket[#t] if a link @racket[path] exists (@|AllUnix|),
+Returns @racket[#t] if a link @racket[path] exists,
 @racket[#f] otherwise.
 
 The predicates @racket[file-exists?]  or @racket[directory-exists?]
@@ -255,7 +255,9 @@ work on the final destination of a link or series of links, while
 path).
 
 This procedure never raises the @racket[exn:fail:filesystem]
-exception.}
+exception.
+
+@history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
 
 @defproc[(delete-file [path path-string?]) void?]{
@@ -393,12 +395,17 @@ rather than the link itself; if @racket[dest] refers to a link and
 @defproc[(make-file-or-directory-link [to path-string?] [path path-string?]) 
          void?]{
 
-Creates a link @racket[path] to @racket[to] on @|AllUnix|. The
+Creates a link @racket[path] to @racket[to]. The
 creation will fail if @racket[path] already exists. The @racket[to]
 need not refer to an existing file or directory, and @racket[to] is
 not expanded before writing the link. If the link is not created
-successfully,the @exnraise[exn:fail:filesystem]. On Windows, the
-@exnraise[exn:fail:unsupported] always.}
+successfully,the @exnraise[exn:fail:filesystem].
+
+On Windows XP and earlier, the @exnraise[exn:fail:unsupported]. On
+later versions of Windows, the creation of links tends to be disallowed
+by security policies.
+
+@history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "directories"]{Directories}

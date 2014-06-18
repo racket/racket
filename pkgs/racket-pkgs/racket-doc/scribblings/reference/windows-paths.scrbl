@@ -234,6 +234,13 @@ directory.  In addition, a path syntactically refers to a directory if
 its last element is a same-directory or up-directory indicator (not
 quoted by a @litchar{\\?\} form), or if it refers to a root.
 
+Even on variants of Windows that support symbolic links, up-directory
+@litchar{..} indicators in a path are resolved syntactically, not
+sensitive to links. For example, if a path ends with @litchar{d\..\f}
+and @litchar{d} refers to a symbolic link that references a directory
+with a different parent than @litchar{d}, the path nevertheless refers
+to @litchar{f} in the same directory as @litchar{d}.
+
 Windows paths are @techlink{cleanse}d as follows: In paths that start
 @litchar{\\?\}, redundant @litchar{\}s are removed, an extra
 @litchar{\} is added in a @litchar{\\?\REL} if an extra one is

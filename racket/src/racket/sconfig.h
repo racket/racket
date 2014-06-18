@@ -562,12 +562,10 @@
 # if defined(_MSC_VER) || defined(__MINGW32__)
 #  define NO_READDIR
 #  define USE_FINDFIRST
-#  define NO_READLINK
 #  define MKDIR_NO_MODE_FLAG
 # endif
 # if defined(__BORLANDC__)
 #  define DIRENT_NO_NAMLEN
-#  define NO_READLINK
 #  define MKDIR_NO_MODE_FLAG
 # endif
 
@@ -852,46 +850,6 @@
 
 # endif
 
-  /************** DOS with Borland C++ ****************/
-  /*          (Never successfully supported)          */
-
-#if defined(__BORLANDC__) && defined(__MSDOS__)
-
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "dos\\i386"
-
-# define USE_SENORA_GC
-# define DOS_FAR_POINTERS
-# define SMALL_HASH_TABLES
-
-# define SYSTEM_TYPE_NAME "dos"
-# define DOS_FILE_SYSTEM
-# define USE_GETDISK
-# define DIRENT_NO_NAMLEN
-# define NO_READLINK
-# define MKDIR_NO_MODE_FLAG
-
-# define TIME_SYNTAX
-# define USE_FTIME
-# define GETENV_FUNCTION
-# define DIR_FUNCTION
-
-# define DO_STACK_CHECK
-# define USE_STACKAVAIL
-# define STACK_SAFETY_MARGIN 15000
-
-# define IGNORE_BY_CONTROL_87
-
-# define DIR_INCLUDE
-# define IO_INCLUDE
-# define NO_SLEEP
-# define DONT_IGNORE_PIPE_SIGNAL
-
-# define REGISTER_POOR_MACHINE
-
-# define FLAGS_ALREADY_SET
-
-#endif
-
   /************ QNX *************/
 
 #if defined(__QNX__)
@@ -1078,8 +1036,6 @@
  /* NO_STAT_PROC means that there is no stat() function. */
 
  /* NO_MKDIR means that there is no mkdir() function. */
-
- /* NO_READLINK means that there is no readlink() function. */
 
  /* BROKEN_READLINK_NUL_TERMINATOR means that readlink() may
     report a length that includes trailing NUL terminators,

@@ -345,11 +345,19 @@ This procedure does not access the filesystem.}
 @defproc[(resolve-path [path path-string?]) path?]{
 
 @tech{Cleanse}s @racket[path] and returns a path that references the
-same file or directory as @racket[path]. On @|AllUnix|, if
+same file or directory as @racket[path]. If
 @racket[path] is a soft link to another path, then the referenced path
 is returned (this may be a relative path with respect to the directory
 owning @racket[path]), otherwise @racket[path] is returned (after
-expansion).}
+expansion).
+
+On Windows, the path for a link should be simplified syntactically
+using the whole link, so that an up-directory indicator removes a
+preceding path element independent of whether the preceding element
+itself refers to a link. See @secref["windowspaths"] for more
+information.
+
+@history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
 
 @defproc[(cleanse-path [path (or/c path-string? path-for-some-system?)])
@@ -385,10 +393,12 @@ path.  If @racket[path] syntactically refers to a directory, the
 result ends with a directory separator.
 
 When @racket[path] is simplified and @racket[use-filesystem?] is true
-(the default), a complete path is returned; if @racket[path] is
-relative, it is resolved with respect to the current directory, and
-up-directory indicators are removed taking into account soft links (so
-that the resulting path refers to the same directory as before).
+(the default), a complete path is returned. If @racket[path] is
+relative, it is resolved with respect to the current directory.
+On @|AllUnix|, up-directory indicators are removed taking into account soft links (so
+that the resulting path refers to the same directory as before);
+on Windows, up-directory indicators are removed by by deleting a
+preceding @tech{path element}.
 
 When @racket[use-filesystem?] is @racket[#f], up-directory indicators
 are removed by deleting a preceding @tech{path element}, and the result can
