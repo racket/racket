@@ -3080,6 +3080,12 @@
           (tr:define (f #:foo [foo 'foo] #:bar bar) 0)
           (error "dummy"))
         #:msg #rx"too many mandatory keyword arguments.*#:foo"]
+
+       ;; PR 14584
+       [tc-e (sort '(hello world) #:key symbol->string string<?)
+             (-lst (one-of/c 'hello 'world))]
+       [tc-err (sort '(hello world) #:key values string<?)
+               #:msg #rx"Polymorphic function.*applied to"]
         )
 
   (test-suite
