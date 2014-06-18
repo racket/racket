@@ -3447,7 +3447,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
           inside = t2;
           t2 = ((Scheme_Compiled_Let_Value *)t2)->body;
         }
-      } if (SAME_TYPE(SCHEME_TYPE(t2), scheme_sequence_type)) {
+      } else if (SAME_TYPE(SCHEME_TYPE(t2), scheme_sequence_type)) {
         Scheme_Sequence *seq = (Scheme_Sequence *)t2;
         if (seq->count) {
           inside = t2;
