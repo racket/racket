@@ -408,13 +408,21 @@
                                     "See the difference")))
                       ,@(if (empty? output-log)
                             '()
-                            ;; xxx add a link if length is > 1 or top is stderr?
-                            `((div 
-                               ([class "output"]) " "
-                               ,@(append*
-                                  (for/list ([o-block (in-list s-output-log)])
-                                    ;; xxx add an anchor on each of these blocks
-                                    (map render-event o-block))))))
+                            (append*
+                             (for/list ([o-block (in-list s-output-log)]
+                                        [i (in-naturals)])
+                               `((span ([id ,(format "output~a" i)]) " ")
+                                 ,(if (> (length s-output-log) (add1 i))
+                                    `(div ([class "error"])
+                                          "There is another block of STDERR output: "
+                                          (a ([href ,(format "#output~a" (add1 i))])
+                                             "skip to it")
+                                          ".")
+                                    "")
+                                 (div 
+                                  ([class "output"])
+                                  " "
+                                  ,@(map render-event o-block))))))
 
                       (p)
                       
