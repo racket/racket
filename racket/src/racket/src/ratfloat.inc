@@ -31,7 +31,7 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
 #ifdef CONVERT_INT_TO_FLOAT
       n = CONVERT_INT_TO_FLOAT(SCHEME_INT_VAL(r->num));
 #else
-      n = FP_TYPE_FROM_INT(SCHEME_INT_VAL(r->num));
+      n = FP_TYPE_FROM_INTPTR(SCHEME_INT_VAL(r->num));
 #endif
       ns = 0;
     } else {
@@ -49,7 +49,7 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
 
   if (SCHEME_INTP(r->denom)) {
     if (FIXNUM_FITS_FP(r->denom)) {
-      d = FP_TYPE_FROM_INT(SCHEME_INT_VAL(r->denom));
+      d = FP_TYPE_FROM_INTPTR(SCHEME_INT_VAL(r->denom));
       ds = 0;
     } else {
       d = FP_ZEROx;
@@ -130,11 +130,11 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
     }
 
     if (SCHEME_INTP(n))
-      res = FP_TYPE_FROM_INT(SCHEME_INT_VAL(n));
+      res = FP_TYPE_FROM_INTPTR(SCHEME_INT_VAL(n));
     else
       res = SCHEME_BIGNUM_TO_FLOAT_INF_INFO(n, 0, NULL);
 
-    res = FP_MULT(res, FP_TYPE_FROM_INT(FP_POWx(2, p - shift)));
+    res = FP_MULT(res, FP_POWx(FP_TYPE_FROM_INT(2), FP_TYPE_FROM_INTPTR(p - shift)));
 
     if (SCHEME_INTP(r->num)) {
       if (SCHEME_INT_VAL(r->num) < 0)
@@ -291,6 +291,7 @@ Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
 #undef FP_DIV
 #undef FP_NEG
 #undef FP_LESS
+#undef FP_TYPE_FROM_INTPTR
 #undef FP_TYPE_FROM_INT
 #undef FP_LDEXP
 #undef FP_EQV

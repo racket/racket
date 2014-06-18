@@ -141,6 +141,7 @@ long_double get_long_double_half_pi()
   restore_mode(m);
   return result;
 }
+
 long_double long_double_from_int(int a)
 {
   long_double result;
@@ -149,7 +150,6 @@ long_double long_double_from_int(int a)
   restore_mode(m);
   return result;
 }
-
 
 long_double long_double_from_float(float a)
 {
@@ -165,6 +165,15 @@ long_double long_double_from_double(double a)
   long_double result;
   int m = ext_mode();
   result.val = (long double) a;
+  restore_mode(m);
+  return result;
+}
+
+long_double long_double_from_intptr(intptr_t a)
+{
+  long_double result;
+  int m = ext_mode();
+  result.val = a;
   restore_mode(m);
   return result;
 }
@@ -546,6 +555,7 @@ DECLARE_LDBL(void, set_long_double, (long_double a, long_double b))
 DECLARE_LDBL(long_double, long_double_from_int, (int a))
 DECLARE_LDBL(long_double, long_double_from_float, (float a))
 DECLARE_LDBL(long_double, long_double_from_double, (double a))
+DECLARE_LDBL(long_double, long_double_from_intptr, (intptr_t a))
 DECLARE_LDBL(long_double, long_double_from_uintptr, (uintptr_t a))
 DECLARE_LDBL(double, double_from_long_double, (long_double a))
 DECLARE_LDBL(float, float_from_long_double, (long_double a))
@@ -656,6 +666,7 @@ void scheme_load_long_double_dll()
   EXTRACT_LDBL(long_double_from_int, fail_long_double);
   EXTRACT_LDBL(long_double_from_float, fail_long_double);
   EXTRACT_LDBL(long_double_from_double, fail_long_double);
+  EXTRACT_LDBL(long_double_from_intptr, fail_long_double);
   EXTRACT_LDBL(long_double_from_uintptr, fail_long_double);
   EXTRACT_LDBL(double_from_long_double, fail_double);
   EXTRACT_LDBL(float_from_long_double, fail_float);
@@ -729,6 +740,7 @@ void set_long_double(long_double a, long_double b) { _imp_set_long_double(a, b);
 long_double long_double_from_int(int a) { return _imp_long_double_from_int(a); }
 long_double long_double_from_float(float a) { return _imp_long_double_from_float(a); }
 long_double long_double_from_double(double a) { return _imp_long_double_from_double(a); }
+long_double long_double_from_intptr(uintptr_t a) { return _imp_long_double_from_intptr(a); }
 long_double long_double_from_uintptr(uintptr_t a) { return _imp_long_double_from_uintptr(a); }
 
 double double_from_long_double(long_double a) { return _imp_double_from_long_double(a); }

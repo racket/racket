@@ -57,6 +57,7 @@ XFORM_NONGCING LDBL_DLL_API void set_long_double(long_double a, long_double b);
 XFORM_NONGCING LDBL_DLL_API long_double long_double_from_int(int a);
 XFORM_NONGCING LDBL_DLL_API long_double long_double_from_float(float a);
 XFORM_NONGCING LDBL_DLL_API long_double long_double_from_double(double a);
+XFORM_NONGCING LDBL_DLL_API long_double long_double_from_intptr(intptr_t a);
 XFORM_NONGCING LDBL_DLL_API long_double long_double_from_uintptr(uintptr_t a);
 
 XFORM_NONGCING LDBL_DLL_API double double_from_long_double(long_double a);
@@ -142,6 +143,7 @@ XFORM_NONGCING int long_double_available();
 # define long_double_from_int(a) ((long double)(a))
 # define long_double_from_float(a) ((long double)(a))
 # define long_double_from_double(a) ((long double)(a))
+# define long_double_from_intptr(a) ((long double)(a))
 # define long_double_from_uintptr(a) ((long double)(a))
 
 # define double_from_long_double(a) (a)

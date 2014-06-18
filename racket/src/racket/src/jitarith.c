@@ -681,7 +681,7 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
     } else {
 #ifdef MZ_LONG_DOUBLE
       long_double d;
-      d = long_double_from_int(second_const);
+      d = long_double_from_intptr(second_const);
       if (extfl) {
         mz_fpu_movi_ld_fppush(fpr1, d, JIT_R2)
       } else {

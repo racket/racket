@@ -1814,7 +1814,7 @@ int scheme_long_minus_zero_p(long_double d)
 long_double scheme_real_to_long_double(Scheme_Object *r)
 {
   if (SCHEME_INTP(r))
-    return long_double_from_int(SCHEME_INT_VAL(r));
+    return long_double_from_intptr(SCHEME_INT_VAL(r));
   else if (SCHEME_DBLP(r))
     return long_double_from_double(SCHEME_DBL_VAL(r));
   else if (SCHEME_LONG_DBLP(r))
@@ -3990,7 +3990,7 @@ static Scheme_Object *exact_to_extfl (int argc, Scheme_Object *argv[])
   Scheme_Type t;
 
   if (SCHEME_INTP(o))
-    return scheme_make_long_double(long_double_from_int(SCHEME_INT_VAL(o)));
+    return scheme_make_long_double(long_double_from_intptr(SCHEME_INT_VAL(o)));
 
   t = _SCHEME_TYPE(o);
   if (t == scheme_float_type)
@@ -5118,7 +5118,7 @@ static Scheme_Object *fx_to_extfl (int argc, Scheme_Object *argv[])
   WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("fx->extfl"));
   if (!SCHEME_INTP(argv[0])) scheme_wrong_contract("fx->extfl", "fixnum?", 0, argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
-  return scheme_make_long_double(long_double_from_int(v));
+  return scheme_make_long_double(long_double_from_intptr(v));
 #else
   return unsupported("fx->extfl");
 #endif
@@ -5291,7 +5291,7 @@ static Scheme_Object *unsafe_fx_to_extfl (int argc, Scheme_Object *argv[])
   intptr_t v;
   if (scheme_current_thread->constant_folding) return exact_to_extfl(argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
-  return scheme_make_long_double(long_double_from_int(v));
+  return scheme_make_long_double(long_double_from_intptr(v));
 #else
   return fx_to_extfl(argc, argv);
 #endif
