@@ -2955,7 +2955,8 @@ other tools that combine @racketmodname[pict]s together.
 @defform[(render-metafunction metafunction-name maybe-contract)]{}
 @defform/none[#:literals (render-metafunction)
               (render-metafunction metafunction-name filename maybe-contract)]{}
-@defform[(render-metafunctions metafunction-name ... maybe-filename maybe-contract)
+@defform[(render-metafunctions metafunction-name ... 
+                               maybe-filename maybe-contract)
           #:grammar ([maybe-filename (code:line) (code:line #:file filename)]
                      [maybe-contract? (code:line) (code:line #:contract? bool-expr)])]{}]]{
 Like @racket[render-reduction-relation] but for metafunctions.
@@ -2965,8 +2966,8 @@ metafunctions and renders them together, lining up all of the
 clauses together.
 
 If the metafunctions have contracts, they are typeset as the first
-lines of the output when the expression following @racket[#:contract?]
-evaluates to @racket[#f].
+lines of the output unless the expression following @racket[#:contract?]
+evaluates to @racket[#f] (which is the default).
 
 This function sets @racket[dc-for-text-size]. See also
 @racket[metafunction->pict] and
