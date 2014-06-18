@@ -3086,6 +3086,11 @@
              (-lst (one-of/c 'hello 'world))]
        [tc-err (sort '(hello world) #:key values string<?)
                #:msg #rx"Polymorphic function.*applied to"]
+       [tc-e (let ()
+               (: f (All (X) (#:foo X X * -> (Listof X))))
+               (tr:define (f #:foo x . xs) (cons x xs))
+               (f #:foo 'a 'b))
+             (-lst (one-of/c 'a 'b))]
         )
 
   (test-suite

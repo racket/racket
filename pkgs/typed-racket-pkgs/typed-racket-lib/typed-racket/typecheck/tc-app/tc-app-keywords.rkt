@@ -35,24 +35,24 @@
        (define kw-arg-tys (stx-map tc-expr/t #'kw-arg-list))
        (define argtys-t (stx-map tc-expr/t #'pos-args))
        (or (for/or ([arr (in-list arrs)])
-             (match-define (arr: dom rng #f #f kw-formals) arr)
+             (match-define (arr: dom rng rest #f kw-formals) arr)
              ;; get the mapping of the keywords that are both provided and
              ;; in the function type, and hope for the best in inference
              (define-values (kw-actual-tys kw-dom-tys)
                (make-kw-mapping kw-args kw-arg-tys kw-formals))
              (define subst
                (extend-tvars vars
-                (infer vars null
-                       (append argtys-t kw-actual-tys)
-                       (append dom kw-dom-tys)
-                       rng
-                       (and expected (tc-results->values expected)))))
+                (infer/vararg vars null
+                              (append argtys-t kw-actual-tys)
+                              (append dom kw-dom-tys)
+                              rest rng
+                              (and expected (tc-results->values expected)))))
              (and subst
                   (tc-keywords/internal (subst-all subst arr) kw-args #'kw-arg-list #f)
                   (tc/funapp1 #'form #'pos-args
                               ;; kw checks were already done by tc-keywords/internal
                               ;; so for tc/funapp1 we just give it null for kws
-                              (subst-all subst (make-arr dom rng #f #f null))
+                              (subst-all subst (make-arr dom rng rest #f null))
                               (map ret argtys-t) ; tc/funapp1 expects results
                               expected #:check #f)))
            (poly-fail #'form #'pos-args ty argtys-t
