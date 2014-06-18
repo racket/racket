@@ -3091,6 +3091,12 @@
                (tr:define (f #:foo x . xs) (cons x xs))
                (f #:foo 'a 'b))
              (-lst (one-of/c 'a 'b))]
+       [tc-e (let ()
+              (: f (All (Y X ...) (-> #:foo Y X ... X (List X ... X))))
+              (tr:define (f #:foo x . xs) xs)
+              (f #:foo 'asdf "foo" "bar")
+              (f #:foo 'asdf))
+             -Null]
         )
 
   (test-suite

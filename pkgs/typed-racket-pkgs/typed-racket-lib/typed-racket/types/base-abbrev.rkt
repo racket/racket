@@ -290,8 +290,8 @@
 					       keyword<?))
 			...))))]))
 
-(define (make-arr-dots dom rng dty dbound)
-  (make-arr* dom rng #:drest (cons dty dbound)))
+(define (make-arr-dots dom rng dty dbound #:kws [kws null])
+  (make-arr* dom rng #:drest (cons dty dbound) #:kws kws))
 
 ;; Convenient syntax for polymorphic types
 (define-syntax -poly

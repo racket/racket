@@ -13,9 +13,6 @@
 (define (convert kw-t plain-t opt-t rng rest drest split?)
   (define-values (mand-kw-t opt-kw-t) (partition (match-lambda [(Keyword: _ _ m) m]) kw-t))
 
-  (when drest
-    (int-err "drest passed to kw-convert"))
-
   (define arities
     (for/list ([i (in-range (length opt-t))])
       (make-arr* (append plain-t (take opt-t i))
@@ -24,7 +21,9 @@
                  #:rest rest
                  #:drest drest)))
   ;; the kw function protocol passes rest args as an explicit list
-  (define rest-type (if rest (-lst rest) empty))
+  (define rest-type (cond [rest (-lst rest)]
+                          [drest (make-ListDots (car drest) (cdr drest))]
+                          [else empty]))
   (define ts 
     (flatten
      (list
