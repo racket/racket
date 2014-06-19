@@ -402,8 +402,9 @@ not expanded before writing the link. If the link is not created
 successfully,the @exnraise[exn:fail:filesystem].
 
 On Windows XP and earlier, the @exnraise[exn:fail:unsupported]. On
-later versions of Windows, the creation of links tends to be disallowed
-by security policies.
+later versions of Windows, the creation of links tends to be
+disallowed by security policies. Furthermore, a relative-path link is
+parsed specially; see @secref["windowspaths"] for more information.
 
 @history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 

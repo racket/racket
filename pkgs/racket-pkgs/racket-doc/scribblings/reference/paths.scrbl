@@ -351,11 +351,11 @@ is returned (this may be a relative path with respect to the directory
 owning @racket[path]), otherwise @racket[path] is returned (after
 expansion).
 
-On Windows, the path for a link should be simplified syntactically
-using the whole link, so that an up-directory indicator removes a
-preceding path element independent of whether the preceding element
-itself refers to a link. See @secref["windowspaths"] for more
-information.
+On Windows, the path for a link should be simplified syntactically, so
+that an up-directory indicator removes a preceding path element
+independent of whether the preceding element itself refers to a
+link. For relative-paths links, the path should be parsed specially;
+see @secref["windowspaths"] for more information.
 
 @history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 

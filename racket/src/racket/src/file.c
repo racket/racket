@@ -2228,7 +2228,8 @@ static char *UNC_readlink(const char *fn)
 
   h = CreateFileW(WIDE_PATH(fn), GENERIC_READ,
 		  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
-		  OPEN_EXISTING, mzFILE_FLAG_OPEN_REPARSE_POINT, NULL);
+		  OPEN_EXISTING, mzFILE_FLAG_OPEN_REPARSE_POINT,
+		  NULL);
 
   if (h == INVALID_HANDLE_VALUE) {
     errno = -1;
@@ -2260,12 +2261,96 @@ static char *UNC_readlink(const char *fn)
 
   off = rp->u.SymbolicLinkReparseBuffer.PrintNameOffset;
   len = rp->u.SymbolicLinkReparseBuffer.PrintNameLength;
-  lk = (wchar_t *)scheme_malloc_atomic((len + 1) * sizeof(wchar_t));
+  lk = (wchar_t *)scheme_malloc_atomic(len + 2);
 
   memcpy(lk, (char *)rp->u.SymbolicLinkReparseBuffer.PathBuffer + off, len);
   lk[len>>1] = 0;
 
   return NARROW_PATH(lk);
+}
+
+Scheme_Object *combine_link_path(char *copy, int len, char *clink, int clen,
+				 int ssq, int drive_end)
+{
+  Scheme_Object *sp;
+
+  /* Windows treats link paths purely syntactically (i.e., simplifying
+     "up" before consulting the filesystem). */
+
+  if (scheme_is_relative_path(clink, clen, SCHEME_WINDOWS_PATH_KIND)) {
+    /* Windows treats absolute paths in the general way,
+       allowing forward slahses, stripping trailing spaces, and
+       so on. It treats relative paths as "\\?\REL\"-like, but
+       allowing ".." as up, "." as same, and multiple adjacent "\"s.
+       So, we implement yet another path construction (which is
+       likely what Windows itself does). */
+    int i;
+    char *copy2;
+    copy2 = (char *)scheme_malloc_atomic(len + clen + 10);
+    if (!ssq) {
+      /* Always use "\\?\" mode. */
+      if (copy[1] == ':') {
+	memcpy(copy2, "\\\\?\\", 4);
+	memcpy(copy2+4, copy, len);
+	len += 4;
+	drive_end += 4;
+      } else {
+	memcpy(copy2, "\\\\?\\UNC", 7);
+	memcpy(copy2+7, copy+1, len-1);
+	len += 6;
+	drive_end += 6;
+      }
+      ssq = 1;
+    } else
+      memcpy(copy2, copy, len);
+    copy = copy2;
+    i = -1; /* start with implicit ".." */
+    while (i < clen) {
+      if ((i < 0)
+	  || ((i + 1 < clen)
+	      && (clink[i] == '.') && (clink[i+1] == '.')
+	      && ((i + 2 >= clen)
+		  || (clink[i+2] == '\\')))) {
+	/* up directory; don't back over root */
+	if (len <= drive_end) {
+	  errno = -1;
+	  return 0;
+	}
+	while ((len > drive_end) && (copy[len-1] != '\\')) {
+	  len--;
+	}
+	if ((len > drive_end) && (copy[len-1] == '\\')) {
+	  len--;
+	}
+	if (i < 0)
+	  i = 0;
+	else
+	  i += 3;
+      } else if ((clink[i] == '.') && ((i + 1 >= clen)
+				       || (clink[i+1] == '\\')))
+	i += 2; /* skip "." */
+      else if (clink[i] == '\\')
+	i++;
+      else {
+	if (copy[len-1] != '\\')
+	  copy[len++] = '\\';
+	while ((i < clen) && (clink[i] != '\\')) {
+	  copy[len++] = clink[i++];
+	}
+      }
+    }
+    copy[len] = 0;
+    sp = scheme_make_sized_path(copy, len, 0);
+  } else {
+    sp = scheme_make_sized_path(clink, clen, 0);
+    sp = do_simplify_path(sp, scheme_null, 0, 0, 0, SCHEME_WINDOWS_PATH_KIND, 0);
+    if (SCHEME_FALSEP(sp)) {
+      errno = -1;
+      return 0;
+    }
+  }
+
+  return sp;
 }
 
 # define MZ_UNC_READ 0x1
@@ -2283,7 +2368,7 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, int *islink,
      So, we use GetFileAttributesExW(). */
   char *copy;
   WIN32_FILE_ATTRIBUTE_DATA fd;
-  int must_be_dir = 0, orig_len;
+  int must_be_dir = 0, drive_end, ssq;
   Scheme_Object *cycle_check = scheme_null;
 
   if (resolved_path)
@@ -2298,32 +2383,38 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, int *islink,
   if (date)
     *date = scheme_false;
 
-  orig_len = len;
-
   copy = scheme_malloc_atomic(len + 14);
-  if (check_dos_slashslash_qm(dirname, len, NULL, NULL, NULL)) {
+  ssq = check_dos_slashslash_qm(dirname, len, &drive_end, NULL, NULL);
+  if (ssq) {
     memcpy(copy, dirname, len + 1);
   } else {
+    if (check_dos_slashslash_drive(dirname, 0, len, &drive_end, 0, 0))
+      drive_end++;
+    else
+      drive_end = 3; /* must be <letter>:/ */
+
     memcpy(copy, dirname, len + 1);
     while (IS_A_DOS_SEP(copy[len - 1])) {
       --len;
-      --orig_len;
       copy[len] = 0;
       must_be_dir = 1;
     }
   }
-  /* If we ended up with "\\?\X:", then drop the "\\?\" */
+
+  /* If we ended up with "\\?\X:" (and nothing after), then drop the "\\?\" */
   if ((copy[0] == '\\')&& (copy[1] == '\\') && (copy[2] == '?') && (copy[3] == '\\') 
       && is_drive_letter(copy[4]) && (copy[5] == ':') && !copy[6]) {
     memmove(copy, copy + 4, len - 4);
     len -= 4;
+    drive_end -= 4;
     copy[len] = 0;
   }
-  /* If we ended up with "\\?\\X:", then drop the "\\?\\" */
+  /* If we ended up with "\\?\\X:" (and nothing after), then drop the "\\?\\" */
   if ((copy[0] == '\\') && (copy[1] == '\\') && (copy[2] == '?') && (copy[3] == '\\') 
       && (copy[4] == '\\') && is_drive_letter(copy[5]) && (copy[6] == ':') && !copy[7]) {
     memmove(copy, copy + 5, len - 5);
     len -= 5;
+    drive_end -= 5;
     copy[len] = 0;
   }
 
@@ -2336,26 +2427,17 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, int *islink,
 	*islink = 1;
 	return 1;
       } else {
-	/* Resolve links ourselves. It's clear how Windows
-	   treats links within a link target path, but it seems
-	   to treat them purely syntactically (i.e., simplifying
-	   "up" before consulting the filesystem). */
+	/* Resolve links ourselves. (We wouldn't have to do this at
+	   all if GetFileAttributesEx() and FindFirstFile() provided a
+	   way to follow links.) */
+	char *clink;
 	Scheme_Object *sp, *cl, *cp;
-	copy = UNC_readlink(dirname);
-	while (orig_len && !IS_A_DOS_SEP(dirname[orig_len - 1])) {
-	  --orig_len;
-	}
-	while (orig_len && IS_A_DOS_SEP(dirname[orig_len - 1])) {
-	  --orig_len;
-	}
-	dirname = do_path_to_complete_path(copy, strlen(copy), dirname, orig_len, SCHEME_WINDOWS_PATH_KIND);
-	len = strlen(dirname);
-	sp = scheme_make_sized_path(dirname, len, 0);
-	sp = do_simplify_path(sp, scheme_null, 0, 0, 0, SCHEME_WINDOWS_PATH_KIND, 0);
-	if (SCHEME_FALSEP(sp)) {
+	clink = UNC_readlink(dirname);
+	if (!clink) {
 	  errno = -1;
 	  return 0;
 	}
+	sp = combine_link_path(copy, len, clink, strlen(clink), ssq, drive_end);
 	for (cl = cycle_check; !SCHEME_NULLP(cl); cl = SCHEME_CDR(cl)) {
 	  cp = SCHEME_CAR(cl);
 	  if ((SCHEME_PATH_LEN(cp) == SCHEME_PATH_LEN(sp))
