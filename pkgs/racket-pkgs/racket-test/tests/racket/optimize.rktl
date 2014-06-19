@@ -1229,6 +1229,14 @@
            '(lambda (w)
               (begin0 17 (random))))
 
+(test-comp '(lambda (w) (not (list w)))
+           '(lambda (w) #f))
+
+(test-comp '(lambda (a b)
+              (not (if a b (list 1 2))))
+           '(lambda (a b)
+              (not (if a b #t))))
+
 ;; Ok to move `box' past a side effect (that can't capture a
 ;; resumable continuation):
 (test-comp '(let ([h (box 0.0)])

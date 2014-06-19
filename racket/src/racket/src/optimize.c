@@ -2232,6 +2232,35 @@ int scheme_expr_produces_local_type(Scheme_Object *expr)
   return expr_produces_local_type(expr, 10);
 }
 
+static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
+{
+  if (SCHEME_PRIMP(rator)) {
+    if ((argc == 2)
+        && (SAME_OBJ(rator, scheme_cons_proc)
+            || SAME_OBJ(rator, scheme_unsafe_cons_list_proc)))
+      return scheme_pair_p_proc;
+    else if ((argc == 2) && SAME_OBJ(rator, scheme_mcons_proc))
+      return scheme_mpair_p_proc;
+    else if (SAME_OBJ(rator, scheme_list_proc)) {
+      if (argc >= 1)
+        return scheme_pair_p_proc;
+      else
+        return scheme_null_p_proc;
+    } else if (SAME_OBJ(rator, scheme_list_star_proc)) {
+      if (argc > 2)
+        return scheme_pair_p_proc;
+    } else if (SAME_OBJ(rator, scheme_vector_proc)
+               || SAME_OBJ(rator, scheme_vector_immutable_proc))
+      return scheme_vector_p_proc;
+    else if ((argc == 1)
+             && (SAME_OBJ(rator, scheme_box_proc)
+                 || SAME_OBJ(rator, scheme_box_immutable_proc)))
+      return scheme_box_p_proc;
+  }
+
+  return NULL;
+}
+
 static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info, int delta, int fuel)
 {
   Scheme_Object *rator = NULL;
@@ -2319,29 +2348,8 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
     break;
   }
 
-  if (rator) {
-    if ((argc == 2)
-        && (SAME_OBJ(rator, scheme_cons_proc)
-            || SAME_OBJ(rator, scheme_unsafe_cons_list_proc)))
-      return scheme_pair_p_proc;
-    else if ((argc == 2) && SAME_OBJ(rator, scheme_mcons_proc))
-      return scheme_mpair_p_proc;
-    else if (SAME_OBJ(rator, scheme_list_proc)) {
-      if (argc >= 1)
-        return scheme_pair_p_proc;
-      else
-        return scheme_null_p_proc;
-    } else if (SAME_OBJ(rator, scheme_list_star_proc)) {
-      if (argc > 2)
-        return scheme_pair_p_proc;
-    } else if (SAME_OBJ(rator, scheme_vector_proc)
-               || SAME_OBJ(rator, scheme_vector_immutable_proc))
-      return scheme_vector_p_proc;
-    else if ((argc == 1)
-             && (SAME_OBJ(rator, scheme_box_proc)
-                 || SAME_OBJ(rator, scheme_box_immutable_proc)))
-      return scheme_box_p_proc;
-  }
+  if (rator)
+    return rator_implies_predicate(rator, argc);
 
   return NULL;
 }
@@ -2531,6 +2539,16 @@ static int appn_flags(Scheme_Object *rator, Optimize_Info *info)
   return 0;
 }
 
+static Scheme_Object *finish_optimize_any_application(Scheme_Object *app, Scheme_Object *rator, int argc,
+                                                      Optimize_Info *info, int context)
+{
+  if (context & OPT_CONTEXT_BOOLEAN)
+    if (rator_implies_predicate(rator, argc))
+      return make_discarding_sequence(app, scheme_true, info);
+
+  return app;
+}
+
 static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context, int rator_flags)
 {
   Scheme_Object *le;
@@ -2568,7 +2586,8 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
   flags = appn_flags(app->args[0], info);
   SCHEME_APPN_FLAGS(app) |= flags;
 
-  return (Scheme_Object *)app;
+  return finish_optimize_any_application((Scheme_Object *)app, app->args[0], app->num_args,
+                                         info, context);
 }
 
 static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand)
@@ -2958,7 +2977,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
   flags = appn_flags(app->rator, info);
   SCHEME_APPN_FLAGS(app) |= flags;
 
-  return (Scheme_Object *)app;
+  return finish_optimize_any_application((Scheme_Object *)app, app->rator, 1,
+                                         info, context);
 }
 
 static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *info, int context)
@@ -3234,7 +3254,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 
   register_local_argument_types(NULL, NULL, app, info);
 
-  return (Scheme_Object *)app;
+  return finish_optimize_any_application((Scheme_Object *)app, app->rator, 2,
+                                         info, context);
 }
 
 Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
@@ -3496,16 +3517,6 @@ static Scheme_Object *make_sequence_2(Scheme_Object *a, Scheme_Object *b)
   return scheme_make_sequence_compilation(scheme_make_pair(a, scheme_make_pair(b, scheme_null)), 1);
 }
 
-static Scheme_Object *simplify_boolean(Scheme_Object *t, Optimize_Info *info)
-{
-  if (expr_implies_predicate(t, info, 0, 5)) {
-    /* all predicates recognize non-#f things */
-    return make_discarding_sequence(t, scheme_true, info);
-  }
-
-  return t;
-}
-
 static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_Branch_Rec *b;
@@ -3551,7 +3562,10 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
       break;
   }
 
-  t = simplify_boolean(t, info);
+  if (expr_implies_predicate(t, info, 0, 5)) {
+    /* all predicates recognize non-#f things */
+    t = make_discarding_sequence(t, scheme_true, info);
+  }
 
   /* Try to lift out `let`s and `begin`s around a test: */
   {
