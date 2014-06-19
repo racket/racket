@@ -2768,7 +2768,7 @@
 [assert (-poly (a b) (cl->*
                       (Univ (make-pred-ty (list a) Univ b) . -> . b)
                       (-> (Un a (-val #f)) a)))]
-[defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
+[defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0) (-filter -Undefined 0)))]
 
 ;; Syntax Manual
 ;; Section 2.1 (syntax/stx)
