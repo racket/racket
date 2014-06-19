@@ -35,8 +35,16 @@ additional provides all other bindings from @racketmodname[racket/class].
 @;; in certain cases rather than the class defined here
 @(module id-holder racket/base
    (require scribble/manual (for-label racket/class))
-   (provide class-element)
-   (define class-element (racket class)))
+   (provide class-element
+            d/p-element d/o-element
+            d/pm-element d/a-element
+            d/pr-element)
+   (define class-element (racket class))
+   (define d/p-element (racket define/public))
+   (define d/o-element (racket define/override))
+   (define d/pm-element (racket define/pubment))
+   (define d/a-element (racket define/augment))
+   (define d/pr-element (racket define/private)))
 @(require 'id-holder)
 
 @defform[#:literals (inspect init init-field init-rest field inherit-field
@@ -181,6 +189,39 @@ additional provides all other bindings from @racketmodname[racket/class].
     (define p1 (make-object point-copy% 1 2))
     (make-object point-copy% p1)
   ]
+}
+
+@(define (define/foo-content define/foo)
+   @elem{
+   Like @define/foo from @racketmodname[racket/class], but uses the binding of
+   @racket[define] from Typed Racket.
+
+   The @racket[formals] may specify type annotations as in @racket[define].
+})
+
+@defform*[((define/public id expr)
+           (define/public (id . formals) body ...+))]{
+  @define/foo-content[d/p-element]
+}
+
+@defform*[((define/override id expr)
+           (define/override (id . formals) body ...+))]{
+  @define/foo-content[d/o-element]
+}
+
+@defform*[((define/pubment id expr)
+           (define/pubment (id . formals) body ...+))]{
+  @define/foo-content[d/pm-element]
+}
+
+@defform*[((define/augment id expr)
+           (define/augment (id . formals) body ...+))]{
+  @define/foo-content[d/a-element]
+}
+
+@defform*[((define/private id expr)
+           (define/private (id . formals) body ...+))]{
+  @define/foo-content[d/pr-element]
 }
 
 @section{Types}

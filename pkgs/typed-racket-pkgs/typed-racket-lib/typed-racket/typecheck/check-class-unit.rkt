@@ -14,7 +14,6 @@
          syntax/stx
          "signatures.rkt"
          (private parse-type syntax-properties type-annotation)
-         (base-env class-prims)
          (env lexical-env tvar-env)
          (types utils abbrev union subtype resolve generalize)
          (typecheck check-below internal-forms)
@@ -22,7 +21,7 @@
          (rep type-rep)
          (for-syntax racket/base)
          (for-template racket/base
-                       (base-env class-prims)
+                       (private class-literals)
                        (typecheck internal-forms)))
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-expr^)
@@ -886,6 +885,7 @@
           ;; type-check pubments/augments.
           [(set-member? names-to-check external-name)
            (do-timestamp (format "started checking method ~a" external-name))
+           ;; FIXME: this case doesn't work very well for keyword methods
            (define type (tc-expr/t meth))
            (do-timestamp (format "finished method ~a" external-name))
            (cons (list external-name
@@ -1415,12 +1415,13 @@
                          (#%plain-lambda (#,annotated-self-param . params)
                                          body ...))])
          m)]
-    [(let-values ([(meth-name:id)
-                   (let-values (((core:id)
-                                 (#%plain-lambda params
-                                   core-body ...)))
-                     method-body ...)])
-       m)
+    [(~and (let-values ([(meth-name:id)
+                         (let-values (((core:id)
+                                       (#%plain-lambda params
+                                                       core-body ...)))
+                           method-body ...)])
+             m)
+           kw:kw-lambda^)
      #`(let-values ([(#,(type-label-property #'meth-name method-type))
                      #,(kw-lambda-property
                         #`(let-values (((core)
@@ -1429,7 +1430,7 @@
                                            (#%plain-lambda params
                                                            core-body ...))))
                             method-body ...)
-                        #t)])
+                        (attribute kw.value))])
          m)]
     ;; case-lambda methods
     [(let-values ([(meth-name:id)

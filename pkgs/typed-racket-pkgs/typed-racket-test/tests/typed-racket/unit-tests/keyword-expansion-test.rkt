@@ -11,7 +11,7 @@
 (define-syntax-rule (t arg expected)
   (begin
     (test-equal? (format "~a" '(arg expected))
-                 (kw-convert arg)
+                 (kw-convert arg #f)
                  expected)))
 
 (define (extract-arrs t)

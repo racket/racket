@@ -3066,6 +3066,20 @@
         #:ret (ret (-lst* (-lst* -String)))
         #:expected (ret (-lst* (-lst* -String)))]
 
+       ;; PR 13898
+       [tc-err
+        (let ()
+          (: f ([#:foo Any] -> (Option Natural)))
+          (tr:define (f #:foo x) 0)
+          (error "dummy"))
+        #:msg #rx"missing keyword arguments.*#:foo"]
+
+       [tc-err
+        (let ()
+          (: f (-> [#:foo Any] Zero))
+          (tr:define (f #:foo [foo 'foo] #:bar bar) 0)
+          (error "dummy"))
+        #:msg #rx"too many mandatory keyword arguments.*#:foo"]
         )
 
   (test-suite

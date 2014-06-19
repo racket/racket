@@ -57,7 +57,7 @@
                                                   (lookup-type/lexical orig env
                                                     #:fail (lambda (i) (lookup-fail i) #f)))
                                                 (define t (if pre-t
-                                                              (kw-convert pre-t)
+                                                              (kw-convert pre-t #f)
                                                               Err))
                                                 (register-type i t)
                                                 t)]
