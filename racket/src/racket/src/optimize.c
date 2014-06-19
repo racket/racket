@@ -130,6 +130,12 @@ static Scheme_Object *optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_In
 static Scheme_Object *optimize_shift(Scheme_Object *obj, int delta, int after_depth);
 
 static int relevant_predicate(Scheme_Object *pred);
+static int single_valued_noncm_expression(Scheme_Object *expr, int fuel);
+static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info, int expected_vals, int maybe_omittable,
+                                       int fuel);
+static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delta,
+                              int cross_lambda, int cross_k,
+                              int check_space, int fuel);
 
 #define IS_COMPILED_PROC(vals_expr) (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_compiled_unclosed_procedure_type) \
                                      || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
@@ -168,7 +174,7 @@ void scheme_init_optimize()
 /*                                  utils                                 */
 /*========================================================================*/
 
-int scheme_is_functional_primitive(Scheme_Object *rator, int num_args, int expected_vals)
+int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args, int expected_vals)
 /* return 2 => results are a constant when arguments are constants */
 {
   if (SCHEME_PRIMP(rator)
@@ -388,7 +394,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       note_match(5, vals, warn_info);
     }
     
-    if (scheme_is_functional_primitive(app->args[0], app->num_args, vals)
+    if (scheme_is_functional_nonfailing_primitive(app->args[0], app->num_args, vals)
         || scheme_is_struct_functional(app->args[0], app->num_args, opt_info, vals)) {
       int i;
       for (i = app->num_args; i--; ) {
@@ -410,7 +416,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
 
   if (vtype == scheme_application2_type) {
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
-    if (scheme_is_functional_primitive(app->rator, 1, vals)
+    if (scheme_is_functional_nonfailing_primitive(app->rator, 1, vals)
         || scheme_is_struct_functional(app->rator, 1, opt_info, vals)) {
       if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, opt_info, warn_info,
                                 deeper_than + (resolved ? 1 : 0), no_id))
@@ -426,7 +432,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
 
   if (vtype == scheme_application3_type) {
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
-    if (scheme_is_functional_primitive(app->rator, 2, vals)
+    if (scheme_is_functional_nonfailing_primitive(app->rator, 2, vals)
         || scheme_is_struct_functional(app->rator, 2, opt_info, vals)) {
       if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, opt_info, warn_info,
                                 deeper_than + (resolved ? 2 : 0), no_id)
@@ -469,6 +475,163 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   }
 
   return 0;
+}
+
+static Scheme_Object *ensure_single_value(Scheme_Object *e)
+{
+  Scheme_App2_Rec *app2;
+
+  app2 = MALLOC_ONE_TAGGED(Scheme_App2_Rec);
+  app2->iso.so.type = scheme_application2_type;
+  app2->rator = scheme_values_func;
+  app2->rand = e;
+  SCHEME_APPN_FLAGS(app2) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+  
+  return (Scheme_Object *)app2;
+}
+
+static Scheme_Object *do_make_discarding_sequence(Scheme_Object *e1, Scheme_Object *e2, Optimize_Info *info,
+                                                  int ignored, int rev)
+/* Evaluate `e1` then `e2` (or opposite order if rev), and each must
+   produce a single value. The result of `e1` is ignored and the
+   result is `e2` --- except that `e2` is ignored, too, if
+   `ignored`. */
+{
+  int e2_omit;
+
+  e2_omit = scheme_omittable_expr(e2, 1, 5, 0, info, NULL, -1, 0);
+
+  if (!e2_omit && !single_valued_noncm_expression(e2, 5))
+    e2 = ensure_single_value(e2);
+  
+  if (scheme_omittable_expr(e1, 1, 5, 0, info, NULL, -1, 0))
+    return e2;
+  else if (single_valued_noncm_expression(e1, 5))
+    e1 = optimize_ignored(e1, info, 1, 0, 5);
+  else
+    e1 = ensure_single_value(optimize_ignored(e1, info, 1, 0, 5));
+
+  if (e2_omit && ignored)
+    return e1;
+
+  /* use `begin` instead of `begin0` if we can swap the order: */
+  if (rev && movable_expression(e2, info, 0, 0, 0, 0, 50))
+    rev = 0;
+
+  return scheme_make_sequence_compilation(scheme_make_pair((rev ? e2 : e1),
+                                                           scheme_make_pair((rev ? e1 : e2), scheme_null)),
+                                          rev ? -1 : 1);
+}
+
+static Scheme_Object *make_discarding_sequence(Scheme_Object *e1, Scheme_Object *e2, Optimize_Info *info)
+{
+  return do_make_discarding_sequence(e1, e2, info, 0, 0);
+}
+
+static Scheme_Object *make_discarding_reverse_sequence(Scheme_Object *e1, Scheme_Object *e2, Optimize_Info *info)
+{
+  return do_make_discarding_sequence(e1, e2, info, 0, 1);
+}
+
+static Scheme_Object *make_discarding_app_sequence(Scheme_App_Rec *appr, int result_pos, Scheme_Object *result,
+                                                   Optimize_Info *info)
+/* Generalize do_make_discarding_sequence() to a sequence of argument
+   expressions, where `result_pos` is the position of the returned
+   argument. If `result_pos` is -1, then all argument results will be
+   ignored. If `result`, then it is used as the result after all
+   arguments are evaluated.*/
+{
+  int i;
+  Scheme_Object *e, *l = scheme_null;
+
+  result_pos = result_pos + 1;
+  if (result)
+    l = scheme_make_pair(result, l);
+
+  for (i = appr->num_args; i; i--) {
+    e = appr->args[i];
+    if (scheme_omittable_expr(e, 1, 5, 0, info, NULL, -1, 0)) {
+      /* drop if not result pos */
+    } else if (single_valued_noncm_expression(e, 5)) {
+      if (i != result_pos) {
+        l = scheme_make_pair(optimize_ignored(e, info, 1, 0, 5), l);
+      }
+    } else if (i == result_pos) {
+      e = ensure_single_value(e);
+    } else if (i != result_pos) {
+      e = ensure_single_value(optimize_ignored(e, info, 1, 0, 5));
+      l = scheme_make_pair(e, l);
+    }
+
+    if (i == result_pos) {
+      if (SCHEME_NULLP(l)) {
+        l = scheme_make_pair(e, scheme_null);
+      } else {
+        l = scheme_make_sequence_compilation(scheme_make_pair(e, l), -1);
+        l = scheme_make_pair(l, scheme_null);
+      }
+    }
+  }
+
+  if (SCHEME_NULLP(l))
+    return scheme_void;
+
+  if (SCHEME_NULLP(SCHEME_CDR(l)))
+    return SCHEME_CAR(l);
+
+  return scheme_make_sequence_compilation(l, 1);
+}
+
+static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info, int expected_vals, int maybe_omittable,
+                                       int fuel)
+/* Simplify an expression whose result will be ignored.  The
+   `expected_vals` is 1 or -1. If `maybe_omittable`, the result can be
+   NULL to dincate that it can be omitted. */
+{
+  if (maybe_omittable) {
+    if (scheme_omittable_expr(e, expected_vals, 5, 0, info, NULL, -1, 0))
+      return NULL;
+  }
+
+  if (fuel) {
+    /* We could do a lot more here, but for now, we just avoid purely
+       functional, always successful operations --- especially allocating ones. */
+    switch (SCHEME_TYPE(e)) {
+    case scheme_application2_type:
+      {
+        Scheme_App2_Rec *app = (Scheme_App2_Rec *)e;
+
+        if (!SAME_TYPE(app->rator, scheme_values_func)) /* `values` is probably here to ensure a single result */
+          if (scheme_is_functional_nonfailing_primitive(app->rator, 1, expected_vals))
+            return do_make_discarding_sequence(app->rand, scheme_void, info, 1, 0);
+      }
+      break;
+    case scheme_application3_type:
+      {
+        Scheme_App3_Rec *app = (Scheme_App3_Rec *)e;
+
+        if (scheme_is_functional_nonfailing_primitive(app->rator, 2, expected_vals))
+          return do_make_discarding_sequence(app->rand1,
+                                             do_make_discarding_sequence(app->rand2,
+                                                                         scheme_void,
+                                                                         info,
+                                                                         1, 0),
+                                             info,
+                                             1, 0);
+      }
+      break;
+    case scheme_application_type:
+      {
+        Scheme_App_Rec *app = (Scheme_App_Rec *)e;
+
+        if (scheme_is_functional_nonfailing_primitive(app->args[0], app->num_args, expected_vals))
+          return make_discarding_app_sequence(app, -1, NULL, info);
+      }
+      break;
+    }
+  }
+
+  return e;
 }
 
 static int is_inspector_call(Scheme_Object *a)
@@ -2513,9 +2676,8 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
    known predicates against the results of some known constructors, because
    it's especially nice to avoid the constructions. */
 {
-  int i, count, matches;
-  Scheme_Object *arg, *pred;
-  Scheme_Sequence *s;
+  int matches;
+  Scheme_Object *pred;
 
   if (!SCHEME_PRIMP(arg_rator))
     return NULL;
@@ -2535,51 +2697,16 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
 
   matches = SAME_OBJ(rator, pred);
 
-  count = 0;
-
-  for (i = 0; i < argc; i++) {
-    if (arg_app2)
-      arg = arg_app2->rand;
-    else if (arg_app3)
-      arg = (i ? arg_app3->rand2 : arg_app3->rand1);
-    else
-      arg = arg_app->args[i+1];
-
-    if (!scheme_omittable_expr(arg, 1, -1, 0, info, info, -1, 0))
-      count++;
-  }
-
-  if (!count)
-    return (matches ? scheme_true : scheme_false);
-
-  s = scheme_malloc_sequence(count+1);
-  s->so.type = scheme_sequence_type;
-  s->count = count+1;
-
-  count = 0;
-
-  for (i = 0; i < argc; i++) {
-    if (arg_app2)
-      arg = arg_app2->rand;
-    else if (arg_app3)
-      arg = (i ? arg_app3->rand2 : arg_app3->rand1);
-    else
-      arg = arg_app->args[i+1];
-
-    if (!scheme_omittable_expr(arg, 1, -1, 0, info, info, -1, 0)) {
-      if (!single_valued_noncm_expression(arg, 5)) {
-        /* wrap with `values` create a single-value context */
-        arg = scheme_make_application(scheme_make_pair(scheme_values_func,
-                                                       scheme_make_pair(arg, scheme_null)),
-                                      info);
-      }
-      s->array[count++] = arg;
-    }
-  }
-
-  s->array[count++] = (matches ? scheme_true : scheme_false);
-
-  return (Scheme_Object *)s;
+  if (arg_app2)
+    return make_discarding_sequence(arg_app2->rand, (matches ? scheme_true : scheme_false), info);
+  else if (arg_app3)
+    return make_discarding_sequence(arg_app3->rand1,
+                                    make_discarding_sequence(arg_app3->rand2,
+                                                             (matches ? scheme_true : scheme_false),
+                                                             info),
+                                    info);
+  else
+    return make_discarding_app_sequence(arg_app, -1, (matches ? scheme_true : scheme_false), info);
 }
 
 static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *info, int context)
@@ -2729,14 +2856,10 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       if (SAME_OBJ(scheme_list_proc, app2->rator)) {
         if (IS_NAMED_PRIM(app->rator, "car")) {
           /* (car (list X)) */
-          if (scheme_omittable_expr(app2->rand, 1, 5, 0, info, NULL, -1, 0)
-              || single_valued_noncm_expression(app2->rand, 5)) {
-            alt = app2->rand;
-          }
+          alt = make_discarding_sequence(scheme_void, app2->rand, info);
         } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
           /* (cdr (list X)) */
-          if (scheme_omittable_expr(app2->rand, 1, 5, 0, info, NULL, -1, 0))
-            alt = scheme_null;
+          alt = make_discarding_sequence(app2->rand, scheme_null, info);
         }
       }
       if (!alt)
@@ -2749,11 +2872,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             || SAME_OBJ(scheme_list_proc, app3->rator)
             || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
           /* (car ({cons|list|list*} X Y)) */
-          if ((scheme_omittable_expr(app3->rand1, 1, 5, 0, info, NULL, -1, 0)
-               || single_valued_noncm_expression(app3->rand1, 5))
-              && scheme_omittable_expr(app3->rand2, 1, 5, 0, info, NULL, -1, 0)) {
-            alt = app3->rand1;
-          }
+          alt = make_discarding_reverse_sequence(app3->rand2, app3->rand1, info);
         }
       } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
         /* (cdr ({cons|list|list*} X Y)) */
@@ -2761,27 +2880,20 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)
             || SAME_OBJ(scheme_list_proc, app3->rator)
             || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
-          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, info, NULL, -1, 0)
-               || single_valued_noncm_expression(app3->rand2, 5))
-              && scheme_omittable_expr(app3->rand1, 1, 5, 0, info, NULL, -1, 0)) {
-            if (SAME_OBJ(scheme_list_proc, app3->rator)) {
-              alt = scheme_make_application(scheme_make_pair(scheme_list_proc,
-                                                             scheme_make_pair(app3->rand2,
-                                                                              scheme_null)),
-                                            info);
-              SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
-            } else
-              alt = app3->rand2;
-          }
+          if (SAME_OBJ(scheme_list_proc, app3->rator)) {
+            alt = scheme_make_application(scheme_make_pair(scheme_list_proc,
+                                                           scheme_make_pair(app3->rand2,
+                                                                            scheme_null)),
+                                          info);
+            SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+            alt = make_discarding_sequence(app3->rand1, alt, info);
+          } else
+            alt = make_discarding_sequence(app3->rand1, app3->rand2, info);
         }
       } else if (IS_NAMED_PRIM(app->rator, "cadr")) {
         if (SAME_OBJ(scheme_list_proc, app3->rator)) {
           /* (cadr (list X Y)) */
-          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, info, NULL, -1, 0)
-               || single_valued_noncm_expression(app3->rand2, 5))
-              && scheme_omittable_expr(app3->rand1, 1, 5, 0, info, NULL, -1, 0)) {
-            alt = app3->rand2;
-          }
+          alt = make_discarding_sequence(app3->rand1, app3->rand2, info);
         }
       } else
         alt = try_reduce_predicate(app->rator, app3->rator, 2, NULL, app3, NULL, info);
@@ -2793,32 +2905,22 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             && (SAME_OBJ(scheme_list_proc, r)
                 || SAME_OBJ(scheme_list_star_proc, r))) {
           /* (car ({list|list*} X Y ...)) */
-          if (scheme_omittable_expr(appr->args[1], 1, 5, 0, info, NULL, -1, 0)
-              || single_valued_noncm_expression(appr->args[1], 5)) {
-            int k;
-            for (k = appr->num_args; k > 1; k--) {
-              if (!scheme_omittable_expr(appr->args[k], 1, 5, 0, info, NULL, -1, 0))
-                break;
-            }
-            if (k <= 1)
-              alt = appr->args[1];
-          }
+          alt = make_discarding_app_sequence(appr, 0, NULL, info);
         }
       } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
         /* (cdr ({list|list*} X Y ...)) */
         if ((appr->args > 0)
             && (SAME_OBJ(scheme_list_proc, r)
                 || SAME_OBJ(scheme_list_star_proc, r))) {
-          if (scheme_omittable_expr(appr->args[1], 1, 5, 0, info, NULL, -1, 0)) {
-            Scheme_Object *al = scheme_null;
-            int k;
-            for (k = appr->num_args; k > 1; k--) {
-              al = scheme_make_pair(appr->args[k], al);
-            }
-            al = scheme_make_pair(r, al);
-            alt = scheme_make_application(al, info);
-            SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+          Scheme_Object *al = scheme_null;
+          int k;
+          for (k = appr->num_args; k > 1; k--) {
+            al = scheme_make_pair(appr->args[k], al);
           }
+          al = scheme_make_pair(r, al);
+          alt = scheme_make_application(al, info);
+          SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+          alt = make_discarding_sequence(appr->args[1], alt, info);
         }
       } else
         alt = try_reduce_predicate(app->rator, appr->args[0], appr->num_args, NULL, NULL, appr, info);
@@ -3036,27 +3138,28 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         return app->rand1;
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx*")) {
       if (z1 || z2) {
-        if ((z1 && z2)
-            || (!z1 && scheme_omittable_expr(app->rand1, 1, 20, 0, info, NULL, -1, 0))
-            || (!z2 && scheme_omittable_expr(app->rand2, 1, 20, 0, info, NULL, -1, 0)))
+        if (z1 && z2)
           return scheme_make_integer(0);
+        else if (z2)
+          return make_discarding_sequence(app->rand1, scheme_make_integer(0), info);
+        else
+          return make_discarding_sequence(app->rand2, scheme_make_integer(0), info);
       }
       if (SAME_OBJ(app->rand1, scheme_make_integer(1)))
         return app->rand2;
       if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
         return app->rand1;
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fxquotient")) {
-      if (z1 && scheme_omittable_expr(app->rand2, 1, 20, 0, info, NULL, -1, 0))
-        return scheme_make_integer(0);
+      if (z1)
+        return make_discarding_sequence(app->rand2, scheme_make_integer(0), info);
       if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
         return app->rand1;
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fxremainder")
                || IS_NAMED_PRIM(app->rator, "unsafe-fxmodulo")) {
-      if (z1 && scheme_omittable_expr(app->rand2, 1, 20, 0, info, NULL, -1, 0))
-        return scheme_make_integer(0);
-      if (SAME_OBJ(app->rand2, scheme_make_integer(1))
-          && scheme_omittable_expr(app->rand1, 1, 20, 0, info, NULL, -1, 0))
-        return scheme_make_integer(0);
+      if (z1)
+        return make_discarding_sequence(app->rand2, scheme_make_integer(0), info);
+      if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
+        return make_discarding_sequence(app->rand1, scheme_make_integer(0), info);
     }
 
     z1 = (SCHEME_FLOATP(app->rand1) && (SCHEME_FLOAT_VAL(app->rand1) == 0.0));
@@ -3240,10 +3343,11 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
       preserves_marks = info->preserves_marks;
     }
 
-    /* Inlining and constant propagation can expose
-       omittable expressions. */
-    if ((i + 1 != count)
-	&& scheme_omittable_expr(le, -1, -1, 0, info, NULL, -1, 0)) {
+    /* Inlining and constant propagation can expose omittable expressions. */
+    if (i + 1 != count)
+      le = optimize_ignored(le, info, -1, 1, 5);
+
+    if (!le) {
       drop++;
       info->size = prev_size;
       s->array[i] = NULL;
@@ -3388,6 +3492,16 @@ static Scheme_Object *make_sequence_2(Scheme_Object *a, Scheme_Object *b)
   return scheme_make_sequence_compilation(scheme_make_pair(a, scheme_make_pair(b, scheme_null)), 1);
 }
 
+static Scheme_Object *simplify_boolean(Scheme_Object *t, Optimize_Info *info)
+{
+  if (expr_implies_predicate(t, info, 0, 5)) {
+    /* all predicates recognize non-#f things */
+    return make_discarding_sequence(t, scheme_true, info);
+  }
+
+  return t;
+}
+
 static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_Branch_Rec *b;
@@ -3432,6 +3546,8 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     } else
       break;
   }
+
+  t = simplify_boolean(t, info);
 
   /* Try to lift out `let`s and `begin`s around a test: */
   {
@@ -3479,20 +3595,12 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   init_kclock = info->kclock;
 
   if (SCHEME_TYPE(t) > _scheme_compiled_values_types_) {
+    /* Branch is statically known */
     info->size -= 1;
     if (SCHEME_FALSEP(t))
       return scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
     else
       return scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
-  } else if (expr_implies_predicate(t, info, 0, 5)) {
-    /* all predicates recognize non-#f things */
-    tb = scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
-    if (scheme_omittable_expr(t, 1, -1, 0, info, info, -1, 0)) {
-      info->size -= 1; /* could be more precise for better for procedure size */
-      return tb;
-    } else {
-      return make_sequence_2(t, tb);
-    }
   }
 
   old_types = info->types;
@@ -3543,10 +3651,9 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   }
 
   /* Try optimize: (if <omitable-expr> v v) => v */
-  if (scheme_omittable_expr(t, 1, 20, 0, info, NULL, -1, 0)
-      && equivalent_exprs(tb, fb)) {
-    info->size -= 2; /* could be more precise */
-    return tb;
+  if (equivalent_exprs(tb, fb)) {
+    info->size -= 1; /* could be more precise */
+    return make_discarding_sequence(t, tb, info);
   }
 
   /* Convert: (if (if M N #f) M2 K) => (if M (if N M2 K) K)
@@ -3605,9 +3712,8 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
   b = scheme_optimize_expr(wcm->body, info, scheme_optimize_tail_context(context));
 
   if (omittable_key(k, info)
-      && scheme_omittable_expr(v, 1, 20, 0, info, info, -1, 0)
       && scheme_omittable_expr(b, -1, 20, 0, info, info, -1, 0))
-    return b;
+    return make_discarding_sequence(v, b, info);
 
   /* info->single_result is already set */
   info->preserves_marks = 0;
@@ -3942,9 +4048,11 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
     if (!i)
       single_result = info->single_result;
 
-    /* Inlining and constant propagation can expose
-       omittable expressions. */
-    if (i && scheme_omittable_expr(le, -1, -1, 0, info, NULL, -1, 0)) {
+    /* Inlining and constant propagation can expose omittable expressions: */
+    if (i)
+      le = optimize_ignored(le, info, -1, 1, 5);
+
+    if (!le) {
       drop++;
       info->size = prev_size;
       s->array[i] = NULL;

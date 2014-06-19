@@ -1209,6 +1209,26 @@
                     (unsafe-cdr w)))
            #f)
 
+(test-comp '(lambda (w z) (box? (list (cons (random w) z))))
+           '(lambda (w z) (random w) #f))
+
+(test-comp '(lambda (w)
+              (car (cons w (random))))
+           '(lambda (w)
+              (begin (random) w)))
+(test-comp '(lambda (w)
+              (begin
+                (list (random) w)
+                17))
+           '(lambda (w)
+              (begin (random) 17)))
+(test-comp '(lambda (w)
+              (begin0
+               17
+               (list (random) w)))
+           '(lambda (w)
+              (begin0 17 (random))))
+
 ;; Ok to move `box' past a side effect (that can't capture a
 ;; resumable continuation):
 (test-comp '(let ([h (box 0.0)])
