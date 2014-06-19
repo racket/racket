@@ -120,10 +120,33 @@
   (delete-file (build-path sub "f4"))
   (delete-file (build "l3"))
 
+  ;; Forward slashes (ok for absolute, not ok for relative)
+  (define abs? (absolute-path? (rbuild "t1")))
+  (define ssq? (and (path? (rbuild "t1"))
+		    (equal? "\\\\?\\"
+			    (substring (path->string (rbuild "t1")) 0 4))))
+  (make-file-or-directory-link (let ([p (rbuild "t1")])
+				 (if (path? p)
+				     (let ([p (build-path p "f5")])
+				       (if ssq?
+					   p
+					   (bytes->path
+					    (regexp-replace #rx"\\" (path->bytes p) "/"))))
+				     (string-append p "/f5")))
+			       (build "l5"))
+  (call-with-output-file (build-path (tbuild "t1") "f5") void)
+  (test (or abs? ssq?) (file-exists? (build "l5")))
+  (delete-file (build-path (tbuild "t1") "f5"))
+  (make-directory (build-path (tbuild "t1") "f5"))
+  (test (or abs? ssq?) (directory-exists? (build "l5")))
+  (delete-directory (build-path (tbuild "t1") "f5"))
+  (delete-file (build "l5"))
+
   (delete-directory/files (tbuild "t1"))
   (test #f (directory-exists? (build "l1")))
   (test #f (file-exists? (build-path (build "l1") "f")))
 
+  ;; Check some extra functions on files:
   (call-with-output-file (tbuild "t1")
     (lambda (o) (display "t1" o)))
   (test "t1" (file->string (build "l1")))
