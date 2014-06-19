@@ -29,7 +29,7 @@
          PolyDots-n
          Class? Row? Row:
          free-vars*
-         type-compare type<?
+         type-equal?
          remove-dups
          sub-t sub-f sub-o sub-pe
          (rename-out [Class:* Class:]
@@ -48,7 +48,6 @@
                      [PolyDots-body* PolyDots-body]
                      [PolyRow-body* PolyRow-body]))
 
-(provide/cond-contract [type-equal? (Rep? Rep? . -> . boolean?)])
 
 ;; Ugly hack - should use units
 (lazy-require
@@ -579,21 +578,6 @@
         [(Scope: sc*) (remove-scopes (sub1 n) sc*)]
         [_ (int-err "Tried to remove too many scopes: ~a" sc)])))
 
-;; type equality
-(define/cond-contract (type-equal? s t)
-  (Rep? Rep? . -> . boolean?)
-  (eq? (Rep-seq s) (Rep-seq t)))
-
-;; inequality - good
-(define/cond-contract (type<? s t)
-  (Rep? Rep? . -> . boolean?)
-  (< (Rep-seq s) (Rep-seq t)))
-
-(define/cond-contract (type-compare s t)
-  (Rep? Rep? . -> . (or/c -1 0 1))
-  (cond [(type-equal? s t) 0]
-        [(type<? s t) 1]
-        [else -1]))
 
 (define ((sub-f st) e)
   (filter-case (#:Type st
