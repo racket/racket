@@ -370,6 +370,11 @@
         (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx key vals)))
      vals]))
 
+;; Rep equality and inequality
+(define (rep-equal? s t)
+  (eq? (Rep-seq s) (Rep-seq t)))
+(define (rep<? s t)
+  (< (Rep-seq s) (Rep-seq t)))
 
 (provide
   Rep-values
@@ -377,7 +382,11 @@
               [Rep-free-vars free-vars*]
               [Rep-free-idxs free-idxs*]))
 
-(provide/cond-contract (struct Rep ([seq exact-nonnegative-integer?]
-                                    [free-vars (hash/c symbol? variance?)]
-                                    [free-idxs (hash/c symbol? variance?)]
-                                    [stx (or/c #f syntax?)])))
+(provide/cond-contract
+  [rename rep-equal? type-equal? (Type? Type? . -> . boolean?)]
+  [rename rep<? type<? (Type? Type? . -> . boolean?)]
+  [rename rep<? filter<? (Filter? Filter? . -> . boolean?)]
+  [struct Rep ([seq exact-nonnegative-integer?]
+               [free-vars (hash/c symbol? variance?)]
+               [free-idxs (hash/c symbol? variance?)]
+               [stx (or/c #f syntax?)])])
