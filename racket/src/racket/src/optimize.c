@@ -2546,6 +2546,9 @@ static Scheme_Object *finish_optimize_any_application(Scheme_Object *app, Scheme
     if (rator_implies_predicate(rator, argc))
       return make_discarding_sequence(app, scheme_true, info);
 
+  if (SAME_OBJ(rator, scheme_void_proc))
+    return make_discarding_sequence(app, scheme_void, info);
+
   return app;
 }
 

@@ -1237,6 +1237,9 @@
            '(lambda (a b)
               (not (if a b #t))))
 
+(test-comp '(lambda (w) (if (void (list w)) 1 2))
+           '(lambda (w) 1))
+
 ;; Ok to move `box' past a side effect (that can't capture a
 ;; resumable continuation):
 (test-comp '(let ([h (box 0.0)])
@@ -3191,14 +3194,14 @@
 
 (let ()
   (define c1
-    '(module c1 racket/base
-       (void ((if (zero? (random 1))
-                  (lambda (f) (displayln (f)))
-                  #f)
-              (lambda ()
-                ;; This access of i should raise an exception:
-                i)))
-       (define i (random 1))))
+    '(module c1 racket/kernel
+       ((if (zero? (random 1))
+            (lambda (f) (display (f)))
+            #f)
+        (lambda ()
+          ;; This access of i should raise an exception:
+          i))
+       (define-values (i) (random 1))))
 
   (define o (open-output-bytes))
 
@@ -3223,20 +3226,15 @@
                                                     [(list a b)
                                                      (list (match a
                                                              [(application rator (list rand))
-                                                              (application 
+                                                              (application
                                                                rator
                                                                (list
-                                                                (match rand
-                                                                  [(application rator (list rand))
-                                                                   (application
-                                                                    rator
-                                                                    (list
-                                                                     (struct-copy 
-                                                                      lam rand
-                                                                      [body
-                                                                       (match (lam-body rand)
-                                                                         [(toplevel depth pos const? ready?)
-                                                                          (toplevel depth pos #t #t)])])))])))])
+                                                                (struct-copy 
+                                                                 lam rand
+                                                                 [body
+                                                                  (match (lam-body rand)
+                                                                    [(toplevel depth pos const? ready?)
+                                                                     (toplevel depth pos #t #t)])])))])
                                                            b)])])))]))
     o2))
 
