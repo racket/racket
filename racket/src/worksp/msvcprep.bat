@@ -1,6 +1,6 @@
 
-REM Expects "x86" or "x64" as an argument.
-REM Find Visual Studio in one of the usual places.
+REM  Find Visual Studio [Express] in one of the usual places.
+REM  Expects something like "x86", "amd64", or "x86_amd64" as an argument.
 
 set VCMODE=%1
 

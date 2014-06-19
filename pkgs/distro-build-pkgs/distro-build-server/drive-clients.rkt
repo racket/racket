@@ -299,7 +299,7 @@
   (define vc (or (get-opt c '#:vc)
                  (if (= bits 32)
                      "x86"
-                     "x64")))
+                     "x86_amd64")))
   (define j (or (get-opt c '#:j) 1))
   (define (cmd . args) 
     (list "cmd" "/c" (shell-protect (apply ~a args) platform)))

@@ -55,9 +55,11 @@ directory.
 On Mac OS X, see the notes below on git submodules, and then `make'
 (or `make in-place') creates a build in the "racket" directory.
 
-On Windows with Microsoft Visual Studio (version 9.0/2008 up to
-version 12.0/2013), see the notes below on git submodules, and then
-`nmake win32-in-place' creates a build in the "racket" directory.
+On Windows with Microsoft Visual Studio (any version between 2008/9.0
+and 2013/12.0), see the notes below on git submodules, and then `nmake
+win32-in-place' creates a build in the "racket" directory.  For
+information on configuring your command-line environment for Visual
+Studio, see "racket/src/worksp/README".
 
 In all cases, an in-place build includes (via links) packages that are
 in the "pkgs" directory.
