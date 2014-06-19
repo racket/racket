@@ -215,8 +215,9 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
 
   #:bits <integer> --- 32 or 64, affects Visual Studio mode
 
-  #:vc <string*> --- "x86" or "x64" to select the Visual Studio build
-    mode; default depends on `#:bits'
+  #:vc <string*> --- provided to "vcvarsall/bat" to select the Visual
+    Studio build mode; the default is "x86" or "x64", depending on
+    `#:bits'
 
   #:sign-identity <string> --- provides an identity to be passed to
     `codesign` for code signing on Mac OS X (for all executables in a

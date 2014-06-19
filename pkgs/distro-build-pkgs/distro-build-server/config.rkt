@@ -134,7 +134,7 @@
     [(#:platform) (memq val '(unix macosx windows windows/bash))]
     [(#:configure) (and (list? val) (andmap string? val))]
     [(#:bits) (or (equal? val 32) (equal? val 64))]
-    [(#:vc) (or (equal? val "x86") (equal? val "x64"))]
+    [(#:vc) (string? val)]
     [(#:sign-identity) (string? val)]
     [(#:timeout) (real? val)]
     [(#:j) (exact-positive-integer? val)]
