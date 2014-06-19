@@ -414,10 +414,8 @@
                                `((span ([id ,(format "output~a" i)]) " ")
                                  ,(if (> (length s-output-log) (add1 i))
                                     `(div ([class "error"])
-                                          "There is another block of STDERR output: "
                                           (a ([href ,(format "#output~a" (add1 i))])
-                                             "skip to it")
-                                          ".")
+                                             "Skip to the next STDERR block."))
                                     "")
                                  (div 
                                   ([class "output"])
