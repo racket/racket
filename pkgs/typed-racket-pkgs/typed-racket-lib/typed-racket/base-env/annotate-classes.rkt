@@ -14,6 +14,13 @@
 ;;   (lambda-kws (Listof Keyword) (Listof Keyword))
 (struct lambda-kws (mand opt))
 
+;; interp.
+;;   - the first list contains the mandatory keywords
+;;   - the second list contains the optional keywords
+;;
+;; The TR lambda form sets this as a syntax property on lambda expansions
+;; to allow TR to check for missing keywords.
+
 (define-literal-set colon #:for-label (:))
 
 (define-splicing-syntax-class annotated-name

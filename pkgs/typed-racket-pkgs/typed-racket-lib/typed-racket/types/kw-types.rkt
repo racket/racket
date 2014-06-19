@@ -9,14 +9,6 @@
          racket/format racket/string
          syntax/parse)
 
-;;
-;; interp.
-;;   - the first list contains the mandatory keywords
-;;   - the second list contains the optional keywords
-;;
-;; The TR lambda form sets this as a syntax property on lambda expansions
-;; to allow TR to check for missing keywords.
-
 ;; convert : [Listof Keyword] [Listof Type] [Listof Type] [Option Type]
 ;;           [Option Type] [Option (Pair Type symbol)] boolean -> Type
 (define (convert kw-t plain-t opt-t rng rest drest split?)
