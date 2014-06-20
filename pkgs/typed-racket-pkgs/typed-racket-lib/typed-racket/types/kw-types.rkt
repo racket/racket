@@ -134,19 +134,20 @@
 ;;                               -> (Listof Keyword)
 ;; Remove keywords in the given list that aren't in the actual lambda
 ;; keywords list. This allows the typechecker to check some branches of the
-;; type that match the actual kws. Add extra actual mandatory keywords
-;; with Bottom type.
+;; type that match the actual kws. Add extra actual keywords with Bottom type.
 (define (handle-extra-or-missing-kws kws actual-kws)
   (match-define (lambda-kws actual-mands actual-opts) actual-kws)
-  (define expected-mands (map Keyword-kw (filter Keyword-required? kws)))
+  (define expected-kws (map Keyword-kw kws))
   (define missing-removed
     (filter
      (λ (kw) (or (member (Keyword-kw kw) actual-mands)
                  (member (Keyword-kw kw) actual-opts)))
      kws))
   (append missing-removed
-          (for/list ([kw (in-list (set-subtract actual-mands expected-mands))])
-            (make-Keyword kw -Bottom #t))))
+          (for/list ([kw (in-list (set-subtract actual-mands expected-kws))])
+            (make-Keyword kw -Bottom #t))
+          (for/list ([kw (in-list (set-subtract actual-opts expected-kws))])
+            (make-Keyword kw -Bottom #f))))
 
 ;; inner-kw-convert : (Listof arr) (Option LambdaKeywords) Boolean -> Type
 ;; Helper function that converts each arr to a Function type and then

@@ -3080,6 +3080,20 @@
           (tr:define (f #:foo [foo 'foo] #:bar bar) 0)
           (error "dummy"))
         #:msg #rx"too many mandatory keyword arguments.*#:foo"]
+
+       ;; PR 14583
+       [tc-e
+        (let ()
+          (: f (-> String))
+          (tr:define (f #:foo [foo 'foo]) "foo")
+          (f))
+        -String]
+       [tc-err
+        (let ()
+          (: f (-> String))
+          (tr:define (f #:foo [foo 'foo]) foo)
+          (error "dummy"))
+        #:msg #rx"expected: String.*given: 'foo"]
         )
 
   (test-suite
