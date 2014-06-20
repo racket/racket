@@ -64,21 +64,23 @@
        (and t (PolyDots:
                (and vars (list fixed-vars ... dotted-var))
                (Function: (list (and arrs (arr: doms rngs rests drests
-                                                (list (Keyword: _ _ #f) ...)))
+                                                (list (Keyword: _ _ kw?) ...)))
                                 ...)))))
       (list (tc-result1: argtys-t) ...))
      (handle-clauses
-      (doms rngs rests drests arrs) f-stx args-stx
+      (doms rngs rests drests kw? arrs) f-stx args-stx
       ;; only try inference if the argument lengths are appropriate
-      (lambda (dom _ rest drest a)
-        (cond [rest (<= (length dom) (length argtys))]
-              [drest (and (<= (length dom) (length argtys))
-                          (eq? dotted-var (cdr drest)))]
-              [else (= (length dom) (length argtys))]))
+      ;; and there's no mandatory kw
+      (lambda (dom _ rest drest kw? a)
+        (and (andmap not kw?)
+             (cond [rest (<= (length dom) (length argtys))]
+                   [drest (and (<= (length dom) (length argtys))
+                               (eq? dotted-var (cdr drest)))]
+                   [else (= (length dom) (length argtys))])))
       ;; Only try to infer the free vars of the rng (which includes the vars
       ;; in filters/objects). Note that we have to use argtys-t here, since
       ;; argtys is a list of tc-results.
-      (λ (dom rng rest drest a)
+      (λ (dom rng rest drest _ a)
         (extend-tvars vars
           (cond
            [drest

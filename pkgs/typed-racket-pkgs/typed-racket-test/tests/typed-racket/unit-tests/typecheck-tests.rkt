@@ -3097,6 +3097,11 @@
               (f #:foo 'asdf "foo" "bar")
               (f #:foo 'asdf))
              -Null]
+       [tc-err (let ()
+                 (: f (All (Y X ...) (-> #:foo Y X ... X (List X ... X))))
+                 (tr:define (f #:foo x . xs) xs)
+                 (f 3))
+               #:msg #rx"Polymorphic function with keywords f could not be applied"]
         )
 
   (test-suite
