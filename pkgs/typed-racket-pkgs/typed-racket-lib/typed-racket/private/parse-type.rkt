@@ -431,8 +431,8 @@
                (parse-values-type #'rng)
                #:rest (parse-type #'rest)
                #:kws (attribute kws.Keyword))))]
-      [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound rng)
-            (dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng))
+      [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty :ddd/bound rng)
+            (dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty :ddd/bound :->^ rng))
        (let* ([bnd (syntax-e #'bound)])
          (unless (bound-index? bnd)
            (parse-error
@@ -445,7 +445,8 @@
                           (parse-values-type #'rng)
                           (extend-tvars (list bnd)
                             (parse-type #'rest))
-                          bnd))))]
+                          bnd
+                          #:kws (attribute kws.Keyword)))))]
       [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty _:ddd rng)
             (dom:non-keyword-ty ... rest:non-keyword-ty _:ddd :->^ rng))
        (let ([var (infer-index stx)])

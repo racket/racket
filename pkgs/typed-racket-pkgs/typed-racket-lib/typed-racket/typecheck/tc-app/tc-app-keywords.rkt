@@ -5,6 +5,8 @@
          "signatures.rkt"
          "utils.rkt"
          syntax/parse syntax/stx racket/match racket/set
+         unstable/match
+         (env tvar-env)
          (typecheck signatures tc-app-helper tc-funapp tc-metafunctions)
          (types abbrev utils union substitute subtype)
          (rep type-rep)
@@ -28,31 +30,69 @@
     #:declare cpce (id-from 'checked-procedure-check-and-extract 'racket/private/kw)
     #:declare s-kp (id-from 'struct:keyword-procedure 'racket/private/kw)
     #:declare kpe  (id-from 'keyword-procedure-extract 'racket/private/kw)
-    (match (tc-expr #'fn)
-      [(tc-result1:
-        (Poly: vars
-               (Function: (list (and ar (arr: dom rng (and rest #f) (and drest #f) kw-formals))))))
-       (=> fail)
-       (unless (set-empty? (fv/list kw-formals))
-         (fail))
-       (match (stx-map single-value #'pos-args)
-         [(list (tc-result1: argtys-t) ...)
-          (let* ([subst (infer vars null argtys-t dom rng
-                               (and expected (tc-results->values expected)))])
-            (unless subst (fail))
-            (tc-keywords #'form (list (subst-all subst ar))
-                         (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected))])]
-      [(tc-result1: (Function: arities))
+    (match (tc-expr/t #'fn)
+      [(and ty (or (as ([dots? #f]) (Poly: vars (Function: arrs)))
+                   (as ([dots? #t]) (PolyDots: vars (Function: arrs)))))
+       (define kw-args (type->list (tc-expr/t #'kws)))
+       (define kw-arg-tys (stx-map tc-expr/t #'kw-arg-list))
+       (define argtys-t (stx-map tc-expr/t #'pos-args))
+       (define expected-values
+         (and expected (tc-results->values expected)))
+       (or (for/or ([arr (in-list arrs)])
+             (match-define (arr: dom rng rest drest kw-formals) arr)
+             ;; get the mapping of the keywords that are both provided and
+             ;; in the function type, and hope for the best in inference
+             (define-values (kw-actual-tys kw-dom-tys)
+               (make-kw-mapping kw-args kw-arg-tys kw-formals))
+             (define subst
+               (extend-tvars vars
+                (cond [(and dots? drest)
+                       (match-define (list fixed-vars ... dotted-var) vars)
+                       (infer/dots fixed-vars dotted-var
+                                   (append kw-actual-tys argtys-t)
+                                   (append kw-dom-tys dom)
+                                   (car drest)
+                                   rng (fv rng)
+                                   #:expected expected-values)]
+                      [else
+                       (infer/vararg vars null
+                                     (append argtys-t kw-actual-tys)
+                                     (append dom kw-dom-tys)
+                                     rest rng
+                                     expected-values)])))
+             (and subst
+                  (tc-keywords/internal (subst-all subst arr) kw-args #'kw-arg-list #f)
+                  (tc/funapp1 #'form #'pos-args
+                              ;; kw checks were already done by tc-keywords/internal
+                              ;; so for tc/funapp1 we just give it null for kws
+                              (subst-all subst (make-arr dom rng rest drest null))
+                              (map ret argtys-t) ; tc/funapp1 expects results
+                              expected #:check #f)))
+           (poly-fail #'form #'pos-args ty argtys-t
+                      #:expected expected))]
+      [(Function: arities)
        (tc-keywords #'(#%plain-app . form) arities (type->list (tc-expr/t #'kws))
                     #'kw-arg-list #'pos-args expected)]
-      [(tc-result1: (Poly: _ (Function: _)))
-       (tc-error/expr "Inference for polymorphic keyword functions not supported")]
-      [(tc-result1: t)
+      [t
        (tc-error/expr "Cannot apply expression of type ~a, since it is not a function type" t)])))
+
+;; make-kw-mapping : (Listof kw-literal) (Listof Type) (Listof Keyword)
+;;                   -> (Listof Type) (Listof Type)
+;; Given a list of provided keywords and their argument types, match it up with
+;; the keyword types that the function type specifies (if one exists).
+(define (make-kw-mapping provided-kws provided-kw-types kw-formals)
+  (define kw-formal-map
+    (for/hash ([kw-formal kw-formals])
+      (values (Keyword-kw kw-formal) (Keyword-ty kw-formal))))
+  (for/lists (_1 _2) ([provided-kw provided-kws]
+                      [provided-kw-type provided-kw-types]
+                      [kw-formal kw-formals]
+                      #:when (hash-has-key? kw-formal-map provided-kw))
+    (values provided-kw-type (hash-ref kw-formal-map provided-kw))))
 
 (define (tc-keywords/internal arity kws kw-args error?)
   (match arity
-    [(arr: dom rng rest #f ktys)
+    [(arr: dom rng rest drest ktys)
      ;; assumes that everything is in sorted order
      (let loop ([actual-kws kws]
                 [actuals (stx-map tc-expr/t kw-args)]

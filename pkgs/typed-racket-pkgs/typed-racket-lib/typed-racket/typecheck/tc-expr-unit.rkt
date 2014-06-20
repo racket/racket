@@ -179,7 +179,8 @@
        #:when expected
        (match expected
          [(tc-result1: (and f (or (Function: _)
-                                  (Poly: _ (Function: _)))))
+                                  (Poly: _ (Function: _))
+                                  (PolyDots: _ (Function: _)))))
           (define actual-kws (attribute kw.value))
           (check-kw-arity actual-kws f)
           (tc-expr/check/type #'fun (kw-convert f actual-kws #:split #t))

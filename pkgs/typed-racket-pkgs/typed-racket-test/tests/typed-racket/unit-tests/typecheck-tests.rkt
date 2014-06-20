@@ -3080,6 +3080,28 @@
           (tr:define (f #:foo [foo 'foo] #:bar bar) 0)
           (error "dummy"))
         #:msg #rx"too many mandatory keyword arguments.*#:foo"]
+
+       ;; PR 14584
+       [tc-e (sort '(hello world) #:key symbol->string string<?)
+             (-lst (one-of/c 'hello 'world))]
+       [tc-err (sort '(hello world) #:key values string<?)
+               #:msg #rx"Polymorphic function.*applied to"]
+       [tc-e (let ()
+               (: f (All (X) (#:foo X X * -> (Listof X))))
+               (tr:define (f #:foo x . xs) (cons x xs))
+               (f #:foo 'a 'b))
+             (-lst (one-of/c 'a 'b))]
+       [tc-e (let ()
+              (: f (All (Y X ...) (-> #:foo Y X ... X (List X ... X))))
+              (tr:define (f #:foo x . xs) xs)
+              (f #:foo 'asdf "foo" "bar")
+              (f #:foo 'asdf))
+             -Null]
+       [tc-err (let ()
+                 (: f (All (Y X ...) (-> #:foo Y X ... X (List X ... X))))
+                 (tr:define (f #:foo x . xs) xs)
+                 (f 3))
+               #:msg #rx"Polymorphic function with keywords f could not be applied"]
         )
 
   (test-suite
