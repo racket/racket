@@ -264,17 +264,20 @@
     (define-values (mand-kw-types opt-kw-types) (partition-kws kws))
     (define mand-kws (map Keyword-kw mand-kw-types))
     (define opt-kws (map Keyword-kw opt-kw-types))
-    (define missing-kws (set-union (set-subtract mand-kws actual-mands)
-                                   (set-subtract opt-kws actual-opts)))
+    (define missing-opts (set-subtract opt-kws actual-opts))
+    (define missing-mands (set-subtract mand-kws actual-mands))
     ;; extra optional keywords are okay
     (define extra-kws (set-subtract actual-mands mand-kws))
-    (unless (set-empty? missing-kws)
+    (unless (and (set-empty? missing-mands)
+                 (set-empty? missing-opts))
       (tc-error/fields
        #:delayed? #t
        "type mismatch"
        #:more "function is missing keyword arguments"
-       "missing keywords"
-       (string-join (map ~a missing-kws))
+       "missing mandatory keywords"
+       (string-join (map ~a missing-mands))
+       "missing optional keywords"
+       (string-join (map ~a missing-opts))
        "expected type" f-type))
     (unless (set-empty? extra-kws)
       (tc-error/fields
