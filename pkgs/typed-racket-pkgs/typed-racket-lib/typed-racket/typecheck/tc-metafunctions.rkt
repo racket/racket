@@ -26,9 +26,9 @@
     [(tc-any-results: f)
      (-AnyValues f)]
     [(tc-results: ts fs os)
-     (make-Values (map -result ts fs os))]
+     (simple-Values (map -result ts fs os))]
     [(tc-results: ts fs os dty dbound)
-     (make-ValuesDots (map -result ts fs os) dty dbound)]))
+     (simple-ValuesDots (map -result ts fs os) dty dbound)]))
 
 (define/cond-contract (resolve atoms prop)
   ((listof Filter/c)

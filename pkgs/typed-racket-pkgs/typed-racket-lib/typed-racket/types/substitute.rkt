@@ -4,7 +4,8 @@
          racket/match racket/set
          racket/lazy-require
          (contract-req)
-         (only-in (types base-abbrev) -Tuple* -lst -Null -result ManyUniv)
+         (only-in (types base-abbrev)
+                  -Tuple* -lst -Null -result ManyUniv simple-Values simple-ValuesDots)
          (rep type-rep rep-utils)
          (utils tc-utils)
          (rep free-variance)
@@ -70,7 +71,7 @@
                                  [(ormap (lambda (x) (and (equal? dbound x) (not (bound-tvar? x)))) names) =>
                                   (lambda (name)
                                     (int-err "substitute used on ... variable ~a in type ~a" name target))]
-                                 [else (make-ValuesDots (map sb types) (sb dty) dbound)])]
+                                 [else (simple-ValuesDots (map sb types) (sb dty) dbound)])]
                  [#:ListDots dty dbound
                              (cond
                                [(ormap (lambda (x) (and (equal? dbound x) (not (bound-tvar? x)))) names) =>
@@ -105,14 +106,14 @@
                                (if (eq? name dbound)
                                    (if rimage
                                        ManyUniv
-                                       (make-Values
+                                       (simple-Values
                                         (append
                                          (map sb types)
                                          ;; We need to recur first, just to expand out any dotted usages of this.
                                          (let ([expanded (sb dty)])
                                            (for/list ([img (in-list images)])
                                              (-result (substitute img name expanded)))))))
-                                   (make-ValuesDots (map sb types) (sb dty) dbound))]
+                                   (simple-ValuesDots (map sb types) (sb dty) dbound))]
                  [#:arr dom rng rest drest kws
                         (if (and (pair? drest)
                                  (eq? name (cdr drest)))
@@ -144,7 +145,7 @@
                  target
                  [#:ValuesDots types dty dbound
                                (let ([extra-types (if (eq? name dbound) pre-image null)])
-                                 (make-ValuesDots (append (map sb types) (map -result extra-types))
+                                 (simple-ValuesDots (append (map sb types) (map -result extra-types))
                                                   (sb dty)
                                                   (if (eq? name dbound) image-bound dbound)))]
                  [#:ListDots dty dbound

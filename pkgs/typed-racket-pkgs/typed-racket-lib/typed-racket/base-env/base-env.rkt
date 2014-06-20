@@ -548,9 +548,11 @@
                   ((-lst b) b) . ->... .(-lst c))))]
 [for-each (-polydots (a b) ((list ((list a) (b b) . ->... . Univ) (-lst a))
                             ((-lst b) b) . ->... . -Void))]
-#;[fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
+#;
+[fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
                                ((-lst b) b) . ->... . c))]
-#;[fold-right (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
+#;
+[fold-right (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
                                 ((-lst b) b) . ->... . c))]
 [foldl
  (-poly (a b c d)
@@ -1033,7 +1035,7 @@
 [values (-polydots (a b) (cl->*
                            (-> (-values null))
                            (->acc (list a) a null)
-                           ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b))))]
+                           ((list a) (b b) . ->... . (simple-ValuesDots (list (-result a)) b 'b))))]
 [call-with-values
   (-polydots (b a)
     (cl->*
@@ -1107,8 +1109,17 @@
        ;; return type here
        (make-ValuesDots '() a 'a)))]
 [call-with-escape-continuation
- (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
-[call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
+ (-polydots (a b c)
+   (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
+          (-> (-> (->... (list a) (c c) (Un))
+                  (simple-ValuesDots (list (-result b)) c 'c))
+              (simple-ValuesDots (list (-result (Un a b))) c 'c))))]
+[call/ec
+ (-polydots (a b c)
+   (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
+          (-> (-> (->... (list a) (c c) (Un))
+                  (simple-ValuesDots (list (-result b)) c 'c))
+              (simple-ValuesDots (list (-result (Un a b))) c 'c))))]
 [call-with-continuation-barrier (-poly (a) (-> (-> a) a))]
 [continuation-prompt-available? (-> (make-Prompt-TagTop) B)]
 [continuation?
