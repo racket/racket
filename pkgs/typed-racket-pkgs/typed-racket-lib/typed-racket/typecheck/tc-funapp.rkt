@@ -39,7 +39,7 @@
     ;; tc/funapp1 currently cannot handle drest arities
     [(Function: (list (and a (arr: _ _ _ #f _))))
      (tc/funapp1 f-stx args-stx a args-res expected)]
-    [(Function: (and arrs (list (arr: doms rngs rests (and drests #f) kws) ...)))
+    [(Function/arrs: doms rngs rests (and drests #f) kws #:arrs arrs)
      (or
       ;; find the first function where the argument types match
       (for/first ([dom (in-list doms)] [rng (in-list rngs)] [rest (in-list rests)] [a (in-list arrs)]
@@ -58,7 +58,7 @@
                       dom))))]
     ;; any kind of dotted polymorphic function without mandatory keyword args
     [(PolyDots: (list fixed-vars ... dotted-var)
-       (Function: (list (and arrs (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...))) ...)))
+       (Function/arrs: doms rngs rests drests (list (Keyword: _ _ #f) ...) #:arrs arrs))
      (handle-clauses
       (doms rngs rests drests arrs) f-stx args-stx
       ;; only try inference if the argument lengths are appropriate
@@ -85,8 +85,7 @@
       f-type args-res expected)]
     ;; regular polymorphic functions without dotted rest, 
     ;; we do not choose any instantiations with mandatory keyword arguments
-    [(Poly: vars
-       (Function: (list (and arrs (arr: doms rngs rests #f (list (Keyword: _ _ kw?) ...))) ...)))
+    [(Poly: vars (Function/arrs: doms rngs rests #f (list (Keyword: _ _ kw?) ...) #:arrs arrs))
      (handle-clauses
       (doms rngs rests kw? arrs) f-stx args-stx
       ;; only try inference if the argument lengths are appropriate
@@ -103,8 +102,7 @@
     ;; Row polymorphism. For now we do really dumb inference that only works
     ;; in very restricted cases, but is probably enough for most cases in
     ;; the Racket codebase. Eventually this should be extended.
-    [(PolyRow: vars constraints
-      (and f-ty (Function: (list (arr: doms _ _ #f _) ...))))
+    [(PolyRow: vars constraints (and f-ty (Function/arrs: doms _ _ #f _)))
      (define (fail)
        (poly-fail f-stx args-stx f-type args-res
                   #:name (and (identifier? f-stx) f-stx)
@@ -157,7 +155,7 @@
     [(? needs-resolving?)
      (tc/funapp f-stx args-stx (resolve-once f-type) args-res expected)]
     ;; a union of functions can be applied if we can apply all of the elements
-    [(Union: (and ts (list (Function: _) ...)))
+    [(Union: (and ts (list (? Function?) ...)))
      (merge-tc-results
       (for/list ([fty ts])
         (tc/funapp f-stx args-stx fty argtys expected)))]

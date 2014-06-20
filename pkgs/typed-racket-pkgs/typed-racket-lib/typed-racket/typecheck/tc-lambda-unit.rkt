@@ -309,7 +309,7 @@
        (let loop ((t t))
          (match t
            [(Mu: _ _) (loop (unfold t))]
-           [(Function: (list (arr: _ _ _ _ '()) ...)) t]
+           [(Function/arrs: _ _ _ _ '()) t]
            [_ #f]))]
       [_ #f]))
 
@@ -321,7 +321,7 @@
   (define (find-matching-arrs formal-arity arities-seen)
     (match-define (list formal-positionals formal-rest) formal-arity)
     (match expected-type
-      [(Function: (and fs (list (arr: argss rets rests drests '()) ...)))
+      [(Function/arrs: argss rets rests drests '() #:arrs fs)
        (for/list ([a (in-list argss)] [f (in-list fs)] [r (in-list rests)] [dr (in-list drests)]
                   #:unless (arities-seen-seen-before? arities-seen (list (length a) (or r dr)))
                   #:when (if formal-rest

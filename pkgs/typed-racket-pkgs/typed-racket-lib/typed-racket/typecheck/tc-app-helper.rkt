@@ -302,7 +302,7 @@
 (define (cleanup-type t [expected #f])
   (match t
     ;; function type, prune if possible.
-    [(Function: (list (arr: doms rngs rests drests kws) ...))
+    [(Function/arrs: doms rngs rests drests kws)
      (match-let ([(list pdoms rngs rests drests) (possible-domains doms rests drests rngs (and expected (ret expected)))])
        (if (= (length pdoms) (length doms))
            ;; pruning didn't improve things, return the original
@@ -324,13 +324,13 @@
   (match t
     [(or (Poly-names:
           msg-vars
-          (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...)))
+          (Function/arrs: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)))
          (PolyDots-names:
           msg-vars
-          (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...)))
+          (Function/arrs: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)))
          (PolyRow-names:
           msg-vars _
-          (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...))))
+          (Function/arrs: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...))))
      (let ([fcn-string (if name
                            (format "function `~a'" (syntax->datum name))
                            "function")])
@@ -350,9 +350,9 @@
                                                                (list->seteq msg-vars)))
                                                  (string-append "Type Variables: " (stringify msg-vars) "\n")
                                                  ""))))))]
-    [(or (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...)))
-         (PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...)))
-         (PolyRow-names: msg-vars _ (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...))))
+    [(or (Poly-names: msg-vars (Function/arrs: msg-doms msg-rngs msg-rests msg-drests kws))
+         (PolyDots-names: msg-vars (Function/arrs: msg-doms msg-rngs msg-rests msg-drests kws))
+         (PolyRow-names: msg-vars _ (Function/arrs: msg-doms msg-rngs msg-rests msg-drests kws)))
      (let ([fcn-string (if name
                            (format "function with keywords ~a" (syntax->datum name))
                            "function with keywords")])
