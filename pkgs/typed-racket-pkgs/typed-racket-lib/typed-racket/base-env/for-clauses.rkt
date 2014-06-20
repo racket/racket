@@ -20,7 +20,7 @@
                                        ((v.ann-name ...) seq-expr)))
            #:with (expand* ...) (list (quasisyntax/loc #'c
                                         ((v.ann-name ...) seq-expr))
-                                      #'#:when #'#t))
+                                      #'#:when #''#t))
   ;; Note: #:break and #:final clauses don't ever typecheck
   (pattern (~seq (~and kw (~or #:when #:unless #:break #:final)) guard:expr)
            #:with (expand ...) (list #'kw #'guard)
