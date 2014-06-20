@@ -187,6 +187,11 @@
   [#:key 'channel])
 
 ;; elem is a Type
+(def-type Async-Channel ([elem Type/c])
+  [#:frees (λ (f) (make-invariant (f elem)))]
+  [#:key 'async-channel])
+
+;; elem is a Type
 (def-type ThreadCell ([elem Type/c])
   [#:frees (λ (f) (make-invariant (f elem)))]
   [#:key 'thread-cell])
@@ -398,6 +403,7 @@
 ;; the supertype of all of these values
 (def-type BoxTop () [#:fold-rhs #:base] [#:key 'box])
 (def-type ChannelTop () [#:fold-rhs #:base] [#:key 'channel])
+(def-type Async-ChannelTop () [#:fold-rhs #:base] [#:key 'async-channel])
 (def-type VectorTop () [#:fold-rhs #:base] [#:key 'vector])
 (def-type HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
 (def-type MPairTop () [#:fold-rhs #:base] [#:key 'mpair])

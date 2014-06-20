@@ -32,6 +32,7 @@
 (define-for-syntax structural-reps
   #'([BoxTop ()]
      [ChannelTop ()]
+     [Async-ChannelTop ()]
      [ClassTop ()]
      [Continuation-Mark-KeyTop ()]
      [Error ()]
@@ -62,6 +63,7 @@
      [Continuation-Mark-Keyof (#:inv)]
      [Box (#:inv)]
      [Channel (#:inv)]
+     [Async-Channel (#:inv)]
      [ThreadCell (#:inv)]
      [Vector (#:inv)]
      [Hashtable (#:inv #:inv)]
