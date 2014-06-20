@@ -3094,7 +3094,8 @@ int scheme_used_app_only(Scheme_Comp_Env *env, int which);
 int scheme_used_ever(Scheme_Comp_Env *env, int which);
 
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
-                          Optimize_Info *opt_info, Optimize_Info *warn_info, int deeper_than, int no_id);
+                          Optimize_Info *opt_info, Optimize_Info *warn_info, 
+                          int min_id_depth, int id_offset, int no_id);
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator, int or_escape);
 int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args, int expected_vals);

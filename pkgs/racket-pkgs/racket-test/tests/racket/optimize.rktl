@@ -1509,6 +1509,29 @@
              (let ([f (lambda () f)]) f))])
   (car f))
 
+;; Make sure `values` splitting doesn't reorder expressions
+(let ([f (lambda (z)
+           (let-values ([(a b) (values (list (z 1)) (list (z 2)))])
+             (list a b)))])
+  (set! f f)
+  (let ([v 0])
+    (test '((1) (2)) f (lambda (n) (set! v n) n))
+    (test 2 values v)))
+
+(test-comp '(lambda (z)
+              ;; ok to reorder `(list z)` and `(list (z 2))`,
+              ;; which then allows more simplication:
+              (let-values ([(a b) (values (list z) (list (z 2)))])
+                (list a b)))
+           '(lambda (z)
+              (list (list z) (list (z 2)))))
+(test-comp '(lambda (z)
+              (let-values ([(a b) (values (list (z 2)) (list z))])
+                (list a b)))
+           '(lambda (z)
+              (let ([p (list z)])
+                (list (list (z 2)) p))))
+
 (test-comp '(let-values ([(x y) (values 1 2)])
               (+ x y))
            3)
