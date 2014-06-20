@@ -1177,7 +1177,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (let ()
     (define ((mk l/c) stx)
       (syntax-parse stx
-       [(_ (~or (~var k (param-annotated-name (lambda (s) #`(#,s -> (U)))))
+       [(_ (~or k:cont-annotated-name
                 (~and k:id (~bind [k.ann-name #'k]))) . body)
         (quasisyntax/loc stx (#,l/c k.ann-name . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))

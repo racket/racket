@@ -46,7 +46,7 @@
 ;; Type Type Seen -> Seen
 ;; Add the type pair to the set of seen type pairs
 (define/cond-contract (remember s t A)
-  ((or/c AnyValues? Values/c ValuesDots?) (or/c AnyValues? Values/c ValuesDots?)
+  (SomeValues/c SomeValues/c
    (listof (cons/c exact-nonnegative-integer?
                    exact-nonnegative-integer?))
    . -> .
@@ -57,7 +57,7 @@
 ;; Type Type -> Boolean
 ;; Check if a given type pair have been seen before
 (define/cond-contract (seen? s t cs)
-  ((or/c AnyValues? Values/c ValuesDots?) (or/c AnyValues? Values/c ValuesDots?)
+  (SomeValues/c SomeValues/c
    (listof (cons/c exact-nonnegative-integer?
                    exact-nonnegative-integer?))
    . -> . any/c)
@@ -353,7 +353,7 @@
 ;; the index variables from the TOPLAS paper
 (define/cond-contract (cgen V X Y S T)
   ((listof symbol?) (listof symbol?) (listof symbol?)
-   (or/c Values/c ValuesDots? AnyValues?) (or/c Values/c ValuesDots? AnyValues?)
+   SomeValues/c SomeValues/c
    . -> . (or/c #F cset?))
   ;; useful quick loop
   (define/cond-contract (cg S T)
@@ -650,7 +650,7 @@
 ;; Y : (listof symbol?) - index variables that must have entries
 ;; R : Type/c - result type into which we will be substituting
 (define/cond-contract (subst-gen C X Y R)
-  (cset? (listof symbol?) (listof symbol?) (or/c Values/c AnyValues? ValuesDots?)
+  (cset? (listof symbol?) (listof symbol?) SomeValues/c
    . -> . (or/c #f substitution/c))
   (define var-hash (free-vars-hash (free-vars* R)))
   (define idx-hash (free-vars-hash (free-idxs* R)))
@@ -751,7 +751,7 @@
   (define/cond-contract (infer X Y S T R [expected #f])
     (((listof symbol?) (listof symbol?) (listof Type/c) (listof Type/c)
       (or/c #f Values/c ValuesDots?))
-     ((or/c #f Values/c AnyValues? ValuesDots?))
+     ((or/c #f SomeValues/c))
      . ->* . (or/c boolean? substitution/c))
     (let* ([expected-cset (if expected
                               (cgen null X Y R expected)
