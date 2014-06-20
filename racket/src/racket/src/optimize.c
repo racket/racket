@@ -634,6 +634,21 @@ static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info, in
   return e;
 }
 
+static Scheme_Object *make_sequence_2(Scheme_Object *a, Scheme_Object *b)
+{
+  return scheme_make_sequence_compilation(scheme_make_pair(a, scheme_make_pair(b, scheme_null)), 1);
+}
+
+static Scheme_Object *make_discarding_first_sequence(Scheme_Object *e1, Scheme_Object *e2, Optimize_Info *info)
+/* Like make_discarding_sequence(), but second expression is not constrained to
+   a single result. */
+{
+  e1 = optimize_ignored(e1, info, 1, 1, 5);
+  if (!e1)
+    return e2;
+  return make_sequence_2(e1, e2);
+}
+
 static int is_inspector_call(Scheme_Object *a)
 {
   if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type)) {
@@ -3515,11 +3530,6 @@ static void add_types(Scheme_Object *t, Optimize_Info *info, int fuel)
   }
 }
 
-static Scheme_Object *make_sequence_2(Scheme_Object *a, Scheme_Object *b)
-{
-  return scheme_make_sequence_compilation(scheme_make_pair(a, scheme_make_pair(b, scheme_null)), 1);
-}
-
 static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_Branch_Rec *b;
@@ -3674,7 +3684,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   /* Try optimize: (if <omitable-expr> v v) => v */
   if (equivalent_exprs(tb, fb)) {
     info->size -= 1; /* could be more precise */
-    return make_discarding_sequence(t, tb, info);
+    return make_discarding_first_sequence(t, tb, info);
   }
 
   /* Convert: (if (if M N #f) M2 K) => (if M (if N M2 K) K)
@@ -3734,7 +3744,7 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
 
   if (omittable_key(k, info)
       && scheme_omittable_expr(b, -1, 20, 0, info, info, -1, 0))
-    return make_discarding_sequence(v, b, info);
+    return make_discarding_first_sequence(v, b, info);
 
   /* info->single_result is already set */
   info->preserves_marks = 0;

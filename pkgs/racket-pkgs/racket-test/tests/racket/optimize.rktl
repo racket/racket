@@ -1240,6 +1240,9 @@
 (test-comp '(lambda (w) (if (void (list w)) 1 2))
            '(lambda (w) 1))
 
+(test null
+      call-with-values (lambda () (with-continuation-mark 'a 'b (values))) list)
+
 ;; Ok to move `box' past a side effect (that can't capture a
 ;; resumable continuation):
 (test-comp '(let ([h (box 0.0)])
