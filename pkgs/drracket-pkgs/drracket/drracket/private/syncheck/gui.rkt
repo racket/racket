@@ -690,14 +690,14 @@ If the namespace does not, they are colored the unbound color.
             (define/public (syncheck:rename-identifier text)
               (define canvas (send text get-canvas))
               
-              (define-values (binding-identifiers identifiers-hash)
+              (define-values (binding-identifiers make-identifiers-hash)
                 (position->matching-identifiers-hash text 
                                                      (send text get-start-position) 
                                                      (send text get-end-position)
                                                      #t))
               (unless (null? binding-identifiers)
                 (define name-to-offer (find-name-to-offer binding-identifiers))
-                (rename-menu-callback identifiers-hash
+                (rename-menu-callback make-identifiers-hash
                                       name-to-offer
                                       binding-identifiers
                                       (and canvas (send canvas get-top-level-window)))))
@@ -718,11 +718,8 @@ If the namespace does not, they are colored the unbound color.
                 (when arrows
                   (tack/untack-callback arrows))))
             
-            ;; rename-callback : (non-empty-listof identifier?)
-            ;;                   (union #f (is-a?/c top-level-window<%>)) 
-            ;;                -> void
             ;; callback for the rename popup menu item
-            (define/private (rename-menu-callback identifiers-hash name-to-offer
+            (define/private (rename-menu-callback make-identifiers-hash name-to-offer
                                                   binding-identifiers parent)
               (define (name-dup? x) 
                 (for/or ([var-arrow (in-list binding-identifiers)])
@@ -760,7 +757,7 @@ If the namespace does not, they are colored the unbound color.
                 (when do-renaming?
                   (define edit-sequence-txts (list this))
                   (define per-txt-positions (make-hash))
-                  (for ([(k _) (in-hash identifiers-hash)])
+                  (for ([(k _) (in-hash (make-identifiers-hash))])
                     (define-values (txt start-pos end-pos) (apply values k))
                     (hash-set! per-txt-positions txt 
                                (cons (cons start-pos end-pos)
@@ -1270,7 +1267,7 @@ If the namespace does not, they are colored the unbound color.
                   (for ([f (in-list add-menus)])
                     (f menu))
                   
-                  (define-values (binding-identifiers identifiers-hash)
+                  (define-values (binding-identifiers make-identifiers-hash)
                     (position->matching-identifiers-hash text pos (+ pos 1) #t))
                   (unless (null? binding-identifiers)
                     (define name-to-offer (find-name-to-offer binding-identifiers))
@@ -1281,7 +1278,7 @@ If the namespace does not, they are colored the unbound color.
                          [callback
                           (λ (x y)
                             (let ([frame-parent (find-menu-parent menu)])
-                              (rename-menu-callback identifiers-hash
+                              (rename-menu-callback make-identifiers-hash
                                                     name-to-offer 
                                                     binding-identifiers
                                                     frame-parent)))]))
@@ -1329,12 +1326,14 @@ If the namespace does not, they are colored the unbound color.
               (un/highlight #f)
               
               (set! current-matching-identifiers
-                    (if (and cursor-text cursor-pos)
-                        (let-values ([(_binders hash) (position->matching-identifiers-hash 
-                                                       cursor-text cursor-pos cursor-pos
-                                                       #f)])
-                          hash)
-                        (make-hash)))
+                    (cond
+                      [(and cursor-text cursor-pos)
+                       (define-values (_binders make-identifiers-hash)
+                         (position->matching-identifiers-hash cursor-text cursor-pos cursor-pos
+                                                              #f))
+                       (make-identifiers-hash)]
+                      [else
+                       (make-hash)]))
               
               (un/highlight #t)
               
@@ -1376,31 +1375,41 @@ If the namespace does not, they are colored the unbound color.
                                                 (var-arrow-start-pos-right candidate-binder)))
                                (add-binding-arrow candidate-binder))))])))))
               
-              (define identifiers-hash (make-hash))
+              (define identifiers-hash #f)
               (define (add-one txt start end)
                 (hash-set! identifiers-hash (list txt start end) #t))
-              (for ([binding-arrow (in-list binding-arrows)])
-                (add-one (var-arrow-start-text binding-arrow)
-                         (var-arrow-start-pos-left binding-arrow)
-                         (var-arrow-start-pos-right binding-arrow))
-                (for ([pos (in-range (var-arrow-start-pos-left binding-arrow)
-                                     (var-arrow-start-pos-right binding-arrow))])
-                  (for ([arrow (in-list (fetch-arrow-records (var-arrow-start-text binding-arrow)
-                                                             pos))])
-                    (when (var-arrow? arrow)
-                      (when (or include-require-arrows?
-                                (not (var-arrow-require-arrow? arrow)))
-                        (when (and (equal? (var-arrow-start-text arrow)
-                                           (var-arrow-start-text binding-arrow))
-                                   (equal? (var-arrow-start-pos-left arrow)
-                                           (var-arrow-start-pos-left binding-arrow))
-                                   (equal? (var-arrow-start-pos-right arrow)
-                                           (var-arrow-start-pos-right binding-arrow)))
-                          (add-one (var-arrow-end-text arrow)
-                                   (var-arrow-end-pos-left arrow)
-                                   (var-arrow-end-pos-right arrow))))))))
+              (define (get-identifiers-hash)
+                (unless identifiers-hash
+                  (set! identifiers-hash (make-hash))
+                  (define already-considered (make-hash))
+                  (for ([binding-arrow (in-list binding-arrows)])
+                    (add-one (var-arrow-start-text binding-arrow)
+                             (var-arrow-start-pos-left binding-arrow)
+                             (var-arrow-start-pos-right binding-arrow))
+                    (define range-to-consider
+                      (cons (var-arrow-start-pos-left binding-arrow)
+                            (var-arrow-start-pos-right binding-arrow)))
+                    (unless (hash-ref already-considered range-to-consider #f)
+                      (hash-set! already-considered range-to-consider #t)
+                      (for ([pos (in-range (car range-to-consider) (cdr range-to-consider))])
+                        (for ([arrow (in-list (fetch-arrow-records 
+                                               (var-arrow-start-text binding-arrow)
+                                               pos))])
+                          (when (var-arrow? arrow)
+                            (when (or include-require-arrows?
+                                      (not (var-arrow-require-arrow? arrow)))
+                              (when (and (equal? (var-arrow-start-text arrow)
+                                                 (var-arrow-start-text binding-arrow))
+                                         (equal? (var-arrow-start-pos-left arrow)
+                                                 (var-arrow-start-pos-left binding-arrow))
+                                         (equal? (var-arrow-start-pos-right arrow)
+                                                 (var-arrow-start-pos-right binding-arrow)))
+                                (add-one (var-arrow-end-text arrow)
+                                         (var-arrow-end-pos-left arrow)
+                                         (var-arrow-end-pos-right arrow))))))))))
+                identifiers-hash)
               
-              (values binding-arrows identifiers-hash))
+              (values binding-arrows get-identifiers-hash))
             
             ;; Sometimes when this is called, the calls to 'tooltip-info->ltrb'
             ;; fail and we get no information back. When that happens, we return 
@@ -1580,10 +1589,10 @@ If the namespace does not, they are colored the unbound color.
             ;; jump-to-next-callback : num text boolean? -> void
             ;; callback for the jump popup menu item
             (define/private (jump-to-next-callback start-pos end-pos txt backwards?)
-              (define-values (_binders identifiers-hash)
+              (define-values (_binders make-identifiers-hash)
                 (position->matching-identifiers-hash txt start-pos end-pos #t))
               (define orig-arrows 
-                (sort (hash-map identifiers-hash
+                (sort (hash-map (make-identifiers-hash)
                                 (λ (x y) x))
                       (λ (x y) (if backwards?
                                    (not (syncheck:compare-bindings x y))
