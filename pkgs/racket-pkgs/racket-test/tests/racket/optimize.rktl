@@ -1532,6 +1532,26 @@
               (let ([p (list z)])
                 (list (list (z 2)) p))))
 
+(test-comp '(lambda (z)
+              (let-values ([(x y)
+                            (if z
+                                (values z (list z))
+                                (values z (box z)))])
+                (list x y)))
+           '(lambda (z)
+              (list z (if z (list z) (box z)))))
+
+(test-comp '(lambda (z)
+              (let-values ([(x y)
+                            (if z
+                                (values 1 1)
+                                (let ([more (+ z z)])
+                                  (values 4 more)))])
+                (list x y)))
+           '(lambda (z)
+              (let ([r (if z 1 (+ z z))])
+                (list (if z 1 4) r))))
+
 (test-comp '(let-values ([(x y) (values 1 2)])
               (+ x y))
            3)

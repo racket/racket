@@ -60,7 +60,7 @@ struct Optimize_Info
   int vclock; /* virtual clock that ticks for a side effect */
   int kclock; /* virtual clock that ticks for a potential continuation capture */
   int psize;
-  short inline_fuel;
+  short inline_fuel, shift_fuel;
   char letrec_not_twice, enforce_const, use_psize, has_nonleaf;
   Scheme_Hash_Table *top_level_consts;
 
@@ -1133,6 +1133,14 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
      }
    }
    break;
+ case scheme_branch_type:
+   if (fuel > 0) {
+     Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
+     return (single_valued_noncm_expression(b->test, fuel - 1)
+             && single_valued_noncm_expression(b->tbranch, fuel - 1)
+             && single_valued_noncm_expression(b->fbranch, fuel - 1));
+   }
+   break;
  default:
    if (SCHEME_TYPE(expr) > _scheme_compiled_values_types_)
      return 1;
@@ -1193,8 +1201,9 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delt
                               int cross_lambda, int cross_k, 
                               int check_space, int fuel)
 /* An expression that can't necessarily be constant-folded,
-   but can be delayed because it has no side-effects (or is unsafe);
-   also not sensitive to being in tail position */
+   but can be delayed because it has no side-effects (or is unsafe),
+   produces a single value,
+   and is not sensitive to being in tail position */
 {
   int can_move;
 
@@ -1251,6 +1260,15 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delt
                              check_space || (can_move < 0), fuel - 1)
           && movable_expression(((Scheme_App3_Rec *)expr)->rand2, info, delta, cross_lambda, cross_k,
                                 check_space || (can_move < 0), fuel - 1))
+        return 1;
+    }
+    break;
+  case scheme_branch_type:
+    {
+      Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
+      if (movable_expression(b->test, info, delta, cross_lambda, cross_k, check_space, fuel-1)
+          && movable_expression(b->tbranch, info, delta, cross_lambda, cross_k, check_space, fuel-1)
+          && movable_expression(b->fbranch, info, delta, cross_lambda, cross_k, check_space, fuel-1))
         return 1;
     }
     break;
@@ -4402,7 +4420,7 @@ Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e)
   return ni;
 }
 
-static int is_values_apply(Scheme_Object *e, int n)
+static int is_values_apply(Scheme_Object *e, int n, Optimize_Info *info, int depth, int fuel)
 {
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
     Scheme_App_Rec *app = (Scheme_App_Rec *)e;
@@ -4414,6 +4432,13 @@ static int is_values_apply(Scheme_Object *e, int n)
   } else if ((n == 2) && SAME_TYPE(SCHEME_TYPE(e), scheme_application3_type)) {
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)e;
     return SAME_OBJ(scheme_values_func, app->rator);
+  } else if (fuel && SAME_TYPE(SCHEME_TYPE(e), scheme_branch_type)) {
+    Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)e;
+    if (SAME_TYPE(SCHEME_TYPE(b->test), scheme_local_type)
+        && scheme_omittable_expr(b->test, 1, -1, 0, info, info, depth, 0, NO_MUTABLE_ID_OMIT)) {
+      return (is_values_apply(b->tbranch, n, info, depth, 0)
+              && is_values_apply(b->fbranch, n, info, depth, 0));
+    }
   }
 
   return 0;
@@ -4439,6 +4464,13 @@ static int can_reorder_values_arguments(Scheme_Object *e, Optimize_Info *info, i
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)e;
     return (scheme_omittable_expr(app->rand1, 1, 5, 0, info, info, skip_depth, 0, NO_MUTABLE_ID_OMIT)
             || scheme_omittable_expr(app->rand2, 1, 5, 0, info, info, skip_depth, 0, NO_MUTABLE_ID_OMIT));
+  } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_branch_type)) {
+    Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)e;
+    if (scheme_omittable_expr(b->tbranch, -1, 5, 0, info, info, skip_depth, 0, NO_MUTABLE_ID_OMIT)) {
+      return can_reorder_values_arguments(b->fbranch, info, skip_depth);
+    } else if (scheme_omittable_expr(b->fbranch, -1, 5, 0, info, info, skip_depth, 0, NO_MUTABLE_ID_OMIT)) {
+      return can_reorder_values_arguments(b->tbranch, info, skip_depth);
+    }
   }
 
   return 0;
@@ -4456,27 +4488,54 @@ static int no_mutable_bindings(Scheme_Compiled_Let_Value *pre_body)
   return 1;
 }
 
+static void update_rhs_value(Scheme_Compiled_Let_Value *naya, Scheme_Object *e,
+                             Optimize_Info *info, Scheme_Object *tst)
+{
+  if (tst) {
+    if (!equivalent_exprs(naya->value, e)) {
+      Scheme_Branch_Rec *b;
+
+      /* In case `tst` was formerly a single-use variable, mark it as multi-use: */
+      (void)optimize_reverse(info, SCHEME_LOCAL_POS(tst), 0, 1);
+
+      b = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
+      b->so.type = scheme_branch_type;
+      b->test = tst;
+      b->tbranch = naya->value;
+      b->fbranch = e;
+
+      naya->value = (Scheme_Object *)b;
+    }
+  } else
+    naya->value = e;
+}
+
 static void unpack_values_application(Scheme_Object *e, Scheme_Compiled_Let_Value *naya,
-                                      int rev_bind_order)
+                                      int rev_bind_order, Optimize_Info *info, Scheme_Object *branch_test)
 {
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
     Scheme_App_Rec *app = (Scheme_App_Rec *)e;
     int i;
     for (i = 0; i < app->num_args; i++) {
       if (rev_bind_order)
-        naya->value = app->args[app->num_args - i];
+        update_rhs_value(naya, app->args[app->num_args - i], info, branch_test);
       else
-        naya->value = app->args[i + 1];
+        update_rhs_value(naya, app->args[i + 1], info, branch_test);
       naya = (Scheme_Compiled_Let_Value *)naya->body;
     }
   } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_application2_type)) {
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)e;
-    naya->value = app->rand;
+    update_rhs_value(naya, app->rand, info, branch_test);
   } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_application3_type)) {
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)e;
-    naya->value = (rev_bind_order ? app->rand2 : app->rand1);
+    update_rhs_value(naya, rev_bind_order ? app->rand2 : app->rand1, info, branch_test);
     naya = (Scheme_Compiled_Let_Value *)naya->body;
-    naya->value = (rev_bind_order ? app->rand1 : app->rand2);
+    update_rhs_value(naya, rev_bind_order ? app->rand1 : app->rand2, info, branch_test);
+  } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_branch_type)) {
+    Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)e;
+
+    unpack_values_application(b->tbranch, naya, rev_bind_order, info, NULL);
+    unpack_values_application(b->fbranch, naya, rev_bind_order, info, b->test);
   }
 }
 
@@ -4654,7 +4713,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   Scheme_Object *body, *value, *ready_pairs = NULL, *rp_last = NULL, *ready_pairs_start;
   Scheme_Once_Used *first_once_used = NULL, *last_once_used = NULL, *once_used;
   int i, j, pos, is_rec, not_simply_let_star = 0, undiscourage, split_shift, skip_opts = 0;
-  int did_set_value, checked_once, skip_depth;
+  int did_set_value, checked_once, skip_depth, unused_clauses;
   int remove_last_one = 0, inline_fuel, rev_bind_order;
   int post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
 
@@ -4961,21 +5020,28 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     }
 
     /* Change (let-values ([(id ...) (values e ...)]) body)
-       to (let-values ([id e] ...) body) for simple e. */
+       to (let-values ([id e] ...) body) for simple e.
+       The is_values_apply() and related functions also handle
+       (if id (values e1 ...) (values e2 ...)) to effetcively convert to
+       (values (if id e1 e2) ...) and then split the values call, since
+       duplicating the id use and test is likely to pay off.
+       Beware that the transformation reorders the e sequence if
+       !rev_bind_order, so checks are needed to make sure that's ok. */
     skip_depth = (is_rec ? (pre_body->position + pre_body->count) : 0);
     if ((pre_body->count != 1)
-        && is_values_apply(value, pre_body->count)
+        && is_values_apply(value, pre_body->count, rhs_info, skip_depth, 1)
         && ((!is_rec && no_mutable_bindings(pre_body)
              && (rev_bind_order
                  /* When !rev_bind_order, the transformation reorders the arguments
                     to `values`, so check that it's ok: */
                  || can_reorder_values_arguments(value, rhs_info, skip_depth)))
             /* If the right-hand side is omittable, then there are
-               no side effects, so reordering is always ok. We pass
-               NO_MUTABLE_ID_OMIT in case some other thread is mutating
+               no side effects, so reordering is always ok. But if !rev_bind_order,
+               we pass NO_MUTABLE_ID_OMIT in case some other thread is mutating
                an identifier in a way that could expose reordering: */
             || scheme_omittable_expr(value, pre_body->count, -1, 0, rhs_info, info,
-                                     skip_depth, 0, NO_MUTABLE_ID_OMIT))) {
+                                     skip_depth, 0,
+                                     rev_bind_order ? ID_OMIT : NO_MUTABLE_ID_OMIT))) {
       if (!pre_body->count && !i) {
         /* We want to drop the clause entirely, but doing it
            here messes up the loop for letrec. So wait and
@@ -5018,7 +5084,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         }
 
         naya = (Scheme_Compiled_Let_Value *)rest;
-        unpack_values_application(value, naya, rev_bind_order);
+        unpack_values_application(value, naya, rev_bind_order, rhs_info, NULL);
         if (prev_body)
           prev_body->body = (Scheme_Object *)naya;
         else
@@ -5353,6 +5419,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
   /* Clear used flags where possible */
   body = head->body;
+  unused_clauses = 0;
   for (i = head->num_clauses; i--; ) {
     int used = 0, j;
 
@@ -5386,6 +5453,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         sz = expr_size(pre_body->value, info);
         pre_body->value = scheme_false;
         info->size -= sz;
+        unused_clauses++;
       }
     } else {
       for (j = pre_body->count; j--; ) {
@@ -5411,6 +5479,21 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
       info->size += 1;
     }
     body = pre_body->body;
+  }
+
+  if (unused_clauses && (head->num_clauses == unused_clauses)) {
+    /* It's worth removing the `let` wrapper and shifting the body to
+       enable further optimizations outside this expression, but we risk
+       quadratic work here, so use up shift fuel: */
+    if (body_info->shift_fuel) {
+      optimize_info_done(body_info, NULL);
+      info->shift_fuel--;
+      body = head->body;
+      for (j = head->num_clauses; j--; ) {
+        body = ((Scheme_Compiled_Let_Value *)body)->body;
+      }
+      return optimize_shift(body, -head->count, 0);
+    }
   }
 
   /* Optimized away all clauses? */
@@ -5712,9 +5795,7 @@ static Scheme_Object *shift_closure_compilation(Scheme_Object *_data, int delta,
   int i, sz;
   mzshort *naya;
 
-  after_depth += data->num_params;
-
-  expr = optimize_shift(data->code, delta, after_depth);
+  expr = optimize_shift(data->code, delta, after_depth + data->num_params);
   data->code = expr;
 
   /* In case the result is not going to be re-optimized, we need
@@ -6499,10 +6580,9 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
           Scheme_Once_Used *o = (Scheme_Once_Used *)val;
           if (((o->vclock == info->vclock)
                && single_valued_noncm_expression(o->expr, 5))
-              || ((o->vclock != info->vclock)
-                  && movable_expression(o->expr, info, o->delta, o->cross_lambda, 
-                                        o->kclock != info->kclock,
-                                        0, 5))) {
+              || movable_expression(o->expr, info, o->delta, o->cross_lambda,
+                                    o->kclock != info->kclock,
+                                    0, 5)) {
             val = optimize_clone(1, o->expr, info, o->delta, 0);
             if (val) {
               info->size -= 1;
@@ -7053,6 +7133,7 @@ Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, int get_logger)
   info->type = scheme_rt_optimize_info;
 #endif
   info->inline_fuel = 32;
+  info->shift_fuel = 8;
   info->cp = cp;
 
   if (get_logger) {
@@ -7641,6 +7722,7 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->original_frame = orig;
   naya->new_frame = current;
   naya->inline_fuel = info->inline_fuel;
+  naya->shift_fuel = info->shift_fuel;
   naya->letrec_not_twice = info->letrec_not_twice;
   naya->enforce_const = info->enforce_const;
   naya->top_level_consts = info->top_level_consts;
@@ -7680,6 +7762,7 @@ static void optimize_info_done(Optimize_Info *info, Optimize_Info *parent)
   parent->vclock = info->vclock;
   parent->kclock = info->kclock;
   parent->psize += info->psize;
+  parent->shift_fuel = info->shift_fuel;
   if (info->has_nonleaf)
     parent->has_nonleaf = 1;
 }
