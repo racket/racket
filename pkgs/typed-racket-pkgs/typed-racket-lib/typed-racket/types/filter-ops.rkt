@@ -187,9 +187,12 @@
         [(cons (AndFilter: fs*) fs) (loop fs (append fs* results))]
         [(cons f fs) (loop fs (cons f results))])))
   ;; Move all the type filters up front as they are the stronger props
-  (define-values (f-args other-args)
-    (partition TypeFilter? (flatten-ands (remove-duplicates args eq? #:key Rep-seq))))
-  (let loop ([fs (append f-args other-args)] [result null])
+  (define-values (filters other-args)
+    (partition (λ (f) (or (TypeFilter? f) (NotTypeFilter? f)))
+               (flatten-ands (remove-duplicates args eq? #:key Rep-seq))))
+  (define-values (type-filters not-type-filters)
+    (partition TypeFilter? filters))
+  (let loop ([fs (append type-filters not-type-filters other-args)] [result null])
     (if (null? fs)
         (match result
           [(list) -top]

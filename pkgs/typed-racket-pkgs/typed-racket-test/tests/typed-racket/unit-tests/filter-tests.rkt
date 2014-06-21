@@ -131,5 +131,18 @@
         (-filter -Symbol #'x))
       (check-equal?
         (-and (-not-filter (-val #f) #'x) (-filter -Symbol #'x))
-        (-filter -Symbol #'x)))
+        (-filter -Symbol #'x))
+
+      (check-equal?
+        (-and (-filter (-val #f) #'y)
+              (-or (-filter (-val #f) #'y)
+                   (-filter (-val #f) #'x)))
+        (-filter (-val #f) #'y))
+
+      (check-equal?
+        (-and (-not-filter (-val #f) #'y)
+              (-or (-not-filter (-val #f) #'y)
+                   (-not-filter (-val #f) #'x)))
+        (-not-filter (-val #f) #'y)))
+
   ))
