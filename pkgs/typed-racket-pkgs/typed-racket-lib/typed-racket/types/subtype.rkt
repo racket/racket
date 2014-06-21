@@ -565,7 +565,9 @@
           (for/or ([f (in-list fs)])
             (match f
               [(FilterSet: f+ f-)
-               (and (filter-subtype* A0 f+ t-f) (filter-subtype* A0 f+ t-f) A0)]))]
+               (subtype-seq A0
+                            (filter-subtype* f+ t-f)
+                            (filter-subtype* f- t-f))]))]
          [((Result: t (FilterSet: ft ff) o) (Result: t* (FilterSet: ft* ff*) o))
           (subtype-seq A0
                        (subtype* t t*)
