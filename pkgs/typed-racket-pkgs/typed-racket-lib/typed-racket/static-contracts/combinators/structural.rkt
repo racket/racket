@@ -13,7 +13,8 @@
          (for-template racket/base
                        racket/contract/base
                        racket/set
-                       unstable/contract)
+                       unstable/contract
+                       "../../utils/hash-combinators.rkt")
          racket/contract)
 
 
@@ -153,6 +154,8 @@
   ((promise/sc (#:covariant)) promise/c #:chaperone)
   ((syntax/sc (#:covariant #:flat)) syntax/c #:flat)
   ((hash/sc (#:invariant #:flat) (#:invariant)) hash/c #:chaperone)
+  ((ihash/sc (#:covariant #:flat) (#:covariant)) ihash/c #:chaperone)
+  ((mhash/sc (#:invariant #:flat) (#:invariant)) mhash/c #:chaperone)
   ((box/sc (#:invariant)) box/c #:chaperone)
   ((parameter/sc (#:contravariant) (#:covariant)) parameter/c #:chaperone)
   ((sequence/sc . (#:covariant)) sequence/c #:impersonator)

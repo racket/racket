@@ -132,7 +132,10 @@
     (pd-t (-thread-cell (-v a)) (b) (-thread-cell (-v a)) (-thread-cell (-v a)))
 
     (pd-t (-HT (-v a) (-v a)) (a) (-HT -Bottom -Bottom) (-HT Univ Univ))
-    (pd-t (-HT (-lst (-v a)) (-lst (-v a))) (a) (-HT -Bottom -Bottom) (-HT Univ Univ))
+    ;; Mixture of Covariant IHT and Invariant MHT make the output the given union.
+    (pd-t (-HT (-lst (-v a)) (-lst (-v a))) (a)
+          (Un (-IHT (-lst -Bottom) (-lst -Bottom)) (-MHT -Bottom -Bottom))
+          (Un (-IHT (-lst Univ) (-lst Univ)) (-MHT Univ Univ)))
     (pd-t (-HT (-v a) (-v a)) (b) (-HT (-v a) (-v a)) (-HT (-v a) (-v a)))
 
     (pd-t (-Param (-v a) (-v b)) (a b) (-Param Univ -Bottom) (-Param -Bottom Univ))

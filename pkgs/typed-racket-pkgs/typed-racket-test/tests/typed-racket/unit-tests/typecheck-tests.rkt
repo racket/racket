@@ -2137,8 +2137,8 @@
        [tc-e (assoc 3 '((a . 5) (b . 7))) (t:Un (-val #f) (-pair (one-of/c 'a 'b) -PosByte))]
        [tc-e (set-remove (set 1 2 3) 'a) (-set -PosByte)]
        ;; don't return HashTableTop
-       [tc-e (hash-remove #hash((a . 5) (b . 7)) 3) (-HT -Symbol -Integer)]
-       [tc-e (hash-remove #hash((a . 5) (b . 7)) 3) (-HT -Symbol -Integer)]
+       [tc-e (hash-remove #hash((a . 5) (b . 7)) 3) (-IHT -Symbol -Integer)]
+       [tc-e (hash-remove #hash((a . 5) (b . 7)) 3) (-IHT -Symbol -Integer)]
        ;; these should actually work
        [tc-e (vector-memq 3 #(a b c)) (t:Un (-val #f) -Index)]
        [tc-e (vector-memv 3 #(a b c)) (t:Un (-val #f) -Index)]
@@ -3129,16 +3129,16 @@
    (tc-l #"foo" -Bytes)
    [tc-l () -Null]
    [tc-l (3 . 4) (-pair -PosByte -PosByte)]
-   [tc-l #hash() (make-Hashtable Univ Univ)]
-   [tc-l #hash((1 . 2) (3 . 4)) (make-Hashtable -Integer -Integer)]
-   [tc-l #hasheq((a . q) (b . w)) (make-Hashtable -Symbol -Symbol)]
+   [tc-l #hash() (-IHT Univ Univ)]
+   [tc-l #hash((1 . 2) (3 . 4)) (-IHT -Integer -Integer)]
+   [tc-l #hasheq((a . q) (b . w)) (-IHT -Symbol -Symbol)]
    [tc-l #hash{[:a . :b]}
-         (let ([rec-type (-mu X (make-Hashtable (t:Un -Symbol X) (t:Un -Symbol X)))])
-           (make-Hashtable (t:Un -Symbol rec-type) (t:Un -Symbol rec-type)))
-         #:expected (-mu X (make-Hashtable (t:Un -Symbol X) (t:Un -Symbol X)))]
+         (let ([rec-type (-mu X (-IHT (t:Un -Symbol X) (t:Un -Symbol X)))])
+           (-IHT (t:Un -Symbol rec-type) (t:Un -Symbol rec-type)))
+         #:expected (-mu X (-IHT (t:Un -Symbol X) (t:Un -Symbol X)))]
    [tc-l #hash{[:a . :b]}
-         (make-Hashtable (-val ':a) (-val ':b))
-         #:expected (t:Un (-val #f) (make-Hashtable (-val ':a) (-val ':b)))]
+         (-IHT (-val ':a) (-val ':b))
+         #:expected (t:Un (-val #f) (-IHT (-val ':a) (-val ':b)))]
    [tc-l #(:a :b)
          (-vec (t:Un (-val ':a) (-val ':b) (-mu X (-vec (t:Un (-val ':a) (-val ':b) X)))))
          #:expected (-mu X (-vec (t:Un (-val ':a) (-val ':b) X)))]

@@ -348,7 +348,8 @@
           (if type
               (subtype* A0 type t*)
               #f)]
-         [((Hashtable: k v) (Sequence: (list k* v*)))
+         [((or (IHashtable: k v)
+               (MHashtable: k v)) (Sequence: (list k* v*)))
           (subtypes* A0 (list k v) (list k* v*))]
          [((Set: t) (Sequence: (list t*)))
           (subtype* A0 t t*)]
@@ -533,11 +534,16 @@
                        (type-equiv? s1 t1)
                        (type-equiv? s2 t2))]
          [((MPair: _ _) (MPairTop:)) A0]
-         [((Hashtable: s1 s2) (Hashtable: t1 t2))
+         [((IHashtable: s1 s2) (IHashtable: t1 t2))
+          (subtype-seq A0
+                       (subtype* s1 t1)
+                       (subtype* s2 t2))]
+         [((MHashtable: s1 s2) (MHashtable: t1 t2))
           (subtype-seq A0
                        (type-equiv? s1 t1)
                        (type-equiv? s2 t2))]
-         [((Hashtable: _ _) (HashtableTop:)) A0]
+         [((IHashtable: _ _) (IHashtableTop:)) A0]
+         [((MHashtable: _ _) (MHashtableTop:)) A0]
          [((Prompt-Tagof: s1 s2) (Prompt-Tagof: t1 t2))
           (subtype-seq A0
                        (type-equiv? s1 t1)

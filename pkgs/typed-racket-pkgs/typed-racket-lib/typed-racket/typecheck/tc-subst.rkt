@@ -54,7 +54,8 @@
     [(tc-results: ts fs os)
      (ret (map st ts) (map sfs fs) (map so os))]
     [(tc-results: ts fs os dt db)
-     (ret (map st ts) (map sfs fs) (map so os) (st dt) db)]))
+     (ret (map st ts) (map sfs fs) (map so os) (st dt) db)]
+    [_ (error 'subst-tc-results "Internal typechecker error: expected tc-results, got ~a" res)]))
 
 
 ;; Substitution of objects into a filter set
@@ -117,8 +118,10 @@
            [(Empty:) -empty-obj]
            ;; the result is not from an annotation, so it isn't a NoObject
            [(NoObject:) -empty-obj]
-           [(Path: p* i*) (make-Path (append p p*) i*)])
-         t)]))
+           [(Path: p* i*) (make-Path (append p p*) i*)]
+           [_ (error 'subst-object "Internal typechecker error: expecting object, got ~a" o)])
+         t)]
+    [_ (error 'subst-object "Internal typechecker error: expecting object, got ~a" t)]))
 
 ;; Substitution of objects into a filter in a filter set
 ;; This is ψ+ [o/x] and ψ- [o/x]
@@ -148,7 +151,8 @@
     [(TypeFilter: t (Path: p i))
      (tf-matcher t p i -filter)]
     [(NotTypeFilter: t (Path: p i))
-     (tf-matcher t p i -not-filter)]))
+     (tf-matcher t p i -not-filter)]
+    [_ (error 'subst-filter "Internal typechecker error: expecting filter, got ~a" f)]))
 
 ;; Determine if the object k occurs free in the given type
 (define (index-free-in? k type)

@@ -549,7 +549,7 @@
              (for/or ([t (in-list (list -Byte -Index -NonNegFixnum -Nat))])
                (and (subtype S t) t)))
            (% cg type t*)]
-          [((Hashtable: k v) (Sequence: (list k* v*)))
+          [((or (IHashtable: k v) (MHashtable: k v)) (Sequence: (list k* v*)))
            (cgen/list V X Y (list k v) (list k* v*))]
           [((Set: t) (Sequence: (list t*)))
            (cg t t*)]
@@ -629,8 +629,9 @@
                t)]
           [((CustodianBox: t) (Evt: t*)) (cg S t*)]
           [((Channel: t) (Evt: t*)) (cg t t*)]
-          ;; we assume all HTs are mutable at the moment
-          [((Hashtable: s1 s2) (Hashtable: t1 t2))
+          [((IHashtable: s1 s2) (IHashtable: t1 t2))
+           (% cset-meet (cg s1 t1) (cg s2 t2))]
+          [((MHashtable: s1 s2) (MHashtable: t1 t2))
            ;; for mutable hash tables, both are invariant
            (% cset-meet (cg/inv s1 t1) (cg/inv s2 t2))]
           ;; syntax is covariant

@@ -49,6 +49,8 @@
     [(syntax/sc: (any/sc:)) syntax?/sc]
     [(promise/sc: (any/sc:)) promise?/sc]
     [(hash/sc: (any/sc:) (any/sc:)) hash?/sc]
+    [(ihash/sc: (any/sc:) (any/sc:)) ihash?/sc]
+    [(mhash/sc: (any/sc:) (any/sc:)) mhash?/sc]
 
     ;; or/sc cases
     [(or/sc: scs ...)

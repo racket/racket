@@ -112,18 +112,19 @@
        [_ (make-HeterogeneousVector (for/list ([l (in-vector (syntax-e #'i))])
                                       (generalize (tc-literal l #f))))])]
     [(~var i (3d hash?))
-     (match (and expected (resolve (restrict expected -HashTop 'orig)))
-       [(Hashtable: k v)
+     (match (and expected (resolve (restrict expected -IHashTop 'orig)))
+       ;; only immutable hash tables can be written as literals.
+       [(IHashtable: k v)
         (let* ([h (syntax-e #'i)]
                [ks (hash-map h (lambda (x y) (tc-literal x k)))]
                [vs (hash-map h (lambda (x y) (tc-literal y v)))])
-          (make-Hashtable
+          (make-IHashtable
             (check-below (apply Un ks) k)
             (check-below (apply Un vs) v)))]
        [_ (let* ([h (syntax-e #'i)]
                  [ks (hash-map h (lambda (x y) (tc-literal x)))]
                  [vs (hash-map h (lambda (x y) (tc-literal y)))])
-            (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
+            (make-IHashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
     [_ Univ]))
 
 

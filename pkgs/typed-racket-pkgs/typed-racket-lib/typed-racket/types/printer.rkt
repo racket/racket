@@ -6,6 +6,7 @@
 (require racket/require racket/match unstable/sequence racket/string racket/promise
          racket/pretty
          racket/list
+         racket/set
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/subtype.rkt"
@@ -375,6 +376,37 @@
   `(,(if object? 'Object 'Class)
     ,@row-var* ,@inits* ,@init-rest* ,@fields* ,@methods* ,@augments*))
 
+;; pair-im/mut : (Listof Type) (Type -> Sexp) -> (values (Listof Sexp) (Listof Type))
+;; Currently only hashes have a mutable/immutable split.
+(define (pair-im/mut lst t->s)
+  (define-values (hashy non-hashy)
+    (partition (λ (t) (equal? 'hash (Type-key t))) lst))
+  (define (iht-sexp a b) `(IHashTable ,(t->s a) ,(t->s b)))
+  (define (mht-sexp a b) `(MHashTable ,(t->s a) ,(t->s b)))
+  (define (ht-sexp a b) `(HashTable ,(t->s a) ,(t->s b)))
+  ;; set cover should have taken care of IHashTop and MHashTop -> HashTableTop
+  (define S (make-mutable-type-set hashy))
+  (let pair-equals ([sexps '()]
+                    [types non-hashy])
+    (cond
+     [(set-empty? S) (values sexps types)]
+     [else
+      (define t (set-first S))
+      (set-remove! S t)
+      (match t
+        [(or (and (app (λ (y) iht-sexp) ctor)
+                  (app (λ (y) make-MHashtable) flip)
+                  (IHashtable: a b))
+             (and (app (λ (y) mht-sexp) ctor)
+                  (app (λ (y) make-IHashtable) flip)
+                  (MHashtable: a b)))
+         (define buddy (flip a b))
+         (if (set-member? S buddy)
+             (begin (set-remove! S buddy)
+                    (pair-equals (cons (ht-sexp a b) sexps) types))
+             (pair-equals sexps (cons t types)))]
+        [t (pair-equals sexps (cons t types))])])))
+
 ;; type->sexp : Type -> S-expression
 ;; convert a type to an s-expression that can be printed
 (define (type->sexp type [ignored-names '()])
@@ -427,6 +459,8 @@
     [(ThreadCellTop:) 'ThreadCellTop]
     [(VectorTop:) 'VectorTop]
     [(HashtableTop:) 'HashTableTop]
+    [(IHashtableTop:) 'IHashTableTop]
+    [(MHashtableTop:) 'MHashTableTop]
     [(MPairTop:) 'MPairTop]
     [(Prompt-TagTop:) 'Prompt-TagTop]
     [(Continuation-Mark-KeyTop:) 'Continuation-Mark-KeyTop]
@@ -470,7 +504,11 @@
     [(Evt: r) `(Evtof ,(t->s r))]
     [(Union: elems)
      (define-values (covered remaining) (cover-union type ignored-names))
-     (cons 'U (append covered (map t->s remaining)))]
+     (define-values (paired remaining*) (pair-im/mut remaining t->s))
+     (define sexps (append covered paired (map t->s remaining*)))
+     (if (and (pair? sexps) (null? (cdr sexps)))
+         (car sexps)
+         (cons 'U sexps))]
     [(Pair: l r) `(Pairof ,(t->s l) ,(t->s r))]
     [(ListDots: dty dbound)
      (define dbound*
@@ -490,7 +528,8 @@
      (if (equal? in out)
          `(Parameterof ,(t->s in))
          `(Parameterof ,(t->s in) ,(t->s out)))]
-    [(Hashtable: k v) `(HashTable ,(t->s k) ,(t->s v))]
+    [(IHashtable: k v) `(IHashTable ,(t->s k) ,(t->s v))]
+    [(MHashtable: k v) `(MHashTable ,(t->s k) ,(t->s v))]
     [(Continuation-Mark-Keyof: rhs)
      `(Continuation-Mark-Keyof ,(t->s rhs))]
     [(Prompt-Tagof: body handler)

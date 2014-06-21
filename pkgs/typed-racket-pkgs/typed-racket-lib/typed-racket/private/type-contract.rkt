@@ -15,15 +15,16 @@
  racket/match racket/syntax racket/list
  racket/format
  racket/dict
+ racket/set
  unstable/list
  unstable/sequence
- (only-in (types abbrev) -Bottom)
+ (only-in (types abbrev) -Bottom -IHashTop -MHashTop)
  (static-contracts instantiate optimize structures combinators)
  ;; TODO make this from contract-req
  (prefix-in c: racket/contract)
  (contract-req)
  (for-syntax racket/base syntax/parse racket/syntax)
- (for-template racket/base racket/contract (utils any-wrap)))
+ (for-template racket/base racket/contract (utils any-wrap hash-combinators)))
 
 (provide
   (c:contract-out
@@ -181,7 +182,6 @@
 (define (same sc)
   (triple sc sc sc))
 
-
 (define (type->static-contract type init-fail #:typed-side [typed-side #t])
   (let/ec return
     (define (fail #:reason reason) (return (init-fail #:reason reason)))
@@ -298,11 +298,17 @@
         [(Refinement: par p?)
          (and/sc (t->sc par) (flat/sc p?))]
         [(Union: elems)
-         (define-values (numeric non-numeric) (partition (λ (t) (equal? 'number (Type-key t))) elems ))
+         (define-values (numeric non-numeric)
+           (partition (λ (t) (equal? 'number (Type-key t))) elems))
          (define numeric-sc (numeric-type->static-contract (apply Un numeric)))
-         (if numeric-sc
-             (apply or/sc numeric-sc (map t->sc non-numeric))
-             (apply or/sc (map t->sc elems)))]
+         (define-values (hashy non-hashy)
+           (partition (λ (t) (equal? 'hash (Type-key t))) non-numeric))
+         (define hash-sc (hash-types->static-contract (make-mutable-type-set hashy) t->sc only-untyped))
+         (cond [numeric-sc
+                (if hash-sc
+                    (apply or/sc numeric-sc hash-sc (map t->sc non-hashy))
+                    (apply or/sc numeric-sc (map t->sc non-numeric)))]
+               [else (apply or/sc (map t->sc elems))])]
         [(and t (Function: _)) (t->sc/fun t)]
         [(Set: t) (set/sc (t->sc t))]
         [(Sequence: ts) (apply sequence/sc (map t->sc ts))]
@@ -330,7 +336,8 @@
         [(VectorTop:) (only-untyped vector?/sc)]
         [(BoxTop:) (only-untyped box?/sc)]
         [(ChannelTop:) (only-untyped channel?/sc)]
-        [(HashtableTop:) (only-untyped hash?/sc)]
+        [(IHashtableTop:) (only-untyped ihash?/sc)]
+        [(MHashtableTop:) (only-untyped mhash?/sc)]
         [(MPairTop:) (only-untyped mpair?/sc)]
         [(ThreadCellTop:) (only-untyped thread-cell?/sc)]
         [(Prompt-TagTop:) (only-untyped prompt-tag?/sc)]
@@ -462,8 +469,10 @@
          (flat/sc #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v))) v)]
         [(Param: in out) 
          (parameter/sc (t->sc in) (t->sc out))]
-        [(Hashtable: k v)
-         (hash/sc (t->sc k) (t->sc v))]
+        [(IHashtable: k v)
+         (ihash/sc (t->sc k) (t->sc v))]
+        [(MHashtable: k v)
+         (mhash/sc (t->sc k) (t->sc v))]
         [(Channel: t)
          (channel/sc (t->sc t))]
         [else
@@ -551,6 +560,40 @@
        (if (= (length arrs) 1)
            ((f #f) (first arrs))
            (case->/sc (map (f #t) arrs)))])]))
+
+;; Hash types can contain immutable and mutable versions of the same type. Pair them up.
+(define (hash-types->static-contract types t->sc only-untyped)
+  (cond
+   [(and (set-member? types -IHashTop)
+         (set-member? types -MHashTop))
+    (only-untyped hash?/sc)]
+   [else
+    (let pair-equals ([ctcs '()] [worth-it? #f])
+      (cond
+       [(set-empty? types) (and worth-it? (apply or/sc ctcs))]
+       [else
+        (define t (set-first types))
+        (set-remove! types t)
+        (match t
+          [(or (and (app (lambda (y) ihash/sc) ctor)
+                    (app (lambda (y) make-MHashtable) flip)
+                    (IHashtable: a b))
+               (and (app (lambda (y) mhash/sc) ctor)
+                    (app (lambda (y) make-IHashtable) flip)
+                    (MHashtable: a b)))
+           (define actc (t->sc a))
+           (define bctc (t->sc b))
+           (define buddy (flip a b))
+           (if (set-member? types buddy)
+               (begin (set-remove! types buddy)
+                      (pair-equals (cons (hash/sc actc bctc) ctcs)
+                                   ;; Found a pair. Worth it to nest or/c contracts.
+                                   #t))
+               (pair-equals (cons (ctor actc bctc) ctcs) worth-it?))]
+          [(== -IHashTop type-equal?)
+           (pair-equals (cons (only-untyped ihash?/sc) ctcs) worth-it?)]
+          [(== -MHashTop type-equal?)
+           (pair-equals (cons (only-untyped mhash?/sc) ctcs) worth-it?)])]))]))
 
 (module predicates racket/base
   (require racket/extflonum)
