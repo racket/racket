@@ -1196,8 +1196,17 @@
  (-poly (a b) (->opt [Sym] (make-Prompt-Tagof a b)))]
 ;; default-continuation-prompt-tag is defined in "base-contracted.rkt"
 [call-with-current-continuation
- (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
-[call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
+ (-polydots (a b c)
+   (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
+          (-> (-> (->... (list a) (c c) (Un))
+                  (make-ValuesDots (list (-result b)) c 'c))
+              (make-ValuesDots (list (-result (Un a b))) c 'c))))]
+[call/cc
+ (-polydots (a b c)
+   (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
+          (-> (-> (->... (list a) (c c) (Un))
+                  (make-ValuesDots (list (-result b)) c 'c))
+              (make-ValuesDots (list (-result (Un a b))) c 'c))))]
 [call-with-composable-continuation
  (-polydots (b c a)
    (-> ;; takes a continuation and should return the same
@@ -1208,8 +1217,17 @@
        ;; return type here
        (make-ValuesDots '() a 'a)))]
 [call-with-escape-continuation
- (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
-[call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
+ (-polydots (a b c)
+   (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
+          (-> (-> (->... (list a) (c c) (Un))
+                  (make-ValuesDots (list (-result b)) c 'c))
+              (make-ValuesDots (list (-result (Un a b))) c 'c))))]
+[call/ec
+ (-polydots (a b c)
+   (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
+          (-> (-> (->... (list a) (c c) (Un))
+                  (make-ValuesDots (list (-result b)) c 'c))
+              (make-ValuesDots (list (-result (Un a b))) c 'c))))]
 [call-with-continuation-barrier (-poly (a) (-> (-> a) a))]
 [continuation-prompt-available? (-> (make-Prompt-TagTop) B)]
 [continuation?
