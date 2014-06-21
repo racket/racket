@@ -264,6 +264,9 @@
    [FAIL (make-ValuesDots (list) -Symbol 'a) (make-ValuesDots (list (-result -String)) -String 'a)]
    [(-values (list -Bottom)) (-values (list -String -Symbol))]
 
+   [(-> Univ -Bottom) (-> Univ (-values (list -String -Symbol)))]
+   [(-> Univ -Bottom) (-> Univ (-values-dots null -String 'x))]
+
    ;; keyword function types
    [(->key #:x -Symbol #f Univ) (->key Univ)]
    [FAIL (->key #:x -Symbol #t Univ) (->key Univ)]
