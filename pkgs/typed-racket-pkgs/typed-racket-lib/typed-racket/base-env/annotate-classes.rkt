@@ -4,7 +4,11 @@
          syntax/parse/experimental/template
          "../private/parse-classes.rkt"
          "../private/syntax-properties.rkt"
-         (for-label "colon.rkt"))
+         "../utils/literal-syntax-class.rkt"
+         (for-meta -1 (only-in "base-types-extra.rkt" U ->))
+         (for-label "colon.rkt"
+                    (only-in "base-types-extra.rkt" Values)
+                    (only-in racket/base values)))
 (provide (all-defined-out))
 
 ;; Data definitions
@@ -48,12 +52,24 @@
            #:attr ty #f
            #:with ann-name #'n))
 
-(define-splicing-syntax-class (param-annotated-name trans)
+(define-literal-syntax-class #:for-label Values)
+(define-literal-syntax-class #:for-label values)
+
+(define-splicing-syntax-class cont-annotated-name
   #:attributes (name ty ann-name)
-  #:description "type-annotated identifier"
+  #:description "type-annotated continuation identifier"
   #:literal-sets (colon)
   (pattern [~seq name:id : ty]
-           #:with ann-name (type-label-property #'name (trans #'ty))))
+           #:with ann-name (type-label-property
+                            #'name
+                            (syntax-parse #'ty
+                              [((~or :Values^ :values^) tys ... dty :ddd/bound)
+                               #'(tys ... dty -> (U))]
+                              [((~or :Values^ :values^) tys ... dty _:ddd)
+                               #'(tys ... dty -> (U))]
+                              [((~or :Values^ :values^) tys ...)
+                               #'(tys ... -> (U))]
+                              [t #'(t -> (U))]))))
 
 (define-syntax-class annotated-binding
   #:attributes (name ty ann-name binding rhs)

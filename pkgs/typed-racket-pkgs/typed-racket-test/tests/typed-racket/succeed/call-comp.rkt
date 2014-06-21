@@ -15,3 +15,6 @@
  tag
  (λ: ([x : Integer]) (+ 1 x)))
 
+((inst call/ec Integer Integer Integer) (lambda ([f : (Integer Integer -> Nothing)]) (f 0 1)))
+(let/cc k : (values String Symbol Boolean)
+   (+ 5 (k "result arity doesn't matter" 'hahaha #t)))
