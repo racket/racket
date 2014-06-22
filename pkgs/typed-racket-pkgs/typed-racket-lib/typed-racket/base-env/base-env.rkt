@@ -51,12 +51,15 @@
 [equal?/recur (-> Univ Univ (-> Univ Univ Univ) B)]
 [immutable?
  (-poly (a b)
-   (cl->*
-    (->* (list (-IHT a b)) B : -true-filter)
-    (->* (list -MHashTop) B : -false-filter)
-    (->* (list (-HT a b)) B : (-FS (-filter (-IHT a b) 0) (-filter (-MHT a b) 0)))
-    (->* (list -HashTop)  B : (-FS (-filter -IHashTop  0) (-filter -MHashTop  0)))
-    (-> Univ B)))]
+   (->* (list Univ) B :
+        (-FS (-and (-not-filter (-MHT a b) 0)
+                   (-not-filter -MHashTop 0)
+                   (-imp (-filter (-HT a b) 0) (-filter (-IHT a b) 0))
+                   (-imp (-filter -HashTop 0) (-filter -IHashTop 0)))
+             (-and (-not-filter (-IHT a b) 0)
+                   (-not-filter -IHashTop 0)
+                   (-imp (-filter (-HT a b) 0) (-filter (-MHT a b) 0))
+                   (-imp (-filter -HashTop 0) (-filter -MHashTop 0))))))]
 [prop:equal+hash -Struct-Type-Property]
 
 ;; Section 4.1.1 (racket/bool)

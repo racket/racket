@@ -137,8 +137,7 @@
             (begin (set-remove! types buddy)
                    (recur (on-pair ctor paired (list a b)) unpaired))
             (recur paired (on-unpair t unpaired)))]
-       [(? MHashtableTop?)
-        (recur paired (on-unpair t unpaired))])])))
+       [t (recur paired (on-unpair t unpaired))])])))
 
 (provide/cond-contract
  [unfold (Mu? . -> . Type/c)]
