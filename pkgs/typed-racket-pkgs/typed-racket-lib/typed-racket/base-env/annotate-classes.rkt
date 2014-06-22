@@ -63,10 +63,8 @@
            #:with ann-name (type-label-property
                             #'name
                             (syntax-parse #'ty
-                              [((~or :Values^ :values^) tys ... dty :ddd/bound)
-                               #'(tys ... dty -> (U))]
-                              [((~or :Values^ :values^) tys ... dty _:ddd)
-                               #'(tys ... dty -> (U))]
+                              [((~or :Values^ :values^) tys ... dty b:ddd)
+                               #'(tys ... dty b -> (U))]
                               [((~or :Values^ :values^) tys ...)
                                #'(tys ... -> (U))]
                               [t #'(t -> (U))]))))
