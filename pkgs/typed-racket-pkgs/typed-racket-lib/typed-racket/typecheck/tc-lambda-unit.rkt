@@ -19,7 +19,6 @@
 (export tc-lambda^)
 
 (define-struct/cond-contract lam-result ([args (listof (list/c identifier? Type/c))]
-                                         [kws (listof (list/c keyword? identifier? Type/c boolean?))]
                                          [rest (or/c #f (list/c identifier? Type/c))]
                                          [drest (or/c #f (list/c identifier? (cons/c Type/c symbol?)))]
                                          [body tc-results/c])
@@ -27,15 +26,13 @@
 
 (define (lam-result->type lr)
   (match lr
-    [(struct lam-result ((list (list arg-ids arg-tys) ...) (list (list kw kw-id kw-ty req?) ...) rest drest body))
+    [(struct lam-result ((list (list arg-ids arg-tys) ...) rest drest body))
      (let ([arg-names (append arg-ids
                               (if rest (list (first rest)) null)
-                              (if drest (list (first drest)) null)
-                              kw-id)])
+                              (if drest (list (first drest)) null))])
        (make-arr*
         arg-tys
         (abstract-results body arg-names)
-        #:kws (map make-Keyword kw kw-ty req?)
         #:rest (and rest (second rest))
         #:drest (and drest (second drest))))]))
 
@@ -92,7 +89,6 @@
        (make-lam-result (for/list ([al (in-list arg-list)]
                                    [at (in-list arg-types)])
                                   (list al at))
-                        null
                         (and rest-ty (list (or rest (generate-temporary)) rest-ty))
                         (and drest (list (or rest (generate-temporary)) drest))
                         (tc-body/check body ret-ty))))
@@ -176,7 +172,6 @@
      arg-list arg-types
      (lam-result
        (map list arg-list arg-types)
-       null
        #f
        #f
        (tc-body/check body #f)))))
@@ -215,7 +210,6 @@
                (cons (make-ListDots rest-type bound) arg-types)
                (lam-result
                  combined-args
-                 null
                  #f
                  (list rest-id (cons rest-type bound))
                  (tc-body/check body #f)))))]
@@ -227,7 +221,6 @@
              (cons (make-Listof rest-type) arg-types)
              (lam-result
                combined-args
-               null
                (list rest-id rest-type)
                #f
                (tc-body/check body #f))))]
@@ -237,7 +230,6 @@
            arg-list arg-types
            (lam-result
              combined-args
-             null
              #f
              #f
              (tc-body/check body #f)))]))]))
@@ -359,7 +351,7 @@
           [(Function: (list)) #f]
           [_ #t]))
       ;; TODO improve error message.
-      (tc-error/expr #:return (list (lam-result null null (list (generate-temporary) Univ) #f (ret (Un))))
+      (tc-error/expr #:return (list (lam-result null (list (generate-temporary) Univ) #f (ret (Un))))
                      "Expected a function of type ~a, but got a function with the wrong arity"
                      expected-type)
       (apply append
