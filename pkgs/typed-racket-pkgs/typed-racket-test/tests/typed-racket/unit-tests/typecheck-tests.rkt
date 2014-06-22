@@ -3094,6 +3094,14 @@
           (tr:define (f #:foo [foo 'foo]) foo)
           (error "dummy"))
         #:msg #rx"expected: String.*given: 'foo"]
+
+       ;; Make sure -Bottom and multiple values play nice together.
+       [tc-e
+        (let ()
+          (define-values (a b) (error 'nyi))
+          b)
+        -Bottom]
+
         )
 
   (test-suite

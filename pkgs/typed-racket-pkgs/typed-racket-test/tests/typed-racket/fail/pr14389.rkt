@@ -1,5 +1,5 @@
 #;
-(exn-pred (regexp-quote "in: (for/flvector"))
+(exn-pred (regexp-quote "in: from"))
 #lang typed/racket/base
 
 ;; Test for PR 14389. Make sure that the reported source location
