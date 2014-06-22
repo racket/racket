@@ -231,6 +231,27 @@
     [infer-t (-> (-values (list -Bottom))) (-> (-values (list (-v b) (-v b)))) #:vars '(a)]
     [infer-t (-> (-values (list (-v a)))) (-> (-values (list (-v b) (-v b)))) #:vars '(a)]
 
+    [infer-t (cl->*
+              (->* (list (-HT (-v a) (-v b)) (-v c) (-> (-v b) (-v d)))
+                   (-IHT (Un (-v a) (-v c)) (Un (-v b) (-v d))) :
+                   (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0)))
+              (->* (list (-HT (-v a) (-v b)) (-v c) (-> (-v b) (-v d)) (-> (-v d)))
+                   (-IHT (Un (-v a) (-v c)) (Un (-v b) (-v d))) :
+                   (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0)))
+;; Broken when commented.
+#;
+              (->* (list (-HT (-v a) (-v b)) (-v c) (-> (-v b) (-v b)))
+                   (-IHT (Un (-v a) (-v c)) (-v b)) :
+                   (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0)))
+#;
+              (->* (list (-HT (-v a) (-v b)) (-v c) (-> (-v b) (-v b)) (-> (-v b)))
+                   (-IHT (Un (-v a) (-v c)) (-v b)) :
+                   (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0))))
+             (->* (list (-HT -Symbol Univ) -Symbol (-poly (a) (-> a a)) (-> Univ))
+                  (-IHT -Symbol Univ) :
+                  (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0)))
+             #:vars '(a b c d)]
+
     ;; Currently Broken
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))
     [i2-t (-v a) N ('a N)]
