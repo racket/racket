@@ -15,27 +15,30 @@
 (define mode-surrogate drracket:modes:mode-surrogate)
 (define mode-repl-submit drracket:modes:mode-repl-submit)
 (define mode-matches-language drracket:modes:mode-matches-language)
+(define mode-intended-to-edit-programs? drracket:modes:mode-intended-to-edit-programs?)
 (define struct:mode struct:drracket:modes:mode)
-
 
 (define modes (list))
 
 (define (get-modes) modes)
 
-(define (add-mode name surrogate repl-submit matches-language)
-  (let ([new-mode (drracket:modes:mode name 
-                                       surrogate
-                                       repl-submit
-                                       matches-language)])
-    (for ([old-mode (in-list modes)])
-      (when (equal? (mode-name old-mode) name)
-        (raise-argument-error
-         'drracket:modes:add-mode
-         "name that is not already used by any other mode"
-         0
-         name surrogate repl-submit matches-language)))
-    (set! modes (cons new-mode modes))
-    new-mode))
+(define (add-mode name surrogate repl-submit matches-language
+                  #:intended-to-edit-programs? [intended-to-edit-programs? #t])
+  (define new-mode
+    (drracket:modes:mode name 
+                         surrogate
+                         repl-submit
+                         matches-language
+                         intended-to-edit-programs?))
+  (for ([old-mode (in-list modes)])
+    (when (equal? (mode-name old-mode) name)
+      (raise-argument-error
+       'drracket:modes:add-mode
+       "name that is not already used by any other mode"
+       0
+       name surrogate repl-submit matches-language)))
+  (set! modes (cons new-mode modes))
+  new-mode)
 
 (define (not-a-language-language? l)
   (and (not (null? l))
@@ -66,4 +69,5 @@
    (λ (l) 
      (and l
           (or (not-a-language-language? l)
-              (ormap (λ (x) (regexp-match #rx"Algol" x)) l))))))
+              (ormap (λ (x) (regexp-match #rx"Algol" x)) l))))
+   #:intended-to-edit-programs? #f))

@@ -2537,9 +2537,12 @@
   
   ;; in-module-language : tab -> module-language-settings or #f
   (define (tab-in-module-language tab)
-    (define settings (send (send tab get-defs) get-next-settings))
+    (define defs (send tab get-defs))
+    (define settings (send defs get-next-settings))
+    (define mode (send defs get-current-mode))
     (and (is-a? (drracket:language-configuration:language-settings-language settings)
                 module-language<%>)
+         (drracket:modes:mode-intended-to-edit-programs? mode)
          (drracket:language-configuration:language-settings-settings settings)))
   
   (define (initialize-prefs-panel)
@@ -2635,6 +2638,7 @@
       
       (define current-mode #f)
       
+      (define/public (get-current-mode) current-mode)
       (define/public (set-current-mode mode)
         (set! current-mode mode)
         (define surrogate (drracket:modes:mode-surrogate mode))

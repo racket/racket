@@ -57,3 +57,5 @@
 (define pkg-desc "The DrRacket programming environment")
 
 (define pkg-authors '(robby))
+
+(define version "1.1")

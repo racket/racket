@@ -46,7 +46,11 @@
 (define-signature drracket:modes^ extends drracket:modes-cm^
   (add-mode
    get-modes
-   (struct mode (name surrogate repl-submit matches-language) 
+   (struct mode (name
+                 surrogate
+                 repl-submit
+                 matches-language
+                 intended-to-edit-programs?)
      #:omit-constructor)))
 (define-signature drracket:modes/int^ extends drracket:modes^
   (add-initial-modes))
