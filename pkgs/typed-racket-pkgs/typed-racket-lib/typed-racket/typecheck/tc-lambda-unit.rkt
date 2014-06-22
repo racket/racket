@@ -27,14 +27,12 @@
 (define (lam-result->type lr)
   (match lr
     [(struct lam-result ((list (list arg-ids arg-tys) ...) rest drest body))
-     (let ([arg-names (append arg-ids
-                              (if rest (list (first rest)) null)
-                              (if drest (list (first drest)) null))])
-       (make-arr*
-        arg-tys
-        (abstract-results body arg-names)
-        #:rest (and rest (second rest))
-        #:drest (and drest (second drest))))]))
+     (make-arr*
+      arg-tys
+      (abstract-results body arg-ids
+                        #:rest-id (or (and rest (first rest))) (and drest (first drest)))
+      #:rest (and rest (second rest))
+      #:drest (and drest (second drest)))]))
 
 (define-syntax-class cl-rhs
   #:literal-sets (kernel-literals)
