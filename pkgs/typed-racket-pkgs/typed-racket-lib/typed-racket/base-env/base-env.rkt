@@ -814,6 +814,10 @@
                      (->* (list (-HT a b) c (-> b d)) (-IHT (Un a c) (Un b d)) :
                           (-FS (-filter (-IHT a b) 0) (-filter (-IHT a b) 0)))
                      (->* (list (-HT a b) c (-> b d) (-> d)) (-IHT (Un a c) (Un b d)) :
+                          (-FS (-filter (-IHT a b) 0) (-filter (-IHT a b) 0)))
+                     (->* (list (-HT a b) c (-> b b)) (-IHT (Un a c) b) :
+                          (-FS (-filter (-IHT a b) 0) (-filter (-IHT a b) 0)))
+                     (->* (list (-HT a b) c (-> b b) (-> b)) (-IHT (Un a c) b) :
                           (-FS (-filter (-IHT a b) 0) (-filter (-IHT a b) 0)))))]
 [hash-remove (-poly (a b) (cl->*
                            (->* (list (-HT a b) Univ) (-IHT a b) :
