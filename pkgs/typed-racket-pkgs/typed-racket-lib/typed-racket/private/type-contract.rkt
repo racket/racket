@@ -308,6 +308,10 @@
                 (if hash-sc
                     (apply or/sc numeric-sc hash-sc (map t->sc non-hashy))
                     (apply or/sc numeric-sc (map t->sc non-numeric)))]
+               [hash-sc
+                (if (null? non-hashy)
+                    hash-sc
+                    (apply or/sc hash-sc (map t->sc non-hashy)))]
                [else (apply or/sc (map t->sc elems))])]
         [(and t (Function: _)) (t->sc/fun t)]
         [(Set: t) (set/sc (t->sc t))]

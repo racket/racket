@@ -6,6 +6,7 @@
 
 (require "simple.rkt" "structural.rkt"
          (for-template racket/base racket/list racket/set racket/promise racket/mpair
+                       racket/contract/base
                        racket/class))
 (provide (all-defined-out))
 
