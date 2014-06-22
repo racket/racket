@@ -113,10 +113,11 @@
                                       (equal? positionals (take dom lpositionals))))]))])
         ok?)))
 
-;; ∀ (A B C D) (Mutable-Setof Type/c?) B C (-> A B (Listof Type/c?) B) (-> A C (Listof Type/c?) C)
-;;   (-> B C D) (HashTable Symbol A) -> D
+;; ∀ (A B C D) (Mutable-Setof Type/c?) B C (-> Symbol B (Listof Type/c?) B) (-> Type/c? C C)
+;;   (-> B C D) -> D
 ;; Destructively recurs through the given set of types to pair up /known/ mutable/immutable type
 ;; pairs, and combines them in a generic manner.
+;; Think of it as a tandem fold over pairable and unpairable types that get combined at the end.
 (define (pair-equals types bot-paired bot-unpaired on-pair on-unpair combine)
   (let recur ([paired bot-paired] [unpaired bot-unpaired])
    (cond

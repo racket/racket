@@ -560,13 +560,20 @@
            ((f #f) (first arrs))
            (case->/sc (map (f #t) arrs)))])]))
 
-;; Hash types can contain immutable and mutable versions of the same type. Pair them up.
+;; hash-types->static-contract :
+;; (-> (Mutable-Setof Type/c?) (-> Type/c? Static-Contract) (-> Static-Contract Static-Contract)
+;;     (or/c #f Static-Contract))
+;; Hash types can contain immutable and mutable versions of the same type.
+;; Given a mutable set (that we destructively remove types from) of types with the 'hash key,
+;; produce a single contract for (U (IHashTable A B) (MHashTable A B)) that doesn't care about mutability.
+;; All types that don't have a flip partner get thrown into a list to be or/sc'd with.
 (define (hash-types->static-contract types t->sc only-untyped)
   (cond
    [(and (set-member? types -IHashTop)
          (set-member? types -MHashTop))
     (only-untyped hash?/sc)]
    [else
+    ;; Building a (nested) or/sc contract is only "worth it" if we can remove a duplicate contract.
     (define worth-it? (box #f))
     (pair-equals types '() '()
                  (λ (ctor paired ab)
