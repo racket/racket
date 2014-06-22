@@ -14,11 +14,14 @@
          tc-results->values)
 
 
-(define/cond-contract (abstract-results results arg-names)
-  (tc-results/c (listof identifier?) . -> . SomeValues/c)
+(define/cond-contract (abstract-results results arg-names #:rest-id [rest-id #f])
+  ((tc-results/c (listof identifier?)) (#:rest-id (or/c #f identifier?))
+   . ->* . SomeValues/c)
+  (define arg-names* (append arg-names (if rest-id (list rest-id) null)))
   (tc-results->values
     (replace-names
-      (for/list ([(nm k) (in-indexed (in-list arg-names))]) (list nm (make-Path null (list 0 k))))
+      (for/list ([(nm k) (in-indexed (in-list arg-names*))])
+        (list nm (make-Path null (list 0 k))))
       results)))
 
 (define (tc-results->values tc)
