@@ -232,18 +232,10 @@
     [infer-t (-> (-values (list (-v a)))) (-> (-values (list (-v b) (-v b)))) #:vars '(a)]
 
     [infer-t (cl->*
-              (->* (list (-HT (-v a) (-v b)) (-v c) (-> (-v b) (-v d)))
-                   (-IHT (Un (-v a) (-v c)) (Un (-v b) (-v d))) :
-                   (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0)))
               (->* (list (-HT (-v a) (-v b)) (-v c) (-> (-v b) (-v d)) (-> (-v d)))
                    (-IHT (Un (-v a) (-v c)) (Un (-v b) (-v d))) :
                    (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0)))
 ;; Broken when commented.
-#;
-              (->* (list (-HT (-v a) (-v b)) (-v c) (-> (-v b) (-v b)))
-                   (-IHT (Un (-v a) (-v c)) (-v b)) :
-                   (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0)))
-#;
               (->* (list (-HT (-v a) (-v b)) (-v c) (-> (-v b) (-v b)) (-> (-v b)))
                    (-IHT (Un (-v a) (-v c)) (-v b)) :
                    (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0))))
