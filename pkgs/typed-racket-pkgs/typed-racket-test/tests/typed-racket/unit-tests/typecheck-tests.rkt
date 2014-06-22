@@ -3094,6 +3094,13 @@
           (tr:define (f #:foo [foo 'foo]) foo)
           (error "dummy"))
         #:msg #rx"expected: String.*given: 'foo"]
+
+       [tc-e
+        (let ()
+          (define-values (a b) (error 'nyi))
+          b)
+        -Bottom]
+
         )
 
   (test-suite

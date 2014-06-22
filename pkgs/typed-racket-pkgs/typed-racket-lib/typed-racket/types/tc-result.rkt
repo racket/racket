@@ -91,7 +91,7 @@
 
 ;; make-tc-result*: Type/c FilterSet/c Object? -> tc-result?
 ;; Smart constructor for a tc-result.
-(define (-tc-result type filter object)
+(define (-tc-result type [filter -top-filter] [object -empty-obj])
   (cond
     [(or (equal? type -Bottom) (equal? filter -bot-filter))
      (tc-result -Bottom -bot-filter object)]
@@ -146,22 +146,20 @@
           [dbound symbol?])
          [res tc-results/c])])
 
-(define (combine-results tcs)
-  (match tcs
-    [(list (tc-result: t f o) ...)
-     (ret t f o)]))
-
 (define tc-result-equal? equal?)
 
 (provide tc-result: tc-results: tc-any-results: tc-result1: Result1: Results:
          tc-results)
 (provide/cond-contract
- [rename -tc-result tc-result (Type/c FilterSet/c Object? . c:-> . tc-result?)]
- [combine-results ((c:listof tc-result?) . c:-> . tc-results?)]
+ [rename -tc-result tc-result
+   (c:case->
+     (Type/c . c:-> . tc-result?)
+     (Type/c FilterSet/c Object? . c:-> . tc-result?))]
  [tc-any-results ((c:or/c Filter/c NoFilter?) . c:-> . tc-any-results?)]
  [tc-result-t (tc-result? . c:-> . Type/c)]
  [rename tc-results-ts* tc-results-ts (tc-results? . c:-> . (c:listof Type/c))]
  [tc-result-equal? (tc-result? tc-result? . c:-> . boolean?)]
+ [tc-result? (c:any/c . c:-> . boolean?)]
  [tc-results? (c:any/c . c:-> . boolean?)]
  [tc-results/c c:flat-contract?]
  [tc-results1/c c:flat-contract?]
