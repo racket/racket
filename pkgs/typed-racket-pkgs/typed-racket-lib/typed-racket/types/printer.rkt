@@ -381,31 +381,13 @@
 (define (pair-im/mut lst t->s)
   (define-values (hashy non-hashy)
     (partition (λ (t) (equal? 'hash (Type-key t))) lst))
-  (define (iht-sexp a b) `(IHashTable ,(t->s a) ,(t->s b)))
-  (define (mht-sexp a b) `(MHashTable ,(t->s a) ,(t->s b)))
-  (define (ht-sexp a b) `(HashTable ,(t->s a) ,(t->s b)))
+  (define (paired ctor paired ab)
+    (cons `(HashTable ,(t->s (first ab)) ,(t->s (second ab))) paired))
+  (define unpaired cons)
   ;; set cover should have taken care of IHashTop and MHashTop -> HashTableTop
   (define S (make-mutable-type-set hashy))
-  (let pair-equals ([sexps '()]
-                    [types non-hashy])
-    (cond
-     [(set-empty? S) (values sexps types)]
-     [else
-      (define t (set-first S))
-      (set-remove! S t)
-      (match t
-        [(or (and (app (λ (y) iht-sexp) ctor)
-                  (app (λ (y) make-MHashtable) flip)
-                  (IHashtable: a b))
-             (and (app (λ (y) mht-sexp) ctor)
-                  (app (λ (y) make-IHashtable) flip)
-                  (MHashtable: a b)))
-         (define buddy (flip a b))
-         (if (set-member? S buddy)
-             (begin (set-remove! S buddy)
-                    (pair-equals (cons (ht-sexp a b) sexps) types))
-             (pair-equals sexps (cons t types)))]
-        [t (pair-equals sexps (cons t types))])])))
+  (pair-equals S '() non-hashy
+               paired unpaired values))
 
 ;; type->sexp : Type -> S-expression
 ;; convert a type to an s-expression that can be printed
@@ -458,8 +440,6 @@
     [(ChannelTop:) 'ChannelTop]
     [(ThreadCellTop:) 'ThreadCellTop]
     [(VectorTop:) 'VectorTop]
-    [(HashtableTop:) 'HashTableTop]
-    [(IHashtableTop:) 'IHashTableTop]
     [(MHashtableTop:) 'MHashTableTop]
     [(MPairTop:) 'MPairTop]
     [(Prompt-TagTop:) 'Prompt-TagTop]

@@ -542,7 +542,6 @@
           (subtype-seq A0
                        (type-equiv? s1 t1)
                        (type-equiv? s2 t2))]
-         [((IHashtable: _ _) (IHashtableTop:)) A0]
          [((MHashtable: _ _) (MHashtableTop:)) A0]
          [((Prompt-Tagof: s1 s2) (Prompt-Tagof: t1 t2))
           (subtype-seq A0

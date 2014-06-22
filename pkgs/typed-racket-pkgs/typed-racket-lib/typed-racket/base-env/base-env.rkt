@@ -52,7 +52,7 @@
 [immutable?
  (-poly (a b)
    (cl->*
-    (->* (list -IHashTop) B : -true-filter)
+    (->* (list (-IHT a b)) B : -true-filter)
     (->* (list -MHashTop) B : -false-filter)
     (->* (list (-HT a b)) B : (-FS (-filter (-IHT a b) 0) (-filter (-MHT a b) 0)))
     (->* (list -HashTop)  B : (-FS (-filter -IHashTop  0) (-filter -MHashTop  0)))
@@ -775,8 +775,8 @@
 [hash-weak? (-> -HashTop B)]
 ;; not a very useful type, but better than nothing
 [hash (-> (-IHT (Un) (Un)))]
-[hasheqv (-poly (a b) (-> (-IHT a b)))]
-[hasheq (-poly (a b) (-> (-IHT a b)))]
+[hasheqv (-> (-IHT (Un) (Un)))]
+[hasheq (-> (-IHT (Un) (Un)))]
 [make-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-MHT a b)))]
 [make-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-MHT a b)))]
 [make-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-MHT a b)))]
@@ -786,9 +786,14 @@
 [make-immutable-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-IHT a b)))]
 [make-immutable-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-IHT a b)))]
 [make-immutable-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-IHT a b)))]
-;; intentionally weak. Would be nice if it immediately refined the input object.
-[hash-set (-poly (a b) ((-HT a b) a b . -> . (-IHT a b)))]
-[hash-set! (-poly (a b) ((-HT a b) a b . -> . -Void))]
+;; intentionally weak input types for backward compatibility.
+;; Operators expecting Mutable/immutable hashes have equal +/- filters to immediately refine
+;; the type environment since they error otherwise.
+[hash-set (-poly (a b c d) (->* (list (-HT a b) c d)
+                                (-IHT (Un a c) (Un b d)) : 
+                                (-FS (-filter (-IHT a b) 0) (-filter (-IHT a b) 0))))]
+[hash-set! (-poly (a b) (->* (list (-HT a b) a b) -Void :
+                             (-FS (-filter (-MHT a b) 0) (-filter (-MHT a b) 0))))]
 [hash-ref (-poly (a b c)
                  (cl-> [((-HT a b) a) b]
                        [((-HT a b) a (-val #f)) (-opt b)]
@@ -796,21 +801,30 @@
                        [(-HashTop a) Univ]
                        [(-HashTop a (-val #f)) Univ]
                        [(-HashTop a (-> c)) Univ]))]
-[hash-ref! (-poly (a b) (-> (-MHT a b) a (-> b) b))]
+[hash-ref! (-poly (a b) (->* (list (-HT a b) a (-> b)) b :
+                             (-FS (-filter (-MHT a b) 0) (-filter (-MHT a b) 0))))]
 [hash-has-key? (-HashTop Univ . -> . B)]
-;; Another immediate refinement to MHT would-be-nice
 [hash-update! (-poly (a b)
-                     (cl-> [((-HT a b) a (-> b b)) -Void]
-                           [((-HT a b) a (-> b b) (-> b)) -Void]))]
-[hash-update (-poly (a b)
-                    (cl-> [((-HT a b) a (-> b b)) (-IHT a b)]
-                          [((-HT a b) a (-> b b) (-> b)) (-IHT a b)]))]
-[hash-remove (-poly (a b) (cl-> [((-HT a b) Univ) (-IHT a b)]
-                                [(-IHashTop Univ) -IHashTop]
-                                [(-HashTop Univ) -HashTop]))]
-;; refine te MHT
-[hash-remove! (-poly (a b) (cl-> [((-HT a b) a) -Void]
-                                 [(-HashTop a) -Void]))]
+                     (cl->* (->* (list (-HT a b) a (-> b b)) -Void :
+                                 (-FS (-filter (-MHT a b) 0) (-filter (-MHT a b) 0)))
+                            (->* (list (-HT a b) a (-> b b) (-> b)) -Void :
+                                 (-FS (-filter (-MHT a b) 0) (-filter (-MHT a b) 0)))))]
+[hash-update (-poly (a b c d)
+                    (cl->*
+                     (->* (list (-HT a b) c (-> b d)) (-IHT (Un a c) (Un b d)) :
+                          (-FS (-filter (-IHT a b) 0) (-filter (-IHT a b) 0)))
+                     (->* (list (-HT a b) c (-> b d) (-> d)) (-IHT (Un a c) (Un b d)) :
+                          (-FS (-filter (-IHT a b) 0) (-filter (-IHT a b) 0)))))]
+[hash-remove (-poly (a b) (cl->*
+                           (->* (list (-HT a b) Univ) (-IHT a b) :
+                                (-FS (-filter (-IHT a b) 0) (-filter (-IHT a b) 0)))
+                           (->* (list -HashTop Univ) -HashTop :
+                                (-FS (-filter (-IHT Univ Univ) 0) (-filter (-IHT Univ Univ) 0)))))]
+[hash-remove! (-poly (a b) (cl->*
+                            (->* (list (-HT a b) a) -Void :
+                                 (-FS (-filter (-MHT a b) 0) (-filter (-MHT a b) 0)))
+                            (->* (list -HashTop a) -Void :
+                                 (-FS (-filter -MHashTop 0) (-filter -MHashTop 0)))))]
 [hash-map (-poly (a b c) (cl-> [((-HT a b) (a b . -> . c)) (-lst c)]
                                [(-HashTop (Univ Univ . -> . c)) (-lst c)]))]
 [hash-for-each (-poly (a b c) (cl-> [((-HT a b) (-> a b c)) -Void]

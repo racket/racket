@@ -35,6 +35,8 @@
          sub-t sub-f sub-o sub-pe
          make-immutable-type-set
          make-mutable-type-set
+         immutable-type-set?
+         mutable-type-set?
          (rename-out [Class:* Class:]
                      [Class* make-Class]
                      [Row* make-Row]
@@ -403,8 +405,6 @@
 (def-type BoxTop () [#:fold-rhs #:base] [#:key 'box])
 (def-type ChannelTop () [#:fold-rhs #:base] [#:key 'channel])
 (def-type VectorTop () [#:fold-rhs #:base] [#:key 'vector])
-(def-type HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
-(def-type IHashtableTop () [#:fold-rhs #:base] [#:key 'hash])
 (def-type MHashtableTop () [#:fold-rhs #:base] [#:key 'hash])
 (def-type MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
 (def-type StructTop ([name Struct?]) [#:key 'struct])

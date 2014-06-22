@@ -35,8 +35,6 @@
      [ClassTop ()]
      [Continuation-Mark-KeyTop ()]
      [Error ()]
-     [HashtableTop ()]
-     [IHashtableTop ()]
      [MHashtableTop ()]
      [MPairTop ()]
      [Prompt-TagTop ()]

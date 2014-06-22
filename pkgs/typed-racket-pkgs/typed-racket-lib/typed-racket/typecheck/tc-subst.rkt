@@ -54,8 +54,7 @@
     [(tc-results: ts fs os)
      (ret (map st ts) (map sfs fs) (map so os))]
     [(tc-results: ts fs os dt db)
-     (ret (map st ts) (map sfs fs) (map so os) (st dt) db)]
-    [_ (error 'subst-tc-results "Internal typechecker error: expected tc-results, got ~a" res)]))
+     (ret (map st ts) (map sfs fs) (map so os) (st dt) db)]))
 
 
 ;; Substitution of objects into a filter set

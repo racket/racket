@@ -2137,8 +2137,7 @@
        [tc-e (assoc 3 '((a . 5) (b . 7))) (t:Un (-val #f) (-pair (one-of/c 'a 'b) -PosByte))]
        [tc-e (set-remove (set 1 2 3) 'a) (-set -PosByte)]
        ;; don't return HashTableTop
-       [tc-e (hash-remove #hash((a . 5) (b . 7)) 3) (-IHT -Symbol -Integer)]
-       [tc-e (hash-remove #hash((a . 5) (b . 7)) 3) (-IHT -Symbol -Integer)]
+       [tc-e (hash-remove #hash((a . 5) (b . 7)) 3) (-IHT (one-of/c 'a 'b) -PosByte)]
        ;; these should actually work
        [tc-e (vector-memq 3 #(a b c)) (t:Un (-val #f) -Index)]
        [tc-e (vector-memv 3 #(a b c)) (t:Un (-val #f) -Index)]
@@ -2252,11 +2251,11 @@
 
        ;; for/hash doesn't always need a return annotation inside
        [tc-e (let ()
-               (tr:define h : (HashTable Any Any)
+               (tr:define h : (IHashTable Any Any)
                  (for/hash ([(k v) (in-hash #hash(("a" . a)))])
                    (values v k)))
                h)
-             (-HT Univ Univ)]
+             (-IHT Univ Univ)]
 
        ;; call-with-input-string and friends - PR 14050
        [tc-e (call-with-input-string "abcd" (lambda: ([input : Input-Port]) (values 'a 'b)))
@@ -3129,9 +3128,9 @@
    (tc-l #"foo" -Bytes)
    [tc-l () -Null]
    [tc-l (3 . 4) (-pair -PosByte -PosByte)]
-   [tc-l #hash() (-IHT Univ Univ)]
-   [tc-l #hash((1 . 2) (3 . 4)) (-IHT -Integer -Integer)]
-   [tc-l #hasheq((a . q) (b . w)) (-IHT -Symbol -Symbol)]
+   [tc-l #hash() (-IHT -Bottom -Bottom)]
+   [tc-l #hash((1 . 2) (3 . 4)) (-IHT -PosByte -PosByte)]
+   [tc-l #hasheq((a . q) (b . w)) (-IHT (one-of/c 'a 'b) (one-of/c 'q 'w))]
    [tc-l #hash{[:a . :b]}
          (let ([rec-type (-mu X (-IHT (t:Un -Symbol X) (t:Un -Symbol X)))])
            (-IHT (t:Un -Symbol rec-type) (t:Un -Symbol rec-type)))

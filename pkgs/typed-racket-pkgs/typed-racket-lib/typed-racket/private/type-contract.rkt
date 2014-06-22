@@ -336,7 +336,6 @@
         [(VectorTop:) (only-untyped vector?/sc)]
         [(BoxTop:) (only-untyped box?/sc)]
         [(ChannelTop:) (only-untyped channel?/sc)]
-        [(IHashtableTop:) (only-untyped ihash?/sc)]
         [(MHashtableTop:) (only-untyped mhash?/sc)]
         [(MPairTop:) (only-untyped mpair?/sc)]
         [(ThreadCellTop:) (only-untyped thread-cell?/sc)]
@@ -568,32 +567,16 @@
          (set-member? types -MHashTop))
     (only-untyped hash?/sc)]
    [else
-    (let pair-equals ([ctcs '()] [worth-it? #f])
-      (cond
-       [(set-empty? types) (and worth-it? (apply or/sc ctcs))]
-       [else
-        (define t (set-first types))
-        (set-remove! types t)
-        (match t
-          [(or (and (app (lambda (y) ihash/sc) ctor)
-                    (app (lambda (y) make-MHashtable) flip)
-                    (IHashtable: a b))
-               (and (app (lambda (y) mhash/sc) ctor)
-                    (app (lambda (y) make-IHashtable) flip)
-                    (MHashtable: a b)))
-           (define actc (t->sc a))
-           (define bctc (t->sc b))
-           (define buddy (flip a b))
-           (if (set-member? types buddy)
-               (begin (set-remove! types buddy)
-                      (pair-equals (cons (hash/sc actc bctc) ctcs)
-                                   ;; Found a pair. Worth it to nest or/c contracts.
-                                   #t))
-               (pair-equals (cons (ctor actc bctc) ctcs) worth-it?))]
-          [(== -IHashTop type-equal?)
-           (pair-equals (cons (only-untyped ihash?/sc) ctcs) worth-it?)]
-          [(== -MHashTop type-equal?)
-           (pair-equals (cons (only-untyped mhash?/sc) ctcs) worth-it?)])]))]))
+    (define worth-it? (box #f))
+    (pair-equals types '() '()
+                 (λ (ctor paired ab)
+                    (set-box! worth-it? #t)
+                    (cons (hash/sc (t->sc (first ab)) (t->sc (second ab))) paired))
+                 (λ (t unpaired)
+                    (cons (t->sc t) unpaired))
+                 (λ (paired unpaired)
+                    (and (unbox worth-it?)
+                         (apply or/sc (append paired unpaired)))))]))
 
 (module predicates racket/base
   (require racket/extflonum)

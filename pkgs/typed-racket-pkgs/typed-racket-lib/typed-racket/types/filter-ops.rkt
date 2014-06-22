@@ -123,7 +123,8 @@
 
 ;; -imp: Filter/c Filter/c -> Filter/c
 ;; Smart constructor for make-ImpFilter
-(define (-imp p1 p2)
+(define/cond-contract (-imp p1 p2)
+  (Filter/c Filter/c . c:-> . Filter/c)
   (match* (p1 p2)
     [(t t) -top]
     [((Bot:) _) -top]
@@ -132,7 +133,8 @@
     [(_ (Bot:)) (invert-filter p1)]
     [(_ _) (make-ImpFilter p1 p2)]))
 
-(define (-or . args)
+(define/cond-contract (-or . args)
+  (c:->* () #:rest (c:listof Filter/c) Filter/c)
   (define mk
     (case-lambda [() -bot]
                  [(f) f]
@@ -165,7 +167,8 @@
                  [else
                   (loop (cdr fs) (cons t result))])]))))
 
-(define (-and . args)
+(define/cond-contract (-and . args)
+  (c:->* () #:rest (c:listof Filter/c) Filter/c)
   (define mk
     (case-lambda [() -top]
                  [(f) f]
@@ -175,8 +178,8 @@
       (match fs
         [(list) results]
         [(cons (AndFilter: fs*) fs) (loop fs (append fs* results))]
-        [(cons f fs) (loop fs (cons f results))]
-        [_ (error 'flatten-ands "Internal typechecker error: expected a list of filters, got ~a" fs)])))
+        [(cons f fs) (loop fs (cons f results))])))
+
   ;; Move all the type filters up front as they are the stronger props
   (define-values (f-args other-args)
     (partition TypeFilter? (flatten-ands (remove-duplicates args eq? #:key Rep-seq))))

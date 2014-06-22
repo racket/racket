@@ -124,7 +124,7 @@
        [_ (let* ([h (syntax-e #'i)]
                  [ks (hash-map h (lambda (x y) (tc-literal x)))]
                  [vs (hash-map h (lambda (x y) (tc-literal y)))])
-            (make-IHashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
+            (make-IHashtable (apply Un ks) (apply Un vs)))])]
     [_ Univ]))
 
 
