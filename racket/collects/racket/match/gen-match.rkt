@@ -42,7 +42,8 @@
      (define/with-syntax (exprs ...) es)
      (define/with-syntax outer-fail (generate-temporary #'fail))
      (define/with-syntax orig-expr (if (= 1 len) (stx-car #'(xs ...)) #'(list xs ...)))
-     (define/with-syntax raise-error (quasisyntax/loc stx (match:error orig-expr (list (srcloc #,@srcloc-list)) 'form-name)))
+     (define/with-syntax raise-error
+       (quasisyntax/loc stx (match:error orig-expr (list (srcloc #,@srcloc-list)) 'form-name)))
      (define parsed-clauses
        (for/list ([clause (syntax->list clauses)]
                   [pats (syntax->list #'(pats ...))]
