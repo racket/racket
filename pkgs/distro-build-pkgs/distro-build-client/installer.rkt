@@ -15,6 +15,7 @@
 
 (define release? #f)
 (define source? #f)
+(define versionless? #f)
 (define mac-pkg? #f)
 (define upload-to #f)
 (define upload-desc "")
@@ -27,6 +28,8 @@
     (set! release? #t)]
    [("--source") "Create a source installer"
     (set! source? #t)]
+   [("--versionless") "Avoid version number in names and paths"
+    (set! versionless? #t)]
    [("--mac-pkg") "Create a \".pkg\" installer on Mac OS X"
     (set! mac-pkg? #t)]
    [("--upload") url "Upload installer"
@@ -41,8 +44,11 @@
    (human-name base-name dir-name dist-suffix sign-identity)
    (values human-name
            (format "~a v~a" human-name (version))
-           (format "~a-~a" base-name (version))
-           (if (and release? (not source?))
+           (if versionless?
+               base-name
+               (format "~a-~a" base-name (version)))
+           (if (or (and release? (not source?))
+                   versionless?)
                dir-name
                (format "~a-~a" dir-name (version)))
            (if (string=? dist-suffix "")
@@ -67,10 +73,16 @@
       (case (system-type)
         [(unix) (installer-sh human-name base-name dir-name release? dist-suffix readme)]
         [(macosx) (if mac-pkg?
-                      (installer-pkg (if release? short-human-name human-name)
+                      (installer-pkg (if (or release? versionless?)
+                                         short-human-name
+                                         human-name)
                                      base-name dist-suffix readme sign-identity)
-                      (installer-dmg human-name base-name dist-suffix readme sign-identity))]
-        [(windows) (installer-exe short-human-name base-name release? dist-suffix readme)])))
+                      (installer-dmg (if versionless?
+                                         short-human-name
+                                         human-name)
+                                     base-name dist-suffix readme sign-identity))]
+        [(windows) (installer-exe short-human-name base-name (or release? versionless?) 
+                                  dist-suffix readme)])))
 
 (call-with-output-file*
  (build-path "bundle" "installer.txt")
