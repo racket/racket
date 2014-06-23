@@ -628,7 +628,7 @@ static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info, in
       {
         Scheme_App2_Rec *app = (Scheme_App2_Rec *)e;
 
-        if (!SAME_TYPE(app->rator, scheme_values_func)) /* `values` is probably here to ensure a single result */
+        if (!SAME_OBJ(app->rator, scheme_values_func)) /* `values` is probably here to ensure a single result */
           if (scheme_is_functional_nonfailing_primitive(app->rator, 1, expected_vals))
             return do_make_discarding_sequence(app->rand, scheme_void, info, 1, 0);
       }
