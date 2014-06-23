@@ -541,6 +541,9 @@ const char *(*scheme_get_proc_name)(Scheme_Object *p, int *len, int for_error);
 intptr_t (*scheme_utf8_decode)(const unsigned char *s, intptr_t start, intptr_t end, 
 				      unsigned int *us, intptr_t dstart, intptr_t dend,
 				      intptr_t *ipos, char utf16, int permissive);
+intptr_t (*scheme_utf8_decode_offset_prefix)(const unsigned char *s, intptr_t start, intptr_t end, 
+                                                    unsigned int *us, intptr_t dstart, intptr_t dend,
+                                                    intptr_t *ipos, char utf16, int permissive);
 intptr_t (*scheme_utf8_decode_as_prefix)(const unsigned char *s, intptr_t start, intptr_t end, 
 						unsigned int *us, intptr_t dstart, intptr_t dend,
 						intptr_t *ipos, char utf16, int permissive);

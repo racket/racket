@@ -613,9 +613,9 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
       mzchar buf[2];
       int ul = 1;
       while (1) {
-        if (scheme_utf8_decode((unsigned char *)s, i, i + ul,
-                               buf, 0, 1,
-                               NULL, 0, '?') > 0)
+        if (scheme_utf8_decode_offset_prefix((unsigned char *)s, i, i + ul,
+                                             buf, 0, 1,
+                                             NULL, 0, '?') > 0)
           break;
         ul++;
       }
