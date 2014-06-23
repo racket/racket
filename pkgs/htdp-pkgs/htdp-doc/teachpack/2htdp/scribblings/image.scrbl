@@ -1390,6 +1390,31 @@ the parts that fit onto @racket[scene].
                  
 }
 
+@defproc[(crop/align [x-place x-place?]
+                     [y-place y-place?]
+                     [width (and/c real? (not/c negative?))]
+                     [height (and/c real? (not/c negative?))]
+                     [image image?])
+         image?]{
+
+ Crops @racket[image] to a rectangle whose size is @racket[width] and @racket[height]
+       and is positioned based on @racket[x-place] and @racket[y-place].
+
+ @crop-warning
+
+ @image-examples[(crop/align "left" "top" 40 40 (circle 40 "solid" "chocolate"))
+                 (crop/align "right" "bottom" 40 60 (ellipse 80 120 "solid" "dodgerblue"))
+                 (crop/align "center" "center" 50 30 (circle 25 "solid" "mediumslateblue"))
+                 (above
+                  (beside (crop/align "right" "bottom" 40 40 (circle 40 "solid" "palevioletred"))
+                          (crop/align "left" "bottom" 40 40 (circle 40 "solid" "lightcoral")))
+                  (beside (crop/align "right" "top" 40 40 (circle 40 "solid" "lightcoral"))
+                          (crop/align "left" "top" 40 40 (circle 40 "solid" "palevioletred"))))]
+
+ @history[#:added "1.1"]
+}
+
+
 @defproc[(frame [image image?]) image?]{
   Returns an image just like @racket[image], except
   with a black, single pixel frame drawn around the 
@@ -1410,6 +1435,8 @@ the parts that fit onto @racket[scene].
 
 @defproc[(color-frame [image image?] [color (or/c pen? image-color?)]) image?]{
   Like @racket[frame], except with the given @racket[color].
+       
+  @history[#:added "1.1"]
 }
 
 

@@ -407,6 +407,16 @@
 (define/chk (crop x1 y1 width height image)
   (crop/internal x1 y1 width height image))
 
+(define/chk (crop/align x-place y-place width height image)
+  (define x-spot (find-x-spot x-place image))
+  (define y-spot (find-y-spot y-place image))
+  (define crop-rec (rectangle width height "solid" "black"))
+  (define w-off (find-x-spot x-place crop-rec))
+  (define h-off (find-y-spot y-place crop-rec))
+  (crop/internal (- x-spot w-off)
+                 (- y-spot h-off)
+                 width height image))
+
 (define (crop/internal x1 y1 width height image)
   (let ([points (rectangle-points width height)]
         [ph (send image get-pinhole)])
@@ -1525,6 +1535,7 @@
          
          rotate
          crop
+         crop/align
          flip-vertical
          flip-horizontal
          frame

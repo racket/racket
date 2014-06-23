@@ -62,6 +62,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          above/align
          
          crop
+         crop/align
          rotate
          flip-horizontal
          flip-vertical
