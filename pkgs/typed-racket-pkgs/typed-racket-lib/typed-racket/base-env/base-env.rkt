@@ -1491,7 +1491,7 @@
 [syntax-local-lift-provide (-> Univ -Void)]
 [syntax-local-name (-> Univ)]
 [syntax-local-context (-> (Un (-val 'expression) (-val 'top-level) (-val 'module) (-val 'module-begin) (-lst Univ)))]
-[syntax-local-phase-level (-> (-opt -Int))]
+[syntax-local-phase-level (-> -Int)]
 [syntax-local-module-exports (-> -Module-Path (-values (list (-lst Sym) (-lst Sym) (-lst Sym))))]
 [syntax-local-get-shadower (-> (-Syntax Sym) (-Syntax Sym))]
 [syntax-local-certifier (->opt [B] (-poly (a) (->opt (-Syntax a) [Univ (-opt (-poly (b) (-> (-Syntax b) (-Syntax b))))] (-Syntax a))))]
