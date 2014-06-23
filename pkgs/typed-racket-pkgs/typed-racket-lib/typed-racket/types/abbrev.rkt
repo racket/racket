@@ -256,6 +256,8 @@
 
 (define/decl -true-filter (-FS -top -bot))
 (define/decl -false-filter (-FS -bot -top))
+(define/decl -1st-iht-filter (-FS (-filter -IHashTop 0) (-filter -IHashTop 0)))
+(define/decl -1st-mht-filter (-FS (-filter -MHashTop 0) (-filter -MHashTop 0)))
 
 (define (opt-fn args opt-args result #:rest [rest #f] #:kws [kws null])
   (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])

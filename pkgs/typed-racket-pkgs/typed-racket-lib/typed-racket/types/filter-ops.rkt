@@ -179,7 +179,6 @@
         [(list) results]
         [(cons (AndFilter: fs*) fs) (loop fs (append fs* results))]
         [(cons f fs) (loop fs (cons f results))])))
-
   ;; Move all the type filters up front as they are the stronger props
   (define-values (f-args other-args)
     (partition TypeFilter? (flatten-ands (remove-duplicates args eq? #:key Rep-seq))))

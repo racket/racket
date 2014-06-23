@@ -73,7 +73,6 @@
           (not (AnyValues? e))
           (not (Result? e)))))
 
-
 ;; (or/c Type/c Values? Results?)
 ;; Anything that can be treated as a Values by sufficient expansion
 (define Values/c?

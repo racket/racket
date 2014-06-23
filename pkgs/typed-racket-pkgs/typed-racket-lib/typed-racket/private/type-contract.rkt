@@ -24,7 +24,7 @@
  (prefix-in c: racket/contract)
  (contract-req)
  (for-syntax racket/base syntax/parse racket/syntax)
- (for-template racket/base racket/contract (utils any-wrap hash-combinators)))
+ (for-template racket/base racket/contract (utils any-wrap)))
 
 (provide
   (c:contract-out
@@ -181,6 +181,7 @@
     ((both) (triple-both trip))))
 (define (same sc)
   (triple sc sc sc))
+
 
 (define (type->static-contract type init-fail #:typed-side [typed-side #t])
   (let/ec return

@@ -13,7 +13,6 @@
                      for*/or for*/sum for*/product for*/first for*/last
                      for*/fold)
           "../base-env/prims.rkt"
-          "../utils/hash-combinators.rkt"
           (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
          "../base-env/extra-procs.rkt" (except-in "../base-env/prims.rkt" with-handlers λ lambda define)
          "../tc-setup.rkt"

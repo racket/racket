@@ -117,10 +117,8 @@
            [(Empty:) -empty-obj]
            ;; the result is not from an annotation, so it isn't a NoObject
            [(NoObject:) -empty-obj]
-           [(Path: p* i*) (make-Path (append p p*) i*)]
-           [_ (error 'subst-object "Internal typechecker error: expecting object, got ~a" o)])
-         t)]
-    [_ (error 'subst-object "Internal typechecker error: expecting object, got ~a" t)]))
+           [(Path: p* i*) (make-Path (append p p*) i*)])
+         t)]))
 
 ;; Substitution of objects into a filter in a filter set
 ;; This is ψ+ [o/x] and ψ- [o/x]

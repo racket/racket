@@ -6,7 +6,6 @@
 (require racket/require racket/match unstable/sequence racket/string racket/promise
          racket/pretty
          racket/list
-         racket/set
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/subtype.rkt"
