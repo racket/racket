@@ -823,6 +823,10 @@
             [(#\}) (display "\\%7d")]
             [else (display c)]))]
        [else
+        ;; Start by normalizing to "combined" form, so that Racket characters
+        ;; are closer to Unicode characters (e.g., ä is one character, instead
+        ;; of a combining character followed by "a").
+        (let ([s (string-normalize-nfc s)])
           (let ([len (string-length s)])
             (let loop ([i 0])
               (unless (= i len)
@@ -1082,7 +1086,7 @@
                                      c)]
                                 [else c])])])
                           c)])))
-                (loop (add1 i)))))]))
+                (loop (add1 i))))))]))
     
     
     (define/private (box-character c)
