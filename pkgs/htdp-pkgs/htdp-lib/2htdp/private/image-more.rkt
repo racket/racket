@@ -506,7 +506,10 @@
 ;; draws a black frame around a image where the bounding box is
 ;; (useful for debugging images)
 
-(define/chk (frame image)
+(define/chk (frame image) (real-color-frame "black" image))
+(define/chk (color-frame color image) (real-color-frame color image))
+
+(define (real-color-frame color image)
   (make-image (make-overlay (image-shape 
                              (crop 0 0
                                    (get-right image)
@@ -514,7 +517,7 @@
                                    (rectangle (get-right image)
                                               (get-bottom image)
                                               'outline
-                                              (pen "black" 2 'solid 'round 'round))))
+                                              (pen color 2 'solid 'round 'round))))
                             (image-shape image))
               (make-bb (get-right image)
                        (get-bottom image)
@@ -1525,6 +1528,7 @@
          flip-vertical
          flip-horizontal
          frame
+         color-frame
 
          place-image
          place-image/align

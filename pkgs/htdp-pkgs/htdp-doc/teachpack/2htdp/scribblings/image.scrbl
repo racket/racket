@@ -690,11 +690,14 @@ the @racket[point-count] argument determines how many points the star has.
 }
 
 @defproc[(add-polygon [image image?]
-                   [posns (listof posn?)]
-                   [mode mode?]
-                   [color image-color?])
+                      [posns (listof posn?)]
+                      [mode mode?]
+                      [color image-color?])
          image?]{
-  Adds a closed polygon to the image @racket[image], with vertices as specified in @racket[posns] (relative to the top-left corner of @racket[image]).  Unlike @racket[scene+polygon], if the polygon goes outside the bounds of @racket[image], the result is enlarged to accommodate both.
+                 
+ Adds a closed polygon to the image @racket[image], with vertices as specified in @racket[posns]
+ (relative to the top-left corner of @racket[image]).  Unlike @racket[scene+polygon], 
+ if the polygon goes outside the bounds of @racket[image], the result is enlarged to accommodate both.
 
 @mode/color-and-nitty-text
 
@@ -732,7 +735,9 @@ the @racket[point-count] argument determines how many points the star has.
                      [mode mode?]
                      [color image-color?])
          image?]{
-  Adds a closed polygon to the image @racket[image], with vertices as specified in @racket[posns] (relative to the top-left corner of @racket[image]).  Unlike @racket[add-polygon], if the polygon goes outside the bounds of @racket[image], the result is clipped to @racket[image].
+  Adds a closed polygon to the image @racket[image], with vertices as specified in @racket[posns]
+ (relative to the top-left corner of @racket[image]).  Unlike @racket[add-polygon], if the
+ polygon goes outside the bounds of @racket[image], the result is clipped to @racket[image].
                                      
 @crop-warning
 
@@ -1402,6 +1407,11 @@ the parts that fit onto @racket[scene].
                    (ellipse 20 30 "solid" "slateblue")
                    (ellipse 20 10 "solid" "navy"))]
 }
+
+@defproc[(color-frame [image image?] [color (or/c pen? image-color?)]) image?]{
+  Like @racket[frame], except with the given @racket[color].
+}
+
 
 @section{Bitmaps}
 

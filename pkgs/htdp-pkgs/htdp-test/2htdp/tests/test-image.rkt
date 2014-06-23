@@ -2204,6 +2204,14 @@
 (test (pinhole-y (frame (center-pinhole (rectangle 10 12 'solid 'red))))
       =>
       6)
+(test (pinhole-x (color-frame "red"
+                              (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      5)
+(test (pinhole-y (color-frame 'blue
+                              (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      6)
 
 (test (pinhole-x (overlay (put-pinhole 1 2 (rectangle 10 100 'solid 'red))
                           (put-pinhole 75 9 (rectangle 100 10 'solid 'blue))))
