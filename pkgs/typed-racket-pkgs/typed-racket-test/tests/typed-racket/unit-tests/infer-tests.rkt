@@ -132,7 +132,10 @@
     (pd-t (-thread-cell (-v a)) (b) (-thread-cell (-v a)) (-thread-cell (-v a)))
 
     (pd-t (-HT (-v a) (-v a)) (a) (-HT -Bottom -Bottom) (-HT Univ Univ))
-    (pd-t (-HT (-lst (-v a)) (-lst (-v a))) (a) (-HT -Bottom -Bottom) (-HT Univ Univ))
+    ;; Mixture of Covariant IHT and Invariant MHT make the output the given union.
+    (pd-t (-HT (-lst (-v a)) (-lst (-v a))) (a)
+          (Un (-IHT (-lst -Bottom) (-lst -Bottom)) (-MHT -Bottom -Bottom))
+          (Un (-IHT (-lst Univ) (-lst Univ)) (-MHT Univ Univ)))
     (pd-t (-HT (-v a) (-v a)) (b) (-HT (-v a) (-v a)) (-HT (-v a) (-v a)))
 
     (pd-t (-Param (-v a) (-v b)) (a b) (-Param Univ -Bottom) (-Param -Bottom Univ))
@@ -227,6 +230,19 @@
 
     [infer-t (-> (-values (list -Bottom))) (-> (-values (list (-v b) (-v b)))) #:vars '(a)]
     [infer-t (-> (-values (list (-v a)))) (-> (-values (list (-v b) (-v b)))) #:vars '(a)]
+
+    [infer-t (cl->*
+              (->* (list (-HT (-v a) (-v b)) (-v c) (-> (-v b) (-v d)) (-> (-v d)))
+                   (-IHT (Un (-v a) (-v c)) (Un (-v b) (-v d))) :
+                   (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0)))
+;; Broken when commented.
+              (->* (list (-HT (-v a) (-v b)) (-v c) (-> (-v b) (-v b)) (-> (-v b)))
+                   (-IHT (Un (-v a) (-v c)) (-v b)) :
+                   (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0))))
+             (->* (list (-HT -Symbol Univ) -Symbol (-poly (a) (-> a a)) (-> Univ))
+                  (-IHT -Symbol Univ) :
+                  (-FS (-filter (-IHT (-v a) (-v b)) 0) (-filter (-IHT (-v a) (-v b)) 0)))
+             #:vars '(a b c d)]
 
     ;; Currently Broken
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))

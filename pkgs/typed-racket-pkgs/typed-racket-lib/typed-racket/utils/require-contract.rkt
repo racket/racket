@@ -2,7 +2,7 @@
 
 ;; This module provides helper macros for `require/typed`
 
-(require racket/contract/region racket/contract/base
+(require racket/contract/region racket/contract/base "hash-combinators.rkt"
          syntax/location
          (for-syntax racket/base
                      syntax/parse

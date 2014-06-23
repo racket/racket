@@ -48,7 +48,12 @@
 [eq? (-> Univ Univ B)]
 
 [equal?/recur (-> Univ Univ (-> Univ Univ Univ) B)]
-[immutable? (-> Univ B)]
+[immutable?
+ (->* (list Univ) B :
+      (-FS (-and (-not-filter -MHashTop 0)
+                 (-imp (-filter -HashTop 0) (-filter -IHashTop 0)))
+           (-and (-not-filter -IHashTop 0)
+                 (-imp (-filter -HashTop 0) (-filter -MHashTop 0)))))]
 [prop:equal+hash -Struct-Type-Property]
 
 ;; Section 4.1.1 (racket/bool)
@@ -766,21 +771,26 @@
 [hash-equal? (-> -HashTop B)]
 [hash-weak? (-> -HashTop B)]
 ;; not a very useful type, but better than nothing
-[hash (-poly (a b) (-> (-HT a b)))]
-[hasheqv (-poly (a b) (-> (-HT a b)))]
-[hasheq (-poly (a b) (-> (-HT a b)))]
-[make-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-[make-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-[make-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-[make-weak-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-[make-weak-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-[make-weak-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-[make-immutable-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-[make-immutable-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-[make-immutable-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-
-[hash-set (-poly (a b) ((-HT a b) a b . -> . (-HT a b)))]
-[hash-set! (-poly (a b) ((-HT a b) a b . -> . -Void))]
+[hash (-> (-IHT (Un) (Un)))]
+[hasheqv (-> (-IHT (Un) (Un)))]
+[hasheq (-> (-IHT (Un) (Un)))]
+[make-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-MHT a b)))]
+[make-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-MHT a b)))]
+[make-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-MHT a b)))]
+[make-weak-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-MHT a b)))]
+[make-weak-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-MHT a b)))]
+[make-weak-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-MHT a b)))]
+[make-immutable-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-IHT a b)))]
+[make-immutable-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-IHT a b)))]
+[make-immutable-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-IHT a b)))]
+;; intentionally weak input types for backward compatibility.
+;; Operators expecting Mutable/immutable hashes have equal +/- filters to immediately refine
+;; the type environment since they error otherwise.
+[hash-set (-poly (a b c d) (->* (list (-HT a b) c d)
+                                (-IHT (Un a c) (Un b d)) : 
+                                -1st-iht-filter))]
+[hash-set! (-poly (a b) (->* (list (-HT a b) a b) -Void :
+                             -1st-mht-filter))]
 [hash-ref (-poly (a b c)
                  (cl-> [((-HT a b) a) b]
                        [((-HT a b) a (-val #f)) (-opt b)]
@@ -788,18 +798,34 @@
                        [(-HashTop a) Univ]
                        [(-HashTop a (-val #f)) Univ]
                        [(-HashTop a (-> c)) Univ]))]
-[hash-ref! (-poly (a b) (-> (-HT a b) a (-> b) b))]
+[hash-ref! (-poly (a b) (->* (list (-HT a b) a (-> b)) b :
+                             -1st-mht-filter))]
 [hash-has-key? (-HashTop Univ . -> . B)]
 [hash-update! (-poly (a b)
-                     (cl-> [((-HT a b) a (-> b b)) -Void]
-                           [((-HT a b) a (-> b b) (-> b)) -Void]))]
-[hash-update (-poly (a b)
-                    (cl-> [((-HT a b) a (-> b b)) (-HT a b)]
-                          [((-HT a b) a (-> b b) (-> b)) (-HT a b)]))]
-[hash-remove (-poly (a b) (cl-> [((-HT a b) Univ) (-HT a b)]
-                                [(-HashTop Univ) -HashTop]))]
-[hash-remove! (-poly (a b) (cl-> [((-HT a b) a) -Void]
-                                 [(-HashTop a) -Void]))]
+                     (cl->* (->* (list (-HT a b) a (-> b b)) -Void :
+                                 -1st-mht-filter)
+                            (->* (list (-HT a b) a (-> b b) (-> b)) -Void :
+                                 -1st-mht-filter)))]
+[hash-update (-poly (a b c d)
+                    (cl->*
+                     (->* (list (-HT a b) c (-> b d)) (-IHT (Un a c) (Un b d)) :
+                          -1st-iht-filter)
+                     (->* (list (-HT a b) c (-> b d) (-> d)) (-IHT (Un a c) (Un b d)) :
+                          -1st-iht-filter)
+                     (->* (list (-HT a b) c (-> b b)) (-IHT (Un a c) b) :
+                          -1st-iht-filter)
+                     (->* (list (-HT a b) c (-> b b) (-> b)) (-IHT (Un a c) b) :
+                          -1st-iht-filter)))]
+[hash-remove (-poly (a b) (cl->*
+                           (->* (list (-HT a b) Univ) (-IHT a b) :
+                                -1st-iht-filter)
+                           (->* (list -HashTop Univ) -HashTop :
+                                -1st-iht-filter)))]
+[hash-remove! (-poly (a b) (cl->*
+                            (->* (list (-HT a b) a) -Void :
+                                 -1st-mht-filter)
+                            (->* (list -HashTop a) -Void :
+                                 -1st-mht-filter)))]
 [hash-map (-poly (a b c) (cl-> [((-HT a b) (a b . -> . c)) (-lst c)]
                                [(-HashTop (Univ Univ . -> . c)) (-lst c)]))]
 [hash-for-each (-poly (a b c) (cl-> [((-HT a b) (-> a b c)) -Void]
@@ -813,19 +839,15 @@
 [hash->list (-poly (a b) (cl-> [((-HT a b)) (-lst (-pair a b))]
                                [(-HashTop) (-lst (-pair Univ Univ))]))]
 
-[hash-copy (-poly (a b) (-> (-HT a b) (-HT a b)))]
+[hash-copy (-poly (a b) ((-HT a b) . -> . (-MHT a b)))]
 [eq-hash-code (-poly (a) (-> a -Integer))]
 [eqv-hash-code (-poly (a) (-> a -Integer))]
 [equal-hash-code (-poly (a) (-> a -Integer))]
 [equal-secondary-hash-code (-poly (a) (-> a -Integer))]
-[hash-iterate-first (-poly (a b)
-                           ((-HT a b) . -> . (Un (-val #f) -Integer)))]
-[hash-iterate-next (-poly (a b)
-                           ((-HT a b) -Integer . -> . (Un (-val #f) -Integer)))]
-[hash-iterate-key (-poly (a b)
-                           ((-HT a b) -Integer . -> . a))]
-[hash-iterate-value (-poly (a b)
-                           ((-HT a b) -Integer . -> . b))]
+[hash-iterate-first (-poly (a b) ((-HT a b) . -> . (Un (-val #f) -Integer)))]
+[hash-iterate-next (-poly (a b) ((-HT a b) -Integer . -> . (Un (-val #f) -Integer)))]
+[hash-iterate-key (-poly (a b) ((-HT a b) -Integer . -> . a))]
+[hash-iterate-value (-poly (a b) ((-HT a b) -Integer . -> . b))]
 
 [make-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
 [make-immutable-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]

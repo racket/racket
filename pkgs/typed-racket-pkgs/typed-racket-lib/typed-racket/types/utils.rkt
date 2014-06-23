@@ -113,6 +113,32 @@
                                       (equal? positionals (take dom lpositionals))))]))])
         ok?)))
 
+;; ∀ (A B C D) (Mutable-Setof Type/c?) B C (-> Symbol B (Listof Type/c?) B) (-> Type/c? C C)
+;;   (-> B C D) -> D
+;; Destructively recurs through the given set of types to pair up /known/ mutable/immutable type
+;; pairs, and combines them in a generic manner.
+;; Think of it as a tandem fold over pairable and unpairable types that get combined at the end.
+(define (pair-equals types bot-paired bot-unpaired on-pair on-unpair combine)
+  (let recur ([paired bot-paired] [unpaired bot-unpaired])
+   (cond
+    [(set-empty? types) (combine paired unpaired)]
+    [else
+     (define t (set-first types))
+     (set-remove! types t)
+     (match t
+       [(or (and (app (lambda (y) 'IHashtable) ctor)
+                 (app (lambda (y) make-MHashtable) flip)
+                 (IHashtable: a b))
+            (and (app (lambda (y) 'MHashtable) ctor)
+                 (app (lambda (y) make-IHashtable) flip)
+                 (MHashtable: a b)))
+        (define buddy (flip a b))
+        (if (set-member? types buddy)
+            (begin (set-remove! types buddy)
+                   (recur (on-pair ctor paired (list a b)) unpaired))
+            (recur paired (on-unpair t unpaired)))]
+       [t (recur paired (on-unpair t unpaired))])])))
+
 (provide/cond-contract
  [unfold (Mu? . -> . Type/c)]
  [instantiate-poly ((or/c Poly? PolyDots? PolyRow?) (listof Type/c)
@@ -124,5 +150,9 @@
  [fv/list ((listof Type/c) . -> . (set/c symbol?))]
  [current-poly-struct (parameter/c (or/c #f poly?))]
  [has-optional-args? (-> (listof arr?) any)]
- )
+ [pair-equals (-> mutable-type-set? any/c any/c
+                  (-> any/c any/c (listof Type/c) any/c)
+                  (-> Type/c any/c any/c)
+                  (-> any/c any/c any/c)
+                  any/c)])
 

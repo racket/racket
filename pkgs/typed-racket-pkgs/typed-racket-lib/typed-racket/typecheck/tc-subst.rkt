@@ -148,7 +148,8 @@
     [(TypeFilter: t (Path: p i))
      (tf-matcher t p i -filter)]
     [(NotTypeFilter: t (Path: p i))
-     (tf-matcher t p i -not-filter)]))
+     (tf-matcher t p i -not-filter)]
+    [_ (error 'subst-filter "Internal typechecker error: expecting filter, got ~a" f)]))
 
 ;; Determine if the object k occurs free in the given type
 (define (index-free-in? k type)

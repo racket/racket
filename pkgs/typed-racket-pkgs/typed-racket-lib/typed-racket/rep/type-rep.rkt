@@ -10,6 +10,7 @@
          "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
          racket/match racket/list
          racket/contract
+         racket/set
          racket/lazy-require
          (for-syntax racket/base syntax/parse))
 
@@ -32,6 +33,10 @@
          type-compare type<?
          remove-dups
          sub-t sub-f sub-o sub-pe
+         make-immutable-type-set
+         make-mutable-type-set
+         immutable-type-set?
+         mutable-type-set?
          (rename-out [Class:* Class:]
                      [Class* make-Class]
                      [Row* make-Row]
@@ -399,7 +404,7 @@
 (def-type BoxTop () [#:fold-rhs #:base] [#:key 'box])
 (def-type ChannelTop () [#:fold-rhs #:base] [#:key 'channel])
 (def-type VectorTop () [#:fold-rhs #:base] [#:key 'vector])
-(def-type HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
+(def-type MHashtableTop () [#:fold-rhs #:base] [#:key 'hash])
 (def-type MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
 (def-type StructTop ([name Struct?]) [#:key 'struct])
 (def-type ThreadCellTop () [#:fold-rhs #:base] [#:key 'thread-cell])
@@ -453,8 +458,11 @@
 
 ;; key : Type
 ;; value : Type
-(def-type Hashtable ([key Type/c] [value Type/c]) [#:key 'hash]
+(def-type MHashtable ([key Type/c] [value Type/c]) [#:key 'hash]
   [#:frees (λ (f) (combine-frees (list (make-invariant (f key)) (make-invariant (f value)))))])
+
+(def-type IHashtable ([key Type/c] [value Type/c]) [#:key 'hash]
+  [#:frees (λ (f) (combine-frees (list (f key) (f value))))])
 
 (def-type Refinement ([parent Type/c] [pred identifier?])
   [#:key (Type-key parent)]
@@ -583,6 +591,8 @@
 (define/cond-contract (type-equal? s t)
   (Rep? Rep? . -> . boolean?)
   (eq? (Rep-seq s) (Rep-seq t)))
+
+(define-custom-set-types type-set #:elem? Type/c? type-equal?)
 
 ;; inequality - good
 (define/cond-contract (type<? s t)

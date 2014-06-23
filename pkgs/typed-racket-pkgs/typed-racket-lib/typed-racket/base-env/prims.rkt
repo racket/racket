@@ -1116,7 +1116,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (lambda (stx)
     (syntax-parse stx
       #:literals (:)
-      [(_ (~seq : return-annotation:expr)
+      [(_ (~optional (~seq : return-annotation:expr)
+                     #:defaults ([return-annotation #'(IHashTable Any Any)]))
           clause:for-clauses
           body ...) ; body is not always an expression, can be a break-clause
        (quasisyntax/loc stx
@@ -1124,11 +1125,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
            ((return-hash : return-annotation (ann (#,hash-maker null) return-annotation)))
            (clause.expand ... ...)
            (let-values (((key val) (let () body ...)))
-             (hash-set return-hash key val))))]
-      [(_ clause:for-clauses body ...)
-       (syntax/loc stx
-         (for/hash (clause.expand ... ...)
-           body ...))])))
+             (hash-set return-hash key val))))])))
 
 (define-syntax for/hash:    (define-for/hash:-variant #'make-immutable-hash))
 (define-syntax for/hasheq:  (define-for/hash:-variant #'make-immutable-hasheq))
@@ -1138,7 +1135,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (lambda (stx)
     (syntax-parse stx
       #:literals (:)
-      ((_ (~seq : return-annotation:expr)
+      [(_ (~optional (~seq : return-annotation:expr)
+                     #:defaults ([return-annotation #'(IHashTable Any Any)]))
           clause:for-clauses
           body ...) ; body is not always an expression, can be a break-clause
        (quasisyntax/loc stx
@@ -1146,7 +1144,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
            ((return-hash : return-annotation (ann (#,hash-maker null) return-annotation)))
            (clause.expand* ... ...)
            (let-values (((key val) (let () body ...)))
-             (hash-set return-hash key val))))))))
+             (hash-set return-hash key val))))])))
 
 (define-syntax for*/hash:    (define-for*/hash:-variant #'make-immutable-hash))
 (define-syntax for*/hasheq:  (define-for*/hash:-variant #'make-immutable-hasheq))

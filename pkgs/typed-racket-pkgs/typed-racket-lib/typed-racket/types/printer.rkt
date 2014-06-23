@@ -375,6 +375,19 @@
   `(,(if object? 'Object 'Class)
     ,@row-var* ,@inits* ,@init-rest* ,@fields* ,@methods* ,@augments*))
 
+;; pair-im/mut : (Listof Type) (Type -> Sexp) -> (values (Listof Sexp) (Listof Type))
+;; Currently only hashes have a mutable/immutable split.
+(define (pair-im/mut lst t->s)
+  (define-values (hashy non-hashy)
+    (partition (λ (t) (equal? 'hash (Type-key t))) lst))
+  (define (paired ctor paired ab)
+    (cons `(HashTable ,(t->s (first ab)) ,(t->s (second ab))) paired))
+  (define unpaired cons)
+  ;; set cover should have taken care of IHashTop and MHashTop -> HashTableTop
+  (define S (make-mutable-type-set hashy))
+  (pair-equals S '() non-hashy
+               paired unpaired values))
+
 ;; type->sexp : Type -> S-expression
 ;; convert a type to an s-expression that can be printed
 (define (type->sexp type [ignored-names '()])
@@ -426,7 +439,7 @@
     [(ChannelTop:) 'ChannelTop]
     [(ThreadCellTop:) 'ThreadCellTop]
     [(VectorTop:) 'VectorTop]
-    [(HashtableTop:) 'HashTableTop]
+    [(MHashtableTop:) 'MHashTableTop]
     [(MPairTop:) 'MPairTop]
     [(Prompt-TagTop:) 'Prompt-TagTop]
     [(Continuation-Mark-KeyTop:) 'Continuation-Mark-KeyTop]
@@ -470,7 +483,11 @@
     [(Evt: r) `(Evtof ,(t->s r))]
     [(Union: elems)
      (define-values (covered remaining) (cover-union type ignored-names))
-     (cons 'U (append covered (map t->s remaining)))]
+     (define-values (paired remaining*) (pair-im/mut remaining t->s))
+     (define sexps (append covered paired (map t->s remaining*)))
+     (if (and (pair? sexps) (null? (cdr sexps)))
+         (car sexps)
+         (cons 'U sexps))]
     [(Pair: l r) `(Pairof ,(t->s l) ,(t->s r))]
     [(ListDots: dty dbound)
      (define dbound*
@@ -490,7 +507,8 @@
      (if (equal? in out)
          `(Parameterof ,(t->s in))
          `(Parameterof ,(t->s in) ,(t->s out)))]
-    [(Hashtable: k v) `(HashTable ,(t->s k) ,(t->s v))]
+    [(IHashtable: k v) `(IHashTable ,(t->s k) ,(t->s v))]
+    [(MHashtable: k v) `(MHashTable ,(t->s k) ,(t->s v))]
     [(Continuation-Mark-Keyof: rhs)
      `(Continuation-Mark-Keyof ,(t->s rhs))]
     [(Prompt-Tagof: body handler)

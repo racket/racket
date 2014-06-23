@@ -15,9 +15,10 @@
  racket/match racket/syntax racket/list
  racket/format
  racket/dict
+ racket/set
  unstable/list
  unstable/sequence
- (only-in (types abbrev) -Bottom)
+ (only-in (types abbrev) -Bottom -IHashTop -MHashTop)
  (static-contracts instantiate optimize structures combinators)
  ;; TODO make this from contract-req
  (prefix-in c: racket/contract)
@@ -298,11 +299,21 @@
         [(Refinement: par p?)
          (and/sc (t->sc par) (flat/sc p?))]
         [(Union: elems)
-         (define-values (numeric non-numeric) (partition (λ (t) (equal? 'number (Type-key t))) elems ))
+         (define-values (numeric non-numeric)
+           (partition (λ (t) (equal? 'number (Type-key t))) elems))
          (define numeric-sc (numeric-type->static-contract (apply Un numeric)))
-         (if numeric-sc
-             (apply or/sc numeric-sc (map t->sc non-numeric))
-             (apply or/sc (map t->sc elems)))]
+         (define-values (hashy non-hashy)
+           (partition (λ (t) (equal? 'hash (Type-key t))) non-numeric))
+         (define hash-sc (hash-types->static-contract (make-mutable-type-set hashy) t->sc only-untyped))
+         (cond [numeric-sc
+                (if hash-sc
+                    (apply or/sc numeric-sc hash-sc (map t->sc non-hashy))
+                    (apply or/sc numeric-sc (map t->sc non-numeric)))]
+               [hash-sc
+                (if (null? non-hashy)
+                    hash-sc
+                    (apply or/sc hash-sc (map t->sc non-hashy)))]
+               [else (apply or/sc (map t->sc elems))])]
         [(and t (Function: _)) (t->sc/fun t)]
         [(Set: t) (set/sc (t->sc t))]
         [(Sequence: ts) (apply sequence/sc (map t->sc ts))]
@@ -330,7 +341,7 @@
         [(VectorTop:) (only-untyped vector?/sc)]
         [(BoxTop:) (only-untyped box?/sc)]
         [(ChannelTop:) (only-untyped channel?/sc)]
-        [(HashtableTop:) (only-untyped hash?/sc)]
+        [(MHashtableTop:) (only-untyped mhash?/sc)]
         [(MPairTop:) (only-untyped mpair?/sc)]
         [(ThreadCellTop:) (only-untyped thread-cell?/sc)]
         [(Prompt-TagTop:) (only-untyped prompt-tag?/sc)]
@@ -462,8 +473,10 @@
          (flat/sc #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v))) v)]
         [(Param: in out) 
          (parameter/sc (t->sc in) (t->sc out))]
-        [(Hashtable: k v)
-         (hash/sc (t->sc k) (t->sc v))]
+        [(IHashtable: k v)
+         (ihash/sc (t->sc k) (t->sc v))]
+        [(MHashtable: k v)
+         (mhash/sc (t->sc k) (t->sc v))]
         [(Channel: t)
          (channel/sc (t->sc t))]
         [else
@@ -551,6 +564,31 @@
        (if (= (length arrs) 1)
            ((f #f) (first arrs))
            (case->/sc (map (f #t) arrs)))])]))
+
+;; hash-types->static-contract :
+;; (-> (Mutable-Setof Type/c?) (-> Type/c? Static-Contract) (-> Static-Contract Static-Contract)
+;;     (or/c #f Static-Contract))
+;; Hash types can contain immutable and mutable versions of the same type.
+;; Given a mutable set (that we destructively remove types from) of types with the 'hash key,
+;; produce a single contract for (U (IHashTable A B) (MHashTable A B)) that doesn't care about mutability.
+;; All types that don't have a flip partner get thrown into a list to be or/sc'd with.
+(define (hash-types->static-contract types t->sc only-untyped)
+  (cond
+   [(and (set-member? types -IHashTop)
+         (set-member? types -MHashTop))
+    (only-untyped hash?/sc)]
+   [else
+    ;; Building a (nested) or/sc contract is only "worth it" if we can remove a duplicate contract.
+    (define worth-it? (box #f))
+    (pair-equals types '() '()
+                 (λ (ctor paired ab)
+                    (set-box! worth-it? #t)
+                    (cons (hash/sc (t->sc (first ab)) (t->sc (second ab))) paired))
+                 (λ (t unpaired)
+                    (cons (t->sc t) unpaired))
+                 (λ (paired unpaired)
+                    (and (unbox worth-it?)
+                         (apply or/sc (append paired unpaired)))))]))
 
 (module predicates racket/base
   (require racket/extflonum)
