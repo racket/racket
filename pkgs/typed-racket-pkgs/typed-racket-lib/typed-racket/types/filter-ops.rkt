@@ -9,7 +9,17 @@
          (only-in (infer infer) restrict)
          (types union subtype remove-intersect abbrev tc-result))
 
-(provide (all-defined-out))
+(provide/cond-contract
+  [-and (c:->* () #:rest (c:listof Filter/c) Filter/c)]
+  [-or (c:->* () #:rest (c:listof Filter/c) Filter/c)]
+  [-imp (c:-> Filter/c Filter/c Filter/c)]
+  [implied-atomic? (c:-> Filter/c Filter/c boolean?)]
+  [complementary? (c:-> Filter/c Filter/c boolean?)]
+  [contradictory? (c:-> Filter/c Filter/c boolean?)]
+  [add-unconditional-filter-all-args (c:-> Function? Type/c Function?)]
+  [add-unconditional-prop (c:-> tc-results/c Filter/c tc-results/c)]
+  [erase-filter (c:-> tc-results/c tc-results/c)]
+  [name-ref=? (c:-> name-ref/c name-ref/c boolean?)])
 
 (define (atomic-filter? p)
   (or (TypeFilter? p) (NotTypeFilter? p)
@@ -51,9 +61,9 @@
     [((Top:) _) #t]
     [(_ (Bot:)) #t]
     [((OrFilter: fs) f2)
-     (memf (lambda (f) (filter-equal? f f2)) fs)]
+     (and (memf (lambda (f) (filter-equal? f f2)) fs) #t)]
     [(f1 (AndFilter: fs))
-     (memf (lambda (f) (filter-equal? f f1)) fs)]
+     (and (memf (lambda (f) (filter-equal? f f1)) fs) #t)]
     [((TypeFilter: t1 p) (TypeFilter: t2 p))
      (subtype t2 t1)]
     [((NotTypeFilter: t2 p) (NotTypeFilter: t1 p))
