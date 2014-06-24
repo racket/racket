@@ -171,6 +171,7 @@
 
 ;; elems are all Types
 (def-type HeterogeneousVector ([elems (listof Type/c)])
+  [#:intern (map Rep-seq elems)]
   [#:frees (λ (f) (make-invariant (combine-frees (map f elems))))]
   [#:key 'vector]
   [#:fold-rhs (*HeterogeneousVector (map type-rec-id elems))])
@@ -292,6 +293,7 @@
   [#:fold-rhs (*Result (type-rec-id t) (filter-rec-id f) (object-rec-id o))])
 
 (def-type Values ([rs (listof Result?)])
+  [#:intern (map Rep-seq rs)]
   [#:frees (λ (f) (combine-frees (map f rs)))]
   [#:fold-rhs (*Values (map type-rec-id rs))])
 
@@ -300,6 +302,7 @@
   [#:fold-rhs #:base])
 
 (def-type ValuesDots ([rs (listof Result?)] [dty Type/c] [dbound (or/c symbol? natural-number/c)])
+  [#:intern (list (map Rep-seq rs) (Rep-seq dty) dbound)]
   [#:frees (if (symbol? dbound)
                (free-vars-remove (combine-frees (map free-vars* (cons dty rs))) dbound)
                (combine-frees (map free-vars* (cons dty rs))))
@@ -353,6 +356,7 @@
 
 ;; arities : Listof[arr]
 (def-type Function ([arities (listof arr?)])
+  [#:intern (map Rep-seq arities)]
   [#:key 'procedure]
   [#:frees (λ (f) (combine-frees (map f arities)))]
   [#:fold-rhs (*Function (map type-rec-id arities))])
@@ -361,7 +365,7 @@
 (def-type fld ([t Type/c] [acc identifier?] [mutable? boolean?])
   [#:frees (λ (f) (if mutable? (make-invariant (f t)) (f t)))]
   [#:fold-rhs (*fld (type-rec-id t) acc mutable?)]
-  [#:intern (list t (hash-id acc) mutable?)])
+  [#:intern (list (Rep-seq t) (hash-id acc) mutable?)])
 
 ;; name : identifier
 ;; parent : Struct
@@ -433,6 +437,7 @@
                                                       (and sorted? (type<? last e))
                                                       e))])
                                        sorted?))))])
+  [#:intern (map Rep-seq elems)]
   [#:frees (λ (f) (combine-frees (map f elems)))]
   [#:fold-rhs (apply Un (map type-rec-id elems))]
   [#:key 
@@ -539,6 +544,7 @@
 ;; includes lists, vectors, etc
 ;; tys : sequence produces this set of values at each step
 (def-type Sequence ([tys (listof Type/c)])
+  [#:intern (map Rep-seq tys)]
   [#:frees (λ (f) (combine-frees (map f tys)))]
   [#:key #f] [#:fold-rhs (*Sequence (map type-rec-id tys))])
 
