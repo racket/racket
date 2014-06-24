@@ -17,7 +17,9 @@
          (only-in racket/list split-at)
          (typecheck internal-forms tc-envops)
          ;; Needed for current implementation of typechecking letrec-syntax+values
-         (for-template (only-in racket/base letrec-values))
+         (for-template (only-in racket/base letrec-values)
+                       ;; see tc-app-contracts.rkt
+                       racket/contract/private/provide)
 
          (for-label (only-in '#%paramz [parameterization-key pz:pk])
                     (only-in racket/private/class-internal find-method/who)))
@@ -35,7 +37,9 @@
 ;; tc-id : identifier -> tc-results
 (define/cond-contract (tc-id id)
   (--> identifier? full-tc-results/c)
-  (let* ([ty (lookup-type/lexical id)])
+  (define rename-id (contract-rename-id-property id))
+  (define id* (or rename-id id))
+  (let* ([ty (lookup-type/lexical id*)])
     (ret ty
          (make-FilterSet (-not-filter (-val #f) id)
                          (-filter (-val #f) id))

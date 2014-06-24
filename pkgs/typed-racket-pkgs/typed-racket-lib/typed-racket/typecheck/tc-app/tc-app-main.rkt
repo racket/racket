@@ -12,7 +12,8 @@
 
 (import tc-expr^ tc-app-keywords^
         tc-app-hetero^ tc-app-list^ tc-app-apply^ tc-app-values^
-        tc-app-objects^ tc-app-eq^ tc-app-lambda^ tc-app-special^)
+        tc-app-objects^ tc-app-eq^ tc-app-lambda^ tc-app-special^
+        tc-app-contracts^)
 (export tc-app^)
 
 (define-tc/app-syntax-class (tc/app-regular* expected)
@@ -34,6 +35,7 @@
   tc/app-objects
   tc/app-lambda
   tc/app-special
+  tc/app-contracts
   tc/app-regular*)
 
 ;; the main dispatching function
