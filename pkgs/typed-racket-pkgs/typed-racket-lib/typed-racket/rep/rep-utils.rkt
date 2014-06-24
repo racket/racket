@@ -30,7 +30,12 @@
 ;; free-vars: cached free type variables
 ;; free-idxs: cached free dot sequence variables
 ;; stx: originating syntax for error-reporting
-(define-struct Rep (seq free-vars free-idxs stx) #:transparent)
+(define-struct Rep (seq free-vars free-idxs stx) #:transparent
+               #:methods gen:equal+hash
+               [(define (equal-proc x y recur)
+                  (eq? (unsafe-Rep-seq x) (unsafe-Rep-seq y)))
+                (define (hash-proc x recur) (unsafe-Rep-seq x))
+                (define (hash2-proc x recur) (unsafe-Rep-seq x))])
 
 ;; evil tricks for hygienic yet unhygienic-looking reference
 ;; in say def-type for type-ref-id
