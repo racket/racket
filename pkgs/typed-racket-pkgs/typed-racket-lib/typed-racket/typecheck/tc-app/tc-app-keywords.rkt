@@ -10,7 +10,10 @@
          (rep type-rep)
          (utils tc-utils)
          (r:infer infer)
-         (for-label racket/base))
+         (for-label racket/base)
+         ;; adjusted -1 since it's provided for-syntax
+         (only-in (for-template racket/contract/private/provide)
+                  contract-neg-party-property))
 
 
 (import tc-expr^)
@@ -24,10 +27,17 @@
                  ((#%plain-app cpce s-kp fn kpe kws num)
                   kw-list
                   (#%plain-app list . kw-arg-list)
-                  . pos-args))
+                  . *pos-args))
     #:declare cpce (id-from 'checked-procedure-check-and-extract 'racket/private/kw)
     #:declare s-kp (id-from 'struct:keyword-procedure 'racket/private/kw)
     #:declare kpe  (id-from 'keyword-procedure-extract 'racket/private/kw)
+    ;; If this application is of a module boundary contract function or not
+    ;; If #t, then the contract system has inserted an extra argument which we
+    ;; need to ignore
+    #:attr boundary-ctc? (contract-neg-party-property #'fn)
+    #:with pos-args (if (attribute boundary-ctc?)
+                        (stx-cdr #'*pos-args)
+                        #'*pos-args)
     (match (tc-expr #'fn)
       [(tc-result1:
         (Poly: vars
