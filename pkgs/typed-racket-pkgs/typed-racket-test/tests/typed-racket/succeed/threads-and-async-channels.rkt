@@ -9,7 +9,7 @@
 (define (reader)
   (thread
    (lambda ()
-     (let: loop : True ((i : Integer 10))
+     (let loop : True ((i : Integer 10))
        (if (= i 0)
            #t
            (begin (async-channel-get chan)
@@ -37,7 +37,7 @@
 (define (jumping-reader)
   (thread
    (lambda ()
-     (let: loop : True ((i : Integer 3)
+     (let loop : True ((i : Integer 3)
                         (c : JumpingChannel jump-chan))
        (if (= i 0)
            #t
@@ -45,11 +45,11 @@
                  (car (async-channel-get c))))))))
 
 (jumping-reader)
-(let: ((c2 : JumpingChannel (make-async-channel)))
+(let ((c2 : JumpingChannel (make-async-channel)))
   (async-channel-put jump-chan (cons c2 'a))
-  (let: ((c3 : JumpingChannel (make-async-channel)))
+  (let ((c3 : JumpingChannel (make-async-channel)))
     (async-channel-put c2 (cons c3 'b))
-    (let: ((c4 : JumpingChannel (make-async-channel)))
+    (let ((c4 : JumpingChannel (make-async-channel)))
       (async-channel-put c3 (cons c4 'c)))))
 
 

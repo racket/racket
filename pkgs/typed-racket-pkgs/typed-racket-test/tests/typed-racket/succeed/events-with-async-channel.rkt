@@ -17,13 +17,13 @@
    (lambda ()
      (: clear-events (-> Void))
      (define (clear-events)
-       (let: ([l : (Option Log-Receiver-Sync-Result)
+       (let ([l : (Option Log-Receiver-Sync-Result)
                (sync/timeout 0 receiver)])
          (when l ; still something to read
            (intercept l) ; interceptor gets the whole vector
            (clear-events))))
      (let loop ()
-       (let: ([l : (U Log-Receiver-Sync-Result 'stop)
+       (let ([l : (U Log-Receiver-Sync-Result 'stop)
                (sync receiver stop-chan)])
          (cond [(eq? l 'stop)
                 ;; we received all the events we were supposed
