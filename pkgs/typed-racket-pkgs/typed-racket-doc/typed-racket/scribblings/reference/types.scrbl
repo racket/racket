@@ -4,7 +4,8 @@
                 "numeric-tower-pict.rkt"
                 scribble/eval
                 racket/sandbox)
-       (require (for-label (only-meta-in 0 [except-in typed/racket for])))]
+       (require (for-label (only-meta-in 0 [except-in typed/racket for])
+                           racket/async-channel))]
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
@@ -410,6 +411,21 @@ corresponding to @racket[trest], where @racket[bound]
   appears in programs via the combination of occurrence typing and
   @racket[channel?].
 @ex[(lambda: ([x : Any]) (if (channel? x) x (error "not a channel!")))]
+}
+
+@defform[(Async-Channelof t)]{An @rtech{asynchronous channel} on which only @racket[t]s can be sent.
+@ex[
+(require typed/racket/async-channel)
+(ann (make-async-channel) (Async-Channelof Symbol))
+]
+}
+
+@defidform[Async-ChannelTop]{is the type of an @rtech{asynchronous channel} with unknown
+  message type and is the supertype of all asynchronous channel types. This type typically
+  appears in programs via the combination of occurrence typing and
+  @racket[async-channel?].
+@ex[(require typed/racket/async-channel)
+    (lambda: ([x : Any]) (if (async-channel? x) x (error "not an async-channel!")))]
 }
 
 @defform*[[(Parameterof t)

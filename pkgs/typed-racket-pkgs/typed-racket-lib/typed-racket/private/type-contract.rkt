@@ -330,6 +330,7 @@
         [(VectorTop:) (only-untyped vector?/sc)]
         [(BoxTop:) (only-untyped box?/sc)]
         [(ChannelTop:) (only-untyped channel?/sc)]
+        [(Async-ChannelTop:) (only-untyped async-channel?/sc)]
         [(HashtableTop:) (only-untyped hash?/sc)]
         [(MPairTop:) (only-untyped mpair?/sc)]
         [(ThreadCellTop:) (only-untyped thread-cell?/sc)]

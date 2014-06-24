@@ -592,6 +592,8 @@
            (% cset-meet (cg/inv s s*) (cg/inv t t*))]
           [((Channel: e) (Channel: e*))
            (cg/inv e e*)]
+          [((Async-Channel: e) (Async-Channel: e*))
+           (cg/inv e e*)]
           [((ThreadCell: e) (ThreadCell: e*))
            (cg/inv e e*)]
           [((Continuation-Mark-Keyof: e) (Continuation-Mark-Keyof: e*))
@@ -629,6 +631,7 @@
                t)]
           [((CustodianBox: t) (Evt: t*)) (cg S t*)]
           [((Channel: t) (Evt: t*)) (cg t t*)]
+          [((Async-Channel: t) (Evt: t*)) (cg t t*)]
           ;; we assume all HTs are mutable at the moment
           [((Hashtable: s1 s2) (Hashtable: t1 t2))
            ;; for mutable hash tables, both are invariant

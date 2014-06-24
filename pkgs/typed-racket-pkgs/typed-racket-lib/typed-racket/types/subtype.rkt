@@ -510,6 +510,7 @@
           ;; compared against t* here
           (subtype* A0 s t*)]
          [((Channel: t) (Evt: t*)) (subtype* A0 t t*)]
+         [((Async-Channel: t) (Evt: t*)) (subtype* A0 t t*)]
          ;; Invariant types
          [((Box: s) (Box: t)) (type-equiv? A0 s t)]
          [((Box: _) (BoxTop:)) A0]
@@ -517,6 +518,8 @@
          [((ThreadCell: _) (ThreadCellTop:)) A0]
          [((Channel: s) (Channel: t)) (type-equiv? A0 s t)]
          [((Channel: _) (ChannelTop:)) A0]
+         [((Async-Channel: s) (Async-Channel: t)) (type-equiv? A0 s t)]
+         [((Async-Channel: _) (Async-ChannelTop:)) A0]
          [((Vector: s) (Vector: t)) (type-equiv? A0 s t)]
          [((Vector: _) (VectorTop:)) A0]
          [((HeterogeneousVector: _) (VectorTop:)) A0]
