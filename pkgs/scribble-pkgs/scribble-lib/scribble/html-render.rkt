@@ -1541,7 +1541,21 @@
                                                           (or (attributes? a)
                                                               (color-property? a)
                                                               (background-color-property? a)))
-                                                        (style-properties column-style))))
+                                                        (style-properties column-style)))
+                                               (let ([ps (style-properties column-style)])
+                                                 (cond
+                                                  [(memq 'border ps)
+                                                   `([style "border: 1px solid black;"])]
+                                                  [else
+                                                   (define (check sym sfx)
+                                                     (if (memq sym ps)
+                                                         `([style ,(format "border-~a: 1px solid black;" sfx)])
+                                                         null))
+                                                   (append
+                                                    (check 'top-border 'top)
+                                                    (check 'bottom-border 'bottom)
+                                                    (check 'left-border 'left)
+                                                    (check 'right-border 'right))])))
                                null)
                          ,@(if (and (pair? (cdr ds))
                                     (eq? 'cont (cadr ds)))
@@ -1558,16 +1572,30 @@
                               (render-content (paragraph-content d) part ri)
                               (render-block d part ri #f)))
                    (loop (cdr ds) (cdr column-styles) #f)))]))))
+      (define cell-styless (extract-table-cell-styles t))
       `((table ([cellspacing "0"]
-                ,@(if starting-item?
-                    '([style "display: inline-table; vertical-align: text-top;"])
-                    null)
+                [cellpadding "0"]
                 ,@(combine-class
                    (case (style-name (table-style t))
                      [(boxed)    '([class "boxed"])]
                      [(centered) '([align "center"])]
                      [else '()])
-                   (style->attribs (table-style t))))
+                   (style->attribs (table-style t)
+                                   (append
+                                    (if starting-item?
+                                        '([style "display: inline-table; vertical-align: text-top;"])
+                                        null)
+                                    (if (for/or ([cell-styles (in-list cell-styless)])
+                                          (for/or ([cell-style (in-list cell-styles)])
+                                            (and cell-style
+                                                 (let ([ps (style-properties cell-style)])
+                                                   (or (memq 'border ps)
+                                                       (memq 'left-border ps)
+                                                       (memq 'right-border ps)
+                                                       (memq 'bottom-border ps)
+                                                       (memq 'top-border ps))))))
+                                        `([style "border-collapse: collapse;"])
+                                        '())))))
           ,@(let ([columns (ormap (lambda (p)
                                     (and (table-columns? p)
                                          (map (lambda (s)
@@ -1587,7 +1615,7 @@
                 `((tr (td)))
                 (map make-row
                      (table-blockss t)
-                     (extract-table-cell-styles t))))))
+                     cell-styless)))))
 
     (define/override (render-nested-flow t part ri starting-item?)
       `((,(or (style->tag (nested-flow-style t)) 'blockquote)

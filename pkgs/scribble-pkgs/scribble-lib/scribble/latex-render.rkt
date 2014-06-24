@@ -566,6 +566,21 @@
               (when (string? s-name)
                 (printf "\\end{~a}" s-name)))
             (unless (or (null? blockss) (null? (car blockss)))
+              (define all-left-line?s
+                (if (null? cell-styless)
+                    null
+                    (for/list ([i (in-range (length (car cell-styless)))])
+                      (for/and ([cell-styles (in-list cell-styless)])
+                        (let ([cell-style (list-ref cell-styles i)])
+                          (or (memq 'left-border (style-properties cell-style))
+                              (memq 'border (style-properties cell-style))))))))
+              (define all-right-line?
+                (and (pair? cell-styless)
+                     (let ([i (sub1 (length (car cell-styless)))])
+                       (for/and ([cell-styles (in-list cell-styless)])
+                         (let ([cell-style (list-ref cell-styles i)])
+                           (or (memq 'right-border (style-properties cell-style))
+                               (memq 'border (style-properties cell-style))))))))
               (parameterize ([current-table-mode
                               (if inline? (current-table-mode) (list tableform t))]
                              [show-link-page-numbers
@@ -589,40 +604,98 @@
                               "")
                           (string-append*
                            (let ([l
-                                  (map (lambda (i cell-style)
-                                         (format "~a@{}"
+                                  (map (lambda (i cell-style left-line?)
+                                         (format "~a~a@{}"
+                                                 (if left-line? "|@{}" "")
                                                  (cond
                                                   [(memq 'center (style-properties cell-style)) "c"]
                                                   [(memq 'right (style-properties cell-style)) "r"]
                                                   [else "l"])))
                                        (car blockss)
-                                       (car cell-styless))])
-                             (if boxed? (cons "@{\\SBoxedLeft}" l) l)))
+                                       (car cell-styless)
+                                       all-left-line?s)])
+                             (let ([l (if all-right-line? (append l '("|")) l)])
+                               (if boxed? (cons "@{\\SBoxedLeft}" l) l))))
                           "")])
+                ;; Helper to add row-separating lines:
+                (define (add-clines prev-styles next-styles)
+                  (let loop ([pos 1] [start #f] [prev-styles prev-styles] [next-styles next-styles])
+                    (cond
+                     [(or (and prev-styles (null? prev-styles))
+                          (and next-styles (null? next-styles)))
+                      (when start
+                        (if (= start 1)
+                            (printf "\\hline ")
+                            (printf "\\cline{~a-~a}" start (sub1 pos))))]
+                     [else
+                      (define prev-style (and prev-styles (car prev-styles)))
+                      (define next-style (and next-styles (car next-styles)))
+                      (define line? (or (and prev-style
+                                             (or (memq 'bottom-border (style-properties prev-style))
+                                                 (memq 'border (style-properties prev-style))))
+                                        (and next-style
+                                             (or (memq 'top-border (style-properties next-style))
+                                                 (memq 'border (style-properties next-style))))))
+                      (when (and start (not line?))
+                        (printf "\\cline{~a-~a}" start (sub1 pos)))
+                      (loop (add1 pos) (and line? (or start pos))
+                            (and prev-styles (cdr prev-styles))
+                            (and next-styles (cdr next-styles)))])))
+                ;; Loop through rows:
                 (let loop ([blockss blockss]
-                           [cell-styless cell-styless])
+                           [cell-styless cell-styless]
+                           [prev-styles #f]) ; for 'bottom-border styles
                   (let ([flows (car blockss)]
                         [cell-styles (car cell-styless)])
+                    (unless index? (add-clines prev-styles cell-styles))
                     (let loop ([flows flows]
-                               [cell-styles cell-styles])
+                               [cell-styles cell-styles]
+                               [all-left-line?s all-left-line?s]
+                               [need-left? #f])
                       (unless (null? flows)
-                        (when index? (printf "\n\\item "))
-                        (unless (eq? 'cont (car flows))
-                          (let ([cnt (let loop ([flows (cdr flows)][n 1])
-                                       (cond [(null? flows) n]
-                                             [(eq? (car flows) 'cont)
-                                              (loop (cdr flows) (add1 n))]
-                                             [else n]))])
-                            (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
-                            (render-table-cell (car flows) part ri (/ twidth cnt) (car cell-styles) (not index?))
-                            (unless (= cnt 1) (printf "}"))
-                            (unless (null? (list-tail flows cnt)) (printf " &\n"))))
+                        (define right-line?
+                          (cond
+                           [index?
+                            (printf "\n\\item ")
+                            #f]
+                           [(eq? 'cont (car flows))
+                            #f]
+                           [else
+                            (let ([cnt (let loop ([flows (cdr flows)][n 1])
+                                         (cond [(null? flows) n]
+                                               [(eq? (car flows) 'cont)
+                                                (loop (cdr flows) (add1 n))]
+                                               [else n]))])
+                              (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
+                              (when (and (not (car all-left-line?s))
+                                         (or need-left?
+                                             (memq 'left-border (style-properties (car cell-styles)))
+                                             (memq 'border (style-properties (car cell-styles)))))
+                                (printf "\\vline "))
+                              (render-table-cell (car flows) part ri (/ twidth cnt) (car cell-styles) (not index?))
+                              (define right-line? (or (memq 'right-border (style-properties (list-ref cell-styles (sub1 cnt))))
+                                                      (memq 'border (style-properties (list-ref cell-styles (sub1 cnt))))))
+                              (when (and right-line? (null? (list-tail flows cnt)) (not all-right-line?))
+                                (printf "\\vline "))
+                              (unless (= cnt 1) (printf "}"))
+                              (unless (null? (list-tail flows cnt))
+                                (printf " &\n"))
+                              right-line?)]))
                         (unless (null? (cdr flows)) (loop (cdr flows)
-                                                          (cdr cell-styles)))))
-                    (unless (or index? (null? (cdr blockss)))
+                                                          (cdr cell-styles)
+                                                          (cdr all-left-line?s)
+                                                          right-line?))))
+                    (unless (or index?
+                                (and (null? (cdr blockss))
+                                     (not (for/or ([cell-style (in-list cell-styles)])
+                                            (or (memq 'bottom-border (style-properties cell-style))
+                                                (memq 'border (style-properties cell-style)))))))
                       (printf " \\\\\n"))
-                    (unless (null? (cdr blockss))
-                      (loop (cdr blockss) (cdr cell-styless)))))
+                    (cond
+                     [(null? (cdr blockss))
+                      (unless index? (add-clines cell-styles #f))]
+                     [else
+                      (loop (cdr blockss) (cdr cell-styless) cell-styles)])))
                 (unless inline?
                   (printf "\\end{~a}~a"
                           tableform
