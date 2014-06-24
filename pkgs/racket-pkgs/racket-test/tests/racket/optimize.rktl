@@ -1575,6 +1575,13 @@
            '(lambda (x y)
               (list (if x x y) (+ x y))))
 
+(test-comp '(lambda (x y)
+              (let ([z (car y)])
+                (if x x z)))
+           '(lambda (x y)
+              (if x x (car y)))
+           #f)
+
 (test-comp '(let-values ([(x y) (values 1 2)])
               (+ x y))
            3)
