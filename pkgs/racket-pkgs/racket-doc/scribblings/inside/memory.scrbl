@@ -6,9 +6,9 @@
 @section-index{memory}
 @section-index{garbage collection}
 
-Racket uses both @cppi{malloc} and allocation functions provided
-by a garbage collector. Embedding/extension C/C++ code may use either
-allocation method, keeping in mind that pointers to
+Racket uses both @cppi{malloc} and allocation functions provided by a
+garbage collector. Foreign-function and embedding/extension C code may
+use either allocation method, keeping in mind that pointers to
 garbage-collectable blocks in @cpp{malloc}ed memory are invisible
 (i.e., such pointers will not prevent the block from being
 garbage-collected).
