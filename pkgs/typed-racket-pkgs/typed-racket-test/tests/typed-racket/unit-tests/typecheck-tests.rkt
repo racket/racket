@@ -3102,6 +3102,10 @@
           b)
         -Bottom]
 
+       [tc-e
+         ((if (even? 4) add1 (inst values Integer)) 4)
+         -Int]
+
         )
 
   (test-suite

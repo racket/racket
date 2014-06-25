@@ -158,7 +158,7 @@
     [(Union: (and ts (list (? Function?) ...)))
      (merge-tc-results
       (for/list ([fty ts])
-        (tc/funapp f-stx args-stx fty argtys expected)))]
+        (tc/funapp f-stx args-stx fty args-res expected)))]
     ;; error type is a perfectly good fcn type
     [(Error:) f-type]
     ;; otherwise fail
