@@ -6280,7 +6280,9 @@ static void filesystem_change_evt_need_wakeup (Scheme_Object *evt, void *fds)
 }
 #endif
 
-int scheme_fd_regular_file(intptr_t fd, int dir_ok)
+int scheme_fd_regular_file(intptr_t fd, int or_other)
+/* or_other == 1 => directory
+   or_other == 2 => directory or fifo */
 {
 #if defined(USE_FD_PORTS) && !defined(DOS_FILE_SYSTEM)
   int ok;
@@ -6290,11 +6292,16 @@ int scheme_fd_regular_file(intptr_t fd, int dir_ok)
     ok = fstat(fd, &buf);
   } while ((ok == -1) && (errno == EINTR));
 
-  if (!S_ISREG(buf.st_mode)
-      && (!dir_ok || !S_ISDIR(buf.st_mode)))
-    return 0;
+  if (S_ISREG(buf.st_mode))
+    return 1;
+
+  if ((or_other >= 1) && S_ISDIR(buf.st_mode))
+    return 1;
+
+  if ((or_other >= 2) && S_ISFIFO(buf.st_mode))
+    return 1;
   
-  return 1;
+  return 0;
 #else
   return 0;
 #endif
@@ -7669,6 +7676,10 @@ fd_write_ready (Scheme_Object *port)
     MZ_FD_SET(fop->fd, exnfds);
 
     do {
+      /* Mac OS X 10.8 and 10.9: select() seems to claim that a pipe
+         is always ready for output. To work around that problem,
+         kqueue() support is enabled for pipes, so we shouldn't get
+         here much for pipes. */
       sr = select(fop->fd + 1, NULL, writefds, exnfds, &time);
     } while ((sr == -1) && (errno == EINTR));
 #endif
