@@ -11,7 +11,9 @@
          (utils tc-utils)
          (r:infer infer)
          (for-label racket/base)
-         (for-template racket/contract/private/provide))
+         ;; adjusted -1 since it's provided for-syntax
+         (only-in (for-template racket/contract/private/provide)
+                  contract-neg-party-property))
 
 
 (import tc-expr^)

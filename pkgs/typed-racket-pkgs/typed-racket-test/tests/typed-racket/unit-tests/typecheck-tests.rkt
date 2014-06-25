@@ -269,7 +269,6 @@
   racket/fixnum
   racket/flonum
   racket/extflonum
-  racket/format
   racket/function
   racket/future
   racket/list

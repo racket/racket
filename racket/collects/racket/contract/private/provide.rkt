@@ -65,20 +65,22 @@
   (struct provide/contract-info (rename-id contract-id original-id))
 
   ;; keys for syntax property used below
-  (define rename-id-key 'rename #;(gensym 'contract:rename-id))
-  (define ignore-key    (gensym 'contract:ignore))
-  (define neg-party-key 'neg-party #;(gensym 'contract:neg-party))
+  (define rename-id-key (gensym 'contract:rename-id))
+  (define lifted-key    (gensym 'contract:lifted))
+  (define neg-party-key (gensym 'contract:neg-party))
 
-  ;; identifier? identifier? boolean? -> identifier?
+  ;; identifier? identifier? -> identifier?
   ;; add a property that tells clients what the exported id was
   (define (add-rename-id rename-id partial-id)
     (syntax-property partial-id rename-id-key rename-id))
 
+  ;; syntax? -> syntax?
   ;; tells clients that the expression is a lifted application
   (define (add-lifted-property stx)
-    (syntax-property stx ignore-key #t))
+    (syntax-property stx lifted-key #t))
 
-  ;; tells clients that the application has an extra inserted argument
+  ;; identifier? -> identifier?
+  ;; tells clients that the application of this id has an extra inserted argument
   (define (add-neg-party stx)
     (syntax-property stx neg-party-key #t))
 
@@ -86,7 +88,7 @@
   (define (contract-rename-id-property stx)
     (syntax-property stx rename-id-key))
   (define (contract-lifted-property stx)
-    (syntax-property stx ignore-key))
+    (syntax-property stx lifted-key))
   (define (contract-neg-party-property stx)
     (syntax-property stx neg-party-key))
 
