@@ -107,6 +107,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
          'struct-extraction
          racket/flonum ; for for/flvector and for*/flvector
          racket/extflonum ; for for/extflvector and for*/extflvector
+         (for-label (only-in "base-types-extra.rkt" Values)
+                    (only-in racket/base values))
          (for-syntax
           racket/lazy-require
           syntax/parse
@@ -121,6 +123,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           syntax/struct
           "annotate-classes.rkt"
           "../utils/tc-utils.rkt"
+          "../utils/literal-syntax-class.rkt"
           "../private/parse-classes.rkt"
           "../private/syntax-properties.rkt"
           ;"../types/utils.rkt"
@@ -1175,9 +1178,16 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-syntaxes (-let/cc -let/ec)
   (let ()
+    (define-literal-syntax-class #:for-label Values)
+    (define-literal-syntax-class #:for-label values)
     (define ((mk l/c) stx)
       (syntax-parse stx
-       [(_ (~or k:cont-annotated-name
+       [(_ (~or (~var k (param-annotated-name
+                         (λ (ty)
+                            (syntax-parse ty
+                              [((~or :Values^ :values^) tys ...) ;; binds types and ellipses
+                               #'(tys ... -> (U))]
+                              [t #'(t -> (U))]))))
                 (~and k:id (~bind [k.ann-name #'k]))) . body)
         (quasisyntax/loc stx (#,l/c k.ann-name . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))
