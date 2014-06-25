@@ -85,9 +85,9 @@
                                 (define tg (generalize tc))
                                 (format "- : ~a~a~a\n"
                                         (pretty-format-type tg #:indent 4)
-                                        (cond [(equal? tc tg) ""]
+                                        (cond [(type-equal? tc tg) ""]
                                               [else (format " [more precisely: ~a]" tc)])
-                                        (cond [(equal? tc t) ""]
+                                        (cond [(type-equal? tc t) ""]
                                               [did-I-suggest-:print-type-already? " ..."]
                                               [else (set! did-I-suggest-:print-type-already? #t)
                                                     :print-type-message]))]
@@ -99,13 +99,13 @@
                                 (define indented? (regexp-match? #rx"\n" formatted))
                                 (format "- : ~a~a~a\n"
                                         formatted
-                                        (cond [(andmap equal? tgs tcs) ""]
+                                        (cond [(andmap type-equal? tgs tcs) ""]
                                               [indented?
                                                (format "\n[more precisely: ~a]"
                                                        (pretty-format-type (make-Values tcs) #:indent 17))]
                                               [else (format " [more precisely: ~a]" (cons 'Values tcs))])
                                         ;; did any get pruned?
-                                        (cond [(andmap equal? t tcs) ""]
+                                        (cond [(andmap type-equal? t tcs) ""]
                                               [did-I-suggest-:print-type-already? " ..."]
                                               [else (set! did-I-suggest-:print-type-already? #t)
                                                     :print-type-message]))]

@@ -112,7 +112,7 @@
      (tc-result
        (Un t1 t2)
        (-FS (-or f1+ f2+) (-or f1- f2-))
-       (if (equal? o1 o2) o1 -empty-obj))])
+       (if (object-equal? o1 o2) o1 -empty-obj))])
 
   (define/match (same-dty? r1 r2)
     [(#f #f) #t]
@@ -131,8 +131,8 @@
 
 
   (define/match (merge-two-results res1 res2)
-    [((tc-result1: (== -Bottom)) res2) res2]
-    [(res1 (tc-result1: (== -Bottom))) res1]
+    [((tc-result1: (== -Bottom type-equal?)) res2) res2]
+    [(res1 (tc-result1: (== -Bottom type-equal?))) res1]
     [((tc-any-results: f1) res2)
      (tc-any-results (-or f1 (unconditional-prop res2)))]
     [(res1 (tc-any-results: f2))

@@ -64,4 +64,3 @@
 ;; should only be used for parsing type annotations and expected types
 (def-filter NoFilter () [#:fold-rhs #:base])
 
-(define (filter-equal? a b) (= (Rep-seq a) (Rep-seq b)))

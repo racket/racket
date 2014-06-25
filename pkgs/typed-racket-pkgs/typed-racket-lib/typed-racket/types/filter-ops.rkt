@@ -29,9 +29,11 @@
 ;; Returns true if the AND of the two filters is equivalent to Bot
 (define (contradictory? f1 f2)
   (match* (f1 f2)
-    [((TypeFilter: t1 p) (NotTypeFilter: t2 p))
+    [((TypeFilter: t1 p1) (NotTypeFilter: t2 p2))
+     #:when (object-equal? p1 p2)
      (subtype t1 t2)]
-    [((NotTypeFilter: t2 p) (TypeFilter: t1 p))
+    [((NotTypeFilter: t2 p2) (TypeFilter: t1 p1))
+     #:when (object-equal? p1 p2)
      (subtype t1 t2)]
     [((Bot:) _) #t]
     [(_ (Bot:)) #t]
@@ -41,9 +43,11 @@
 ;; Returns true if the OR of the two filters is equivalent to Top
 (define (complementary? f1 f2)
   (match* (f1 f2)
-    [((TypeFilter: t1 p) (NotTypeFilter: t2 p))
+    [((TypeFilter: t1 p1) (NotTypeFilter: t2 p2))
+     #:when (object-equal? p1 p2)
      (subtype t2 t1)]
-    [((NotTypeFilter: t2 p) (TypeFilter: t1 p))
+    [((NotTypeFilter: t2 p2) (TypeFilter: t1 p1))
+     #:when (object-equal? p1 p2)
      (subtype t2 t1)]
     [((Top:) (Top:)) #t]
     [(_ _) #f]))
@@ -57,18 +61,21 @@
 ;; is f1 implied by f2?
 (define (implied-atomic? f1 f2)
   (match* (f1 f2)
-    [(f f) #t]
+    [(f1 f2) #:when (filter-equal? f1 f2) #t]
     [((Top:) _) #t]
     [(_ (Bot:)) #t]
     [((OrFilter: fs) f2)
      (and (memf (lambda (f) (filter-equal? f f2)) fs) #t)]
     [(f1 (AndFilter: fs))
      (and (memf (lambda (f) (filter-equal? f f1)) fs) #t)]
-    [((TypeFilter: t1 p) (TypeFilter: t2 p))
+    [((TypeFilter: t1 p1) (TypeFilter: t2 p2))
+     #:when (object-equal? p1 p2)
      (subtype t2 t1)]
-    [((NotTypeFilter: t2 p) (NotTypeFilter: t1 p))
+    [((NotTypeFilter: t2 p2) (NotTypeFilter: t1 p1))
+     #:when (object-equal? p1 p2)
      (subtype t2 t1)]
-    [((NotTypeFilter: t1 p) (TypeFilter: t2 p))
+    [((NotTypeFilter: t1 p1) (TypeFilter: t2 p2))
+     #:when (object-equal? p1 p2)
      (not (overlap t1 t2))]
     [(_ _) #f]))
 
@@ -88,27 +95,31 @@
      ((c:listof Filter/c) boolean? . c:-> . (c:listof Filter/c))
   (define tf-map (make-hash))
   (define ntf-map (make-hash))
+  ;; TODO undo this
+  (define obj-map (make-hash))
   (define (restrict-update dict t1 p)
-    (hash-update! dict p (λ (t2) (restrict t1 t2)) Univ))
+    (hash-update! dict (Rep-seq p) (λ (t2) (restrict t1 t2)) Univ))
   (define (union-update dict t1 p)
-    (hash-update! dict p (λ (t2) (Un t1 t2)) -Bottom))
+    (hash-update! dict (Rep-seq p) (λ (t2) (Un t1 t2)) -Bottom))
 
   (define-values (atomics others) (partition atomic-filter? props))
   (for ([prop (in-list atomics)])
     (match prop
       [(TypeFilter: t1 p)
+       (hash-set! obj-map (Rep-seq p) p)
        ((if or? union-update restrict-update) tf-map t1 p) ]
       [(NotTypeFilter: t1 p)
+       (hash-set! obj-map (Rep-seq p) p)
        ((if or? restrict-update union-update) ntf-map t1 p) ]))
   (define raw-results
     (append others
-            (for/list ([(k v) (in-hash tf-map)]) (-filter v k))
-            (for/list ([(k v) (in-hash ntf-map)]) (-not-filter v k))))
+            (for/list ([(k v) (in-hash tf-map)]) (-filter v (hash-ref obj-map k)))
+            (for/list ([(k v) (in-hash ntf-map)]) (-not-filter v (hash-ref obj-map k)))))
   (if or?
-      (if (member -top raw-results)
+      (if (memf Top? raw-results)
           (list -top)
           (filter-not Bot? raw-results))
-      (if (member -bot raw-results)
+      (if (memf Bot? raw-results)
           (list -bot)
           (filter-not Top? raw-results))))
 
@@ -130,7 +141,7 @@
 ;; Smart constructor for make-ImpFilter
 (define (-imp p1 p2)
   (match* (p1 p2)
-    [(t t) -top]
+    [(f1 f2) #:when (filter-equal? f1 f2) -top]
     [((Bot:) _) -top]
     [(_ (Top:)) -top]
     [((Top:) _) p2]

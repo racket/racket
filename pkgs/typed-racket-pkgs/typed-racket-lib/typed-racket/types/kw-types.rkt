@@ -4,6 +4,7 @@
          "../utils/tc-utils.rkt"
          "../base-env/annotate-classes.rkt"
          "tc-result.rkt"
+         "../rep/rep-utils.rkt"
          racket/list racket/set racket/dict racket/match
          racket/format racket/string
          syntax/parse)
@@ -68,7 +69,7 @@
     (if split?
         (remove-duplicates
           (list (make-arr* ts/true rng #:drest drest)
-                (make-arr* ts/false rng #:drest drest)))
+                (make-arr* ts/false rng #:drest drest)) type-equal?)
         (list (make-arr* ts rng #:rest rest #:drest drest)))))
 
 
@@ -170,7 +171,9 @@
 (define (kw-convert ft actual-kws #:split [split? #f])
   (match ft
     [(Function: arrs)
-     (inner-kw-convert arrs actual-kws split?)]
+     ;; TODO revert
+     (parameterize ([raise-error #f])
+       (inner-kw-convert arrs actual-kws split?))]
     [(Poly-names: names f)
      (make-Poly names (kw-convert f actual-kws #:split split?))]
     [(PolyDots-names: names f)

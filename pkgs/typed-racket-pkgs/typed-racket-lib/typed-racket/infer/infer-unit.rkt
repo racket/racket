@@ -187,18 +187,24 @@
 (define/cond-contract (cgen/filter V X Y s t)
   ((listof symbol?) (listof symbol?) (listof symbol?) Filter? Filter? . -> . (or/c #f cset?))
   (match* (s t)
-    [(e e) (empty-cset X Y)]
+    [(e1 e2) #:when (filter-equal? e1 e2)
+     (empty-cset X Y)]
     [(e (Top:)) (empty-cset X Y)]
     ;; FIXME - is there something to be said about the logical ones?
-    [((TypeFilter: s p) (TypeFilter: t p)) (cgen/inv V X Y s t)]
-    [((NotTypeFilter: s p) (NotTypeFilter: t p)) (cgen/inv V X Y s t)]
+    [((TypeFilter: s p1) (TypeFilter: t p2))
+     #:when (object-equal? p1 p2)
+     (cgen/inv V X Y s t)]
+    [((NotTypeFilter: s p1) (NotTypeFilter: t p2))
+     #:when (object-equal? p1 p2)
+     (cgen/inv V X Y s t)]
     [(_ _) #f]))
 
 ;; s and t must be *latent* filter sets
 (define/cond-contract (cgen/filter-set V X Y s t)
   ((listof symbol?) (listof symbol?) (listof symbol?) FilterSet? FilterSet? . -> . (or/c #f cset?))
   (match* (s t)
-    [(e e) (empty-cset X Y)]
+    [(e1 e2) #:when (filter-equal? e1 e2)
+     (empty-cset X Y)]
     [((FilterSet: s+ s-) (FilterSet: t+ t-))
      (% cset-meet (cgen/filter V X Y s+ t+) (cgen/filter V X Y s- t-))]
     [(_ _) #f]))
@@ -206,7 +212,8 @@
 (define/cond-contract (cgen/object V X Y s t)
   ((listof symbol?) (listof symbol?) (listof symbol?) Object? Object? . -> . (or/c #f cset?))
   (match* (s t)
-    [(e e) (empty-cset X Y)]
+    [(e1 e2) #:when (object-equal? e1 e2)
+     (empty-cset X Y)]
     [(e (Empty:)) (empty-cset X Y)]
     ;; FIXME - do something here
     [(_ _) #f]))

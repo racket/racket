@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         (rep type-rep filter-rep rep-utils)
+         (rep type-rep filter-rep rep-utils object-rep)
          (utils tc-utils)
          (types base-abbrev)
          racket/match
@@ -28,7 +28,7 @@
 ;; Used to contract the return values of typechecking functions.
 (define (full-tc-results/c r)
   (match r
-    [(tc-any-results: f) (not (equal? -no-filter f))]
+    [(tc-any-results: f) (not (type-equal? -no-filter f))]
     [(tc-results: _ fs os)
      (and
        (not (member -no-filter fs))
@@ -93,7 +93,7 @@
 ;; Smart constructor for a tc-result.
 (define (-tc-result type [filter -top-filter] [object -empty-obj])
   (cond
-    [(or (equal? type -Bottom) (equal? filter -bot-filter))
+    [(or (type-equal? type -Bottom) (filter-equal? filter -bot-filter))
      (tc-result -Bottom -bot-filter object)]
     [else
      (tc-result type filter object)]))
@@ -146,7 +146,20 @@
           [dbound symbol?])
          [res tc-results/c])])
 
-(define tc-result-equal? equal?)
+(define (tc-result-equal? x y)
+  (match* (x y)
+    [((tc-any-results: f1) (tc-any-results: f2))
+     (filter-equal? f1 f2)]
+    [((tc-results: ts1 fs1 os1) (tc-results: ts2 fs2 os2))
+     (and (andmap type-equal? ts1 ts2)
+          (andmap filter-equal? fs1 fs2)
+          (andmap object-equal? os1 os2))]
+    [((tc-results: ts1 fs1 os1 dty1 dbound1) (tc-results: ts2 fs2 os2 dty2 dbound2))
+     (and (andmap type-equal? ts1 ts2)
+          (andmap filter-equal? fs1 fs2)
+          (andmap object-equal? os1 os2)
+          (type-equal? dty1 dty2)
+          (equal? dbound1 dbound2))]))
 
 (provide tc-result: tc-results: tc-any-results: tc-result1: Result1: Results:
          tc-results)

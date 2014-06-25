@@ -93,10 +93,17 @@
       ;; Keyword args, range and rest specs all the same.
       (let* ([xs (map (match-lambda [(arr: _ rng rest-spec _ kws)
                                 (list rng rest-spec kws)])
-                      arrs)]
-             [first-x (first xs)])
-        (for/and ([x (in-list (rest xs))])
-          (equal? x first-x)))
+                      arrs)])
+        (match (first xs)
+          [(list rng1 rest1 kws1)
+           (for/and ([x (in-list (rest xs))])
+             (match x
+               [(list rng2 rest2 kws2)
+                (and (type-equal? rng1 rng2)
+                     (if rest1
+                         (and rest2 (type-equal? rest1 rest2))
+                         (not rest2))
+                     (andmap type-equal? kws1 kws2))]))]))
       ;; Positionals are monotonically increasing by at most one.
       (let-values ([(_ ok?)
                     (for/fold ([positionals (arr-dom (first arrs))]
@@ -110,7 +117,7 @@
                                  (and ok-so-far?
                                       (or (= ldom lpositionals)
                                           (= ldom (add1 lpositionals)))
-                                      (equal? positionals (take dom lpositionals))))]))])
+                                      (andmap type-equal? positionals (take dom lpositionals))))]))])
         ok?)))
 
 (provide/cond-contract

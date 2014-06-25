@@ -569,7 +569,7 @@
 ;; return true if the class member is already annotated
 (define (check-duplicate-member table name type)
   (and (hash-has-key? table name)
-       (not (equal? (hash-ref table name) type))
+       (not (type-equal? (hash-ref table name) type))
        (tc-error/expr/fields
         "duplicate type annotation in class"
         #:stx #`#,name
@@ -734,11 +734,11 @@
       (define maybe-type (dict-ref type-map external #f))
       (->* (list (make-Univ))
            (cond [(and maybe-type
-                       (not (equal? (car maybe-type) top-func))
+                       (not (type-equal? (car maybe-type) top-func))
                        (not inner?))
                   (function->method (car maybe-type) self-type)]
                  [(and maybe-type
-                       (not (equal? (car maybe-type) top-func)))
+                       (not (type-equal? (car maybe-type) top-func)))
                   (Un (-val #f)
                       (function->method (car maybe-type) self-type))]
                  [else (make-Univ)]))))
@@ -788,7 +788,7 @@
       (define pre-type (dict-ref type-map f #f))
       (define maybe-type (if (pair? pre-type) (car pre-type) pre-type))
       (or (and maybe-type
-               (not (equal? maybe-type top-func))
+               (not (type-equal? maybe-type top-func))
                (function->method maybe-type self-type))
           (make-Univ))))
 
@@ -869,7 +869,7 @@
     (cond [(and maybe-expected
                 ;; fall back to tc-expr/t if the annotated type
                 ;; was the default type (Procedure)
-                (not (equal? (car maybe-expected) top-func))
+                (not (type-equal? (car maybe-expected) top-func))
                 (set-member? names-to-check external-name))
            (define pre-method-type (car maybe-expected))
            (define method-type

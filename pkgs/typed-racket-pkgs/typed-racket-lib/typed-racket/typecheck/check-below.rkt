@@ -114,7 +114,7 @@
 (define (check-below tr1 expected)
   (define (filter-set-better? f1 f2)
     (match* (f1 f2)
-      [(f f) #t]
+      [(f1 f2) #:when (filter-equal? f1 f2) #t]
       [(f (NoFilter:)) #t]
       [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-))
        (and (implied-atomic? f2+ f1+)
@@ -122,7 +122,7 @@
       [(_ _) #f]))
   (define (object-better? o1 o2)
     (match* (o1 o2)
-      [(o o) #t]
+      [(o1 o2) #:when (object-equal? o1 o2) #t]
       [(o (or (NoObject:) (Empty:))) #t]
       [(_ _) #f]))
   (define (filter-better? f1 f2)
@@ -210,7 +210,10 @@
        (expected-but-got (stringify t2) (stringify t1)))
      (fix-results expected)]
 
-    [((tc-results: t1 fs os) (tc-results: t2 fs os))
+    [((tc-results: t1 fs1 os1) (tc-results: t2 fs2 os2)) (=> continue)
+     (when (= (length t1) (length t2))
+       (unless (and (andmap filter-equal? fs1 fs2) (andmap object-equal? os1 os2))
+         (continue)))
      (unless (= (length t1) (length t2))
        (value-mismatch expected tr1))
      (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))

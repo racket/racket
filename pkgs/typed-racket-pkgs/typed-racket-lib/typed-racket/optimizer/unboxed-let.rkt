@@ -142,7 +142,7 @@
                          [dom doms]
                          [i (in-naturals)])
                 (cond
-                  [(and (equal? dom -FloatComplex)
+                  [(and (type-equal? dom -FloatComplex)
                         (could-be-unboxed-in?
                           param
                           #'(begin body ...)))

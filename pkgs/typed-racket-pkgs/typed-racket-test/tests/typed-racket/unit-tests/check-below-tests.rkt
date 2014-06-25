@@ -5,7 +5,7 @@
          syntax/srcloc syntax/location
          (types abbrev union tc-result)
          (utils tc-utils)
-         (rep filter-rep object-rep type-rep)
+         (rep filter-rep object-rep type-rep rep-utils)
          (typecheck check-below)
          (for-syntax racket/base syntax/parse))
 
@@ -47,7 +47,7 @@
            (define result (check-below t1 t2))
            (with-check-info (['actual result])
              (check-result result)
-             (unless (equal? expected-result result)
+             (unless ((if (Type? expected-result) type-equal? tc-result-equal?) expected-result result)
                (fail-check "Check below did not return expected result.")))))]
     [(_ #:fail (~optional message:expr #:defaults [(message #'#rx"type mismatch")])
         t1:expr t2:expr
@@ -66,7 +66,7 @@
                    (report-all-errors)
                    (fail-check "Check below did not fail."))))
              (check-result result)
-             (unless (equal? expected-result result)
+             (unless ((if (Type? expected-result) type-equal? tc-result-equal?) expected-result result)
                (fail-check "Check below did not return expected result."))
              (check-regexp-match message (exn-message exn)))))]))
 

@@ -105,7 +105,7 @@
 (define/cond-contract (-result t [f -top-filter] [o -empty-obj])
   (c:->* (Type/c) (FilterSet? Object?) Result?)
   (cond
-    [(or (equal? t -Bottom) (equal? f -bot-filter))
+    [(or (type-equal? t -Bottom) (filter-equal? f -bot-filter))
      (make-Result -Bottom -bot-filter o)]
     [else
      (make-Result t f o)]))
@@ -144,8 +144,8 @@
   (cond
     [(and (identifier? i) (is-var-mutated? i)) -top]
     [(Empty? o) -top]
-    [(equal? Univ t) -top]
-    [(equal? -Bottom t) -bot]
+    [(Univ? t) -top]
+    [(type-equal? -Bottom t) -bot]
     [else (make-TypeFilter t o)]))
 
 
@@ -162,8 +162,8 @@
   (cond
     [(and (identifier? i) (is-var-mutated? i)) -top]
     [(Empty? o) -top]
-    [(equal? -Bottom t) -top]
-    [(equal? Univ t) -bot]
+    [(Univ? t) -bot]
+    [(type-equal? -Bottom t) -top]
     [else (make-NotTypeFilter t o)]))
 
 

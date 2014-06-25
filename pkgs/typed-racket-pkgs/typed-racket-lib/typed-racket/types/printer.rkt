@@ -241,12 +241,12 @@
          (list (type->sexp t))]
         [(Values: (list (Result: t
                                  (FilterSet: (TypeFilter: ft (Path: pth (list 0 0)))
-                                             (NotTypeFilter: ft (Path: pth (list 0 0))))
+                                             (NotTypeFilter: ft* (Path: pth* (list 0 0))))
                                  (Empty:))))
          ;; Only print a simple filter for single argument functions,
          ;; since parse-type only accepts simple latent filters on single
          ;; argument functions.
-         #:when (= 1 (length dom))
+         #:when (and (= 1 (length dom)) (type-equal? ft ft*) (andmap object-equal? pth pth*))
          (if (null? pth)
              `(,(type->sexp t) : ,(type->sexp ft))
              `(,(type->sexp t) : ,(type->sexp ft) @
@@ -489,7 +489,7 @@
     [(ValuesDots: v dty dbound)
      (cons 'values (append (map t->s v) (list (t->s dty) '... dbound)))]
     [(Param: in out)
-     (if (equal? in out)
+     (if (type-equal? in out)
          `(Parameterof ,(t->s in))
          `(Parameterof ,(t->s in) ,(t->s out)))]
     [(Hashtable: k v) `(HashTable ,(t->s k) ,(t->s v))]

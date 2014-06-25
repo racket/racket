@@ -64,17 +64,19 @@
      `(-lst ,(sub elem-ty))]
     [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:)))) #f #f '())))
      `(simple-> (list ,@(map sub dom)) ,(sub t))]
-    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (TypeFilter: ft pth)
-                                                                      (NotTypeFilter: ft pth))
+    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (TypeFilter: ft obj)
+                                                                      (NotTypeFilter: ft obj*))
                                                         (Empty:))))
                             #f #f '())))
-     `(make-pred-ty (list ,@(map sub dom)) ,(sub t) ,(sub ft) ,(sub pth))]
-    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (NotTypeFilter: (== -False)
+     #:when (object-equal? obj obj*)
+     `(make-pred-ty (list ,@(map sub dom)) ,(sub t) ,(sub ft) ,(sub obj))]
+    [(Function: (list (arr: dom (Values: (list (Result: t (FilterSet: (NotTypeFilter: (== -False type-equal?)
                                                                                       (Path: pth (list 0 0)))
-                                                                      (TypeFilter: (== -False)
-                                                                                   (Path: pth (list 0 0))))
-                                                        (Path: pth (list 0 0)))))
+                                                                      (TypeFilter: (== -False type-equal?)
+                                                                                   (Path: pth* (list 0 0))))
+                                                        (Path: pth** (list 0 0)))))
                             #f #f '())))
+     #:when (and (andmap object-equal? pth pth*) (andmap object-equal? pth pth**))
      `(->acc (list ,@(map sub dom)) ,(sub t) ,(sub pth))]
     [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) `(-result ,(sub t))]
     [(Union: elems) (split-union elems)]
@@ -101,7 +103,7 @@
                                             (quote ,c) ,(sub b))]
     [(Class: row inits fields methods augments init-rest)
      (cond [(and (current-class-cache)
-                 (dict-ref (unbox (current-class-cache)) v #f)) => car]
+                 (dict-ref (unbox (current-class-cache)) (Rep-seq v) #f)) => car]
            [else
             ;; FIXME: there's probably a better way to do this
             (define (convert members [inits? #f])
@@ -120,7 +122,7 @@
             (define cache-box (current-class-cache))
             (when cache-box
               (set-box! cache-box
-                        (dict-set (unbox cache-box) v (list name class-type))))
+                        (dict-set (unbox cache-box) (Rep-seq v) (list name class-type))))
             (if cache-box name class-type)])]
     [(arr: dom rng rest drest kws)
      `(make-arr ,(sub dom) ,(sub rng) ,(sub rest) ,(sub drest) ,(sub kws))]

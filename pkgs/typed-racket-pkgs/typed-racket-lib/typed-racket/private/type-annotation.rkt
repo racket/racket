@@ -88,7 +88,7 @@
                 (tc-error/expr
                   "Expression should produce ~a values, but produces an unknown number of values"
                   (length stxs))]
-               [(tc-results: (list (== -Bottom)) _ _)
+               [(tc-results: (list (== -Bottom type-equal?)) _ _)
                 (for/list ([_ (in-range (length stxs))])
                   (tc-result -Bottom))]
                [(tc-results: tys fs os)

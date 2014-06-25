@@ -139,7 +139,7 @@
 ;; check subtyping of filters, so that predicates subtype correctly
 (define (filter-subtype* A0 s t)
   (match* (s t)
-   [(f f) A0]
+   [(f1 f2) #:when (filter-equal? f1 f2) A0]
    [((Bot:) t) A0]
    [(s (Top:)) A0]
    [(_ _) #f]))
@@ -553,7 +553,7 @@
          [((Struct: nm (? Type/c? parent) _ _ _ _) other)
           (subtype* A0 parent other)]
          ;; subtyping on values is pointwise, except special case for Bottom
-         [((Values: (list (Result: (== -Bottom) _ _))) _)
+         [((Values: (list (Result: (== -Bottom type-equal?) _ _))) _)
           A0]
          [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
          [((ValuesDots: s-rs s-dty dbound) (ValuesDots: t-rs t-dty dbound))
@@ -571,7 +571,8 @@
                (subtype-seq A0
                             (filter-subtype* f+ t-f)
                             (filter-subtype* f- t-f))]))]
-         [((Result: t (FilterSet: ft ff) o) (Result: t* (FilterSet: ft* ff*) o))
+         [((Result: t (FilterSet: ft ff) o1) (Result: t* (FilterSet: ft* ff*) o2))
+          #:when (object-equal? o1 o2)
           (subtype-seq A0
                        (subtype* t t*)
                        (filter-subtype* ft ft*)

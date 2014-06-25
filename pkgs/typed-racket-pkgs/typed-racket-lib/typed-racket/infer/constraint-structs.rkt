@@ -4,7 +4,13 @@
 
 ;; S, T types
 ;; represents S <: X <: T (see "Local Type Inference" pg. 12)
-(define-struct/cond-contract c ([S Type/c] [T Type/c]) #:transparent)
+(define-struct/cond-contract c ([S Type/c] [T Type/c]) #:transparent
+  #:methods gen:equal+hash
+  [(define (equal-proc x y recur)
+     (and (type-equal? (c-S x) (c-S y))
+          (type-equal? (c-T x) (c-T y))))
+   (define (hash-proc x recur) (+ (recur (c-S x)) (recur (c-T x))))
+   (define (hash2-proc x recur) (+ (recur (c-S x)) (recur (c-T x))))])
 
 ;; fixed : Listof[c]
 ;; rest : option[c]

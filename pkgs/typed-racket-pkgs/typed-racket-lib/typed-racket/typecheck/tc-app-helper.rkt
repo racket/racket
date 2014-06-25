@@ -289,7 +289,7 @@
                ([c (in-list fun-tys-ret-any)]
                 [p (in-list parts-acc)]
                 ;; if a case is a supertype of another, we discard it
-                #:unless (is-subsumed-in? c (remove c fun-tys-ret-any)))
+                #:unless (is-subsumed-in? c (remove c fun-tys-ret-any type-equal?)))
 
              (cons p parts-res)))
 

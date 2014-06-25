@@ -488,6 +488,12 @@
                [augments (listof (list/c symbol? Function?))]
                [init-rest (or/c Type/c #f)])
   #:no-provide
+  [#:intern 
+    (list (map (λ (l) (list (first l) (Rep-seq (second l)) (third l))) inits)
+          (map (λ (l) (list (first l) (Rep-seq (second l)))) fields)
+          (map (λ (l) (list (first l) (Rep-seq (second l)))) methods)
+          (map (λ (l) (list (first l) (Rep-seq (second l)))) augments)
+          (and init-rest (Rep-seq init-rest)))]
   [#:frees (λ (f) (combine-frees
                    (map f (append (map cadr inits)
                                   (map cadr fields)
@@ -531,11 +537,9 @@
                            '())
                      ,(f row))))]
   [#:key 'class]
-  [#:fold-rhs (match (list row-ext row)
-                [(list row-ext row)
-                 (*Class
-                  (and row-ext (type-rec-id row-ext))
-                  (type-rec-id row))])])
+  [#:fold-rhs (*Class
+                (and row-ext (type-rec-id row-ext))
+                (type-rec-id row))])
 
 ;; cls : Class
 (def-type Instance ([cls Type/c]) [#:key 'instance])

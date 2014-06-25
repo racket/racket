@@ -24,8 +24,9 @@
   ["../types/printer.rkt" (print-type print-filter print-object print-pathelem)])
 
 
-(provide == defintern hash-id (for-syntax fold-target))
+(provide == defintern hash-id (for-syntax fold-target) raise-error)
 
+(define raise-error (make-parameter #t))
 ;; seq: interning-generated count that is used to compare types (type<).
 ;; free-vars: cached free type variables
 ;; free-idxs: cached free dot sequence variables
@@ -33,6 +34,8 @@
 (define-struct Rep (seq free-vars free-idxs stx) #:transparent
                #:methods gen:equal+hash
                [(define (equal-proc x y recur)
+                  (when (raise-error)
+                    (error 'equal))
                   (eq? (unsafe-Rep-seq x) (unsafe-Rep-seq y)))
                 (define (hash-proc x recur) (unsafe-Rep-seq x))
                 (define (hash2-proc x recur) (unsafe-Rep-seq x))])
@@ -389,6 +392,7 @@
 
 (provide/cond-contract
   [rename rep-equal? type-equal? (Type? Type? . -> . boolean?)]
+  [rename rep-equal? filter-equal? (Filter? Filter? . -> . boolean?)]
   [rename rep<? type<? (Type? Type? . -> . boolean?)]
   [rename rep<? filter<? (Filter? Filter? . -> . boolean?)]
   [struct Rep ([seq exact-nonnegative-integer?]

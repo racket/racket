@@ -103,7 +103,7 @@
          [(list (and t1 (Struct: _ _ _ _ _ _))
                 (and t2 (Struct: _ _ _ _ _ _)))
           (or (subtype t1 t2) (subtype t2 t1))]
-         [(list (== (-val eof))
+         [(list (== (-val eof) type-equal?)
                 (Function: _))
           #f]
          [else #t])])))

@@ -67,15 +67,14 @@
     [(x y)
      (match* (x y)
       [((struct cset (maps1)) (struct cset (maps2)))
-       (define maps (for*/list ([(map1 dmap1) (in-pairs (remove-duplicates maps1))]
-                                [(map2 dmap2) (in-pairs (remove-duplicates maps2))]
+       (define maps (for*/list ([(map1 dmap1) (in-pairs (in-list (remove-duplicates maps1)))]
+                                [(map2 dmap2) (in-pairs (in-list (remove-duplicates maps2)))]
                                 [v (in-value (% cons
                                                 (hash-union/fail map1 map2 #:combine c-meet)
                                                 (dmap-meet dmap1 dmap2)))]
                                 #:when v)
                       v))
-       (cond [(null? maps)
-              #f]
+       (cond [(null? maps) #f]
              [else (make-cset maps)])])]
     [(x . ys)
      (for/fold ([x x]) ([y (in-list ys)])

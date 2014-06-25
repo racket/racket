@@ -371,7 +371,7 @@
                (let loop ((ty t*))
                  (match ty
                   [(Union: elems) (andmap loop elems)]
-                  [(F: _) (not (equal? ty tvar))]
+                  [(F: _) (not (type-equal? ty tvar))]
                   [(App: rator rands stx)
                    (loop (resolve-app rator rands stx))]
                   [(Mu: _ body) (loop body)]

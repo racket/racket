@@ -91,7 +91,7 @@
                     (in-sequences (in-list dom) (in-cycle (in-value rest)))))))
             (for/list ([a (in-list args*)] [types matching-domains])
               (match-define (cons t ts) types)
-              (if (for/and ((t2 (in-list ts))) (equal? t t2))
+              (if (for/and ((t2 (in-list ts))) (type-equal? t t2))
                   (tc-expr/check a (ret t))
                   (single-value a)))]
            [_ (map single-value args*)]))
