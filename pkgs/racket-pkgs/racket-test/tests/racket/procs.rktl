@@ -443,5 +443,19 @@
   (test #t (lambda () (expander (m f 1 #:foo 3)))))
 
 ;; ----------------------------------------
+;; Test that syntax property propagation in kw applications isn't
+;; buggy for symbolic inferred names.
+
+(let ()
+  (define (f #:x [x 10]) x)
+
+  (define-syntax (ba stx)
+    (syntax-property #'(#%app f #:x 8)
+                     'inferred-name
+                     'bind-accum))
+
+  (test 8 (lambda () (ba))))
+
+;; ----------------------------------------
 
 (report-errs)
