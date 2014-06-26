@@ -3106,6 +3106,13 @@
          ((if (even? 4) add1 (inst values Integer)) 4)
          -Int]
 
+       ;; PR 14601
+       [tc-err
+        (let ()
+          (: f Procedure)
+          (define f (lambda () 'hi))
+          (f))
+        #:msg "cannot apply function of type Procedure"]
         )
 
   (test-suite

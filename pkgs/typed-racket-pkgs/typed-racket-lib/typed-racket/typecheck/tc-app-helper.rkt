@@ -105,7 +105,8 @@
                       (if tail-bound (cons tail-ty tail-bound) #f)))
   (cond
     [(null? doms)
-     (int-err "How could doms be null: ~a" ty)]
+     (tc-error/expr "cannot apply function of type Procedure"
+                    #:return return)]
     [(and (= 1 (length doms)) (not (car rests)) (not (car drests)) (not tail-ty) (not tail-bound))
      (tc-error/expr
       #:return return
