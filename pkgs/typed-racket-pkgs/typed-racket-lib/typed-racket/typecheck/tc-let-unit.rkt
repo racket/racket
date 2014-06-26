@@ -1,7 +1,7 @@
 #lang racket/unit
 
 (require "../utils/utils.rkt"
-         (except-in (types utils abbrev union filter-ops) -> ->* one-of/c)
+         (except-in (types utils subtype abbrev union filter-ops remove-intersect) -> ->* one-of/c)
          (only-in (types abbrev) (-> t:->) [->* t:->*])
          (private type-annotation parse-type syntax-properties)
          (env lexical-env type-alias-env type-alias-helper mvar-env
@@ -52,12 +52,17 @@
            (values e-ts
                    (apply append
                           (for/list ([n (in-list names)]
+                                     [t (in-list e-ts)]
                                      [f+ (in-list fs+)]
                                      [f- (in-list fs-)])
-                            (if (is-var-mutated? n)
-                                (list)
-                                (list (-imp (-not-filter (-val #f) n) f+)
-                                      (-imp (-filter (-val #f) n) f-))))))]
+                            (cond
+                              [(not (overlap t (-val #f)))
+                               (list f+)]
+                              [(is-var-mutated? n)
+                               (list)]
+                              [else
+                               (list (-imp (-not-filter (-val #f) n) f+)
+                                     (-imp (-filter (-val #f) n) f-))]))))]
           [(list (tc-result: e-ts (NoFilter:) _) ...)
            (values e-ts null)]))))
   ;; extend the lexical environment for checking the body
