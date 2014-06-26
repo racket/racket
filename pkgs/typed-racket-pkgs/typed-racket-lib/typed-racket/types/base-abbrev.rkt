@@ -119,7 +119,9 @@
 (define/decl -no-obj (make-NoObject))
 (define/decl -empty-obj (make-Empty))
 (define (-id-path id)
-  (make-Path null id))
+  (if (is-var-mutated? id)
+      -empty-obj
+      (make-Path null id)))
 (define (-arg-path arg [depth 0])
   (make-Path null (list depth arg)))
 (define (-acc-path path-elems o)
@@ -140,9 +142,9 @@
     (cond
       [(Object? i) i]
       [(integer? i) (make-Path null (list 0 i))]
-      [else (make-Path null i)]))
+      [(list? i) (make-Path null i)]
+      [else (-id-path i)]))
   (cond
-    [(and (identifier? i) (is-var-mutated? i)) -top]
     [(Empty? o) -top]
     [(equal? Univ t) -top]
     [(equal? -Bottom t) -bot]
@@ -158,9 +160,9 @@
     (cond
       [(Object? i) i]
       [(integer? i) (make-Path null (list 0 i))]
-      [else (make-Path null i)]))
+      [(list? i) (make-Path null i)]
+      [else (-id-path i)]))
   (cond
-    [(and (identifier? i) (is-var-mutated? i)) -top]
     [(Empty? o) -top]
     [(equal? -Bottom t) -top]
     [(equal? Univ t) -bot]
