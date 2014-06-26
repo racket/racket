@@ -385,8 +385,8 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
           scheme_console_printf("\n");
         }
         scheme_console_printf("}\n");
-        bp = jit_buffer_cache;
-        tend = jit_buffer_cache + (jitter->limit - (char *)buffer);
+        bp = (char *)jit_buffer_cache;
+        tend = (char *)jit_buffer_cache + ((char *)jitter->limit - (char *)buffer);
         scheme_console_printf("  temporary buffer content: {\n");
         while (bp < tend) {
           int d = 16;
