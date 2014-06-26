@@ -14,7 +14,10 @@
       (boolean? v)
       (pair? v)
       (string? v)
-      (keyword? v)))
+      (keyword? v)
+      (char? v)
+      (void? v)
+      (eof-object? v)))
 
 
 (define (overlap t1 t2)
@@ -103,8 +106,8 @@
          [(list (and t1 (Struct: _ _ _ _ _ _))
                 (and t2 (Struct: _ _ _ _ _ _)))
           (or (subtype t1 t2) (subtype t2 t1))]
-         [(list (== (-val eof))
-                (Function: _))
+         [(or (list (Value: (? simple-datum? v1)) (? Function?))
+              (list (? Function?) (Value: (? simple-datum? v1))))
           #f]
          [else #t])])))
 
