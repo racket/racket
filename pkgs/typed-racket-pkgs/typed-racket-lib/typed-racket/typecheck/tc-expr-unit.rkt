@@ -5,9 +5,9 @@
          racket/match (prefix-in - (contract-req))
          "signatures.rkt"
          "check-below.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
-         (types utils abbrev union subtype type-table classes filter-ops)
+         (types utils abbrev union subtype type-table classes filter-ops remove-intersect)
          (private-in parse-type type-annotation syntax-properties)
-         (rep type-rep filter-rep object-rep)
+         (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (env lexical-env tvar-env index-env scoped-tvar-env)
          racket/format racket/list
@@ -39,11 +39,13 @@
   (--> identifier? full-tc-results/c)
   (define rename-id (contract-rename-id-property id))
   (define id* (or rename-id id))
-  (let* ([ty (lookup-type/lexical id*)])
-    (ret ty
-         (make-FilterSet (-not-filter (-val #f) id)
-                         (-filter (-val #f) id))
-         (-id-path id))))
+  (define ty (lookup-type/lexical id*))
+  (define obj (-id-path id*))
+  (ret ty
+       (if (overlap ty (-val #f))
+           (-FS (-not-filter (-val #f) obj) (-filter (-val #f) obj))
+           -true-filter)
+       obj))
 
 ;; typecheck an expression, but throw away the effect
 ;; tc-expr/t : Expr -> Type

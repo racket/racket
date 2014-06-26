@@ -929,7 +929,8 @@
                               #:row (make-Row null `([x ,-Integer]) null null #f))
                             (-class
                               #:row (make-Row null `([x ,-Integer]) null null #f)
-                              #:field ([x -Integer]))))]
+                              #:field ([x -Integer])))
+                      -true-filter)]
    ;; fails, mixin argument is missing required field
    [tc-err (let ()
              (: f (All (A #:row (field x))
@@ -999,7 +1000,8 @@
                               #:row (make-Row null `([x ,-Integer]) null null #f))
                             (-class
                               #:row (make-Row null `([x ,-Integer]) null null #f)
-                              #:field ([x -Integer]))))]
+                              #:field ([x -Integer])))
+                      -true-filter)]
    ;; Check simple use of pubment
    [tc-e (let ()
            (define c%
