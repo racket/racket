@@ -3041,7 +3041,8 @@ This function sets @racket[dc-for-text-size]. See also
 
 @defparam[extend-language-show-union show? boolean?]{
 
-If this is @racket[#t], then a language constructed with
+A parameter that controls the rendering of extended languages.
+If the parameter value is @racket[#t], then a language constructed with
 extend-language is shown as if the language had been
 constructed directly with @racket[language]. If it is @racket[#f], then only
 the last extension to the language is shown (with
@@ -3053,6 +3054,18 @@ Note that the @racket[#t] variant can look a little bit strange if
 @racket[....] are used and the original version of the language has
 multi-line right-hand sides.
 }
+
+@defparam[extend-language-show-extended-order ext-order? boolean?]{
+
+A parameter that controls the rendering of extended languages when
+@racket[extend-language-show-union] has a true value.  If this
+parameter's value is @racket[#t], then productions are shown as
+ordered in the language extension instead of the order of the
+original, unextended language.
+
+Defaults to @racket[#f].
+
+@history[#:added "1.2"]}
 
 @defparam[render-reduction-relation-rules 
           rules 
