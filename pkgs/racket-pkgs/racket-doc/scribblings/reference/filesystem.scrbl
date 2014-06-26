@@ -298,7 +298,8 @@ existing @racket[new].}
                                            [fail-thunk (-> any) (lambda () (raise (make-exn:fail:filesystem ....)))])
          any]{
 
-Returns the file or directory's last modification date in seconds
+@index['("file modification date and time")]{Returns}
+the file or directory's last modification date in seconds
 since midnight UTC, January 1, 1970 (see also @secref["time"]) when
 @racket[secs-n] is not provided or is @racket[#f].
 
