@@ -69,14 +69,14 @@
   (define name-nums 0)
   (define fresh-pat (parameterize ([unique-name-nums 0])
                       (begin0
-                       (fresh-pat-vars input (make-hash))
-                       (set! name-nums (unique-name-nums)))))
+                        (fresh-pat-vars input (make-hash))
+                        (set! name-nums (unique-name-nums)))))
   (define fs (list (fail-cont empty-env
-                             (list (make-partial-rule fresh-pat (if (shuffle-clauses?)
-                                                                    (shuffle clauses)
-                                                                    (order-clauses clauses))
-                                                      '() bound))
-                             bound)))
+                              (list (make-partial-rule fresh-pat (if (shuffle-clauses?)
+                                                                     (shuffle clauses)
+                                                                     (order-clauses clauses))
+                                                       '() bound))
+                              bound)))
   (define v-locs (make-hash))
   (λ ()
     (parameterize ([unique-name-nums name-nums]
@@ -93,11 +93,12 @@
           (values (and/fail env/f (unify fresh-pat 'any env/f lang))
                   fails)))
       (set-last-gen-trace! (generation-trace))
-      (when (success-jump?)
-        (set! fs (shuffle-fails fails)))  ;; how to test if we're randomizing here?
+      (set! fs (if (success-jump?)
+                   fails
+                   (shuffle-fails fails)))  ;; how to test if we're randomizing here?
       (set! name-nums (unique-name-nums))
       ans)))
-  
+
 (define (trim-fails fs)
   (define rev-fs (reverse fs))
   (reverse
@@ -131,44 +132,43 @@
 
 (define (push-down a-partial-rule env fringe fail)
   (inc-pushdown-count)
-  (match a-partial-rule
-    [(partial-rule pat clauses tr-loc bound)
-     (check-depth-limits bound tr-loc fail)
+  (match-define (partial-rule pat clauses tr-loc bound) a-partial-rule)
+  (check-depth-limits bound tr-loc fail)
+  (cond
+    [(null? clauses)
+     (fail-back fail)]
+    [else
+     (define the-clause (fresh-clause-vars (car clauses)))
+     (define res-pe (do-unification the-clause pat env))
+     (when (log-receiver? gen-log-recv)
+       (log-message (current-logger) 'info (symbol->string (clause-name the-clause))
+                    (gen-trace tr-loc the-clause pat (and res-pe #t) bound env)))
+     (define failure-fringe
+       (cons (struct-copy partial-rule
+                          a-partial-rule
+                          [clauses (cdr clauses)])
+             fringe))
      (cond
-       [(null? clauses)
-        (fail-back fail)]
+       [(not res-pe)
+        (choose-rule env failure-fringe fail)]
        [else
-        (define the-clause (fresh-clause-vars (car clauses)))
-        (define res-pe (do-unification the-clause pat env))
-        (when (log-receiver? gen-log-recv)
-          (log-message (current-logger) 'info (symbol->string (clause-name the-clause))
-                       (gen-trace tr-loc the-clause pat (and res-pe #t) bound env)))
-        (define failure-fringe
-          (cons (struct-copy partial-rule
-                             a-partial-rule
-                             [clauses (cdr clauses)])
-                fringe))
-        (cond
-          [(not res-pe)
-           (choose-rule env failure-fringe fail)]
-          [else
-           (define new-fringe-elements
-             (for/list ([prem (in-list (clause-prems the-clause))]
-                        [n (in-naturals)])
-               (define prem-cls (prem-clauses prem))
-               (make-partial-rule (prem-pat prem) 
-                                  (if (positive? bound)
-                                      (if (shuffle-clauses?)
-                                          (shuffle prem-cls)
-                                          (order-clauses prem-cls))
-                                      (order-clauses prem-cls))
-                                  (cons n tr-loc)
-                                  (- bound 1))))
-           (define new-fringe (append new-fringe-elements
-                                      fringe))
-           (choose-rule (p*e-e res-pe)
-                        new-fringe
-                        (cons (fail-cont env failure-fringe bound) fail))])])]))
+        (define new-fringe-elements
+          (for/list ([prem (in-list (clause-prems the-clause))]
+                     [n (in-naturals)])
+            (define prem-cls (prem-clauses prem))
+            (make-partial-rule (prem-pat prem) 
+                               (if (positive? bound)
+                                   (if (shuffle-clauses?)
+                                       (shuffle prem-cls)
+                                       (order-clauses prem-cls))
+                                   (order-clauses prem-cls))
+                               (cons n tr-loc)
+                               (- bound 1))))
+        (define new-fringe (append new-fringe-elements
+                                   fringe))
+        (choose-rule (p*e-e res-pe)
+                     new-fringe
+                     (cons (fail-cont env failure-fringe bound) fail))])]))
 
 (define (order-clauses cs)
   (define num-prems->cs (hash))
@@ -184,37 +184,36 @@
   (apply append
          (for/list ([k (sort (hash-keys num-prems->cs) <)])
            (shuffle (set->list (hash-ref num-prems->cs k))))))
-  
+
 
 
 (define (do-unification clse input env)
-  (match clse
-    [(clause head-pat eq/dqs prems lang name)
-     (define-values (eqs dqs) (partition eqn? eq/dqs))
-     (define env1
-       (let loop ([e env]
-                  [dqs dqs])
-         (match dqs
-           ['() e]
-           [(cons (dqn ps lhs rhs) rest)
-            (dqn ps lhs rhs)
-            (define u-res (disunify ps lhs rhs e lang))
-            (and u-res
-                 (loop u-res rest))])))
-     (define head-p*e (and/fail env1 (unify input head-pat env1 lang)))
-     (cond
-       [(not-failed? head-p*e)
-        (define res-p (p*e-p head-p*e))
-        (let loop ([e (p*e-e head-p*e)]
-                   [eqs eqs])
-          (match eqs
-            ['() 
-             (p*e (p*e-p head-p*e) e)]
-            [(cons (eqn lhs rhs) rest)
-             (define u-res (unify lhs rhs e lang))
-             (and (not-failed? u-res)
-                  (loop (p*e-e u-res) rest))]))]
-       [else #f])]))
+  (match-define (clause head-pat eq/dqs prems lang name) clse)
+  (clause head-pat eq/dqs prems lang name)
+  (define-values (eqs dqs) (partition eqn? eq/dqs))
+  (define env1
+    (let loop ([e env]
+               [dqs dqs])
+      (match dqs
+        ['() e]
+        [(cons (dqn ps lhs rhs) rest)
+         (define u-res (disunify ps lhs rhs e lang))
+         (and u-res
+              (loop u-res rest))])))
+  (define head-p*e (and/fail env1 (unify input head-pat env1 lang)))
+  (cond
+    [(not-failed? head-p*e)
+     (define res-p (p*e-p head-p*e))
+     (let loop ([e (p*e-e head-p*e)]
+                [eqs eqs])
+       (match eqs
+         ['() 
+          (p*e (p*e-p head-p*e) e)]
+         [(cons (eqn lhs rhs) rest)
+          (define u-res (unify lhs rhs e lang))
+          (and (not-failed? u-res)
+               (loop (p*e-e u-res) rest))]))]
+    [else #f]))
 
 (define (fresh-clause-vars clause-raw)
   (define instantiations (make-hash))
@@ -227,10 +226,10 @@
                                  (fresh-pat-vars rhs instantiations))]
                            [(dqn ps lhs rhs)
                             (dqn (map (λ (id) (hash-ref instantiations id
-                                                       (λ () 
-                                                         (define unique-id (make-uid id))
-                                                         (hash-set! instantiations id unique-id)
-                                                         unique-id)))
+                                                        (λ () 
+                                                          (define unique-id (make-uid id))
+                                                          (hash-set! instantiations id unique-id)
+                                                          unique-id)))
                                       ps)
                                  (fresh-pat-vars lhs instantiations)
                                  (fresh-pat-vars rhs instantiations))]))]
@@ -244,13 +243,15 @@
 (define (check-depth-limits bound tr-loc fails)
   (when ((pushdown-count) . > . (pushdown-limit))
     (define str (format "pushdown count of ~s exceeded at ~s" (pushdown-count) tr-loc))
-    ;(printf "!*\n\t~s\t*!\n" str)
+    (printf "!*\n\t~s\t*!\n" str)
     (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails)))
   (when (> (bt-count) (bt-limit))
     (define str (format "backtrack count of ~s exceeded at ~s" (bt-limit) tr-loc))
+    (displayln str)
     (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails)))
   (when (> (length tr-loc) (* 3 (+ (length tr-loc) bound)))
     (define str (format "depth bound exceeded at depth: ~s" (length tr-loc)))
+    (displayln str)
     (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails))))
 
 

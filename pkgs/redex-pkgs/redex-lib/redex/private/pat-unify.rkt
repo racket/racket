@@ -414,6 +414,12 @@
                   (if (not-failed? res)
                       res
                       (fail (unif-fail))))))]
+    [`(variable-not-in ,p ,s)
+     (define pat (bind-names p e L))
+     (and/fail (not-failed? pat)
+               (let ([s-pat (bind-names s e L)])
+                 (and/fail (not-failed? s-pat)
+                           `(variable-not-in ,pat ,s-pat))))]
     [`(mismatch-name ,name ,p)
      (define b-pat (bind-names p e L))
      (and/fail (not-failed? b-pat)
@@ -426,51 +432,52 @@
   (define t (resolve t0 e))
   (define u (resolve u0 e))
   #2dmatch
-  ╔═════════════════╦═════════════════╦═════════════╦═══════════════╦═══════════╦══════╦════════════╦══════════════╦═════════════════╦═════════╦══════════╦══════════════╦═════════════╗
-  ║            u    ║ `(mismatch-name ║ `(name      ║ `(cstr        ║`(nt ,n-u) ║`any  ║ (? num-ty?)║`(list        ║ (? pvar?)       ║ `string ║ `boolean ║ (? base-ty?) ║(? not-pair?)║
-  ║                 ║   ,u-name       ║   ,name-u   ║   (,nts1 ...) ║           ║      ║            ║  ,us ...)    ║                 ║         ║          ║              ║             ║
-  ║  t              ║   ,u-pat)       ║   ,(bound)) ║   ,p1)        ║           ║      ║            ║              ║                 ║         ║          ║              ║             ║
-  ╠═════════════════╬═════════════════╩═════════════╩═══════════════╩═══════════╩══════╩════════════╩══════════════╩═════════════════╩═════════╩══════════╩══════════════╩═════════════╣
-  ║`(mismatch-name  ║ (hash-set! (dqs-found) t-name (cons u (hash-ref (dqs-found) t-name (λ () '()))))                                                                                 ║
-  ║  ,t-name        ║ (unify* t-pat u e L)                                                                                                                                             ║
-  ║  ,t-pat)        ║                                                                                                                                                                  ║
-  ╠═════════════════╬═════════════════╦════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
-  ║`(name ,name-t   ║                 ║ (instantiate* name-t u e L)                                                                                                                    ║
-  ║       ,(bound)) ║                 ║                                                                                                                                                ║
-  ╠═════════════════╣                 ╚═════════════╦═══════════════╦══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
-  ║`(cstr           ║                               ║(u*-2cstrs     ║ (u*-1cstr nts2 p2 u e L)                                                                                         ║
-  ║  (,nts2 ...)    ║                               ║  nts1 p1      ║                                                                                                                  ║
-  ║  ,p2)           ║                               ║  nts2 p2 e L) ║                                                                                                                  ║
-  ╠═════════════════╣                               ╚═══════════════╬═══════════╦══════════════════════════════════════════════════════════════════════════════════════════════════════╣
-  ║ `(nt ,n-t)      ║                                               ║(u*-2nts   ║ (u*-1nt n-t u e L)                                                                                   ║
-  ║                 ║                                               ║ n-t n-u   ║                                                                                                      ║
-  ║                 ║                                               ║ e L)      ║                                                                                                      ║
-  ╠═════════════════╣                                               ╚═══════════╬══════════════════════════════════════════════════════════════════════════════════════════════════════╣
-  ║  `any           ║                                                           ║ u                                                                                                    ║
-  ║                 ║                                                           ║                                                                                                      ║
-  ╠═════════════════╣                                                           ╚══════╦════════════╦════════════════════════════════════════════════════════════════════╦═════════════╣
-  ║  (? num-ty?)    ║                                                                  ║(u*-2nums   ║                                                                    ║             ║
-  ║                 ║                                                                  ║  t u)      ║                                                                    ║             ║
-  ╠═════════════════╣                                                                  ╚════════════╬══════════════╗                                                     ║             ║
-  ║ `(list ,ts ...) ║                                                                               ║(u*-2lsts     ║                              (unif-fail)            ║             ║
-  ║                 ║                                                                               ║ ts us e L)   ║                                                     ║(u*-matches? ║
-  ╠═════════════════╣                                                                               ╚══════════════╬═════════════════╗                                   ║  t u        ║
-  ║ (? pvar?)       ║                                                                                              ║(u*-2pvars u t L)║                                   ║  e L)       ║
-  ╠═════════════════╣                                                                                              ╚═════════════════╬═════════╗                         ║             ║
-  ║ `string         ║                   (unify* u t e L)                                                                             ║    t    ║                         ║             ║
-  ╠═════════════════╣                                                                                                                ╚═════════╬══════════╗              ║             ║
-  ║ `boolean        ║                                                                                                                          ║    t     ║              ║             ║
-  ╠═════════════════╣                                                                                                                          ╚══════════╬══════════════╣             ║
-  ║ (? base-ty?)    ║                                                                                                                                     ║      t       ║             ║
-  ╠═════════════════╣                                                                                                                                     ╚══════════════╬═════════════╣
-  ║ (? not-pair?)   ║                                                                                                                                                    ║(and/fail    ║
-  ║                 ║                                                                                                                                                    ║ (equal? t u)║
-  ║                 ║                                                                                                                                                    ║ t)          ║
-  ╚═════════════════╩════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╩═════════════╝)
+  ╔═════════════════╦═════════════════╦═════════════╦═══════════════╦═══════════╦══════╦════════════╦══════════════╦═══════════════════╦═════════╦══════════╦══════════════╦═════════════╗
+  ║            u    ║ `(mismatch-name ║ `(name      ║ `(cstr        ║`(nt ,n-u) ║`any  ║ (? num-ty?)║`(list        ║ (? pvar?)         ║ `string ║ `boolean ║ (? base-ty?) ║(? not-pair?)║
+  ║                 ║   ,u-name       ║   ,name-u   ║   (,nts1 ...) ║           ║      ║            ║  ,us ...)    ║                   ║         ║          ║              ║             ║
+  ║  t              ║   ,u-pat)       ║   ,(bound)) ║   ,p1)        ║           ║      ║            ║              ║                   ║         ║          ║              ║             ║
+  ╠═════════════════╬═════════════════╩═════════════╩═══════════════╩═══════════╩══════╩════════════╩══════════════╩═══════════════════╩═════════╩══════════╩══════════════╩═════════════╣
+  ║`(mismatch-name  ║ (hash-set! (dqs-found) t-name (cons u (hash-ref (dqs-found) t-name (λ () '()))))                                                                                   ║
+  ║  ,t-name        ║ (unify* t-pat u e L)                                                                                                                                               ║
+  ║  ,t-pat)        ║                                                                                                                                                                    ║
+  ╠═════════════════╬═════════════════╦══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+  ║`(name ,name-t   ║                 ║ (instantiate* name-t u e L)                                                                                                                      ║
+  ║       ,(bound)) ║                 ║                                                                                                                                                  ║
+  ╠═════════════════╣                 ╚═════════════╦═══════════════╦════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+  ║`(cstr           ║                               ║(u*-2cstrs     ║ (u*-1cstr nts2 p2 u e L)                                                                                           ║
+  ║  (,nts2 ...)    ║                               ║  nts1 p1      ║                                                                                                                    ║
+  ║  ,p2)           ║                               ║  nts2 p2 e L) ║                                                                                                                    ║
+  ╠═════════════════╣                               ╚═══════════════╬═══════════╦════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+  ║ `(nt ,n-t)      ║                                               ║(u*-2nts   ║ (u*-1nt n-t u e L)                                                                                     ║
+  ║                 ║                                               ║ n-t n-u   ║                                                                                                        ║
+  ║                 ║                                               ║ e L)      ║                                                                                                        ║
+  ╠═════════════════╣                                               ╚═══════════╬════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+  ║  `any           ║                                                           ║ u                                                                                                      ║
+  ║                 ║                                                           ║                                                                                                        ║
+  ╠═════════════════╣                                                           ╚══════╦════════════╦══════════════════════════════════════════════════════════════════════╦═════════════╣
+  ║  (? num-ty?)    ║                                                                  ║(u*-2nums   ║                                                                      ║             ║
+  ║                 ║                                                                  ║  t u)      ║                                                                      ║             ║
+  ╠═════════════════╣                                                                  ╚════════════╬══════════════╗                                                       ║             ║
+  ║ `(list ,ts ...) ║                                                                               ║(u*-2lsts     ║                                (unif-fail)            ║             ║
+  ║                 ║                                                                               ║ ts us e L)   ║                                                       ║(u*-matches? ║
+  ╠═════════════════╣                                                                               ╚══════════════╬═══════════════════╗                                   ║  t u        ║
+  ║ (? pvar?)       ║                                                                                              ║(u*-2pvars u t e L)║                                   ║  e L)       ║
+  ╠═════════════════╣                                                                                              ╚═══════════════════╬═════════╗                         ║             ║
+  ║ `string         ║                   (unify* u t e L)                                                                               ║    t    ║                         ║             ║
+  ╠═════════════════╣                                                                                                                  ╚═════════╬══════════╗              ║             ║
+  ║ `boolean        ║                                                                                                                            ║    t     ║              ║             ║
+  ╠═════════════════╣                                                                                                                            ╚══════════╬══════════════╣             ║
+  ║ (? base-ty?)    ║                                                                                                                                       ║      t       ║             ║
+  ╠═════════════════╣                                                                                                                                       ╚══════════════╬═════════════╣
+  ║ (? not-pair?)   ║                                                                                                                                                      ║(and/fail    ║
+  ║                 ║                                                                                                                                                      ║ (equal? t u)║
+  ║                 ║                                                                                                                                                      ║ t)          ║
+  ╚═════════════════╩══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╩═════════════╝)
 
 (define (pvar? x) (or (vnom? x)
                       (var-pref? x)
                       (var-exc? x)
+                      (vni? x)
                       (equal? 'variable x)))
 (define (vnom? x) (equal? x 'variable-not-otherwise-mentioned))
 (define (var-pref? x) (match x
@@ -480,33 +487,56 @@
                        [`(variable-except ,p ...) #t]
                        [_ #f]))
 (define (not-pair? x) (not (pair? x)))
+(define vni?
+  (match-lambda [`(variable-not-in ,e ,s) #t]
+                [_ #f]))
 
-(define (u*-2pvars v1 v2 L)
+(define (u*-2pvars v1 v2 e L)
   #2dmatch
-  ╔════════════════════════╦══════════════════════════╦════════════════════════════════╦═══════════════════════════════╦════════════════╗
-  ║                   v1   ║`(variable-prefix ,p1)    ║ `(variable-except ,e1 ... )    ║    (? vnom?)                  ║   `variable    ║
-  ║ v2                     ║                          ║                                ║                               ║                ║
-  ╠════════════════════════╬══════════════════════════╬════════════════════════════════╬═══════════════════════════════╬════════════════╣
-  ║                        ║ (cond                    ║ (and/fail                      ║(u*-2pvars                     ║                ║
-  ║ `(variable-prefix ,p2) ║  [(sym-pref? p1 p2)      ║  (not (ormap                   ║ v2                            ║                ║
-  ║                        ║   `(variable-prefix ,p2)]║        (curry sym-pref? p2)    ║ `(variable-except             ║                ║
-  ║                        ║  [(sym-pref? p2 p1)      ║        e1))                    ║ ,@(compiled-lang-literals L)) ║                ║
-  ║                        ║   `(variable-prefix ,p1)]║  v2)                           ║ L)                            ║                ║
-  ║                        ║  [else (unif-fail)])     ║                                ║                               ║                ║
-  ╠════════════════════════╬══════════════════════════╬════════════════════════════════╣                               ║                ║
-  ║                        ║                          ║ `(variable-except              ║                               ║                ║
-  ║  `(variable-except     ║                          ║   ,@(de-dupe/sorted            ║                               ║       v2       ║
-  ║     ,e2 ...)           ║                          ║      (merge/sorted e1 e2)))    ║                               ║                ║
-  ║                        ║                          ║                                ║                               ║                ║
-  ╠════════════════════════╣                          ╚════════════════════════════════╬═══════════════════════════════╣                ║
-  ║                        ║                                                           ║                               ║                ║
-  ║  (? vnom?)             ║                                                           ║              v1               ║                ║
-  ║                        ║                                                           ║                               ║                ║
-  ╠════════════════════════╣               (u*-2pvars v2 v1 L)                         ╚═══════════════════════════════╣                ║
-  ║                        ║                                                                                           ║                ║
-  ║ `variable              ║                                                                                           ║                ║
-  ║                        ║                                                                                           ║                ║
-  ╚════════════════════════╩═══════════════════════════════════════════════════════════════════════════════════════════╩════════════════╝)
+  ╔══════════════════════════╦══════════════════════════╦════════════════════════════════╦═══════════════════════════════╦════════════════╦══════════════════════════════════════╗
+  ║                   v1     ║`(variable-prefix ,p1)    ║ `(variable-except ,e1 ... )    ║    (? vnom?)                  ║   `variable    ║`(variable-not-in ,e1 ,s)             ║       
+  ║ v2                       ║                          ║                                ║                               ║                ║                                      ║
+  ╠══════════════════════════╬══════════════════════════╬════════════════════════════════╬═══════════════════════════════╬════════════════╬══════════════════════════════════════╣
+  ║                          ║ (cond                    ║ (and/fail                      ║(u*-2pvars                     ║                ║(and/fail                             ║
+  ║ `(variable-prefix ,p2)   ║  [(sym-pref? p1 p2)      ║  (not (ormap                   ║ v2                            ║                ║  (sym-pref? p2 s)                    ║
+  ║                          ║   `(variable-prefix ,p2)]║        (curry sym-pref? p2)    ║ `(variable-except             ║                ║  v1)                                 ║
+  ║                          ║  [(sym-pref? p2 p1)      ║        e1))                    ║ ,@(compiled-lang-literals L)) ║                ║                                      ║
+  ║                          ║   `(variable-prefix ,p1)]║  v2)                           ║ e L)                          ║                ║                                      ║
+  ║                          ║  [else (unif-fail)])     ║                                ║                               ║                ║                                      ║
+  ╠══════════════════════════╬══════════════════════════╬════════════════════════════════╣                               ║                ╠══════════════════════════════════════╣
+  ║                          ║                          ║ `(variable-except              ║                               ║                ║`(variable-not-in                     ║
+  ║  `(variable-except       ║                          ║   ,@(de-dupe/sorted            ║                               ║       v2       ║   (list ,e1 ,@e2)                    ║
+  ║     ,e2 ...)             ║                          ║      (merge/sorted e1 e2)))    ║                               ║                ║   ,s)                                ║
+  ║                          ║                          ║                                ║                               ║                ║                                      ║
+  ╠══════════════════════════╣                          ╚════════════════════════════════╬═══════════════════════════════╣                ╠══════════════════════════════════════╣
+  ║                          ║                                                           ║                               ║                ║(u*-2pvars v1                         ║
+  ║  (? vnom?)               ║                                                           ║              v1               ║                ║`(variable-except                     ║
+  ║                          ║                                                           ║                               ║                ║  ,@(compiled-lang-literals L))       ║
+  ║                          ║                                                           ║                               ║                ║ e L)                                 ║
+  ╠══════════════════════════╣               (u*-2pvars v2 v1 e L)                       ╚═══════════════════════════════╣                ╠══════════════════════════════════════╣
+  ║                          ║                                                                                           ║                ║                                      ║
+  ║ `variable                ║                                                                                           ║                ║              v1                      ║  
+  ║                          ║                                                                                           ║                ║                                      ║
+  ╠══════════════════════════╣                                                                                           ╚════════════════╬══════════════════════════════════════╣
+  ║                          ║                                                                                                            ║                                      ║
+  ║ `(variable-not-in ,e2 ,t)║                                                                                                            ║     (2-vnis v1 v2 e L)               ║  
+  ║                          ║                                                                                                            ║                                      ║
+  ╚══════════════════════════╩════════════════════════════════════════════════════════════════════════════════════════════════════════════╩══════════════════════════════════════╝)
+
+(define (2-vnis v1 v2 e L)
+  (match-define `(variable-not-in ,e1 ,s1) v1)
+  (match-define `(variable-not-in ,e2 ,s2) v2)
+  (cond
+    [(not (and (symbol? s1) (symbol? s2)))
+     (displayln (list s1 s2))
+     (define s-res (unify* s1 s2 e L))
+     (and/fail s-res
+               `(variable-not-in (list ,e1 ,e2) ,s-res))]
+    [(sym-pref? s1 s2)
+     `(variable-not-in (list ,e1 ,e2) s2)]
+    [(sym-pref? s2 s1)
+     `(variable-not-in (list ,e1 ,e2) s1)]
+    [else (unif-fail)]))
 
 (define (sym-pref? sp s)
   (regexp-match
@@ -780,24 +810,25 @@
     [_
      (values (lvar id) res)]))
 
-(provide check-nt)
+(provide check-nt
+         normalize-pat)
 
 (define check-nt
   (let ([memo (hash)])
     (λ (nt clang pat)
-      (define npat (normalize-pat pat))
+      (define npat (normalize-pat clang pat))
       (hash-ref memo (list nt clang npat)
                 (λ ()
                   (define pat-ok? 
-                    (for/or ([ntp (in-list (map normalize-pat (nt-pats nt clang)))])
+                    (for/or ([ntp (in-list (map ((curry normalize-pat) clang) (nt-pats nt clang)))])
                       (not-failed? (unify* npat ntp #f empty-lang))))
                   (set! memo
                         (hash-set memo (list nt clang npat) pat-ok?))
                   pat-ok?)))))
 
-(define (normalize-pat pat)
+(define (normalize-pat lang pat)
   (let loop ([pat pat])
-    (match-a-pattern pat
+    (match-a-pattern #:allow-else pat
                      [`any pat]
                      [`number pat]
                      [`string pat]
@@ -809,27 +840,34 @@
                      [`(variable-except ,s ...) `variable]
                      [`(variable-prefix ,s) `variable]
                      [`variable-not-otherwise-mentioned pat]
-                     [`hole (error "can't normalize pattern: ~s" pat)]
-                     [`(nt ,id) `any]
+                     [`hole (error 'normalize-pat "can't normalize pattern: ~s" pat)]
+                     [`(nt ,id)
+                      (loop (hash-ref (compiled-lang-collapsible-nts lang) id 'any))]
                      [`(name ,name ,npat)
                       (if (bound? npat)
                           `any
                           `(name ,name ,(loop npat)))]
                      [`(mismatch-name ,name ,pat) (loop pat)]
-                     [`(in-hole ,p1 ,p2) (error "can't normalize pattern: ~s" pat)]
+                     [`(in-hole ,p1 ,p2) (error 'normalize-pat "can't normalize pattern: ~s" pat)]
                      [`(hide-hole ,p) (loop p)]
                      [`(side-condition ,p ,g ,e)
-                      (error "can't normalize pattern: ~s" pat)]
-                     [`(cross ,s) (error "can't normalize pattern: ~s" pat)]
+                      (error 'normalize-pat "can't normalize pattern: ~s" pat)]
+                     [`(cross ,s) (error 'normalize-pat "can't normalize pattern: ~s" pat)]
                      [`(list ,sub-pats ...)
                       `(list ,@(for/list ([sub-pat (in-list sub-pats)])
                                  (match sub-pat
                                    [`(repeat ,pat ,name ,mismatch)
-                                    (error "can't normalize pattern: ~s" pat)]
+                                    (error 'normalize-pat "can't normalize pattern: ~s" sub-pat)]
                                    [_
                                     (loop sub-pat)])))]
                      [(? (compose not pair?)) 
-                      pat])))
+                      pat]
+                     [_
+                      (match pat
+                        [`(variable-not-in ,p ,s)
+                         `variable])])))
+
+(provide nt-pats)
 
 (define (nt-pats nt lang)
   (define this-rhs
@@ -868,6 +906,8 @@
      `(name ,new-id ,(fresh-pat-vars pat instantiations))]
     [`(list ,pats ...)
      `(list ,@(for/list ([p pats]) (fresh-pat-vars p instantiations)))]
+    [`(variable-not-in ,pat ,s)
+     `(variable-not-in ,(fresh-pat-vars pat instantiations) ,s)]
     [_ pre-pat]))
 
 (define (make-uid id)

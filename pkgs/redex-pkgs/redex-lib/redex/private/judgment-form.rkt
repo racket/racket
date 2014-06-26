@@ -1492,6 +1492,9 @@
      (and (identifier? #'in-hole)
           (eq? (syntax-e #'in-hole) 'in-hole))
      #''(in-hole . rest)]
+    ;; TODO check that s is quoted or a term
+    [(undatum (variable-not-in (term . tr) . s))
+     #f]
     [(undatum . rest)
      (and (identifier? #'undatum)
           (eq? (syntax-e #'undatum) 'undatum))

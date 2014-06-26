@@ -340,6 +340,21 @@ Capture avoiding substitution
    M])
 
 (define-metafunction stlc
+  [(replace x x x_new)
+   x_new]
+  [(replace (λ x_0 M) x x_new)
+   (λ (replace x_0 x x_new) (replace M x x_new))]
+  [(replace (let ([x_0 M]) N) x x_new)
+   (let ([(replace x_0 x x_new)
+          (replace M x x_new)])
+     (replace N x x_new))]
+  [(replace (M N) x x_new)
+   ((replace M x x_new) (replace N x x_new))]
+  [(replace M x x_new)
+   M])
+
+#;
+(define-metafunction stlc
   [(replace (any_1 ...) x_1 x_new)
    ((replace any_1 x_1 x_new) ...)]
   [(replace x_1 x_1 x_new)

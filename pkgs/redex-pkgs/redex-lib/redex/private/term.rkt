@@ -8,6 +8,7 @@
                      (only-in racket/list flatten)
                      "keyword-macros.rkt"
                      "matcher.rkt")
+         (only-in "fresh.rkt" variable-not-in)
          syntax/datum
          "error.rkt"
          "lang-struct.rkt"
@@ -330,9 +331,16 @@
      (d->pat #'d names)]))
 
 (define-for-syntax (d->pat d names)
-  (syntax-case d (... undatum in-hole undatum-splicing)
+  (syntax-case d (... undatum in-hole undatum-splicing variable-not-in term quote)
     [()
      #'(list)]
+    [(undatum (variable-not-in (term t) (quote s)))
+     (with-syntax ([t-pat (d->pat #'t names)])
+       #'(variable-not-in t-pat s))]
+    [(undatum (variable-not-in (term t1) (term t2)))
+     (with-syntax ([t1-pat (d->pat #'t1 names)]
+                   [t2-pat (d->pat #'t2 names)])
+       #'(variable-not-in t1-pat t2-pat))]
     [(undatum rest ...) ;; holes are also undatumed
      d]
     [(undatum-splicing rest ...)
