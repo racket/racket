@@ -43,7 +43,7 @@
     (ret ty
          (make-FilterSet (-not-filter (-val #f) id)
                          (-filter (-val #f) id))
-         (make-Path null id))))
+         (-id-path id))))
 
 ;; typecheck an expression, but throw away the effect
 ;; tc-expr/t : Expr -> Type
