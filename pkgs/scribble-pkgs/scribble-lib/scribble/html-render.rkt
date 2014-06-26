@@ -1001,7 +1001,7 @@
         `(span ([class "navleft"])
            ,@(if search-box?
                  (list (if up-path search-box top-search-box))
-                 null)
+                 (list `(div ([class "nosearchform"]))))
            ,@(render
               sep-element
               (and up-path (make-element top-link top-content))

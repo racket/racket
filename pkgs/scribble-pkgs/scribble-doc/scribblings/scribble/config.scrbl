@@ -349,6 +349,7 @@ The style classes:
   [@css{nonavigation} @elem{Disabled links within a navigation bar.}]
   [@css{searchform} @elem{Outer wrapper for a search box within the top navigation bar.}]
   [@css{searchbox} @elem{Inner wrapper for a search box within the top navigation bar.}]
+  [@css{nosearchform} @elem{Takes the place of an absent search box within the top navigation bar.}]
 
   [@spacer @spacer]
 
