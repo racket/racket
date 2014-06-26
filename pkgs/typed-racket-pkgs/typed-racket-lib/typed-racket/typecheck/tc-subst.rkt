@@ -61,11 +61,13 @@
 ;; This is essentially ψ+|ψ- [o/x] from the paper
 (define/cond-contract (subst-filter-set fs k o polarity [t Univ])
   (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) (Type/c) FilterSet?)
+  (define extra-filter (-filter t k))
   (define (add-extra-filter f)
-    (define f* (-and (-filter t k) f))
-    (match f*
-      [(Bot:) f*]
-      [_ f]))
+    (define f* (-and f extra-filter))
+    (cond
+      [(filter-equal? f* extra-filter) -top]
+      [(Bot? f*) -bot]
+      [else f]))
   (match fs
     [(FilterSet: f+ f-)
      (-FS (subst-filter (add-extra-filter f+) k o polarity)

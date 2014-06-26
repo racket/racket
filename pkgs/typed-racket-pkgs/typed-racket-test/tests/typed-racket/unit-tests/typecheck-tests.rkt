@@ -573,7 +573,7 @@
 
         [tc-e/t (let ([x 1]) x) -One]
         [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean -false-filter)]
-        [tc-e (boolean? number?) #:ret (ret -Boolean (-FS -bot (-not-filter -Boolean #'number?)))]
+        [tc-e (boolean? number?) #:ret (ret -Boolean -false-filter)]
 
         [tc-e (let: ([x : (Option Number) #f]) x) (t:Un -Number (-val #f))]
         [tc-e (let: ([x : Any 12]) (not (not x))) -Boolean]
@@ -917,7 +917,7 @@
           #:ret (ret -Number)]
         [tc-err (call-with-values 5
                                   (lambda: ([x : Number] [y : Number]) (+ x y)))
-          #:ret (ret -Number -bot-filter)]
+          #:ret (ret -Number)]
         [tc-err (call-with-values (lambda () (values 2))
                                   5)]
         [tc-err (call-with-values (lambda () (values 2 1))
@@ -1360,7 +1360,7 @@
         ;(tc-e (false? #t) #:ret (ret -Boolean -false-filter))
 
 
-        (tc-e (boolean? true) #:ret (ret -Boolean (-FS (-filter -Boolean #'true) -bot)))
+        (tc-e (boolean? true) #:ret (ret -Boolean -true-filter))
         (tc-e (boolean? 6) #:ret (ret -Boolean -false-filter))
         (tc-e (immutable? (cons 3 4)) -Boolean)
 
@@ -1533,12 +1533,12 @@
 
         (tc-e (namespace-anchor? 3) #:ret (ret -Boolean -false-filter))
         (tc-e/t (lambda: ((x : Namespace-Anchor)) (namespace-anchor? x))
-                (t:-> -Namespace-Anchor -Boolean : (-FS (-filter -Namespace-Anchor 0) -bot)))
+                (t:-> -Namespace-Anchor -Boolean : -true-filter))
 
 
         (tc-e (variable-reference? 3) #:ret (ret -Boolean -false-filter))
         (tc-e/t (lambda: ((x : Variable-Reference)) (variable-reference? x))
-                (t:-> -Variable-Reference  -Boolean : (-FS (-filter -Variable-Reference 0) -bot)))
+                (t:-> -Variable-Reference  -Boolean : -true-filter))
 
         (tc-e (system-type 'os) (one-of/c 'unix 'windows 'macosx))
         (tc-e (system-type 'gc) (one-of/c 'cgc '3m))
