@@ -43,7 +43,7 @@
 (define-runtime-path skull-tex "scribble-skull.tex")
 (define skull-style (make-style #f (list (tex-addition skull-tex))))
 
-(define (render-mixin %)
+(define (render-mixin % #:convert-as-ps-not-pdf? [convert-as-ps-not-pdf? #t])
   (class %
     (inherit-field prefix-file style-file style-extra-files)
 
@@ -355,10 +355,14 @@
                                        (not (disable-images))
                                        (let ([ftag (lambda (v suffix) (and v (list v suffix)))]
                                              [xlist (lambda (v) (and v (list v #f #f #f #f)))])
-                                         (or (ftag (convert e 'pdf-bytes+bounds) ".pdf")
-                                             (ftag (xlist (convert e 'pdf-bytes)) ".pdf")
-                                             (ftag (xlist (convert e 'eps-bytes)) ".ps")
-                                             (ftag (xlist (convert e 'png-bytes)) ".png"))))
+                                         (if convert-as-ps-not-pdf?
+                                             (or (ftag (convert e 'eps-bytes+bounds) ".ps")
+                                                 (ftag (xlist (convert e 'eps-bytes)) ".ps")
+                                                 (ftag (xlist (convert e 'png-bytes)) ".png"))
+                                             (or (ftag (convert e 'pdf-bytes+bounds) ".pdf")
+                                                 (ftag (xlist (convert e 'pdf-bytes)) ".pdf")
+                                                 (ftag (xlist (convert e 'eps-bytes)) ".ps")
+                                                 (ftag (xlist (convert e 'png-bytes)) ".png")))))
                                   => (lambda (bstr+info+suffix)
                                        (check-render)
                                        (let* ([bstr (list-ref (list-ref bstr+info+suffix 0) 0)]

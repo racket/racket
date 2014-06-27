@@ -62,9 +62,12 @@
    [("--latex") "generate LaTeX-format output"
     (current-html #f)
     (current-render-mixin latex:render-mixin)]
-   [("--pdf") "generate PDF-format output (with PDFLaTeX)"
+   [("--pdf") "generate PDF-format output (via PDFLaTeX)"
     (current-html #f)
     (current-render-mixin pdf:render-mixin)]
+   [("--dvipdf") "generate PDF-format output (via LaTeX and DVIPDF)"
+    (current-html #f)
+    (current-render-mixin pdf:dvi-render-mixin)]
    [("--latex-section") n "generate LaTeX-format output for section depth <n>"
     (current-html #f)
     (let ([v (string->number n)])

@@ -35,6 +35,9 @@ its file suffix:
  @item{@DFlag{pdf} --- PDF @filepath{@|fn|.pdf} that is generated
        via @exec{pdflatex}}
 
+ @item{@DFlag{dvipdf} --- PDF @filepath{@|fn|.pdf} that is generated
+       via @exec{latex} and @exec{dvipdf}}
+
  @item{@DFlag{latex-section} @nonterm{n} --- LaTeX source
        @filepath{@|fn|.tex} plus additional @filepath{.tex} files to
        be included in the enclosing document's preamble, where the
