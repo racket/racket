@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+. ~/.profile
+
 export PC_ROOT=~/Dev/local/pkg.rlo/planet-compat/root/
 
 cd $(dirname $0)
