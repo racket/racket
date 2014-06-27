@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require (rename-in "../utils/utils.rkt" [infer infer-in]))
-(require racket/match
+(require racket/match racket/list
          (only-in unstable/list list-update)
          (for-syntax racket/base syntax/parse)
          (contract-req)
@@ -62,19 +62,22 @@
 
 ;; Returns #f if anything becomes (U)
 (define (env+ env fs)
-  (let/ec exit
+  (let/ec exit*
+    (define (exit) (exit* #f empty))
     (define-values (props atoms) (combine-props fs (env-props env) exit))
-    (for/fold ([Γ (replace-props env (append atoms props))]) ([f (in-list atoms)])
-      (match f
-        [(or (TypeFilter: ft (Path: lo x)) (NotTypeFilter: ft (Path: lo x)))
-         (update-type/lexical
-           (lambda (x t)
-             (define new-t (update t ft (TypeFilter? f) lo))
-             (when (type-equal? new-t -Bottom)
-               (exit #f))
-             new-t)
-           x Γ)]
-        [_ Γ]))))
+    (values
+      (for/fold ([Γ (replace-props env props)]) ([f (in-list atoms)])
+        (match f
+          [(or (TypeFilter: ft (Path: lo x)) (NotTypeFilter: ft (Path: lo x)))
+           (update-type/lexical
+             (lambda (x t)
+               (define new-t (update t ft (TypeFilter? f) lo))
+               (when (type-equal? new-t -Bottom)
+                 (exit))
+               new-t)
+             x Γ)]
+          [_ Γ]))
+      atoms)))
 
 ;; run code in an extended env and with replaced props. Requires the body to return a tc-results.
 ;; TODO make this only add the new prop instead of the entire environment once tc-id is fixed to
@@ -85,10 +88,10 @@
     (pattern (~seq) #:with form #'(begin)))
   (syntax-parse stx
     [(_ ps:expr u:unreachable? . b)
-     #'(let ([new-env (env+ (lexical-env) ps)])
+     #'(let-values ([(new-env atoms) (env+ (lexical-env) ps)])
          (if new-env
              (with-lexical-env new-env
-               (add-unconditional-prop (let () . b) (apply -and (env-props new-env))))
+               (add-unconditional-prop (let () . b) (apply -and (append atoms (env-props new-env)))))
              (let ()
                u.form
                (ret -Bottom))))]))

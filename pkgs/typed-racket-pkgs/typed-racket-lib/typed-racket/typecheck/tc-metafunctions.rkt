@@ -59,7 +59,7 @@
       [(cons p ps) (cons p (loop ps))])))
 
 (define/cond-contract (combine-props new-props old-props exit)
-  ((listof Filter/c) (listof Filter/c) (-> #f none/c)
+  ((listof Filter/c) (listof Filter/c) (-> none/c)
    . -> .
    (values (listof (or/c ImpFilter? OrFilter?)) (listof (or/c TypeFilter? NotTypeFilter?))))
   (define (atomic-prop? p) (or (TypeFilter? p) (NotTypeFilter? p)))
@@ -96,7 +96,7 @@
 
             [(AndFilter: ps) (loop derived-formulas derived-atoms (append ps (cdr worklist)))]
             [(Top:) (loop derived-formulas derived-atoms (cdr worklist))]
-            [(Bot:) (exit #f)])))))
+            [(Bot:) (exit)])))))
 
 
 (define (unconditional-prop res)
