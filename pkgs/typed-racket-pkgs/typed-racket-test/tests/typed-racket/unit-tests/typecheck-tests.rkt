@@ -3113,6 +3113,15 @@
           (define f (lambda () 'hi))
           (f))
         #:msg "cannot apply function of type Procedure"]
+
+       ;; PR 13259
+       [tc-err
+        (let ()
+          (: y String)
+          (define y (for/fold: ((x : String null)) ((v : String null)) x))
+          y)
+        #:ret (ret -String)
+        #:msg "expected: String.*given: Null"]
         )
 
   (test-suite
