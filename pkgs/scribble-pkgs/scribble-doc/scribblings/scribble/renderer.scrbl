@@ -49,6 +49,7 @@ function to render a document.
                  [#:style-file style-file (or/c #f path-string?) #f]
                  [#:style-extra-files style-extra-files (listof path-string?) #f]
                  [#:extra-files extra-files (listof path-string?) #f]
+                 [#:image-preferences image-preferences (listof (or/c 'ps 'pdf 'png 'svg 'gif)) null]
                  [#:xrefs xrefs (listof xref?) null]
                  [#:info-in-files info-in-files (listof path-string?) null]
                  [#:info-out-file info-out-file (or/c #f path-string?) #f]
@@ -75,6 +76,12 @@ The @racket[helper-file-prefix], @racket[prefix-file],
 @racket[style-file], @racket[style-extra-files], and
 @racket[extra-files] arguments are passed on to the @racket[render%]
 constructor.
+
+The @racket[image-preferences] argument specified preferred formats
+for image files and conversion, where formats listed earlier in the
+list are more preferred. The renderer specified by
+@racket[render-mixin] may not support all of the formats listed in
+@racket[image-preferences].
 
 The @racket[xrefs] argument provides extra cross-reference information
 to be used during the documents' @tech{resolve pass}. The

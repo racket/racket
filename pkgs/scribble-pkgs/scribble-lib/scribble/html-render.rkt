@@ -277,7 +277,7 @@
              extract-version
              extract-authors
              extract-pretitle)
-    (inherit-field prefix-file style-file style-extra-files)
+    (inherit-field prefix-file style-file style-extra-files image-preferences)
 
     (init-field [alt-paths null]
                 ;; `up-path' is either a link "up", or #t which goes
@@ -546,6 +546,16 @@
                        ""
                        (uri-unreserved-encode
                         (anchor-name (dest-anchor dest)))))))
+
+    (inherit sort-image-requests)
+    (define/override (render ds fns ri)
+      (parameterize ([current-render-convertible-requests
+                      (sort-image-requests (current-render-convertible-requests)
+                                           image-preferences)])
+        (render-top ds fns ri)))
+
+    (define/public (render-top ds fns ri)
+      (super render ds fns ri))
 
     (define/public (render-toc-view d ri)
       (define has-sub-parts?
@@ -1370,28 +1380,75 @@
     (define/private (render-as-convertible e requests)
       (for/or ([request (in-list requests)])
         (cond
-          [(and (or (equal? request 'png-bytes)
-                    (equal? request 'png@2x-bytes))
-                (convert e request))
+          [(case request
+             [(png-bytes)
+              (or (convert e 'png-bytes+bounds8)
+                  (convert e 'png-bytes+bounds)
+                  (convert e 'png-bytes))]
+             [(png@2x-bytes)
+              (or (convert e 'png@2x-bytes+bounds8)
+                  (convert e 'png@2x-bytes+bounds)
+                  (convert e 'png@2x-bytes))]
+             [else #f])
            => 
-           (lambda (bstr)
-             (let ([w (integer-bytes->integer (subbytes bstr 16 20) #f #t)]
-                   [h (integer-bytes->integer (subbytes bstr 20 24) #f #t)]
-                   [scale (lambda (v)
-                            (if (equal? request 'png@2x-bytes)
-                                (/ v 2.0)
-                                v))])
-               `((img ([src ,(install-file "pict.png" bstr)]
-                       [alt "image"]
-                       [width ,(number->string (scale w))]
-                       [height ,(number->string (scale h))])))))]
-          [(and (equal? request 'svg-bytes)
-                (convert e 'svg-bytes))
-           => (lambda (bstr)
-                `((object
-                   ([data ,(install-file "pict.svg" bstr)]
-                    [type "image/svg+xml"]))))]
+           (lambda (cvt)
+             (let* ([bstr (if (list? cvt) (first cvt) cvt)]
+                    [w (if (list? cvt)
+                           (list-ref cvt 1)
+                           (integer-bytes->integer (subbytes bstr 16 20) #f #t))]
+                    [h (if (list? cvt)
+                           (list-ref cvt 2)
+                           (integer-bytes->integer (subbytes bstr 20 24) #f #t))]
+                    [scale (lambda (v)
+                             (if (and (not (list? cvt))
+                                      (equal? request 'png@2x-bytes))
+                                 (/ v 2.0)
+                                 v))])
+               (list
+                (add-padding
+                 cvt
+                 `(img ([src ,(install-file "pict.png" bstr)]
+                        [alt "image"]
+                        [width ,(number->string (scale w))]
+                        [height ,(number->string (scale h))]))))))]
+          [(case request
+             [(svg-bytes)
+              (or (convert e 'svg-bytes+bounds8)
+                  (convert e 'svg-bytes))]
+             [else #f])
+           => (lambda (cvt)
+                (let* ([bstr (if (list? cvt) (first cvt) cvt)])
+                  (list
+                   (add-padding
+                    cvt
+                    `(object
+                      ([data ,(install-file "pict.svg" bstr)]
+                       [type "image/svg+xml"]))))))]
           [else #f])))
+
+    ;; Add padding for a bounding-box conversion reply:
+    (define/private (add-padding cvt e)
+      (define descent (and (list? cvt)
+                           ((length cvt) . >= . 5)
+                           (list-ref cvt 3)))
+      (define padding (and (list? cvt)
+                           ((length cvt) . >= . 9)
+                           (take (list-tail cvt 5) 4)))
+      (cond
+       [(and (or (not descent)
+                 (zero? descent))
+             (or (not padding)
+                 (andmap zero? padding)))
+        e]
+       [else
+        ;; Descent and padding:
+        (define-values (left top right bottom) (apply values padding))
+        `(,(car e) ,(cons `[style ,(format "vertical-align: ~apx; margin: ~apx ~apx ~apx ~apx;"
+                                           (- (- descent bottom))
+                                           (- top) (- right)
+                                           (- bottom) (- left))]
+                          (cadr e))
+          ,@(cddr e))]))
 
     (define/private (render-plain-content e part ri)
       (define (attribs) (content-attribs e))
@@ -1843,7 +1900,7 @@
                   (super collect-part d parent ci number sub-init-number)))
             (super collect-part d parent ci number sub-init-number)))))
 
-    (define/override (render ds fns ri)
+    (define/override (render-top ds fns ri)
       (map (lambda (d fn)
              (when (report-output?)
                (printf " [Output to ~a/index.html]\n" fn))

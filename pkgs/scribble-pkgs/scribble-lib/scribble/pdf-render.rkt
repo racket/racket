@@ -8,10 +8,10 @@
 
 (define render-mixin
   (make-indirect-renderer-mixin
-   latex:render-mixin #".tex" #".pdf" 
+   (λ (%) (latex:render-mixin % #:image-mode 'pdf)) #".tex" #".pdf"
    run-pdflatex))
 
 (define dvi-render-mixin
   (make-indirect-renderer-mixin
-   (λ (%) (latex:render-mixin % #:convert-as-ps-not-pdf? #t)) #".tex" #".pdf" 
+   (λ (%) (latex:render-mixin % #:image-mode 'ps)) #".tex" #".pdf"
    run-dvipdf-latex))

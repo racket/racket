@@ -45,11 +45,21 @@
                    file)]))
   (when via-dvipdf?
     (define dvi-file (path-replace-suffix file #".dvi"))
+    (define ps-file (path-replace-suffix file #".ps"))
     (unless (file-exists? dvi-file) (err "didn't find .dvi file"))
-    (define dvipdf (get-latex-binary "dvipdf"))
-    (notify "running dvipdf on ~a" dvi-file)
-    (unless (parameterize ([current-output-port (open-output-nowhere)])
-              (system* dvipdf dvi-file))
+    (define dvips (get-latex-binary "dvips"))
+    (define pstopdf (get-latex-binary "pstopdf"))
+    (notify "running dvips on ~a" dvi-file)
+    (define stderr (open-output-bytes))
+    (unless (parameterize ([current-output-port (open-output-nowhere)]
+                           [current-error-port stderr])
+              (system* dvips dvi-file))
+      (displayln (get-output-bytes stderr))
+      (err "got error exit code"))
+    (unless (parameterize ([current-output-port (open-output-nowhere)]
+                           [current-error-port stderr])
+              (system* pstopdf ps-file))
+      (displayln (get-output-bytes stderr))
       (err "got error exit code")))
   (path-replace-suffix file #".pdf"))
 

@@ -43,12 +43,25 @@
 (define-runtime-path skull-tex "scribble-skull.tex")
 (define skull-style (make-style #f (list (tex-addition skull-tex))))
 
-(define (render-mixin % #:convert-as-ps-not-pdf? [convert-as-ps-not-pdf? #f])
+(define (render-mixin % #:image-mode [image-mode #f])
   (class %
-    (inherit-field prefix-file style-file style-extra-files)
+    (super-new)
+
+    (inherit-field prefix-file style-file style-extra-files image-preferences)
 
     (define/override (current-render-mode)
       '(latex))
+
+    (inherit sort-image-requests)
+    (define image-reqs 
+      (sort-image-requests (cond
+                            [(eq? image-mode 'pdf)
+                             '(pdf-bytes png@2x-bytes png-bytes)]
+                            [(eq? image-mode 'ps)
+                             '(eps-bytes)]
+                            [else
+                             '(pdf-bytes png@2x-bytes png-bytes eps-bytes)])
+                           image-preferences))
 
     (define/override (get-suffix) #".tex")
 
@@ -353,30 +366,47 @@
                                             (image-element-scale e) fn))]
                                  [(and (convertible? e)
                                        (not (disable-images))
-                                       (let ([ftag (lambda (v suffix) (and v (list v suffix)))]
-                                             [xlist (lambda (v) (and v (list v #f #f #f #f)))])
-                                         (if convert-as-ps-not-pdf?
-                                             (or (ftag (convert e 'eps-bytes+bounds) ".ps")
-                                                 (ftag (xlist (convert e 'eps-bytes)) ".ps")
-                                                 (ftag (xlist (convert e 'png-bytes)) ".png"))
-                                             (or (ftag (convert e 'pdf-bytes+bounds) ".pdf")
-                                                 (ftag (xlist (convert e 'pdf-bytes)) ".pdf")
-                                                 (ftag (xlist (convert e 'eps-bytes)) ".ps")
-                                                 (ftag (xlist (convert e 'png-bytes)) ".png")))))
+                                       (let ([ftag (lambda (v suffix [scale 1]) (and v (list v suffix scale)))]
+                                             [xxlist (lambda (v) (and v (list v #f #f #f #f #f #f #f #f)))]
+                                             [xlist (lambda (v) (and v (append v (list 0 0 0 0))))])
+                                         (for/or ([req (in-list image-reqs)])
+                                           (case req
+                                             [(eps-bytes)
+                                              (or (ftag (convert e 'eps-bytes+bounds8) ".ps")
+                                                  (ftag (xlist (convert e 'eps-bytes+bounds)) ".ps")
+                                                  (ftag (xxlist (convert e 'eps-bytes)) ".ps"))]
+                                             [(pdf-bytes)
+                                              (or (ftag (convert e 'pdf-bytes+bounds8) ".pdf")
+                                                  (ftag (xlist (convert e 'pdf-bytes+bounds)) ".pdf")
+                                                  (ftag (xxlist (convert e 'pdf-bytes)) ".pdf"))]
+                                             [(png@2x-bytes)
+                                              (or (ftag (convert e 'png@2x-bytes+bounds8) ".png" 0.5)
+                                                  (ftag (xxlist (convert e 'png@2x-bytes)) ".png" 0.5))]
+                                             [(png-bytes)
+                                              (or (ftag (convert e 'png-bytes+bounds8) ".png")
+                                                  (ftag (xxlist (convert e 'png-bytes)) ".png"))]))))
                                   => (lambda (bstr+info+suffix)
                                        (check-render)
                                        (let* ([bstr (list-ref (list-ref bstr+info+suffix 0) 0)]
                                               [suffix (list-ref bstr+info+suffix 1)]
-                                              [width (list-ref (list-ref bstr+info+suffix 0) 1)]
+                                              [scale (list-ref bstr+info+suffix 2)]
                                               [height (list-ref (list-ref bstr+info+suffix 0) 2)]
+                                              [pad-left (or (list-ref (list-ref bstr+info+suffix 0) 5) 0)]
+                                              [pad-top (or (list-ref (list-ref bstr+info+suffix 0) 6) 0)]
+                                              [pad-right (or (list-ref (list-ref bstr+info+suffix 0) 7) 0)]
+                                              [pad-bottom (or (list-ref (list-ref bstr+info+suffix 0) 8) 0)]
                                               [descent (and height
-                                                            (+ (list-ref (list-ref bstr+info+suffix 0) 3)
-                                                               (- (ceiling height) height)))]
+                                                            (- (+ (list-ref (list-ref bstr+info+suffix 0) 3)
+                                                                  (- (ceiling height) height))
+                                                               pad-bottom))]
+                                              [width (- (list-ref (list-ref bstr+info+suffix 0) 1) pad-left pad-right)]
                                               [fn (install-file (format "pict~a" suffix) bstr)])
                                          (if descent
-                                             (printf "\\raisebox{-~abp}{\\makebox[~abp][l]{\\includegraphics{~a}}}" 
+                                             (printf "\\raisebox{-~abp}{\\makebox[~abp][l]{\\includegraphics[~atrim=~a ~a ~a ~a]{~a}}}" 
                                                      descent
-                                                     width 
+                                                     width
+                                                     (if (= scale 1) "" (format "scale=~a," scale))
+                                                     (/ pad-left scale) (/ pad-bottom scale) (/ pad-right scale) (/ pad-top scale)
                                                      fn)
                                              (printf "\\includegraphics{~a}" fn))))]
                                  [else
@@ -1264,8 +1294,4 @@
       (make-toc-paragraph plain null))
 
     (define/override (local-table-of-contents part ri style)
-      (make-paragraph plain null))
-
-    ;; ----------------------------------------
-
-    (super-new)))
+      (make-paragraph plain null))))
