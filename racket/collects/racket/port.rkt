@@ -1576,7 +1576,7 @@
                                                        bytes-convert/post-nl
                                                        bytes-convert)
                                                      c buf buf-start buf-end ready-bytes)])
-                  (unless (memq status '(continues complete))
+                  (unless (positive? got-c)
                     (decode-error "unable to make decoding progress"
                                   port))
                   (set! ready-start 0)
