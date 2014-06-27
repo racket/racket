@@ -123,7 +123,12 @@
 
     (unless pdf?
       (when (and s as-eps)
-        (cairo_ps_surface_set_eps s #t))
+        (cairo_ps_surface_set_eps s #t)
+        ;; Cairo writes a %%BoundingBox that covers only the drawn points,
+        ;; which arguably matches the EPS spec, but that isn't what we want.
+        ;; Fortunately, Cairo will suppress its own %%BoundingBox if we
+        ;; write one:
+        (cairo_ps_surface_dsc_comment s (format "%%BoundingBox: ~a ~a ~a ~a" 0 0 width height)))
       (when (and s landscape?)
         (cairo_ps_surface_dsc_comment s "%%Orientation: Landscape")))
 
