@@ -3121,7 +3121,7 @@
           (define y (for/fold: ((x : String null)) ((v : String null)) x))
           y)
         #:ret (ret -String)
-        #:msg "expected: String.*given: Null"]
+        #:msg #rx"expected: String.*given: (Null|'\\(\\))"]
         )
 
   (test-suite
