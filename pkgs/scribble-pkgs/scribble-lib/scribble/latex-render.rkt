@@ -43,7 +43,7 @@
 (define-runtime-path skull-tex "scribble-skull.tex")
 (define skull-style (make-style #f (list (tex-addition skull-tex))))
 
-(define (render-mixin % #:convert-as-ps-not-pdf? [convert-as-ps-not-pdf? #t])
+(define (render-mixin % #:convert-as-ps-not-pdf? [convert-as-ps-not-pdf? #f])
   (class %
     (inherit-field prefix-file style-file style-extra-files)
 
