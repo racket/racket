@@ -1,6 +1,7 @@
 #lang scheme/unit
 
-  (require racket/class)
+  (require racket/class
+           racket/list)
 
   (require racket/draw/draw-sig
            racket/gui/dynamic
@@ -73,8 +74,19 @@
 				(lambda (x)
 				  (unless (or (not x)
 					      (is-a? x dc<%>))
-				    (raise-type-error 'dc-for-parameter "dc<%> object or #f" x))
+				    (raise-argument-error 'dc-for-parameter "(or/c (is-a?/c dc<%>) #f)" x))
 				  x)))
+
+      (define convert-bounds-padding
+        (make-parameter
+         (list 3 3 3 3)
+         (lambda (x)
+           (unless (and (list? x) (= 4 (length x)) (andmap real? x)
+                        (andmap (lambda (i) (not (negative? i))) x))
+             (raise-argument-error 'convert-bounds-padding
+                                   "(list/c (>=/c 0) (>=/c 0) (>=/c 0) (>=/c 0))"
+                                   x))
+           x)))
 
       (define dc 
 	(case-lambda
@@ -538,22 +550,53 @@
       (define (draw-pict p dc dx dy)
 	((make-pict-drawer p) dc dx dy))
 
-
-      (define (convert-pict p format default)
+      (define (convert-pict p format default #:pad? [pad? #t])
         (cond
-          [(member format '(pdf-bytes+bounds eps-bytes+bounds))
-           (define xscale (box 1.0))
-           (define yscale (box 1.0))
-           (send (current-ps-setup) get-scaling xscale yscale)
-           (list (convert-pict/bytes p
-                                     (if (equal? format 'pdf-bytes+bounds)
-                                         'pdf-bytes
-                                         'eps-bytes)
+          [(member format '(pdf-bytes+bounds8 eps-bytes+bounds8
+                                              png-bytes+bounds8 png@2x-bytes+bounds8
+                                              svg-bytes+bounds8))
+           (define xscale (box 1))
+           (define yscale (box 1))
+           (case format
+             [(pdf-bytes+bounds8 eps-bytes+bounds8)
+              (send (current-ps-setup) get-scaling xscale yscale)])
+           (define-values (pad-l pad-t pad-r pad-b)
+             (if pad?
+                 (apply values (convert-bounds-padding))
+                 (values 0 0 0 0)))
+           (define pad-p (inset p pad-l pad-t pad-r pad-b))
+           (list (convert-pict/bytes pad-p
+                                     (case format
+                                       [(pdf-bytes+bounds8) 'pdf-bytes]
+                                       [(eps-bytes+bounds8) 'eps-bytes]
+                                       [(png-bytes+bounds8) 'png-bytes]
+                                       [(png@2x-bytes+bounds8) 'png@2x-bytes]
+                                       [(svg-bytes+bounds8) 'svg-bytes]
+                                       [else (error "internal error" format)])
                                      default)
-                 (* (unbox xscale) (pict-width p))
-                 (* (unbox yscale) (pict-height p))
-                 (* (unbox yscale) (pict-descent p))
-                 0)]
+                 (* (unbox xscale) (pict-width pad-p))
+                 (* (unbox yscale) (pict-height pad-p))
+                 (* (unbox yscale) (pict-descent pad-p))
+                 0
+                 (* (unbox xscale) pad-l)
+                 (* (unbox yscale) pad-t)
+                 (* (unbox xscale) pad-r)
+                 (* (unbox yscale) pad-b))]
+          [(member format '(pdf-bytes+bounds eps-bytes+bounds
+                                             png-bytes+bounds
+                                             png@2x-bytes+bounds
+                                             svg-bytes+bounds))
+           (take (convert-pict p
+                               (case format
+                                 [(pdf-bytes+bounds) 'pdf-bytes+bounds8]
+                                 [(eps-bytes+bounds) 'eps-bytes+bounds8]
+                                 [(png-bytes+bounds) 'png-bytes+bounds8]
+                                 [(png@2x-bytes+bounds) 'png@2x-bytes+bounds8]
+                                 [(svg-bytes+bounds) 'svg-bytes+bounds8]
+                                 [else (error "internal error" format)])
+                               default
+                               #:pad? #f)
+                 5)]
           [else
            (convert-pict/bytes p format default)]))
       
@@ -606,8 +649,5 @@
                              (λ (all w h) 
                                (define (rem x) (bytes->string/utf-8 (regexp-replace "pt" x "")))
                                (string->bytes/utf-8
-                                (string-append "width=\"" (rem w) "\" height=\"" (rem h) "\""))))
-             (get-output-bytes s))]
+                                (string-append "width=\"" (rem w) "\" height=\"" (rem h) "\"")))))]
           [else default]))
-
-             
