@@ -20,11 +20,43 @@
 
 (btest (render-language lang #:nts '(e v)) "language-nox.png")
 
-(define-extended-language lang++ lang
-  (e .... number (+ e e))
-  (v .... number))
-
-(btest (render-language lang++) "extended-language.png")
+(let ()
+  (define-language L1
+    [a 1]
+    [b 2]
+    [c 3]
+    [d 4]
+    [e 5])
+  
+  (define-extended-language L2 L1
+    [d .... more-d]
+    [c different-c]
+    [b .... more-b]
+    [a different-a]
+    [f 6]
+    [g 7]
+    [h 8])
+  
+  (define-extended-language L3 L2
+    [c differenter-c]
+    [d .... yet-more-d]
+    [f different-f]
+    [g .... more-g])
+  
+  (btest
+   (apply
+    ht-append
+    2
+    (for*/list ([union? '(#f #t)]
+                [ext-order? '(#f #t)])
+      (parameterize ([extend-language-show-union union?]
+                     [extend-language-show-extended-order ext-order?])
+        (vc-append
+         2
+         (frame (language->pict L1))
+         (frame (language->pict L2))
+         (frame (language->pict L3))))))
+   "extended-language.png"))
 
 (define red
   (reduction-relation
@@ -63,7 +95,8 @@
           (--> 1 1 "a")
           (--> 2 2 "b" (computed-name "a"))
           (--> 3 3 (computed-name "c")))])
-  (btest (parameterize ([render-reduction-relation-rules (remq 'b (reduction-relation->rule-names R))])
+  (btest (parameterize ([render-reduction-relation-rules
+                         (remq 'b (reduction-relation->rule-names R))])
            (render-reduction-relation R))
          "reduction-relation-with-computed-labels-and-hiding.png"))
 
@@ -425,6 +458,6 @@
            ['extend rewrite-extend]
            ['lookup rewrite-lookup])
           (render-judgment-form typeof))
-         "stlc.png"))  
+         "stlc.png"))
 
 (done)
