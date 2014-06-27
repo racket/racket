@@ -26,6 +26,10 @@ should be considered standard:
  @item{@racket['svg-bytes] --- a byte string containing a SVG image encoding}
  @item{@racket['ps-bytes] --- a byte string containing a PostScript document}
  @item{@racket['eps-bytes] --- a byte string containing an Encapsulated PostScript document}
+ @item{@racket['eps-bytes+bounds] --- a list containing a byte string and four numbers; 
+        the byte string contains an Encapsulated PostScript document and the four numbers 
+        are sizing information for the PostScript document, namely the width, height, ascent
+        and descent in that order}
  @item{@racket['pdf-bytes] --- a byte string containing a PDF document}
  @item{@racket['pdf-bytes+bounds] --- a list containing a byte string and four numbers; 
         the byte string contains a PDF document and the four numbers are sizing information
@@ -53,12 +57,13 @@ Returns @racket[#t] if @racket[v] supports the conversion protocol,
            [(gif-bytes png-bytes png@2x-bytes
                        ps-bytes eps-bytes pdf-bytes svg-bytes)
             (or/c bytes? (λ (x) (eq? x default)))]
-           [(pdf-bytes+bounds) (or/c (list/c bytes?
-                                             (and/c real? (not/c negative?))
-                                             (and/c real? (not/c negative?))
-                                             (and/c real? (not/c negative?))
-                                             (and/c real? (not/c negative?)))
-                                     (λ (x) (eq? x default)))]
+           [(eps-bytes+bounds pdf-bytes+bounds)
+            (or/c (list/c bytes?
+                          (and/c real? (not/c negative?))
+                          (and/c real? (not/c negative?))
+                          (and/c real? (not/c negative?))
+                          (and/c real? (not/c negative?)))
+                  (λ (x) (eq? x default)))]
            [else any/c])]{
 
 Requests a data conversion from @racket[v], where @racket[request]
