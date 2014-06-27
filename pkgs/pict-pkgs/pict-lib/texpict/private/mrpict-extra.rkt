@@ -540,16 +540,22 @@
 
 
       (define (convert-pict p format default)
-        (if (eq? format 'pdf-bytes+bounds)
-            (let ([xscale (box 1.0)]
-                  [yscale (box 1.0)])
-              (send (current-ps-setup) get-scaling xscale yscale)
-              (list (convert-pict/bytes p 'pdf-bytes default)
-                    (* (unbox xscale) (pict-width p))
-                    (* (unbox yscale) (pict-height p))
-                    (* (unbox yscale) (pict-descent p))
-                    0))
-            (convert-pict/bytes p format default)))
+        (cond
+          [(member format '(pdf-bytes+bounds eps-bytes+bounds))
+           (define xscale (box 1.0))
+           (define yscale (box 1.0))
+           (send (current-ps-setup) get-scaling xscale yscale)
+           (list (convert-pict/bytes p
+                                     (if (equal? format 'pdf-bytes+bounds)
+                                         'pdf-bytes
+                                         'eps-bytes)
+                                     default)
+                 (* (unbox xscale) (pict-width p))
+                 (* (unbox yscale) (pict-height p))
+                 (* (unbox yscale) (pict-descent p))
+                 0)]
+          [else
+           (convert-pict/bytes p format default)]))
       
       (define (convert-pict/bytes p format default)
         (case format
@@ -570,7 +576,7 @@
                  [xs (box 1)]
                  [ys (box 1)])
              (send (current-ps-setup) get-scaling xs ys)
-             (let ([dc (new (if (eq? format 'eps-bytes) post-script-dc% pdf-dc%)
+             (let ([dc (new (if (equal? format 'eps-bytes) post-script-dc% pdf-dc%)
                             [interactive #f]
                             [as-eps #t]
                             [width (* (pict-width p) (unbox xs))]
