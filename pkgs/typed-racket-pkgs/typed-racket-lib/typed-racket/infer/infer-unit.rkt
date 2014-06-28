@@ -571,16 +571,10 @@
           [((Set: t) (Sequence: (list t*)))
            (cg t t*)]
 
-          ;; if we have two mu's, we rename them to have the same variable
-          ;; and then compare the bodies
-          ;; This relies on (B 0) only unifying with itself, 
-          ;; and thus only hitting the first case of this `match'
-          [((Mu-unsafe: s) (Mu-unsafe: t))
-           (cg s t)]
-
-          ;; other mu's just get unfolded
-          [(s (? Mu? t)) (cg s (unfold t))]
+          ;; Mu's just get unfolded
+          ;; We unfold S first so that unions are handled in S before T
           [((? Mu? s) t) (cg (unfold s) t)]
+          [(s (? Mu? t)) (cg s (unfold t))]
 
           ;; resolve applications
           [((App: _ _ _) _)
