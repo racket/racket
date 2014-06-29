@@ -7,16 +7,20 @@
 (provide (all-defined-out))
 
 (define-signature dmap^
-  ([cond-contracted dmap-meet (dmap? dmap? . -> . (or/c #f dmap?))]))
+  ([cond-contracted dcon-meet (dcon/c dcon/c . -> . (or/c #f dcon/c))]
+   [cond-contracted dmap-meet (dmap? dmap? . -> . (or/c #f dmap?))]))
 
 (define-signature constraints^
   ([cond-contracted cset-meet ((cset? cset?) #:rest (listof cset?) . ->* . (or/c #f cset?))]
    [cond-contracted cset-meet* ((listof cset?) . -> . (or/c #f cset?))]
    [cond-contracted no-constraint c?]
    [cond-contracted empty-cset cset?]
-   [cond-contracted insert (cset? symbol? Type/c Type/c . -> . cset?)]
-   [cond-contracted cset-join ((listof cset?) . -> . cset?)]
-   [cond-contracted c-meet ((c? c?) (symbol?) . ->* . (or/c #f c?))]))
+   [cond-contracted reduce/var (cset? symbol? Type/c Type/c . -> . (or/c #f cset?))]
+   [cond-contracted reduce/dotted-var (cset? symbol? dcon/c . -> . (or/c #f cset?))]
+   [cond-contracted cset-join ((listof cset?) . -> . (or/c #f cset?))]
+   [cond-contracted map/cset
+    (((hash/c symbol? c?) dmap? . -> . (or/c #f cset?)) cset?  . -> .  (listof cset?))]
+   [cond-contracted c-meet (c? c? . -> . (or/c #f c?))]))
 
 (define-signature restrict^
   ([cond-contracted restrict ((Type/c Type/c) ((or/c 'new 'orig)) . ->* . Type/c)]))

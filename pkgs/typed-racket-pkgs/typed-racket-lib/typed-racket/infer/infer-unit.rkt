@@ -28,7 +28,7 @@
          unstable/sequence unstable/list unstable/hash
          racket/list)
 
-(import dmap^ constraints^)
+(import constraints^)
 (export infer^)
 
 ;; For more data definitions, see "constraint-structs.rkt"
@@ -48,32 +48,39 @@
 (define-struct/cond-contract context
   ([bounds (listof symbol?)]
    [vars (listof symbol?)]
-   [indices (listof symbol?)]) #:transparent)
+   [indices (listof symbol?)]
+   [expected-cset cset?]) #:transparent)
 
 (define (context-add-vars ctx vars)
   (match ctx
-    [(context V X Y)
-     (context V (append vars X) Y)]))
+    [(context V X Y cset)
+     (context V (append vars X) Y cset)]))
 
 (define (context-add-var ctx var)
   (match ctx
-    [(context V X Y)
-     (context V (cons var X) Y)]))
+    [(context V X Y cset)
+     (context V (cons var X) Y cset)]))
 
 (define (context-add ctx #:bounds [bounds empty] #:vars [vars empty] #:indices [indices empty])
   (match ctx
-    [(context V X Y)
-     (context (append bounds V) (append vars X) (append indices Y))]))
+    [(context V X Y cset)
+     (context (append bounds V) (append vars X) (append indices Y) cset)]))
 
 (define (inferable-index? ctx bound)
   (match ctx
-    [(context _ _ Y)
+    [(context _ _ Y _)
      (memq bound Y)]))
 
 (define ((inferable-var? ctx) var)
   (match ctx
-    [(context _ X _)
+    [(context _ X _ _)
      (memq var X)]))
+
+(define (context-set-expected-cset ctx cset)
+  (match ctx
+    [(context V X Y _)
+     (context V X Y cset)]))
+
 
 ;; Type Type Seen -> Seen
 ;; Add the type pair to the set of seen type pairs
@@ -95,44 +102,30 @@
    . -> . any/c)
  (member (seen-before s t) cs))
 
-;; (CMap DMap -> Pair<CMap, DMap>) CSet -> CSet
-;; Map a function over a constraint set
-(define (map/cset f cset)
-  (% make-cset (for/list/fail ([(cmap dmap) (in-pairs (cset-maps cset))])
-                 (f cmap dmap))))
-
-;; Symbol DCon -> DMap
-;; Construct a dmap containing only a single mapping
-(define (singleton-dmap dbound dcon)
-  (make-dmap (make-immutable-hash (list (cons dbound dcon)))))
-
 ;; Hash<K, V> Listof<K> -> Hash<K, V>
 ;; Remove all provided keys from the hash table
 (define (hash-remove* hash keys)
   (for/fold ([h hash]) ([k (in-list keys)]) (hash-remove h k)))
 
-(define (mover cset dbound vars f)
-  (map/cset
-   (lambda (cmap dmap)
-     (when (hash-has-key? (dmap-map dmap) dbound)
-       (int-err "Tried to move vars to dbound that already exists"))
-     (% cons
-        (hash-remove* cmap (cons dbound vars))
-        (dmap-meet
-         (singleton-dmap
-          dbound
-          (f cmap))
-         dmap)))
-   cset))
+(define (mover context cset dbound vars f)
+  (cset-join
+    (map/cset
+     (lambda (cmap dmap)
+       (when (hash-has-key? (dmap-map dmap) dbound)
+         (int-err "Tried to move vars to dbound that already exists"))
+       (% cset-meet
+          (make-cset (list (cons (hash-remove* cmap vars) dmap)))
+          (reduce/dotted-var (context-expected-cset context) dbound (f cmap))))
+     cset)))
 
 ;; dbound : index variable
 ;; vars : listof[type variable] - temporary variables
 ;; cset : the constraints being manipulated
 ;; takes the constraints on vars and creates a dmap entry constraining dbound to be |vars|
 ;; with the constraints that cset places on vars
-(define/cond-contract (move-vars-to-dmap cset dbound vars)
-  (cset? symbol? (listof symbol?) . -> . cset?)
-  (mover cset dbound vars
+(define/cond-contract (move-vars-to-dmap context cset dbound vars)
+  (context? cset? symbol? (listof symbol?) . -> . (or/c cset? #f))
+  (mover context cset dbound vars
          (λ (cmap)
            (make-dcon (for/list ([v (in-list vars)])
                         (hash-ref cmap v no-constraint))
@@ -142,9 +135,9 @@
 ;; var : index variable being inferred
 ;; dbound : constraining index variable
 ;;
-(define/cond-contract (move-dotted-rest-to-dmap cset var dbound)
-  (cset? symbol? symbol? . -> . cset?)
-  (mover cset var null
+(define/cond-contract (move-dotted-rest-to-dmap context cset var dbound)
+  (context? cset? symbol? symbol? . -> . (or/c cset? #f))
+  (mover context cset var null
          (λ (cmap)
            (make-dcon-dotted
             null
@@ -154,9 +147,9 @@
 ;; cset : the constraints being manipulated
 ;; vars : the variables that are the prefix of the dbound
 ;; dbound : index variable
-(define/cond-contract (move-vars+rest-to-dmap cset vars dbound #:exact [exact? #f])
-  ((cset? (listof symbol?) symbol?) (#:exact boolean?) . ->* . cset?)
-  (mover cset dbound vars
+(define/cond-contract (move-vars+rest-to-dmap context cset vars dbound #:exact [exact? #f])
+  ((context? cset? (listof symbol?) symbol?) (#:exact boolean?) . ->* . (or/c cset? #f))
+  (mover context cset dbound vars
          (λ (cmap)
            ((if exact? make-dcon-exact make-dcon)
             (for/list ([v (in-list vars)])
@@ -272,7 +265,7 @@
      (define-values (ts-front ts-back) (split-at ts (length ss)))
      (% cset-meet
         (cgen/list context ss ts-front)
-        (% move-vars-to-dmap (cgen/list (context-add context #:vars vars) new-tys ts-back) dbound vars))]
+        (% move-vars-to-dmap context (cgen/list (context-add context #:vars vars) new-tys ts-back) dbound vars))]
     ;; dotted above, nothing below
     [((seq ss (null-end))
       (seq ts (dotted-end dty dbound)))
@@ -284,7 +277,7 @@
      (define-values (ss-front ss-back) (split-at ss (length ts)))
      (% cset-meet
         (cgen/list context ss-front ts)
-        (% move-vars-to-dmap (cgen/list (context-add-vars context vars) ss-back new-tys) dbound vars))]
+        (% move-vars-to-dmap context (cgen/list (context-add-vars context vars) ss-back new-tys) dbound vars))]
 
     ;; same dotted bound
     [((seq ss (dotted-end s-dty dbound))
@@ -295,7 +288,7 @@
         (cgen/list context ss ts)
         (if (inferable-index? context dbound)
             (extend-tvars (list dbound)
-              (% move-vars+rest-to-dmap (cgen (context-add-var context dbound) s-dty t-dty) null dbound))
+              (% move-vars+rest-to-dmap context (cgen (context-add-var context dbound) s-dty t-dty) null dbound))
             (cgen context s-dty t-dty)))]
 
     ;; bounds are different
@@ -307,7 +300,7 @@
      (% cset-meet
         (cgen/list context ss ts)
         (extend-tvars (list dbound*)
-          (% move-dotted-rest-to-dmap (cgen (context-add-var context dbound) s-dty t-dty) dbound dbound*)))]
+          (% move-dotted-rest-to-dmap context (cgen (context-add-var context dbound) s-dty t-dty) dbound dbound*)))]
     [((seq ss (dotted-end s-dty dbound))
       (seq ts (dotted-end t-dty dbound*)))
      #:when (inferable-index? context dbound*)
@@ -315,7 +308,7 @@
      (% cset-meet
         (cgen/list context ss ts)
         (extend-tvars (list dbound)
-          (% move-dotted-rest-to-dmap (cgen (context-add-var context dbound*) s-dty t-dty) dbound* dbound)))]
+          (% move-dotted-rest-to-dmap context (cgen (context-add-var context dbound*) s-dty t-dty) dbound* dbound)))]
 
     ;; * <: ...
     [((seq ss (uniform-end s-rest))
@@ -331,6 +324,7 @@
      (% cset-meet
         (cgen/list context ss-front ts)
         (% move-vars+rest-to-dmap
+           context
            (% cset-meet
               (cgen/list (context-add context #:bounds (list new-bound) #:vars vars #:indices (list new-bound))
                          ss-back new-tys)
@@ -350,6 +344,7 @@
                                      (drop-right ts length-delta)
                                      (extend ss ts t-rest)))
            (% move-vars+rest-to-dmap
+              context
               (% cset-meet
                  (cgen/list (context-add context #:bounds (list new-bound) #:vars vars #:indices (list new-bound))
                             new-tys (take-right ts (max 0 length-delta)))
@@ -411,7 +406,7 @@
   ;; this places no constraints on any variables
   ;; this constrains just x (which is a single var)
   (define (singleton S x T)
-    (insert empty-cset x S T))
+    (reduce/var (context-expected-cset context) x S T))
   ;; FIXME -- figure out how to use parameters less here
   ;;          subtyping doesn't need to use it quite as much
   (define cs (current-seen))
@@ -763,19 +758,18 @@
 ;; context : the context of what to infer/not infer
 ;; S : a list of types to be the subtypes of T
 ;; T : a list of types
-;; expected-cset : a cset representing the expected type, to meet early and
 ;;  keep the number of constraints in check. (empty by default)
 ;; produces a cset which determines a substitution that makes the Ss subtypes of the Ts
-(define/cond-contract (cgen/list context S T
-                                 #:expected-cset [expected-cset empty-cset])
-  ((context? (listof Values/c) (listof Values/c)) (#:expected-cset cset?) . ->* . (or/c cset? #f))
+(define/cond-contract (cgen/list context S T)
+  (context? (listof Values/c) (listof Values/c) . -> . (or/c cset? #f))
   (and (= (length S) (length T))
        (% cset-meet*
           (for/list/fail ([s (in-list S)] [t (in-list T)])
-                         ;; We meet early to prune the csets to a reasonable size.
-                         ;; This weakens the inference a bit, but sometimes avoids
-                         ;; constraint explosion.
-            (% cset-meet (cgen context s t) expected-cset)))))
+            ;; We meet early to prune the csets to a reasonable size.
+            ;; This weakens the inference a bit, but sometimes avoids
+            ;; constraint explosion.
+            (cgen context s t)))))
+
 
 
 
@@ -795,13 +789,13 @@
       (or/c #f Values/c ValuesDots?))
      ((or/c #f Values/c AnyValues? ValuesDots?))
      . ->* . (or/c boolean? substitution/c))
-    (define ctx (context null X Y ))
+    (define ctx (context null X Y empty-cset))
     (define expected-cset
       (if expected
           (cgen ctx R expected)
           empty-cset))
     (and expected-cset
-         (let* ([cs (cgen/list ctx S T #:expected-cset expected-cset)]
+         (let* ([cs (cgen/list (context-set-expected-cset ctx expected-cset) S T)]
                 [cs* (% cset-meet cs expected-cset)])
            (and cs* (if R (subst-gen cs* X Y R) #t)))))
   ;(trace infer)
@@ -819,19 +813,19 @@
   (early-return
    (define short-S (take S (length T)))
    (define rest-S (drop S (length T)))
-   (define ctx (context null X (list dotted-var)))
+   (define ctx (context null X (list dotted-var) empty-cset))
    (define expected-cset (if expected
                              (cgen ctx R expected)
                              empty-cset))
    #:return-unless expected-cset #f
-   (define cs-short (cgen/list ctx short-S T #:expected-cset expected-cset))
+   (define ctx* (context-set-expected-cset ctx expected-cset))
+   (define cs-short (cgen/list ctx* short-S T))
    #:return-unless cs-short #f
    (define-values (new-vars new-Ts)
      (generate-dbound-prefix dotted-var T-dotted (length rest-S) #f))
-   (define cs-dotted (cgen/list (context-add-vars ctx new-vars) rest-S new-Ts
-                                #:expected-cset expected-cset))
+   (define cs-dotted (cgen/list (context-add-vars ctx* new-vars) rest-S new-Ts))
    #:return-unless cs-dotted #f
-   (define cs-dotted* (move-vars-to-dmap cs-dotted dotted-var new-vars))
+   (define cs-dotted* (move-vars-to-dmap ctx* cs-dotted dotted-var new-vars))
    #:return-unless cs-dotted* #f
    (define cs (cset-meet cs-short cs-dotted*))
    #:return-unless cs #f
