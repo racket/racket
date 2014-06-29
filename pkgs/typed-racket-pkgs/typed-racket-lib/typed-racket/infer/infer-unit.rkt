@@ -75,14 +75,6 @@
     [(context _ X _)
      (memq var X)]))
 
-(define (empty-cset/context ctx)
-  (match ctx
-    [(context _ X Y)
-     (empty-cset X Y)]))
-
-
-
-
 ;; Type Type Seen -> Seen
 ;; Add the type pair to the set of seen type pairs
 (define/cond-contract (remember s t A)
@@ -143,8 +135,7 @@
   (mover cset dbound vars
          (λ (cmap)
            (make-dcon (for/list ([v (in-list vars)])
-                        (hash-ref cmap v
-                                  (λ () (int-err "No constraint for new var ~a" v))))
+                        (hash-ref cmap v no-constraint))
                       #f))))
 
 ;; cset : the constraints being manipulated
@@ -157,8 +148,7 @@
          (λ (cmap)
            (make-dcon-dotted
             null
-            (hash-ref cmap var
-                      (λ () (int-err "No constraint for bound ~a" var)))
+            (hash-ref cmap var no-constraint)
             dbound))))
 
 ;; cset : the constraints being manipulated
@@ -171,7 +161,7 @@
            ((if exact? make-dcon-exact make-dcon)
             (for/list ([v (in-list vars)])
               (hash-ref cmap v no-constraint))
-            (hash-ref cmap dbound (λ () (int-err "No constraint for bound ~a" dbound)))))))
+            (hash-ref cmap dbound no-constraint)))))
 
 ;; Represents a sequence of types. types are the fixed prefix, and end is the remaining types
 ;; This is a unification of all of the dotted types that exist ListDots, ->..., and ValuesDots.
@@ -227,8 +217,8 @@
 (define/cond-contract (cgen/filter context s t)
   (context? Filter? Filter? . -> . (or/c #f cset?))
   (match* (s t)
-    [(e e) (empty-cset/context context)]
-    [(e (Top:)) (empty-cset/context context)]
+    [(e e) empty-cset]
+    [(e (Top:)) empty-cset]
     ;; FIXME - is there something to be said about the logical ones?
     [((TypeFilter: s p) (TypeFilter: t p)) (cgen/inv context s t)]
     [((NotTypeFilter: s p) (NotTypeFilter: t p)) (cgen/inv context s t)]
@@ -238,7 +228,7 @@
 (define/cond-contract (cgen/filter-set context s t)
   (context? FilterSet? FilterSet? . -> . (or/c #f cset?))
   (match* (s t)
-    [(e e) (empty-cset/context context)]
+    [(e e) empty-cset]
     [((FilterSet: s+ s-) (FilterSet: t+ t-))
      (% cset-meet (cgen/filter context s+ t+) (cgen/filter context s- t-))]
     [(_ _) #f]))
@@ -246,8 +236,8 @@
 (define/cond-contract (cgen/object context s t)
   (context? Object? Object? . -> . (or/c #f cset?))
   (match* (s t)
-    [(e e) (empty-cset/context context)]
-    [(e (Empty:)) (empty-cset/context context)]
+    [(e e) empty-cset]
+    [(e (Empty:)) empty-cset]
     ;; FIXME - do something here
     [(_ _) #f]))
 
@@ -419,25 +409,24 @@
    (Type/c Type/c . -> . (or/c #f cset?))
    (cgen/inv context S T))
   ;; this places no constraints on any variables
-  (define empty (empty-cset/context context))
   ;; this constrains just x (which is a single var)
   (define (singleton S x T)
-    (insert empty x S T))
+    (insert empty-cset x S T))
   ;; FIXME -- figure out how to use parameters less here
   ;;          subtyping doesn't need to use it quite as much
   (define cs (current-seen))
   ;; if we've been around this loop before, we're done (for rec types)
   (if (seen? S T cs)
-      empty
+      empty-cset
       (parameterize (;; remember S and T, and obtain everything we've seen from the context
                      ;; we can't make this an argument since we may call back and forth with
                      ;; subtyping, for example
                      [current-seen (remember S T cs)])
         (match*/early (S T)
           ;; if they're equal, no constraints are necessary (CG-Refl)
-          [(a b) #:when (type-equal? a b) empty]
+          [(a b) #:when (type-equal? a b) empty-cset]
           ;; CG-Top
-          [(_ (Univ:)) empty]
+          [(_ (Univ:)) empty-cset]
           ;; AnyValues
           [((AnyValues: s-f) (AnyValues: t-f))
            (cgen/filter context s-f t-f)]
@@ -481,7 +470,7 @@
           ;; they're subtypes. easy.
           [(a b) 
            #:when (subtype a b)
-           empty]
+           empty-cset]
 
           ;; Lists delegate to sequences
           [((ListSeq: s-seq) (ListSeq: t-seq))
@@ -523,8 +512,7 @@
 
           ;; constrain *each* element of es to be below T, and then combine the constraints
           [((Union: es) T)
-           (define cs (for/list/fail ([e (in-list es)]) (cg e T)))
-           (and cs (cset-meet* (cons empty cs)))]
+           (% cset-meet* (for/list/fail ([e (in-list es)]) (cg e T)))]
 
           ;; find *an* element of es which can be made to be a supertype of S
           ;; FIXME: we're using multiple csets here, but I don't think it makes a difference
@@ -544,13 +532,13 @@
                   (cond [(and proc proc*)
                          (cg proc proc*)]
                         [proc* #f]
-                        [else empty])])
+                        [else empty-cset])])
              (% cset-meet proc-c (cgen/flds context flds flds*)))]
 
           ;; two struct names, need to resolve b/c one could be a parent
           [((Name: n _ _ #t) (Name: n* _ _ #t))
            (if (free-identifier=? n n*)
-               empty ;; just succeed now
+               empty-cset ;; just succeed now
                (% cg (resolve-once S) (resolve-once T)))]
           ;; pairs are pointwise
           [((Pair: a b) (Pair: a* b*))
@@ -735,51 +723,42 @@
                       gS
                       S))])]))
 
-  ;; Since we don't add entries to the empty cset for index variables (since there is no
-  ;; widest constraint, due to dcon-exacts), we must add substitutions here if no constraint
-  ;; was found.  If we're at this point and had no other constraints, then adding the
-  ;; equivalent of the constraint (dcon null (c Bot X Top)) is okay.
-  (define (extend-idxs S)
-    (hash-union
-     (for/hash ([v (in-list Y)]
-                #:unless (hash-has-key? S v))
-       (let ([var (hash-ref idx-hash v Constant)])
-         (values v
-                 (evcase var
-                         [Constant (i-subst null)]
-                         [Covariant (i-subst null)]
-                         [Contravariant (i-subst/starred null Univ)]
-                         ;; TODO figure out if there is a better subst here
-                         [Invariant (i-subst null)]))))
-     S))
   (match (car (cset-maps C))
     [(cons cmap (dmap dm))
-     (let ([subst (hash-union
-                    (for/hash ([(k dc) (in-hash dm)])
-                      (define (c->t c) (constraint->type c (hash-ref idx-hash k Constant)))
-                      (values
-                        k
-                        (match dc
-                          [(dcon fixed #f)
-                           (i-subst (map c->t fixed))]
-                          [(or (dcon fixed rest) (dcon-exact fixed rest))
-                           (i-subst/starred
-                             (map c->t fixed)
-                             (c->t rest))]
-                          [(dcon-dotted fixed dc dbound)
-                           (i-subst/dotted
-                             (map c->t fixed)
-                             (c->t dc)
-                             dbound)])))
-                   (for/hash ([(k v) (in-hash cmap)])
-                     (values k (t-subst (constraint->type v (hash-ref var-hash k Constant))))))])
-       ;; verify that we got all the important variables
-       (and (for/and ([v (in-list X)])
-              (let ([entry (hash-ref subst v #f)])
-                ;; Make sure we got a subst entry for a type var
-                ;; (i.e. just a type to substitute)
-                (and entry (t-subst? entry))))
-            (extend-idxs subst)))]))
+     (hash-union
+       (for/hash ([k (in-list Y)])
+         (define var (hash-ref idx-hash k Constant))
+         (define (c->t c) (constraint->type c var))
+         (values
+           k
+           (match (hash-ref dm k #f)
+             [(dcon fixed #f)
+              (i-subst (map c->t fixed))]
+             [(or (dcon fixed rest) (dcon-exact fixed rest))
+              (i-subst/starred
+                (map c->t fixed)
+                (c->t rest))]
+             [(dcon-dotted fixed dc dbound)
+              (i-subst/dotted
+                (map c->t fixed)
+                (c->t dc)
+                dbound)]
+             ;; Since we don't add entries to the empty cset for index variables (since
+             ;; there is no widest constraint, due to dcon-exacts), we must add
+             ;; substitutions here if no constraint was found.  If we're at this point
+             ;; and had no other constraints, then adding the  equivalent of the
+             ;; constraint (dcon null (c Bot X Top)) is okay.
+             [#f
+              (evcase var
+                      [Constant (i-subst null)]
+                      [Covariant (i-subst null)]
+                      [Contravariant (i-subst/starred null Univ)]
+                      ;; TODO figure out if there is a better subst here
+                      [Invariant (i-subst null)])])))
+      (for/hash ([k (in-list X)])
+        (values k (t-subst (constraint->type
+                             (hash-ref cmap k no-constraint)
+                             (hash-ref var-hash k Constant))))))]))
 
 ;; context : the context of what to infer/not infer
 ;; S : a list of types to be the subtypes of T
@@ -788,7 +767,7 @@
 ;;  keep the number of constraints in check. (empty by default)
 ;; produces a cset which determines a substitution that makes the Ss subtypes of the Ts
 (define/cond-contract (cgen/list context S T
-                                 #:expected-cset [expected-cset (empty-cset '() '())])
+                                 #:expected-cset [expected-cset empty-cset])
   ((context? (listof Values/c) (listof Values/c)) (#:expected-cset cset?) . ->* . (or/c cset? #f))
   (and (= (length S) (length T))
        (% cset-meet*
@@ -820,7 +799,7 @@
     (define expected-cset
       (if expected
           (cgen ctx R expected)
-          (empty-cset '() '())))
+          empty-cset))
     (and expected-cset
          (let* ([cs (cgen/list ctx S T #:expected-cset expected-cset)]
                 [cs* (% cset-meet cs expected-cset)])
@@ -843,7 +822,7 @@
    (define ctx (context null X (list dotted-var)))
    (define expected-cset (if expected
                              (cgen ctx R expected)
-                             (empty-cset '() '())))
+                             empty-cset))
    #:return-unless expected-cset #f
    (define cs-short (cgen/list ctx short-S T #:expected-cset expected-cset))
    #:return-unless cs-short #f

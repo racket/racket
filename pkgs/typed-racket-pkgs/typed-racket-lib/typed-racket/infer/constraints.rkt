@@ -14,12 +14,9 @@
 ;; Widest constraint possible
 (define no-constraint (make-c (Un) Univ))
 
-;; Create an empty constraint map from a set of type variables X and
-;; index variables Y.  For now, we add the widest constraints for
-;; variables in X to the cmap and create an empty dmap.
-(define (empty-cset X Y)
-  (make-cset (list (cons (for/hash ([x (in-list X)])
-                           (values x no-constraint))
+;; An empty constraint map.
+(define empty-cset 
+  (make-cset (list (cons (hash) 
                          (make-dmap (make-immutable-hash null))))))
 
 
@@ -62,7 +59,7 @@
 ;; returns #f for failure
 (define cset-meet
   (case-lambda
-    [() (empty-cset null null)]
+    [() empty-cset]
     [(x) x]
     [(x y)
      (match* (x y)
