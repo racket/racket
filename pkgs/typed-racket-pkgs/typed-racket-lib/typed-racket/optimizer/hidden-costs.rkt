@@ -13,6 +13,12 @@
   (display displayln newline write write-byte write-bytes print printf))
 (define-literal-syntax-class hidden-random-parameter-function
   (random))
+(define-literal-syntax-class regexp-function
+  (regexp-match regexp-try-match regexp-match-positions regexp-match?
+   regexp-match-peek regexp-match-peek-positions regexp-match-peek-immediate
+   regexp-match-peek-positions-immediate regexp-match-peek-positions
+   regexp-match/end regexp-match-positions/end regexp-match-peek-positions/end
+   regexp-match-peek-positions-immediate/end regexp-split))
 
 ;; This syntax class does not perform optimization.
 ;; It only logs operations with hidden costs, for use by Optimization Coach.
@@ -49,4 +55,13 @@
              (or (and constructor-for (struct-constructor? constructor-for))
                  (struct-constructor? #'op)))
     #:do [(log-optimization-info "struct constructor" #'op)]
-    #:with opt (syntax/loc this-syntax (op-part args.opt ...))))
+    #:with opt (syntax/loc this-syntax (op-part args.opt ...)))
+
+  ;; regexp-match (or other regexp operation) with non-regexp pattern argument
+  ;; (i.e. string or bytes)
+  (pattern (#%plain-app op:regexp-function pattern-arg:opt-expr
+                        args:opt-expr ...)
+    #:when (not (or (subtypeof? #'pattern-arg -Regexp)
+                    (subtypeof? #'pattern-arg -Byte-Regexp)))
+    #:do [(log-optimization-info "non-regexp pattern" #'pattern-arg)]
+    #:with opt (syntax/loc this-syntax (op pattern-arg.opt args.opt ...))))
