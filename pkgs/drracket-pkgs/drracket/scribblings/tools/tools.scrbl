@@ -267,16 +267,21 @@ These precise colors for these identifiers are controlled by the preferences dia
 @language-info-def[drracket:default-filters]{
   When a language's @racket[_get-info] procedure responds to
   @racket['drracket:default-filters], it is expected to return
-  @racket[(listof (list/c string? string?))].}
-These results are added as a prefix to @racket[finder:default-filters],
-extending the default that DrRacket normally uses, namely:
-@racketblock[`(["Racket Sources" "*.rkt;*.scrbl;*.rktl;*.rktd;*.ss;*.scm"]
-               ["Any" "*.*"])]
+  @racket[(listof (list/c string? string?))].
+  
+  These results are added as a prefix to @racket[finder:default-filters],
+  extending the default that DrRacket normally uses, namely:
+  @racketblock[`(["Racket Sources" "*.rkt;*.scrbl;*.rktl;*.rktd;*.ss;*.scm"]
+                 ["Any" "*.*"])]
+  @history[#:added "1.1"]
+}
 
 @language-info-def[drracket:default-extension]{
   When a language's @racket[_get-info] procedure responds to @racket['drracket:default-extension],
   it is expected to return @racket[(and/c string? (not/c #rx"[.]"))]; the result is used
   as the default extension when saving files by setting @racket[finder:default-extension].
+  
+  @history[#:added "1.1"]
 }
 
 @subsection{Adding Module-based Languages to DrRacket}
