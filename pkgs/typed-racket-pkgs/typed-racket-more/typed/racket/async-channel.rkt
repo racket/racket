@@ -2,7 +2,7 @@
 
 ;; This module provides a typed version of racket/async-channel
 
-(require "private/async-channel-wrapped.rkt"
+(require racket/async-channel
          (for-syntax (only-in (rep type-rep) make-Async-ChannelTop)))
 
 ;; Section 11.2.4 (Buffered Asynchronous Channels)
