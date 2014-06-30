@@ -289,7 +289,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ name:id ty:expr)
      #`(begin
-         #,(ignore #'(define name (procedure-rename (make-predicate ty) 'name)))
+         ;; We want the value bound to name to have a nice object name. Using the built in mechanism
+         ;; of define has better performance than procedure-rename.
+         #,(ignore
+             #'(begin
+                 (define pred (make-predicate ty))
+                 (define (name x) (pred x))))
          ;; not a require, this is just the unchecked declaration syntax
          #,(internal #'(require/typed-internal name (Any -> Boolean : ty))))]))
 
