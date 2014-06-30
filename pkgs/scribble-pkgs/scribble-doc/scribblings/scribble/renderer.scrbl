@@ -104,7 +104,9 @@ written to the current output port.
 
 If @racket[warn-undefined?] is a true value, then references to
 missing cross-reference targets trigger a warning message on the
-current error port.}
+current error port.
+
+@history[#:changed "1.4" @elem{Added the @racket[#:image-preferences] argument.}]}
 
 
 @section{Base Renderer}
@@ -261,7 +263,8 @@ Represents a renderer.
                  [prefix-file (or/c path-string? #f) #f]
                  [style-file (or/c path-string? #f) #f]
                  [style-extra-files (listof path-string?) null]
-                 [extra-files (listof path-string?) null])]{
+                 [extra-files (listof path-string?) null]
+                 [image-preferences (listof (or/c 'ps 'pdf 'png 'svg 'gif)) null])]{
 
 Creates a renderer whose output will go to @racket[dest-dir]. For
 example, @racket[dest-dir] could name the directory containing the
@@ -287,8 +290,15 @@ styles in a formal-specific way; see @secref["config-style"] for more
 information.
 
 The @racket[extra-files] argument names files to be copied to the
-output location, such as image files or extra configuration files.}
-}
+output location, such as image files or extra configuration files.
+
+The @racket[image-preferences] argument specified preferred formats
+for image files and conversion, where formats listed earlier in the
+list are more preferred. The renderer may not support all of the
+formats listed in @racket[image-preferences].
+
+@history[#:changed "1.4" @elem{Added the @racket[image-preferences]
+                               initialization argument.}]}}
 
 @; ----------------------------------------
 

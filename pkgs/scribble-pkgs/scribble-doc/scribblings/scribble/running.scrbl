@@ -72,6 +72,8 @@ information in one document is visible to the other documents. See
 @secref["xref-flags"] for information on references that cross
 documents that are built separately.
 
+@history[#:changed "1.4" @elem{Added @DFlag{dvipdf}.}]
+
 @section{Extra and Format-Specific Files}
 
 Use the @DFlag{style} flag to specify a format-specific file to adjust
@@ -187,6 +189,8 @@ of @exec{pdflatex}), combine @DFlag{latex} with @exec{@DPFlag{convert}
 ps}. To generate HTML pages with images converted to SVG format
 instead of PNG format, combine @DFlag{html} with
 @exec{@DPFlag{convert} svg}.
+
+@history[#:changed "1.4" @elem{Added @DPFlag{convert} support.}]
 
 @section{Passing Command-Line Arguments to Documents}
 
