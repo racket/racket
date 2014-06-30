@@ -16,7 +16,7 @@
   (language-info-def id . args)
   (language-info-def/proc 'id . args))
 
-(define (language-info-def/proc sym . args)
+(define (language-info-def/proc sym arg0 . args)
   (define str (format "~s" sym))
-  (apply elemtag str args))
+  (list (elemtag str arg0) args))
 

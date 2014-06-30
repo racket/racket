@@ -61,39 +61,41 @@
                  (begin (file-or-directory-permissions* dest "rwx") #t))))]
     [else #t]))
 
-(define (zip-tests zip unzip timestamps?)
-  (make-directory* "ex1")
-  (make-file (build-path "ex1" "f1"))
-  (make-file (build-path "ex1" "f2"))
-  (make-file (build-path "ex1" "f3"))
-  (define more-dir (build-path "ex1" "more"))
+(define (zip-tests zip unzip timestamps?
+                   #:dir-name [ex1 "ex1"]
+                   #:file-name [f2 "f2"])
+  (make-directory* ex1)
+  (make-file (build-path ex1 "f1"))
+  (make-file (build-path ex1 f2))
+  (make-file (build-path ex1 "f3"))
+  (define more-dir (build-path ex1 "more"))
   (make-directory* more-dir)
   (make-file (build-path more-dir "f4"))
 
-  (zip "a.zip" "ex1")
+  (zip "a.zip" ex1)
   (when timestamps? (sleep 3)) ; at least 2 seconds, plus 1 to likely change parity
 
   (make-directory* "sub")
   (parameterize ([current-directory "sub"])
     (unzip "../a.zip"))
   
-  (unless (diff "ex1" (build-path "sub" "ex1") timestamps?)
+  (unless (diff ex1 (build-path "sub" ex1) timestamps?)
     (eprintf "changed! ~s\n" zip))
 
   (delete-directory/files "sub")
   (delete-file "a.zip")
 
-  (zip "a.zip" #:path-prefix "inside" "ex1")
+  (zip "a.zip" #:path-prefix "inside" ex1)
   (make-directory* "sub")
   (parameterize ([current-directory "sub"])
     (unzip "../a.zip"))
 
-  (unless (diff "ex1" (build-path "sub" "inside" "ex1") timestamps?)
+  (unless (diff ex1 (build-path "sub" "inside" ex1) timestamps?)
     (eprintf "changed! ~s\n" zip))
   
   (delete-file "a.zip")
   (delete-directory/files "sub")
-  (delete-directory/files "ex1"))
+  (delete-directory/files ex1))
 
 (define work-dir (make-temporary-file "packer~a" 'directory))
 
@@ -109,7 +111,10 @@
   (zip-tests zip unzip #f)
   (zip-tests (make-zip #f) (make-unzip #f) 'file)
   (zip-tests (make-zip #t) (make-unzip #t) 'file)
-  (zip-tests tar untar #t))
+  (zip-tests tar untar #t)
+  (zip-tests tar untar #t
+             #:dir-name (make-string 64 #\d)
+             #:file-name (make-string 64 #\f)))
 
 (delete-directory/files work-dir)
 
