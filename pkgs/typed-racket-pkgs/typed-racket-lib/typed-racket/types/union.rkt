@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep rep-utils)
          (prefix-in c: (contract-req))
-         (types subtype base-abbrev resolve)
+         (types subtype base-abbrev resolve current-seen)
          racket/match
          racket/list)
 
@@ -21,6 +21,8 @@
 ;; a is a Type (not a union type)
 ;; b is a List[Type] (non overlapping, non Union-types)
 ;; The output is a non overlapping list of non Union types.
+;; The overlapping constraint is lifted if we are in the midst of subtyping. This is because during
+;; subtyping calls to subtype are expensive.
 (define (merge a b)
   (define b* (make-union* b))
   (match* (a b)
@@ -32,6 +34,7 @@
      ;; so that bad applications are rejected early.
      (resolve-app-check-error rator rands stx)
      (cons a b)]
+    [(_ _) #:when (currently-subtyping?) (cons a b)]
     [((? (λ _ (subtype a b*))) _) b]
     [((? (λ _ (subtype b* a))) _) (list a)]
     [(_ _) (cons a (filter-not (λ (b-elem) (subtype b-elem a)) b))]))
