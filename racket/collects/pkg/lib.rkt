@@ -3175,7 +3175,8 @@
                                   #:set-catalogs? [set-catalogs? #t]
                                   #:catalog-file [catalog-file (db:current-pkg-catalog-file)]
                                   #:quiet? [quiet? #f]
-                                  #:consult-packages? [consult-packages? #f])
+                                  #:consult-packages? [consult-packages? #f]
+                                  #:skip-download-failures? [skip-download-failures? #f])
   (parameterize ([db:current-pkg-catalog-file catalog-file])
     (define current-catalogs (db:get-catalogs))
     (cond
@@ -3242,7 +3243,8 @@
                              #:from-config? [from-config? #f]
                              #:state-catalog [state-catalog #f]
                              #:relative-sources? [relative-sources? #f]
-                             #:quiet? [quiet? #f])
+                             #:quiet? [quiet? #f]
+                             #:package-exn-handler [package-exn-handler (lambda (name exn) (raise exn))])
   (when (and state-catalog
              (not (db-path? (if (path? state-catalog)
                                 state-catalog
@@ -3281,56 +3283,58 @@
   ;; Check on each new package:
   (for ([pkg (in-list (sort pkgs string<? #:key db:pkg-name))])
     (define name (db:pkg-name pkg))
-    (define current-checksum (and state-catalog
-                                  (parameterize ([db:current-pkg-catalog-file state-catalog])
-                                    (define l (db:get-pkgs #:name (db:pkg-name pkg)))
-                                    (and (= 1 (length l))
-                                         (db:pkg-checksum (car l))))))
-    (unless (and current-checksum
-                 (equal? current-checksum (db:pkg-checksum pkg)))
-      (unless quiet?
-        (printf/flush "== Archiving ~a ==\nchecksum: ~a\n" (db:pkg-name pkg) (db:pkg-checksum pkg)))
-      ;; Download/unpack existing package:
-      (define-values (staged-name staged-dir staged-checksum clean? staged-mods)
-        (pkg-stage
-         (pkg-desc (db:pkg-source pkg) #f (db:pkg-name pkg) (db:pkg-checksum pkg) #f)
-         #:in-place? #t
-         #:use-cache? #t
-         #:quiet? quiet?))
-      (make-directory* (build-path dest-dir "pkgs"))
-      ;; Repack:
-      (pkg-create 'zip
-                  staged-dir
-                  #:pkg-name name
-                  #:dest (build-path dest-dir "pkgs")
-                  #:quiet? quiet?)
-      (when clean? (delete-directory/files staged-dir))
+    (with-handlers ([exn:fail? (lambda (exn)
+                                 (package-exn-handler name exn))])
+      (define current-checksum (and state-catalog
+                                    (parameterize ([db:current-pkg-catalog-file state-catalog])
+                                      (define l (db:get-pkgs #:name (db:pkg-name pkg)))
+                                      (and (= 1 (length l))
+                                           (db:pkg-checksum (car l))))))
+      (unless (and current-checksum
+                   (equal? current-checksum (db:pkg-checksum pkg)))
+        (unless quiet?
+          (printf/flush "== Archiving ~a ==\nchecksum: ~a\n" (db:pkg-name pkg) (db:pkg-checksum pkg)))
+        ;; Download/unpack existing package:
+        (define-values (staged-name staged-dir staged-checksum clean? staged-mods)
+          (pkg-stage
+           (pkg-desc (db:pkg-source pkg) #f (db:pkg-name pkg) (db:pkg-checksum pkg) #f)
+           #:in-place? #t
+           #:use-cache? #t
+           #:quiet? quiet?))
+        (make-directory* (build-path dest-dir "pkgs"))
+        ;; Repack:
+        (pkg-create 'zip
+                    staged-dir
+                    #:pkg-name name
+                    #:dest (build-path dest-dir "pkgs")
+                    #:quiet? quiet?)
+        (when clean? (delete-directory/files staged-dir))
+        ;; Record packed result:
+        (when state-catalog
+          (parameterize ([db:current-pkg-catalog-file state-catalog])
+            (db:set-pkg! name "local"
+                         (db:pkg-author pkg)
+                         (db:pkg-source pkg)
+                         staged-checksum
+                         (db:pkg-desc pkg)))))
       ;; Record packed result:
-      (when state-catalog
-        (parameterize ([db:current-pkg-catalog-file state-catalog])
-          (db:set-pkg! name "local"
-                       (db:pkg-author pkg)
-                       (db:pkg-source pkg)
-                       staged-checksum
-                       (db:pkg-desc pkg)))))
-    ;; Record packed result:
-    (define pkg-file (build-path dest-dir "pkgs" (format "~a.zip" name)))
-    (define new-checksum
-      (file->string (path-replace-suffix pkg-file #".zip.CHECKSUM")))
-    (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
-      (define modules (db:get-pkg-modules name (db:pkg-catalog pkg) (or current-checksum "")))
-      (define dependencies (db:get-pkg-dependencies name (db:pkg-catalog pkg) (or current-checksum "")))
-      (db:set-pkg! name (db:pkg-catalog pkg)
-                   (db:pkg-author pkg)
-                   (path->string (path->complete-path pkg-file))
-                   new-checksum
-                   (db:pkg-desc pkg))
-      (db:set-pkg-modules! name (db:pkg-catalog pkg)
-                           new-checksum
-                           modules)
-      (db:set-pkg-dependencies! name (db:pkg-catalog pkg)
-                                new-checksum
-                                dependencies)))
+      (define pkg-file (build-path dest-dir "pkgs" (format "~a.zip" name)))
+      (define new-checksum
+        (file->string (path-replace-suffix pkg-file #".zip.CHECKSUM")))
+      (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
+        (define modules (db:get-pkg-modules name (db:pkg-catalog pkg) (or current-checksum "")))
+        (define dependencies (db:get-pkg-dependencies name (db:pkg-catalog pkg) (or current-checksum "")))
+        (db:set-pkg! name (db:pkg-catalog pkg)
+                     (db:pkg-author pkg)
+                     (path->string (path->complete-path pkg-file))
+                     new-checksum
+                     (db:pkg-desc pkg))
+        (db:set-pkg-modules! name (db:pkg-catalog pkg)
+                             new-checksum
+                             modules)
+        (db:set-pkg-dependencies! name (db:pkg-catalog pkg)
+                                  new-checksum
+                                  dependencies))))
   (define dest-catalog (build-path dest-dir "catalog"))
   (unless quiet?
     (printf/flush "Creating catalog ~a\n" dest-catalog))
@@ -3495,7 +3499,8 @@
         (#:from-config? boolean?
                         #:state-catalog (or/c path-string? #f)
                         #:relative-sources? boolean?
-                        #:quiet? boolean?)
+                        #:quiet? boolean?
+                        #:package-exn-handler (string? exn:fail? . -> . any))
         void?)]
   [default-pkg-scope
    (-> package-scope/c)]

@@ -368,15 +368,24 @@ for extracting existing catalog information.
                               [#:from-config? from-config? boolean? #f]
                               [#:state-catalog state-catalog (or/c #f path-string?) #f]
                               [#:relative-sources? relative-sources? boolean? #f]
-                              [#:quiet? quiet? boolean? #f])
+                              [#:quiet? quiet? boolean? #f]
+                              [#:package-exn-handler package-exn-handler (string? exn:fail? . -> . any) (lambda (_pkg-name _exn) (raise _exn))])
          void?]{
 
 Implements @racket[pkg-catalog-archive-command].
 
+The @racket[package-exn-handler] argument handles any exception that
+is raised while trying to archive an individual package; the first
+argument is the package name, and the second is the exception. The
+default re-@racket[raise]s the exception, which aborts the archiving
+process, while a function that logs the exception message and returns
+would allow archiving to continue for other packages.
+
 The @racket[current-pkg-lookup-version] parameter determines the version
 for extracting existing catalog information.
 
-@history[#:added "6.0.1.7"]}
+@history[#:added "6.0.1.7"
+         #:changed "6.0.1.13" @elem{Added the @racket[#:package-exn-handler] argument.}]}
 
 
 @defproc[(pkg-catalog-update-local [#:catalogs catalogs (listof string?) (pkg-config-catalogs)]
