@@ -105,7 +105,7 @@ all of the names in the tools library, for use defining keybindings
  (language:simple-settings #t case-sensitive printing-style
                            fraction-style show-sharing
                            insert-newlines annotations)
- (modes:mode #t name surrogate repl-submit matches-language))
+ (modes:mode #t name surrogate repl-submit matches-language intended-to-edit-programs?))
  
 (provide-signature-elements drracket:tool-cm^) ;; provide all of the classes & interfaces
 (provide-signature-elements drscheme:tool-cm^) ;; provide the classes & interfaces w/ drscheme: prefix
@@ -1066,12 +1066,14 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:modes:add-mode
-  (-> string?
-      (or/c #f (is-a?/c mode:surrogate-text<%>))
-      (-> (is-a?/c drracket:rep:text%) number? boolean?)
-      (-> (or/c #f (listof string?)) boolean?)
-      drracket:modes:mode?)
-  (name surrogate repl-submit matches-language)
+  (->* (string?
+        (or/c #f (is-a?/c mode:surrogate-text<%>))
+        (-> (is-a?/c drracket:rep:text%) number? boolean?)
+        (-> (or/c #f (listof string?)) boolean?))
+       (#:intended-to-edit-programs? boolean?)
+       drracket:modes:mode?)
+  ((name surrogate repl-submit matches-language)
+   ([intended-to-edit-programs? #t]))
   @{Adds a mode to DrRacket. Returns a mode value
     that identifies the mode.
     
@@ -1103,22 +1105,35 @@ all of the names in the tools library, for use defining keybindings
     that correspond to the names of the language in the
     language dialog.
     
+    The @racket[intended-to-edit-programs?] boolean indicates
+    if this mode is intended to be for editing programs 
+    (as opposed to some other kind of file content). If it is
+    @racket[#f], online expansion is disabled and DrRacket
+    won't look for @tt{(module} at the front of the buffer
+    to try to guess the intended filename.
+    
     Modes are tested in the opposite order that they are
     added. That is, the last mode to be added gets tested
     first when the filename changes or when the language
     changes.
     
     See also
-    @racket[drracket:modes:get-modes].})
+    @racket[drracket:modes:get-modes].
+    
+    @history[#:changed "1.1" @list{Added the @racket[intended-to-edit-programs?] argument.}]
+    })
  
  (struct-doc 
   drracket:modes:mode
   ([name string?]
    [surrogate (or/c #f (is-a?/c mode:surrogate-text<%>))]
    [repl-submit (-> (is-a?/c drracket:rep:text%) number? boolean?)]
-   [matches-language (-> (or/c #f (listof string?)) boolean?)])
+   [matches-language (-> (or/c #f (listof string?)) boolean?)]
+   [intended-to-edit-programs? boolean?])
   #:omit-constructor
-  @{See @racket[drracket:modes:add-mode] for details on modes.})
+  @{See @racket[drracket:modes:add-mode] for details on modes.
+        
+    @history[#:changed "1.1" @list{Added the @racket[intended-to-edit-programs?] field.}]})
  
  (thing-doc
   drracket:modes:struct:mode

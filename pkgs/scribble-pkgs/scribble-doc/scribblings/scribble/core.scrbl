@@ -1152,6 +1152,15 @@ The following are recognized as cell-@tech{style properties}:
 
  @item{@racket['vcenter] --- Center the cell content vertically.}
 
+ @item{@racket['border] --- Draw a line around all sides of the
+       cell. Borders along a shared edge of adjacent cells are
+       collapsed into a single line.}
+
+ @item{@racket['left-border], @racket['right-border],
+       @racket['top-border], or @racket['bottom-border] --- Draw a
+       line along the corresponding side of the cell (with the same
+       border collapsing as for @racket['border]).}
+
  @item{@racket[color-property] structure --- For HTML, applies a color
        to the cell content.}
 
@@ -1164,7 +1173,10 @@ The following are recognized as cell-@tech{style properties}:
 ]
 
 @history[#:changed "1.1" @elem{Added @racket[color-property] and 
-                               @racket[background-color-property] support.}]}
+                               @racket[background-color-property] support.}
+         #:changed "1.4" @elem{Added @racket['border], @racket['left-border],
+                               @racket['right-border], @racket['top-border],
+                               and @racket['bottom-border] support.}]}
 
 
 @defstruct[table-columns ([styles (listof style?)])]{

@@ -552,7 +552,9 @@
          ;; subtyping on structs follows the declared hierarchy
          [((Struct: nm (? Type/c? parent) _ _ _ _) other)
           (subtype* A0 parent other)]
-         ;; subtyping on values is pointwise
+         ;; subtyping on values is pointwise, except special case for Bottom
+         [((Values: (list (Result: (== -Bottom) _ _))) _)
+          A0]
          [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
          [((ValuesDots: s-rs s-dty dbound) (ValuesDots: t-rs t-dty dbound))
           (subtype-seq A0
@@ -566,7 +568,9 @@
           (for/or ([f (in-list fs)])
             (match f
               [(FilterSet: f+ f-)
-               (and (filter-subtype* A0 f+ t-f) (filter-subtype* A0 f+ t-f) A0)]))]
+               (subtype-seq A0
+                            (filter-subtype* f+ t-f)
+                            (filter-subtype* f- t-f))]))]
          [((Result: t (FilterSet: ft ff) o) (Result: t* (FilterSet: ft* ff*) o))
           (subtype-seq A0
                        (subtype* t t*)

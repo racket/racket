@@ -1,4 +1,5 @@
 #lang typed/racket
+(require typed/racket/async-channel)
 
 (make-predicate VectorTop)
 (make-predicate BoxTop)

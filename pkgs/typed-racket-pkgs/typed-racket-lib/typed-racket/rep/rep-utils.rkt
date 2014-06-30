@@ -30,7 +30,12 @@
 ;; free-vars: cached free type variables
 ;; free-idxs: cached free dot sequence variables
 ;; stx: originating syntax for error-reporting
-(define-struct Rep (seq free-vars free-idxs stx) #:transparent)
+(define-struct Rep (seq free-vars free-idxs stx) #:transparent
+               #:methods gen:equal+hash
+               [(define (equal-proc x y recur)
+                  (eq? (unsafe-Rep-seq x) (unsafe-Rep-seq y)))
+                (define (hash-proc x recur) (unsafe-Rep-seq x))
+                (define (hash2-proc x recur) (unsafe-Rep-seq x))])
 
 ;; evil tricks for hygienic yet unhygienic-looking reference
 ;; in say def-type for type-ref-id
@@ -370,6 +375,11 @@
         (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx key vals)))
      vals]))
 
+;; Rep equality and inequality
+(define (rep-equal? s t)
+  (eq? (Rep-seq s) (Rep-seq t)))
+(define (rep<? s t)
+  (< (Rep-seq s) (Rep-seq t)))
 
 (provide
   Rep-values
@@ -377,7 +387,11 @@
               [Rep-free-vars free-vars*]
               [Rep-free-idxs free-idxs*]))
 
-(provide/cond-contract (struct Rep ([seq exact-nonnegative-integer?]
-                                    [free-vars (hash/c symbol? variance?)]
-                                    [free-idxs (hash/c symbol? variance?)]
-                                    [stx (or/c #f syntax?)])))
+(provide/cond-contract
+  [rename rep-equal? type-equal? (Type? Type? . -> . boolean?)]
+  [rename rep<? type<? (Type? Type? . -> . boolean?)]
+  [rename rep<? filter<? (Filter? Filter? . -> . boolean?)]
+  [struct Rep ([seq exact-nonnegative-integer?]
+               [free-vars (hash/c symbol? variance?)]
+               [free-idxs (hash/c symbol? variance?)]
+               [stx (or/c #f syntax?)])])

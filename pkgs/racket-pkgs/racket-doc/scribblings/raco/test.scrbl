@@ -151,6 +151,8 @@ The @exec{raco test} command accepts several flags:
 
 ]
 
+@history[#:changed "1.1" @elem{Added @DFlag{heartbeat}.}]
+
 @section[#:tag "test-config"]{Test Configuration by Submodule}
 
 When @exec{raco test} runs a test in a submodule, a @racket[config]

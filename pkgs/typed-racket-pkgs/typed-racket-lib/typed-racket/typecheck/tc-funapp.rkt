@@ -13,13 +13,13 @@
 
 (provide/cond-contract
   [tc/funapp
-   (syntax? stx-list? tc-results/c (c:listof tc-results/c)
+   (syntax? stx-list? Type/c (c:listof tc-results1/c)
     (c:or/c #f tc-results/c)
     . c:-> . full-tc-results/c)])
 
 (define-syntax (handle-clauses stx)
   (syntax-parse stx
-    [(_  (lsts ... arrs) f-stx args-stx pred infer t argtys expected)
+    [(_  (lsts ... arrs) f-stx args-stx pred infer t args-res expected)
      (with-syntax ([(vars ... a) (generate-temporaries #'(lsts ... arrs))])
        (syntax/loc stx
          (or (for/or ([vars (in-list lsts)] ... [a (in-list arrs)]
@@ -27,46 +27,38 @@
                (let ([substitution (infer vars ... a)])
                  (and substitution
                       (tc/funapp1 f-stx args-stx (subst-all substitution a)
-                                  argtys expected #:check #f))))
-             (poly-fail f-stx args-stx t argtys
+                                  args-res expected #:check #f))))
+             (poly-fail f-stx args-stx t args-res
                         #:name (and (identifier? f-stx) f-stx)
                         #:expected expected))))]))
 
-(define (tc/funapp f-stx args-stx ftype0 argtys expected)
-  (match* (ftype0 argtys)
+(define (tc/funapp f-stx args-stx f-type args-res expected)
+  (match-define (list (tc-result1: argtys) ...) args-res)
+  (match f-type
     ;; we special-case this (no case-lambda) for improved error messages
-    [((tc-result1: (and t (Function: (list (and a (arr: dom (Values: _)
-                                                        rest #f kws))))))
-      argtys)
-     (tc/funapp1 f-stx args-stx a argtys expected)]
-    [((tc-result1: (and t (Function: (and arrs (list (arr: doms rngs rests
-                                                           (and drests #f) kws)
-                                                     ...)))))
-      (and argtys (list (tc-result1: argtys-t) ...)))
+    ;; tc/funapp1 currently cannot handle drest arities
+    [(Function: (list (and a (arr: _ _ _ #f _))))
+     (tc/funapp1 f-stx args-stx a args-res expected)]
+    [(Function/arrs: doms rngs rests (and drests #f) kws #:arrs arrs)
      (or
       ;; find the first function where the argument types match
       (for/first ([dom (in-list doms)] [rng (in-list rngs)] [rest (in-list rests)] [a (in-list arrs)]
-                  #:when (subtypes/varargs argtys-t dom rest))
+                  #:when (subtypes/varargs argtys dom rest))
         ;; then typecheck here
         ;; we call the separate function so that we get the appropriate
         ;; filters/objects
-        (tc/funapp1 f-stx args-stx a argtys expected #:check #f))
+        (tc/funapp1 f-stx args-stx a args-res expected #:check #f))
       ;; if nothing matched, error
       (domain-mismatches
-       f-stx args-stx t doms rests drests rngs argtys #f #f
+       f-stx args-stx f-type doms rests drests rngs args-res #f #f
        #:expected expected
        #:msg-thunk (lambda (dom)
                      (string-append
                       "No function domains matched in function application:\n"
                       dom))))]
     ;; any kind of dotted polymorphic function without mandatory keyword args
-    [((tc-result1:
-       (and t (PolyDots:
-               (and vars (list fixed-vars ... dotted-var))
-               (Function: (list (and arrs (arr: doms rngs rests drests
-                                                (list (Keyword: _ _ #f) ...)))
-                                ...)))))
-      (list (tc-result1: argtys-t) ...))
+    [(PolyDots: (list fixed-vars ... dotted-var)
+       (Function/arrs: doms rngs rests drests (list (Keyword: _ _ #f) ...) #:arrs arrs))
      (handle-clauses
       (doms rngs rests drests arrs) f-stx args-stx
       ;; only try inference if the argument lengths are appropriate
@@ -76,31 +68,24 @@
                           (eq? dotted-var (cdr drest)))]
               [else (= (length dom) (length argtys))]))
       ;; Only try to infer the free vars of the rng (which includes the vars
-      ;; in filters/objects). Note that we have to use argtys-t here, since
-      ;; argtys is a list of tc-results.
+      ;; in filters/objects).
       (λ (dom rng rest drest a)
-        (extend-tvars vars
+        (extend-tvars fixed-vars
           (cond
            [drest
             (infer/dots
-             fixed-vars dotted-var argtys-t dom (car drest) rng (fv rng)
+             fixed-vars dotted-var argtys dom (car drest) rng (fv rng)
              #:expected (and expected (tc-results->values expected)))]
            [rest
-            (infer/vararg fixed-vars (list dotted-var) argtys-t dom rest rng
+            (infer/vararg fixed-vars (list dotted-var) argtys dom rest rng
                           (and expected (tc-results->values expected)))]
            ;; no rest or drest
-           [else (infer fixed-vars (list dotted-var) argtys-t dom rng
+           [else (infer fixed-vars (list dotted-var) argtys dom rng
                         (and expected (tc-results->values expected)))])))
-      t argtys expected)]
+      f-type args-res expected)]
     ;; regular polymorphic functions without dotted rest, 
     ;; we do not choose any instantiations with mandatory keyword arguments
-    [((tc-result1:
-       (and t (Poly:
-               vars
-               (Function: (list (and arrs (arr: doms rngs rests (and drests #f)
-                                                (list (Keyword: _ _ kw?) ...)))
-                                ...)))))
-      (list (tc-result1: argtys-t) ...))
+    [(Poly: vars (Function/arrs: doms rngs rests #f (list (Keyword: _ _ kw?) ...) #:arrs arrs))
      (handle-clauses
       (doms rngs rests kw? arrs) f-stx args-stx
       ;; only try inference if the argument lengths are appropriate
@@ -108,24 +93,18 @@
       (λ (dom _ rest kw? a) 
         (and (andmap not kw?) ((if rest <= =) (length dom) (length argtys))))
       ;; Only try to infer the free vars of the rng (which includes the vars
-      ;; in filters/objects). Note that we have to use argtys-t here, since
-      ;; argtys is a list of tc-results.
+      ;; in filters/objects).
       (λ (dom rng rest kw? a)
-         (extend-tvars vars
-           (infer/vararg vars null argtys-t dom rest rng
-                         (and expected (tc-results->values expected)))))
-      t argtys expected)]
+        (extend-tvars vars
+         (infer/vararg vars null argtys dom rest rng
+                       (and expected (tc-results->values expected)))))
+      f-type args-res expected)]
     ;; Row polymorphism. For now we do really dumb inference that only works
     ;; in very restricted cases, but is probably enough for most cases in
     ;; the Racket codebase. Eventually this should be extended.
-    [((tc-result1:
-       (and t (PolyRow:
-               vars
-               constraints
-               (and f-ty (Function: (list (arr: doms _ _ #f _) ...))))))
-      (list (tc-result1: argtys-t) ...))
+    [(PolyRow: vars constraints (and f-ty (Function/arrs: doms _ _ #f _)))
      (define (fail)
-       (poly-fail f-stx args-stx t argtys
+       (poly-fail f-stx args-stx f-type args-res
                   #:name (and (identifier? f-stx) f-stx)
                   #:expected expected))
      ;; there's only one row variable in a PolyRow (for now)
@@ -146,48 +125,49 @@
        ;; row var wasn't in the same position in some cases
        (fail))
      (define idx (car row-var-idxs))
-     (define resolved-argty (resolve (list-ref argtys-t idx)))
+     (define resolved-argty (resolve (list-ref argtys idx)))
      (cond [(Class? resolved-argty)
             (define substitution
               (hash row-var
                     (t-subst (infer-row constraints resolved-argty))))
-            (tc/funapp f-stx args-stx (ret (subst-all substitution f-ty))
-                       argtys expected)]
+            (tc/funapp f-stx args-stx (subst-all substitution f-ty)
+                       args-res expected)]
            [else (fail)])]
     ;; procedural structs
-    [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _))) _)
-     (tc/funapp f-stx #`(#,(syntax/loc f-stx dummy) . #,args-stx) (ret proc-ty)
-                (cons ftype0 argtys) expected)]
+    [(Struct: _ _ _ (? Function? proc-ty) _ _)
+     (tc/funapp f-stx #`(#,(syntax/loc f-stx dummy) . #,args-stx) proc-ty
+                (cons (ret f-type) args-res) expected)]
     ;; parameters are functions too
-    [((tc-result1: (Param: in out)) (list)) (ret out)]
-    [((tc-result1: (Param: in out)) (list (tc-result1: t)))
-     (if (subtype t in)
-         (ret -Void -true-filter)
-         (tc-error/expr
-          #:return (ret -Void -true-filter)
-          "Wrong argument to parameter - expected ~a and got ~a"
-          in t))]
-    [((tc-result1: (Param: _ _)) _)
-     (tc-error/expr
-      "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
-      (length argtys))]
+    [(Param: in out)
+     (match argtys
+      [(list) (ret out)]
+      [(list t)
+       (if (subtype t in)
+           (ret -Void -true-filter)
+           (tc-error/expr
+            #:return (ret -Void -true-filter)
+            "Wrong argument to parameter - expected ~a and got ~a"
+            in t))]
+      [_ (tc-error/expr
+           "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
+           (length argtys))])]
     ;; resolve names, polymorphic apps, mu, etc
-    [((tc-result1: (? needs-resolving? t) f o) _)
-     (tc/funapp f-stx args-stx (ret (resolve-once t) f o) argtys expected)]
+    [(? needs-resolving?)
+     (tc/funapp f-stx args-stx (resolve-once f-type) args-res expected)]
     ;; a union of functions can be applied if we can apply all of the elements
-    [((tc-result1: (Union: (and ts (list (Function: _) ...)))) _)
+    [(Union: (and ts (list (? Function?) ...)))
      (merge-tc-results
       (for/list ([fty ts])
-        (tc/funapp f-stx args-stx (ret fty) argtys expected)))]
+        (tc/funapp f-stx args-stx fty args-res expected)))]
     ;; error type is a perfectly good fcn type
-    [((tc-result1: (Error:)) _) (ret (make-Error))]
+    [(Error:) f-type]
     ;; otherwise fail
-    [((tc-result1: (and f-ty (Poly: ns (Function: arrs)))) _)
+    [(Poly: ns (Function: arrs))
      (tc-error/expr
       (string-append "Cannot infer type instantiation for type ~a. Please add "
                      "more type annotations")
-      f-ty)]
-    [((tc-result1: f-ty) _)
+      f-type)]
+    [_
      (tc-error/expr
       "Cannot apply expression of type ~a, since it is not a function type"
-      f-ty)]))
+      f-type)]))

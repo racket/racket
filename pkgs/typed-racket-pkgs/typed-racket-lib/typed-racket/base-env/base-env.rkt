@@ -175,6 +175,107 @@
            #:repeat? Univ #f
            -String)]
 
+;; Section 4.3.6 (racket/format)
+[~a (->optkey []
+              #:rest Univ
+              #:separator -String #f
+              #:width (Un -Nat (-val #f)) #f
+              #:max-width (Un -Nat (-val +inf.0)) #f
+              #:min-width -Nat #f
+              #:limit-marker -String #f
+              #:align (one-of/c 'left 'center 'right) #f
+              #:pad-string -String #f
+              #:left-pad-string -String #f
+              #:right-pad-string -String #f
+              -String)]
+[~v (->optkey []
+              #:rest Univ
+              #:separator -String #f
+              #:width (Un -Nat (-val #f)) #f
+              #:max-width (Un -Nat (-val +inf.0)) #f
+              #:min-width -Nat #f
+              #:limit-marker -String #f
+              #:align (one-of/c 'left 'center 'right) #f
+              #:pad-string -String #f
+              #:left-pad-string -String #f
+              #:right-pad-string -String #f
+              -String)]
+[~s (->optkey []
+              #:rest Univ
+              #:separator -String #f
+              #:width (Un -Nat (-val #f)) #f
+              #:max-width (Un -Nat (-val +inf.0)) #f
+              #:min-width -Nat #f
+              #:limit-marker -String #f
+              #:align (one-of/c 'left 'center 'right) #f
+              #:pad-string -String #f
+              #:left-pad-string -String #f
+              #:right-pad-string -String #f
+              -String)]
+[~e (->optkey []
+              #:rest Univ
+              #:separator -String #f
+              #:width (Un -Nat (-val #f)) #f
+              #:max-width (Un -Nat (-val +inf.0)) #f
+              #:min-width -Nat #f
+              #:limit-marker -String #f
+              #:align (one-of/c 'left 'center 'right) #f
+              #:pad-string -String #f
+              #:left-pad-string -String #f
+              #:right-pad-string -String #f
+              -String)]
+[~r (->optkey -Real []
+              #:sign (Un (-val #f) (one-of/c '+ '++ 'parens)
+                         (-lst* (Un -String (-lst* -String -String))
+                                (Un -String (-lst* -String -String))
+                                (Un -String (-lst* -String -String))))
+                     #f
+              #:base (Un -Integer (-lst* (-val 'up) -Integer)) #f
+              #:precision (Un -Integer (-lst* (-val '=) -Integer)) #f
+              #:notation (Un (-val 'positional) (-val 'exponential)
+                             (-> -Real (one-of/c 'positional 'exponential)))
+                         #f
+              #:format-exponent (-opt (Un -String (-> -Integer -String))) #f
+              #:min-width -Integer #f
+              #:pad-string -String #f
+              -String)]
+[~.a (->optkey []
+               #:rest Univ
+               #:separator -String #f
+               #:width (Un -Nat (-val #f)) #f
+               #:max-width (Un -Nat (-val +inf.0)) #f
+               #:min-width -Nat #f
+               #:limit-marker -String #f
+               #:align (one-of/c 'left 'center 'right) #f
+               #:pad-string -String #f
+               #:left-pad-string -String #f
+               #:right-pad-string -String #f
+               -String)]
+[~.v (->optkey []
+               #:rest Univ
+               #:separator -String #f
+               #:width (Un -Nat (-val #f)) #f
+               #:max-width (Un -Nat (-val +inf.0)) #f
+               #:min-width -Nat #f
+               #:limit-marker -String #f
+               #:align (one-of/c 'left 'center 'right) #f
+               #:pad-string -String #f
+               #:left-pad-string -String #f
+               #:right-pad-string -String #f
+               -String)]
+[~.s (->optkey []
+               #:rest Univ
+               #:separator -String #f
+               #:width (Un -Nat (-val #f)) #f
+               #:max-width (Un -Nat (-val +inf.0)) #f
+               #:min-width -Nat #f
+               #:limit-marker -String #f
+               #:align (one-of/c 'left 'center 'right) #f
+               #:pad-string -String #f
+               #:left-pad-string -String #f
+               #:right-pad-string -String #f
+               -String)]
+
 ;; Section 4.4 (Byte Strings)
 [bytes (->* (list) -Integer -Bytes)]
 [bytes? (make-pred-ty -Bytes)]
@@ -1491,7 +1592,7 @@
 [syntax-local-lift-provide (-> Univ -Void)]
 [syntax-local-name (-> Univ)]
 [syntax-local-context (-> (Un (-val 'expression) (-val 'top-level) (-val 'module) (-val 'module-begin) (-lst Univ)))]
-[syntax-local-phase-level (-> (-opt -Int))]
+[syntax-local-phase-level (-> -Int)]
 [syntax-local-module-exports (-> -Module-Path (-values (list (-lst Sym) (-lst Sym) (-lst Sym))))]
 [syntax-local-get-shadower (-> (-Syntax Sym) (-Syntax Sym))]
 [syntax-local-certifier (->opt [B] (-poly (a) (->opt (-Syntax a) [Univ (-opt (-poly (b) (-> (-Syntax b) (-Syntax b))))] (-Syntax a))))]

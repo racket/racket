@@ -241,6 +241,12 @@ a:hover {
     height: 4rem;
 }
 
+.nosearchform {
+    margin: 0;
+    padding: 0;
+    height: 4rem;
+}
+
 .searchbox {
     font-size: 1rem;
     width: 12rem;

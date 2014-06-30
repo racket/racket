@@ -61,6 +61,7 @@
 (provide/contract
  [render-language-nts (parameter/c (or/c false/c (listof (or/c string? symbol?))))]
  [extend-language-show-union (parameter/c boolean?)]
+ [extend-language-show-extended-order (parameter/c boolean?)]
  [current-text (parameter/c (-> string? text-style/c number? pict?))])
 
 (provide/contract

@@ -4474,6 +4474,11 @@ static Scheme_Object *read_compact_svector(CPort *port, int l)
   return o;
 }
 
+static int valid_utf8(const char *s, int l)
+{
+  return (scheme_utf8_decode((const unsigned char *)s, 0, l, NULL, 0, -1, NULL, 0, 0) >= 0);
+}
+
   
 static Scheme_Object *read_escape_from_string(char *s, intptr_t len,
                                               Scheme_Object *rel_to,
@@ -4577,6 +4582,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       l = read_compact_number(port);
       RANGE_CHECK_GETS(l);
       s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
+      if (!valid_utf8(s, l))
+        scheme_ill_formed_code(port);
       v = scheme_intern_exact_symbol(s, l);
 
       if (SAME_OBJ(v, port->magic_sym))
@@ -4609,6 +4616,9 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	RANGE_CHECK_GETS(l);
 	s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
 
+        if (!valid_utf8(s, l))
+          scheme_ill_formed_code(port);
+
 	if (uninterned)
 	  v = scheme_make_exact_symbol(s, l);
 	else
@@ -4623,6 +4633,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       l = read_compact_number(port);
       RANGE_CHECK_GETS(l);
       s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
+      if (!valid_utf8(s, l))
+        scheme_ill_formed_code(port);
       v = scheme_intern_exact_keyword(s, l);
       break;
     case CPT_BYTE_STRING:
@@ -5037,6 +5049,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	l = ch - CPT_SMALL_SYMBOL_START;
 	RANGE_CHECK_GETS(l);
 	s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
+        if (!valid_utf8(s, l))
+          scheme_ill_formed_code(port);
 	v = scheme_intern_exact_symbol(s, l);
 
 	if (SAME_OBJ(v, port->magic_sym))
@@ -5300,6 +5314,9 @@ Scheme_Object *scheme_string_to_submodule_path(char *_s, intptr_t len)
     memcpy(e, s + pos, l);
     e[l] = 0;
     pos += l;
+
+    if (!valid_utf8(e, l))
+      return scheme_null;
 
     pr = scheme_make_pair(scheme_intern_exact_symbol(e, l), scheme_null);
     if (last)

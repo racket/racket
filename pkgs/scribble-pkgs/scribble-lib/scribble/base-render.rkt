@@ -53,6 +53,7 @@
                 [style-file #f]
                 [style-extra-files null]
                 [extra-files null]
+                [image-preferences null]
                 [helper-file-prefix #f])
 
     (define/public (current-render-mode)
@@ -758,6 +759,23 @@
 
     ;; ----------------------------------------
     ;; render methods
+
+    (define/public (sort-image-requests reqs prefs)
+      (for/fold ([reqs reqs]) ([pref (in-list (reverse prefs))])
+        (define matches
+          (for/list ([req (in-list reqs)]
+                     #:when (case pref
+                              [(png) (or (eq? req 'png@2x-bytes)
+                                         (eq? req 'png-bytes))]
+                              [(svg) (eq? req 'svg-bytes)]
+                              [(pdf) (eq? req 'pdf-bytes)]
+                              [(ps) (eq? req 'eps-bytes)]
+                              [(gif) (eq? req 'gif-bytes)]
+                              [else #f]))
+            req))
+        (if (null? matches)
+            reqs
+            (append matches (remove* matches reqs)))))
 
     (define/public (auto-extra-files? v) #f)
     (define/public (auto-extra-files-paths v) null)

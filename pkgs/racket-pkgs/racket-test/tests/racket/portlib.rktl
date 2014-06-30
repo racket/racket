@@ -804,6 +804,29 @@
  (lambda (exn)
    (regexp-match? #rx"^reencode-output-port:" (exn-message exn))))
 
+;; Check that slow input stream is handled correctly:
+(let ()
+  (define poem (bytes-append #"\307\256\314\306\272\376\264\272\320\320\n\n\271\302\311\275\313\302\261\261"
+                             #"\274\326\315\244\316\367\n\313\256\303\346\263\365\306\275\324\306\275\305\265"
+                             #"\315\n\274\270\264\246\324\347\335\272\325\371\305\257\312\367\n\313\255\274"
+                             #"\322\320\302\321\340\327\304\264\272\304\340\n\302\322\273\250\275\245\323\373"
+                             #"\303\324\310\313\321\333\n\307\263\262\335\262\305\304\334\303\273\302\355\314"
+                             #"\343\n\327\356\260\256\272\376\266\253\320\320\262\273\327\343\n\302\314\321\356"
+                             #"\322\365\300\357\260\327\311\263\265\314\n"))
+  (define (slower p)
+    (make-input-port
+     (object-name p)
+     (lambda (bstr)
+       (if (zero? (random 2))
+           (wrap-evt (alarm-evt (+ (current-inexact-milliseconds) 5))
+                     (lambda (v) 0))
+           (read-bytes-avail! bstr p)))
+     #f
+     (lambda () (void))))
+  (define i (reencode-input-port (slower (open-input-bytes poem)) "gbk" #"?"))
+  (test #f regexp-match? #px#"temple" i)
+  (close-input-port i))
+
 ;; --------------------------------------------------
 
 (let ([o (open-output-bytes)])

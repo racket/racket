@@ -23,11 +23,13 @@ todo: sort out wxme library support (loading in text mode).
 From Matthias: (to use to compare with this library)
 
 
-You asked about exercises and code snippets for HtDP/2e yesterday. I actually do have a bunch of stuff in
+You asked about exercises and code snippets for HtDP/2e yesterday. 
+I actually do have a bunch of stuff in
 
  svn: 2HtDP/SampleCode/
 
-and they all have good sample contracts. (It is amazing what we can do with kids who have just a few weeks of cs down; I would have never dared to write an editor after six weeks in Algol.)
+and they all have good sample contracts. (It is amazing what we can do with kids who have just
+ a few weeks of cs down; I would have never dared to write an editor after six weeks in Algol.)
 
 
 |#
@@ -60,9 +62,11 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          above/align
          
          crop
+         crop/align
          rotate
          flip-horizontal
          flip-vertical
+         color-frame
          frame
          place-image
          place-image/align

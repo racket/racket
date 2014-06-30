@@ -191,6 +191,10 @@ RELEASE_MODE =
 # proper) on a client that has the run-time system in source form:
 SOURCE_MODE =
 
+# Set to "--versionless" to avoid a version number in an installer's
+# name or installation path:
+VERSIONLESS_MODE =
+
 # Set to "--mac-pkg" to create ".pkg"-based installers for Mac OS X,
 # instead of a ".dmg" for drag-and-drop installation:
 MAC_PKG_MODE =
@@ -447,7 +451,8 @@ binary-catalog-server:
 
 PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_HOSTS)" \
             PKGS="$(PKGS)" BUILD_STAMP="$(BUILD_STAMP)" \
-	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
+	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
+            VERSIONLESS_MODE=$(VERSIONLESS_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)"\
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) UPLOAD="$(UPLOAD)" \
@@ -499,7 +504,7 @@ bundle-from-server:
 	$(RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
 
 UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
-DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(MAC_PKG_MODE) \
+DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) $(MAC_PKG_MODE) \
               "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
               "$(SIGN_IDENTITY)"
 
@@ -549,7 +554,8 @@ client-from-site:
 # ------------------------------------------------------------
 # Drive installer build across server and clients:
 
-DRIVE_ARGS_q = $(RELEASE_MODE) $(SOURCE_MODE) $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
+DRIVE_ARGS_q = $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) \
+               $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
                $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" \
                "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DRIVE_CMD_q = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)

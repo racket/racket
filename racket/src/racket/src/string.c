@@ -5476,6 +5476,14 @@ intptr_t scheme_utf8_decode(const unsigned char *s, intptr_t start, intptr_t end
 		       ipos, NULL, utf16, utf16, NULL, 0, permissive);
 }
 
+intptr_t scheme_utf8_decode_offset_prefix(const unsigned char *s, intptr_t start, intptr_t end,
+                                          unsigned int *us, intptr_t dstart, intptr_t dend,
+                                          intptr_t *ipos, char utf16, int permissive)
+{
+  return utf8_decode_x(s, start, end, us, dstart, dend,
+		       ipos, NULL, utf16, utf16, NULL, 1, permissive);
+}
+
 intptr_t scheme_utf8_decode_as_prefix(const unsigned char *s, intptr_t start, intptr_t end,
                                       unsigned int *us, intptr_t dstart, intptr_t dend,
                                       intptr_t *ipos, char utf16, int permissive)

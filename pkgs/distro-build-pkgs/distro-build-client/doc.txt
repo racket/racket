@@ -257,9 +257,14 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     the value of `#:source?'
 
   #:source-pkgs? <boolean> --- if true, then packages are included in
-    th installer/archive only in source form; a true value works best
+    the installer/archive only in source form; a true value works best
     when the `#:source-runtime?' value is also #t; the default is the
     value of `#:source?'
+
+  #:versionless? <boolean> --- if true, avoids including the Racket
+    version number in an installer's name or in the installation path;
+    the default is determined by the `VERSIONLESS_MODE' makefile
+    variable
 
   #:mac-pkg? <boolean> --- if true, creates a ".pkg" for Mac OS X (in
     single-file format) instead of a ".dmg"; the default is #f

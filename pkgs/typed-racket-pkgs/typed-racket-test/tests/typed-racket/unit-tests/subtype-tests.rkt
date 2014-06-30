@@ -262,6 +262,12 @@
    [(make-ListDots (-> -Symbol (make-F 'a)) 'a) (-lst (-> -Symbol Univ))]
 
    [FAIL (make-ValuesDots (list) -Symbol 'a) (make-ValuesDots (list (-result -String)) -String 'a)]
+   [(-values (list -Bottom)) (-values (list -String -Symbol))]
+
+   [(-> Univ -Bottom) (-> Univ (-values (list -String -Symbol)))]
+   [(-> Univ -Bottom) (-> Univ (-values-dots null -String 'x))]
+
+   [FAIL (make-pred-ty -String) (-> Univ (-AnyValues (-filter -String 0)))]
 
    ;; keyword function types
    [(->key #:x -Symbol #f Univ) (->key Univ)]

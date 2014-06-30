@@ -358,6 +358,37 @@ crashes or memory corruption.
 
 @; ----------------------------------------------------------------------
 
+@section[#:tag "regexp-perf"]{Regular Expression Performance}
+
+When a string or byte string is provided to a function like
+@racket[regexp-match], then the string is internally compiled into
+a @tech{regexp} value. Instead of supplying a string or byte string
+multiple times as a pattern for matching, compile the pattern once to
+a @tech{regexp} value using @racket[regexp], @racket[byte-regexp],
+@racket[pregexp], or @racket[byte-pregexp]. In place of a constant
+string or byte string, write a constant @tech{regexp} using an
+@litchar{#rx} or @litchar{#px} prefix.
+
+@racketblock[
+(define (slow-matcher str)
+  (regexp-match? "[0-9]+" str))
+
+(define (fast-matcher str)
+  (regexp-match? #rx"[0-9]+" str))
+
+(define (make-slow-matcher pattern-str)
+  (lambda (str)
+    (regexp-match? pattern-str str)))
+
+(define (make-fast-matcher pattern-str)
+  (define pattern-rx (regexp pattern-str))
+  (lambda (str)
+    (regexp-match? pattern-rx str)))
+]
+
+
+@; ----------------------------------------------------------------------
+
 @section[#:tag "gc-perf"]{Memory Management}
 
 The Racket implementation is available in two variants: @deftech{3m} and

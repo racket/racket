@@ -346,9 +346,10 @@ The style classes:
   [@css{navsetbottom} @elem{Wraps the bottom navigation bar (in multi-page mode or when a search bar is present).}]
   [@css{navleft} @elem{Wraps left-side elements within a navigation bar.}]
   [@css{navright} @elem{Wraps right-side elements within a navigation bar.}]
-  [@css{nonavigation} @elem{Disabled lins within a navigation bar.}]
+  [@css{nonavigation} @elem{Disabled links within a navigation bar.}]
   [@css{searchform} @elem{Outer wrapper for a search box within the top navigation bar.}]
   [@css{searchbox} @elem{Inner wrapper for a search box within the top navigation bar.}]
+  [@css{nosearchform} @elem{Takes the place of an absent search box within the top navigation bar.}]
 
   [@spacer @spacer]
 

@@ -1681,6 +1681,11 @@
   ; puts the path to the spell program in the ~a and then the error message
   ; is put following this string (with a blank line in between)
   (spell-program-wrote-to-stderr-on-startup "Der Rechtschreibchecker (~a) hat eine Fehlermeldung ausgegeben:")
+
+  (spell-skip-to-next-misspelled-word "Zum nächsten falsch geschriebenen Wort") ;; menu item
+  (spell-suggest-corrections "Rechtschreibkorrekturen vorschlagen...") ;; menu item
+  (spell-correction-suggestions "Vorschläge für Rechtschreibkorrekturen") ;; dialog title
+  (spell-choose-replacement-word "Austauschwort auswählen") ;; label in dialog 
   
   ;; GUI for installing a pkg package; available via File|Install Package...
   (install-pkg-install-by-source "Tu was ich meine") ; tab label

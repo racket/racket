@@ -289,9 +289,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ name:id ty:expr)
      #`(begin
-         #,(ignore (if (eq? (syntax-local-context) 'top-level)
-                       #'(define name (procedure-rename (make-predicate ty) 'name))
-                       (flat-contract-def-property  #'(define name #f) #'ty)))
+         ;; We want the value bound to name to have a nice object name. Using the built in mechanism
+         ;; of define has better performance than procedure-rename.
+         #,(ignore
+             #'(define name
+                 (let ([pred (make-predicate ty)])
+                   (lambda (x) (pred x)))))
          ;; not a require, this is just the unchecked declaration syntax
          #,(internal #'(require/typed-internal name (Any -> Boolean : ty))))]))
 
@@ -311,20 +314,21 @@ This file defines two sorts of primitives. All of them are provided into any mod
                type)))
 
          #`(#,(external-check-property #'#%expression check-valid-type)
-            #,(ignore-some/expr name #'(Any -> Boolean : ty))))
+            #,(ignore-some/expr #`(flat-contract-predicate #,name) #'(Any -> Boolean : ty))))
        (let ([typ (parse-type #'ty)])
          (if (Error? typ)
              ;; This code should never get run, typechecking will have an error earlier
              #`(error 'make-predicate "Couldn't parse type")
              #`(#%expression
                 #,(ignore-some/expr
-                   (type->contract
-                    typ
-                    ;; must be a flat contract
-                    #:kind 'flat
-                    ;; the value is not from the typed side
-                    #:typed-side #f
-                    (type->contract-fail typ #'ty #:ctc-str "predicate"))
+                   #`(flat-contract-predicate
+                      #,(type->contract
+                         typ
+                         ;; must be a flat contract
+                         #:kind 'flat
+                         ;; the value is not from the typed side
+                         #:typed-side #f
+                         (type->contract-fail typ #'ty #:ctc-str "predicate")))
                    #'(Any -> Boolean : ty))))))]))
 
 (define-syntax (cast stx)

@@ -302,9 +302,10 @@ configuration file there and omit the `CONFIG' argument to
 your site-configuration module (accessible via the `current-mode'
 parameter). Supply `CLEAN_MODE=--clean' to make the default `#:clean?'
 configuration for a client #t instead of #f, supply
-`RELEASE_MODE=--release' to make thde default `#:release?'
-configuration #t, and supply `SOURCE_MODE=--source to make the default
-`#:source?' configuration #t.
+`RELEASE_MODE=--release' to make the default `#:release?'
+configuration #t, supply `SOURCE_MODE=--source` to make the default
+`#:source?' configuration #t, and supply `VERSIONLESS_MODE=--version`
+to make the default `#:versionless?' configuration #t.
 
 A configuration file can specify the packages to include, host address
 of the server, distribution name, installer directory, and
@@ -484,6 +485,10 @@ In more detail:
 
      To create a source archive, provide `SOURCE_MODE' as "--source"
      to `make'.
+
+     To create an archive that omits the version number and also omit
+     and version number in installer paths, provide `VERSIONLESS_MODE' as
+     "--versionless" to `make'.
 
      To change the human-readable name of the distribution as embedded
      in the installer, provide `DIST_NAME' to `make'. The default

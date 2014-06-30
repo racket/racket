@@ -52,7 +52,7 @@
            [(tc-result1: (Listof: elem-type)) (ret elem-type)]
            [else (fail)]))
        ;; Do not check this in an environment where bound0 is a type variable.
-       (define f-type (tc-expr #'f))
+       (define f-type (tc-expr/t #'f))
        ;; Check that the function applies successfully to the element type
        ;; We need the bound to be considered a type var here so that inference works
        (match (extend-tvars (list bound0)
@@ -67,7 +67,7 @@
   ;; ormap/andmap of ... argument
   (pattern (~and form (m:boolmap f arg))
     (match-let* ([arg-ty (tc-expr/t #'arg)]
-                 [ft (tc-expr #'f)])
+                 [ft (tc-expr/t #'f)])
       (match (match arg-ty
                ;; if the argument is a ListDots
                [(ListDots: t bound)
@@ -113,4 +113,4 @@
          [(tc-result1: (List: ts))
           (ret (-Tuple (reverse ts)))]
          [arg-ty
-          (tc/funapp #'fun #'(arg) (single-value #'fun) (list arg-ty) expected)])])))
+          (tc/funapp #'fun #'(arg) (tc-expr/t #'fun) (list arg-ty) expected)])])))

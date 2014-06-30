@@ -1395,7 +1395,7 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
   if (data->b.bufmax == -1) {
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		     "tcp-read: error reading\n"
-                     "  system error: %e",
+                     "  system error: %E",
 		     errid);
     return 0;
   } else if (!data->b.bufmax) {
@@ -1555,7 +1555,7 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
   if (errid)
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		     "tcp-write: error writing\n"
-                     "  system error: %e",
+                     "  system error: %E",
 		     errid);
 
   return sent;
@@ -2595,7 +2595,7 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
     if (getsockname(socket, (struct sockaddr *)here, &l)) {
       scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		       "tcp-addresses: could not get local address\n"
-                       "  system error: %e",
+                       "  system error: %E",
 		       SOCK_ERRNO());
     }
     here_len = l;
@@ -2606,7 +2606,7 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
       if (peerrc && !udp) {
         scheme_raise_exn(MZEXN_FAIL_NETWORK, 
                          "tcp-addresses: could not get peer address\n"
-                         "  system error: %e", 
+                         "  system error: %E", 
                          SOCK_ERRNO());
       }
       there_len = l;

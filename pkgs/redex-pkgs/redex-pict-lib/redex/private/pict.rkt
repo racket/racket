@@ -80,6 +80,7 @@
          judgment-form-cases
          compact-vertical-min-width
          extend-language-show-union
+         extend-language-show-extended-order
          set-arrow-pict!
          arrow->pict
          horizontal-bar-spacing
@@ -573,7 +574,7 @@
 ;; raw-info : language-pict-info
 ;; nts : (listof symbol) -- the nts that the user expects to see
 (define (make-grammar-pict raw-info nts all-nts)
-  (let* ([info (remove-unwanted-nts nts (flatten-grammar-info raw-info all-nts))]
+  (let* ([info (remove-unwanted-nts nts (flatten-grammar-info raw-info all-nts nts))]
          [term-space 
           (launder
            (ghost
@@ -604,6 +605,7 @@
 
 
 (define extend-language-show-union (make-parameter #f))
+(define extend-language-show-extended-order (make-parameter #f))
 
 ;; remove-unwanted-nts : (listof symbol) flattened-language-pict-info -> flattened-language-pict-info
 (define (remove-unwanted-nts nts info)
@@ -615,32 +617,53 @@
 
 
 ;; flatten-grammar-info : language-pict-info (listof symbol) -> flattened-language-pict-info
-(define (flatten-grammar-info info all-nts)
-  (let ([union? (extend-language-show-union)])
+(define (flatten-grammar-info info all-nts wanted-nts)
+  (define (merge-line nt extension orig-line)
+    (cond
+     [(and extension orig-line)
+      (let ([rhss (cdr extension)])
+        (cons nt
+              (map (λ (x)
+                     (if (and (lw? x) (eq? '.... (lw-e x)))
+                         (struct-copy lw
+                                      x
+                                      [e
+                                       (lw->pict all-nts
+                                                 (find-enclosing-loc-wrapper
+                                                  (add-bars (cdr orig-line))))])
+                         x))
+                   (cdr extension))))]
+     [extension extension]
+     [else orig-line]))
+  (let ([union? (extend-language-show-union)]
+        [ext-order? (extend-language-show-extended-order)])
     (let loop ([info info])
       (cond
         [(vector? info) 
          (let ([orig (loop (vector-ref info 0))]
                [extensions (vector-ref info 1)])
            (if union?
-               (map (λ (orig-line)
-                      (let* ([nt (car orig-line)]
-                             [extension (assoc nt extensions)])
-                        (if extension
-                            (let ([rhss (cdr extension)])
-                              (cons nt
-                                    (map (λ (x) 
-                                           (if (and (lw? x) (eq? '.... (lw-e x)))
-                                               (struct-copy lw
-                                                            x
-                                                            [e
-                                                             (lw->pict all-nts
-                                                                       (find-enclosing-loc-wrapper
-                                                                        (add-bars (cdr orig-line))))])
-                                               x))
-                                         (cdr extension))))
-                            orig-line)))
-                    orig)
+               (cond
+                [(not ext-order?)
+                 ;; Use original order, adding extra extensions after:
+                 (define orig-nts (list->set (map car orig)))
+                 (append
+                  (map (λ (orig-line)
+                         (define nt (car orig-line))
+                         (merge-line nt (assoc nt extensions) orig-line))
+                       orig)
+                  (filter (lambda (extension) (not (set-member? orig-nts (car extension))))
+                          extensions))]
+                [else
+                 ;; Use extension order, adding any extra originals after:
+                 (define ext-nts (list->set (map car extensions)))
+                 (append
+                  (map (λ (extension)
+                         (define nt (car extension))
+                         (merge-line nt extension (assoc nt orig)))
+                       extensions)
+                  (filter (lambda (orig-line) (not (set-member? ext-nts (car orig-line))))
+                          orig))])
                extensions))]
         [else info]))))
 

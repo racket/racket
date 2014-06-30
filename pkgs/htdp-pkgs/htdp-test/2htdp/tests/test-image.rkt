@@ -1691,6 +1691,13 @@
       =>
       (rectangle 10 10 'solid 'black))
 
+(test (crop/align 'left 'top 10 10 (rectangle 20 20 'solid 'black))
+      =>
+      (rectangle 10 10 'solid 'black))
+(test (crop/align 'center 'center 10 10 (rectangle 20 20 'solid 'black))
+      =>
+      (rectangle 10 10 'solid 'black))
+
 (test (equal~? (crop 0 0 40 40 (circle 40 'solid 'red))
                (rotate 180 (crop 40 40 40 40 (circle 40 'solid 'red)))
                0.1)
@@ -1764,6 +1771,18 @@
       (underlay/xy (rectangle 40 40 'solid 'orange)
                    2 7
                    (circle 4 'solid 'black)))
+
+(test (above
+       (beside (crop/align "right" "bottom" 40 40 (circle 40 "solid" "palevioletred"))
+               (crop/align "left" "bottom" 40 40 (circle 40 "solid" "lightcoral")))
+       (beside (crop/align "right" "top" 40 40 (circle 40 "solid" "lightcoral"))
+               (crop/align "left" "top" 40 40 (circle 40 "solid" "palevioletred"))))
+      =>
+      (above
+       (beside (crop 40 40 40 40 (circle 40 "solid" "palevioletred"))
+               (crop 0 40 40 40 (circle 40 "solid" "lightcoral")))
+       (beside (crop 40 0 40 40 (circle 40 "solid" "lightcoral"))
+               (crop 0 0 40 40 (circle 40 "solid" "palevioletred")))))
 
 (let ()
   (define image1 (circle 8 'solid 'red))
@@ -2202,6 +2221,14 @@
       =>
       5)
 (test (pinhole-y (frame (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      6)
+(test (pinhole-x (color-frame "red"
+                              (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      5)
+(test (pinhole-y (color-frame 'blue
+                              (center-pinhole (rectangle 10 12 'solid 'red))))
       =>
       6)
 

@@ -1552,6 +1552,36 @@
               (let ([r (if z 1 (+ z z))])
                 (list (if z 1 4) r))))
 
+(test-comp '(lambda (a b c f)
+              (let ((d (if a
+                           a
+                           b)))
+                (let ((e
+                       (if b
+                           c
+                           (if (= f 90000)
+                               #f
+                               (add1 c)))))
+                  (values d e))))
+           '(lambda (a b c f)
+              (values (if a a b)
+                      (if b c (if (= f 90000)
+                                  #f
+                                  (add1 c))))))
+
+(test-comp '(lambda (x y)
+              (let ([z (+ x y)])
+                (list (if x x y) z)))
+           '(lambda (x y)
+              (list (if x x y) (+ x y))))
+
+(test-comp '(lambda (x y)
+              (let ([z (car y)])
+                (if x x z)))
+           '(lambda (x y)
+              (if x x (car y)))
+           #f)
+
 (test-comp '(let-values ([(x y) (values 1 2)])
               (+ x y))
            3)

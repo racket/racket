@@ -49,6 +49,7 @@ function to render a document.
                  [#:style-file style-file (or/c #f path-string?) #f]
                  [#:style-extra-files style-extra-files (listof path-string?) #f]
                  [#:extra-files extra-files (listof path-string?) #f]
+                 [#:image-preferences image-preferences (listof (or/c 'ps 'pdf 'png 'svg 'gif)) null]
                  [#:xrefs xrefs (listof xref?) null]
                  [#:info-in-files info-in-files (listof path-string?) null]
                  [#:info-out-file info-out-file (or/c #f path-string?) #f]
@@ -76,6 +77,12 @@ The @racket[helper-file-prefix], @racket[prefix-file],
 @racket[extra-files] arguments are passed on to the @racket[render%]
 constructor.
 
+The @racket[image-preferences] argument specified preferred formats
+for image files and conversion, where formats listed earlier in the
+list are more preferred. The renderer specified by
+@racket[render-mixin] may not support all of the formats listed in
+@racket[image-preferences].
+
 The @racket[xrefs] argument provides extra cross-reference information
 to be used during the documents' @tech{resolve pass}. The
 @racket[info-in-files] arguments supply additional cross-reference
@@ -97,7 +104,9 @@ written to the current output port.
 
 If @racket[warn-undefined?] is a true value, then references to
 missing cross-reference targets trigger a warning message on the
-current error port.}
+current error port.
+
+@history[#:changed "1.4" @elem{Added the @racket[#:image-preferences] argument.}]}
 
 
 @section{Base Renderer}
@@ -254,7 +263,8 @@ Represents a renderer.
                  [prefix-file (or/c path-string? #f) #f]
                  [style-file (or/c path-string? #f) #f]
                  [style-extra-files (listof path-string?) null]
-                 [extra-files (listof path-string?) null])]{
+                 [extra-files (listof path-string?) null]
+                 [image-preferences (listof (or/c 'ps 'pdf 'png 'svg 'gif)) null])]{
 
 Creates a renderer whose output will go to @racket[dest-dir]. For
 example, @racket[dest-dir] could name the directory containing the
@@ -280,8 +290,15 @@ styles in a formal-specific way; see @secref["config-style"] for more
 information.
 
 The @racket[extra-files] argument names files to be copied to the
-output location, such as image files or extra configuration files.}
-}
+output location, such as image files or extra configuration files.
+
+The @racket[image-preferences] argument specified preferred formats
+for image files and conversion, where formats listed earlier in the
+list are more preferred. The renderer may not support all of the
+formats listed in @racket[image-preferences].
+
+@history[#:changed "1.4" @elem{Added the @racket[image-preferences]
+                               initialization argument.}]}}
 
 @; ----------------------------------------
 

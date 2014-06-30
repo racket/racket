@@ -64,7 +64,7 @@
      (raise-syntax-error 'match "incorrect use of ... in pattern" stx #'..)]
     [(p .. . rest)
      (ddk? #'..)
-     (dd-parse parse #'p #'.. #'rest)]
+     (dd-parse parse #'p #'.. #'rest #'list?)]
     [(e . es)
      (make-Pair (parse #'e) (parse (syntax/loc stx es)))]
     [x

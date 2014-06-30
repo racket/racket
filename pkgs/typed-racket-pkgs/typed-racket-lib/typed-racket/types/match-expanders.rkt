@@ -10,7 +10,7 @@
          racket/set
          (for-syntax racket/base syntax/parse))
 
-(provide Listof: List: MListof: AnyPoly: AnyPoly-names:)
+(provide Listof: List: MListof: AnyPoly: AnyPoly-names: Function/arrs:)
 
 
 (define-match-expander Listof:
@@ -87,3 +87,9 @@
     (syntax-parse stx
       [(_ vars dotted-vars body)
        #'(app unpoly-names vars dotted-vars body)])))
+
+(define-match-expander Function/arrs:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ doms rngs rests drests kws (~optional (~seq #:arrs arrs) #:defaults ([arrs #'_])))
+       #'(Function: (and arrs (list (arr: doms rngs rests drests kws) (... ...))))])))

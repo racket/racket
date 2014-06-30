@@ -28,7 +28,7 @@
 (define empty-hash/sc (and/sc hash?/sc (flat/sc #'(λ (h) (zero? (hash-count h))))))
 
 (define channel?/sc (flat/sc #'channel?))
-(define async-channel?/sc (flat/sc #'channel?))
+(define async-channel?/sc (flat/sc #'async-channel?))
 (define thread-cell?/sc (flat/sc #'thread-cell?))
 (define prompt-tag?/sc (flat/sc #'continuation-prompt-tag?))
 (define continuation-mark-key?/sc (flat/sc #'continuation-mark-key?))

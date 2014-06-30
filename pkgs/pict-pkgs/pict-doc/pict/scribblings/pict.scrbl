@@ -64,9 +64,16 @@ picts. The functions @racket[pict-width], @racket[pict-height],
 @racket[pict-descent], and @racket[pict-ascent] extract bounding box
 information from a pict.
 
-A pict is a convertible datatype through the @racketmodname[file/convertible]
-protocol. Supported conversions include @racket['png-bytes],
-@racket['eps-bytes], and @racket['pdf-bytes].
+A pict is a convertible datatype through the
+@racketmodname[file/convertible] protocol. Supported conversions
+include @racket['png-bytes], @racket['eps-bytes], @racket['pdf-bytes],
+@racket['svg-bytes], and variants such as @racket['png-bytes+bounds]
+and @racket['png-bytes+bounds8].
+
+@history[#:changed "1.2" @elem{Added support for
+                               @racket['png-bytes+bounds],
+                               @racket['png-bytes+bounds8] and similar
+                               variants.}]
 
 
 @defstruct[pict ([draw any/c]
@@ -984,6 +991,17 @@ as the ultimate drawing context, but it should measure text in the same
 way. Under normal circumstances, font metrics are the same for all
 drawing contexts, so the default value of @racket[dc-for-text-size] is
 a @racket[bitmap-dc%] that draws to a 1-by-1 bitmap.}
+
+
+@defparam[convert-bounds-padding padding (list/c (>=/c 0) (>=/c 0) (>=/c 0) (>=/c 0))]{
+
+A parameter that determines an amount of padding added to each edge of
+a @tech{pict} when converting to a format like @racket['png@2x-bytes+bounds8]
+(see @racketmodname[file/convertible]). The default value of the parameter
+is @racket['(3 3 3 3)], which adds three pixels to each edge to accomodate
+a small amount of drawing outside the pict's @tech{bounding box}.
+
+@history[#:added "1.2"]}
 
 
 @defproc[(draw-pict [pict pict?]

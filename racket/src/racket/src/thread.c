@@ -3723,7 +3723,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 
 # ifdef HAVE_KQUEUE_SYSCALL
   if (!is_socket) {
-    if (!scheme_fd_regular_file(fd, 10))
+    if (!scheme_fd_regular_file(fd, 2))
       return NULL; /* kqueue() might not work on devices, such as ttys */
   }
   if (scheme_semaphore_fd_kqueue < 0) {

@@ -18,6 +18,7 @@
          (for-template
           (only-in syntax/location quote-module-name)
           racket/base
+          racket/contract/private/provide
           (env env-req)))
 
 (provide/cond-contract
@@ -103,6 +104,10 @@
        (register-scoped-tvars #'t.id (parse-literal-alls #'t.type))
        (list)]
 
+      ;; definitions lifted from contracts should be ignored
+      [(define-values (lifted) expr)
+       #:when (contract-lifted-property #'expr)
+       (list)]
 
       ;; values definitions
       [(define-values (var ...) expr)
@@ -150,6 +155,11 @@
       #:literals (define-values begin)
       [(~or _:ignore^ _:ignore-some^) (list)]
 
+      ;; definitions lifted from contracts should be ignored
+      [(define-values (lifted) expr)
+       #:when (contract-lifted-property #'expr)
+       (list)]
+
       [(define-values (var ...) expr)
        (define vars (syntax->list #'(var ...)))
        (syntax-parse vars
@@ -164,7 +174,7 @@
          ;; the module (hence we haven't synthesized a type for yet).
          [_
           (match (get-type/infer vars #'expr tc-expr tc-expr/check)
-            [(tc-results: ts)
+            [(list (tc-result: ts) ...)
              (for/list ([i (in-list vars)] [t (in-list ts)])
                (register-type i t)
                (free-id-table-set! unann-defs i #t)
@@ -210,6 +220,11 @@
       [(module n spec (#%plain-module-begin body ...)) 'no-type]
       ;; module* is not expanded, so it doesn't have a `#%plain-module-begin`
       [(module* n spec body ...) 'no-type]
+
+      ;; definitions lifted from contracts should be ignored
+      [(define-values (lifted) expr)
+       #:when (contract-lifted-property #'expr)
+       'no-type]
 
       ;; definitions just need to typecheck their bodies
       [(define-values () expr)

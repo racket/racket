@@ -34,3 +34,5 @@
 (define pkg-desc "implementation (no documentation) part of \"htdp\"")
 
 (define pkg-authors '(matthias mflatt robby))
+
+(define version "1.1")

@@ -21,6 +21,7 @@
   (provide-signature-elements texpict-common^)
   (provide
    dc-for-text-size
+   convert-bounds-padding
    show-pict
    caps-text current-expected-text-scale
    dc

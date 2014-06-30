@@ -82,13 +82,15 @@
 (define (mover cset dbound vars f)
   (map/cset
    (lambda (cmap dmap)
+     (when (hash-has-key? (dmap-map dmap) dbound)
+       (int-err "Tried to move vars to dbound that already exists"))
      (% cons
         (hash-remove* cmap (cons dbound vars))
         (dmap-meet
          (singleton-dmap
           dbound
           (f cmap))
-         (make-dmap (hash-remove (dmap-map dmap) dbound)))))
+         dmap)))
    cset))
 
 ;; dbound : index variable
@@ -237,7 +239,10 @@
      #:return-unless (<= (length ss) (length ts))
      #f
      (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ts) (length ss)) #f))
-     (% move-vars-to-dmap (cgen/list V (append vars X) Y (append ss new-tys) ts) dbound vars)]
+     (define-values (ts-front ts-back) (split-at ts (length ss)))
+     (% cset-meet
+        (cgen/list V X Y ss ts-front)
+        (% move-vars-to-dmap (cgen/list V (append vars X) Y new-tys ts-back) dbound vars))]
     ;; dotted above, nothing below
     [((seq ss (null-end))
       (seq ts (dotted-end dty dbound)))
@@ -246,7 +251,10 @@
      #:return-unless (<= (length ts) (length ss))
      #f
      (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ss) (length ts)) #f))
-     (% move-vars-to-dmap (cgen/list V (append vars X) Y ss (append ts new-tys)) dbound vars)]
+     (define-values (ss-front ss-back) (split-at ss (length ts)))
+     (% cset-meet
+        (cgen/list V X Y ss-front ts)
+        (% move-vars-to-dmap (cgen/list V (append vars X) Y ss-back new-tys) dbound vars))]
 
     ;; same dotted bound
     [((seq ss (dotted-end s-dty dbound))
@@ -287,24 +295,33 @@
      (define new-bound (gensym dbound))
      (define-values (vars new-tys) (generate-dbound-prefix dbound t-dty (- (length ss) (length ts))
                                                            new-bound))
-     (% move-vars+rest-to-dmap
-        (% cset-meet
-           (cgen/list (cons new-bound V) (append vars X) (cons new-bound Y) ss (append ts new-tys))
-           (cgen V (cons dbound X) Y s-rest t-dty))
-        vars dbound #:exact #t)]
+     (define-values (ss-front ss-back) (split-at ss (length ts)))
+     (% cset-meet
+        (cgen/list V X Y ss-front ts)
+        (% move-vars+rest-to-dmap
+           (% cset-meet
+              (cgen/list (cons new-bound V) (append vars X) (cons new-bound Y) ss-back new-tys)
+              (cgen V (cons dbound X) Y s-rest t-dty))
+           vars dbound #:exact #t))]
 
     [((seq ss (dotted-end s-dty dbound))
       (seq ts (uniform-end t-rest)))
      (cond
        [(memq dbound Y)
         (define new-bound (gensym dbound))
+        (define length-delta (- (length ts) (length ss)))
         (define-values (vars new-tys)
-          (generate-dbound-prefix dbound s-dty (max 0 (- (length ts) (length ss))) new-bound))
-        (% move-vars+rest-to-dmap
-           (% cset-meet
-              (cgen/list (cons new-bound V) (append vars X) (cons new-bound Y) (append ss new-tys) (extend ss ts t-rest))
-              (cgen V (cons dbound X) Y s-dty t-rest))
-           vars dbound)]
+          (generate-dbound-prefix dbound s-dty (max 0 length-delta) new-bound))
+        (% cset-meet
+           (cgen/list V X Y ss (if (positive? length-delta)
+                                   (drop-right ts length-delta)
+                                   (extend ss ts t-rest)))
+           (% move-vars+rest-to-dmap
+              (% cset-meet
+                 (cgen/list (cons new-bound V) (append vars X) (cons new-bound Y)
+                            new-tys (take-right ts (max 0 length-delta)))
+                 (cgen V (cons dbound X) Y s-dty t-rest))
+              vars dbound))]
        [else
         (extend-tvars (list dbound)
           (cgen/seq (cons dbound V) X Y (seq ss (uniform-end s-dty)) t-seq))])]))
@@ -405,9 +422,22 @@
                         (cgen/filter-set V X Y f-s f-t)
                         (cgen/object V X Y o-s o-t))]
 
-          ;; Values just delegate to cgen/seq
+          ;; Values just delegate to cgen/seq, except special handling for -Bottom.
+          ;; A single -Bottom in a Values means that there is no value returned and so any other
+          ;; Values or ValuesDots should be above it.
           [((ValuesSeq: s-seq) (ValuesSeq: t-seq))
-           (cgen/seq V X Y s-seq t-seq)]
+           ;; Check for a substition that S is below (ret -Bottom).
+           (define bottom-case
+             (match S
+               [(Values: (list (Result: s f-s o-s)))
+                (cgen V X Y s -Bottom)]
+               [else #f]))
+           (define regular-case
+             (cgen/seq V X Y s-seq t-seq))
+           ;; If we want the OR of the csets that the two cases return.
+           (cset-join
+             (filter values
+               (list bottom-case regular-case)))]
 
           ;; they're subtypes. easy.
           [(a b) 

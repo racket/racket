@@ -690,11 +690,14 @@ the @racket[point-count] argument determines how many points the star has.
 }
 
 @defproc[(add-polygon [image image?]
-                   [posns (listof posn?)]
-                   [mode mode?]
-                   [color image-color?])
+                      [posns (listof posn?)]
+                      [mode mode?]
+                      [color image-color?])
          image?]{
-  Adds a closed polygon to the image @racket[image], with vertices as specified in @racket[posns] (relative to the top-left corner of @racket[image]).  Unlike @racket[scene+polygon], if the polygon goes outside the bounds of @racket[image], the result is enlarged to accommodate both.
+                 
+ Adds a closed polygon to the image @racket[image], with vertices as specified in @racket[posns]
+ (relative to the top-left corner of @racket[image]).  Unlike @racket[scene+polygon], 
+ if the polygon goes outside the bounds of @racket[image], the result is enlarged to accommodate both.
 
 @mode/color-and-nitty-text
 
@@ -732,7 +735,9 @@ the @racket[point-count] argument determines how many points the star has.
                      [mode mode?]
                      [color image-color?])
          image?]{
-  Adds a closed polygon to the image @racket[image], with vertices as specified in @racket[posns] (relative to the top-left corner of @racket[image]).  Unlike @racket[add-polygon], if the polygon goes outside the bounds of @racket[image], the result is clipped to @racket[image].
+  Adds a closed polygon to the image @racket[image], with vertices as specified in @racket[posns]
+ (relative to the top-left corner of @racket[image]).  Unlike @racket[add-polygon], if the
+ polygon goes outside the bounds of @racket[image], the result is clipped to @racket[image].
                                      
 @crop-warning
 
@@ -1385,6 +1390,31 @@ the parts that fit onto @racket[scene].
                  
 }
 
+@defproc[(crop/align [x-place x-place?]
+                     [y-place y-place?]
+                     [width (and/c real? (not/c negative?))]
+                     [height (and/c real? (not/c negative?))]
+                     [image image?])
+         image?]{
+
+ Crops @racket[image] to a rectangle whose size is @racket[width] and @racket[height]
+       and is positioned based on @racket[x-place] and @racket[y-place].
+
+ @crop-warning
+
+ @image-examples[(crop/align "left" "top" 40 40 (circle 40 "solid" "chocolate"))
+                 (crop/align "right" "bottom" 40 60 (ellipse 80 120 "solid" "dodgerblue"))
+                 (crop/align "center" "center" 50 30 (circle 25 "solid" "mediumslateblue"))
+                 (above
+                  (beside (crop/align "right" "bottom" 40 40 (circle 40 "solid" "palevioletred"))
+                          (crop/align "left" "bottom" 40 40 (circle 40 "solid" "lightcoral")))
+                  (beside (crop/align "right" "top" 40 40 (circle 40 "solid" "lightcoral"))
+                          (crop/align "left" "top" 40 40 (circle 40 "solid" "palevioletred"))))]
+
+ @history[#:added "1.1"]
+}
+
+
 @defproc[(frame [image image?]) image?]{
   Returns an image just like @racket[image], except
   with a black, single pixel frame drawn around the 
@@ -1402,6 +1432,13 @@ the parts that fit onto @racket[scene].
                    (ellipse 20 30 "solid" "slateblue")
                    (ellipse 20 10 "solid" "navy"))]
 }
+
+@defproc[(color-frame [image image?] [color (or/c pen? image-color?)]) image?]{
+  Like @racket[frame], except with the given @racket[color].
+       
+  @history[#:added "1.1"]
+}
+
 
 @section{Bitmaps}
 

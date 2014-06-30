@@ -50,9 +50,9 @@
     (let loop ((t t))
       (match t
         [(Function: (list _ ... (arr: (list arg1) _ _ #f (list (Keyword: _ _ #f) ...)) _ ...))
-         (tc/funapp #'here #'(here) (ret t) (list (ret arg1)) #f)]
+         (tc/funapp #'here #'(here) t (list (ret arg1)) #f)]
         [(Function: (list _ ... (arr: '() _ (? values rest) #f (list (Keyword: _ _ #f) ...)) _ ...))
-         (tc/funapp #'here #'(here) (ret t) (list (ret rest)) #f)]
+         (tc/funapp #'here #'(here) t (list (ret rest)) #f)]
         [(? needs-resolving? t)
          (loop (resolve t))]
         [(or (Poly: ns _) (PolyDots: (list ns ... _) _))

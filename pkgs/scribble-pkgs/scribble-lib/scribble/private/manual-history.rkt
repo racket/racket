@@ -43,7 +43,7 @@
               (car from))))
      (para
       #:style (style "SHistory" (list scheme-properties))
-      (for/list ([e (in-list (sort es (lambda (a b) (version<? b a))
+      (for/list ([e (in-list (sort es (lambda (a b) (version<? a b))
                                    #:key history-entry-vers))]
                  [i (in-naturals)])
         (define vers (history-entry-vers e))

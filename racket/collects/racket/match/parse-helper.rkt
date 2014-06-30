@@ -8,7 +8,9 @@
 
 (provide ddk? parse-literal all-vars pattern-var? match:syntax-err
          match-expander-transform trans-match parse-struct
-         dd-parse parse-quote parse-id)
+         dd-parse parse-quote parse-id in-splicing?)
+
+(define in-splicing? (make-parameter #f))
 
 ;; parse x as a match variable
 ;; x : identifier
@@ -46,19 +48,27 @@
 ;; p : the repeated pattern
 ;; dd : the ... stx
 ;; rest : the syntax for the rest
-(define (dd-parse parse p dd rest #:mutable [mutable? #f])
-  (let* ([count (ddk? dd)]
-         [min (and (number? count) count)])
-    (make-GSeq
-     (parameterize ([match-...-nesting (add1 (match-...-nesting))])
-       (list (list (parse p))))
-     (list min)
-     ;; no upper bound
-     (list #f)
-     ;; patterns in p get bound to lists
-     (list #f)
-     (parse rest)
-     mutable?)))
+;; pred? : recognizer for the parsed data structure (such as list?)
+;; to-list: function to convert the value to a list
+(define (dd-parse parse p dd rest pred? #:to-list [to-list #'values] #:mutable [mutable? #f])
+  (define count (ddk? dd))
+  (define min (and (number? count) count))
+  (define pat (parameterize ([match-...-nesting (add1 (match-...-nesting))])
+                (parse p)))
+  (define rest-pat (parse rest))
+  (cond [(and (not (in-splicing?)) ;; when we're inside splicing, rest-pat isn't the rest
+              (not min) ;; if we have a count, better generate general code
+              (Null? rest-pat)
+              (or (Var? pat) (Dummy? pat)))
+         (make-And (list (make-Pred pred?) (make-App to-list (list pat))))]
+        [else (make-GSeq (list (list pat))
+                         (list min)
+                         ;; no upper bound
+                         (list #f)
+                         ;; patterns in p get bound to lists
+                         (list #f)
+                         rest-pat
+                         mutable?)]))
 
 ;; stx : the syntax object for the whole pattern
 ;; parse : the pattern parser

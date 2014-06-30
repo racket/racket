@@ -27,7 +27,7 @@
 (define-tc/app-syntax-class (tc/app-eq expected)
   (pattern (eq?:comparator v1 v2)
     ;; make sure the whole expression is type correct
-    (match* ((tc/funapp #'eq? #'(v1 v2) (single-value #'eq?)
+    (match* ((tc/funapp #'eq? #'(v1 v2) (tc-expr/t #'eq?)
                         (stx-map single-value #'(v1 v2)) expected)
              ;; check thn and els with the eq? info
              (tc/eq #'eq? #'v1 #'v2))

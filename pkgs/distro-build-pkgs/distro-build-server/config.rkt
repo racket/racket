@@ -145,6 +145,7 @@
     [(#:source?) (boolean? val)]
     [(#:source-runtime?) (boolean? val)]
     [(#:source-pkgs?) (boolean? val)]
+    [(#:versionless?) (boolean? val)]
     [(#:mac-pkg?) (boolean? val)]
     [(#:site-dest) (path-string? val)]
     [(#:site-help) (hash? val)]

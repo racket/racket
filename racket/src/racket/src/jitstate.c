@@ -369,10 +369,35 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
     jitter->limit = (char *)jitter->limit + padding;
     if (PAST_LIMIT() || (jitter->retain_start
 			 && (jitter->retained > num_retained))) {
-      scheme_console_printf("JIT buffer overflow: %p [%p,%p] (%d)!!\n", 
+      scheme_console_printf("internal error in JIT;\n"
+                            " ending address %p not in [%p,%p] (%d)\n",
 			    jit_get_ip(), 
 			    buffer, jitter->limit,
 			    !!jitter->retain_start);
+      if (jitter->retain_start) {
+        const char *bp = buffer, *tend;
+        scheme_console_printf("  buffer content: {\n");
+        while (bp < jitter->limit) {
+          int d = 16;
+          while (d-- && (bp < jitter->limit)) {
+            scheme_console_printf("%d,", *(unsigned char *)(bp++));
+          }
+          scheme_console_printf("\n");
+        }
+        scheme_console_printf("}\n");
+        bp = (char *)jit_buffer_cache;
+        tend = (char *)jit_buffer_cache + ((char *)jitter->limit - (char *)buffer);
+        scheme_console_printf("  temporary buffer content: {\n");
+        while (bp < tend) {
+          int d = 16;
+          while (d-- && (bp < tend)) {
+            scheme_console_printf("%d,", *(unsigned char *)(bp++));
+          }
+          scheme_console_printf("\n");
+        }
+        scheme_console_printf("}\n");
+      }
+      scheme_log_abort("internal error: JIT buffer overflow");
       abort();
     }
 

@@ -15,10 +15,12 @@
     [(_ new:expr existing:expr expected:expr box-v:expr)
      (quasisyntax/loc stx
        (test-case (~a '(new + existing = expected))
-         (define b (box #t))
-         (define-values (res-formulas res-props) (combine-props new existing b))
-         #,(syntax/loc stx (check-equal? (append res-formulas res-props) expected))
-         #,(syntax/loc stx (check-equal? (unbox b) box-v))))]))
+         (define success
+           (let/ec exit
+             (define-values (res-formulas res-props) (combine-props new existing exit))
+             #,(syntax/loc stx (check-equal? (append res-formulas res-props) expected))
+             #t))
+         #,(syntax/loc stx (check-equal? success box-v))))]))
 
 
 (define tests

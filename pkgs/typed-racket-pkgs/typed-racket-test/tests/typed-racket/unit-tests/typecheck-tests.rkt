@@ -3094,6 +3094,34 @@
           (tr:define (f #:foo [foo 'foo]) foo)
           (error "dummy"))
         #:msg #rx"expected: String.*given: 'foo"]
+
+       ;; Make sure -Bottom and multiple values play nice together.
+       [tc-e
+        (let ()
+          (define-values (a b) (error 'nyi))
+          b)
+        -Bottom]
+
+       [tc-e
+         ((if (even? 4) add1 (inst values Integer)) 4)
+         -Int]
+
+       ;; PR 14601
+       [tc-err
+        (let ()
+          (: f Procedure)
+          (define f (lambda () 'hi))
+          (f))
+        #:msg "cannot apply function of type Procedure"]
+
+       ;; PR 13259
+       [tc-err
+        (let ()
+          (: y String)
+          (define y (for/fold: ((x : String null)) ((v : String null)) x))
+          y)
+        #:ret (ret -String)
+        #:msg #rx"expected: String.*given: (Null|'\\(\\))"]
         )
 
   (test-suite

@@ -50,7 +50,7 @@
 (define-struct (Null Atom) () #:transparent)
 
 ;; expr is an expression
-;; p is a pattern
+;; ps is a list of patterns
 (define-struct (App Pat) (expr ps) #:transparent)
 
 ;; pred is an expression

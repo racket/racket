@@ -91,12 +91,7 @@
                              #:kind kind
                              (type->contract-fail typ prop))])
            (ignore ; should be ignored by the optimizer
-            (quasisyntax/loc
-                stx
-              (define-values (n)
-                (recursive-contract
-                 cnt
-                 #,(contract-kind->keyword kind)))))))]
+            (quasisyntax/loc stx (define-values (n) cnt)))))]
     [_ (int-err "should never happen - not a define-values: ~a"
                 (syntax->datum stx))]))
 
@@ -455,7 +450,7 @@
                                                 nm (recursive-sc-use nm*)))))
             (recursive-sc (list nm*) (list (struct/sc nm (ormap values mut?) fields))
                                 (recursive-sc-use nm*))]
-           [else (flat/sc #`(flat-named-contract '#,(syntax-e pred?) #,pred?))])]
+           [else (flat/sc #`(flat-named-contract '#,(syntax-e pred?) (lambda (x) (#,pred? x))))])]
         [(Syntax: (Base: 'Symbol _ _ _)) identifier?/sc]
         [(Syntax: t)
          (syntax/sc (t->sc t))]

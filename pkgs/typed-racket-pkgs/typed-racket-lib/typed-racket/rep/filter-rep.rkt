@@ -47,11 +47,13 @@
 
 (def-filter OrFilter ([fs (and/c (length>=/c 2)
                                  (listof (or/c TypeFilter? NotTypeFilter? ImpFilter?)))])
+  [#:intern (map Rep-seq fs)]
   [#:fold-rhs (*OrFilter (map filter-rec-id fs))]
   [#:frees (λ (f) (combine-frees (map f fs)))])
 
 (def-filter AndFilter ([fs (and/c (length>=/c 2)
                                   (listof (or/c OrFilter? TypeFilter? NotTypeFilter? ImpFilter?)))])
+  [#:intern (map Rep-seq fs)]
   [#:fold-rhs (*AndFilter (map filter-rec-id fs))]
   [#:frees (λ (f) (combine-frees (map f fs)))])
 
