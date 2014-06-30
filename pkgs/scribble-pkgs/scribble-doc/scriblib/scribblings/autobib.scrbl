@@ -229,4 +229,6 @@ same way as by @racket[make-bib].}
   Otherwise, does not change the author names.
   
   Defaults to @racket[#f].
+  
+  @history[#:addded "1.4"]
 }
