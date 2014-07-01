@@ -852,7 +852,7 @@
 
 (define (pick-dest latex-dest doc)
   (cond [(path? latex-dest)
-         (let-values ([(base name dir?) (split-path (doc-src-file doc))])
+         (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
            (build-path latex-dest (path-replace-suffix name #".tex")))]
         [(not latex-dest)
          (cond
@@ -985,8 +985,8 @@
          doc)
 
   ;; First, move pre-rendered documentation, if any, into place
-  (let ([rendered-dir (let-values ([(base name dir?) (split-path (doc-src-file doc))])
-                        (build-path (doc-src-dir doc) "doc" (path-replace-suffix name #"")))])
+  (let ([rendered-dir (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
+                        (build-path (doc-src-dir doc) "doc" name))])
     (when (and (can-build? only-dirs doc)
                (directory-exists? rendered-dir)
                (not (file-exists? (build-path rendered-dir "synced.rktd")))
