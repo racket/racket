@@ -71,7 +71,7 @@ The following libraries are included with Typed Racket in the
 @defmodule/incl[typed/openssl/md5]
 @defmodule/incl[typed/openssl/sha1]
 @defmodule/incl[typed/pict]
-@defmodule/incl[typed/racket/async-channel]
+@defmodule[typed/racket/async-channel @history[#:added "1.1"]]
 @defmodule/incl[typed/rackunit]
 @defmodule/incl[typed/srfi/14]
 @defmodule/incl[typed/syntax/stx]

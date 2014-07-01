@@ -418,6 +418,7 @@ corresponding to @racket[trest], where @racket[bound]
 (require typed/racket/async-channel)
 (ann (make-async-channel) (Async-Channelof Symbol))
 ]
+@history[#:added "1.1"]
 }
 
 @defidform[Async-ChannelTop]{is the type of an @rtech{asynchronous channel} with unknown
@@ -426,6 +427,7 @@ corresponding to @racket[trest], where @racket[bound]
   @racket[async-channel?].
 @ex[(require typed/racket/async-channel)
     (lambda: ([x : Any]) (if (async-channel? x) x (error "not an async-channel!")))]
+@history[#:added "1.1"]
 }
 
 @defform*[[(Parameterof t)
