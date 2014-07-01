@@ -13,7 +13,7 @@
          (prefix-in setup: setup/setup)
          (for-syntax racket/base))
 
-(define (setup what no-setup? setup-collects jobs)
+(define (setup what no-setup? fail-fast? setup-collects jobs)
   (unless (or (eq? setup-collects 'skip)
               no-setup?
               (not (member (getenv "PLT_PKG_NOSETUP") '(#f ""))))
@@ -27,7 +27,8 @@
                                      setup-collects))
              #:tidy? #t
              #:make-doc-index? #t
-             #:jobs jobs)
+             #:jobs jobs
+             #:fail-fast? fail-fast?)
       ((current-pkg-error)
        "packages ~a, although setup reported errors"
        what))))
@@ -159,6 +160,7 @@
              [#:bool pkgs () ("Install only the specified packages, even when none are provided")]
              install-force-flags ...
              job-flags ...
+             [#:bool fail-fast () ("Break `raco setup' when it discovers an error")]
              #:args pkg-source
              install-copy-defns ...
              (call-with-package-scope
@@ -194,7 +196,7 @@
                                   #:link-dirs? link-dirs?
                                   (for/list ([p (in-list sources)])
                                     (pkg-desc p a-type* name checksum #f))))))
-                (setup "installed" no-setup setup-collects jobs)))]
+                (setup "installed" no-setup fail-fast setup-collects jobs)))]
             ;; ----------------------------------------
             [update
              "Update packages"
@@ -249,7 +251,7 @@
                                  #:update-implies? (not ignore-implies)
                                  #:strip (or (and source 'source) (and binary 'binary))
                                  #:link-dirs? link-dirs?))))
-                (setup "updated" no-setup setup-collects jobs)))]
+                (setup "updated" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [remove
              "Remove packages"
@@ -273,7 +275,7 @@
                                #:demote? demote
                                #:auto? auto
                                #:force? force)))
-                (setup "removed" no-setup setup-collects jobs)))]
+                (setup "removed" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [show
              "Show information about installed packages"
@@ -348,7 +350,7 @@
                                   #:ignore-checksums? ignore-checksums
                                   #:use-cache? (not no-cache)
                                   #:strip (or (and source 'source) (and binary 'binary))))))
-                (setup "migrated" no-setup setup-collects jobs)))]
+                (setup "migrated" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [create
              "Bundle package from a directory or installed package"

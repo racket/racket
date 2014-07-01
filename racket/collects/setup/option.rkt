@@ -74,6 +74,7 @@
 (define-flag-param pause-on-errors #f)
 (define-flag-param force-unpacks #f)
 (define-flag-param doc-pdf-dest #f)
+(define-flag-param fail-fast #f)
 
 (define specific-collections (make-parameter null))
 (define specific-planet-dirs (make-parameter null))

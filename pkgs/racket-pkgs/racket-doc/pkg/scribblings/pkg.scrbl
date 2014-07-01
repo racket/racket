@@ -441,6 +441,8 @@ sub-commands.
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Install and setup with @nonterm{n} parallel jobs.}
+
+  @item{@DFlag{fail-fast} --- Breaks @exec{raco setup} as soon as any error is encountered.}
  ]
 
 

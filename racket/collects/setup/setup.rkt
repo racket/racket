@@ -16,7 +16,8 @@
                #:clean? [clean? #f]
                #:tidy? [tidy? #f]
                #:avoid-main? [avoid-main? #f]
-               #:jobs [parallel #f])
+               #:jobs [parallel #f]
+               #:fail-fast? [fail-fast? #f])
   (parameterize 
    (;; Here's where we tell setup the archive file:
     [archives (if (or clean? (not file)) (archives) (list file))]
@@ -42,6 +43,8 @@
     [make-tidy (if tidy? #t (make-tidy))]
 
     [avoid-main-installation (if avoid-main? #t (avoid-main-installation))]
+
+    [fail-fast fail-fast?]
     
     [clean (if clean? #t (clean))]
     [make-zo (if clean? #f (make-zo))]

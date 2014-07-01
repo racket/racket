@@ -138,8 +138,11 @@
 
   (define errors null)
   (define exit-code 0)
+  (define original-thread (current-thread))
   (define (append-error cc desc exn out err type)
-    (set! errors (cons (list cc desc exn out err type) errors)))
+    (set! errors (cons (list cc desc exn out err type) errors))
+    (when (fail-fast)
+      (break-thread original-thread)))
   (define (handle-error cc desc exn out err type)
       (if (verbose)
           ((error-display-handler)

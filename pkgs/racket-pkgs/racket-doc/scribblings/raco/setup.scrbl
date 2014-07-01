@@ -135,7 +135,7 @@ flags:
 
  @item{@DFlag{no-launcher} or @Flag{x} --- refrain from creating
    executables or installing @tt{man} pages (as specified in
-   @filepath{info.rkt}; see @secref["setup-info"].}
+   @filepath{info.rkt}; see @secref["setup-info"]).}
 
  @item{@DFlag{no-foreign-libs} --- refrain from installing foreign
    libraries (as specified in @filepath{info.rkt}; see
@@ -189,6 +189,9 @@ flags:
   dependencies may be reported as unused only because compilation of
   relevant modules has been suppressed.}
 
+ @item{@DFlag{fail-fast} --- attempt to break as soon as any error is
+  discovered.}
+
  @item{@DFlag{mode} @nonterm{mode} --- use a @filepath{.zo} compiler
    other than the default compiler, and put the resulting
    @filepath{.zo} files in a subdirectory (of the usual place) named
@@ -214,7 +217,7 @@ flags:
 
  @item{@Flag{l} @nonterm{collection} @racket[...] --- constrain setup
   actions to the specified @nonterm{collection}s (i.e., the same as
-  providing @nonterm{collections}s without a flag, but with no
+  providing @nonterm{collections}s without a flag), but with no
   possibility that a @nonterm{collection} is interpreted as a flag.}
 
  @item{@Flag{A} @nonterm{archive} @racket[...] --- Install each
@@ -237,6 +240,8 @@ example, the following command line uses a single process to build
 collections during an install:
 
    @commandline{env PLT_SETUP_OPTIONS="-j 1" make install}
+
+@history[#:changed "1.2" @elem{Added @DFlag{fast-break} flag.}]
 
 @; ------------------------------------------------------------------------
 
@@ -687,6 +692,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
                 [#:clean? clean? any/c #f]
                 [#:tidy? tidy? any/c #f]
                 [#:jobs jobs exact-nonnegative-integer? #f]
+                [#:fail-fast? fail-fast? any/c #f]
                 [#:get-target-dir get-target-dir (or/c #f (-> path-string?)) #f])
           boolean?]{
 Runs @exec{raco setup} with various options:
@@ -723,6 +729,9 @@ Runs @exec{raco setup} with various options:
 
  @item{@racket[jobs] --- if not @racket[#f], determines the maximum number of parallel
        tasks used for setup}
+
+ @item{@racket[fail-fast?] --- if true, breaks the current thread as soon as an
+       error is discovered}
 
  @item{@racket[get-target-dir] --- if not @racket[#f], treated as a
        value for @sigelem[setup-option^ current-target-directory-getter]}
@@ -875,6 +884,12 @@ form.}
     and for building the documentation.
     @defaults[@racket[(min (processor-count) 8)]]
   }
+
+@defboolparam[fail-fast on?]{
+  If on, breaks the original thread as soon as an error is discovered.
+  @defaults[@racket[#f]]
+
+  @history[#:added "1.2"]}
   
 @defboolparam[force-unpacks on?]{
   If on, ignore version and already-installed errors when unpacking a
