@@ -3113,7 +3113,7 @@
           (: f Procedure)
           (define f (lambda () 'hi))
           (f))
-        #:msg "cannot apply function of type Procedure"]
+        #:msg "function with unknown arity"]
 
        ;; PR 13259
        [tc-err

@@ -105,8 +105,11 @@
                       (if tail-bound (cons tail-ty tail-bound) #f)))
   (cond
     [(null? doms)
-     (tc-error/expr "cannot apply function of type Procedure"
-                    #:return return)]
+     (tc-error/expr/fields
+      "cannot apply a function with unknown arity"
+      #:more (format "~a has type Procedure which cannot be applied"
+                     (name->function-str (and (identifier? f-stx) f-stx)))
+      #:return return)]
     [(and (= 1 (length doms)) (not (car rests)) (not (car drests)) (not tail-ty) (not tail-bound))
      (tc-error/expr
       #:return return
@@ -332,9 +335,7 @@
          (PolyRow-names:
           msg-vars _
           (Function/arrs: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...))))
-     (let ([fcn-string (if name
-                           (format "function `~a'" (syntax->datum name))
-                           "function")])
+     (let ([fcn-string (name->function-str name)])
        (if (and (andmap null? msg-doms)
                 (null? argtypes))
            (tc-error/expr (string-append
@@ -374,3 +375,9 @@
                                                  (string-append "Type Variables: " (stringify msg-vars) "\n")
                                                  ""))))))]))
 
+;; name->function-str : (Option Identifier) -> String
+;; Produce a function name string for error messages
+(define (name->function-str name)
+  (if name
+      (format "function `~a'" (syntax->datum name))
+      "function"))
