@@ -15,3 +15,5 @@
 (define pkg-desc "implementation (no documentation) part of \"typed-racket\"")
 
 (define pkg-authors '(samth stamourv))
+
+(define version "1.1")

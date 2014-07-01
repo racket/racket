@@ -16,3 +16,5 @@
 (define pkg-desc "Types for various libraries")
 
 (define pkg-authors '(samth stamourv))
+
+(define version "1.1")
