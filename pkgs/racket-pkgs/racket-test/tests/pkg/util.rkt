@@ -190,18 +190,24 @@
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test1.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-test1.zip"))
+                     "http://localhost:9999/pkg-test1.zip"
+                     'tags
+                     '("first")))
 
   (hash-set! *index-ht-1* "pkg-test2"
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test2.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-test2.zip"))
+                     "http://localhost:9999/pkg-test2.zip"
+                     'dependencies
+                     '("pkg-test1")))
 
   (hash-set! *index-ht-2* "pkg-test2-snd"
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test2.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-test2.zip")))
+                     "http://localhost:9999/pkg-test2.zip"
+                     'dependencies
+                     '("pkg-test1"))))
 
 (provide (all-defined-out))

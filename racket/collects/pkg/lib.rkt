@@ -3322,8 +3322,8 @@
       (define new-checksum
         (file->string (path-replace-suffix pkg-file #".zip.CHECKSUM")))
       (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
-        (define modules (db:get-pkg-modules name (db:pkg-catalog pkg) (or current-checksum "")))
-        (define dependencies (db:get-pkg-dependencies name (db:pkg-catalog pkg) (or current-checksum "")))
+        (define modules (db:get-pkg-modules name (db:pkg-catalog pkg) (db:pkg-checksum pkg)))
+        (define dependencies (db:get-pkg-dependencies name (db:pkg-catalog pkg) (db:pkg-checksum pkg)))
         (db:set-pkg! name (db:pkg-catalog pkg)
                      (db:pkg-author pkg)
                      (path->string (path->complete-path pkg-file))

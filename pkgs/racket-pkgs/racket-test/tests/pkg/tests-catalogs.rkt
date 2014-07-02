@@ -133,6 +133,10 @@
   =exit> 1
   $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
   $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip") =exit> 1
+  $ (~a "raco pkg catalog-show --catalog file://" archive-d "/catalog pkg-test2")
+  =stdout> #px"Dependencies:\\s+ pkg-test1"
+  $ (~a "raco pkg catalog-show --catalog file://" archive-d "/catalog pkg-test1")
+  =stdout> #px"Tags: first"
 
   ;; Incremental update:
   $ (~a "raco pkg catalog-archive --from-config --relative"
