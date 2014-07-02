@@ -1479,7 +1479,7 @@
      stx]))
 
 (define-for-syntax (has-unsupported-pat? stx)
-  (syntax-case stx (repeat side-condition in-hole undatum-splicing)
+  (syntax-case stx ()
     [(repeat . rest)
      (and (identifier? #'repeat)
           (eq? (syntax-e #'repeat) 'repeat))
@@ -1492,8 +1492,15 @@
      (and (identifier? #'in-hole)
           (eq? (syntax-e #'in-hole) 'in-hole))
      #''(in-hole . rest)]
-    ;; TODO check that s is quoted or a term
-    [(undatum (variable-not-in (term . tr) . s))
+    [(undatum (variable-not-in (term . tr) (q/t s)))
+     (and (identifier? #'undatum)
+          (eq? (syntax-e #'undatum) 'undatum)
+          (identifier? #'variable-not-in)
+          (eq? (syntax-e #'variable-not-in) 'variable-not-in)
+          (identifier? #'q/t)
+          (or (eq? (syntax-e #'q/t) 'term)
+              (eq? (syntax-e #'q/t) 'quote)
+              (eq? (syntax-e #'q/t) 'quasiquote)))
      #f]
     [(undatum . rest)
      (and (identifier? #'undatum)

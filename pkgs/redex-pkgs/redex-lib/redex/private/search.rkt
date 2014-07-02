@@ -243,15 +243,15 @@
 (define (check-depth-limits bound tr-loc fails)
   (when ((pushdown-count) . > . (pushdown-limit))
     (define str (format "pushdown count of ~s exceeded at ~s" (pushdown-count) tr-loc))
-    (printf "!*\n\t~s\t*!\n" str)
+    ;(printf "!*\n\t~s\t*!\n" str)
     (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails)))
   (when (> (bt-count) (bt-limit))
     (define str (format "backtrack count of ~s exceeded at ~s" (bt-limit) tr-loc))
-    (displayln str)
+    ;(displayln str)
     (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails)))
   (when (> (length tr-loc) (* 3 (+ (length tr-loc) bound)))
     (define str (format "depth bound exceeded at depth: ~s" (length tr-loc)))
-    (displayln str)
+    ;(displayln str)
     (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails))))
 
 

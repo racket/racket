@@ -236,23 +236,21 @@
 
 
 (define (unify*/format p1 p2 eqs L)
-  (define e eqs)
-  (define e2 (hash-copy eqs))
-  (define res-p (unify*/lt p1 p2 e L))
-  (define res-p-bkwd (unify*/lt p2 p1 e2 L))
+  (define e (env eqs '()))
+  (define res (unify*/lt p1 p2 e L))
+  (define res-bkwd (unify*/lt p2 p1 e L))
   (cond
-    [(and (not-failed? res-p)
-          (not-failed? res-p-bkwd)
-          (p*e-equivalent? (p*e res-p (env e '())) 
-                           (p*e res-p-bkwd (env e2 '())) eqs))
-     res-p]
-    [(and (unif-fail? res-p)
-          (unif-fail? res-p-bkwd))
+    [(and (not-failed? res)
+          (not-failed? res-bkwd)
+          (p*e-equivalent? res res-bkwd eqs))
+     res]
+    [(and (unif-fail? res)
+          (unif-fail? res-bkwd))
      #f]
     [else 
      (list 'different-orders=>different-results
-           res-p
-           res-p-bkwd)]))
+           res
+           res-bkwd)]))
 
 ;; This looks really strange but it is for backwards compatability
 ;; with tests that didn't take nonterminal productions into account.
@@ -304,34 +302,41 @@
 (check-equal? (unify #t '(name x any) (env (hash) '()) #f)
               (p*e `(name x ,(bound))
                    (env (hash (lvar 'x) #t) '())))
-(check-equal? (unify* #t 'any (hash) #f)
-              #t)
-(check-equal? (unify* #f 'any (hash) #f)
-              #f)
-(check-equal? (unify* #t 'any (hash) #f)
-              #t)
-(check-equal? (unify* #f 'number (hash) #f)
+(check-equal? (unify* #t 'any (env (hash) '()) #f)
+              (p*e #t (env (hash) '())))
+(check-equal? (unify* #f 'any (env (hash) '()) #f)
+              (p*e #f (env (hash) '())))
+(check-equal? (unify* #t 'any (env (hash) '()) #f)
+              (p*e #t (env (hash) '())))
+(check-equal? (unify* #f 'number (env (hash) '()) #f)
               (unif-fail))
-(check-equal? (unify* '(list 1) 1 (hash) #f)
+(check-equal? (unify* '(list 1) 1 (env (hash) '()) #f)
               (unif-fail))
-(check-equal? (unify* 'boolean #t (hash) #f)
-              #t)
-(check-equal? (unify* 'boolean #f (hash) #f)
-              #f)
-(check-equal? (unify* 'number #f (hash) #f)
+(check-equal? (unify* 'boolean #t (env (hash) '()) #f)
+              (p*e #t (env (hash) '())))
+(check-equal? (unify* 'boolean #f (env (hash) '()) #f)
+              (p*e #f (env (hash) '())))
+(check-equal? (unify* 'number #f (env (hash) '()) #f)
               (unif-fail))
-(check-equal? (unify* 'integer #f (hash) #f)
+(check-equal? (unify* 'integer #f (env (hash) '()) #f)
               (unif-fail))
-(check-equal? (unify* 'natural #f (hash) #f)
+(check-equal? (unify* 'natural #f (env (hash) '()) #f)
               (unif-fail))
-(check-equal? (unify* 'real #f (hash) #f)
+(check-equal? (unify* 'real #f (env (hash) '()) #f)
               (unif-fail))
-(check-equal? (unify* 'string #f (hash) #f)
+(check-equal? (unify* 'string #f (env (hash) '()) #f)
               (unif-fail))
-(check-equal? (unify* 'variable #f (hash) #f)
+(check-equal? (unify* 'variable #f (env (hash) '()) #f)
               (unif-fail))
-(check-equal? (unify* 'variable-not-otherwise-mentioned #f (hash) #f)
+(check-equal? (unify* 'variable-not-otherwise-mentioned #f (env (hash) '()) #f)
               (unif-fail))
+
+(define (p-eqs-equal? a b)
+  (check-equal?
+   (cons (p*e-p a)
+         (p*e-eqs a))
+   (cons (p*e-p b)
+         (p*e-eqs b))))
 
 (define-syntax (unify-all/results stx)
   (syntax-case stx ()
@@ -344,11 +349,11 @@
     [(_ lhs eqs ([rhs res res-eqs] rest ...))
      #'(begin
          (check-equal? (unify/format lhs rhs eqs L0)
-                       (p*e res res-eqs)) 
+                       (p*e res res-eqs))
          (unify-all/results lhs eqs (rest ...)))]
     [(_ lhs eqs ([rhs res] rest ...))
      #'(begin
-         (check-equal? (unify/format lhs rhs eqs L0)
+         (p-eqs-equal? (unify/format lhs rhs eqs L0)
                        res) 
          (unify-all/results lhs eqs (rest ...)))]
     [(_ lhs eqs ())
@@ -542,21 +547,28 @@
   ['(variable-prefix b) #f]))
                   
 
-
-(check-equal? (unify*/lt `(nt v) `(cstr (e) (list (nt e) (nt v))) (hash) L0)
+(define-syntax-rule
+  (check-pat-equal? a b)
+  (check-equal? (let ([ans a])
+                  (match ans
+                    [(p*e p _) p]
+                    [_ ans]))
+                b))
+  
+(check-pat-equal? (unify*/lt `(nt v) `(cstr (e) (list (nt e) (nt v))) empty-env L0)
               `(cstr (e v) (list (nt e) (nt v))))
-(check-equal? (unify*/lt `(cstr (e) (list (nt e) (nt v))) `(nt v) (hash) L0)
+(check-pat-equal? (unify*/lt `(cstr (e) (list (nt e) (nt v))) `(nt v) empty-env L0)
               `(cstr (e v) (list (nt e) (nt v))))
-(check-equal? (unify*/lt `(cstr (e) (list (nt e) (nt v))) 5 (hash) L0)
+(check-pat-equal? (unify*/lt `(cstr (e) (list (nt e) (nt v))) 5 empty-env L0)
               (unif-fail))
-(check-equal? (unify*/lt `(cstr (e) (list (nt e) (nt v))) `(list (nt e) (nt v)) (hash) L0)
+(check-pat-equal? (unify*/lt `(cstr (e) (list (nt e) (nt v))) `(list (nt e) (nt v)) empty-env L0)
               `(cstr (e) (list (nt e) (nt v))))
-(check-equal? (unify*/lt `(cstr (e) number) `(cstr (v) natural) (hash) L0)
+(check-pat-equal? (unify*/lt `(cstr (e) number) `(cstr (v) natural) empty-env L0)
               `(cstr (e v) natural))
-(check-equal? (unify*/lt `(cstr (e) (list number variable)) `(cstr (e) number) (hash) L0)
+(check-pat-equal? (unify*/lt `(cstr (e) (list number variable)) `(cstr (e) number) empty-env L0)
               (unif-fail))
-(check-equal? (unify*/lt `(cstr (e) (list number variable-not-otherwise-mentioned)) 
-                         `(cstr (e) (list integer variable)) (hash) L0)
+(check-pat-equal? (unify*/lt `(cstr (e) (list number variable-not-otherwise-mentioned)) 
+                         `(cstr (e) (list integer variable)) empty-env L0)
               `(cstr (e) (list integer variable-not-otherwise-mentioned)))
 
 
@@ -564,55 +576,55 @@
   (syntax-case stx ()
     [(_ lhs eqs ([rhs res res-eqs] ...))
      #'(begin
-         (let ([h eqs])
-           (check-equal? (unify*/format lhs rhs h L0) res)
-           (check-equal? h res-eqs)) ...)]))
+         (let ([pe (unify*/format lhs rhs eqs L0)])
+           (check-equal? (p*e-p pe) res)
+           (check-equal? (env-eqs (p*e-e pe)) res-eqs)) ...)]))
 
 (unify*-all/results
- `(cstr (e) (nt q)) (make-hash)
- (['any `(cstr (e q) any) (make-hash)]
-  ['integer `(cstr (e q) integer) (make-hash)]
-  ['natural `(cstr (e q) natural) (make-hash)]
-  ['number `(cstr (e q) number) (make-hash)]
-  ['real `(cstr (e q) real) (make-hash)]
-  ['string `(cstr (e q) string) (make-hash)]
-  [`boolean `(cstr (e q) boolean) (make-hash)]
-  ['variable `(cstr (e q) variable) (make-hash)]
+ `(cstr (e) (nt q)) (hash)
+ (['any `(cstr (e q) any) (hash)]
+  ['integer `(cstr (e q) integer) (hash)]
+  ['natural `(cstr (e q) natural) (hash)]
+  ['number `(cstr (e q) number) (hash)]
+  ['real `(cstr (e q) real) (hash)]
+  ['string `(cstr (e q) string) (hash)]
+  [`boolean `(cstr (e q) boolean) (hash)]
+  ['variable `(cstr (e q) variable) (hash)]
   ['variable-not-otherwise-mentioned 
-   `(cstr (e q) variable-not-otherwise-mentioned) (make-hash)]
+   `(cstr (e q) variable-not-otherwise-mentioned) (hash)]
   ['(variable-except a)
-   `(cstr (e q) (variable-except a)) (make-hash)]
+   `(cstr (e q) (variable-except a)) (hash)]
   ['(variable-prefix a) 
-   `(cstr (e q) (variable-prefix a)) (make-hash)]
+   `(cstr (e q) (variable-prefix a)) (hash)]
   ['(list 1 2 3)
-   '(cstr (e q) (list 1 2 3)) (make-hash)]
-  [5 '(cstr (e q) 5) (make-hash)]
-  ["a string" '(cstr (e q) "a string") (make-hash)]
-  ['(mismatch-name x 5) '(cstr (e q) 5) (make-hash)]))
+   '(cstr (e q) (list 1 2 3)) (hash)]
+  [5 '(cstr (e q) 5) (hash)]
+  ["a string" '(cstr (e q) "a string") (hash)]
+  ['(mismatch-name x 5) '(cstr (e q) 5) (hash)]))
 
 (unify*-all/results
- `(name x ,(bound)) (make-hash `((,(lvar 'x) . any)))
- (['any `(name x ,(bound)) (make-hash `((,(lvar 'x) . any)))]
-  [5 `(name x ,(bound)) (make-hash `((,(lvar 'x) . 5)))]
-  ['number `(name x ,(bound)) (make-hash `((,(lvar 'x) . number)))]
-  ['integer `(name x ,(bound)) (make-hash `((,(lvar 'x) . integer)))]
-  ['natural `(name x ,(bound)) (make-hash `((,(lvar 'x) . natural)))]
-  ['real `(name x ,(bound)) (make-hash `((,(lvar 'x) . real)))]
-  ['string `(name x ,(bound)) (make-hash `((,(lvar 'x) . string)))]
-  ['boolean `(name x ,(bound)) (make-hash `((,(lvar 'x) . boolean)))]
-  ['variable `(name x ,(bound)) (make-hash `((,(lvar 'x) . variable)))]
-  ['variable-not-otherwise-mentioned `(name x ,(bound)) (make-hash `((,(lvar 'x) . variable-not-otherwise-mentioned)))]
-  ['(variable-except a) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (variable-except a))))]
-  ['(variable-prefix a) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (variable-prefix a))))]
-  ['(cstr (n) any) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (cstr (n) any))))]
-  ['(list 1 2) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (list 1 2))))]
-  ['(mismatch-name z any) `(name x ,(bound)) (make-hash `((,(lvar 'x) . any)))]
-  ['(nt q) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (cstr (q) any))))]))
+ `(name x ,(bound)) (hash (lvar 'x) 'any)
+ (['any `(name x ,(bound)) (hash (lvar 'x) 'any)]
+  [5 `(name x ,(bound)) (hash (lvar 'x) 5)]
+  ['number `(name x ,(bound)) (hash (lvar 'x) 'number)]
+  ['integer `(name x ,(bound)) (hash (lvar 'x) 'integer)]
+  ['natural `(name x ,(bound)) (hash (lvar 'x) 'natural)]
+  ['real `(name x ,(bound)) (hash (lvar 'x) 'real)]
+  ['string `(name x ,(bound)) (hash (lvar 'x) 'string)]
+  ['boolean `(name x ,(bound)) (hash (lvar 'x) 'boolean)]
+  ['variable `(name x ,(bound)) (hash (lvar 'x) 'variable)]
+  ['variable-not-otherwise-mentioned `(name x ,(bound)) (hash (lvar 'x) 'variable-not-otherwise-mentioned)]
+  ['(variable-except a) `(name x ,(bound)) (hash (lvar 'x) '(variable-except a))]
+  ['(variable-prefix a) `(name x ,(bound)) (hash (lvar 'x) '(variable-prefix a))]
+  ['(cstr (n) any) `(name x ,(bound)) (hash (lvar 'x) '(cstr (n) any))]
+  ['(list 1 2) `(name x ,(bound)) (hash (lvar 'x) '(list 1 2))]
+  ['(mismatch-name z any) `(name x ,(bound)) (hash (lvar 'x) 'any)]
+  ['(nt q) `(name x ,(bound)) (hash (lvar 'x) '(cstr (q) any))]))
 
 (unify*-all/results
- `(name x ,(bound)) (make-hash `((,(lvar 'x) . any) (,(lvar 'y) . variable)))
- ([`(name x ,(bound)) `(name x ,(bound)) (make-hash `((,(lvar 'x) . any) (,(lvar 'y) . variable)))]
-  [`(name y ,(bound)) `(name x ,(bound)) (make-hash `((,(lvar 'y) . ,(lvar 'x)) (,(lvar 'x) . variable)))]))
+ `(name x ,(bound)) (hash (lvar 'x) 'any (lvar 'y) 'variable)
+ ([`(name x ,(bound)) `(name x ,(bound)) (hash (lvar 'x) 'any (lvar 'y) 'variable)]
+  [`(name y ,(bound)) `(name x ,(bound)) (hash (lvar 'y) (lvar 'x) (lvar 'x) 'variable)]))
 
 
 (let ()
@@ -765,16 +777,13 @@
                            (lvar 'n_1) (lvar 'n_2))))
 
 
-(check-not-false (let ([h (make-hash)])
-                   (bind-names 'any h L0)))
-(check-equal? (let ([h (make-hash)])
-                (list (bind-names `(name x any) h L0)
-                      h))
-              (list `(name x ,(bound))
-                    (make-hash (list (cons (lvar 'x) 'any)))))
-(check-equal? (let ([h (make-hash (list (cons (lvar 'x) (lvar 'y))
-                                        (cons (lvar 'y) 'any)))])
-                (bind-names `(list (name x 5) (name y 6)) h L0))
+(check-not-false (bind-names 'any empty-env L0))
+(check-equal? (bind-names `(name x any) empty-env L0)
+              (p*e `(name x ,(bound))
+                   (env (hash (lvar 'x) 'any) '())))
+(check-equal? (let ([h (hash (lvar 'x) (lvar 'y)
+                             (lvar 'y) 'any)])
+                (bind-names `(list (name x 5) (name y 6)) (env h '()) L0))
               (unif-fail))
 
 (define-syntax do-unify
@@ -815,8 +824,11 @@
   (n O
      (S n)))
 
-(check-equal? (unify*/lt '(cstr (n) (list S O)) '(list S O) (hash) U-nums)
-              '(cstr (n) (list S O)))
+(define (m-env . eqs)
+  (env (apply hash eqs) '()))
+
+(check-pat-equal? (unify*/lt '(cstr (n) (list S O)) '(list S O) empty-env U-nums)
+                '(cstr (n) (list S O)))
 (u-succeeds U-nums (S O) (S O) (hash))
 (u-succeeds U-nums (S (S O)) (S n) (hash))
 (u-fails U-nums (S (S O)) (S n) (m-hash (lvar 'n) '(list O)))
@@ -955,32 +967,32 @@
  (disunify* '()
             `(list (name x_1 ,(bound))) 
             `(list (name x_2 ,(bound))) 
-            (make-hash `((,(lvar 'x_1) . a)
-                         (,(lvar 'x_2) . a)))
+            (hash (lvar 'x_1) 'a
+                   (lvar 'x_2) 'a)
             L0))
 (check-not-false
  (disunify* '()
             `(list (name x_1 ,(bound))) 
             `(list (name x_2 ,(bound))) 
-            (make-hash `((,(lvar 'x_1) . (nt x))
-                         (,(lvar 'x_2) . a)))
+            (hash (lvar 'x_1) '(nt x)
+                   (lvar 'x_2) 'a)
             L0))
 (check-not-false
  (disunify* '()
             `(list (name x_1 ,(bound))) 
             `(list (name x_2 ,(bound))) 
-            (make-hash `((,(lvar 'x_1) . (nt x))
-                         (,(lvar 'x_2) . (nt x))))
+            (hash (lvar 'x_1) '(nt x)
+                   (lvar 'x_2) '(nt x))
             L0))
 (check-false 
- (disunify* '() 'a '(cstr (s) a) (make-hash) L0))
+ (disunify* '() 'a '(cstr (s) a) (hash) L0))
 (check-false
- (let ([h (make-hash (list (cons (lvar 'a2) 'a)))])
-   (disunify* '() `(name a2 ,(bound)) '(cstr (s) a) h L0)))
+ (disunify* '() `(name a2 ,(bound)) '(cstr (s) a) (hash (lvar 'a2) 'a) L0))
 (check-false
- (let ([h (make-hash (list (cons (lvar 'a2) 'a)
-                           (cons (lvar 's6) '(cstr (s) a))))])
-   (disunify* '() `(name a2 ,(bound)) `(name s6 ,(bound)) h L0)))
+ (disunify* '() `(name a2 ,(bound)) `(name s6 ,(bound))
+            (hash (lvar 'a2) 'a
+                   (lvar 's6) '(cstr (s) a))
+            L0))
 
 (define (make-eqs eqs)
   (for/hash ([eq eqs])

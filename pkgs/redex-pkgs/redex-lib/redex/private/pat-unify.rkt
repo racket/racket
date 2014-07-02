@@ -36,8 +36,8 @@
          predef-pat?
          unique-name-nums
          fresh-pat-vars
-         make-uid)
-
+         make-uid
+         p*e-eqs)
 
 
 ;;
@@ -136,24 +136,6 @@
                                    cstr?))
                                 (extracted-clauses->fns)))
 
-(define (bound-var? b)
-  (match b
-    [`(name ,(? var? name) ,(bound))
-     #t]
-    [_ 
-     #f]))
-
-(define eqs/c
-  (hash/c lvar? (or/c lvar? pat*?)))
-(define dq/c
-  (list/c (listof (or/c 'list bound-var?)) (listof (or/c 'list pat*?))))
-(define dqs/c
-  (listof dq/c))
-(define env/c
-  (struct/c env eqs/c dqs/c))
-(define p*e/c
-  (struct/c p*e pat*? env/c))
-
 ;; used to track new equations for disunification
 (define new-eqs (make-parameter (make-hash)))
 
@@ -161,31 +143,45 @@
 ;; disqequations generated (by mismatch-pattern) during a given unification pass
 (define dqs-found (make-parameter (make-hash)))
 
+(define-syntax-rule
+  (maybe-let ([x e]) body ...)
+  (let ([val e])
+    (match val
+      [(unif-fail) val]
+      [_ (let ([x val]) body ...)])))
 
-;; pat pat env -> (or/c p*e #f)
+(define-syntax maybe-let*
+  (syntax-rules ()
+    [(maybe-let* () body ...) (let () body ...)]
+    [(maybe-let* ([x x-e] [y e] ...) body ...)
+     (maybe-let ([x x-e])
+       (maybe-let* ([y e] ...) body ...))]))
+
+(define-syntax-rule
+  (p*e-eqs x)
+  (env-eqs (p*e-e x)))
+      
+;; pat pat env lang -> (or/c p*e? unif-fail?)
 (define (unify t u e L)
   (parameterize ([dqs-found (make-hash)])
-    (define eqs (hash-copy (env-eqs e)))
-    (define t* (bind-names t eqs L))
-    (define u* (bind-names u eqs L))
-    (define res (and/fail (not-failed? t*) 
-                          (not-failed? u*)
-                          (unify* t* u* eqs L)))
-    (and/fail (not-failed? res)
-              (let* ([static-eqs (hash/mut->imm eqs)]
-                     [found-pre-dqs 
-                      (apply set-union (set) 
-                             (for/list ([dq-sides/id (hash-values (dqs-found))])
-                               (list->dq-pairs dq-sides/id)))]
-                     [found-dqs
-                      (for/list ([pdq found-pre-dqs])
-                        (disunify* '() (first pdq) (second pdq) static-eqs L))])
-                (and/fail (for/and ([d found-dqs]) d)
-                          (let* ([real-dqs (filter (λ (dq) (not (boolean? dq))) found-dqs)]
-                                 [new-dqs (check-and-resimplify static-eqs (append real-dqs (env-dqs e)) L)])
+    (maybe-let* ([t* (bind-names t e L)]
+                 [u* (bind-names u (p*e-e t*) L)]
+                 [res (unify* (p*e-p t*) (p*e-p u*) (p*e-e u*) L)])
+                (define eqs (p*e-eqs res))
+                (define res-pat (p*e-p res))
+                (define found-pre-dqs (apply set-union (set) 
+                                             (for/list ([dq-sides/id (hash-values (dqs-found))])
+                                               (list->dq-pairs dq-sides/id))))
+                (maybe-let* ([found-dqs (for/fold ([fdqs '()])
+                                          ([pdq (in-set found-pre-dqs)])
+                                          (maybe-let* ([fdqs fdqs])
+                                                      (define new-dq (disunify* '() (first pdq) (second pdq) eqs L))
+                                                      (and/fail new-dq
+                                                                (cons new-dq fdqs))))])
+                            (define real-dqs (filter (λ (dq) (not (boolean? dq))) found-dqs))
+                            (define new-dqs (check-and-resimplify eqs (append real-dqs (env-dqs e)) L))
                             (and/fail new-dqs
-                                      (p*e res
-                                           (env static-eqs new-dqs)))))))))
+                                      (p*e res-pat (env eqs new-dqs)))))))
 
 (define (list->dq-pairs dq-sides)
   (cond
@@ -197,28 +193,27 @@
                          (list (car dq-sides) rhs))
                 (list->dq-pairs (cdr dq-sides)))]))
 
-
-;; pat pat env lang -> (or/c env #f)
+;; pat pat env lang -> (or/c env boolean?)
 (define (disunify params t u e L)
   (parameterize ([new-eqs (make-hash)])
-    (define eqs (hash-copy (env-eqs e)))
-    (define t* (bind-names t eqs L))
-    (define u* (bind-names u eqs L))
-    (define bn-eqs (hash/mut->imm eqs))
+    (define t*e (bind-names t e L))
     (cond 
-      [(or (unif-fail? t*) (unif-fail? u*))
-       e]
+      [(unif-fail? t*e) e]
       [else
-       (define new-dq (disunify* params t* u* bn-eqs L)) 
-       (match new-dq
-         [#f #f]
-         [#t 
-          (env bn-eqs
-               (env-dqs e))]
-         [_
-          (env bn-eqs
-               (cons new-dq 
-                     (env-dqs e)))])])))
+       (define u*e (bind-names u (p*e-e t*e) L))
+       (cond
+         [(unif-fail? u*e) e]
+         [else
+          (define new-dq (disunify* params (p*e-p t*e) (p*e-p u*e) (env-eqs (p*e-e u*e)) L))
+          (match new-dq
+            [#f #f]
+            [#t
+             (env (env-eqs (p*e-e u*e))
+                  (env-dqs e))]
+            [_
+             (env (env-eqs (p*e-e u*e))
+                  (cons new-dq
+                        (env-dqs e)))])])])))
 
 (define base-dq `((list) (list)))
 
@@ -240,7 +235,7 @@
             (list ,@terms ,(resolve-no-nts/pat v eqs)))])])))
 
 (define (resolve-no-nts/var lv eqs)
-  (define-values (rep pat) (lookup (lvar-id lv) eqs))
+  (define-values (rep pat _) (lookup (lvar-id lv) eqs))
   (if (not (groundable? pat))
       `(name ,(lvar-id rep) ,(bound))
       (resolve-no-nts/pat pat eqs)))
@@ -267,13 +262,7 @@
     [(? predef-pat? _) #f]
     [`(cstr ,_ ,p)
      (groundable? p)]
-    [_ #t]))
-           
-                
-(define (hash/mut->imm h0)
-  (for/fold ([h (hash)]) 
-    ([(k v) (in-hash h0)])
-    (hash-set h k v)))                                    
+    [_ #t]))                                   
                                            
 
 ;; eqs dqs -> dqs or #f
@@ -301,30 +290,31 @@
                    [#t (loop ok rest)]
                    [_ (loop (cons new-dq ok) rest)])))])])))
 
-;; disunfy* pat* pat* eqs lang -> dq or boolean (dq is a pat*)
-(define (disunify* params u* t* static-eqs L)
-  (define eqs (hash-copy static-eqs))
+;; params pat* pat* eqs lang -> boolean or dq
+(define (disunify* params u* t* eqs L)
   (parameterize ([new-eqs (make-hash)])
-    (let ([res (unify* u* t* eqs L)])
-      (cond
-        [(unif-fail? res) #t]
-        [(empty? (hash-keys (new-eqs))) #f]
-        [else
-         (define-values (new-ps new-dq)
-           (param-elim params (extend-dq (new-eqs) base-dq eqs)))
-         (match new-dq
-           [`((list) (list))
-            #f]
-           [`((list (name ,var-ids ,(bound)) ...) (list ,pats ...))
-            ;; check to see if parameter elimination exposed some
-            ;; equivalences...
-            (and
-             (or (equal? (length params) (length new-ps))
-                 (for/and ([v (in-list var-ids)] [p (in-list pats)])
-                   (or (not (hash-has-key? static-eqs (lvar v)))
-                       (not (equal? (resolve-no-nts/pat `(name ,v ,(bound)) static-eqs)
-                                    p)))))
-             (dq new-ps new-dq))])]))))
+    (define res (unify* u* t* (env eqs '()) L))
+    (cond
+      [(unif-fail? res) #t]
+      [(empty? (hash-keys (new-eqs))) #f]
+      [else
+       (define-values (new-ps new-dq)
+         (param-elim params (extend-dq (new-eqs) base-dq (env-eqs (p*e-e res)))))
+       (match new-dq
+         [`((list) (list))
+          #f]
+         [`((list (name, var-ids ,(bound)) ...) (list ,pats ...))
+          ;; check to see if parameter eliminations exposed some
+          ;; equivalences...
+          (and
+           (or (equal? (length params) (length new-ps))
+               (for/and ([v (in-list var-ids)]
+                         [p (in-list pats)])
+                 (or (not (hash-has-key? eqs (lvar v)))
+                     (not (equal? (resolve-no-nts/pat `(name ,v ,(bound)) eqs)
+                                  p)))))
+           (dq new-ps new-dq))])])))
+
 
 (define (param-elim params unquantified-dq)             
   (let loop ([dq-rest unquantified-dq]                                             
@@ -376,61 +366,67 @@
 ;; which match both pat and pat*...
 ;; (those are the ones bind-names does nothing with)
 
-;; bind-names : pat env lang -> pat* or unif-fail
+;; pat env lang -> p*e or (unif-fail)
 (define (bind-names pat e L)
-  (match pat
-    [`(name ,name ,(bound))
-     (error 'bind-names "pat*, not a pat: ~s\n" pat)]
-    [`(name ,name ,pat)
-     (define b-pat (bind-names pat e L))
-     (and/fail (not-failed? b-pat)
-               (let recur ([id name])
-                 (define res (hash-ref e (lvar id) (uninstantiated)))
-                 (match res
-                   [(uninstantiated)
-                    (when (equal? b-pat (bound)) 
-                      (error 'bind-names "tried to set something to bound"))
-                    (and/fail (not (occurs?* id b-pat e L))
-                              (hash-set! e (lvar id) b-pat)
-                              ;; here we only bind to things in the LOCAL pattern
-                              ;; so don't update new-eqs
-                              `(name ,name ,(bound)))]
-                   [(lvar id′)
-                    (define next (recur id′))
-                    (match next
-                      [`(name ,id-new ,(bound))
-                       (unless (eq? id id-new)
-                         ;; path compression: don't update new-eqs here
-                         (hash-set! e (lvar id) (lvar id-new)))]
-                      [_ (void)])
-                    next]
-                   [_ ;; some pat* (res is already bound)
-                    (and/fail (not-failed? (unify-update* id b-pat res e L))
-                              `(name ,id ,(bound)))])))]
-    [`(list ,pats ...)
-     (let/ec fail
-       `(list ,@(for/list ([p pats])
-                  (define res (bind-names p e L))
-                  (if (not-failed? res)
-                      res
-                      (fail (unif-fail))))))]
-    [`(variable-not-in ,p ,s)
-     (define pat (bind-names p e L))
-     (and/fail (not-failed? pat)
-               (let ([s-pat (bind-names s e L)])
-                 (and/fail (not-failed? s-pat)
-                           `(variable-not-in ,pat ,s-pat))))]
-    [`(mismatch-name ,name ,p)
-     (define b-pat (bind-names p e L))
-     (and/fail (not-failed? b-pat)
-               `(mismatch-name ,name ,(bind-names p e L)))]
-    [_ pat]))
+  (define eqs (env-eqs e))
+  (define dqs (env-dqs e))
+  (define res-pat
+    (let loop ([pat pat])
+      (match pat
+        [`(name ,name ,(bound))
+         (error 'bind-names "pat*, not a pat: ~s" pat)]
+        [`(name ,name ,pat)
+         (maybe-let ([b-pat (loop pat)])
+                    (let recur ([id name])
+                      (define res (hash-ref eqs (lvar id) (uninstantiated)))
+                      (match res
+                        [(uninstantiated)
+                         (when (equal? b-pat (bound))
+                           (error 'bind-names "tried to set something to bound"))
+                         (and/fail (not (occurs?* id b-pat eqs L))
+                                   (set! eqs (hash-set eqs (lvar id) b-pat))
+                                   ;; here we only bind to things in the local pattern
+                                   ;; so don't update new-eqs
+                                   `(name ,name ,(bound)))]
+                        [(lvar new-id)
+                         (define next (recur new-id))
+                         (match next
+                           [`(name ,id-new ,(bound))
+                            (unless (eq? id id-new)
+                              ;; path compression: don't update new-eqs here
+                              (set! eqs (hash-set eqs (lvar id) (lvar id-new))))]
+                           [_ (void)])
+                         next]
+                        [_
+                         (maybe-let ([u-res (unify-update* id b-pat res (env eqs #f) L)])
+                                    (set! eqs (p*e-eqs u-res))
+                                    `(name ,id ,(bound)))])))]
+        [`(list ,pats ...)
+         (let/ec fail
+           `(list ,@(for/list ([p pats])
+                      (define res (loop p))
+                      (if (not-failed? res)
+                          res
+                          (fail (unif-fail))))))]
+        [`(variable-not-in ,p ,s)
+         (maybe-let* ([pat (loop p)]
+                      [s-pat (loop s)])
+                     `(variable-not-in ,pat ,s-pat))]
+        [`(mismatch-name ,name ,p)
+         (maybe-let ([b-pat (loop p)])
+                    `(mismatch-name ,name ,b-pat))]
+        [_ pat])))
+  (maybe-let ([res-pat res-pat])
+             (p*e res-pat (env eqs dqs))))
 
 
-;; unify* : pat* pat* env lang -> pat* or unif-fail
-(define (unify* t0 u0 e L)
-  (define t (resolve t0 e))
-  (define u (resolve u0 e))
+;; unify* : pat* pat* env lang -> p*e? or unif-fail?
+(define (unify* t0 u0 e0 L)
+  (define t*e (resolve t0 e0))
+  (define u*e (resolve u0 (p*e-e t*e)))
+  (define t (p*e-p t*e))
+  (define u (p*e-p u*e))
+  (define e (p*e-e u*e))
   #2dmatch
   ╔═════════════════╦═════════════════╦═════════════╦═══════════════╦═══════════╦══════╦════════════╦══════════════╦═══════════════════╦═════════╦══════════╦══════════════╦═════════════╗
   ║            u    ║ `(mismatch-name ║ `(name      ║ `(cstr        ║`(nt ,n-u) ║`any  ║ (? num-ty?)║`(list        ║ (? pvar?)         ║ `string ║ `boolean ║ (? base-ty?) ║(? not-pair?)║
@@ -452,26 +448,26 @@
   ║                 ║                                               ║ n-t n-u   ║                                                                                                        ║
   ║                 ║                                               ║ e L)      ║                                                                                                        ║
   ╠═════════════════╣                                               ╚═══════════╬════════════════════════════════════════════════════════════════════════════════════════════════════════╣
-  ║  `any           ║                                                           ║ u                                                                                                      ║
+  ║  `any           ║                                                           ║ (p*e u e)                                                                                              ║
   ║                 ║                                                           ║                                                                                                        ║
   ╠═════════════════╣                                                           ╚══════╦════════════╦══════════════════════════════════════════════════════════════════════╦═════════════╣
   ║  (? num-ty?)    ║                                                                  ║(u*-2nums   ║                                                                      ║             ║
-  ║                 ║                                                                  ║  t u)      ║                                                                      ║             ║
+  ║                 ║                                                                  ║  t u e)    ║                                                                      ║             ║
   ╠═════════════════╣                                                                  ╚════════════╬══════════════╗                                                       ║             ║
   ║ `(list ,ts ...) ║                                                                               ║(u*-2lsts     ║                                (unif-fail)            ║             ║
   ║                 ║                                                                               ║ ts us e L)   ║                                                       ║(u*-matches? ║
   ╠═════════════════╣                                                                               ╚══════════════╬═══════════════════╗                                   ║  t u        ║
   ║ (? pvar?)       ║                                                                                              ║(u*-2pvars u t e L)║                                   ║  e L)       ║
   ╠═════════════════╣                                                                                              ╚═══════════════════╬═════════╗                         ║             ║
-  ║ `string         ║                   (unify* u t e L)                                                                               ║    t    ║                         ║             ║
+  ║ `string         ║                   (unify* u t e L)                                                                               ║(p*e t e)║                         ║             ║
   ╠═════════════════╣                                                                                                                  ╚═════════╬══════════╗              ║             ║
-  ║ `boolean        ║                                                                                                                            ║    t     ║              ║             ║
+  ║ `boolean        ║                                                                                                                            ║(p*e t e) ║              ║             ║
   ╠═════════════════╣                                                                                                                            ╚══════════╬══════════════╣             ║
-  ║ (? base-ty?)    ║                                                                                                                                       ║      t       ║             ║
+  ║ (? base-ty?)    ║                                                                                                                                       ║   (p*e t e)  ║             ║
   ╠═════════════════╣                                                                                                                                       ╚══════════════╬═════════════╣
   ║ (? not-pair?)   ║                                                                                                                                                      ║(and/fail    ║
   ║                 ║                                                                                                                                                      ║ (equal? t u)║
-  ║                 ║                                                                                                                                                      ║ t)          ║
+  ║                 ║                                                                                                                                                      ║ (p*e t e))  ║
   ╚═════════════════╩══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╩═════════════╝)
 
 (define (pvar? x) (or (vnom? x)
@@ -491,37 +487,45 @@
   (match-lambda [`(variable-not-in ,e ,s) #t]
                 [_ #f]))
 
+;; pvar? pvar? env lang -> (or/c p*e? unif-fail?)
 (define (u*-2pvars v1 v2 e L)
-  #2dmatch
-  ╔══════════════════════════╦══════════════════════════╦════════════════════════════════╦═══════════════════════════════╦════════════════╦══════════════════════════════════════╗
-  ║                   v1     ║`(variable-prefix ,p1)    ║ `(variable-except ,e1 ... )    ║    (? vnom?)                  ║   `variable    ║`(variable-not-in ,e1 ,s)             ║       
-  ║ v2                       ║                          ║                                ║                               ║                ║                                      ║
-  ╠══════════════════════════╬══════════════════════════╬════════════════════════════════╬═══════════════════════════════╬════════════════╬══════════════════════════════════════╣
-  ║                          ║ (cond                    ║ (and/fail                      ║(u*-2pvars                     ║                ║(and/fail                             ║
-  ║ `(variable-prefix ,p2)   ║  [(sym-pref? p1 p2)      ║  (not (ormap                   ║ v2                            ║                ║  (sym-pref? p2 s)                    ║
-  ║                          ║   `(variable-prefix ,p2)]║        (curry sym-pref? p2)    ║ `(variable-except             ║                ║  v1)                                 ║
-  ║                          ║  [(sym-pref? p2 p1)      ║        e1))                    ║ ,@(compiled-lang-literals L)) ║                ║                                      ║
-  ║                          ║   `(variable-prefix ,p1)]║  v2)                           ║ e L)                          ║                ║                                      ║
-  ║                          ║  [else (unif-fail)])     ║                                ║                               ║                ║                                      ║
-  ╠══════════════════════════╬══════════════════════════╬════════════════════════════════╣                               ║                ╠══════════════════════════════════════╣
-  ║                          ║                          ║ `(variable-except              ║                               ║                ║`(variable-not-in                     ║
-  ║  `(variable-except       ║                          ║   ,@(de-dupe/sorted            ║                               ║       v2       ║   (list ,e1 ,@e2)                    ║
-  ║     ,e2 ...)             ║                          ║      (merge/sorted e1 e2)))    ║                               ║                ║   ,s)                                ║
-  ║                          ║                          ║                                ║                               ║                ║                                      ║
-  ╠══════════════════════════╣                          ╚════════════════════════════════╬═══════════════════════════════╣                ╠══════════════════════════════════════╣
-  ║                          ║                                                           ║                               ║                ║(u*-2pvars v1                         ║
-  ║  (? vnom?)               ║                                                           ║              v1               ║                ║`(variable-except                     ║
-  ║                          ║                                                           ║                               ║                ║  ,@(compiled-lang-literals L))       ║
-  ║                          ║                                                           ║                               ║                ║ e L)                                 ║
-  ╠══════════════════════════╣               (u*-2pvars v2 v1 e L)                       ╚═══════════════════════════════╣                ╠══════════════════════════════════════╣
-  ║                          ║                                                                                           ║                ║                                      ║
-  ║ `variable                ║                                                                                           ║                ║              v1                      ║  
-  ║                          ║                                                                                           ║                ║                                      ║
-  ╠══════════════════════════╣                                                                                           ╚════════════════╬══════════════════════════════════════╣
-  ║                          ║                                                                                                            ║                                      ║
-  ║ `(variable-not-in ,e2 ,t)║                                                                                                            ║     (2-vnis v1 v2 e L)               ║  
-  ║                          ║                                                                                                            ║                                      ║
-  ╚══════════════════════════╩════════════════════════════════════════════════════════════════════════════════════════════════════════════╩══════════════════════════════════════╝)
+  (define res
+    (begin
+    #2dmatch
+    ╔══════════════════════════╦══════════════════════════╦════════════════════════════════╦═══════════════════════════════╦════════════════╦══════════════════════════════════════╗
+    ║                   v1     ║`(variable-prefix ,p1)    ║ `(variable-except ,e1 ... )    ║    (? vnom?)                  ║   `variable    ║`(variable-not-in ,e1 ,s)             ║       
+    ║ v2                       ║                          ║                                ║                               ║                ║                                      ║
+    ╠══════════════════════════╬══════════════════════════╬════════════════════════════════╬═══════════════════════════════╬════════════════╬══════════════════════════════════════╣
+    ║                          ║ (cond                    ║ (and/fail                      ║(u*-2pvars                     ║                ║(and/fail                             ║
+    ║ `(variable-prefix ,p2)   ║  [(sym-pref? p1 p2)      ║  (not (ormap                   ║ v2                            ║                ║  (sym-pref? p2 s)                    ║
+    ║                          ║   `(variable-prefix ,p2)]║        (curry sym-pref? p2)    ║ `(variable-except             ║                ║  v1)                                 ║
+    ║                          ║  [(sym-pref? p2 p1)      ║        e1))                    ║ ,@(compiled-lang-literals L)) ║                ║                                      ║
+    ║                          ║   `(variable-prefix ,p1)]║  v2)                           ║ e L)                          ║                ║                                      ║
+    ║                          ║  [else (unif-fail)])     ║                                ║                               ║                ║                                      ║
+    ╠══════════════════════════╬══════════════════════════╬════════════════════════════════╣                               ║                ╠══════════════════════════════════════╣
+    ║                          ║                          ║ `(variable-except              ║                               ║                ║`(variable-not-in                     ║
+    ║  `(variable-except       ║                          ║   ,@(de-dupe/sorted            ║                               ║       v2       ║   (list ,e1 ,@e2)                    ║
+    ║     ,e2 ...)             ║                          ║      (merge/sorted e1 e2)))    ║                               ║                ║   ,s)                                ║
+    ║                          ║                          ║                                ║                               ║                ║                                      ║
+    ╠══════════════════════════╣                          ╚════════════════════════════════╬═══════════════════════════════╣                ╠══════════════════════════════════════╣
+    ║                          ║                                                           ║                               ║                ║(u*-2pvars v1                         ║
+    ║  (? vnom?)               ║                                                           ║              v1               ║                ║`(variable-except                     ║
+    ║                          ║                                                           ║                               ║                ║  ,@(compiled-lang-literals L))       ║
+    ║                          ║                                                           ║                               ║                ║ e L)                                 ║
+    ╠══════════════════════════╣               (u*-2pvars v2 v1 e L)                       ╚═══════════════════════════════╣                ╠══════════════════════════════════════╣
+    ║                          ║                                                                                           ║                ║                                      ║
+    ║ `variable                ║                                                                                           ║                ║              v1                      ║  
+    ║                          ║                                                                                           ║                ║                                      ║
+    ╠══════════════════════════╣                                                                                           ╚════════════════╬══════════════════════════════════════╣
+    ║                          ║                                                                                                            ║                                      ║
+    ║ `(variable-not-in ,e2 ,t)║                                                                                                            ║     (2-vnis v1 v2 e L)               ║  
+    ║                          ║                                                                                                            ║                                      ║
+    ╚══════════════════════════╩════════════════════════════════════════════════════════════════════════════════════════════════════════════╩══════════════════════════════════════╝))
+  (match res
+    [(unif-fail) res]
+    [(p*e _ _) res]
+    [_ (p*e res e)]))
+  
 
 (define (2-vnis v1 v2 e L)
   (match-define `(variable-not-in ,e1 ,s1) v1)
@@ -529,9 +533,9 @@
   (cond
     [(not (and (symbol? s1) (symbol? s2)))
      (displayln (list s1 s2))
-     (define s-res (unify* s1 s2 e L))
-     (and/fail s-res
-               `(variable-not-in (list ,e1 ,e2) ,s-res))]
+     (maybe-let ([s-res (unify* s1 s2 e L)])
+       (p*e `(variable-not-in (list ,e1 ,e2) ,(p*e-p s-res))
+            (p*e-e s-res)))]
     [(sym-pref? s1 s2)
      `(variable-not-in (list ,e1 ,e2) s2)]
     [(sym-pref? s2 s1)
@@ -544,116 +548,131 @@
    (symbol->string s)))
 
 (define (u*-2cstrs nts1 p1 nts2 p2 e L)
-  (let ([res (unify* p1 p2 e L)]
-        [new-nts (merge-ids/sorted nts1 nts2 L)])
-    (and/fail (not-failed? res)
-              new-nts
-              (when (lvar? res)
+  (maybe-let ([res (unify* p1 p2 e L)])
+    (define res-p (p*e-p res))
+    (define new-nts (merge-ids/sorted nts1 nts2 L))
+    (and/fail new-nts
+              (when (lvar? res-p)
                 (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" p1 p2 e))
-              `(cstr ,new-nts ,res))))
+              (p*e `(cstr ,new-nts ,res-p) (p*e-e res)))))
 
 (define (u*-1cstr nts p u e L)
-    (let ([res (unify* p u e L)])
-      (and/fail (not-failed? res)
-                (match res
-                  [(lvar id)
-                   (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" p u e)]
-                  [`(nt ,nt)
-                   (define new-nts (merge-ids/sorted (list nt) nts L))
-                   (and/fail new-nts
-                             `(cstr ,new-nts ,p))]
-                  [`(cstr ,nts2 ,new-p)
-                   (define new-nts (merge-ids/sorted nts nts2 L))
-                   (and/fail new-nts
-                             `(cstr ,new-nts ,new-p))]
-                  [_
-                   (and/fail (for/and ([n nts]) (check-nt n L res))
-                             `(cstr ,nts ,res))]))))
+  (maybe-let ([res (unify* p u e L)])
+             (define res-p (p*e-p res))
+             (define res-e (p*e-e res))
+             (match res-p
+               [(lvar id)
+                (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" p u e)]
+               [`(nt ,nt)
+                (define new-nts (merge-ids/sorted (list nt) nts L))
+                (and/fail new-nts
+                          (p*e `(cstr ,new-nts ,p) res-e))]
+               [`(cstr ,nts2 ,new-p)
+                (define new-nts (merge-ids/sorted nts nts2 L))
+                (and/fail new-nts
+                          (p*e `(cstr ,new-nts ,new-p) res-e))]
+               [_
+                (and/fail (for/and ([n nts]) (check-nt n L res-p))
+                          (p*e `(cstr ,nts ,res-p) res-e))])))
   
 (define (u*-2nts n-t n-u e L)
   (if (equal? n-t n-u)
-      `(nt ,n-t)
+      (p*e `(nt ,n-t) e)
       (u*-1nt n-t `(nt ,n-u) e L)))
 
 (define (u*-1nt p u e L)
   (and/fail
    (check-nt p L u)
    (if (hash-has-key? (compiled-lang-collapsible-nts L) p)
-       (let ([p-bn (bind-names (fresh-pat-vars (hash-ref (compiled-lang-collapsible-nts L) p) (make-hash)) e L)])
-         (and/fail
-          (not-failed? p-bn)
-          (unify* p-bn u e L)))
-       (let ([res (unify* u u e L)]) ;; look at structure of nt here?
-         (and/fail (not-failed? res)
-                   (when (lvar? res)
-                     (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" u u e))
-                   `(cstr (,p) ,res))))))
+       (maybe-let ([bn-res (bind-names (fresh-pat-vars (hash-ref (compiled-lang-collapsible-nts L) p) (make-hash)) e L)])
+         (unify* (p*e-p bn-res) u (p*e-e bn-res) L))
+       ;; removed a unification of u with itself here
+       (p*e `(cstr (,p) ,u) e))))
   
 (define (u*-2lsts ts us e L)
   (and/fail (= (length ts) (length us))
-            (let/ec fail
-              `(list ,@(for/list ([t ts] [u us])
-                         (let ([res (unify* t u e L)])
-                           (if (not-failed? res)
-                               res
-                               (fail (unif-fail)))))))))
+            (maybe-let ([res-ps-e
+                         (let loop ([ts ts]
+                                    [us us]
+                                    [e e]
+                                    [rs '()])
+                           (if (empty? ts)
+                               (cons rs e)
+                               (maybe-let ([res (unify* (car ts) (car us) e L)])
+                                          (loop (cdr ts)
+                                                (cdr us)
+                                                (p*e-e res)
+                                                (cons (p*e-p res) rs)))))])
+                 (p*e `(list ,@(reverse (car res-ps-e)))
+                      (cdr res-ps-e)))))
 
-(define (u*-2nums t u)
-  (cond 
-    [(number-superset? t u) u]
-    [(number-superset? u t) t]))
+(define (u*-2nums t u e)
+  (p*e
+   (cond 
+     [(number-superset? t u) u]
+     [(number-superset? u t) t])
+   e))
 
-(define (u*-matches? t u e L) 
-  (match* (t u)
-    [((? num-ty? t) _)
-     (and/fail ((number-pred t) u)
-               u)]
-    [(`variable-not-otherwise-mentioned (? symbol? s))
-     (and/fail (not (memq s (compiled-lang-literals L)))
-               (not (base-ty? s))
-               s)]
-    [(`(variable-except ,ss ...) (? symbol? s))
-     (and/fail (not (memq s ss))
-               u)]
-    [(`(variable-prefix ,pref) (? symbol? s))
-     (and/fail (regexp-match 
-                (regexp (string-append "^" (symbol->string pref) ".*$"))
-                (symbol->string s))
-               u)]           
-    [(`variable (? symbol? s))
-     (and/fail (not (base-ty? s))
-               s)]
-    [(`string (? string? s))
-     s]
-    [(`boolean (? boolean? b))
-     b]
-    [(_ _) (unif-fail)]))
+(define (u*-matches? t u e L)
+  (maybe-let ([pat-res
+               (match* (t u)
+                 [((? num-ty? t) _)
+                  (and/fail ((number-pred t) u)
+                            u)]
+                 [(`variable-not-otherwise-mentioned (? symbol? s))
+                  (and/fail (not (memq s (compiled-lang-literals L)))
+                            (not (base-ty? s))
+                            s)]
+                 [(`(variable-except ,ss ...) (? symbol? s))
+                  (and/fail (not (memq s ss))
+                            u)]
+                 [(`(variable-prefix ,pref) (? symbol? s))
+                  (and/fail (regexp-match 
+                             (regexp (string-append "^" (symbol->string pref) ".*$"))
+                             (symbol->string s))
+                            u)]           
+                 [(`variable (? symbol? s))
+                  (and/fail (not (base-ty? s))
+                            s)]
+                 [(`string (? string? s))
+                  s]
+                 [(`boolean (? boolean? b))
+                  b]
+                 [(_ _) (unif-fail)])])
+             (p*e pat-res e)))
     
-(define (resolve pat env)
-  (match pat
-    [`(name ,id ,(bound))
-     (define id-rep (lvar-id (lookup-rep id env)))
-     (match (hash-ref env (lvar id-rep))
-       [`(name ,next-id ,(bound))
-        (hash-set! env (lvar id) (lvar next-id))
-        (resolve `(name ,next-id ,(bound)) env)]
-       [_
-        `(name ,id-rep ,(bound))])]
-    [_ pat]))
+(define (resolve pat e)
+  (define e-eqs (env-eqs e))
+  (define-values (res-pat eqz)
+    (let loop ([pat pat]
+               [eqs e-eqs])
+      (match pat
+        [`(name ,id ,(bound))
+         (define-values (rep eqs2) (lookup-rep id eqs))
+         (define id-rep (lvar-id rep))
+         (match (hash-ref eqs2 (lvar id-rep))
+           [`(name ,next-id ,(bound))
+            (loop `(name ,next-id ,(bound)) (hash-set eqs2 (lvar id) (lvar next-id)))]
+           [_
+            (values `(name ,id-rep ,(bound)) eqs2)])]
+        [_ (values pat eqs)])))
+  (p*e res-pat (struct-copy env e [eqs eqz])))
 
-;; unify-update* : id pat* pat* env lang -> pat* or #f
+;; id pat* pat* env lang -> p*e? or unif-fail?
 (define (unify-update* id pat-1 pat-2 e L)
-  (let ([u-res (unify* pat-1 pat-2 e L)])
-    (and/fail (not (occurs?* id pat-1 e L))
-              (not (occurs?* id pat-2 e L))
-              (when (not-failed? u-res)
-                (when (equal? u-res (bound)) (error 'update "tried to set something to bound"))
-                (unless (equal? u-res (hash-ref e (lvar id) (uninstantiated)))
-                  (hash-set! e (lvar id) u-res)
-                  (unless (or (nt-only-pat? u-res)
-                              (ground-pat-eq? pat-1 pat-2))
-                    (hash-set! (new-eqs) (lvar id) u-res))))
-              u-res)))
+  (maybe-let ([u-res (unify* pat-1 pat-2 e L)])
+   (define res-e (p*e-e u-res))
+   (define res-eqs (env-eqs res-e))
+   (define res-p (p*e-p u-res))
+   (and/fail (not (occurs?* id pat-1 res-eqs L))
+             (not (occurs?* id pat-2 res-eqs L))
+             (when (equal? u-res (bound)) 
+               (error 'update "tried to set something to bound"))
+             (unless (equal? u-res (hash-ref res-eqs (lvar id) (uninstantiated)))
+               (unless (or (nt-only-pat? res-p)
+                           (ground-pat-eq? pat-1 pat-2))
+                 (hash-set! (new-eqs) (lvar id) res-p)))
+             (p*e res-p (struct-copy env res-e [eqs (hash-set res-eqs (lvar id) res-p)])))))
 
 (define (nt-only-pat? p*)
   (match p*
@@ -673,50 +692,55 @@
 ;; we only need to look at the id in name, and the pattern it is bound to
 ;; TODO: replace name in p*'s with lvar - this is the most obvious of many 
 ;; functions that would be improved by this
-(define (occurs?* name p e L)
+(define (occurs?* name p eqs L)
   (match p
     [`(name ,name-p ,(bound))
      (or (eq? name name-p)
-         (occurs?* name (hash-ref e (lvar name-p) (uninstantiated)) e L))]
+         (occurs?* name (hash-ref eqs (lvar name-p) (uninstantiated)) eqs L))]
     [`(list ,ps ...)
      (for/or ([p ps])
-       (occurs?* name p e L))]
+       (occurs?* name p eqs L))]
     [`(cstr (,nts ...) ,pat)
-     (occurs?* name pat e L)]
+     (occurs?* name pat eqs L)]
     [(lvar id)
      (or (eq? name id)
-         (occurs?* name (hash-ref e (lvar id) (uninstantiated)) e L))]
+         (occurs?* name (hash-ref eqs (lvar id) (uninstantiated)) eqs L))]
     [`(cstr ,(lvar _))
      (error 'occurs?* "rogue lvar: ~s\n" p)]
     [_ #f]))
 
-
 (define (instantiate* id pat e L)
-  (define id-pat (resolve (lookup-pat id e) e))
-  (match id-pat
-    [`(name ,next-id ,(bound))
-     (and/fail (not-failed? (instantiate* next-id pat e L))
-               (not (occurs?* id (lvar next-id) e L))
-               (hash-set! e (lvar id) (lvar next-id))
-               `(name ,next-id ,(bound)))]
-    [_
-     (match pat
-       [`(name ,id-2 ,(bound))
-        (cond
-          [(eq? id id-2)
-           pat]
-          [else
-           (define id-2-pat (resolve (lookup-pat id-2 e) e))
-           (define res (unify-update* id id-pat id-2-pat e L))
-           (and/fail (not-failed? res)
-                     (not (occurs?* id-2 (lvar id) e L))
-                     (hash-set! e (lvar id-2) (lvar id))
-                     (unless (ground-pat-eq? id-pat id-2-pat)
-                       (hash-set! (new-eqs) (lvar id-2) (lvar id)))
-                     `(name ,id ,(bound)))])]
-       [_
-        (and/fail (not-failed? (unify-update* id id-pat pat e L))
-                  `(name ,id ,(bound)))])]))
+  (define-values (p eqs2) (lookup-pat id (env-eqs e)))
+  (define id-res (resolve p (struct-copy env e [eqs eqs2])))
+  (define e-res (p*e-e id-res))
+  (define id-pat (p*e-p id-res))
+  (define e-eqs (p*e-eqs id-res))
+  (match* (id-pat pat)
+    [(`(name ,next-id ,(bound)) _)
+     (maybe-let ([n-res (instantiate* next-id pat e-res L)])
+        (define n-eqs (p*e-eqs n-res))
+        (and/fail (not (occurs?* id (lvar next-id) n-eqs L))
+                  (p*e `(name ,next-id ,(bound))
+                       (struct-copy env e
+                                    [eqs (hash-set n-eqs (lvar id) (lvar next-id))]))))]
+    [(_ `(name ,id-2 ,(bound)))
+     (cond 
+       [(eq? id id-2) (p*e pat e)]
+       [else
+        (define-values (p2 eqsp2) (lookup-pat id-2 e-eqs))
+        (define id-2-res (resolve p2 (struct-copy env e-res [eqs eqsp2])))
+        (define id-2-pat (p*e-p id-2-res))
+        (maybe-let ([res (unify-update* id id-pat id-2-pat (p*e-e id-2-res) L)])
+          (define e-res (p*e-e res))
+          (and/fail (not (occurs?* id-2 (lvar id) (env-eqs e-res) L))
+                    (unless (ground-pat-eq? id-pat id-2-pat)
+                      (hash-set! (new-eqs) (lvar id-2) (lvar id)))
+                    (p*e `(name ,id ,(bound))
+                         (struct-copy env e
+                                      [eqs (hash-set (env-eqs e-res) (lvar id-2) (lvar id))]))))])]
+    [(_ _)
+     (maybe-let ([res (unify-update* id id-pat pat e L)])
+       (p*e `(name ,id ,(bound)) (p*e-e res)))]))
 
 ;; we want to consider ground pats that are equal
 ;; modulo constraints as equal when disunifying (see uses)
@@ -792,38 +816,38 @@
           '(any number string natural integer real boolean
                 variable variable-not-otherwise-mentioned)))
 
-(define (lookup-pat id env)
-  (define-values (_ pat) (lookup id env))
-  pat)
+(define (lookup-pat id eqs)
+  (define-values (_ pat new-eqs) (lookup id eqs))
+  (values pat new-eqs))
 
-(define (lookup-rep id env)
-  (define-values (rep _) (lookup id env))
-  rep)
+(define (lookup-rep id eqs)
+  (define-values (rep _ new-eqs) (lookup id eqs))
+  (values rep new-eqs))
 
-(define (lookup id env)
-  (define res (hash-ref env (lvar id) (λ () #f)))
-  (match res
-    [(lvar new-id)
-     (define-values (rep pat) (lookup new-id env))
-     (hash-set! env (lvar id) rep)
-     (values rep pat)]
-    [_
-     (values (lvar id) res)]))
+(define (lookup id eqs)
+  (let loop ([id id])
+    (define res (hash-ref eqs (lvar id) 
+                          (λ () (error 'lookup "unbound var: ~a" id))))
+    (match res
+      [(lvar new-id)
+       (define-values (rep pat new-eqs) (loop new-id))
+       (values rep pat (hash-set new-eqs (lvar id) rep))]
+      [_
+       (values (lvar id) res eqs)])))
 
 (provide check-nt
          normalize-pat)
 
 (define check-nt
-  (let ([memo (hash)])
+  (let ([memo (make-hash)])
     (λ (nt clang pat)
       (define npat (normalize-pat clang pat))
       (hash-ref memo (list nt clang npat)
                 (λ ()
                   (define pat-ok? 
                     (for/or ([ntp (in-list (map ((curry normalize-pat) clang) (nt-pats nt clang)))])
-                      (not-failed? (unify* npat ntp #f empty-lang))))
-                  (set! memo
-                        (hash-set memo (list nt clang npat) pat-ok?))
+                      (not-failed? (unify* npat ntp empty-env empty-lang))))
+                  (hash-set! memo (list nt clang npat) pat-ok?)
                   pat-ok?)))))
 
 (define (normalize-pat lang pat)

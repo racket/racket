@@ -21,7 +21,6 @@
 
 ;; pat->term lang pat* env env -> term
 (define (pat->term lang pat full-env [term-e (make-hash)])
-  (displayln (list 'pat->term lang pat))
   (define nt-matchers (make-hash))
   (define eqs (env-eqs full-env))
   (define (get-matcher nt)
