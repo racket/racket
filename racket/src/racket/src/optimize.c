@@ -5908,8 +5908,8 @@ static Scheme_Object *shift_closure_compilation(Scheme_Object *_data, int delta,
   /* In case the result is not going to be re-optimized, we need
      to update base_closure_map. */
 
-  sz = data->closure_size;
   cl = (Closure_Info *)data->closure_map;
+  sz = cl->base_closure_size;
   naya = MALLOC_N_ATOMIC(mzshort, sz);
 
   for (i = 0; i < sz; i++) {
