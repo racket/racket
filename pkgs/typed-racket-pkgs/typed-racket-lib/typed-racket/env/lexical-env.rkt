@@ -7,7 +7,6 @@
 ;; but split here for performance
 
 (require "../utils/utils.rkt"
-         syntax/id-table
          racket/keyword-transform racket/list
          (for-syntax syntax/parse racket/base)
          (contract-req)
@@ -20,10 +19,10 @@
 (provide lexical-env with-lexical-env with-lexical-env/extend
          update-type/lexical)
 (provide/cond-contract
- [lookup-type/lexical ((identifier?) (prop-env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))])
+ [lookup-type/lexical ((identifier?) (env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))])
 
 ;; the current lexical environment
-(define lexical-env (make-parameter (make-empty-prop-env (make-immutable-free-id-table))))
+(define lexical-env (make-parameter empty-prop-env))
 
 ;; run code in a new env
 (define-syntax-rule (with-lexical-env e . b)
@@ -31,7 +30,8 @@
 
 ;; run code in an extended env
 (define-syntax-rule (with-lexical-env/extend is ts . b)
-  (with-lexical-env (extend/values is ts (lexical-env)) . b))
+  (with-lexical-env (extend/values (lexical-env) is ts) . b))
+
 
 ;; find the type of identifier i, looking first in the lexical env, then in the top-level env
 ;; identifier -> Type

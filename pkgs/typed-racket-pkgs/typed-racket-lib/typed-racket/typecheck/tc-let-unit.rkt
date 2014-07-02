@@ -67,8 +67,8 @@
            (values e-ts null)]))))
   ;; extend the lexical environment for checking the body
   (with-lexical-env/extend
-    namess
-    expected-types
+    (append* namess)
+    (append* expected-types)
     (replace-names
       (get-names+objects namess expected-results)
       (with-lexical-env/extend-props
