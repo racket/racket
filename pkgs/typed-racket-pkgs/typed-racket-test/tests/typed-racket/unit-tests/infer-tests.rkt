@@ -257,6 +257,17 @@
       #:vars '(a)
       #:result [(-seq (-v a)) (-seq (-val 'b))]]
 
+    ;; Test that two -mu types check recursive variance constraints
+    [infer-l
+      (list
+        (-mu A (Un (-val 'b) (-vec A)))
+        (-vec -Symbol))
+      (list
+        (-mu C (Un (-v b2) (-vec C)))
+        (-vec (-v b2)))
+      #:vars '(b2)
+      #:fail]
+
     ;; Currently Broken
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))
     [i2-t (-v a) N ('a N)]
