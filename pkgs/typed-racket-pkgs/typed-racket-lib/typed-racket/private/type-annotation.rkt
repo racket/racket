@@ -100,7 +100,8 @@
                                [a (in-list anns)] [f (in-list fs)] [o (in-list os)])
                       (cond [a (check-type stx ty a) (tc-result a f o)]
                             ;; mutated variables get generalized, so that we don't infer too small a type
-                            [(is-var-mutated? stx) (tc-result (generalize ty) f o)]
+                            ;; and we don't want them associated with the object of the result
+                            [(is-var-mutated? stx) (tc-result (generalize ty) f -empty-obj)]
                             [else (tc-result ty f o)])))]))))]))
 
 ;; check that e-type is compatible with ty in context of stx

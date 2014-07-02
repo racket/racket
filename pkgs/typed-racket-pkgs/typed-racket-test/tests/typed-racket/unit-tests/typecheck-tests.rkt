@@ -1047,8 +1047,7 @@
               (-polydots (z x y) (t:-> (cl->*
                                         ((t:-> x z) (-pair x (-lst x)) . t:-> . (-pair z (-lst z)))
                                         ((list ((list x) (y y) . ->... . z) (-lst x)) ((-lst y) y) . ->... . (-lst z)))
-                                       : -true-filter 
-                                       : (-id-path #'map)))]
+                                       : -true-filter))]
 
         ;; error tests
         [tc-err (+ 3 #f)]
@@ -3132,6 +3131,53 @@
           (define (g x) (f x))
           (error "foo"))
         #:msg #rx"Polymorphic function `f' could not be applied"]
+
+       [tc-err
+        (let ()
+          (: f (All (A) (A -> A)))
+          (define (f y) y)
+          (define g (inst f Boolean))
+          (g 4)
+          ((inst f Number) 5))
+        #:ret (ret -Number)]
+
+       [tc-e
+        (let ()
+          (: x Any)
+          (define x 5)
+          (define y x)
+          (if (number? y)
+              (add1 x)
+              5))
+        -Number]
+
+       [tc-e
+        (let ()
+          (: x Any)
+          (define x 5)
+          (let ([y x])
+            (when (number? y)
+              (add1 x))))
+        (t:Un -Void -Number)]
+
+       [tc-e
+        (let ()
+          (define lst null)
+          (set! lst (cons 'x lst)))
+        -Void]
+
+       [tc-e/t
+        (let ()
+          (: x Integer)
+          (define x 5)
+          (let ()
+            (define y
+              (if (>= x 0)
+                  x
+                  (error 'bad)))
+            y))
+        -Nat]
+
         )
 
   (test-suite

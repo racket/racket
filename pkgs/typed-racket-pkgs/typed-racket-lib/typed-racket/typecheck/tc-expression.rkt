@@ -51,11 +51,12 @@
       "Cannot instantiate expression that produces ~a values"
       number))
   (match tc-res
-    [(tc-results: tys fs os)
-     (match tys
-      [(list ty)
-       (ret (list (inst-type ty inst)) fs os)]
-      [_ (error-case (if (null? tys) 0 "multiple"))])]
+    [(tc-result1: ty f _)
+     ;; Do not keep the original object because the new type can conflict
+     ;; with the type of it, and we want a unique type per object.
+     (ret (inst-type ty inst) f -empty-obj)]
+    [(tc-results: tys)
+     (error-case (if (null? tys) 0 "multiple"))]
     [_ (error-case "multiple")]))
 
 

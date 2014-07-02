@@ -13,10 +13,12 @@
          (env type-env-structs global-env mvar-env)
          (utils tc-utils)
          (only-in (rep type-rep) Type/c)
+         (rep object-rep)
          (typecheck renamer)
          (except-in (types utils abbrev kw-types) -> ->* one-of/c))
 
 (provide lexical-env with-lexical-env with-lexical-env/extend
+         with-lexical-env/extend-objects
          update-type/lexical)
 (provide/cond-contract
  [lookup-type/lexical ((identifier?) (env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))])
@@ -30,8 +32,13 @@
 
 ;; run code in an extended env
 (define-syntax-rule (with-lexical-env/extend is ts . b)
-  (with-lexical-env (extend/values (lexical-env) is ts) . b))
+  (let ([is* is])
+    (with-lexical-env/extend-objects
+      is* ts (map (λ (_) (make-Empty)) is*) . b)))
 
+;; run code in an extended env with objects
+(define-syntax-rule (with-lexical-env/extend-objects is ts os . b)
+  (with-lexical-env (extend/values (lexical-env) is ts os) . b))
 
 ;; find the type of identifier i, looking first in the lexical env, then in the top-level env
 ;; identifier -> Type
@@ -84,5 +91,5 @@
                ([current-orig-stx i])
              (let* ([v (lookup-type/lexical i env #:fail (lambda _ Univ))]
                     [new-v (f i v)]
-                    [new-env (extend env i new-v)])
+                    [new-env (refine env i new-v)])
                new-env)))]))
