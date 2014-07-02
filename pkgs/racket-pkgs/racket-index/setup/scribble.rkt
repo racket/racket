@@ -5,6 +5,7 @@
          setup/path-to-relative
          "private/doc-path.rkt"
          setup/collects
+         setup/collection-name
          setup/main-doc
          setup/parallel-do
          setup/doc-db
@@ -154,7 +155,7 @@
     (define (validate path [flags '()] [cat '(library)] [name #f] [out-count 1] [order-hint 0])
       (and (string? path) (relative-path? path)
            (list? flags) (andmap scribblings-flag? flags)
-           (or (not name) (and (path-string? name) (relative-path? name) name))
+           (or (not name) (collection-name-element? name))
            (and (list? cat)
                 (<= 1 (length cat) 2)
                 (symbol? (car cat))

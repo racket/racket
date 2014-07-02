@@ -287,16 +287,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    A list of documents to build. Each document in the list is itself
    represented as a list, where each document's list starts with a
    string that is a collection-relative path to the document's source
-   file. A directory for pre-rendered documentation is computed from the
-   source file name by starting with the directory of the @filepath{info.rkt}
-   file, adding @filepath{doc}, and then using the source file's name without
-   a suffix; if such a directory exists and does not have a
-   @filepath{synced.rktd} file, then it is treated as pre-rendered
-   documentation and moved into place, in which case the documentation source file
-   need not be present. (Moving documentation into place may require no movement
-   at all, depending on the way that the enclosing collection is installed, but 
-   movement includes adding a @filepath{synced.rktd} file to represent
-   the installation.)
+   file.
 
    More precisely a @racketidfont{scribblings} entry must be a value
    that can be generated from an expression matching the following
@@ -326,7 +317,10 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    (described further below). If a document's list contains a fourth
    item, @racket[_name], it is a name to use for the generated
    documentation, instead of defaulting to the source file's name
-   (sans extension), where @racket[#f] means to use the default. If a
+   (sans extension), where @racket[#f] means to use the default; a
+   non-@racket[#f] value for @racket[_name] must fit the grammar
+   of a colelction-name element as checked by 
+   @racket[collection-name-element?]. If a
    document's list contains a fifth item, @racket[_out-k], it is used
    a hint for the number of files to use for the document's
    cross-reference information; see below. If a document's list
@@ -467,7 +461,19 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    less disables running the document in parallel to other documents.
    The main Racket reference is given a value of @racket[-11], the
    search page is given a value of @racket[10], and the default is
-   @racket[0].}
+   @racket[0].
+
+   A directory for pre-rendered documentation is computed from the
+   source file name by starting with the directory of the
+   @filepath{info.rkt} file, adding @filepath{doc}, and then using the
+   document name (which is usually the source file's name without a
+   suffix); if such a directory exists and does not have a
+   @filepath{synced.rktd} file, then it is treated as pre-rendered
+   documentation and moved into place, in which case the documentation
+   source file need not be present. Moving documentation into place
+   may require no movement at all, depending on the way that the
+   enclosing collection is installed, but movement includes adding a
+   @filepath{synced.rktd} file to represent the installation.}
 
  @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.
