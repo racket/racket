@@ -310,6 +310,15 @@ a:hover {
     border-left: 0.4rem solid #ccb;
 }
 
+/* slightly different handling for margin-note* */
+span.refcolumn {
+    float: right;
+    width: 50%;
+    margin-left: 1rem;
+    margin-bottom: 0.8rem;   
+    margin-top: 1.2rem; 
+}
+
 .refcontent p {
     line-height: 1.5;
     margin: 0;
