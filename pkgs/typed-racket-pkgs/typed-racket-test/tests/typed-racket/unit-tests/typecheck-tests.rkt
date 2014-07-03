@@ -3123,6 +3123,15 @@
           y)
         #:ret (ret -String -true-filter)
         #:msg #rx"expected: String.*given: (Null|'\\(\\))"]
+
+       ;; PR 14493
+       [tc-err
+        (let ()
+          (define f values)
+          (: g (Any -> Boolean))
+          (define (g x) (f x))
+          (error "foo"))
+        #:msg #rx"Polymorphic function `f' could not be applied"]
         )
 
   (test-suite

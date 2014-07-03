@@ -230,8 +230,9 @@
                              [(Values: (list (Result: t _ _)))
                               t]
                              [(ValuesDots: (list (Result: t _ _)) _ _)
-                              t])])
-                  (subtype rng expected-ty))]))))
+                              t]
+                             [_ #f])])
+                  (and rng (subtype rng expected-ty)))]))))
 
   (define orig (map list doms rngs rests drests))
 

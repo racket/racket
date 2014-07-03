@@ -168,4 +168,6 @@
     (test-form-exn #rx"exactly two arguments"
       (:query-type/result))
     (test-form-exn #rx"exactly two arguments"
-      (:query-type/result 1 2 3))))
+      (:query-type/result 1 2 3))
+    (test-form #rx"not in the given function's range"
+      (:query-type/result syntax-local-expand-expression Boolean))))
