@@ -193,7 +193,7 @@ THREAD_LOCAL_DECL(static Scheme_Custodian *last_custodian);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *limited_custodians = NULL);
 READ_ONLY static Scheme_Object *initial_inspector;
 
-THREAD_LOCAL_DECL(static Scheme_Custodian *initial_plumber);
+THREAD_LOCAL_DECL(static Scheme_Plumber *initial_plumber);
 
 THREAD_LOCAL_DECL(Scheme_Config *initial_config);
 
