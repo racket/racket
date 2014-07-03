@@ -82,9 +82,10 @@
                                   (newline)
                                   (display "Usage:\n")
                                   (display help-string)
-                                  (exit))))] ...
-                                  ["help" (help)]
-                                  [else (help)])))))]))
+                                  (exit))))]
+                            ...
+                            ["help" (help)]
+                            [else (begin (help) (exit 1))])))))]))
 
 
 ;; display-help-message : string string (listof (list string string)) -> void
