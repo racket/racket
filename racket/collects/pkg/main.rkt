@@ -188,6 +188,7 @@
                                   #:all-platforms? all-platforms
                                   #:force? force
                                   #:ignore-checksums? ignore-checksums
+                                  #:strict-doc-conflicts? strict-doc-conflicts
                                   #:use-cache? (not no-cache)
                                   #:skip-installed? skip-installed
                                   #:update-deps? update-deps
@@ -246,6 +247,7 @@
                                  #:all-platforms? all-platforms
                                  #:force? force
                                  #:ignore-checksums? ignore-checksums
+                                 #:strict-doc-conflicts? strict-doc-conflicts
                                  #:use-cache? (not no-cache)
                                  #:update-deps? (or update-deps auto)
                                  #:update-implies? (not ignore-implies)
@@ -348,6 +350,7 @@
                                   #:force? force
                                   #:all-platforms? all-platforms
                                   #:ignore-checksums? ignore-checksums
+                                  #:strict-doc-conflicts? strict-doc-conflicts
                                   #:use-cache? (not no-cache)
                                   #:strip (or (and source 'source) (and binary 'binary))))))
                 (setup "migrated" no-setup #f setup-collects jobs)))]
@@ -511,6 +514,7 @@
    ([#:bool all-platforms () "Follow package dependencies for all platforms"]
     [#:bool force () "Ignore conflicts"]
     [#:bool ignore-checksums () "Ignore checksums"]
+    [#:bool strict-doc-conflicts () "Report doc-name conflicts, even for user scope"]
     [#:bool no-cache () "Disable download cache"])
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"]

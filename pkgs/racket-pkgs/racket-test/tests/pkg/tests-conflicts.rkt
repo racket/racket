@@ -2,6 +2,7 @@
 (require rackunit
          racket/system
          racket/match
+         racket/format
          (for-syntax racket/base
                      syntax/parse)
          racket/file
@@ -17,6 +18,40 @@
 (pkg-tests
  (shelly-begin
   (initialize-catalogs)
+
+
+  
+  (shelly-case
+   "conflict extra installs"
+   (for ([c '("test-pkgs/pkg-add-a"
+             "test-pkgs/pkg-add-x"
+             "test-pkgs/pkg-add-1")])
+    (with-fake-root
+     (shelly-begin
+      $ (~a "raco pkg install --strict-doc-conflicts test-pkgs/pkg-add-base " c) =exit> 1
+      $ (~a "raco pkg install --strict-doc-conflicts " c "test-pkgs/pkg-add-base") =exit> 1))))
+  (shelly-case
+   "doc conflict allowed in non-strict mode"
+   (for ([c '("test-pkgs/pkg-add-a")])
+    (with-fake-root
+     (shelly-begin
+      $ (~a "raco pkg install test-pkgs/pkg-add-base " c) =exit> 0))))
+  (putenv "PLT_PKG_NOSETUP" "")
+  (with-fake-root
+   (shelly-case
+    "conflict extra installs with already installed"
+    $ (~a "raco pkg install test-pkgs/pkg-add-base") =exit> 0
+    (for ([c '("test-pkgs/pkg-add-a"
+               "test-pkgs/pkg-add-x"
+               "test-pkgs/pkg-add-1")])
+      (shelly-begin
+       $ (~a "raco pkg install --strict-doc-conflicts " c) =exit> 1)))
+   (for ([c '("test-pkgs/pkg-add-a")])
+    (with-fake-root
+     (shelly-begin
+      $ (~a "raco pkg install --no-setup " c) =exit> 0))))
+  (putenv "PLT_PKG_NOSETUP" "1")
+ (exit)
 
   $ "raco pkg create --format plt test-pkgs/pkg-test1/"
   $ "raco pkg create --format plt test-pkgs/pkg-test1-not-conflict/"
@@ -76,4 +111,25 @@
                    $ "racket -e '(require pkg-test1/conflict)'" =exit> 43
                    $ "raco pkg install --force test-pkgs/pkg-test1.zip" =exit> 0
                    $ "racket -e '(require pkg-test1/conflict)'" =exit> 43
-                   $ "raco pkg remove pkg-test1-conflict"))))
+                   $ "raco pkg remove pkg-test1-conflict"))
+  
+  (shelly-case
+   "conflict extra installs"
+   (for ([c '("test-pkgs/pkg-add-a"
+             "test-pkgs/pkg-add-x"
+             "test-pkgs/pkg-add-1")])
+    (with-fake-root
+     (shelly-begin
+      $ (~a "raco pkg install test-pkgs/pkg-add-base " c) =exit> 1
+      $ (~a "raco pkg install " c "test-pkgs/pkg-add-base") =exit> 1))))
+  (putenv "PLT_PKG_NOSETUP" "")
+  (with-fake-root
+   (shelly-case
+    "conflict extra installs with already installed"
+    $ (~a "raco pkg install test-pkgs/pkg-add-base") =exit> 0
+    (for ([c '("test-pkgs/pkg-add-a"
+               "test-pkgs/pkg-add-x"
+               "test-pkgs/pkg-add-1")])
+      (shelly-begin
+       $ (~a "raco pkg install " c) =exit> 1))))
+  (putenv "PLT_PKG_NOSETUP" "1")))

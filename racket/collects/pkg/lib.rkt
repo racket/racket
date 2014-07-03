@@ -763,7 +763,7 @@
   (or (current-pkg-catalogs)
       (map string->url (read-pkg-cfg/def 'catalogs))))
 
-(struct install-info (name orig-pkg directory clean? checksum module-paths))
+(struct install-info (name orig-pkg directory clean? checksum module-paths additional-installs))
 
 (define (update-install-info-orig-pkg if op)
   (struct-copy install-info if
@@ -1359,7 +1359,8 @@
                       pkg-path
                       #f
                       given-checksum ; if a checksum is provided, just use it
-                      (directory->module-paths pkg pkg-name metadata-ns))]
+                      (directory->module-paths pkg pkg-name metadata-ns)
+                      (directory->additional-installs pkg pkg-name metadata-ns))]
        [else
         (define pkg-dir
           (if in-place?
@@ -1384,7 +1385,8 @@
                       pkg-dir
                       (or (not in-place?) in-place-clean?) 
                       given-checksum ; if a checksum is provided, just use it
-                      (directory->module-paths pkg-dir pkg-name metadata-ns))]))]
+                      (directory->module-paths pkg-dir pkg-name metadata-ns)
+                      (directory->additional-installs pkg-dir pkg-name metadata-ns))]))]
    [(eq? type 'name)
     (define catalog-info (package-catalog-lookup pkg #f download-printf))
     (log-pkg-debug "catalog response: ~s" catalog-info)
@@ -1482,6 +1484,8 @@
          #:conversation conversation
          #:strip strip-mode
          #:link-dirs? link-dirs?
+         #:local-docs-ok? local-docs-ok?
+         #:ai-cache ai-cache
          descs)
   (define download-printf (if quiet? void printf/flush))
   (define check-sums? (not ignore-checksums?))
@@ -1491,7 +1495,7 @@
   (define (install-package/outer infos desc info)
     (match-define (pkg-desc pkg type orig-name given-checksum auto?) desc)
     (match-define
-     (install-info pkg-name orig-pkg pkg-dir clean? checksum module-paths)
+     (install-info pkg-name orig-pkg pkg-dir clean? checksum module-paths additional-installs)
      info)
     (define name? (eq? 'catalog (first orig-pkg)))
     (define this-dep-behavior (or dep-behavior
@@ -1608,6 +1612,50 @@
                             "  package: ~a\n"
                             "  module path: ~s")
                         pkg (pretty-module-path mp))))]
+      [(and
+        (not force?)
+        (for/or ([ai (in-set additional-installs)])
+          ;; Check for source or compiled:
+          (cond
+           ;; If `local-docs-ok?`, exempt doc collisions for user-scope install, since
+           ;; user-scope documentation is rendered within the package:
+           [(and local-docs-ok?
+                 (eq? (car ai) 'doc)
+                 (eq? (current-pkg-scope) 'user))
+            #f]
+           [(set-member? (get-additional-installed (car ai) ai-cache metadata-ns) ai)
+            ;; This item is already installed
+            (cons #f ai)]
+           [else
+            ;; Compare with simultaneous installs
+            (for/or ([other-pkg-info (in-list infos)]
+                     #:unless (eq? other-pkg-info info))
+              (and (set-member? (install-info-additional-installs other-pkg-info) ai)
+                   (cons (install-info-name other-pkg-info)
+                         ai)))])))
+       =>
+       (λ (conflicting-pkg*ai)
+         (clean!)
+         (match-define (cons conflicting-pkg ai) conflicting-pkg*ai)
+         (if conflicting-pkg
+             (pkg-error (~a "packages ~aconflict\n"
+                            "  package: ~a\n"
+                            "  package: ~a\n"
+                            "  item category: ~a\n"
+                            "  item name: ~s")
+                        (if (equal? conflicting-pkg pkg-name)
+                            "in different scopes "
+                            "")
+                        pkg conflicting-pkg
+                        (car ai)
+                        (cdr ai))
+             (pkg-error (~a "package conflicts with existing installed item\n"
+                            "  package: ~a\n"
+                            "  item category: ~a\n"
+                            "  item name: ~s")
+                        pkg
+                        (car ai)
+                        (cdr ai))))]
       [(and
         (not (eq? dep-behavior 'force))
         (let ()
@@ -2018,6 +2066,7 @@
                      #:all-platforms? [all-platforms? #f]
                      #:force? [force #f]
                      #:ignore-checksums? [ignore-checksums? #f]
+                     #:strict-doc-conflicts? [strict-doc-conflicts? #f]
                      #:use-cache? [use-cache? #t]
                      #:skip-installed? [skip-installed? #f]
                      #:pre-succeed [pre-succeed void]
@@ -2056,6 +2105,7 @@
                        #:all-platforms? all-platforms?
                        #:force? force
                        #:ignore-checksums? ignore-checksums?
+                       #:strict-doc-conflicts? strict-doc-conflicts?
                        #:use-cache? use-cache?
                        #:dep-behavior dep-behavior
                        #:update-deps? update-deps?
@@ -2089,6 +2139,8 @@
        #:conversation conversation
        #:strip strip-mode
        #:link-dirs? link-dirs?
+       #:local-docs-ok? (not strict-doc-conflicts?)
+       #:ai-cache (box #f)
        new-descs)
       (unless (empty? summary-deps)
         (unless quiet?
@@ -2286,6 +2338,7 @@
                     #:all-platforms? [all-platforms? #f]
                     #:force? [force? #f]
                     #:ignore-checksums? [ignore-checksums? #f]
+                    #:strict-doc-conflicts? [strict-doc-conflicts? #f]
                     #:use-cache? [use-cache? #t]
                     #:update-deps? [update-deps? #f]
                     #:update-implies? [update-implies? #t]
@@ -2345,6 +2398,7 @@
       #:all-platforms? all-platforms?
       #:force? force?
       #:ignore-checksums? ignore-checksums?
+      #:strict-doc-conflicts? strict-doc-conflicts?
       #:use-cache? use-cache?
       #:link-dirs? link-dirs?
       to-update)]))
@@ -2409,6 +2463,7 @@
                      #:quiet? [quiet? #f]
                      #:from-command-line? [from-command-line? #f]
                      #:ignore-checksums? [ignore-checksums? #f]
+                     #:strict-doc-conflicts? [strict-doc-conflicts? #f]
                      #:use-cache? [use-cache? #t]
                      #:dep-behavior [dep-behavior #f]
                      #:strip [strip-mode #f])
@@ -2450,6 +2505,7 @@
                     #:all-platforms? all-platforms?
                     #:force? force?
                     #:ignore-checksums? ignore-checksums?
+                    #:strict-doc-conflicts? strict-doc-conflicts?
                     #:use-cache? use-cache?
                     #:skip-installed? #t
                     #:dep-behavior (or dep-behavior 'search-auto)
@@ -3171,6 +3227,101 @@
              [else s])]
            [else s])])]))))
 
+(define (pkg-directory->additional-installs dir pkg-name
+                                            #:namespace [metadata-ns (make-metadata-namespace)])
+  (set->list (directory->additional-installs dir pkg-name metadata-ns)))
+
+(define (directory->additional-installs dir pkg-name metadata-ns)
+  (define single-collect
+    (pkg-single-collection dir #:name pkg-name #:namespace metadata-ns))
+  (let loop ([s (set)] [f dir] [top? #t])
+    (cond
+     [(directory-exists? f)
+      (define i (get-pkg-info f metadata-ns))
+      (define new-s
+        (if (and i (or single-collect (not top?)))
+            (set-union (extract-additional-installs i)
+                       s)
+            s))
+      (for/fold ([s new-s]) ([f (directory-list f #:build? #t)])
+        (loop s f #f))]
+     [else s])))
+
+(define (extract-additional-installs i)
+  (define (extract-documents i)
+    (let ([s (i 'scribblings (lambda () null))])
+      (for/set ([doc (in-list (if (list? s) s null))]
+                #:when (and (list? doc)
+                            (pair? doc)
+                            (path-string? (car doc))
+                            (or ((length doc) . < . 4)
+                                (collection-name-element? (list-ref doc 3)))))
+        (cons 'doc (string-foldcase
+                    (if ((length doc) . < . 4)
+                        (let-values ([(base name dir?) (split-path (car doc))])
+                          (path->string (path-replace-suffix name #"")))
+                        (list-ref doc 3)))))))
+  (define (extract-paths i tag keys)
+    (define (get k)
+      (define l (i k (lambda () null)))
+      (if (and (list? l) (andmap path-string? l))
+          l
+          null))
+    (list->set (map (lambda (v) (cons tag
+                                      (let-values ([(base name dir?) (split-path v)])
+                                        ;; Normalize case, because some platforms
+                                        ;; have case-insensitive filesystems:
+                                        (string-foldcase (path->string name)))))
+                    (apply
+                     append
+                     (for/list ([k (in-list keys)])
+                       (get k))))))
+  (define (extract-launchers i)
+    (extract-paths i 'exe '(racket-launcher-names
+                            mzscheme-launcher-names
+                            gracket-launcher-names
+                            mred-launcher-names)))
+  (define (extract-foreign-libs i)
+    (extract-paths i 'lib '(copy-foreign-libs
+                            move-foreign-libs)))
+  (define (extract-shared-files i)
+    (extract-paths i 'share '(copy-shared-files
+                              move-shared-files)))
+  (define (extract-man-pages i)
+    (extract-paths i 'man '(copy-man-pages
+                            move-man-pages)))
+
+  (set-union (extract-documents i)
+             (extract-launchers i)
+             (extract-foreign-libs i)
+             (extract-shared-files i)
+             (extract-man-pages i)))
+
+(define (get-additional-installed kind ai-cache metadata-ns)
+  (or (unbox ai-cache)
+      (let ()
+        (define dirs (find-relevant-directories '(scribblings
+                                                  racket-launcher-names
+                                                  mzscheme-launcher-names
+                                                  gracket-launcher-names
+                                                  mred-launcher-names
+                                                  copy-foreign-libs
+                                                  move-foreign-libs
+                                                  copy-shared-files
+                                                  move-shared-files
+                                                  copy-man-pages
+                                                  move-man-pages)
+                                                (if (eq? 'user (current-pkg-scope))
+                                                    'all-available
+                                                    'no-user)))
+        (define s (for/fold ([s (set)]) ([dir (in-list dirs)])
+                    (define i (get-pkg-info dir metadata-ns))
+                    (if i
+                        (set-union s (extract-additional-installs i))
+                        s)))
+        (set-box! ai-cache s)
+        s)))
+
 (define (pkg-catalog-update-local #:catalogs [catalogs (pkg-config-catalogs)]
                                   #:set-catalogs? [set-catalogs? #t]
                                   #:catalog-file [catalog-file (db:current-pkg-catalog-file)]
@@ -3437,6 +3588,7 @@
                         #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
+                        #:strict-doc-conflicts? boolean?
                         #:use-cache? boolean?
                         #:strip (or/c #f 'source 'binary)
                         #:link-dirs? boolean?)
@@ -3462,6 +3614,7 @@
                         #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
+                        #:strict-doc-conflicts? boolean?
                         #:use-cache? boolean?
                         #:skip-installed? boolean?
                         #:quiet? boolean?
@@ -3475,6 +3628,7 @@
                         #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
+                        #:strict-doc-conflicts? boolean?
                         #:use-cache? boolean?
                         #:quiet? boolean?
                         #:from-command-line? boolean?
@@ -3569,5 +3723,7 @@
                                     (or/c #f package-scope/c))]
   [pkg-directory->module-paths (->* (path-string? string?)
                                     (#:namespace namespace?)
-                                    (listof module-path?))]))
-
+                                    (listof module-path?))]
+  [pkg-directory->additional-installs (->* (path-string? string?)
+                                           (#:namespace namespace?)
+                                           (listof (cons/c symbol? string?)))]))

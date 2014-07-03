@@ -210,6 +210,7 @@ is true, error messages may suggest specific command-line flags for
                            [#:update-deps? update-deps? boolean? #f]
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
+                           [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                            [#:use-cache? use-cache? boolean? #t]
                            [#:quiet? boolean? quiet? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
@@ -249,6 +250,7 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:update-deps? update-deps? boolean? #f]
                           [#:force? force? boolean? #f]
                           [#:ignore-checksums? ignore-checksums? boolean? #f]
+                          [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                           [#:use-cache? use-cache? quiet? #t]
                           [#:quiet? boolean? quiet? #f]
                           [#:from-command-line? from-command-line? boolean? #f]
@@ -312,6 +314,7 @@ The package lock must be held to allow reads; see
                            [#:force? force? boolean? #f]
                            [#:use-cache? use-cache? boolean? #t]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
+                           [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                            [#:quiet? boolean? quiet? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary) #f])
@@ -531,3 +534,19 @@ two-element list containing a string and a version (when
 Returns a list of module paths (normalized in the sense of
 @racket[collapse-module-path]) that are provided by the package
 represented by @racket[dir] and named @racket[pkg-name].}
+
+
+@defproc[(pkg-directory->additional-installs [dir path-string?]
+                                             [pkg-name string]
+                                             [#:namespace namespace namespace? (make-base-namespace)])
+         (listof (cons/c symbol? string?))]{
+
+Returns a list of pairs for items that are installed by the package
+represented by @racket[dir] and named @racket[pkg-name]. Installed
+items can include documentation, executables, foreign libraries, other
+shared files, and man pages. The symbol for each item gives it a
+category, such as @racket['doc] or @racket['exe], and the string part
+is a normalized name, such as the destination name for a document or a
+case-folded executable name without a file suffix.
+
+@history[#:added "6.0.1.13"]}
