@@ -44,7 +44,7 @@
   (define path-cache (make-hash))
   (define metadata-ns (make-base-namespace))
 
-  (hash-set! pkg-internal-deps "racket" null)
+  (hash-set! pkg-internal-deps "racket" (list (set) (set)))
   (hash-set! pkg-external-deps "racket" (set))
   (hash-set! pkg-reps "racket" "racket")
   
