@@ -362,9 +362,8 @@
                 lhs-ps)])]))) 
 
 
-;; the "root" pats will be pats without names,
-;; which match both pat and pat*...
-;; (those are the ones bind-names does nothing with)
+;; refactoring bind-names to remove set!'s (with the idea of enabling optimizations)
+;; seems to have no effect on performance
 
 ;; pat env lang -> p*e or (unif-fail)
 (define (bind-names pat e L)
@@ -532,7 +531,6 @@
   (match-define `(variable-not-in ,e2 ,s2) v2)
   (cond
     [(not (and (symbol? s1) (symbol? s2)))
-     (displayln (list s1 s2))
      (maybe-let ([s-res (unify* s1 s2 e L)])
        (p*e `(variable-not-in (list ,e1 ,e2) ,(p*e-p s-res))
             (p*e-e s-res)))]
@@ -540,7 +538,7 @@
      `(variable-not-in (list ,e1 ,e2) s2)]
     [(sym-pref? s2 s1)
      `(variable-not-in (list ,e1 ,e2) s1)]
-    [else (unif-fail)]))
+    [else (unif-fail)])) 
 
 (define (sym-pref? sp s)
   (regexp-match
@@ -587,6 +585,7 @@
        (maybe-let ([bn-res (bind-names (fresh-pat-vars (hash-ref (compiled-lang-collapsible-nts L) p) (make-hash)) e L)])
          (unify* (p*e-p bn-res) u (p*e-e bn-res) L))
        ;; removed a unification of u with itself here
+       ;; (the reason for which was mysterious)
        (p*e `(cstr (,p) ,u) e))))
   
 (define (u*-2lsts ts us e L)
