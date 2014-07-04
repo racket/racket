@@ -115,9 +115,7 @@
                "type must be one of #:impersonator, #:chaperone, or #:flat"
                stx
                type)]))
-    #`(#,maker '#,name (λ () #,arg) '#,local-name
-               'uninitialized-non-cyclic-first-order
-               'uninitialized-rec-proj-field))
+    #`(#,maker '#,name (λ () #,arg) '#,local-name))
   (syntax-case stx ()
     [(_ arg type)
      (keyword? (syntax-e #'type))
@@ -127,56 +125,28 @@
 
 (define (force-recursive-contract ctc)
   (define current (recursive-contract-ctc ctc))
-  (when (or (symbol? current) (not current))
-    (define thunk (recursive-contract-thunk ctc))
-    (define old-name (recursive-contract-name ctc))
-    (set-recursive-contract-name! ctc (or current '<recursive-contract>))
-    (define forced-ctc
-      (cond
-        [(flat-recursive-contract? ctc)
-         (coerce-flat-contract 'recursive-contract (thunk))]
-        [(chaperone-recursive-contract? ctc)
-         (coerce-chaperone-contract 'recursive-contract (thunk))]
-        [(impersonator-recursive-contract? ctc)
-         (coerce-contract 'recursive-contract (thunk))]))
-    (define cm-key (box #f))
-    (define orig-projection (contract-projection forced-ctc))
-    (define ((wrapper-projection blame) val)
-      (cond
-        [(continuation-mark-set-first #f cm-key)
-         =>
-         (λ (ht)
-           (cond
-             [(hash-ref ht val #f) val]
-             [else
-              (hash-set! ht val #t)
-              ((orig-projection blame) val)]))]
-        [else
-         (with-continuation-mark cm-key (make-hasheq)
-           ((orig-projection blame) val))]))
-    (define orig-first-order (contract-first-order forced-ctc))
-    (define (wrapper-first-order val)
-      (cond
-        [(continuation-mark-set-first #f cm-key)
-         =>
-         (λ (ht)
-           (cond
-             [(hash-ref ht val #f) #t]
-             [else
-              (hash-set! ht val #t)
-              (orig-first-order val)]))]
-        [else
-         (with-continuation-mark cm-key (make-hasheq)
-           (orig-first-order val))]))
-    (set-recursive-contract-ctc! ctc forced-ctc)
-    (set-recursive-contract-non-cyclic-projection! ctc wrapper-projection)
-    (set-recursive-contract-non-cyclic-first-order! ctc wrapper-first-order)
-    (set-recursive-contract-name! ctc (append `(recursive-contract ,(contract-name forced-ctc))
-                                              (cddr old-name)))))
+  (cond
+    [(or (symbol? current) (not current))
+     (define thunk (recursive-contract-thunk ctc))
+     (define old-name (recursive-contract-name ctc))
+     (set-recursive-contract-name! ctc (or current '<recursive-contract>))
+     (define forced-ctc
+       (cond
+         [(flat-recursive-contract? ctc)
+          (coerce-flat-contract 'recursive-contract (thunk))]
+         [(chaperone-recursive-contract? ctc)
+          (coerce-chaperone-contract 'recursive-contract (thunk))]
+         [(impersonator-recursive-contract? ctc)
+          (coerce-contract 'recursive-contract (thunk))]))
+     (set-recursive-contract-ctc! ctc forced-ctc)
+     (set-recursive-contract-name! ctc (append `(recursive-contract ,(contract-name forced-ctc))
+                                               (cddr old-name)))
+     forced-ctc]
+    [else current]))
 
 (define ((recursive-contract-projection ctc) blame)
-  (force-recursive-contract ctc)
-  (define f (recursive-contract-non-cyclic-projection ctc))
+  (define r-ctc (force-recursive-contract ctc))
+  (define f (contract-projection r-ctc))
   (define blame-known (blame-add-context blame #f))
   (λ (val)
     ((f blame-known) val)))
@@ -187,14 +157,10 @@
                                        (recursive-contract-thunk that))))
 
 (define ((recursive-contract-first-order ctc) val)
-  (force-recursive-contract ctc)
-  ((recursive-contract-non-cyclic-first-order ctc) val))
+  (contract-first-order-passes? (force-recursive-contract ctc)
+                                val))
 
-(struct recursive-contract ([name #:mutable]
-                            thunk
-                            [ctc #:mutable]
-                            [non-cyclic-first-order #:mutable]
-                            [non-cyclic-projection #:mutable]))
+(struct recursive-contract ([name #:mutable] thunk [ctc #:mutable]))
 
 (struct flat-recursive-contract recursive-contract ()
   #:property prop:custom-write custom-write-property-proc
