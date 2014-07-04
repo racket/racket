@@ -11,7 +11,7 @@
         rep-key)))
 
 (define (elect! reps key)
-  (define rep-key (hash-ref reps key key))
+  (define rep-key (find! reps key))
   (unless (equal? rep-key key)
     (hash-set! reps rep-key key)
     (hash-set! reps key key)))

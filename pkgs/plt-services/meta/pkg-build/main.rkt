@@ -39,7 +39,6 @@
 ;; FIXME:
 ;;  - handle conflicting doc names
 ;;  - check that declared dependencies are right
-;;  - keep docs that build despite errors
 
 (define (build-pkgs 
          ;; Besides a running Racket, the host machine must provide
@@ -71,6 +70,10 @@
          ;;      * pkgs/P.orig-CHECKSUM matching archived catalog
          ;;         + fail/P
          ;;        => up-to-date and failed
+         ;;
+         ;;   "dumpster" --- saved builds of failed packages
+         ;;     if the package at least installs, and maybe the
+         ;;     attempt builds some documentation
          ;;
          ;; A package is rebuilt if its checksum changes or if one of
          ;; its declared dependencies changes.
@@ -144,6 +147,10 @@
   (define built-catalog-dir (build-path built-dir "catalog"))
   (define fail-dir (build-path built-dir "fail"))
   (define success-dir (build-path built-dir "success"))
+
+  (define dumpster-dir (build-path work-dir "dumpster"))
+  (define dumpster-pkgs-dir (build-path dumpster-dir "pkgs/"))
+  (define dumpster-docs-dir (build-path dumpster-dir "docs"))
 
   (define snapshot-catalog
     (url->string
@@ -270,9 +277,11 @@
   (define (q s)
     (~a "\"" s "\""))
 
-  (define (scp src dest)
+  (define (scp src dest #:mode [mode 'auto])
     (unless (system*/show scp-exe src dest)
-      (error "failed")))
+      (case mode
+        [(ignore-failure) (void)]
+        [else (error "failed")])))
   (define (at-vm dest)
     (~a vm-user+host ":" dest))
   
@@ -608,6 +617,9 @@
   (make-directory* fail-dir)
   (make-directory* success-dir)
 
+  (make-directory* dumpster-pkgs-dir)
+  (make-directory* dumpster-docs-dir)
+
   (define (pkg-docs-file pkg)
     (build-path built-dir "docs" (format "~a-docs.rktd" pkg)))
 
@@ -682,21 +694,27 @@
                                 " maybe a dependency is missing, maybe the package\n"
                                 " failed to build on its own, or maybe there's a\n"
                                 " dependency cycle that is not currently handled\n")
-                            pkg))))
+                            pkg))))))
+       (define doc-ok?
+         (and
+          ;; If we're building a single package (or set of mutually
+          ;; dependent packages), then try to save generated documentation
+          ;; even on failure. We'll put it in the "dumpster".
+          (or ok? one-pkg)
           (ssh cd-racket
                " && bin/racket ../pkg-docs.rkt " pkgs-str
                " > ../pkg-docs.rktd"
                #:mode 'result
-               #:failure-dest failure-dest)
+               #:failure-dest (and ok? failure-dest))
           (for/and ([pkg (in-list flat-pkgs)])
             (ssh cd-racket
                  " && bin/raco pkg create --from-install --built"
                  " --dest " vm-dir "/built"
                  " " pkg
                  #:mode 'result
-                 #:failure-dest failure-dest))))
+                 #:failure-dest (and ok? failure-dest)))))
        (cond
-        [ok?
+        [(and ok? doc-ok?)
          (for ([pkg (in-list flat-pkgs)])
            (when (file-exists? (pkg-failure-dest pkg))
              (delete-file (pkg-failure-dest pkg)))
@@ -717,11 +735,23 @@
          (update-built-catalog flat-pkgs)]
         [else
          (when one-pkg
+           ;; Record failure (for all docs in a mutually dependent set):
            (for ([pkg (in-list flat-pkgs)])
              (when (list? one-pkg)
                (unless (equal? pkg (car one-pkg))
                  (copy-file failure-dest (pkg-failure-dest (car one-pkg)) #t)))
-             (save-checksum pkg)))
+             (save-checksum pkg))
+           ;; Keep any docs that might have been built:
+           (for ([pkg (in-list flat-pkgs)])
+             (scp (at-vm (~a vm-dir "/built/" pkg ".zip"))
+                  dumpster-pkgs-dir
+                  #:mode 'ignore-failure)
+             (scp (at-vm (~a vm-dir "/built/" pkg ".zip.CHECKSUM"))
+                  dumpster-pkgs-dir
+                  #:mode 'ignore-failure)
+             (scp (at-vm (~a vm-dir "/pkg-docs.rktd"))
+                  (build-path dumpster-docs-dir (format "~a-docs.rktd" pkg))
+                  #:mode 'ignore-failure)))
          (substatus "*** failed ***\n")])
        ok?)
      (lambda ()
