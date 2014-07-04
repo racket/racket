@@ -373,11 +373,11 @@ PACK_NATIVE = --native --pack build/native/pkgs \
               ++catalog build/native/catalog \
 	      ++catalog build/local/catalog
 native-catalog:
-	$(RACKET) racket/src/pack-all.rkt $(PACK_NATIVE) native-pkgs
+	$(RACKET) racket/src/pack-all.rkt --mods $(PACK_NATIVE) native-pkgs
 
 # Create a catalog for all packages in this directory:
 local-source-catalog:
-	$(RACKET) racket/src/pack-all.rkt ++catalog build/local/catalog pkgs
+	$(RACKET) racket/src/pack-all.rkt --mods ++catalog build/local/catalog pkgs
 
 # Clear out a package build in "build/user", and then install
 # packages:
@@ -399,6 +399,7 @@ set-server-config:
 packages-from-local:
 	$(RACO) pkg install $(LOCAL_USER_AUTO) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(MAKE) set-server-config
+	$(RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/local/catalog
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(LOCAL_USER_AUTO)
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
 
@@ -409,6 +410,7 @@ build-from-catalog:
 	$(MAKE) fresh-user
 	$(RACO) pkg install --all-platforms $(SOURCE_USER_AUTO_q) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(MAKE) set-server-config
+	$(RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd $(SRC_CATALOG)
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
 
@@ -422,7 +424,7 @@ origin-collects:
 # Now that we've built packages from local sources, create "built"
 # versions of the packages from the installation into "build/user":
 built-catalog:
-	$(RACKET) -l distro-build/pack-built
+	$(RACKET) -l distro-build/pack-built build/pkgs.rktd
 
 # Run a catalog server to provide pre-built packages, as well
 # as the copy of the server's "collects" tree:
@@ -434,7 +436,7 @@ built-catalog-server:
 # which involves creating package archives in "binary" mode
 # instead of "built" mode:
 binary-catalog:
-	$(RACKET) -l- distro-build/pack-built --mode binary
+	$(RACKET) -l- distro-build/pack-built --mode binary build/pkgs.rktd
 binary-catalog-server:
 	$(RACKET) -l- distro-build/serve-catalog --mode binary $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT)
 

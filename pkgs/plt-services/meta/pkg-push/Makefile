@@ -1,8 +1,9 @@
 # ------------------------------------------------------------
 # Configuration
 
-# This `racket' must have the the "distro-build" and "aws" packages
-# installed, where "aws" depends on "html-lib":
+# This `racket' must have the the "aws" package installed,
+# where "aws" depends on "html-lib", and it must be consistent
+# with "pack-all.rkt" in `PLT_TOP`.
 RACKET = racket
 
 # In `PLT_TOP', "build/latest" should be a git clone to update (and it
@@ -43,8 +44,8 @@ PACK_ARCHIVE = --at-checksum $(PLT_TOP)/build/archive/pkgs \
                --mods
 archive-catalog:
 	rm -rf $(PLT_TOP)/build/archive/catalog
-	$(RACKET) -l- distro-build/pack-and-catalog --native $(PACK_ARCHIVE) $(PLT_TOP)/build/latest/native-pkgs
-	$(RACKET) -l- distro-build/pack-and-catalog $(PACK_ARCHIVE) $(PLT_TOP)/build/latest/pkgs
+	$(RACKET) $(PLT_TOP)/racket/src/pack-all.rkt --native $(PACK_ARCHIVE) $(PLT_TOP)/build/latest/native-pkgs
+	$(RACKET) $(PLT_TOP)/racket/src/pack-all.rkt $(PACK_ARCHIVE) $(PLT_TOP)/build/latest/pkgs
 
 # Copy files from "build/archive" to $(BUCKET), and update
 # $(DEST_CATALOG):
