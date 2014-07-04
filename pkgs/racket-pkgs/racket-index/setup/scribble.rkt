@@ -102,10 +102,11 @@
     docs]
    [else (filter main-doc? docs)])) ; Don't need them, so drop them
 
-(define (parallel-do-error-handler setup-printf doc errmsg outstr errstr)
-  (setup-printf "error running" (module-path-prefix->string (doc-src-spec doc)))
-  (eprintf "~a" errmsg)
-  (eprintf "~a" errstr))
+(define (parallel-do-error-handler with-record-error doc errmsg outstr errstr)
+  (with-record-error
+   (doc-src-file doc)
+   (lambda () (error errmsg))
+   void))
 
 ;; We use a lock to control writing to the database. It's not
 ;; strictly necessary, but place channels can deal with blocking
@@ -351,7 +352,7 @@
                     (printf "~a" errstr)
                     (deserialize (fasl->s-exp r)))
                   (lambda (work errmsg outstr errstr) 
-                    (parallel-do-error-handler setup-printf work errmsg outstr errstr)))
+                    (parallel-do-error-handler with-record-error work errmsg outstr errstr)))
                  (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest 
                                                      auto-main? auto-user? main-doc-exists?
                                                      force-out-of-date? lock-ch)
@@ -681,7 +682,7 @@
                   (printf "~a" errstr)
                   (update-info! i (deserialize (fasl->s-exp r))))
                 (lambda (i errmsg outstr errstr) 
-                  (parallel-do-error-handler setup-printf (info-doc i) errmsg outstr errstr)))
+                  (parallel-do-error-handler with-record-error (info-doc i) errmsg outstr errstr)))
                (define-worker (build-again!-worker2 workerid verbosev latex-dest lock-ch
                                                     main-doc-exists?)
                  (define (with-record-error cc go fail-k)

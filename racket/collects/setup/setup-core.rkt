@@ -162,7 +162,11 @@
   (define (show-errors port)
     (for ([e (reverse errors)])
       (match-let ([(list cc desc x out err type) e])
-        (setup-fprintf port type "during ~a for ~a" desc (if (cc? cc) (cc-name cc) cc))
+        (setup-fprintf port type "during ~a for ~a" desc (cond
+                                                          [(cc? cc) (cc-name cc)]
+                                                          [(path? cc)
+                                                           (path->relative-string/setup cc #:cache pkg-path-cache)]
+                                                          [else cc]))
         (unless (null? x) (for ([str (in-list (regexp-split #rx"\n" (exn->string x)))])
                             (setup-fprintf port #f "  ~a" str)))
         (unless (zero? (string-length out)) (eprintf "STDOUT:\n~a=====\n" out))
@@ -674,7 +678,7 @@
                (assume-virtual-sources? cc)))))
 
   (define (clean-collection cc dependencies)
-    (begin-record-error cc "Cleaning"
+    (begin-record-error cc "cleaning"
       (define info (cc-info cc))
       (define paths
         (call-info
@@ -775,9 +779,9 @@
       (for ([cc ccs-to-compile])
         (let/ec k
           (begin-record-error cc (case part
-                                   [(pre)     "Early Install"]
-                                   [(general) "General Install"]
-                                   [(post)    "Post Install"])
+                                   [(pre)     "early install"]
+                                   [(general) "general install"]
+                                   [(post)    "post install"])
             (define fn
               (call-info (cc-info cc)
                 (case part
@@ -1235,7 +1239,7 @@
               (if no-specific-collections? #f (map cc-path ccs-to-compile))
               latex-dest auto-start-doc? (make-user)
               (make-tidy) (avoid-main-installation)
-              (lambda (what go alt) (record-error what "Building docs" go alt))
+              (lambda (what go alt) (record-error what "building docs" go alt))
               setup-printf))
 
   (define (make-docs-step)
@@ -1293,7 +1297,7 @@
     (define ((or-f f) x) (when x (f x)))
     (define created-launchers (make-hash))
     (for ([cc ccs-to-compile])
-      (begin-record-error cc "Launcher Setup"
+      (begin-record-error cc "launcher setup"
         (define info (cc-info cc))
         (define (make-launcher kind
                                launcher-names
@@ -1704,7 +1708,7 @@
   (define make-foreign-libs-step
     (make-copy/move-step "foreign library"
                          "foreign libraries"
-                         "Foreign Library Setup"
+                         "foreign library setup"
                          'copy-foreign-libs
                          'move-foreign-libs
                          find-lib-dir
@@ -1720,7 +1724,7 @@
   (define make-shares-step
     (make-copy/move-step "shared file"
                          "shared files"
-                         "Share Files Setup"
+                         "share files setup"
                          'copy-shared-files
                          'move-shared-files
                          find-share-dir
@@ -1736,7 +1740,7 @@
   (define make-mans-step
     (make-copy/move-step "man page"
                          "man pages"
-                         "Man Page Setup"
+                         "man page setup"
                          'copy-man-pages
                          'move-man-pages
                          find-man-dir
