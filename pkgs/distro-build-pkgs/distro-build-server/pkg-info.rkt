@@ -32,3 +32,6 @@
                             #:exists 'truncate/replace
                             write-out)
     (write-out (current-output-port)))
+
+
+(module test racket/base)
