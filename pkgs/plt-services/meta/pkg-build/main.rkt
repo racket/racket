@@ -12,9 +12,11 @@
          pkg/lib
          distro-build/vbox
          web-server/servlet-env
-         "union-find.rkt")
+         "union-find.rkt"
+         "thread.rkt")
 
-(provide build-pkgs)
+(provide vbox-vm
+         build-pkgs)
 
 (define-runtime-path pkg-list-rkt "pkg-list.rkt")
 (define-runtime-path pkg-adds-rkt "pkg-adds.rkt")
@@ -39,6 +41,31 @@
 ;; FIXME:
 ;;  - check that declared dependencies are right
 ;;  - run tests
+
+(struct vm (name host user dir init-snapshot installed-snapshot))
+
+;; Each VM must provide at least an ssh server and `tar`, it must have
+;; any system libraries installed that are needed for building
+;; (typically the libraries needed by `racket/draw`), and the intent
+;; is that it is otherwise isolated (e.g., no network connection
+;; except to the host)
+(define (vbox-vm
+         ;; VirtualBox VM name:
+         #:name name
+         ;; IP address of VM (from host):
+         #:host host
+         ;; User for ssh login to VM:
+         #:user [user "racket"]
+         ;; Working directory on VM:
+         #:dir [dir "/home/racket/build-pkgs"]
+         ;; Name of a clean starting snapshot in the VM:
+         #:init-shapshot [init-snapshot "init"]
+         ;; An "installed" snapshot is created after installing Racket
+         ;; and before building any package:
+         #:installed-shapshot [installed-snapshot "installed"])
+  (unless (complete-path? dir)
+    (error 'vbox-vm "need a complete path for #:dir"))
+  (vm name host user dir init-snapshot installed-snapshot))
 
 (define (build-pkgs 
          ;; Besides a running Racket, the host machine must provide
@@ -83,23 +110,8 @@
          ;; Name of platform for installer to get from snapshot:
          #:installer-platform-name installer-platform-name
 
-         ;; VirtualBox VM name; this VM must provide at least an ssh
-         ;; server and `tar`, it must have any system libraries
-         ;; installed that are needed for building (typically the
-         ;; libraries needed by `racket/draw`), and the intent is that
-         ;; it is otherwise isolated (e.g., no network connection
-         ;; except to the host):
-         #:vbox-vm vbox-vm
-         ;; IP address of VM (from host):
-         #:vm-host vm-host
-         ;; User for ssh login to VM:
-         #:vm-user [vm-user "racket"]
-         ;; Working directory on VM:
-         #:vm-dir [vm-dir "/home/racket/build-pkgs"]
-         ;; Name of a clean starting snapshot in the VM:
-         #:vm-init-shapshot [vm-init-snapshot "init"]
-         ;; An "installed" snapshot is created after installing Racket
-         ;; and before building any package.
+         ;; VirtualBox VMs (created by `vbox-vm`), at least one:
+         #:vms vms
 
          ;; Skip the install step if the "installed" snapshot is
          ;; ready and "install-list.rktd" is up-to-date:
@@ -129,10 +141,12 @@
 
          ;; Port to use on host machine for catalog server:
          #:server-port [server-port 18333])
-  
-  (unless (complete-path? vm-dir)
-    (error 'build-pkgs "need a complete path for #:vm-dir"))
 
+  (unless (and (list? vms)
+               ((length vms) . >= . 1)
+               (andmap vm? vms))
+    (error 'build-pkgs "expected a non-empty list of `vm`s"))
+  
   (define work-dir (path->complete-path given-work-dir))
   (define installer-dir (build-path work-dir "installer"))
   (define server-dir (build-path work-dir "server"))
@@ -190,10 +204,10 @@
   (define scp-exe (find-executable-path "scp"))
   (define ssh-exe (find-executable-path "ssh"))
 
-  (define vm-user+host
-    (if (not (equal? vm-user ""))
-        (~a vm-user "@" vm-host)
-        vm-host))
+  (define (vm-user+host vm)
+    (if (not (equal? (vm-user vm) ""))
+        (~a (vm-user vm) "@" (vm-host vm))
+        (vm-host vm)))
 
   (define (system*/show exe . args)
     (displayln (apply ~a #:separator " " 
@@ -202,11 +216,12 @@
     (flush-output)
     (apply system* exe args))
 
-  (define (ssh #:mode [mode 'auto]
+  (define (ssh vm
+               #:mode [mode 'auto]
                #:failure-dest [failure-dest #f]
                . args)
     (define cmd
-      (list "/usr/bin/env" (~a "PLTUSERHOME=" vm-dir "/user")
+      (list "/usr/bin/env" (~a "PLTUSERHOME=" (vm-dir vm) "/user")
             "/bin/sh" "-c" (apply ~a args)))
 
     (define saved (and failure-dest (open-output-bytes)))
@@ -244,13 +259,13 @@
                                   #f]
                                  [else (raise exn)]))])
           (begin0
-           (if (and (equal? vm-host "localhost")
-                    (equal? vm-user ""))
+           (if (and (equal? (vm-host vm) "localhost")
+                    (equal? (vm-user vm) ""))
                (apply system*/show cmd)
                (apply system*/show ssh-exe
                       ;; create tunnel to connect back to server:
                       "-R" (~a server-port ":localhost:" server-port)
-                      vm-user+host
+                      (vm-user+host vm)
                       ;; ssh needs an extra level of quoting
                       ;;  relative to sh:
                       (for/list ([arg (in-list cmd)])
@@ -274,15 +289,15 @@
   (define (q s)
     (~a "\"" s "\""))
 
-  (define (scp src dest #:mode [mode 'auto])
+  (define (scp vm src dest #:mode [mode 'auto])
     (unless (system*/show scp-exe src dest)
       (case mode
         [(ignore-failure) (void)]
         [else (error "failed")])))
-  (define (at-vm dest)
-    (~a vm-user+host ":" dest))
+  (define (at-vm vm dest)
+    (~a (vm-user+host vm) ":" dest))
   
-  (define cd-racket (~a "cd " (q vm-dir) "/racket"))
+  (define (cd-racket vm) (~a "cd " (q (vm-dir vm)) "/racket"))
 
   ;; ----------------------------------------
   (status "Getting installer table\n")
@@ -335,70 +350,77 @@
     (parameterize ([current-pkg-catalogs (list (path->url (build-path archive-dir "catalog")))])
       (get-all-pkg-details-from-catalogs)))
 
-  (unless skip-install?
-    ;; ----------------------------------------
-    (status "Starting VM ~a\n" vbox-vm)
-    (stop-vbox-vm vbox-vm)
-    (restore-vbox-snapshot vbox-vm vm-init-snapshot)
-    (start-vbox-vm vbox-vm)
+  (define (install vm #:one-time? [one-time? #f])
+    (unless skip-install?
+      ;; ----------------------------------------
+      (status "Starting VM ~a\n" (vm-name vm))
+      (stop-vbox-vm (vm-name vm))
+      (restore-vbox-snapshot (vm-name vm) (vm-init-snapshot vm))
+      (start-vbox-vm (vm-name vm))
 
-    (dynamic-wind
-     void
-     (lambda ()
-       ;; ----------------------------------------
-       (status "Fixing time at ~a\n" vbox-vm)
-       (ssh "sudo date --set=" (q (parameterize ([date-display-format 'rfc2822])
-                                    (date->string (seconds->date (current-seconds)) #t))))
+      (dynamic-wind
+          void
+          (lambda ()
+            ;; ----------------------------------------
+            (status "Fixing time at ~a\n" (vm-name vm))
+            (ssh vm "sudo date --set=" (q (parameterize ([date-display-format 'rfc2822])
+                                            (date->string (seconds->date (current-seconds)) #t))))
 
-       ;; ----------------------------------------
-       (status "Preparing directory ~a\n" vm-dir)
-       (ssh "rm -rf " (~a (q vm-dir) "/*"))
-       (ssh "mkdir -p " (q vm-dir))
-       (ssh "mkdir -p " (q (~a vm-dir "/user")))
-       (ssh "mkdir -p " (q (~a vm-dir "/built")))
-       
-       (scp (build-path installer-dir installer-name) (at-vm vm-dir))
-       
-       (ssh "cd " (q vm-dir) " && " " sh " (q installer-name) " --in-place --dest ./racket")
-       
-       ;; VM-side helper modules:
-       (scp pkg-adds-rkt (at-vm (~a vm-dir "/pkg-adds.rkt")))
-       (scp pkg-list-rkt (at-vm (~a vm-dir "/pkg-list.rkt")))
+            ;; ----------------------------------------
+            (define remote-dir (vm-dir vm))
+            (status "Preparing directory ~a\n" remote-dir)
+            (ssh vm "rm -rf " (~a (q remote-dir) "/*"))
+            (ssh vm "mkdir -p " (q remote-dir))
+            (ssh vm "mkdir -p " (q (~a remote-dir "/user")))
+            (ssh vm "mkdir -p " (q (~a remote-dir "/built")))
+            
+            (scp vm (build-path installer-dir installer-name) (at-vm vm remote-dir))
+            
+            (ssh vm "cd " (q remote-dir) " && " " sh " (q installer-name) " --in-place --dest ./racket")
+            
+            ;; VM-side helper modules:
+            (scp vm pkg-adds-rkt (at-vm vm (~a remote-dir "/pkg-adds.rkt")))
+            (scp vm pkg-list-rkt (at-vm vm (~a remote-dir "/pkg-list.rkt")))
 
-       ;; ----------------------------------------
-       (status "Getting installed packages\n")
-       (ssh cd-racket
-            " && bin/racket ../pkg-list.rkt > ../pkg-list.rktd")
-       (scp (at-vm (~a vm-dir "/pkg-list.rktd"))
-            (build-path work-dir "install-list.rktd"))
+            (when one-time?
+              ;; ----------------------------------------
+              (status "Getting installed packages\n")
+              (ssh vm (cd-racket vm)
+                   " && bin/racket ../pkg-list.rkt > ../pkg-list.rktd")
+              (scp vm (at-vm vm (~a remote-dir "/pkg-list.rktd"))
+                   (build-path work-dir "install-list.rktd")))
 
-       ;; ----------------------------------------
-       (status "Setting catalogs at ~a\n" vbox-vm)
-       (ssh cd-racket
-            " && bin/raco pkg config -i --set catalogs "
-            " http://localhost:" server-port "/built/catalog/"
-            " http://localhost:" server-port "/archive/catalog/")
+            ;; ----------------------------------------
+            (status "Setting catalogs at ~a\n" (vm-name vm))
+            (ssh vm (cd-racket vm)
+                 " && bin/raco pkg config -i --set catalogs "
+                 " http://localhost:" server-port "/built/catalog/"
+                 " http://localhost:" server-port "/archive/catalog/")
 
-       ;; ----------------------------------------
-       (status "Stashing installation docs\n")
-       (ssh cd-racket
-            " && bin/racket ../pkg-adds.rkt --all > ../pkg-adds.rktd")
-       (ssh cd-racket
-            " && tar zcf ../install-doc.tgz doc")
-       (scp (at-vm (~a vm-dir "/pkg-adds.rktd"))
-            (build-path work-dir "install-adds.rktd"))
-       (scp (at-vm (~a vm-dir "/install-doc.tgz"))
-            (build-path work-dir "install-doc.tgz"))
-       
-       (void))
-     (lambda ()
-       (stop-vbox-vm vbox-vm)))
+            (when one-time?
+              ;; ----------------------------------------
+              (status "Stashing installation docs\n")
+              (ssh vm (cd-racket vm)
+                   " && bin/racket ../pkg-adds.rkt --all > ../pkg-adds.rktd")
+              (ssh vm (cd-racket vm)
+                   " && tar zcf ../install-doc.tgz doc")
+              (scp vm (at-vm vm (~a remote-dir "/pkg-adds.rktd"))
+                   (build-path work-dir "install-adds.rktd"))
+              (scp vm (at-vm vm (~a remote-dir "/install-doc.tgz"))
+                   (build-path work-dir "install-doc.tgz")))
+            
+            (void))
+          (lambda ()
+            (stop-vbox-vm (vm-name vm))))
 
-    ;; ----------------------------------------
-    (status "Taking installation snapshopt\n")
-    (when (exists-vbox-snapshot? vbox-vm "installed")
-      (delete-vbox-snapshot vbox-vm "installed"))
-    (take-vbox-snapshot vbox-vm "installed"))
+      ;; ----------------------------------------
+      (status "Taking installation snapshopt\n")
+      (when (exists-vbox-snapshot? (vm-name vm) (vm-installed-snapshot vm))
+        (delete-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm)))
+      (take-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))))
+
+  (install (car vms) #:one-time? #t)
+  (map install (cdr vms))
 
   ;; ----------------------------------------
   (status "Resetting ready content of ~a\n" built-pkgs-dir)
@@ -630,7 +652,7 @@
     #f)
 
   ;; Build one package or a group of packages:
-  (define (build-pkgs pkgs)
+  (define (build-pkgs vm pkgs)
     (define flat-pkgs (flatten pkgs))
     ;; one-pkg can be a list in the case of mutual dependencies:
     (define one-pkg (and (= 1 (length pkgs)) (car pkgs)))
@@ -658,14 +680,16 @@
        #:exists 'truncate/replace
        (lambda (o) (write-string (pkg-checksum pkg) o))))
 
-    (restore-vbox-snapshot vbox-vm "installed")
-    (start-vbox-vm vbox-vm)
+    (define remote-dir (vm-dir vm))
+
+    (restore-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))
+    (start-vbox-vm (vm-name vm) #:max-vms (length vms))
     (dynamic-wind
      void
      (lambda ()
        (define ok?
          (and
-          (ssh cd-racket
+          (ssh vm (cd-racket vm)
                " && bin/raco pkg install -u --auto"
                (if one-pkg "" " --fail-fast")
                " " pkgs-str
@@ -675,9 +699,9 @@
             ;; Make sure that any extra installed packages used were previously
             ;; built, since we want built packages to be consistent with a binary
             ;; installation.
-            (ssh cd-racket
+            (ssh vm (cd-racket vm)
                  " && bin/racket ../pkg-list.rkt --user > ../user-list.rktd")
-            (scp (at-vm (~a vm-dir "/user-list.rktd"))
+            (scp vm (at-vm vm (~a remote-dir "/user-list.rktd"))
                  (build-path work-dir "user-list.rktd"))
             (define new-pkgs (call-with-input-file*
                               (build-path work-dir "user-list.rktd")
@@ -698,15 +722,15 @@
           ;; dependent packages), then try to save generated documentation
           ;; even on failure. We'll put it in the "dumpster".
           (or ok? one-pkg)
-          (ssh cd-racket
+          (ssh vm (cd-racket vm)
                " && bin/racket ../pkg-adds.rkt " pkgs-str
                " > ../pkg-adds.rktd"
                #:mode 'result
                #:failure-dest (and ok? failure-dest))
           (for/and ([pkg (in-list flat-pkgs)])
-            (ssh cd-racket
+            (ssh vm (cd-racket vm)
                  " && bin/raco pkg create --from-install --built"
-                 " --dest " vm-dir "/built"
+                 " --dest " remote-dir "/built"
                  " " pkg
                  #:mode 'result
                  #:failure-dest (and ok? failure-dest)))))
@@ -715,11 +739,11 @@
          (for ([pkg (in-list flat-pkgs)])
            (when (file-exists? (pkg-failure-dest pkg))
              (delete-file (pkg-failure-dest pkg)))
-           (scp (at-vm (~a vm-dir "/built/" pkg ".zip"))
+           (scp vm (at-vm vm (~a remote-dir "/built/" pkg ".zip"))
                 built-pkgs-dir)
-           (scp (at-vm (~a vm-dir "/built/" pkg ".zip.CHECKSUM"))
+           (scp vm (at-vm vm (~a remote-dir "/built/" pkg ".zip.CHECKSUM"))
                 built-pkgs-dir)
-           (scp (at-vm (~a vm-dir "/pkg-adds.rktd"))
+           (scp vm (at-vm vm (~a remote-dir "/pkg-adds.rktd"))
                 (build-path built-dir "adds" (format "~a-adds.rktd" pkg)))
            (call-with-output-file*
             (build-path success-dir pkg)
@@ -740,37 +764,131 @@
              (save-checksum pkg))
            ;; Keep any docs that might have been built:
            (for ([pkg (in-list flat-pkgs)])
-             (scp (at-vm (~a vm-dir "/built/" pkg ".zip"))
+             (scp vm (at-vm vm (~a remote-dir "/built/" pkg ".zip"))
                   dumpster-pkgs-dir
                   #:mode 'ignore-failure)
-             (scp (at-vm (~a vm-dir "/built/" pkg ".zip.CHECKSUM"))
+             (scp vm (at-vm vm (~a remote-dir "/built/" pkg ".zip.CHECKSUM"))
                   dumpster-pkgs-dir
                   #:mode 'ignore-failure)
-             (scp (at-vm (~a vm-dir "/pkg-adds.rktd"))
+             (scp vm (at-vm vm (~a remote-dir "/pkg-adds.rktd"))
                   (build-path dumpster-adds-dir (format "~a-adds.rktd" pkg))
                   #:mode 'ignore-failure)))
          (substatus "*** failed ***\n")])
        ok?)
      (lambda ()
-       (stop-vbox-vm vbox-vm #:save-state? #f))))
+       (stop-vbox-vm (vm-name vm) #:save-state? #f))))
+
+  ;; Build a group of packages, recurring on smaller groups
+  ;; if the big group fails:
+  (define (build-pkg-set vm pkgs)
+    (define len (length pkgs))
+    (define ok? (and (len . <= . max-build-together)
+                     (build-pkgs vm pkgs)))
+    (flush-chunk-output)
+    (unless (or ok? (= 1 len))
+      (define part (min (quotient len 2)
+                        max-build-together))
+      (build-pkg-set vm (take pkgs part))
+      (build-pkg-set vm (drop pkgs part))))
+
+  ;; Look for n packages whose dependencies are ready:
+  (define (select-n n pkgs pending-pkgs)
+    (cond
+     [(zero? n) null]
+     [(null? pkgs) null]
+     [else
+      (define pkg (car pkgs)) ; `pkg` can be a list of strings
+      ;; Check for dependencies in `pending-pkgs`, but
+      ;; we don't have to check dependencies transtively,
+      ;; because the ordering of `pkgs` takes care of that.
+      (cond
+       [(ormap (lambda (dep) (set-member? pending-pkgs dep))
+               (if (string? pkg)
+                   (pkg-deps pkg)
+                   (apply append (map pkg-deps pkg))))
+        (select-n n (cdr pkgs) pending-pkgs)]
+       [else
+        (cons pkg
+              (select-n (sub1 n) (cdr pkgs) pending-pkgs))])]))
+
+  ;; try-pkgs has the same order as `pkgs`:
+  (define (remove-ordered try-pkgs pkgs)
+    (cond
+     [(null? try-pkgs) pkgs]
+     [(equal? (car try-pkgs) (car pkgs))
+      (remove-ordered (cdr try-pkgs) (cdr pkgs))]
+     [else
+      (cons (car pkgs) (remove-ordered try-pkgs (cdr pkgs)))]))
+
+  (struct running (vm pkgs th)
+    #:property prop:evt (lambda (r)
+                          (wrap-evt (running-th r)
+                                    (lambda (v) r))))
+  (define (start-running vm pkgs)
+    (define t (thread/chunk-output
+               (lambda ()
+                 (status ">> Sending to ~a:\n" (vm-name vm))
+                 (show-list pkgs)
+                 (flush-chunk-output)
+                 (build-pkg-set vm pkgs))))
+    (running vm pkgs t))
+
+  (define (break-running r)
+    (break-thread (running-th r))
+    (sync (running-th r)))
 
   ;; Build a group of packages, trying smaller
   ;; groups if the whole group fails or is too
   ;; big:
   (define (build-all-pkgs pkgs)
     ;; pkgs is a list of string and lists (for mutual dependency)
-    (define len (length pkgs))
-    (define ok? (and (len . <= . max-build-together)
-                     (build-pkgs pkgs)))
-    (unless (or ok? (= 1 len))
-      (define part (min (quotient len 2)
-                        max-build-together))
-      (build-all-pkgs (take pkgs part))
-      (build-all-pkgs (drop pkgs part))))
+    (let loop ([pkgs pkgs]
+               [pending-pkgs (list->set pkgs)]
+               [vms vms]
+               [runnings null])
+      (define (wait)
+        (define r
+          (with-handlers ([exn:break? (lambda (exn)
+                                        (log-error "breaking...")
+                                        (for-each break-running runnings)
+                                        (wait-chunk-output))])
+            (parameterize-break
+             #t
+             (apply sync runnings))))
+        (loop pkgs
+              (set-subtract pending-pkgs (list->set (running-pkgs r)))
+              (cons (running-vm r) vms)
+              (remq r runnings)))
+      (cond
+       [(and (null? pkgs)
+             (null? runnings))
+        ;; Done
+        (void)]
+       [(null? vms)
+        ;; All VMs busy; wait for one to finish
+        (wait)]
+       [else
+        (define try-pkgs (select-n max-build-together pkgs pending-pkgs))
+        (cond
+         [(null? try-pkgs)
+          ;; Nothing to do until a dependency finished; wait
+          (wait)]
+         [else
+          (loop (remove-ordered try-pkgs pkgs)
+                pending-pkgs
+                (cdr vms)
+                (cons (start-running (car vms) try-pkgs)
+                      runnings))])])))
 
   ;; Build all of the out-of-date packages:
   (unless skip-build?
-    (build-all-pkgs need-pkgs-list))
+    (if (= 1 (length vms))
+        ;; Sequential builds:
+        (build-pkg-set (car vms) need-pkgs-list)
+        ;; Parallel builds:
+        (parameterize-break
+         #f
+         (build-all-pkgs need-pkgs-list))))
 
   ;; ----------------------------------------
   (status "Assembling documentation\n")
@@ -850,20 +968,21 @@
   (define no-conflict-doc-pkg-list (sort (set->list no-conflict-doc-pkgs) string<?))
 
   (unless skip-docs?
-    (restore-vbox-snapshot vbox-vm "installed")
-    (start-vbox-vm vbox-vm)
+    (define vm (car vms))
+    (restore-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))
+    (start-vbox-vm (vm-name vm))
     (dynamic-wind
      void
      (lambda ()
-       (ssh cd-racket
+       (ssh vm (cd-racket vm)
             " && bin/raco pkg install -i --auto"
             " " (apply ~a #:separator " " no-conflict-doc-pkg-list))
-       (ssh cd-racket
+       (ssh vm (cd-racket vm)
             " && tar zcf ../all-doc.tgz doc")
-       (scp (at-vm (~a vm-dir "/all-doc.tgz"))
+       (scp vm (at-vm vm (~a (vm-dir vm) "/all-doc.tgz"))
             (build-path work-dir "all-doc.tgz")))
      (lambda ()
-       (stop-vbox-vm vbox-vm #:save-state? #f))))
+       (stop-vbox-vm (vm-name vm) #:save-state? #f))))
   
   ;; ----------------------------------------
   

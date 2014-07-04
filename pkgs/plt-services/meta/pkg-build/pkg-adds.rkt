@@ -25,7 +25,9 @@
                        want-pkgs))])
     (define dir (pkg-directory pkg))
     (values pkg
-            (pkg-directory->additional-installs dir pkg #:namespace ns))))
+            (if dir
+                (pkg-directory->additional-installs dir pkg #:namespace ns)
+                null))))
 
 (write ht)
 (newline)
