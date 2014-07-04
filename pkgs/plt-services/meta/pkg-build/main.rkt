@@ -17,7 +17,7 @@
 (provide build-pkgs)
 
 (define-runtime-path pkg-list-rkt "pkg-list.rkt")
-(define-runtime-path pkg-docs-rkt "pkg-docs.rkt")
+(define-runtime-path pkg-adds-rkt "pkg-adds.rkt")
 
 ;; ----------------------------------------
 
@@ -37,8 +37,8 @@
 ;;     needed by `racket/draw`)
 ;;
 ;; FIXME:
-;;  - handle conflicting doc names
 ;;  - check that declared dependencies are right
+;;  - run tests
 
 (define (build-pkgs 
          ;; Besides a running Racket, the host machine must provide
@@ -65,21 +65,18 @@
          ;;         + pkgs/P.zip
          ;;         + P.zip.CHECKSUM
          ;;        => up-to-date and successful,
-         ;;           docs/P-docs.rktd has doc listing, and
+         ;;           docs/P-adds.rktd listing of docs, exes, etc., and
          ;;           success/P records success
          ;;      * pkgs/P.orig-CHECKSUM matching archived catalog
          ;;         + fail/P
          ;;        => up-to-date and failed
          ;;
-         ;;   "dumpster" --- saved builds of failed packages
-         ;;     if the package at least installs, and maybe the
-         ;;     attempt builds some documentation
+         ;;   "dumpster" --- saved builds of failed packages if the
+         ;;     package at least installs; maybe the attempt built
+         ;;     some documentation
          ;;
          ;; A package is rebuilt if its checksum changes or if one of
          ;; its declared dependencies changes.
-         ;;
-         ;; Currently, package-level dependencies are not checked, and
-         ;; tests are not yet run.
 
          ;; URL to provide the installer and pre-built packages:
          #:snapshot-url snapshot-url
@@ -150,7 +147,7 @@
 
   (define dumpster-dir (build-path work-dir "dumpster"))
   (define dumpster-pkgs-dir (build-path dumpster-dir "pkgs/"))
-  (define dumpster-docs-dir (build-path dumpster-dir "docs"))
+  (define dumpster-adds-dir (build-path dumpster-dir "adds"))
 
   (define snapshot-catalog
     (url->string
@@ -167,7 +164,7 @@
     (printf ">> ")
     (apply substatus fmt args))
 
-  (define (show-list nested-strs)
+  (define (show-list nested-strs #:indent [indent ""])
     (define strs (let loop ([strs nested-strs])
                    (cond
                     [(null? strs) null]
@@ -181,11 +178,11 @@
                             (cdr strs)))]
                     [else (cons (car strs) (loop (cdr strs)))])))
     (substatus "~a\n"
-               (for/fold ([a ""]) ([s (in-list strs)])
+               (for/fold ([a indent]) ([s (in-list strs)])
                  (if ((+ (string-length a) 1 (string-length s)) . > . 72)
                      (begin
                        (substatus "~a\n" a)
-                       (string-append " " s))
+                       (string-append indent " " s))
                      (string-append a " " s)))))
 
   ;; ----------------------------------------
@@ -365,7 +362,7 @@
        (ssh "cd " (q vm-dir) " && " " sh " (q installer-name) " --in-place --dest ./racket")
        
        ;; VM-side helper modules:
-       (scp pkg-docs-rkt (at-vm (~a vm-dir "/pkg-docs.rkt")))
+       (scp pkg-adds-rkt (at-vm (~a vm-dir "/pkg-adds.rkt")))
        (scp pkg-list-rkt (at-vm (~a vm-dir "/pkg-list.rkt")))
 
        ;; ----------------------------------------
@@ -385,11 +382,11 @@
        ;; ----------------------------------------
        (status "Stashing installation docs\n")
        (ssh cd-racket
-            " && bin/racket ../pkg-docs.rkt --all > ../pkg-docs.rktd")
+            " && bin/racket ../pkg-adds.rkt --all > ../pkg-adds.rktd")
        (ssh cd-racket
             " && tar zcf ../install-doc.tgz doc")
-       (scp (at-vm (~a vm-dir "/pkg-docs.rktd"))
-            (build-path work-dir "install-docs.rktd"))
+       (scp (at-vm (~a vm-dir "/pkg-adds.rktd"))
+            (build-path work-dir "install-adds.rktd"))
        (scp (at-vm (~a vm-dir "/install-doc.tgz"))
             (build-path work-dir "install-doc.tgz"))
        
@@ -613,15 +610,15 @@
   (sync (system-idle-evt))
 
   ;; ----------------------------------------
-  (make-directory* (build-path built-dir "docs"))
+  (make-directory* (build-path built-dir "adds"))
   (make-directory* fail-dir)
   (make-directory* success-dir)
 
   (make-directory* dumpster-pkgs-dir)
-  (make-directory* dumpster-docs-dir)
+  (make-directory* dumpster-adds-dir)
 
-  (define (pkg-docs-file pkg)
-    (build-path built-dir "docs" (format "~a-docs.rktd" pkg)))
+  (define (pkg-adds-file pkg)
+    (build-path built-dir "adds" (format "~a-adds.rktd" pkg)))
 
   (define (complain failure-dest fmt . args)
     (when failure-dest
@@ -702,8 +699,8 @@
           ;; even on failure. We'll put it in the "dumpster".
           (or ok? one-pkg)
           (ssh cd-racket
-               " && bin/racket ../pkg-docs.rkt " pkgs-str
-               " > ../pkg-docs.rktd"
+               " && bin/racket ../pkg-adds.rkt " pkgs-str
+               " > ../pkg-adds.rktd"
                #:mode 'result
                #:failure-dest (and ok? failure-dest))
           (for/and ([pkg (in-list flat-pkgs)])
@@ -722,8 +719,8 @@
                 built-pkgs-dir)
            (scp (at-vm (~a vm-dir "/built/" pkg ".zip.CHECKSUM"))
                 built-pkgs-dir)
-           (scp (at-vm (~a vm-dir "/pkg-docs.rktd"))
-                (build-path built-dir "docs" (format "~a-docs.rktd" pkg)))
+           (scp (at-vm (~a vm-dir "/pkg-adds.rktd"))
+                (build-path built-dir "adds" (format "~a-adds.rktd" pkg)))
            (call-with-output-file*
             (build-path success-dir pkg)
             #:exists 'truncate/replace
@@ -749,8 +746,8 @@
              (scp (at-vm (~a vm-dir "/built/" pkg ".zip.CHECKSUM"))
                   dumpster-pkgs-dir
                   #:mode 'ignore-failure)
-             (scp (at-vm (~a vm-dir "/pkg-docs.rktd"))
-                  (build-path dumpster-docs-dir (format "~a-docs.rktd" pkg))
+             (scp (at-vm (~a vm-dir "/pkg-adds.rktd"))
+                  (build-path dumpster-adds-dir (format "~a-adds.rktd" pkg))
                   #:mode 'ignore-failure)))
          (substatus "*** failed ***\n")])
        ok?)
@@ -789,19 +786,68 @@
                      (file-exists? (pkg-zip-checksum-file pkg)))))
       pkg))
 
-  (define doc-pkgs
-    (for/set ([pkg (in-set available-pkgs)]
-              #:when
-              (let ()
-                (define docs-file (pkg-docs-file pkg))
-                (define ht (call-with-input-file* docs-file read))
-                (pair? (hash-ref ht pkg null))))
-      pkg))
-
-  (define doc-pkg-list (sort (set->list doc-pkgs) string<?))
+  (define adds-pkgs
+    (for/hash ([pkg (in-set available-pkgs)])
+      (define adds-file (pkg-adds-file pkg))
+      (define ht (call-with-input-file* adds-file read))
+      (values pkg (hash-ref ht pkg null))))
+  
+  (define doc-pkg-list
+    (sort (for/list ([(k l) (in-hash adds-pkgs)]
+                     #:when (for/or ([v (in-list l)])
+                              (eq? (car v) 'doc)))
+            k)
+          string<?))
 
   (substatus "Packages with documentation:\n")
   (show-list doc-pkg-list)
+  
+  (define no-conflict-doc-pkgs
+    (let ()
+      (define doc-pkgs
+        (for/hash ([doc-pkg (in-list doc-pkg-list)])
+          (values doc-pkg (hash-ref adds-pkgs doc-pkg null))))
+      (define (add-providers ht doc-pkgs)
+        (for*/fold ([ht ht]) ([(k v) (in-hash doc-pkgs)]
+                              [(d) (in-list v)])
+          (hash-update ht d (lambda (l) (set-add l k)) (set))))
+      (define providers (add-providers (add-providers (hash) doc-pkgs)
+                                       (call-with-input-file*
+                                        (build-path work-dir "install-adds.rktd")
+                                        read)))
+      (define conflicts
+        (for/list ([(k v) (in-hash providers)]
+                   #:when ((set-count v) . > . 1))
+          (cons k v)))
+      (cond
+       [(null? conflicts)
+        doc-pkgs]
+       [else
+        (substatus "Install conflicts:\n")
+        (for ([v (in-list conflicts)])
+          (substatus " ~a ~s:\n" (caar v) (cdar v))
+          (show-list #:indent " " (sort (set->list (cdr  v)) string<?)))
+        (define conflicting-pkgs
+          (for/fold ([s (set)]) ([v (in-list conflicts)])
+            (set-union s (cdr v))))
+        (define reverse-deps
+          (for*/fold ([ht (hash)]) ([pkg (in-list doc-pkg-list)]
+                                    [dep (in-list (pkg-deps pkg))])
+            (hash-update ht dep (lambda (s) (set-add s pkg)) (set))))
+        (define disallowed-pkgs
+          (let loop ([pkgs conflicting-pkgs] [conflicting-pkgs conflicting-pkgs])
+            (define new-pkgs (for*/set ([p (in-set conflicting-pkgs)]
+                                        [rev-dep (in-set (hash-ref reverse-deps p (set)))]
+                                        #:unless (set-member? pkgs rev-dep))
+                               rev-dep))
+            (if (set-empty? new-pkgs)
+                pkgs
+                (loop (set-union pkgs new-pkgs) new-pkgs))))
+        (substatus "Packages disallowed due to conflicts:\n")
+        (show-list (sort (set->list disallowed-pkgs) string<?))
+        (set-subtract (list->set doc-pkg-list) disallowed-pkgs)])))
+
+  (define no-conflict-doc-pkg-list (sort (set->list no-conflict-doc-pkgs) string<?))
 
   (unless skip-docs?
     (restore-vbox-snapshot vbox-vm "installed")
@@ -811,7 +857,7 @@
      (lambda ()
        (ssh cd-racket
             " && bin/raco pkg install -i --auto"
-            " " (apply ~a #:separator " " doc-pkg-list))
+            " " (apply ~a #:separator " " no-conflict-doc-pkg-list))
        (ssh cd-racket
             " && tar zcf ../all-doc.tgz doc")
        (scp (at-vm (~a vm-dir "/all-doc.tgz"))
