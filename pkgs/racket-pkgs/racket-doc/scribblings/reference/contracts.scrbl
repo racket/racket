@@ -1549,6 +1549,9 @@ The @racket[define-struct/contract] form only allows a subset of the
             (furlongss->feets (list 1 2 3))
             
             (furlongss->feets (list 1 327 3))]
+  
+  @history[#:added "6.0.1.11"]
+  
 }
 
 @defidform[current-contract-region]{
