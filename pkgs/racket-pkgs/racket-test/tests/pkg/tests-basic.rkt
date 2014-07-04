@@ -17,7 +17,8 @@
 (pkg-tests
  (shelly-case
   "Each command has an associated help"
-  $ "raco pkg -h"
+  $ "raco pkg -h" =exit> 1
+  $ "raco pkg help"
   $ "raco pkg install -h"
   $ "raco pkg update -h"
   $ "raco pkg remove -h"
