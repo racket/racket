@@ -825,15 +825,18 @@ The following @filepath{info.rkt} fields are used by the package manager:
         
         ]
 
-       Each elements of the @racketidfont{deps} list determines a
+       Each element of the @racketidfont{deps} list determines a
        dependency on the @tech{package} whose name is inferred from
        the @tech{package source} (i.e., dependencies are on package
        names, not package sources), while the @tech{package source}
        indicates where to get the package if needed to satisfy the
        dependency.
 
-       Use the package name @racket["racket"] to specify a dependency
-       on the version of the Racket installation.}
+       Using the package name @racket["racket"] specifies a dependency
+       on the Racket run-time system, which is potentially useful when
+       a version is included in the dependency. For most purposes,
+       it's better to specify a versioned dependency on
+       @racket["base"], instead.}
 
  @item{@racketidfont{build-deps} --- like @racketidfont{deps}, but for
        dependencies that can be dropped in a @tech{binary package},
