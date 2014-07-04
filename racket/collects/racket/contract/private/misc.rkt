@@ -466,7 +466,8 @@
         #:projection (listof-*-ho-check (λ (p v) (for-each p v) v))
         #:val-first-projection (listof-*-val-first-flat-proj predicate? ctc)
         #:generate (generate ctc)
-        #:exercise (exercise ctc))]
+        #:exercise (exercise ctc)
+        #:list-contract? #t)]
       [(chaperone-contract? ctc)
        (make-chaperone-contract
         #:name ctc-name
@@ -474,14 +475,16 @@
         #:projection (listof-*-ho-check (λ (p v) (map p v)))
         #:val-first-projection (listof-*-val-first-ho-proj predicate? ctc)
         #:generate (generate ctc)
-        #:exercise (exercise ctc))]
+        #:exercise (exercise ctc)
+        #:list-contract? #t)]
       [else
        (make-contract
         #:name ctc-name
         #:first-order fo-check
         #:val-first-projection (listof-*-val-first-ho-proj predicate? ctc)
         #:projection (listof-*-ho-check (λ (p v) (map p v)))
-        #:exercise (exercise ctc))])))
+        #:exercise (exercise ctc)
+        #:list-contract? #t)])))
 
 (define (listof-*-val-first-flat-proj predicate? ctc)
   (define vf-proj (get/build-val-first-projection ctc))
@@ -593,6 +596,9 @@
          cdr-gen
          (λ () (cons (car-gen) (cdr-gen))))))
 
+(define (cons/c-list-contract? c)
+  (list-contract? (the-cons/c-tl-ctc c)))
+
 (define-struct the-cons/c (hd-ctc tl-ctc))
 (define-struct (flat-cons/c the-cons/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -603,7 +609,8 @@
    #:name cons/c-name
    #:first-order cons/c-first-order
    #:stronger cons/c-stronger?
-   #:generate cons/c-generate))
+   #:generate cons/c-generate
+   #:list-contract? cons/c-list-contract?))
 (define-struct (chaperone-cons/c the-cons/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
@@ -614,7 +621,8 @@
      #:name cons/c-name
      #:first-order cons/c-first-order
      #:stronger cons/c-stronger?
-     #:generate cons/c-generate)))
+     #:generate cons/c-generate
+     #:list-contract? cons/c-list-contract?)))
 (define-struct (impersonator-cons/c the-cons/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -624,7 +632,8 @@
    #:name cons/c-name
    #:first-order cons/c-first-order
    #:stronger cons/c-stronger?
-   #:generate cons/c-generate))
+   #:generate cons/c-generate
+   #:list-contract? cons/c-list-contract?))
 
 (define/subexpression-pos-prop (cons/c a b)
   (define ctc-car (coerce-contract 'cons/c a))
@@ -748,7 +757,8 @@
              (((contract-projection arg/c) 
                (add-list-context blame i))
               v))
-           x))))))
+           x))))
+   #:list-contract? (λ (c) #t)))
 
 (define (list/c-chaperone/other-projection c)
   (define args (map contract-projection (generic-list/c-args c)))
@@ -830,7 +840,8 @@
      #:generate list/c-generate
      #:exercise list/c-exercise
      #:projection list/c-chaperone/other-projection
-     #:val-first-projection list/c-chaperone/other-val-first-projection)))
+     #:val-first-projection list/c-chaperone/other-val-first-projection
+     #:list-contract? (λ (c) #t))))
 
 (struct higher-order-list/c generic-list/c ()
   #:property prop:custom-write custom-write-property-proc
@@ -841,7 +852,8 @@
    #:generate list/c-generate
    #:exercise list/c-exercise
    #:projection list/c-chaperone/other-projection
-   #:val-first-projection list/c-chaperone/other-val-first-projection))
+   #:val-first-projection list/c-chaperone/other-val-first-projection
+   #:list-contract? (λ (c) #t)))
 
 (define/subexpression-pos-prop (syntax/c ctc-in)
   (let ([ctc (coerce-flat-contract 'syntax/c ctc-in)])

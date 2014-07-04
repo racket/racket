@@ -6,6 +6,7 @@
          "rand.rkt"
          "generate-base.rkt"
          racket/pretty
+         racket/list
          (for-syntax racket/base
                      "helpers.rkt"))
 
@@ -20,7 +21,8 @@
          build-compound-type-name
          
          contract-stronger?
-
+         list-contract?
+         
          contract-first-order
          contract-first-order-passes?
          
@@ -123,6 +125,10 @@
     (coerce-contract 'contract-first-order-passes? c))
    v))
 
+(define (list-contract? raw-c)
+  (define c (coerce-contract/f raw-c))
+  (and c (contract-struct-list-contract? c)))
+
 ;; contract-stronger? : contract contract -> boolean
 ;; indicates if one contract is stronger (ie, likes fewer values) than another
 ;; this is not a total order.
@@ -207,6 +213,7 @@
                               x 
                               #f 
                               (memq x the-known-good-contracts))]
+    [(null? x) (make-eq-contract x)]
     [(or (symbol? x) (boolean? x) (char? x) (null? x) (keyword? x)) (make-eq-contract x)]
     [(or (bytes? x) (string? x)) (make-equal-contract x)]
     [(number? x) (make-=-contract x)]
@@ -356,7 +363,8 @@
               (eq? this-val (eq-contract-val that)))
          (and (predicate-contract? that)
               (predicate-contract-sane? that)
-              ((predicate-contract-pred that) this-val))))))
+              ((predicate-contract-pred that) this-val))))
+   #:list-contract? (λ (c) (null? (eq-contract-val c)))))
 
 (define-struct equal-contract (val)
   #:property prop:custom-write custom-write-property-proc
@@ -451,7 +459,9 @@
                                        (predicate-contract-name ctc)))
                       (λ (fuel)
                         (and built-in-generator
-                             (λ () (built-in-generator fuel))))])))))
+                             (λ () (built-in-generator fuel))))])))
+   #:list-contract? (λ (ctc) (or (equal? (predicate-contract-pred ctc) null?)
+                                 (equal? (predicate-contract-pred ctc) empty?)))))
 
 (define (check-flat-named-contract predicate) (coerce-flat-contract 'flat-named-contract predicate))
 (define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))

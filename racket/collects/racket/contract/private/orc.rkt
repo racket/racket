@@ -168,6 +168,11 @@
               [else (option)])])))]
     [else #f]))
 
+(define (single-or/c-list-contract? c)
+  (and (list-contract? (single-or/c-ho-ctc c))
+       (for/and ([c (in-list (single-or/c-flat-ctcs c))])
+         (list-contract? c))))
+
 (define-struct single-or/c (name pred flat-ctcs ho-ctc)
   #:property prop:orc-contract
   (λ (this) (cons (single-or/c-ho-ctc this) 
@@ -186,7 +191,8 @@
      #:generate (λ (ctc) (or/c-generate ctc
                                         (cons (single-or/c-ho-ctc ctc)
                                               (single-or/c-flat-ctcs ctc))))
-     #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc)))))))
+     #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc))))
+     #:list-contract? single-or/c-list-contract?)))
 
 (define-struct (impersonator-single-or/c single-or/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -200,7 +206,8 @@
    #:generate (λ (ctc) (or/c-generate ctc
                                       (cons (single-or/c-ho-ctc ctc)
                                             (single-or/c-flat-ctcs ctc))))
-   #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc))))))
+   #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc))))
+   #:list-contract? single-or/c-list-contract?))
 
 (define (multi-or/c-proj ctc)
   (let* ([ho-contracts (multi-or/c-ho-ctcs ctc)]
@@ -319,6 +326,12 @@
                   (andmap contract-stronger? this-ctcs that-ctcs))))
       (generic-or/c-stronger? this that)))
 
+(define (mult-or/c-list-contract? c)
+  (and (for/and ([c (in-list (multi-or/c-flat-ctcs c))])
+         (list-contract? c))
+       (for/and ([c (in-list (multi-or/c-ho-ctcs c))])
+         (list-contract? c))))
+
 (define-struct multi-or/c (name flat-ctcs ho-ctcs)
   #:property prop:orc-contract
   (λ (this) (append (multi-or/c-ho-ctcs this) 
@@ -337,7 +350,8 @@
      #:generate (λ (ctc) (or/c-generate ctc
                                         (append (multi-or/c-ho-ctcs ctc)
                                                 (multi-or/c-flat-ctcs ctc))))
-     #:exercise (λ (ctc) (or/c-exercise (multi-or/c-ho-ctcs ctc))))))
+     #:exercise (λ (ctc) (or/c-exercise (multi-or/c-ho-ctcs ctc)))
+     #:list-contract? mult-or/c-list-contract?)))
 
 (define-struct (impersonator-multi-or/c multi-or/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -351,7 +365,8 @@
    #:generate (λ (ctc) (or/c-generate ctc
                                       (append (multi-or/c-ho-ctcs ctc)
                                               (multi-or/c-flat-ctcs ctc))))
-   #:exercise (λ (ctc) (or/c-exercise (multi-or/c-ho-ctcs ctc)))))
+   #:exercise (λ (ctc) (or/c-exercise (multi-or/c-ho-ctcs ctc)))
+   #:list-contract? mult-or/c-list-contract?))
 
 (define-struct flat-or/c (pred flat-ctcs)
   #:property prop:custom-write custom-write-property-proc
@@ -396,8 +411,11 @@
 
    #:first-order
    (λ (ctc) (flat-or/c-pred ctc))
-   #:generate (λ (ctc) (or/c-generate ctc (flat-or/c-flat-ctcs ctc)))))
-
+   #:generate (λ (ctc) (or/c-generate ctc (flat-or/c-flat-ctcs ctc)))
+   #:list-contract? 
+   (λ (ctc)
+     (for/and ([c (in-list (flat-or/c-flat-ctcs ctc))])
+       (list-contract? c)))))
 
 
 (define/final-prop (symbols s1 . s2s)

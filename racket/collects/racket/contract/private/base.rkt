@@ -103,7 +103,7 @@
                    '#,(build-source-location-vector #'ctc))))]))
 
 (define-syntax (-recursive-contract stx)
-  (define (do-recursive-contract arg type name)
+  (define (do-recursive-contract arg type name list-contract?)
     (define local-name (syntax-local-infer-name stx))
     (define maker
       (case (syntax-e type)
@@ -115,13 +115,18 @@
                "type must be one of #:impersonator, #:chaperone, or #:flat"
                stx
                type)]))
-    #`(#,maker '#,name (λ () #,arg) '#,local-name))
+    #`(#,maker '#,name (λ () #,arg) '#,local-name #,list-contract?))
   (syntax-case stx ()
+    [(_ arg type #:list-contract?)
+     (keyword? (syntax-e #'type))
+     (do-recursive-contract #'arg #'type #'(recursive-contract arg type) #t)]
+    [(_ arg #:list-contract?)
+     (do-recursive-contract #'arg #'#:impersonator #'(recursive-contract arg) #t)]
     [(_ arg type)
      (keyword? (syntax-e #'type))
-     (do-recursive-contract #'arg #'type #'(recursive-contract arg type))]
+     (do-recursive-contract #'arg #'type #'(recursive-contract arg type) #f)]
     [(_ arg)
-     (do-recursive-contract #'arg #'#:impersonator #'(recursive-contract arg))]))
+     (do-recursive-contract #'arg #'#:impersonator #'(recursive-contract arg) #f)]))
 
 (define (force-recursive-contract ctc)
   (define current (recursive-contract-ctc ctc))
@@ -138,19 +143,37 @@
           (coerce-chaperone-contract 'recursive-contract (thunk))]
          [(impersonator-recursive-contract? ctc)
           (coerce-contract 'recursive-contract (thunk))]))
+     (when (recursive-contract-list-contract? ctc)
+       (unless (list-contract? forced-ctc)
+         (raise-argument-error 'recursive-contract "list-contract?" forced-ctc)))
      (set-recursive-contract-ctc! ctc forced-ctc)
      (set-recursive-contract-name! ctc (append `(recursive-contract ,(contract-name forced-ctc))
                                                (cddr old-name)))
      forced-ctc]
     [else current]))
 
-(define ((recursive-contract-projection ctc) blame)
-  (define r-ctc (force-recursive-contract ctc))
-  (define f (contract-projection r-ctc))
-  (define blame-known (blame-add-context blame #f))
-  (λ (val)
-    ((f blame-known) val)))
-
+(define (recursive-contract-projection ctc)
+  (cond
+    [(recursive-contract-list-contract? ctc)
+     (λ (blame)
+       (define r-ctc (force-recursive-contract ctc))
+       (define f (contract-projection r-ctc))
+       (define blame-known (blame-add-context blame #f))
+       (λ (val)
+         (unless (list? val)
+           (raise-blame-error blame-known
+                              val
+                              '(expected: "list?" given: "~e")
+                              val))
+         ((f blame-known) val)))]
+    [else
+     (λ (blame)
+       (define r-ctc (force-recursive-contract ctc))
+       (define f (contract-projection r-ctc))
+       (define blame-known (blame-add-context blame #f))
+       (λ (val)
+         ((f blame-known) val)))]))
+  
 (define (recursive-contract-stronger this that)
   (and (recursive-contract? that)
        (procedure-closure-contents-eq? (recursive-contract-thunk this)
@@ -160,7 +183,7 @@
   (contract-first-order-passes? (force-recursive-contract ctc)
                                 val))
 
-(struct recursive-contract ([name #:mutable] thunk [ctc #:mutable]))
+(struct recursive-contract ([name #:mutable] thunk [ctc #:mutable] list-contract?))
 
 (struct flat-recursive-contract recursive-contract ()
   #:property prop:custom-write custom-write-property-proc
@@ -169,7 +192,8 @@
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
    #:projection recursive-contract-projection
-   #:stronger recursive-contract-stronger))
+   #:stronger recursive-contract-stronger
+   #:list-contract? recursive-contract-list-contract?))
 (struct chaperone-recursive-contract recursive-contract ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
@@ -177,7 +201,8 @@
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
    #:projection recursive-contract-projection
-   #:stronger recursive-contract-stronger))
+   #:stronger recursive-contract-stronger
+   #:list-contract? recursive-contract-list-contract?))
 (struct impersonator-recursive-contract recursive-contract ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -185,4 +210,5 @@
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
    #:projection recursive-contract-projection
-   #:stronger recursive-contract-stronger))
+   #:stronger recursive-contract-stronger
+   #:list-contract? recursive-contract-list-contract?))

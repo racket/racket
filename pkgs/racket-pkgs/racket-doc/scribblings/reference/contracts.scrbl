@@ -187,6 +187,9 @@ For example, this contract
 does not accept a function like this one: @racket[(lambda args ...)]
 since it cannot tell which of the two arrow contracts should be used
 with the function.
+
+If all of its arguments are @racket[list-contract?]s, then @racket[or/c]
+returns a @racket[list-contract?].
 }
 
 @defproc[(and/c [contract contract?] ...) contract?]{
@@ -369,14 +372,14 @@ Returns the same contract as @racket[(box/c c #:immutable #t)]. This form exists
 reasons of backwards compatibility.}
 
 
-@defproc[(listof [c contract?]) contract?]{
+@defproc[(listof [c contract?]) list-contract?]{
 
 Returns a contract that recognizes a list whose every element matches
 the contract @racket[c]. Beware that when this contract is applied to
 a value, the result is not necessarily @racket[eq?] to the input.}
 
 
-@defproc[(non-empty-listof [c contract?]) contract?]{
+@defproc[(non-empty-listof [c contract?]) list-contract?]{
 
 Returns a contract that recognizes non-empty lists whose elements match
 the contract @racket[c]. Beware that when this contract is applied to
@@ -387,10 +390,16 @@ a value, the result is not necessarily @racket[eq?] to the input.}
 Produces a contract that recognizes pairs whose first and second elements
 match @racket[car-c] and @racket[cdr-c], respectively. Beware that
 when this contract is applied to a value, the result is not
-necessarily @racket[eq?] to the input.}
+necessarily @racket[eq?] to the input.
+
+If the @racket[cdr-c] contract is a @racket[list-contract?], then 
+@racket[cons/c] returns a @racket[list-contract?].
+
+@history[#:changed "6.0.1.13" @list{Added the @racket[list-contract?] propagating behavior.}]
+}
 
 
-@defproc[(list/c [c contract?] ...) contract?]{
+@defproc[(list/c [c contract?] ...) list-contract?]{
 
 Produces a contract for a list. The number of elements in the list
 must match the number of arguments supplied to @racket[list/c], and
@@ -1858,7 +1867,8 @@ the contract library primitives below.
                   name x))))]
           [#:stronger stronger
                       (or/c #f (-> contract? contract? boolean?))
-                      #f])
+                      #f]
+          [#:list-contract is-list-contract? boolean? #f])
          contract?]
 @defproc[(make-chaperone-contract
           [#:name name any/c 'anonymous-chaperone-contract]
@@ -1878,7 +1888,8 @@ the contract library primitives below.
                   name x))))]
           [#:stronger stronger
                       (or/c #f (-> contract? contract? boolean?))
-                      #f])
+                      #f]
+          [#:list-contract is-list-contract? boolean? #f])
          chaperone-contract?]
 @defproc[(make-flat-contract
           [#:name name any/c 'anonymous-flat-contract]
@@ -1898,7 +1909,8 @@ the contract library primitives below.
                   name x))))]
           [#:stronger stronger
                       (or/c #f (-> contract? contract? boolean?))
-                      #f])
+                      #f]
+          [#:list-contract is-list-contract? boolean? #f])
          flat-contract?]
 )]{
 
@@ -1946,6 +1958,9 @@ The @racket[stronger] argument is used to implement @racket[contract-stronger?].
 first argument is always the contract itself and the second argument is whatever
 was passed as the second argument to @racket[contract-stronger?].
 
+The @racket[is-list-contract?] argument is used by the @racket[list-contract?] predicate
+to determine if this is a contract that accepts only @racket[list?] values.
+
 @defexamples[#:eval (contract-eval)
 (define int/c
   (make-flat-contract #:name 'int/c #:first-order integer?))
@@ -1977,6 +1992,7 @@ was passed as the second argument to @racket[contract-stronger?].
 (halve 1)
 ]
 
+@history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}]
 }
 
 @defproc[(build-compound-type-name [c/s any/c] ...) any]{
@@ -2306,7 +2322,8 @@ is expected to be the blame record for the contract on the value).
                   (-> (and/c positive? real?)
                       (values
                        (-> c void?)
-                       (listof contract?)))]))])
+                       (listof contract?)))]))]
+          [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          flat-contract-property?]
 @defproc[(build-chaperone-contract-property
           [#:name
@@ -2353,7 +2370,8 @@ is expected to be the blame record for the contract on the value).
                   (-> (and/c positive? real?)
                       (values
                        (-> c void?)
-                       (listof contract?)))]))])
+                       (listof contract?)))]))]
+          [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          chaperone-contract-property?]
 @defproc[(build-contract-property
           [#:name
@@ -2400,7 +2418,8 @@ is expected to be the blame record for the contract on the value).
                   (-> (and/c positive? real?)
                       (values
                        (-> c void?)
-                       (listof contract?)))]))])
+                       (listof contract?)))]))]
+          [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          contract-property?])]{
 
       @italic{The precise details of the 
@@ -2423,10 +2442,12 @@ produces a blame-tracking projection defining the behavior of the contract;
 (passed in the first argument) is stronger than some other contract (passed
 in the second argument); @racket[generate], which returns a thunk
 that generates random values matching the contract or @racket[#f], indicating
-that random generation for this contract isn't supported; and @racket[exercise],
+that random generation for this contract isn't supported; @racket[exercise],
 which returns a function that exercises values matching the contract (e.g.,
 if it is a function contract, it may call the function) and a list of contracts
-whose values will be generated by this process.
+whose values will be generated by this process; and @racket[is-flat-contract?],
+which is used by @racket[flat-contract?] to determine if this contract
+accepts only @racket[list?]s.
 
 These accessors are passed as (optional) keyword arguments to
 @racket[build-contract-property], and are applied to instances of the
@@ -2448,6 +2469,7 @@ projection accessor is expected not to wrap its argument in a higher-order
 fashion, analogous to the constraint on projections in
 @racket[make-flat-contract].
 
+@history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}]
 }
 
 @deftogether[(
@@ -2628,6 +2650,17 @@ symbols, booleans, numbers, and other ordinary Racket values
 (that are defined as @tech{contracts}) are also
 flat contracts.}
 
+@defproc[(list-contract? [v any/c]) boolean?]{
+  Recognizes certain @racket[contract?] values that accept @racket[list?]s.
+  
+  A list contract is one that insists that its argument
+  is a @racket[list?], meaning that the value cannot be cyclic
+  and must either be the empty list or a pair constructed
+  with @racket[cons] and another list.
+  
+  @history[#:added "6.0.1.13"]
+}
+
 @defproc[(contract-name [c contract?]) any/c]{
 Produces the name used to describe the contract in error messages.
 }
@@ -2670,13 +2703,22 @@ Makes a contract that accepts no values, and reports the
 name @racket[sexp-name] when signaling a contract violation.}
 
 @defform*[[(recursive-contract contract-expr)
-           (recursive-contract contract-expr type)]]{
+           (recursive-contract contract-expr #:list-contract?)
+           (recursive-contract contract-expr type)
+           (recursive-contract contract-expr type #:list-contract?)]]{
 
 Delays the evaluation of its argument until the contract is checked,
 making recursive contracts possible.  If @racket[type] is given, it
 describes the expected type of contract and must be one of the keywords
 @racket[#:impersonator], @racket[#:chaperone], or @racket[#:flat].  If
-@racket[type] is not given, an impersonator contract is created.}
+@racket[type] is not given, an impersonator contract is created.
+
+If @racket[#:list-contract?] is returned, then the result is a
+@racket[list-contract?] and the @racket[contract-expr] must evaluate
+to a @racket[list-contract?].
+
+@history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}]
+}
 
 
 @defform/subs[(opt/c contract-expr maybe-name)

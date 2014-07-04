@@ -13,6 +13,7 @@
          contract-struct-stronger?
          contract-struct-generate
          contract-struct-exercise
+         contract-struct-list-contract?
          
          prop:flat-contract
          flat-contract-struct?
@@ -55,7 +56,8 @@
                                    stronger
                                    generate
                                    exercise
-                                   val-first-projection ]
+                                   val-first-projection
+                                   list-contract? ]
   #:omit-define-syntaxes)
 
 (define (contract-property-guard prop info)
@@ -120,6 +122,10 @@
   (if (procedure? exercise)
       (exercise c)
       (λ (fuel) (values void '()))))
+
+(define (contract-struct-list-contract? c)
+  (define prop (contract-struct-property c))
+  ((contract-property-list-contract? prop) c))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -215,7 +221,8 @@
          #:val-first-projection [get-val-first-projection #f]
          #:stronger [stronger #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
-         #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))])
+         #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
+         #:list-contract? [list-contract? (λ (c) #f)])
   
   ;; this code is here to help me find the combinators that
   ;; are still using only #:projection and not #:val-first-projection
@@ -242,10 +249,16 @@
                    get-name get-first-order)])]
          [stronger (or stronger weakest)])
 
-    (mk get-name get-first-order get-projection stronger generate exercise get-val-first-projection)))
+    (mk get-name get-first-order
+        get-projection stronger 
+        generate exercise 
+        get-val-first-projection 
+        list-contract?)))
 
 (define build-contract-property
-  (build-property make-contract-property 'anonymous-contract values))
+  (procedure-rename
+   (build-property make-contract-property 'anonymous-contract values)
+   'build-contract-property))
 
 ;; Here we'll force the projection to always return the original value,
 ;; instead of assuming that the provided projection does so appropriately.
@@ -257,9 +270,11 @@
           (λ (v) (p v) v))))))
 
 (define build-flat-contract-property
-  (build-property (compose make-flat-contract-property make-contract-property)
-                  'anonymous-flat-contract
-                  flat-projection-wrapper))
+  (procedure-rename
+   (build-property (compose make-flat-contract-property make-contract-property)
+                   'anonymous-flat-contract
+                   flat-projection-wrapper)
+   'build-flat-contract-property))
 
 (define (chaperone-projection-wrapper f)
   (λ (c)
@@ -279,9 +294,11 @@
       (c-proj (blame-add-unknown-context blame)))))
 
 (define build-chaperone-contract-property
-  (build-property (compose make-chaperone-contract-property make-contract-property)
-                  'anonymous-chaperone-contract
-                  chaperone-projection-wrapper))
+  (procedure-rename
+   (build-property (compose make-chaperone-contract-property make-contract-property)
+                   'anonymous-chaperone-contract
+                   chaperone-projection-wrapper)
+   'build-chaperone-contract-property))
 
 (define (get-any? c) any?)
 (define (any? x) #t)
@@ -309,7 +326,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-struct make-contract [ name first-order projection val-first-projection 
-                                    stronger generate exercise ]
+                                    stronger generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -324,10 +341,11 @@
    #:val-first-projection (lambda (c) (make-contract-val-first-projection c))
    #:stronger (lambda (a b) ((make-contract-stronger a) a b))
    #:generate (lambda (c) (make-contract-generate c))
-   #:exercise (lambda (c) (make-contract-exercise c))))
+   #:exercise (lambda (c) (make-contract-exercise c))
+   #:list-contract? (λ (c) (make-contract-list-contract? c))))
 
 (define-struct make-chaperone-contract [ name first-order projection val-first-projection
-                                              stronger generate exercise ]
+                                              stronger generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -342,10 +360,11 @@
    #:val-first-projection (lambda (c) (make-chaperone-contract-val-first-projection c))
    #:stronger (lambda (a b) ((make-chaperone-contract-stronger a) a b))
    #:generate (lambda (c) (make-chaperone-contract-generate c))
-   #:exercise (lambda (c) (make-chaperone-contract-exercise c))))
+   #:exercise (lambda (c) (make-chaperone-contract-exercise c))
+   #:list-contract? (λ (c) (make-chaperone-contract-list-contract? c))))
 
 (define-struct make-flat-contract [ name first-order projection val-first-projection
-                                         stronger generate exercise ]
+                                         stronger generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -360,7 +379,8 @@
    #:projection (lambda (c) (make-flat-contract-projection c))
    #:stronger (lambda (a b) ((make-flat-contract-stronger a) a b))
    #:generate (lambda (c) (make-flat-contract-generate c))
-   #:exercise (lambda (c) (make-flat-contract-exercise c))))
+   #:exercise (lambda (c) (make-flat-contract-exercise c))
+   #:list-contract? (λ (c) (make-flat-contract-list-contract? c))))
 
 (define ((build-contract mk default-name)
          #:name [name #f]
@@ -369,7 +389,8 @@
          #:val-first-projection [val-first-projection #f]
          #:stronger [stronger #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
-         #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))])
+         #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
+         #:list-contract? [list-contract? (λ (ctc) #f)])
 
   (let* ([name (or name default-name)]
          [first-order (or first-order any?)]
@@ -379,7 +400,11 @@
                                         (val-first-first-order-projection name first-order)))]
          [stronger (or stronger as-strong?)])
 
-    (mk name first-order projection val-first-projection stronger generate exercise)))
+    (mk name first-order 
+        projection val-first-projection
+        stronger 
+        generate exercise
+        list-contract?)))
 
 (define ((get-val-first-first-order-projection get-name get-first-order) c)
   (val-first-first-order-projection (get-name c) (get-first-order c)))
@@ -403,12 +428,19 @@
    (contract-struct-projection b)))
 
 (define make-contract
-  (build-contract make-make-contract 'anonymous-contract))
+  (procedure-rename 
+   (build-contract make-make-contract 'anonymous-contract)
+   'make-contract))
 
 (define make-chaperone-contract
-  (build-contract make-make-chaperone-contract 'anonymous-chaperone-contract))
+  (procedure-rename
+   (build-contract make-make-chaperone-contract 'anonymous-chaperone-contract)
+   'make-chaperone-contract))
 
-(define make-flat-contract (build-contract make-make-flat-contract 'anonymous-flat-contract))
+(define make-flat-contract
+  (procedure-rename
+   (build-contract make-make-flat-contract 'anonymous-flat-contract)
+   'make-flat-contract))
 
 ;; property should be bound to a function that accepts the contract and
 ;; returns a list of contracts that were the original arguments to the or/c
