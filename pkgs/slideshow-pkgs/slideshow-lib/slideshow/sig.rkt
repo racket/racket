@@ -114,4 +114,5 @@
      use-prefetch-in-preview?
      print-target
      talk-duration-minutes
-     screen-number)))
+     screen-number
+     letterbox-color)))
