@@ -287,7 +287,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    A list of documents to build. Each document in the list is itself
    represented as a list, where each document's list starts with a
    string that is a collection-relative path to the document's source
-   file.
+   file. A document name (which is derived from the source module's
+   name by default) is intended to be globally unique in the same way
+   as a package or module name.
 
    More precisely a @racketidfont{scribblings} entry must be a value
    that can be generated from an expression matching the following
