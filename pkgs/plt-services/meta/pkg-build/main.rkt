@@ -11,7 +11,8 @@
          net/url
          pkg/lib
          distro-build/vbox
-         web-server/servlet-env)
+         web-server/servlet-env
+         "union-find.rkt")
 
 (provide build-pkgs)
 
@@ -36,7 +37,6 @@
 ;;     needed by `racket/draw`)
 ;;
 ;; FIXME:
-;;  - handle dependency cycles
 ;;  - handle conflicting doc names
 ;;  - check that declared dependencies are right
 ;;  - keep docs that build despite errors
@@ -160,7 +160,19 @@
     (printf ">> ")
     (apply substatus fmt args))
 
-  (define (show-list strs)
+  (define (show-list nested-strs)
+    (define strs (let loop ([strs nested-strs])
+                   (cond
+                    [(null? strs) null]
+                    [(pair? (car strs))
+                     (define l (car strs))
+                     (define len (length l))
+                     (loop (append
+                            (list (string-append "(" (car l)))
+                            (take (cdr l) (- len 2))
+                            (list (string-append (last l) ")"))
+                            (cdr strs)))]
+                    [else (cons (car strs) (loop (cdr strs)))])))
     (substatus "~a\n"
                (for/fold ([a ""]) ([s (in-list strs)])
                  (if ((+ (string-length a) 1 (string-length s)) . > . 72)
@@ -477,31 +489,49 @@
   (define need-pkgs (set-subtract (set-subtract update-pkgs installed-pkgs)
                                   failed-pkgs))
 
-  ;; Sort needed packages based on dependencies:
-  (define need-pkgs-list 
-    (let loop ([l (sort (set->list need-pkgs) string<?)] [seen (set)] [cycle-seen (set)])
-      (cond
-       [(null? l) null]
-       [(set-member? cycle-seen (car l))
-        (eprintf "WARNING: cannot yet handle cycles reliably, discovered at: ~s\n" (car l))
-        (loop (cdr l) seen cycle-seen)]
-       [(set-member? seen (car l)) (loop (cdr l) seen cycle-seen)]
-       [else
-        (define pkg (car l))
-        (define new-seen (set-add seen pkg))
-        (define deps
-          (for/list ([dep (in-list (pkg-deps pkg))]
-                     #:unless (set-member? seen dep)
-                     #:when (set-member? need-pkgs dep))
-            dep))
-        (if (null? deps)
-            (cons pkg (loop (cdr l) new-seen cycle-seen))
-            (let ([pre (loop deps new-seen (set-add cycle-seen pkg))])
-              (append pre
-                      (cons pkg
-                            (loop (cdr l)
-                                  (set-union new-seen (list->set pre))
-                                  cycle-seen)))))])))
+  (define cycles (make-hash)) ; for union-find
+
+  ;; Sort needed packages based on dependencies, and accumulate cycles:
+  (define need-rep-pkgs-list
+    (let loop ([l (sort (set->list need-pkgs) string<?)] [seen (set)] [cycle-stack null])
+      (if (null? l)
+          null
+          (let ([pkg (car l)])
+            (cond
+             [(member pkg cycle-stack)
+              ;; Hit a package while processing its dependencies;
+              ;; everything up to that package on the stack is
+              ;; mutually dependent:
+              (for ([s (in-list (member pkg (reverse cycle-stack)))])
+                (union! cycles pkg s))
+              (loop (cdr l) seen cycle-stack)]
+             [(set-member? seen pkg)
+              (loop (cdr l) seen cycle-stack)]
+             [else
+              (define pkg (car l))
+              (define new-seen (set-add seen pkg))
+              (define deps
+                (for/list ([dep (in-list (pkg-deps pkg))]
+                           #:when (set-member? need-pkgs dep))
+                  dep))
+              (define pre (loop deps new-seen (cons pkg cycle-stack)))
+              (define pre-seen (set-union new-seen (list->set pre)))
+              (define remainder (loop (cdr l) pre-seen cycle-stack))
+              (elect! cycles pkg) ; in case of mutual dependency, follow all pre-reqs
+              (append pre (cons pkg remainder))])))))
+
+  ;; A list that contains strings and lists of strings, where a list
+  ;; of strings represents mutually dependent packages:
+  (define need-pkgs-list
+    (let ([reps (make-hash)])
+      (for ([pkg (in-set need-pkgs)])
+        (hash-update! reps (find! cycles pkg) (lambda (l) (cons pkg l)) null))
+      (for/list ([pkg (in-list need-rep-pkgs-list)]
+                 #:when (equal? pkg (find! cycles pkg)))
+        (define pkgs (hash-ref reps pkg))
+        (if (= 1 (length pkgs))
+            pkg
+            pkgs))))
 
   (substatus "Packages that we need:\n")
   (show-list need-pkgs-list)
@@ -592,19 +622,26 @@
 
   ;; Build one package or a group of packages:
   (define (build-pkgs pkgs)
+    (define flat-pkgs (flatten pkgs))
+    ;; one-pkg can be a list in the case of mutual dependencies:
     (define one-pkg (and (= 1 (length pkgs)) (car pkgs)))
-    (define pkgs-str (or one-pkg
-                         (apply ~a #:separator " " pkgs)))
+    (define pkgs-str (apply ~a #:separator " " flat-pkgs))
 
     (status (~a (make-string 40 #\=) "\n"))
     (if one-pkg
-        (status "Building ~a\n" one-pkg)
+        (if (pair? one-pkg)
+            (begin
+              (status "Building mutually dependent packages:\n")
+              (show-list one-pkg))
+            (status "Building ~a\n" one-pkg))
         (begin
           (status "Building packages together:\n")
           (show-list pkgs)))
 
     (define failure-dest (and one-pkg
-                              (pkg-failure-dest one-pkg)))
+                              (pkg-failure-dest (if (list? one-pkg)
+                                                    (car one-pkg)
+                                                    one-pkg))))
 
     (define (save-checksum pkg)
       (call-with-output-file*
@@ -637,7 +674,7 @@
                               (build-path work-dir "user-list.rktd")
                               read))
             (for/and ([pkg (in-list new-pkgs)])
-              (or (member pkg pkgs)
+              (or (member pkg flat-pkgs)
                   (set-member? installed-pkgs pkg)
                   (file-exists? (build-path built-catalog-dir "pkg" pkg))
                   (complain failure-dest
@@ -651,7 +688,7 @@
                " > ../pkg-docs.rktd"
                #:mode 'result
                #:failure-dest failure-dest)
-          (for/and ([pkg (in-list pkgs)])
+          (for/and ([pkg (in-list flat-pkgs)])
             (ssh cd-racket
                  " && bin/raco pkg create --from-install --built"
                  " --dest " vm-dir "/built"
@@ -660,7 +697,7 @@
                  #:failure-dest failure-dest))))
        (cond
         [ok?
-         (for ([pkg (in-list pkgs)])
+         (for ([pkg (in-list flat-pkgs)])
            (when (file-exists? (pkg-failure-dest pkg))
              (delete-file (pkg-failure-dest pkg)))
            (scp (at-vm (~a vm-dir "/built/" pkg ".zip"))
@@ -677,10 +714,14 @@
                   (fprintf o "success\n")
                   (fprintf o "success with ~s\n" pkgs))))
            (save-checksum pkg))
-         (update-built-catalog pkgs)]
+         (update-built-catalog flat-pkgs)]
         [else
          (when one-pkg
-           (save-checksum one-pkg))
+           (for ([pkg (in-list flat-pkgs)])
+             (when (list? one-pkg)
+               (unless (equal? pkg (car one-pkg))
+                 (copy-file failure-dest (pkg-failure-dest (car one-pkg)) #t)))
+             (save-checksum pkg)))
          (substatus "*** failed ***\n")])
        ok?)
      (lambda ()
@@ -690,6 +731,7 @@
   ;; groups if the whole group fails or is too
   ;; big:
   (define (build-all-pkgs pkgs)
+    ;; pkgs is a list of string and lists (for mutual dependency)
     (define len (length pkgs))
     (define ok? (and (len . <= . max-build-together)
                      (build-pkgs pkgs)))

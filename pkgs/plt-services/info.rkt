@@ -26,7 +26,8 @@
                "scribble-lib"
                "compatibility-lib"
                "plt-web"
-               "web-server-lib"))
+               "web-server-lib"
+               "rackunit-lib"))
 
 (define pkg-desc "Miscellaneous management and maintenance tools used by the Racket development team")
 
