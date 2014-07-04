@@ -64,7 +64,7 @@ If @racket[secs] argument for @racket[#:timeout] is not @racket[#f],
 then the viewer automatically advances from this slide to the next
 after @racket[secs] seconds, and manual advancing skips this slide.
 
-If @racket[condense?] is ture, then in condense mode (as specified by
+If @racket[condense?] is true, then in condense mode (as specified by
 the @Flag{c} command-line flag), the slide is not created and
 registered.}
 
@@ -626,7 +626,7 @@ Within the @racket[body]s, several keywords are bound non-hygienically
 
 Like @racket[with-steps], but when @racket[condense?] is true, then
 @racket[expr] is evaluated only for the last @racket[id] (independent
-of whether the name fo the last @racket[id] name ends in @litchar{~}).
+of whether the name of the last @racket[id] name ends in @litchar{~}).
 }
 
 @; ----------------------------------------------------------------------
