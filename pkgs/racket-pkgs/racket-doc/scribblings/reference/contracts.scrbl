@@ -2686,11 +2686,15 @@ Produces the name used to describe the contract in error messages.
   To support @racket[value-contract] and @racket[value-blame]
   in your own contract combinators, use @racket[prop:blame] or
   @racket[impersonator-prop:blame].
+  
+  @history[#:added "6.0.1.12"]
 }
 
 @defproc[(has-blame? [v any/c]) boolean?]{
   Returns @racket[#t] if @racket[v] is a value that
   has a contract with blame information attached to it.
+
+  @history[#:added "6.0.1.12"]
 }
 
 @defproc[(contract-projection [c contract?]) (-> blame? (-> any/c any/c))]{
