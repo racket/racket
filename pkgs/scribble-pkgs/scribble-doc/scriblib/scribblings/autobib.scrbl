@@ -230,5 +230,5 @@ same way as by @racket[make-bib].}
   
   Defaults to @racket[#f].
   
-  @history[#:added "1.4"]
+  @history[#:added "1.5"]
 }
