@@ -807,11 +807,11 @@
       (define doc-pkgs
         (for/hash ([doc-pkg (in-list doc-pkg-list)])
           (values doc-pkg (hash-ref adds-pkgs doc-pkg null))))
-      (define (add-providers ht doc-pkgs)
-        (for*/fold ([ht ht]) ([(k v) (in-hash doc-pkgs)]
+      (define (add-providers ht pkgs)
+        (for*/fold ([ht ht]) ([(k v) (in-hash pkgs)]
                               [(d) (in-list v)])
           (hash-update ht d (lambda (l) (set-add l k)) (set))))
-      (define providers (add-providers (add-providers (hash) doc-pkgs)
+      (define providers (add-providers (add-providers (hash) adds-pkgs)
                                        (call-with-input-file*
                                         (build-path work-dir "install-adds.rktd")
                                         read)))
