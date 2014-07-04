@@ -2982,7 +2982,7 @@ This function sets @racket[dc-for-text-size]. See also
 @racket[metafunction->pict] and
 @racket[metafunctions->pict].
 
-@history[#:changed "1.2" @list{Added @racket[#:contract?] keyword argument.}]
+@history[#:changed "1.3" @list{Added @racket[#:contract?] keyword argument.}]
 }
 
 @defform[(metafunction->pict metafunction-name)]{
