@@ -12,7 +12,8 @@
   env-item-name
   env-item-ctc
   
-  predicate-generator-table)
+  predicate-generator-table
+  exact-nonnegative-integer-gen)
 
  
 ;; generate 

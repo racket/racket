@@ -15,6 +15,8 @@
 (for ([(k v) (in-hash predicate-generator-table)])
   (check-not-exn (λ () (test-contract-generation k))))
 
+(check-not-exn (λ () (test-contract-generation natural-number/c)))
+
 ;; test =, eq?, and equal? contract random generators
 (check-not-exn (λ () (test-contract-generation 0)))
 (check-not-exn (λ () (test-contract-generation 'x)))

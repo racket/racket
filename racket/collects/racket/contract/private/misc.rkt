@@ -1550,7 +1550,8 @@
      (and (number? x)
           (integer? x)
           (exact? x)
-          (x . >= . 0)))))
+          (x . >= . 0)))
+   (λ (fuel) (λ () (exact-nonnegative-integer-gen fuel)))))
 
 (define (n->th n)
   (string-append 
