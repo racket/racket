@@ -3222,10 +3222,16 @@
            [else s])])]))))
 
 (define (pkg-directory->additional-installs dir pkg-name
-                                            #:namespace [metadata-ns (make-metadata-namespace)])
-  (set->list (directory->additional-installs dir pkg-name metadata-ns)))
+                                            #:namespace [metadata-ns (make-metadata-namespace)]
+                                            #:system-type [sys-type #f]
+                                            #:system-library-subpath [sys-lib-subpath #f])
+  (set->list (directory->additional-installs dir pkg-name metadata-ns
+                                             #:system-type sys-type
+                                             #:system-library-subpath sys-lib-subpath)))
 
-(define (directory->additional-installs dir pkg-name metadata-ns)
+(define (directory->additional-installs dir pkg-name metadata-ns
+                                        #:system-type [sys-type #f]
+                                        #:system-library-subpath [sys-lib-subpath #f])
   (define single-collect
     (pkg-single-collection dir #:name pkg-name #:namespace metadata-ns))
   (let loop ([s (set)] [f dir] [top? #t])
@@ -3234,14 +3240,14 @@
       (define i (get-pkg-info f metadata-ns))
       (define new-s
         (if (and i (or single-collect (not top?)))
-            (set-union (extract-additional-installs i)
+            (set-union (extract-additional-installs i sys-type sys-lib-subpath)
                        s)
             s))
       (for/fold ([s new-s]) ([f (directory-list f #:build? #t)])
         (loop s f #f))]
      [else s])))
 
-(define (extract-additional-installs i)
+(define (extract-additional-installs i sys-type sys-lib-subpath)
   (define (extract-documents i)
     (let ([s (i 'scribblings (lambda () null))])
       (for/set ([doc (in-list (if (list? s) s null))]
@@ -3284,12 +3290,20 @@
   (define (extract-man-pages i)
     (extract-paths i 'man '(copy-man-pages
                             move-man-pages)))
-
+  (define (this-platform? i)
+    (define v (i 'install-platform (lambda () #rx"")))
+    (or (not (platform-spec? v))
+        (matching-platform? v
+                            #:system-type sys-type
+                            #:system-library-subpath sys-lib-subpath)))
   (set-union (extract-documents i)
              (extract-launchers i)
-             (extract-foreign-libs i)
-             (extract-shared-files i)
-             (extract-man-pages i)))
+             (if (this-platform? i)
+                 (set-union
+                  (extract-foreign-libs i)
+                  (extract-shared-files i)
+                  (extract-man-pages i))
+                 (set))))
 
 (define (get-additional-installed kind ai-cache metadata-ns)
   (or (unbox ai-cache)
@@ -3311,7 +3325,7 @@
         (define s (for/fold ([s (set)]) ([dir (in-list dirs)])
                     (define i (get-pkg-info dir metadata-ns))
                     (if i
-                        (set-union s (extract-additional-installs i))
+                        (set-union s (extract-additional-installs i #f #f))
                         s)))
         (set-box! ai-cache s)
         s)))
@@ -3719,5 +3733,7 @@
                                     (#:namespace namespace?)
                                     (listof module-path?))]
   [pkg-directory->additional-installs (->* (path-string? string?)
-                                           (#:namespace namespace?)
+                                           (#:namespace namespace?
+                                                        #:system-type (or/c #f symbol?)
+                                                        #:system-library-subpath (or/c #f path?))
                                            (listof (cons/c symbol? string?)))]))

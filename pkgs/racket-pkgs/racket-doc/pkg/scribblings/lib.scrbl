@@ -8,7 +8,8 @@
                      (only-in pkg/db current-pkg-catalog-file)
                      net/url
                      syntax/modcollapse
-                     setup/getinfo))
+                     setup/getinfo
+                     setup/matching-platform))
 
 @title[#:tag "lib"]{Package Management Functions}
 
@@ -538,15 +539,25 @@ represented by @racket[dir] and named @racket[pkg-name].}
 
 @defproc[(pkg-directory->additional-installs [dir path-string?]
                                              [pkg-name string]
-                                             [#:namespace namespace namespace? (make-base-namespace)])
+                                             [#:namespace namespace namespace? (make-base-namespace)]
+                                             [#:system-type sys-type (or/c #f symbol?) (system-type)]
+                                             [#:system-library-subpath sys-lib-subpath (or/c #f path?)
+                                                                       (system-library-subpath #f)])
          (listof (cons/c symbol? string?))]{
 
 Returns a list of pairs for items that are installed by the package
 represented by @racket[dir] and named @racket[pkg-name]. Installed
 items can include documentation, executables, foreign libraries, other
-shared files, and man pages. The symbol for each item gives it a
-category, such as @racket['doc] or @racket['exe], and the string part
-is a normalized name, such as the destination name for a document or a
-case-folded executable name without a file suffix.
+shared files, and man pages---all as specified by @filepath{info.rkt}
+files. The symbol for each item gives it a category, such as
+@racket['doc] or @racket['exe], and the string part is a normalized
+name, such as the destination name for a document or a case-folded
+executable name without a file suffix.
+
+The @racket[sys-type] and @racket[sys-lib-subpath] arguments are used
+in the same way as for @racket[matching-platform?] to determine
+platform-specific installations as determined by
+@racketidfont{install-platform} definitions in @filepath{info.rkt}
+files.
 
 @history[#:added "6.0.1.13"]}
