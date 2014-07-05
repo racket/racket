@@ -48,7 +48,12 @@
   (define lb (new list-box% 
                   [style (if dir? '(extended) '(single))]
                   [parent dlg] [choices '()] [label #f]
-                  [callback (λ (lb evt) (update-buttons))]))
+                  [callback (λ (lb evt)
+                              (cond
+                                [(equal? (send evt get-event-type) 'list-box-dclick)
+                                 (handle-list-box-double-click)]
+                                [else
+                                 (update-buttons)]))]))
                   
   (define different-racket-panel
     (new vertical-panel% 
@@ -212,7 +217,7 @@
       [else
        (define item-to-act-on (get-item-to-act-on))
        (cond
-         [item-to-act-on 
+         [item-to-act-on
           (define datum (send lb get-data item-to-act-on))
           (cond
             [(path? datum)
@@ -224,6 +229,23 @@
          [else
           (send ok-button enable #f)
           (send enter-sub-button enable #f)])]))
+  
+  (define (handle-list-box-double-click)
+    (cond
+      [dir?
+       (ok)]
+      [else
+       (define item-to-act-on (get-item-to-act-on))
+       (cond
+         [item-to-act-on 
+          (define datum (send lb get-data item-to-act-on))
+          (cond
+            [(path? datum)
+             (ok)]
+            [(string? datum)
+             (enter-sub)])]
+         [else
+          (void)])]))
   
   (define (get-item-to-act-on)
     (or (send lb get-selection)
@@ -342,3 +364,7 @@
 (preferences:set-default 'drracket:get-module-path-from-user-size 
                          (list 600 600)
                          (list/c exact-nonnegative-integer? exact-nonnegative-integer?))
+
+
+(module+ main
+  (get-module-path-from-user))
