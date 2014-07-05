@@ -749,7 +749,7 @@
 (define (http-sendrecv/url u
                            #:method [method-bss #"GET"]
                            #:headers [headers-bs empty]
-                           #:data [data-bsf #f]
+                           #:data [data #f]
                            #:content-decode [decodes '(gzip)])
   (unless (member (url-scheme u) '(#f "http" "https"))
     (error 'http-sendrecv/url "URL scheme ~e not supported" (url-scheme u)))
@@ -777,7 +777,7 @@
    #:port port
    #:method method-bss
    #:headers headers-bs
-   #:data data-bsf
+   #:data data
    #:content-decode decodes))
 
 (provide
@@ -786,6 +786,6 @@
    (->* (url?)
         (#:method (or/c bytes? string? symbol?)
                   #:headers (listof (or/c bytes? string?))
-                  #:data (or/c false/c bytes? string?)
+                  #:data (or/c false/c bytes? string? hc:data-procedure/c)
                   #:content-decode (listof symbol?))
         (values bytes? (listof bytes?) input-port?))]))
