@@ -97,8 +97,8 @@
                     (tc-expr/check/t i (ret (subst-all subst (make-F v))))
                     (tc-expr/t i)))))))
   ;; special case for `list*'
-  (pattern (list* . args)
-    (match-let* ([(list tys ... last) (stx-map tc-expr/t #'args)])
+  (pattern (list* (~between args:expr 1 +inf.0) ...)
+    (match-let* ([(list tys ... last) (stx-map tc-expr/t #'(args ...))])
       (ret (foldr -pair last tys))))
   ;; special case for `reverse' to propagate expected type info
   (pattern ((~and fun (~or reverse k:reverse)) arg)

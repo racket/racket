@@ -1000,6 +1000,7 @@
         [tc-e/t (if #f 1 'foo) (-val 'foo)]
 
         [tc-e (list* 1 2 3) (-pair -One (-pair -PosByte -PosByte))]
+        [tc-err (list*)]
 
         [tc-err (apply append (list 1) (list 2) (list 3) (list (list 1) "foo"))]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list 1))) (-lst -PosByte)]
