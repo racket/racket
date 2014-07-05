@@ -1,6 +1,7 @@
 #lang racket/base
 (require syntax/modread
          syntax/modcollapse
+         syntax/modresolve
          pkg/lib
          pkg/name
          racket/set
@@ -27,7 +28,8 @@
          coll-main?s
          coll-modes
          setup-printf setup-fprintf
-         check-unused? fix? verbose?)
+         check-unused? fix? verbose?
+         all-pkgs-lazily?)
   ;; Tables
   (define missing (make-hash))
   (define skip-pkgs (make-hash))
@@ -281,6 +283,12 @@
   ;; Check use of `mod' (in `mode') from `pkg' by file `f':
   (define reported (make-hash))
   (define (check-mod! mod mode pkg f dir)
+    (when (and all-pkgs-lazily?
+               (not (hash-ref mod-pkg mod #f)))
+      (define path (resolve-module-path mod #f))
+      (define pkg (path->pkg path #:cache path-cache))
+      (when pkg
+        (init-pkg-internals! pkg)))
     (define src-pkg (or (hash-ref mod-pkg mod #f)
                         'core))
     (when src-pkg

@@ -45,7 +45,7 @@
      #:once-each
      [("--tidy") "Clear references to removed, even if not a specified <collection>"
       (add-flags '((make-tidy #t)))]
-     [("--doc-index") "Rebuild documentation indexes, along with specified <collection>s"
+     [("--doc-index") "Rebuild documentation indexes with specified <collection>s"
       (add-flags '((make-doc-index #t)))]
      [("-c" "--clean") "Delete existing compiled files; implies -nxi"
       (add-flags '((clean #t)
@@ -80,6 +80,8 @@
       (add-flags '((avoid-main-installation #t)))]
      [("-K" "--no-pkg-deps") "Do not check package dependencies"
       (add-flags '((check-dependencies #f)))]
+     [("--check-pkg-deps") "Check package dependencies when <collection>s specified"
+      (add-flags '((always-check-dependencies #t)))]
      [("--fix-pkg-deps") "Auto-repair package-dependency declarations"
       (add-flags '((check-dependencies #t)
                    (fix-dependencies #t)))]

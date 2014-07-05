@@ -113,7 +113,7 @@ flags:
  @item{@Flag{P} @nonterm{owner} @nonterm{package-name} @nonterm{maj}
   @nonterm{min} --- constrain setup actions to the specified @|PLaneT|
   package, in addition to any other specified @|PLaneT| packages or
-  @nonterm{collections}.}
+  @nonterm{collection}s.}
 
  @item{@DFlag{tidy} --- remove metadata cache information and
   documentation for non-existent collections (to clean up after removal)
@@ -175,9 +175,16 @@ flags:
   whether dependencies among libraries are properly reflected by
   package-level dependency declarations, whether modules are declared
   by multiple packages, and whether package version dependencies are
-  satisfied. Dependency checking uses compiled bytecode and associated
-  @filepath{.dep} files, and it checks only files that are setup
-  against only packages that include files that are setup.}
+  satisfied. Dependency checking uses compiled bytecode, associated
+  @filepath{.dep} files, and the documentation index. Dependency
+  checking is disabled by default if any collection is specified for
+  @exec{raco setup}.}
+
+ @item{@DFlag{check-pkg-deps} --- checks package dependencies (unless
+  explicitly disabled) even when specific collections are provided to
+  @exec{raco setup}. Currently, dependency checking related to
+  documentation cross-referencing is constrained to documents among
+  specified collections.}
 
  @item{@DFlag{fix-pkg-deps} --- attempt to correct dependency
   mismatches by adjusting package @filepath{info.rkt} files (which makes
@@ -242,7 +249,8 @@ collections during an install:
 
    @commandline{env PLT_SETUP_OPTIONS="-j 1" make install}
 
-@history[#:changed "1.2" @elem{Added @DFlag{fast-break} flag.}]
+@history[#:changed "1.2" @elem{Added @DFlag{check-pkg-deps} 
+                               and @DFlag{fast-break} flags.}]
 
 @; ------------------------------------------------------------------------
 

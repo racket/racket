@@ -1781,7 +1781,8 @@
                                         setup-printf setup-fprintf
                                         (check-unused-dependencies)
                                         (fix-dependencies)
-                                        (verbose))
+                                        (verbose)
+                                        (not no-specific-collections?))
       (set! exit-code 1)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1836,7 +1837,9 @@
   (do-install-part 'general)
   (do-install-part 'post)
 
-  (when (and (check-dependencies) no-specific-collections?)
+  (when (and (check-dependencies)
+             (or no-specific-collections?
+                 (always-check-dependencies)))
     (do-check-package-dependencies))
 
   (done))

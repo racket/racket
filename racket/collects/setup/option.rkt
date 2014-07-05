@@ -67,6 +67,7 @@
 (define-flag-param make-tidy #f)
 (define-flag-param make-doc-index #f)
 (define-flag-param check-dependencies #t)
+(define-flag-param always-check-dependencies #f)
 (define-flag-param fix-dependencies #f)
 (define-flag-param check-unused-dependencies #f)
 (define-flag-param call-install #t)
