@@ -222,4 +222,22 @@
     #"GET / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '(#"Content-Type: text/plain" #"Transfer-Encoding: chunked" #"Another-Header: ta-daa")
-    #"<HTML>\n\t\t\t\t\t  <HEAD>\n\t\t\t\t\t  <TITLE>ABCNANOTECH Co., LTD.</TITLE>\n\t\t\t\t\t  </HEAD>\n\t\t\t\t\t  <FRAMESET ROWS=\"100%,*\" border=0>\n\t\t\t\t\t  <FRAME src=http://nanotech.co.kr></FRAMESET>\n\t\t\t\t\t  </HTML>"]))
+    #"<HTML>\n\t\t\t\t\t  <HEAD>\n\t\t\t\t\t  <TITLE>ABCNANOTECH Co., LTD.</TITLE>\n\t\t\t\t\t  </HEAD>\n\t\t\t\t\t  <FRAMESET ROWS=\"100%,*\" border=0>\n\t\t\t\t\t  <FRAME src=http://nanotech.co.kr></FRAMESET>\n\t\t\t\t\t  </HTML>"]
+
+   ["PUT" #f "HTTP/1.1 200 OK\r\n\r\n"
+    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nConnection: close\r\n\r\n"
+    #"HTTP/1.1 200 OK"
+    '()
+    #""]
+
+   ["PUT" #"frob" "HTTP/1.1 200 OK\r\n\r\n"
+    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 4\r\nConnection: close\r\n\r\nfrob"
+    #"HTTP/1.1 200 OK"
+    '()
+    #""]
+
+   ["PUT" "frob" "HTTP/1.1 200 OK\r\n\r\n"
+    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 4\r\nConnection: close\r\n\r\nfrob"
+    #"HTTP/1.1 200 OK"
+    '()
+    #""]))
