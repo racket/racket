@@ -25,6 +25,7 @@
          "unpack.rkt"
          "getinfo.rkt"
          "dirs.rkt"
+         "matching-platform.rkt"
          "main-collects.rkt"
          "path-to-relative.rkt"
          "path-relativize.rkt"
@@ -838,10 +839,7 @@
                                (string? v)
                                (symbol? v))
                      (error "entry is not regexp, string, or symbol:" v)))))
-    (cond
-     [(regexp? sys) (regexp-match? sys (system-library-subpath #f))]
-     [(symbol? sys) (eq? sys (system-type))]
-     [else (equal? sys (path->string (system-library-subpath #f)))]))
+    (matching-platform? sys))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Make zo                      ;;

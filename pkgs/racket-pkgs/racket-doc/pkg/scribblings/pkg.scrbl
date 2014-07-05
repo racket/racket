@@ -4,7 +4,8 @@
           "common.rkt"
           (for-label pkg
                      (except-in racket/base remove)
-                     setup/dirs))
+                     setup/dirs
+                     setup/matching-platform))
 
 @(define @|Planet1| @|PLaneT|)
 
@@ -813,7 +814,8 @@ The following @filepath{info.rkt} fields are used by the package manager:
                @racket[(system-type)] when @racket[_platforms-spec] is
                a symbol or @racket[(path->string
                (system-library-subpath #f))] when
-               @racket[_platform-spec] is a regular expression.  For
+               @racket[_platform-spec] is a string or regular expression.
+               See also @racket[matching-platform?]. For
                example, platform-specific binaries can be placed into
                their own packages, with one separate package and one
                dependency for each supported platform.}

@@ -11,6 +11,7 @@
          setup/unpack
          setup/dirs
          setup/collection-name
+         setup/matching-platform
          racket/port
          racket/list
          racket/function
@@ -336,14 +337,7 @@
 
 (define (dependency-this-platform? dep)
   (define p (dependency-lookup '#:platform dep))
-  (if p
-      (if (symbol? p)
-          (eq? p (system-type))
-          (let ([s (path->string (system-library-subpath #f))])
-            (if (regexp? p)
-                (regexp-match? p s)
-                (equal? p s))))
-      #t))
+  (or (not p) (matching-platform? p)))
 
 (define pkg-lock-held (make-parameter #f))
 (define pkg-lock-scope (make-parameter #f))

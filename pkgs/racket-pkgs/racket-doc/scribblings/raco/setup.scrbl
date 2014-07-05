@@ -12,6 +12,7 @@
                     setup/getinfo
                     setup/main-collects
                     setup/collection-name
+                    setup/matching-platform
                     setup/path-to-relative
                     setup/xref scribble/xref
                     ;; info -- no bindings from this are used
@@ -599,18 +600,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    @racket[copy-man-pages], but the original file is removed after it
    is copied (which makes sense for precompiled packages).}
 
- @item{@indexed-racket[install-platform] : @racket[(or/c regexp?
-   string? symbol?)] --- Determines whether files are copied or moved
+ @item{@indexed-racket[install-platform] : @racket[platform-spec?]
+   --- Determines whether files are copied or moved
    for @racket[copy-foreign-libs], @racket[move-foreign-libs],
-   @racket[copy-shared-files], or @racket[move-shared-files]. If
-   @racket[install-platform] is defined as a regexp, then files are
-   copied/moved only if the regexp matches the result of
-   @racket[(system-library-subpath #f)]. If @racket[install-platform]
-   is defined as a string, then files are copied/moved only if the
-   @racket[(path->string (system-library-subpath #f))] produces the
-   same string. If @racket[install-platform] is defined as a symbol,
-   then files are copied/moved only if the @racket[(system-type)]
-   produces the same symbol.}
+   @racket[copy-shared-files], or @racket[move-shared-files]. 
+   See @racket[matching-platform?] for information on the way that the
+   specification is compared to @racket[(system-type)]
+   and @racket[(system-library-subpath #f)].}
 
  @item{@indexed-racket[install-collection] : @racket[path-string?]  --- A
    library module relative to the collection that provides
@@ -1517,6 +1513,41 @@ lowercase hexadecimal digits, and the digits must form a number that
 is not the ASCII value of a letter, digit, @litchar{-}, @litchar{+},
 or @litchar{_}.}
 
+
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "matching-platform"]{API for Platform Specifications}
+
+@defmodule[setup/matching-platform]
+
+@history[#:added "6.0.1.13"]
+
+@defproc[(platform-spec? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a symbol, string, or regexp value
+(in the sense of @racket[regexp?]), @racket[#f] otherwise.}
+
+@defproc[(matching-platform? [spec platform-spec?]
+                             [#:system-type sys-type (or/c #f symbol?) (system-type)]
+                             [#:system-library-subpath sys-lib-subpath (or/c #f path?)
+                                                       (system-library-subpath #f)])
+         boolean?]{
+
+Reports whether @racket[spec] matches @racket[sys-type] or
+@racket[sys-lib-subpath], where @racket[#f] values for the latter are
+replaced with the default values.
+
+If @racket[spec] is a symbol, then the result is @racket[#t] if
+@racket[sys-type] is the same symbol, @racket[#f] otherwise.
+
+If @racket[spec] is a string, then the result is @racket[#t] if
+@racket[(path->string sys-lib-subpath)] is the same string,
+@racket[#f] otherwise.
+
+If @racket[spec] is a regexp value, then the result is @racket[#t] if
+the regexp matches @racket[(path->string sys-lib-subpath)],
+@racket[#f] otherwise.}
 
 @; ------------------------------------------------------------------------
 
