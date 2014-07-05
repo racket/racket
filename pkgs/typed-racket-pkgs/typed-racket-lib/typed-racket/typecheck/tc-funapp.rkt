@@ -160,7 +160,7 @@
       (for/list ([fty ts])
         (tc/funapp f-stx args-stx fty args-res expected)))]
     ;; error type is a perfectly good fcn type
-    [(Error:) f-type]
+    [(Error:) (ret f-type)]
     ;; otherwise fail
     [(Poly: ns (Function: arrs))
      (tc-error/expr
