@@ -906,12 +906,13 @@ Returns a fresh list whose elements are taken successively from
 includes up to, but not including, the first element in @racket[lst] for
 which @racket[pred] returns @racket[#f].
 
-The @racket[lst] argument need not actually be a list; @racket[lst]
-must merely start with a chain of at least @racket[pos] pairs.
+The @racket[lst] argument need not actually be a list; the chain of
+pairs in @racket[lst] will be traversed until a non-pair is encountered.
 
 @mz-examples[#:eval list-eval
   (takef '(2 4 5 8) even?)
-  (takef '(2 4 6 8) odd?)]}
+  (takef '(2 4 6 8) odd?)
+  (takef '(2 4 . 6) even?)]}
 
 
 @defproc[(dropf [lst any/c] [pred procedure?])
