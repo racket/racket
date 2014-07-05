@@ -40,4 +40,5 @@
   "init-env-tests.rkt"
   "filter-tests.rkt"
   "metafunction-tests.rkt"
+  "generalize-tests.rkt"
   "rep-tests.rkt")
