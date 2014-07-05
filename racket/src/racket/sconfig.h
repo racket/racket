@@ -315,12 +315,22 @@
   /************** x86/OpenBSD with gcc ****************/
               /* Thanks to Bengt Kleberg */
 
-#if defined(__OpenBSD__) && (defined(__i386__) || defined(i386) || defined(__x86_64__))
+#if defined(__OpenBSD__)
 
 # if defined(__x86_64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-openbsd"
-# else
+# elif defined(__i386__) || defined(i386)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-openbsd"
+# elif defined(__mips64__)
+#  if defined(__MIPSEL__)
+#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips64el-openbsd"
+#  else
+#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips64-openbsd"
+#  endif
+# elif defined(__hppa__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "hppa-openbsd"
+# else
+#  error Unported platform.
 # endif
 
 # include "uconfig.h"
@@ -358,8 +368,6 @@
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
 # define MZ_TRY_EXTFLONUMS
-#else
-# error Unported platform.
 #endif
 
 # define FLAGS_ALREADY_SET
@@ -430,7 +438,7 @@
   /************** SGI/IRIX with SGI cc ****************/
 
 #if  (defined(mips) || defined(__mips)) \
-     && !(defined(ultrix) || defined(__ultrix) || defined(linux))
+     && !(defined(ultrix) || defined(__ultrix) || defined(linux) || defined(__OpenBSD__))
 
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips-irix"
 
@@ -474,7 +482,8 @@
 
   /************** ALPHA/OSF1 with gcc ****************/
 
-# if (defined(__alpha) || defined(__alpha__)) && !defined(linux) && !defined(__NetBSD__)
+# if (defined(__alpha) || defined(__alpha__)) \
+    && !defined(linux) && !defined(__NetBSD__) && !defined(__OpenBSD__)
 
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-osf1"
 
