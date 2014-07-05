@@ -113,6 +113,14 @@
                                       (equal? positionals (take dom lpositionals))))]))])
         ok?)))
 
+
+;; Determines if t2 is an ancestor of t1
+(define (ancestor-struct-type? t1 t2)
+  (match* (t1 t2)
+    [((Struct: n _ _ _ _ _) (Struct: n* p* _ _ _ _))
+     (or (free-identifier=? n n*)
+         (and p* (ancestor-struct-type? t1 p*)))]))
+
 (provide/cond-contract
  [unfold (Mu? . -> . Type/c)]
  [instantiate-poly ((or/c Poly? PolyDots? PolyRow?) (listof Type/c)
@@ -124,5 +132,6 @@
  [fv/list ((listof Type/c) . -> . (set/c symbol?))]
  [current-poly-struct (parameter/c (or/c #f poly?))]
  [has-optional-args? (-> (listof arr?) any)]
+ [ancestor-struct-type? (Struct? Struct? . -> . boolean?)]
  )
 

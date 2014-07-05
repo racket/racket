@@ -96,20 +96,11 @@
                 (StructTop: (Struct: n* #f _ _ _ _))) (=> nevermind)
           (unless (free-identifier=? n n*) (nevermind))
           #t]
-         ;; n and n* must be different, so there's no overlap
-         [(list (Struct: n #f flds _ _ _)
-                (Struct: n* #f flds* _ _ _))
-          #f]
-         [(list (Struct: n #f flds _ _ _)
-                (StructTop: (Struct: n* #f flds* _ _ _)))
-          #f]
-         [(list (and t1 (Struct: _ _ _ _ _ _))
-                (and t2 (Struct: _ _ _ _ _ _)))
-          (or (subtype t1 t2) (subtype t2 t1))]
+         [(list (or (StructTop: t1) (? Struct? t1))
+                (or (StructTop: t2) (? Struct? t2)))
+          (or (ancestor-struct-type? t1 t2)
+              (ancestor-struct-type? t2 t1))]
          [else #t])])))
-
-
-;(trace overlap)
 
 ;; also not yet correct
 ;; produces old without the contents of rem
@@ -128,5 +119,3 @@
           [(list (Poly: vs b) t) (make-Poly vs (*remove b rem))]
           [_ old])))
   (if (subtype old initial) old initial))
-
-;(trace *remove)
