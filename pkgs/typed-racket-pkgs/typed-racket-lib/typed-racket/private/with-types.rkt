@@ -28,6 +28,8 @@
                   "env/global-env.rkt"
                   "env/tvar-env.rkt"
                   "utils/tc-utils.rkt"
+                  "utils/disarm.rkt"
+                  "utils/arm.rkt"
                   "types/utils.rkt"))
 
 (provide wt-core)
@@ -67,13 +69,14 @@
         [ty (in-list fv-types)])
     (register-type i ty))
   (define expanded-body
-    (if expr?
-        (with-syntax ([body body])
-          (local-expand #'(let () . body) ctx null))
-        (with-syntax ([(body ...) body]
-                      [(id ...) exids]
-                      [(ty ...) extys])
-          (local-expand #'(let () (begin (: id ty) ... body ... (values id ...))) ctx null))))
+    (disarm*
+      (if expr?
+          (with-syntax ([body body])
+            (local-expand #'(let () . body) ctx null))
+          (with-syntax ([(body ...) body]
+                        [(id ...) exids]
+                        [(ty ...) extys])
+            (local-expand #'(let () (begin (: id ty) ... body ... (values id ...))) ctx null)))))
   (parameterize (;; do we report multiple errors
                  [delay-errors? #t]
                  ;; this parameter is just for printing types
@@ -108,19 +111,20 @@
                                      #'(void)
                                      'disappeared-binding (disappeared-bindings-todo))
                                     'disappeared-use (disappeared-use-todo))])
-    (if expr?
-        (quasisyntax/loc stx
-          (begin check-syntax-help
-                 (c:with-contract typed-region
-                                  #:results (region-cnt ...)
-                                  #:freevars ([fv.id cnt] ...)
-                                  body)))
-        (syntax/loc stx
-          (begin
-            (define-values () (begin check-syntax-help (values)))
-            (c:with-contract typed-region
-                             ([ex-id ex-cnt] ...)
-                             (define-values (ex-id ...) body)))))))
+    (arm
+      (if expr?
+          (quasisyntax/loc stx
+            (begin check-syntax-help
+                   (c:with-contract typed-region
+                                    #:results (region-cnt ...)
+                                    #:freevars ([fv.id cnt] ...)
+                                    body)))
+          (syntax/loc stx
+            (begin
+              (define-values () (begin check-syntax-help (values)))
+              (c:with-contract typed-region
+                               ([ex-id ex-cnt] ...)
+                               (define-values (ex-id ...) body))))))))
 
 (define (wt-core stx)
   (define-syntax-class typed-id
