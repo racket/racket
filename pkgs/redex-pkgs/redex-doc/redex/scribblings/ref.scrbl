@@ -224,7 +224,7 @@ If the symbol is a non-terminal followed by an underscore,
 for example @tt{e_1}, it is implicitly the same as a name @pattern
 that matches only the non-terminal, @tt{(@pattech[name] e_1 e)} for the
 example. Accordingly, repeated uses of the same name are
-constrainted to match the same expression.
+constrained to match the same expression.
 
 If the symbol is a non-terminal followed by @tt{_!_}, for example
 @tt{e_!_1}, it is also treated as a @|pattern|, but repeated uses of
@@ -279,7 +279,7 @@ matches what the embedded @ttpattern matches, and then the guard
 expression is evaluated. If it returns @racket[#f], the @pattern fails
 to match, and if it returns anything else, the @pattern matches. Any
 occurrences of @racket[name] in the @pattern (including those implicitly
-there via @tt{_} pattersn) are bound using @racket[term-let] in the
+there via @tt{_} patterns) are bound using @racket[term-let] in the
 guard. 
 }
 
@@ -295,7 +295,7 @@ non-terminal.
 list, where each pattern-sequence element matches an element
 of the list. In addition, if a list @pattern contains an
 ellipsis, the ellipsis is not treated as a literal, instead
-it matches any number of duplications of the @pattern that
+it matches any number of duplicates of the @pattern that
 came before the ellipses (including 0). Furthermore, each
 @tt{(@pattech[name] symbol @ttpattern)} in the duplicated @pattern binds a
 list of matches to @tt{symbol}, instead of a single match.  (A
@@ -318,7 +318,7 @@ occurrences of @tt{a}, one where each named @pattern matches a
 single @tt{a} and one where the first matches both and the
 second matches nothing.
 
-If the ellipses is named (ie, has an underscore and a name
+If the ellipses is named (i.e., has an underscore and a name
 following it, like a variable may), the @pattern matcher
 records the length of the list and ensures that any other
 occurrences of the same named ellipses must have the same
@@ -369,7 +369,7 @@ structures describing the matches (see @racket[match?] and
 If @racket[redex-match] receives only two arguments, it
 builds a procedure for efficiently testing if expressions
 match the pattern, using the language @racket[lang]. The
-procedures accepts a single expression and if the expresion
+procedures accepts a single expression and if the expression
 matches, it returns a list of match structures describing the
 matches. If the match fails, the procedure returns @racket[#f].
 
@@ -523,7 +523,7 @@ The optional @racket[#:lang] keyword must supply an identifier bound
 by @racket[define-language], and adds a check that any symbol containing
 an underscore in @tttterm could have been bound by a pattern in the
 language referenced by @racket[lang-id].  In practice, this means that the
-underscore must be preceded by a non-terminal in that langauge or a
+underscore must be preceded by a non-terminal in that language or a
 built-in @ttpattern such as @racket[number].  This form of @racket[term]
 is used internally by default, so this check is applied to terms 
 that are constructed by Redex forms such as @racket[reduction-relation] 
@@ -567,7 +567,7 @@ different lengths to appear together inside an ellipsis.
                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
 Matches each given id pattern to the value yielded by
-evaluating the corresponding expr and binds each variable in
+evaluating the corresponding expression and binds each variable in
 the id pattern to the appropriate value (described
 below). These bindings are then accessible to the @|tttterm|
 syntactic form.
@@ -626,7 +626,7 @@ result multiple times to avoid compiling the patterns multiple times.
 
 This produces a procedure that accepts term (or quoted)
 expressions and checks them against each pattern. The
-function returns the expression behind the first sucessful
+function returns the expression behind the first successful
 match. If that pattern produces multiple matches, an error
 is signaled. If no patterns match, an error is signaled.
 
@@ -691,7 +691,7 @@ way.
 A @racket[non-terminal-def] comprises one or more non-terminal names
 (considered aliases) followed by one or more productions.
 
-For example, the following defines @deftech{@racket[lc-lang]} as the
+For example, the following defines @deftech{@racket[_lc-lang]} as the
 grammar of the λ-calculus:
 
 @racketblock[
@@ -733,7 +733,7 @@ extended non-terminals. For example, this language:
     (x (variable-except λ +)))
 ]
 
-extends lc-lang with two new alternatives (@racket[+] and @racket[number])
+extends @racket[_lc-lang] with two new alternatives (@racket[+] and @racket[number])
 for the @racket[v] non-terminal, carries forward the @racket[e] 
 and @racket[c] non-terminals, and replaces the @racket[x] non-terminal 
 with a new one (which happens to be equivalent to the one that would 
@@ -848,7 +848,7 @@ otherwise.
                [pat/term @#,ttpattern
                          @#,tttterm])]{
 
-Defines a reduction relation casewise, one case for each of the
+Defines a reduction relation case-wise, one case for each of the
 @racket[reduction-case] clauses. 
 
 The optional @racket[domain] clause provides a contract for the
@@ -876,7 +876,7 @@ For example, the expression
         beta-v))
 ]
 
-defines a reduction relation for the @tech{@racket[lc-lang]} grammar.
+defines a reduction relation for the @tech{@racket[_lc-lang]} grammar.
 
 A rule's name (used in @seclink["Typesetting" "typesetting"],
 the @racket[stepper], @racket[traces], and 
@@ -1008,7 +1008,7 @@ closure of the reduction for the specified non-terminal.
 @defform[(context-closure reduction-relation lang pattern)]{
 
 This accepts a reduction, a language, a pattern representing
-a context (ie, that can be used as the first argument to
+a context (i.e., that can be used as the first argument to
 @racket[in-hole]; often just a non-terminal) in the language and
 returns the closure of the reduction in that context.
 }
@@ -1167,7 +1167,7 @@ metafunction is called with the same inputs twice, then its body is
 only evaluated a single time.
 
 As an example, these metafunctions finds the free variables in
-an expression in the lc-lang above:
+an expression in the @racket[_lc-lang] above:
 
 @racketblock[
     (define-metafunction lc-lang
@@ -1181,7 +1181,7 @@ an expression in the lc-lang above:
 
 The first argument to define-metafunction is the grammar
 (defined above). Following that are three cases, one for
-each variation of expressions (e in lc-lang). The free variables of an
+each variation of expressions (e in @racket[_lc-lang]). The free variables of an
 application are the free variables of each of the subterms;
 the free variables of a variable is just the variable
 itself, and the free variables of a λ expression are
@@ -1229,7 +1229,7 @@ clauses).
 
 For example, @racket[define-metafunction/extension] may be used to extend
 the free-vars function above to the forms introduced by the language
-lc-num-lang.
+@racket[_lc-num-lang].
                 
 @racketblock[
 (define-metafunction/extension free-vars lc-num-lang
@@ -1243,7 +1243,7 @@ lc-num-lang.
                 
 @defform[(in-domain? (metafunction-name @#,tttterm ...))]{
 Returns @racket[#t] if the inputs specified to @racket[metafunction-name] are
-legtimate inputs according to @racket[metafunction-name]'s contract,
+legitimate inputs according to @racket[metafunction-name]'s contract,
 and @racket[#f] otherwise.
 }
 
@@ -1604,7 +1604,7 @@ reduces to the terms @racket[e2-expr] under @racket[rel-expr],
 using @racket[pred-expr] to determine equivalence. 
 
 If @racket[#:pred] is specified, it is applied to each reachable term
-until one of the terms fails to satify the predicate (i.e., the
+until one of the terms fails to satisfy the predicate (i.e., the
 predicate returns @racket[#f]). If that happens, then the test fails
 and a message is printed with the term that failed to satisfy the
 predicate.
@@ -2459,7 +2459,7 @@ If @racket[edge-labels?] is @racket[#t] (the default), then edge labels
 are drawn; otherwise not.
 
 The @racket[edge-label-font] argument is used as the font on the edge
-labels. If @racket[#f] is suppled, the @racket[dc<%>] object's default
+labels. If @racket[#f] is supplied, the @racket[dc<%>] object's default
 font is used.
 
 The traces library uses an instance of the @racketmodname[mrlib/graph]
@@ -2473,7 +2473,7 @@ inserted into the editor by this library have a
 @racket[term-node].
 
 For a more serious example of @racket[traces], please see @secref["tutorial"],
-but for a silly one that demonstates how the @racket[pp] argument
+but for a silly one that demonstrates how the @racket[pp] argument
 lets us use images, we can take the pairing functions discussed in
 Matthew Szudzik's @italic{An Elegant Pairing Function} presentation:
 @racketblock[(define/contract (unpair z)
@@ -2636,7 +2636,7 @@ seeds it with the reduction-sequence supplied in @racket[seed].
 
 @defproc[(term-node-children [tn term-node?]) (listof term-node?)]{
 
-Returns a list of the children (ie, terms that this term
+Returns a list of the children (i.e., terms that this term
 reduces to) of the given node.
 
 Note that this function does not return all terms that this
@@ -2647,7 +2647,7 @@ graph.
                
 @defproc[(term-node-parents [tn term-node?]) (listof term-node?)]{
 
-Returns a list of the parents (ie, terms that reduced to the
+Returns a list of the parents (i.e., terms that reduced to the
 current term) of the given node.
 
 Note that this function does not return all terms that
@@ -3397,11 +3397,11 @@ Its result should be the rewritten version version of the input.
 
 This extends the current set of atomic-rewriters with one
 new one that rewrites the value of name-symbol to
-string-or-pict-returning-thunk (applied, in the case of a
+@racket[string-or-pict-returning-thunk] (applied, in the case of a
 thunk), during the evaluation of expression.
 
 @racket[name-symbol] is expected to evaluate to a symbol. The value
-of string-or-thunk-returning-pict is used whenever the symbol
+of @racket[string-or-thunk-returning-pict] is used whenever the symbol
 appears in a pattern.
 }
 
@@ -3568,7 +3568,7 @@ lines, and the column span is the number of columns on the
 last line (not the total width).
 
 When there are multiple lines, lines are aligned based on
-the logical space (ie, the line/column &
+the logical space (i.e., the line/column &
 line-span/column-span) fields of the lws. As an
 example, if this is the original pattern:
 
