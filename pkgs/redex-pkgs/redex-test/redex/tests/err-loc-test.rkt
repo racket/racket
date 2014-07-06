@@ -68,7 +68,7 @@
                (map source-location (syntax->list #'(loc-piece ...)))
                #'(let-syntax ([subst 
                                (λ (stx)
-                                 (syntax-case stx ()
+                                 (syntax-case (syntax-local-introduce stx) ()
                                    [(_ loc-name ... non-loc-name ...)
                                     #'body]))])
                    (subst loc-piece ... non-loc-piece ...)

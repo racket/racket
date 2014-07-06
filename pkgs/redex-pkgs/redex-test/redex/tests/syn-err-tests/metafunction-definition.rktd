@@ -24,3 +24,13 @@
  (define-metafunction syn-err-lang
   [(func M_1 E_2)
    (M_1 (E_2 not-non-term) M_1)]))
+
+(#rx"metafunction must be in an application"
+ ([z2 z])
+ (let ()
+   (define-metafunction syn-err-lang
+     [(i any) any])
+   (define-metafunction syn-err-lang
+     [(z any) (0)])
+   (let ()
+     (term (i z2 4)))))

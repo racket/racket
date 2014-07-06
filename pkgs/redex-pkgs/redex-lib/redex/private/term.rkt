@@ -123,11 +123,11 @@
     (make-free-identifier-mapping))
   
   (define (rewrite stx)
-    (let-values ([(rewritten _) (rewrite/max-depth stx 0 #f)])
+    (let-values ([(rewritten _) (rewrite/max-depth stx 0 #f #f)])
       rewritten))
   
   (define (rewrite-application fn args depth srcloc-stx)
-    (let-values ([(rewritten max-depth) (rewrite/max-depth args depth #t)])
+    (let-values ([(rewritten max-depth) (rewrite/max-depth args depth #t #t)])
       (let ([result-id (car (generate-temporaries '(f-results)))])
         (with-syntax ([fn fn])
           (let loop ([func (if (judgment-form-id? #'fn)
@@ -150,10 +150,11 @@
                         (syntax (res (... ...)))
                         (sub1 args-depth)))))))))
   
-  (define (rewrite/max-depth stx depth ellipsis-allowed?)
+  (define (rewrite/max-depth stx depth ellipsis-allowed? continuing-an-application?)
     (syntax-case stx (unquote unquote-splicing in-hole hole)
       [(metafunc-name arg ...)
-       (and (identifier? (syntax metafunc-name))
+       (and (not continuing-an-application?)
+            (identifier? (syntax metafunc-name))
             (if names
                 (not (memq (syntax->datum #'metafunc-name) names))
                 #t)
@@ -164,7 +165,8 @@
                                        #t)
          (rewrite-application f (syntax/loc stx (arg ...)) depth stx))]
       [(jf-name arg ...)
-       (and (identifier? (syntax jf-name))
+       (and (not continuing-an-application?)
+            (identifier? (syntax jf-name))
             (if names
                 (not (memq (syntax->datum #'jf-name) names))
                 #t)
@@ -237,7 +239,7 @@
        (let-values ([(x-rewrite max-depth)
                      (let i-loop ([xs (syntax->list (syntax (x ...)))])
                        (cond
-                         [(null? xs) (rewrite/max-depth #'y depth #t)]
+                         [(null? xs) (rewrite/max-depth #'y depth #t #f)]
                          [else
                           (let ([new-depth (if (and (not (null? (cdr xs)))
                                                     (identifier? (cadr xs))
@@ -246,7 +248,7 @@
                                                (+ depth 1)
                                                depth)])
                             (let-values ([(fst fst-max-depth)
-                                          (rewrite/max-depth (car xs) new-depth #t)]
+                                          (rewrite/max-depth (car xs) new-depth #t #f)]
                                          [(rst rst-max-depth)
                                           (i-loop (cdr xs))])
                               (values (cons fst rst)
