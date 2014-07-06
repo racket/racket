@@ -387,7 +387,7 @@
 (define: (lookup-in-entry [name : atom] [e : entry] [fail : (atom -> atom)]) : atom
   (lookup-in-entry-help name (car e) (car (cdr e)) fail))
 
-(define: extend-table : (entry table -> table) #{cons @ entry Any})
+(define: extend-table : (entry table -> table) cons)
 
 (define: (lookup-in-table [name : atom] [t : table] [fail : (atom -> atom)]) : atom
   (cond

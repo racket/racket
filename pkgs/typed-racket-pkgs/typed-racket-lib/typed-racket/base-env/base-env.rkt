@@ -595,15 +595,9 @@
 [rest (-poly (a b)
              (cl->*
               (->acc (list (-pair a (-lst b))) (-lst b) (list -cdr))
-              (->* (list (-lst a)) (-lst a))))]
+              (->acc (list (-lst a)) (-lst a) (list -cdr))))]
 
-[cons (-poly (a b)
-             (cl->* [->* (list a (-lst a)) (-lst a)]
-                    [->* (list a b) (-pair a b)]))]
-#;[*cons (-poly (a b) (cl->
-                     [(a b) (-pair a b)]
-                     [(a (-lst a)) (-lst a)]))]
-#;[*list? (make-pred-ty (-lst Univ))]
+[cons (-poly (a b) (-> a b (-pair a b)))]
 
 [null? (make-pred-ty -Null)]
 [null -Null]

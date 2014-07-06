@@ -440,7 +440,7 @@
         [tc-e/t (lambda () 3) (t:-> -PosByte : -true-filter)]
         [tc-e (values 3 4) #:ret (ret (list -PosByte -PosByte) (list -true-filter -true-filter))]
         [tc-e (cons 3 4) (-pair -PosByte -PosByte)]
-        [tc-e (cons 3 (ann '() : (Listof Integer))) (make-Listof -Integer)]
+        [tc-e (cons 3 (ann '() : (Listof Integer))) (-pair -PosByte (-lst -Integer))]
         [tc-e (void) -Void]
         [tc-e (void 3 4) -Void]
         [tc-e (void #t #f '(1 2 3)) -Void]
@@ -1872,7 +1872,7 @@
               (t:Un -Int (-val #f))]
         [tc-e (sequence-fold (lambda: ([y : (Listof Symbol)] [x : Symbol]) (cons x y))
                              null empty-sequence)
-              (-lst -Symbol)]
+              (unfold (-lst -Symbol))]
         [tc-e (sequence-count zero? (inst empty-sequence Integer))
               -Nat]
         [tc-e (sequence-filter zero? (inst empty-sequence Integer))
@@ -3133,6 +3133,19 @@
           (define (g x) (f x))
           (error "foo"))
         #:msg #rx"Polymorphic function `f' could not be applied"]
+
+       ;; PR 14457
+       [tc-e/t
+         (let ([xs : (Listof Symbol) (list 'a 'b 'c 'd)])
+           (if (or (empty? xs) (empty? (rest xs)) (empty? (rest (rest xs))))
+               (error 'bad)
+               xs))
+         (-pair -Symbol (-pair -Symbol (-pair -Symbol (-lst -Symbol))))]
+
+       [tc-e
+         (cons 'x (ann (list 'y 'z) (Listof Symbol)))
+         (-pair (-val 'x) (-lst -Symbol))]
+
         )
 
   (test-suite

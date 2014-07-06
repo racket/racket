@@ -1,5 +1,5 @@
 #;
-(exn-pred 2)
+(exn-pred 1)
 #lang typed/racket/base
 
 (define-type T (Rec T (U (Pair String T) (Pair Char T))))
