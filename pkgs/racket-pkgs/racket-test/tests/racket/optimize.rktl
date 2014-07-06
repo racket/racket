@@ -1361,9 +1361,13 @@
                               (if r r (something-else)))
                             (a1)
                             (a2)))
-           '(lambda (x)  (if (if (something) #t (something-else))
-                             (a1)
-                             (a2))))
+           '(lambda (x) (if (if (something) #t (something-else))
+                            (a1)
+                            (a2))))
+
+(test-comp '(lambda (x) (let ([r (something)])
+                          (if r #t (something-else))))
+           '(lambda (x) (if (something) #t (something-else))))
 
 (test-comp '(if (let ([z (random)]) null) 1 2)
            '(if (let ([z (random)]) #t) 1 2))
