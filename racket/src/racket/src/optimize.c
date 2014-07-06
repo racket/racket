@@ -6701,7 +6701,8 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
         if (SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
           Scheme_Once_Used *o = (Scheme_Once_Used *)val;
           if (((o->vclock == info->vclock)
-               && single_valued_noncm_expression(o->expr, 5))
+               && ((context & OPT_CONTEXT_BOOLEAN)
+                   || single_valued_noncm_expression(o->expr, 5)))
               || movable_expression(o->expr, info, o->delta, o->cross_lambda,
                                     o->kclock != info->kclock,
                                     0, 5)) {
