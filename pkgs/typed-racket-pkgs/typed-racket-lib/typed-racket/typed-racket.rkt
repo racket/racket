@@ -10,6 +10,7 @@
  (submod "private/type-contract.rkt" predicates)
  "utils/utils.rkt"
  (for-syntax "utils/utils.rkt")
+ "static-contracts/runtime-definitions.rkt"
  "utils/any-wrap.rkt" unstable/contract racket/contract/parametric)
 
 (provide (rename-out [module-begin #%module-begin]

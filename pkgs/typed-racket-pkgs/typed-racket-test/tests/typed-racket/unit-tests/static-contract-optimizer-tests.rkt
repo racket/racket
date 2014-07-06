@@ -60,6 +60,7 @@
 ;; Ids with unique identity so that equals works
 (define foo-id #'foo)
 (define bar-id #'bar)
+(define chap/sc (chaperone/sc #'a-chaperone-ctc))
 
 (define syntax-tests
   (test-suite "Optimized Syntax Tests"
@@ -322,6 +323,11 @@
               (list
                 (arr/sc empty #f (list set?/sc))
                 (arr/sc (list any/sc) #f (list (listof/sc set?/sc))))))
+
+    ;; PR 14581
+    (check-optimize (or/sc identifier?/sc (listof/sc chap/sc))
+      #:pos (if-first-order-passes/sc (listof/sc chap/sc))
+      #:neg (or/sc identifier?/sc (listof/sc chap/sc)))
 
     ))
 

@@ -10,7 +10,8 @@
          racket/set
          racket/format
          unstable/contract
-         (for-template racket/base
+         (for-template "../runtime-definitions.rkt"
+                       racket/base
                        racket/contract/base
                        racket/set
                        unstable/contract)
@@ -144,6 +145,7 @@
 (combinator-structs
   ((or/sc . (#:covariant)) or/c #:flat)
   ((and/sc . (#:covariant)) and/c #:flat)
+  ((if-first-order-passes/sc (#:covariant)) if-first-order-passes/c #:flat)
   ((list/sc . (#:covariant)) list/c #:flat)
   ((listof/sc (#:covariant)) listof #:flat)
   ((cons/sc (#:covariant) (#:covariant)) cons/c #:flat)

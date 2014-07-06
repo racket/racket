@@ -37,12 +37,17 @@
         (let ([then-proj (contract-projection then-ctc)]
               [then-fo (contract-first-order then-ctc)]
               [else-proj (contract-projection else-ctc)]
-              [else-fo (contract-first-order else-ctc)])
+              [else-fo (contract-first-order else-ctc)]
+              [constructor
+                (if (and (chaperone-contract? then-ctc)
+                         (chaperone-contract? else-ctc))
+                    make-chaperone-contract
+                    make-contract)])
           (define ((proj blame) x)
             (if (predicate x)
                 ((then-proj blame) x)
                 ((else-proj blame) x)))
-          (make-contract
+          (constructor
            #:name name
            #:projection proj
            #:first-order
