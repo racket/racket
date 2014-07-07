@@ -7,7 +7,7 @@
            racket/set
            syntax/parse
            (base-env base-structs)
-           (env tvar-env type-alias-env)
+           (env tvar-env type-alias-env mvar-env)
            (utils tc-utils)
            (private parse-type)
            (rep type-rep)
@@ -26,8 +26,13 @@
 (provide tests)
 (gen-test-main)
 
+
+(define mutated-var #f)
+(define not-mutated-var #f)
+
 (begin-for-syntax
-  (do-standard-inits))
+  (do-standard-inits)
+  (register-mutated-var #'mutated-var))
 
 (define-syntax (pt-test stx)
   (syntax-parse stx
@@ -171,6 +176,19 @@
    [(-> Integer (All (X) (-> X X)))
     (t:-> -Integer (-poly (x) (t:-> x x)))]
    [FAIL -> #:msg "incorrect use of -> type constructor"]
+
+
+   [(Any -> Boolean : #:+ (Symbol @ not-mutated-var))
+    (t:-> Univ -Boolean : (-FS (-filter -Symbol (-id-path #'not-mutated-var)) -top))]
+   [FAIL (Any -> Boolean : #:+ (Symbol @ mutated-var))
+         #:msg "cannot be a mutated identifier"]
+   [(Any -> Boolean : #:+ (! Symbol @ not-mutated-var))
+    (t:-> Univ -Boolean : (-FS (-not-filter -Symbol (-id-path #'not-mutated-var)) -top))]
+   [FAIL (Any -> Boolean : #:+ (! Symbol @ mutated-var))
+         #:msg "cannot be a mutated identifier"]
+   [FAIL (Any -> Boolean : #:+ (String @ unbound))
+         #:msg "must be a bound identifier"]
+
 
    ;; ->* types
    [(->* (String Symbol) Void) (t:-> -String -Symbol -Void)]
