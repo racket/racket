@@ -38,9 +38,15 @@
 ;;   - build without special system libraries (i.e., beyond the ones
 ;;     needed by `racket/draw`)
 ;;
-;; FIXME:
-;;  - check that declared dependencies are right
-;;  - run tests
+;; A successful build not not require that its declaraed dependencies
+;; are complete if the needed packages end up installed, anyway, but
+;; the declaraed dependencies are checked.
+;;
+;; Even when a build is unsuccessful, any documentation that is built
+;; along the way is extracted, if possible.
+;;
+;; To do:
+;;  - support for running tests
 
 (struct vm (name host user dir init-snapshot installed-snapshot))
 
@@ -88,15 +94,18 @@
          ;;
          ;;   "server/built" --- built packages
          ;;     For a package P:
-         ;;      * pkgs/P.orig-CHECKSUM matching archived catalog
-         ;;         + pkgs/P.zip
-         ;;         + P.zip.CHECKSUM
+         ;;      * "pkgs/P.orig-CHECKSUM" matching archived catalog
+         ;;         + "pkgs/P.zip"
+         ;;         + "P.zip.CHECKSUM"
          ;;        => up-to-date and successful,
-         ;;           docs/P-adds.rktd listing of docs, exes, etc., and
-         ;;           success/P records success
+         ;;           "docs/P-adds.rktd" listing of docs, exes, etc., and
+         ;;           "success/P" records success;
+         ;;           "install/P" records installation
+         ;;           "deps/P" record dependency-checking failure;
          ;;      * pkgs/P.orig-CHECKSUM matching archived catalog
          ;;         + fail/P
-         ;;        => up-to-date and failed
+         ;;        => up-to-date and failed;
+         ;;           "install/P" may record installation success
          ;;
          ;;   "dumpster" --- saved builds of failed packages if the
          ;;     package at least installs; maybe the attempt built
@@ -158,6 +167,8 @@
   (define built-catalog-dir (build-path built-dir "catalog"))
   (define fail-dir (build-path built-dir "fail"))
   (define success-dir (build-path built-dir "success"))
+  (define install-success-dir (build-path built-dir "install"))
+  (define deps-fail-dir (build-path built-dir "deps"))
 
   (define dumpster-dir (build-path work-dir "dumpster"))
   (define dumpster-pkgs-dir (build-path dumpster-dir "pkgs/"))
@@ -219,12 +230,14 @@
   (define (ssh vm
                #:mode [mode 'auto]
                #:failure-dest [failure-dest #f]
+               #:success-dest [success-dest #f]
                . args)
     (define cmd
       (list "/usr/bin/env" (~a "PLTUSERHOME=" (vm-dir vm) "/user")
             "/bin/sh" "-c" (apply ~a args)))
 
-    (define saved (and failure-dest (open-output-bytes)))
+    (define saved (and (or failure-dest success-dest)
+                       (open-output-bytes)))
     (define (tee o1 o2)
       (cond
        [(not o1)
@@ -275,11 +288,12 @@
            (kill-thread timeout-thread)))))
     (sync-out)
     (sync-err)
-    (when (and failure-dest (not ok?))
-      (call-with-output-file*
-       failure-dest
-       #:exists 'truncate/replace
-       (lambda (o) (write-bytes (get-output-bytes saved) o))))
+    (let ([dest (if ok? success-dest failure-dest)])
+      (when dest
+        (call-with-output-file*
+         dest
+         #:exists 'truncate/replace
+         (lambda (o) (write-bytes (get-output-bytes saved) o)))))
     (case mode
       [(result) ok?]
       [else
@@ -635,6 +649,8 @@
   (make-directory* (build-path built-dir "adds"))
   (make-directory* fail-dir)
   (make-directory* success-dir)
+  (make-directory* install-success-dir)
+  (make-directory* deps-fail-dir)
 
   (make-directory* dumpster-pkgs-dir)
   (make-directory* dumpster-adds-dir)
@@ -670,9 +686,14 @@
           (show-list pkgs)))
 
     (define failure-dest (and one-pkg
-                              (pkg-failure-dest (if (list? one-pkg)
-                                                    (car one-pkg)
-                                                    one-pkg))))
+                              (pkg-failure-dest (car flat-pkgs))))
+    (define install-success-dest (build-path install-success-dir
+                                             (car flat-pkgs)))
+
+    (define (pkg-deps-failure-dest pkg)
+      (build-path deps-fail-dir pkg))
+    (define deps-failure-dest (and one-pkg
+                                   (pkg-deps-failure-dest (car flat-pkgs))))
 
     (define (save-checksum pkg)
       (call-with-output-file*
@@ -682,6 +703,10 @@
 
     (define remote-dir (vm-dir vm))
 
+    (for ([pkg (in-list flat-pkgs)])
+      (define f (build-path install-success-dir pkg))
+      (when (file-exists? f) (delete-file f)))
+
     (restore-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))
     (start-vbox-vm (vm-name vm) #:max-vms (length vms))
     (dynamic-wind
@@ -689,12 +714,19 @@
      (lambda ()
        (define ok?
          (and
+          ;; Try to install:
           (ssh vm (cd-racket vm)
                " && bin/raco pkg install -u --auto"
                (if one-pkg "" " --fail-fast")
                " " pkgs-str
                #:mode 'result
-               #:failure-dest failure-dest)
+               #:failure-dest failure-dest
+               #:success-dest install-success-dest)
+          ;; Copy success log for other packages in the group:
+          (for ([pkg (in-list (cdr flat-pkgs))])
+            (copy-file install-success-dest
+                       (build-path install-success-dir pkg)
+                       #t))
           (let ()
             ;; Make sure that any extra installed packages used were previously
             ;; built, since we want built packages to be consistent with a binary
@@ -712,10 +744,22 @@
                   (file-exists? (build-path built-catalog-dir "pkg" pkg))
                   (complain failure-dest
                             (~a "use of package not previously built: ~s;\n"
-                                " maybe a dependency is missing, maybe the package\n"
-                                " failed to build on its own, or maybe there's a\n"
-                                " dependency cycle that is not currently handled\n")
+                                " maybe a dependency is missing, or maybe the package\n"
+                                " failed to build on its own\n")
                             pkg))))))
+       (define deps-ok?
+         (and ok?
+              (ssh vm (cd-racket vm)
+                   " && bin/raco setup -nxiID --check-pkg-deps --pkgs "
+                   " " pkgs-str
+                   #:mode 'result
+                   #:failure-dest deps-failure-dest)))
+       (when (and ok? one-pkg (not deps-ok?))
+         ;; Copy dependency-failure log for other packages in the group:
+         (for ([pkg (in-list (cdr flat-pkgs))])
+           (copy-file install-success-dest
+                      (pkg-deps-failure-dest pkg)
+                      #t)))
        (define doc-ok?
          (and
           ;; If we're building a single package (or set of mutually
@@ -735,23 +779,26 @@
                  #:mode 'result
                  #:failure-dest (and ok? failure-dest)))))
        (cond
-        [(and ok? doc-ok?)
+        [(and ok? doc-ok? (or deps-ok? one-pkg))
          (for ([pkg (in-list flat-pkgs)])
            (when (file-exists? (pkg-failure-dest pkg))
              (delete-file (pkg-failure-dest pkg)))
+           (when (and deps-ok? (file-exists? (pkg-deps-failure-dest pkg)))
+             (delete-file (pkg-deps-failure-dest pkg)))
            (scp vm (at-vm vm (~a remote-dir "/built/" pkg ".zip"))
                 built-pkgs-dir)
            (scp vm (at-vm vm (~a remote-dir "/built/" pkg ".zip.CHECKSUM"))
                 built-pkgs-dir)
            (scp vm (at-vm vm (~a remote-dir "/pkg-adds.rktd"))
                 (build-path built-dir "adds" (format "~a-adds.rktd" pkg)))
+           (define deps-msg (if deps-ok? "" ", but problems with dependency declarations"))
            (call-with-output-file*
             (build-path success-dir pkg)
             #:exists 'truncate/replace
             (lambda (o)
               (if one-pkg
-                  (fprintf o "success\n")
-                  (fprintf o "success with ~s\n" pkgs))))
+                  (fprintf o "success~a\n" deps-msg)
+                  (fprintf o "success with ~s~a\n" pkgs deps-msg))))
            (save-checksum pkg))
          (update-built-catalog flat-pkgs)]
         [else
@@ -939,7 +986,7 @@
           (cons k v)))
       (cond
        [(null? conflicts)
-        doc-pkgs]
+        (set->list (hash-keys doc-pkgs))]
        [else
         (substatus "Install conflicts:\n")
         (for ([v (in-list conflicts)])
