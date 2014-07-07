@@ -42,33 +42,42 @@
    . -> .
    tc-results/c)
   (with-cond-contract t/p ([expected-types (listof (listof Type/c))]
-                           [props          (listof (listof Filter?))])
-    (define-values (expected-types props)
-      (for/lists (e p)
+                           [props          (listof (listof Filter?))]
+                           [objects        (listof (listof Object?))])
+    (define-values (expected-types props objects)
+      (for/lists (e p o)
         ([e-r   (in-list expected-results)]
          [names (in-list namess)])
         (match e-r
-          [(list (tc-result: e-ts (FilterSet: fs+ fs-) os) ...)
+          [(list (tc-result: e-ts fs os) ...)
            (values e-ts
-                   (apply append
-                          (for/list ([n (in-list names)]
-                                     [t (in-list e-ts)]
-                                     [f+ (in-list fs+)]
-                                     [f- (in-list fs-)])
-                            (cond
-                              [(not (overlap t (-val #f)))
-                               (list f+)]
-                              [(is-var-mutated? n)
-                               (list)]
-                              [else
-                               (list (-imp (-not-filter (-val #f) n) f+)
-                                     (-imp (-filter (-val #f) n) f-))]))))]
-          [(list (tc-result: e-ts (NoFilter:) _) ...)
-           (values e-ts null)]))))
+                   (match fs
+                     [(list (FilterSet: fs+ fs-) ...)
+                      (apply append
+                             (for/list ([n (in-list names)]
+                                        [t (in-list e-ts)]
+                                        [f+ (in-list fs+)]
+                                        [f- (in-list fs-)])
+                               (cond
+                                 [(not (overlap t (-val #f)))
+                                  (list f+)]
+                                 [(is-var-mutated? n)
+                                  (list)]
+                                 [else
+                                  (list (-imp (-not-filter (-val #f) n) f+)
+                                        (-imp (-filter (-val #f) n) f-))])))]
+                     [(list (NoFilter:) ...)
+                      null])
+                   (for/list ([n (in-list names)]
+                              [o (in-list os)])
+                      (if (is-var-mutated? n)
+                          -empty-obj
+                          o)))]))))
   ;; extend the lexical environment for checking the body
-  (with-lexical-env/extend
+  (with-lexical-env/extend-objects
     (append* namess)
     (append* expected-types)
+    (append* objects)
     (replace-names
       (get-names+objects namess expected-results)
       (with-lexical-env/extend-props
@@ -222,7 +231,7 @@
              (get-type/infer names expr
                              (lambda (e) (tc-expr/maybe-expected/t e names))
                              tc-expr/check))
-           (with-lexical-env/extend names ts
+           (with-lexical-env/extend-objects names ts os
              (replace-names (map list names os)
                (loop (cdr clauses))))])))
 
