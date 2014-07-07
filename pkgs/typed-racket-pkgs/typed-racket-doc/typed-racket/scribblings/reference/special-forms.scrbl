@@ -111,7 +111,8 @@ Type-annotated versions of @|letrec-id|, @|let*-id|, @|let-values-id|,
 @deftogether[[
 @defform[(let/cc v : t . body)]
 @defform[(let/ec v : t . body)]]]{
-  Type-annotated versions of @|let/cc-id| and @|let/ec-id|.
+  Type-annotated versions of @|let/cc-id| and @|let/ec-id|. As with
+  @racket[let], the type annotation is optional.
 }
 
 @section{Anonymous Functions}
