@@ -159,6 +159,15 @@
     (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0) (-filter -Number 0)))]
    [(-> Any Boolean : #:+ (! Number @ 0) #:- (Number @ 0))
     (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0) (-filter -Number 0)))]
+   [(-> Any (-> Any Boolean : #:+ (Number @ 1 0) #:- (! Number @ 1 0)))
+    (t:-> Univ
+          (t:->* (list Univ) -Boolean : (-FS (-filter -Number '(1 0)) (-not-filter -Number '(1 0)))))]
+   [(-> Any Any (-> Any Boolean : #:+ (Number @ 1 1) #:- (! Number @ 1 1)))
+    (t:-> Univ Univ
+          (t:->* (list Univ) -Boolean : (-FS (-filter -Number '(1 1)) (-not-filter -Number '(1 1)))))]
+   [(-> Any #:foo Any (-> Any Boolean : #:+ (Number @ 1 0) #:- (! Number @ 1 0)))
+    (->key Univ #:foo Univ #t
+           (t:->* (list Univ) -Boolean : (-FS (-filter -Number '(1 0)) (-not-filter -Number '(1 0)))))]
    [(All (a b) (-> (-> a Any : #:+ b) (Listof a) (Listof b)))
     (-poly (a b) (t:-> (asym-pred a Univ (-FS (-filter b 0) -top)) (-lst a) (-lst b)))]
    [(All (a b) (-> (-> a Any : #:+ (! b)) (Listof a) (Listof b)))
@@ -178,6 +187,10 @@
    [FAIL -> #:msg "incorrect use of -> type constructor"]
    [FAIL (Any -> Any #:object 0) #:msg "expected the identifier `:'"]
    [FAIL (-> Any Any #:+ (String @ x)) #:msg "expected the identifier `:'"]
+   [FAIL (-> Any Boolean : #:+ (Number @ 1 0) #:- (! Number @ 1 0))
+         #:msg "Index 1 used in"]
+   [FAIL (-> Any (-> Any Boolean : #:+ (Number @ 1 1) #:- (! Number @ 1 1)))
+         #:msg "larger than argument length"]
 
 
    [(Any -> Boolean : #:+ (Symbol @ not-mutated-var))
@@ -210,6 +223,11 @@
     (->optkey -Integer [-String] #:bar -Integer #t -Void)]
    [(->* (Integer #:bar Integer) (String #:foo Integer) Void)
     (->optkey -Integer [-String] #:bar -Integer #t #:foo -Integer #f -Void)]
+   [(->* (Any (-> Any Boolean : #:+ (String @ 1 0))) Void)
+    (t:-> Univ (t:->* (list Univ) -Boolean : (-FS (-filter -String '(1 0)) -top))
+          -Void)]
+   [FAIL (->* (Any (-> Any Boolean : #:+ (String @ 2 0))) Void)
+         #:msg "Index 2 used in"]
 
    [(Opaque foo?) (make-Opaque #'foo?)]
    ;; PR 14122
