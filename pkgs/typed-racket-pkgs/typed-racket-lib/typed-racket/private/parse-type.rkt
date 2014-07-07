@@ -64,6 +64,16 @@
 ;; interp. same as above
 (define current-referenced-class-parents (make-parameter #f))
 
+;; current-arities : Parameter<(Listof Natural)>
+;; Represents the stack of function arities in the potentially
+;; nested function type being parsed. The stack does not include the
+;; innermost function (since syntax classes can check that locally)
+(define current-arities (make-parameter null))
+
+(define-syntax-rule (with-arity arity e ...)
+  (parameterize ([current-arities (cons arity (current-arities))])
+    e ...))
+
 (define-literal-syntax-class #:for-label car)
 (define-literal-syntax-class #:for-label cdr)
 (define-literal-syntax-class #:for-label colon^ (:))
@@ -263,8 +273,14 @@
                    arg (length doms))
            #:attr obj (-arg-path arg 0))
   (pattern (~seq depth-idx:nat idx:nat)
-           #:do [(define arg (syntax-e #'idx))]
-           #:fail-unless (< arg (length doms))
+           #:do [(define arg (syntax-e #'idx))
+                 (define depth (syntax-e #'depth-idx))]
+           #:fail-unless (<= depth (length (current-arities)))
+           (format "Filter proposition's object index ~a is larger than function depth ~a"
+                   depth (length (current-arities)))
+           #:fail-unless (if (zero? depth)
+                             (< arg (length doms))
+                             (< arg (list-ref (current-arities) (sub1 depth))))
            (format "Filter proposition's object index ~a is larger than argument length ~a"
                    arg (length doms))
            #:attr obj (-arg-path arg (syntax-e #'depth-idx))))
@@ -400,49 +416,55 @@
       [((~and dom:non-keyword-ty (~not :->^)) ...
         :->^
         (~and (~seq rest-dom ...) (~seq (~or _ (~between :->^ 1 +inf.0)) ...)))
-       (let ([doms (for/list ([d (in-syntax #'(dom ...))])
-                     (parse-type d))])
-         (make-Function
-          (list (make-arr
-                 doms
-                 (parse-type (syntax/loc stx (rest-dom ...)))))))]
+       (define doms (syntax->list #'(dom ...)))
+       (with-arity (length doms)
+         (let ([doms (for/list ([d (in-list doms)])
+                       (parse-type d))])
+           (make-Function
+            (list (make-arr
+                   doms
+                   (parse-type (syntax/loc stx (rest-dom ...))))))))]
       [(~or (:->^ dom rng :colon^ latent:simple-latent-filter)
             (dom :->^ rng :colon^ latent:simple-latent-filter))
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
-       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type)
-                     (-acc-path (attribute latent.path) (-arg-path 0)))]
+       (with-arity 1
+         (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type)
+                       (-acc-path (attribute latent.path) (-arg-path 0))))]
       [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star rng)
             (dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star :->^ rng))
-       (make-Function
-        (list (make-arr
-               (parse-types #'(dom ...))
-               (parse-values-type #'rng)
-               #:rest (parse-type #'rest)
-               #:kws (map force (attribute kws.Keyword)))))]
+       (with-arity (length (syntax->list #'(dom ...)))
+         (make-Function
+          (list (make-arr
+                 (parse-types #'(dom ...))
+                 (parse-values-type #'rng)
+                 #:rest (parse-type #'rest)
+                 #:kws (map force (attribute kws.Keyword))))))]
       [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound rng)
             (dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng))
-       (let* ([bnd (syntax-e #'bound)])
-         (unless (bound-index? bnd)
-           (parse-error
-            #:stx #'bound
-            "used a type variable not bound with ... as a bound on a ..."
-            "variable" bnd))
-         (make-Function
-          (list
-           (make-arr-dots (parse-types #'(dom ...))
-                          (parse-values-type #'rng)
-                          (extend-tvars (list bnd)
-                            (parse-type #'rest))
-                          bnd))))]
+       (with-arity (length (syntax->list #'(dom ...)))
+         (let* ([bnd (syntax-e #'bound)])
+           (unless (bound-index? bnd)
+             (parse-error
+              #:stx #'bound
+              "used a type variable not bound with ... as a bound on a ..."
+              "variable" bnd))
+           (make-Function
+            (list
+             (make-arr-dots (parse-types #'(dom ...))
+                            (parse-values-type #'rng)
+                            (extend-tvars (list bnd)
+                                          (parse-type #'rest))
+                            bnd)))))]
       [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty _:ddd rng)
             (dom:non-keyword-ty ... rest:non-keyword-ty _:ddd :->^ rng))
-       (let ([var (infer-index stx)])
-         (make-Function
-          (list
-           (make-arr-dots (parse-types #'(dom ...))
-                          (parse-values-type #'rng)
-                          (extend-tvars (list var) (parse-type #'rest))
-                          var))))]
+       (with-arity (length (syntax->list #'(dom ...)))
+         (let ([var (infer-index stx)])
+           (make-Function
+            (list
+             (make-arr-dots (parse-types #'(dom ...))
+                            (parse-values-type #'rng)
+                            (extend-tvars (list var) (parse-type #'rest))
+                            var)))))]
       #| ;; has to be below the previous one
      [(dom:expr ... :->^ rng)
       (->* (parse-types #'(dom ...))
@@ -450,33 +472,37 @@
       ;; use expr to rule out keywords
       [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rng)
             (dom:non-keyword-ty ... kws:keyword-tys ... :->^ rng))
-      (let ([doms (for/list ([d (in-syntax #'(dom ...))])
-                    (parse-type d))])
-         (make-Function
-          (list (make-arr
-                 doms
-                 (parse-values-type #'rng)
-                 #:kws (map force (attribute kws.Keyword))))))]
+       (define doms (syntax->list #'(dom ...)))
+       (with-arity (length doms)
+         (let ([doms (for/list ([d (in-list doms)])
+                       (parse-type d))])
+           (make-Function
+            (list (make-arr
+                   doms
+                   (parse-values-type #'rng)
+                   #:kws (map force (attribute kws.Keyword)))))))]
       ;; This case needs to be at the end because it uses cut points to give good error messages.
       [(~or (:->^ ~! dom:non-keyword-ty ... rng:expr
              :colon^ (~var latent (full-latent (syntax->list #'(dom ...)))))
             (dom:non-keyword-ty ... :->^ rng:expr
              ~! :colon^ (~var latent (full-latent (syntax->list #'(dom ...))))))
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
-       (->* (parse-types #'(dom ...))
-            (parse-type #'rng)
-            : (-FS (attribute latent.positive) (attribute latent.negative))
-            : (attribute latent.object))]
+       (with-arity (length (syntax->list #'(dom ...)))
+         (->* (parse-types #'(dom ...))
+              (parse-type #'rng)
+              : (-FS (attribute latent.positive) (attribute latent.negative))
+              : (attribute latent.object)))]
       [(:->*^ mand:->*-mand opt:->*-opt rest:->*-rest rng)
-       (define doms (for/list ([d (attribute mand.doms)])
-                      (parse-type d)))
-       (define opt-doms (for/list ([d (attribute opt.doms)])
-                          (parse-type d)))
-       (opt-fn doms opt-doms (parse-values-type #'rng)
-               #:rest (and (attribute rest.type)
-                           (parse-type (attribute rest.type)))
-               #:kws (map force (append (attribute mand.kws)
-                                        (attribute opt.kws))))]
+       (with-arity (length (attribute mand.doms))
+         (define doms (for/list ([d (attribute mand.doms)])
+                        (parse-type d)))
+         (define opt-doms (for/list ([d (attribute opt.doms)])
+                            (parse-type d)))
+         (opt-fn doms opt-doms (parse-values-type #'rng)
+                 #:rest (and (attribute rest.type)
+                             (parse-type (attribute rest.type)))
+                 #:kws (map force (append (attribute mand.kws)
+                                          (attribute opt.kws)))))]
       [:->^
        (parse-error #:delayed? #t "incorrect use of -> type constructor")
        Err]
