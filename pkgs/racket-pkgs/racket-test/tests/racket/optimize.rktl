@@ -1361,9 +1361,33 @@
                               (if r r (something-else)))
                             (a1)
                             (a2)))
-           '(lambda (x)  (if (if (something) #t (something-else))
+           '(lambda (x) (if (if (something) #t (something-else))
+                            (a1)
+                            (a2))))
+
+(test-comp '(lambda (x) (if (if x x (something-else))
+                            (a1)
+                            (a2)))
+           '(lambda (x) (if (if x #t (something-else))
                              (a1)
                              (a2))))
+
+(test-comp '(lambda (x) (if x (something-else) x))
+           '(lambda (x) (if x (something-else) #f)))
+                             
+(test-comp '(lambda (x) (if (if x #t #f)
+                            (a1)
+                            (a2)))
+           '(lambda (x) (if x
+                            (a1)
+                            (a2))))
+
+(test-comp '(lambda (x) (if (if x x x)
+                            (a1)
+                            (a2)))
+           '(lambda (x) (if x
+                            (a1)
+                            (a2))))
 
 (test-comp '(if (let ([z (random)]) null) 1 2)
            '(if (let ([z (random)]) #t) 1 2))
