@@ -14,6 +14,7 @@
               lexical-env index-env row-constraint-env)
          (only-in racket/list flatten)
          racket/dict
+         racket/promise
          racket/format
          racket/match
          racket/syntax
@@ -162,21 +163,19 @@
 ;; optional or mandatory depending on where it's used
 (define-splicing-syntax-class plain-kw-tys
   (pattern (~seq k:keyword t:expr)
-           #:attr mand-kw (make-Keyword (syntax-e #'k) (parse-type #'t) #t)
-           #:attr opt-kw  (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
+           #:attr mand-kw (delay (make-Keyword (syntax-e #'k) (parse-type #'t) #t))
+           #:attr opt-kw  (delay (make-Keyword (syntax-e #'k) (parse-type #'t) #f))))
 
 (define-splicing-syntax-class keyword-tys
   (pattern kw:plain-kw-tys #:attr Keyword (attribute kw.mand-kw))
   ;; custom optional keyword syntax for TR
   (pattern (~seq [k:keyword t:expr])
-           #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
+           #:attr Keyword (delay (make-Keyword (syntax-e #'k) (parse-type #'t) #f))))
 
 (define-syntax-class non-keyword-ty
-  (pattern (k e ...)
-           #:when (not (keyword? (syntax->datum #'k))))
-  (pattern t:expr
-           #:when (and (not (keyword? (syntax->datum #'t)))
-                       (not (syntax->list #'t)))))
+  (pattern (k:expr e ...))
+  (pattern (~and t:expr (~not :colon^) (~not :->^))
+           #:when (not (syntax->list #'t))))
 
 ;; syntax classes for parsing ->* function types
 (define-syntax-class ->*-mand
@@ -416,15 +415,6 @@
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
        (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type)
                      (-acc-path (attribute latent.path) (-arg-path 0)))]
-      [(~or (:->^ dom ... rng
-             :colon^ ~! (~var latent (full-latent (syntax->list #'(dom ...)))))
-            (dom ... :->^ rng
-             :colon^ ~! (~var latent (full-latent (syntax->list #'(dom ...))))))
-       ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
-       (->* (parse-types #'(dom ...))
-            (parse-type #'rng)
-            : (-FS (attribute latent.positive) (attribute latent.negative))
-            : (attribute latent.object))]
       [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star rng)
             (dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star :->^ rng))
        (make-Function
@@ -432,7 +422,7 @@
                (parse-types #'(dom ...))
                (parse-values-type #'rng)
                #:rest (parse-type #'rest)
-               #:kws (attribute kws.Keyword))))]
+               #:kws (map force (attribute kws.Keyword)))))]
       [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound rng)
             (dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng))
        (let* ([bnd (syntax-e #'bound)])
@@ -470,7 +460,17 @@
           (list (make-arr
                  doms
                  (parse-values-type #'rng)
-                 #:kws (attribute kws.Keyword)))))]
+                 #:kws (map force (attribute kws.Keyword))))))]
+      ;; This case needs to be at the end because it uses cut points to give good error messages.
+      [(~or (:->^ ~! dom:non-keyword-ty ... rng:expr
+             :colon^ (~var latent (full-latent (syntax->list #'(dom ...)))))
+            (dom:non-keyword-ty ... :->^ rng:expr
+             ~! :colon^ (~var latent (full-latent (syntax->list #'(dom ...))))))
+       ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
+       (->* (parse-types #'(dom ...))
+            (parse-type #'rng)
+            : (-FS (attribute latent.positive) (attribute latent.negative))
+            : (attribute latent.object))]
       [(:->*^ mand:->*-mand opt:->*-opt rest:->*-rest rng)
        (define doms (for/list ([d (attribute mand.doms)])
                       (parse-type d)))
@@ -479,8 +479,8 @@
        (opt-fn doms opt-doms (parse-values-type #'rng)
                #:rest (and (attribute rest.type)
                            (parse-type (attribute rest.type)))
-               #:kws (append (attribute mand.kws)
-                             (attribute opt.kws)))]
+               #:kws (map force (append (attribute mand.kws)
+                                        (attribute opt.kws))))]
       [:->^
        (parse-error #:delayed? #t "incorrect use of -> type constructor")
        Err]
