@@ -519,21 +519,28 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax/loc stx
        ((plambda: (A ...) (bn ...) . body) e ...))]))
 
-;; Syntax classes for `define-type-alias`
-(begin-for-syntax
- (define-syntax-class type-alias-rest
-   #:literals (All)
-   #:attributes (args)
-   (pattern (All (arg:id ...) rest)
-            #:with args #'(arg ...))
-   (pattern type:expr #:with args #'#f)))
-
 (define-syntax (define-type-alias stx)
+  (define-syntax-class all-vars
+    #:literals (All)
+    #:attributes (poly-vars)
+    (pattern (All (arg:id ...) rest)
+             #:with poly-vars #'(arg ...))
+    (pattern type:expr #:with poly-vars #'#f))
+
+  (define-splicing-syntax-class omit-define-syntaxes
+    #:attributes (omit)
+    (pattern #:omit-define-syntaxes #:attr omit #t)
+    (pattern (~seq) #:attr omit #f))
+
+  (define-splicing-syntax-class type-alias-full
+     #:attributes (tname type poly-vars omit)
+     (pattern (~seq tname:id (~and type:expr :all-vars) :omit-define-syntaxes))
+     (pattern (~seq (tname:id arg:id ...) body:expr :omit-define-syntaxes)
+       #:with poly-vars #'(arg ...)
+       #:with type (syntax/loc #'body (All (arg ...) body))))
+
   (syntax-parse stx
-    [(_ tname:id rest:type-alias-rest
-        (~optional (~and omit #:omit-define-syntaxes)
-                   #:defaults
-                   ([omit #f])))
+    [(_ :type-alias-full)
      (define/with-syntax stx-err-fun
        #'(lambda (stx)
            (raise-syntax-error
@@ -546,10 +553,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                (ignore #'(define-syntax tname stx-err-fun))
                #'(begin))
          #,(internal (syntax/loc stx
-                       (define-type-alias-internal tname rest
-                         rest.args))))]
-    [(_ (tname:id args:id ...) rest)
-     (syntax/loc stx (define-type-alias tname (All (args ...) rest)))]))
+                       (define-type-alias-internal tname type poly-vars))))]))
 
 (define-syntax (with-handlers: stx)
   (syntax-parse stx
