@@ -3133,6 +3133,17 @@
           (define (g x) (f x))
           (error "foo"))
         #:msg #rx"Polymorphic function `f' could not be applied"]
+
+       ;; PR 14509
+       [tc-e
+        (let ()
+         (: f (-> Any (-> Any Boolean : #:+ (Number @ 1 0))))
+         (define f (λ (x) (λ (y) (number? x))))
+
+         (: g (-> Any (-> Boolean : #:+ (Number @ 1 0))))
+         (define g (λ (x) (λ () (number? x))))
+         (void))
+        -Void]
         )
 
   (test-suite
