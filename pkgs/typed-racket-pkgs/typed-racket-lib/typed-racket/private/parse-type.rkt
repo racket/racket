@@ -95,7 +95,6 @@
 ;; (Syntax -> Type) -> Syntax Any -> Syntax
 ;; See `parse-type/id`. This is a curried generalization.
 (define ((parse/id p) loc datum)
-  #;(printf "parse-type/id id : ~a\n ty: ~a\n" (syntax-object->datum loc) (syntax-object->datum stx))
   (let* ([stx* (datum->syntax loc datum loc loc)])
     (p stx*)))
 
@@ -113,7 +112,6 @@
 ;; Syntax -> Type
 ;; Parse a Forall type
 (define (parse-all-type stx)
-  ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
   (syntax-parse stx
     [(:All^ (vars:id ... v:id dd:ddd) . t:omit-parens)
      (define maybe-dup (check-duplicate-identifier (syntax->list #'(vars ... v))))
@@ -360,8 +358,6 @@
                   #:stx ty
                   "expected a function type for component of case-> type"
                   "given" t)]))))]
-      #;[(:Vectorof^ t)
-       (make-Vector (parse-type #'t))]
       [(:Rec^ x:id t)
        (let* ([var (syntax-e #'x)]
               [tvar (make-F var)])
@@ -497,7 +493,6 @@
          [(lookup-type-alias #'id parse-type (lambda () #f))
           =>
           (lambda (t)
-            ;(printf "found a type alias ~a\n" #'id)
             (when (current-referenced-aliases)
               (define alias-box (current-referenced-aliases))
               (set-box! alias-box (cons #'id (unbox alias-box))))
@@ -510,8 +505,6 @@
        (parse-error "bad syntax in Opaque")]
       [(:U^ . rest)
        (parse-error "bad syntax in Union")]
-      #;[(:Vectorof^ . rest)
-       (tc-error "bad syntax in Vectorof")]
       [(:Rec^ . rest)
        (parse-error "bad syntax in Rec")]
       [(t ... :->^ . rest)
