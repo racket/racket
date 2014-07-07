@@ -10,7 +10,7 @@
          (utils tc-utils stxclass-util literal-syntax-class)
          syntax/stx (prefix-in c: (contract-req))
          syntax/parse unstable/sequence
-         (env tvar-env type-name-env type-alias-env
+         (env tvar-env type-name-env type-alias-env mvar-env
               lexical-env index-env row-constraint-env)
          (only-in racket/list flatten)
          racket/dict
@@ -210,17 +210,6 @@
   (pattern :cdr^
            #:attr pe (make-CdrPE)))
 
-(define-splicing-syntax-class idx-obj
-  #:description "index object"
-  #:attributes (arg depth path)
-  (pattern (~seq idx:nat)
-           #:attr arg (syntax-e #'idx)
-           #:attr depth 0
-           #:attr path (-arg-path (attribute arg) (attribute depth)))
-  (pattern (~seq depth-idx:nat idx:nat)
-           #:attr arg (syntax-e #'idx)
-           #:attr depth (syntax-e #'depth-idx)
-           #:attr path (-arg-path (attribute arg) (attribute depth))))
 
 (define-syntax-class @
   #:description "@"
@@ -244,22 +233,12 @@
   #:attributes (prop)
   (pattern :Top^ #:attr prop -top)
   (pattern :Bot^ #:attr prop -bot)
-  (pattern (t:expr :@ pe:path-elem ... i:id)
-           #:attr prop (-filter (parse-type #'t) (-acc-path (attribute pe.pe) (-id-path #'i))))
   ;; Here is wrong check
-  (pattern (t:expr :@ ~! pe:path-elem ... i:idx-obj)
-           #:fail-unless (< (attribute i.arg) (length doms))
-           (format "Filter proposition's object index ~a is larger than argument length ~a"
-                   (attribute i.arg) (length doms))
-           #:attr prop (-filter (parse-type #'t) (-acc-path (attribute pe.pe) (attribute i.path))))
-  (pattern (:! t:expr :@ pe:path-elem ... i:id)
-           #:attr prop (-not-filter (parse-type #'t) (-acc-path (attribute pe.pe) (-id-path #'i))))
+  (pattern (t:expr :@ ~! pe:path-elem ... (~var o (filter-object doms)))
+           #:attr prop (-filter (parse-type #'t) (-acc-path (attribute pe.pe) (attribute o.obj))))
   ;; Here is wrong check
-  (pattern (:! t:expr :@ ~! pe:path-elem ... i:idx-obj)
-           #:fail-unless (< (attribute i.arg) (length doms))
-           (format "Filter proposition's object index ~a is larger than argument length ~a"
-                   (attribute i.arg) (length doms))
-           #:attr prop (-not-filter (parse-type #'t) (-acc-path (attribute pe.pe) (attribute i.path))))
+  (pattern (:! t:expr :@ ~! pe:path-elem ... (~var o (filter-object doms)))
+           #:attr prop (-not-filter (parse-type #'t) (-acc-path (attribute pe.pe) (attribute o.obj))))
   (pattern (:! t:expr)
            #:attr prop (-not-filter (parse-type #'t) 0))
   (pattern (and (~var p (prop doms)) ...)
@@ -270,6 +249,29 @@
            #:attr prop (-imp (attribute p1.prop) (attribute p2.prop)))
   (pattern t:expr
            #:attr prop (-filter (parse-type #'t) 0)))
+
+(define-splicing-syntax-class (filter-object doms)
+  #:description "filter object"
+  #:attributes (obj)
+  (pattern i:id
+           #:fail-unless (identifier-binding #'i)
+           "Filters for predicates may not reference identifiers that are unbound"
+           #:fail-when (is-var-mutated? #'i)
+           "Filters for predicates may not reference identifiers that are mutated"
+           #:attr obj (-id-path #'i))
+  (pattern idx:nat
+           #:do [(define arg (syntax-e #'idx))]
+           #:fail-unless (< arg (length doms))
+           (format "Filter proposition's object index ~a is larger than argument length ~a"
+                   arg (length doms))
+           #:attr obj (-arg-path arg 0))
+  (pattern (~seq depth-idx:nat idx:nat)
+           #:do [(define arg (syntax-e #'idx))]
+           #:fail-unless (< arg (length doms))
+           (format "Filter proposition's object index ~a is larger than argument length ~a"
+                   arg (length doms))
+           #:attr obj (-arg-path arg (syntax-e #'depth-idx))))
+
 
 (define-syntax-class object
   #:attributes (object)
