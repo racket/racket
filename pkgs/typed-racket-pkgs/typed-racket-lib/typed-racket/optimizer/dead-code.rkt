@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require syntax/parse racket/promise syntax/stx unstable/sequence
+         racket/syntax
          (for-template racket/base)
          "../utils/utils.rkt"
          (types type-table)
@@ -12,31 +13,33 @@
 ;; The type based 'dead code elimination' done by this file just makes the dead code obvious.
 ;; The actual elimination step is left to the compiler.
 
-
-;; if the conditional has a known truth value, we can reveal this
-;; we have to keep the test, in case it has side effects
-(define-syntax-class tautology
-  #:attributes (opt)
-  (pattern e:opt-expr
-    #:when (tautology? #'e)
-    #:attr opt (delay #'(begin e.opt #t))))
-
-(define-syntax-class contradiction
-  #:attributes (opt)
-  (pattern e:opt-expr
-    #:when (contradiction? #'e)
-    #:attr opt (delay #'(begin e.opt #f))))
-
-
 (define-syntax-class dead-code-opt-expr
   #:commit
   #:literal-sets (kernel-literals)
-  (pattern ((~and kw if) tst:tautology thn:opt-expr els:expr)
-    #:do [(log-optimization "dead else branch" "Unreachable else branch elimination." #'els)]
-    #:with opt (syntax/loc/origin this-syntax #'kw (if tst.opt thn.opt els)))
-  (pattern ((~and kw if) tst:contradiction thn:expr els:opt-expr)
-    #:do [(log-optimization "dead then branch" "Unreachable then branch elimination." #'thn)]
-    #:with opt (syntax/loc/origin this-syntax #'kw (if tst.opt thn els.opt)))
+  (pattern ((~and kw if) tst:opt-expr thn:opt-expr els:opt-expr)
+    #:do [(define takes-true (test-position-takes-true-branch #'tst))
+          (define takes-false (test-position-takes-false-branch #'tst))
+          (unless takes-true
+            (log-optimization "dead then branch" "Unreachable then branch elimination." #'thn))
+          (unless takes-false
+            (log-optimization "dead else branch" "Unreachable else branch elimination." #'els))]
+    #:with thn-opt (if takes-true #'thn.opt #'thn)
+    #:with els-opt (if takes-false #'els.opt #'els)
+    ;; if the conditional has a known truth value, we can reveal this
+    ;; we have to keep the test, in case it has side effects
+    #:with opt
+      (cond
+        [(and (not takes-true) (not takes-false))
+         (quasisyntax/loc/origin this-syntax #'kw
+           (if #t tst.opt (begin thn-opt els-opt)))]
+        [else
+          (define/with-syntax tst-opt
+            (cond
+              [(and takes-true takes-false) #'tst.opt]
+              [takes-true #'(begin tst.opt #t)]
+              [takes-false #'(begin tst.opt #f)]))
+          (quasisyntax/loc/origin this-syntax #'kw
+            (if tst-opt thn-opt els-opt))]))
   (pattern ((~and kw lambda) formals . bodies)
     #:when (dead-lambda-branch? #'formals)
     #:with opt this-syntax)
