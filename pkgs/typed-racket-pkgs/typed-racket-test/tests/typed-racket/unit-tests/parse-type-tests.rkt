@@ -171,6 +171,8 @@
    [(-> Integer (All (X) (-> X X)))
     (t:-> -Integer (-poly (x) (t:-> x x)))]
    [FAIL -> #:msg "incorrect use of -> type constructor"]
+   [FAIL (Any -> Any #:object 0) #:msg "expected the identifier `:'"]
+   [FAIL (-> Any Any #:+ (String @ x)) #:msg "expected the identifier `:'"]
 
    ;; ->* types
    [(->* (String Symbol) Void) (t:-> -String -Symbol -Void)]
