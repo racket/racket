@@ -3,17 +3,22 @@
          racket/file
          racket/port
          racket/format
-         racket/system
          racket/date
          racket/list
          racket/set
+         racket/string
          racket/runtime-path
          net/url
          pkg/lib
+         file/untgz
          distro-build/vbox
          web-server/servlet-env
+         (only-in scribble/html a td tr #%top)
          "union-find.rkt"
-         "thread.rkt")
+         "thread.rkt"
+         "ssh.rkt"
+         "status.rkt"
+         "summary.rkt")
 
 (provide vbox-vm
          build-pkgs)
@@ -46,9 +51,11 @@
 ;; along the way is extracted, if possible.
 ;;
 ;; To do:
+;;  - salvage docs from conflicst & dumster
+;;  - tier-based selection of packages on conflict
 ;;  - support for running tests
 
-(struct vm (name host user dir init-snapshot installed-snapshot))
+(struct vm remote (name init-snapshot installed-snapshot))
 
 ;; Each VM must provide at least an ssh server and `tar`, it must have
 ;; any system libraries installed that are needed for building
@@ -71,7 +78,7 @@
          #:installed-shapshot [installed-snapshot "installed"])
   (unless (complete-path? dir)
     (error 'vbox-vm "need a complete path for #:dir"))
-  (vm name host user dir init-snapshot installed-snapshot))
+  (vm host user dir name init-snapshot installed-snapshot))
 
 (define (build-pkgs 
          ;; Besides a running Racket, the host machine must provide
@@ -87,6 +94,9 @@
          ;;
          ;;   "install-list.rktd" --- list of packages found in
          ;;     the installation
+         ;;   "install-adds.rktd" --- table of docs, libs, etc.
+         ;;     in the installation (to detect conflicts)
+         ;;   "install-doc.tgz" --- copy of installation's docs
          ;;
          ;;   "server/archive" plus "state.sqlite" --- archived
          ;;     packages, taken from the snapshot site plus additional
@@ -110,6 +120,24 @@
          ;;   "dumpster" --- saved builds of failed packages if the
          ;;     package at least installs; maybe the attempt built
          ;;     some documentation
+         ;;
+         ;;   "doc" --- unpacked docs with non-conflicting
+         ;;     packages installed
+         ;;   "all-doc.tgz" --- "doc", still packed
+         ;;
+         ;;   "summary.rktd" --- summary of build results, a hash
+         ;;     table mapping each package name to another hash table
+         ;;     with the following keys:
+         ;;       'success-log --- #f or relative path
+         ;;       'failure-log --- #f or relative path
+         ;;       'dep-failure-log --- #f or relative path
+         ;;       'docs --- list of one of
+         ;;                  * (docs/none name)
+         ;;                  * (docs/main name path)
+         ;;       'conflict-log --- #f, relative path, or
+         ;;                         (conflicts/indirect path)
+         ;;   "index.html" (and "robots.txt", etc.) --- summary in
+         ;;     web-page form
          ;;
          ;; A package is rebuilt if its checksum changes or if one of
          ;; its declared dependencies changes.
@@ -139,6 +167,12 @@
          ;; Skip the doc-assembling step if you don't want docs:
          #:skip-docs? [skip-docs? #f]
 
+         ;; Skip the summary step if you don't want the generated
+         ;; web pages:
+         #:skip-summary? [skip-summary? #f]
+         ;; Omit specified packages from the summary:
+         #:summary-omit-pkgs [summary-omit-pkgs null]
+
          ;; Timeout in seconds for any one package or step:
          #:timeout [timeout 600]
 
@@ -150,6 +184,9 @@
 
          ;; Port to use on host machine for catalog server:
          #:server-port [server-port 18333])
+
+  (current-timeout timeout)
+  (current-tunnel-port server-port)
 
   (unless (and (list? vms)
                ((length vms) . >= . 1)
@@ -181,137 +218,15 @@
 
   (make-directory* work-dir)
 
-  (define (substatus fmt . args)
-    (apply printf fmt args)
-    (flush-output))
-
-  (define (status fmt . args)
-    (printf ">> ")
-    (apply substatus fmt args))
-
-  (define (show-list nested-strs #:indent [indent ""])
-    (define strs (let loop ([strs nested-strs])
-                   (cond
-                    [(null? strs) null]
-                    [(pair? (car strs))
-                     (define l (car strs))
-                     (define len (length l))
-                     (loop (append
-                            (list (string-append "(" (car l)))
-                            (take (cdr l) (- len 2))
-                            (list (string-append (last l) ")"))
-                            (cdr strs)))]
-                    [else (cons (car strs) (loop (cdr strs)))])))
-    (substatus "~a\n"
-               (for/fold ([a indent]) ([s (in-list strs)])
-                 (if ((+ (string-length a) 1 (string-length s)) . > . 72)
-                     (begin
-                       (substatus "~a\n" a)
-                       (string-append indent " " s))
-                     (string-append a " " s)))))
-
   ;; ----------------------------------------
-
-  (define scp-exe (find-executable-path "scp"))
-  (define ssh-exe (find-executable-path "ssh"))
-
-  (define (vm-user+host vm)
-    (if (not (equal? (vm-user vm) ""))
-        (~a (vm-user vm) "@" (vm-host vm))
-        (vm-host vm)))
-
-  (define (system*/show exe . args)
-    (displayln (apply ~a #:separator " " 
-                      (map (lambda (p) (if (path? p) (path->string p) p)) 
-                           (cons exe args))))
-    (flush-output)
-    (apply system* exe args))
-
-  (define (ssh vm
-               #:mode [mode 'auto]
-               #:failure-dest [failure-dest #f]
-               #:success-dest [success-dest #f]
-               . args)
-    (define cmd
-      (list "/usr/bin/env" (~a "PLTUSERHOME=" (vm-dir vm) "/user")
-            "/bin/sh" "-c" (apply ~a args)))
-
-    (define saved (and (or failure-dest success-dest)
-                       (open-output-bytes)))
-    (define (tee o1 o2)
-      (cond
-       [(not o1)
-        (values o2 void)]
-       [else
-        (define-values (i o) (make-pipe 4096))
-        (values o
-                (let ([t (thread (lambda ()
-                                   (copy-port i o1 o2)))])
-                  (lambda ()
-                    (close-output-port o)
-                    (sync t))))]))
-    (define-values (stdout sync-out) (tee saved (current-output-port)))
-    (define-values (stderr sync-err) (tee saved (current-error-port)))
-
-    (define timeout? #f)
-    (define orig-thread (current-thread))
-    (define timeout-thread
-      (thread (lambda ()
-                (sleep timeout)
-                (set! timeout? #t)
-                (break-thread orig-thread))))
-
-    (define ok?
-      (parameterize ([current-output-port stdout]
-                     [current-error-port stderr])
-        (with-handlers ([exn? (lambda (exn)
-                                (cond
-                                 [timeout?
-                                  (eprintf "~a\n" (exn-message exn))
-                                  (eprintf "Timeout after ~a seconds\n" timeout)
-                                  #f]
-                                 [else (raise exn)]))])
-          (begin0
-           (if (and (equal? (vm-host vm) "localhost")
-                    (equal? (vm-user vm) ""))
-               (apply system*/show cmd)
-               (apply system*/show ssh-exe
-                      ;; create tunnel to connect back to server:
-                      "-R" (~a server-port ":localhost:" server-port)
-                      (vm-user+host vm)
-                      ;; ssh needs an extra level of quoting
-                      ;;  relative to sh:
-                      (for/list ([arg (in-list cmd)])
-                        (~a "'" 
-                            (regexp-replace* #rx"'" arg "'\"'\"'")
-                            "'"))))
-           (kill-thread timeout-thread)))))
-    (sync-out)
-    (sync-err)
-    (let ([dest (if ok? success-dest failure-dest)])
-      (when dest
-        (call-with-output-file*
-         dest
-         #:exists 'truncate/replace
-         (lambda (o) (write-bytes (get-output-bytes saved) o)))))
-    (case mode
-      [(result) ok?]
-      [else
-       (unless ok?
-         (error "failed"))]))
 
   (define (q s)
     (~a "\"" s "\""))
 
-  (define (scp vm src dest #:mode [mode 'auto])
-    (unless (system*/show scp-exe src dest)
-      (case mode
-        [(ignore-failure) (void)]
-        [else (error "failed")])))
   (define (at-vm vm dest)
-    (~a (vm-user+host vm) ":" dest))
-  
-  (define (cd-racket vm) (~a "cd " (q (vm-dir vm)) "/racket"))
+    (~a (remote-user+host vm) ":" dest))
+
+  (define (cd-racket vm) (~a "cd " (q (remote-dir vm)) "/racket"))
 
   ;; ----------------------------------------
   (status "Getting installer table\n")
@@ -365,77 +280,77 @@
       (get-all-pkg-details-from-catalogs)))
 
   (define (install vm #:one-time? [one-time? #f])
-    (unless skip-install?
-      ;; ----------------------------------------
-      (status "Starting VM ~a\n" (vm-name vm))
-      (stop-vbox-vm (vm-name vm))
-      (restore-vbox-snapshot (vm-name vm) (vm-init-snapshot vm))
-      (start-vbox-vm (vm-name vm))
+    ;; ----------------------------------------
+    (status "Starting VM ~a\n" (vm-name vm))
+    (stop-vbox-vm (vm-name vm))
+    (restore-vbox-snapshot (vm-name vm) (vm-init-snapshot vm))
+    (start-vbox-vm (vm-name vm))
 
-      (dynamic-wind
-          void
-          (lambda ()
-            ;; ----------------------------------------
-            (status "Fixing time at ~a\n" (vm-name vm))
-            (ssh vm "sudo date --set=" (q (parameterize ([date-display-format 'rfc2822])
-                                            (date->string (seconds->date (current-seconds)) #t))))
+    (dynamic-wind
+     void
+     (lambda ()
+       ;; ----------------------------------------
+       (status "Fixing time at ~a\n" (vm-name vm))
+       (ssh vm "sudo date --set=" (q (parameterize ([date-display-format 'rfc2822])
+                                       (date->string (seconds->date (current-seconds)) #t))))
 
-            ;; ----------------------------------------
-            (define remote-dir (vm-dir vm))
-            (status "Preparing directory ~a\n" remote-dir)
-            (ssh vm "rm -rf " (~a (q remote-dir) "/*"))
-            (ssh vm "mkdir -p " (q remote-dir))
-            (ssh vm "mkdir -p " (q (~a remote-dir "/user")))
-            (ssh vm "mkdir -p " (q (~a remote-dir "/built")))
-            
-            (scp vm (build-path installer-dir installer-name) (at-vm vm remote-dir))
-            
-            (ssh vm "cd " (q remote-dir) " && " " sh " (q installer-name) " --in-place --dest ./racket")
-            
-            ;; VM-side helper modules:
-            (scp vm pkg-adds-rkt (at-vm vm (~a remote-dir "/pkg-adds.rkt")))
-            (scp vm pkg-list-rkt (at-vm vm (~a remote-dir "/pkg-list.rkt")))
+       ;; ----------------------------------------
+       (define there-dir (remote-dir vm))
+       (status "Preparing directory ~a\n" there-dir)
+       (ssh vm "rm -rf " (~a (q there-dir) "/*"))
+       (ssh vm "mkdir -p " (q there-dir))
+       (ssh vm "mkdir -p " (q (~a there-dir "/user")))
+       (ssh vm "mkdir -p " (q (~a there-dir "/built")))
+       
+       (scp vm (build-path installer-dir installer-name) (at-vm vm there-dir))
+       
+       (ssh vm "cd " (q there-dir) " && " " sh " (q installer-name) " --in-place --dest ./racket")
+       
+       ;; VM-side helper modules:
+       (scp vm pkg-adds-rkt (at-vm vm (~a there-dir "/pkg-adds.rkt")))
+       (scp vm pkg-list-rkt (at-vm vm (~a there-dir "/pkg-list.rkt")))
 
-            (when one-time?
-              ;; ----------------------------------------
-              (status "Getting installed packages\n")
-              (ssh vm (cd-racket vm)
-                   " && bin/racket ../pkg-list.rkt > ../pkg-list.rktd")
-              (scp vm (at-vm vm (~a remote-dir "/pkg-list.rktd"))
-                   (build-path work-dir "install-list.rktd")))
+       (when one-time?
+         ;; ----------------------------------------
+         (status "Getting installed packages\n")
+         (ssh vm (cd-racket vm)
+              " && bin/racket ../pkg-list.rkt > ../pkg-list.rktd")
+         (scp vm (at-vm vm (~a there-dir "/pkg-list.rktd"))
+              (build-path work-dir "install-list.rktd")))
 
-            ;; ----------------------------------------
-            (status "Setting catalogs at ~a\n" (vm-name vm))
-            (ssh vm (cd-racket vm)
-                 " && bin/raco pkg config -i --set catalogs "
-                 " http://localhost:" server-port "/built/catalog/"
-                 " http://localhost:" server-port "/archive/catalog/")
+       ;; ----------------------------------------
+       (status "Setting catalogs at ~a\n" (vm-name vm))
+       (ssh vm (cd-racket vm)
+            " && bin/raco pkg config -i --set catalogs "
+            " http://localhost:" server-port "/built/catalog/"
+            " http://localhost:" server-port "/archive/catalog/")
 
-            (when one-time?
-              ;; ----------------------------------------
-              (status "Stashing installation docs\n")
-              (ssh vm (cd-racket vm)
-                   " && bin/racket ../pkg-adds.rkt --all > ../pkg-adds.rktd")
-              (ssh vm (cd-racket vm)
-                   " && tar zcf ../install-doc.tgz doc")
-              (scp vm (at-vm vm (~a remote-dir "/pkg-adds.rktd"))
-                   (build-path work-dir "install-adds.rktd"))
-              (scp vm (at-vm vm (~a remote-dir "/install-doc.tgz"))
-                   (build-path work-dir "install-doc.tgz")))
-            
-            (void))
-          (lambda ()
-            (stop-vbox-vm (vm-name vm))))
+       (when one-time?
+         ;; ----------------------------------------
+         (status "Stashing installation docs\n")
+         (ssh vm (cd-racket vm)
+              " && bin/racket ../pkg-adds.rkt --all > ../pkg-adds.rktd")
+         (ssh vm (cd-racket vm)
+              " && tar zcf ../install-doc.tgz doc")
+         (scp vm (at-vm vm (~a there-dir "/pkg-adds.rktd"))
+              (build-path work-dir "install-adds.rktd"))
+         (scp vm (at-vm vm (~a there-dir "/install-doc.tgz"))
+              (build-path work-dir "install-doc.tgz")))
+       
+       (void))
+     (lambda ()
+       (stop-vbox-vm (vm-name vm))))
 
-      ;; ----------------------------------------
-      (status "Taking installation snapshopt\n")
-      (when (exists-vbox-snapshot? (vm-name vm) (vm-installed-snapshot vm))
-        (delete-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm)))
-      (take-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))))
+    ;; ----------------------------------------
+    (status "Taking installation snapshopt\n")
+    (when (exists-vbox-snapshot? (vm-name vm) (vm-installed-snapshot vm))
+      (delete-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm)))
+    (take-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm)))
 
-  (install (car vms) #:one-time? #t)
-  (map install (cdr vms))
-
+  (unless skip-install?
+    (install (car vms) #:one-time? #t)
+    (map install (cdr vms)))
+  
   ;; ----------------------------------------
   (status "Resetting ready content of ~a\n" built-pkgs-dir)
 
@@ -701,7 +616,7 @@
        #:exists 'truncate/replace
        (lambda (o) (write-string (pkg-checksum pkg) o))))
 
-    (define remote-dir (vm-dir vm))
+    (define there-dir (remote-dir vm))
 
     (for ([pkg (in-list flat-pkgs)])
       (define f (build-path install-success-dir pkg))
@@ -715,7 +630,8 @@
        (define ok?
          (and
           ;; Try to install:
-          (ssh vm (cd-racket vm)
+          (ssh #:show-time? #t
+               vm (cd-racket vm)
                " && bin/raco pkg install -u --auto"
                (if one-pkg "" " --fail-fast")
                " " pkgs-str
@@ -731,9 +647,10 @@
             ;; Make sure that any extra installed packages used were previously
             ;; built, since we want built packages to be consistent with a binary
             ;; installation.
-            (ssh vm (cd-racket vm)
+            (ssh #:show-time? #t
+                 vm (cd-racket vm)
                  " && bin/racket ../pkg-list.rkt --user > ../user-list.rktd")
-            (scp vm (at-vm vm (~a remote-dir "/user-list.rktd"))
+            (scp vm (at-vm vm (~a there-dir "/user-list.rktd"))
                  (build-path work-dir "user-list.rktd"))
             (define new-pkgs (call-with-input-file*
                               (build-path work-dir "user-list.rktd")
@@ -749,7 +666,8 @@
                             pkg))))))
        (define deps-ok?
          (and ok?
-              (ssh vm (cd-racket vm)
+              (ssh #:show-time? #t
+                   vm (cd-racket vm)
                    " && bin/raco setup -nxiID --check-pkg-deps --pkgs "
                    " " pkgs-str
                    #:mode 'result
@@ -774,7 +692,7 @@
           (for/and ([pkg (in-list flat-pkgs)])
             (ssh vm (cd-racket vm)
                  " && bin/raco pkg create --from-install --built"
-                 " --dest " remote-dir "/built"
+                 " --dest " there-dir "/built"
                  " " pkg
                  #:mode 'result
                  #:failure-dest (and ok? failure-dest)))))
@@ -785,11 +703,11 @@
              (delete-file (pkg-failure-dest pkg)))
            (when (and deps-ok? (file-exists? (pkg-deps-failure-dest pkg)))
              (delete-file (pkg-deps-failure-dest pkg)))
-           (scp vm (at-vm vm (~a remote-dir "/built/" pkg ".zip"))
+           (scp vm (at-vm vm (~a there-dir "/built/" pkg ".zip"))
                 built-pkgs-dir)
-           (scp vm (at-vm vm (~a remote-dir "/built/" pkg ".zip.CHECKSUM"))
+           (scp vm (at-vm vm (~a there-dir "/built/" pkg ".zip.CHECKSUM"))
                 built-pkgs-dir)
-           (scp vm (at-vm vm (~a remote-dir "/pkg-adds.rktd"))
+           (scp vm (at-vm vm (~a there-dir "/pkg-adds.rktd"))
                 (build-path built-dir "adds" (format "~a-adds.rktd" pkg)))
            (define deps-msg (if deps-ok? "" ", but problems with dependency declarations"))
            (call-with-output-file*
@@ -811,13 +729,13 @@
              (save-checksum pkg))
            ;; Keep any docs that might have been built:
            (for ([pkg (in-list flat-pkgs)])
-             (scp vm (at-vm vm (~a remote-dir "/built/" pkg ".zip"))
+             (scp vm (at-vm vm (~a there-dir "/built/" pkg ".zip"))
                   dumpster-pkgs-dir
                   #:mode 'ignore-failure)
-             (scp vm (at-vm vm (~a remote-dir "/built/" pkg ".zip.CHECKSUM"))
+             (scp vm (at-vm vm (~a there-dir "/built/" pkg ".zip.CHECKSUM"))
                   dumpster-pkgs-dir
                   #:mode 'ignore-failure)
-             (scp vm (at-vm vm (~a remote-dir "/pkg-adds.rktd"))
+             (scp vm (at-vm vm (~a there-dir "/pkg-adds.rktd"))
                   (build-path dumpster-adds-dir (format "~a-adds.rktd" pkg))
                   #:mode 'ignore-failure)))
          (substatus "*** failed ***\n")])
@@ -867,18 +785,20 @@
      [else
       (cons (car pkgs) (remove-ordered try-pkgs (cdr pkgs)))]))
 
-  (struct running (vm pkgs th)
+  (struct running (vm pkgs th done?-box)
     #:property prop:evt (lambda (r)
                           (wrap-evt (running-th r)
                                     (lambda (v) r))))
   (define (start-running vm pkgs)
+    (define done?-box (box #f))
     (define t (thread/chunk-output
                (lambda ()
-                 (status ">> Sending to ~a:\n" (vm-name vm))
+                 (status "Sending to ~a:\n" (vm-name vm))
                  (show-list pkgs)
                  (flush-chunk-output)
-                 (build-pkg-set vm pkgs))))
-    (running vm pkgs t))
+                 (build-pkg-set vm pkgs)
+                 (set-box! done?-box #t))))
+    (running vm pkgs t done?-box))
 
   (define (break-running r)
     (break-thread (running-th r))
@@ -892,7 +812,8 @@
     (let loop ([pkgs pkgs]
                [pending-pkgs (list->set pkgs)]
                [vms vms]
-               [runnings null])
+               [runnings null]
+               [error? #f])
       (define (wait)
         (define r
           (with-handlers ([exn:break? (lambda (exn)
@@ -905,8 +826,13 @@
         (loop pkgs
               (set-subtract pending-pkgs (list->set (running-pkgs r)))
               (cons (running-vm r) vms)
-              (remq r runnings)))
+              (remq r runnings)
+              (or error? (not (unbox (running-done?-box r))))))
       (cond
+       [error?
+        (if (null? runnings)
+            (error "a build task ended prematurely")
+            (wait))]
        [(and (null? pkgs)
              (null? runnings))
         ;; Done
@@ -925,7 +851,8 @@
                 pending-pkgs
                 (cdr vms)
                 (cons (start-running (car vms) try-pkgs)
-                      runnings))])])))
+                      runnings)
+                error?)])])))
 
   ;; Build all of the out-of-date packages:
   (unless skip-build?
@@ -967,11 +894,10 @@
   (substatus "Packages with documentation:\n")
   (show-list doc-pkg-list)
   
-  (define no-conflict-doc-pkgs
+  ;; `conflict-pkgs` have a direct conflict, while `no-conflict-pkgs`
+  ;; have no direct conflict and no dependency with a conflict
+  (define-values (conflict-pkgs no-conflict-pkgs)
     (let ()
-      (define doc-pkgs
-        (for/hash ([doc-pkg (in-list doc-pkg-list)])
-          (values doc-pkg (hash-ref adds-pkgs doc-pkg null))))
       (define (add-providers ht pkgs)
         (for*/fold ([ht ht]) ([(k v) (in-hash pkgs)]
                               [(d) (in-list v)])
@@ -986,17 +912,22 @@
           (cons k v)))
       (cond
        [(null? conflicts)
-        (set->list (hash-keys doc-pkgs))]
+        available-pkgs]
        [else
-        (substatus "Install conflicts:\n")
-        (for ([v (in-list conflicts)])
-          (substatus " ~a ~s:\n" (caar v) (cdar v))
-          (show-list #:indent " " (sort (set->list (cdr  v)) string<?)))
+        (define (show-conflicts)
+          (substatus "Install conflicts:\n")
+          (for ([v (in-list conflicts)])
+            (substatus " ~a ~s:\n" (caar v) (cdar v))
+            (show-list #:indent " " (sort (set->list (cdr  v)) string<?))))
+        (show-conflicts)
+        (with-output-to-file "conflicts"
+          #:exists 'truncate/replace
+          show-conflicts)
         (define conflicting-pkgs
           (for/fold ([s (set)]) ([v (in-list conflicts)])
             (set-union s (cdr v))))
         (define reverse-deps
-          (for*/fold ([ht (hash)]) ([pkg (in-list doc-pkg-list)]
+          (for*/fold ([ht (hash)]) ([pkg (in-set available-pkgs)]
                                     [dep (in-list (pkg-deps pkg))])
             (hash-update ht dep (lambda (s) (set-add s pkg)) (set))))
         (define disallowed-pkgs
@@ -1010,8 +941,10 @@
                 (loop (set-union pkgs new-pkgs) new-pkgs))))
         (substatus "Packages disallowed due to conflicts:\n")
         (show-list (sort (set->list disallowed-pkgs) string<?))
-        (set-subtract (list->set doc-pkg-list) disallowed-pkgs)])))
+        (values conflicting-pkgs
+                (set-subtract available-pkgs disallowed-pkgs))])))
 
+  (define no-conflict-doc-pkgs (set-intersect (list->set doc-pkg-list) no-conflict-pkgs))
   (define no-conflict-doc-pkg-list (sort (set->list no-conflict-doc-pkgs) string<?))
 
   (unless skip-docs?
@@ -1021,16 +954,88 @@
     (dynamic-wind
      void
      (lambda ()
-       (ssh vm (cd-racket vm)
+       (ssh #:show-time? #t
+            vm (cd-racket vm)
             " && bin/raco pkg install -i --auto"
             " " (apply ~a #:separator " " no-conflict-doc-pkg-list))
        (ssh vm (cd-racket vm)
             " && tar zcf ../all-doc.tgz doc")
-       (scp vm (at-vm vm (~a (vm-dir vm) "/all-doc.tgz"))
+       (scp vm (at-vm vm (~a (remote-dir vm) "/all-doc.tgz"))
             (build-path work-dir "all-doc.tgz")))
      (lambda ()
-       (stop-vbox-vm (vm-name vm) #:save-state? #f))))
+       (stop-vbox-vm (vm-name vm) #:save-state? #f)))
+    (untgz "all-doc.tgz"))
   
+  ;; ----------------------------------------
+
+  (unless skip-summary?
+    (define (path->relative p)
+      (define work (explode-path work-dir))
+      (define dest (explode-path p))
+      (unless (equal? work (take dest (length work)))
+        (error "not relative"))
+      (string-join (map path->string (drop dest (length work))) "/"))
+    
+    (define summary-ht
+      (for/hash ([pkg (in-set (set-subtract try-pkgs
+                                            (list->set summary-omit-pkgs)))])
+        (define failed? (file-exists? (pkg-failure-dest pkg)))
+        (define succeeded? (file-exists? (build-path install-success-dir pkg)))
+        (define status
+          (cond
+           [(and failed? (not succeeded?)) 'failure]
+           [(and succeeded? (not failed?)) 'success]
+           [(and succeeded? failed?) 'confusion]
+           [else 'unknown]))
+        (define dep-status
+          (if (eq? status 'success)
+              (if (file-exists? (build-path deps-fail-dir pkg))
+                  'failure
+                  'success)
+              'unknown))
+        (define adds (let ([adds-file (if (eq? status 'success)
+                                          (pkg-adds-file pkg)
+                                          (build-path dumpster-adds-dir (format "~a-adds.rktd" pkg)))])
+                       (if (file-exists? adds-file)
+                           (hash-ref (call-with-input-file* adds-file read)
+                                     pkg
+                                     null)
+                           null)))
+        (define conflicts? (and (eq? status 'success)
+                                (not (set-member? no-conflict-pkgs pkg))))
+        (define docs (for/list ([add (in-list adds)]
+                                #:when (eq? (car add) 'doc))
+                       (cdr add)))
+        (values
+         pkg
+         (hash 'success-log (and (or (eq? status 'success)
+                                     (eq? status 'confusion))
+                                 (path->relative (build-path install-success-dir pkg)))
+               'failure-log (and (or (eq? status 'failure)
+                                     (eq? status 'confusion))
+                                 (path->relative (pkg-failure-dest pkg)))
+               'dep-failure-log (and (eq? dep-status 'failure)
+                                     (path->relative (build-path deps-fail-dir pkg)))
+               'docs (for/list ([doc (in-list docs)])
+                       (if (or (not (eq? status 'success))
+                               conflicts?)
+                           (doc/none doc)
+                           (doc/main doc
+                                     (~a "doc/" doc "/index.html"))))
+               'conflicts-log (and conflicts?
+                                   (if (set-member? conflict-pkgs pkg)
+                                       "conflicts"
+                                       (conflicts/indirect "conflicts")))))))
+
+    (call-with-output-file*
+     (build-path work-dir "summary.rktd")
+     #:exists 'truncate/replace
+     (lambda (o)
+       (write summary-ht o)
+       (newline o)))
+
+    (summary-page summary-ht work-dir))
+
   ;; ----------------------------------------
   
   (void))
