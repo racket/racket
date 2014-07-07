@@ -1805,7 +1805,8 @@
                                         (check-unused-dependencies)
                                         (fix-dependencies)
                                         (verbose)
-                                        (not no-specific-collections?))
+                                        (not no-specific-collections?)
+                                        (always-check-dependencies))
       (set! exit-code 1)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

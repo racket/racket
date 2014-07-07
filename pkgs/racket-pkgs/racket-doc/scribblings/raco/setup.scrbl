@@ -180,13 +180,16 @@ flags:
   package-level dependency declarations, whether modules are declared
   by multiple packages, and whether package version dependencies are
   satisfied. Dependency checking uses compiled bytecode, associated
-  @filepath{.dep} files, and the documentation index. Dependency
-  checking is disabled by default if any collection is specified for
-  @exec{raco setup}.}
+  @filepath{.dep} files, and the documentation index. Unless
+  @DFlag{check-pkg-deps} is specified, dependency checking is disabled
+  if any collection is specified for @exec{raco setup}, and missing
+  dependencies are not treated as an error for a package that has no
+  dependency declarations.}
 
  @item{@DFlag{check-pkg-deps} --- checks package dependencies (unless
   explicitly disabled) even when specific collections are provided to
-  @exec{raco setup}. Currently, dependency checking related to
+  @exec{raco setup}, and even for packages that have no
+  dependency declarations. Currently, dependency checking related to
   documentation cross-referencing is constrained to documents among
   specified collections.}
 

@@ -29,7 +29,8 @@
          coll-modes
          setup-printf setup-fprintf
          check-unused? fix? verbose?
-         all-pkgs-lazily?)
+         all-pkgs-lazily?
+         must-declare-deps?)
   ;; Tables
   (define missing (make-hash))
   (define skip-pkgs (make-hash))
@@ -128,7 +129,7 @@
                                          (and i (i 'version (lambda () #f)))))))
     (define vers (cdr deps+build-deps+vers))
     (define deps+build-deps (car deps+build-deps+vers))
-    (unless deps+build-deps
+    (unless (or deps+build-deps must-declare-deps?)
       (hash-set! skip-pkgs pkg #t)
       (setup-printf #f "package declares no dependencies: ~s" pkg))
     (define deps+vers (if deps+build-deps
