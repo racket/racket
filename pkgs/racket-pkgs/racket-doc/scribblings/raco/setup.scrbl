@@ -115,6 +115,10 @@ flags:
   package, in addition to any other specified @|PLaneT| packages or
   @nonterm{collection}s.}
 
+ @item{@DFlag{pkgs} @nonterm{pkg} @racket[...] --- constrain setup
+  actions to collections that are within (or partially within) the
+  named @nonterm{pkg}s.}
+
  @item{@DFlag{tidy} --- remove metadata cache information and
   documentation for non-existent collections (to clean up after removal)
   even when setup actions are otherwise confined to specified collections.}
@@ -249,8 +253,9 @@ collections during an install:
 
    @commandline{env PLT_SETUP_OPTIONS="-j 1" make install}
 
-@history[#:changed "1.2" @elem{Added @DFlag{check-pkg-deps} 
-                               and @DFlag{fast-break} flags.}]
+@history[#:changed "1.2" @elem{Added the @DFlag{pkgs},
+                               @DFlag{check-pkg-deps}, and
+                               @DFlag{fast-break} flags.}]
 
 @; ------------------------------------------------------------------------
 

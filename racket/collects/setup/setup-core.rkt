@@ -33,7 +33,10 @@
          "parallel-build.rkt"
          "private/cc-struct.rkt"
          "link.rkt"
-         "private/pkg-deps.rkt")
+         "private/pkg-deps.rkt"
+         "collection-name.rkt"
+         (only-in pkg/lib pkg-directory
+                  pkg-single-collection))
 
 (define-namespace-anchor anchor)
 
@@ -193,9 +196,29 @@
          (let ([p (collection-file-path "scribble.rkt" "setup")])
            (or (file-exists? p)
                (file-exists? (get-compilation-bytecode-file p))))))
+
+  (define (pkg->collections pkg)
+    (define dir (pkg-directory pkg))
+    (cond
+     [dir
+      (define collect (pkg-single-collection dir #:name pkg))
+      (if collect
+          (list (list collect))
+          (for/list ([d (directory-list dir)]
+                     #:when (and (directory-exists? (build-path dir d))
+                                 (collection-name-element? (path->string d))))
+            (list d)))]
+     [else
+      (error 'pkd->collections
+             (string-append "package not found\n"
+                            "  package: ~a")
+             pkg)]))
     
   (define x-specific-collections
     (append* (specific-collections)
+             (apply append
+                    (map pkg->collections
+                         (specific-packages)))
              (if (and (make-doc-index)
                       make-docs?)
                  (append

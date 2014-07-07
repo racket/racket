@@ -10,6 +10,7 @@
                #:get-target-dir [get-target-dir #f]
                #:planet-specs [planet-specs #f]
                #:collections [collections #f]
+               #:pkgs [pkgs #f]
                #:make-docs? [make-docs? #t]
                #:make-doc-index? [make-doc-index? #f]
                #:make-user? [make-user? #t]
@@ -31,6 +32,8 @@
     [specific-planet-dirs (if planet-specs planet-specs (specific-planet-dirs))]
     
     [specific-collections (if collections collections (specific-collections))]
+
+    [specific-packages (if pkgs pkgs (specific-packages))]
     
     [make-only (if (or planet-specs collections) #t (make-only))]
     

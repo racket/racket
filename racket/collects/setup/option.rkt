@@ -6,6 +6,7 @@
          set-flag-params
 	 setup-program-name
 	 specific-collections
+	 specific-packages
 	 specific-planet-dirs
 	 archives
 	 archive-implies-reindex
@@ -78,6 +79,7 @@
 (define-flag-param fail-fast #f)
 
 (define specific-collections (make-parameter null))
+(define specific-packages (make-parameter null))
 (define specific-planet-dirs (make-parameter null))
 
 (define archives (make-parameter null))

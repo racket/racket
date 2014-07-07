@@ -6,6 +6,7 @@
 
 (require racket/cmdline
          raco/command-name
+         pkg/name
          "private/command-name.rkt")
 
 (provide parse-cmdline)
@@ -28,7 +29,7 @@
 
   ;; Beware of the poor-man's duplicate of this command-line specification
   ;; in "main.rkt"!
-  (define-values (x-specific-collections x-archives)
+  (define-values (x-specific-collections x-specific-packages x-archives)
     (command-line
      #:program long-name
      #:argv argv
@@ -105,6 +106,10 @@
                   (check-collections short-name collections)
                   (cons 'collections (map list collections)))
              '("Setup specific <collection>s only" "collection")]
+     [("--pkgs") => (lambda (flag . pkgs)
+                      (check-packages short-name pkgs)
+                      (cons 'packages pkgs))
+             '("Setup <collection>s in specific <pkg>s only" "pkg")]
      [("-A") => (λ (flag . archives)
                   (cons 'archives archives))
              '("Unpack and install <archive>s" "archive")]
@@ -114,22 +119,24 @@
       (add-flags '((all-users #t)))]
      
      #:handlers
-     (lambda (collections/archives . rest)
-       (let ([pre-archives (if (and (pair? collections/archives)
-                                    (eq? (caar collections/archives) 'archives))
-                               (cdr (car collections/archives))
-                               '())]
-             [pre-collections (if (and (pair? collections/archives)
-                                       (eq? (caar collections/archives) 'collections))
-                                  (cdr (car collections/archives))
-                                  '())])
+     (lambda (collections/pkgs/archives . rest)
+       (define (get key)
+         (if (and (pair? collections/pkgs/archives)
+                  (eq? (caar collections/pkgs/archives) key))
+             (cdr (car collections/pkgs/archives))
+             '()))
+       (let ([pre-archives (get 'archives)]
+             [pre-collections (get 'collections)]
+             [pre-packages (get 'packages)])
          (cond
            [raco?
             (check-collections short-name rest)
             (values (append pre-collections (map list rest))
+                    pre-packages
                     pre-archives)]
            [else
             (values pre-collections
+                    pre-packages
                     (append pre-archives rest))])))
      (if raco? '("collection") '("archive"))
      (lambda (s)
@@ -139,7 +146,9 @@
            (printf "If no <archive> or -l <collection> is specified, all collections are setup\n"))
        (exit 0))))
 
-    (values short-name x-flags x-specific-collections x-specific-planet-packages x-archives))
+    (values short-name x-flags 
+            x-specific-collections x-specific-packages x-specific-planet-packages
+            x-archives))
 
 (define (check-collections name collections)
   (for ((v (in-list collections)))
@@ -153,4 +162,13 @@
                               [(regexp-match? #rx"\\\\" v)
                                " (backslash not allowed)"]
                               [else ""])
+                        v))))
+
+(define (check-packages name packages)
+  (for ((v (in-list packages)))
+    (define-values (n type) (package-source->name+type v #f))
+    (unless (and (eq? type 'name)
+                 (equal? n v))
+      (raise-user-error (string->symbol name)
+                        "bad package name: ~a"
                         v))))
