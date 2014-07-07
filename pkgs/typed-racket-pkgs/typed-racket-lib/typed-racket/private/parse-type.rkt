@@ -479,6 +479,9 @@
                            (parse-type (attribute rest.type)))
                #:kws (append (attribute mand.kws)
                              (attribute opt.kws)))]
+      [:->^
+       (parse-error #:delayed? #t "incorrect use of -> type constructor")
+       Err]
       [id:identifier
        (cond
          ;; if it's a type variable, we just produce the corresponding reference (which is in the HT)
@@ -498,9 +501,6 @@
               (set-box! alias-box (cons #'id (unbox alias-box))))
             (add-disappeared-use (syntax-local-introduce #'id))
             t)]
-         [(free-identifier=? #'id #'->)
-          (parse-error #:delayed? #t "incorrect use of -> type constructor")
-          Err]
          [else
           (parse-error #:delayed? #t (~a "type name `" (syntax-e #'id) "' is unbound"))
           Err])]

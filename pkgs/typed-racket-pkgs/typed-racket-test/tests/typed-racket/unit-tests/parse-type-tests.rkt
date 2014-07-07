@@ -5,6 +5,7 @@
            racket/base
            racket/dict
            racket/set
+           syntax/parse
            (base-env base-structs)
            (env tvar-env type-alias-env)
            (utils tc-utils)
@@ -29,22 +30,28 @@
   (do-standard-inits))
 
 (define-syntax (pt-test stx)
-  (syntax-case stx (FAIL)
-    [(_ FAIL ty-stx)
-     (syntax/loc stx (pt-test FAIL ty-stx initial-tvar-env))]
-    [(_ FAIL ty-stx tvar-env)
+  (syntax-parse stx
+    [(_ (~datum FAIL) ty-stx:expr
+        (~optional tvar-env:expr #:defaults [(tvar-env #'initial-tvar-env)])
+        (~optional (~seq #:msg msg*:expr) #:defaults [(msg* #'#f)]))
      (quasisyntax/loc stx
        (test-case #,(format "~a" (syntax->datum #'ty-stx))
-         (unless
+         (define msg msg*)
+         (define actual-message
            (phase1-phase0-eval
-             (with-handlers ([exn:fail:syntax? (lambda (exn) #'#t)])
+             (with-handlers ([exn:fail:syntax? (lambda (exn) #`#,(exn-message exn))])
                (parameterize ([current-tvars tvar-env]
                               [delay-errors? #f])
                  (parse-type (quote-syntax ty-stx)))
-               #'#f))
-           (fail-check "No syntax error when parsing type."))))]
-    [(_ ts tv) (syntax/loc stx (pt-test ts tv initial-tvar-env))]
-    [(_ ty-stx ty-val tvar-env)
+               #'#f)))
+         (unless actual-message
+           (fail-check "No syntax error when parsing type."))
+         (when msg
+           (unless (regexp-match? msg actual-message)
+             (with-check-info (['expected msg] ['actual actual-message])
+               (fail-check "parse-type raised the wrong error message"))))))]
+    [(_ ty-stx:expr ty-val:expr
+        (~optional tvar-env:expr #:defaults [(tvar-env #'initial-tvar-env)]))
      (quasisyntax/loc
        stx
        (test-case #,(format "~a" (syntax->datum #'ty-stx))
@@ -163,6 +170,7 @@
     (t:-> -Integer (-poly (x) (t:-> x x)))]
    [(-> Integer (All (X) (-> X X)))
     (t:-> -Integer (-poly (x) (t:-> x x)))]
+   [FAIL -> #:msg "incorrect use of -> type constructor"]
 
    ;; ->* types
    [(->* (String Symbol) Void) (t:-> -String -Symbol -Void)]
