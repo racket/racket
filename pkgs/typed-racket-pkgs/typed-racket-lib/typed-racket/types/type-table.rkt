@@ -18,8 +18,8 @@
  [reset-type-table (-> any/c)]
  [test-position-add-true (syntax? . -> . any)]
  [test-position-add-false (syntax? . -> . any)]
- [tautology? (syntax? . -> . boolean?)]
- [contradiction? (syntax? . -> . boolean?)]
+ [test-position-takes-true-branch (syntax? . -> . boolean?)]
+ [test-position-takes-false-branch (syntax? . -> . boolean?)]
  [add-dead-lambda-branch (syntax? . -> . any)]
  [dead-lambda-branch? (syntax? . -> . boolean?)]
  [;; Register that the given expression should be ignored
@@ -63,29 +63,18 @@
                                         (syntax-column e))))))
 
 ;; For expressions in test position keep track of if it evaluates to true/false
-;; values: can be 'true, 'false, 'both.
-(define test-position-table (make-hasheq))
+(define test-position-table/true (make-hasheq))
+(define test-position-table/false (make-hasheq))
 
 (define (test-position-add-true expr)
-  (hash-update! test-position-table expr
-    (lambda (v)
-      (case v
-        [(true) 'true]
-        [(false both) 'both]))
-    'true))
+  (hash-set! test-position-table/true expr #t))
 (define (test-position-add-false expr)
-  (hash-update! test-position-table expr
-    (lambda (v)
-      (case v
-        [(false) 'false]
-        [(true both) 'both]))
-    'false))
+  (hash-set! test-position-table/false expr #t))
 
-(define-values (tautology? contradiction?)
-  (let ()
-    (define ((mk t?) e)
-      (eq? t? (hash-ref test-position-table e 'not-there)))
-    (values (mk 'true) (mk 'false))))
+(define (test-position-takes-true-branch expr)
+  (hash-ref test-position-table/true expr #f))
+(define (test-position-takes-false-branch expr)
+  (hash-ref test-position-table/false expr #f))
 
 ;; keeps track of lambda branches that never get evaluated, so that the
 ;; optimizer can eliminate dead code. The key is the formals syntax object.
