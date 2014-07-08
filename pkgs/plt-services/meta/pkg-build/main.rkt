@@ -152,6 +152,10 @@
          ;; VirtualBox VMs (created by `vbox-vm`), at least one:
          #:vms vms
 
+         ;; Skip downloading the installer if you know it's
+         ;; already downloaded:
+         #:skip-download? [skip-download? #f]
+
          ;; Skip the install step if the "installed" snapshot is
          ;; ready and "install-list.rktd" is up-to-date:
          #:skip-install? [skip-install? #f]
@@ -222,7 +226,7 @@
   (define snapshot-catalog
     (url->string
      (combine-url/relative (string->url snapshot-url)
-                           "catalog")))
+                           "catalog/")))
 
   (make-directory* work-dir)
 
@@ -247,19 +251,20 @@
   (define installer-name (hash-ref table installer-platform-name))
 
   ;; ----------------------------------------
-  (status "Getting installer ~a\n" installer-name)
-  (delete-directory/files installer-dir #:must-exist? #f)
-  (make-directory* installer-dir)
-  (call/input-url
-   (combine-url/relative (string->url snapshot-url)
-                         (~a "installers/" installer-name))
-   get-pure-port
-   (lambda (i)
-     (call-with-output-file*
-      (build-path installer-dir installer-name)
-      #:exists 'replace
-      (lambda (o)
-        (copy-port i o)))))
+  (unless skip-download?
+    (status "Downloading installer ~a\n" installer-name)
+    (delete-directory/files installer-dir #:must-exist? #f)
+    (make-directory* installer-dir)
+    (call/input-url
+     (combine-url/relative (string->url snapshot-url)
+                           (~a "installers/" installer-name))
+     get-pure-port
+     (lambda (i)
+       (call-with-output-file*
+        (build-path installer-dir installer-name)
+        #:exists 'replace
+        (lambda (o)
+          (copy-port i o))))))
 
   ;; ----------------------------------------
   (unless skip-archive?
