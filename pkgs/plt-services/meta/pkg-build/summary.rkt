@@ -45,8 +45,10 @@
                 'success)
             'unknown))
       (define docs (hash-ref ht 'docs))
+      (define author (hash-ref ht 'author))
       (define conflicts-log (hash-ref ht 'conflicts-log))
       (tr (td pkg)
+          (td author)
           (td (if (null? docs)
                   ""
                   (list
