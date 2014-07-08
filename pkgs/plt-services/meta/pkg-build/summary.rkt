@@ -47,8 +47,8 @@
       (define docs (hash-ref ht 'docs))
       (define author (hash-ref ht 'author))
       (define conflicts-log (hash-ref ht 'conflicts-log))
-      (tr (td pkg)
-          (td author)
+      (tr (td pkg
+              (div class: "author" author))
           (td (if (null? docs)
                   ""
                   (list
@@ -116,6 +116,7 @@
                     .go { background-color: #ccffcc }
                     .stop { background-color: #ffcccc }
                     .yield { background-color: #ffffcc }
+                    .author { font-size: small; font-weight: normal; }
                     .annotation { font-size: small }
                   }|))
 
