@@ -49,6 +49,62 @@ The result of a @racket[trace] expression is @|void-const|.
 
 }
 
+@defform*[((trace-define id expr)
+           (trace-define (head args) body ...+))]{
+
+The @racket[trace-define] form supports all @racket[define] forms. This
+form is equivalent to:
+
+@racketblock[
+  (define id expr)
+  (trace id)
+]
+
+Or
+
+@racketblock[
+  (define ((id arg) args) expr)
+  (trace id)
+]}
+
+@defform*[((trace-define-syntax id expr)
+           (trace-define-syntax (head args) body ...+))]{
+
+The @racket[trace-define-syntax] form supports all @racket[define-syntax] forms. This
+form is equivalent to:
+
+@racketblock[
+  (define-syntax id expr)
+  (trace id)
+]
+
+Or
+
+@racketblock[
+  (define-syntax ((id arg) args) expr)
+  (trace id)
+]}
+
+@defform[(trace-lambda [#:name id] args expr)]{
+
+This form is equivalent to:
+
+@racketblock[
+  (let ([id (lambda args expr)])
+    (trace id)
+    id)
+]
+
+If @racket[#:name] is not specified, a name is inferred.}
+
+@defform[(trace-let id ([arg expr] ...+) body ...+)]{
+
+This form is equivalent to:
+
+@racketblock[
+  ((trace-lambda #:name id (arg ...) body) expr ...)
+]}
+
 @defform[(untrace id ...)]{
 
 Undoes the effects of the @racket[trace] form for each @racket[id],
@@ -79,7 +135,7 @@ trace information during the call, as described above in the docs for
 
 }
 
-@defparam[current-trace-print-args trace-print-args 
+@defparam[current-trace-print-args trace-print-args
           (-> symbol?
               list?
               (listof keyword?)
@@ -94,7 +150,7 @@ number indicating the depth of the call.
 
 }
 
-@defparam[current-trace-print-results trace-print-results 
+@defparam[current-trace-print-results trace-print-results
           (-> symbol?
               list?
               number?
@@ -110,7 +166,7 @@ results, and a number indicating the depth of the call.
   This string is used by the default value of @racket[current-trace-print-args]
   indicating that the current line is showing the a call to a
   traced function.
-  
+
   It defaults to @racket[">"].
 }
 
@@ -119,7 +175,7 @@ results, and a number indicating the depth of the call.
   This string is used by the default value of @racket[current-trace-print-results]
   indicating that the current line is showing the result
   of a traced call.
-  
+
   It defaults to @racket["<"].
 }
 
