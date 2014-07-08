@@ -24,7 +24,8 @@
          "summary.rkt")
 
 (provide vbox-vm
-         build-pkgs)
+         build-pkgs
+         steps-in)
 
 (define-runtime-path pkg-list-rkt "pkg-list.rkt")
 (define-runtime-path pkg-adds-rkt "pkg-adds.rkt")
@@ -81,6 +82,37 @@
   (unless (complete-path? dir)
     (error 'vbox-vm "need a complete path for #:dir"))
   (vm host user dir name init-snapshot installed-snapshot))
+
+;; The build steps:
+(define all-steps-in-order
+  (list
+   ;; Download installer from snapshot site:
+   'download
+   ;; Install into each VM:
+   'install
+   ;; Archive catalogs, downlowning the catalog and all
+   ;; packages to the working directory:
+   'archive
+   ;; Build packages that have changed:
+   'build
+   ;; Extract and assemble documentation:
+   'docs
+   ;; Build a result-summary file and web page:
+   'summary
+   ;; Assemble web-friendly pieces to an archive:
+   'site))
+
+;; Return the subset of steps with `start` through `end` inclusive:
+(define (steps-in start end)
+  (define l (member start all-steps-in-order))
+  (if l
+      (let ([l (member end (reverse l))])
+        (if l
+            (reverse l)
+            (if (member end all-steps-in-order)
+                (error 'steps-in "steps out of order: ~e and: ~e" start end)
+                (error 'steps-in "bad ending step: ~e" end))))
+      (error 'steps-in "bad starting step: ~e" start)))
 
 (define (build-pkgs 
          ;; Besides a running Racket, the host machine must provide
@@ -152,36 +184,16 @@
          ;; VirtualBox VMs (created by `vbox-vm`), at least one:
          #:vms vms
 
-         ;; Skip downloading the installer if you know it's
-         ;; already downloaded:
-         #:skip-download? [skip-download? #f]
-
-         ;; Skip the install step if the "installed" snapshot is
-         ;; ready and "install-list.rktd" is up-to-date:
-         #:skip-install? [skip-install? #f]
-         
          ;; Catalogs of packages to build (via an archive):
          #:pkg-catalogs [pkg-catalogs (list "http://pkgs.racket-lang.org/")]
-         ;; Skip the archiving step if the archive is up-to-date
-         ;; or you don't want to update it:
-         #:skip-archive? [skip-archive? #f]
 
-         ;; Skip the building step if you know that everything is
-         ;; built or you don't want to build:
-         #:skip-build? [skip-build? #f]
+         ;; Steps that you want to include; you can skip steps
+         ;; at the beginning if you know they're already done, and
+         ;; you can skip tests at the end if you don't want them:
+         #:steps [steps (steps-in 'download 'summary)]
 
-         ;; Skip the doc-assembling step if you don't want docs:
-         #:skip-docs? [skip-docs? #f]
-
-         ;; Skip the summary step if you don't want the generated
-         ;; web pages:
-         #:skip-summary? [skip-summary? #f]
          ;; Omit specified packages from the summary:
          #:summary-omit-pkgs [summary-omit-pkgs null]
-
-         ;; Skip the site step if you don't need a web-friendly
-         ;; bundle of results:
-         #:skip-site? [skip-site? #t]
 
          ;; Timeout in seconds for any one package or step:
          #:timeout [timeout 600]
@@ -202,7 +214,19 @@
                ((length vms) . >= . 1)
                (andmap vm? vms))
     (error 'build-pkgs "expected a non-empty list of `vm`s"))
+
+  (for ([step (in-list steps)])
+    (unless (member step all-steps-in-order)
+      (error 'build-pkgs "bad step: ~e" step)))
   
+  (define skip-download? (not (member 'download steps)))
+  (define skip-install? (not (member 'install steps)))
+  (define skip-archive? (not (member 'archive steps)))
+  (define skip-build? (not (member 'build steps)))
+  (define skip-docs? (not (member 'docs steps)))
+  (define skip-summary? (not (member 'summary steps)))
+  (define skip-site? (not (member 'site steps)))
+
   (define work-dir (path->complete-path given-work-dir))
   (define installer-dir (build-path work-dir "installer"))
   (define server-dir (build-path work-dir "server"))
