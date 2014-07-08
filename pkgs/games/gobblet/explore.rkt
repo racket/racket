@@ -98,7 +98,8 @@
                         (unless (or (and (= steps max-steps)
                                          (one-step-depth . <= . max-depth))
                                     ((car result) . = . +inf.0)
-                                    ((car result) . = . -inf.0))
+                                    ((car result) . = . -inf.0)
+                                    ((cdr result) . eq? . 'loop!))
                           (if (one-step-depth . <= . max-depth)
                               (loop (add1 steps) 2)
                               (loop steps (add1 max-depth)))))
@@ -249,7 +250,7 @@
              [key (vector board-key (- (config-max-depth config) depth) span)])
         (let ([choices
                (cond
-                 ;; Check for known win/loss at arbitrary depth:
+                 ;; Check for known win/loss/tie at arbitrary depth:
                  [(hash-ref (config-memory config) board-key (lambda () #f)) 
                   => (lambda (x) x)]
                  ;; Check for known result at specific remaining depth:
@@ -504,36 +505,46 @@
                      (= steps 1))
             (record-result plays board me config init-memory))
           
-          (if (or (steps . <= . 1) first-move?)
-              (first plays)
-              (let ([nexts 
-                     ;; See what the other player thinks about our candidate moves,
-                     ;;  and pick the one that looks worst to the other player.
-                     (if ((caar plays) . < . +inf.0)
-                         (sort
-                          (map
-                           (lambda (play)
-                             (log-printf 4 indent " ~a>>> Checking: ~a\n" 
-                                         (make-string indent #\space) (play->string play))
-                             (if (= -inf.0 (car play))
-                                 (begin
-                                   (log-printf 4 indent " ~a>>>> losing\n" 
-                                               (make-string indent #\space))
-                                   play)
-                                 (let ([r (cons (- (car (multi-step-minmax 
-                                                         (sub1 steps) span config 
-                                                         (+ 3 indent) init-memory
-                                                         (other me)
-                                                         (apply-play board (cdr play)))))
-                                                (cdr play))])
-                                   (log-printf 4 indent " ~a>>>> deeper = ~a\n" 
-                                               (make-string indent #\space)
-                                               (float->string (car r)))
-                                   r)))
-                           plays)
-                          (lambda (a b) (> (car a) (car b))))
-                         (list (car plays)))])
-                (first nexts))))))
+          (cond
+           [(null? plays)
+            ;; No moves because it was a tie due to a repeat.
+            (car LOOP-TIE)]
+           [(or (steps . <= . 1) first-move?)
+            (first plays)]
+           [else
+            (let ([nexts 
+                   ;; See what the other player thinks about our candidate moves,
+                   ;;  and pick the one that looks worst to the other player.
+                   (if ((caar plays) . < . +inf.0)
+                       (sort
+                        (map
+                         (lambda (play)
+                           (log-printf 4 indent " ~a>>> Checking: ~a\n" 
+                                       (make-string indent #\space) (play->string play))
+                           (cond
+                            [(= -inf.0 (car play))
+                             (log-printf 4 indent " ~a>>>> losing\n" 
+                                         (make-string indent #\space))
+                             play]
+                            [(eq? 'loop! (cdr play))
+                             (log-printf 4 indent " ~a>>>> tying\n" 
+                                         (make-string indent #\space))
+                             play]
+                            [else
+                             (let ([r (cons (- (car (multi-step-minmax 
+                                                     (sub1 steps) span config 
+                                                     (+ 3 indent) init-memory
+                                                     (other me)
+                                                     (apply-play board (cdr play)))))
+                                            (cdr play))])
+                               (log-printf 4 indent " ~a>>>> deeper = ~a\n" 
+                                           (make-string indent #\space)
+                                           (float->string (car r)))
+                               r)]))
+                         plays)
+                        (lambda (a b) (> (car a) (car b))))
+                       (list (car plays)))])
+              (first nexts))]))))
     
     ;; ------------------------------------------------------------
     ;;  Multi-run memory:
