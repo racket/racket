@@ -16,6 +16,7 @@
          distro-build/vbox
          web-server/servlet-env
          (only-in scribble/html a td tr #%top)
+         "download.rkt"
          "union-find.rkt"
          "thread.rkt"
          "ssh.rkt"
@@ -265,30 +266,30 @@
   (define (cd-racket vm) (~a "cd " (q (remote-dir vm)) "/racket"))
 
   ;; ----------------------------------------
-  (status "Getting installer table\n")
-  (define table (call/input-url
-                 (combine-url/relative (string->url snapshot-url)
-                                       "installers/table.rktd")
-                 get-pure-port
-                 (lambda (i) (read i))))
+  (define installer-table-path (build-path work-dir "table.rktd"))
+  (unless skip-download?
+    (status "Getting installer table\n")
+    (define table (call/input-url
+                   (combine-url/relative (string->url snapshot-url)
+                                         "installers/table.rktd")
+                   get-pure-port
+                   (lambda (i) (read i))))
+    (call-with-output-file*
+     installer-table-path
+     #:exists 'truncate/replace
+     (lambda (o) (write table o) (newline o))))
 
-  (define installer-name (hash-ref table installer-platform-name))
+  (define installer-name (hash-ref
+                          (call-with-input-file*
+                           installer-table-path
+                           read)
+                          installer-platform-name))
+  (substatus "Installer is ~a\n" installer-name)
 
   ;; ----------------------------------------
   (unless skip-download?
     (status "Downloading installer ~a\n" installer-name)
-    (delete-directory/files installer-dir #:must-exist? #f)
-    (make-directory* installer-dir)
-    (call/input-url
-     (combine-url/relative (string->url snapshot-url)
-                           (~a "installers/" installer-name))
-     get-pure-port
-     (lambda (i)
-       (call-with-output-file*
-        (build-path installer-dir installer-name)
-        #:exists 'replace
-        (lambda (o)
-          (copy-port i o))))))
+    (download-installer snapshot-url installer-dir installer-name substatus))
 
   ;; ----------------------------------------
   (unless skip-archive?
@@ -855,7 +856,8 @@
           (with-handlers ([exn:break? (lambda (exn)
                                         (log-error "breaking...")
                                         (for-each break-running runnings)
-                                        (wait-chunk-output))])
+                                        (wait-chunk-output)
+                                        (raise exn))])
             (parameterize-break
              #t
              (apply sync runnings))))
@@ -950,7 +952,7 @@
           (cons k v)))
       (cond
        [(null? conflicts)
-        available-pkgs]
+        (values (set) available-pkgs)]
        [else
         (define (show-conflicts)
           (substatus "Install conflicts:\n")
@@ -1130,6 +1132,7 @@
                             (wpath "server" "built" "pkgs")
                             (wpath "server" "built" "adds")
                             (wpath "dumpster")
+                            (wpath "table.rktd")
                             (wpath "state.sqlite")
                             (wpath "all-doc.tgz")
                             (wpath "install-doc.tgz")
