@@ -6,10 +6,14 @@
 
 (provide summary-page
          (struct-out doc/main)
+         (struct-out doc/extract)
+         (struct-out doc/salvage)
          (struct-out doc/none)
          (struct-out conflicts/indirect))
 
 (struct doc/main (name path) #:prefab)
+(struct doc/extract (name path) #:prefab)
+(struct doc/salvage (name path) #:prefab)
 (struct doc/none (name) #:prefab)
 
 (struct conflicts/indirect (path) #:prefab)
@@ -53,6 +57,15 @@
                        [(doc/main? doc)
                         (a href: (doc/main-path doc)
                            (doc/main-name doc))]
+                       [(doc/extract? doc)
+                        (a href: (doc/extract-path doc)
+                           (doc/extract-name doc))]
+                       [(doc/salvage? doc)
+                        (list (a href: (doc/salvage-path doc)
+                                 (doc/salvage-name doc))
+                              (span class: "annotation"
+                                    nbsp
+                                    "(salvaged)"))]
                        [(doc/none? doc)
                         (doc/none-name doc)]
                        [else "???"]))
@@ -101,6 +114,7 @@
                     .go { background-color: #ccffcc }
                     .stop { background-color: #ffcccc }
                     .yield { background-color: #ffffcc }
+                    .annotation { font-size: small }
                   }|))
 
   (void (page #:site page-site

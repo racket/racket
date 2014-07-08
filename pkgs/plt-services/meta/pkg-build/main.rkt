@@ -11,6 +11,8 @@
          net/url
          pkg/lib
          file/untgz
+         file/tar
+         file/gzip
          distro-build/vbox
          web-server/servlet-env
          (only-in scribble/html a td tr #%top)
@@ -18,6 +20,7 @@
          "thread.rkt"
          "ssh.rkt"
          "status.rkt"
+         "extract-doc.rkt"
          "summary.rkt")
 
 (provide vbox-vm
@@ -51,7 +54,6 @@
 ;; along the way is extracted, if possible.
 ;;
 ;; To do:
-;;  - salvage docs from conflicst & dumster
 ;;  - tier-based selection of packages on conflict
 ;;  - support for running tests
 
@@ -86,7 +88,7 @@
 
          ;; All local state is here, where state from a previous
          ;; run is used to work incrementally:
-         #:work-dir given-work-dir
+         #:work-dir [given-work-dir (current-directory)]
          ;; Directory content:
          ;;
          ;;   "installer" --- directly holding installer downloaded
@@ -173,6 +175,10 @@
          ;; Omit specified packages from the summary:
          #:summary-omit-pkgs [summary-omit-pkgs null]
 
+         ;; Skip the site step if you don't need a web-friendly
+         ;; bundle of results:
+         #:skip-site? [skip-site? #t]
+
          ;; Timeout in seconds for any one package or step:
          #:timeout [timeout 600]
 
@@ -210,6 +216,8 @@
   (define dumpster-dir (build-path work-dir "dumpster"))
   (define dumpster-pkgs-dir (build-path dumpster-dir "pkgs/"))
   (define dumpster-adds-dir (build-path dumpster-dir "adds"))
+
+  (define doc-dir (build-path work-dir "doc"))
 
   (define snapshot-catalog
     (url->string
@@ -284,10 +292,9 @@
     (status "Starting VM ~a\n" (vm-name vm))
     (stop-vbox-vm (vm-name vm))
     (restore-vbox-snapshot (vm-name vm) (vm-init-snapshot vm))
-    (start-vbox-vm (vm-name vm))
 
     (dynamic-wind
-     void
+     (lambda () (start-vbox-vm (vm-name vm)))
      (lambda ()
        ;; ----------------------------------------
        (status "Fixing time at ~a\n" (vm-name vm))
@@ -623,9 +630,8 @@
       (when (file-exists? f) (delete-file f)))
 
     (restore-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))
-    (start-vbox-vm (vm-name vm) #:max-vms (length vms))
     (dynamic-wind
-     void
+     (lambda () (start-vbox-vm (vm-name vm) #:max-vms (length vms)))
      (lambda ()
        (define ok?
          (and
@@ -884,12 +890,14 @@
       (define ht (call-with-input-file* adds-file read))
       (values pkg (hash-ref ht pkg null))))
   
+  (define doc-pkgs
+    (for/set ([(k l) (in-hash adds-pkgs)]
+              #:when (for/or ([v (in-list l)])
+                       (eq? (car v) 'doc)))
+      k))
+
   (define doc-pkg-list
-    (sort (for/list ([(k l) (in-hash adds-pkgs)]
-                     #:when (for/or ([v (in-list l)])
-                              (eq? (car v) 'doc)))
-            k)
-          string<?))
+    (sort (set->list doc-pkgs) string<?))
 
   (substatus "Packages with documentation:\n")
   (show-list doc-pkg-list)
@@ -950,9 +958,10 @@
   (unless skip-docs?
     (define vm (car vms))
     (restore-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))
-    (start-vbox-vm (vm-name vm))
+
+    ;; Get fully installed docs for non-conflicting packages:
     (dynamic-wind
-     void
+     (lambda () (start-vbox-vm (vm-name vm)))
      (lambda ()
        (ssh #:show-time? #t
             vm (cd-racket vm)
@@ -964,7 +973,44 @@
             (build-path work-dir "all-doc.tgz")))
      (lambda ()
        (stop-vbox-vm (vm-name vm) #:save-state? #f)))
-    (untgz "all-doc.tgz"))
+    (untgz "all-doc.tgz")
+
+    ;; Add documentation for conflicting packages and salvageable
+    ;; from the dumpster, and add links for each package
+    (for ([f (in-list (directory-list doc-dir #:build? #t))])
+      (when (regexp-match? #rx"@" f)
+        (delete-directory/files f)))
+    (for ([pkg (in-set doc-pkgs)])
+      (define docs (for/list ([a (in-list (hash-ref adds-pkgs pkg))]
+                              #:when (eq? 'doc (car a)))
+                     (cdr a)))
+      (cond
+       [(set-member? no-conflict-doc-pkgs pkg)
+        ;; Create a link for fully installed documentation:
+        (for ([doc (in-list docs)])
+          (make-file-or-directory-link doc (build-path doc-dir (~a doc "@" pkg))))]
+       [else
+        (printf "Trying to extract ~s docs\n" pkg)
+        (with-handlers ([exn:fail? (lambda (exn)
+                                     (eprintf "~a\n" (exn-message)))])
+          (extract-documentation (pkg-zip-file pkg) pkg doc-dir))]))
+    (for ([pkg (in-set try-pkgs)])
+      (unless (set-member? available-pkgs pkg)
+        (define adds-file (build-path dumpster-adds-dir (format "~a-adds.rktd" pkg)))
+        (define zip-file (build-path dumpster-pkgs-dir (format "~a.zip" pkg)))
+        (define adds* (and (file-exists? adds-file)
+                           (file-exists? zip-file)
+                           (with-handlers ([exn:fail? (lambda (exn) #f)])
+                             (call-with-input-file* adds-file read))))
+        (define adds (and (hash? adds*)
+                          (hash-ref adds* pkg #f)))
+        (when (and (list? adds)
+                   (ormap (lambda (a) (and (pair? a) (eq? (car a) 'doc)))
+                          adds))
+          (printf "Trying to salvage ~s docs\n" pkg)
+          (with-handlers ([exn:fail? (lambda (exn)
+                                       (eprintf "~a\n" (exn-message exn)))])
+            (extract-documentation zip-file pkg doc-dir))))))
   
   ;; ----------------------------------------
 
@@ -1017,11 +1063,15 @@
                'dep-failure-log (and (eq? dep-status 'failure)
                                      (path->relative (build-path deps-fail-dir pkg)))
                'docs (for/list ([doc (in-list docs)])
+                       (define path (~a "doc/" (~a doc "@" pkg) "/index.html"))
                        (if (or (not (eq? status 'success))
                                conflicts?)
-                           (doc/none doc)
-                           (doc/main doc
-                                     (~a "doc/" doc "/index.html"))))
+                           (if (directory-exists? (build-path doc-dir (~a doc "@" pkg)))
+                               (if (set-member? available-pkgs pkg)
+                                   (doc/extract doc path)
+                                   (doc/salvage doc path))
+                               (doc/none doc))
+                           (doc/main doc path)))
                'conflicts-log (and conflicts?
                                    (if (set-member? conflict-pkgs pkg)
                                        "conflicts"
@@ -1035,6 +1085,42 @@
        (newline o)))
 
     (summary-page summary-ht work-dir))
+
+  ;; ----------------------------------------
+
+  (unless skip-site?
+    (define site-file (build-path work-dir "site.tgz"))
+    (status "Packing site to ~a\n" site-file)
+
+    (define (wpath . a) (apply build-path work-dir a))
+    (define skip-paths (set (wpath "installer")
+                            (wpath "server" "archive")
+                            (wpath "server" "built" "catalog")
+                            (wpath "server" "built" "pkgs")
+                            (wpath "server" "built" "adds")
+                            (wpath "dumpster")
+                            (wpath "state.sqlite")
+                            (wpath "all-doc.tgz")
+                            (wpath "install-doc.tgz")
+                            (wpath "install-adds.rktd")
+                            (wpath "user-list.rktd")
+                            (wpath "site.tgz")))
+    (parameterize ([current-directory work-dir])
+      (define files (for/list ([f (in-directory #f (lambda (p)
+                                                     (not (set-member? skip-paths p))))]
+                               #:unless (set-member? skip-paths (path->complete-path f)))
+                      f))
+      (call-with-output-file*
+       site-file
+       #:exists 'truncate/replace
+       (lambda (o)
+         (define-values (i2 o2) (make-pipe 40960))
+         (thread (lambda ()
+                   (dynamic-wind
+                    void
+                    (lambda () (tar->output files o2))
+                    (lambda () (close-output-port o2)))))
+         (gzip-through-ports i2 o #f (current-seconds))))))
 
   ;; ----------------------------------------
   
