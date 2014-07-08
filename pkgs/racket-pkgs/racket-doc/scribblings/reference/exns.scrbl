@@ -360,7 +360,7 @@ through a combination of the @racket[name], @racket[expr], and
   first element, then the form name in the error message is
   @racket["?"].}
 
- @item{@racket[symbol]: When @racket[name] is a symbol, then the symbol
+ @item{When @racket[name] is a symbol, then the symbol
   is used as the form name in the generated error message.}
 
 ]}
