@@ -376,6 +376,7 @@
                                  installed-pkgs))
 
   (define (pkg-checksum pkg) (hash-ref (hash-ref pkg-details pkg) 'checksum ""))
+  (define (pkg-author pkg) (hash-ref (hash-ref pkg-details pkg) 'author ""))
   (define (pkg-checksum-file pkg) (build-path built-pkgs-dir (~a pkg ".orig-CHECKSUM")))
   (define (pkg-zip-file pkg) (build-path built-pkgs-dir (~a pkg ".zip")))
   (define (pkg-zip-checksum-file pkg) (build-path built-pkgs-dir (~a pkg ".zip.CHECKSUM")))
@@ -1072,6 +1073,7 @@
                                    (doc/salvage doc path))
                                (doc/none doc))
                            (doc/main doc path)))
+               'author (pkg-author pkg)
                'conflicts-log (and conflicts?
                                    (if (set-member? conflict-pkgs pkg)
                                        "conflicts"
