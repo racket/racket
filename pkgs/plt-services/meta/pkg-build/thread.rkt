@@ -89,21 +89,51 @@
 
 ;; --------------------------------------------------
 
-(module+ test
-  (define t1 (thread/chunk-output
-              (lambda ()
-                (printf "hi\n")
-                (eprintf "bye\n")
-                (flush-chunk-output)
-                (sleep)
-                (printf "HI\n")
-                (eprintf "BYE\n"))))
-  (define t2 (thread/chunk-output
-              (lambda ()
-                (printf "hola\n")
-                (eprintf "adios\n")
-                (flush-chunk-output)
-                (sleep)
-                (printf "HOLA\n")
-                (eprintf "ADIOS\n"))))
-  (wait-chunk-output))
+(module test racket/base
+  (define o (open-output-bytes))
+  (parameterize ([current-output-port o]
+                 [current-error-port o])
+    (define-syntax-rule (def id)
+      (define id
+        (dynamic-require (module-path-index-join
+                          `(submod "..")
+                          (variable-reference->module-path-index
+                           (#%variable-reference)))
+                         'id)))
+    (def thread/chunk-output)
+    (def flush-chunk-output)
+    (def wait-chunk-output)
+    (define t1 (thread/chunk-output
+                (lambda ()
+                  (printf "hi\n")
+                  (eprintf "bye\n")
+                  (flush-chunk-output)
+                  (sleep)
+                  (printf "HI\n")
+                  (eprintf "BYE\n"))))
+    (define t2 (thread/chunk-output
+                (lambda ()
+                  (printf "hola\n")
+                  (eprintf "adios\n")
+                  (flush-chunk-output)
+                  (sleep)
+                  (printf "HOLA\n")
+                  (eprintf "ADIOS\n"))))
+    (wait-chunk-output))
+  (let ([l '("hi\nbye" "hola\nadios")]
+        [s (get-output-string o)]
+        [sa (lambda (a b) (string-append (car a)
+                                         "\n"
+                                         (cadr a)
+                                         "\n"
+                                         (car b)
+                                         "\n"
+                                         (cadr b)
+                                         "\n"))]
+        [r reverse]
+        [u (lambda (l) (map string-upcase l))])
+    (unless (or (equal? s (sa l (u l)))
+                (equal? s (sa (r l) (u l)))
+                (equal? s (sa (r l) (u (r l))))
+                (equal? s (sa l (u (r l)))))
+      (error "mismatch: " s))))
