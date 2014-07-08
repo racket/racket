@@ -43,7 +43,7 @@ THREAD_LOCAL_DECL(static intptr_t jit_buffer_cache_size);
 THREAD_LOCAL_DECL(static int jit_buffer_cache_registered);
 
 #ifdef SET_DEFAULT_LONG_JUMPS
-static int default_long_jumps;
+static volatile int default_long_jumps;
 static volatile uintptr_t code_low, code_high;
 #endif
 
@@ -194,7 +194,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 {
   mz_jit_state _jitter;
   mz_jit_state *jitter = &_jitter;
-  void *buffer;
+  void *buffer, *prev_buffer = NULL;
   int mappings_buffer[JIT_INIT_MAPPINGS_SIZE];
   int *mappings = mappings_buffer;
   intptr_t size = JIT_BUFFER_INIT_SIZE, known_size = 0;
@@ -385,8 +385,8 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
           scheme_console_printf("\n");
         }
         scheme_console_printf("}\n");
-        bp = (char *)jit_buffer_cache;
-        tend = (char *)jit_buffer_cache + ((char *)jitter->limit - (char *)buffer);
+        bp = (char *)prev_buffer;
+        tend = bp + ((char *)jitter->limit - (char *)buffer);
         scheme_console_printf("  temporary buffer content: {\n");
         while (bp < tend) {
           int d = 16;
@@ -441,6 +441,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 	  jit_buffer_cache = buffer;
 	  jit_buffer_cache_size = size;
 	}
+        prev_buffer = buffer;
       }
       /* looping to try again... */
     } else {
