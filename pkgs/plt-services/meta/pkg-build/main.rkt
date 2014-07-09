@@ -988,6 +988,24 @@
   (define no-conflict-doc-pkg-list (sort (set->list no-conflict-doc-pkgs) string<?))
 
   (unless skip-docs?
+    ;; Save "doc" as "prev-doc", so we can preserve any documentation
+    ;; that successfully built in the past. If "prev-doc" exists,
+    ;; assume that a previous "doc" run didn't complete, so keep referring
+    ;; to the old "prev-doc".
+    (define prev-doc-dir (build-path work-dir "prev-doc"))
+    (when (and (directory-exists? doc-dir)
+               (not (directory-exists? prev-doc-dir)))
+      (rename-file-or-directory doc-dir prev-doc-dir))
+
+    (define prev-docs
+      (if (directory-exists? prev-doc-dir)
+          (for/fold ([ht (hash)]) ([d (in-list (directory-list prev-doc-dir))])
+            (define m (regexp-match #rx"^[^@]+@([^@]+)$" d))
+            (if m
+                (hash-update ht (cadr m) (lambda (l) (cons d l)) null)
+                ht))
+          (hash)))
+
     (define vm (car vms))
     (restore-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))
 
@@ -1007,8 +1025,8 @@
        (stop-vbox-vm (vm-name vm) #:save-state? #f)))
     (untgz "all-doc.tgz")
 
-    ;; Add documentation for conflicting packages and salvageable
-    ;; from the dumpster, and add links for each package
+    ;; Add documentation for conflicting packages, and add links for
+    ;; each package:
     (for ([f (in-list (directory-list doc-dir #:build? #t))])
       (when (regexp-match? #rx"@" f)
         (delete-directory/files f)))
@@ -1022,10 +1040,13 @@
         (for ([doc (in-list docs)])
           (make-file-or-directory-link doc (build-path doc-dir (~a doc "@" pkg))))]
        [else
+        ;; Extract successfully built but not fully installed documentation:
         (printf "Trying to extract ~s docs\n" pkg)
         (with-handlers ([exn:fail? (lambda (exn)
                                      (eprintf "~a\n" (exn-message)))])
           (extract-documentation (pkg-zip-file pkg) pkg doc-dir))]))
+    ;; Add salvageable docs from the dumpster, and fall back as a last resort
+    ;; to documention in "prev-doc":
     (for ([pkg (in-set try-pkgs)])
       (unless (set-member? available-pkgs pkg)
         (define adds-file (build-path dumpster-adds-dir (format "~a-adds.rktd" pkg)))
@@ -1042,7 +1063,14 @@
           (printf "Trying to salvage ~s docs\n" pkg)
           (with-handlers ([exn:fail? (lambda (exn)
                                        (eprintf "~a\n" (exn-message exn)))])
-            (extract-documentation zip-file pkg doc-dir))))))
+            (extract-documentation zip-file pkg doc-dir))
+          (for ([f (in-list (hash-ref prev-docs pkg null))])
+            (unless (directory-exists? (build-path doc-dir f))
+              (printf "Salvaging previously built ~a\n" f)
+              (copy-directory/files (build-path prev-doc-dir f)
+                                    (build-path doc-dir f)))))))
+
+    (delete-directory/files prev-doc-dir #:must-exist? #f))
   
   ;; ----------------------------------------
 
