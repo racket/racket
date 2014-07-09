@@ -6,7 +6,7 @@
 
 @title{Redex: Practical Semantics Engineering}
 
-@author["Robert Bruce Findler" "Casey Klein"]
+@author["Robert Bruce Findler" "Casey Klein" "Burke Fetscher"]
 
 PLT Redex consists of a domain-specific language for specifying
 reduction semantics, plus a suite of tools for working with the
