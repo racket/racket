@@ -6292,6 +6292,13 @@ int scheme_fd_regular_file(intptr_t fd, int or_other)
     ok = fstat(fd, &buf);
   } while ((ok == -1) && (errno == EINTR));
 
+  if (ok == -1) {
+    scheme_log(NULL, SCHEME_LOG_ERROR, 0,
+               "error while checking whether a file descriptor is a regular file: %d",
+               errno);
+    return 0;
+  }
+
   if (S_ISREG(buf.st_mode))
     return 1;
 
@@ -6967,13 +6974,13 @@ fd_close_input(Scheme_Input_Port *port)
    rc = adj_refcount(fip->refcount, -1);
    if (!rc) {
      int cr;
+     (void)scheme_fd_to_semaphore(fip->fd, MZFD_REMOVE, 0);
      do {
        cr = close(fip->fd);
      } while ((cr == -1) && (errno == EINTR));
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
      release_lockf(fip->fd);
 # endif
-     (void)scheme_fd_to_semaphore(fip->fd, MZFD_REMOVE, 0);
    }
  }
 #endif
@@ -8287,13 +8294,13 @@ fd_close_output(Scheme_Output_Port *port)
 
    if (!rc) {
      int cr;
+     (void)scheme_fd_to_semaphore(fop->fd, MZFD_REMOVE, 0);
      do {
        cr = close(fop->fd);
      } while ((cr == -1) && (errno == EINTR));
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
      release_lockf(fop->fd);
 # endif
-     (void)scheme_fd_to_semaphore(fop->fd, MZFD_REMOVE, 0);
    }
  }
 #endif
