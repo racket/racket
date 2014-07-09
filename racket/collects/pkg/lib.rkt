@@ -3449,8 +3449,14 @@
                                       (define l (db:get-pkgs #:name (db:pkg-name pkg)))
                                       (and (= 1 (length l))
                                            (db:pkg-checksum (car l))))))
+      (define pkg-file (build-path dest-dir "pkgs" (format "~a.zip" name)))
+      (define pkg-checksum-file (path-replace-suffix pkg-file #".zip.CHECKSUM"))
       (unless (and current-checksum
-                   (equal? current-checksum (db:pkg-checksum pkg)))
+                   (equal? current-checksum (db:pkg-checksum pkg))
+                   (file-exists? pkg-file)
+                   (file-exists? pkg-checksum-file)
+                   (equal? (file->string pkg-checksum-file)
+                           (call-with-input-file* pkg-file sha1)))
         (unless quiet?
           (printf/flush "== Archiving ~a ==\nchecksum: ~a\n" (db:pkg-name pkg) (db:pkg-checksum pkg)))
         ;; Download/unpack existing package:
@@ -3477,9 +3483,7 @@
                          staged-checksum
                          (db:pkg-desc pkg)))))
       ;; Record packed result:
-      (define pkg-file (build-path dest-dir "pkgs" (format "~a.zip" name)))
-      (define new-checksum
-        (file->string (path-replace-suffix pkg-file #".zip.CHECKSUM")))
+      (define new-checksum (file->string pkg-checksum-file))
       (parameterize ([db:current-pkg-catalog-file temp-catalog-file])
         (define modules (db:get-pkg-modules name (db:pkg-catalog pkg) (db:pkg-checksum pkg)))
         (define dependencies (db:get-pkg-dependencies name (db:pkg-catalog pkg) (db:pkg-checksum pkg)))
