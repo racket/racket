@@ -1137,7 +1137,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
   Scheme_Object *name, *srcname, *srcmname, *fail_thunk;
   Scheme_Module *m, *srcm;
   Scheme_Env *menv, *lookup_env = NULL;
-  int i, count, protected = 0;
+  int i, count, protected = 0, check_protected_at_source = 0;
   const char *errname;
   intptr_t base_phase;
 
@@ -1320,6 +1320,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	else {
 	  srcmname = scheme_modidx_shift(srcmname, srcm->me->src_modidx, srcm->self_modidx);
 	  srcmname = scheme_module_resolve(srcmname, 1);
+          check_protected_at_source = 1;
 	}
 	srcname = srcm->me->rt->provide_src_names[i];
       }
@@ -1387,6 +1388,28 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
     Scheme_Bucket *b;
 
     menv = scheme_module_access(srcmname, lookup_env ? lookup_env : env, mod_phase);
+
+    if (check_protected_at_source) {
+      Scheme_Module_Phase_Exports *pt;
+      if (mod_phase == 0)
+        pt = menv->module->me->rt;
+      else if (mod_phase == 1)
+        pt = menv->module->me->et;
+      else if (menv->module->me->other_phases)
+        pt = (Scheme_Module_Phase_Exports *)scheme_hash_get(menv->module->me->other_phases,
+                                                            scheme_make_integer(mod_phase));
+      else
+        pt = NULL;
+      if (pt) {
+        count = pt->num_provides;
+        for (i = 0; i < count; i++) {
+          if (SAME_OBJ(name, pt->provides[i])) {
+            if (menv->module->exp_infos[mod_phase]->provide_protects)
+              protected = menv->module->exp_infos[mod_phase]->provide_protects[i];
+          }
+        }
+      }
+    }
 
     if (protected) {
       Scheme_Object *insp;

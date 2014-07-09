@@ -345,6 +345,25 @@
             three/normal
             current-code-inspector make-inspector #t #t #t #t #f)
 
+;; ----------------------------------------
+
+(err/rt-test (parameterize ([current-code-inspector (make-inspector (current-code-inspector))])
+               (dynamic-require 'racket/unsafe/ops 'unsafe-s16vector-ref)))
+
+(err/rt-test (parameterize ([current-code-inspector (make-inspector (current-code-inspector))])
+               (eval '(define-syntax foo (dynamic-require 'racket/unsafe/ops 'unsafe-s16vector-ref)))))
+
+(let ([n (make-base-namespace)])
+  (eval '(module m racket/base
+           (require (for-syntax racket/unsafe/ops))
+           (provide (for-syntax unsafe-s16vector-ref))))
+  (parameterize ([current-code-inspector (make-inspector (current-code-inspector))])
+    (err/rt-test
+     (eval '(module n racket/base
+              (require (for-syntax racket/base) 'm)
+              (begin-for-syntax unsafe-s16vector-ref)))
+     exn:fail:syntax?)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
