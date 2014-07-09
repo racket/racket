@@ -1197,7 +1197,37 @@
     (test (term (m 1 1)) 1)
     (test (with-handlers ((exn:fail:redex? exn-message))
             (term (m 1 2)))
-          #rx"is not in my domain"))
+          #rx"is not in my domain")
+    
+    (define-metafunction empty-language
+      is-nat : any -> boolean
+      [(is-nat natural) #t]
+      [(is-nat any) #f])
+
+    (define-metafunction empty-language
+      post-only : any_1 -> any_2
+      #:post (same any_1 any_2)
+      [(post-only any) 1])
+
+    (test (term (post-only 1)) 1)
+    (test (with-handlers ([exn:fail:redex? exn-message])
+            (term (post-only 2)))
+          #rx"codomain")
+
+    (define-metafunction empty-language
+      pre-and-post : any_1 -> any_2
+      #:pre (is-nat any_1)
+      #:post (same any_1 any_2)
+      [(pre-and-post any) 1])
+
+    (test (term (pre-and-post 1)) 1)
+    (test (with-handlers ([exn:fail:redex? exn-message])
+            (term (pre-and-post x)))
+          #rx"is not in my domain")
+    (test (with-handlers ([exn:fail:redex? exn-message])
+            (term (pre-and-post 2)))
+          #rx"codomain")
+    )
   
   (let ()
     (define-language L

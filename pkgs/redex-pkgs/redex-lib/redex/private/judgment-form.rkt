@@ -407,7 +407,7 @@
      (begin
        (unless (identifier? #'lang)
          (raise-syntax-error #f "expected an identifier in the language position" stx #'lang))
-       (define-values (contract-name dom-ctcs pre-condition codom-contracts pats)
+       (define-values (contract-name dom-ctcs pre-condition codom-contracts post-condition pats)
          (split-out-contract stx (syntax-e #'def-form-id) #'body #t))
        (with-syntax* ([((name trms ...) rest ...) (car pats)]
                       [(mode-stx ...) #`(#:mode (name I))]
@@ -425,7 +425,7 @@
   ;; initial test determines if a contract is specified or not
   (cond
     [(pair? (syntax-e (car (syntax->list rest))))
-     (values #f #f #f (list #'any) (check-clauses stx syn-error-name (syntax->list rest) relation?))]
+     (values #f #f #f (list #'any) #f (check-clauses stx syn-error-name (syntax->list rest) relation?))]
     [else
      (syntax-case rest ()
        [(id separator more ...)
@@ -438,7 +438,7 @@
                (raise-syntax-error syn-error-name 
                                    "expected clause definitions to follow domain contract"
                                    stx))
-             (values #'id contract #f (list #'any) (check-clauses stx syn-error-name clauses #t)))]
+             (values #'id contract #f (list #'any) #f (check-clauses stx syn-error-name clauses #t)))]
           [else
            (unless (eq? ': (syntax-e #'separator))
              (raise-syntax-error syn-error-name "expected a colon to follow the meta-function's name" stx #'separator))
@@ -448,18 +448,19 @@
                [(null? more)
                 (raise-syntax-error syn-error-name "expected an ->" stx)]
                [(eq? (syntax-e (car more)) '->)
-                (define-values (raw-clauses rev-codomains pre-condition)
+                (define-values (raw-clauses rev-codomains pre-condition post-condition)
                   (let loop ([prev (car more)]
                              [more (cdr more)]
                              [codomains '()])
                     (cond
                       [(null? more)
-                       (raise-syntax-error syn-error-name "expected a range contract to follow" stx prev)]
+                       (raise-syntax-error syn-error-name
+                                           "expected a range contract to follow" stx prev)]
                       [else
                        (define after-this-one (cdr more))
                        (cond
                          [(null? after-this-one)
-                          (values null (cons (car more) codomains) #t)]
+                          (values null (cons (car more) codomains) #t #t)]
                          [else
                           (define kwd (cadr more))
                           (cond
@@ -467,17 +468,41 @@
                              (loop kwd 
                                    (cddr more)
                                    (cons (car more) codomains))]
-                            [(and (not relation?) (equal? (syntax-e kwd) '#:pre))
+                            [(and (not relation?) 
+                                  (or (equal? (syntax-e kwd) '#:pre)
+                                      (equal? (syntax-e kwd) '#:post)))
                              (when (null? (cddr more)) 
-                               (raise-syntax-error 'define-metafunction 
-                                                   "expected an expression to follow #:pre keyword"
-                                                   kwd))
-                             (values (cdddr more)
+                               (raise-syntax-error 
+                                'define-metafunction 
+                                (format "expected an expression to follow ~a keyword"
+                                        (syntax-e kwd))
+                                kwd))
+                             (define pre #t)
+                             (define post #t)
+                             (define remainder (cdddr more))
+                             (cond
+                               [(equal? (syntax-e kwd) '#:pre)
+                                (set! pre (caddr more))
+                                (define without-pre (cdddr more))
+                                (when (and (pair? without-pre)
+                                           (equal? (syntax-e (car without-pre)) '#:post))
+                                  (when (null? (cddr without-pre)) 
+                                    (raise-syntax-error 
+                                     'define-metafunction 
+                                     "expected an expression to follow #:post keyword"
+                                     kwd))
+                                  (set! remainder (cddr without-pre))
+                                  (set! post (cadr without-pre)))]
+                               [(equal? (syntax-e kwd) '#:post)
+                                (set! post (caddr more))])
+                             (values remainder
                                      (cons (car more) codomains)
-                                     (caddr more))]
+                                     pre 
+                                     post)]
                             [else
                              (values (cdr more)
                                      (cons (car more) codomains)
+                                     #t
                                      #t)])])])))
                 (let ([doms (reverse dom-pats)]
                       [clauses (check-clauses stx syn-error-name raw-clauses relation?)])
@@ -485,6 +510,7 @@
                           doms
                           (if relation? #f pre-condition)
                           (reverse rev-codomains)
+                          (if relation? #f post-condition)
                           clauses))]
                [else
                 (loop (cdr more) (cons (car more) dom-pats))]))])]

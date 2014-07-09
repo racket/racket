@@ -1106,9 +1106,12 @@ reduce it further).
                ...)
              ([metafunction-contract (code:line) 
                                      (code:line id : @#,ttpattern-sequence ... -> range
-                                                maybe-pre-condition)]
+                                                maybe-pre-condition
+                                                maybe-post-condition)]
               [maybe-pre-condition (code:line #:pre @#,tttterm)
                                    (code:line)]
+              [maybe-post-condition (code:line #:post @#,tttterm)
+                                    (code:line)]
               [range @#,ttpattern
                      (code:line @#,ttpattern or range)
                      (code:line @#,ttpattern ∨ range)
@@ -1133,7 +1136,10 @@ If present, the term inside the @racket[maybe-pre-condition] is evaluated
 after a successful match to the input pattern in the contract (with
 any variables from the input contract bound). If
 it returns @racket[#f], then the input contract is considered to not
-have matched and an error is also raised.
+have matched and an error is also raised. When a metafunction
+returns, the expression in the @racket[maybe-post-condition] is
+evaluated (if present), with any variables from the input or output 
+contract bound.
 
 The @racket[side-condition], @racket[hidden-side-condition],
 @racket[where], and @racket[where/hidden] clauses behave as
@@ -1212,6 +1218,8 @@ Note the side-condition in the second case of @racket[-]. It
 ensures that there is a unique match for that case. Without
 it, @racket[(term (- (x x) x))] would lead to an ambiguous
 match.
+
+@history[#:changed "1.4" @list{Added @racket[#:post] conditions.}]
 
 }
 
