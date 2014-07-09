@@ -89,11 +89,11 @@
   (list
    ;; Download installer from snapshot site:
    'download
-   ;; Install into each VM:
-   'install
    ;; Archive catalogs, downlowning the catalog and all
    ;; packages to the working directory:
    'archive
+   ;; Install into each VM:
+   'install
    ;; Build packages that have changed:
    'build
    ;; Extract and assemble documentation:
