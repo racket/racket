@@ -414,7 +414,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
   result = validate_expr(port, val, stack, tls, 
                          depth, letlimit, delta, 
                          num_toplevels, num_stxes, num_lifts, tl_use_map,
-                         tl_state, tl_timestamp + (stinfo.uses_super ? 1 : 0),
+                         tl_state, tl_timestamp + ((is_struct && stinfo.uses_super) ? 1 : 0),
                          NULL, !!only_var, 0, vc, 0, 0, NULL,
                          size-1, _st_ht);
 

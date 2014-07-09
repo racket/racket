@@ -97,7 +97,7 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
     bg->block_size <<= 1;
   }
 
-  bd = (block_desc*) ofm_malloc(sizeof(block_desc));
+  bd = (block_desc*) ofm_malloc_zero(sizeof(block_desc));
   if (!bd) {
     os_free_pages(r, this_block_size);
     return NULL;
