@@ -2873,11 +2873,15 @@ Scheme_Object *scheme_letrec_check_expr(Scheme_Object *);
 Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int context);
 Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context);
 
+/* Context uses result as a boolean: */
 #define OPT_CONTEXT_BOOLEAN    0x1
+/* Context might duplicate the expression: */
 #define OPT_CONTEXT_NO_SINGLE  0x2
-#define OPT_CONTEXT_TYPE_SHIFT   3
-#define OPT_CONTEXT_TYPE_MASK    (SCHEME_MAX_LOCAL_TYPE_MASK << OPT_CONTEXT_TYPE_SHIFT)
-#define OPT_CONTEXT_TYPE(oc)    ((oc & OPT_CONTEXT_TYPE_MASK) >> OPT_CONTEXT_TYPE_SHIFT)
+/* Context checks that result is a single value: */
+#define OPT_CONTEXT_SINGLED    0x4
+#define OPT_CONTEXT_TYPE_SHIFT 4
+#define OPT_CONTEXT_TYPE_MASK  (SCHEME_MAX_LOCAL_TYPE_MASK << OPT_CONTEXT_TYPE_SHIFT)
+#define OPT_CONTEXT_TYPE(oc)   ((oc & OPT_CONTEXT_TYPE_MASK) >> OPT_CONTEXT_TYPE_SHIFT)
 
 #define scheme_optimize_result_context(c) (c & (~(OPT_CONTEXT_TYPE_MASK | OPT_CONTEXT_NO_SINGLE)))
 #define scheme_optimize_tail_context(c) scheme_optimize_result_context(c) 

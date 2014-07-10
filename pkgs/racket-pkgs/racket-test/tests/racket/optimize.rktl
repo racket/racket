@@ -1009,6 +1009,7 @@
               (let ([x (cons w z)])
                 (car x)))
            '(lambda (w z) w))
+
 (test-comp '(lambda (w z)
               (let ([x (cons w z)])
                 (cdr x)))
@@ -1392,6 +1393,39 @@
 (test-comp '(lambda (x) (let ([r (something)])
                           (if r #t (something-else))))
            '(lambda (x) (if (something) #t (something-else))))
+
+(test-comp '(lambda (x) (let ([r (something)])
+                          (r)))
+           '(lambda (x) ((something))))
+(test-comp '(lambda (x) (let ([r (something)])
+                          (r (something-else))))
+           '(lambda (x) ((something) (something-else))))
+(test-comp '(lambda (x z) (let ([r (something)])
+                            (z r)))
+           '(lambda (x z) (z (something))))
+(test-comp '(lambda (x) (let ([r (something)])
+                          (r (something-else) 1 2)))
+           '(lambda (x) ((something) (something-else) 1 2)))
+(test-comp '(lambda (x z) (let ([r (something)])
+                            (with-continuation-mark r z (something-else))))
+           '(lambda (x z) (with-continuation-mark (something) z (something-else))))
+(test-comp '(lambda (x z) (let ([r (something)])
+                            (with-continuation-mark z r (something-else))))
+           '(lambda (x z) (with-continuation-mark z (something) (something-else))))
+(test-comp '(lambda (x z) (let ([r (something)])
+                            (set! z r)))
+           '(lambda (x z) (set! z (something))))
+(test-comp '(lambda (x z) (let ([r (something)])
+                            (call-with-values (lambda () (z)) r)))
+           '(lambda (x z) (call-with-values (lambda () (z)) (something))))
+
+;; Don't move closure allocation:
+(test-comp '(lambda (z) (let ([r (lambda () z)])
+                          (lambda () r)))
+           '(lambda (z) (lambda ()
+                          (lambda () z)))
+           #f)
+
 
 (test-comp '(if (let ([z (random)]) null) 1 2)
            '(if (let ([z (random)]) #t) 1 2))
@@ -3882,6 +3916,30 @@
                 (fl+ v v))))
   (set! f f)
   (err/rt-test (f #t)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure compilation doesn't try to inline forever:
+
+(module cfg-extract-test racket/base
+  (define (report-answer-all k)
+    (k (list (random 10))))
+
+  (lambda ()
+    (let loop ([success-k 0]
+               [fail-k 1]
+               [k 0])
+      (let ([new-got-k
+             (lambda (val stream depth tasks next-k)
+               (let ([next-k (lambda (x y tasks)
+                               (loop (random)
+                                     1
+                                     (lambda (end tasks success-k fail-k)
+                                       (next-k success-k fail-k 8))))])
+                 (report-answer-all (lambda (tasks)
+                                      (success-k 0 1 2 3 next-k)))))])
+        (k 5 5 new-got-k
+           (lambda (tasks)
+             (report-answer-all 8)))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

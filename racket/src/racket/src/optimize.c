@@ -1155,6 +1155,9 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
              && single_valued_noncm_expression(b->fbranch, fuel - 1));
    }
    break;
+ case scheme_compiled_unclosed_procedure_type:
+ case scheme_case_lambda_sequence_type:
+   return 1;
  default:
    if (SCHEME_TYPE(expr) > _scheme_compiled_values_types_)
      return 1;
@@ -1286,6 +1289,11 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info, int delt
         return 1;
     }
     break;
+  case scheme_compiled_unclosed_procedure_type:
+  case scheme_case_lambda_sequence_type:
+    /* Can't move across lambda or continuation if not closed, since
+       that changes allocation of a closure. */
+    return !cross_lambda && !cross_k;
   default:
     if (SCHEME_TYPE(expr) > _scheme_compiled_values_types_)
       return 1;
@@ -2531,12 +2539,12 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
 	return le;
     }
 
-    sub_context = 0;
+    sub_context = OPT_CONTEXT_SINGLED;
     if (i > 0) {
       int ty;
       ty = wants_local_type_arguments(app->args[0], i - 1);
       if (ty)
-        sub_context = (ty << OPT_CONTEXT_TYPE_SHIFT);
+        sub_context |= (ty << OPT_CONTEXT_TYPE_SHIFT);
     }
 
     optimize_info_seq_step(info, &info_seq);
@@ -2804,7 +2812,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 {
   Scheme_App2_Rec *app;
   Scheme_Object *le;
-  int rator_flags = 0, sub_context = 0, ty;
+  int rator_flags = 0, sub_context, ty;
   Optimize_Info_Sequence info_seq;
 
   app = (Scheme_App2_Rec *)o;
@@ -2818,7 +2826,9 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 
   optimize_info_seq_init(info, &info_seq);
 
-  le = scheme_optimize_expr(app->rator, info, 0);
+  sub_context = OPT_CONTEXT_SINGLED;
+
+  le = scheme_optimize_expr(app->rator, info, sub_context);
   app->rator = le;
 
   {
@@ -2829,7 +2839,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   }
 
   if (SAME_PTR(scheme_not_prim, app->rator)){
-    sub_context = OPT_CONTEXT_BOOLEAN;
+    sub_context |= OPT_CONTEXT_BOOLEAN;
   } else {
     ty = wants_local_type_arguments(app->rator, 0);
     if (ty)
@@ -3064,7 +3074,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 {
   Scheme_App3_Rec *app;
   Scheme_Object *le;
-  int rator_flags = 0, sub_context = 0, ty, flags;
+  int rator_flags = 0, sub_context, ty, flags;
   Optimize_Info_Sequence info_seq;
 
   app = (Scheme_App3_Rec *)o;
@@ -3091,6 +3101,8 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
     return le;
 
   optimize_info_seq_init(info, &info_seq);
+
+  sub_context = OPT_CONTEXT_SINGLED;
 
   le = scheme_optimize_expr(app->rator, info, sub_context);
   app->rator = le;
@@ -3642,7 +3654,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 
   optimize_info_seq_init(info, &info_seq);
 
-  t = scheme_optimize_expr(t, info, OPT_CONTEXT_BOOLEAN);
+  t = scheme_optimize_expr(t, info, OPT_CONTEXT_BOOLEAN | OPT_CONTEXT_SINGLED);
 
   /* Try optimize: (if (not x) y z) => (if x z y) */
   while (1) {
@@ -3838,11 +3850,11 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
 
   optimize_info_seq_init(info, &info_seq);
 
-  k = scheme_optimize_expr(wcm->key, info, 0);
+  k = scheme_optimize_expr(wcm->key, info, OPT_CONTEXT_SINGLED);
 
   optimize_info_seq_step(info, &info_seq);
 
-  v = scheme_optimize_expr(wcm->val, info, 0);
+  v = scheme_optimize_expr(wcm->val, info, OPT_CONTEXT_SINGLED);
 
   /* The presence of a key can be detected by other expressions,
      to increment vclock to prevent expressions incorrectly
@@ -3905,7 +3917,7 @@ set_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   var = sb->var;
   val = sb->val;
 
-  val = scheme_optimize_expr(val, info, 0);
+  val = scheme_optimize_expr(val, info, OPT_CONTEXT_SINGLED);
 
   info->preserves_marks = 1;
   info->single_result = 1;
@@ -4041,7 +4053,7 @@ apply_values_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
   optimize_info_seq_init(info, &info_seq);
 
-  f = scheme_optimize_expr(f, info, 0);
+  f = scheme_optimize_expr(f, info, OPT_CONTEXT_SINGLED);
 
   optimize_info_seq_step(info, &info_seq);
 
@@ -5102,7 +5114,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
     if (!skip_opts) {
       optimize_info_seq_step(rhs_info, &info_seq);
-      value = scheme_optimize_expr(pre_body->value, rhs_info, 0);
+      value = scheme_optimize_expr(pre_body->value, rhs_info,
+                                   ((pre_body->count == 1)
+                                    ? OPT_CONTEXT_SINGLED
+                                    : 0));
       pre_body->value = value;
     } else {
       value = pre_body->value;
@@ -5410,7 +5425,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
             rhs_info->use_psize = info->use_psize;
 
             optimize_info_seq_step(rhs_info, &info_seq);
-            value = scheme_optimize_expr(self_value, rhs_info, 0);
+            value = scheme_optimize_expr(self_value, rhs_info,
+                                         ((clv->count == 1)
+                                          ? OPT_CONTEXT_SINGLED
+                                          : 0));
 
             if (!OPT_DISCOURAGE_EARLY_INLINE)
               --rhs_info->letrec_not_twice;
@@ -6701,7 +6719,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
         if (SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
           Scheme_Once_Used *o = (Scheme_Once_Used *)val;
           if (((o->vclock == info->vclock)
-               && ((context & OPT_CONTEXT_BOOLEAN)
+               && ((context & OPT_CONTEXT_SINGLED)
                    || single_valued_noncm_expression(o->expr, 5)))
               || movable_expression(o->expr, info, o->delta, o->cross_lambda,
                                     o->kclock != info->kclock,
@@ -6710,6 +6728,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
             if (val) {
               info->size -= 1;
               o->used = 1;
+              info->inline_fuel = 0; /* no more inlining; o->expr was already optimized */
               return scheme_optimize_expr(val, info, context);
             }
           }
