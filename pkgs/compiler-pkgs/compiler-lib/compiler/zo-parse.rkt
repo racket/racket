@@ -67,13 +67,10 @@
      (make-compilation-top ld prefix code)]))
 
 (define (read-resolve-prefix v)
-  (let-values ([(v unsafe?) (if (integer? (car v))
-                                (values v #f)
-                                (values (cdr v) #t))])
-    (match v
-      [`(,i ,tv . ,sv)
-       ; XXX Why not leave them as vectors and change the contract?
-       (make-prefix i (vector->list tv) (vector->list sv))])))
+  (match v
+    [`(,i ,tv . ,sv)
+     ;; XXX Why not leave them as vectors and change the contract?
+     (make-prefix i (vector->list tv) (vector->list sv))]))
 
 (define read-free-id-info
   (match-lambda
