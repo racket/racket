@@ -332,7 +332,14 @@ Each addition for @racket[id] is combined in order to form the entire
 submodule using @racket[(module* id #f ....)] at the end of the
 enclosing module. If there is only one @racket[module+] for a given
 @racket[id], then @racket[(module+ id form ...)] is equivalent to
-@racket[(module* id #f form ...)].
+@racket[(module* id #f form ...)], but still moved to the end of the
+enclosing module.
+
+When a module contains multiple submodules declared with
+@racket[module+], then the relative order of the initial
+@racket[module+] declarations for each submodule determines the
+relative order of the @racket[module*] declarations at the end of the
+enclosing module.
 
 A submodule must not be defined using @racket[module+] @emph{and}
 @racket[module] or @racket[module*]. That is, if a submodule is made
