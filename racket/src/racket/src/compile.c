@@ -4586,7 +4586,6 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	  scheme_compile_rec_done_local(rec, drec);
           if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)) {
             if (scheme_extract_unsafe(var)) {
-              scheme_register_unsafe_in_prefix(env, rec, drec, menv);
               return scheme_extract_unsafe(var);
             } else if (scheme_extract_flfxnum(var)) {
               return scheme_extract_flfxnum(var);

@@ -2514,7 +2514,6 @@ Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
   rp->so.type = scheme_resolve_prefix_type;
   rp->num_toplevels = cp->num_toplevels;
   rp->num_stxes = cp->num_stxes;
-  rp->uses_unsafe = cp->uses_unsafe;
   
   if (rp->num_toplevels)
     tls = MALLOC_N(Scheme_Object*, rp->num_toplevels);

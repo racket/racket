@@ -72,6 +72,7 @@ SHARED_OK static unsigned char cpt_branch[256];
 
 /* Table of built-in variable refs for .zo loading: */
 SHARED_OK static Scheme_Object **variable_references;
+SHARED_OK int unsafe_variable_references_start;
 
 ROSYM static Scheme_Object *quote_symbol;
 ROSYM static Scheme_Object *quasiquote_symbol;
@@ -162,6 +163,7 @@ typedef struct Readtable {
 typedef struct ReadParams {
   MZTAG_IF_REQUIRED
   char can_read_compiled;
+  char can_read_unsafe;
   char can_read_pipe_quote;
   char can_read_box;
   char can_read_graph;
@@ -552,7 +554,7 @@ void scheme_init_read(Scheme_Env *env)
 void scheme_init_variable_references_constants()
 {
   REGISTER_SO(variable_references);
-  variable_references = scheme_make_builtin_references_table();
+  variable_references = scheme_make_builtin_references_table(&unsafe_variable_references_start);
 }
 
 
@@ -2319,11 +2321,18 @@ _internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cant_fai
     else
       params.table = NULL;
   }
-  if (crc >= 0)
+  if (crc >= 0) {
     params.can_read_compiled = crc;
-  else {
+    params.can_read_unsafe = 1;
+  } else {
     v = scheme_get_param(scheme_current_config(), MZCONFIG_CAN_READ_COMPILED);
     params.can_read_compiled = SCHEME_TRUEP(v);
+    if (v) {
+      v = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+      v2 = scheme_get_initial_inspector();
+      params.can_read_unsafe = SAME_OBJ(v, v2);
+    } else
+      params.can_read_unsafe = 0;
   }
   v = scheme_get_param(config, MZCONFIG_CAN_READ_PIPE_QUOTE);
   params.can_read_pipe_quote = SCHEME_TRUEP(v);
@@ -4332,6 +4341,7 @@ typedef struct Scheme_Load_Delay {
   Scheme_Object *cached_port;
   struct Scheme_Load_Delay *clear_bytes_prev;
   struct Scheme_Load_Delay *clear_bytes_next;
+  int unsafe_ok;
 } Scheme_Load_Delay;
 
 #define ZO_CHECK(x) if (!(x)) scheme_ill_formed_code(port);
@@ -4345,6 +4355,7 @@ typedef struct CPort {
   unsigned char *start;
   uintptr_t symtab_size;
   intptr_t base;
+  int unsafe_ok;
   Scheme_Object *orig_port;
   Scheme_Hash_Table **ht;
   Scheme_Unmarshal_Tables *ut;
@@ -4374,6 +4385,13 @@ void scheme_ill_formed(struct CPort *port
 		  " [%s:%d]", file, line
 #endif
 		  );
+}
+
+static void unsafe_disallowed(struct CPort *port)
+{
+  scheme_read_err(port ? port->orig_port : NULL,
+                  NULL, -1, -1, port ? CP_TELL(port) : 0, -1, 0, NULL,
+		  "read (compiled): unsafe values disallowed");
 }
 
 /* Since read_compact_number is called often, we want it to be
@@ -4809,6 +4827,9 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
                         + EXPECTED_EXTFL_COUNT
                         + EXPECTED_FUTURES_COUNT
                         + EXPECTED_FOREIGN_COUNT));
+      if ((l >= unsafe_variable_references_start)
+          && !port->unsafe_ok)
+        unsafe_disallowed(port);
       return variable_references[l];
       break;
     case CPT_LOCAL:
@@ -5530,6 +5551,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       rp->symtab_size = symtabsize;
       rp->ht = local_ht;
       rp->symtab = symtab;
+      rp->unsafe_ok = params->can_read_unsafe;
 
       config = scheme_current_config();
 
@@ -5567,6 +5589,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
         delay_info->symtab = rp->symtab;
         delay_info->shared_offsets = rp->shared_offsets;
         delay_info->relto = rp->relto;
+        delay_info->unsafe_ok = rp->unsafe_ok;
 
         if (SAME_OBJ(delay_info->path, scheme_true))
           perma_cache = 1;
@@ -5807,6 +5830,7 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   rp->orig_port = port;
   rp->size = size;
   rp->ut = delay_info->ut;
+  rp->unsafe_ok = delay_info->unsafe_ok;
   if (delay_info->ut)
     delay_info->ut->rp = rp;
 

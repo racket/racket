@@ -6,4 +6,5 @@ MANIFEST
 pkg-test1b*
 /src-pkgs/
 /built-pkgs/
+pkg-add-a/doc
 pkg-add-base/doc

@@ -415,7 +415,7 @@ Scheme_Object *scheme_get_local_inspector();
 
 extern int scheme_builtin_ref_counter;
 
-Scheme_Object **scheme_make_builtin_references_table(void);
+Scheme_Object **scheme_make_builtin_references_table(int *_unsafe_start);
 Scheme_Object *scheme_make_local(Scheme_Type type, int pos, int flags);
 
 void scheme_add_embedded_builtins(Scheme_Env *env);
@@ -2445,7 +2445,6 @@ typedef struct Comp_Prefix
   Scheme_Hash_Table *inline_variants; /* position -> inline_variant */
   Scheme_Object *unbound; /* identifiers (and lists of phase-1 shifted unbounds) that were unbound at compile */
   Scheme_Hash_Table *stxes;     /* syntax objects */
-  Scheme_Object *uses_unsafe;   /* NULL, inspector, or hashtree of inspectors */
 } Comp_Prefix;
 
 typedef struct Scheme_Comp_Env
@@ -2518,7 +2517,6 @@ typedef struct Resolve_Prefix
   Scheme_Object **toplevels;
   Scheme_Object **stxes; /* simplified */
   Scheme_Object *delay_info_rpair; /* (rcons refcount Scheme_Load_Delay*) */
-  Scheme_Object *uses_unsafe; /* non-NULL => inspector or hashtree of inspectors for accessing #%unsafe bindings */
 } Resolve_Prefix;
 
 typedef struct Resolve_Info Resolve_Info;
@@ -2826,9 +2824,6 @@ Scheme_Object *scheme_register_toplevel_in_comp_prefix(Scheme_Object *var, Comp_
 void scheme_register_unbound_toplevel(Scheme_Comp_Env *env, Scheme_Object *id);
 Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 					     Scheme_Compile_Info *rec, int drec);
-void scheme_register_unsafe_in_prefix(Scheme_Comp_Env *env,
-                                      Scheme_Compile_Info *rec, int drec,
-                                      Scheme_Env *menv);
 void scheme_merge_undefineds(Scheme_Comp_Env *exp_env, Scheme_Comp_Env *env);
 
 void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object *a, 
@@ -3504,7 +3499,6 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 						 int *_protected, int *_unexported, 
                                                  Scheme_Env *from_env, int *_would_complain,
                                                  Scheme_Object **_is_constant);
-void scheme_check_unsafe_accessible(Scheme_Object *insp, Scheme_Env *from_env);
 Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name, int mod_phase);
 
 Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,

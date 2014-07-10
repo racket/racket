@@ -997,7 +997,6 @@ resolve_prefix_val {
   gcMARK2(rp->toplevels, gc);
   gcMARK2(rp->stxes, gc);
   gcMARK2(rp->delay_info_rpair, gc);
-  gcMARK2(rp->uses_unsafe, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -1010,7 +1009,6 @@ comp_prefix_val {
   gcMARK2(cp->inline_variants, gc);
   gcMARK2(cp->unbound, gc);
   gcMARK2(cp->stxes, gc);
-  gcMARK2(cp->uses_unsafe, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Comp_Prefix));

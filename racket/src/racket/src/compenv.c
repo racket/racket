@@ -731,38 +731,6 @@ Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env
   return o;
 }
 
-void scheme_register_unsafe_in_prefix(Scheme_Comp_Env *env, 
-                                      Scheme_Compile_Info *rec, int drec,
-                                      Scheme_Env *menv)
-{
-  Scheme_Object *v, *insp;
-
-  if (rec && rec[drec].dont_mark_local_use) {
-    return;
-  }
-
-  insp = menv->module->insp;
-
-  v = env->prefix->uses_unsafe;
-  if (!v)
-    v = insp;
-  else if (!SAME_OBJ(v, insp)) {
-    Scheme_Hash_Tree *ht;
-
-    if (SCHEME_HASHTRP(v)) {
-      ht = (Scheme_Hash_Tree *)v;
-    } else {
-      ht = scheme_make_hash_tree(0);
-      ht = scheme_hash_tree_set(ht, v, scheme_true);
-    }
-    
-    if (!scheme_hash_tree_get(ht, insp)) {
-      ht = scheme_hash_tree_set(ht, insp, scheme_true);
-      env->prefix->uses_unsafe = (Scheme_Object *)ht;
-    }
-  }
-}
-
 /*========================================================================*/
 /*                     compile-time env, lookup bindings                  */
 /*========================================================================*/

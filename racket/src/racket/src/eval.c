@@ -5637,15 +5637,6 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 
   rs_save = rs = MZ_RUNSTACK;
 
-  if (rp->uses_unsafe) {
-    scheme_check_unsafe_accessible((SCHEME_FALSEP(rp->uses_unsafe)
-                                    ? (insp
-                                       ? insp
-                                       : genv->access_insp)
-                                    : rp->uses_unsafe),
-                                   genv);
-  }
-
   if (rp->num_toplevels || rp->num_stxes || rp->num_lifts) {
     i = rp->num_toplevels;
     if (rp->num_stxes) {
