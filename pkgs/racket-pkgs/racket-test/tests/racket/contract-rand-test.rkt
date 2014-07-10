@@ -203,6 +203,20 @@
            'pos
            'neg))
 
+(check-exercise
+ 1
+ pos-exn?
+ (contract (->i ([i integer?] [b boolean?]) [result string?])
+           (λ (i b) 'not-a-string)
+           'pos 'neg))
+
+(check-exercise
+ 1
+ pos-exn?
+ (contract (->i ([i integer?] [b boolean?]) [result number?] #:post (result) (zero? result))
+           (λ (i b) 11)
+           'pos 'neg))
+
 ;; the tests below that use pos-exn? have a
 ;; (vanishingly small) probability of not passing. 
 

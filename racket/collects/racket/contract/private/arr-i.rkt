@@ -6,6 +6,7 @@
          "opt.rkt"
          "misc.rkt"
          "blame.rkt"
+         "generate.rkt"
          syntax/location
          racket/private/performance-hint
          (for-syntax racket/base
@@ -25,7 +26,7 @@
 (provide (rename-out [->i/m ->i]))
 
 (define (build-??-args ctc blame)
-  (define arg-ctc-projs (map (λ (x) (contract-projection (cdr x))) (->i-arg-ctcs ctc)))
+  (define arg-ctc-projs (map (λ (x) (contract-projection (->i-arg-contract x))) (->i-arg-ctcs ctc)))
   (define indy-arg-ctc-projs (map (λ (x) (contract-projection (cdr x)))
                                   (->i-indy-arg-ctcs ctc)))
   (define rng-ctc-projs (map (λ (x) (contract-projection (cdr x))) (->i-rng-ctcs ctc)))
@@ -55,7 +56,7 @@
     (for/list ([dom-proj (in-list arg-ctc-projs)]
                [pr (in-list (->i-arg-ctcs ctc))])
       (dom-proj (blame-add-context swapped-blame 
-                                   (format "the ~a argument of" (car pr))))))
+                                   (format "the ~a argument of" (->i-arg-name pr))))))
   (define partial-indy-doms
     (for/list ([dom-proj (in-list indy-arg-ctc-projs)]
                [dom-pr (in-list (->i-indy-arg-ctcs ctc))])
@@ -107,8 +108,63 @@
       (define ???-args (build-??-args ctc blame))
       (apply func ???-args))))
 
+
+(define (exercise->i ctc)
+  (define arg-deps (->i-arg-dep-ctcs ctc))
+  (cond
+    [(null? arg-deps) 
+     (λ (fuel)
+       (define gens (for/list ([arg-ctc (in-list (->i-arg-ctcs ctc))]
+                               #:when (and (not (->i-arg-optional? arg-ctc))
+                                           (not (->i-arg-kwd arg-ctc))))
+                      (generate/choose (->i-arg-contract arg-ctc) fuel)))
+       (define kwd-gens (for/list ([arg-ctc (in-list (->i-arg-ctcs ctc))]
+                                   #:when (and (not (->i-arg-optional? arg-ctc))
+                                               (->i-arg-kwd arg-ctc)))
+                          (generate/choose (->i-arg-contract arg-ctc) fuel)))
+       (define dom-kwds (for/list ([arg-ctc (in-list (->i-arg-ctcs ctc))]
+                                   #:when (and (not (->i-arg-optional? arg-ctc))
+                                               (->i-arg-kwd arg-ctc)))
+                          (->i-arg-kwd arg-ctc)))
+       (cond
+         [(andmap values gens)
+          (define env (generate-env))
+          (values (λ (f)
+                    (call-with-values
+                     (λ ()
+                       (define kwd-args 
+                         (for/list ([kwd-gen (in-list kwd-gens)])
+                           (kwd-gen)))
+                       (define regular-args 
+                         (for/list ([gen (in-list gens)])
+                           (gen)))
+                       (keyword-apply 
+                        f
+                        dom-kwds
+                        kwd-args
+                        regular-args))
+                     (λ results
+                       (void)
+                       ;; what to do here? (nothing, for now)
+                       ;; better: if we did actually stash the results we knew about.
+                       '(for ([res-ctc (in-list rng-ctcs)]
+                              [result (in-list results)])
+                          (env-stash env res-ctc result)))))
+                  ;; better here: if we promised the results we knew we could deliver
+                  '())]
+         [else
+          (values void '())]))]
+    [else
+     (λ (fuel) (values void '()))]))
+
+;; name : symbol?
+;; kwd : (or/c #f keyword?)
+;; optional? : boolean?
+;; contract : contract?
+(struct ->i-arg (name kwd optional? contract) #:transparent)
+
 ;; blame-info    : (listof (vector symbol boolean?[indy?] boolean?[swap?]))
-;; arg-ctcs      : (listof (cons symbol? contract))
+;; arg-ctcs      : (listof ->i-arg?)
 ;; arg-dep-ctcs  : (-> ??? (listof contract))
 ;; indy-arg-ctcs : (listof (cons symbol? contract))
 ;; rng-ctcs      : (listof (cons symbol? contract))
@@ -178,11 +234,11 @@
                          [rng-info  (vector-ref name-info 3)]
                          [post-infos (vector-ref name-info 4)])
                     `(->i ,(arg/ress->spec args-info
-                                           (map cdr (->i-arg-ctcs ctc))
+                                           (map ->i-arg-contract (->i-arg-ctcs ctc))
                                            (->i-arg-dep-ctcs ctc)
                                            (λ (x) (list-ref x 4)))
                           ,@(let ([rests (arg/ress->spec args-info
-                                                         (map cdr (->i-arg-ctcs ctc))
+                                                         (map ->i-arg-contract (->i-arg-ctcs ctc))
                                                          (->i-arg-dep-ctcs ctc)
                                                          (λ (x) (not (list-ref x 4))))])
                               (if (null? rests)
@@ -193,7 +249,9 @@
                                   [(nodep) `(#:rest 
                                              [,(list-ref rest-info 1)
                                               ,(contract-name
-                                                (car (reverse (map cdr (->i-arg-ctcs ctc)))))])]
+                                                (car 
+                                                 (reverse
+                                                  (map ->i-arg-contract (->i-arg-ctcs ctc)))))])]
                                   [(dep) `(#:rest [,(list-ref rest-info 1)
                                                    ,(list-ref rest-info 2)
                                                    ,(list-ref rest-info 3)])])
@@ -241,6 +299,7 @@
                  (if has-rest
                      (check-procedure/more val mtd? mand-args mand-kwds opt-kwds #f)
                      (check-procedure val mtd? mand-args opt-args mand-kwds opt-kwds #f)))))
+         #:exercise exercise->i
          #:stronger (λ (this that) (eq? this that)))) ;; WRONG
 
 ;; find-ordering : (listof arg) -> (values (listof arg) (listof number)) 
@@ -898,66 +957,7 @@
           (list var)]))))
   (if rst 
       #`(apply f #,@argument-list rest-args)
-      #`(f #,@argument-list))
-          
-  #;
-(let ([opts? (ormap arg-optional? args)]
-        [this-params (if this-param (list this-param) '())])
-    (cond
-      [(and opts? (ormap arg-kwd args))
-       (let* ([arg->var (make-hash)]
-              [kwd-args (filter arg-kwd args)]
-              [non-kwd-args (filter (λ (x) (not (arg-kwd x))) args)])
-         
-         (for ([arg (in-list args)]
-               [var (in-vector vars)])
-           (hash-set! arg->var arg var))
-         
-         (let ([sorted-kwd/arg-pairs 
-                (sort
-                 (map (λ (arg) (cons (arg-kwd arg) (hash-ref arg->var arg))) kwd-args)
-                 (λ (x y) (keyword<? (syntax-e (car x)) (syntax-e (car y)))))])
-           
-           ;; has both optional and keyword args
-           #`(keyword-return/no-unsupplied 
-              '#,(map car sorted-kwd/arg-pairs)
-              (list #,@(map cdr sorted-kwd/arg-pairs))
-              #,(if rst
-                    #'rest-args
-                    #''())
-              #,@this-params
-              #,@(map (λ (arg) (hash-ref arg->var arg)) non-kwd-args))))]
-      [opts?
-       ;; has optional args, but no keyword args
-       #`(return/no-unsupplied #,(if rst
-                                     #'rest-args
-                                     #''())
-                               #,@this-params
-                               #,@(if rst
-                                      (all-but-last (vector->list vars))
-                                      (vector->list vars)))] 
-      [else
-       (let*-values ([(rev-regs rev-kwds)
-                      (for/fold ([regs null]
-                                 [kwds null])
-                        ([arg (in-list args)]
-                         [i (in-naturals)])
-                        (if (arg-kwd arg)
-                            (values regs (cons (vector-ref vars i) kwds))
-                            (values (cons (vector-ref vars i) regs) kwds)))]
-                     [(regular-arguments keyword-arguments)
-                      (values (reverse rev-regs) (reverse rev-kwds))])
-         (cond
-           [(and (null? keyword-arguments) rst)
-            #`(apply values #,@this-params #,@regular-arguments rest-args)]
-           [(null? keyword-arguments)
-            #`(values #,@this-params #,@regular-arguments)]
-           [rst
-            #`(apply values (list #,@keyword-arguments) 
-                     #,@this-params #,@regular-arguments rest-args)]
-           [else
-            #`(values (list #,@keyword-arguments) 
-                      #,@this-params #,@regular-arguments)]))])))
+      #`(f #,@argument-list)))
 
 (begin-encourage-inline
   (define (un-dep ctc obj blame)
@@ -1014,10 +1014,12 @@
                   (filter values (map (λ (arg)
                                         (and (not (arg/res-vars arg)) (arg/res-var arg)))
                                       args+rst)))]
-                [((arg-names arg-exps) ...)
+                [((arg-names arg-kwds arg-is-optional?s arg-exps) ...)
                  (filter values (map (λ (arg) (and (not (arg/res-vars arg)) 
                                                    (list
                                                     (arg/res-var arg)
+                                                    (arg-kwd arg)
+                                                    (arg-optional? arg)
                                                     (syntax-property
                                                      (syntax-property
                                                       (arg/res-ctc arg)
@@ -1067,7 +1069,7 @@
               ;; the information needed to make the blame records and their new contexts
               '#,blame-ids
               ;; all of the non-dependent argument contracts
-              (list (cons 'arg-names arg-exp-xs) ...)
+              (list (->i-arg 'arg-names 'arg-kwds arg-is-optional?s arg-exp-xs) ...)
               ;; all of the dependent argument contracts
               (list #,@(for/list ([arg (in-list args+rst)]
                                   #:when (arg/res-vars arg))
