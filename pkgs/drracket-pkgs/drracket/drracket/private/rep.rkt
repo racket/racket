@@ -269,7 +269,7 @@ TODO
       (send keymap add-function name f)
       (send alt-as-meta-keymap add-function name f))
     (define (map-meta-fn key f)
-      (keymap:send-map-function-meta keymap "p" "put-previous-sexp" #t
+      (keymap:send-map-function-meta keymap key f #t
                                      #:alt-as-meta-keymap alt-as-meta-keymap))
     (define (map-fn key f)
       (send keymap map-function key f)
