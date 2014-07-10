@@ -33,35 +33,47 @@
     (command-line
      #:program long-name
      #:argv argv
+     #:help-labels
+     " --------------------------- collections --------------------------- "
+     " If no collection, package, or archive is specified, all are setup"
      #:once-each
-     [("-j" "--jobs" "--workers") n "Use <n> parallel jobs"
-      (add-flags `((parallel-workers ,(string->number n))))]
-     [("--only") "Set up only specified <collection>s"
+     [("--only") "Set up only specified, even if none"
       (add-flags '((make-only #t)))]
+     [("-l") => (lambda (flag . collections)
+                  (check-collections short-name collections)
+                  (cons 'collections (map list collections)))
+             '("Setup specified <collection>s" "collection")]
+     [("--pkgs") => (lambda (flag . pkgs)
+                      (check-packages short-name pkgs)
+                      (cons 'packages pkgs))
+             '("Setup collections in specified <pkg>s" "pkg")]
      #:multi
      [("-P") owner package-name maj min
-      "Setup specified PLaneT packages only"
+      "Setup specified PLaneT packages"
       (set! x-specific-planet-packages (cons (list owner package-name maj min)
                                              x-specific-planet-packages))]
      #:once-each
-     [("--tidy") "Clear references to removed, even if not a specified <collection>"
-      (add-flags '((make-tidy #t)))]
-     [("--doc-index") "Rebuild documentation indexes with specified <collection>s"
+     [("--doc-index") "Rebuild documentation index along with specified"
       (add-flags '((make-doc-index #t)))]
-     [("-c" "--clean") "Delete existing compiled files; implies -nxi"
+     [("--tidy") "Clear references to removed items outside of specified"
+      (add-flags '((make-tidy #t)))]
+     #:help-labels
+     " ------------------------------ tasks ------------------------------ "
+     #:once-each
+     [("-c" "--clean") "Delete existing compiled files; implies -nxiD"
       (add-flags '((clean #t)
                    (make-zo #f)
                    (call-install #f)
                    (make-launchers #f)
                    (make-info-domain #f)
                    (make-docs #f)))]
-     [("-n" "--no-zo") "Do not produce .zo files"
+     [("-n" "--no-zo") "Do not create \".zo\" files"
       (add-flags '((make-zo #f)))]
-     [("--trust-zos") "Trust existing .zos (use only with prepackaged .zos)"
+     [("--trust-zos") "Trust existing \".zo\"s (use only with prepackaged \".zo\"s)"
       (add-flags '((trust-existing-zos #t)))]
      [("-x" "--no-launcher") "Do not produce launcher programs"
       (add-flags '((make-launchers #f)))]
-     [("--no-foreign-libs") "Do not install foreign libraries"
+     [("-F" "--no-foreign-libs") "Do not install foreign libraries"
       (add-flags '((make-foreign-libs #f)))]
      [("-i" "--no-install") "Do not call collection-specific pre-installers"
       (add-flags '((call-install #f)))]
@@ -71,17 +83,11 @@
       (add-flags '((make-info-domain #f)))]
      [("-D" "--no-docs") "Do not compile .scrbl files and do not build documentation"
       (add-flags '((make-docs #f)))]
-     [("--doc-pdf") dir "Build doc PDFs, write to <dir>"
+     [("--doc-pdf") dir "Build documentation PDFs, write to <dir>"
       (add-flags `((doc-pdf-dest ,dir)))]
-     [("-U" "--no-user") "Do not setup user-specific collections (implies --no-planet)"
-      (add-flags '((make-user #f) (make-planet #f)))]
-     [("--no-planet") "Do not setup PLaneT packages"
-      (add-flags '((make-planet #f)))]
-     [("--avoid-main") "Do not make main-installation files"
-      (add-flags '((avoid-main-installation #t)))]
      [("-K" "--no-pkg-deps") "Do not check package dependencies"
       (add-flags '((check-dependencies #f)))]
-     [("--check-pkg-deps") "Check package dependencies when <collection>s specified"
+     [("--check-pkg-deps") "Check package dependencies when collections specified"
       (add-flags '((always-check-dependencies #t)))]
      [("--fix-pkg-deps") "Auto-repair package-dependency declarations"
       (add-flags '((check-dependencies #t)
@@ -89,10 +95,20 @@
      [("--unused-pkg-deps") "Check for unused package-dependency declarations"
       (add-flags '((check-dependencies #t)
                    (check-unused-dependencies #t)))]
-     [("--fail-fast") "Trigger break on error"
-      (add-flags '((fail-fast #t)))]
-     [("--mode") mode "Select a compilation mode"
-      (add-flags `((compile-mode ,mode)))]
+     #:help-labels
+     " ------------------------------ users ------------------------------ "
+     #:once-each
+     [("-U" "--no-user") "Do not setup user-specific collections (implies --no-planet)"
+      (add-flags '((make-user #f) (make-planet #f)))]
+     [("--no-planet") "Do not setup PLaneT packages"
+      (add-flags '((make-planet #f)))]
+     [("--avoid-main") "Do not make main-installation files"
+      (add-flags '((avoid-main-installation #t)))]
+     #:help-labels
+     " ------------------------------ modes ------------------------------ "
+     #:once-each
+     [("-j" "--jobs" "--workers") n "Use <n> parallel jobs"
+      (add-flags `((parallel-workers ,(string->number n))))]
      [("-v" "--verbose") "See names of compiled files and info printfs"
       (add-flags '((verbose #t)))]
      [("-m" "--make-verbose") "See make and compiler usual messages"
@@ -100,16 +116,15 @@
      [("-r" "--compile-verbose") "See make and compiler verbose messages"
       (add-flags '((make-verbose #t)
                    (compiler-verbose #t)))]
+     [("--mode") mode "Select a compilation mode, such as \"errortrace\""
+      (add-flags `((compile-mode ,mode)))]
+     [("--fail-fast") "Trigger a break on the first error"
+      (add-flags '((fail-fast #t)))]
      [("-p" "--pause") "Pause at the end if there are any errors"
       (add-flags '((pause-on-errors #t)))]
-     [("-l") => (lambda (flag . collections)
-                  (check-collections short-name collections)
-                  (cons 'collections (map list collections)))
-             '("Setup specific <collection>s only" "collection")]
-     [("--pkgs") => (lambda (flag . pkgs)
-                      (check-packages short-name pkgs)
-                      (cons 'packages pkgs))
-             '("Setup <collection>s in specific <pkg>s only" "pkg")]
+     #:help-labels
+     " ---------------------------- archives ----------------------------- "
+     #:once-each
      [("-A") => (λ (flag . archives)
                   (cons 'archives archives))
              '("Unpack and install <archive>s" "archive")]
@@ -117,6 +132,9 @@
       (add-flags '((force-unpacks #t)))]
      [("-a" "--all-users") "Install archives to main (not user-specific) installation"
       (add-flags '((all-users #t)))]
+     #:help-labels
+     " ------------------------------ misc ------------------------------- "
+
      
      #:handlers
      (lambda (collections/pkgs/archives . rest)
@@ -141,9 +159,6 @@
      (if raco? '("collection") '("archive"))
      (lambda (s)
        (display s)
-       (if raco?
-           (printf "If no <collection> is specified, all collections are setup\n")
-           (printf "If no <archive> or -l <collection> is specified, all collections are setup\n"))
        (exit 0))))
 
     (values short-name x-flags 
