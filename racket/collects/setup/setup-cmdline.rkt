@@ -60,13 +60,16 @@
      #:help-labels
      " ------------------------------ tasks ------------------------------ "
      #:once-each
-     [("-c" "--clean") "Delete existing compiled files; implies -nxiD"
+     [("-c" "--clean") "Delete existing compiled files; implies -nxiIFDK"
       (add-flags '((clean #t)
                    (make-zo #f)
                    (call-install #f)
+                   (call-post-install #f)
                    (make-launchers #f)
                    (make-info-domain #f)
-                   (make-docs #f)))]
+                   (make-docs #f)
+                   (check-dependencies #f)
+                   (make-foreign-libs #f)))]
      [("-n" "--no-zo") "Do not create \".zo\" files"
       (add-flags '((make-zo #f)))]
      [("--trust-zos") "Trust existing \".zo\"s (use only with prepackaged \".zo\"s)"
