@@ -6611,7 +6611,7 @@ static Scheme_Object *extract_for_common_wrap(Scheme_Object *a, int get_mark, in
         else
           return SCHEME_CDR(v);
       }
-    } else if (!SCHEME_BOXP(v) && !SCHEME_VECTORP(v) && !SCHEME_HASHTRP(v) && !prefab_p(v)) {
+    } else if (!SCHEME_NULLP(v) && !SCHEME_BOXP(v) && !SCHEME_VECTORP(v) && !SCHEME_HASHTRP(v) && !prefab_p(v)) {
       /* It's atomic. */
       if (get_mark)
         return SCHEME_CDR(a);

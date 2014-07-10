@@ -1820,5 +1820,24 @@
   (test #f values (displayln-syntax-local-value/immediate ++)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that syntax structure is preserved precisely with
+;; #'(a . ()) as opposed to #'(a)
+
+(let ()
+  (define-values (i o) (make-pipe))
+  (write (compile #'#'(a)) o)
+  (close-output-port o)
+  (define s (parameterize ([read-accept-compiled #t])
+              (read i)))
+  (test #t null? (cdr (syntax-e (eval s)))))
+(let ()
+  (define-values (i o) (make-pipe))
+  (write (compile #'#'(a . ())) o)
+  (close-output-port o)
+  (define s (parameterize ([read-accept-compiled #t])
+              (read i)))
+  (test #t syntax? (cdr (syntax-e (eval s)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
