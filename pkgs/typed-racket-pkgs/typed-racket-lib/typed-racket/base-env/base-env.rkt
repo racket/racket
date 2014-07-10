@@ -1134,7 +1134,7 @@
 [values (-polydots (a b) (cl->*
                            (-> (-values null))
                            (->acc (list a) a null)
-                           ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b))))]
+                           ((list a) (b b) . ->... . (simple-ValuesDots (list (-result a)) b 'b))))]
 [call-with-values
   (-polydots (b a)
     (cl->*
@@ -1220,14 +1220,14 @@
  (-polydots (a b c)
    (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
           (-> (-> (->... (list a) (c c) (Un))
-                  (make-ValuesDots (list (-result b)) c 'c))
-              (make-ValuesDots (list (-result (Un a b))) c 'c))))]
+                  (simple-ValuesDots (list (-result b)) c 'c))
+              (simple-ValuesDots (list (-result (Un a b))) c 'c))))]
 [call/ec
  (-polydots (a b c)
    (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
           (-> (-> (->... (list a) (c c) (Un))
-                  (make-ValuesDots (list (-result b)) c 'c))
-              (make-ValuesDots (list (-result (Un a b))) c 'c))))]
+                  (simple-ValuesDots (list (-result b)) c 'c))
+              (simple-ValuesDots (list (-result (Un a b))) c 'c))))]
 [call-with-continuation-barrier (-poly (a) (-> (-> a) a))]
 [continuation-prompt-available? (-> (make-Prompt-TagTop) B)]
 [continuation?
