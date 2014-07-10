@@ -83,8 +83,8 @@ additional headers given in @racket[headers] and the additional data
 @racket[data].
 
 If @racket[data] is a procedure, it will be called once with a
-procedure of one argument, which is a @racket[string] or
-@racket[byte-string] to be written to the request body using
+procedure of one argument, which is a string or
+byte string to be written to the request body using
 chunked transfer encoding.
 
 If @racket[headers] does not contain an @litchar{Accept-Encoding}
@@ -148,6 +148,14 @@ sequence on a fresh HTTP connection produced by
 The HTTP connection is not returned, so it is always closed after one
 response, which is why there is no @racket[#:closed?] argument like
 @racket[http-conn-recv!].
+
+}
+
+@defthing[data-procedure/c chaperone-contract?]{
+
+Contract for a procedure that accepts a procedure of one
+argument, which is a string or byte string:
+@racket[(-> (-> (or/c bytes? string?) any/c) any/c)].
 
 }
 
