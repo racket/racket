@@ -99,33 +99,40 @@ flags:
 
 @itemize[
 
- @item{@DFlag{jobs} @nonterm{n}, @DFlag{workers} @nonterm{n}, 
-   or @Flag{j} @nonterm{n} --- use up
-   to @nonterm{n} parallel processes.  By default, @exec{raco setup}
-   uses @racket[(processor-count)] jobs, which typically uses
-   all of the machine's processing cores.}
+@item{Constraining to specified collections or @|PLaneT| packages:
+@itemize[
 
  @item{@DFlag{only} --- restrict setup to specified collections and
    @|PLaneT| packages, even if none are specified. This mode is the
-   default if any collection is specified as a command-line argument,
-   through the @Flag{l} flag, or through the @Flag{P} flag.}
+   default if any collection is specified as a command-line argument
+   or through the @Flag{l}, @DFlag{pkgs}, or @Flag{P} flag.}
 
- @item{@Flag{P} @nonterm{owner} @nonterm{package-name} @nonterm{maj}
-  @nonterm{min} --- constrain setup actions to the specified @|PLaneT|
-  package, in addition to any other specified @|PLaneT| packages or
-  @nonterm{collection}s.}
+ @item{@Flag{l} @nonterm{collection} @racket[...] --- constrain setup
+  actions to the specified @nonterm{collection}s (i.e., the same as
+  providing @nonterm{collections}s without a flag, but with no
+  possibility that a @nonterm{collection} is interpreted as a flag).}
 
  @item{@DFlag{pkgs} @nonterm{pkg} @racket[...] --- constrain setup
   actions to collections that are within (or partially within) the
   named @nonterm{pkg}s.}
 
- @item{@DFlag{tidy} --- remove metadata cache information and
-  documentation for non-existent collections (to clean up after removal)
-  even when setup actions are otherwise confined to specified collections.}
+ @item{@Flag{P} @nonterm{owner} @nonterm{package-name} @nonterm{maj}
+  @nonterm{min} --- constrain setup actions to the specified @|PLaneT|
+  package, in addition to any other specified @|PLaneT| packages or
+  collections.}
 
- @item{@DFlag{doc-index} --- builds collections that implement
+ @item{@DFlag{doc-index} --- build collections that implement
   documentation indexes (when documentation building is enabled), in
   addition to specified collections.}
+
+ @item{@DFlag{tidy} --- remove metadata cache information and
+  documentation for non-existent collections or documentation (to
+  clean up after removal), even when setup actions are otherwise
+  confined to specified collections.}
+
+]}
+@item{Constraining to specific tasks:
+@itemize[
 
  @item{@DFlag{clean} or @Flag{c} --- delete existing @filepath{.zo}
    files, thus ensuring a clean build from the source files. The exact
@@ -142,7 +149,7 @@ flags:
    executables or installing @tt{man} pages (as specified in
    @filepath{info.rkt}; see @secref["setup-info"]).}
 
- @item{@DFlag{no-foreign-libs} --- refrain from installing foreign
+ @item{@DFlag{no-foreign-libs} or @Flag{F} --- refrain from installing foreign
    libraries (as specified in @filepath{info.rkt}; see
    @secref["setup-info"]).}
 
@@ -166,20 +173,11 @@ flags:
    documentation, render documentation to PDF and place files in
    @nonterm{dir}.}
 
- @item{@DFlag{no-user} or @Flag{U} --- refrain from any user-specific
-  (as opposed to installation-specific) setup actions.}
-
- @item{@DFlag{no-planet} --- refrain from any setup actions for
-  @|PLaneT| actions; this flags is implied by @DFlag{no-user}.}
-
- @item{@DFlag{avoid-main} --- refrain from any setup actions that
-  affect the installation, as opposed to user-specific actions.}
-
  @item{@DFlag{no-pkg-deps} or @Flag{K} --- refrain from checking
   whether dependencies among libraries are properly reflected by
   package-level dependency declarations, whether modules are declared
   by multiple packages, and whether package version dependencies are
-  satisfied. Dependency checking uses compiled bytecode, associated
+  satisfied. Dependency checking uses @filepath{.zo} files, associated
   @filepath{.dep} files, and the documentation index. Unless
   @DFlag{check-pkg-deps} is specified, dependency checking is disabled
   if any collection is specified for @exec{raco setup}, and missing
@@ -204,8 +202,37 @@ flags:
   dependencies may be reported as unused only because compilation of
   relevant modules has been suppressed.}
 
- @item{@DFlag{fail-fast} --- attempt to break as soon as any error is
-  discovered.}
+]}
+@item{Constraining user versus installation setup:
+@itemize[
+
+ @item{@DFlag{no-user} or @Flag{U} --- refrain from any user-specific
+  (as opposed to installation-specific) setup actions.}
+
+ @item{@DFlag{no-planet} --- refrain from any setup actions for
+  @|PLaneT| actions; this flags is implied by @DFlag{no-user}.}
+
+ @item{@DFlag{avoid-main} --- refrain from any setup actions that
+  affect the installation, as opposed to user-specific actions.}
+
+]}
+@item{Selecting parallelism and other build modes:
+@itemize[
+
+ @item{@DFlag{jobs} @nonterm{n}, @DFlag{workers} @nonterm{n},
+   or @Flag{j} @nonterm{n} --- use up
+   to @nonterm{n} parallel processes.  By default, @exec{raco setup}
+   uses @racket[(processor-count)] jobs, which typically uses
+   all of the machine's processing cores.}
+
+ @item{@DFlag{verbose} or @Flag{v} --- more verbose output about
+   @exec{raco setup} actions.}
+
+ @item{@DFlag{make-verbose} or @Flag{m} --- more verbose output about
+   dependency checks.}
+
+ @item{@DFlag{compiler-verbose} or @Flag{r} --- even more verbose
+   output about dependency checks and compilation.}
 
  @item{@DFlag{mode} @nonterm{mode} --- use a @filepath{.zo} compiler
    other than the default compiler, and put the resulting
@@ -217,23 +244,16 @@ flags:
    @racket[compile]; see the @filepath{errortrace} collection for an
    example.}
 
- @item{@DFlag{verbose} or @Flag{v} --- more verbose output about
-   @exec{raco setup} actions.}
-
- @item{@DFlag{make-verbose} or @Flag{m} --- more verbose output about
-   dependency checks.}
-
- @item{@DFlag{compiler-verbose} or @Flag{r} --- even more verbose
-   output about dependency checks and compilation.}
+ @item{@DFlag{fail-fast} --- attempt to break as soon as any error is
+  discovered.}
 
  @item{@DFlag{pause} or @Flag{p} --- pause for user input if any
   errors are reported (so that a user has time to inspect output that
   might otherwise disappear when the @exec{raco setup} process ends).}
 
- @item{@Flag{l} @nonterm{collection} @racket[...] --- constrain setup
-  actions to the specified @nonterm{collection}s (i.e., the same as
-  providing @nonterm{collections}s without a flag), but with no
-  possibility that a @nonterm{collection} is interpreted as a flag.}
+]}
+@item{Unpacking @filepath{.plt} archives:
+@itemize[
 
  @item{@Flag{A} @nonterm{archive} @racket[...] --- Install each
   @nonterm{archive}; see @secref["raco-setup-A"].}
@@ -245,6 +265,7 @@ flags:
   install archive into the installation instead of a user-specific
   location.}
 
+]}
 
 ]
 
@@ -258,7 +279,7 @@ collections during an install:
 
 @history[#:changed "1.2" @elem{Added the @DFlag{pkgs},
                                @DFlag{check-pkg-deps}, and
-                               @DFlag{fast-break} flags.}]
+                               @DFlag{fail-fast} flags.}]
 
 @; ------------------------------------------------------------------------
 
