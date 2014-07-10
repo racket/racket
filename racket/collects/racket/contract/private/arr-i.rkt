@@ -112,7 +112,7 @@
 (define (exercise->i ctc)
   (define arg-deps (->i-arg-dep-ctcs ctc))
   (cond
-    [(null? arg-deps) 
+    [(and (null? arg-deps) (not (->i-rest ctc)))
      (λ (fuel)
        (define gens (for/list ([arg-ctc (in-list (->i-arg-ctcs ctc))]
                                #:when (and (not (->i-arg-optional? arg-ctc))
@@ -1018,8 +1018,8 @@
                  (filter values (map (λ (arg) (and (not (arg/res-vars arg)) 
                                                    (list
                                                     (arg/res-var arg)
-                                                    (arg-kwd arg)
-                                                    (arg-optional? arg)
+                                                    (and (arg? arg) (arg-kwd arg))
+                                                    (and (arg? arg) (arg-optional? arg))
                                                     (syntax-property
                                                      (syntax-property
                                                       (arg/res-ctc arg)
