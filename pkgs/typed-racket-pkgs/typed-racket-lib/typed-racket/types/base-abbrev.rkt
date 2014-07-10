@@ -90,6 +90,8 @@
       [args
        (make-union* (remove-dups (sort (append-map flat args) type<?)))])))
 
+;; Bottom-Result? : Any -> Boolean
+;; Determine if a Result is at the bottom of the lattice.
 (define (Bottom-Result? r)
   (match r
     [(Result: t f _)
@@ -97,11 +99,17 @@
          (filter-equal? f -bot-filter))]
     [_ #f]))
 
+;; simple-Values : (Listof Result) -> Values
+;; Canonicalize a multiple-values container so that 
+;; (values ... ⊥ ...) is always represented as (values ⊥)
 (define (simple-Values rs)
   (if (ormap Bottom-Result? rs)
       -BotValues
       (make-Values rs)))
 
+;; simple-ValuesDots : (Listof Result) Type/c (U Symbol Natural) -> (U BotValues ValuesDots)
+;; Canonicalize dotted multiple-values container so that
+;; (valuesdots (list ... ⊥ ...) T d) = (values ⊥)
 (define (simple-ValuesDots rs dty dbound)
   (if (ormap Bottom-Result? rs)
       -BotValues
