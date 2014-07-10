@@ -510,7 +510,9 @@ binding, constructor, etc.}
              [undef-ok? boolean?])]{
   Represents a @racket[set!] expression that assigns to a top-level or
   module-level variable. (Assignments to local variables are represented
-  by @racket[install-value] expressions.)
+  by @racket[install-value] expressions.) If @racket[undef-ok?] is true,
+  the assignment to @racket[id] succeeds even if @racket[id] was not
+  previously defined (see also @racket[compile-allow-set!-undefined]).
 
   After @racket[rhs] is evaluated, the stack is restored to its depth
   from before evaluating @racket[rhs].}
