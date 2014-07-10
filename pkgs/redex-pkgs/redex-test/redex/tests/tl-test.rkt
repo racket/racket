@@ -1185,6 +1185,15 @@
           '(2 1)))
   
   (let ()
+    
+    (define-metafunction empty-language
+      must-be-identity : natural_1 -> natural_1
+      [(must-be-identity any) 0])
+
+    (test (with-handlers ((exn:fail:redex? exn-message))
+            (term (must-be-identity 1)))
+          #rx"codomain test failed")
+    
     (define-metafunction empty-language
       [(same any_1 any_1) #t]
       [(same any_1 any_2) #f])
