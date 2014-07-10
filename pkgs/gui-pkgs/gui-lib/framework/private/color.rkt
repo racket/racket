@@ -421,8 +421,8 @@ added get-regions
                 (let loop ([spellos (query-aspell str current-dict)]
                            [lp 0])
                   (cond
-                    [(null? spellos) 
-                     (add-coloring color (+ pos lp) (+ pos (string-length str)))]
+                    [(null? spellos)
+                     (add-coloring/spell #f color (+ pos lp) (+ pos (string-length str)))]
                     [else
                      (define err (car spellos))
                      (define err-start (list-ref err 0))
@@ -440,7 +440,7 @@ added get-regions
                 (loop (cdr strs)
                       (+ pos (string-length str) 1))))]
            [else
-            (add-coloring/spell color sp ep)])]
+            (add-coloring/spell #f color sp ep)])]
         [else
          (add-coloring/spell #f color sp ep)]))
     
@@ -458,7 +458,7 @@ added get-regions
     (define/public (get-spell-suggestions position)
       (and misspelled-regions (interval-map-ref misspelled-regions position #f)))
     
-    (define/private (add-coloring color sp ep) 
+    (define/private (add-coloring color sp ep)
       (change-style color sp ep #f))
     
     (define/private (show-tree t)
@@ -1222,11 +1222,19 @@ added get-regions
     
     (define/augment (after-insert edit-start-pos change-length)
       ;;(printf "(after-insert ~a ~a)\n" edit-start-pos change-length)
+      (when misspelled-regions
+        (interval-map-expand! misspelled-regions 
+                              edit-start-pos 
+                              (+ edit-start-pos change-length)))
       (do-insert/delete edit-start-pos change-length)
       (inner (void) after-insert edit-start-pos change-length))
     
     (define/augment (after-delete edit-start-pos change-length)
       ;;(printf "(after-delete ~a ~a)\n" edit-start-pos change-length)
+      (when misspelled-regions
+        (time (interval-map-contract! misspelled-regions
+                                      edit-start-pos 
+                                      (+ edit-start-pos change-length))))
       (do-insert/delete edit-start-pos (- change-length))
       (inner (void) after-delete edit-start-pos change-length))
     
