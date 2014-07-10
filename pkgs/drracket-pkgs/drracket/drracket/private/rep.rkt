@@ -167,35 +167,40 @@ TODO
              #:alt-as-meta-keymap drs-binding-alt-as-meta-keymap))]
          [show-tab
           (λ (i)
-            (λ (obj evt)
-              (let ([fr (get-frame obj)])
-                (and fr
-                     (is-a? fr drracket:unit:frame<%>)
-                     (< i (send fr get-tab-count))
-                     (begin (send fr change-to-nth-tab i)
-                            #t)))))])
+            (λ (fr)
+              (and fr
+                   (is-a? fr drracket:unit:frame<%>)
+                   (< i (send fr get-tab-count))
+                   (begin (send fr change-to-nth-tab i)
+                          #t))))])
     (for ([i (in-range 1 10)])
-      (send drs-bindings-keymap add-function (format "show-tab-~a" i) (show-tab (- i 1))))
-    (send drs-bindings-keymap add-function "search-help-desk"
-          (λ (obj evt)
-            (if (not (and (is-a? obj text%) (get-frame obj))) ; is `get-frame' needed?
-                (drracket:help-desk:help-desk)
-                (let* ([start (send obj get-start-position)]
-                       [end (send obj get-end-position)]
-                       [str (if (= start end)
-                                (drracket:unit:find-symbol obj start)
-                                (send obj get-text start end))])
-                  (if (or (not str) (equal? "" str))
-                      (drracket:help-desk:help-desk)
-                      (let* ([l (send obj get-canvas)]
-                             [l (and l (send l get-top-level-window))]
-                             [l (and l (is-a? l drracket:unit:frame<%>) (send l get-definitions-text))]
-                             [l (and l (send l get-next-settings))]
-                             [l (and l (drracket:language-configuration:language-settings-language l))]
-                             [ctxt (and l (send l capability-value 'drscheme:help-context-term))]
-                             [name (and l (send l get-language-name))])
-                        (drracket:help-desk:help-desk
-                         str (and ctxt (list ctxt name)))))))))
+      (add-drs-function (format "show-tab-~a" i) (show-tab (- i 1))))
+    (add-drs-function
+     "search-help-desk"
+     (λ (frame)
+       (define obj (send frame get-focus-object))
+       (cond
+         [(is-a? obj text%)
+          (define start (send obj get-start-position))
+          (define end (send obj get-end-position))
+          (define str (if (= start end)
+                          (drracket:unit:find-symbol obj start)
+                          (send obj get-text start end)))
+          (cond
+            [(or (not str) (equal? "" str))
+             (drracket:help-desk:help-desk)]
+            [else
+             (let* ([l (send obj get-canvas)]
+                    [l (and l (send l get-top-level-window))]
+                    [l (and l (is-a? l drracket:unit:frame<%>) (send l get-definitions-text))]
+                    [l (and l (send l get-next-settings))]
+                    [l (and l (drracket:language-configuration:language-settings-language l))]
+                    [ctxt (and l (send l capability-value 'drscheme:help-context-term))]
+                    [name (and l (send l get-language-name))])
+               (drracket:help-desk:help-desk
+                str (and ctxt (list ctxt name))))])]
+         [else
+          (drracket:help-desk:help-desk)])))
     
     ;; keep this in case people use it in their keymaps
     (add-drs-function "execute"  (λ (frame) (send frame execute-callback)))
