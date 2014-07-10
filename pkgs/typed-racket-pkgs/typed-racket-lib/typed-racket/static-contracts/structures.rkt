@@ -14,14 +14,14 @@
     (struct recursive-sc-use ([name identifier?]))
     (struct combinator ([args sequence?]))
     (struct static-contract ())
-    [sc-map (static-contract? (static-contract? variance/c . -> . static-contract?) . -> . static-contract?)]
+    [sc-map
+     (static-contract? (static-contract? variance/c . -> . static-contract?) . -> . static-contract?)]
     [sc-traverse (static-contract? (static-contract? variance/c . -> . any/c) . -> . void?)]
     [sc->contract (static-contract? (static-contract? . -> . syntax?) . -> . syntax?)]
-    [sc->constraints (static-contract? (static-contract? . -> . contract-restrict?) . -> . contract-restrict?)]
+    [sc->constraints
+     (static-contract? (static-contract? . -> . contract-restrict?) . -> . contract-restrict?)]
     [sc-terminal-kind (static-contract? . -> . (or/c #f contract-kind?))]
-    [sc? predicate/c]
-    )
-
+    [sc? predicate/c])
 
   prop:combinator-name
   gen:sc)

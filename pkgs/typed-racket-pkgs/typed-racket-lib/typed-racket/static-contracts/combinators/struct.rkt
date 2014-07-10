@@ -6,13 +6,19 @@
          racket/list racket/match
          unstable/contract
          racket/contract
-         (for-template racket/base racket/contract/base)
+         (for-template racket/base racket/contract/base "../../utils/struct-type-c.rkt")
          (for-syntax racket/base syntax/parse))
+
+
 
 (provide
   (contract-out
-    [struct/sc (identifier? boolean? (listof static-contract?) . -> . static-contract?)])
-  struct/sc:)
+    [struct/sc (identifier? boolean? (listof static-contract?) . -> . static-contract?)]
+    ;; #f as argument indicates StructTypeTop, which should fail on
+    ;; all reflective operations.
+    [struct-type/sc (any/c . -> . static-contract?)])
+  struct/sc:
+  struct-type/sc:)
 
 
 (struct struct-combinator combinator (name mut?)
@@ -47,3 +53,31 @@
   (syntax-parser
     [(_ name fields)
      #'(struct-combinator fields name _)]))
+
+;; FIXME: Currently ignores the structure type and fails on all
+;; reflective use.  
+(struct struct-type/sc combinator ()
+  #:transparent
+  #:property prop:combinator-name "struct-type/sc"
+  #:methods gen:sc
+    [(define (sc-map v f)
+       (match v
+         [(struct-type/sc args)
+          (struct-type/sc (map (λ (a) (f a 'covariant)) args))]))
+     (define (sc-traverse v f)
+       (match v
+         [(struct-type/sc args)
+          (for-each (λ (a) (f a 'covariant)) args)
+          (void)]))
+     (define (sc->contract v f)
+       (match v
+         [(struct-type/sc args)
+          #`(struct-type/c #f)]))
+     (define (sc->constraints v f)
+       (match v
+         [(struct-type/sc args) (simple-contract-restrict 'chaperone)]))])
+
+(define-match-expander struct-type/sc:
+  (syntax-parser
+    [(_ args)
+     #'(struct-type/sc args)]))

@@ -332,6 +332,7 @@
         [(Prompt-TagTop:) (only-untyped prompt-tag?/sc)]
         [(Continuation-Mark-KeyTop:) (only-untyped continuation-mark-key?/sc)]
         [(ClassTop:) (only-untyped class?/sc)]
+        [(StructTypeTop:) (struct-type/sc null)]
         ;; TODO Figure out how this should work
         ;[(StructTop: s) (struct-top/sc s)]
 
@@ -451,6 +452,11 @@
             (recursive-sc (list nm*) (list (struct/sc nm (ormap values mut?) fields))
                                 (recursive-sc-use nm*))]
            [else (flat/sc #`(flat-named-contract '#,(syntax-e pred?) (lambda (x) (#,pred? x))))])]
+        [(StructType: s)
+         (if (from-untyped? typed-side)
+             (fail #:reason (~a "cannot import structure types from"
+                                "untyped code"))
+             (struct-type/sc null))]
         [(Syntax: (Base: 'Symbol _ _ _)) identifier?/sc]
         [(Syntax: t)
          (syntax/sc (t->sc t))]

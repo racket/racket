@@ -10,7 +10,7 @@
  (submod "private/type-contract.rkt" predicates)
  "utils/utils.rkt"
  (for-syntax "utils/utils.rkt")
- "utils/any-wrap.rkt" unstable/contract racket/contract/parametric)
+ "utils/any-wrap.rkt" "utils/struct-type-c.rkt" unstable/contract racket/contract/parametric)
 
 (provide (rename-out [module-begin #%module-begin]
                      [top-interaction #%top-interaction])

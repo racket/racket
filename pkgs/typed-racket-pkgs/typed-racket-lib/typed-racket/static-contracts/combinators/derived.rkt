@@ -34,3 +34,5 @@
 (define continuation-mark-key?/sc (flat/sc #'continuation-mark-key?))
 
 (define class?/sc (flat/sc #'class?))
+
+(define struct-type?/sc (flat/sc #'struct-type?))
