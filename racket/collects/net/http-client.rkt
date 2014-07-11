@@ -299,7 +299,7 @@
                        #:close? #t))
 
 (define data-procedure/c
-  (-> (-> (or/c bytes? string?) any/c) any/c))
+  (-> (-> (or/c bytes? string?) void?) any))
 
 (provide
  data-procedure/c
