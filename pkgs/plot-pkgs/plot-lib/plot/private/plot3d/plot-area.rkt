@@ -923,6 +923,7 @@
     (define background-color '(255 255 255))
     
     (define font-size 11)
+    (define font-face #f)
     (define font-family 'roman)
     (define text-foreground '(0 0 0))
     
@@ -949,11 +950,18 @@
       (set! background-color (->brush-color color)))
     
     (define/public (put-font-size size) (set! font-size size))
+    (define/public (put-font-face face) (set! font-face face))
     (define/public (put-font-family family) (set! font-family family))
     
-    (define/public (put-font size family)
-      (put-font-size size)
-      (put-font-family family))
+    (define/public put-font
+      (case-lambda 
+        [(size family)
+         (put-font-size size)
+         (put-font-family family)]
+        [(size face family)
+         (put-font-size size)
+         (put-font-face face)
+         (put-font-family family)]))
     
     (define/public (put-text-foreground c)
       (set! text-foreground (->pen-color c)))
@@ -963,7 +971,7 @@
       (put-pen (plot-foreground) (plot-line-width) 'solid)
       (put-brush (plot-background) 'solid)
       (put-background (plot-background))
-      (put-font (plot-font-size) (plot-font-family))
+      (put-font (plot-font-size) (plot-font-face) (plot-font-family))
       (put-text-foreground (plot-foreground)))
     
     ;; Drawing shapes

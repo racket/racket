@@ -42,6 +42,7 @@ See @(racket ->pen-color) and @(racket ->brush-color) for details on how @(plot-
 @doc-apply[plot-foreground-alpha]
 @doc-apply[plot-background-alpha]{The opacity of the background and foreground colors.}
 @doc-apply[plot-font-size]{The font size of the title, axis labels, tick labels, and other labels, in drawing units.}
+@doc-apply[plot-font-face]{The font face used for the title and labels.}
 @doc-apply[plot-font-family]{The font family used for the title and labels.}
 @doc-apply[plot-line-width]{The width of axis lines and major tick lines. (Minor tick lines are half this width.)}
 
