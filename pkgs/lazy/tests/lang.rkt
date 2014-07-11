@@ -24,6 +24,14 @@
    (! (= 1.0 1)) => #t
    (! (equal? (list 1.0) (list 1.0))) => #t
    (! (letrec ([zs (cons 0 zs)]) (equal? (list zs zs) (list zs zs)))) => #t
+   (! (let-values ([(x) (values (error "a"))]) 1)) => 1
+   (! (let-values ([(x y) (values (error "a") (error "b"))]) 1)) => 1
+   (! (let*-values ([(x0 x1) (values (error "a") (error "b"))] [(y) (values x0)]) 1)) => 1
+   ;(! (letrec ([x y] [y 1]) x)) => 1  ;; <- this does not pass due to variable references not being delayed
+   (! (letrec ([x (list y)] [y 1]) (car x))) => 1
+   (! (letrec-values ([(x) (values (list y))] [(y) (values 1)]) (car x))) => 1
+   (! (letrec-values ([(x0 x1) (values (list y0) (list y1))] [(y0 y1) (values 1 2)])
+        (+ (car x0) (car x1)))) => 3
    ))
 
 (define (list-tests)

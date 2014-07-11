@@ -221,7 +221,7 @@
         x)))
 
   (define* ~values
-    (case-lambda [(x) x] [xs (multiple-values xs)]))
+    (lambda xs (multiple-values xs)))
 
   ;; Redefine multiple-value constructs so they split the results
   (defsubst (~define-values (v ...) body)
