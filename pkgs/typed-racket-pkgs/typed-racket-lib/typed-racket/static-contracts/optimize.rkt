@@ -55,7 +55,8 @@
      (match scs
       [(list) none/sc]
       [(list sc) sc]
-      [(? (λ (l) (member any/sc l))) any/sc]
+      [(? (λ (l) (member any/sc l)))
+       (if-first-order-passes/sc (apply or/sc (remove* (list any/sc) scs)))]
       [(? (λ (l) (member none/sc l)))
        (apply or/sc (remove* (list none/sc) scs))]
       [else sc])]
@@ -70,6 +71,8 @@
        (apply and/sc (remove* (list any/sc) scs))]
       [else sc])]
 
+    ;; if-first-order-passes/sc cases
+    [(if-first-order-passes/sc: (app sc-terminal-kind 'flat)) any/sc]
 
     ;; case->/sc cases
     [(case->/sc: arrs ...)
