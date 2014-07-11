@@ -155,7 +155,7 @@ response, which is why there is no @racket[#:closed?] argument like
 
 Contract for a procedure that accepts a procedure of one
 argument, which is a string or byte string:
-@racket[(-> (-> (or/c bytes? string?) any/c) any/c)].
+@racket[(-> (-> (or/c bytes? string?) void?) any)].
 
 }
 
