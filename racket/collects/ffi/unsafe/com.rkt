@@ -1447,13 +1447,16 @@
                 (define s (make-SYSTEMTIME 0 0 0 0 0 0 0 0))
                 (unless (not (zero? (VariantTimeToSystemTime d s)))
                   (error 'date "error converting date from COM date"))
-                (seconds->date
-                 (find-seconds (SYSTEMTIME-wSecond s)
-                               (SYSTEMTIME-wMinute s)
-                               (SYSTEMTIME-wHour s)
-                               (SYSTEMTIME-wDay s)
-                               (SYSTEMTIME-wMonth s)
-                               (SYSTEMTIME-wYear s))))))
+                (date (SYSTEMTIME-wSecond s)
+                      (SYSTEMTIME-wMinute s)
+                      (SYSTEMTIME-wHour s)
+                      (SYSTEMTIME-wDay s)
+                      (SYSTEMTIME-wMonth s)
+                      (SYSTEMTIME-wYear s)
+                      (SYSTEMTIME-wDayOfWeek s)
+                      0
+                      #f
+                      0))))
 
 (define _currency
   (make-ctype _CY
