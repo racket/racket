@@ -463,7 +463,10 @@
     
     (define/public (put-font-size size) (send pd set-font-size size))
     (define/public (put-font-family family) (send pd set-font-family family))
-    (define/public (put-font size family) (send pd set-font size family))
+    (define/public put-font
+      (case-lambda 
+        [(size family) (send pd set-font size #f family)]
+        [(size face family) (send pd set-font size face family)]))
     (define/public (put-text-foreground color) (send pd set-text-foreground color))
     
     (define/public (reset-drawing-params)
@@ -471,7 +474,7 @@
       (put-pen (plot-foreground) (plot-line-width) 'solid)
       (put-brush (plot-background) 'solid)
       (put-background (plot-background))
-      (put-font (plot-font-size) (plot-font-family))
+      (put-font (plot-font-size) (plot-font-face) (plot-font-family))
       (put-text-foreground (plot-foreground)))
     
     ;; Shapes

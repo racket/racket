@@ -21,7 +21,7 @@
   plot-foreground plot-foreground-alpha
   plot-background plot-background-alpha
   plot-line-width plot-tick-size
-  plot-font-size plot-font-family
+  plot-font-size plot-font-face plot-font-family
   plot-legend-anchor plot-legend-box-alpha
   plot-decorations?
   plot-animating?
