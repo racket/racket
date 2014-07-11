@@ -1066,12 +1066,8 @@ void scheme_really_create_overflow(void *stack_base)
           p->values_buffer = NULL;
       } else if (reply == SCHEME_TAIL_CALL_WAITING) {
         p = scheme_current_thread;
-        if (p->ku.apply.tail_rands == p->tail_buffer) {
-          GC_CAN_IGNORE Scheme_Object **tb;
-          p->tail_buffer = NULL; /* so args aren't zeroed */
-          tb = MALLOC_N(Scheme_Object *, p->tail_buffer_size);
-          p->tail_buffer = tb;
-        }
+        if (p->ku.apply.tail_rands == p->tail_buffer)
+          scheme_realloc_tail_buffer(p);
       }
     }
 
@@ -1366,12 +1362,8 @@ force_values(Scheme_Object *obj, int multi_ok)
     GC_CAN_IGNORE Scheme_Object **rands;
       
     /* Watch out for use of tail buffer: */
-    if (p->ku.apply.tail_rands == p->tail_buffer) {
-      GC_CAN_IGNORE Scheme_Object **tb;
-      p->tail_buffer = NULL; /* so args aren't zeroed */
-      tb = MALLOC_N(Scheme_Object *, p->tail_buffer_size);
-      p->tail_buffer = tb;
-    }
+    if (p->ku.apply.tail_rands == p->tail_buffer)
+      scheme_realloc_tail_buffer(p);
 
     rator = p->ku.apply.tail_rator;
     rands = p->ku.apply.tail_rands;
@@ -1620,12 +1612,11 @@ scheme_tail_apply (Scheme_Object *rator, int num_rands, Scheme_Object **rands)
   if (num_rands) {
     Scheme_Object **a;
     if (num_rands > p->tail_buffer_size) {
-      Scheme_Object **tb;
-      tb = MALLOC_N(Scheme_Object *, num_rands);
-      p->tail_buffer = tb;
+      a = MALLOC_N(Scheme_Object *, num_rands);
+      p->tail_buffer = a;
       p->tail_buffer_size = num_rands;
-    }
-    a = p->tail_buffer;
+    } else
+      a = p->tail_buffer;
     p->ku.apply.tail_rands = a;
     for (i = num_rands; i--; ) {
       a[i] = rands[i];

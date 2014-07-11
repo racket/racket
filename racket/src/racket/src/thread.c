@@ -2505,7 +2505,21 @@ Scheme_Thread *scheme_make_thread(void *stack_base)
   return make_thread(NULL, NULL, NULL, NULL, stack_base);
 }
 
-static void scheme_check_tail_buffer_size(Scheme_Thread *p)
+void scheme_realloc_tail_buffer(Scheme_Thread *p)
+{
+  GC_CAN_IGNORE Scheme_Object **tb;
+
+  p->tail_buffer = NULL; /* so args aren't zeroed */
+
+  /* Decay cached size back toward the initial size: */
+  if (p->tail_buffer_size > (buffer_init_size << 1))
+    p->tail_buffer_size = p->tail_buffer_size >> 1;
+
+  tb = MALLOC_N(Scheme_Object *, p->tail_buffer_size);
+  p->tail_buffer = tb;
+}
+
+static void check_tail_buffer_size(Scheme_Thread *p)
 {
   if (p->tail_buffer_size < buffer_init_size) {
     Scheme_Object **tb;
@@ -2523,7 +2537,7 @@ void scheme_set_tail_buffer_size(int s)
     buffer_init_size = s;
 
     for (p = scheme_first_thread; p; p = p->next) {
-      scheme_check_tail_buffer_size(p);
+      check_tail_buffer_size(p);
     }
   }
 }
@@ -5412,7 +5426,7 @@ void scheme_weak_resume_thread(Scheme_Thread *r)
       r->next->prev = r;
       r->ran_some = 1;
       schedule_in_set((Scheme_Object *)r, r->t_set_parent);
-      scheme_check_tail_buffer_size(r);
+      check_tail_buffer_size(r);
     }
   }
 }

@@ -1351,12 +1351,7 @@ static void unbound_global(Scheme_Object *obj)
 
 static void make_tail_buffer_safe()
 {
-  Scheme_Thread *p = scheme_current_thread;
-
-  GC_CAN_IGNORE Scheme_Object **tb;
-  p->tail_buffer = NULL; /* so args aren't zeroed */
-  tb = MALLOC_N(Scheme_Object *, p->tail_buffer_size);
-  p->tail_buffer = tb;
+  scheme_realloc_tail_buffer(scheme_current_thread);
 }
 
 static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, Scheme_Object **runstack)

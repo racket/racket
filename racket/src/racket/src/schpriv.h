@@ -665,6 +665,8 @@ void scheme_clear_thread_sync(Scheme_Thread *p);
 
 void scheme_zero_unneeded_rands(Scheme_Thread *p);
 
+void scheme_realloc_tail_buffer(Scheme_Thread *p);
+
 int scheme_can_break(Scheme_Thread *p);
 void scheme_thread_wait(Scheme_Object *thread);
 
