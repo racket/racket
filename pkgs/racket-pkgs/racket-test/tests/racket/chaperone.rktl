@@ -199,6 +199,14 @@
     (test #f vector-ref b 0)
     (test #f vector-ref b2 0)))
 
+;; check interaction of chaperones and vector->values:
+(let ([b (vector 1 2 3)])
+  (let ([b2 (impersonate-vector b
+                                (lambda (b i v) (collect-garbage) v)
+                                (lambda (b i v) #f))])
+    (define-values (a b c) (vector->values b2))
+    (test '(1 2 3) list a b c)))
+
 ;; ----------------------------------------
 
 (test #t chaperone?/impersonator (chaperone-procedure (lambda (x) x) (lambda (y) y)))
