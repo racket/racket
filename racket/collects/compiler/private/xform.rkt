@@ -992,7 +992,13 @@
                            (apply + (map get-variable-size
                                          (map cdr (cdr m)))))])
                (if (struct-array-type? vtype)
-                   (* size (struct-array-type-count vtype))
+                   (* size
+                      (let ([c (struct-array-type-count vtype)])
+                        (cond
+                         [(eq? c 'unknown)
+                          (log-error "[STRUCT ARRAY]: Can't get size of unknown-sized array")
+                          1]
+                         [else c])))
                    size))]
             [(vtype? vtype) 1]
             [else (error 'get-variable-size "not a vtype: ~e"
@@ -1130,7 +1136,10 @@
                          (printf "~aPUSHUNION(~a, ~a~a)" comma full-name n plus)
                          (add1 n)]
                         [(array-type? vtype)
-                         (printf "~aPUSHARRAY(~a, ~a, ~a~a)" comma full-name (array-type-count vtype) n plus)
+                         (define c (array-type-count vtype))
+                         (when (eq? c 'unknown)
+                           (log-error "[ARRAY]: Can't push unknown array size onto mark stack: ~a." full-name))
+                         (printf "~aPUSHARRAY(~a, ~a, ~a~a)" comma full-name (if (eq? c 'unknown) 0 c) n plus)
                          (+ 3 n)]
                         [(struc-type? vtype)
                          (let aloop ([array-index 0][n n][comma comma])
@@ -1138,7 +1147,14 @@
                            (let loop ([n n][l (cdr (lookup-struct-def (struc-type-struct vtype)))][comma comma])
                              (if (null? l)
                                  (if (and (struct-array-type? vtype)
-                                          (< (add1 array-index) (struct-array-type-count vtype)))
+                                          (< (add1 array-index)
+                                             (let ([c (struct-array-type-count vtype)])
+                                               (cond
+                                                [(eq? c 'unknown)
+                                                 (log-error "[STRUCT ARRAY]: Can't push with unknown array size: ~a."
+                                                            full-name)
+                                                 1]
+                                                [else c]))))
                                      ;; Next in array
                                      (aloop (add1 array-index) n comma)
                                      ;; All done
@@ -1965,11 +1981,14 @@
                                 ;; Array decl:
                                 (loop (sub1 l)
                                       (let ([inner (seq->list (seq-in (list-ref e l)))])
-                                        (if (null? inner)
-                                            (if empty-array-is-ptr?
-                                                'pointer
-                                                0)
-                                            (tok-n (car inner))))
+                                        (cond
+                                         [(null? inner)
+                                          (if empty-array-is-ptr?
+                                              'pointer
+                                              0)]
+                                         [(= 1 (length inner))
+                                          (tok-n (car inner))]
+                                         [else 'unknown]))
                                       pointers non-pointers)]
                                [(braces? v) 
                                 ;; No more variable declarations
@@ -2002,13 +2021,14 @@
                                                           (union-type? (cdr base-is-ptr?))))]
                                          [struct-array? (or (and base-struct (not pointer?) (number? array-size))
                                                             (and base-is-ptr? (struct-array-type? (cdr base-is-ptr?))))]
-                                         [array-size (if (number? array-size)
+                                         [array-size (if (or (number? array-size) (eq? array-size 'unknown))
                                                          array-size
                                                          (and struct-array?
                                                               (struct-array-type-count (cdr base-is-ptr?))))])
                                     (when (and struct-array?
                                                (not union-ok?)
-                                               (> array-size 16))
+                                               (and (number? array-size)
+                                                    (> array-size 16)))
                                       (log-error "[SIZE] ~a in ~a: Large array of structures at ~a."
                                                  (tok-line v) (tok-file v) name))
                                     (when (and (not union-ok?)
@@ -2042,7 +2062,7 @@
                                                     (cond
                                                       [struct-array?
                                                        (format "struct ~a[~a] " base-struct array-size)]
-                                                      [(number? array-size)
+                                                      [(or (number? array-size) (eq? array-size 'unknown))
                                                        (format "[~a] " array-size)]
                                                       [(and base-struct (not pointer?))
                                                        (format "struct ~a " base-struct)]
@@ -2055,7 +2075,7 @@
                                                             (cond
                                                               [struct-array?
                                                                (make-struct-array-type base-struct array-size)]
-                                                              [(number? array-size)
+                                                              [(or (number? array-size) (eq? array-size 'unknown))
                                                                (make-array-type array-size)]
                                                               [pointer? (make-pointer-type (or (and base (list base))
                                                                                                non-ptr-base)
@@ -2970,7 +2990,9 @@
                                                 null]
                                                [(array-type? vtype)
                                                 (let ([c (array-type-count vtype)])
-                                                  (if (<= c 3)
+                                                  (when (eq? c 'unknown)
+                                                    (log-error "[ARRAY]: Can't initialize array of unknown: ~a." full-name))
+                                                  (if (and (number? c) (<= c 3))
                                                       (let loop ([n 0])
                                                         (if (= n c)
                                                             null
@@ -2989,7 +3011,14 @@
                                                   (let loop ([l (cdr (lookup-struct-def (struc-type-struct vtype)))])
                                                     (if (null? l)
                                                         (if (and (struct-array-type? vtype)
-                                                                 (< (add1 array-index) (struct-array-type-count vtype)))
+                                                                 (< (add1 array-index)
+                                                                    (let ([c (struct-array-type-count vtype)])
+                                                                      (cond
+                                                                       [(eq? c 'unknown)
+                                                                        (log-error "[STRUCT ARRAY]: Can't initialize with unknown array size: ~a."
+                                                                                   full-name)
+                                                                        1]
+                                                                       [else c]))))
                                                             ;; Next in array
                                                             (aloop (add1 array-index))
                                                             ;; All done
