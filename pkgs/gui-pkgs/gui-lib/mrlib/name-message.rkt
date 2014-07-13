@@ -88,7 +88,7 @@
       (set! paths (if (and file-name? 
                            path-name 
                            (file-exists? path-name))
-                      (map path->string (explode-path (normalize-path path-name)))
+                      (map path->string (explode-path (simple-form-path path-name)))
                       #f))
       (let ([new-label (cond
                          [(and paths (not (null? paths))) (last paths)]
