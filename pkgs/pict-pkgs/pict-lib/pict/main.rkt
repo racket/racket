@@ -2,15 +2,34 @@
 (require "private/main.rkt"
          racket/contract
          racket/class
-         racket/draw)
+         racket/draw
+         racket/bool)
 (provide 
  (except-out (all-from-out "private/main.rkt")
              pict->bitmap
              pict->argb-pixels
              argb-pixels->pict
              colorize
-             pin-under pin-over disk)
+             pin-under pin-over disk
+             vl-append
+             vc-append
+             vr-append
+             ht-append
+             hc-append
+             hb-append
+             htl-append
+             hbl-append)
  (contract-out
+  
+  [vl-append *-append/c]
+  [vc-append *-append/c]
+  [vr-append *-append/c]
+  [ht-append *-append/c]
+  [hc-append *-append/c]
+  [hb-append *-append/c]
+  [htl-append *-append/c]
+  [hbl-append *-append/c]
+  
   [colorize (-> pict? 
                 (or/c string? 
                       (is-a?/c color%)
@@ -45,6 +64,12 @@
          [pict pict?])
         [result pict?])]
   [disk (->* ((and/c rational? (not/c negative?))) (#:draw-border? any/c) pict?)]))
+
+(define *-append/c
+  (->i ([r/p (or/c real? pict?)])
+       #:rest [more (listof pict?)]
+       #:pre (r/p more) (implies (null? more) (pict? r/p))
+       [result pict?]))
 
 (define (multiple-of-four-bytes? b)
   (zero? (modulo (bytes-length b) 4)))
