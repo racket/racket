@@ -18,9 +18,10 @@
              hc-append
              hb-append
              htl-append
-             hbl-append)
+             hbl-append
+             cellophane)
  (contract-out
-  
+  [cellophane (-> pict? (real-in 0 1) pict?)]
   [vl-append *-append/c]
   [vc-append *-append/c]
   [vr-append *-append/c]
