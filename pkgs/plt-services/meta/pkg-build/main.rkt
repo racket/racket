@@ -188,6 +188,13 @@
          ;; Catalogs of packages to build (via an archive):
          #:pkg-catalogs [pkg-catalogs (list "http://pkgs.racket-lang.org/")]
 
+         ;; Extra packages to install within an installation so that
+         ;; they're treated like packages included in the installer;
+         ;; these should be built packages (normally from the snapshot
+         ;; site), or else the generated build packages will not work
+         ;; right (especially when using multiple VMs):
+         #:extra-packages [extra-packages null]
+
          ;; Steps that you want to include; you can skip steps
          ;; at the beginning if you know they're already done, and
          ;; you can skip tests at the end if you don't want them:
@@ -317,8 +324,23 @@
     (parameterize ([current-pkg-catalogs (list (path->url (build-path archive-dir "catalog")))])
       (get-all-pkg-details-from-catalogs)))
 
+  ;; ----------------------------------------
+  (status "Starting server at locahost:~a for ~a\n" server-port archive-dir)
+
+  (define server
+    (thread
+     (lambda ()
+       (serve/servlet
+        (lambda args #f)
+        #:command-line? #t
+        #:listen-ip "localhost"
+        #:extra-files-paths (list server-dir)
+        #:servlet-regexp #rx"$." ; never match
+        #:port server-port))))
+  (sync (system-idle-evt))
+
+  ;; ----------------------------------------
   (define (install vm #:one-time? [one-time? #f])
-    ;; ----------------------------------------
     (status "Starting VM ~a\n" (vm-name vm))
     (stop-vbox-vm (vm-name vm))
     (restore-vbox-snapshot (vm-name vm) (vm-init-snapshot vm))
@@ -347,14 +369,6 @@
        (scp vm pkg-adds-rkt (at-vm vm (~a there-dir "/pkg-adds.rkt")))
        (scp vm pkg-list-rkt (at-vm vm (~a there-dir "/pkg-list.rkt")))
 
-       (when one-time?
-         ;; ----------------------------------------
-         (status "Getting installed packages\n")
-         (ssh vm (cd-racket vm)
-              " && bin/racket ../pkg-list.rkt > ../pkg-list.rktd")
-         (scp vm (at-vm vm (~a there-dir "/pkg-list.rktd"))
-              (build-path work-dir "install-list.rktd")))
-
        ;; ----------------------------------------
        (status "Setting catalogs at ~a\n" (vm-name vm))
        (ssh vm (cd-racket vm)
@@ -362,7 +376,21 @@
             " http://localhost:" server-port "/built/catalog/"
             " http://localhost:" server-port "/archive/catalog/")
 
+       ;; ----------------------------------------
+       (unless (null? extra-packages)
+         (status "Extra package installs at ~a\n" (vm-name vm))
+         (ssh vm (cd-racket vm)
+              " && bin/raco pkg install -i --auto"
+              " " (apply ~a #:separator " " extra-packages)))
+
        (when one-time?
+         ;; ----------------------------------------
+         (status "Getting installed packages\n")
+         (ssh vm (cd-racket vm)
+              " && bin/racket ../pkg-list.rkt > ../pkg-list.rktd")
+         (scp vm (at-vm vm (~a there-dir "/pkg-list.rktd"))
+              (build-path work-dir "install-list.rktd"))
+
          ;; ----------------------------------------
          (status "Stashing installation docs\n")
          (ssh vm (cd-racket vm)
@@ -582,21 +610,6 @@
   (update-built-catalog (set->list (set-subtract
                                     (set-subtract try-pkgs need-pkgs)
                                     failed-pkgs)))
-
-  ;; ----------------------------------------
-  (status "Starting server at locahost:~a for ~a\n" server-port archive-dir)
-  
-  (define server
-    (thread
-     (lambda ()
-       (serve/servlet
-        (lambda args #f)
-        #:command-line? #t
-        #:listen-ip "localhost"
-        #:extra-files-paths (list server-dir)
-        #:servlet-regexp #rx"$." ; never match
-        #:port server-port))))
-  (sync (system-idle-evt))
 
   ;; ----------------------------------------
   (make-directory* (build-path built-dir "adds"))
