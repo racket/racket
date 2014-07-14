@@ -209,7 +209,7 @@ racket
 (define (process f)
   (define (complex-step x)
     ... 10 lines ...)
-  (map complext-step
+  (map complex-step
        (to-list f)))
 ]
 @; -----------------------------------------------------------------------------
