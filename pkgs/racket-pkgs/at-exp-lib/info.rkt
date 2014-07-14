@@ -6,3 +6,5 @@
 (define pkg-desc "Libraries for @-expressions")
 
 (define pkg-authors '(eli mflatt))
+
+(define version "1.1")

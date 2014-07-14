@@ -6,11 +6,10 @@
                        [at-read-syntax read-syntax]
                        [at-get-info get-info]))
 
-  (define at-readtable (make-at-readtable))
-
   (define (wrap-reader p)
     (lambda args
-      (parameterize ([current-readtable at-readtable])
+      (parameterize ([current-readtable (make-at-readtable #:datum-readtable 'dynamic
+                                                           #:command-readtable 'dynamic)])
         (apply p args))))
 
   (define-values (at-read at-read-syntax at-get-info)
