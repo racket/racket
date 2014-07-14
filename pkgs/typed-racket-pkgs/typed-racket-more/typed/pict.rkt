@@ -77,7 +77,7 @@
                #:segment (-opt -Real) #f
                ;; FIXME: add color% with class support
                #:color (-opt -String) #f
-               #:width (-opt -Real) #f
+               #:line-width (-opt -Real) #f
                -pict)]
  [ellipse (-> -Real -Real -pict)]
  [circle (-> -Real -pict)]
