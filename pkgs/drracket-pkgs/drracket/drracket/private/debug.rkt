@@ -1002,7 +1002,8 @@ profile todo:
                            (values #f void)))]
                     [(is-a? file editor<%>)
                      (values file void)]
-                    [else (error 'insert-context "unknown file spec ~e" file)])])
+                    [else 
+                     (values #f void)])])
       (when from-text
         (let* ([finish (+ start span -1)]
                [context-text (copy/highlight-text from-text start finish)])
