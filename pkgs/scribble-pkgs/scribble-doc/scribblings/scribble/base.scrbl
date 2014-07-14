@@ -419,7 +419,16 @@ Wraps the @tech{decode}d @racket[pre-content] as an element with style
 
 @def-style-proc[italic]
 @def-style-proc[bold]
-@def-style-proc[tt]
+
+@defproc[(tt [pre-content pre-content?] ...) element?]{
+
+Similar to @racket[elem], but the @racket['tt] style is used for
+immediate strings and symbols among the @racket[pre-content]
+arguments.
+
+To apply the @racket['tt] style uniformly to all @racket[pre-content]
+arguments, use @racket[(elem #:style 'tt pre-content ...)], instead.}
+
 @def-style-proc[subscript]
 @def-style-proc[superscript]
 

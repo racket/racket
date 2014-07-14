@@ -29,7 +29,7 @@
 (define-syntax-rule (provide-styling id ...)
   (provide/contract [id styling-f/c] ...))
 (provide-styling racketmodfont racketoutput
-                 racketerror racketfont racketvalfont racketidfont racketvarfont
+                 racketerror racketfont racketplainfont racketvalfont racketidfont racketvarfont
                  racketcommentfont racketparenfont racketkeywordfont racketmetafont
                  onscreen defterm filepath exec envvar Flag DFlag PFlag DPFlag math
                  procedure
@@ -91,6 +91,8 @@
     (make-element 'italic c)))
 (define (racketfont . str)
   (apply tt str))
+(define (racketplainfont . str)
+  (make-element 'tt (decode-content str)))
 (define (racketvalfont . str)
   (make-element value-color (decode-content str)))
 (define (racketresultfont #:decode? [decode? #t] . str)
