@@ -931,6 +931,16 @@
   (define doc-pkg-list
     (sort (set->list doc-pkgs) string<?))
 
+  (define install-adds-pkgs
+    (call-with-input-file*
+     (build-path work-dir "install-adds.rktd")
+     read))
+  (define install-doc-pkgs
+    (for/set ([(k l) (in-hash install-adds-pkgs)]
+              #:when (for/or ([v (in-list l)])
+                       (eq? (car v) 'doc)))
+      k))
+
   (substatus "Packages with documentation:\n")
   (show-list doc-pkg-list)
   
@@ -1025,11 +1035,20 @@
        (stop-vbox-vm (vm-name vm) #:save-state? #f)))
     (untgz "all-doc.tgz")
 
-    ;; Add documentation for conflicting packages, and add links for
-    ;; each package:
+    ;; Clear links:
     (for ([f (in-list (directory-list doc-dir #:build? #t))])
       (when (regexp-match? #rx"@" f)
         (delete-directory/files f)))
+
+    ;; For completeness, add links for installer's docs:
+    (for ([pkg (in-set install-doc-pkgs)])
+      (for ([a (in-list (hash-ref install-adds-pkgs pkg))]
+            #:when (eq? 'doc (car a)))
+        (define doc (cdr a))
+        (make-file-or-directory-link doc (build-path doc-dir (~a doc "@" pkg)))))
+
+    ;; Add documentation for conflicting packages, and add links for
+    ;; each package:
     (for ([pkg (in-set doc-pkgs)])
       (define docs (for/list ([a (in-list (hash-ref adds-pkgs pkg))]
                               #:when (eq? 'doc (car a)))
@@ -1045,6 +1064,7 @@
         (with-handlers ([exn:fail? (lambda (exn)
                                      (eprintf "~a\n" (exn-message)))])
           (extract-documentation (pkg-zip-file pkg) pkg doc-dir))]))
+
     ;; Add salvageable docs from the dumpster, and fall back as a last resort
     ;; to documention in "prev-doc":
     (for ([pkg (in-set try-pkgs)])
@@ -1070,7 +1090,15 @@
               (copy-directory/files (build-path prev-doc-dir f)
                                     (build-path doc-dir f)))))))
 
-    (delete-directory/files prev-doc-dir #:must-exist? #f))
+    ;; The "docs" directory now have everything that we want to keep from
+    ;; "prev-docs". To make the delete effectively atomic, move and then
+    ;; delete.
+    (when (directory-exists? prev-doc-dir)
+      (define old-prev-doc-dir (build-path work-dir "old-prev-doc"))
+      (when (directory-exists? old-prev-doc-dir)
+        (delete-directory/files old-prev-doc-dir))
+      (rename-file-or-directory prev-doc-dir old-prev-doc-dir)
+      (delete-directory/files old-prev-doc-dir)))
   
   ;; ----------------------------------------
 
@@ -1138,11 +1166,21 @@
                                        "conflicts"
                                        (conflicts/indirect "conflicts")))))))
 
+    ;; Add info for docs in the installer:
+    (define full-summary-ht
+      (for/fold ([ht summary-ht]) ([pkg (in-set install-doc-pkgs)])
+        (define docs (for/list ([a (in-list (hash-ref install-adds-pkgs pkg))]
+                                #:when (eq? 'doc (car a)))
+                       (define doc (cdr a))
+                       (define path (~a "doc/" (~a doc "@" pkg) "/index.html"))
+                       (doc/main doc path)))
+        (hash-set ht pkg (hash 'docs docs))))
+
     (call-with-output-file*
      (build-path work-dir "summary.rktd")
      #:exists 'truncate/replace
      (lambda (o)
-       (write summary-ht o)
+       (write full-summary-ht o)
        (newline o)))
 
     (summary-page summary-ht work-dir))
