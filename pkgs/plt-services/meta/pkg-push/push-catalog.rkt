@@ -15,11 +15,11 @@
 ;; Versions to map to the empty source:
 (define compatibility-versions '("5.3.4" "5.3.5" "5.3.6"))
 
-(define-values (src-dir s3-hostname bucket dest-catalog)
+(define-values (src-dir s3-hostname bucket src-catalog dest-catalog)
   (command-line
    #:args
-   (src-dir s3-hostname bucket dest-catalog)
-   (values src-dir s3-hostname bucket dest-catalog)))
+   (src-dir s3-hostname bucket src-catalog dest-catalog)
+   (values src-dir s3-hostname bucket src-catalog dest-catalog)))
 
 (ensure-have-keys)
 (s3-host s3-hostname)
@@ -29,9 +29,9 @@
    (build-path (find-system-path 'home-dir) ".pkg-catalog-login")
    (lambda (i) (values (read i) (read i)))))
 
-(printf "Getting current packages at ~a...\n" dest-catalog)
+(printf "Getting current packages at ~a...\n" src-catalog)
 (define current-pkgs
-  (parameterize ([current-pkg-catalogs (list (string->url dest-catalog))])
+  (parameterize ([current-pkg-catalogs (list (string->url src-catalog))])
     (get-all-pkg-details-from-catalogs)))
 (printf "... got it.\n")
 
@@ -107,7 +107,7 @@
                          #hash((x-amz-storage-class . "REDUCED_REDUNDANCY")
                                (x-amz-acl . "public-read"))))
     (unless (member (extract-http-code s) '(200))
-      (printf "put failed for ~s: ~s\n" p s)))
+      (error 'sync-one "put failed for ~s: ~s" p s)))
 
   (unless (set-member? old-content (at-checksum now))
     (put (at-bucket&checksum now)
@@ -125,7 +125,7 @@
 
   (define s (delete p))
   (unless (member (extract-http-code s) '(200 204))
-    (printf "delete failed for ~s: ~s\n" p s)))
+    (error 'purge-one "delete failed for ~s: ~s" p s)))
 
 ;; Update the package catalog:
 (define (update-catalog the-email the-password the-post)
@@ -202,12 +202,12 @@
                        (add-tag v "main-tests")]
                       [else v])))))])
   (unless (zero? (hash-count changed-pkgs))
-    (printf "Updating catalog:\n")
+    (printf "Updating catalog at ~a:\n" dest-catalog)
     (for ([k (in-hash-keys changed-pkgs)])
       (printf "  ~a\n" k))
     (define r (update-catalog catalog-email catalog-password changed-pkgs))
     (unless (equal? r #t)
-      (printf "unexpected result from catalog update: ~s\n" r))))
+      (error 'update "unexpected result from catalog update: ~s" r))))
 (printf "Catalog updated\n")
 
 ;; Look for files that can be discarded:

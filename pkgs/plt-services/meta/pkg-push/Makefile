@@ -18,8 +18,9 @@ PLT_TOP = ../../../..
 S3_HOST = s3-us-west-2.amazonaws.com
 BUCKET = racket-packages
 
-# The catalog server to update:
-DEST_CATALOG = https://localhost:9004
+# The catalog server to read and update:
+SRC_CATALOG = https://localhost:9004
+DEST_CATALOG = $(SRC_CATALOG)
 
 # ------------------------------------------------------------
 # Targets
@@ -48,7 +49,7 @@ archive-catalog:
 	$(RACKET) $(PLT_TOP)/racket/src/pack-all.rkt $(PACK_ARCHIVE) $(PLT_TOP)/build/latest/pkgs
 
 # Copy files from "build/archive" to $(BUCKET), and update
-# $(DEST_CATALOG):
-AWS_AND_CATALOG = $(S3_HOST) $(BUCKET) $(DEST_CATALOG)
+# $(DEST_CATALOG) relative to $(SRC_CATALOG):
+AWS_AND_CATALOG = $(S3_HOST) $(BUCKET) $(SRC_CATALOG) $(DEST_CATALOG)
 push-catalog:
 	$(RACKET) push-catalog.rkt $(PLT_TOP)/build/archive $(AWS_AND_CATALOG)
