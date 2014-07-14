@@ -951,8 +951,8 @@
                      [(#\<) (if (rendering-tt) "{\\Stttextless}" "$<$")]
                      [(#\|) (if (rendering-tt) "{\\Stttextbar}" "$|$")]
                      [(#\-) "{-}"] ;; avoid en- or em-dash
-                     [(#\`) "{`}"] ;; avoid double-quotes
-                     [(#\') "{'}"] ;; avoid double-quotes
+                     [(#\`) "{\\textasciigrave}"]
+                     [(#\') "{\\textquotesingle}"]
                      [(#\? #\! #\. #\:)
                       (if (rendering-tt) (format "{\\hbox{\\texttt{~a}}}" c) c)]
                      [(#\~) "$\\sim$"]
