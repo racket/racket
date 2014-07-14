@@ -843,6 +843,7 @@
     (define done?-box (box #f))
     (define t (thread/chunk-output
                (lambda ()
+                 (break-enabled #t)
                  (status "Sending to ~a:\n" (vm-name vm))
                  (show-list pkgs)
                  (flush-chunk-output)
