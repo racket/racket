@@ -90,6 +90,31 @@
       [args
        (make-union* (remove-dups (sort (append-map flat args) type<?)))])))
 
+;; Bottom-Result? : Any -> Boolean
+;; Determine if a Result is at the bottom of the lattice.
+(define (Bottom-Result? r)
+  (match r
+    [(Result: t f _)
+     (or (equal? t -Bottom)
+         (filter-equal? f -bot-filter))]
+    [_ #f]))
+
+;; simple-Values : (Listof Result) -> Values
+;; Canonicalize a multiple-values container so that 
+;; (values ... ⊥ ...) is always represented as (values ⊥)
+(define (simple-Values rs)
+  (if (ormap Bottom-Result? rs)
+      -BotValues
+      (make-Values rs)))
+
+;; simple-ValuesDots : (Listof Result) Type/c (U Symbol Natural) -> (U BotValues ValuesDots)
+;; Canonicalize dotted multiple-values container so that
+;; (valuesdots (list ... ⊥ ...) T d) = (values ⊥)
+(define (simple-ValuesDots rs dty dbound)
+  (if (ormap Bottom-Result? rs)
+      -BotValues
+      (make-ValuesDots rs dty dbound)))
+
 ;; Recursive types
 (define-syntax -v
   (syntax-rules ()
@@ -173,6 +198,10 @@
 ;; return type of functions
 (define (-AnyValues f) (make-AnyValues f))
 (define/decl ManyUniv (make-AnyValues -top))
+(define/decl -BotValues (make-Values (list (make-Result -Bottom -bot-filter -empty-obj))))
+(define-match-expander BotValues:
+  (λ (stx) (syntax-case stx ()
+             [(_) #'(Values: (list (? Bottom-Result?)))])))
 
 ;; Function types
 (define/cond-contract (make-arr* dom rng
@@ -186,7 +215,7 @@
           #:object Object?)
          arr?)
   (make-arr dom (if (Type/c? rng)
-                    (make-Values (list (-result rng filters obj)))
+                    (simple-Values (list (-result rng filters obj)))
                     rng)
             rest drest (sort #:key Keyword-kw kws keyword<?)))
 

@@ -233,7 +233,7 @@
           (make-Function
            (list (make-arr
                   dom
-                  (make-Values
+                  (simple-Values
                    (list (-result tp
                                   (-FS (-and -true-filter new-filters)
                                        (-and -false-filter new-filters))

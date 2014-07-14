@@ -75,14 +75,14 @@
   (c:-> (c:listof Type/c) (c:or/c Type/c Values?))
   (match args
     ;[(list t) t]
-    [_ (make-Values (for/list ([i (in-list args)]) (-result i)))]))
+    [_ (simple-Values (for/list ([i (in-list args)]) (-result i)))]))
 
 ;; Convenient constructor for ValuesDots
 ;; (wraps arg types with Result)
 (define/cond-contract (-values-dots args dty dbound)
   (c:-> (c:listof Type/c) Type/c (c:or/c symbol? c:natural-number/c)
         ValuesDots?)
-  (make-ValuesDots (for/list ([i (in-list args)]) (-result i))
+  (simple-ValuesDots (for/list ([i (in-list args)]) (-result i))
                    dty dbound))
 
 ;; Basic types
