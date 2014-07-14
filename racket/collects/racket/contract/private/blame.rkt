@@ -320,6 +320,7 @@
    from-line
    on-line
    blaming-line
+   "   (assuming the contract is correct)"
    at-line))
 
 ;; combine-lines : (->* #:rest (listof (or/c string? #f))) string?)
