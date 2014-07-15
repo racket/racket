@@ -3258,7 +3258,7 @@
           (set-union
            omits
            (for/set ([i (in-list (append omit-paths omit-files))])
-             (simplify-path (path->complete-path i f)))))
+             (simplify-path (build-path f i)))))
         (for/fold ([s new-s]) ([f (directory-list f #:build? #t)])
           (loop s f #f new-omits))])]
      [else s])))
