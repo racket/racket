@@ -3615,17 +3615,27 @@ static Scheme_Object *chaperone_evt(int argc, Scheme_Object *argv[])
   return scheme_do_chaperone_evt("chaperone-evt", 0, argc, argv);
 }
 
-static int chaperone_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
+static int chaperone_evt_is_ready(Scheme_Object *obj, Scheme_Schedule_Info *sinfo)
 {
+  Scheme_Object *o = obj;
   Scheme_Chaperone *px;
+  int redirected = 0;
 
   while (SCHEME_CHAPERONEP(o)) {
     px = (Scheme_Chaperone *)o;
     if (SAME_TYPE(SCHEME_TYPE(px->redirects), scheme_nack_guard_evt_type)) {
       o = px->redirects;
+      redirected = 1;
       break;
     }
     o = px->prev;
+  }
+
+  if (!redirected && SCHEME_STRUCTP(o)) {
+    /* No chaperone was an `evt` chaperone. Don't discard
+       other chaperones, because they may be relevant for
+       structure properties. */
+    return evt_struct_is_ready(obj, sinfo);
   }
 
   scheme_set_sync_target(sinfo, o, NULL, NULL, 0, 1, NULL);

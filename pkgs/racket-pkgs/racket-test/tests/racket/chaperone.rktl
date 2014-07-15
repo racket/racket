@@ -1245,6 +1245,20 @@
   (err/rt-test (sync (chaperone-evt evt redirect-3)))
   (err/rt-test (sync (chaperone-evt evt redirect-4))))
 
+;; check that evt-chaperone handling doesn't intefere with other chaperones:
+(let ()
+  (struct e (orig)
+    #:property prop:input-port 0)
+  (define an-e (e (open-input-string "s")))
+  (define checked? #f)
+  (test #t input-port? an-e)
+  (sync (chaperone-struct an-e
+                          e-orig
+                          (lambda (self v)
+                            (set! checked? #t)
+                            v)))
+  (test #t values checked?))
+
 ;; ----------------------------------------
 ;; channel chaperones
 
