@@ -9,7 +9,8 @@
          scp
          remote-user+host
          current-timeout
-         current-tunnel-port)
+         current-tunnel-port
+         make-sure-host-is-ready)
 
 (struct remote (host user dir))
 
@@ -121,3 +122,10 @@
       [(ignore-failure) (void)]
       [else (error "failed")])))
 
+(define (make-sure-host-is-ready remote)
+  (let loop ([tries 3])
+    (unless (ssh remote
+                 "echo hello"
+                 #:mode (if (zero? tries) 'auto 'result))
+      (sleep 1)
+      (loop (sub1 tries)))))

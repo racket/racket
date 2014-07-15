@@ -348,6 +348,7 @@
     (dynamic-wind
      (lambda () (start-vbox-vm (vm-name vm)))
      (lambda ()
+       (make-sure-host-is-ready vm)
        ;; ----------------------------------------
        (status "Fixing time at ~a\n" (vm-name vm))
        (ssh vm "sudo date --set=" (q (parameterize ([date-display-format 'rfc2822])
@@ -677,6 +678,7 @@
     (dynamic-wind
      (lambda () (start-vbox-vm (vm-name vm) #:max-vms (length vms)))
      (lambda ()
+       (make-sure-host-is-ready vm)
        (define ok?
          (and
           ;; Try to install:
@@ -1037,6 +1039,7 @@
     (dynamic-wind
      (lambda () (start-vbox-vm (vm-name vm)))
      (lambda ()
+       (make-sure-host-is-ready vm)
        (ssh #:show-time? #t
             vm (cd-racket vm)
             " && bin/raco pkg install -i --auto"
