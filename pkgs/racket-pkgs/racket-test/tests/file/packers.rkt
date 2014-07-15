@@ -63,7 +63,8 @@
 
 (define (zip-tests zip unzip timestamps?
                    #:dir-name [ex1 "ex1"]
-                   #:file-name [f2 "f2"])
+                   #:file-name [f2 "f2"]
+                   #:links? [links? #f])
   (make-directory* ex1)
   (make-file (build-path ex1 "f1"))
   (make-file (build-path ex1 f2))
@@ -71,6 +72,10 @@
   (define more-dir (build-path ex1 "more"))
   (make-directory* more-dir)
   (make-file (build-path more-dir "f4"))
+  (when links?
+    (make-file-or-directory-link "f1" (build-path ex1 "f1-link"))
+    (make-file-or-directory-link "more" (build-path ex1 "more-link"))
+    (make-file-or-directory-link "no" (build-path ex1 "no-link")))
 
   (zip "a.zip" ex1)
   (when timestamps? (sleep 3)) ; at least 2 seconds, plus 1 to likely change parity
@@ -111,8 +116,9 @@
   (zip-tests zip unzip #f)
   (zip-tests (make-zip #f) (make-unzip #f) 'file)
   (zip-tests (make-zip #t) (make-unzip #t) 'file)
-  (zip-tests tar untar #t)
+  (zip-tests tar untar #t #:links? #t)
   (zip-tests tar untar #t
+             #:links? #t
              #:dir-name (make-string 64 #\d)
              #:file-name (make-string 64 #\f)))
 
