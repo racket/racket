@@ -626,6 +626,14 @@
 (test always-evt sync always-evt (replace-evt never-evt (lambda () 10)))
 (err/rt-test (sync (replace-evt always-evt (lambda () 10))))
 
+(test 17 sync (replace-evt (wrap-evt always-evt 
+                                     (lambda (_)
+                                       (values 3 14)))
+                           (lambda (a b)
+                             (wrap-evt always-evt
+                                       (lambda (_)
+                                         (+ a b))))))
+
 ;; ----------------------------------------
 ;; Structures as waitables
 
