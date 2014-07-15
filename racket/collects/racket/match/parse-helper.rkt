@@ -85,10 +85,8 @@
     (unless (struct-info? v) (fail))
     (let-values ([(id _1 pred acc _2 super fields)
                   (apply values
-                         (cond
-                          [(extended-struct-info? v)
-                           (extract-extended-struct-info v)]
-                          [else (append (extract-struct-info v) (list #f))]))])
+                         (append (extract-struct-info v)
+                                 (list (extract-struct-field-info v))))])
       ;; this produces a list of all the super-types of this struct
       ;; ending when it reaches the top of the hierarchy, or a struct that we
       ;; can't access

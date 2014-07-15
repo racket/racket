@@ -24,10 +24,8 @@
               [_ stx])])
     (let ([v (syntax-local-value id (λ () #f))])
       (cond
-       [(extended-struct-info? v)
-        (extract-extended-struct-info v)]
        [(struct-info? v)
-        (append (extract-struct-info v) (list #f))]
+        (append (extract-struct-info v) (list (extract-struct-field-info v)))]
        [else
         (raise-syntax-error 'provide/contract
                             "expected a struct name" 

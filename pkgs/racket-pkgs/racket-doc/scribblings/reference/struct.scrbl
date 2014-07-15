@@ -1,4 +1,4 @@
-#lang scribble/doc
+lang scribble/doc
 @(require "mz.rkt" (for-label racket/struct-info))
 
 @(define struct-eval (make-base-eval))
@@ -681,10 +681,9 @@ derived from @racket[struct:struct-info] or with the
 by @racket[make-set!-transformer]. In addition, the representation may
 implement the @racket[prop:struct-auto-info] property.
 
-The extended information including field names can be created by
-@racket[make-extended-struct-info]. The information can be extracted
-as a 7 item list (the first 6 are the same as @racket[struct-info?])
-with @racket[extract-extended-struct-info]. The representation carrying
+The representation can also contain extended information when created by
+@racket[make-extended-struct-info]. The field information can be extracted
+with @racket[extract-struct-field-info]. The representation carrying
 extended info can be recognized with @racket[extended-struct-info?].
 
 Use @racket[struct-info?] to recognize all allowed forms of the
@@ -794,11 +793,11 @@ Wraps a @racket[struct-info?] with additional information, the field names as sy
 in reverse order like accessors, and an optional #f at the end to signify missing information.
 }
 
-@defproc[(extract-extended-struct-info [v extended-struct-info?])
-         list?]{
+@defproc[(extract-struct-field-info [v struct-info?])
+         (or/c #f list?)]{
 
-Extracts the list given by @racket[extract-struct-info] with an additional
-list at the end containing the field names as symbols.
+If @racket[v] is a @racket[extended-struct-info?], then this returns
+the list of field symbols associated with the struct. If only @racket[struct-info?], then the output is @racket[#f].
 }
 
 @defthing[struct:extended-struct-info struct-type?]{

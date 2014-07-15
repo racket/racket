@@ -329,8 +329,7 @@
         (define contract-id
           ;; let is here to give the right name.
           (let ([#,ex-id (coerce-contract '#,contract-error-name ctrct)
-                         #;
-                           (opt/c ctrct #:error-name #,contract-error-name)])
+                         #;(opt/c ctrct #:error-name #,contract-error-name)])
             #,ex-id))
         
         (define-syntax #,id-rename
@@ -749,8 +748,11 @@
                (let loop ([true-field-names true-field-names]
                           [field-names (reverse field-names)])
                  (cond
-                  [(or (null? true-field-names) (null? field-names))
+                  [(null? true-field-names)
                    (void)]
+                  ;; Both are same length since true-field-names is same length as selector-ids.
+                  ;; The previous error check ensures the length of field-names is the same as
+                  ;; selector-ids, so we know field-names is a pair without checking.
                   [else
                    (let* ([field-name (car field-names)]
                           [field-name-should-be (car true-field-names)]
@@ -1031,7 +1033,6 @@
                      (cons (cons (length fields) (predicate->struct-name provide-stx predicate))
                            (loop (list-ref parent-info 5) #f))]))]))))
 
-       ;; FIXME: struct-name should be an accessible property of a struct-type.
        (define (predicate->struct-name orig-stx stx)
          (and stx
               (let ([m (regexp-match #rx"^(.*)[?]$" (format "~a" (syntax-e stx)))])
@@ -1121,11 +1122,15 @@
              (if a-fields ;; has extended info
                  (λ (f)
                    ;; will always find the field due to prior error checking.
-                   (let find ([acc a-accessors] [fld a-fields])
-                 
+                   (let find ([acc a-accessors] [fld a-fields])                 
                      (cond
                       [(or (null? acc) (null? fld))
-                       (raise-syntax-error #f (format "Could not find accessor for field ~a, given ~a and ~a" f a-accessors a-fields) provide-stx)]
+                       (raise-syntax-error
+                        'contract-out/struct
+                        (format "~a~a, given ~a and ~a"
+                                "Internal error: could not find accessor for field "
+                                f a-accessors a-fields)
+                        provide-stx)]
                       [(eq? f (car fld)) (car acc)]
                       [else (find (cdr acc) (cdr fld))])))
                  ;; unhygienic!

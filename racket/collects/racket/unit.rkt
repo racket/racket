@@ -163,7 +163,7 @@
   "#:mutable, #:constructor-name, #:extra-constructor-name, #:omit-constructor, #:omit-define-syntaxes, or #:omit-define-values")
 
 ;; Extract field ids from field spec.
-(define-for-syntax (sanitize-fields field-stx orig-stx)
+(define-for-syntax (extract-field-names field-stx orig-stx)
   (map (lambda (field)
          (if (identifier? field)
              field
@@ -188,7 +188,7 @@
                              "expected an identifier to name the structure type"
                              stx
                              #'name))
-       (let*-values ([(field-ids) (sanitize-fields #'(field ...) stx)]
+       (let*-values ([(field-ids) (extract-field-names #'(field ...) stx)]
                      [(no-ctr? mutable? no-stx? no-rt? opt-cname)
                       (let loop ([opts (syntax->list #'(opt ...))]
                                  [no-ctr? #f]
@@ -409,7 +409,7 @@
                              "expected an identifier to name the structure type"
                              stx
                              #'name))
-       (let*-values ([(field-ids) (sanitize-fields #'(field ...) stx)]
+       (let*-values ([(field-ids) (extract-field-names #'(field ...) stx)]
                      [(no-ctr? mutable? no-stx? no-rt? opt-cname)
                       (let loop ([opts (syntax->list #'(opt ...))]
                                  [no-ctr? #f]

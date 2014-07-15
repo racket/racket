@@ -11,7 +11,7 @@
              struct:struct-info
              prop:struct-info
 
-             extract-extended-struct-info
+             extract-struct-field-info
              make-extended-struct-info
              struct:extended-struct-info
              (rename extended-struct-info-rec? extended-struct-info?)
@@ -81,14 +81,16 @@
                                    "struct-info?"
                                    si)])))
 
-  (define-values (extract-extended-struct-info)
+  (define-values (extract-struct-field-info)
     (lambda (esi)
-      (if (extended-struct-info-rec? esi)
-          (append (extract-struct-info esi)
-                  (list (extended-struct-info-ref esi 0)))
-          (raise-argument-error 'extract-extended-struct-info
-                                "extended-struct-info?"
-                                esi))))
+      (cond
+       [(extended-struct-info-rec? esi)
+        (extended-struct-info-ref esi 0)]
+       [(struct-info-rec? esi) #f]
+       [else
+        (raise-argument-error 'extract-struct-field-info
+                              "struct-info?"
+                              esi)])))
 
   (define-values (struct-info?)
     (lambda (si)

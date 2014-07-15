@@ -243,9 +243,9 @@ In more detail, patterns match as follows:
        includes at least a predicate binding and field accessor
        bindings corresponding to the number of field
        @racket[_pat]s. Named patterns are allowed if expansion-time
-       information is an @racket[extended-struct-info?], which contains an
-       additional field that is the list of symbols representing the struct's fields.
-       Field names and field accessors are not associated to preserve hygiene.
+       information is an @racket[extended-struct-info?] (true by default for
+       structs created by @racket[struct]), which contains an additional field
+       that is the list of symbols representing the struct's fields.
        In particular, a module import or a
        @racket[unit] import with a signature containing a
        @racket[struct] declaration can provide the structure type

@@ -382,24 +382,17 @@
                              "bad syntax;\n expected <id> for structure-type name or (<id> <id>) for name and supertype\n name"
                              stx
                              #'id)]))])
-         (let-values ([(super-info super-autos super-info-checked? super-info-extended?)
+         (let-values ([(super-info super-autos super-info-checked? super-fields)
 		       (if super-id
 			   (let ([v (syntax-local-value super-id (lambda () #f))])
 			     (cond
-                              [(extended-struct-info? v)
-                               (values (extract-extended-struct-info v) 
-                                       (if (struct-auto-info? v)
-                                           (struct-auto-info-lists v)
-                                           (list null null))
-                                       (checked-struct-info-rec? v)
-                                       #t)]
                               [(struct-info? v)
-                               (values (extract-struct-info v) 
+                               (values (extract-struct-info v)
                                        (if (struct-auto-info? v)
                                            (struct-auto-info-lists v)
                                            (list null null))
                                        (checked-struct-info-rec? v)
-                                       #f)]
+                                       (extract-struct-field-info v))]
                               [else
                                (raise-syntax-error
                                 #f
@@ -693,8 +686,8 @@
                                    (list #,@(map (λ (f) #`(quote #,(field-id f))) (reverse fields))
                                          ;; XXX: possible for parent to not have extension.
                                          ;; This is troubling and can cause surprising hygiene issues.
-                                         #,@(if super-info-extended?
-                                                (map (λ (f) #`(quote #,f)) (list-ref super-info 6))
+                                         #,@(if super-fields
+                                                (map (λ (f) #`(quote #,f)) super-fields)
                                                 (if super-expr
                                                     '(#f)
                                                     null)))
@@ -817,22 +810,14 @@
                        ans)
              (let-values ([(construct pred accessors parent fields)
                            (let ([v (syntax-local-value #'info (lambda () #f))])
-                             (unless (or (extended-struct-info? v)
-                                         (struct-info? v))
+                             (unless (struct-info? v)
                                (raise-syntax-error #f "identifier is not bound to a structure type" stx #'info))
-                             (if (extended-struct-info? v)
-                                 (let ([v (extract-extended-struct-info v)])
-                                   (values (cadr v)
-                                           (caddr v)
-                                           (cadddr v)
-                                           (list-ref v 5)
-                                           (list-ref v 6)))
-                                 (let ([v (extract-struct-info v)])
-                                   (values (cadr v)
-                                           (caddr v)
-                                           (cadddr v)
-                                           (list-ref v 5)
-                                           #f))))])
+                             (let ([d (extract-struct-info v)])
+                               (values (cadr d)
+                                       (caddr d)
+                                       (cadddr d)
+                                       (list-ref d 5)
+                                       (extract-struct-field-info v))))])
                
                (let* ([get-accessor/acc+fields
                        ;; can't just rebuild the identifier due to hygiene.
@@ -857,12 +842,13 @@
                       [get-parent-accessor
                        (λ (id parent-id)
                           (let ([v (syntax-local-value parent-id (lambda () #f))])
-                            ;; probably won't happen(?)
-                            (unless (or (extended-struct-info? v) (struct-info? v))
+                            ;; this can happen: https://gist.github.com/ianj/6ae7424cc2d093661df2
+                            (unless (struct-info? v)
                               (raise-syntax-error #f "unknown parent struct" stx parent-id))
                             (if (extended-struct-info? v)
-                                (let ([v (extract-extended-struct-info v)])
-                                  (get-accessor/acc+fields (syntax-e id) parent-id (cadddr v) (list-ref v 6)))
+                                (let ([v (extract-struct-info v)])
+                                  (get-accessor/acc+fields (syntax-e id) parent-id (cadddr v)
+                                                           (extract-struct-field-info v)))
                                 ;; XXX: mix of extended and non-extended. Surprising hygiene?
                                 (begin
                                   (log-warning (format "Struct ~a has extended info but parent ~a doesn't."
@@ -879,7 +865,7 @@
                              [(free-identifier=? id parent) (void)]
                              [else
                               (let ([v (syntax-local-value parent (lambda () #f))])
-                                ;; probably won't happen(?)
+                                ;; see above gist
                                 (unless (struct-info? v)
                                   (raise-syntax-error #f "unknown parent struct" stx id))
                                 (let ([v (extract-struct-info v)])

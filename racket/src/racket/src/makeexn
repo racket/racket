@@ -229,6 +229,8 @@ Not an exception in the above sense:
            [fds `(list ,@(map (λ (x) `(quote-syntax ,x)) field-sels))]
            [fdsset! `'(,@(map (λ (x) #f) field-sels))]
            [prnt (if (non-parent parent) #t `(quote-syntax ,parent))])
+      (unless (= (length field-sels) (length fields))
+         (error 'gen-ds "Unequal number of field selectors and field names for ~a" name-string))
       `(begin
          (#%require (rename '#%kernel ,kern-name ,name))
          (define ,mn ,kern-name)
