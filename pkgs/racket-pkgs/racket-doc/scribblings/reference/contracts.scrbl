@@ -954,7 +954,7 @@ introduced with the @racket[#:pre] keyword followed by the list of names on
 which it depends. If the @racket[#:pre/name] keyword is used, the string
 supplied is used as part of the error message; similarly with @racket[#:post/name].
 
-The @racket[dep-range] non-terminal specifies the possible result
+The @racket[dependent-range] non-terminal specifies the possible result
 contracts. If it is @racket[any], then any value is allowed. Otherwise, the
 result contract pairs a name and a contract or a multiple values return
 with names and contracts. In the last two cases, the range contract may be
