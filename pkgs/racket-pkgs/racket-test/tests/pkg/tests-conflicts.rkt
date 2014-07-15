@@ -112,4 +112,13 @@
   (with-fake-root
    (shelly-case
     "no conflict for non-matching platform"
-    $ "raco pkg install --strict-doc-conflicts test-pkgs/pkg-add-base test-pkgs/pkg-add-none"))))
+    $ "raco pkg install --strict-doc-conflicts test-pkgs/pkg-add-base test-pkgs/pkg-add-none"))
+
+  (shelly-case
+   "compile-omit-paths is used by `pkg-directory->additional-installs`:"
+   $ (~a "racket -e '(require pkg/lib)' -e '"
+         (~s '(pkg-directory->additional-installs
+               (path-only (collection-file-path "test.rkt" "tests/pkg"))
+               "racket-test"))
+         "'")
+   =stdout> "'()\n")))
