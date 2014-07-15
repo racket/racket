@@ -3234,17 +3234,33 @@
                                         #:system-library-subpath [sys-lib-subpath #f])
   (define single-collect
     (pkg-single-collection dir #:name pkg-name #:namespace metadata-ns))
-  (let loop ([s (set)] [f dir] [top? #t])
+  (let loop ([s (set)] [f dir] [top? #t] [omits (set)])
     (cond
-     [(directory-exists? f)
+     [(and (directory-exists? f)
+           (not (set-member? omits (simplify-path f))))
       (define i (get-pkg-info f metadata-ns))
-      (define new-s
-        (if (and i (or single-collect (not top?)))
-            (set-union (extract-additional-installs i sys-type sys-lib-subpath)
-                       s)
-            s))
-      (for/fold ([s new-s]) ([f (directory-list f #:build? #t)])
-        (loop s f #f))]
+      (define omit-paths (if i
+                             (i 'compile-omit-paths (lambda () null))
+                             null))
+      (cond
+       [(eq? omit-paths 'all)
+        s]
+       [else
+        (define omit-files (if i
+                               (i 'compile-omit-files (lambda () null))
+                               null))
+        (define new-s
+          (if (and i (or single-collect (not top?)))
+              (set-union (extract-additional-installs i sys-type sys-lib-subpath)
+                         s)
+              s))
+        (define new-omits
+          (set-union
+           omits
+           (for/set ([i (in-list (append omit-paths omit-files))])
+             (simplify-path (path->complete-path i f)))))
+        (for/fold ([s new-s]) ([f (directory-list f #:build? #t)])
+          (loop s f #f new-omits))])]
      [else s])))
 
 (define (extract-additional-installs i sys-type sys-lib-subpath)
