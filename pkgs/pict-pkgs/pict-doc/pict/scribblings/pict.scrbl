@@ -753,7 +753,7 @@ line drops below the descent line, the two lines are flipped.}
 
 @defproc[(ghost [pict pict?]) pict?]{
 
-Creats a container picture that doesn't draw the child picture,
+Creates a container picture that doesn't draw the child picture,
 but uses the child's size.}
 
 
@@ -954,7 +954,7 @@ descent are extended.}
 
 Scales a color, making it brighter or darker. If the factor is less
 than 1, the color is darkened by multiplying the RGB components by the
-factor. If the factor is greater tham 1, the color is lightened by
+factor. If the factor is greater than 1, the color is lightened by
 dividing the gap between the RGB components and 255 by the factor.}
 
 @defproc[(color-series [dc (is-a?/c dc<%>)]
@@ -998,7 +998,7 @@ a @racket[bitmap-dc%] that draws to a 1-by-1 bitmap.}
 A parameter that determines an amount of padding added to each edge of
 a @tech{pict} when converting to a format like @racket['png@2x-bytes+bounds8]
 (see @racketmodname[file/convertible]). The default value of the parameter
-is @racket['(3 3 3 3)], which adds three pixels to each edge to accomodate
+is @racket['(3 3 3 3)], which adds three pixels to each edge to accommodate
 a small amount of drawing outside the pict's @tech{bounding box}.
 
 @history[#:added "1.2"]}
