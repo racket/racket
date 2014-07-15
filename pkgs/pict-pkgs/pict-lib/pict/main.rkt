@@ -30,13 +30,7 @@
             [h real?])
            ([d (or/c #f real?)]
             [a (or/c #f real?)])
-           #:pre (draw)
-           (let ()
-             (define bdc (new bitmap-dc% [bitmap (make-bitmap 1 1)]))
-             (randomize-state bdc)
-             (define old-state (get-dc-state bdc))
-             (draw bdc 0 0)
-             (equal? (get-dc-state bdc) old-state))
+           #:pre (draw) (does-draw-restore-the-state-after-being-called? draw)
            [p pict?])]
   [cellophane (-> pict? (real-in 0 1) pict?)]
   [vl-append *-append/c]
@@ -82,6 +76,13 @@
          [pict pict?])
         [result pict?])]
   [disk (->* ((and/c rational? (not/c negative?))) (#:draw-border? any/c) pict?)]))
+
+(define (does-draw-restore-the-state-after-being-called? draw)
+  (define bdc (new bitmap-dc% [bitmap (make-bitmap 1 1)]))
+  (randomize-state bdc)
+  (define old-state (get-dc-state bdc))
+  (draw bdc 0 0)
+  (equal? (get-dc-state bdc) old-state))
 
 ;; randomizes some portions of the state of the given dc;
 ;; doesn't pick random values for things that the 'dc'
