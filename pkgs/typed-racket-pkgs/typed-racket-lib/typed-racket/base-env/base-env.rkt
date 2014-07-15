@@ -1345,6 +1345,10 @@
 [poll-guard-evt
  (-poly (a) (-> (-> -Boolean (-evt a)) (-evt a)))]
 [always-evt (-mu x (-evt x))]
+[replace-evt (-poly (a b)
+               (cl->*
+                 (-> (-evt a) (-> a (-evt b)) (-evt b))
+                 (-> (-evt a) (-> a b) (-mu x (-evt x)))))]
 [never-evt (-evt (Un))]
 [system-idle-evt (-> (-evt -Void))]
 [alarm-evt (-> -Real (-mu x (-evt x)))]
