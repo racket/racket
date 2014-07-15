@@ -155,6 +155,8 @@
      (Pair (rearm+parse #'e) (rearm+parse (syntax/loc #'es (list-rest . es))))]
     [(cons e1 e2) (Pair (rearm+parse #'e1) (rearm+parse #'e2))]
     [(mcons e1 e2) (MPair (rearm+parse #'e1) (rearm+parse #'e2))]
+    [(struct s mode pats)
+     (parse-struct disarmed-stx rearm+parse #'s (cons #'mode #'pats))]
     [(struct s pats)
      (parse-struct disarmed-stx rearm+parse #'s #'pats)]
     [(s . pats)

@@ -219,11 +219,22 @@ In more detail, patterns match as follows:
          [(box a) a])
        ]}
 
- @item{@racket[(_struct-id _pat ...)] or
-       @racket[(#,(racketidfont "struct") _struct-id (_pat ...))] ---
+ @item{@racket[(_struct-id _spat ...)] or
+       @racket[(#,(racketidfont "struct") _struct-id (_spat ...))] ---
        matches an instance of a structure type named
        @racket[_struct-id], where each field in the instance matches
-       the corresponding @racket[_pat]. See also @racket[struct*].
+       the corresponding @racket[_spat]. Struct patterns allow fields to be
+       named out-of-order with either @racket[[#:field id pat]] or equivalently
+       @racket[[#:id pat]] for a field named @racket[id]. An optional @racket[_mode]
+       may be specified after @racket[_struct-id]. If @racket[_mode] is @racket[#:full],
+       then @racket[match] will ensure that all fields are specified.
+       The @racket[#:first] mode signifies that unnamed patterns will match starting
+       with the first of all fields, allowing fields to be named as long as
+       they don't conflict positionally with an already provided unnamed pattern.
+       The @racket[#:last] mode is similar, only the last pattern corresponds to
+       the last field. The default match mode is @racket[#:first] in the presence
+       of named patterns, and @racket[#:full] without named patterns. 
+       
 
        Usually, @racket[_struct-id] is defined with
        @racket[struct].  More generally, @racket[_struct-id]
@@ -231,7 +242,11 @@ In more detail, patterns match as follows:
        type (see @secref["structinfo"]), where the information
        includes at least a predicate binding and field accessor
        bindings corresponding to the number of field
-       @racket[_pat]s. In particular, a module import or a
+       @racket[_pat]s. Named patterns are allowed if expansion-time
+       information is an @racket[extended-struct-info?], which contains an
+       additional field that is the list of symbols representing the struct's fields.
+       Field names and field accessors are not associated to preserve hygiene.
+       In particular, a module import or a
        @racket[unit] import with a signature containing a
        @racket[struct] declaration can provide the structure type
        information.
@@ -241,6 +256,10 @@ In more detail, patterns match as follows:
        (define-struct tree (val left right))
        (match (make-tree 0 (make-tree 1 #f #f) #f)
          [(tree a (tree b  _ _) _) (list a b)])
+       (match (make-tree 0 1 2)
+         [(tree #:first b) b])
+       (match (make-tree 0 1 2)
+         [(tree #:last [#:val v] r) (list v r)])
        ]}
 
  @item{@racket[(#,(racketidfont "struct") _struct-id _)] ---

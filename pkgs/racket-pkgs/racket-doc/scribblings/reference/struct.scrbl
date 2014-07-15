@@ -612,9 +612,9 @@ See @racket[make-prefab-struct] for a description of valid key shapes.}
 The @racket[struct] form binds the name of a structure type as
 a @tech{transformer binding} that records the other identifiers bound
 to the structure type, the constructor procedure, the predicate
-procedure, and the field accessor and mutator procedures. This
-information can be used during the expansion of other expressions via
-@racket[syntax-local-value].
+procedure, the field accessor and mutator procedures, and (as an
+extended form) the field names as symbols. This information can be
+used during the expansion of other expressions via @racket[syntax-local-value].
 
 For example, the @racket[struct] variant for subtypes uses the
 base type name @racket[_t] to find the variable
@@ -680,6 +680,12 @@ derived from @racket[struct:struct-info] or with the
 @racket[prop:procedure], and where the instance is further is wrapped
 by @racket[make-set!-transformer]. In addition, the representation may
 implement the @racket[prop:struct-auto-info] property.
+
+The extended information including field names can be created by
+@racket[make-extended-struct-info]. The information can be extracted
+as a 7 item list (the first 6 are the same as @racket[struct-info?])
+with @racket[extract-extended-struct-info]. The representation carrying
+extended info can be recognized with @racket[extended-struct-info?].
 
 Use @racket[struct-info?] to recognize all allowed forms of the
 information, and use @racket[extract-struct-info] to obtain a list
@@ -780,6 +786,26 @@ The @tech{structure type property} for creating new structure types
 like @racket[struct:struct-info]. The property value must be a procedure
 of one argument that takes an instance structure and returns
 structure-type information in list form.}
+
+@defproc[(make-extended-struct-info [si struct-info?] [fields (listof (or/c #f symbol?))])
+         extended-struct-info?]{
+
+Wraps a @racket[struct-info?] with additional information, the field names as symbols
+in reverse order like accessors, and an optional #f at the end to signify missing information.
+}
+
+@defproc[(extract-extended-struct-info [v extended-struct-info?])
+         list?]{
+
+Extracts the list given by @racket[extract-struct-info] with an additional
+list at the end containing the field names as symbols.
+}
+
+@defthing[struct:extended-struct-info struct-type?]{
+
+The @tech{structure type descriptor} for the structure type returned by
+@racket[make-extended-struct-info]. This @tech{structure type descriptor} is additionally
+useful for hygienic references to field names like in @racket[struct-copy] or @racket[match].}
 
 @deftogether[(
 @defthing[prop:struct-auto-info struct-type-property?]

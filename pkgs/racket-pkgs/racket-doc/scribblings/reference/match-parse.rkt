@@ -43,6 +43,8 @@
     => (fixup s (racketparenfont ")"))]
    [(regexp-match-positions #rx"K" s)
     => (fixup s (match-nonterm "k"))]
+   [(regexp-match-positions #rx"id" s)
+    => (fixup s (fixup-sexp 'id))]
    [else s]))
 
 (define (fixup-rhs s)

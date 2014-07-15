@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require rackunit racket/match)
+(require rackunit racket/match
+         (for-syntax racket/base))
 
 (define/match ((curried x) y)
   [((? number? x) y) (+ x y)]
@@ -55,3 +56,31 @@
 
 (check-equal? (list-fun '(1 2 3)) #t)
 (check-equal? (list-fun '(4 5 6)) #f)
+
+(struct Foo (x y z w))
+(check-true (match (Foo 0 3 2 'dropped)
+              [(Foo #:first 0 [#:z 2] 3) #t]
+              [_ #f]))
+(check-true (match (Foo 'dropped 0 2 3)
+              [(Foo #:last 0 [#:z 2] 3) #t]
+              [_ #f]))
+(check-true (match (Foo 'dropped 2 0 3)
+              [(Foo #:last 0 [#:y 2] 3) #t]
+              [_ #f]))
+
+(define-syntax (check-syntax-error stx)
+  (syntax-case stx ()
+    [(_ name e)
+     (with-handlers ([exn:fail:syntax? (λ (e) #'(void))])
+       (with-syntax ([e (local-expand #'e 'expression #f)])
+         #'(fail-check (format "Test ~a successfully expanded when expecting syntax error" #''name))))]))
+
+(check-syntax-error bad-field-name
+                    (match (Foo 0 1 2 3)
+                      [(Foo [#:bad 0]) #f]))
+(check-syntax-error first-mode-name-conflict
+                    (match (Foo 0 1 2 3)
+                      [(Foo 0 [#:x 0] 1 2) #f]))
+(check-syntax-error last-mode-name-conflict
+                    (match (Foo 0 1 2 3)
+                      [(Foo #:last [#:w 3] 3) #f]))

@@ -19,8 +19,10 @@ pat     ::= id                                @match anything, bind identifier
          |  (CONS pat pat)                    @match pair of pats
          |  (MCONS pat pat)                   @match mutable pair of pats
          |  (BOX pat)                         @match boxed pat
-         |  (struct-id pat ...)               @match struct-id instance
-         |  (STRUCT struct-id (pat ...))      @match struct-id instance
+         |  (struct-id spat ...)              @match struct-id instance
+         |  (struct-id mode spat ...)         @match struct-id instance with given mode
+         |  (STRUCT struct-id (spat ...))     @match struct-id instance
+         |  (STRUCT struct-id mode (spat ...)) @match struct-id instance with given mode
          |  (REGEXP rx-expr)                  @match string
          |  (REGEXP rx-expr pat)              @match string, result with pat
          |  (PREGEXP px-expr)                 @match string
@@ -32,6 +34,12 @@ pat     ::= id                                @match anything, bind identifier
          |  (? expr pat ...)                  @match if (expr value) and pats
          |  (QUASIQUOTE qp)                   @match a quasipattern
          |  derived-pattern                   @match using extension
+spat    ::= [#:field id pat]                  @match struct field named id with pat
+         |  [#:id pat]                        @match struct field named id with pat
+         |  pat                               @match struct field positionally
+mode    ::= #:first                           @match struct's first fields incompletely
+         |  #:last                            @match struct's last fields incompletely
+         |  #:full                            @match all struct's fields
 literal ::= #t                                @match true
          |  #f                                @match false
          |  string                            @match equal% string

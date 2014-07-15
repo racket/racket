@@ -17,57 +17,72 @@
               [v (if (identifier? #'struct-name)
                      (syntax-local-value #'struct-name fail)
                      (fail))]
-              [field-acc->pattern (make-free-id-table)])
+              [field-err (λ (an)
+                            (raise-syntax-error
+                             'struct* "expected a field pattern of the form (<field-id> <pat>)"
+                             stx an))])
          (unless (struct-info? v) (fail))
-         ; Check each pattern and capture the field-accessor name
-         (for-each (lambda (an)
-                     (syntax-case an ()
-                       [(field pat)
-                        (unless (identifier? #'field)
-                          (raise-syntax-error 
-                           'struct* "not an identifier for field name" 
-                           stx #'field))
-                        (let ([field-acc
-                               (datum->syntax #'field
-                                              (string->symbol
-                                               (format "~a-~a"
-                                                       (syntax-e #'struct-name)
-                                                       (syntax-e #'field)))
-                                              #'field)])
-                          (when (free-id-table-ref field-acc->pattern field-acc #f)
-                            (raise-syntax-error 'struct* "Field name appears twice" stx #'field)) 
-                          (free-id-table-set! field-acc->pattern field-acc #'pat))]
-                       [_
-                        (raise-syntax-error
-                         'struct* "expected a field pattern of the form (<field-id> <pat>)"
-                         stx an)]))
-                   (syntax->list #'(field+pat ...)))
-         (let* (; Get the structure info
-                [acc (fourth (extract-struct-info v))]
-                ;; the accessors come in reverse order
-                [acc (reverse acc)]
-                ;; remove the first element, if it's #f
-                [acc (cond [(empty? acc) acc]
-                           [(not (first acc)) (rest acc)]
-                           [else acc])]
-                ; Order the patterns in the order of the accessors
-                [pats-in-order
-                 (for/list ([field-acc (in-list acc)])
-                   (begin0
-                     (free-id-table-ref
-                      field-acc->pattern field-acc
-                      (syntax/loc stx _))
-                     ; Use up pattern
-                     (free-id-table-remove! field-acc->pattern field-acc)))])
-           ; Check that all patterns were used
-           (free-id-table-for-each
-            field-acc->pattern
-            (lambda (field-acc pat)
-              (when pat
-                (raise-syntax-error 'struct* "field name not associated with given structure type"
-                                    stx field-acc))))
-           (quasisyntax/loc stx
-             (struct struct-name #,pats-in-order))))])))
+         (cond
+          ;; doable hygienically with struct syntax?
+          [(extended-struct-info? v)
+           (syntax-case #'(field+pat ...) ()
+             [([f pat] ...)
+              (quasisyntax/loc stx
+                (struct struct-name ([#:field f pat] ...)))]
+             [_ (for-each (λ (an) ;; must fail
+                             (syntax-case an ()
+                               [(field pat) (identifier? #'field) (void)]
+                               [_ (field-err an)]))
+                          (syntax->list #'(field+pat ...)))])]
+          ;; no, fall back to unhygienic for backwards compatibility.
+          [else
+           (define field-acc->pattern (make-free-id-table))
+           ;; Check each pattern and capture the field-accessor name
+           (for-each (lambda (an)
+                       (syntax-case an ()
+                         [(field pat)
+                          (unless (identifier? #'field)
+                            (raise-syntax-error
+                             'struct* "not an identifier for field name"
+                             stx #'field))
+                          (let ([field-acc
+                                 (datum->syntax #'field
+                                                (string->symbol
+                                                 (format "~a-~a"
+                                                         (syntax-e #'struct-name)
+                                                         (syntax-e #'field)))
+                                                #'field)])
+                            (when (free-id-table-ref field-acc->pattern field-acc #f)
+                              (raise-syntax-error 'struct* "Field name appears twice" stx #'field))
+                            (free-id-table-set! field-acc->pattern field-acc #'pat))]
+                         [_ (field-err an)]))
+                     (syntax->list #'(field+pat ...)))
+           (let* (                      ; Get the structure info
+                  [acc (fourth (extract-struct-info v))]
+                  ;; the accessors come in reverse order
+                  [acc (reverse acc)]
+                  ;; remove the first element, if it's #f
+                  [acc (cond [(empty? acc) acc]
+                             [(not (first acc)) (rest acc)]
+                             [else acc])]
+                                        ; Order the patterns in the order of the accessors
+                  [pats-in-order
+                   (for/list ([field-acc (in-list acc)])
+                     (begin0
+                         (free-id-table-ref
+                          field-acc->pattern field-acc
+                          (syntax/loc stx _))
+                                        ; Use up pattern
+                       (free-id-table-remove! field-acc->pattern field-acc)))])
+                                        ; Check that all patterns were used
+             (free-id-table-for-each
+              field-acc->pattern
+              (lambda (field-acc pat)
+                (when pat
+                  (raise-syntax-error 'struct* "field name not associated with given structure type"
+                                      stx field-acc))))
+             (quasisyntax/loc stx
+               (struct struct-name #,pats-in-order)))]))]))) 
 
 (provide struct* ==)
 
