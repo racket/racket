@@ -1507,6 +1507,11 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Object *v;
 
+  if (sinfo->false_positive_ok) {
+    sinfo->potentially_false_positive = 1;
+    return 1;
+  }
+
   v = scheme_struct_type_property_ref(evt_property, o);
 
   if (!v) {
@@ -1529,11 +1534,6 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
   }
 
   if (SCHEME_PROCP(v)) {
-    if (sinfo->false_positive_ok) {
-      sinfo->potentially_false_positive = 1;
-      return 1;
-    }
-
     if (scheme_check_proc_arity(NULL, 1, 0, 1, &v)) {
       Scheme_Object *f = v, *result, *a[1];
 
@@ -3621,6 +3621,12 @@ static int chaperone_evt_is_ready(Scheme_Object *obj, Scheme_Schedule_Info *sinf
   Scheme_Chaperone *px;
   int redirected = 0;
 
+  if (sinfo->false_positive_ok) {
+    /* Safer, though maybe unnecessarily conservative: */
+    sinfo->potentially_false_positive = 1;
+    return 1;
+  }
+
   while (SCHEME_CHAPERONEP(o)) {
     px = (Scheme_Chaperone *)o;
     if (SAME_TYPE(SCHEME_TYPE(px->redirects), scheme_nack_guard_evt_type)) {
@@ -3748,7 +3754,7 @@ static int nack_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
   Scheme_Object *a[2], *wset;
 
   wset = SCHEME_PTR1_VAL(o);
-  /* Lazily construct a evt set: */
+  /* Lazily construct an evt set: */
   if (SCHEME_SEMAP(wset)) {
     a[0] = wset;
     a[1] = SCHEME_PTR2_VAL(o);
