@@ -732,6 +732,7 @@ typedef struct {
   double sleep_end;
   int w_i;
   char spin, is_poll, no_redirect;
+  Scheme_Object *replace_chain; /* turns non-tail replace_evt recursion into a loop */
 } Scheme_Schedule_Info;
 
 typedef Scheme_Object *(*Scheme_Accept_Sync)(Scheme_Object *wrap);
@@ -741,6 +742,15 @@ void scheme_set_sync_target(Scheme_Schedule_Info *sinfo, Scheme_Object *target,
 			    int repost, int retry, Scheme_Accept_Sync accept);
 struct Syncing;
 void scheme_accept_sync(struct Syncing *syncing, int i);
+
+struct Syncing *scheme_make_syncing(int argc, Scheme_Object **argv);
+int scheme_syncing_ready(struct Syncing *s, Scheme_Schedule_Info *sinfo, int can_suspend);
+void scheme_syncing_needs_wakeup(struct Syncing *s, void *fds);
+void scheme_escape_during_sync(struct Syncing *syncing);
+Scheme_Object *scheme_syncing_result(struct Syncing *syncing, int tailok);
+
+struct Syncing *scheme_replace_evt_nack(Scheme_Object *active_replace);
+struct Syncing *scheme_replace_evt_needs_wakeup(Scheme_Object *o);
 
 typedef int (*Scheme_Ready_Fun_FPC)(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 typedef int (*Scheme_Out_Ready_Fun_FPC)(Scheme_Output_Port *port, Scheme_Schedule_Info *sinfo);

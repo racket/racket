@@ -236,6 +236,37 @@ static int mark_nack_guard_evt_FIXUP(void *p, struct NewGC *gc) {
 #define mark_nack_guard_evt_IS_CONST_SIZE 1
 
 
+static int mark_active_replace_evt_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Active_Replace_Evt));
+}
+
+static int mark_active_replace_evt_MARK(void *p, struct NewGC *gc) {
+  Active_Replace_Evt *a = (Active_Replace_Evt *)p;
+
+  gcMARK2(a->syncing, gc);
+  gcMARK2(a->wrapper, gc);
+  gcMARK2(a->orig, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Active_Replace_Evt));
+}
+
+static int mark_active_replace_evt_FIXUP(void *p, struct NewGC *gc) {
+  Active_Replace_Evt *a = (Active_Replace_Evt *)p;
+
+  gcFIXUP2(a->syncing, gc);
+  gcFIXUP2(a->wrapper, gc);
+  gcFIXUP2(a->orig, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Active_Replace_Evt));
+}
+
+#define mark_active_replace_evt_IS_ATOMIC 0
+#define mark_active_replace_evt_IS_CONST_SIZE 1
+
+
 static int mark_chaperone_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Chaperone));

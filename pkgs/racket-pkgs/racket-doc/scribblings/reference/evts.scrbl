@@ -246,6 +246,30 @@ for synchronization}, with itself as its @tech{synchronization result}.
 ]}
 
 
+@defproc[(replace-evt [evt evt?] [maker (any/c ... . -> . evt?)]) evt?]{
+
+Like @racket[guard-evt], but @racket[maker] is called only after
+@racket[evt] becomes @tech{ready for synchronization}, and the
+@tech{synchronization result} of @racket[evt] is passed to @racket[maker].
+
+The attempt to synchronize on @racket[evt] proceeds concurrently as
+the attempt to synchronize on the result @racket[_guard] from
+@racket[replace-evt]; despite that concurrency, if @racket[maker] is
+called, it is called in the thread that is synchronizing on
+@racket[_guard]. Synchronization can succeed for both @racket[evt] and
+another synchronized with @racket[_guard] at the same time; the
+single-choice guarantee of synchronization applies only to the result
+of @racket[maker] and other events synchronized with @racket[_guard].
+
+If @racket[maker] returns a non-event, then @racket[maker]'s
+result is replaced with an event that is @tech{ready for
+synchronization} and whose @tech{synchronization result} is
+@racket[_guard].
+
+@history[#:added "6.1.0.3"]}
+
+
+
 @defthing[never-evt evt?]{A constant event that is never @tech{ready
 for synchronization}.
 

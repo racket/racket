@@ -425,7 +425,6 @@ static Scheme_Object *will_executor_go(int argc, Scheme_Object *args[]);
 static Scheme_Object *will_executor_sema(Scheme_Object *w, int *repost);
 
 static Scheme_Object *check_break_now(int argc, Scheme_Object *args[]);
-static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo);
 
 static void make_initial_config(Scheme_Thread *p);
 
@@ -433,6 +432,8 @@ static int do_kill_thread(Scheme_Thread *p);
 static void suspend_thread(Scheme_Thread *p);
 
 static int check_sleep(int need_activity, int sleep_now);
+
+static int syncing_ready(Syncing *syncing, Scheme_Schedule_Info *sinfo);
 
 static void remove_thread(Scheme_Thread *r);
 static void exit_or_escape(Scheme_Thread *p);
@@ -4417,6 +4418,7 @@ static void init_schedule_info(Scheme_Schedule_Info *sinfo, Scheme_Thread *false
   sinfo->is_poll = 0;
   sinfo->no_redirect = no_redirect;
   sinfo->sleep_end = sleep_end;
+  sinfo->replace_chain = NULL;
 }
 
 Scheme_Object *scheme_current_break_cell()
@@ -6168,7 +6170,6 @@ void scheme_clear_thread_sync(Scheme_Thread *p)
 /*                              syncing                                   */
 /*========================================================================*/
 
-static void syncing_needs_wakeup(Scheme_Object *s, void *fds);
 static Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delta, int flatten);
 
 typedef struct Evt {
@@ -6314,6 +6315,15 @@ static Syncing *make_syncing(Evt_Set *evt_set, float timeout, double start_time)
   syncing->thread = scheme_current_thread;
 
   return syncing;
+}
+
+Syncing *scheme_make_syncing(int argc, Scheme_Object **argv)
+{
+  Evt_Set *evt_set;
+
+  evt_set = make_evt_set("sync", argc, argv, 0, 1);
+
+  return make_syncing(evt_set, -1.0, 0);
 }
 
 static void *splice_ptr_array(void **a, int al, void **b, int bl, int i)
@@ -6499,13 +6509,12 @@ void scheme_set_sync_target(Scheme_Schedule_Info *sinfo, Scheme_Object *target,
   }
 }
 
-static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo)
+int scheme_syncing_ready(Syncing *syncing, Scheme_Schedule_Info *sinfo, int can_suspend)
 {
   int i, redirections = 0, all_semas = 1, j, result = 0;
   Evt *w;
   Scheme_Object *o;
   Scheme_Schedule_Info r_sinfo;
-  Syncing *syncing = (Syncing *)s;
   Evt_Set *evt_set;
   int is_poll;
   double sleep_end;
@@ -6550,10 +6559,12 @@ static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo)
       r_sinfo.current_syncing = (Scheme_Object *)syncing;
       r_sinfo.w_i = i;
       r_sinfo.is_poll = is_poll;
+      r_sinfo.replace_chain = sinfo->replace_chain;
 
       yep = ready(o, &r_sinfo);
 
       sleep_end = r_sinfo.sleep_end;
+      sinfo->replace_chain = r_sinfo.replace_chain;
 
       /* Calling a guard can allow thread swap, which might choose a
          semaphore or a channel, so check for a result: */
@@ -6615,7 +6626,7 @@ static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo)
   if (syncing->timeout >= 0.0) {
     if (syncing->sleep_end <= scheme_get_inexact_milliseconds())
       result = 1;
-  } else if (all_semas) {
+  } else if (all_semas && can_suspend) {
     /* Try to block in a GCable way: */
     if (sinfo->false_positive_ok) {
       /* In scheduler. Swap us in so we can suspend. */
@@ -6645,6 +6656,11 @@ static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo)
   return result;
 }
 
+static int syncing_ready(Syncing *syncing, Scheme_Schedule_Info *sinfo)
+{
+  return scheme_syncing_ready(syncing, sinfo, 1);
+}
+
 void scheme_accept_sync(Syncing *syncing, int i)
 {
   /* run atomic accept action to revise the wrap */
@@ -6664,23 +6680,40 @@ void scheme_accept_sync(Syncing *syncing, int i)
   syncing->wrapss[i] = pr;
 }
 
-static void syncing_needs_wakeup(Scheme_Object *s, void *fds)
+void scheme_syncing_needs_wakeup(Syncing *s, void *fds)
 {
   int i;
-  Scheme_Object *o;
+  Scheme_Object *o, *syncs = NULL;
+  Syncing *next;
   Evt *w;
-  Evt_Set *evt_set = ((Syncing *)s)->set;
+  Evt_Set *evt_set;
 
-  for (i = 0; i < evt_set->argc; i++) {
-    o = evt_set->argv[i];
-    w = evt_set->ws[i];
+  do {
+    evt_set = s->set;
 
-    if (w->needs_wakeup) {
-      Scheme_Needs_Wakeup_Fun nw = w->needs_wakeup;
+    for (i = 0; i < evt_set->argc; i++) {
+      o = evt_set->argv[i];
+      w = evt_set->ws[i];
       
-      nw(o, fds);
+      if (SAME_TYPE(SCHEME_TYPE(o), scheme_active_replace_evt_type)) {
+        /* Handle active_replace_evt specially to avoid stack overflow: */
+        next = scheme_replace_evt_needs_wakeup(o);
+        if (next)
+          syncs = scheme_make_raw_pair((Scheme_Object *)next, syncs);
+      } else if (w->needs_wakeup) {
+        Scheme_Needs_Wakeup_Fun nw = w->needs_wakeup;
+        
+        nw(o, fds);
+      }
     }
-  }
+
+    if (!syncs)
+      s = NULL;
+    else {
+      s = (Syncing *)SCHEME_CAR(syncs);
+      syncs = SCHEME_CDR(syncs);
+    }
+  } while (s);
 }
 
 static Scheme_Object *evt_p(int argc, Scheme_Object *argv[])
@@ -6796,52 +6829,183 @@ Scheme_Object *scheme_make_evt_set(int argc, Scheme_Object **argv)
   return (Scheme_Object *)make_evt_set("internal-make-evt-set", argc, argv, 0, 1);
 }
 
-void scheme_post_syncing_nacks(Syncing *syncing)
-     /* Also removes channel-syncers. Can be called multiple times. */
+static void post_syncing_nacks(Syncing *syncing, int as_escape)
+/* Also removes channel-syncers. Can be called multiple times. */
 {
   int i, c;
-  Scheme_Object *l;
+  Scheme_Object *l, *syncs = NULL;
+  Syncing *next;
 
-  if (syncing->thread && syncing->thread->sync_box)
-    syncing->thread->sync_box = NULL;
+  do {
+    if (as_escape) {
+      Scheme_Thread *p = syncing->thread;
+      
+      syncing->thread = NULL;
+      
+      if (p && p->sync_box)
+        scheme_post_sema_all(p->sync_box);
+      
+#ifdef MZ_PRECISE_GC
+      if (p && p->place_channel_msg_in_flight) {
+        GC_destroy_orphan_msg_memory(p->place_channel_msg_in_flight);
+        p->place_channel_msg_in_flight = NULL;
+      }
+#endif
+    }
 
-  if (syncing->set) {
-    c = syncing->set->argc;
+    if (syncing->thread && syncing->thread->sync_box)
+      syncing->thread->sync_box = NULL;
+
+    if (syncing->set) {
+      c = syncing->set->argc;
     
-    for (i = 0; i < c; i++) {
-      if (SAME_TYPE(SCHEME_TYPE(syncing->set->argv[i]), scheme_channel_syncer_type))
-	scheme_get_outof_line((Scheme_Channel_Syncer *)syncing->set->argv[i]);
-      if (syncing->nackss) {
-	if ((i + 1) != syncing->result) {
-	  l = syncing->nackss[i];
-	  if (l) {
-	    for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-	      scheme_post_sema_all(SCHEME_CAR(l));
-	    }
+      for (i = 0; i < c; i++) {
+        if (SAME_TYPE(SCHEME_TYPE(syncing->set->argv[i]), scheme_channel_syncer_type))
+          scheme_get_outof_line((Scheme_Channel_Syncer *)syncing->set->argv[i]);
+        else if (SAME_TYPE(SCHEME_TYPE(syncing->set->argv[i]), scheme_active_replace_evt_type)) {
+         /* Handle active_replace_evt specially to avoid stack overflow: */
+          next = scheme_replace_evt_nack(syncing->set->argv[i]);
+          if (next) {
+            syncs = scheme_make_raw_pair((Scheme_Object *)next, syncs);
+            if ((i + 1) != syncing->result)
+              syncs = scheme_make_raw_pair(scheme_true, syncs);
+          }
+        }
+
+        if (syncing->nackss) {
+          if ((i + 1) != syncing->result) {
+            l = syncing->nackss[i];
+            if (l) {
+              for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+                scheme_post_sema_all(SCHEME_CAR(l));
+              }
+            }
+            syncing->nackss[i] = NULL;
+          }
+        }
+      }
+    }
+
+    if (!syncs)
+      syncing = NULL;
+    else {
+      if (SAME_OBJ(scheme_true, SCHEME_CAR(syncs))) {
+        as_escape = 1;
+        syncs = SCHEME_CDR(syncs);
+      } else
+        as_escape = 0;
+
+      syncing = (Syncing *)SCHEME_CAR(syncs);
+      syncs = SCHEME_CDR(syncs);
+    }
+  } while (syncing);
+}
+
+void scheme_post_syncing_nacks(Syncing *syncing)
+{
+  post_syncing_nacks(syncing, 0);
+}
+
+void scheme_escape_during_sync(Syncing *syncing)
+{
+  post_syncing_nacks(syncing, 1);
+}
+
+Scheme_Object *scheme_syncing_result(Syncing *syncing, int tailok)
+{
+  if (syncing->result) {
+    /* Apply wrap functions to the selected evt: */
+    Scheme_Object *o, *l, *a, *to_call = NULL, *args[1], **mv = NULL;
+    int to_call_is_handle = 0, rc = 1;
+    Scheme_Cont_Frame_Data cframe;
+
+    o = syncing->set->argv[syncing->result - 1];
+    if (SAME_TYPE(SCHEME_TYPE(o), scheme_channel_syncer_type)) {
+      /* This is a put that got changed to a syncer, but not changed back */
+      o = ((Scheme_Channel_Syncer *)o)->obj;
+    }
+    if (syncing->wrapss) {
+      l = syncing->wrapss[syncing->result - 1];
+      if (l) {
+	for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+	  a = SCHEME_CAR(l);
+	  if (to_call) {
+            if (rc == 1) {
+              mv = args;
+              args[0] = o;
+            }
+	    
+	    /* Call wrap proc with breaks disabled */
+	    scheme_push_break_enable(&cframe, 0, 0);
+	    
+	    o = scheme_apply_multi(to_call, rc, mv);
+
+            if (SAME_OBJ(o, SCHEME_MULTIPLE_VALUES)) {
+              rc = scheme_multiple_count;
+              mv = scheme_multiple_array;
+              scheme_detach_multple_array(mv);
+            } else {
+              rc = 1;
+              mv = NULL;
+            }
+	    
+	    scheme_pop_break_enable(&cframe, 0);
+
+	    to_call = NULL;
 	  }
-	  syncing->nackss[i] = NULL;
+	  if (SCHEME_BOXP(a) || SCHEME_PROCP(a)) {
+	    if (SCHEME_BOXP(a)) {
+	      a = SCHEME_BOX_VAL(a);
+	      to_call_is_handle = 1;
+	    }
+	    to_call = a;
+	  } else if (SAME_TYPE(scheme_thread_suspend_type, SCHEME_TYPE(a))
+		     || SAME_TYPE(scheme_thread_resume_type, SCHEME_TYPE(a))) {
+	    o = SCHEME_PTR2_VAL(a);
+            rc = 1;
+          } else {
+	    o = a;
+            rc = 1;
+          }
+	}
+
+	if (to_call) {
+          if (rc == 1) {
+            mv = args;
+            args[0] = o;
+          }
+	  
+	  /* If to_call is still a wrap-evt (not a handle-evt),
+	     then set the config one more time: */
+	  if (!to_call_is_handle) {
+	    scheme_push_break_enable(&cframe, 0, 0);
+	    tailok = 0;
+	  }
+
+	  if (tailok) {
+	    return _scheme_tail_apply(to_call, rc, mv);
+	  } else {
+	    o = scheme_apply_multi(to_call, rc, mv);
+
+            if (SAME_OBJ(o, SCHEME_MULTIPLE_VALUES)) {
+              rc = scheme_multiple_count;
+              mv = scheme_multiple_array;
+              scheme_detach_multple_array(mv);
+              if (!to_call_is_handle)
+                scheme_pop_break_enable(&cframe, 1);
+              return scheme_values(rc, mv);
+            } else {
+              if (!to_call_is_handle)
+                scheme_pop_break_enable(&cframe, 1);
+              return o;
+            }
+	  }
 	}
       }
     }
-  }
-}
-
-static void escape_during_sync(Syncing *syncing)
-{
-  Scheme_Thread *p = syncing->thread;
-
-  syncing->thread = NULL;
-
-  if (p && p->sync_box)
-    scheme_post_sema_all(p->sync_box);
-  scheme_post_syncing_nacks(syncing);
-
-#ifdef MZ_PRECISE_GC
-  if (p && p->place_channel_msg_in_flight) {
-    GC_destroy_orphan_msg_memory(p->place_channel_msg_in_flight);
-    p->place_channel_msg_in_flight = NULL;
-  }
-#endif
+    return o;
+  } else
+    return NULL;
 }
 
 static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[], 
@@ -6941,8 +7105,9 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
     syncing->disable_break = scheme_current_thread;
   }
 
-  BEGIN_ESCAPEABLE(escape_during_sync, syncing);
-  scheme_block_until((Scheme_Ready_Fun)syncing_ready, syncing_needs_wakeup, 
+  BEGIN_ESCAPEABLE(scheme_escape_during_sync, syncing);
+  scheme_block_until((Scheme_Ready_Fun)syncing_ready,
+                     (Scheme_Needs_Wakeup_Fun)scheme_syncing_needs_wakeup,
 		     (Scheme_Object *)syncing, timeout);
   END_ESCAPEABLE();
 
@@ -6959,95 +7124,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
   }
 
   if (syncing->result) {
-    /* Apply wrap functions to the selected evt: */
-    Scheme_Object *o, *l, *a, *to_call = NULL, *args[1], **mv = NULL;
-    int to_call_is_handle = 0, rc = 1;
-
-    o = evt_set->argv[syncing->result - 1];
-    if (SAME_TYPE(SCHEME_TYPE(o), scheme_channel_syncer_type)) {
-      /* This is a put that got changed to a syncer, but not changed back */
-      o = ((Scheme_Channel_Syncer *)o)->obj;
-    }
-    if (syncing->wrapss) {
-      l = syncing->wrapss[syncing->result - 1];
-      if (l) {
-	for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-	  a = SCHEME_CAR(l);
-	  if (to_call) {
-            if (rc == 1) {
-              mv = args;
-              args[0] = o;
-            }
-	    
-	    /* Call wrap proc with breaks disabled */
-	    scheme_push_break_enable(&cframe, 0, 0);
-	    
-	    o = scheme_apply_multi(to_call, rc, mv);
-
-            if (SAME_OBJ(o, SCHEME_MULTIPLE_VALUES)) {
-              rc = scheme_multiple_count;
-              mv = scheme_multiple_array;
-              scheme_detach_multple_array(mv);
-            } else {
-              rc = 1;
-              mv = NULL;
-            }
-	    
-	    scheme_pop_break_enable(&cframe, 0);
-
-	    to_call = NULL;
-	  }
-	  if (SCHEME_BOXP(a) || SCHEME_PROCP(a)) {
-	    if (SCHEME_BOXP(a)) {
-	      a = SCHEME_BOX_VAL(a);
-	      to_call_is_handle = 1;
-	    }
-	    to_call = a;
-	  } else if (SAME_TYPE(scheme_thread_suspend_type, SCHEME_TYPE(a))
-		     || SAME_TYPE(scheme_thread_resume_type, SCHEME_TYPE(a))) {
-	    o = SCHEME_PTR2_VAL(a);
-            rc = 1;
-          } else {
-	    o = a;
-            rc = 1;
-          }
-	}
-
-	if (to_call) {
-          if (rc == 1) {
-            mv = args;
-            args[0] = o;
-          }
-	  
-	  /* If to_call is still a wrap-evt (not a handle-evt),
-	     then set the config one more time: */
-	  if (!to_call_is_handle) {
-	    scheme_push_break_enable(&cframe, 0, 0);
-	    tailok = 0;
-	  }
-
-	  if (tailok) {
-	    return _scheme_tail_apply(to_call, rc, mv);
-	  } else {
-	    o = scheme_apply_multi(to_call, rc, mv);
-
-            if (SAME_OBJ(o, SCHEME_MULTIPLE_VALUES)) {
-              rc = scheme_multiple_count;
-              mv = scheme_multiple_array;
-              scheme_detach_multple_array(mv);
-              if (!to_call_is_handle)
-                scheme_pop_break_enable(&cframe, 1);
-              return scheme_values(rc, mv);
-            } else {
-              if (!to_call_is_handle)
-                scheme_pop_break_enable(&cframe, 1);
-              return o;
-            }
-	  }
-	}
-      }
-    }
-    return o;
+    return scheme_syncing_result(syncing, tailok);
   } else {
     if (with_timeout && SCHEME_PROCP(argv[0])) {
       if (tailok)

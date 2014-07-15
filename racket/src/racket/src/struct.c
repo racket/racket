@@ -84,6 +84,14 @@ typedef struct {
   Scheme_Object *maker;
 } Nack_Guard_Evt;
 
+typedef struct {
+  Scheme_Object so;
+  int done;
+  Syncing *syncing;
+  Scheme_Object *wrapper;
+  Scheme_Object *orig;
+} Active_Replace_Evt;
+
 static Scheme_Object *make_inspector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_sibling_inspector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *inspector_p(int argc, Scheme_Object *argv[]);
@@ -117,6 +125,7 @@ static Scheme_Object *make_struct_field_mutator(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *nack_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *handle_evt(int argc, Scheme_Object *argv[]);
+static Scheme_Object *replace_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *handle_evt_p(int argc, Scheme_Object *argv[]);
 
@@ -157,6 +166,9 @@ static int wrapped_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int nack_guard_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int nack_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int poll_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+static int replace_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+static int active_replace_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+static void active_replace_evt_needs_wakeup(Scheme_Object *s, void *fds);
 
 static int chaperone_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int is_chaperone_evt(Scheme_Object *o);
@@ -557,6 +569,11 @@ scheme_init_struct (Scheme_Env *env)
 						      "handle-evt",
 						      2, 2),
 			     env);
+  scheme_add_global_constant("replace-evt",
+			     scheme_make_prim_w_arity(replace_evt,
+						      "replace-evt",
+						      2, 2),
+			     env);
   scheme_add_global_constant("chaperone-evt",
 			     scheme_make_prim_w_arity(chaperone_evt,
 						      "chaperone-evt",
@@ -845,6 +862,13 @@ void scheme_init_struct_wait()
   scheme_add_evt(scheme_handle_evt_type,
 		 (Scheme_Ready_Fun)wrapped_evt_is_ready,
 		 NULL, NULL, 1);
+  scheme_add_evt(scheme_replace_evt_type,
+		 (Scheme_Ready_Fun)replace_evt_is_ready,
+		 NULL, NULL, 1);
+  scheme_add_evt(scheme_active_replace_evt_type,
+		 (Scheme_Ready_Fun)active_replace_evt_is_ready,
+		 active_replace_evt_needs_wakeup,
+		 NULL, 1);
   scheme_add_evt(scheme_chaperone_type,
 		 (Scheme_Ready_Fun)chaperone_evt_is_ready,
 		 NULL, 
@@ -3393,7 +3417,7 @@ static Scheme_Object *make_struct_field_mutator(int argc, Scheme_Object *argv[])
 /*                           wraps and nacks                              */
 /*========================================================================*/
 
-static Scheme_Object *wrap_evt(const char *who, int wrap, int argc, Scheme_Object *argv[])
+static Scheme_Object *wrap_evt(const char *who, Scheme_Type ty, int argc, Scheme_Object *argv[])
 {
   Wrapped_Evt *ww;
 
@@ -3404,7 +3428,7 @@ static Scheme_Object *wrap_evt(const char *who, int wrap, int argc, Scheme_Objec
     scheme_wrong_contract(who, "procedure?", 1, argc, argv);
 
   ww = MALLOC_ONE_TAGGED(Wrapped_Evt);
-  ww->so.type = (wrap ? scheme_wrap_evt_type : scheme_handle_evt_type);
+  ww->so.type = ty;
   ww->evt = argv[0];
   ww->wrapper = argv[1];
 
@@ -3413,12 +3437,17 @@ static Scheme_Object *wrap_evt(const char *who, int wrap, int argc, Scheme_Objec
 
 Scheme_Object *scheme_wrap_evt(int argc, Scheme_Object *argv[])
 {
-  return wrap_evt("wrap-evt", 1, argc, argv);
+  return wrap_evt("wrap-evt", scheme_wrap_evt_type, argc, argv);
 }
 
 Scheme_Object *handle_evt(int argc, Scheme_Object *argv[])
 {
-  return wrap_evt("handle-evt", 0, argc, argv);
+  return wrap_evt("handle-evt", scheme_handle_evt_type, argc, argv);
+}
+
+Scheme_Object *replace_evt(int argc, Scheme_Object *argv[])
+{
+  return wrap_evt("replace-evt", scheme_replace_evt_type, argc, argv);
 }
 
 Scheme_Object *handle_evt_p(int argc, Scheme_Object *argv[])
@@ -3648,27 +3677,8 @@ static int chaperone_evt_is_ready(Scheme_Object *obj, Scheme_Schedule_Info *sinf
   return 0;
 }
 
-static Scheme_Object *is_chaperone_evt_k(void)
-{
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
-  int c;
-
-  p->ku.k.p1 = NULL;
-
-  c = is_chaperone_evt(o);
-
-  return scheme_make_integer(c);
-}
-
 static int is_chaperone_evt(Scheme_Object *o)
 {
-#include "mzstkchk.h"
-  {
-    scheme_current_thread->ku.k.p1 = (void *)o;
-    return SCHEME_INT_VAL(scheme_handle_stack_overflow(is_chaperone_evt_k));
-  }
-
   return scheme_is_evt(SCHEME_CHAPERONE_VAL(o));
 }
 
@@ -3786,6 +3796,156 @@ static int poll_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
     return 0;
   } else
     return 1; /* Non-evt => ready */
+}
+
+static int replace_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
+{
+  Active_Replace_Evt *a;
+  Syncing *s;
+  Scheme_Object *argv[1];
+
+  argv[0] = ((Wrapped_Evt *)o)->evt;
+  s = scheme_make_syncing(1, argv);
+
+  a = MALLOC_ONE_TAGGED(Active_Replace_Evt);
+  a->so.type = scheme_active_replace_evt_type;
+  a->done = 0;
+  a->wrapper = ((Wrapped_Evt *)o)->wrapper;
+  a->syncing = s;
+  a->orig = o;
+
+  scheme_set_sync_target(sinfo, (Scheme_Object *)a, NULL, NULL, 0, 1, NULL);
+  return 0;
+}
+
+static int active_replace_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
+{
+  Active_Replace_Evt *a = (Active_Replace_Evt *)o;
+  int nested = 0;
+
+  if (!a->syncing)
+    return 0;
+
+  do {
+    if (a->syncing) {
+      /* Can't finish in a scheduler context: */
+      if (a->done && sinfo->false_positive_ok) {
+        sinfo->potentially_false_positive = 1;
+        if (nested)
+          sinfo->replace_chain = NULL;
+        return 1;
+      }
+
+      if (!a->done && sinfo->replace_chain && !nested) {
+        /* In a nested context; trampoline to avoid stack overflow.
+           If the trampolined check succeeds, then the context calling here will
+           not see it; we'll return a potentially-false-positive success,
+           and then check again in a way that bubbles results up. */
+        Scheme_Object *l;
+        l = scheme_make_pair((Scheme_Object *)a, sinfo->replace_chain);
+        sinfo->replace_chain = l;
+        return 0;
+      }
+
+      if (!a->done && !sinfo->replace_chain) {
+        /* In a non-nested scheduler context; We can receive trampolined syncs: */
+        sinfo->replace_chain = scheme_null;
+      }
+
+      if (a->done || scheme_syncing_ready(a->syncing, sinfo, 0)) {
+        sinfo->replace_chain = NULL;
+
+        if (sinfo->potentially_false_positive)
+          return 1;
+
+        a->done = 1;
+        if (sinfo->false_positive_ok) {
+          sinfo->potentially_false_positive = 1;
+          return 1;
+        } else if (nested) {
+          /* We're in a trampilined sync. Now that we've recorded success,
+             wait for the next round, and we won't trampoline then. This
+             waiting causes a quadratic bubbling effect for deeply nested
+             events, so uses of `replace-evt` shouldn't deeply nest! */
+          sinfo->spin = 1;
+          return 0;
+        } else {
+          /* Non-nested, non-scheduler context. */
+          Scheme_Object *v, *argv[1], **args;
+          Syncing *s = a->syncing;
+          int argc;
+
+          a->syncing = NULL;
+
+          v = scheme_syncing_result(s, 0);
+
+          if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES)) {
+            argc = scheme_multiple_count;
+            args = scheme_multiple_array;
+            scheme_detach_multple_array(args);
+          } else {
+            argv[0] = v;
+            args = argv;
+            argc = 1;
+          }
+
+          v = scheme_apply(a->wrapper, argc, args);
+
+          if (scheme_is_evt(v)) {
+            scheme_set_sync_target(sinfo, v, NULL, NULL, 0, 1, NULL);
+            return 0;
+          } else {
+            /* Non-event => ready */
+            scheme_set_sync_target(sinfo, a->orig, NULL, NULL, 0, 1, NULL);
+            return 1;
+          }
+        }
+      }
+    }
+
+    if (sinfo->replace_chain && !SCHEME_NULLP(sinfo->replace_chain)) {
+      /* Receive a trampoline */
+      a = (Active_Replace_Evt *)SCHEME_CAR(sinfo->replace_chain);
+      sinfo->replace_chain = SCHEME_CDR(sinfo->replace_chain);
+      nested = 1;
+    } else
+      a = NULL;
+  } while (a);
+
+  sinfo->replace_chain = NULL;
+
+  return 0;
+}
+
+static void active_replace_evt_needs_wakeup(Scheme_Object *o, void *fds)
+{
+  Active_Replace_Evt *a = (Active_Replace_Evt *)o;
+
+  if (a->syncing && !a->done)
+    scheme_syncing_needs_wakeup(a->syncing, fds);
+}
+
+Syncing *scheme_replace_evt_needs_wakeup(Scheme_Object *o)
+{
+  Active_Replace_Evt *a = (Active_Replace_Evt *)o;
+
+  if (a->syncing && !a->done)
+    return a->syncing;
+
+  return NULL;
+}
+
+Syncing *scheme_replace_evt_nack(Scheme_Object *o)
+{
+  Active_Replace_Evt *a = (Active_Replace_Evt *)o;
+  Syncing *s = NULL;
+
+  if (a->syncing) {
+    s = a->syncing;
+    a->syncing = NULL;
+  }
+
+  return s;
 }
 
 /*========================================================================*/
@@ -5900,6 +6060,8 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_handle_evt_type, mark_wrapped_evt);
   GC_REG_TRAV(scheme_nack_guard_evt_type, mark_nack_guard_evt);
   GC_REG_TRAV(scheme_poll_evt_type, mark_nack_guard_evt);
+  GC_REG_TRAV(scheme_replace_evt_type, mark_wrapped_evt);
+  GC_REG_TRAV(scheme_active_replace_evt_type, mark_active_replace_evt);
 
   GC_REG_TRAV(scheme_chaperone_type, mark_chaperone);
   GC_REG_TRAV(scheme_proc_chaperone_type, mark_chaperone);

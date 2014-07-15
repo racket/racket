@@ -258,6 +258,7 @@ scheme_init_type ()
   set_name(scheme_evt_set_type, "<evt-set>");
   set_name(scheme_wrap_evt_type, "<evt>");
   set_name(scheme_handle_evt_type, "<evt>");
+  set_name(scheme_replace_evt_type, "<evt>");
   set_name(scheme_nack_evt_type, "<evt>");
   set_name(scheme_nack_guard_evt_type, "<evt>");
   set_name(scheme_poll_evt_type, "<evt>");

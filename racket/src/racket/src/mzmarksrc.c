@@ -2225,6 +2225,18 @@ mark_nack_guard_evt {
   gcBYTES_TO_WORDS(sizeof(Nack_Guard_Evt));
 }
 
+mark_active_replace_evt {
+ mark:
+  Active_Replace_Evt *a = (Active_Replace_Evt *)p;
+
+  gcMARK2(a->syncing, gc);
+  gcMARK2(a->wrapper, gc);
+  gcMARK2(a->orig, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Active_Replace_Evt));
+}
+
 mark_chaperone {
  mark:
   Scheme_Chaperone *px = (Scheme_Chaperone *)p;
