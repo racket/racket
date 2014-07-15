@@ -2371,8 +2371,8 @@ exploring reduction sequences.
                  [#:racket-colors? racket-colors? boolean? #t]
                  [#:scheme-colors? scheme-colors? boolean? racket-colors?]
                  [#:filter term-filter (-> any/c (or/c #f string?) any/c) (λ (x y) #t)]
-                 [#:x-spacing x-spacing number? 15]
-                 [#:y-spacing y-spacing number? 15]
+                 [#:x-spacing x-spacing real? 15]
+                 [#:y-spacing y-spacing real? 15]
                  [#:layout layout (-> (listof term-node?) void?) void]
                  [#:edge-labels? edge-labels? boolean? #t]
                  [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
@@ -2454,7 +2454,7 @@ The @racket[term-filter] function is called each time a new node is
 about to be inserted into the graph. If the filter returns false, the
 node is not inserted into the graph.
 
-The @racket[x-spacing] and @racket[y-spacing] control the amount of
+The @racket[x-spacing] and @racket[y-spacing] arguments control the amount of
 space put between the snips in the default layout.
 
 The @racket[layout] argument is called (with all of the terms) when

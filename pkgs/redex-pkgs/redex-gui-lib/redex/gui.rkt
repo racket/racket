@@ -43,6 +43,8 @@
                #:edge-label-font (or/c #f (is-a?/c font%))
                #:edge-labels? boolean?
                #:filter (-> any/c (or/c #f string?) any/c)
+               #:x-spacing real?
+               #:y-spacing real?
                #:graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>)
                #:reduce (-> reduction-relation? any/c
                             (listof (list/c (or/c false/c string?) any/c))))
@@ -62,6 +64,8 @@
                   #:edge-label-font (or/c #f (is-a?/c font%))
                   #:edge-labels? boolean?
                   #:filter (-> any/c (or/c #f string?) any/c)
+                  #:x-spacing real?
+                  #:y-spacing real?
                   #:graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>)
                   #:reduce (-> reduction-relation? any/c
                                (listof (list/c (or/c false/c string?) any/c)))
