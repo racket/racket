@@ -1521,7 +1521,7 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
   }
 
   if (SCHEME_INTP(v))
-    v = ((Scheme_Structure *)o)->slots[SCHEME_INT_VAL(v)];
+    v = scheme_struct_ref(o, SCHEME_INT_VAL(v));
 
   if (scheme_is_evt(v)) {
     scheme_set_sync_target(sinfo, v, NULL, NULL, 0, 1, NULL);

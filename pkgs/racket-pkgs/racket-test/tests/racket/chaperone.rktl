@@ -1258,6 +1258,18 @@
                             (set! checked? #t)
                             v)))
   (test #t values checked?))
+(let ()
+  (struct e (orig)
+    #:property prop:evt 0)
+  (define an-e (e always-evt))
+  (define checked? #f)
+  (test #t evt? an-e)
+  (sync (chaperone-struct an-e
+                          e-orig
+                          (lambda (self v)
+                            (set! checked? #t)
+                            v)))
+  (test #t values checked?))
 
 ;; ----------------------------------------
 ;; channel chaperones
