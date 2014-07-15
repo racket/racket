@@ -3908,7 +3908,7 @@
              [label (string-constant spell-skip-to-next-misspelled-word)]
              [shortcut (if (member 'shift (get-default-shortcut-prefix))
                            #f
-                           #\w)]
+                           #\n)]
              [shortcut-prefix (if (member 'shift (get-default-shortcut-prefix))
                                   (get-default-shortcut-prefix)
                                   (cons 'shift (get-default-shortcut-prefix)))]
