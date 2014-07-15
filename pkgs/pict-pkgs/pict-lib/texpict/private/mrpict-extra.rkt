@@ -88,12 +88,9 @@
                                    x))
            x)))
 
-      (define dc 
-	(case-lambda
-	 [(f w h a d)
-	  (make-pict `(prog ,f ,h) w h a d null #f #f)]
-	 [(f w h)
-	  (dc f w h h 0)]))
+      (define (dc f w h [a h] [d 0])
+        (make-pict `(prog ,f ,h) w h a d null #f #f))
+
       (define prog-picture dc)
 
       (define current-expected-text-scale (make-parameter (list 1 1)))

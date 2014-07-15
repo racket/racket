@@ -130,29 +130,23 @@ A @racket[child] structure is normally not created directly with
 
 @section{Basic Pict Constructors}
 
-@defproc*[([(dc [draw ((is-a?/c dc<%>) real? real? . -> . any)]
-                [w real?]
-                [h real?])
-            pict?]
-           [(dc [draw ((is-a?/c dc<%>) real? real? . -> . any)]
-                [w real?]
-                [h real?]
-                [a real?]
-                [d real?])
-            pict?])]{
+@defproc[(dc [draw (-> (is-a?/c dc<%>) real? real? any)]
+             [w real?]
+             [h real?]
+             [a real? h]
+             [d real? 0])
+         pict?]{
 
 Creates an arbitrary self-rendering pict.  The arguments to the
 rendering procedure will be a drawing context and top-left location for
 drawing.
 
-The @racket[w] and @racket[h] arguments determine the width and height
-of the resulting pict's @tech{bounding box}.  In the three-argument case, the
-descent is @math{0} and the ascent is @racket[h] for the bounding
-box; in the five-argument case, @racket[a] and @racket[d] are used
-as the bounding box's ascent and descent.
+The @racket[w], @racket[h], @racket[a], and @racket[d] arguments 
+determine the width, height, ascent, and descent of the
+of the resulting pict's @tech{bounding box} respectively.
 
 When the rendering procedure is called, the current pen and brush will
-be solid and in the pict's color (and linewidth), and the scale and
+be @racket['solid] and in the pict's color and @racket[linewidth], and the scale and
 offset of the drawing context will be set. The text mode will be transparent, but
 the font and text colors are not guaranteed to be anything in
 particular.
@@ -174,9 +168,30 @@ particular.
         (send dc draw-path path dx dy)
         (send dc set-brush old-brush)
         (send dc set-pen old-pen))
-    50 50)
-]}
+    50 50)]
 
+The @racket[draw] is called during the dynamic extent of
+the call to @racket[dc] as part of the contract checking.
+
+Specifically, the pre-condition portion of the contract
+for @racket[dc] concocts a @racket[dc<%>] object with a 
+random initial state, calls the @racket[draw] argument 
+with that @racket[dc<%>] and then checks to make sure that 
+@racket[draw] the state of the  @racket[dc<%>] object
+is the same as it was before @racket[draw] was called.
+
+@examples[#:eval 
+          ss-eval
+          (dc (λ (dc dx dy)
+                (send dc set-brush "red" 'solid)
+                (send dc set-pen "black" 1 'transparent)
+                (send dc draw-ellipse dx dy 50 50))
+              50 50)]
+
+@history[#:changed "1.3" @list{The @racket[draw] argument is 
+                               now called by the @racket[#:pre] 
+                               condition of @racket[dc].}]
+}
 
 @defproc*[([(blank [size real? 0]) pict?]
            [(blank [w real?] [h real?]) pict?]
