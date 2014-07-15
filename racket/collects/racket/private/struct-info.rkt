@@ -11,6 +11,11 @@
              struct:struct-info
              prop:struct-info
 
+             extract-extended-struct-info
+             make-extended-struct-info
+             struct:extended-struct-info
+             (rename extended-struct-info-rec? extended-struct-info?)
+
              prop:struct-auto-info
              struct-auto-info?
              struct-auto-info-lists)
@@ -44,6 +49,13 @@
                                                   "(procedure-arity-includes/c 0)"
                                                   proc)))))
 
+  (define-values (struct:extended-struct-info make-extended-struct-info extended-struct-info-rec?
+                                              extended-struct-info-ref extended-struct-info-set!)
+    (make-struct-type 'extended-struct-info struct:struct-info
+                      1 0 #f
+                      (list (cons prop:struct-info
+                                  (lambda (v) ((struct-info-ref v 0)))))))
+
   (define-values (extract-struct-info)
     (lambda (si)
       (cond
@@ -68,6 +80,15 @@
        [else (raise-argument-error 'extract-struct-info
                                    "struct-info?"
                                    si)])))
+
+  (define-values (extract-extended-struct-info)
+    (lambda (esi)
+      (if (extended-struct-info-rec? esi)
+          (append (extract-struct-info esi)
+                  (list (extended-struct-info-ref esi 0)))
+          (raise-argument-error 'extract-extended-struct-info
+                                "extended-struct-info?"
+                                esi))))
 
   (define-values (struct-info?)
     (lambda (si)

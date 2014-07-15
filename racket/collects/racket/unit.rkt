@@ -143,7 +143,7 @@
 
 (begin-for-syntax
  (define-struct self-name-struct-info (id)
-   #:super struct:struct-info
+   #:super struct:extended-struct-info
    #:property prop:procedure (lambda (me stx)
                                (syntax-case stx ()
                                  [(_ arg ...) (datum->syntax
@@ -162,6 +162,22 @@
 (define-for-syntax option-keywords
   "#:mutable, #:constructor-name, #:extra-constructor-name, #:omit-constructor, #:omit-define-syntaxes, or #:omit-define-values")
 
+;; Extract field ids from field spec.
+(define-for-syntax (sanitize-fields field-stx orig-stx)
+  (map (lambda (field)
+         (if (identifier? field)
+             field
+             (syntax-case field ()
+               [(id #:mutable)
+                (identifier? #'id)
+                #'id]
+               [_
+                (raise-syntax-error #f
+                                    "bad field specification"
+                                    orig-stx
+                                    field)])))
+       (syntax->list field-stx)))
+
 ;; Replacement `struct' signature form for `scheme/unit':
 (define-for-syntax (do-struct~ stx extra-make?)
   (syntax-case stx ()
@@ -172,19 +188,8 @@
                              "expected an identifier to name the structure type"
                              stx
                              #'name))
-       (for-each (lambda (field)
-                   (unless (identifier? field)
-                     (syntax-case field ()
-                       [(id #:mutable)
-                        (identifier? #'id)
-                        'ok]
-                       [_
-                        (raise-syntax-error #f
-                                            "bad field specification"
-                                            stx
-                                            field)])))
-                 (syntax->list #'(field ...)))
-       (let*-values ([(no-ctr? mutable? no-stx? no-rt? opt-cname)
+       (let*-values ([(field-ids) (sanitize-fields #'(field ...) stx)]
+                     [(no-ctr? mutable? no-stx? no-rt? opt-cname)
                       (let loop ([opts (syntax->list #'(opt ...))]
                                  [no-ctr? #f]
                                  [mutable? #f]
@@ -266,7 +271,7 @@
          (cons
           #`(define-syntaxes (name)
               #,(let ([e (build-struct-expand-info
-                          #'name (syntax->list #'(field ...))
+                          #'name field-ids
                           #f (not mutable?)
                           #f '(#f) '(#f)
                           #:omit-constructor? no-ctr?
@@ -274,9 +279,10 @@
                   (if self-ctr?
                       #`(make-self-name-struct-info 
                          (lambda () #,e)
+                         (quote #,field-ids) ;; units don't discuss struct parents
                          (lambda () (quote-syntax #,def-cname)))
                       e)))
-          (let ([names (build-struct-names #'name (syntax->list #'(field ...))
+          (let ([names (build-struct-names #'name field-ids
                                            #f (not mutable?)
                                            #:constructor-name def-cname)])
             (cond
@@ -403,19 +409,8 @@
                              "expected an identifier to name the structure type"
                              stx
                              #'name))
-       (for-each (lambda (field)
-                   (unless (identifier? field)
-                     (syntax-case field ()
-                       [(id #:mutable)
-                        (identifier? #'id)
-                        'ok]
-                       [_
-                        (raise-syntax-error #f
-                                            "bad field specification"
-                                            stx
-                                            field)])))
-                 (syntax->list #'(field ...)))
-       (let*-values ([(no-ctr? mutable? no-stx? no-rt? opt-cname)
+       (let*-values ([(field-ids) (sanitize-fields #'(field ...) stx)]
+                     [(no-ctr? mutable? no-stx? no-rt? opt-cname)
                       (let loop ([opts (syntax->list #'(opt ...))]
                                  [no-ctr? #f]
                                  [mutable? #f]
@@ -506,7 +501,7 @@
                                                  (not (pair? (syntax-e f))))
                                             null
                                             #`(-> #,pred #,c void?))))
-                               (syntax->list #'(field ...))
+                               field-ids
                                (syntax->list #'(ctc ...))))])
              (list* (car l)
                     (list (cadr l) ctor-ctc)
@@ -515,7 +510,7 @@
          (cons
           #`(define-syntaxes (name)
               #,(let ([e (build-struct-expand-info
-                          #'name (syntax->list #'(field ...))
+                          #'name field-ids
                           #f (not mutable?)
                           #f '(#f) '(#f)
                           #:omit-constructor? no-ctr?
@@ -523,10 +518,11 @@
                   (if self-ctr?
                       #`(make-self-name-struct-info 
                          (lambda () #,e)
+                         (quote #,field-ids)
                          (lambda () (quote-syntax #,def-cname)))
                       e)))
           (let* ([names (add-contracts
-                         (build-struct-names #'name (syntax->list #'(field ...))
+                         (build-struct-names #'name field-ids
                                              #f (not mutable?)
                                              #:constructor-name def-cname))]
                  [cpairs (cons 'contracted

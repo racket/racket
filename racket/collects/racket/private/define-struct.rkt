@@ -8,7 +8,7 @@
                          "procedure-alias.rkt"
                          "member.rkt"
                          "stx.rkt" "stxcase-scheme.rkt" "small-scheme.rkt" 
-                         "stxloc.rkt" "qqstx.rkt"
+                         "stxloc.rkt" "qqstx.rkt" "logger.rkt"
                          "struct-info.rkt"))
 
   (#%provide define-struct*
@@ -24,7 +24,7 @@
      struct-auto-info-rec?
      struct-auto-info-ref
      struct-auto-info-set!)
-    (make-struct-type 'struct-auto-info struct:struct-info
+    (make-struct-type 'struct-auto-info struct:extended-struct-info
                       1 0 #f
                       (list (cons prop:struct-auto-info
                                   (lambda (rec)
@@ -46,10 +46,10 @@
                          "bad syntax;\n identifier for static struct-type information cannot be used as an expression"
                          stx))
                       null
-                      (lambda (proc autos info)
+                      (lambda (proc fields autos info)
                         (if (and (procedure? proc)
                                  (procedure-arity-includes? proc 0))
-                            (values proc autos)
+                            (values proc fields autos)
                             (raise-argument-error 'make-struct-info
                                                   "(procedure-arity-includes/c 0)"
                                                   proc)))))
@@ -382,25 +382,35 @@
                              "bad syntax;\n expected <id> for structure-type name or (<id> <id>) for name and supertype\n name"
                              stx
                              #'id)]))])
-         (let-values ([(super-info super-autos super-info-checked?)
+         (let-values ([(super-info super-autos super-info-checked? super-info-extended?)
 		       (if super-id
 			   (let ([v (syntax-local-value super-id (lambda () #f))])
-			     (if (struct-info? v)
-				 (values (extract-struct-info v) 
-                                         (if (struct-auto-info? v)
-                                             (struct-auto-info-lists v)
-                                             (list null null))
-                                         (checked-struct-info-rec? v))
-				 (raise-syntax-error
-				  #f
-				  (format "parent struct type not defined~a"
-					  (if v
-					      ";\n identifier does not name struct type information"
-					      ""))
-				  stx
-				  super-id)))
+			     (cond
+                              [(extended-struct-info? v)
+                               (values (extract-extended-struct-info v) 
+                                       (if (struct-auto-info? v)
+                                           (struct-auto-info-lists v)
+                                           (list null null))
+                                       (checked-struct-info-rec? v)
+                                       #t)]
+                              [(struct-info? v)
+                               (values (extract-struct-info v) 
+                                       (if (struct-auto-info? v)
+                                           (struct-auto-info-lists v)
+                                           (list null null))
+                                       (checked-struct-info-rec? v)
+                                       #f)]
+                              [else
+                               (raise-syntax-error
+                                #f
+                                (format "parent struct type not defined~a"
+                                        (if v
+                                            ";\n identifier does not name struct type information"
+                                            ""))
+                                stx
+                                super-id)]))
 			   ;; if there's no super type, it's like it was checked
-			   (values #f #f #t))])
+			   (values #f #f #t #f))])
            (when (and super-info
                       (not (car super-info)))
              (raise-syntax-error
@@ -634,13 +644,13 @@
                                                        (positive? auto-count))]
                                    [mk-info (if super-info-checked?
                                                 (if name-as-ctor?
-                                                    #'make-self-ctor-checked-struct-info
-                                                    #'make-checked-struct-info)
+                                                    #'make-self-ctor-checked-struct-info ; parent: checked-struct-info
+                                                    #'make-checked-struct-info) ; parent: struct-auto-info
                                                 (if name-as-ctor?
                                                     #'make-self-ctor-struct-info
                                                     (if include-autos?
-                                                        #'make-struct-auto-info
-                                                        #'make-struct-info)))])
+                                                        #'make-struct-auto-info ; parent: struct-info
+                                                        #'make-extended-struct-info)))])
                               (quasisyntax/loc stx
                                 (define-syntaxes (#,id)
                                   (#,mk-info
@@ -658,6 +668,7 @@
                                               (if super-expr
                                                   '(#f)
                                                   null)))
+                                      ;; mutators
                                       (list
                                        #,@(reverse
                                            (let loop ([fields fields][sets sets])
@@ -678,6 +689,15 @@
                                             (if super-expr
                                                 #f
                                                 #t))))
+                                   ;; selectors stored in reverse, so store fields in reverse.
+                                   (list #,@(map (λ (f) #`(quote #,(field-id f))) (reverse fields))
+                                         ;; XXX: possible for parent to not have extension.
+                                         ;; This is troubling and can cause surprising hygiene issues.
+                                         #,@(if super-info-extended?
+                                                (map (λ (f) #`(quote #,f)) (list-ref super-info 6))
+                                                (if super-expr
+                                                    '(#f)
+                                                    null)))
                                    #,@(if include-autos?
                                           (list #`(list (list #,@(map protect 
                                                                       (list-tail sels (- (length sels) auto-count)))
@@ -795,17 +815,60 @@
                                                 stx
                                                 an)]))
                        ans)
-             (let-values ([(construct pred accessors parent)
+             (let-values ([(construct pred accessors parent fields)
                            (let ([v (syntax-local-value #'info (lambda () #f))])
-                             (unless (struct-info? v)
+                             (unless (or (extended-struct-info? v)
+                                         (struct-info? v))
                                (raise-syntax-error #f "identifier is not bound to a structure type" stx #'info))
-                             (let ([v (extract-struct-info v)])
-                               (values (cadr v)
-                                       (caddr v)
-                                       (cadddr v)
-                                       (list-ref v 5))))])
+                             (if (extended-struct-info? v)
+                                 (let ([v (extract-extended-struct-info v)])
+                                   (values (cadr v)
+                                           (caddr v)
+                                           (cadddr v)
+                                           (list-ref v 5)
+                                           (list-ref v 6)))
+                                 (let ([v (extract-struct-info v)])
+                                   (values (cadr v)
+                                           (caddr v)
+                                           (cadddr v)
+                                           (list-ref v 5)
+                                           #f))))])
                
-               (let* ([ensure-really-parent
+               (let* ([get-accessor/acc+fields
+                       ;; can't just rebuild the identifier due to hygiene.
+                       ;; find accessor positionally given field name.
+                       (λ (id whose accessors fields)
+                          (let loop ([accessors accessors] [fields fields])
+                            (cond
+                             [(null? accessors)
+                              (raise-syntax-error #f (format "identifier not a field of ~a" (syntax-e whose)) stx id)]
+                             [(eq? id (car fields))
+                              (car accessors)]
+                             [else
+                              (loop (cdr accessors) (cdr fields))])))]
+                      [get-accessor
+                       (λ (id) (get-accessor/acc+fields (syntax-e id) #'info accessors fields))]
+                      [dirty-sel ;; unhygienic!
+                        (λ (field info)
+                           (datum->syntax field
+                                          (string->symbol
+                                           (format "~a-~a" (syntax-e info) (syntax-e field)))
+                                          field))]
+                      [get-parent-accessor
+                       (λ (id parent-id)
+                          (let ([v (syntax-local-value parent-id (lambda () #f))])
+                            ;; probably won't happen(?)
+                            (unless (or (extended-struct-info? v) (struct-info? v))
+                              (raise-syntax-error #f "unknown parent struct" stx parent-id))
+                            (if (extended-struct-info? v)
+                                (let ([v (extract-extended-struct-info v)])
+                                  (get-accessor/acc+fields (syntax-e id) parent-id (cadddr v) (list-ref v 6)))
+                                ;; XXX: mix of extended and non-extended. Surprising hygiene?
+                                (begin
+                                  (log-warning (format "Struct ~a has extended info but parent ~a doesn't."
+                                                       #'info parent-id))
+                                  (dirty-sel id parent-id)))))]
+                      [ensure-really-parent
                        (λ (id)
                          (let loop ([parent parent])
                            (cond
@@ -816,34 +879,33 @@
                              [(free-identifier=? id parent) (void)]
                              [else
                               (let ([v (syntax-local-value parent (lambda () #f))])
+                                ;; probably won't happen(?)
                                 (unless (struct-info? v)
-                                  (raise-syntax-error #f "unknown parent struct" stx id)) ;; probably won't happen(?)
+                                  (raise-syntax-error #f "unknown parent struct" stx id))
                                 (let ([v (extract-struct-info v)])
                                   (loop (list-ref v 5))))])))]
                       [new-fields
-                       (map (lambda (an)
-                              (syntax-case an ()
-                                [(field expr)
-                                 (list (datum->syntax #'field
-                                                      (string->symbol
-                                                       (format "~a-~a"
-                                                               (syntax-e #'info)
-                                                               (syntax-e #'field)))
-                                                      #'field)
+                       (map
+                        (let-values ([(sel psel)
+                                      (if fields
+                                          (values (λ (f dummy) (get-accessor f))
+                                                  get-parent-accessor)
+                                          ;; XXX: We should push to make this path unnecessary.
+                                          ;; Kept for backward compatibility.
+                                          (values dirty-sel dirty-sel))])
+                          (lambda (an)
+                            (syntax-case an ()
+                              [(field expr)
+                               (list (sel #'field #'info)
+                                     #'expr
+                                     (car (generate-temporaries (list #'field))))]
+                              [(field #:parent id expr)
+                               (begin
+                                 (ensure-really-parent #'id)
+                                 (list (psel #'field #'id)
                                        #'expr
-                                       (car (generate-temporaries (list #'field))))]
-                                [(field #:parent id expr)
-                                 (begin
-                                   (ensure-really-parent #'id)
-                                   (list (datum->syntax #'field
-                                                        (string->symbol
-                                                         (format "~a-~a"
-                                                                 (syntax-e #'id)
-                                                                 (syntax-e #'field)))
-                                                        #'field)
-                                         #'expr
-                                         (car (generate-temporaries (list #'field)))))]))
-                            ans)]
+                                       (car (generate-temporaries (list #'field)))))])))
+                        ans)]
                       
                       ;; new-binding-for : syntax[field-name] -> (union syntax[expression] #f)
                       [new-binding-for 

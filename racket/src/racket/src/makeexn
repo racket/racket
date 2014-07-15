@@ -200,7 +200,7 @@ Not an exception in the above sense:
 
                       (define-values-for-syntax (make-self-ctr-struct-info)
                         (letrec-values ([(struct: make- ? ref set!)
-                                         (make-struct-type 'self-ctor-struct-info struct:struct-info
+                                         (make-struct-type 'self-ctor-struct-info struct:extended-struct-info
                                                            1 0 #f
                                                            (list (cons prop:procedure
                                                                        (lambda (v stx)
@@ -220,14 +220,14 @@ Not an exception in the above sense:
   (define (non-parent x)
     (or (equal? #f x) (equal? #t x)))
   
-  (define (gen-ds name-string fields parent)
+  (define (gen-ds name-string field-sels fields parent)
     (let* ([name (sss name-string)]
            [kern-name (sss "kernel:" name)]
            [sn (sss "struct:" name)]
            [mn (sss "make-" name)]
            [pn (sss name "?")]
-           [fds `(list ,@(map (λ (x) `(quote-syntax ,x)) fields))]
-           [fdsset! `'(,@(map (λ (x) #f) fields))]
+           [fds `(list ,@(map (λ (x) `(quote-syntax ,x)) field-sels))]
+           [fdsset! `'(,@(map (λ (x) #f) field-sels))]
            [prnt (if (non-parent parent) #t `(quote-syntax ,parent))])
       `(begin
          (#%require (rename '#%kernel ,kern-name ,name))
@@ -238,6 +238,7 @@ Not an exception in the above sense:
                                            (quote-syntax ,pn)                              
                                            ,fds
                                            ,fdsset! ,prnt))
+                               '(,@fdns)
                                (λ () (quote-syntax ,kern-name)))))))
   
   (define (parent-sym x)
@@ -256,13 +257,19 @@ Not an exception in the above sense:
   
   (define exceptions (map (λ (x) (gen-ds (ex-string x) (fields x) (parent-sym x))) l))
   (define structs (map (λ (x) (apply gen-ds x))
-                       '((arity-at-least (arity-at-least-value) #t)
+                       '((arity-at-least (arity-at-least-value) (value) #t)
                          (date (date-time-zone-offset date-dst? date-year-day date-week-day date-year 
-                                 date-month date-day date-hour date-minute date-second) #t)
+                                 date-month date-day date-hour date-minute date-second)
+                               (time-zone-offset dst? year-day week-day year 
+                                 month day hour minute second) #t)
                          (date* (date*-time-zone-name date*-nanosecond
                                  date-time-zone-offset date-dst? date-year-day date-week-day date-year 
-                                 date-month date-day date-hour date-minute date-second) date)
-                         (srcloc (srcloc-span srcloc-position srcloc-column srcloc-line srcloc-source) #t))))
+                                 date-month date-day date-hour date-minute date-second)
+                                (time-zone-name nanosecond
+                                 time-zone-offset dst? year-day week-day year 
+                                 month day hour minute second) date)
+                         (srcloc (srcloc-span srcloc-position srcloc-column srcloc-line srcloc-source)
+                                 (span position column line) #t))))
   
   (with-output-to-file filename #:exists 'replace
     (λ ()

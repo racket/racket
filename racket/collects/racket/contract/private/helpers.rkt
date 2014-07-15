@@ -23,12 +23,16 @@
               [(a b) (syntax a)]
               [_ stx])])
     (let ([v (syntax-local-value id (λ () #f))])
-      (if (struct-info? v)
-          (extract-struct-info v)
-          (raise-syntax-error 'provide/contract
-                              "expected a struct name" 
-                              provide-stx
-                              id)))))
+      (cond
+       [(extended-struct-info? v)
+        (extract-extended-struct-info v)]
+       [(struct-info? v)
+        (append (extract-struct-info v) (list #f))]
+       [else
+        (raise-syntax-error 'provide/contract
+                            "expected a struct name" 
+                            provide-stx
+                            id)]))))
 
 
 (define (add-name-prop name stx)

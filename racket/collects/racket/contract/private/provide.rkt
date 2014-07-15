@@ -47,6 +47,16 @@
                                   stx)]
       [_ (syntax orig)])))
 
+(define-for-syntax make-applicable-extended-struct-info
+  (letrec-values ([(struct: make- ? ref set!)
+                   (make-struct-type 'self-ctor-struct-info struct:extended-struct-info
+                                     1 0 #f
+                                     (list (cons prop:procedure
+                                                 (lambda (v stx)
+                                                   (self-ctor-transformer ((ref v 0)) stx))))
+                                     (current-inspector) #f '(0))])
+    make-))
+
 (define-for-syntax make-applicable-struct-info
   (letrec-values ([(struct: make- ? ref set!)
                    (make-struct-type 'self-ctor-struct-info struct:struct-info
@@ -319,7 +329,8 @@
         (define contract-id
           ;; let is here to give the right name.
           (let ([#,ex-id (coerce-contract '#,contract-error-name ctrct)
-                         #;(opt/c ctrct #:error-name #,contract-error-name)])
+                         #;
+                           (opt/c ctrct #:error-name #,contract-error-name)])
             #,ex-id))
         
         (define-syntax #,id-rename
@@ -660,6 +671,7 @@
                 [constructor-id (list-ref the-struct-info 1)]
                 [predicate-id (list-ref the-struct-info 2)]
                 [selector-ids (reverse (list-ref the-struct-info 3))]
+                [true-field-names (list-ref the-struct-info 6)]
                 [type-is-only-constructor? (free-identifier=? constructor-id struct-name)]
                 ; I think there's no way to detect when the struct-name binding isn't a constructor
                 [type-is-constructor? #t] 
@@ -733,49 +745,68 @@
                                  struct-name))
 
            ;; make sure the field names are right.
-           (let* ([relative-counts (let loop ([c (map car all-parent-struct-count/names)])
-                                     (cond
-                                       [(null? c) null]
-                                       [(null? (cdr c)) c]
-                                       [else (cons (- (car c) (cadr c))
-                                                   (loop (cdr c)))]))]
-                  [names (map cdr all-parent-struct-count/names)]
-                  [predicate-name (format "~a" (syntax-e predicate-id))])
-             (let loop ([count (car relative-counts)]
-                        [name (car names)]
-                        [counts (cdr relative-counts)]
-                        [names (cdr names)]
-                        [selector-strs (reverse (map (λ (x) (format "~a" (syntax-e x))) 
-                                                     selector-ids))]
-                        [field-names (reverse field-names)])
-               (cond
-                 [(or (null? selector-strs) (null? field-names))
-                  (void)]
-                 [(zero? count)
-                  (loop (car counts) (car names) (cdr counts) (cdr names)
-                        selector-strs
-                        field-names)]
-                 [else
-                  (let* ([selector-str (car selector-strs)]
-                         [field-name (car field-names)]
-                         [field-name-should-be
-                          (substring selector-str
-                                     (+ (string-length name) 1)
-                                     (string-length selector-str))]
-                         [field-name-is (format "~a" (syntax-e field-name))])
-                    (unless (equal? field-name-should-be field-name-is)
-                      (raise-syntax-error who
-                                          (format "expected field name to be ~a, but found ~a"
-                                                  field-name-should-be
-                                                  field-name-is)
-                                          provide-stx
-                                          field-name))
-                    (loop (- count 1)
-                          name
-                          counts
-                          names
-                          (cdr selector-strs)
-                          (cdr field-names)))])))
+           (if true-field-names
+               (let loop ([true-field-names true-field-names]
+                          [field-names (reverse field-names)])
+                 (cond
+                  [(or (null? true-field-names) (null? field-names))
+                   (void)]
+                  [else
+                   (let* ([field-name (car field-names)]
+                          [field-name-should-be (car true-field-names)]
+                          [field-name-is (syntax-e field-name)])
+                     (unless (eq? field-name-should-be field-name-is)
+                       (raise-syntax-error who
+                                           (format "expected field name to be ~a, but found ~a"
+                                                   field-name-should-be
+                                                   field-name-is)
+                                           provide-stx
+                                           field-name))
+                     (loop (cdr true-field-names)
+                           (cdr field-names)))]))
+               (let* ([relative-counts (let loop ([c (map car all-parent-struct-count/names)])
+                                         (cond
+                                          [(null? c) null]
+                                          [(null? (cdr c)) c]
+                                          [else (cons (- (car c) (cadr c))
+                                                      (loop (cdr c)))]))]
+                      [names (map cdr all-parent-struct-count/names)]
+                      [predicate-name (format "~a" (syntax-e predicate-id))])
+                 (let loop ([count (car relative-counts)]
+                            [name (car names)]
+                            [counts (cdr relative-counts)]
+                            [names (cdr names)]
+                            [selector-strs (reverse (map (λ (x) (format "~a" (syntax-e x)))
+                                                         selector-ids))]
+                            [field-names (reverse field-names)])
+                   (cond
+                    [(or (null? selector-strs) (null? field-names))
+                     (void)]
+                    [(zero? count)
+                     (loop (car counts) (car names) (cdr counts) (cdr names)
+                           selector-strs
+                           field-names)]
+                    [else
+                     (let* ([selector-str (car selector-strs)]
+                            [field-name (car field-names)]
+                            [field-name-should-be
+                             (substring selector-str
+                                        (+ (string-length name) 1)
+                                        (string-length selector-str))]
+                            [field-name-is (format "~a" (syntax-e field-name))])
+                       (unless (equal? field-name-should-be field-name-is)
+                         (raise-syntax-error who
+                                             (format "expected field name to be ~a, but found ~a"
+                                                     field-name-should-be
+                                                     field-name-is)
+                                             provide-stx
+                                             field-name))
+                       (loop (- count 1)
+                             name
+                             counts
+                             names
+                             (cdr selector-strs)
+                             (cdr field-names)))]))))
            (with-syntax ([((selector-codes selector-new-names) ...)
                           (filter
                            (λ (x) x)
@@ -895,12 +926,26 @@
                                   #`(begin
                                       (provide (rename-out [id-rename struct-name]))
                                       (define-syntax id-rename
-                                        #,(if (and type-is-constructor? (not omit-constructor?))
-                                              #`(make-applicable-struct-info 
+                                        #,(cond
+                                           [(and type-is-constructor? (not omit-constructor?))
+                                            ;; add extended info if possible.
+                                            (define-values (mk fields-arg)
+                                              (if true-field-names
+                                                  (values #'make-applicable-extended-struct-info
+                                                          (list #`(quote #,true-field-names)))
+                                                  (values #'make-applicable-struct-info '())))
+                                            #`(#,mk
                                                  #,proc
+                                                 #,@fields-arg
                                                  (lambda ()
-                                                   (quote-syntax constructor-new-name)))
-                                              #`(make-struct-info #,proc)))))]
+                                                   (quote-syntax constructor-new-name)))]
+                                           [else
+                                            (define-values (mk fields-arg)
+                                              (if true-field-names
+                                                  (values #'make-extended-struct-info
+                                                          (list #`(quote #,true-field-names)))
+                                                  (values #'make-struct-info '())))
+                                            #`(#,mk #,proc #,@fields-arg)]))))]
                                [struct:struct-name struct:struct-name]
                                [-struct:struct-name -struct:struct-name]
                                [struct-name struct-name]
@@ -986,6 +1031,7 @@
                      (cons (cons (length fields) (predicate->struct-name provide-stx predicate))
                            (loop (list-ref parent-info 5) #f))]))]))))
 
+       ;; FIXME: struct-name should be an accessible property of a struct-type.
        (define (predicate->struct-name orig-stx stx)
          (and stx
               (let ([m (regexp-match #rx"^(.*)[?]$" (format "~a" (syntax-e stx)))])
@@ -1060,14 +1106,31 @@
        (define p/c-clauses (syntax->list (syntax (p/c-ele ...))))
        (define struct-id-mapping (make-free-identifier-mapping))
        (define (add-struct-clause-to-struct-id-mapping a parent flds/stx)
-         (define flds (syntax->list flds/stx))
+         (define flds (syntax->datum flds/stx)) ;; list of symbols
          (when (and (identifier? a)
                     (struct-info? (syntax-local-value a (λ () #f)))
                     (or (not parent)
                         (and (identifier? parent)
                              (struct-info? (syntax-local-value parent (λ () #f)))))
                     flds
-                    (andmap identifier? flds))
+                    (andmap symbol? flds))
+           (define a-info (a:lookup-struct-info a #f)) ;; won't error
+           (define a-accessors (list-ref a-info 3))
+           (define a-fields (list-ref a-info 6))
+           (define get-accessor
+             (if a-fields ;; has extended info
+                 (λ (f)
+                   ;; will always find the field due to prior error checking.
+                   (let find ([acc a-accessors] [fld a-fields])
+                 
+                     (cond
+                      [(or (null? acc) (null? fld))
+                       (raise-syntax-error #f (format "Could not find accessor for field ~a, given ~a and ~a" f a-accessors a-fields) provide-stx)]
+                      [(eq? f (car fld)) (car acc)]
+                      [else (find (cdr acc) (cdr fld))])))
+                 ;; unhygienic!
+                 (λ (f)
+                    (datum->syntax a (string->symbol (format "~a-~a" (syntax-e a) (syntax-e f)))))))
            (free-identifier-mapping-put!
             struct-id-mapping
             a
@@ -1082,9 +1145,7 @@
            ;; this test will fail when the syntax is bad; we catch syntax errors elsewhere
            (when (< parent-selectors (length flds))
              (for ([f (in-list (list-tail flds parent-selectors))])
-               (define selector-id (datum->syntax 
-                                    a 
-                                    (string->symbol (format "~a-~a" (syntax-e a) (syntax-e f)))))
+               (define selector-id (get-accessor f))
                (free-identifier-mapping-put!
                 struct-id-mapping
                 selector-id
