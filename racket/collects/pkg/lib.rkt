@@ -3270,13 +3270,23 @@
                 #:when (and (list? doc)
                             (pair? doc)
                             (path-string? (car doc))
+                            (or ((length doc) . < . 2)
+                                (list? (cadr doc)))
                             (or ((length doc) . < . 4)
                                 (collection-name-element? (list-ref doc 3)))))
-        (cons 'doc (string-foldcase
-                    (if ((length doc) . < . 4)
-                        (let-values ([(base name dir?) (split-path (car doc))])
-                          (path->string (path-replace-suffix name #"")))
-                        (list-ref doc 3)))))))
+        (define flags (if ((length doc) . < . 2)
+                          null
+                          (cadr doc)))
+        (cond
+         [(member 'main-doc-root flags) '(main-doc-root . "root")]
+         [(member 'user-doc-root flags) '(user-doc-root . "root")]
+         [else
+          (cons 'doc
+                (string-foldcase
+                 (if ((length doc) . < . 4)
+                     (let-values ([(base name dir?) (split-path (car doc))])
+                       (path->string (path-replace-suffix name #"")))
+                     (list-ref doc 3))))]))))
   (define (extract-paths i tag keys)
     (define (get k)
       (define l (i k (lambda () null)))
