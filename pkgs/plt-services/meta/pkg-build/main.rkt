@@ -255,6 +255,8 @@
 
   (define doc-dir (build-path work-dir "doc"))
 
+  (define (txt s) (~a s ".txt"))
+
   (define snapshot-catalog
     (url->string
      (combine-url/relative (string->url snapshot-url)
@@ -439,7 +441,7 @@
   (define (pkg-checksum-file pkg) (build-path built-pkgs-dir (~a pkg ".orig-CHECKSUM")))
   (define (pkg-zip-file pkg) (build-path built-pkgs-dir (~a pkg ".zip")))
   (define (pkg-zip-checksum-file pkg) (build-path built-pkgs-dir (~a pkg ".zip.CHECKSUM")))
-  (define (pkg-failure-dest pkg) (build-path fail-dir pkg))
+  (define (pkg-failure-dest pkg) (build-path fail-dir (txt pkg)))
 
   (define failed-pkgs
     (for/set ([pkg (in-list all-pkg-names)]
@@ -655,10 +657,10 @@
     (define failure-dest (and one-pkg
                               (pkg-failure-dest (car flat-pkgs))))
     (define install-success-dest (build-path install-success-dir
-                                             (car flat-pkgs)))
+                                             (txt (car flat-pkgs))))
 
     (define (pkg-deps-failure-dest pkg)
-      (build-path deps-fail-dir pkg))
+      (build-path deps-fail-dir (txt pkg)))
     (define deps-failure-dest (and one-pkg
                                    (pkg-deps-failure-dest (car flat-pkgs))))
 
@@ -671,7 +673,7 @@
     (define there-dir (remote-dir vm))
 
     (for ([pkg (in-list flat-pkgs)])
-      (define f (build-path install-success-dir pkg))
+      (define f (build-path install-success-dir (txt pkg)))
       (when (file-exists? f) (delete-file f)))
 
     (restore-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))
@@ -693,7 +695,7 @@
           ;; Copy success log for other packages in the group:
           (for ([pkg (in-list (cdr flat-pkgs))])
             (copy-file install-success-dest
-                       (build-path install-success-dir pkg)
+                       (build-path install-success-dir (txt pkg))
                        #t))
           (let ()
             ;; Make sure that any extra installed packages used were previously
@@ -763,7 +765,7 @@
                 (build-path built-dir "adds" (format "~a-adds.rktd" pkg)))
            (define deps-msg (if deps-ok? "" ", but problems with dependency declarations"))
            (call-with-output-file*
-            (build-path success-dir pkg)
+            (build-path success-dir (txt pkg))
             #:exists 'truncate/replace
             (lambda (o)
               (if one-pkg
@@ -1079,7 +1081,7 @@
         ;; Extract successfully built but not fully installed documentation:
         (printf "Trying to extract ~s docs\n" pkg)
         (with-handlers ([exn:fail? (lambda (exn)
-                                     (eprintf "~a\n" (exn-message)))])
+                                     (eprintf "~a\n" (exn-message exn)))])
           (extract-documentation (pkg-zip-file pkg) pkg doc-dir))]))
 
     ;; Add salvageable docs from the dumpster, and fall back as a last resort
@@ -1131,7 +1133,7 @@
       (for/hash ([pkg (in-set (set-subtract try-pkgs
                                             (list->set summary-omit-pkgs)))])
         (define failed? (file-exists? (pkg-failure-dest pkg)))
-        (define succeeded? (file-exists? (build-path install-success-dir pkg)))
+        (define succeeded? (file-exists? (build-path install-success-dir (txt pkg))))
         (define status
           (cond
            [(and failed? (not succeeded?)) 'failure]
@@ -1140,7 +1142,7 @@
            [else 'unknown]))
         (define dep-status
           (if (eq? status 'success)
-              (if (file-exists? (build-path deps-fail-dir pkg))
+              (if (file-exists? (build-path deps-fail-dir (txt pkg)))
                   'failure
                   'success)
               'unknown))
@@ -1161,12 +1163,12 @@
          pkg
          (hash 'success-log (and (or (eq? status 'success)
                                      (eq? status 'confusion))
-                                 (path->relative (build-path install-success-dir pkg)))
+                                 (path->relative (build-path install-success-dir (txt pkg))))
                'failure-log (and (or (eq? status 'failure)
                                      (eq? status 'confusion))
                                  (path->relative (pkg-failure-dest pkg)))
                'dep-failure-log (and (eq? dep-status 'failure)
-                                     (path->relative (build-path deps-fail-dir pkg)))
+                                     (path->relative (build-path deps-fail-dir (txt pkg))))
                'docs (for/list ([doc (in-list docs)])
                        (define path (~a "doc/" (~a doc "@" pkg) "/index.html"))
                        (if (or (not (eq? status 'success))
@@ -1221,6 +1223,9 @@
                             (wpath "install-doc.tgz")
                             (wpath "install-adds.rktd")
                             (wpath "user-list.rktd")
+                            (wpath "prev-doc")
+                            (wpath "old-prev-doc")
+                            (wpath "doc" "docindex.sqlite")
                             (wpath "site.tgz")))
     (parameterize ([current-directory work-dir])
       (define files (for/list ([f (in-directory #f (lambda (p)
