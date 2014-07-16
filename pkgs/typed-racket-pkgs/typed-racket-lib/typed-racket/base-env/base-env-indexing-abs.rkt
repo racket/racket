@@ -220,7 +220,7 @@
                  (-> -Byte (-lst -Byte))
                  (-> -Index (-lst -Index))
                  (-> -Fixnum (-lst -NonNegFixnum))
-                 (-> -Real (-lst -NonNegInt))
+                 (-> -Real (-lst -Nat))
                  (->opt -PosInt -Byte [-Int] (-lst -PosByte))
                  (->opt -Nat -Byte [-Int] (-lst -Byte))
                  (->opt -PosInt -Index [-Int] (-lst -PosIndex))
