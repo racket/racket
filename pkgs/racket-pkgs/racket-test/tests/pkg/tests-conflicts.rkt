@@ -86,33 +86,33 @@
              "test-pkgs/pkg-add-1")])
     (with-fake-root
      (shelly-begin
-      $ (~a "raco pkg install --strict-doc-conflicts test-pkgs/pkg-add-base " c) =exit> 1
-      $ (~a "raco pkg install --strict-doc-conflicts " c "test-pkgs/pkg-add-base") =exit> 1))))
+      $ (~a "raco pkg install --copy --strict-doc-conflicts test-pkgs/pkg-add-base " c) =exit> 1
+      $ (~a "raco pkg install --copy --strict-doc-conflicts " c "test-pkgs/pkg-add-base") =exit> 1))))
   (shelly-case
    "doc conflict allowed in non-strict mode"
    (for ([c '("test-pkgs/pkg-add-a")])
     (with-fake-root
      (shelly-begin
-      $ (~a "raco pkg install test-pkgs/pkg-add-base " c) =exit> 0))))
+      $ (~a "raco pkg install --copy test-pkgs/pkg-add-base " c) =exit> 0))))
   (putenv "PLT_PKG_NOSETUP" "")
   (with-fake-root
    (shelly-case
     "conflict extra installs with already installed"
-    $ (~a "raco pkg install test-pkgs/pkg-add-base") =exit> 0
+    $ (~a "raco pkg install --copy test-pkgs/pkg-add-base") =exit> 0
     (for ([c '("test-pkgs/pkg-add-a"
                "test-pkgs/pkg-add-x"
                "test-pkgs/pkg-add-1")])
       (shelly-begin
-       $ (~a "raco pkg install --strict-doc-conflicts " c) =exit> 1)))
+       $ (~a "raco pkg install --copy --strict-doc-conflicts " c) =exit> 1)))
    (for ([c '("test-pkgs/pkg-add-a")])
     (with-fake-root
      (shelly-begin
-      $ (~a "raco pkg install --no-setup " c) =exit> 0))))
+      $ (~a "raco pkg install --copy --no-setup " c) =exit> 0))))
   (putenv "PLT_PKG_NOSETUP" "1")
   (with-fake-root
    (shelly-case
     "no conflict for non-matching platform"
-    $ "raco pkg install --strict-doc-conflicts test-pkgs/pkg-add-base test-pkgs/pkg-add-none"))
+    $ "raco pkg install --copy --strict-doc-conflicts test-pkgs/pkg-add-base test-pkgs/pkg-add-none"))
 
   (shelly-case
    "compile-omit-paths is used by `pkg-directory->additional-installs`:"
