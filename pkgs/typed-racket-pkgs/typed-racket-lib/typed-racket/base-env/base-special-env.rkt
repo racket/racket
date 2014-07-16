@@ -70,7 +70,7 @@
    (cl->* (-> -Byte (-seq -Byte))
           (-> -Index (-seq -Index))
           (-> -Fixnum (-seq -NonNegFixnum))
-          (-> -Real (-seq -NonNegInt))
+          (-> -Real (-seq -Nat))
           (->opt -PosInt -Byte [-Int] (-seq -PosByte))
           (->opt -Nat -Byte [-Int] (-seq -Byte))
           (->opt -PosInt -Index [-Int] (-seq -PosIndex))
