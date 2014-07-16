@@ -190,7 +190,9 @@ TO DO:
   [ssl-abandon-port
    (c-> ssl-port? void?)]
   [ssl-port?
-   (c-> any/c boolean?)]))
+   (c-> any/c boolean?)])
+ supported-client-protocols
+ supported-server-protocols)
 
 (define ssl-load-fail-reason
   (or libssl-load-fail-reason
@@ -223,18 +225,18 @@ TO DO:
 (define-cpointer-type _EC_KEY*)
 (define-cstruct _GENERAL_NAME ([type _int] [d _ASN1_STRING*]))
 
-(define-ssl SSLv2_client_method (_fun -> _SSL_METHOD*))
-(define-ssl SSLv2_server_method (_fun -> _SSL_METHOD*))
-(define-ssl SSLv3_client_method (_fun -> _SSL_METHOD*))
-(define-ssl SSLv3_server_method (_fun -> _SSL_METHOD*))
-(define-ssl SSLv23_client_method (_fun -> _SSL_METHOD*))
-(define-ssl SSLv23_server_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_client_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_server_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_1_client_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_1_server_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_2_client_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_2_server_method (_fun -> _SSL_METHOD*))
+(define-ssl SSLv2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl SSLv2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl SSLv3_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl SSLv3_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl SSLv23_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl SSLv23_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_1_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_1_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
 
 (define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
 (define-crypto EC_KEY_free (_fun _EC_KEY* -> _void) #:wrap (deallocator))
@@ -518,21 +520,53 @@ TO DO:
 (define default-encrypt 'sslv2-or-v3)
 
 (define (encrypt->method who e client?)
-  ((case e
-     [(sslv2-or-v3)
-      (if client? SSLv23_client_method SSLv23_server_method)]
-     [(sslv2)
-      (if client? SSLv2_client_method SSLv2_server_method)]
-     [(sslv3)
-      (if client? SSLv3_client_method SSLv3_server_method)]
-     [(tls)
-      (if client? TLSv1_client_method TLSv1_server_method)]
-     [(tls11)
-      (if client? TLSv1_1_client_method TLSv1_1_server_method)]
-     [(tls12)
-      (if client? TLSv1_2_client_method TLSv1_2_server_method)]
-     [else
-      (error 'encrypt->method "internal error, unknown encrypt: ~e" e)])))
+  (define f
+    (case e
+      [(sslv2-or-v3)
+       (if client? SSLv23_client_method SSLv23_server_method)]
+      [(sslv2)
+       (if client? SSLv2_client_method SSLv2_server_method)]
+      [(sslv3)
+       (if client? SSLv3_client_method SSLv3_server_method)]
+      [(tls)
+       (if client? TLSv1_client_method TLSv1_server_method)]
+      [(tls11)
+       (if client? TLSv1_1_client_method TLSv1_1_server_method)]
+      [(tls12)
+       (if client? TLSv1_2_client_method TLSv1_2_server_method)]
+      [else
+       (error 'encrypt->method "internal error, unknown encrypt: ~e" e)]))
+  (unless f
+    (raise (exn:fail:unsupported
+            (format "~a: requested protocol not supported\n  requested: ~e"
+                    who
+                    e)
+            (current-continuation-marks))))
+  (f))
+
+(define (filter-available l)
+  (cond
+   [(null? l) null]
+   [(cadr l) (cons (car l) (filter-available (cddr l)))]
+   [else (filter-available (cddr l))]))
+
+(define (supported-client-protocols)
+  (filter-available
+   (list 'sslv2-or-v3 SSLv23_client_method
+         'sslv2 SSLv2_client_method
+         'sslv3 SSLv3_client_method
+         'tls TLSv1_client_method
+         'tls11 TLSv1_1_client_method
+         'tls12 TLSv1_2_client_method)))
+
+(define (supported-server-protocols)
+  (filter-available
+   (list 'sslv2-or-v3 SSLv23_server_method
+         'sslv2 SSLv2_server_method
+         'sslv3 SSLv3_server_method
+         'tls TLSv1_server_method
+         'tls11 TLSv1_1_server_method
+         'tls12 TLSv1_2_server_method)))
 
 (define (make-context who protocol-symbol client?)
   (let ([meth (encrypt->method who protocol-symbol client?)])

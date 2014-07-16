@@ -62,13 +62,8 @@ using the functions described in @secref["cert-procs"].
 @defproc[(ssl-connect [hostname string?]
                       [port-no (integer-in 1 65535)]
                       [client-protocol
-                       (or/c ssl-client-context? 
-                             'sslv2-or-v3
-                             'sslv2
-                             'sslv3
-                             'tls
-                             'tls11
-                             'tls12)
+                       (or/c ssl-client-context?
+                             'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
                        'sslv2-or-v3])
          (values input-port? output-port?)]{
 
@@ -177,14 +172,26 @@ The @racket[protocol] must be one of the following:
 
 Note that SSL protocol version 2 is deprecated on some platforms and may not be
 present in your system libraries. The use of SSLv2 may also compromise security; 
-thus, using SSLv3 is recommended.
-}
+thus, using SSLv3 is recommended. TLS 1.1 and 1.2 are relatively new and not
+always available. See also @racket[supported-client-protocols] and
+@racket[supported-server-protocols].
+
+@history[#:changed "6.1" @elem{Added @racket['tls11] and @racket['tls12].}]}
+
+
+@defproc[(supported-client-protocols)
+         (listof (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
+
+Returns a list of symbols representing protocols that are supported
+for clients on the current platform.}
 
 
 @defproc[(ssl-client-context? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a value produced by
-@racket[ssl-make-client-context], @racket[#f] otherwise.}
+@racket[ssl-make-client-context], @racket[#f] otherwise.
+
+@history[#:added "6.0.1.3"]}
 
 
 @; ----------------------------------------------------------------------
@@ -269,11 +276,19 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
 
 Like @racket[ssl-make-client-context], but creates a server context.}
 
+
 @defproc[(ssl-server-context? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a value produced by
 @racket[ssl-make-server-context], @racket[#f] otherwise.}
 
+@defproc[(supported-server-protocols)
+         (listof (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
+
+Returns a list of symbols representing protocols that are supported
+for servers on the current platform.
+
+@history[#:added "6.0.1.3"]}
 
 @; ----------------------------------------------------------------------
 
