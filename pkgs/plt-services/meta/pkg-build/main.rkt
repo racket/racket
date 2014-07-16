@@ -144,13 +144,13 @@
          ;;         + "P.zip.CHECKSUM"
          ;;        => up-to-date and successful,
          ;;           "docs/P-adds.rktd" listing of docs, exes, etc., and
-         ;;           "success/P" records success;
-         ;;           "install/P" records installation
-         ;;           "deps/P" record dependency-checking failure;
+         ;;           "success/P.txt" records success;
+         ;;           "install/P.txt" records installation
+         ;;           "deps/P.txt" record dependency-checking failure;
          ;;      * pkgs/P.orig-CHECKSUM matching archived catalog
-         ;;         + fail/P
+         ;;         + fail/P.txt
          ;;        => up-to-date and failed;
-         ;;           "install/P" may record installation success
+         ;;           "install/P.txt" may record installation success
          ;;
          ;;   "dumpster" --- saved builds of failed packages if the
          ;;     package at least installs; maybe the attempt built
@@ -988,7 +988,7 @@
             (substatus " ~a ~s:\n" (caar v) (cdar v))
             (show-list #:indent " " (sort (set->list (cdr  v)) string<?))))
         (show-conflicts)
-        (with-output-to-file "conflicts"
+        (with-output-to-file "conflicts.txt"
           #:exists 'truncate/replace
           show-conflicts)
         (define conflicting-pkgs
@@ -1182,8 +1182,8 @@
                'author (pkg-author pkg)
                'conflicts-log (and conflicts?
                                    (if (set-member? conflict-pkgs pkg)
-                                       "conflicts"
-                                       (conflicts/indirect "conflicts")))))))
+                                       "conflicts.txt"
+                                       (conflicts/indirect "conflicts.txt")))))))
 
     ;; Add info for docs in the installer:
     (define full-summary-ht
