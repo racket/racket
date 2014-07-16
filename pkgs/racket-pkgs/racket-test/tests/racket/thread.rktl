@@ -700,20 +700,31 @@
 
 	  ;; Fill up output buffer:
 	  (test sw sync/timeout 0 sw)
-	  (test #t
-		positive?
-		(let loop ([n 0])
-		  (if (and (sync/timeout 0 sw)
-			   (= 4096 (write-bytes-avail (make-bytes 4096 (char->integer #\x)) sw)))
-		      (loop (add1 n))
-		      n)))
-	  (test #f sync/timeout 0 sw sr)
-	  (test cr sync sw sr cr) ; sync/timeout 0 might work, but it depends on the underlying transport
+	  (test 'ok
+                values
+                (let retry-loop ([m 5])
+                  (cond
+                   [(zero? m)
+                    ;; Couldn't get the output port filled, which is susipcious
+                    'could-not-fill]
+                   [else
+                    ;; Fill:
+                    (let loop ([n 0])
+                      (if (and (sync/timeout 0 sw)
+                               (positive? (write-bytes-avail (make-bytes 4096 (char->integer #\x)) sw)))
+                          (loop (add1 n))
+                          n))
+                    (if (and (eq? #f (sync/timeout 0 sw sr))
+                             (eq? cr (sync sw sr cr)))
+                        ;; It worked:
+                        'ok
+                        ;; Try again:
+                        (retry-loop (sub1 m)))])))
 	  ;; Flush cr:
 	  (let ([s (make-bytes 4096)])
 	    (let loop ()
 	      (when (and (char-ready? cr)
-			 (= 4096 (read-bytes-avail! s cr)))
+			 (positive? (read-bytes-avail! s cr)))
 		(loop))))
 
 	  (close-output-port sw)
