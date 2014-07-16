@@ -156,12 +156,17 @@
     [(cons e1 e2) (Pair (rearm+parse #'e1) (rearm+parse #'e2))]
     [(mcons e1 e2) (MPair (rearm+parse #'e1) (rearm+parse #'e2))]
     [(struct s mode pats)
-     (parse-struct disarmed-stx rearm+parse #'s (cons #'mode #'pats))]
+     (begin
+       (define mode* (syntax-e #'mode))
+       (unless (memv mode* '(#:first #:last #:full))
+         (raise-syntax-error 'match (format "expected a match mode (#:first #:last #:full), instead got ~a" mode*)
+                             stx #'mode))
+       (parse-struct disarmed-stx rearm+parse #'s mode* #'pats))]
     [(struct s pats)
-     (parse-struct disarmed-stx rearm+parse #'s #'pats)]
+     (parse-struct disarmed-stx rearm+parse #'s #f #'pats)]
     [(s . pats)
      (and (identifier? #'s) (struct-info? (syntax-local-value #'s (lambda () #f))))
-     (parse-struct disarmed-stx rearm+parse #'s #'pats)]
+     (parse-struct disarmed-stx rearm+parse #'s #f #'pats)]
     [(? p q1 qs ...)
      (OrderedAnd 
       (list (Pred (rearm #'p))

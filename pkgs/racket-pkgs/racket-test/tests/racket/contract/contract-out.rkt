@@ -1024,7 +1024,7 @@
        (eval '(require 'pce5-bug)))
    (λ (x)
      (and (exn:fail:syntax? x)
-          (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
+          (regexp-match #rx"expected field that belongs to struct bad, but found string?" (exn-message x)))))
   
   (contract-error-test
    'contract-error-test13
@@ -1040,7 +1040,7 @@
        (eval '(require 'pce6-bug)))
    (λ (x)
      (and (exn:fail:syntax? x)
-          (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
+          (regexp-match #rx"expected field that belongs to struct bad, but found string?" (exn-message x)))))
   
   (contract-error-test
    'contract-error-test14

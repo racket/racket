@@ -73,9 +73,10 @@
 ;; stx : the syntax object for the whole pattern
 ;; parse : the pattern parser
 ;; struct-name : identifier
+;; mode : #f or one of '#:first '#:last '#:full
 ;; pats : syntax representing the member patterns
 ;; returns a pattern
-(define (parse-struct stx parse struct-name pats)
+(define (parse-struct stx parse struct-name mode pats)
   (let* ([fail (lambda ()
                  (raise-syntax-error
                   'match (format "~a does not refer to a structure definition"
@@ -121,21 +122,22 @@
                               (map make-Dummy acc*)]
                              [(syntax->list pats)
                               =>
-                              (parse-struct-pats stx parse struct-name acc acc* fields)]
+                              (parse-struct-pats stx parse struct-name mode acc acc* fields)]
                              [else (raise-syntax-error
                                     'match
                                     "improper syntax for struct pattern"
                                     stx pats)])))))))
 
-(define ((parse-struct-pats stx parse struct-name rev-acc accessors rev-fields) body)
+(define ((parse-struct-pats stx parse struct-name mode rev-acc accessors rev-fields) pats)
   ;; The grammar of a struct form when not fully dummied is
-  ;; (struct-id mode-op kw/pats ...)
+  ;; (struct-id kw/pats ...) 
+  ;; (struct struct-id mode-op (kw/pats ...))
+  ;; mode not available for (s . kw/pats) because un-quoted keywords are already patterns.
   ;; mode-op ::=
   ;;           | #:first
   ;;           | #:last
   ;;           | #:full
   ;; kw/pats := [f-kw pat]
-  ;;          | [#:field field-name:id pat]
   ;;          | pat
   ;; where f-kw is a field name as a keyword.
   ;; If no first/last is given and some kw/pats are just pats,
@@ -152,152 +154,135 @@
              (length pats))
      stx pats))
   (cond
-   [(null? body)
-    (unless (= 0 acclen) (bad-arity '()))
-    '()]
+   ;; do a fast-path check
+   [(and (not mode)
+         (for/and ([p (in-list pats)])
+           (syntax-case p ()
+             [[kw _] (keyword? (syntax-e #'kw)) #f]
+             [_ #t])))
+    (map parse pats)]
+   ;; named patterns, but no field info
+   [(not rev-fields)
+    (raise-syntax-error
+     'match
+     (format 
+      "struct identifier ~a not bound to extended struct info. Cannot use named patterns."
+      (syntax->datum struct-name))
+     stx)]
    [else
-    (define fst (car body))
-    (define fst* (if (syntax? fst) (syntax-e fst) fst))
-    (define mode (and (keyword? fst*) fst*))
-    (cond
-     ;; do a fast-path check
-     [(and (not mode)
-           (for/and ([p (in-list body)])
-             (syntax-case p ()
-               [[#:field _ _] #f]
-               [[kw _] (keyword? (syntax-e #'kw)) #f]
-               [_ #t])))
-      (map parse body)]
-     ;; named patterns, but no field info
-     [(not rev-fields)
-      (raise-syntax-error
-       'match
-       (format 
-        "struct identifier ~a not bound to extended struct info. Cannot use named patterns."
-        (syntax->datum struct-name))
-       stx)]
-     [else
-      (define pats
-        (if mode (cdr body) body))
-      ;; Named and non-named patterns may be interleaved, but
-      ;; a name following its position is an error.
-      ;; e.g. with fields (x y z), we can't have (0 [#:x 1] [#:z 2])
-      ;; but we can have ([#:x 1] 0 [#:z 2]) and ([#:z 2] [#:x 1] 0).
+    ;; Named and non-named patterns may be interleaved, but
+    ;; a name following its position is an error.
+    ;; e.g. with fields (x y z), we can't have (0 [#:x 1] [#:z 2])
+    ;; but we can have ([#:x 1] 0 [#:z 2]) and ([#:z 2] [#:x 1] 0).
 
-      ;; Build a table of field name to a pair of the associated
-      ;; pattern syntax and the count of unnamed patterns preceding it.
-      ;; Parse while we're at it.
-      (define named (make-hasheq))
-      ;; build a table to check that the names given are actual field names.
-      (define actual-fields (make-hasheq))
-      (for ([f (in-list rev-fields)]) (hash-set! actual-fields f #t))
-      (define (bad-field? f)
-        (unless (hash-has-key? actual-fields f)
-          (raise-syntax-error 'match
-                              (format "field name (~a) not associated with struct ~a"
-                                      f (syntax->datum struct-name))
-                              stx)))
-      ;; We collect the layout in a list for #:last to compute the analogous count
-      ;; of unnamed patterns that /follow/ the named pattern.
-      (define-values (rev-parsed-unnamed rev-layout num-unnamed)
-        (for/fold ([parsed '()] [layout '()] [count 0]) ([p (in-list pats)])
-          (define (named-pat name pat)
-            (bad-field? name)
-            (when (hash-has-key? named name)
-              (raise-syntax-error
-               'match
-               "field name appears twice"
-               stx name))
-            (hash-set! named name (cons (parse pat) count))
-            (values parsed (cons name layout) count))
-          (syntax-case p ()
-            [[#:field f pat]
-             (cond
-              [(identifier? #'f)
-               (named-pat (syntax-e #'f) #'pat)]
-              [else
-               (raise-syntax-error 'match "expected a field name" stx #'f)])]
-            [[kw pat]
-             (keyword? (syntax-e #'kw))
-             (named-pat (string->symbol (keyword->string (syntax-e #'kw))) #'pat)]
-            [_ (values (cons (parse p) parsed) (cons #f layout) (add1 count))])))
+    ;; Build a table of field name to a pair of the associated
+    ;; pattern syntax and the count of unnamed patterns preceding it.
+    ;; Parse while we're at it.
+    (define named (make-hasheq))
+    ;; build a table to check that the names given are actual field names.
+    (define actual-fields (make-hasheq))
+    (for ([f (in-list rev-fields)]) (hash-set! actual-fields f #t))
+    (define (bad-field? f)
+      (unless (hash-has-key? actual-fields f)
+        (raise-syntax-error 'match
+                            (format "field name (~a) not associated with struct ~a"
+                                    f (syntax->datum struct-name))
+                            stx)))
+    ;; We collect the layout in a list for #:last to compute the analogous count
+    ;; of unnamed patterns that /follow/ the named pattern.
+    (define-values (rev-parsed-unnamed rev-layout num-unnamed)
+      (for/fold ([parsed '()] [layout '()] [count 0]) ([p (in-list pats)])
+        (define (named-pat name pat)
+          (bad-field? name)
+          (when (hash-has-key? named name)
+            (raise-syntax-error
+             'match
+             "field name appears twice"
+             stx name))
+          (hash-set! named name (cons (parse pat) count))
+          (values parsed (cons name layout) count))
+        (syntax-case p ()
+          [[kw pat]
+           (keyword? (syntax-e #'kw))
+           (named-pat (string->symbol (keyword->string (syntax-e #'kw))) #'pat)]
+          [_ (values (cons (parse p) parsed) (cons #f layout) (add1 count))])))
 
-      ;; Bearings made. Now we check sanity.
-      (define total (+ num-unnamed (hash-count named)))
-      (unless (if (eq? mode '#:full)
-                  (= total acclen)
-                  (<= total acclen))
-        (bad-arity pats))
+    ;; Bearings made. Now we check sanity.
+    (define total (+ num-unnamed (hash-count named)))
+    (unless (if (eq? mode '#:full)
+                (= total acclen)
+                (<= total acclen))
+      (bad-arity pats))
 
-      ;; the following raise conflict errors with (struct Foo (x y z w))
-      ;; (match (Foo 0 2 1 3) [(Foo 0 1 [#:y 2] 3) #t])
-      ;; (match (Foo 'dropped 0 3 2) [(Foo #:last 0 [#:w 2] 3) #t])
+    ;; the following raise conflict errors with (struct Foo (x y z w))
+    ;; (match (Foo 0 2 1 3) [(Foo 0 1 [#:y 2] 3) #t])
+    ;; (match (Foo 'dropped 0 3 2) [(Foo #:last 0 [#:w 2] 3) #t])
 
-      (define used-unnamed (box #f))
-      (define (use! acc)
-        (define lst (unbox used-unnamed))
-        (cond
-         [(null? lst) (make-Dummy acc)]
-         [else (set-box! used-unnamed (cdr lst))
-               (car lst)]))
+    (define used-unnamed (box #f))
+    (define (use! acc)
+      (define lst (unbox used-unnamed))
       (cond
-        [(eq? mode '#:last)
-         (set-box! used-unnamed rev-parsed-unnamed)
-         ;; The count in named isn't useful for #:last mode.
-         ;; We need the number of unnamed patterns that happen /after/ a named pattern.
-         (define count-after (make-hasheq))
-         (for/fold ([count 0]) ([op-field (in-list rev-layout)])
-           (cond [op-field
-                  (hash-set! count-after op-field count)
-                  count]
-                 [else (add1 count)]))
+       [(null? lst) (make-Dummy acc)]
+       [else (set-box! used-unnamed (cdr lst))
+             (car lst)]))
+    (cond
+     [(eq? mode '#:last)
+      (set-box! used-unnamed rev-parsed-unnamed)
+      ;; The count in named isn't useful for #:last mode.
+      ;; We need the number of unnamed patterns that happen /after/ a named pattern.
+      (define count-after (make-hasheq))
+      (for/fold ([count 0]) ([op-field (in-list rev-layout)])
+        (cond [op-field
+               (hash-set! count-after op-field count)
+               count]
+              [else (add1 count)]))
 
-         ;; Layout backwards.
-         (for/fold ([rev-layout '()])
-             ([acc (in-list rev-acc)]
-              [field (in-list rev-fields)]
-              [i (in-range (sub1 acclen) -1 -1)]
-              ;; don't count the "missing super info" #f
-              #:when (and acc field))
-           (define info (hash-ref named field #f))
-           (cond
-            [(pair? info)
-             (define num (hash-ref count-after field))
-             (unless (< num (- acclen i))
-               ;; Give position in terms of pattern number, not field number.
-               (raise-syntax-error
-                'match
-                (format "named field pattern (~a) given before ~a~a~a~a~a in #:last mode"
-                        field num
-                        (format " unnamed pattern~a but the field is "
-                                (if (= num 1) "" "s"))
-                        (- (sub1 acclen) i)
-                        " from last for structure "
-                        (syntax->datum struct-name))
-                stx body))
-             (cons (car info) rev-layout)]
-            [else (cons (use! acc) rev-layout)]))]
-        [else ;;(or (eq? mode '#:first) (not mode))
-         (define fields (reverse rev-fields))
-         (set-box! used-unnamed (reverse rev-parsed-unnamed))
-         (for/list ([acc (in-list accessors)]
-                    [field (in-list fields)]
-                    [i (in-naturals)])
-           (define info (hash-ref named field #f))
-           (cond
-            [(pair? info)
-             (define num (cdr info))
-             (unless (<= num i)
-               (raise-syntax-error
-                'match
-                (format "named field pattern (~a) given after ~a~a~a for structure ~a"
-                        field num
-                        (format " unnamed pattern~a but the field is in position "
-                                (if (= num 1) "" "s"))
-                        i (syntax->datum struct-name))
-                stx body))
-             (car info)]
-            [else (use! acc)]))])])]))
+      ;; Layout backwards.
+      (for/fold ([rev-layout '()])
+          ([acc (in-list rev-acc)]
+           [field (in-list rev-fields)]
+           [i (in-range (sub1 acclen) -1 -1)]
+           ;; don't count the "missing super info" #f
+           #:when (and acc field))
+        (define info (hash-ref named field #f))
+        (cond
+         [(pair? info)
+          (define num (hash-ref count-after field))
+          (unless (< num (- acclen i))
+            ;; Give position in terms of pattern number, not field number.
+            (raise-syntax-error
+             'match
+             (format "named field pattern (~a) given before ~a~a~a~a~a in #:last mode"
+                     field num
+                     (format " unnamed pattern~a but the field is "
+                             (if (= num 1) "" "s"))
+                     (- (sub1 acclen) i)
+                     " from last for structure "
+                     (syntax->datum struct-name))
+             stx pats))
+          (cons (car info) rev-layout)]
+         [else (cons (use! acc) rev-layout)]))]
+     [else ;;(or (eq? mode '#:first) (not mode))
+      (define fields (reverse rev-fields))
+      (set-box! used-unnamed (reverse rev-parsed-unnamed))
+      (for/list ([acc (in-list accessors)]
+                 [field (in-list fields)]
+                 [i (in-naturals)])
+        (define info (hash-ref named field #f))
+        (cond
+         [(pair? info)
+          (define num (cdr info))
+          (unless (<= num i)
+            (raise-syntax-error
+             'match
+             (format "named field pattern (~a) given after ~a~a~a for structure ~a"
+                     field num
+                     (format " unnamed pattern~a but the field is in position "
+                             (if (= num 1) "" "s"))
+                     i (syntax->datum struct-name))
+             stx body))
+          (car info)]
+         [else (use! acc)]))])]))
 
 (define (trans-match pred transformer pat)
   (make-And (list (make-Pred pred) (make-App transformer (list pat)))))

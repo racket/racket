@@ -25,15 +25,22 @@
          (cond
           ;; doable hygienically with struct syntax?
           [(extended-struct-info? v)
-           (syntax-case #'(field+pat ...) ()
-             [([f pat] ...)
-              (quasisyntax/loc stx
-                (struct struct-name ([#:field f pat] ...)))]
-             [_ (for-each (λ (an) ;; must fail
-                             (syntax-case an ()
-                               [(field pat) (identifier? #'field) (void)]
-                               [_ (field-err an)]))
-                          (syntax->list #'(field+pat ...)))])]
+           (with-syntax ([((kw pat) ...)
+                          ;; convert field identifiers to keywords.
+                          (map (λ (an)
+                                  (syntax-case an ()
+                                    [[f pat]
+                                     (identifier? #'f)
+                                     (list
+                                      (datum->syntax
+                                       #'f
+                                       (string->keyword (symbol->string (syntax-e #'f)))
+                                       #'f)
+                                      #'pat)]
+                                    [_ (field-err an)]))
+                               (syntax->list #'(field+pat ...)))])
+             (quasisyntax/loc stx
+               (struct struct-name ([kw pat] ...))))]
           ;; no, fall back to unhygienic for backwards compatibility.
           [else
            (define field-acc->pattern (make-free-id-table))

@@ -827,6 +827,9 @@
                             (cond
                              [(null? accessors)
                               (raise-syntax-error #f (format "identifier not a field of ~a" (syntax-e whose)) stx id)]
+                             ;; Can't check on construction since declaration info is delayed.
+                             [(null? fields)
+                              (raise-syntax-error #f (format "extended struct info has mismatched length for field names: ~a" (syntax-e whose)) stx id)]
                              [(eq? id (car fields))
                               (car accessors)]
                              [else
@@ -845,15 +848,19 @@
                             ;; this can happen: https://gist.github.com/ianj/6ae7424cc2d093661df2
                             (unless (struct-info? v)
                               (raise-syntax-error #f "unknown parent struct" stx parent-id))
-                            (if (extended-struct-info? v)
-                                (let ([v (extract-struct-info v)])
-                                  (get-accessor/acc+fields (syntax-e id) parent-id (cadddr v)
-                                                           (extract-struct-field-info v)))
-                                ;; XXX: mix of extended and non-extended. Surprising hygiene?
-                                (begin
-                                  (log-warning (format "Struct ~a has extended info but parent ~a doesn't."
-                                                       #'info parent-id))
-                                  (dirty-sel id parent-id)))))]
+                            (cond
+                             [(extended-struct-info? v)
+                              (define v* (extract-struct-info v))
+                              (get-accessor/acc+fields (syntax-e id) parent-id (cadddr v*)
+                                                       (extract-struct-field-info v))]
+                             [else
+                              ;; XXX: mix of extended and non-extended. Surprising hygiene?
+                              ;; This path is necessary since users can still make and use
+                              ;; struct-info without extending it.
+                              ;; We should encourage the extension for newer uses.
+                              (log-warning (format "Struct ~a has extended info but parent ~a doesn't."
+                                                   #'info parent-id))
+                              (dirty-sel id parent-id)])))]
                       [ensure-really-parent
                        (λ (id)
                          (let loop ([parent parent])
@@ -876,8 +883,8 @@
                                       (if fields
                                           (values (λ (f dummy) (get-accessor f))
                                                   get-parent-accessor)
-                                          ;; XXX: We should push to make this path unnecessary.
-                                          ;; Kept for backward compatibility.
+                                          ;; Another case of user-provided unextended struct-info
+                                          ;; still needing to work for backward compatability.
                                           (values dirty-sel dirty-sel))])
                           (lambda (an)
                             (syntax-case an ()
