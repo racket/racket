@@ -188,7 +188,7 @@ breaks explicitly disabled---when it is not wrapped by @racket[wrap-evt],
 ]}
 
 
-@defproc[(guard-evt [maker (-> evt?)]) evt?]{
+@defproc[(guard-evt [maker (-> (or/c evt? any/c))]) evt?]{
 
 Creates a value that behaves as an event, but that is actually an
 event maker.
@@ -208,7 +208,7 @@ synchronization} and whose @tech{synchronization result} is
 @racket[_guard].}
 
 
-@defproc[(nack-guard-evt [maker (evt? . -> . evt?)]) evt?]{
+@defproc[(nack-guard-evt [maker (evt? . -> . (or/c evt? any/c))]) evt?]{
 
 Like @racket[guard-evt], but when @racket[maker] is called, it is
 given a NACK (``negative acknowledgment'') event. After starting the
@@ -225,7 +225,7 @@ value). If the event returned by @racket[maker] is chosen, then the
 NACK event never becomes @tech{ready for synchronization}.}
 
 
-@defproc[(poll-guard-evt [maker (boolean? . -> . evt?)]) evt?]{
+@defproc[(poll-guard-evt [maker (boolean? . -> . (or/c evt? any/c))]) evt?]{
 
 Like @racket[guard-evt], but when @racket[maker] is called, it is
 provided a boolean value that indicates whether the event will be used
@@ -238,15 +238,7 @@ resulting event produces a @tech{synchronization result}, then the event
 will certainly be chosen for its result.}
 
 
-@defthing[always-evt evt?]{A constant event that is always @tech{ready
-for synchronization}, with itself as its @tech{synchronization result}.
-
-@examples[#:eval evt-eval
-  (sync always-evt)
-]}
-
-
-@defproc[(replace-evt [evt evt?] [maker (any/c ... . -> . evt?)]) evt?]{
+@defproc[(replace-evt [evt evt?] [maker (any/c ... . -> . (or/c evt? any/c))]) evt?]{
 
 Like @racket[guard-evt], but @racket[maker] is called only after
 @racket[evt] becomes @tech{ready for synchronization}, and the
@@ -268,6 +260,13 @@ synchronization} and whose @tech{synchronization result} is
 
 @history[#:added "6.1.0.3"]}
 
+
+@defthing[always-evt evt?]{A constant event that is always @tech{ready
+for synchronization}, with itself as its @tech{synchronization result}.
+
+@examples[#:eval evt-eval
+  (sync always-evt)
+]}
 
 
 @defthing[never-evt evt?]{A constant event that is never @tech{ready
