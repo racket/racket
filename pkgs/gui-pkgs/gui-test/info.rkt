@@ -18,4 +18,4 @@
 
 (define pkg-desc "tests for \"gui\"")
 
-(define pkg-authors '(mflatt))
+(define pkg-authors '(mflatt robby))

@@ -27,6 +27,6 @@
 
 (define pkg-desc "implementation (no documentation) part of \"gui\"")
 
-(define pkg-authors '(mflatt))
+(define pkg-authors '(mflatt robby))
 
 (define version "1.2")

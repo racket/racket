@@ -19,4 +19,4 @@
 
 (define pkg-desc "documentation part of \"gui\"")
 
-(define pkg-authors '(mflatt))
+(define pkg-authors '(mflatt robby))
