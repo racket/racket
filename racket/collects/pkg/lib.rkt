@@ -1007,6 +1007,55 @@
         ;; This file would be redundant, so drop it
         (delete-file pkg-file)))))
 
+(define (disallow-package-path-overlaps pkg-name
+                                        pkg-path
+                                        path-pkg-cache
+                                        simultaneous-installs)
+  (define simple-pkg-path (simple-form-path pkg-path))
+  (define (one-in-the-other? p1 p2)
+    (define pe (explode-path p1))
+    (define e (explode-path p2))
+    (if ((length e) . < . (length pe))
+        (equal? (take pe (length e)) e)
+        (equal? (take e (length pe)) pe)))
+  ;; Check collects:
+  (for ([c (in-list (current-library-collection-paths))])
+    (when (one-in-the-other? simple-pkg-path
+                             (simple-form-path c))
+      (pkg-error (~a "cannot link a directory that overlaps with a collection path\n"
+                     "  collection path: ~a\n"
+                     "  link path: ~a\n"
+                     "  as package: ~a")
+                 c
+                 pkg-path
+                 pkg-name)))
+  ;; Check installed packages:
+  (for ([f (in-directory simple-pkg-path)])
+    (define found-pkg (path->pkg f #:cache path-pkg-cache))
+    (when (and found-pkg
+               (not (equal? found-pkg pkg-name)))
+      (pkg-error (~a "cannot link a directory that overlaps with existing packages\n"
+                     "  existing package: ~a\n"
+                     "  overlapping path: ~a\n"
+                     "  a package: ~a")
+                 found-pkg
+                 f
+                 pkg-name)))
+  ;; Check simultaneous installs:
+  (for ([(other-pkg other-dir) (in-hash simultaneous-installs)])
+    (unless (equal? other-pkg pkg-name)
+      (when (one-in-the-other? simple-pkg-path
+                               (simple-form-path other-dir))
+        (pkg-error (~a "cannot link directories that overlap for different packages\n"
+                       "  package: ~a\n"
+                       "  path: ~a\n"
+                       "  overlapping package: ~a\n"
+                       "  overlapping path: ~a")
+                   pkg-name
+                   pkg-path
+                   other-pkg
+                   other-dir)))))
+
 ;; Downloads a package (if needed) and unpacks it (if needed) into a  
 ;; temporary directory.
 (define (stage-package/info pkg
@@ -1518,6 +1567,14 @@
     (define simultaneous-installs
       (for/hash ([i (in-list infos)])
         (values (install-info-name i) (install-info-directory i))))
+
+    (when (and (pair? orig-pkg)
+               (or (eq? (car orig-pkg) 'link)
+                   (eq? (car orig-pkg) 'static-link)))
+      (disallow-package-path-overlaps pkg-name
+                                      pkg-dir
+                                      path-pkg-cache
+                                      simultaneous-installs))
     (cond
       [(and (not updating?)
             (hash-ref all-db pkg-name #f)

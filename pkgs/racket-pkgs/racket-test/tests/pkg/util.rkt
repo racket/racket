@@ -173,7 +173,7 @@
     (format "Test installation of ~a" message)
     pre ...
     $ "racket -e '(require pkg-test1)'" =exit> 1
-    $ (format "raco pkg install ~a" pkg)
+    $ (format "raco pkg install --copy ~a" pkg)
     $ "racket -e '(require pkg-test1)'"
     more ...
     $ (format "raco pkg remove ~a" rm-pkg)

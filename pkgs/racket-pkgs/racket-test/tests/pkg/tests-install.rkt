@@ -8,10 +8,12 @@
          racket/runtime-path
          racket/path
          racket/list
+         racket/format
          file/zip
          file/unzip
          net/url
          pkg/util
+         setup/dirs
          "shelly.rkt"
          "util.rkt")
 
@@ -31,12 +33,8 @@
    (shelly-install* "local package (zip, single-collection)" 
                     "test-pkgs/pkg-test1.zip test-pkgs/pkg-test3.zip" 
                     "pkg-test1 pkg-test3")
-   (shelly-install "local package (dir)" (string-append
-                                          "--copy "
-                                          (url->string (path->url (path->complete-path "test-pkgs/pkg-test1")))))
-   (shelly-install "local package (file://dir)" (string-append
-                                                 "--copy "
-                                                 (url->string (path->url (path->complete-path "test-pkgs/pkg-test1")))))
+   (shelly-install "local package (dir)" (url->string (path->url (path->complete-path "test-pkgs/pkg-test1"))))
+   (shelly-install "local package (file://dir)" (url->string (path->url (path->complete-path "test-pkgs/pkg-test1"))))
 
    ;; Check ".zip" file with extra directory layer:
    (let ([dir (make-temporary-file "zip~a" 'directory)]
@@ -117,56 +115,79 @@
 
    (shelly-case
     "local directory fails when not there"
-    $ "raco pkg install test-pkgs/pkg-test1-not-there/" =exit> 1)
+    $ "raco pkg install --copy test-pkgs/pkg-test1-not-there/" =exit> 1)
+
+   (shelly-case
+    "directory fails due to path overlap"
+    $ "raco pkg install test-pkgs/pkg-test1"
+    =exit> 1
+    =stderr> #rx"overlap"
+    $ (~a "raco pkg install " (find-collects-dir))
+    =exit> 1
+    =stderr> #rx"overlap.*collection"
+    $ (~a "raco pkg install " (collection-path "tests"))
+    =exit> 1
+    =stderr> #rx"overlap.*package")
+
+   (define tmp-dir (path->directory-path (make-temporary-file "pkg~a" 'directory)))
+   $ (~a "cp -r test-pkgs/pkg-test1 "tmp-dir"pkg-test1")
+   $ (~a "cp -r test-pkgs/pkg-test3 "tmp-dir"pkg-test3")
+
+   (shelly-case
+    "directory fails due to path overlap"
+    $ (~a "raco pkg install "tmp-dir" "tmp-dir"pkg-test1")
+    =exit> 1
+    =stderr> #rx"overlap")
 
    (shelly-install "local package (directory)" "test-pkgs/pkg-test1/"
                    $ "racket -e '(require pkg-test1)'")
    (shelly-install* "local package (single-collection directory)" 
-                    "test-pkgs/pkg-test1/ test-pkgs/pkg-test3/"
+                    (~a tmp-dir"pkg-test1/ "tmp-dir"pkg-test3/")
                     "pkg-test1 pkg-test3"
                     $ "racket -e '(require pkg-test3)'")
-
-   (shelly-install "redundant packages ignored" "test-pkgs/pkg-test1/ test-pkgs/pkg-test1/"
+   
+   (shelly-install "redundant packages ignored"
+                   (~a tmp-dir"pkg-test1/ "tmp-dir"pkg-test1/")
                    $ "racket -e '(require pkg-test1)'")
+
    (shelly-case
     "conflicting package names disallowed"
-    $ "raco pkg install  test-pkgs/pkg-test1/ test-pkgs/pkg-test1.zip" =exit> 1)
+    $ "raco pkg install --copy test-pkgs/pkg-test1/ test-pkgs/pkg-test1.zip" =exit> 1)
+
+   $ (~a "cp -r "tmp-dir"pkg-test1 "tmp-dir"pkg-test1-linking")
+   $ (~a "cp -r test-pkgs/pkg-test1-staging "tmp-dir"pkg-test1-staging")
 
    (with-fake-root
     (shelly-case
      "linking local directory"
-     (shelly-wind
-      $ "cp -r test-pkgs/pkg-test1 test-pkgs/pkg-test1-linking"
-      $ "racket -e '(require pkg-test1)'" =exit> 1
-      $ "raco pkg install --link test-pkgs/pkg-test1-linking"
-      $ "racket -e '(require pkg-test1)'"
-      $ "racket -e '(require pkg-test1/a)'" =exit> 1
-      $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs/pkg-test1-linking\")'" =stdout> "\"pkg-test1-linking\"\n"
-      $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs/pkg-test1-linking/README\")'" =stdout> "\"pkg-test1-linking\"\n"
-      $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs\")'" =stdout> "\"racket-test\"\n"
-      $ "racket -e '(require pkg/lib)' -e '(path->pkg (collection-file-path \"main.rkt\" \"racket\"))'" =stdout> "#f\n"
-      $ "cp test-pkgs/pkg-test1-staging/a.rkt test-pkgs/pkg-test1-linking/pkg-test1/a.rkt"
-      $ "racket -e '(require pkg-test1/a)'"
-      $ "rm -f test-pkgs/pkg-test1-linking/pkg-test1/a.rkt"
-      $ "racket -e '(require pkg-test1/a)'" =exit> 1
-      $ "raco pkg remove pkg-test1-linking"
-      $ "racket -e '(require pkg-test1)'" =exit> 1
-      (finally
-       $ "rm -r test-pkgs/pkg-test1-linking"))))
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ (~a "raco pkg install --link "tmp-dir"pkg-test1-linking")
+     $ "racket -e '(require pkg-test1)'"
+     $ "racket -e '(require pkg-test1/a)'" =exit> 1
+     $ (~a "racket -e '(require pkg/lib)' -e '(path->pkg \""tmp-dir"pkg-test1-linking\")'") =stdout> "\"pkg-test1-linking\"\n"
+     $ (~a "racket -e '(require pkg/lib)' -e '(path->pkg \""tmp-dir"pkg-test1-linking/README\")'") =stdout> "\"pkg-test1-linking\"\n"
+     $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs\")'" =stdout> "\"racket-test\"\n"
+     $ "racket -e '(require pkg/lib)' -e '(path->pkg (collection-file-path \"main.rkt\" \"racket\"))'" =stdout> "#f\n"
+     $ (~a "cp "tmp-dir"pkg-test1-staging/a.rkt "tmp-dir"pkg-test1-linking/pkg-test1/a.rkt")
+     $ "racket -e '(require pkg-test1/a)'"
+     $ (~a "rm -f "tmp-dir"pkg-test1-linking/pkg-test1/a.rkt")
+     $ "racket -e '(require pkg-test1/a)'" =exit> 1
+     $ "raco pkg remove pkg-test1-linking"
+     $ "racket -e '(require pkg-test1)'" =exit> 1))
+
+   $ (~a "cp -r "tmp-dir"pkg-test3 "tmp-dir"pkg-test3-linking")
 
    (with-fake-root
     (shelly-case
      "linking local directory, single-collection"
-     (shelly-wind
-      $ "cp -r test-pkgs/pkg-test3 test-pkgs/pkg-test3-linking"
-      $ "racket -e '(require pkg-test3)'" =exit> 1
-      $ "raco pkg install --link test-pkgs/pkg-test1 test-pkgs/pkg-test3-linking"
-      $ "racket -e '(require pkg-test3-linking)'"
-      $ "racket -e '(require pkg-test3)'" =exit> 1
-      $ "raco pkg remove pkg-test1 pkg-test3-linking"
-      $ "racket -e '(require pkg-test3-linking)'" =exit> 1
-      (finally
-       $ "rm -r test-pkgs/pkg-test3-linking"))))
+     $ "racket -e '(require pkg-test3)'" =exit> 1
+     $ (~a "raco pkg install --link "tmp-dir"pkg-test1 "tmp-dir"pkg-test3-linking")
+     $ "racket -e '(require pkg-test3-linking)'"
+     $ "racket -e '(require pkg-test3)'" =exit> 1
+     $ "raco pkg remove pkg-test1 pkg-test3-linking"
+     $ "racket -e '(require pkg-test3-linking)'" =exit> 1))
+
+   (delete-directory/files tmp-dir)
 
    (with-fake-root
     (shelly-case
@@ -178,7 +199,7 @@
     (shelly-case
      "implicitly single-collection"
      $ "racket -e '(require pkg-c/c)'" =exit> 1
-     $ "raco pkg install --link test-pkgs/pkg-c"
+     $ "raco pkg install --copy test-pkgs/pkg-c"
      $ "racket -e '(require pkg-c/c)'" =stdout> "'c\n"))
 
    (with-fake-root

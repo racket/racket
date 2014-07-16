@@ -57,15 +57,15 @@
                     $ "test -f test-pkgs/pkg-test3.zip"
                     $ "raco pkg install test-pkgs/pkg-test3.zip" =exit> 1)
 
+   (define tmp-dir (path->directory-path (make-temporary-file "pkg~a" 'directory)))
    (shelly-wind
-    $ "cp -r test-pkgs/pkg-test1 test-pkgs/pkg-test1-linking"
-    (shelly-install* "conflicts are caught, even with a link" 
-                    "--link test-pkgs/pkg-test1-linking"
-                    "pkg-test1-linking"
-                    $ "test -f test-pkgs/pkg-test1-conflict.zip"
-                    $ "raco pkg install test-pkgs/pkg-test1-conflict.zip" =exit> 1)
+    $ (~a "cp -r test-pkgs/pkg-test1 " tmp-dir"pkg-test1-linking")
+    $ (~a "raco pkg install --link " tmp-dir"pkg-test1-linking")
+    $ "test -f test-pkgs/pkg-test1-conflict.zip"
+    $ "raco pkg install test-pkgs/pkg-test1-conflict.zip" =exit> 1
+    $ "raco pkg remove pkg-test1-linking"
     (finally
-     $ "rm -fr test-pkgs/pkg-test1-linking"))
+     (delete-directory/files tmp-dir)))
 
    (shelly-install "conflicts can be forced" "test-pkgs/pkg-test1.zip"
                    $ "racket -e '(require pkg-test1/conflict)'" =exit> 42

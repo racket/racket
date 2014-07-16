@@ -8,6 +8,7 @@
          racket/runtime-path
          racket/path
          racket/list
+         racket/format
          pkg/util
          "shelly.rkt"
          "util.rkt")
@@ -26,9 +27,16 @@
    (shelly-install "local packages can't be updated (file)"
                    "test-pkgs/pkg-test1.zip"
                    $ "raco pkg update pkg-test1" =exit> 1)
-   (shelly-install "local packages can't be updated (directory)"
-                   "test-pkgs/pkg-test1/"
-                   $ "raco pkg update pkg-test1" =exit> 1)
+
+   (define tmp-dir (path->directory-path (make-temporary-file "pkg~a" 'directory)))
+   (shelly-wind
+    $ (~a "cp -r test-pkgs/pkg-test1 " tmp-dir"pkg-test1")
+    (shelly-install "local packages can't be updated (directory)"
+                    (~a tmp-dir"pkg-test1/")
+                    $ "raco pkg update pkg-test1" =exit> 1)
+    (finally
+     (delete-directory/files tmp-dir)))
+
    (shelly-wind
     $ "mkdir -p test-pkgs/update-test"
     $ "cp -f test-pkgs/pkg-test1-v2.zip test-pkgs/update-test/pkg-test1.zip"
@@ -45,21 +53,26 @@
                    $ "racket -e '(require pkg-test1/update)'" =exit> 42
                    $ "raco pkg update --name pkg-test1 test-pkgs/pkg-test1-v2.zip"
                    $ "racket -e '(require pkg-test1/update)'" =exit> 43)
-   (shelly-install "packages can be replaced with local packages (directory)"
-                   "test-pkgs/pkg-test1.zip"
-                   $ "racket -e '(require pkg-test1/update)'" =exit> 42
-                   $ "raco pkg update --name pkg-test1 test-pkgs/pkg-test1-v2"
-                   $ "racket -e '(require pkg-test1/update)'" =exit> 43)
-   (shelly-install "replacement checksum can be checked"
-                   "test-pkgs/pkg-test1.zip"
-                   $ "raco pkg update test-pkgs/pkg-test1.zip" =stdout> "No updates available\n")
-   (shelly-install "checksum can be supplied for local directory"
-                   "test-pkgs/pkg-test1.zip"
-                   $ "racket -e '(require pkg-test1/update)'" =exit> 42
-                   $ "raco pkg update --name pkg-test1 --checksum abcdef test-pkgs/pkg-test1-v2"
-                   $ "racket -e '(require pkg-test1/update)'" =exit> 43
-                   $ "raco pkg show" =stdout> #rx"abcdef"
-                   $ "raco pkg update --name pkg-test1 --checksum abcdef test-pkgs/pkg-test1-v2" =stdout> "No updates available\n")
+   (define tmp2-dir (path->directory-path (make-temporary-file "pkg~a" 'directory)))
+   (shelly-wind
+    $ (~a "cp -r test-pkgs/pkg-test1-v2 " tmp2-dir"pkg-test1-v2")
+    (shelly-install "packages can be replaced with local packages (directory)"
+                    "test-pkgs/pkg-test1.zip"
+                    $ "racket -e '(require pkg-test1/update)'" =exit> 42
+                    $ (~a "raco pkg update --name pkg-test1 "tmp2-dir"pkg-test1-v2")
+                    $ "racket -e '(require pkg-test1/update)'" =exit> 43)
+    (shelly-install "replacement checksum can be checked"
+                    "test-pkgs/pkg-test1.zip"
+                    $ "raco pkg update test-pkgs/pkg-test1.zip" =stdout> "No updates available\n")
+    (shelly-install "checksum can be supplied for local directory"
+                    "test-pkgs/pkg-test1.zip"
+                    $ "racket -e '(require pkg-test1/update)'" =exit> 42
+                    $ (~a "raco pkg update --name pkg-test1 --checksum abcdef "tmp2-dir"pkg-test1-v2")
+                    $ "racket -e '(require pkg-test1/update)'" =exit> 43
+                    $ "raco pkg show" =stdout> #rx"abcdef"
+                    $ (~a "raco pkg update --name pkg-test1 --checksum abcdef "tmp2-dir"pkg-test1-v2") =stdout> "No updates available\n")
+    (finally
+     (delete-directory/files tmp2-dir)))
 
    (shelly-wind
     $ "mkdir -p test-pkgs/update-test"
