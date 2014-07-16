@@ -607,11 +607,12 @@
   ;; never get an answe back from this depth:
   (define overflow-depth 40000)
 
+  (read-byte i)
   (set! nacks null)
   (define t
     (thread (lambda ()
               (with-handlers ([exn:break? void])
-                (sync (deep #t (current-input-port) overflow-depth))))))
+                (sync (deep #t i overflow-depth))))))
   (sync (system-idle-evt))
 
   (test #f sync/timeout 0 t)
