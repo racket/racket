@@ -58,14 +58,17 @@
 (check-equal? (list-fun '(4 5 6)) #f)
 
 (struct Foo (x y z w))
+(check-true (match (Foo 0 3 2 'last)
+              [(Foo 0 [#:z 2] 3 'last) #t]
+              [_ #f]))
 (check-true (match (Foo 0 3 2 'dropped)
-              [(Foo #:first 0 [#:z 2] 3) #t]
+              [(struct Foo #:first (0 [#:z 2] 3)) #t]
               [_ #f]))
 (check-true (match (Foo 'dropped 0 2 3)
-              [(Foo #:last 0 [#:z 2] 3) #t]
+              [(struct Foo #:last (0 [#:z 2] 3)) #t]
               [_ #f]))
 (check-true (match (Foo 'dropped 2 0 3)
-              [(Foo #:last 0 [#:y 2] 3) #t]
+              [(struct Foo #:last (0 [#:y 2] 3)) #t]
               [_ #f]))
 
 (define-syntax (check-syntax-error stx)
@@ -83,4 +86,4 @@
                       [(Foo 0 [#:x 0] 1 2) #f]))
 (check-syntax-error last-mode-name-conflict
                     (match (Foo 0 1 2 3)
-                      [(Foo #:last [#:w 3] 3) #f]))
+                      [(struct Foo #:last ([#:w 3] 3)) #f]))
