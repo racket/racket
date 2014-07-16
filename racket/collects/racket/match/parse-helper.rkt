@@ -280,7 +280,7 @@
                      (format " unnamed pattern~a but the field is in position "
                              (if (= num 1) "" "s"))
                      i (syntax->datum struct-name))
-             stx body))
+             stx pats))
           (car info)]
          [else (use! acc)]))])]))
 
