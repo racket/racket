@@ -1024,6 +1024,10 @@
 [procedure? (make-pred-ty top-func)]
 [compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
 [compose1 (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
+[procedure-rename (-> top-func -Symbol top-func)]
+[procedure->method (-> top-func top-func)]
+[procedure-closure-contents-eq? (-> top-func top-func -Boolean)]
+;; keyword-apply - hard to give a type
 [procedure-arity (-> top-func (Un -Nat -Arity-At-Least (-lst (Un -Nat -Arity-At-Least))))]
 [procedure-arity? (make-pred-ty (Un -Nat -Arity-At-Least (-lst (Un -Nat -Arity-At-Least))))]
 [procedure-arity-includes? (->opt top-func -Nat [Univ] B)]
