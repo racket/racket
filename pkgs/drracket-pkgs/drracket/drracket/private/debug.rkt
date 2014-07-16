@@ -14,6 +14,7 @@ profile todo:
          errortrace/stacktrace
          racket/class
          racket/path
+         racket/bool
          racket/gui/base
          string-constants
          framework
@@ -22,6 +23,7 @@ profile todo:
          drracket/private/drsig
          "bindings-browser.rkt"
          "stack-checkpoint.rkt"
+         "ellipsis-snip.rkt"
          net/sendurl
          net/url
          racket/match
@@ -371,7 +373,7 @@ profile todo:
           (unless (and (null? stack1) (null? stack2))
             (print-bug-to-stderr msg stack1 stack1-editions stack2 stack2-editions defs ints)))
         (display-srclocs-in-error src-locs src-locs-edition))
-      (display msg (current-error-port))
+      (display-error-message exn msg)
       (when (exn:fail:syntax? exn)
         (unless (error-print-source-location)
           (show-syntax-error-context (current-error-port) exn)))
@@ -389,6 +391,76 @@ profile todo:
              (send ints highlight-errors src-locs (if (null? stack1)
                                                       stack2
                                                       stack1))))))))
+  
+  (define (render-message lines)
+    (define collected (collect-hidden-lines lines))
+    (for ([x (in-list collected)]
+          [i (in-naturals)])
+      (unless (zero? i) (newline (current-error-port)))
+      (cond
+        [(string? x)
+         (display x (current-error-port))]
+        [(pair? x)
+         (define line (list-ref x 0))
+         (define to-show-later (list-ref x 1))
+         (write-string line (current-error-port) 0 (- (string-length line) 4))
+         (write-special (new ellipsis-snip% [extra to-show-later]) (current-error-port))
+         (display "!" (current-error-port))])))
+  
+  (define (display-error-message exn msg)
+    (cond
+      [(exn:fail? exn)
+       (define lines (regexp-split #rx"\n" msg))
+       (cond
+         [(ellipsis-candidate? lines)
+          (render-message lines)]
+         [else
+          (display msg (current-error-port))])]
+      [else 
+       (display msg (current-error-port))]))
+  
+  (define (collect-hidden-lines lines)
+    (let loop ([lines lines]
+               [ellipsis-line #f]
+               [collection #f])
+      (cond
+        [(null? lines)
+         (cond
+           [ellipsis-line
+            (list (list ellipsis-line collection))]
+           [else
+            '()])]
+        [else
+         (define line (car lines))
+         (cond
+           [ellipsis-line
+            (cond
+              [(regexp-match #rx"^   " line)
+               (loop (cdr lines) ellipsis-line (cons line collection))]
+              [else
+               (cons (list ellipsis-line collection)
+                     (loop (cdr lines) #f #f))])]
+           [else
+            (cond
+              [(regexp-match #rx"  [^ ].*[.][.][.]:$" line)
+               (loop (cdr lines) line '())]
+              [else
+               (cons line (loop (cdr lines) #f #f))])])])))
+  
+  (define (ellipsis-candidate? lines)
+    (and ((length lines) . > . 1)
+         (for/and ([x (in-list lines)]
+                   [i (in-naturals)])
+           
+           (and
+            ;; if it's not the first line, it is indented.
+            (implies (not (zero? i))
+                     (regexp-match? #rx"^ " x))
+            
+            ;; if it has the indentation to match a `field' line,
+            ;; it has a colon
+            (implies (regexp-match? #rx"^  [^ ]" x)
+                     (regexp-match? #rx":" x))))))
   
   (define (srcloc->edition/pair defs ints srcloc [port-name-matches-cache #f])
     (let ([src (srcloc-source srcloc)])
