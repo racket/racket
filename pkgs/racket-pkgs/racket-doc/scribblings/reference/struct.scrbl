@@ -1,4 +1,4 @@
-lang scribble/doc
+#lang scribble/doc
 @(require "mz.rkt" (for-label racket/struct-info))
 
 @(define struct-eval (make-base-eval))

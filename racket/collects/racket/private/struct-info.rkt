@@ -86,7 +86,12 @@
       (cond
        [(extended-struct-info-rec? esi)
         (extended-struct-info-ref esi 0)]
-       [(struct-info-rec? esi) #f]
+       [(or (struct-info-rec? esi)
+            (has-struct-info-prop? esi)
+            (struct-declaration-info? esi))
+        #f]
+       [(set!-transformer? esi)
+        (extract-struct-field-info (set!-transformer-procedure esi))]
        [else
         (raise-argument-error 'extract-struct-field-info
                               "struct-info?"
