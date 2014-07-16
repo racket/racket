@@ -405,7 +405,7 @@ profile todo:
          (define to-show-later (list-ref x 1))
          (write-string line (current-error-port) 0 (- (string-length line) 4))
          (write-special (new ellipsis-snip% [extra to-show-later]) (current-error-port))
-         (display "!" (current-error-port))])))
+         (display ":" (current-error-port))])))
   
   (define (display-error-message exn msg)
     (cond
