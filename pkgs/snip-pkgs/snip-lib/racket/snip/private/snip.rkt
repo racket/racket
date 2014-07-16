@@ -195,6 +195,8 @@
 
   (def/public (on-event [dc<%> dc] [real? x] [real? y] [real? ex] [real? ey] [mouse-event% event])
     (void))
+  (def/public (on-goodbye-event [dc<%> dc] [real? x] [real? y] [real? ex] [real? ey] [mouse-event% event])
+    (on-event dc x y ex ey event))
 
   (def/public (adjust-cursor [dc<%> dc] [real? x] [real? y] [real? ex] [real? ey] [mouse-event% event])
     #f)
