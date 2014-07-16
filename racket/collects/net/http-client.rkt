@@ -136,7 +136,7 @@
   (fprintf to "\r\n")
   (cond [(procedure? body)
          (body (λ (data) (write-chunk to data)))
-         (fprintf to "\r\n")]
+         (fprintf to "0\r\n\r\n")]
         [body (display body to)])
   (flush-output to))
 
