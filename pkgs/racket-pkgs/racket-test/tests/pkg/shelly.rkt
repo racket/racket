@@ -86,11 +86,11 @@
                              (loop)))))))
                   (to-proc 'wait)
                   (define cmd-status (to-proc 'exit-code))
-                  (when stdout (close-input-port stdout))
-                  (when stderr (close-input-port stderr))
                   (when stdin (close-output-port stdin))
                   (thread-wait stdout-t)
                   (thread-wait stderr-t)
+                  (when stdout (close-input-port stdout))
+                  (when stderr (close-input-port stderr))
                   (define actual-output
                     (get-output-string output-port))
                   (define actual-error
