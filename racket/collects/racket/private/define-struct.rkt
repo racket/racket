@@ -411,6 +411,8 @@
               "no structure type descriptor available for supertype"
               stx
               super-id))
+           (when (and super-info (not super-fields))
+             (log-warning (format "parent struct does not have associated extended struct info: ~a" (syntax-e super-id))))
            (let* ([field-stxes (syntax->list #'(field ...))]
                   [fields (map parse-field field-stxes)]
                   [dup (check-duplicate-identifier (map field-id fields))])

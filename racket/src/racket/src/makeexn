@@ -240,7 +240,7 @@ Not an exception in the above sense:
                                            (quote-syntax ,pn)                              
                                            ,fds
                                            ,fdsset! ,prnt))
-                               '(,@fdns)
+                               '(,@fields)
                                (λ () (quote-syntax ,kern-name)))))))
   
   (define (parent-sym x)
@@ -249,15 +249,20 @@ Not an exception in the above sense:
           parent
           (string->symbol (ex-string parent)))))
   
-  (define (fields exn)
+  (define (selectors exn)
     (define (field-name exn fld)
       (sss  (ex-string exn) "-"  (fld-name fld)))
     (if (non-parent exn)
         null
-        (append (reverse (map (λ (field) (field-name exn field)) (ex-args exn))) (fields (ex-parent exn)))))
+        (append (reverse (map (λ (field) (field-name exn field)) (ex-args exn))) (selectors (ex-parent exn)))))
+
+  (define (fields exn)
+    (if (non-parent exn)
+        null
+        (append (reverse (map (λ (field) (fld-name field)) (ex-args exn))) (fields (ex-parent exn)))))
   
   
-  (define exceptions (map (λ (x) (gen-ds (ex-string x) (fields x) (parent-sym x))) l))
+  (define exceptions (map (λ (x) (gen-ds (ex-string x) (selectors x) (fields x) (parent-sym x))) l))
   (define structs (map (λ (x) (apply gen-ds x))
                        '((arity-at-least (arity-at-least-value) (value) #t)
                          (date (date-time-zone-offset date-dst? date-year-day date-week-day date-year 
@@ -271,7 +276,7 @@ Not an exception in the above sense:
                                  time-zone-offset dst? year-day week-day year 
                                  month day hour minute second) date)
                          (srcloc (srcloc-span srcloc-position srcloc-column srcloc-line srcloc-source)
-                                 (span position column line) #t))))
+                                 (span position column line source) #t))))
   
   (with-output-to-file filename #:exists 'replace
     (λ ()

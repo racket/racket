@@ -749,7 +749,7 @@
             [true-field-names
              ;; Unfortunately couldn't be checked on construction.
              (unless (= sel-len (length true-field-names))
-               (raise-syntax-error #f (format "extended struct info has mismatched length for field names: ~a" (syntax-e struct-name)) stx struct-name))
+               (raise-syntax-error #f (format "extended struct info has mismatched length for field names: ~a (fields: ~a) (selectors: ~a)" (syntax-e struct-name) true-field-names (map syntax-e selector-ids)) stx struct-name))
              (let loop ([true-field-names true-field-names]
                         [field-names (reverse field-names)])
                (cond

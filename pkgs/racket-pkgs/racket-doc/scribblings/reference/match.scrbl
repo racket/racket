@@ -226,14 +226,15 @@ In more detail, patterns match as follows:
        the corresponding @racket[_spat]. Struct patterns allow fields to be
        named out-of-order with either @racket[[#:field id pat]] or equivalently
        @racket[[#:id pat]] for a field named @racket[id]. An optional @racket[_mode]
-       may be specified after @racket[_struct-id]. If @racket[_mode] is @racket[#:full],
-       then @racket[match] will ensure that all fields are specified.
-       The @racket[#:first] mode signifies that unnamed patterns will match starting
-       with the first of all fields, allowing fields to be named as long as
-       they don't conflict positionally with an already provided unnamed pattern.
-       The @racket[#:last] mode is similar, only the last pattern corresponds to
-       the last field. The default match mode is @racket[#:first] in the presence
-       of named patterns, and @racket[#:full] without named patterns. 
+       may be specified after @racket[_struct-id] in the @racket[struct] pattern.
+       If @racket[_mode] is @racket[#:full], then @racket[match] will ensure that
+       all fields are specified. The @racket[#:first] mode signifies that unnamed
+       patterns will match starting with the first of all fields, allowing fields
+       to be named as long as they don't conflict positionally with an already
+       provided unnamed pattern. The @racket[#:last] mode is similar, only the last
+       pattern corresponds to the last field. The default match behavior allows
+       incomplete matches when all patterns are named, but if there is at least
+       one unnamed pattern, then all fields must have patterns.
        
 
        Usually, @racket[_struct-id] is defined with

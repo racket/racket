@@ -46,7 +46,7 @@
     [#(es ...)
      (make-Vector (map parse (syntax->list #'(es ...))))]
     [($ s . pats)
-     (parse-struct disarmed-stx parse #'s #'pats)]
+     (parse-struct disarmed-stx parse #'s #f #'pats)]
     [(? p q1 qs ...)
      (make-And (cons (make-Pred #'p)
                      (map parse (syntax->list #'(q1 qs ...)))))]
