@@ -105,8 +105,6 @@
       (datum->syntax lctx fmt+vs-sym src))
     (define srbs
       (final-make-srbs))
-    (printf "~v -> ~v\n"
-            this-id srbs)
     (set! SRBS (cons srbs SRBS))
     this-id)
 
