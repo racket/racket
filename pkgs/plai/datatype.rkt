@@ -164,9 +164,11 @@
 
      (with-syntax
          ([(variant* ...)
-           (generate-temporaries #'(variant ...))]
+           (stx-map (λ (x) (datum->syntax #f (syntax->datum x)))
+                    #'(variant ...))]
           [(underlying-variant ...)
-           (generate-temporaries #'(variant ...))])
+           (stx-map (λ (x) (datum->syntax #f (syntax->datum x)))
+                    #'(variant ...))])
 
        (with-syntax
            ([((field/c-val ...) ...)
