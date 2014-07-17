@@ -1051,14 +1051,14 @@ profile todo:
         [(and defs (send defs port-name-matches? file))
          (values defs void)]
         [(path? file)
-         (define file
+         (define normalized-file
            (with-handlers ((exn:fail? (λ (x) #f)))
              (normal-case-path (normalize-path file))))
          (cond
-           [(not file) (values #f void)]
+           [(not normalized-file) (values #f void)]
            [(send (group:get-the-frame-group)
                   locate-file
-                  file)
+                  normalized-file)
             =>
             (λ (frame)
               (cond
@@ -1072,15 +1072,15 @@ profile todo:
                         (if (with-handlers ((exn:fail? (λ (x) #f)))
                               (equal? 
                                (normalize-path (normal-case-path (send defs get-filename)))
-                               file))
+                               normalized-file))
                             (values defs void)
                             (loop (cdr tabs))))]))]
                 [(is-a? frame frame:editor<%>)
                  (values (send frame get-editor) void)]
                 [else (values #f void)]))]
-           [(path? file)
+           [(path? normalized-file)
             (let ([text (new text:basic%)])
-              (if (send text load-file file)
+              (if (send text load-file normalized-file)
                   (values text 
                           (λ () (send text on-close)))
                   (values #f (λ () (void)))))]
