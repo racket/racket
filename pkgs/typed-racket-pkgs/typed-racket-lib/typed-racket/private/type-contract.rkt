@@ -109,28 +109,46 @@
 
 ;; fixup-type-aliases : (Listof Syntax) -> (Listof Syntax)
 ;; Generate contracts for mutually recursive type aliases
-(define (fixup-type-aliases forms)
-  ;; run this twice to ensure that contract failures in mutually
-  ;; recursive type aliases are found and turned into failure syntaxes
-  (for ([e (in-syntax forms)]
-        #:when (contract-def/alias-property e)
-        #:unless (in-ignore-table? e))
-    (generate-contract-def/alias e))
-  (for/list ([e (in-syntax forms)]
-             #:when (contract-def/alias-property e)
-             #:unless (in-ignore-table? e))
-    (generate-contract-def/alias e)))
+(define (fixup-type-aliases *forms)
+  (define forms
+    (for/list ([*form (syntax->list *forms)]
+               #:when (contract-def/alias-property *form)
+               #:unless (in-ignore-table? *form))
+      *form))
+  (for/fold ;; none of the contracts are generated to begin, so #f
+            ([contracts (make-list (length forms) #f)])
+            ([kind (in-list '(flat chaperone impersonator))])
+    ;; clear out #f entries after each loop because a failure to generate
+    ;; a flat contract doesn't rule out a chaperone or impersonator one
+    (for ([k (in-list (dict-keys alias-info))])
+      (define v (free-id-table-ref alias-info k #f))
+      (when (string? v) (free-id-table-remove! alias-info k)))
+    ;; run this twice to ensure that contract failures in mutually
+    ;; recursive type aliases are found and turned into failure syntaxes
+    (for ([e (in-list forms)]
+          [ctc (in-list contracts)])
+      (when (or (string? ctc) (not ctc))
+        (generate-contract-def/alias e kind)))
+    (map (λ (new old) (or new old))
+         (for/list ([e (in-list forms)]
+                    [ctc (in-list contracts)])
+           ;; use the previous contract if it was successful (i.e., flat
+           ;; instead of chaperone, chaperone instead of impersonator)
+           ;; since we want the most specific
+           (and (or (string? ctc) (not ctc))
+                (generate-contract-def/alias e kind)))
+         contracts)))
 
-;; failed-aliases : (Dict Id (U #f String))
+;; alias-info : (Dict Id (U String 'flat 'impersonator 'chaperone))
 ;;
-;; This table stores whether TR failed to generate a contract for the
-;; given identifier corresponding to a recursive type alias. When it does
-;; fail, the failure reason (a string) is stored. Otherwise it's #f.
-(define failed-aliases (make-free-id-table))
+;; This table stores if a given Name type matches up to a flat, impersonator,
+;; or chaperone contract. If the contract failed to generate, then the
+;; failure reason (a string) is stored.
+(define alias-info (make-free-id-table))
 
-;; generate-contract-def/alias : Syntax -> Syntax
+;; generate-contract-def/alias : Syntax -> (U Syntax #f)
 ;; Generate a contract that goes with a type alias
-(define (generate-contract-def/alias stx)
+(define (generate-contract-def/alias stx kind)
   (define prop (contract-def/alias-property stx))
   (define-values (typed-side type-stx)
     (syntax-case prop ()
@@ -143,29 +161,32 @@
      (define/with-syntax cnt
        (type->contract typ
                        #:typed-side typed-side
-                       #:kind 'impersonator
+                       #:kind kind
                        (λ (#:reason [reason #f])
                           (set! failed? #t)
                           (set! failure-reason reason)
-                          (free-id-table-set! failed-aliases #'n reason))))
-     (ignore
-      ;; If the contract fails to generate, then turn this identifier
-      ;; into a macro that always raises a failure error. This delays the
-      ;; error until the type alias is actually used.
-      (if failed?
-          (quasisyntax/loc stx
-            (define-syntaxes (n)
-              (λ (stx)
-               (tc-error/stx
-                (quote-syntax #,prop)
-                (format "Type ~a could not be converted to a contract ~a"
-                        (quote #,(~a typ))
-                        (if #,failure-reason
-                            (format ": ~a" #,failure-reason)
-                            "."))))))
-          (quasisyntax/loc stx
-            (define-values (n)
-              (recursive-contract cnt #:impersonator)))))]
+                          (free-id-table-set! alias-info #'n reason))))
+     (cond [(and failed? (not (eq? kind 'impersonator))) #f]
+           [failed?
+            (ignore
+             (quasisyntax/loc stx
+               (define-syntaxes (n)
+                 (λ (stx)
+                  (tc-error/stx
+                   (quote-syntax #,prop)
+                   (format "Type ~a could not be converted to a contract ~a"
+                           (quote #,(~a typ))
+                           (if #,failure-reason
+                               (format ": ~a" #,failure-reason)
+                               ".")))))))]
+           [else
+            (free-id-table-set! alias-info #'n kind)
+            (ignore
+             (quasisyntax/loc stx
+               (define-values (n)
+                 ;; the recursive contract is actually needed in this case since these
+                 ;; are all recursive/mutually recursive type aliases
+                 (recursive-contract cnt #,(contract-kind->keyword kind)))))])]
     [_ (int-err "should never happen - not a define-values: ~a"
                 (syntax->datum stx))]))
 
@@ -312,15 +333,14 @@
          (define ctc-id
            (case typed-side
              [(typed) ctc-t]
-             [(both) ctc-u]
-             [(untyped) ctc-b]))
-         ;; FIXME: More precision here would be good so that contracts are
-         ;;        valid in more cases. In some cases, we can be more precise
-         ;;        than impersonator even if it's sound to assume that.
-         (define alias-failed? (free-id-table-ref failed-aliases ctc-id #f))
-         (if alias-failed?
-             (fail #:reason alias-failed?)
-             (impersonator/sc ctc-id))]
+             [(both) ctc-b]
+             [(untyped) ctc-u]))
+         (define alias-kind (free-id-table-ref alias-info ctc-id #f))
+         (match alias-kind
+           [(? string?)   (fail #:reason alias-kind)]
+           ['impersonator (impersonator/sc ctc-id)]
+           ['chaperone    (chaperone/sc ctc-id)]
+           [_             (flat/sc ctc-id)])]
         ;; Ordinary type applications or struct type names, just resolve
         [(or (App: _ _ _) (Name: _ _ _ _ #t)) (t->sc (resolve-once type))]
         [(Univ:) (if (from-typed? typed-side) any-wrap/sc any/sc)]
