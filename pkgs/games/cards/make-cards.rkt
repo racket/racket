@@ -3,7 +3,27 @@
            (prefix-in mred: racket/gui)
            (prefix-in card-class: "card-class.rkt"))
 
-  (provide back deck-of-cards make-card)
+  (provide back deck-of-cards
+           (contract-out
+            [make-card (->i ([front-bm (back-bm)
+                                       (and/c (is-a?/c mred:bitmap%)
+                                              (same-size back-bm))]
+                             [back-bm (or/c #f (is-a?/c mred:bitmap%))]
+                             [suit-id any/c]
+                             [value any/c])
+                            [result (is-a?/c card-class:card%)])]))
+  
+  (define (same-size given-bitmap)
+    (cond
+      [given-bitmap
+       (define w (send given-bitmap get-width))
+       (define h (send given-bitmap get-height))
+       (define (check bmp)
+         (and (= w (send bmp get-width))
+              (= h (send bmp get-height))))
+       (procedure-rename check
+                         (string->symbol (format "~ax~a-bitmap?" w h)))]
+      [else any/c]))
 
   (define (get-bitmap file)
     (mred:read-bitmap file 
