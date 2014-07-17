@@ -249,7 +249,7 @@ typedef struct fsemaphore_t {
 
 # include "jit_ts_protos.h"
 
-extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
+extern Scheme_Object *scheme_force_value_same_mark_as_lightweight_continuation(Scheme_Object *v);
 
 extern Scheme_Object **scheme_rtcall_on_demand(Scheme_Object **argv);
 extern uintptr_t scheme_rtcall_alloc(void);
