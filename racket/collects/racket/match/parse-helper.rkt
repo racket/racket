@@ -149,7 +149,7 @@
     (raise-syntax-error
      'match
      (format "~a structure ~a: expected ~a but got ~a"
-             "wrong number for fields for"
+             "wrong number of fields for"
              (syntax->datum struct-name) acclen
              (length pats))
      stx pats))
@@ -185,7 +185,7 @@
     (define (bad-field? f)
       (unless (hash-has-key? actual-fields f)
         (raise-syntax-error 'match
-                            (format "field name (~a) not associated with struct ~a"
+                            (format "field name (~a) not associated with structure ~a"
                                     f (syntax->datum struct-name))
                             stx)))
     ;; We collect the layout in a list for #:last to compute the analogous count
@@ -209,7 +209,10 @@
 
     ;; Bearings made. Now we check sanity.
     (define total (+ num-unnamed (hash-count named)))
-    (unless (if (eq? mode '#:full)
+    (unless (if (or (eq? mode '#:full)
+                    ;; default behavior: expect all fields if
+                    ;; any unnamed pattern is given.
+                    (and (not mode) (< 0 num-unnamed)))
                 (= total acclen)
                 (<= total acclen))
       (bad-arity pats))

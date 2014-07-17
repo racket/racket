@@ -73,17 +73,28 @@
 
 (define-syntax (check-syntax-error stx)
   (syntax-case stx ()
-    [(_ name e)
-     (with-handlers ([exn:fail:syntax? (λ (e) #'(void))])
+    [(_ name e exp)
+     (with-handlers ([exn:fail:syntax?
+                      (λ (e)
+                         (if (regexp-match (syntax-e #'exp) (exn-message e))
+                             #'(void)
+                             #`(fail-check (format "Test ~a failed with different error message: ~a" 'name #,(exn-message e)))))])
        (with-syntax ([e (local-expand #'e 'expression #f)])
          #'(fail-check (format "Test ~a successfully expanded when expecting syntax error" #''name))))]))
 
 (check-syntax-error bad-field-name
                     (match (Foo 0 1 2 3)
-                      [(Foo [#:bad 0]) #f]))
+                      [(Foo [#:bad 0]) #f])
+                    #rx"field name \\(bad\\) not associated with structure Foo")
 (check-syntax-error first-mode-name-conflict
                     (match (Foo 0 1 2 3)
-                      [(Foo 0 [#:x 0] 1 2) #f]))
+                      [(Foo 0 [#:x 0] 1 2) #f])
+                    #rx"named field pattern \\(x\\) given after 1 unnamed pattern but the field is in position 0 for structure Foo")
 (check-syntax-error last-mode-name-conflict
                     (match (Foo 0 1 2 3)
-                      [(struct Foo #:last ([#:w 3] 3)) #f]))
+                      [(struct Foo #:last ([#:w 3] 3)) #f])
+                    #rx"named field pattern \\(w\\) given before 1 unnamed pattern but the field is 0 from last for structure Foo in #:last mode")
+(check-syntax-error default-full-when-unnamed-given
+                    (match (Foo 0 1 2 3)
+                      [(Foo [#:w 3] 0) #f])
+                    #rx"wrong number of fields for structure Foo: expected 4 but got 2")
