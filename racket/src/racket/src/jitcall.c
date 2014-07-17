@@ -557,7 +557,7 @@ int scheme_generate_finish_apply(mz_jit_state *jitter)
 int scheme_generate_finish_tail_apply(mz_jit_state *jitter)
 {
   GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
-  (void)mz_finish_lwe(_scheme_tail_apply_from_native, refr);
+  (void)mz_finish_lwe(ts__scheme_tail_apply_from_native, refr);
   return 1;
 }
 
