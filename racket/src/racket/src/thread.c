@@ -5186,7 +5186,7 @@ int scheme_block_until(Scheme_Ready_Fun _f, Scheme_Needs_Wakeup_Fun fdf,
       if (sleep_end) {
 	delay = (float)(sleep_end - scheme_get_inexact_milliseconds());
 	delay /= 1000.0;
-	if (delay < 0)
+	if (delay <= 0)
 	  delay = (float)0.00001;
       } else
 	delay = 0.0;
