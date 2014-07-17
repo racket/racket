@@ -56,11 +56,62 @@
     (plai-syntax-error 'type-case stx-loc type-case:not-a-type)))
 
 (require (for-syntax syntax/parse
-                     racket/syntax syntax/stx
+                     syntax/stx
+                     racket/string
+                     racket/match
                      (only-in racket/function curry)))
 
-(define-for-syntax (syntax-string s)
-  (symbol->string (syntax-e s)))
+(begin-for-syntax
+  (define SRBS null)
+  (define (CLEAR-SRBS!)
+    (set! SRBS null))
+  (define (GRAB-SRBS)
+    SRBS)
+
+  (define (format-id lctx fmt #:source src . v)
+    (define-values
+      (fmt+vs-strs final-make-srbs)
+      (let loop ([l (string->list fmt)]
+                 [v v]
+                 [here 0]
+                 [ss empty]
+                 [make-srbs (λ () null)])
+        (match l
+          [(list* #\~ #\a more)
+           (define first-v (first v))
+           (define first-s (format "~a" (syntax->datum first-v)))
+           (define first-len (string-length first-s))
+           (loop more (rest v) (+ here first-len)
+                 (cons first-s ss)
+                 (if (syntax-source first-v)
+                   (λ ()
+                     (cons (vector (syntax-local-introduce this-id)
+                                   here first-len
+                                   (syntax-local-introduce first-v)
+                                   0 first-len)
+                           (make-srbs)))
+                   make-srbs))]
+          [(list* other more)
+           (loop more v (+ here 1)
+                 (cons (string other) ss)
+                 make-srbs)]
+          [(list)
+           (values (reverse ss) make-srbs)])))
+    (define fmt+vs-str
+      (string-append* fmt+vs-strs))
+    (define fmt+vs-sym
+      (string->symbol fmt+vs-str))
+    (define this-id
+      (datum->syntax lctx fmt+vs-sym src))
+    (define srbs
+      (final-make-srbs))
+    (printf "~v -> ~v\n"
+            this-id srbs)
+    (set! SRBS (cons srbs SRBS))
+    this-id)
+
+  (define (syntax-string s)
+    (symbol->string (syntax-e s))))
 
 ;; XXX Copied from racket/private/define-struct
 (begin-for-syntax
@@ -110,6 +161,9 @@
      ;; Ensure type and variant names are unbound
      (map (assert-unbound 'define-type)
           (cons #'datatype? (syntax->list #'(variant ...))))
+
+     (CLEAR-SRBS!)
+
      (with-syntax
          ([(variant* ...)
            (generate-temporaries #'(variant ...))]
@@ -164,81 +218,86 @@
                         #'(variant* ...)
                         #'((field ...) ...))])
 
-           (syntax/loc stx
-             (begin
-               (define-syntax datatype
-                 (list type-symbol
-                       (list (list #'variant (list #'variant-field ...) #'variant?)
-                             ...)
-                       #'datatype?))
-               (define-struct variant* (field ...)
-                 #:transparent
-                 #:omit-define-syntaxes
-                 #:mutable
-                 #:reflection-name 'variant)
-               ...
-               (define variant?
-                 variant*?)
-               ...
-               (define (datatype? x)
-                 (or (variant? x) ...))
-               (begin
-                 ;; If this is commented in, then contracts will be
-                 ;; checked early.  However, this will disallow mutual
-                 ;; recursion, which PLAI relies on.  It could be
-                 ;; allowed if we could have module-begin cooperate
-                 ;; and lift the define-struct to the top-level but,
-                 ;; that would break web which doesn't use the plai
-                 ;; language AND would complicate going to a
-                 ;; student-language based deployment
+           (define srbs (GRAB-SRBS))
 
-                 ;; (define field/c-val field/c)
-                 ;; ...
+           (syntax-property
+            (syntax/loc stx
+              (begin
+                (define-syntax datatype
+                  (list type-symbol
+                        (list (list #'variant (list #'variant-field ...) #'variant?)
+                              ...)
+                        #'datatype?))
+                (define-struct variant* (field ...)
+                  #:transparent
+                  #:omit-define-syntaxes
+                  #:mutable
+                  #:reflection-name 'variant)
+                ...
+                (define variant?
+                  variant*?)
+                ...
+                (define (datatype? x)
+                  (or (variant? x) ...))
+                (begin
+                  ;; If this is commented in, then contracts will be
+                  ;; checked early.  However, this will disallow mutual
+                  ;; recursion, which PLAI relies on.  It could be
+                  ;; allowed if we could have module-begin cooperate
+                  ;; and lift the define-struct to the top-level but,
+                  ;; that would break web which doesn't use the plai
+                  ;; language AND would complicate going to a
+                  ;; student-language based deployment
 
-                 (define (the-field/c)
-                   (or/c undefined?
-                         field/c))
-                 ...
+                  ;; (define field/c-val field/c)
+                  ;; ...
 
-                 (define make-variant
-                   (lambda-memocontract (field ...)
-                                        (contract ((the-field/c) ... . -> . variant?)
-                                                  make-variant*
-                                                  'make-variant 'use
-                                                  'make-variant #'variant)))
-                 (define underlying-variant
-                   (lambda-memocontract (field ...)
-                                        (contract ((the-field/c) ... . -> . variant?)
-                                                  make-variant*
-                                                  'variant 'use
-                                                  'variant #'variant)))
-                 (define-syntax
-                   variant
-                   (self-ctor-checked-struct-info
-                    (λ ()
-                      (list #'struct:variant*
-                            #'make-variant*
-                            #'variant*?
-                            (reverse (list #'variant*-field ...))
-                            (reverse (list #'set-variant*-field! ...))
-                            #t))
-                    (λ () #'underlying-variant)))
-                 (define variant-field
-                   (lambda-memocontract (v)
-                                        (contract (f:variant? . -> . (the-field/c))
-                                                  variant*-field
-                                                  'variant-field 'use
-                                                  'variant-field #'field)))
-                 ...
-                 (define set-variant-field!
-                   (lambda-memocontract (v nv)
-                                        (contract (f:variant? (the-field/c) . -> . void)
-                                                  set-variant*-field!
-                                                  'set-variant-field! 'use
-                                                  'set-variant-field! #'field)))
-                 ...
-                 )
-               ...)))))]))
+                  (define (the-field/c)
+                    (or/c undefined?
+                          field/c))
+                  ...
+
+                  (define make-variant
+                    (lambda-memocontract (field ...)
+                                         (contract ((the-field/c) ... . -> . variant?)
+                                                   make-variant*
+                                                   'make-variant 'use
+                                                   'make-variant #'variant)))
+                  (define underlying-variant
+                    (lambda-memocontract (field ...)
+                                         (contract ((the-field/c) ... . -> . variant?)
+                                                   make-variant*
+                                                   'variant 'use
+                                                   'variant #'variant)))
+                  (define-syntax
+                    variant
+                    (self-ctor-checked-struct-info
+                     (λ ()
+                       (list #'struct:variant*
+                             #'make-variant*
+                             #'variant*?
+                             (reverse (list #'variant*-field ...))
+                             (reverse (list #'set-variant*-field! ...))
+                             #t))
+                     (λ () #'underlying-variant)))
+                  (define variant-field
+                    (lambda-memocontract (v)
+                                         (contract (f:variant? . -> . (the-field/c))
+                                                   variant*-field
+                                                   'variant-field 'use
+                                                   'variant-field #'field)))
+                  ...
+                  (define set-variant-field!
+                    (lambda-memocontract (v nv)
+                                         (contract (f:variant? (the-field/c) . -> . void)
+                                                   set-variant*-field!
+                                                   'set-variant-field! 'use
+                                                   'set-variant-field! #'field)))
+                  ...
+                  )
+                ...))
+            'sub-range-binders
+            srbs))))]))
 
 (define-syntax-rule (lambda-memocontract (field ...) c-expr)
   (let ([cd #f])
