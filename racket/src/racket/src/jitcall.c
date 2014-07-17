@@ -147,16 +147,11 @@ Scheme_Object *scheme_prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc
     return proc(argc, MZ_RUNSTACK, self);
 }
 
+#endif
+
 /* Various specific 'futurized' versions of primitives that may 
    be invoked directly from JIT code and are not considered thread-safe 
    (are not invoked via apply_multi_from_native, etc.) */
-
-Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v)
-{
-  return ts_scheme_force_value_same_mark(v);
-}
-
-#endif
 
 #ifdef MZ_USE_FUTURES
 static Scheme_Object *ts__scheme_tail_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
@@ -544,6 +539,17 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
     (void)jit_jmpi(sjc.finish_tail_call_code);
   }
   
+  return 1;
+}
+
+int scheme_generate_force_value_same_mark(mz_jit_state *jitter)
+{
+  GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
+  jit_movi_p(JIT_R0, SCHEME_TAIL_CALL_WAITING);
+  mz_prepare(1);
+  jit_pusharg_p(JIT_R0);
+  (void)mz_finish_lwe(ts_scheme_force_value_same_mark, refr);
+  jit_retval(JIT_R0);
   return 1;
 }
 

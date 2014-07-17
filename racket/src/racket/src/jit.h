@@ -368,6 +368,7 @@ struct scheme_jit_common_record {
 #endif
   void *make_rest_list_code, *make_rest_list_clear_code;
   void *call_check_not_defined_code, *call_check_assign_not_defined_code;
+  void *force_value_same_mark_code;
 
   Continuation_Apply_Indirect continuation_apply_indirect_code;
 #ifdef MZ_USE_LWC
@@ -1481,6 +1482,7 @@ void scheme_jit_register_helper_func(mz_jit_state *jitter, void *code, int gcabl
 Scheme_Object *scheme_noncm_prim_indirect(Scheme_Prim proc, int argc);
 Scheme_Object *scheme_prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object *self);
 #endif
+int scheme_generate_force_value_same_mark(mz_jit_state *jitter);
 
 /**********************************************************************/
 /*                             jitstack                               */
@@ -1521,6 +1523,8 @@ int scheme_generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
 int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int tail_ok, int wcm_may_replace, int multi_ok, int target,
                     Branch_Info *for_branch);
 int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway);
+
+void scheme_generate_function_prolog(mz_jit_state *jitter);
 
 #ifdef USE_FLONUM_UNBOXING
 int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push, int no_store, int extfl);

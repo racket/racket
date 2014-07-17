@@ -129,10 +129,11 @@ static Scheme_Object *clear_rs_arguments(Scheme_Object *v, int size, int delta) 
 
 THREAD_LOCAL_DECL(Scheme_Current_LWC *scheme_current_lwc);
 
-Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Native_Proc *code,
-                                                       void *data,
-                                                       int argc, 
-                                                       Scheme_Object **argv)
+static Scheme_Object *do_call_as_lwc(Scheme_Native_Proc *code,
+                                     void *data,
+                                     int argc,
+                                     Scheme_Object **argv,
+                                     MZ_MARK_STACK_TYPE cont_mark_stack_start)
 {
 #ifdef JIT_THREAD_LOCAL
 # define THDLOC &BOTTOM_VARIABLE
@@ -140,10 +141,28 @@ Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Native_Proc *code,
 # define THDLOC NULL
 #endif
   scheme_current_lwc->runstack_start = MZ_RUNSTACK;
-  scheme_current_lwc->cont_mark_stack_start = MZ_CONT_MARK_STACK;
+  scheme_current_lwc->cont_mark_stack_start = cont_mark_stack_start;
   return sjc.native_starter_code(data, argc, argv, THDLOC, code, (void **)&scheme_current_lwc->stack_start);
 #undef THDLOC
 }
+
+Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Native_Proc *code,
+                                                       void *data,
+                                                       int argc,
+                                                       Scheme_Object **argv)
+{
+  return do_call_as_lwc(code, data, argc, argv, MZ_CONT_MARK_STACK);
+}
+
+#ifdef MZ_USE_FUTURES
+Scheme_Object *scheme_force_value_same_mark_as_lightweight_continuation(Scheme_Object *v)
+{
+  /* Providing 0 as cont_mark_stack_start is the "same_mark" part:
+     it preserves any continuation marks that are in place as part
+     of the continuation. */
+  return do_call_as_lwc(sjc.force_value_same_mark_code, NULL, 0, NULL, 0);
+}
+#endif
 
 void scheme_fill_stack_lwc_end(void) XFORM_SKIP_PROC
 {
@@ -3152,7 +3171,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 /*                          procedure codegen                             */
 /*========================================================================*/
 
-static void generate_function_prolog(mz_jit_state *jitter, void *code, int max_let_depth)
+void scheme_generate_function_prolog(mz_jit_state *jitter)
 {
   int in;
   START_JIT_DATA();
@@ -3289,10 +3308,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   argv = gdata->argv;
   argv_delta = gdata->argv_delta;
 
-  generate_function_prolog(jitter, start_code, 
-			   /* max_extra_pushed may be wrong the first time around,
-			      but it will be right the last time around */
-			   WORDS_TO_BYTES(data->max_let_depth + jitter->max_extra_pushed));
+  scheme_generate_function_prolog(jitter);
   CHECK_LIMIT();
 
   cnt = generate_function_getarg(jitter, 
@@ -4004,7 +4020,7 @@ static int do_generate_case_lambda_dispatch(mz_jit_state *jitter, void *_data)
 
   start_code = jit_get_ip();
   
-  generate_function_prolog(jitter, start_code, data->ndata->max_let_depth);
+  scheme_generate_function_prolog(jitter);
   CHECK_LIMIT();
   
   if (generate_case_lambda_dispatch(jitter, data->c, data->ndata, 1)) {
