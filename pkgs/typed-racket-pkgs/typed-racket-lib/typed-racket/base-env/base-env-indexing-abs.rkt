@@ -215,12 +215,12 @@
 
 
 
-   [range (cl->* (-> (Un -Zero -NegInt) -Null)
-                 (-> -One (-lst* -One))
+   [range (cl->* (-> -NonPosReal -Null)
+                 (-> -One (-lst* -Zero))
                  (-> -Byte (-lst -Byte))
                  (-> -Index (-lst -Index))
-                 (-> -Fixnum (-lst -Fixnum))
-                 (-> -Real (-lst -Int))
+                 (-> -Fixnum (-lst -NonNegFixnum))
+                 (-> -Real (-lst -Nat))
                  (->opt -PosInt -Byte [-Int] (-lst -PosByte))
                  (->opt -Nat -Byte [-Int] (-lst -Byte))
                  (->opt -PosInt -Index [-Int] (-lst -PosIndex))
