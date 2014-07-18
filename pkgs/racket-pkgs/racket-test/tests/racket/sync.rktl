@@ -1373,4 +1373,18 @@
 
 ;; ----------------------------------------
 
+;; zero-argument case:
+(test #f sync/timeout 0)
+(test #f sync
+      (handle-evt (system-idle-evt)
+                  (lambda (_) #f))
+      (thread (lambda () (sync))))
+
+(let ([t (thread (lambda () (with-handlers ([exn:break? void]) (sync))))])
+  (sync (system-idle-evt))
+  (break-thread t)
+  (test t sync t))
+
+;; ----------------------------------------
+
 (report-errs)

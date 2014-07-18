@@ -604,10 +604,10 @@ void scheme_init_thread(Scheme_Env *env)
   
 
   GLOBAL_FOLDING_PRIM("evt?"                      , evt_p                        , 1, 1 , 1, env);
-  GLOBAL_PRIM_W_ARITY2("sync"                     , sch_sync                     , 1, -1, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY2("sync/timeout"             , sch_sync_timeout             , 2, -1, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY2("sync/enable-break"        , sch_sync_enable_break        , 1, -1, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY2("sync/timeout/enable-break", sch_sync_timeout_enable_break, 2, -1, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY2("sync"                     , sch_sync                     , 0, -1, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY2("sync/timeout"             , sch_sync_timeout             , 1, -1, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY2("sync/enable-break"        , sch_sync_enable_break        , 0, -1, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY2("sync/timeout/enable-break", sch_sync_timeout_enable_break, 1, -1, 0, -1, env);
   GLOBAL_PRIM_W_ARITY("choice-evt"                , evts_to_evt                  , 0, -1, env);
 
   GLOBAL_PARAMETER("current-thread-initial-stack-size", current_thread_initial_stack_size, MZCONFIG_THREAD_INIT_STACK_SIZE, env);

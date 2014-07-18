@@ -51,7 +51,7 @@ Returns @racket[#t] if @racket[v] is a @tech{synchronizable event},
 ]}
 
 
-@defproc[(sync [evt evt?] ...+) any]{
+@defproc[(sync [evt evt?] ...) any]{
 
 Blocks as long as none of the @tech{synchronizable events}
 @racket[evt]s are ready, as defined above.
@@ -67,11 +67,13 @@ random-number generator that controls this choice.
   (define ch (make-channel))
   (thread (λ () (displayln (sync ch))))
   (channel-put ch 'hellooooo)
-]}
+]
+
+@history[#:changed "6.1.0.3" @elem{Allow 0 arguments instead of 1 or more.}]}
 
 
 @defproc[(sync/timeout [timeout (or/c #f (and/c real? (not/c negative?)) (-> any))]
-                       [evt evt?] ...+) 
+                       [evt evt?] ...)
           any]{
 
 Like @racket[sync] if @racket[timeout] is @racket[#f]. If
@@ -95,10 +97,12 @@ See also @racket[alarm-evt] for an alternative timeout mechanism.
   (sync/timeout
    (λ () (displayln "no ready events"))
    never-evt)
-]}
+]
+
+@history[#:changed "6.1.0.3" @elem{Allow 1 argument instead of 2 or more.}]}
 
 
-@defproc[(sync/enable-break [evt evt?] ...+) any]{
+@defproc[(sync/enable-break [evt evt?] ...) any]{
 
 Like @racket[sync], but breaking is enabled (see
 @secref["breakhandler"]) while waiting on the @racket[evt]s. If
@@ -108,7 +112,7 @@ exception is raised, but not both.}
 
 
 @defproc[(sync/timeout/enable-break [timeout (or/c #f (and/c real? (not/c negative?)) (-> any))]
-                                    [evt evt?] ...+) 
+                                    [evt evt?] ...)
          any]{
 
 Like @racket[sync/enable-break], but with a timeout as for @racket[sync/timeout].}
