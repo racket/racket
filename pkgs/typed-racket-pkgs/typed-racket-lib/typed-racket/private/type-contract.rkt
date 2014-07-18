@@ -9,13 +9,14 @@
  (utils tc-utils)
  (env type-name-env type-alias-env)
  (rep rep-utils)
- (types resolve union utils kw-types)
+ (types resolve union utils kw-types printer)
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
  racket/match racket/syntax racket/list
  racket/format
  racket/dict
  syntax/id-table
+ syntax/stx
  unstable/list
  unstable/sequence
  (only-in (types abbrev) -Bottom)
@@ -32,7 +33,9 @@
       (c:parametric->/c (a) ((Type/c (c:-> #:reason (c:or/c #f string?) a))
                              (#:typed-side boolean?) . c:->* . (c:or/c a static-contract?)))]))
 
-(provide type->contract define/fixup-contract? change-contract-fixups
+(provide type->contract define/fixup-contract?
+         change-contract-fixups
+         change-provide-fixups
          type->contract-fail any-wrap/sc
          ignore-for-contract-gen!)
 
@@ -79,23 +82,70 @@
   (define prop (define/fixup-contract? stx))
   (define maker? (typechecker:contract-def/maker stx))
   (define flat? (typechecker:flat-contract-def stx))
-  (define typ (parse-type prop))
+  (define *typ (parse-type prop))
+  (define typ
+    (if maker?
+        ((map fld-t (Struct-flds (lookup-type-name (Name-id *typ)))) #f . t:->* . *typ)
+        *typ))
   (define kind (if flat? 'flat 'impersonator))
+  (define ctc
+    (type->contract typ
+                    #:typed-side 'untyped
+                    #:kind kind
+                    (type->contract-fail typ prop)))
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
-     (let ([typ (if maker?
-                    ((map fld-t (Struct-flds (lookup-type-name (Name-id typ)))) #f . t:->* . typ)
-                    typ)])
-         (with-syntax ([cnt (type->contract
-                             typ
-                             ;; this is for a `require/typed', so the value is not from the typed side
-                             #:typed-side 'untyped
-                             #:kind kind
-                             (type->contract-fail typ prop))])
-           (ignore ; should be ignored by the optimizer
-            (quasisyntax/loc stx (define-values (n) cnt)))))]
+     (ignore ; should be ignored by the optimizer
+       (quasisyntax/loc stx (define-values (n) #,ctc)))]
     [_ (int-err "should never happen - not a define-values: ~a"
                 (syntax->datum stx))]))
+
+(define (generate-contract-def/provide stx)
+  (match-define (list type untyped-id orig-id blame-id)
+                (contract-def/provide-property stx))
+  (define failure-reason #f)
+  (define ctc
+    (type->contract type
+                    #:typed-side 'typed
+                    #:kind 'impersonator
+                    ;; FIXME: get rid of this interface, make it functional
+                    (λ (#:reason [reason #f]) (set! failure-reason reason))))
+  (syntax-parse stx
+    #:literals (define-values)
+    [(define-values ctc-id _)
+     ;; no need for ignore, the optimizer doesn't run on this code
+     (if failure-reason
+         #`(define-syntax (#,untyped-id stx)
+             (tc-error/fields #:stx stx
+                              "could not convert type to a contract"
+                              #:more #,failure-reason
+                              "identifier" #,(symbol->string (syntax-e orig-id))
+                              "type" #,(pretty-format-type type #:indent 8)))
+         #`(begin (define ctc-id #,ctc)
+                  (define-module-boundary-contract #,untyped-id
+                    #,orig-id ctc-id
+                    #:pos-source #,blame-id
+                    #:srcloc (vector (quote #,(syntax-source orig-id))
+                                     #,(syntax-line orig-id)
+                                     #,(syntax-column orig-id)
+                                     #,(syntax-position orig-id)
+                                     #,(syntax-span orig-id)))))]))
+
+;; Syntax -> (Listof Syntax)
+;; Generate contract definitions and contracted provides
+(define (change-provide-fixups forms)
+  (for/list ([form (in-list (collapse-begin forms))])
+    (if (contract-def/provide-property form)
+        (generate-contract-def/provide form)
+        form)))
+
+;; FIXME: replace with stdlib function
+(define (collapse-begin stx)
+  (syntax-parse stx
+    #:literals (begin)
+    [(begin e ...)
+     (apply append (map collapse-begin (syntax->list #'(e ...))))]
+    [x (list #'x)]))
 
 (define (change-contract-fixups forms)
   (define alias-defs (fixup-type-aliases forms))
@@ -111,7 +161,7 @@
 ;; Generate contracts for mutually recursive type aliases
 (define (fixup-type-aliases *forms)
   (define forms
-    (for/list ([*form (syntax->list *forms)]
+    (for/list ([*form (stx->list *forms)]
                #:when (contract-def/alias-property *form)
                #:unless (in-ignore-table? *form))
       *form))
@@ -168,17 +218,7 @@
                           (free-id-table-set! alias-info #'n reason))))
      (cond [(and failed? (not (eq? kind 'impersonator))) #f]
            [failed?
-            (ignore
-             (quasisyntax/loc stx
-               (define-syntaxes (n)
-                 (λ (stx)
-                  (tc-error/stx
-                   (quote-syntax #,prop)
-                   (format "Type ~a could not be converted to a contract ~a"
-                           (quote #,(~a typ))
-                           (if #,failure-reason
-                               (format ": ~a" #,failure-reason)
-                               ".")))))))]
+            (ignore (quasisyntax/loc stx (void)))]
            [else
             (free-id-table-set! alias-info #'n kind)
             (ignore

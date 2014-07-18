@@ -26,7 +26,7 @@
        (parameterize ([optimize? (or (and (not (attribute opt?)) (optimize?))
                                      (and (attribute opt?) (syntax-e (attribute opt?))))])
          (tc-module/full stx pmb-form
-          (λ (new-mod before-code after-code)
+          (λ (new-mod before-code pre-after-code)
             (with-syntax*
              (;; pmb = #%plain-module-begin
               [(pmb . body2) new-mod]
@@ -34,6 +34,8 @@
               [transformed-body (begin0 (remove-provides #'body2) (do-time "Removed provides"))]
               ;; add the real definitions of contracts on requires
               [transformed-body (begin0 (change-contract-fixups #'transformed-body) (do-time "Fixed contract ids"))]
+              ;; add the real definitions of contracts on the after-code
+              [(after-code ...) (change-provide-fixups pre-after-code)]
               ;; potentially optimize the code based on the type information
               [(optimized-body ...) (maybe-optimize #'transformed-body)] ;; has own call to do-time
               ;; add in syntax property on useless expression to draw check-syntax arrows
@@ -46,7 +48,7 @@
                                   'mouse-over-tooltips (type-table->tooltips))])
              ;; reconstruct the module with the extra code
              ;; use the regular %#module-begin from `racket/base' for top-level printing
-             (arm #`(#%module-begin #,before-code optimized-body ... #,after-code check-syntax-help)))))))]))
+             (arm #`(#%module-begin #,before-code optimized-body ... after-code ... check-syntax-help)))))))]))
 
 (define did-I-suggest-:print-type-already? #f)
 (define :print-type-message " ... [Use (:print-type <expr>) to see more.]")
