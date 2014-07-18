@@ -193,10 +193,11 @@
 
     (test-case "macro def within begin"
       (let ([rs (reductions
-                 (trace '(begin
-                           (define-syntax-rule (m x e)
-                             (define x e))
-                           (m y 12))))])
+                 (parameterize ((current-namespace testing-namespace))
+                   (trace '(begin
+                             (define-syntax-rule (m x e)
+                               (define x e))
+                             (m y 12)))))])
         (check-pred list? rs)
         (check-false (ormap misstep? rs))
         (check-true (for/or ([step rs])

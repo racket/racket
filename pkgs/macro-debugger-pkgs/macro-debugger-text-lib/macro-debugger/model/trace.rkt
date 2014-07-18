@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/promise
+(require (for-syntax racket/base)
+         racket/promise
          racket/list
          syntax/modcode
          syntax/modresolve
@@ -199,13 +200,6 @@
     [(begin-for-syntax . _)
      (eval/compile stx)]
     [(define-values (id ...) . _)
-     (with-syntax ([defvals (stx-car stx)]
-                   [undefined (letrec ([x x]) x)])
-       (for ([id (syntax->list #'(id ...))])
-         (with-syntax ([id id])
-           (eval/compile #'(defvals (id) undefined)))))
-     ;; Following doesn't work (namespace mismatch)
-     ;; (eval/compile #'(define-values (id ...) (let ([id #f] ...) (values id ...))))
-     ]
+     (eval/compile #'(define-syntaxes (id ...) (values)))]
     [_else
      (void)]))
