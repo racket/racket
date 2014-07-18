@@ -2,6 +2,9 @@
        Version 6.1
 ------------------------------
 
+  . added better spell-checking support: DrRacket can suggest
+    corrections and has a keystroke to jump the next misspelling.
+
   . changed the online expansion handler machinery so that
     the handlers receive exceptions when expansion raises one
 
