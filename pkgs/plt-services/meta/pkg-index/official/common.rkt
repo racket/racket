@@ -24,6 +24,9 @@
 (github-client_id (file->string (build-path root "client_id")))
 (github-client_secret (file->string (build-path root "client_secret")))
 
+(define cache-path (build-path root "cache"))
+(make-directory* cache-path)
+
 (define pkgs-path (build-path root "pkgs"))
 (make-directory* pkgs-path)
 
@@ -87,6 +90,7 @@
   valid-name?)
 
 (define-runtime-path update.rkt "update.rkt")
+(define-runtime-path build-update.rkt "build-update.rkt")
 (define-runtime-path static.rkt "static.rkt")
 (define-runtime-path s3.rkt "s3.rkt")
 
@@ -105,6 +109,8 @@
 
 (define (run-update! pkgs)
   (run! update.rkt pkgs))
+(define (run-build-update!)
+  (run! build-update.rkt empty))
 (define (run-static! pkgs)
   (run! static.rkt pkgs))
 (define (run-s3! pkgs)
@@ -112,6 +118,8 @@
 
 (define (signal-update! pkgs)
   (thread (λ () (run-update! pkgs))))
+(define (signal-build-update!)
+  (thread (λ () (run-build-update!))))
 (define (signal-static! pkgs)
   (thread (λ () (run-static! pkgs))))
 (define (signal-s3! pkgs)
