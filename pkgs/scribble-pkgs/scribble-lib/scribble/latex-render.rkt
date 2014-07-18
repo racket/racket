@@ -399,7 +399,8 @@
                                                             (- (+ (list-ref (list-ref bstr+info+suffix 0) 3)
                                                                   (- (ceiling height) height))
                                                                pad-bottom))]
-                                              [width (- (list-ref (list-ref bstr+info+suffix 0) 1) pad-left pad-right)]
+                                              [width (let ([w (list-ref (list-ref bstr+info+suffix 0) 1)])
+                                                       (and w (- w pad-left pad-right)))]
                                               [fn (install-file (format "pict~a" suffix) bstr)])
                                          (if descent
                                              (printf "\\raisebox{-~abp}{\\makebox[~abp][l]{\\includegraphics[~atrim=~a ~a ~a ~a]{~a}}}" 
