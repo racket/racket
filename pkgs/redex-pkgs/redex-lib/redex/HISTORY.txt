@@ -1,5 +1,16 @@
 v6.1
 
+  * changed the semantics for _!_ variables when they are under
+    ellipses, making them less insane. There is now a much simpler
+    description of how these two interact (in the docs)
+    
+  * improved the performance of term generation from judgment-forms
+    (when using the #:satisfying keyword argument)
+
+  * lots of improvements to the enumeration test case generator
+
+  * metafunctions can now typeset their contracts
+
   * added #:equiv option to test-equal
 
   * added default-equiv
