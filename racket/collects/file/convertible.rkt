@@ -4,11 +4,11 @@
 
 (define opaque-default/c (new-∀/c))
 
-(define default/c (or/c #f opaque-default/c))
+(define default-or-f/c (or/c #f opaque-default/c))
 
 (define (make-result-contract request default)
   (define default/c
-    (if (unsupplied-arg? default) default/c opaque-default/c))
+    (if (unsupplied-arg? default) default-or-f/c opaque-default/c))
   (case request
     [(text)
      (or/c string? default/c)]
@@ -41,12 +41,12 @@
 
   [prop:convertible
    (struct-type-property/c
-    (->i ([v convertible?] [request symbol?] [default default/c])
+    (->i ([v convertible?] [request symbol?] [default default-or-f/c])
          [result (request default) (make-result-contract request default)]))]
 
   [convert
    (->i ([v convertible?] [request symbol?])
-        ([default default/c])
+        ([default default-or-f/c])
         [result (request default) (make-result-contract request default)])]))
 
 
