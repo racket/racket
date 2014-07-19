@@ -412,17 +412,7 @@
                               (current-inexact-milliseconds))
                         empty)]
            [head last]          
-           [consumer (proc->signal
-                      (lambda ()
-                        (let* ([now (current-inexact-milliseconds)]
-                               [new (deep-value-now beh empty)]
-                               [ms (value-now ms-b)])
-                          (when (not (equal? new (car (mcar last))))
-                            (set-mcdr! last (mcons (cons new now)
-                                                   empty))
-                            (set! last (mcdr last))
-                            (schedule-alarm (+ now ms) producer))))
-                      beh ms-b)]
+           [consumer #f]
            [producer (proc->signal
                       (lambda ()
                         (let* ([now (and (signal? consumer) (current-inexact-milliseconds))]
@@ -437,7 +427,19 @@
                               (begin
                                 (set! head (mcdr head))
                                 (loop)))))))])
-    producer))
+    (begin
+      (set! consumer (proc->signal
+                      (lambda ()
+                        (let* ([now (current-inexact-milliseconds)]
+                               [new (deep-value-now beh empty)]
+                               [ms (value-now ms-b)])
+                          (when (not (equal? new (car (mcar last))))
+                            (set-mcdr! last (mcons (cons new now)
+                                                   empty))
+                            (set! last (mcdr last))
+                            (schedule-alarm (+ now ms) producer))))
+                      beh ms-b))
+      producer)))
 
 (define (inf-delay beh)
   (delay-by beh 0))
@@ -451,8 +453,8 @@
              [last-time (current-inexact-milliseconds)]
              [last-val (value-now b)]
              [last-alarm 0]
-             [producer (proc->signal (lambda () (and (signal? consumer) accum)))]
-             [consumer (proc->signal void b ms-b)])
+             [consumer (proc->signal void b ms-b)]
+             [producer (proc->signal (lambda () (and (signal? consumer) accum)))])
       (set-signal-thunk!
        consumer
        (lambda ()
