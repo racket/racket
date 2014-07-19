@@ -3,6 +3,7 @@
                      (only-in racket/list first second last-pair empty empty?))
          (only-in racket/list first second cons? empty empty? rest last-pair)
          (only-in racket/function identity)
+         data/queue
          (only-in frtime/core/frp super-lift undefined undefined? behavior? do-in-manager-after do-in-manager proc->signal set-signal-thunk! register unregister 
                   signal? signal-depth signal:switching? signal-value value-now signal:compound? signal:compound-content signal:switching-current signal:switching-trigger 
                   set-cell! snap? iq-enqueue value-now/no-copy event-receiver event-set? proc->signal:switching set-signal-producers! set-signal-depth! safe-signal-depth 
@@ -403,46 +404,110 @@
     (set-signal-value! ret ((signal-thunk ret)))
     ret))
 
-; XXX general efficiency fix for delay
-; signal[a] signal[num] -> signal[a]
-(define (delay-by beh ms-b)
-  (letrec ([last (mcons (cons (if (zero? (value-now ms-b))
-                                  (value-now/no-copy beh)
-                                  undefined)
-                              (current-inexact-milliseconds))
-                        empty)]
-           [head last]          
-           [consumer #f]
-           [producer (proc->signal
-                      (lambda ()
-                        (let* ([now (and (signal? consumer) (current-inexact-milliseconds))]
-                               [ms (value-now ms-b)])
-                          (let loop ()
-                            (if (or (empty? (mcdr head))
-                                    (< now (+ ms (cdr (mcar (mcdr head))))))
-                              (let ([val (car (mcar head))])
-                                (if (event-set? val)
-                                  (make-events-now (event-set-events val))
-                                  val))
-                              (begin
-                                (set! head (mcdr head))
-                                (loop)))))))])
+;; signal[a] num -> signal[a]
+;;
+;; Returns a signal whose value at (approximately) time (+ t |delay-millis|) is a (deep) snapshot
+;; of the value of |sig| at time t, for all times t from now on. For earlier times, the value of the
+;; returned signal is undefined.
+;;
+;; Assumptions: (current-inexact-milliseconds) is monotonically non-decreasing; |delay-millis| is
+;; positive and finite.
+(define (delay-by sig delay-millis)
+  ;; Implementation strategy:
+  ;;
+  ;; Maintain a queue of pairs (snapshot . timestamp) of the observed signal going back in
+  ;; time for at least |delay-millis|. Start with (undefined . -inf.0) and (current-value . now), so
+  ;; there should always be at least one item (value . timestamp) in the queue such that
+  ;; (>= now (+ timestamp delay-millis)).
+  ;;
+  ;; |consumer| runs whenever |sig| changes and adds an item with the observed value and current
+  ;;     time to the queue; schedules |producer| to run at |delay-millis| in the future, by which
+  ;;     time it should be ready to take on that observed value.
+  ;;
+  ;; |producer| has no dependencies recorded in the dataflow graph and only runs when scheduled
+  ;;     by the consumer. (This is what allows delay-by to break cycles.) It traverses the queue
+  ;;     looking for the latest observation (value . timestamp) such that
+  ;;     (>= now (+ timestamp delay-millis)), and takes on the observed value. |producer| is the
+  ;;     value returned by this procedure, so it stays alive as long as anything cares about its
+  ;;     value.
+  (let* ([queue (make-queue)]
+         
+         ;; finish : (a . num) a -> a
+         ;; Puts |queue-item| back on the front of the queue and returns |val|, updating the
+         ;; occurrence timestamp if |val| represents an event set.
+         ;; TODO(gcooper): We could avoid this if data/queue supported a "peek" operation.
+         [finish! (lambda (queue-item val)
+                    (enqueue-front! queue queue-item)
+                    (if (event-set? val)
+                        (make-events-now (event-set-events val))
+                        val))]
+         [now-millis (current-inexact-milliseconds)]
+          
+         [_ (begin
+              ;; Add initial observations to the queue.
+              (enqueue! queue (cons undefined -inf.0))
+              (enqueue! queue (cons (deep-value-now sig empty) now-millis)))]
+         
+         ;; |consumer|'s thunk needs |producer| to be in scope so it can schedule it, and
+         ;; |producer|'s thunk needs |consumer| to be in scope so it can keep it alive. To set up
+         ;; this cycle, we first create |consumer| with a dummy thunk (void), then define
+         ;; |producer|, and finally update |consumer|'s thunk to what we want it to be.
+         [consumer (proc->signal void sig)]
+         [producer (proc->signal
+                    (lambda ()
+                      (let ([now-millis (current-inexact-milliseconds)])
+                        ;; There's no way to "peek" at the next item in the queue, so we have to
+                        ;; dequeue it, check whether we're ready for it, and if not, stick it back
+                        ;; on the front...
+                        (let loop ([front (dequeue! queue)])
+                          ;; |val| is our current candidate value; we'll use it if there's no later
+                          ;; observation that's at least |delay-millis| old.
+                          (let* ([val (car front)])
+                            (if (queue-empty? queue)
+                                ;; There are no later observations to consider, so use the current
+                                ;; one.
+                                (finish! front val)
+                                ;; Look at the next item in the queue to see if we're ready for it.
+                                ;; If so, recur. Otherwise, put it back on the front of the queue
+                                ;; and use the previous value.
+                                (let* ([next (dequeue! queue)]
+                                       [timestamp-millis (cdr next)])
+                                  ;; Kludge: since there's nothing that would otherwise keep
+                                  ;; |consumer| alive, we retain a reference to it here, and we
+                                  ;; trick the runtime into not optimizing it away by calling a
+                                  ;; predicate and using the result in a conditional expression. If
+                                  ;; the compiler ever gets smart enough to determine that the
+                                  ;; outcome is provably always true, and therefore that it can
+                                  ;; optimize away this code, we'll have to come up with a
+                                  ;; different strategy (e.g., adding a special field to the signal
+                                  ;; structure).
+                                  (if (and (signal? consumer)
+                                           (< now-millis (+ timestamp-millis delay-millis)))
+                                      ;; We're not ready for the next value yet, so push it back
+                                      ;; and proceed with the previous value.
+                                      (begin
+                                        (enqueue-front! queue next)
+                                        (finish! front val))
+                                      (loop next)))))))))])
     (begin
-      (set! consumer (proc->signal
-                      (lambda ()
-                        (let* ([now (current-inexact-milliseconds)]
-                               [new (deep-value-now beh empty)]
-                               [ms (value-now ms-b)])
-                          (when (not (equal? new (car (mcar last))))
-                            (set-mcdr! last (mcons (cons new now)
-                                                   empty))
-                            (set! last (mcdr last))
-                            (schedule-alarm (+ now ms) producer))))
-                      beh ms-b))
+      (set-signal-thunk!
+       consumer
+       (lambda ()
+         (let* ([now-millis (current-inexact-milliseconds)]
+                [new-value (deep-value-now sig empty)])
+           ;; Record the current observation and schedule |producer| to run when it's time to take
+           ;; on this value.
+           (enqueue! queue (cons new-value now-millis))
+           (schedule-alarm (+ now-millis delay-millis) producer))))
+      
+      ;; Make sure producer is scheduled to run as soon as there's a value ready for it.
+      (schedule-alarm (+ now-millis delay-millis) producer)
       producer)))
 
-(define (inf-delay beh)
-  (delay-by beh 0))
+;; signal[a] -> signal[a]
+;; Delays |sig| by the smallest possible amount of time.
+(define (inf-delay sig)
+  (delay-by sig 0))
 
 ; XXX fix to take arbitrary monotonically increasing number
 ; (instead of milliseconds)
