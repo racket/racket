@@ -239,7 +239,7 @@
     (match-define (vector x y) v)
     (renderer2d (vector (ivl x x) (ivl y y)) #f #f
                 (label-render-proc
-                 label v color size family anchor angle
+                 label v color size face family anchor angle
                  point-color (cond [(eq? point-fill-color 'auto)  (->pen-color point-color)]
                                    [else  point-fill-color])
                  point-size point-line-width point-sym
