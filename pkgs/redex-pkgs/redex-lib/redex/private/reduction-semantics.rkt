@@ -193,49 +193,49 @@
          "language argument does not contain a definition of the non-terminal ~a, needed by the reduction-relation"
          red-lang-nt))))
   
-  (let ([cp (compile-pattern
-             lang
-             `(in-hole (name ctxt ,pat)
-                       (name exp any))
-             #f)])
-    (build-reduction-relation
-     #f
-     lang
-     (map
-      (λ (make-proc)
-        (make-rewrite-proc
-         (λ (lang)
-           (let ([f (make-proc lang)])
-             (λ (main-exp exp extend acc)
-               (let loop ([ms (or (match-pattern cp exp) '())]
-                          [acc acc])
-                 (cond
-                   [(null? ms) acc]
-                   [else
-                    (let* ([mtch (car ms)]
-                           [bindings (mtch-bindings mtch)])
-                      (loop (cdr ms)
-                            (f main-exp
-                               (lookup-binding bindings 'exp)
-                               (λ (x) (extend (plug (lookup-binding bindings 'ctxt) x)))
-                               acc)))])))))
-         (rewrite-proc-name make-proc)
-         (rewrite-proc-lhs make-proc)
-         (rewrite-proc-lhs-src make-proc)
-         (rewrite-proc-id make-proc)))
-      (reduction-relation-make-procs red))
-     (reduction-relation-rule-names red)
-     (reduction-relation-lws red)
-     (let ([orig-pat (reduction-relation-domain-pat red)])
-       (cond
-         [(equal? orig-pat `any)
-          ;; special case for backwards compatibility:
-          ;; if there was no #:domain argument, then we
-          ;; probably should let the compatible closure also
-          ;; not have a domain
-          `any]
-         [else
-          `(in-hole ,pat ,orig-pat)])))))
+  (build-reduction-relation
+   #f
+   lang
+   (map
+    (λ (make-proc)
+      (make-rewrite-proc
+       (λ (lang)
+         (define f (make-proc lang))
+         (define cp (compile-pattern
+                     lang
+                     `(in-hole (name ctxt ,pat)
+                               (name exp any))
+                     #f))
+         (λ (main-exp exp extend acc)
+           (let loop ([ms (or (match-pattern cp exp) '())]
+                      [acc acc])
+             (cond
+               [(null? ms) acc]
+               [else
+                (let* ([mtch (car ms)]
+                       [bindings (mtch-bindings mtch)])
+                  (loop (cdr ms)
+                        (f main-exp
+                           (lookup-binding bindings 'exp)
+                           (λ (x) (extend (plug (lookup-binding bindings 'ctxt) x)))
+                           acc)))]))))
+       (rewrite-proc-name make-proc)
+       (rewrite-proc-lhs make-proc)
+       (rewrite-proc-lhs-src make-proc)
+       (rewrite-proc-id make-proc)))
+    (reduction-relation-make-procs red))
+   (reduction-relation-rule-names red)
+   (reduction-relation-lws red)
+   (let ([orig-pat (reduction-relation-domain-pat red)])
+     (cond
+       [(equal? orig-pat `any)
+        ;; special case for backwards compatibility:
+        ;; if there was no #:domain argument, then we
+        ;; probably should let the compatible closure also
+        ;; not have a domain
+        `any]
+       [else
+        `(in-hole ,pat ,orig-pat)]))))
 
 (define (apply-reduction-relation/tagged p v)
   (let loop ([procs (reduction-relation-procs p)]
