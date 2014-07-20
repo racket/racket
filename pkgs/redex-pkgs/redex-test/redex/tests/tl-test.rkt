@@ -3205,6 +3205,17 @@
       "no error raised"))
   
   (test #t (regexp-match? #rx"^compatible-closure:.*fred" err-msg)))
+
+;; this tests that context-closure (and thus compatible-closure)
+;; play along properly with way extend-reduction-relation handles
+;; language extensions
+(let ()
+  (define-language L0 (K ::= number))
+  (define r (reduction-relation L0 (--> 5 6)))
+  (define r0 (context-closure r L0 (hole K)))
+  (define-language L1 (K ::= string))
+  (define r1 (extend-reduction-relation r0 L1))
+  (test (apply-reduction-relation r1  (term (5 "14"))) (list '(6 "14"))))
   
   (let* ([R (reduction-relation
              empty-language
