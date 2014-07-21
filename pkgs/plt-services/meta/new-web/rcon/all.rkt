@@ -1,7 +1,7 @@
 #lang plt-web
 
 (require plt-web/style
-         racket/dict
+         racket/dict racket/match
          "resources.rkt"
          "utils.rkt"
          "../identity.rkt"
@@ -18,19 +18,98 @@
 
 (define hotel @a[href: "http://www.stlunionstationhotel.com/"]{Union Station DoubleTree})
 
-(define speakers+web-pages
-  '(("Claire Alvis" . "https://github.com/calvis")
-    ("Matthew Butterick" . "http://practicaltypography.com/")
-    ("Stephen Chang" . "http://www.ccs.neu.edu/home/stchang/")
-    ("John Clements" . "http://www.brinckerhoff.org/JBCsite/index.html")
-    ("Matthew Flatt" . "https://www.cs.utah.edu/~mflatt/")
-    ("Tony Garnock-Jones" . "http://homepages.kcbbs.gen.nz/tonyg/")
-    ("Greg Hendershott" . "http://www.greghendershott.com/")
-    ("Jay McCarthy" . "http://faculty.cs.byu.edu/~jay/home/")
-    ("Brian Mastenbrook" . "http://brian.mastenbrook.net/")
-    ("Daniel Prager" . "https://www.youpatch.com/")
-    ("Neil Toronto" . "http://students.cs.byu.edu/~ntoronto/")
-    ("David Vanderson" . "https://github.com/david-vanderson/")))
+(define speaker-info
+  (list
+   (list
+    "Michael Fogus" "http://www.fogus.me/"
+    "Extracting a Goose from a Klein Bottle"
+     @p*{Racket is the most amazing language that no one's ever heard of.  This
+         seemingly harsh assessment is prelude to a discussion on programming
+         language development, innovation, marketing, open source, research,
+         Lisp, and education.  While other programming languages have dominated
+         the public discourse, Racket's influence on said languages is
+         undeniable.  I'll touch on some of these influences during the course
+         of the talk placing them within the context of just what a language
+         like Racket means within the current, and future software landscapes.}
+     @p*{Fogus is a programming language aesthete with experience in expert
+         systems, logic programming, and distributed simulation.  He is a
+         contributor to Clojure, ClojureScript, Datomic, and Transit. Fogus is
+         also the co-author of @em{The Joy of Clojure} and author of
+         @em{Functional JavaScript} and the upcoming release @em{The Art of
+         Chupacabra Husbandry}.})
+    '("Claire Alvis" "https://github.com/calvis" #f #f #f)
+    (list
+     "Matthew Butterick" "http://practicaltypography.com/"
+     "Like a Blind Squirrel in a Ferrari"
+     @p*{At RacketCon last year, I talked about Pollen, a web-publishing system
+         I wrote in Racket. This year, I'll recap what I've learned since then
+         about typesetting in Racket, by redesigning Racket's documentation,
+         hacking Scribble, and releasing Pollen. Plus: my two great Racket
+         ambitions.}
+     @p*{Matthew Butterick is a writer, designer, and lawyer in Los Angeles. He
+         is the author of @em{Typography for Lawyers} and the creator of
+         @a[href: "practicaltypography.com"]{practicaltypography.com}.})
+    '("Stephen Chang" "http://www.ccs.neu.edu/home/stchang/" #f #f #f)
+    '("John Clements" "http://www.brinckerhoff.org/JBCsite/index.html" #f #f #f)
+    (list
+     "Matthew Flatt" "https://www.cs.utah.edu/~mflatt/"
+     "Carry on Making that Racket"
+     @p*{This talk will provide a brief introduction to Racket and Racketeers,
+         a report on recent and current developments, and predictions for the
+         future. Bring your questions, and I'll bring my Magic 8 Ball.}
+     @p*{Matthew Flatt is a professor at the University of Utah and one of the
+         main developers of Racket. He works primarily on Racket's run-time
+         system, compiler, macro system, build system, package system,
+         documentation language, and graphics/GUI libraries.})
+    '("Tony Garnock-Jones" "http://homepages.kcbbs.gen.nz/tonyg/" #f #f #f)
+    (list
+     "Greg Hendershott" "http://www.greghendershott.com/"
+     "Emacs à la mode DrRacket"
+     @p*{DrRacket is wonderful for both newcomers and Racket pros.
+         Some people do like to use Emacs, especially when working with a wide
+         variety of file types and languages. Racket-mode brings some of the
+         DrRacket approach and experience to Emacs, hopefully giving you the
+         best of both worlds. This talk includes a demonstration and a
+         discussion of the implementation in Racket and Elisp.}
+     @p*{Before becoming obsessed with Racket, Greg Hendershott founded
+         and ran the music software company Cakewalk, and has served as an
+         advisor to technology companies such as Roland and JamHub. Soon after
+         RacketCon he is joining the autumn batch at Hacker School.})
+    '("Jay McCarthy" "http://faculty.cs.byu.edu/~jay/home/" #f #f #f)
+    '("Brian Mastenbrook" "http://brian.mastenbrook.net/" #f #f #f)
+    (list
+     "Daniel Prager" "https://www.youpatch.com/"
+     "YouPatch: A Racket-powered startup"
+     @p*{@a[href: "youpatch.com"]{youpatch.com} began as a hack in Racket to
+         save my wife PatchAndi 10 or so hours of effort to turn an image of
+         Groucho Marx into the design for a patchwork quilt, and evolved into
+         a bootstrapped startup aimed at democratising the hitherto elite art
+         of pixel quilt making.
+
+         In this talk I recount the YouPatch story so far, discuss Racket's
+         advantages for exploratory programming, and look at the options that
+         face a creative programmer when (s)he comes up with an original idea.}
+     @p*{Daniel has been programming creatively since his teenage years in
+         the 1980s, starting with Turbo Pascal and Z80 assembly on a 64K CP/M
+         machine, and most recently in Racket. In between he took his PhD in
+         mathematics (specifically computational General Relativity) before
+         crossing into software development and leadership, where he has worked
+         in diverse areas, including: devising algorithms for staff scheduling,
+         software for medical devices, educational software to teach critical
+         thinking, and teaching and coaching Agile approaches to software
+         development and business. Nowadays he divides his professional time
+         between Agile/Lean coaching and more entrepreneurial endeavours,
+         including YouPatch!})
+    '("Neil Toronto" "http://students.cs.byu.edu/~ntoronto/" #f #f #f)
+    (list
+     "David Vanderson" "https://github.com/david-vanderson/"
+     "Racket for a networked multiplayer game"
+     @p*{I'll talk about using Racket features like easy serialization,
+         threads, and eventspaces to smoothly go from a toy prototype to a
+         playable networked game.}
+     @p*{David Vanderson has been a professional software developer for 10
+         years.  He stumbled onto Racket a few years back and recently was
+         inspired by the game Artemis to make a coop game in Racket.})))
 
 
 (define index
@@ -53,10 +132,14 @@
 
        @p{@nbsp}
 
-       @p{@b{Confirmed speakers:}}
+       @p{@b{Talks:}}
        @(apply ul
-               (for/list ([(speaker web-page) (in-dict speakers+web-pages)])
-                 @li{@a[href: web-page]{@speaker}}))}
+               (for/list ([speaker (in-list speaker-info)])
+                 (match-define (list name web-page title abstract bio) speaker)
+                 @li{@p*{@a[href: web-page]{@name} — @(or title "TBA")}
+                     @(or abstract "")
+                     @(or bio "")
+                     @hr{}}))}
 
     @columns[1 #:center? #f #:row? #f]{ }
 
