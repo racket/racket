@@ -39,8 +39,8 @@ Even so, DrRacket and programs developed within DrRacket use the same
 Racket virtual machine, so garbage collection times (see
 @secref["gc-perf"]) may be longer in DrRacket than when a program is
 run by itself, and DrRacket threads may impede execution of program
-threads. For the most reliable timing results for a program, run in
-plain @exec{racket} instead of in the DrRacket development environment.
+threads. @bold{For the most reliable timing results for a program, run in
+plain @exec{racket} instead of in the DrRacket development environment.}
 Non-interactive mode should be used instead of the
 @tech["REPL"] to benefit from the module system. See
 @secref["modules-performance"] for details.
