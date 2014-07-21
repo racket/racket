@@ -38,7 +38,7 @@
          [(list _ (F: _)) #t]
          [(list (Opaque: _) _) #t]
          [(list _ (Opaque: _)) #t]
-         [(list (Name: n _ _ _ _) (Name: n* _ _ _ _))
+         [(list (Name/simple: n) (Name/simple: n*))
           (or (free-identifier=? n n*)
               (overlap (resolve-once t1) (resolve-once t2)))]
          [(list _ (? Name?))

@@ -8,10 +8,10 @@
                               make-Union)))
 
 (begin-for-syntax
- (define -pict (make-Name #'pict null #f #f #t))
+ (define -pict (-struct-name #'pict))
  (define -pict-path
    (make-Union (list (-val #f) -pict (-lst -pict))))
- (define -child (make-Name #'child null #f #f #t))
+ (define -child (-struct-name #'child))
  (define -linestyle
    (one-of/c 'transparent 'solid 'xor 'hilite
              'dot 'long-dash 'short-dash 'dot-dash

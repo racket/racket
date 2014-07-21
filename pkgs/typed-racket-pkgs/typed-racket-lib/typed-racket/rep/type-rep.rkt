@@ -32,6 +32,7 @@
          type-equal?
          remove-dups
          sub-t sub-f sub-o sub-pe
+         Name/simple: Name/struct:
          (rename-out [Class:* Class:]
                      [Class* make-Class]
                      [Row* make-Row]
@@ -1026,3 +1027,15 @@
                  (list row-pat inits-pat fields-pat
                        methods-pat augments-pat init-rest-pat)))])))
 
+;; alternative to Name: that only matches the name part
+(define-match-expander Name/simple:
+  (λ (stx)
+    (syntax-parse stx
+      [(_ name-pat) #'(Name: name-pat _ _ _ _)])))
+
+;; alternative to Name: that only matches struct names
+(define-match-expander Name/struct:
+  (λ (stx)
+    (syntax-parse stx
+      [(_) #'(Name: _ _ _ _ #t)]
+      [(_ name-pat) #'(Name: name-pat _ _ _ #t)])))

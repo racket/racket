@@ -29,8 +29,8 @@
 
 (define (resolve-name t)
   (match t
-    [(Name: n _ _ _ _) (let ([t (lookup-type-name n)])
-                         (if (Type/c? t) t #f))]
+    [(Name/simple: n) (let ([t (lookup-type-name n)])
+                        (if (Type/c? t) t #f))]
     [_ (int-err "resolve-name: not a name ~a" t)]))
 
 (define already-resolving? (make-parameter #f))
@@ -43,7 +43,7 @@
        (unless (= n (length rands))
          (tc-error "wrong number of arguments to polymorphic type: expected ~a and got ~a"
                    n (length rands)))]
-      [(Name: n _ _ _ #t)
+      [(Name/struct: n)
        (when (and (current-poly-struct)
                   (free-identifier=? n (poly-name (current-poly-struct))))
         (define num-rands (length rands))

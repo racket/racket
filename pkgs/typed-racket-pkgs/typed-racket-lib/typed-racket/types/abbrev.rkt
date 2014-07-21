@@ -236,6 +236,10 @@
 (define/decl -syntax-e (make-SyntaxPE))
 (define/decl -force (make-ForcePE))
 
+;; Type alias names
+(define (-struct-name name)
+  (make-Name name null #f #f #t))
+
 ;; Structs
 (define (-struct name parent flds [proc #f] [poly #f] [pred #'dummy])
   (make-Struct name parent flds proc poly pred))
