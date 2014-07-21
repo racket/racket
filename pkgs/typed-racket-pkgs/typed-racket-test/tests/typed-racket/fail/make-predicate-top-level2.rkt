@@ -1,5 +1,5 @@
 #;
-(exn-pred exn:fail:syntax? #rx".*is unbound.*")
+(exn-pred exn:fail:syntax? #rx"free variables")
 
 #lang racket/load
 (require typed/racket/base)

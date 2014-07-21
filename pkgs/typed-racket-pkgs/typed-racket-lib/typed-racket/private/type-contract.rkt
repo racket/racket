@@ -92,7 +92,9 @@
     (type->contract typ
                     #:typed-side 'untyped
                     #:kind kind
-                    (type->contract-fail typ prop)))
+                    (type->contract-fail
+                     typ prop
+                     #:ctc-str (if flat? "predicate" "contract"))))
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
      (ignore ; should be ignored by the optimizer

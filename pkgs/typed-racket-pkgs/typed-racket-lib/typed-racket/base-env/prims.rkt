@@ -304,35 +304,19 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (make-predicate stx)
   (syntax-parse stx
     [(_ ty:expr)
-     (if (syntax-transforming-module-expression?)
-       (let ((name (syntax-local-lift-expression
-                     (flat-contract-def-property #'#f #'ty))))
-         (define (check-valid-type _)
-           (define type (parse-type #'ty))
-           (define vars (fv type))
-           ;; If there was an error don't create another one
-           (unless (or (Error? type) (null? vars))
-             (tc-error/delayed
-               "Type ~a could not be converted to a predicate because it contains free variables."
-               type)))
+     (let ((name (syntax-local-lift-expression
+                  (flat-contract-def-property #'#f #'ty))))
+       (define (check-valid-type _)
+         (define type (parse-type #'ty))
+         (define vars (fv type))
+         ;; If there was an error don't create another one
+         (unless (or (Error? type) (null? vars))
+           (tc-error/delayed
+            "Type ~a could not be converted to a predicate because it contains free variables."
+            type)))
 
-         #`(#,(external-check-property #'#%expression check-valid-type)
-            #,(ignore-some/expr #`(flat-contract-predicate #,name) #'(Any -> Boolean : ty))))
-       (let ([typ (parse-type #'ty)])
-         (if (Error? typ)
-             ;; This code should never get run, typechecking will have an error earlier
-             #`(error 'make-predicate "Couldn't parse type")
-             #`(#%expression
-                #,(ignore-some/expr
-                   #`(flat-contract-predicate
-                      #,(type->contract
-                         typ
-                         ;; must be a flat contract
-                         #:kind 'flat
-                         ;; the value is not from the typed side
-                         #:typed-side 'untyped
-                         (type->contract-fail typ #'ty #:ctc-str "predicate")))
-                   #'(Any -> Boolean : ty))))))]))
+       #`(#,(external-check-property #'#%expression check-valid-type)
+            #,(ignore-some/expr #`(flat-contract-predicate #,name) #'(Any -> Boolean : ty))))]))
 
 (define-syntax (cast stx)
   (syntax-parse stx
@@ -355,7 +339,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
      (cond [(not (unbox typed-context?)) ; no-check, don't check
             #'v]
-           [(syntax-transforming-module-expression?)
+           [else
             (let ((ctc (syntax-local-lift-expression
                         (contract-def-property #'#f #'ty))))
               (define (check-valid-type _)
@@ -367,18 +351,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    "Type ~a could not be converted to a contract because it contains free variables."
                    type)))
               #`(#,(external-check-property #'#%expression check-valid-type)
-                 #,(apply-contract ctc)))]
-           [else
-            (let ([typ (parse-type #'ty)])
-              (if (Error? typ)
-                  ;; This code should never get run, typechecking will have an error earlier
-                  #`(error 'cast "Couldn't parse type")
-                  (apply-contract
-                   (type->contract
-                    typ
-                    ;; the value is not from the typed side
-                    #:typed-side 'untyped
-                    (type->contract-fail typ #'ty)))))])]))
+                 #,(apply-contract ctc)))])]))
 
 (define-syntax (require/opaque-type stx)
   (define-syntax-class name-exists-kw
@@ -542,6 +515,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
        #:with poly-vars #'(arg ...)
        #:with type (syntax/loc #'body (All (arg ...) body))))
 
+  (define (make-ctc-def orig-name name prop)
+    (ignore (contract-def/alias-property #`(define #,name #f) prop)))
+
   (syntax-parse stx
     [(_ :type-alias-full)
      (define/with-syntax stx-err-fun
@@ -561,9 +537,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
          ;; mark `ctc` for contract generation in a later phase of TR
          ;; to make contracts more manageable instead of generating the large
          ;; recursive nest at once.
-         #,(ignore (contract-def/alias-property #'(define ctc-t #f) #'(typed type)))
-         #,(ignore (contract-def/alias-property #'(define ctc-u #f) #'(untyped type)))
-         #,(ignore (contract-def/alias-property #'(define ctc-b #f) #'(both type)))
+         #,(make-ctc-def #'tname #'ctc-t #'(typed type))
+         #,(make-ctc-def #'tname #'ctc-u #'(untyped type))
+         #,(make-ctc-def #'tname #'ctc-b #'(both type))
          #,(internal (syntax/loc stx
                        (define-type-alias-internal tname type poly-vars
                          (ctc-t ctc-u ctc-b)))))]))

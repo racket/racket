@@ -18,3 +18,9 @@
 (evaluator '(require 'a))
 (evaluator 'x)
 
+;; Make sure that recursive type aliases work at the top-level for
+;; `make-predicate` and `cast`.
+
+(evaluator '(define-type MyList (U Null (Pairof String MyList))))
+(evaluator '((make-predicate MyList) '("a")))
+(evaluator '(cast '("a" "b" "c") MyList))
