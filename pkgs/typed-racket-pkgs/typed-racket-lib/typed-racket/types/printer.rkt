@@ -376,7 +376,7 @@
     [(? Rep-stx a) (syntax->datum (Rep-stx a))]
     [(Univ:) 'Any]
     ;; struct names are just printed as the original syntax
-    [(Name: id _ _ #t) (syntax-e id)]
+    [(Name/struct: id) (syntax-e id)]
     ;; If a type has a name, then print it with that name.
     ;; However, we expand the alias in some cases
     ;; (i.e., the fuel is > 0) for the :type form.

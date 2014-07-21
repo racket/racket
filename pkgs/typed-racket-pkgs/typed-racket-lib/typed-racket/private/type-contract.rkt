@@ -277,7 +277,7 @@
                                   (λ () (loop resolved-name 'both rv)))
                 (lookup-name-sc name-id typed-side)])]
         ;; Ordinary type applications or struct type names, just resolve
-        [(or (App: _ _ _) (Name: _ _ _ #t)) (t->sc (resolve-once type))]
+        [(or (App: _ _ _) (Name/struct:)) (t->sc (resolve-once type))]
         [(Univ:) (if (from-typed? typed-side) any-wrap/sc any/sc)]
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          (listof/sc (t->sc elem-ty))]
