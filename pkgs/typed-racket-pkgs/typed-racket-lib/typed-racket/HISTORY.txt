@@ -1,3 +1,7 @@
+6.1
+- Inference speedups.
+- Support for contracted functions in the base environment.
+- Better keyword support.
 6.0.1
 - Types for classes (including row types, sealing contracts, etc).
   Still experimental.  
