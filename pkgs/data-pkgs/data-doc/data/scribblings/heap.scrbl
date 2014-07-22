@@ -110,7 +110,7 @@ empty, an exception is raised.
 }
 
 @defproc[(heap-remove! [h heap?] [v any/c] [#:same? same? (-> any/c any/c any/c) equal?]) void?]{
-Removes @racket[v] from the heap @racket[h] if it exists. 
+Removes @racket[v] from the heap @racket[h] if it exists. Worst case running time is linear.
 @examples[#:eval the-eval
   (define a-heap (make-heap string<=? string=?))
   (heap-add! a-heap "a" "b" "c")

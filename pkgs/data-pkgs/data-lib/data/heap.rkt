@@ -128,7 +128,7 @@
 
 (define (heap-min h)
   (match h
-    [(heap vec size <=?)
+    [(heap vec size _)
      (when (zero? size)
        (error 'heap-min "empty heap"))
      (vector-ref vec 0)]))
@@ -149,13 +149,28 @@
                   "empty heap: ~s" index)
            (error 'heap-remove-index!
                   "index out of bounds [0,~s]: ~s" (sub1 size) index)))
-     (vector-set! vec index (vector-ref vec (sub1 size)))
-     (vector-set! vec (sub1 size) #f)
-     (heapify-down <=? vec index (sub1 size))
+     ;; if index less than parent, bubble up, otherwise bubble down.
+     (define last (sub1 size))
+     (vector-set! vec index (vector-ref vec last))
+     (vector-set! vec last #f)
+     (cond
+      ;; at the top.
+      [(= index 0)
+       (heapify-down <=? vec index last)]
+      [(= index last) (void)] ;; it's at the end, so just let it die.
+      [else
+       (define parent (vt-parent index))
+       (define key (vector-ref vec index))
+       (define parent-key (vector-ref vec parent))
+       ;; Which direction do we need to bubble the last element we swapped in?
+       (if (<=? key parent-key)
+           (heapify-up <=? vec index)
+           (heapify-down <=? vec index last))])
      (when (< MIN-SIZE size (quotient (vector-length vec) 4))
        (set-heap-vec! h (shrink-vector vec)))
-     (set-heap-count! h (sub1 size))]))
+     (set-heap-count! h last)]))
 
+;; O(n) operation
 (define (heap-get-index h v same?)
   (match h
     [(heap vec size <=?)
