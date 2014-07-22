@@ -1232,9 +1232,9 @@ added get-regions
     (define/augment (after-delete edit-start-pos change-length)
       ;;(printf "(after-delete ~a ~a)\n" edit-start-pos change-length)
       (when misspelled-regions
-        (time (interval-map-contract! misspelled-regions
-                                      edit-start-pos 
-                                      (+ edit-start-pos change-length))))
+        (interval-map-contract! misspelled-regions
+                                edit-start-pos
+                                (+ edit-start-pos change-length)))
       (do-insert/delete edit-start-pos (- change-length))
       (inner (void) after-delete edit-start-pos change-length))
     
