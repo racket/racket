@@ -149,12 +149,29 @@
                   "empty heap: ~s" index)
            (error 'heap-remove-index!
                   "index out of bounds [0,~s]: ~s" (sub1 size) index)))
-     (vector-set! vec index (vector-ref vec (sub1 size)))
-     (vector-set! vec (sub1 size) #f)
-     (heapify-down <=? vec index (sub1 size))
+     (define sub1-size (sub1 size))
+     (vector-set! vec index (vector-ref vec sub1-size))
+     (vector-set! vec sub1-size #f)
+     (cond
+       [(= sub1-size index)
+        ;; easy to remove the right-most leaf
+        (void)]
+       [(= index 0)
+        ;; can only go down when at the root
+        (heapify-down <=? vec index sub1-size)]
+       [else
+        (define index-parent (vt-parent index))
+        (cond
+          ;; if we are in the right relationship with our parent,
+          ;; try to heapify down
+          [(<=? (vector-ref vec index-parent) (vector-ref vec index))
+           (heapify-down <=? vec index sub1-size)]
+          [else
+           ;; otherwise we need to heapify up
+           (heapify-up <=? vec index)])])
      (when (< MIN-SIZE size (quotient (vector-length vec) 4))
        (set-heap-vec! h (shrink-vector vec)))
-     (set-heap-count! h (sub1 size))]))
+     (set-heap-count! h sub1-size)]))
 
 (define (heap-get-index h v same?)
   (match h
@@ -250,3 +267,18 @@
  [in-heap/consume! (-> heap? sequence?)])
 
 (provide heap-sort!)
+
+(module+ test-util
+  (provide valid-heap?)
+  (define (valid-heap? a-heap)
+    (match a-heap
+      [(heap vec size <=?)
+       (let loop ([i 0]
+                  [parent -inf.0])
+         (cond
+           [(< i size)
+            (define this (vector-ref vec i))
+            (and (<=? parent this)
+                 (loop (vt-leftchild i) this)
+                 (loop (vt-rightchild i) this))]
+           [else #t]))])))
