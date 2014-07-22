@@ -515,8 +515,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
        #:with poly-vars #'(arg ...)
        #:with type (syntax/loc #'body (All (arg ...) body))))
 
-  (define (make-ctc-def orig-name name prop)
-    (ignore (contract-def/alias-property #`(define #,name #f) prop)))
+  ;; Lift and mark contract identifiers for recursive type aliases so that
+  ;; they're handled in the fixup pass. The lifting is so that uses in `let`
+  ;; or other definition contexts will work.
+  (define (make-ctc-def prop)
+    (ignore (contract-def/alias-property #'#f prop)))
 
   (syntax-parse stx
     [(_ :type-alias-full)
@@ -529,17 +532,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
             (and (stx-pair? stx) (stx-car stx)))))
      ;; identifier used to bind a contract matching this type alias,
      ;; for use if the alias ends up being recursive
-     (define/with-syntax (ctc-t ctc-u ctc-b) (generate-temporaries '(t u b)))
+     (define/with-syntax (ctc-t ctc-u ctc-b)
+       (list (syntax-local-lift-expression (make-ctc-def #'(typed type)))
+             (syntax-local-lift-expression (make-ctc-def #'(untyped type)))
+             (syntax-local-lift-expression (make-ctc-def #'(both type)))))
      #`(begin
          #,(if (not (attribute omit))
                (ignore #'(define-syntax tname stx-err-fun))
                #'(begin))
-         ;; mark `ctc` for contract generation in a later phase of TR
-         ;; to make contracts more manageable instead of generating the large
-         ;; recursive nest at once.
-         #,(make-ctc-def #'tname #'ctc-t #'(typed type))
-         #,(make-ctc-def #'tname #'ctc-u #'(untyped type))
-         #,(make-ctc-def #'tname #'ctc-b #'(both type))
          #,(internal (syntax/loc stx
                        (define-type-alias-internal tname type poly-vars
                          (ctc-t ctc-u ctc-b)))))]))

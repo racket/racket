@@ -153,7 +153,7 @@
   (define alias-defs (fixup-type-aliases forms))
   (define require-typed-defs
     (for/list ([e (in-syntax forms)]
-               #:unless (contract-def/alias-property e))
+               #:unless (alias-contract-def e))
       (if (not (define/fixup-contract? e))
           e
           (generate-contract-def e))))
@@ -164,7 +164,7 @@
 (define (fixup-type-aliases *forms)
   (define forms
     (for/list ([*form (stx->list *forms)]
-               #:when (contract-def/alias-property *form)
+               #:when (alias-contract-def *form)
                #:unless (in-ignore-table? *form))
       *form))
   (for/fold ;; none of the contracts are generated to begin, so #f
@@ -191,6 +191,15 @@
                 (generate-contract-def/alias e kind)))
          contracts)))
 
+;; alias-contract-def : Syntax -> Syntax
+;; Return the alias contract definition property if it's applied on
+;; the definition body, #f otherwise.
+(define (alias-contract-def stx)
+  (syntax-parse stx #:literals (define-values)
+    [(define-values (n) body)
+     (contract-def/alias-property #'body)]
+    [_ #f]))
+
 ;; alias-info : (Dict Id (U String 'flat 'impersonator 'chaperone))
 ;;
 ;; This table stores if a given Name type matches up to a flat, impersonator,
@@ -201,7 +210,7 @@
 ;; generate-contract-def/alias : Syntax -> (U Syntax #f)
 ;; Generate a contract that goes with a type alias
 (define (generate-contract-def/alias stx kind)
-  (define prop (contract-def/alias-property stx))
+  (define prop (alias-contract-def stx))
   (define-values (typed-side type-stx)
     (syntax-case prop ()
       [(typed-side type-stx) (values (syntax-e #'typed-side) #'type-stx)]))
