@@ -793,6 +793,11 @@ Wraps a @racket[struct-info?] with additional information, the field names as sy
 in reverse order like accessors, and an optional #f at the end to signify missing information.
 }
 
+@defproc[(extended-struct-info? [v any/c]) boolean?]{
+
+Returns @racket[#t] iff @racket[v] is a value constructed by @racket[make-extended-struct-info].
+}
+
 @defproc[(extract-struct-field-info [v struct-info?])
          (or/c #f list?)]{
 
