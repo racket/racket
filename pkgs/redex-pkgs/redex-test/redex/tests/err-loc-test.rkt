@@ -153,6 +153,11 @@
             (ctc-fail q s)]
            [(ctc-fail c s)
             (ctc-fail a s)]))
+  (eval '(define-judgment-form L
+           #:mode (inv-fail I O)
+           #:contract (inv-fail s_1 s_2)
+           #:inv ,(not (eq? (term s_1) (term s_2)))
+           [(inv-fail s a)]))
   (exec-runtime-error-tests "run-err-tests/judgment-form-contracts.rktd")
   (exec-runtime-error-tests "run-err-tests/judgment-form-undefined.rktd")
   (exec-runtime-error-tests "run-err-tests/judgment-form-ellipses.rktd"))
