@@ -1483,7 +1483,8 @@
       (define prt (open-input-text-editor definitions-text))
       (port-count-lines! prt)
       (define l (with-handlers ((exn:fail? (λ (x) #f)))
-                  (read-language prt)))
+                  (read-language prt)
+                  #t))
       (cond
         [l
          (define-values (line col pos) (port-next-location prt))

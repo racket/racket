@@ -312,7 +312,8 @@ racket
 
 This revised @racket[literal] implementation provides a
 @racketidfont{get-info} function. The @racketidfont{get-info} function
-will be applied to the source input stream and location information,
+is called by @racket[read-language] (which DrRacket calls) with the 
+source input stream and location information,
 in case query results should depend on the content of the module after
 the language name (which is not the case for @racket[literal]). The
 result of @racketidfont{get-info} is a function of two arguments. The

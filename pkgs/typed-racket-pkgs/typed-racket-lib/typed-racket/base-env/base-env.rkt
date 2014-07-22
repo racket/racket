@@ -1978,7 +1978,7 @@
 [read-syntax (->opt [Univ -Input-Port] (Un (-Syntax Univ) (-val eof)))]
 [read/recursive (->opt [-Input-Port (-opt -Char) (-opt -Read-Table) Univ] Univ)]
 [read-syntax/recursive (->opt [Univ -Input-Port (-opt -Char) (-opt -Read-Table) Univ] Univ)]
-[read-language (->opt [-Input-Port (-> ManyUniv)] (-> Univ Univ ManyUniv))]
+[read-language (->opt [-Input-Port (-> ManyUniv)] (-opt (-> Univ Univ ManyUniv)))]
 
 [read-case-sensitive (-Param Univ B)]
 [read-square-bracket-as-paren (-Param Univ B)]

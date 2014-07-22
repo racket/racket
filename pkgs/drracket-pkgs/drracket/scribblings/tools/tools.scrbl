@@ -244,7 +244,10 @@ as the @racket[_key] argument to the @racket[_get-info] function to do so:
           @item{@language-info-ref[color-lexer]}]
 
 If the call to @racket[read-language] raises an error, DrRacket logs the
-error via @racket[log-debug].
+error at the @racket[_debug] level to a logger with the name 
+@racket['drracket-language] (see 
+@secref["logging" #:doc '(lib "scribblings/reference/reference.scrbl")] for more
+about how to follow specific loggers).
 
 @language-info-def[color-lexer]{
   When a language's @racket[_get-info] procedure responds to @racket['color-lexer], it
