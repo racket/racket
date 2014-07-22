@@ -20,7 +20,7 @@
   (unless (and (pair? val)
                (not (null? val))
                (identifier? (car val))
-               (free-identifier=? (car val) #'begin))
+               (free-identifier=? (car val) #'begin #f #f))
     (raise-syntax-error
      #f
      "not a begin expression"
@@ -29,6 +29,6 @@
     (define lst (syntax->list stx))
     (if (and lst
              (not (null? lst))
-             (free-identifier=? (car lst) #'begin))
+             (free-identifier=? (car lst) #'begin #f #f))
         (apply append (map loop (cdr lst)))
         (list (syntax-track-origin stx orig-stx #'begin)))))

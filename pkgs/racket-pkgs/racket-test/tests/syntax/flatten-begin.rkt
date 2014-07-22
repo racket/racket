@@ -14,6 +14,8 @@
   (check-exn exn:fail:syntax? (λ () (flatten-all-begins #'(1 2 3))))
   (check-equal-datum? (flatten-all-begins #'(begin 1 2 3))
                       (list #'1 #'2 #'3))
+  (check-equal-datum? (flatten-all-begins (syntax-shift-phase-level #'(begin 1 2 3) 2))
+                      (list #'1 #'2 #'3))
   (check-equal-datum? (flatten-all-begins #'(begin (begin 1 2) 3))
                       (list #'1 #'2 #'3))
   (check-equal-datum? (flatten-all-begins #'(begin (begin 1 2) (+ 3 4) 5))
