@@ -15,7 +15,13 @@
 Extracts the sub-expressions from a @racket[begin]-like form,
 reporting an error if @racket[stx] does not have the right shape
 (i.e., a syntax list). The resulting syntax objects have annotations
-transferred from @racket[stx] using @racket[syntax-track-origin].}
+transferred from @racket[stx] using @racket[syntax-track-origin].
+
+@examples[#:eval flatten-eval
+  (flatten-begin #'(begin 1 2 3))
+  (flatten-begin #'(begin (begin 1 2) 3))
+  (flatten-begin #'(+ (- 1 2) 3))
+]}
 
 @defproc[(flatten-all-begins [stx syntax?]) (listof syntax?)]{
 
