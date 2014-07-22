@@ -11,9 +11,9 @@ A @racket[gl-config%] object encapsulates configuration information
 
 @defconstructor[()]{
 
-Creates a GL configuration that indicates double buffering, a depth
- buffer of size one, no stencil buffer, no accumulation buffer, no
- multisampling, and not stereo.
+Creates a GL configuration that indicates legacy OpenGL, double
+buffering, a depth buffer of size one, no stencil buffer, no
+accumulation buffer, no multisampling, and not stereo.
 
 }
 
@@ -143,4 +143,20 @@ Adjusts the configuration to request a particular stencil-buffer size,
 
 Adjusts the configuration to request stereo or not.
 
-}}
+}
+
+@defmethod[(get-legacy?)
+           boolean?]{
+
+Reports whether to use legacy, "Compatibility" OpenGL or "Core" OpenGL.
+@history[#:added "1.2"]
+}
+@defmethod[(set-legacy? [legacy? any/c])
+           void?]{
+
+Adjusts the configuration to request legacy or not.
+@history[#:added "1.2"]
+}
+
+
+}

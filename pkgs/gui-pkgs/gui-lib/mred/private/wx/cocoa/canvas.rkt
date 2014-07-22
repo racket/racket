@@ -192,12 +192,22 @@
 (define NSOpenGLPFASampleBuffers 55)
 (define NSOpenGLPFASamples 56)
 (define NSOpenGLPFAMultisample 59)
+(define NSOpenGLPFAOpenGLProfile 99)
+
+(define NSOpenGLProfileVersionLegacy #x1000)
+(define NSOpenGLProfileVersion3_2Core #x3200)
 
 (define (gl-config->pixel-format conf)
   (let ([conf (or conf (new gl-config%))])
     (tell (tell NSOpenGLPixelFormat alloc)
           initWithAttributes: #:type (_list i _int)
           (append
+           (if (version-10.7-or-later?)
+             (list NSOpenGLPFAOpenGLProfile
+                   (if (send conf get-legacy?)
+                     NSOpenGLProfileVersionLegacy
+                     NSOpenGLProfileVersion3_2Core))             
+             null)
            (if (send conf get-double-buffered) (list NSOpenGLPFADoubleBuffer) null)
            (if (send conf get-stereo) (list NSOpenGLPFAStereo) null)
            (list
