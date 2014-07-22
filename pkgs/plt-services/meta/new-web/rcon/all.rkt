@@ -76,7 +76,25 @@
          advisor to technology companies such as Roland and JamHub. Soon after
          RacketCon he is joining the autumn batch at Hacker School.})
     '("Jay McCarthy" "http://faculty.cs.byu.edu/~jay/home/" #f #f #f)
-    '("Brian Mastenbrook" "http://brian.mastenbrook.net/" #f #f #f)
+    (list
+     "Brian Mastenbrook" "http://brian.mastenbrook.net/"
+     "Making Things With Racket"
+      @p*{When electronic products come off the manufacturing line, they
+          go through a multi-step program and test process to become sellable
+          products. Wearable has been using Racket to automate this process for
+          the portable wireless products that we design and manufacture or
+          license to high-volume consumer electronics companies such as SanDisk.
+          I'll talk about why we chose Racket for our most business-critical
+          application (and why it's so critical!), what we've learned across
+          three generations of manufacturing fixtures and why we went from a
+          monolithic to a distributed system and back to monolithic again. I'll
+          also talk about expressing actor-model semantics in Racket and our
+          gradual migration from untyped to typed Racket.}
+      @p*{Brian Mastenbrook is CTO and cofounder of Wearable Inc, a small
+          Chicago company that invented the wireless flash drive and develops
+          the AirStash OS that makes it possible. In a past life he worked at
+          Motorola on code generators in Common Lisp for five-nines
+          telecommunication systems (among other things).})
     (list
      "Daniel Prager" "https://www.youpatch.com/"
      "YouPatch: A Racket-powered startup"
@@ -100,7 +118,25 @@
          development and business. Nowadays he divides his professional time
          between Agile/Lean coaching and more entrepreneurial endeavours,
          including YouPatch!})
-    '("Neil Toronto" "http://students.cs.byu.edu/~ntoronto/" #f #f #f)
+    (list
+     "Neil Toronto" "http://students.cs.byu.edu/~ntoronto/"
+     "Purely Functional 3D in Typed Racket"
+      @p*{Efficient 3D engines use scene databases to quickly answer queries
+          such as "What must be drawn if the viewer is here and looking this
+          direction?" and "Return all non-opaque triangles in back-to-front
+          order." Most 3D engines are written in an imperative style, even
+          though most scene databases are structured as trees and operations
+          on them can be done without destructive updates.
+
+          In this talk, I give a sneak peak at a standalone 3D engine with a
+          purely functional API, comprised mostly of combinators that operate on
+          scene databases. I intend it to replace Plot's internal 3D engine,
+          which draws on Cairo device contexts, but also be flexible and
+          efficient enough to render simple game scenes using OpenGL.}
+      @p*{Neil Toronto is a recent PhD graduate from Brigham Young University,
+          now researching programming language support for reliable mathematical
+          computation at University of Maryland, College Park. He writes
+          programs to draw pretty pictures in his nonexistent spare time.})
     (list
      "David Vanderson" "https://github.com/david-vanderson/"
      "Racket for a networked multiplayer game"
