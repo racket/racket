@@ -15,6 +15,7 @@
  racket/match racket/syntax racket/list
  racket/format
  racket/dict
+ syntax/flatten-begin
  syntax/id-table
  syntax/stx
  unstable/list
@@ -136,18 +137,10 @@
 ;; Syntax -> (Listof Syntax)
 ;; Generate contract definitions and contracted provides
 (define (change-provide-fixups forms)
-  (for/list ([form (in-list (collapse-begin forms))])
+  (for/list ([form (in-list (flatten-all-begins forms))])
     (if (contract-def/provide-property form)
         (generate-contract-def/provide form)
         form)))
-
-;; FIXME: replace with stdlib function
-(define (collapse-begin stx)
-  (syntax-parse stx
-    #:literals (begin)
-    [(begin e ...)
-     (apply append (map collapse-begin (syntax->list #'(e ...))))]
-    [x (list #'x)]))
 
 (define (change-contract-fixups forms)
   (define alias-defs (fixup-type-aliases forms))

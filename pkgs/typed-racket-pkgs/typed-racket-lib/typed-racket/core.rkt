@@ -6,6 +6,7 @@
          (private with-types type-contract)
          (except-in syntax/parse id)
          racket/match racket/syntax
+         syntax/flatten-begin
          (types utils abbrev generalize type-table)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
@@ -68,7 +69,7 @@
      (tc-toplevel/full stx #'form
        (λ (body2 type)
          (with-syntax*
-          ([(transformed-body ...) (change-contract-fixups (collapse-begin body2))]
+          ([(transformed-body ...) (change-contract-fixups (flatten-all-begins body2))]
            [(optimized-body ...) (maybe-optimize #'(transformed-body ...))])
           (syntax-parse body2
             [_ (let ([ty-str (match type
@@ -119,11 +120,3 @@
                      #`(begin (display '#,ty-str)
                               #,(arm #'(begin optimized-body ...)))
                      (arm #'(begin optimized-body ...))))]))))]))
-
-;; FIXME: replace with flatten-begins with #:all
-(define (collapse-begin stx)
-  (syntax-parse stx
-    #:literals (begin)
-    [(begin e ...)
-     (apply append (map collapse-begin (syntax->list #'(e ...))))]
-    [x (list #'x)]))
