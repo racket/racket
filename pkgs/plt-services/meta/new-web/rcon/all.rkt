@@ -49,8 +49,32 @@
      @p*{Matthew Butterick is a writer, designer, and lawyer in Los Angeles. He
          is the author of @em{Typography for Lawyers} and the creator of
          @a[href: "practicaltypography.com"]{practicaltypography.com}.})
-    '("Stephen Chang" "http://www.ccs.neu.edu/home/stchang/" #f #f #f)
-    '("John Clements" "http://www.brinckerhoff.org/JBCsite/index.html" #f #f #f)
+    (list
+     "Stephen Chang" "http://www.ccs.neu.edu/home/stchang/"
+     "A Boost-Inspired Graph Library for Racket"
+     @p*{The Boost Graph Library (BGL) introduces many novel abstraction
+         patterns for graph processing. I borrowed many of the BGL's ideas in
+         implementing a graph library for Racket. This talk will show how the
+         library turned out to be a nice playground for many of the unique
+         features in Racket.}
+     @p*{Stephen is a postdoc and recent PhD graduate at Northeastern
+         University. In his early years, he worked as an electrical engineer
+         before deciding that his life needed more abstraction. So he went off
+         to study programming languages and has been hacking in Racket ever
+         since.})
+    (list
+     "John Clements" "http://www.brinckerhoff.org/JBCsite/index.html"
+     "Stumbling around in the dark: failure partially averted"
+     @p*{Cal Poly includes a 10-week team-based domain-specific course for
+         incoming freshmen. I teach this course using Racket, in the domain of
+         Music. The challenge is to allow students with no programming
+         background to create full-featured music applications using only the
+         first few sections of HtDP. I report on the successes and failures of
+         these teams, illustrating the bizarre but creative code patterns that
+         the students exhibit.}
+     @p*{John Clements is an Associate Professor at Cal Poly State University in
+         San Luis Obispo. He is the author of DrRacket’s Stepper, and the RSound
+         library, and this paragraph.})
     (list
      "Matthew Flatt" "https://www.cs.utah.edu/~mflatt/"
      "Carry on Making that Racket"
@@ -75,7 +99,19 @@
          and ran the music software company Cakewalk, and has served as an
          advisor to technology companies such as Roland and JamHub. Soon after
          RacketCon he is joining the autumn batch at Hacker School.})
-    '("Jay McCarthy" "http://faculty.cs.byu.edu/~jay/home/" #f #f #f)
+    (list
+     "Jay McCarthy" "http://jeapostrophe.github.io"
+     "Get Bonus! Infinite Functional Entertainment at 60 FPS!"
+     @p*{Hard real-time embedded systems with tight operating
+         environments, a.k.a. console video games, are an exciting and
+         challenging place to program functionally. The Get Bonus project is
+         an effort to experiment in this space with Racket. This
+         progress-report presentation will discuss some of our goals and
+         some of the interesting implementations we've made in Racket.}
+     @p*{Jay McCarthy is a visiting assistant professor at Vassar
+         College and one of the developers of Racket. He works primarily on
+         Racket's Web server, package system, networking libraries, and
+         special projects, like DrDr.})
     (list
      "Brian Mastenbrook" "http://brian.mastenbrook.net/"
      "Making Things With Racket"
