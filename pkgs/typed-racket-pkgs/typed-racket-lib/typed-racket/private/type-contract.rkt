@@ -11,7 +11,7 @@
  (rep rep-utils)
  (types resolve union utils kw-types printer)
  (prefix-in t: (types abbrev numeric-tower))
- (private parse-type syntax-properties)
+ (private parse-type syntax-properties alias-info)
  racket/match racket/syntax racket/list
  racket/format
  racket/dict
@@ -200,13 +200,6 @@
      (contract-def/alias-property #'body)]
     [_ #f]))
 
-;; alias-info : (Dict Id (U String 'flat 'impersonator 'chaperone))
-;;
-;; This table stores if a given Name type matches up to a flat, impersonator,
-;; or chaperone contract. If the contract failed to generate, then the
-;; failure reason (a string) is stored.
-(define alias-info (make-free-id-table))
-
 ;; generate-contract-def/alias : Syntax -> (U Syntax #f)
 ;; Generate a contract that goes with a type alias
 (define (generate-contract-def/alias stx kind)
@@ -234,10 +227,16 @@
             (free-id-table-set! alias-info #'n kind)
             (ignore
              (quasisyntax/loc stx
-               (define-values (n)
-                 ;; the recursive contract is actually needed in this case since these
-                 ;; are all recursive/mutually recursive type aliases
-                 (recursive-contract cnt #,(contract-kind->keyword kind)))))])]
+               (begin
+                ;; This expression is needed to communicate the table data to other
+                ;; modules. Ordinary environment serialization via #%type-decl doesn't work
+                ;; because #%type-decl is generated too early in the type-checker.
+                (begin-for-syntax (require typed-racket/private/alias-info)
+                                  (free-id-table-set! alias-info (quote-syntax n) (quote #,kind)))
+                (define-values (n)
+                  ;; the recursive contract is actually needed in this case since these
+                  ;; are all recursive/mutually recursive type aliases
+                  (recursive-contract cnt #,(contract-kind->keyword kind))))))])]
     [_ (int-err "should never happen - not a define-values: ~a"
                 (syntax->datum stx))]))
 
