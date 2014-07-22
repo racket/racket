@@ -9,7 +9,9 @@
          racket/stxparam
          "term-fn.rkt"
          "rewrite-side-conditions.rkt"
-         (prefix-in pu: "pat-unify.rkt"))
+         (only-in "pat-unify.rkt"
+                  unsupported-pat-err-name
+                  unsupported-pat-err))
 
 (require
  (for-syntax "rewrite-side-conditions.rkt"
@@ -1534,14 +1536,12 @@
                 (values (syntax->list #'(body-pat ...))
                         (maybe-rev (syntax->list #'((prem mf-clauses '(list args-pat res-pat)) ... ...))))))
 
-(define unsupported-pat-err-name (make-parameter #f))
-
 (define-for-syntax (check-pats stx)
   (cond
     [(has-unsupported-pat? stx) 
      =>
      (λ (bad-stx)
-       #`(error (unsupported-pat-err-name) "generation failed at unsupported pattern: ~s" #,bad-stx))]
+       #`(unsupported-pat-err #,bad-stx))]
     [else
      stx]))
 

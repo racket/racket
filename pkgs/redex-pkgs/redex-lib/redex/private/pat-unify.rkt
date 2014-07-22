@@ -11,6 +11,7 @@
          "lang-struct.rkt"
          "extract-conditions.rkt"
          "enum.rkt"
+         "error.rkt"
          (for-syntax "rewrite-side-conditions.rkt"
                      racket/base)
          unstable/2d/match)
@@ -37,7 +38,9 @@
          unique-name-nums
          fresh-pat-vars
          make-uid
-         p*e-eqs)
+         p*e-eqs
+         unsupported-pat-err-name
+         unsupported-pat-err)
 
 
 ;;
@@ -849,7 +852,19 @@
                   (hash-set! memo (list nt clang npat) pat-ok?)
                   pat-ok?)))))
 
+(define unsupported-pat-err-name (make-parameter #f))
+
+(define (unsupported-pat-err pat)
+  (unless (unsupported-pat-err-name)
+    (redex-error 'unsupported-pat-err-name "not set before derivation generation"))
+  (redex-error (unsupported-pat-err-name)
+               (string-append "generation failed at unsupported pattern;\n"
+                              " (#:satisfying keyword does not support ellipses, contexts, side-conditions, or unquote)\n"
+                              "  pattern: ~a")
+               pat))
+
 (define (normalize-pat lang pat)
+  (define err unsupported-pat-err)
   (let loop ([pat pat])
     (match-a-pattern #:allow-else pat
                      [`any pat]
@@ -863,7 +878,7 @@
                      [`(variable-except ,s ...) `variable]
                      [`(variable-prefix ,s) `variable]
                      [`variable-not-otherwise-mentioned pat]
-                     [`hole (error 'normalize-pat "can't normalize pattern: ~s" pat)]
+                     [`hole (err pat)]
                      [`(nt ,id)
                       (loop (hash-ref (compiled-lang-collapsible-nts lang) id 'any))]
                      [`(name ,name ,npat)
@@ -871,16 +886,16 @@
                           `any
                           `(name ,name ,(loop npat)))]
                      [`(mismatch-name ,name ,pat) (loop pat)]
-                     [`(in-hole ,p1 ,p2) (error 'normalize-pat "can't normalize pattern: ~s" pat)]
+                     [`(in-hole ,p1 ,p2) (err pat)]
                      [`(hide-hole ,p) (loop p)]
                      [`(side-condition ,p ,g ,e)
-                      (error 'normalize-pat "can't normalize pattern: ~s" pat)]
-                     [`(cross ,s) (error 'normalize-pat "can't normalize pattern: ~s" pat)]
+                      (err pat)]
+                     [`(cross ,s) (err pat)]
                      [`(list ,sub-pats ...)
                       `(list ,@(for/list ([sub-pat (in-list sub-pats)])
                                  (match sub-pat
                                    [`(repeat ,pat ,name ,mismatch)
-                                    (error 'normalize-pat "can't normalize pattern: ~s" sub-pat)]
+                                    (err sub-pat)]
                                    [_
                                     (loop sub-pat)])))]
                      [(? (compose not pair?)) 
