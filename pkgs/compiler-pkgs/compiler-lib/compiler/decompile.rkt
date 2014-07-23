@@ -216,6 +216,27 @@
                (if (null? l)
                    null
                    `((require ,@l))))
+           (provide ,@(apply
+                       append
+                       (for/list ([p (in-list provides)])
+                         (define phase (car p))
+                         (define l
+                           (for/list ([pv (in-list (append (cadr p) (caddr p)))])
+                             (match pv
+                               [(struct provided (name src src-name nom-src src-phase protected?))
+                                (define n (if (eq? name src-name)
+                                              name
+                                              `(rename-out [,src-name ,name])))
+                                (if protected?
+                                    `(protect-out ,n)
+                                    n)])))
+                         (if (or (null? l) (eq? phase 0))
+                             l
+                             `((,@(case phase
+                                    [(#f) `(for-label)]
+                                    [(1) `(for-syntax)]
+                                    [else `(for-meta ,phase)])
+                                ,@l))))))
           ,@defns
           ,@(for/list ([submod (in-list pre-submodules)])
               (decompile-module submod orig-stack stx-ht 'module))
