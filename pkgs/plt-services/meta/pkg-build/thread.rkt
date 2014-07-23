@@ -108,7 +108,7 @@
                   (printf "hi\n")
                   (eprintf "bye\n")
                   (flush-chunk-output)
-                  (sleep)
+                  (sync (system-idle-evt))
                   (printf "HI\n")
                   (eprintf "BYE\n"))))
     (define t2 (thread/chunk-output
@@ -116,7 +116,7 @@
                   (printf "hola\n")
                   (eprintf "adios\n")
                   (flush-chunk-output)
-                  (sleep)
+                  (sync (system-idle-evt))
                   (printf "HOLA\n")
                   (eprintf "ADIOS\n"))))
     (wait-chunk-output))
