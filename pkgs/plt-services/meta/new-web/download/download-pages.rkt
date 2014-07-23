@@ -290,8 +290,8 @@
         var ord1 = getOrder(opt1[0]), ord2 = getOrder(opt2[0]);
              if (ord1 < ord2)       return -1;
         else if (ord1 > ord2)       return +1;
-        else if (opt1[2] < opt2[2]) return -1;
-        else if (opt1[2] > opt2[2]) return +1;
+        else if (opt1[4] < opt2[4]) return -1;
+        else if (opt1[4] > opt2[4]) return +1;
         else                        return  0;
       }
       // sort the options, need to use a temporary array
