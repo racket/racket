@@ -155,6 +155,15 @@
                       "misuse within quasisyntax"
                       orig-stx
                       stx)]
+                    [(us . _)
+                     (and (identifier? #'us)
+                          (or (free-identifier=? #'us unsyntax-id)
+                              (free-identifier=? #'us unsyntax-splicing-id)))
+                     (raise-syntax-error
+                      #f
+                      "misuse within quasisyntax"
+                      orig-stx
+                      stx)]
                     [(qs x)
                      (and (identifier? #'qs)
                           (free-identifier=? #'qs quasisyntax-id))

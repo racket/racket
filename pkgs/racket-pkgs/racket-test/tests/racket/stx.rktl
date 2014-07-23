@@ -1794,6 +1794,13 @@
           (quasisyntax #s(PS a (unsyntax b) (unsyntax-splicing ds))))
     |#))
 
+(syntax-test #'(quasisyntax unsyntax))
+(syntax-test #'(quasisyntax (unsyntax)))
+(syntax-test #'(quasisyntax (unsyntax 1 2)))
+(syntax-test #'(quasisyntax unsyntax-splicing))
+(syntax-test #'(quasisyntax (unsyntax-splicing)))
+(syntax-test #'(quasisyntax (unsyntax-splicing 1 2)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check preservation of properties by `quasisyntax'
 
