@@ -241,7 +241,7 @@
                                                     (let ([v (bytes-ref bstr (+ A (* 4 i) (* j row-width)))])
                                                       (or (= v 0) (= v 255))))])
                                 (let ([mask-bm (make-object bitmap% w h b&w?)])
-                                  (send mask-bm set-alphas-as-mask 0 0 w h bstr row-width A)
+                                  (send mask-bm set-alphas-as-mask 0 0 w h bstr row-width A w h)
                                   mask-bm)))
                          ;; Force all alpha values to 255
                          (for* ([j (in-range h)]
@@ -691,7 +691,7 @@
       (or (if (or b&w? alpha-channel?)
               s
               (begin
-                (prep-alpha)
+                (prep-alpha (*i width backing-scale) (*i height backing-scale))
                 alpha-s))
           (get-empty-surface)))
 
@@ -873,7 +873,9 @@
          [(and set-alpha?
                (not alpha-channel?))
           ;; Set alphas:
-          (set-alphas-as-mask x y w h bstr (* 4 w) 0)])
+          (set-alphas-as-mask x y w h bstr (* 4 w) 0
+                              (if unscaled? (*i width backing-scale) width)
+                              (if unscaled? (*i height backing-scale) height))])
         (drop-alpha-s)]))
 
     (define/public (get-alphas-as-mask x y w h bstr width height)
@@ -882,7 +884,7 @@
                                                       (cairo_surface_flush s)
                                                       s)
                                                     (begin
-                                                      (prep-alpha)
+                                                      (prep-alpha width height)
                                                       (cairo_surface_flush alpha-s)
                                                       alpha-s)))]
             [row-width (cairo_image_surface_get_stride s)]
@@ -894,7 +896,7 @@
                     [q (+ row (* i 4))])
                 (bytes-set! bstr p (bytes-ref data (+ q A)))))))))
 
-    (define/public (prep-alpha)
+    (define/public (prep-alpha width height)
       (when (and (not b&w?)
                  (not alpha-channel?))
         (unless alpha-s-up-to-date?
@@ -931,7 +933,7 @@
             (for ([i (in-range width)])
               (bytes-set! bstr (+ A (+ row (* i 4))) 0))))))
 
-    (define/public (set-alphas-as-mask x y w h bstr src-w src-A)
+    (define/public (set-alphas-as-mask x y w h bstr src-w src-A width height)
       (when (or b&w? (and (not b&w?) (not alpha-channel?)))
         (let ([data (cairo_image_surface_get_data s)]
               [row-width (cairo_image_surface_get_stride s)]
