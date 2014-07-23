@@ -7832,7 +7832,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
   Scheme_Object *phase, *super_name, *name, *super_vec, *vec;
   Scheme_Object *l, *v, *super_defs, *key, *val;
   int i, j;
-  Scheme_Env *super_def_genv;
+  Scheme_Env *super_def_genv, *def_genv;
 
   ht = super_bxs->tables;
   for (i = ht->size; i--; ) {
@@ -7895,6 +7895,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
       super_defs = val;
 
       super_def_genv = find_env(super_genv, SCHEME_INT_VAL(phase));
+      def_genv = find_env(genv, SCHEME_INT_VAL(phase));
       
       required = (Scheme_Hash_Table *)get_required_from_tables(bxs->tables, 
                                                                scheme_bin_plus(phase, phase_shift));
@@ -7910,7 +7911,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
         SCHEME_VEC_ELS(vec)[1] = to_idx;
         v = scheme_tl_id_sym(super_def_genv, name, NULL, 2, NULL, NULL);
         SCHEME_VEC_ELS(vec)[2] = v;
-        if (scheme_lookup_in_table(super_def_genv->toplevel, (char *)name))
+        if (scheme_lookup_in_table(super_def_genv->toplevel, (char *)v))
           SCHEME_VEC_ELS(vec)[3] = scheme_true;
         else
           SCHEME_VEC_ELS(vec)[3] = scheme_false;
@@ -7920,9 +7921,9 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
         SCHEME_VEC_ELS(vec)[6] = name;
         SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
         SCHEME_VEC_ELS(vec)[8] = phase;
-        
-        name = SCHEME_STX_VAL(name); /* is this right? */
-        scheme_hash_set(required, name, vec);
+
+        v = scheme_tl_id_sym(def_genv, name, NULL, 2, NULL, NULL);
+        scheme_hash_set(required, v, vec);
       }
     }
   }

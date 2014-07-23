@@ -895,5 +895,32 @@
   (require (for-label (submod "." foo))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that submodule exports the right binding
+
+(module provides-id-not-id* racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ id)
+       (with-syntax ([id* (datum->syntax #f (syntax-e #'id))])
+         #'(begin
+             (define id* 'no)
+             (define id 'yes)))]))
+
+  (m x)
+
+  (module* sub #f
+    (provide x)))
+
+(module uses-id-not-id* racket/base
+  (require (submod 'provides-id-not-id* sub))
+  (define answer x)
+  (provide answer))
+
+(test 'yes dynamic-require ''uses-id-not-id* 'answer)
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
