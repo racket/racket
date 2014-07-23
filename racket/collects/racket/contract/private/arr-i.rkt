@@ -306,29 +306,95 @@
 ;; sorts the arguments according to the dependency order.
 ;; returns them in the reverse of that order, ie expressions that need
 ;; to be evaluted first come later in the list.
-;; BAD: this seem wrong, as it doesn't consider transitive dependencies
 (define-for-syntax (find-ordering args)
   
-  (define (comes-before? x y)
-    (cond
-      [(depends-on? (car x) (car y)) #t]
-      [(depends-on? (car y) (car x)) #f]
-      [else (< (cdr x) (cdr y))]))
+  #|
+
+This uses a variation of the topological sorting algorithm
+from Wikipedia attributed to Kahn (1962). It doesn't run in
+linear time since it uses a linear scan at each step to find
+the 'least' argument contract to pick. (Picking the least arg
+ensures that args that are independent of each other are still
+evaluted left-to-right.)
+
+  |#
   
-  (define (depends-on? arg1 arg2)
-    (and (arg/res-vars arg2)
-         (ormap (λ (x) (free-identifier=? x (arg/res-var arg1)))
-                (arg/res-vars arg2))))
+  (define numbers (make-hasheq)) ;; this uses eq?, but it could use a number in the 'arg' struct
+  (define id->arg/res (make-free-identifier-mapping))
+  (for ([arg (in-list args)]
+        [i (in-naturals)])
+    (hash-set! numbers arg i)
+    (free-identifier-mapping-put! id->arg/res (arg/res-var arg) arg))
   
-  (let* ([numbered (for/list ([arg (in-list args)]
-                              [i (in-naturals)])
-                     (cons arg i))]
-         [sorted
-          (sort 
-           numbered
-           (λ (x y) (not (comes-before? x y))))])
-    (values (map car sorted)
-            (map cdr sorted))))
+  (define comes-before (make-free-identifier-mapping))
+  (define comes-after (make-free-identifier-mapping))
+  (for ([arg (in-list args)])
+    (free-identifier-mapping-put! comes-before (arg/res-var arg) '())
+    (free-identifier-mapping-put! comes-after (arg/res-var arg) '()))
+  (for ([arg (in-list args)])
+    (when (arg/res-vars arg)
+      (define arg-id (arg/res-var arg))
+      (for ([dep-id (in-list (arg/res-vars arg))])
+        (define dep (free-identifier-mapping-get id->arg/res dep-id (λ () #f)))
+        (when dep
+          ;; dep = #f should happen only when we're handling the result
+          ;; contracts and dep-id is one of the argument contracts.
+          ;; in that case, we can just ignore the edge since we know
+          ;; it will be bound already
+          (free-identifier-mapping-put!
+           comes-before
+           arg-id
+           (cons dep (free-identifier-mapping-get comes-before arg-id)))
+          (free-identifier-mapping-put!
+           comes-after
+           dep-id
+           (cons arg (free-identifier-mapping-get comes-after dep-id)))))))
+  
+  (define sorted '())
+  (define no-incoming-edges
+    (for/list ([arg (in-list args)]
+               #:when (null? (free-identifier-mapping-get comes-before (arg/res-var arg))))
+      arg))
+  
+  (define (pick-next-node)
+    (define least-node
+      (let loop ([nodes (cdr no-incoming-edges)]
+                 [least-node (car no-incoming-edges)])
+        (cond
+          [(null? nodes) least-node]
+          [else
+           (define node (car nodes))
+           (cond
+             [(< (hash-ref numbers node) (hash-ref numbers least-node))
+              (loop (cdr nodes) node)]
+             [else
+              (loop (cdr nodes) least-node)])])))
+    (set! no-incoming-edges (remove least-node no-incoming-edges))
+    least-node)
+  
+  (define (remove-edge from to)
+    (free-identifier-mapping-put!
+     comes-before
+     (arg/res-var to)
+     (remove from (free-identifier-mapping-get comes-before (arg/res-var to))))
+    (free-identifier-mapping-put!
+     comes-after
+     (arg/res-var from)
+     (remove to (free-identifier-mapping-get comes-after (arg/res-var from)))))
+  
+  (let loop ()
+    (unless (null? no-incoming-edges)
+      (define n (pick-next-node))
+      (set! sorted (cons n sorted))
+      (for ([m (in-list (free-identifier-mapping-get comes-after (arg/res-var n)))])
+        (remove-edge n m)
+        (when (null? (free-identifier-mapping-get comes-before (arg/res-var m)))
+          (set! no-incoming-edges (cons m no-incoming-edges))))
+      (loop)))
+  
+  (values sorted
+          (for/list ([arg (in-list sorted)])
+            (hash-ref numbers arg))))
 
 ;; args/vars->arglist : (listof arg?) (vectorof identifier?) -> syntax
 ;; (vector-length vars) = (length args)

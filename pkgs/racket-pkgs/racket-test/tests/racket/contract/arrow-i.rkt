@@ -876,6 +876,14 @@
                'neg))
    'qq)
   
+  (test/spec-passed/result
+   '->i53
+   '((contract (->i ([x (z) (if (equal? z 1) any/c none/c)] [y any/c] [z any/c]) any)
+               (λ (x y z) x)
+               'pos 'neg)
+     3 2 1)
+   3)
+  
   (test/pos-blame
    '->i-arity1
    '(contract (->i ([x number?]) () any) (λ () 1) 'pos 'neg))
