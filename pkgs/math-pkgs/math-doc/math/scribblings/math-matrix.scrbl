@@ -252,8 +252,8 @@ The length of @racket[xs] must be positive.
 
 @define[block-diagonal-url]{http://en.wikipedia.org/wiki/Block_matrix#Block_diagonal_matrices}
 
-@margin-note*{@hyperlink[block-diagonal-url]{Wikipedia: Block-diagonal matrices}}
 @defproc[(block-diagonal-matrix [Xs (Listof (Matrix A))] [zero A 0]) (Matrix A)]{
+@margin-note*{@hyperlink[block-diagonal-url]{Wikipedia: Block-diagonal matrices}}
 Returns a matrix with matrices @racket[Xs] along the diagonal and @racket[zero] everywhere else.
 The length of @racket[Xs] must be positive.
 @examples[#:eval typed-eval
@@ -268,8 +268,8 @@ The length of @racket[Xs] must be positive.
 
 @define[vandermonde-url]{http://en.wikipedia.org/wiki/Vandermonde_matrix}
 
-@margin-note*{@hyperlink[vandermonde-url]{Wikipedia: Vandermonde matrix}}
 @defproc[(vandermonde-matrix [xs (Listof Number)] [n Integer]) (Matrix Number)]{
+@margin-note*{@hyperlink[vandermonde-url]{Wikipedia: Vandermonde matrix}}
 Returns an @racket[m]×@racket[n] Vandermonde matrix, where @racket[m = (length xs)].
 @examples[#:eval typed-eval
                  (vandermonde-matrix '(1 2 3 4) 5)
@@ -565,10 +565,10 @@ Returns a matrix where each entry of the given matrix is conjugated.
                  (matrix-conjugate (matrix ([1 +i] [-1 2+i])))]
 }
 
-@margin-note*{@hyperlink["http://en.wikipedia.org/wiki/Transpose"]{Wikipedia: Transpose}}
 @deftogether[(@defproc[(matrix-transpose [M (Matrix A)]) (Matrix A)]
               @defproc[(matrix-hermitian [M (Matrix Number)]) (Matrix Number)])]{
-@margin-note*{@hyperlink["http://en.wikipedia.org/wiki/Hermitian_matrix"]{Wikipedia: Hermitian}}
+@margin-note*{Wikipedia: @hyperlink["http://en.wikipedia.org/wiki/Transpose"]{Transpose},
+                         @hyperlink["http://en.wikipedia.org/wiki/Hermitian_matrix"]{Hermitian}}
 Returns the transpose or the hermitian of the matrix. 
 The hermitian of a matrix is the conjugate of the transposed matrix.
 For a real matrix these operations return the the same result.
@@ -577,8 +577,8 @@ For a real matrix these operations return the the same result.
                  (matrix-hermitian (matrix ([1 +i] [2 +2i] [3 +3i])))]
 }
 
-@margin-note*{@hyperlink["http://en.wikipedia.org/wiki/Trace_(linear_algebra)"]{Wikipedia: Trace}}
 @defproc[(matrix-trace [M (Matrix Number)]) Number]{
+@margin-note*{@hyperlink["http://en.wikipedia.org/wiki/Trace_(linear_algebra)"]{Wikipedia: Trace}}
 Returns the trace of the square matrix. The trace of matrix is the 
 the sum of the diagonal entries. 
 @examples[#:eval untyped-eval
@@ -602,11 +602,11 @@ reasonable criteria (specifically, it is submultiplicative).
 See @secref{matrix:op-norm} for similar functions (e.g. norms and angles) defined by considering
 matrices as operators between inner product spaces consisting of column matrices.
 
-@margin-note*{@hyperlink["http://en.wikipedia.org/wiki/Norm_(mathematics)"]{Wikipedia: Norm}}
 @deftogether[(@defproc[(matrix-1norm [M (Matrix Number)]) Nonnegative-Real]
               @defproc[(matrix-2norm [M (Matrix Number)]) Nonnegative-Real]
               @defproc[(matrix-inf-norm [M (Matrix Number)]) Nonnegative-Real]
               @defproc[(matrix-norm [M (Matrix Number)] [p Real 2]) Nonnegative-Real])]{
+@margin-note*{@hyperlink["http://en.wikipedia.org/wiki/Norm_(mathematics)"]{Wikipedia: Norm}}
 Respectively compute the L@subscript{1} norm, L@subscript{2} norm, L@subscript{∞}, and
 L@subscript{p} norm.
 
@@ -745,8 +745,8 @@ polynomials.
 }
 
 @define[inverse-url]{http://en.wikipedia.org/wiki/Invertible_matrix}
-@margin-note*{@hyperlink[inverse-url]{Wikipedia: Invertible Matrix}}
 @defproc[(matrix-inverse [M (Matrix Number)] [fail (-> F) (λ () (error ...))]) (U F (Matrix Number))]{
+@margin-note*{@hyperlink[inverse-url]{Wikipedia: Invertible Matrix}}
 Returns the inverse of @racket[M] if it exists; otherwise returns the result of applying the
 @tech{failure thunk} @racket[fail].
 @examples[#:eval typed-eval
@@ -761,8 +761,8 @@ Returns @racket[#t] when @racket[M] is a @racket[square-matrix?] and @racket[(ma
 is nonzero.
 }
 
-@margin-note*{@hyperlink["http://en.wikipedia.org/wiki/Determinant"]{Wikipedia: Determinant}}
 @defproc[(matrix-determinant [M (Matrix Number)]) Number]{
+@margin-note*{@hyperlink["http://en.wikipedia.org/wiki/Determinant"]{Wikipedia: Determinant}}
 Returns the determinant of @racket[M], which must be a @racket[square-matrix?].
 @examples[#:eval typed-eval
                  (matrix-determinant (diagonal-matrix '(1 2 3 4)))
@@ -780,13 +780,13 @@ Returns the determinant of @racket[M], which must be a @racket[square-matrix?].
 @define[gauss-url]{http://en.wikipedia.org/wiki/Gaussian_elimination}
 @define[gauss-jordan-url]{http://en.wikipedia.org/wiki/Gauss%E2%80%93Jordan_elimination}
 
-@margin-note*{@hyperlink[gauss-url]{Wikipedia: Gaussian elimination}}
 @defproc[(matrix-gauss-elim [M (Matrix Number)]
                             [jordan? Any #f]
                             [unitize-pivot? Any #f]
                             [pivoting (U 'first 'partial) 'partial])
          (Values (Matrix Number) (Listof Index))]{
-@margin-note*{@hyperlink[gauss-jordan-url]{Wikipedia: Gauss-Jordan elimination}}
+@margin-note*{Wikipedia: @hyperlink[gauss-url]{Gaussian elimination},
+                         @hyperlink[gauss-jordan-url]{Gauss-Jordan elimination}}
 Implements Gaussian elimination or Gauss-Jordan elimination.
 
 If @racket[jordan?] is true, row operations are done both above and below the pivot.
@@ -807,12 +807,12 @@ See @racket[matrix-row-echelon] for examples.
 
 @define[row-echelon-url]{http://en.wikipedia.org/wiki/Row_echelon_form}
 
-@margin-note*{@hyperlink[row-echelon-url]{Wikipedia: Row echelon form}}
 @defproc[(matrix-row-echelon [M (Matrix Number)]
                              [jordan? Any #f]
                              [unitize-pivot? Any #f]
                              [pivoting (U 'first 'partial) 'partial])
          (Matrix Number)]{
+@margin-note*{@hyperlink[row-echelon-url]{Wikipedia: Row echelon form}}
 Like @racket[matrix-gauss-elim], but returns only the result of Gaussian elimination.
 @examples[#:eval typed-eval
                  (define M (matrix [[2 1 -1] [-3 -1 2] [-2 1 2]]))
@@ -837,9 +837,9 @@ Using @racket[matrix-row-echelon] to invert a matrix (also without checking for 
 }
 
 @define[lu-url]{http://en.wikipedia.org/wiki/LU_decomposition}
-@margin-note*{@hyperlink[lu-url]{Wikipedia: LU decomposition}}
 @defproc[(matrix-lu [M (Matrix Number)] [fail (-> F) (λ () (error ...))])
          (Values (U F (Matrix Number)) (Matrix Number))]{
+@margin-note*{@hyperlink[lu-url]{Wikipedia: LU decomposition}}
 Returns the LU decomposition of @racket[M] (which must be a @racket[square-matrix?]) if one exists.
 An LU decomposition exists if @racket[M] can be put in row-echelon form without swapping rows.
 
@@ -868,9 +868,9 @@ If @racket[M] does not have an LU decomposition, the first result is the result 
 @define[gram-schmidt-url]{http://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process}
 @define[reortho-pdf]{http://www.cerfacs.fr/algor/reports/2002/TR_PA_02_33.pdf}
 
-@margin-note*{@hyperlink[gram-schmidt-url]{Wikipedia: Gram-Schmidt process}}
 @defproc[(matrix-gram-schmidt [M (Matrix Number)] [normalize? Any #f] [start-col Integer 0])
          (Array Number)]{
+@margin-note*{@hyperlink[gram-schmidt-url]{Wikipedia: Gram-Schmidt process}}
 Returns an array whose columns are orthogonal and span the same subspace as @racket[M]'s columns.
 The number of columns in the result is the rank of @racket[M].
 If @racket[normalize?] is true, the columns are also normalized.
@@ -919,9 +919,9 @@ normalized.
 
 @define[qr-url]{http://en.wikipedia.org/wiki/QR_decomposition}
 
-@margin-note*{@hyperlink["http://en.wikipedia.org/wiki/QR_decomposition"]{Wikipedia: QR decomposition}}
 @defproc*[([(matrix-qr [M (Matrix Number)])  (Values (Matrix Number) (Matrix Number))]
            [(matrix-qr [M (Matrix Number)] [full? Any]) (Values (Matrix Number) (Matrix Number))])]{
+@margin-note*{@hyperlink["http://en.wikipedia.org/wiki/QR_decomposition"]{Wikipedia: QR decomposition}}
 Computes a QR-decomposition of the matrix @racket[M]. The values returned are
 the matrices @racket[Q] and @racket[R]. If @racket[full?] is @racket[#f], then
 a reduced decomposition is returned, otherwise a full decomposition is returned.
