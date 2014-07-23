@@ -16,7 +16,8 @@
   
   (define (w n)
     (big-bang 3
-              [to-draw (lambda (w) (overlay (text (number->string w) 22 'black) (circle 100 'solid 'red)))]
+              [to-draw (lambda (w) 
+                         (overlay (text (number->string w) 22 'black) (circle 100 'solid 'red)))]
               [on-tick (lambda (w) (if (<= w 1) (make-package 0 n) (- w 1)))]
               [register LOCALHOST]
               [port PORT-NO]
@@ -46,7 +47,8 @@
   
   (define (w n)
     (big-bang 3
-              [to-draw (lambda (w) (overlay (text (number->string w) 22 'black) (circle 100 'solid 'red)))]
+              [to-draw (lambda (w) 
+                         (overlay (text (number->string w) 22 'black) (circle 100 'solid 'red)))]
               [on-tick (lambda (w) (if (= w 1) (make-package 0 n) (- w 1)))]
               [register LOCALHOST]
               [port PORT-NO]
