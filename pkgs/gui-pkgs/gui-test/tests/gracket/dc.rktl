@@ -763,6 +763,7 @@
   (send dc set-pen "black" 0 'transparent)
   (send dc set-brush (make-color 100 100 200) 'solid)
   (send dc draw-rectangle 0 0 3 3)
+  (send dc draw-rectangle 9 9 1 1)
 
   (let ([s (make-bytes 4)])
     (send bm get-argb-pixels 2 2 1 1 s)
@@ -771,6 +772,16 @@
     (test 0 'scaled (bytes-ref s 0))
     (send bm get-argb-pixels 2 2 1 1 s #:unscaled? #t)
     (test (list 255 100 100 200) 'unscaled (bytes->list s))
+
+    (bytes-copy! s 0 (bytes 0 1 2 3))
+    (send bm get-argb-pixels 2 2 1 1 s #:unscaled? #t 'just-alpha)
+    (test (list 255 1 2 3) 'unscaled-alpha (bytes->list s))
+
+    (bytes-copy! s 0 (bytes 0 1 2 3))
+    (send bm get-argb-pixels 9 9 1 1 s #:unscaled? #t 'just-alpha)
+    (test (list 0 1 2 3) 'unscaled-alpha-miss (bytes->list s))
+    (send bm get-argb-pixels 18 18 1 1 s #:unscaled? #t 'just-alpha)
+    (test (list 255 1 2 3) 'unscaled-alpha-hit (bytes->list s))
 
     (send bm set-argb-pixels 0 0 2 1 #"\xff\x0\x0\x0\xff\x0\x0\x0" 
           #:unscaled? #t)

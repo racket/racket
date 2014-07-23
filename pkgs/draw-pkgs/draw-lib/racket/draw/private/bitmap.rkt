@@ -769,7 +769,7 @@
                         (unsafe-bytes-set! bstr (+ pi 3) (unmult (unsafe-bytes-ref data (+ ri B)))))))))))))
       (cond
        [get-alpha?
-        (get-alphas-as-mask x y w h bstr)]
+        (get-alphas-as-mask x y w h bstr width height)]
        [(and (not get-alpha?) (not alpha-channel?))
         ;; For non-alpha mode and no alpha channel; fill in 255s for alpha:
         (for ([j (in-range 0 (min h (- height y)))])
@@ -876,7 +876,7 @@
           (set-alphas-as-mask x y w h bstr (* 4 w) 0)])
         (drop-alpha-s)]))
 
-    (define/public (get-alphas-as-mask x y w h bstr)
+    (define/public (get-alphas-as-mask x y w h bstr width height)
       (let ([data (cairo_image_surface_get_data (if (or b&w? alpha-channel?)
                                                     (begin
                                                       (cairo_surface_flush s)
