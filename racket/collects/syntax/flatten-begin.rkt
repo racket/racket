@@ -1,4 +1,7 @@
 #lang racket/base
+
+(require (for-template racket/base))
+
 (provide flatten-begin
          flatten-all-begins)
 
@@ -20,7 +23,7 @@
   (unless (and (pair? val)
                (not (null? val))
                (identifier? (car val))
-               (free-identifier=? (car val) #'begin #f #f))
+               (free-identifier=? (car val) #'begin))
     (raise-syntax-error
      #f
      "not a begin expression"
@@ -29,6 +32,6 @@
     (define lst (syntax->list stx))
     (if (and lst
              (not (null? lst))
-             (free-identifier=? (car lst) #'begin #f #f))
+             (free-identifier=? (car lst) #'begin))
         (apply append (map loop (cdr lst)))
         (list (syntax-track-origin stx orig-stx #'begin)))))

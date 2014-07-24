@@ -4,7 +4,8 @@
 
 (require rackunit
          rackunit/text-ui
-         syntax/flatten-begin)
+         syntax/flatten-begin
+         (for-meta -2 (only-in racket/base begin)))
 
 (define-binary-check (check-equal-datum? actual expected)
   (check-equal? (map syntax->datum actual)
