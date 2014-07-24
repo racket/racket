@@ -6060,7 +6060,7 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
   /* see "inotify.inc" */
   mz_inotify_init();
   if (!mz_inotify_ready())
-    errid = EAGAIN;
+    errid = mz_inotify_errid();
   else {
     fd = mz_inotify_add(filename);
     if (fd == -1)
