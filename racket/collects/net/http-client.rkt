@@ -100,7 +100,9 @@
 
 (define (write-chunk out data)
   (let ([bytes (->bytes data)])
-    (fprintf out "~x\r\n~a\r\n" (bytes-length bytes) bytes)))
+    (define len (bytes-length bytes))
+    (unless (zero? len)
+      (fprintf out "~x\r\n~a\r\n" len bytes))))
 
 (define (http-conn-send! hc url-bs
                          #:version [version-bs #"1.1"]
