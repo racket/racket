@@ -560,10 +560,6 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
   }
 
  top_after_next:
-  cmp = is_eqv(obj1, obj2);
-  if (cmp > -1)
-    return cmp;
-
   cmp = is_fast_equal(obj1, obj2, eql->for_chaperone == 1);
   if (cmp > -1)
     return cmp;
