@@ -1398,19 +1398,21 @@
 (let ([dir (make-temporary-file "change~a" 'directory)])
   (define known-supported? (vector-ref (system-type 'fs-change) 0))
   (define known-file-supported? (vector-ref (system-type 'fs-change) 3))
-  (define (check-supported evt file?)
-    (when (if file?
-              known-file-supported?
-              known-supported?)
-      (test #t filesystem-change-evt? evt)))
+  (define (filesystem-change-evt* dir file?)
+    (if (if file?
+            known-file-supported?
+            known-supported?)
+        (let ([e (filesystem-change-evt dir)])
+          (test #t filesystem-change-evt? e)
+          e)
+        (filesystem-change-evt dir (lambda () #f))))
 
   (define (check f1-name f2-name as-file? known-x-supported?)
     (printf "checking ~s, ~s as ~a\n" f1-name f2-name (if as-file? "file" "dir"))
     (define f1 (build-path dir f1-name))
     (define f2 (build-path dir f2-name))
 
-    (define dir-e (filesystem-change-evt dir (lambda () #f)))
-    (check-supported dir-e #f)
+    (define dir-e (filesystem-change-evt* dir #f))
     (if as-file?
         (call-with-output-file* f1 (lambda (o) (fprintf o "1\n")))
         (make-directory f1))
@@ -1421,10 +1423,8 @@
         (call-with-output-file* f2 (lambda (o) (fprintf o "2\n")))
         (make-directory f2))
 
-    (define f1-e (filesystem-change-evt f1 (lambda () #f)))
-    (define f2-e (filesystem-change-evt f2 (lambda () #f)))
-    (check-supported f1-e #t)
-    (check-supported f2-e #t)
+    (define f1-e (filesystem-change-evt* f1 #t))
+    (define f2-e (filesystem-change-evt* f2 #t))
     
     (when f1-e
       (test #f sync/timeout 0 f1-e)
