@@ -62,7 +62,7 @@ thread created to invoke @racket[thunk] terminates.
 @defproc[(current-thread) thread?]{Returns the @tech{thread
  descriptor} for the currently executing thread.}
 
-@defproc[(thread/suspend-to-kill [thunk (-> any)]) thread]{
+@defproc[(thread/suspend-to-kill [thunk (-> any)]) thread?]{
 
 Like @racket[thread], except that ``killing'' the thread through
 @racket[kill-thread] or @racket[custodian-shutdown-all] merely

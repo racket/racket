@@ -150,7 +150,7 @@ Creates an event that is @tech{ready for synchronization} when
 @racket[evt] is @tech{ready for synchronization}, but whose
 @tech{synchronization result} is determined by applying @racket[wrap]
 to the @tech{synchronization result} of @racket[evt]. The number
-of arguments accetped by @racket[wrap] must match the number of values
+of arguments accepted by @racket[wrap] must match the number of values
 for the synchronization result of @racket[evt].
 
 The call to @racket[wrap] is
