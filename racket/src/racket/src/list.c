@@ -1795,7 +1795,7 @@ static Scheme_Object *impersonate_box(int argc, Scheme_Object **argv)
   return do_chaperone_box("impersonate-box", 1, argc, argv);
 }
 
-static int compare_equal(void *v1, void *v2)
+int scheme_compare_equal(void *v1, void *v2)
 {
   return !scheme_equal((Scheme_Object *)v1, (Scheme_Object *)v2);
 }
@@ -1830,7 +1830,7 @@ Scheme_Bucket_Table *scheme_make_weak_equal_table(void)
   
   sema = scheme_make_sema(1);
   t->mutex = sema;
-  t->compare = compare_equal;
+  t->compare = scheme_compare_equal;
   t->make_hash_indices = make_hash_indices_for_equal;
 
   return t;
@@ -1842,7 +1842,7 @@ Scheme_Bucket_Table *scheme_make_nonlock_equal_bucket_table(void)
   
   t = scheme_make_bucket_table(20, SCHEME_hash_ptr);
   
-  t->compare = compare_equal;
+  t->compare = scheme_compare_equal;
   t->make_hash_indices = make_hash_indices_for_equal;
 
   return t;
@@ -2023,7 +2023,7 @@ Scheme_Hash_Table *scheme_make_hash_table_equal()
 
   sema = scheme_make_sema(1);
   t->mutex = sema;
-  t->compare = compare_equal;
+  t->compare = scheme_compare_equal;
   t->make_hash_indices = make_hash_indices_for_equal;
 
   return t;
@@ -2167,14 +2167,14 @@ Scheme_Object *scheme_hash_eq_p(int argc, Scheme_Object *argv[])
     o = SCHEME_CHAPERONE_VAL(o);
 
   if (SCHEME_HASHTP(o)) {
-    if ((((Scheme_Hash_Table *)o)->compare != compare_equal)
+    if ((((Scheme_Hash_Table *)o)->compare != scheme_compare_equal)
         && (((Scheme_Hash_Table *)o)->compare != compare_eqv))
       return scheme_true;
   } else if (SCHEME_HASHTRP(o)) {
     if (!(SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)o) & 0x3))
       return scheme_true;
   } else if (SCHEME_BUCKTP(o)) {
-    if ((((Scheme_Bucket_Table *)o)->compare != compare_equal)
+    if ((((Scheme_Bucket_Table *)o)->compare != scheme_compare_equal)
         && (((Scheme_Bucket_Table *)o)->compare != compare_eqv))
       return scheme_true;
   } else {
@@ -2215,13 +2215,13 @@ Scheme_Object *scheme_hash_equal_p(int argc, Scheme_Object *argv[])
     o = SCHEME_CHAPERONE_VAL(o);
 
   if (SCHEME_HASHTP(o)) {
-    if (((Scheme_Hash_Table *)o)->compare == compare_equal)
+    if (((Scheme_Hash_Table *)o)->compare == scheme_compare_equal)
       return scheme_true;
   } else if (SCHEME_HASHTRP(o)) {
     if (SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)o) & 0x1)
       return scheme_true;
   } else if (SCHEME_BUCKTP(o)) {
-    if (((Scheme_Bucket_Table *)o)->compare == compare_equal)
+    if (((Scheme_Bucket_Table *)o)->compare == scheme_compare_equal)
       return scheme_true;
   } else {
     scheme_wrong_contract("hash-equal?", "hash?", 0, argc, argv);
@@ -2249,7 +2249,7 @@ static Scheme_Object *hash_weak_p(int argc, Scheme_Object *argv[])
 
 int scheme_is_hash_table_equal(Scheme_Object *o)
 {
-  return (((Scheme_Hash_Table *)o)->compare == compare_equal);
+  return (((Scheme_Hash_Table *)o)->compare == scheme_compare_equal);
 }
 
 int scheme_is_hash_table_eqv(Scheme_Object *o)
@@ -2282,10 +2282,9 @@ static Scheme_Object *hash_table_put_bang(int argc, Scheme_Object *argv[])
   } else if (!SCHEME_HASHTP(v) || !SCHEME_MUTABLEP(v)) {
     scheme_wrong_contract("hash-set!", "(and/c hash? (not/c immutable?))", 0, argc, argv);
   } else if (((Scheme_Hash_Table *)v)->mutex) {
-    Scheme_Hash_Table *t = (Scheme_Hash_Table *)v;
-    scheme_wait_sema(t->mutex, 0);
-    scheme_hash_set(t, argv[1], argv[2]);
-    scheme_post_sema(t->mutex);
+    scheme_wait_sema(((Scheme_Hash_Table *)v)->mutex, 0);
+    scheme_hash_set((Scheme_Hash_Table *)v, argv[1], argv[2]);
+    scheme_post_sema(((Scheme_Hash_Table *)v)->mutex);
   } else {
     scheme_hash_set((Scheme_Hash_Table *)v, argv[1], argv[2]);
   }

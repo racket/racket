@@ -2176,7 +2176,7 @@ static Scheme_Object *current_thread_set(int argc, Scheme_Object *argv[])
                               -1, thread_set_p, "thread-group?", 0);
 }
 
-static TSET_IL void set_t_set_next(Scheme_Object *o, Scheme_Object *n)
+XFORM_NONGCING static TSET_IL void set_t_set_next(Scheme_Object *o, Scheme_Object *n)
 {
   if (SCHEME_THREADP(o))
     ((Scheme_Thread *)o)->t_set_next = n;
@@ -2184,7 +2184,7 @@ static TSET_IL void set_t_set_next(Scheme_Object *o, Scheme_Object *n)
     ((Scheme_Thread_Set *)o)->next = n;
 }
 
-static TSET_IL void set_t_set_prev(Scheme_Object *o, Scheme_Object *n)
+XFORM_NONGCING static TSET_IL void set_t_set_prev(Scheme_Object *o, Scheme_Object *n)
 {
   if (SCHEME_THREADP(o))
     ((Scheme_Thread *)o)->t_set_prev = n;
@@ -2192,7 +2192,7 @@ static TSET_IL void set_t_set_prev(Scheme_Object *o, Scheme_Object *n)
     ((Scheme_Thread_Set *)o)->prev = n;
 }
 
-static TSET_IL Scheme_Object *get_t_set_next(Scheme_Object *o)
+XFORM_NONGCING static TSET_IL Scheme_Object *get_t_set_next(Scheme_Object *o)
 {
   if (SCHEME_THREADP(o))
     return ((Scheme_Thread *)o)->t_set_next;
@@ -2200,7 +2200,7 @@ static TSET_IL Scheme_Object *get_t_set_next(Scheme_Object *o)
     return ((Scheme_Thread_Set *)o)->next;
 }
 
-static TSET_IL Scheme_Object *get_t_set_prev(Scheme_Object *o)
+XFORM_NONGCING static TSET_IL Scheme_Object *get_t_set_prev(Scheme_Object *o)
 {
   if (SCHEME_THREADP(o))
     return ((Scheme_Thread *)o)->t_set_prev;
@@ -2208,7 +2208,7 @@ static TSET_IL Scheme_Object *get_t_set_prev(Scheme_Object *o)
     return ((Scheme_Thread_Set *)o)->prev;
 }
 
-static void schedule_in_set(Scheme_Object *s, Scheme_Thread_Set *t_set)
+XFORM_NONGCING static void schedule_in_set(Scheme_Object *s, Scheme_Thread_Set *t_set)
 {
   num_running_threads += 1;
 
@@ -2227,7 +2227,7 @@ static void schedule_in_set(Scheme_Object *s, Scheme_Thread_Set *t_set)
   }
 }
 
-static void unschedule_in_set(Scheme_Object *s, Scheme_Thread_Set *t_set)
+XFORM_NONGCING static void unschedule_in_set(Scheme_Object *s, Scheme_Thread_Set *t_set)
 {
   Scheme_Object *prev;
   Scheme_Object *next;

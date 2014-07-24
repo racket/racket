@@ -4039,7 +4039,7 @@ Scheme_Object *scheme_copy_list(Scheme_Object *l);
 
 void scheme_reset_hash_table(Scheme_Hash_Table *ht, int *history);
 
-Scheme_Object *scheme_regexp_source(Scheme_Object *re);
+XFORM_NONGCING Scheme_Object *scheme_regexp_source(Scheme_Object *re);
 int scheme_regexp_is_byte(Scheme_Object *re);
 int scheme_regexp_is_pregexp(Scheme_Object *re);
 Scheme_Object *scheme_make_regexp(Scheme_Object *str, int byte, int pcre, int * volatile result_is_err_string);
@@ -4223,5 +4223,7 @@ void scheme_check_place_port_ok();
 void scheme_place_set_memory_use(intptr_t amt);
 void scheme_place_check_memory_use();
 void scheme_clear_place_ifs_stack();
+
+int scheme_compare_equal(void *v1, void *v2);
 
 #endif /* __mzscheme_private__ */

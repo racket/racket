@@ -228,16 +228,22 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
   mask = table->size - 1;
 
   if (table->make_hash_indices) {
-    GC_CAN_IGNORE intptr_t *_h2x;
-    if (table->compare) {
+    if (table->compare == scheme_compare_equal) {
       h2 = 0;
-      _h2x = NULL;
-    } else
-      _h2x = &h2x;
-    table->make_hash_indices((void *)key, &hx, _h2x);
-    h = to_unsigned_hash(hx) & mask;
-    if (_h2x)
-      h2 = (to_unsigned_hash(h2x) & mask) | 1;
+      hx = scheme_equal_hash_key(key);
+      h = to_unsigned_hash(hx) & mask;
+    } else {
+      GC_CAN_IGNORE intptr_t *_h2x;
+      if (table->compare) {
+        h2 = 0;
+        _h2x = NULL;
+      } else
+        _h2x = &h2x;
+      table->make_hash_indices((void *)key, &hx, _h2x);
+      h = to_unsigned_hash(hx) & mask;
+      if (_h2x)
+        h2 = (to_unsigned_hash(h2x) & mask) | 1;
+    }
   } else {
     uintptr_t lkey;
     lkey = PTR_TO_LONG((Scheme_Object *)key);
@@ -246,32 +252,61 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
   }
 
   keys = table->keys;
-  
+
   if (table->compare) {
-    scheme_hash_request_count++;
-    while ((tkey = keys[h])) {
-      if (SAME_PTR(tkey, GONE)) {
-	if (set > 1) {
-	  useme = h;
-	  set = 1;
-	}
-      } else if (!table->compare(tkey, (char *)key)) {
-	if (set) {
-	  table->vals[h] = val;
-	  if (!val) {
-	    keys[h] = GONE;
-	    --table->count;
-	  }
-	  return val;
-	} else
-	  return table->vals[h];
+    if (table->compare == scheme_compare_equal) {
+      /* Direct calls can be significant faster than indirect */
+      scheme_hash_request_count++;
+      while ((tkey = keys[h])) {
+        if (SAME_PTR(tkey, GONE)) {
+          if (set > 1) {
+            useme = h;
+            set = 1;
+          }
+        } else if (scheme_equal(tkey, key)) {
+          if (set) {
+            table->vals[h] = val;
+            if (!val) {
+              keys[h] = GONE;
+              --table->count;
+            }
+            return val;
+          } else
+            return table->vals[h];
+        }
+        scheme_hash_iteration_count++;
+        if (!h2) {
+          h2x = scheme_equal_hash_key2(key);
+          h2 = (to_unsigned_hash(h2x) & (table->size - 1)) | 1;
+        }
+        h = (h + h2) & mask;
       }
-      scheme_hash_iteration_count++;
-      if (!h2) {
-        table->make_hash_indices((void *)key, NULL, &h2x);
-        h2 = (to_unsigned_hash(h2x) & (table->size - 1)) | 1;
+    } else {
+      scheme_hash_request_count++;
+      while ((tkey = keys[h])) {
+        if (SAME_PTR(tkey, GONE)) {
+          if (set > 1) {
+            useme = h;
+            set = 1;
+          }
+        } else if (!table->compare(tkey, (char *)key)) {
+          if (set) {
+            table->vals[h] = val;
+            if (!val) {
+              keys[h] = GONE;
+              --table->count;
+            }
+            return val;
+          } else
+            return table->vals[h];
+        }
+        scheme_hash_iteration_count++;
+        if (!h2) {
+          table->make_hash_indices((void *)key, NULL, &h2x);
+          h2 = (to_unsigned_hash(h2x) & (table->size - 1)) | 1;
+        }
+        h = (h + h2) & mask;
       }
-      h = (h + h2) & mask;
     }
   } else {
     scheme_hash_request_count++;
@@ -1162,21 +1197,13 @@ XFORM_NONGCING static uintptr_t long_dbl_hash2_val(long_double d)
    http://www.burtleburtle.net/bob/hash/doobs.html: */
 #define MZ_MIX(k) (k += (k << 10), k ^= (k >> 6))
 
-static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
+XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t k, int *_done)
 {
   Scheme_Type t;
-  Scheme_Object *orig_obj;
 
  top:
-  orig_obj = o;
-  if (SCHEME_CHAPERONEP(o))
-    o = ((Scheme_Chaperone *)o)->val;
-  
   t = SCHEME_TYPE(o);
   k += t;
-
-  if (hi->depth > (MAX_HASH_DEPTH << 1))
-    return k;
   
   switch(t) {
   case scheme_integer_type:
@@ -1213,17 +1240,114 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
     break;
   case scheme_rational_type:
     {
-      k += equal_hash_key(scheme_rational_numerator(o), 0, hi);
+      k += fast_equal_hash_key(scheme_rational_numerator(o), 0, _done);
       o = scheme_rational_denominator(o);
       break;
     }
   case scheme_complex_type:
     {
       Scheme_Complex *c = (Scheme_Complex *)o;
-      k += equal_hash_key(c->r, 0, hi);
+      k += fast_equal_hash_key(c->r, 0, _done);
       o = c->i;
       break;
     }
+  case scheme_cpointer_type:
+    {
+      k = (k << 3) + k;
+      k += (uintptr_t)((char *)SCHEME_CPTR_VAL(o) + SCHEME_CPTR_OFFSET(o));
+      return k;
+    }
+  case scheme_char_type:
+    return k + SCHEME_CHAR_VAL(o);
+  case scheme_byte_string_type:
+  case scheme_unix_path_type:
+  case scheme_windows_path_type:
+    {
+      int i = SCHEME_BYTE_STRLEN_VAL(o);
+      char *s = SCHEME_BYTE_STR_VAL(o);
+      
+      while (i--) {
+	k += s[i];
+        MZ_MIX(k);
+      }
+      
+      return k;
+    }
+  case scheme_char_string_type:
+    {
+      int i = SCHEME_CHAR_STRLEN_VAL(o);
+      mzchar *s = SCHEME_CHAR_STR_VAL(o);
+      
+      while (i--) {
+	k += s[i];
+        MZ_MIX(k);
+      }
+      
+      return k;
+    }
+  case scheme_regexp_type:
+    {
+      o = scheme_regexp_source(o);
+      break;
+    }
+# ifndef MZ_PRECISE_GC
+  case scheme_keyword_type:
+  case scheme_symbol_type:
+    {
+      Scheme_Symbol *s = (Scheme_Symbol *)o;
+      if (!(MZ_OPT_HASH_KEY(&s->iso) & 0x1)) {
+	/* Interned. Make key depend only on the content. */
+	if (!(MZ_OPT_HASH_KEY(&s->iso) & 0xFFFC)) {
+	  int i, h = 0;
+	  for (i = s->len; i--; ) {
+	    h += (h << 5) + h + s->s[i];
+	  }
+	  h += (h << 2);
+	  if (!(((short)h) & 0xFFFC))
+	    h = 0x10;
+	  MZ_OPT_HASH_KEY(&s->iso) |= (((short)h) & 0xFFFC);
+	}
+	
+	return k + (MZ_OPT_HASH_KEY(&s->iso) & 0xFFFC);
+      } else
+	return k + PTR_TO_LONG(o);
+    }
+# endif
+  default:
+    {
+      *_done = 0;
+      return 0;
+    }
+  }
+
+  MZ_MIX(k);
+  goto top;
+}
+
+static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
+{
+  Scheme_Type t;
+  Scheme_Object *orig_obj;
+  int done;
+  uintptr_t k2;
+
+ top:
+  orig_obj = o;
+  if (SCHEME_CHAPERONEP(o))
+    o = ((Scheme_Chaperone *)o)->val;
+  
+  t = SCHEME_TYPE(o);
+  k += t;
+
+  if (hi->depth > (MAX_HASH_DEPTH << 1))
+    return k;
+
+  done = 1;
+  k2 = fast_equal_hash_key(o, k, &done);
+  if (done)
+    return k2;
+  
+  switch(t) {
   case scheme_pair_type:
     {
 #     include "mzhashchk.inc"
@@ -1244,12 +1368,6 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       k += equal_hash_key(SCHEME_CAR(o), 0, hi);
       o = SCHEME_CDR(o);
       break;
-    }
-  case scheme_cpointer_type:
-    {
-      k = (k << 3) + k;
-      k += (uintptr_t)((char *)SCHEME_CPTR_VAL(o) + SCHEME_CPTR_OFFSET(o));
-      return k;
     }
   case scheme_vector_type:
   case scheme_fxvector_type:
@@ -1315,39 +1433,6 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       return k;
     }
 #endif
-  case scheme_char_type:
-    return k + SCHEME_CHAR_VAL(o);
-  case scheme_byte_string_type:
-  case scheme_unix_path_type:
-  case scheme_windows_path_type:
-    {
-      int i = SCHEME_BYTE_STRLEN_VAL(o);
-      char *s = SCHEME_BYTE_STR_VAL(o);
-      
-      while (i--) {
-	k += s[i];
-        MZ_MIX(k);
-      }
-      
-      return k;
-    }
-  case scheme_char_string_type:
-    {
-      int i = SCHEME_CHAR_STRLEN_VAL(o);
-      mzchar *s = SCHEME_CHAR_STR_VAL(o);
-      
-      while (i--) {
-	k += s[i];
-        MZ_MIX(k);
-      }
-      
-      return k;
-    }
-  case scheme_regexp_type:
-    {
-      o = scheme_regexp_source(o);
-      break;
-    }
   case scheme_structure_type:
   case scheme_proc_struct_type:
     {
@@ -1544,29 +1629,14 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       
       return k;
     }
-# ifndef MZ_PRECISE_GC
-  case scheme_keyword_type:
-  case scheme_symbol_type:
+  case scheme_place_bi_channel_type:
     {
-      Scheme_Symbol *s = (Scheme_Symbol *)o;
-      if (!(MZ_OPT_HASH_KEY(&s->iso) & 0x1)) {
-	/* Interned. Make key depend only on the content. */
-	if (!(MZ_OPT_HASH_KEY(&s->iso) & 0xFFFC)) {
-	  int i, h = 0;
-	  for (i = s->len; i--; ) {
-	    h += (h << 5) + h + s->s[i];
-	  }
-	  h += (h << 2);
-	  if (!(((short)h) & 0xFFFC))
-	    h = 0x10;
-	  MZ_OPT_HASH_KEY(&s->iso) |= (((short)h) & 0xFFFC);
-	}
-	
-	return k + (MZ_OPT_HASH_KEY(&s->iso) & 0xFFFC);
-      } else
-	return k + PTR_TO_LONG(o);
+      k += 7;
+      /* a bi channel has sendch and recvch, but
+         sends are the same iff recvs are the same: */
+      o = (Scheme_Object *)((Scheme_Place_Bi_Channel *)o)->link->sendch;
     }
-# endif
+    break;
   case scheme_resolved_module_path_type:
     /* Needed for interning */
     {
@@ -1586,15 +1656,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       break;
     }
     break;
-  case scheme_place_bi_channel_type:
-    {
-      k += 7;
-      /* a bi channel has sendch and recvch, but
-         sends are the same iff recvs are the same: */
-      o = (Scheme_Object *)((Scheme_Place_Bi_Channel *)o)->link->sendch;
-    }
-    break;
-  default:    
+  default:
     {
       Scheme_Primary_Hash_Proc h1 = scheme_type_hash1s[t];
       if (h1)
@@ -1608,7 +1670,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
   goto top;
 }
 
-intptr_t scheme_equal_hash_key(Scheme_Object *o)
+static intptr_t slow_equal_hash_key(Scheme_Object *o)
 {
   Hash_Info hi;
 
@@ -1617,6 +1679,18 @@ intptr_t scheme_equal_hash_key(Scheme_Object *o)
   hi.insp = NULL;
 
   return to_signed_hash(equal_hash_key(o, 0, &hi));
+}
+
+intptr_t scheme_equal_hash_key(Scheme_Object *o)
+{
+  uintptr_t k;
+  int done = 1;
+
+  k = fast_equal_hash_key(o, 0, &done);
+  if (done)
+    return to_signed_hash(k);
+  else
+    return slow_equal_hash_key(o);
 }
 
 intptr_t scheme_equal_hash_key2(Scheme_Object *o)

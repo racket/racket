@@ -1155,13 +1155,12 @@ MZ_EXTERN int scheme_recur_equal(Scheme_Object *obj1, Scheme_Object *obj2, void 
 MZ_EXTERN Scheme_Object *scheme_build_list(int argc, Scheme_Object **argv);
 MZ_EXTERN Scheme_Object *scheme_build_list_offset(int argc, Scheme_Object **argv, int delta);
 
-MZ_EXTERN int scheme_is_list(Scheme_Object *obj1);
-MZ_EXTERN int scheme_list_length(Scheme_Object *list);
-MZ_EXTERN int scheme_proper_list_length(Scheme_Object *list);
+XFORM_NONGCING MZ_EXTERN int scheme_is_list(Scheme_Object *obj1);
+XFORM_NONGCING MZ_EXTERN int scheme_list_length(Scheme_Object *list);
+XFORM_NONGCING MZ_EXTERN int scheme_proper_list_length(Scheme_Object *list);
 
 MZ_EXTERN Scheme_Object *scheme_alloc_list(int size);
-MZ_EXTERN Scheme_Object *scheme_map_1(Scheme_Object *(*f)(Scheme_Object*),
-			    Scheme_Object *l);
+MZ_EXTERN Scheme_Object *scheme_map_1(Scheme_Object *(*f)(Scheme_Object*), Scheme_Object *l);
 
 MZ_EXTERN Scheme_Object *scheme_car(Scheme_Object *pair);
 MZ_EXTERN Scheme_Object *scheme_cdr(Scheme_Object *pair);
