@@ -248,4 +248,12 @@
     #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n2\r\nfr\r\n2\r\nob\r\n0\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '()
+    #""]
+
+   ["PUT"
+    (λ (w) (void))
+    "HTTP/1.1 200 OK\r\n\r\n"
+    #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n0\r\n\r\n"
+    #"HTTP/1.1 200 OK"
+    '()
     #""]))
