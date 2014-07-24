@@ -2912,7 +2912,7 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen, rx_lazy_str_t *
   }
 }
 
-#define LAZY_STRING_CHUNK_SIZE 1024
+#define LAZY_STRING_CHUNK_SIZE 32
 
 static void read_more_from_lazy_string(Regwork *rw, rxpos need_total)
 {
