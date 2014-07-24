@@ -1531,62 +1531,6 @@
   (port-closed? i))
 
 ;;----------------------------------------------------------------------
-;; UDP
-
-(unless (eq? 'macos (system-type))
-  (load-relative "udp.rktl"))
-
-(when (eq? 'macos (system-type))
-  (err/rt-test (udp-open-socket) exn:misc:unsupported?)
-  ;; All others fail b/c can't supply a UDP.
-  )
-
-(test #f udp? 5)
-
-;; more type tests in udp.rktl, where we have UDP socket values
-(err/rt-test (udp-close 5))
-(err/rt-test (udp-bound? 5))
-(err/rt-test (udp-connected? 5))
-(err/rt-test (udp-bind! 5 #f 40000))
-(err/rt-test (udp-connect! 5 "localhost" 40000))
-(err/rt-test (udp-send-to 5 "localhost" 40000 #"hello"))
-(err/rt-test (udp-send-to* 5 "localhost" 40000 #"hello"))
-(err/rt-test (udp-send-to/enable-break 5 "localhost" 40000 #"hello"))
-(err/rt-test (udp-send 5 #"hello"))
-(err/rt-test (udp-send* 5 #"hello"))
-(err/rt-test (udp-send/enable-break 5 #"hello"))
-(err/rt-test (udp-receive! 5 (make-bytes 10)))
-(err/rt-test (udp-receive!* 5 (make-bytes 10)))
-(err/rt-test (udp-receive!/enable-break 5 (make-bytes 10)))
-(err/rt-test (udp-receive!-evt 5 (make-bytes 10)))
-(err/rt-test (udp-send-ready-evt 5))
-(err/rt-test (udp-receive-ready-evt 5))
-
-(arity-test udp-open-socket 0 2)
-(arity-test udp-close 1 1)
-(arity-test udp? 1 1)
-(arity-test udp-bound? 1 1)
-(arity-test udp-connected? 1 1)
-(arity-test udp-bind! 3 4)
-(arity-test udp-connect! 3 3)
-(arity-test udp-send-to 4 6)
-(arity-test udp-send-to* 4 6)
-(arity-test udp-send-to/enable-break 4 6)
-(arity-test udp-send 2 4)
-(arity-test udp-send* 2 4)
-(arity-test udp-send/enable-break 2 4)
-(arity-test udp-send-to-evt 4 6)
-(arity-test udp-send-evt 2 4)
-(arity-test udp-receive! 2 4)
-(arity-test udp-receive!* 2 4)
-(arity-test udp-receive!/enable-break 2 4)
-(arity-test udp-receive!-evt 2 4)
-(arity-test udp-send-ready-evt 1 1)
-(arity-test udp-receive-ready-evt 1 1)
-
-(Section 'file-after-udp)
-
-;;----------------------------------------------------------------------
 ;; Security guards:
 
 (arity-test make-security-guard 3 4)

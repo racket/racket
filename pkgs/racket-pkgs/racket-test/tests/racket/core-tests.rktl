@@ -34,6 +34,7 @@
   (load-relative "param.rktl"))
 (load-relative "port.rktl")
 (load-relative "file.rktl")
+(load-relative "udp.rktl")
 (load-relative "path.rktl")
 (unless (or building-flat-tests? in-drscheme?)
   (load-relative "optimize.rktl"))
