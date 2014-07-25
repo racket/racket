@@ -265,6 +265,8 @@ This one is ``compact'':
 
 ]
 
+This paragraph follows the enumeration above.
+
 @; ======================================================================
 @section{Paragraph Spacing}
 

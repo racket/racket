@@ -88,6 +88,9 @@ p, .SIntrapara {
     line-height: 1.4;
 }
 
+.compact {
+  padding: 0 0 1em 0;
+}
 
 li {
     list-style-position: outside;
