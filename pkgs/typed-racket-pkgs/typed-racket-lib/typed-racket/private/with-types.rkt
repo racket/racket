@@ -1,9 +1,21 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         (utils lift)
-         (typecheck tc-toplevel)
-         racket/require racket/promise
+         (base-env base-types-extra extra-procs)
+         (except-in (base-env prims) with-handlers λ lambda define)
+         (env type-name-env type-alias-env type-env-structs
+              global-env tvar-env)
+         (private parse-type type-contract)
+         (typecheck tc-toplevel typechecker)
+         (types utils)
+         (utils lift tc-utils disarm arm)
+         racket/match
+         racket/promise
+         racket/require
+         syntax/parse
+         unstable/sequence
+         "../tc-setup.rkt"
+         "../standard-inits.rkt"
          (for-template
           (except-in racket/base for for* with-handlers lambda λ define
                      let let* letrec letrec-values let-values
@@ -15,25 +27,8 @@
                      for*/vector for*/hash for*/hasheq for*/hasheqv for*/and
                      for*/or for*/sum for*/product for*/first for*/last
                      for*/fold)
-          "../base-env/prims.rkt"
-          (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
-         "../base-env/extra-procs.rkt" (except-in "../base-env/prims.rkt" with-handlers λ lambda define)
-         "../tc-setup.rkt"
-         "../standard-inits.rkt"
-         syntax/parse racket/match
-         unstable/sequence  "../base-env/base-types-extra.rkt"
-         (path-up "env/type-name-env.rkt"
-                  "env/type-alias-env.rkt"
-                  "private/parse-type.rkt"
-                  "private/type-contract.rkt"
-                  "typecheck/typechecker.rkt"
-                  "env/type-env-structs.rkt"
-                  "env/global-env.rkt"
-                  "env/tvar-env.rkt"
-                  "utils/tc-utils.rkt"
-                  "utils/disarm.rkt"
-                  "utils/arm.rkt"
-                  "types/utils.rkt"))
+          (base-env prims)
+          (prefix-in c: (combine-in racket/contract/region racket/contract/base))))
 
 (provide wt-core)
 
