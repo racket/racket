@@ -6,6 +6,7 @@
          "error.rkt"
          "search.rkt"
          racket/trace
+         racket/list
          racket/stxparam
          "term-fn.rkt"
          "rewrite-side-conditions.rkt"
@@ -332,15 +333,30 @@
           (apply trace-call form-name wrapped (assemble mode input spacers))
           outputs)
         (form-proc form-proc input derivation-init)))
-  (for/list ([v (in-list vecs)])
-    (define subs (derivation-with-output-only-subs v))
-    (define rulename (derivation-with-output-only-name v))
-    (define this-output (derivation-with-output-only-output v))
-    (derivation-subs-acc 
-     (and subs (derivation (cons form-name (assemble mode input this-output))
-                           rulename
-                           (reverse subs)))
-     this-output)))
+  (remove-duplicates
+   (for/list ([v (in-list vecs)])
+     (define subs (derivation-with-output-only-subs v))
+     (define rulename (derivation-with-output-only-name v))
+     (define this-output (derivation-with-output-only-output v))
+     (derivation-subs-acc
+      (and subs (derivation (cons form-name (assemble mode input this-output))
+                            
+                            ;; just drop the subderivations 
+                            ;; and the name when we know we
+                            ;; won't be using them.
+                            ;; this lets the remove-duplicates
+                            ;; call just above do something 
+                            ;; and possibly avoid exponential blowup
+                            
+                            (if (include-entire-derivation)
+                                rulename
+                                "")
+                            (if (include-entire-derivation)
+                                (reverse subs)
+                                '())))
+      this-output))))
+
+(define include-entire-derivation (make-parameter #f))
 
 (define (verify-name-ok orig-name the-name)
   (unless (symbol? the-name)
@@ -797,12 +813,13 @@
                          id-or-not)])
        (check-judgment-arity stx judgment)
        (syntax-property
-        (if id-or-not
-            #`(let ([#,id-or-not '()])
-                #,main-stx)
-            #`(sort #,main-stx
-                    string<=?
-                    #:key (λ (x) (format "~s" x))))
+        #`(parameterize ([include-entire-derivation #,derivation?])
+            #,(if id-or-not
+                  #`(let ([#,id-or-not '()])
+                      #,main-stx)
+                  #`(sort #,main-stx
+                          string<=?
+                          #:key (λ (x) (format "~s" x)))))
         'disappeared-use
         (syntax-local-introduce #'form-name)))]
     [(_ stx-name derivation? (not-form-name . _) . _)

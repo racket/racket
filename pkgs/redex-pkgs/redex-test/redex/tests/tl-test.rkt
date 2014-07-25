@@ -2767,6 +2767,33 @@
       (test (judgment-holds (Q (3 4) number_1) number_1)
                   '(14)))
 
+  (let () 
+    (define-judgment-form empty-language
+      #:mode (J I)
+      [(D any_x) ...
+       --------------
+       (J (any_x ...))])
+    (define-judgment-form empty-language
+      #:mode (D I)
+      [----------- nat
+       (D natural)]
+      [----------- num
+       (D number)])
+
+    ;; this test is designed to check to see if we are
+    ;; avoiding an exponential blow up. On my laptop,
+    ;; a list of length 14 was taking 2 seconds before
+    ;; the fix and 1 msec afterwards. After the fix,
+    ;; a list of length 100 (as below) was also taking 
+    ;; no time.
+    
+    (define-values (_ cpu real gc)
+      (time-apply
+       (λ ()
+         (judgment-holds (J ,(build-list 100 add1))))))
+    (test (< cpu 1000) #t))
+
+
     
     (parameterize ([current-namespace (make-base-namespace)])
       (eval '(require errortrace))
