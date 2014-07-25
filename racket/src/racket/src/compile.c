@@ -4817,6 +4817,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     } else {
       if (!rec[drec].comp
           && (rec[drec].depth == -2) /* local-expand */
+          && SAME_OBJ(var, normal)
           && SAME_OBJ(SCHEME_STX_VAL(stx), top_symbol)) {
         rec[drec].pre_unwrapped = 1;
       } else {

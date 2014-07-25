@@ -1085,6 +1085,14 @@
                      (error 'test "bad expansion: ~e" e)]))])
   (m))
 
+(test 10 values
+      (let-syntax ([#%top (lambda (stx)
+                            (syntax-case stx ()
+                              [(_ . id) #'10]))])
+        (let-syntax ([m (lambda (stx)
+                          (local-expand #'nonsuch 'expression null))])
+          (m))))
+
 ;; ----------------------------------------
 
 (report-errs)
