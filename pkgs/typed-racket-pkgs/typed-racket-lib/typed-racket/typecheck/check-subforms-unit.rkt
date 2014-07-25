@@ -40,9 +40,9 @@
   (define handler-map (make-hash))
   (define body-results #f)
 
-  ;; tc-result1 type -> tc-results
+  ;; syntax tc-result1 type -> tc-results
   ;; The result of applying the function to a single argument of the type of its first argument
-  (define (get-range-result t filter-type)
+  (define (get-range-result stx t filter-type)
     (let loop ((t t))
       (match t
         [(Function: (list _ ... (arr: (list arg1) _ _ #f (list (Keyword: _ _ #f) ...)) _ ...))
@@ -56,7 +56,8 @@
         [(or (Poly: ns _) (PolyDots: (list ns ... _) _))
          (loop (instantiate-poly t (map (λ (n) Univ) ns)))]
         [_
-         (check-below t (-> filter-type Univ))
+         (parameterize ([current-orig-stx stx])
+           (check-below t (-> filter-type Univ)))
          (ret (Un))])))
 
   ;; Syntax Type -> (Option Type)
@@ -97,7 +98,7 @@
       ;; if the predicate doesn't check, then don't bother
       ;; with the RHS and return no result
       (if filter-type
-          (get-range-result handler-type filter-type)
+          (get-range-result handler-stx handler-type filter-type)
           (ret (Un)))))
 
   (find-syntax form
