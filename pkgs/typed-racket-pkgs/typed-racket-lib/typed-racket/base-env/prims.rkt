@@ -562,12 +562,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ ([pred? action] ...) . body)
      (with-syntax ([(pred?* ...)
-                    (for/list ([s (in-syntax #'(pred? ...))])
-                      (with-type* s #'(Any -> Any)))]
+                    (for/list ([(pred? idx) (in-indexed (in-syntax #'(pred? ...)))])
+                      (exn-predicate-property pred? idx))]
                    [(action* ...)
-                    (stx-map exn-handler #'(action ...))]
+                    (for/list ([(action idx) (in-indexed (in-syntax #'(action ...)))])
+                      (exn-handler-property action idx))]
                    [body* (exn-body #'(let-values () . body))])
-       (exn-handlers #'(with-handlers ([pred?* action*] ...) body*)))]))
+       (exn-handlers (quasisyntax/loc stx
+                       (with-handlers ([pred?* action*] ...) body*))))]))
 
 (begin-for-syntax
   (define-syntax-class dtsi-struct-name

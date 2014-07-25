@@ -2954,18 +2954,6 @@
          (-lst -Int)]
 
        [tc-e
-         (with-handlers ([exn:fail? (λ (exn) 4)])
-            5)
-         #:ret (ret -Nat -true-filter)
-         #:expected (ret -Nat -no-filter)]
-
-       [tc-e
-         (with-handlers ([exn:fail? (λ (exn) #f)])
-            5)
-         #:ret (ret Univ -top-filter)
-         #:expected (ret Univ -no-filter)]
-
-       [tc-e
          (lambda (a . b) (apply values a b))
 
          #:ret (ret (-polydots (A B ...) (->... (list A) (B B) (-values-dots (list A) B 'B))))
@@ -3153,6 +3141,40 @@
          (define g (λ (x) (λ () (number? x))))
          (void))
         -Void]
+
+       ;; with-handlers
+       [tc-e
+         (with-handlers ([exn:fail? (λ (exn) 4)])
+            5)
+         #:ret (ret -Nat -true-filter)
+         #:expected (ret -Nat -no-filter)]
+       [tc-e
+         (with-handlers ([exn:fail? (λ (exn) #f)])
+            5)
+         #:ret (ret Univ -top-filter)
+         #:expected (ret Univ -no-filter)]
+       [tc-e
+        (with-handlers ([void (λ: ([x : Any]) #t)]) #f)
+        -Boolean]
+       [tc-err
+        (with-handlers ([values (lambda: ([e : String]) (string-append e "bar"))])
+          (raise "foo"))
+        #:msg #rx"expected: \\(-> Any Any\\).*given: \\(-> String String\\)"]
+       [tc-err
+        (with-handlers (["foo" (lambda: ([e : String]) (string-append e "bar"))])
+          (raise "foo"))
+        #:msg #rx"expected: \\(-> Any Any\\).*given: String"]
+       [tc-err
+        (with-handlers ([string? (lambda (e) (string-append e "bar"))])
+          (raise "foo"))
+        #:ret (ret -String)
+        #:msg #rx"expected: String.*given: Any"]
+       [tc-err
+        (with-handlers ([string? (lambda: ([e : String]) (string-append e "bar"))]
+                        [symbol? (lambda (x) (symbol->string x))])
+          (raise 'foo))
+        #:ret (ret -String)
+        #:msg #rx"expected: Symbol.*given: Any"]
         )
 
   (test-suite
