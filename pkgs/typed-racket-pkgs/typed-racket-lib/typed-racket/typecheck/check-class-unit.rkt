@@ -14,7 +14,7 @@
          syntax/stx
          "signatures.rkt"
          (private parse-type syntax-properties type-annotation)
-         (env lexical-env tvar-env)
+         (env lexical-env tvar-env global-env)
          (types utils abbrev union subtype resolve generalize)
          (typecheck check-below internal-forms)
          (utils tc-utils)
@@ -875,9 +875,9 @@
            (define method-type
              (function->method pre-method-type self-type))
            (define expected (ret method-type))
-           (define annotated (annotate-method meth self-type method-type))
+           (register-method-ids meth self-type method-type)
            (do-timestamp (format "started checking method ~a" external-name))
-           (tc-expr/check annotated expected)
+           (tc-expr/check (add-kw-property meth) expected)
            (do-timestamp (format "finished method ~a" external-name))
            (cons (list external-name pre-method-type) checked)]
           ;; Only try to type-check if these names are in the
@@ -888,7 +888,8 @@
            ;; FIXME: this case doesn't work very well yet for keyword methods
            ;;        because TR can't recognize that the expansion is a kw
            ;;        function (unlike the expected case).
-           (define type (tc-expr/t meth))
+           (register-method-ids meth self-type #f)
+           (define type (tc-expr/t (add-kw-property meth)))
            (do-timestamp (format "finished method ~a" external-name))
            (cons (list external-name
                        (method->function type))
@@ -908,11 +909,13 @@
            (define method-type
              (function->method pre-method-type self-type))
            (define expected (ret method-type))
-           (define annotated (annotate-method stx self-type method-type))
-           (tc-expr/check annotated expected)]
+           (register-method-ids stx self-type method-type)
+           (tc-expr/check (add-kw-property stx) expected)]
           ;; not private, then ignore since it's irrelevant
           [(not private?) (void)]
-          [else (tc-expr/t stx)])))
+          [else
+           (register-method-ids stx self-type #f)
+           (tc-expr/t (add-kw-property stx))])))
 
 ;; check-field-set!s : Syntax Dict<Symbol, Symbol> Dict<Symbol, Type> -> Void
 ;; Check that fields are initialized to the correct type
@@ -1398,25 +1401,20 @@
      (make-PolyRow ns constraints (method->function type))]
     [_ (tc-error/expr #:return -Bottom "expected a function type for method")]))
 
-;; annotate-method : Syntax Type -> Syntax
-;; Adds a self type annotation for the first argument and annotated
-;; the let-values binding for tc-expr
-(define (annotate-method stx self-type method-type)
+;; register-method-ids : Syntax (Option Type) -> Void
+;; Register types for identifiers in a method that don't come with types
+(define (register-method-ids stx self-type method-type)
+  (define (do-register self-param meth-name)
+    (when method-type
+      (register-type meth-name method-type))
+    (register-type self-param self-type))
   (syntax-parse stx
     #:literals (let-values #%plain-lambda case-lambda)
     [(let-values ([(meth-name:id)
                    (#%plain-lambda (self-param:id . params)
                      body ...)])
        m)
-     (define annotated-self-param
-       (type-ascription-property #'self-param self-type))
-     #`(let-values ([(#,(type-label-property #'meth-name method-type))
-                     ;; attach source location to the lambda in order to
-                     ;; obtain better error messages for arity errors
-                     #,(quasisyntax/loc stx
-                         (#%plain-lambda (#,annotated-self-param . params)
-                                         body ...))])
-         m)]
+     (do-register #'self-param #'meth-name)]
     [(~and (let-values ([(meth-name:id)
                          (let-values (((core:id)
                                        (#%plain-lambda params
@@ -1424,30 +1422,33 @@
                            method-body ...)])
              m)
            kw:kw-lambda^)
-     #`(let-values ([(#,(type-label-property #'meth-name method-type))
-                     #,(kw-lambda-property
-                        #`(let-values (((core)
-                                        ;; see comment above
-                                        #,(quasisyntax/loc stx
-                                           (#%plain-lambda params
-                                                           core-body ...))))
-                            method-body ...)
-                        (attribute kw.value))])
-         m)]
+     (do-register #'self-param #'meth-name)]
     ;; case-lambda methods
     [(let-values ([(meth-name:id)
                    (case-lambda
                      [(self x ...) body] ...)])
        m)
-     (define annotated-self-params
-       (for/list ([self-param (in-list (syntax->list #'(self ...)))])
-         (type-ascription-property self-param self-type)))
-     (define/with-syntax (annotated-self ...) annotated-self-params)
-     #`(let-values ([(#,(syntax-property #'meth-name 'type-label method-type))
-                     (case-lambda
-                       [(annotated-self x ...) body] ...)])
-         m)]
-    [_ (int-err "annotate-method: internal error")]))
+     (when method-type
+       (register-type #'meth-name method-type))
+     (for ([self-param (in-list (syntax->list #'(self ...)))])
+       (register-type self-param self-type))]
+    [_ (int-err "register-method-ids: internal error")]))
+
+;; Syntax -> Syntax
+;; If the method syntax is for a keyword method, then propagate the keyword
+;; property further into the syntax object.
+(define (add-kw-property stx)
+  (syntax-parse stx
+    #:literal-sets (kernel-literals)
+    [(~and (let-values ([(meth-name:id) core]) m)
+           kw:kw-lambda^)
+      (quasisyntax/loc stx
+        (let-values ([(meth-name)
+                      #,(kw-lambda-property
+                        (syntax/loc stx core)
+                        (attribute kw.value))])
+          m))]
+    [_ stx]))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
 ;; check that all the required names are actually present
