@@ -5,7 +5,7 @@
          racket/match
          "signatures.rkt" "tc-metafunctions.rkt"
          "tc-funapp.rkt"
-         (types utils abbrev union resolve subtype)
+         (types utils abbrev union resolve subtype match-expanders)
          (typecheck check-below)
          (private syntax-properties)
          (utils tc-utils)
@@ -55,9 +55,13 @@
          (loop (resolve t))]
         [(or (Poly: ns _) (PolyDots: (list ns ... _) _))
          (loop (instantiate-poly t (map (λ (n) Univ) ns)))]
+        ;; This clause should raise an error via the check-below test
         [_
-         (parameterize ([current-orig-stx stx])
-           (check-below t (-> filter-type Univ)))
+         (cond [;; a redundant test, but it ensures an error message below
+                (not (subtype t (-> filter-type Univ)))
+                (parameterize ([current-orig-stx stx])
+                  (check-below t (-> filter-type Univ)))]
+               [else (int-err "get-range-result: should not happen")])
          (ret (Un))])))
 
   ;; Syntax Type -> (Option Type)
@@ -73,7 +77,7 @@
            (match fun-type
              ;; FIXME: Almost all predicates fall into this case, but it may
              ;;        be worth being more precise here for some rare code.
-             [(Function: (list (arr: (list _) (Values: (list (Result: _ fs _))) _ _ _)))
+             [(PredicateFilter: fs)
               (match fs
                 [(FilterSet: (TypeFilter: ft (Path: '() '(0 0))) _) ft]
                 [(Bot:) (Un)]

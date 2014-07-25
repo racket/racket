@@ -10,7 +10,8 @@
          racket/set
          (for-syntax racket/base syntax/parse))
 
-(provide Listof: List: MListof: AnyPoly: AnyPoly-names: Function/arrs:)
+(provide Listof: List: MListof: AnyPoly: AnyPoly-names: Function/arrs:
+         PredicateFilter:)
 
 
 (define-match-expander Listof:
@@ -93,3 +94,11 @@
     (syntax-parse stx
       [(_ doms rngs rests drests kws (~optional (~seq #:arrs arrs) #:defaults ([arrs #'_])))
        #'(Function: (and arrs (list (arr: doms rngs rests drests kws) (... ...))))])))
+
+;; A match expander for matching the filter on a predicate. This assumes a standard
+;; predicate type of the shape (-> Any Any : SomeType)
+(define-match-expander PredicateFilter:
+  (λ (stx)
+    (syntax-parse stx
+      [(_ fs)
+       #'(Function: (list (arr: (list _) (Values: (list (Result: _ fs _))) _ _ _)))])))

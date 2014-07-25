@@ -562,12 +562,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ ([pred? action] ...) . body)
      (with-syntax ([(pred?* ...)
-                    (for/list ([pred? (in-syntax #'(pred? ...))]
-                               [idx (in-naturals)])
+                    (for/list ([(pred? idx) (in-indexed (in-syntax #'(pred? ...)))])
                       (exn-predicate-property pred? idx))]
                    [(action* ...)
-                    (for/list ([action (in-syntax #'(action ...))]
-                               [idx (in-naturals)])
+                    (for/list ([(action idx) (in-indexed (in-syntax #'(action ...)))])
                       (exn-handler-property action idx))]
                    [body* (exn-body #'(let-values () . body))])
        (exn-handlers (quasisyntax/loc stx

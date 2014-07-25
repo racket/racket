@@ -3153,6 +3153,9 @@
             5)
          #:ret (ret Univ -top-filter)
          #:expected (ret Univ -no-filter)]
+       [tc-e
+        (with-handlers ([void (λ: ([x : Any]) x)]) #f)
+        Univ]
        [tc-err
         (with-handlers ([values (lambda: ([e : String]) (string-append e "bar"))])
           (raise "foo"))
