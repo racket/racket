@@ -227,7 +227,13 @@ or override impersonator-property values of @racket[v].
 
 Each @racket[orig-proc] must indicate a distinct operation. If no
 @racket[orig-proc]s are supplied, then no @racket[prop]s must be
-supplied, and @racket[v] is returned unimpersonated.}
+supplied, and @racket[v] is returned unimpersonated.
+
+If any @racket[orig-proc] is itself an impersonator, then a use of the
+accessor or mutator that @racket[orig-proc] impersonates is redirected
+for the resulting impersonated structure to use @racket[orig-proc] on
+@racket[v] before @racket[redirect-proc] (in the case of accessor) or
+after @racket[redirect-proc] (in the case of a mutator).}
 
 
 @defproc[(impersonate-vector [vec (and/c vector? (not/c immutable?))]
@@ -565,6 +571,9 @@ Like @racket[impersonate-struct], but with the following refinements:
        would return @racket[#f] as its first argument. An
        @racket[orig-proc] can be @racket[struct-info] only if some
        other @racket[orig-proc] is supplied.}
+
+ @item{Any accessor or mutator @racket[orig-proc] that is an
+       @tech{impersonator} must be specifically a @tech{chaperone}.}
 
 ]}
 

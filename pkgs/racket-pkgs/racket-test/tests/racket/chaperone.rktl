@@ -654,6 +654,133 @@
    (test #t values (equal? d3 d1))
    (test '(#t) list got?)))
 
+;; Check use of chaperoned accessor to chaperone a structure:
+(let ()
+  (define-values (prop: prop? prop-ref) (make-struct-type-property 'prop))
+  (struct x [a]
+    #:mutable
+    #:property prop: 'secret)
+  (define v1 (x 'secret))
+  (define v2 (x 'public))
+  (define v3 (x #f))
+
+  ;; Original accessor and mutators can get 'secret and install 'garbage:
+  (test 'secret x-a v1)
+  (test (void) set-x-a! v3 'garbage)
+  (test 'garbage x-a v3)
+  (set-x-a! v3 #f)
+  (test 'secret prop-ref v1)
+  (test 'secret prop-ref struct:x)
+
+  (define get-a
+    (chaperone-procedure x-a
+                         (lambda (s)
+                           (values (lambda (r)
+                                     (when (eq? r 'secret)
+                                       (error "sssh!"))
+                                     r)
+                                   s))))
+  (define lie-a
+    (impersonate-procedure x-a
+                           (lambda (s)
+                             (values (lambda (r)
+                                       'whatever)
+                                     s))))
+  (define set-a!
+    (chaperone-procedure set-x-a!
+                         (lambda (s v)
+                           (when (eq? v 'garbage)
+                             (error "no thanks!"))
+                           (values s v))))
+  (define mangle-a!
+    (impersonate-procedure set-x-a!
+                           (lambda (s v)
+                             (values s 'garbage))))
+  (define get-prop
+    (chaperone-procedure prop-ref
+                         (case-lambda
+                          [(s)
+                           (values (lambda (r)
+                                     (when (eq? r 'secret)
+                                       (error "sssh!"))
+                                     r)
+                                   s)]
+                          [(s def)
+                           (values (lambda (r)
+                                     (when (eq? r 'secret)
+                                       (error "sssh!"))
+                                     r)
+                                   s
+                                   def)])))
+
+  (test 'public get-a v2)
+  (err/rt-test (get-a v1) exn:fail?)
+
+  (test (void) set-a! v3 'fruit)
+  (test 'fruit x-a v3)
+  (err/rt-test (set-a! v3 'garbage) exn:fail?)
+  (test 'fruit x-a v3)
+
+  (test 'whatever lie-a v1)
+  (test 'whatever lie-a v2)
+  (test (void) mangle-a! v3 'fruit)
+  (test 'garbage get-a v3)
+  (set-a! v3 #f)
+
+  (err/rt-test (get-prop v1) exn:fail?)
+  (err/rt-test (get-prop struct:x) exn:fail?)
+
+  (define (wrap v
+                #:chaperone-struct [chaperone-struct chaperone-struct]
+                #:get-a [get-a get-a]
+                #:set-a! [set-a! set-a!]
+                #:get-prop [get-prop get-prop])
+    (chaperone-struct v
+                      get-a (lambda (s v)
+                              (when (eq? v 'secret)
+                                (raise 'leaked!))
+                              v)
+                      set-a! (lambda (s v)
+                               v)
+                      get-prop (lambda (s v)
+                                 (when (eq? v 'secret)
+                                   (raise 'leaked-via-property!))
+                                 v)))
+
+  (test 'public x-a (wrap v2))
+  ;; Can't access 'secret by using `get-a` to chaperone:
+  (err/rt-test (x-a (wrap v1)) exn:fail?)
+  ;; More-nested chaperone takes precedence:
+  (err/rt-test (x-a (wrap (chaperone-struct v1 x-a
+                                            (lambda (s v)
+                                              (raise 'early)))))
+               (lambda (exn) (eq? exn 'early)))
+  ;; Double chaperone should be ok:
+  (err/rt-test (get-a (wrap v1)) exn:fail?)
+  ;; Can't allow 'garbage into a value chaperoned using `set-a!`:
+  (err/rt-test (set-x-a! (wrap v3) 'garbage) exn:fail?)
+  (err/rt-test (set-a! (wrap v3) 'garbage) exn:fail?)
+  ;; Can't access 'secret by using `get-prop` to chaperone:
+  (err/rt-test (prop-ref (wrap v1)) exn:fail?)
+
+  ;; Cannot chaperone using an impersonated operation:
+  (err/rt-test (wrap v2 #:get-a lie-a))
+  (err/rt-test (wrap v2 #:set-a! mangle-a!))
+  ;; Can impersonate with impersonated operation:
+  (test 'whatever x-a (wrap v2
+                            #:chaperone-struct impersonate-struct
+                            #:get-a lie-a
+                            #:get-prop (let ()
+                                         (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
+                                         ;; dummy, since property accessor cannot be impersonated:
+                                         prop:blue)))
+
+  ;; Currently, `chaperone-struct-type` does not accept
+  ;; a property accessor as an argument. Probably it should,
+  ;; in which case we need to test a chaperone put in place
+  ;; with `get-prop`.
+  (void))
+
 ;; ----------------------------------------
 
 (as-chaperone-or-impersonator

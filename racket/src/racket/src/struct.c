@@ -1128,7 +1128,16 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
 #endif
           
           arg = px->prev;
-          orig = do_chaperone_prop_accessor(who, prop, arg);
+          if (SCHEME_PAIRP(red)) {
+            /* Operation used to chaperone the struct was itself chaperoned.
+               Use the chaperoned operation to get the result to chaperone
+               further. */
+            a[0] = arg;
+            orig = _scheme_apply(SCHEME_CAR(red), 1, a);
+            red = SCHEME_CDR(red);
+          } else {
+            orig = do_chaperone_prop_accessor(who, prop, arg);
+          }
 
           if (!orig) return NULL;
           
@@ -2089,11 +2098,19 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim,
         }
 #endif
 
-        orig = chaperone_struct_ref(who, prim, px->prev, i);
+        red = SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + i];
+        if (SCHEME_PAIRP(red)) {
+          /* Operation used to chaperone the struct was itself chaperoned.
+             Use the chaperoned operation to get the result to chaperone
+             further. */
+          a[0] = px->prev;
+          orig = _scheme_apply(SCHEME_CAR(red), 1, a);
+          red = SCHEME_CDR(red);
+        } else
+          orig = chaperone_struct_ref(who, prim, px->prev, i);
 
         a[0] = px->prev;
         a[1] = orig;
-        red = SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + i];
         if (SAME_TYPE(SCHEME_TYPE(red), scheme_native_closure_type)) {
           o = _scheme_apply_native(red, 2, a);
           if (o == SCHEME_MULTIPLE_VALUES) {
@@ -2146,8 +2163,16 @@ static void chaperone_struct_set(const char *who, Scheme_Object *prim,
         half = (SCHEME_VEC_SIZE(px->redirects) - PRE_REDIRECTS) >> 1;
         red = SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + half + i];
         if (SCHEME_TRUEP(red)) {
+          Scheme_Object *finish_setter = NULL;
+
           a[0] = o;
           a[1] = v;
+
+          if (SCHEME_PAIRP(red)) {
+            finish_setter = SCHEME_CAR(red);
+            red = SCHEME_CDR(red);
+          }
+
           if (SAME_TYPE(SCHEME_TYPE(red), scheme_native_closure_type)) {
             v = _scheme_apply_native(red, 2, a);
             if (v == SCHEME_MULTIPLE_VALUES) {
@@ -2162,6 +2187,15 @@ static void chaperone_struct_set(const char *who, Scheme_Object *prim,
           if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
             if (!SAME_OBJ(v, a[1]) && !scheme_chaperone_of(v, a[1]))
               scheme_wrong_chaperoned(who, "value", a[1], v);
+
+          if (finish_setter) {
+            /* Operation used to chaperone the struct was itself chaperoned.
+               Use the chaperoned operation to finish the assignment. */
+            a[0] = o;
+            a[1] = v;
+            (void)_scheme_apply_multi(finish_setter, 2, a);
+            return;
+          }
         } 
       } if (SCHEME_VECTORP(px->redirects)
             && !(SCHEME_VEC_SIZE(px->redirects) & 1)
@@ -5857,6 +5891,20 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
                             "operation kind", 0, kind,
                             "operation procedure", 1, a[0],
                             NULL);
+    }
+
+    /* If the operation to chaperone was itself a chaperone, we need to
+       preserve and use he chaperoned variant of the operation. */
+    if (SCHEME_CHAPERONEP(a[0])) {
+      Scheme_Chaperone *ppx = (Scheme_Chaperone *)a[0];
+      if (!is_impersonator
+          && (SCHEME_CHAPERONE_FLAGS(ppx) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
+        scheme_contract_error(name,
+                              "impersonated operation cannot be used to create a chaperone",
+                              "operation", 1, a[0],
+                              NULL);
+      }
+      proc = scheme_make_pair(a[0], proc);
     }
 
     if (prop)
