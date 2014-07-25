@@ -3097,6 +3097,7 @@ static Scheme_Object *get_old_module_env(Scheme_Object *stx)
   WRAP_POS awl;
   Scheme_Object *a, *last_id = NULL, *cancel_rename_id = scheme_false;
   Scheme_Object *result_id = scheme_false, *last_pr = NULL, *pr;
+  int saw_rename = 0;
 
   WRAP_POS_INIT(awl, ((Scheme_Stx *)stx)->wraps);
 
@@ -3155,13 +3156,20 @@ static Scheme_Object *get_old_module_env(Scheme_Object *stx)
         }
         last_id = set_identity;
       }
+
+      /* Only cancel via phase shift after we've seen a rename.
+         Canceling makes submodule contexts work, while not canceling
+         until after a rename makes inspection of a fully-expanded
+         module work in the case that a binding's indentifier cam from
+         another module. */
+      saw_rename = 1;
     } else if (SCHEME_BOXP(a)) {
       /* Phase shift: */
       Scheme_Object *vec;
 
       vec = SCHEME_BOX_VAL(a);
       a = SCHEME_VEC_ELS(vec)[5];
-      if (!SCHEME_FALSEP(a))
+      if (saw_rename && !SCHEME_FALSEP(a))
         cancel_rename_id = a;
     }
 

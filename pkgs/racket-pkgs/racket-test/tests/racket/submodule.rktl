@@ -920,6 +920,33 @@
 
 (test 'yes dynamic-require ''uses-id-not-id* 'answer)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check binding in fully expanded module:
+
+(let ()
+  (define m
+    '(module m racket/kernel
+       (module foo racket
+         (provide def-wrap)
+         (define-syntax-rule (def-wrap)
+           (begin  (define y 1) y)))
+       (module bar racket/kernel
+         (#%require (submod ".." foo))
+         (def-wrap))))
+
+  (parameterize ([current-namespace (make-base-namespace)])
+    (define e (expand m))
+    ;; (pretty-print (syntax->datum e))
+    (syntax-case e (module)
+      [(module m _
+         (#%mb1
+          _
+          (module bar _
+            (#%mb2
+             (#%require (submod ".." foo))
+             (define-values (y) '1)
+             _))))
+       (test #t list? (identifier-binding #'y))])))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
