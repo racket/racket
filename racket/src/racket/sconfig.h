@@ -579,9 +579,7 @@
 # endif
 
 # define TIME_SYNTAX
-# define USE_FTIME
-# define USE_TIMEZONE_VAR_W_DLS
-# define USE_TZNAME_VAR
+# define USE_WIN32_TIME
 # define WINDOWS_GET_PROCESS_TIMES
 # define GETENV_FUNCTION
 # define DIR_FUNCTION
@@ -990,6 +988,8 @@
  /* USE_PLAIN_TIME uses time; only for TIME_SYNTAX */
  
  /* USE_MACTIME uses the Mac toolbox to implement time functions. */
+
+ /* USE_WIN32_TIME uses the Win32 API to implement time functions. */
 
  /* CLOCK_IS_USER_TIME uses the system time for user milliseconds. */
 
