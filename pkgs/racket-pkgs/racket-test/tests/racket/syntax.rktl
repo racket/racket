@@ -1288,6 +1288,16 @@
 (define x 5)
 (test 5 '#%top (#%top . x))
 
+(syntax-test #'(module m racket/base
+                 (define x 1)
+                 (let ([x 2]) (#%top . x))))
+
+(module ok-top-reference-within-module racket/base
+  (define x 1)
+  (define z (let ([y 2]) (#%top . x)))
+  (provide z))
+(test 1 dynamic-require ''ok-top-reference-within-module 'z)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests related to bytecode optimizer.
 ;; The (if (let ([x M]) (if x x N)) ...)

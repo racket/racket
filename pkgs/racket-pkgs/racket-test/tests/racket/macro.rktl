@@ -1032,5 +1032,59 @@
   (test "2\n" get-output-string o))
 
 ;; ----------------------------------------
+;; Lifting should not introduce `#%top` around
+;; the reference to the lifted identifier:
+
+(module lifting-doesnt-introduce-top-wrapper racket
+  ;; do the lifting
+  (define-syntax (m stx)
+    (syntax-local-lift-expression #'(+ 1 1)))
+
+  ;; catch the lift, try to put definitions in a let
+  (define-syntax (catch stx)
+    (syntax-case stx ()
+      [(_ body)
+       (syntax-case (local-expand/capture-lifts #'body (syntax-local-context) null)
+           (define-values begin)
+         [(begin (define-values (x ...) e ...) ... exp)
+          #'(let () (define-values (x ...) e ...) ... exp)])]))
+
+  (define z (catch (+ 1 (m))))
+
+  (provide z))
+
+(test 3 dynamic-require ''lifting-doesnt-introduce-top-wrapper 'z)
+
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (eval '(define-syntax (m stx)
+           (syntax-local-lift-expression #'(+ 1 1))))
+  (eval '(define-syntax (catch stx)
+           (syntax-case stx ()
+             [(_ body)
+              (syntax-case (local-expand/capture-lifts #'body (syntax-local-context) null)
+                  (define-values begin)
+                [(begin (define-values (x ...) e ...) ... exp)
+                 #'(let () (define-values (x ...) e ...) ... exp)])])))
+  (test 3 eval '(catch (+ 1 (m)))))
+
+(let-syntax ([m (lambda (stx)
+                  (define e (local-expand #'nonsuch 'expression null))
+                  (unless (identifier? e)
+                    (error 'test "bad expansion: ~e" e))
+                  #'(void))])
+  (m))
+(let-syntax ([m (lambda (stx)
+                  (define e (local-expand #'(#%top . nonsuch) 'expression null))
+                  (syntax-case e (#%top)
+                    [(#%top . id)
+                     (identifier? #'id)
+                     #'(void)]
+                    [else
+                     (error 'test "bad expansion: ~e" e)]))])
+  (m))
+
+;; ----------------------------------------
 
 (report-errs)

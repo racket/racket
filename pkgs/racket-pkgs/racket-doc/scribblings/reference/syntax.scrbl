@@ -1614,16 +1614,18 @@ x
 
 @defform[(#%top . id)]{
 
-Refers to a module-level or top-level definition that could bind
-@racket[id], even if @racket[id] has a local binding in its context.
+Refers to a module-level or top-level definition. If @racket[id] has a
+local binding in its context, then @racket[(#%top . id)] refers to a
+top-level definition, but a reference to a top-level definition is
+disallowed within a module.
 
 Within a @racket[module] form, @racket[(#%top . id)] expands to just
 @racket[id]---with the obligation that @racket[id] is defined within
-the module. At @tech{phase level} 0, @racket[(#%top . id)] is an
-immediate syntax error if @racket[id] is not bound. At @tech{phase
-level} 1 and higher, a syntax error is reported if @racket[id] is not
-defined at the corresponding phase by the end of @racket[module]-body
-@tech{partial expansion}.
+the module and has no local binding in its context. At @tech{phase
+level} 0, @racket[(#%top . id)] is an immediate syntax error if
+@racket[id] is not bound. At @tech{phase level} 1 and higher, a syntax
+error is reported if @racket[id] is not defined at the corresponding
+phase by the end of @racket[module]-body @tech{partial expansion}.
 
 See also @secref["expand-steps"] for information on how the expander
 introduces @racketidfont{#%top} identifiers.
