@@ -16,3 +16,10 @@
 
 (with-type ([val Number]) (define val (m2)))
 (check-equal? val 3)
+
+(with-type #:result (Listof String)
+  ;; casts do lifts for the contract
+  (define x (cast '() (Listof String)))
+  ;; as do predicates
+  (make-predicate (Listof String))
+  x)

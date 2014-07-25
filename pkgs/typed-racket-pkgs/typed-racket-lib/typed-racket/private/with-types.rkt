@@ -117,6 +117,8 @@
                                      #'(void)
                                      'disappeared-binding (disappeared-bindings-todo))
                                     'disappeared-use (disappeared-use-todo))])
+    (define fixed-up-definitions
+      (change-contract-fixups lifted-definitions))
     (arm
       (if expr?
           (quasisyntax/loc stx
@@ -124,14 +126,14 @@
                    (c:with-contract typed-region
                                     #:results (region-cnt ...)
                                     #:freevars ([fv.id cnt] ...)
-                                    #,lifted-definitions
+                                    #,fixed-up-definitions
                                     body)))
           (quasisyntax/loc stx
             (begin
               (define-values () (begin check-syntax-help (values)))
               (c:with-contract typed-region
                                ([ex-id ex-cnt] ...)
-                               #,lifted-definitions
+                               #,fixed-up-definitions
                                (define-values (ex-id ...) body))))))))
 
 ;; Syntax (U Symbol List) -> (values Syntax Syntax)
