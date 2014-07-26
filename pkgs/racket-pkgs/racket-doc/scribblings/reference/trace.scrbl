@@ -85,6 +85,22 @@ Or
   (trace id)
 ]}
 
+By default, @racket[trace] prints out syntax objects when tracing a
+macro. This can result in too much output if you do not need to see,
+e.g., source information. To get more readable output, try this:
+
+@racketblock[
+  (begin-for-syntax
+    (current-trace-print-args
+      (let ([ctpa (current-trace-print-args)])
+        (lambda (s l kw l2 n)
+          (ctpa s (map syntax->datum l) kw l2 n))))
+    (current-trace-print-results
+      (let ([ctpr (current-trace-print-results)])
+        (lambda (s l n)
+         (ctpr s (map syntax->datum l) n)))))
+  (trace-define-syntax (macro syn) body)]
+
 @defform[(trace-lambda [#:name id] args expr)]{
 
 This form is equivalent to:
