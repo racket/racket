@@ -2790,7 +2790,8 @@
     (define-values (_ cpu real gc)
       (time-apply
        (λ ()
-         (judgment-holds (J ,(build-list 100 add1))))))
+         (judgment-holds (J ,(build-list 100 add1))))
+       '()))
     (test (< cpu 1000) #t))
 
 
