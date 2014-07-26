@@ -54,9 +54,9 @@
   [current-base-color (parameter/c (or/c string? (is-a?/c color%)))]
   [current-reader-forms (parameter/c (listof symbol?))]
   [code-align (-> pict? pict?)]
-  [current-keyword-list (parameter/c string?)]
-  [current-const-list (parameter/c string?)]
-  [current-literal-list (parameter/c string?)]))
+  [current-keyword-list (parameter/c (listof string?))]
+  [current-const-list (parameter/c (listof string?))]
+  [current-literal-list (parameter/c (listof string?))]))
 
 (provide define-exec-code/scale
          define-exec-code)
