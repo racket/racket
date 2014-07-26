@@ -2160,6 +2160,24 @@
     (test (apply-reduction-relation red2 (term (X q))) (list (term (X z)) 
                                                              (term (X w)))))
   
+  (let ()
+    (define-language L (M ::= number))
+    (define r (reduction-relation L (--> M M (where M M))))
+    (define-extended-language L1 L (M ::= string))
+    (define r1 (extend-reduction-relation r L1))
+    (test (apply-reduction-relation r1 "7") '("7")))
+
+  (let ()
+    (define-language L (M ::= number))
+    (define-extended-language L1 L (M ::= string))
+    (define-judgment-form L
+      #:mode (id I O)
+      #:contract (id any any)
+      [(id any any)])
+    (define t  (reduction-relation L (--> M M (judgment-holds (id M M)))))
+    (define t1 (extend-reduction-relation t L1))
+    (test (apply-reduction-relation t1 "7") '("7")))
+
   (test (reduction-relation->rule-names
          (reduction-relation
           empty-language

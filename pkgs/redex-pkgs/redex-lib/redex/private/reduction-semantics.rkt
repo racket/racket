@@ -754,11 +754,12 @@
       (define lang-nts (language-id-nts lang-id 'reduction-relation))
       (define (rw-sc pat) (rewrite-side-conditions/check-errs lang-id orig-name #t pat))
       (define-values (name computed-name sides/withs/freshs) (process-extras stx orig-name name-table extras))
+      (define rt-lang-id (car (generate-temporaries (list lang))))
       (with-syntax ([(from-syncheck-expr side-conditions-rewritten (names ...) (names/ellipses ...)) (rw-sc from)])
         (define body-code
           (bind-withs orig-name 
                       #'main-exp
-                      lang
+                      rt-lang-id
                       lang-nts
                       lang-id
                       sides/withs/freshs
@@ -799,11 +800,12 @@
               lhs-syncheck-expr
               (build-rewrite-proc/leaf 
                `side-conditions-rewritten
-               (λ (main-exp bindings)
-                 #,(bind-pattern-names 'reduction-relation
-                                       #'(names/ellipses ...)
-                                       #'((lookup-binding bindings 'names) ...)
-                                       #'body-code))
+               (λ (#,rt-lang-id)
+                 (λ (main-exp bindings)
+                   #,(bind-pattern-names 'reduction-relation
+                                         #'(names/ellipses ...)
+                                         #'((lookup-binding bindings 'names) ...)
+                                         #'body-code)))
                lhs-source
                name
                (λ (lang-id2) `lhs-w/extras))))))
@@ -925,13 +927,14 @@
   (do-reduction-relation/proc stx))
 
 (define (build-rewrite-proc/leaf side-conditions-rewritten 
-                                 build-really-matched 
+                                 build-really-matched/lang-arg
                                  lhs-source
                                  name
                                  lhs-w/extras-proc)
   (let ([case-id (gensym)])
     (make-rewrite-proc
      (λ (lang-id)
+       (define build-really-matched (build-really-matched/lang-arg lang-id))
        (let ([cp (compile-pattern lang-id side-conditions-rewritten #t)])
          (λ (main-exp exp f other-matches)
            (let ([mtchs (match-pattern cp exp)])
