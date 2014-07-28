@@ -29,11 +29,15 @@
    (build-path (find-system-path 'home-dir) ".pkg-catalog-login")
    (lambda (i) (values (read i) (read i)))))
 
-(printf "Getting current packages at ~a...\n" src-catalog)
+(define (status fmt . args)
+  (apply printf fmt args)
+  (flush-output))
+
+(status "Getting current packages at ~a...\n" src-catalog)
 (define current-pkgs
   (parameterize ([current-pkg-catalogs (list (string->url src-catalog))])
     (get-all-pkg-details-from-catalogs)))
-(printf "... got it.\n")
+(status "... got it.\n")
 
 (define new-pkgs
   (let ([dir (build-path src-dir "catalog" "pkg")])
@@ -69,9 +73,9 @@
                                             '())))
                   "racket"))))])))
 
-(printf "Getting current S3 content...\n")
+(status "Getting current S3 content...\n")
 (define old-content (list->set (ls (string-append bucket "/pkgs"))))
-(printf "... got it.\n")
+(status "... got it.\n")
 
 ;; A list of `(cons checksum p)':
 (define new-checksums&files
@@ -92,7 +96,7 @@
 
 ;; Push one file at a given chcksum to the bucket
 (define (sync-one checksum p)
-  (printf "Checking ~a @ ~a\n" p checksum)
+  (status "Checking ~a @ ~a\n" p checksum)
 
   (define (at-checksum p)
     (string-append "pkgs/" checksum "/" p))
@@ -100,7 +104,7 @@
     (string-append bucket "/" (at-checksum p)))
 
   (define (put p content)
-    (printf "Putting ~a\n" p)
+    (status "Putting ~a\n" p)
     (define s (put/bytes p
                          content
                          "application/octet-stream"
@@ -119,7 +123,7 @@
 
 ;; Discard an obsolete file
 (define (purge-one checksum raw-p)
-  (printf "Removing ~a @ ~a\n" raw-p checksum)
+  (status "Removing ~a @ ~a\n" raw-p checksum)
 
   (define p (string-append bucket "/pkgs/" checksum "/" raw-p))
 
@@ -128,7 +132,7 @@
     (error 'purge-one "delete failed for ~s: ~s" p s)))
 
 ;; Update the package catalog:
-(define (update-catalog the-email the-password the-post)
+(define (update-catalog the-email the-password the-post expected-result)
   (define the-url
     (let ([u (string->url dest-catalog)])
       (struct-copy url u
@@ -147,7 +151,16 @@
                                                       (string->bytes/utf-8 the-password)
                                                       the-post))))))
                     port->bytes))
-  (read (open-input-bytes bs)))
+  (define r (with-handlers ([exn:fail? (lambda (exn) exn)])
+              (read (open-input-bytes bs))))
+  (unless (equal? r expected-result)
+    (error 'update
+           (string-append
+            "unexpected result from catalog update\n"
+            "  result: ~a\n"
+            "  server response: ~s")
+           r
+           bs)))
 
 (define (add-compatibility-pkgs ht)
   (hash-set ht 'versions
@@ -202,13 +215,11 @@
                        (add-tag v "main-tests")]
                       [else v])))))])
   (unless (zero? (hash-count changed-pkgs))
-    (printf "Updating catalog at ~a:\n" dest-catalog)
+    (status "Updating catalog at ~a:\n" dest-catalog)
     (for ([k (in-hash-keys changed-pkgs)])
-      (printf "  ~a\n" k))
-    (define r (update-catalog catalog-email catalog-password changed-pkgs))
-    (unless (equal? r #t)
-      (error 'update "unexpected result from catalog update: ~s" r))))
-(printf "Catalog updated\n")
+      (status "  ~a\n" k))
+    (update-catalog catalog-email catalog-password changed-pkgs #t)))
+(status "Catalog updated\n")
 
 ;; Look for files that can be discarded:
 (let ([new-checksums
