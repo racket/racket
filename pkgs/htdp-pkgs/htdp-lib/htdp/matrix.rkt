@@ -192,3 +192,4 @@ position structures returned by matrix-where?
 (define-values/invoke-unit invisible-matrix@ (import) (export matrix^))
 
 (provide-signature-elements matrix^)
+(provide snip-class)
