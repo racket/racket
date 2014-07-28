@@ -54,6 +54,10 @@
 
 (define metadata-ns (make-base-namespace))
 
+(define (status fmt . args)
+  (apply printf fmt args)
+  (flush-output))
+
 (define (stream-directory d)
   (define-values (i o) (make-pipe (* 100 4096)))
   (define (skip-path? p)
@@ -86,14 +90,14 @@
 
   (when pack-dest-dir
     (define sum-file (path-add-suffix pkg-name #".srcsum"))
-    (printf "summing ~a\n" pkg-src-dir)
+    (status "summing ~a\n" pkg-src-dir)
     (define src-sha1 (sha1 (stream-directory pkg-src-dir)))
     (define dest-sum (build-path (path->complete-path pack-dest-dir) sum-file))
     (unless (and (file-exists? dest-zip)
                  (file-exists? dest-sum)
                  (equal? (list (version) src-sha1)
                          (call-with-input-file* dest-sum read)))
-      (printf "packing ~a\n" zip-file)
+      (status "packing ~a\n" zip-file)
       (define tmp-dir (make-temporary-file "~a-pkg" 'directory))
       (parameterize ([strip-binary-compile-info #f]) ; for deterministic checksum
         (generate-stripped-directory (if native? 'binary 'source)
@@ -131,7 +135,7 @@
                          (call-with-input-file* dest-zip sha1)
                          (if source-checksums?
                              (begin
-                               (printf "summing ~a\n" pkg-src-dir)
+                               (status "summing ~a\n" pkg-src-dir)
                                (sha1 (stream-directory pkg-src-dir)))
                              "0")))
     (define orig-dest (if dest-zip
