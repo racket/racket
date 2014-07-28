@@ -848,7 +848,7 @@
 
 (define (parse-tc-results stx)
   (syntax-parse stx
-    [(:values^ t ...)
+    [((~or :Values^ :values^) t ...)
      (ret (parse-types #'(t ...))
           (stx-map (lambda (x) -no-filter) #'(t ...))
           (stx-map (lambda (x) -no-obj) #'(t ...)))]

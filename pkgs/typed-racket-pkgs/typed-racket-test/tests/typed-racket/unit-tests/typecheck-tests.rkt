@@ -3175,6 +3175,14 @@
           (raise 'foo))
         #:ret (ret -String)
         #:msg #rx"expected: Symbol.*given: Any"]
+
+       ;; PR 14218
+       [tc-e (ann (values "foo" "bar") (Values String String))
+             #:ret (ret (list -String -String))]
+       [tc-e (let ()
+               (tr:define (foo) : (Values String String) (values "foo" "bar"))
+               (void))
+             -Void]
         )
 
   (test-suite
