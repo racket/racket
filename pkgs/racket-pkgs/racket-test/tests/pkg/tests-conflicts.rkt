@@ -113,6 +113,17 @@
    (shelly-case
     "no conflict for non-matching platform"
     $ "raco pkg install --copy --strict-doc-conflicts test-pkgs/pkg-add-base test-pkgs/pkg-add-none"))
+  (shelly-case
+   "no doc conflict for an update"
+   (for ([c '("test-pkgs/pkg-add-base"
+              "test-pkgs/pkg-add-a"
+              "test-pkgs/pkg-add-x"
+              "test-pkgs/pkg-add-1")])
+    (with-fake-root
+     (shelly-begin
+      $ "raco pkg install --copy test-pkgs/pkg-add-base"
+      $ "raco setup -D --pkgs pkg-add-base"
+      $ (~a "raco pkg update --copy --name pkg-add-base " c) =exit> 0))))
 
   (shelly-case
    "compile-omit-paths is used by `pkg-directory->additional-installs`:"
