@@ -1674,7 +1674,12 @@
                  (eq? (car ai) 'doc)
                  (eq? (current-pkg-scope) 'user))
             #f]
-           [(set-member? (get-additional-installed (car ai) ai-cache metadata-ns) ai)
+           [(set-member? (get-additional-installed (car ai)
+                                                   simultaneous-installs
+                                                   ai-cache
+                                                   metadata-ns
+                                                   path-pkg-cache)
+                         ai)
             ;; This item is already installed
             (cons #f ai)]
            [else
@@ -3388,9 +3393,10 @@
                   (extract-man-pages i))
                  (set))))
 
-(define (get-additional-installed kind ai-cache metadata-ns)
+(define (get-additional-installed kind skip-ht-keys ai-cache metadata-ns path-pkg-cache)
   (or (unbox ai-cache)
       (let ()
+        (define skip-pkgs (list->set (hash-keys skip-ht-keys)))
         (define dirs (find-relevant-directories '(scribblings
                                                   racket-launcher-names
                                                   mzscheme-launcher-names
@@ -3406,10 +3412,14 @@
                                                     'all-available
                                                     'no-user)))
         (define s (for/fold ([s (set)]) ([dir (in-list dirs)])
-                    (define i (get-pkg-info dir metadata-ns))
-                    (if i
-                        (set-union s (extract-additional-installs i #f #f))
-                        s)))
+                    (cond
+                     [(set-member? skip-pkgs (path->pkg dir #:cache path-pkg-cache))
+                      s]
+                     [else
+                      (define i (get-pkg-info dir metadata-ns))
+                      (if i
+                          (set-union s (extract-additional-installs i #f #f))
+                          s)])))
         (set-box! ai-cache s)
         s)))
 
