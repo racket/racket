@@ -259,83 +259,84 @@
      (and (string? x)
           ((string-length x) . < . n)))))
 
-(define-struct between/c (low high)
+(define (between/c-stronger this that)
+  (and (between/c-s? that)
+       (<= (between/c-s-low that) (between/c-s-low this))
+       (<= (between/c-s-high this) (between/c-s-high that))))
+
+(define (between/c-first-order ctc)
+  (define n (between/c-s-low ctc))
+  (define m (between/c-s-high ctc))
+  (λ (x) 
+    (and (real? x)
+         (<= n x m))))
+
+(define ((between/c-generate ctc) fuel)
+  (define n (between/c-s-low ctc))
+  (define m (between/c-s-high ctc))
+  (cond
+    [(= n m)
+     (λ () 
+       (define choice (rand-choice
+                       [1/2 n]
+                       [else m]))
+       (rand-choice 
+        [1/2 (if (exact? choice)
+                 (if (= (exact->inexact choice) choice)
+                     (exact->inexact choice)
+                     choice)
+                 (if (= (* 1.0 choice) choice)
+                     (* 1.0 choice)
+                     choice))]
+        [else choice]))]
+    [else
+     (λ ()
+       (rand-choice
+        [1/10 (if (<= n 0 m)
+                  (rand-choice [1/3 0] [1/3 0.0] [else -0.0])
+                  (rand-choice [1/2 n] [else m]))]
+        [1/20 (if (<= n 1 m)
+                  1
+                  (rand-choice [1/2 n] [else m]))]
+        [1/20 (if (<= n -1 m)
+                  -1
+                  (rand-choice [1/2 n] [else m]))]
+        [1/10 m]
+        [1/10 n]
+        [1/10 (if (<= n 0 1 m)
+                  (random)
+                  (rand-choice [1/2 n] [else m]))]
+        [else
+         (cond
+           [(or (= n -inf.0) (= m +inf.0))
+            (define c (random 4294967087))
+            (cond
+              [(and (= n -inf.0) (= m +inf.0)) c]
+              [(= m +inf.0) (+ n c)]
+              [(= n -inf.0) (- m c)])]
+           [else
+            (+ n (* (random) (- m n)))])]))]))
+
+(define-struct between/c-s (low high)
   #:property prop:custom-write custom-write-property-proc
-  #:omit-define-syntaxes
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name
-   (λ (ctc) 
-      (let ([n (between/c-low ctc)]
-            [m (between/c-high ctc)])
-        (cond
-          [(and (= n -inf.0) (= m +inf.0))
-           `(between/c ,n ,m)]
-          [(= n -inf.0) `(<=/c ,m)]
-          [(= m +inf.0) `(>=/c ,n)]
-          [(= n m) `(=/c ,n)]
-          [else `(between/c ,n ,m)])))
-
-   #:stronger
-   (λ (this that)
-      (and (between/c? that)
-           (<= (between/c-low that) (between/c-low this))
-           (<= (between/c-high this) (between/c-high that))))
-
-   #:first-order
-   (λ (ctc) 
-      (let ([n (between/c-low ctc)]
-            [m (between/c-high ctc)])
-        (λ (x) 
-           (and (real? x)
-                (<= n x m)))))
-   #:generate
    (λ (ctc)
-      (λ (fuel)
-        (define n (between/c-low ctc))
-        (define m (between/c-high ctc))
-          (cond
-            [(= n m)
-             (λ () 
-               (define choice (rand-choice
-                               [1/2 n]
-                               [else m]))
-               (rand-choice 
-                [1/2 (if (exact? choice)
-                         (if (= (exact->inexact choice) choice)
-                             (exact->inexact choice)
-                             choice)
-                         (if (= (* 1.0 choice) choice)
-                             (* 1.0 choice)
-                             choice))]
-                [else choice]))]
-            [else
-             (λ ()
-               (rand-choice
-                [1/10 (if (<= n 0 m)
-                          (rand-choice [1/3 0] [1/3 0.0] [else -0.0])
-                          (rand-choice [1/2 n] [else m]))]
-                [1/20 (if (<= n 1 m)
-                          1
-                          (rand-choice [1/2 n] [else m]))]
-                [1/20 (if (<= n -1 m)
-                          -1
-                          (rand-choice [1/2 n] [else m]))]
-                [1/10 m]
-                [1/10 n]
-                [1/10 (if (<= n 0 1 m)
-                          (random)
-                          (rand-choice [1/2 n] [else m]))]
-                [else
-                 (cond
-                   [(or (= n -inf.0) (= m +inf.0))
-                    (define c (random 4294967087))
-                    (cond
-                      [(and (= n -inf.0) (= m +inf.0)) c]
-                      [(= m +inf.0) (+ n c)]
-                      [(= n -inf.0) (- m c)])]
-                   [else
-                    (+ n (* (random) (- m n)))])]))])))))
+     (define n (between/c-s-low ctc))
+     (define m (between/c-s-high ctc))
+     (define name (if (real-in-s? ctc) 'real-in 'between/c))
+     (cond
+       [(and (= n -inf.0) (= m +inf.0))
+        `(,name ,n ,m)]
+       [(= n -inf.0) `(<=/c ,m)]
+       [(= m +inf.0) `(>=/c ,n)]
+       [(= n m) `(=/c ,n)]
+       [else `(,name ,n ,m)]))
+   #:stronger between/c-stronger
+   #:first-order between/c-first-order
+   #:generate between/c-generate))
+(define-struct (real-in-s between/c-s) ())
 
 (define (maybe-neg n) (rand-choice [1/2 n] [else (- n)]))
 
@@ -345,18 +346,18 @@
 
 (define/final-prop (=/c x) 
   (check-unary-between/c '=/c x)
-  (make-between/c x x))
+  (make-between/c-s x x))
 (define/final-prop (<=/c x) 
   (check-unary-between/c '<=/c x)
-  (make-between/c -inf.0 x))
+  (make-between/c-s -inf.0 x))
 (define/final-prop (>=/c x)
   (check-unary-between/c '>=/c x)
-  (make-between/c x +inf.0))
+  (make-between/c-s x +inf.0))
 (define (check-between/c x y)
   (check-two-args 'between/c x y real? real?))
 (define/final-prop (between/c x y)
   (check-between/c x y)
-  (make-between/c x y))
+  (make-between/c-s x y))
 
 (define (</c x)
   (flat-named-contract
@@ -402,8 +403,8 @@
           (<= start x end)))))
 
 (define/final-prop (real-in start end)
-  (check-two-args 'real start end real? real?)
-  (between/c start end))
+  (check-two-args 'real-in start end real? real?)
+  (make-real-in-s start end))
 
 (define/final-prop (not/c f)
   (let* ([ctc (coerce-flat-contract 'not/c f)]
