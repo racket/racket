@@ -1480,7 +1480,7 @@
 
  (proc-doc/names
   racket:get-color-prefs-table
-  (-> (listof (list/c symbol? (is-a?/c color%))))
+  (-> (listof (list/c symbol? (is-a?/c color%) string?)))
   ()
   @{Returns a table mapping from symbols (naming the categories that the online
     colorer uses for Racket mode coloring) to their colors.
@@ -1493,7 +1493,7 @@
 
  (proc-doc/names
   racket:get-white-on-black-color-prefs-table
-  (-> (listof (list/c symbol? (is-a?/c color%))))
+  (-> (listof (list/c symbol? (is-a?/c color%) string?)))
   ()
   @{Returns a table mapping from symbols (naming the categories that the online
     colorer uses for Racket mode coloring) to their colors when the user
