@@ -1136,6 +1136,7 @@ path/s is either such a string or a list of them.
 "pkgs/redex-pkgs/redex-examples/redex/examples/racket-machine/randomized-tests.rkt" drdr:timeout 300
 "pkgs/redex-pkgs/redex-test/redex/tests/run-tests.rkt" drdr:timeout 360
 "pkgs/redex-pkgs/redex-test/redex/tests/ryr-test.rkt" drdr:timeout 200 drdr:random #t
+"pkgs/remote-shell-pkgs" responsible (mflatt)
 "pkgs/sandbox-lib" responsible (eli)
 "pkgs/scheme-lib" responsible (mflatt)
 "pkgs/scheme-lib/scheme/match.rkt" responsible (samth)

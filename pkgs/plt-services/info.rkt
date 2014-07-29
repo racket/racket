@@ -13,6 +13,7 @@
                "distro-build"
                "honu"
                "gui-pkg-manager"
+               "remote-shell"
                
                ;; Actual dependencies:
                "eli-tester"
@@ -27,7 +28,8 @@
                "compatibility-lib"
                "plt-web"
                "web-server-lib"
-               "rackunit-lib"))
+               "rackunit-lib"
+               "remote-shell-lib"))
 
 (define pkg-desc "Miscellaneous management and maintenance tools used by the Racket development team")
 

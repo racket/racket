@@ -1,14 +1,29 @@
 #lang racket/base
 (require racket/system
-         racket/string)
+         racket/string
+         racket/contract)
 
-(provide start-vbox-vm
-         stop-vbox-vm
-
-         take-vbox-snapshot
-         restore-vbox-snapshot
-         delete-vbox-snapshot
-         exists-vbox-snapshot?)
+(provide
+ (contract-out
+  [start-vbox-vm
+   ((string?)
+    (#:max-vms real?
+               #:dry-run? any/c
+               #:log-status (string? #:rest any/c . -> . any)
+               #:pause-seconds real?)
+    . ->* .
+    void?)]
+  [stop-vbox-vm
+   ((string?)
+    (#:save-state? any/c
+                   #:dry-run? any/c
+                   #:log-status (string? #:rest any/c . -> . any))
+    . ->* .
+    void?)]
+  [take-vbox-snapshot (string? string? . -> . void?)]
+  [restore-vbox-snapshot (string? string? . -> . void?)]
+  [delete-vbox-snapshot (string? string? . -> . void?)]
+  [exists-vbox-snapshot? (string? string? . -> . boolean?)]))
 
 (define VBoxManage (find-executable-path "VBoxManage"))
 (define use-headless? #t)
@@ -71,7 +86,8 @@
 (define (start-vbox-vm vbox
                        #:max-vms [max-vm 1]
                        #:dry-run? [dry-run? #f]
-                       #:log-status [log-status printf/flush])
+                       #:log-status [log-status printf/flush]
+                       #:pause-seconds [pause-seconds 3])
   (define (check-count)
     (define s (system*/string VBoxManage "list" "runningvms"))
     (unless ((length (string-split s "\n")) . < . max-vm)
@@ -90,7 +106,7 @@
     (unless (eq? (vbox-state vbox) 'running)
       (error 'start-vbox-vm "could not get virtual machine started: ~s" vbox))
     ;; pause a little to let the VM get networking ready, etc.
-    (sleep 3)))
+    (sleep pause-seconds)))
 
 (define (stop-vbox-vm vbox
                       #:save-state? [save-state? #t]

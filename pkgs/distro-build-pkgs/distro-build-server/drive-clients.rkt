@@ -14,8 +14,8 @@
          distro-build/url-options
          distro-build/display-time
          distro-build/readme
-         "email.rkt"
-         "vbox.rkt")
+         remote-shell/vbox
+         "email.rkt")
 
 ;; See "config.rkt" for an overview.
 
