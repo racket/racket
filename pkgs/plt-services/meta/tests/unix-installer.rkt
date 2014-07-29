@@ -5,6 +5,8 @@
          racket/date
          file/zip)
 
+(module test racket/base)
+
 ;; ----------------------------------------
 ;; Configuration (adjust as needed)
 
