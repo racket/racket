@@ -963,7 +963,7 @@
   test:keystroke
   (->* ((or/c char? symbol?))
        ((listof (or/c 'alt 'control 'meta 'shift 
-                      'noalt 'nocontrol 'nometea 'noshift)))
+                      'noalt 'nocontrol 'nometa 'noshift)))
        void?)
   ((key)
    ((modifier-list null)))
