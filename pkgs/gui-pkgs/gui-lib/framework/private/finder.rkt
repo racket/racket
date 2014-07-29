@@ -92,7 +92,6 @@
   (define/rename std-get-file    (*get-file '()))
   (define/rename common-put-file (*put-file '(common)))
   (define/rename common-get-file (*get-file '(common)))
-  (define common-get-file-list void)
   
   (define -put-file
     (λ args

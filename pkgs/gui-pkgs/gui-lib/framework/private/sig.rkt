@@ -137,7 +137,6 @@
      common-get-file 
      std-put-file 
      std-get-file 
-     common-get-file-list
      get-file
      put-file))
   

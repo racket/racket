@@ -624,7 +624,6 @@ the state transitions / contracts are:
                                 [else 12])]
            [font-section "mred"]
            [build-font-entry (λ (x) (string-append "Screen" x "__"))]
-           [font-file (find-graphical-system-path 'setup-file)]
            [build-font-preference-symbol
             (λ (family)
               (string->symbol (string-append "framework:" family)))]
