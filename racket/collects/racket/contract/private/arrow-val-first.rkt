@@ -723,11 +723,13 @@
          (set! dom-exers (cons exer dom-exers))
          (set! addl-available (append ctcs addl-available)))
        (define rngs-gens 
-         (with-definitely-available-contracts
-          addl-available
-          (λ ()
-            (for/list ([c (in-list (base->-rngs ctc))])
-              (generate/choose c fuel)))))
+         (if (base->-rngs ctc)
+             (with-definitely-available-contracts
+              addl-available
+              (λ ()
+                (for/list ([c (in-list (base->-rngs ctc))])
+                  (generate/choose c fuel))))
+             '()))
        (cond
          [(for/and ([rng-gen (in-list rngs-gens)])
             rng-gen)
@@ -787,10 +789,11 @@
                  (for/list ([gen (in-list gens)])
                    (gen))))
               (λ results 
-                (for ([res-ctc (in-list rng-ctcs)]
-                      [result (in-list results)])
-                  (env-stash env res-ctc result)))))
-           (base->-rngs ctc))]
+                (when rng-ctcs
+                  (for ([res-ctc (in-list rng-ctcs)]
+                        [result (in-list results)])
+                    (env-stash env res-ctc result))))))
+           (or rng-ctcs '()))]
          [else
           (values void '())]))]
     [else

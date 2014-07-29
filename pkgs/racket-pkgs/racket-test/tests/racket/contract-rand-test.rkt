@@ -84,6 +84,10 @@
 
 (check-exn exn:fail? (λ () ((test-contract-generation (-> char? integer?)) 0)))
 (check-not-exn (λ () ((test-contract-generation (-> integer? integer?)) 1)))
+(check-not-exn (λ () ((test-contract-generation (-> integer? any)) 1)))
+(check-not-exn (λ () ((test-contract-generation (-> integer? (-> integer? any))) 1)))
+(check-not-exn (λ () ((test-contract-generation (-> (-> integer? any) integer?))
+                      (λ (i) (values 1 2 3)))))
 (check-not-exn (λ () ((test-contract-generation (-> (-> integer? integer?) boolean?)) +)))
 (check-not-exn 
  (λ () ((test-contract-generation (-> some-crazy-predicate? some-crazy-predicate?)) 11)))
