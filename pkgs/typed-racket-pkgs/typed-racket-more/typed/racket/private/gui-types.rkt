@@ -2637,7 +2637,7 @@
          [get-version (-> Integer)]
          [read ((Instance Editor-Stream-In%) -> (Option (Instance Snip%)))]
          [read-header ((Instance Editor-Stream-In%) -> Boolean)]
-         [reading-header ((Instance Editor-Stream-In%) -> Boolean)]
+         [reading-version ((Instance Editor-Stream-In%) -> Integer)]
          [set-classname (String -> Void)]
          [set-version (Integer -> Void)]
          [write-header ((Instance Editor-Stream-Out%) -> Boolean)]))
