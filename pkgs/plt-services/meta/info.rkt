@@ -9,8 +9,7 @@
     "images/mkheart.rkt"
     "pkg-index/official"
     "pkg-index/planet-compat"
-    "pkg-push"
-    "web"))
+    "pkg-push"))
 
 
 (define test-responsibles '(("props" (eli jay))
