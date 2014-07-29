@@ -15,7 +15,9 @@
   (for ([d (in-directory temp-dir)])
     (cond
      [(directory-exists? d)
-      (define i (get-info/full d))
+      (define i (get-info/full d
+                               #:namespace (make-base-namespace)
+                               #:bootstrap? #t))
       (when i
         (define l (i 'scribblings (lambda () null)))
         (when (list? l)
