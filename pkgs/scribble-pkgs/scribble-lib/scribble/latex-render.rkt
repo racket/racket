@@ -414,9 +414,9 @@
                                   (parameterize ([rendering-tt (or tt? (rendering-tt))])
                                     (super render-content e part ri))]))]
                  [wrap (lambda (e s tt?)
-                         (printf "\\~a{" s)
+                         (when s (printf "\\~a{" s))
                          (core-render e tt?)
-                         (printf "}"))])
+                         (when s (printf "}")))])
             (define (finish tt?)
               (cond
                [(symbol? style-name)
@@ -465,6 +465,10 @@
                           (printf "}")))]
                    [else
                     (wrap e style-name tt?)]))]
+               [(and (not style-name)
+                     style
+                     (memq 'exact-chars (style-properties style)))
+                (wrap e style-name 'exact)]
                [else
                 (core-render e tt?)]))
             (let loop ([l (if style (style-properties style) null)] [tt? #f])

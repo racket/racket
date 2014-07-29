@@ -876,13 +876,16 @@ The following @tech{style properties} are currently recognized:
         suitable for Latex @tt{tt} mode.}
 
   @item{@racket['exact-chars] --- For Latex output, when the @tech{style
-        name} is a string, render the elements content exactly
+        name} is a string or @racket[#f], render the elements content exactly
         (without escapes).}
 
   @item{@racket[command-extras] structure --- For Latex output,
          adds strings as arguments to the Latex command.}
 
-]}
+]
+
+@history[#:changed "1.6" @elem{Changed @racket['exact-chars] handling to
+         take effect when the style name is @racket[#f].}]}
 
 
 @defstruct[(image-element element) ([path (or/c path-string?
