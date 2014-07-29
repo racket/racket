@@ -22,6 +22,7 @@
 (define config-file-path (build-path config-dir-path "config.rktd"))
 (define devel-pkgs-rel-dir (build-path "devel-pkgs"))
 (define devel-pkgs-dir (build-path "racket" "share" devel-pkgs-rel-dir))
+(define cache-file-path (build-path "racket" "share" "info-cache.rktd"))
 
 (define only-platform? #f)
 (define save? #f)
@@ -216,6 +217,14 @@
   (printf "Erasing previous development package configuration\n")
   (delete-directory/files devel-pkgs-dir))
 
+(define orig-info-cache
+  (and (file-exists? cache-file-path)
+       (let ()
+         (printf "Saving previous info cache\n")
+         (begin0
+          (call-with-input-file* cache-file-path read)
+          (delete-file cache-file-path)))))
+
 (void
  (parameterize ([current-pkg-scope (path->complete-path devel-pkgs-dir)])
    (with-pkg-lock
@@ -236,6 +245,12 @@
                              #f
                              #f
                              auto?))))))
+
+(when orig-info-cache
+  (printf "Restoring previous info cache\n")
+  (call-with-output-file* cache-file-path (lambda (o)
+                                            (write orig-info-cache o)
+                                            (newline o))))
 
 (for ([p (in-list missing-desc)])
   (printf "Missing package description for ~a\n" p))
