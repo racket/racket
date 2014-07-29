@@ -3,8 +3,7 @@
 (define name "Infrastructure code")
 (define compile-omit-paths '("images/taking-screenshots/racket-widget.scm"))
 (define test-omit-paths
-  '("build"
-    "check-dists.rkt"
+  '("check-dists.rkt"
     "drdr"
     "drdr2"
     "images/mkheart.rkt"
