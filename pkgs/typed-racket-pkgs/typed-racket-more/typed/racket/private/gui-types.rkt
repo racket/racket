@@ -677,6 +677,10 @@
 
 (define-type Canvas<%>
   (Class #:implements Subwindow<%>
+         [accept-tab-focus (case-> [-> Boolean]
+                                   [Any -> Void])]
+         [flush (-> Void)]
+         [get-canvas-background (-> (Option (Instance Color%)))]
          [get-dc (-> (Instance DC<%>))]
          [min-client-height
           (case-> (-> Natural)
@@ -685,7 +689,13 @@
           (case-> (-> Natural)
                   (Natural -> Void))]
          [on-char ((Instance Key-Event%) -> Void)]
-         [on-event ((Instance Mouse-Event%) -> Void)]))
+         [on-event ((Instance Mouse-Event%) -> Void)]
+         [on-paint (-> Void)]
+         [on-tab-in (-> Void)]
+         [resume-flush (-> Void)]
+         [set-canvas-background ((Instance Color%) -> Void)]
+         [set-resize-corner (Any -> Void)]
+         [suspend-flush (-> Void)]))
 
 (define-type Canvas%
   (Class #:implements Canvas<%>
@@ -2452,14 +2462,19 @@
 
 ;; racket/snip
 
-(provide Snip%
+(provide Readable-Snip<%>
+         Snip%
          Snip-Admin%
          Snip-Class%
          Snip-Class-List<%>
          String-Snip%
          Style<%>
          Style-Delta%
-         Style-List%)
+         Style-List%
+         Tab-Snip%)
+
+(define-type Readable-Snip<%>
+  (Class [read-special (Any (Option Natural) (Option Natural) (Option Natural) -> Any)]))
 
 (define-type Snip-Edit-Operation
   (U 'undo 'redo 'clear 'cut 'copy
@@ -2749,3 +2764,55 @@
          [insert (case-> (String Natural -> Void)
                          (String Natural Natural -> Void))]
          [read (Natural (Instance Editor-Stream-In%) -> Void)]))
+
+(define-type Tab-Snip%
+  (Class #:implements String-Snip%))
+
+;; 7 Editor Classes
+(provide Editor-Snip%
+         Editor-Wordbreak-Map%)
+(define-type Editor-Snip%
+  (Class #:implements Snip%
+         (init [editor (Option (Instance Editor<%>)) #:optional]
+               [with-border? Any #:optional]
+               [left-margin Natural #:optional]
+               [top-margin Natural #:optional]
+               [right-margin Natural #:optional]
+               [bottom-margin Natural #:optional]
+               [left-inset Natural #:optional]
+               [top-inset Natural #:optional]
+               [right-inset Natural #:optional]
+               [bottom-inset Natural #:optional]
+               [min-width Nonnegative-Real #:optional]
+               [max-width Nonnegative-Real #:optional]
+               [min-height Nonnegative-Real #:optional]
+               [max-height Nonnegative-Real #:optional])
+         [border-visible? (-> Boolean)]
+         [get-align-top-line (-> Boolean)]
+         [get-editor (-> (U #f (Instance Text%) (Instance Pasteboard%)))]
+         [get-inset ((Boxof Natural) (Boxof Natural) (Boxof Natural) (Boxof Natural) -> Void)]
+         [get-margin ((Boxof Natural) (Boxof Natural) (Boxof Natural) (Boxof Natural) -> Void)]
+         [get-max-height (-> (U Nonnegative-Real 'none))]
+         [get-max-width (-> (U Nonnegative-Real 'none))]
+         [get-min-height (-> (U Nonnegative-Real 'none))]
+         [get-min-width (-> (U Nonnegative-Real 'none))]
+         [get-tight-text-fit (-> Boolean)]
+         [resize (Nonnegative-Real Nonnegative-Real -> Boolean)]
+         [set-align-top-line (Any -> Void)]
+         [set-editor ((U (Instance Text%) (Instance Pasteboard%) #f) -> Void)]
+         [set-inset (Natural Natural Natural Natural -> Void)]
+         [set-margin (Natural Natural Natural Natural -> Void)]
+         [set-max-height ((U Nonnegative-Real 'none) -> Void)]
+         [set-max-width ((U Nonnegative-Real 'none) -> Void)]
+         [set-min-height ((U Nonnegative-Real 'none) -> Void)]
+         [set-min-width ((U Nonnegative-Real 'none) -> Void)]
+         [set-tight-text-fit (Any -> Void)]
+         [show-border (Any -> Void)]
+         [style-background-used? (-> Boolean)]
+         [use-style-background (Any -> Void)]))
+
+(define-type Wordbreak-Map-Value (U 'caret 'line 'selection 'user1 'user2))
+(define-type Editor-Wordbreak-Map%
+  (Class
+   [get-map (Char -> (Listof Wordbreak-Map-Value))]
+   [set-map (Char (Listof Wordbreak-Map-Value) -> Void)]))

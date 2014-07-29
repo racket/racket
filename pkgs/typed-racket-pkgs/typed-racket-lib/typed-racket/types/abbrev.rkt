@@ -51,7 +51,7 @@
 ;; Convenient constructors
 (define -App make-App)
 (define -mpair make-MPair)
-(define -Param make-Param)
+(define (-Param t1 [t2 t1]) (make-Param t1 t2))
 (define -box make-Box)
 (define -channel make-Channel)
 (define -async-channel make-Async-Channel)
@@ -68,6 +68,8 @@
   (apply Un (map -val args)))
 
 (define (-opt t) (Un (-val #f) t))
+
+(define (-ne-lst t) (-pair t (-lst t)))
 
 ;; Convenient constructor for Values
 ;; (wraps arg types with Result)
