@@ -77,12 +77,15 @@ creates a matrix minor from @racket[m] at (@racket[i],@racket[j])}
 
 @;defproc[(matrix-set! [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))] [x any/c]) matrix?]{like @racket[matrix-set] but uses a destructive update}
 
+@; -----------------------------------------------------------------------------
+
 @section{Matrix Snip}
 
 @(require (for-label (only-in mrlib/cache-image-snip cache-image-snip%)))
 
-The @racket[htdp/matrix] teachpack exports the @racket[snip-class%] to
+@;defmodule[htdp/matrix]
+
+The @racket[htdp/matrix] teachpack exports the @racket[snip-class] object to
 support saving and reading matrix snips. 
 
-@defclass[snip-class% cache-image-snip% ()]{
-A 2-D graphical matrix.}
+@defthing[snip-class (instance/of matrix-snip-class%)]{An object to support 2D matrix rendering.}
