@@ -1,7 +1,16 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-advanced-reader.ss" "lang")((modname TestEngineTest) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ())))
-;;Expect 42 checks, 19 failures
+;; Expect 44 checks, 20 failures
+;; 2 must be uncommented to check error message for check-satisfied
+
+;; ---------------------------------------------------------------------------------------------------
+;; MF: This test suite calls for serious re-organization: 
+;; -- BSL issues with check-satisfied 
+;; -- ISL issues for check-random 
+;; -- ASL issues for check-random
+;; -- error message checking for check-expect 
+;; -- ordinary usage 
 
 (define (count f)
   (cond
@@ -87,3 +96,30 @@
 (check-random (h 0) (begin0 (random 50) (random 20)))
 
 (check-random (h 0) (begin (random 20) (random 50))) ;; fails 
+  
+
+
+;; ---------------------------------------------------------------------------------------------------
+;; MF: for SK 
+
+#;
+(check-satisfied
+ (random 10)
+ (lambda (x) #f))
+; => "check-satisfied: expects named function in second position."
+
+#;
+(check-satisfied
+ 3
+ equal?)
+; => "check-satisfied: expects function of one argument in second position. Given equal?"
+
+
+(check-satisfied 
+ (random 10)
+ between-0-and-10?)
+
+(define (between-0-and-10? x)
+  (member x (list 0 1 2 3 4 5 6 7 8 9)))
+
+(check-satisfied 4 odd?) ;; fails 
