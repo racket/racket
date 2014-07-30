@@ -292,6 +292,7 @@ THREAD_LOCAL_DECL(static Scheme_Object *global_shift_cache);
 #define PROVIDE_MODFORM_KIND 3
 #define MODULE_MODFORM_KIND 4
 #define SAVED_MODFORM_KIND 5
+#define DECLARE_MODFORM_KIND 6
 
 /* combined bitwise: */
 #define NON_PHASELESS_IMPORT 0x1
@@ -9157,7 +9158,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           if (!SCHEME_STX_NULLP(kws))
             scheme_wrong_syntax(who, NULL, e, IMPROPER_LIST_FORM);
           
-          kind = SAVED_MODFORM_KIND;
+          kind = DECLARE_MODFORM_KIND;
 	} else if (scheme_stx_module_eq_x(scheme_module_stx, fst, phase)
                    || scheme_stx_module_eq_x(scheme_modulestar_stx, fst, phase)) {
 	  /************ module[*] *************/
@@ -9312,8 +9313,13 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     SCHEME_EXPAND_OBSERVE_NEXT(observer);
 
     if (kind == SAVED_MODFORM_KIND) {
-      expanded_l = scheme_make_pair(e, expanded_l);
+      expanded_l = scheme_make_pair(SCHEME_CDR(e), expanded_l);
+      SCHEME_CAR(p) = SCHEME_CAR(e);
+      prev_p = p;
       p = SCHEME_CDR(p);      
+    } else if (kind == DECLARE_MODFORM_KIND) {
+      expanded_l = scheme_make_pair(e, expanded_l);
+      p = SCHEME_CDR(p);
     } else if ((kind == PROVIDE_MODFORM_KIND)
                || (kind == MODULE_MODFORM_KIND)) {
       /* handle `provide's and `module's in later passes */

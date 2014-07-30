@@ -1095,4 +1095,35 @@
 
 ;; ----------------------------------------
 
+;; Check that `expand` produces valied syntax
+(let ()
+  (define (check mod)
+    (define e
+      (syntax->datum
+       (parameterize ([current-namespace (make-base-namespace)])
+         (expand mod))))
+    (let loop ([e e])
+      (cond
+       [(syntax? e) (loop (syntax-e e))]
+       [(pair? e) (loop (car e)) (loop (cdr e))]
+       [(null? e) (void)]
+       [(symbol? e) (void)]
+       [(keyword? e) (void)]
+       [(number? e) (void)]
+       [(boolean? e) (void)]
+       [else (error 'expand-test "unexpected value: ~e" e)])))
+  (check '(module m '#%kernel
+            (#%declare #:cross-phase-persistent)))
+  (check '(module m '#%kernel
+            (define-values (x) 10)))
+  (check '(module m racket/base
+            (require (for-syntax racket/base))
+            (define-syntax (m stx)
+              (syntax-local-lift-expression #'(+ 1 2)))
+            (list (m))))
+  (check '(module m racket/base
+            (module+ main 10))))
+
+;; ----------------------------------------
+
 (report-errs)
