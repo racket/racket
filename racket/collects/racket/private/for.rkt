@@ -1664,6 +1664,27 @@
     (lambda (rhs) rhs)
     (lambda (x) #`(* result #,x)))
 
+  (define-for-variants (for/set-union for*/set-union)
+    ([table (set)])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x)
+      #`(set-union result #,x)))
+
+  (define-for-variants (for/seteqv-union for*/seteqv-union)
+    ([table (seteqv)])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x)
+      #`(set-union result #,x)))
+
+  (define-for-variants (for/seteq-union for*/seteq-union)
+    ([table (seteq)])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x)
+      #`(set-union result #,x)))
+
   (define-for-variants (for/hash for*/hash)
     ([table #hash()])
     (lambda (x) x)
