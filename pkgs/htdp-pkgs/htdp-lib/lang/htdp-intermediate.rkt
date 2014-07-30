@@ -44,7 +44,8 @@
           [beginner-false false]
           )
          check-expect
-	 check-random 
+	 check-random
+	 check-satisfied
          check-within
          check-error
          check-member-of
