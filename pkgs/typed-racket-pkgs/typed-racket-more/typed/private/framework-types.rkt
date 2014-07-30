@@ -4,6 +4,24 @@
 
 (require "../racket/private/gui-types.rkt")
 
+;; Frequently reused types
+(define-type Style-Delta%-Instance (Instance Style-Delta%))
+(define-type Snip%-Instance (Instance Snip%))
+(define-type Color%-Instance (Instance Color%))
+(define-type Frame:Basic<%>-Instance (Instance Frame:Basic<%>))
+(define-type Canvas%-Instance (Instance Canvas%))
+(define-type Menu%-Instance (Instance Menu%))
+(define-type Key-Event%-Instance (Instance Key-Event%))
+(define-type Mouse-Event%-Instance (Instance Mouse-Event%))
+(define-type Control-Event%-Instance (Instance Control-Event%))
+(define-type Menu-Item%-Instance (Instance Menu-Item%))
+(define-type Canvas:Basic<%>-Instance (Instance Canvas:Basic<%>))
+(define-type Text%-Instance (Instance Text%))
+(define-type Editor-Canvas%-Instance (Instance Editor-Canvas%))
+(define-type Editor<%>-Instance (Instance Editor<%>))
+(define-type Area-Container<%>-Instance (Instance Area-Container<%>))
+(define-type Dialog%-Instance (Instance Dialog%))
+
 ;; 3 Autosave
 (provide Autosave:Autosavable<%>
          Editor<%>-And-Autosave:Autosavable<%>)
@@ -45,7 +63,7 @@
 
 (define-type Canvas:Basic%
   (Class #:implements Canvas:Basic<%>
-         (init [parent (Instance Dialog%)]
+         (init [parent Dialog%-Instance]
                [editor (Instance Text:Basic<%>)])))
 
 (define-type Canvas:Color<%>
@@ -87,8 +105,8 @@
 (define-type Canvas:Wide-Snip<%>
   (Class #:implements Canvas:Basic<%>
          [recalc-snips (-> Void)]
-         [add-wide-snip ((Instance Snip%) -> Void)]
-         [add-tall-snip ((Instance Snip%) -> Void)]))
+         [add-wide-snip (Snip%-Instance -> Void)]
+         [add-tall-snip (Snip%-Instance -> Void)]))
 
 (define-type Canvas:Wide-Snip-Mixin
   (All (r #:row)
@@ -192,7 +210,7 @@
 (define-type Editor-Snip:Decorated<%>
   (Class #:implements Editor-Snip%
          [get-corner-bitmap (-> (Option (Instance Bitmap%)))]
-         [get-color (-> (U String (Instance Color%)))]
+         [get-color (-> (U String Color%-Instance))]
          [get-menu (-> (Option (Instance Popup-Menu%)))]
          [get-position (-> (U 'top-right 'left-top))]
          [reset-min-sizes (-> Void)]))
@@ -210,7 +228,7 @@
 (define-type Editor-Snip:Decorated%
   (Class #:implements Editor-Snip:Decorated<%>
          [make-snip (-> (Instance Editor-Snip:Decorated%))]
-         [make-editor (-> (Instance Editor<%>))]
+         [make-editor (-> Editor<%>-Instance)]
          [copy (-> (Instance Editor-Snip:Decorated<%> #|FIXME Editor-Snip:Decorated%|#))]))
 
 (define-type Editor-Snip:Decorated-Snipclass%
@@ -260,10 +278,10 @@
          [can-close? (-> Boolean)]
          [close (-> Boolean)]
          [get-filename/untitled-name (-> String)]
-         [get-pos/text ((Instance Mouse-Event%) -> (Values (Option Natural)
-                                                           (Option (Instance Editor<%>))))]
+         [get-pos/text (Mouse-Event%-Instance -> (Values (Option Natural)
+                                                         (Option Editor<%>-Instance)))]
          [get-pos/text-dc-location (Integer Integer -> (Values (Option Natural)
-                                                               (Option (Instance Editor<%>))))]))
+                                                               (Option Editor<%>-Instance)))]))
 
 (define-type Editor:Basic-Mixin
   (All (r #:row)
@@ -301,7 +319,7 @@
 
 (define-type Editor:File<%>
   (Class #:implements Editor:Keymap<%>
-         [get-can-close-parent (-> (U #f (Instance Frame%) (Instance Dialog%)))]
+         [get-can-close-parent (-> (U #f (Instance Frame%) Dialog%-Instance))]
          [update-frame-filename (-> Void)]
          [allow-close-with-no-filename? (-> Boolean)]
          [user-saves-or-not-modified? (#t -> Boolean)] ; FIXME: fishy docs
@@ -384,12 +402,12 @@
 (define-type Frame:Basic<%>
   (Class #:implements Frame%
          [get-area-container% (-> Area-Container<%> #|FIXME (implementation?/c area-container<%>)|#)]
-         [get-area-container (-> (Instance Area-Container<%>))]
-         [get-menu-bar% (-> Menu-Bar% #|FIXME (subclass?/c menu-bar%)|#)]
+         [get-area-container (-> Area-Container<%>-Instance)]
+         [get-menu-bar% (-> ClassTop #|FIXME (subclass?/c menu-bar%)|#)]
          [make-root-area-container
           (Area-Container<%> #|FIXME (implementation?/c area-container<%>)|#
-           (Instance Area-Container<%>)
-           -> (Instance Area-Container<%>))]
+           Area-Container<%>-Instance
+           -> Area-Container<%>-Instance)]
          [close (-> Void)]
          [editing-this-file? (Path -> Boolean)]
          [get-filename ([] [(Option (Boxof Boolean))] . ->* . (Option Path))]
@@ -457,12 +475,12 @@
 (define-type Frame:Info<%>
   (Class #:implements Frame:Basic<%>
          [determine-width
-          (String (Instance Editor-Canvas%) (Instance Text%) -> Integer)]
+          (String Editor-Canvas%-Instance Text%-Instance -> Integer)]
          [lock-status-changed (-> Void)]
          [udpate-info (-> Void)]
          [set-info-canvas ((Option (Instance Canvas:Basic%)) -> Void)]
          [get-info-canvas (-> (Option (Instance Canvas:Basic%)))]
-         [get-info-editor (-> (Option (Instance Editor<%>)))]
+         [get-info-editor (-> (Option Editor<%>-Instance))]
          [get-info-panel (-> (Instance Horizontal-Panel%))]
          [show-info (-> Void)]
          [hide-info (-> Void)]
@@ -504,208 +522,208 @@
          [get-menu-item% (-> (Instance Menu:Can-Restore-Menu-Item%))]
          [get-checkable-menu-item%
           (-> (Instance Menu:Can-Restore-Checkable-Menu-Item%))]
-         [get-file-menu (-> (Instance Menu%))]
-         [get-edit-menu (-> (Instance Menu%))]
-         [get-help-menu (-> (Instance Menu%))]
-         [file-menu:get-new-item (-> (Option (Instance Menu-Item%)))]
+         [get-file-menu (-> Menu%-Instance)]
+         [get-edit-menu (-> Menu%-Instance)]
+         [get-help-menu (-> Menu%-Instance)]
+         [file-menu:get-new-item (-> (Option Menu-Item%-Instance))]
          [file-menu:create-new? (-> Boolean)]
          [file-menu:new-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [file-menu:new-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [file-menu:new-on-demand (Menu-Item%-Instance -> Void)]
          [file-menu:new-string (-> String)]
          [file-menu:new-help-string (-> String)]
-         [file-menu:between-new-and-open ((Instance Menu-Item%) -> Void)]
-         [file-menu:get-open-item (-> (Option (Instance Menu-Item%)))]
+         [file-menu:between-new-and-open (Menu-Item%-Instance -> Void)]
+         [file-menu:get-open-item (-> (Option Menu-Item%-Instance))]
          [file-menu:create-open? (-> Boolean)]
          [file-menu:open-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [file-menu:open-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [file-menu:open-on-demand (Menu-Item%-Instance -> Void)]
          [file-menu:open-string (-> String)]
          [file-menu:open-help-string (-> String)]
-         [file-menu:get-open-recent-item (-> (Option (Instance Menu-Item%)))]
+         [file-menu:get-open-recent-item (-> (Option Menu-Item%-Instance))]
          [file-menu:create-open-recent? (-> Boolean)]
          [file-menu:open-recent-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [file-menu:open-recent-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [file-menu:open-recent-on-demand (Menu-Item%-Instance -> Void)]
          [file-menu:open-recent-string (-> String)]
          [file-menu:open-recent-help-string (-> String)]
-         [file-menu:between-open-and-revert ((Instance Menu-Item%) -> Void)]
-         [file-menu:get-revert-item (-> (Option (Instance Menu-Item%)))]
+         [file-menu:between-open-and-revert (Menu-Item%-Instance -> Void)]
+         [file-menu:get-revert-item (-> (Option Menu-Item%-Instance))]
          [file-menu:create-revert? (-> Boolean)]
          [file-menu:revert-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [file-menu:revert-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [file-menu:revert-on-demand (Menu-Item%-Instance -> Void)]
          [file-menu:revert-string (-> String)]
          [file-menu:revert-help-string (-> String)]
-         [file-menu:between-revert-and-save ((Instance Menu-Item%) -> Void)]
-         [file-menu:get-save-item (-> (Option (Instance Menu-Item%)))]
+         [file-menu:between-revert-and-save (Menu-Item%-Instance -> Void)]
+         [file-menu:get-save-item (-> (Option Menu-Item%-Instance))]
          [file-menu:create-save? (-> Boolean)]
          [file-menu:save-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [file-menu:save-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [file-menu:save-on-demand (Menu-Item%-Instance -> Void)]
          [file-menu:save-string (-> String)]
          [file-menu:save-help-string (-> String)]
-         [file-menu:get-save-as-item (-> (Option (Instance Menu-Item%)))]
+         [file-menu:get-save-as-item (-> (Option Menu-Item%-Instance))]
          [file-menu:create-save-as? (-> Boolean)]
          [file-menu:save-as-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [file-menu:save-as-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [file-menu:save-as-on-demand (Menu-Item%-Instance -> Void)]
          [file-menu:save-as-string (-> String)]
          [file-menu:save-as-help-string (-> String)]
-         [file-menu:between-save-as-and-print ((Instance Menu-Item%) -> Void)]
-         [file-menu:get-print-item (-> (Option (Instance Menu-Item%)))]
+         [file-menu:between-save-as-and-print (Menu-Item%-Instance -> Void)]
+         [file-menu:get-print-item (-> (Option Menu-Item%-Instance))]
          [file-menu:create-print? (-> Boolean)]
          [file-menu:print-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [file-menu:print-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [file-menu:print-on-demand (Menu-Item%-Instance -> Void)]
          [file-menu:print-string (-> String)]
          [file-menu:print-help-string (-> String)]
-         [file-menu:between-print-and-close ((Instance Menu-Item%) -> Void)]
-         [file-menu:get-close-item (-> (Option (Instance Menu-Item%)))]
+         [file-menu:between-print-and-close (Menu-Item%-Instance -> Void)]
+         [file-menu:get-close-item (-> (Option Menu-Item%-Instance))]
          [file-menu:create-close? (-> Boolean)]
          [file-menu:close-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [file-menu:close-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [file-menu:close-on-demand (Menu-Item%-Instance -> Void)]
          [file-menu:close-string (-> String)]
          [file-menu:close-help-string (-> String)]
-         [file-menu:between-close-and-quit ((Instance Menu-Item%) -> Void)]
-         [file-menu:get-quit-item (-> (Option (Instance Menu-Item%)))]
+         [file-menu:between-close-and-quit (Menu-Item%-Instance -> Void)]
+         [file-menu:get-quit-item (-> (Option Menu-Item%-Instance))]
          [file-menu:create-quit? (-> Boolean)]
          [file-menu:quit-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [file-menu:quit-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [file-menu:quit-on-demand (Menu-Item%-Instance -> Void)]
          [file-menu:quit-string (-> String)]
          [file-menu:quit-help-string (-> String)]
-         [file-menu:after-quit ((Instance Menu-Item%) -> Void)]
-         [edit-menu:get-undo-item (-> (Option (Instance Menu-Item%)))]
+         [file-menu:after-quit (Menu-Item%-Instance -> Void)]
+         [edit-menu:get-undo-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-undo? (-> Boolean)]
          [edit-menu:undo-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:undo-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:undo-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:undo-string (-> String)]
          [edit-menu:undo-help-string (-> String)]
-         [edit-menu:get-redo-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:get-redo-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-redo? (-> Boolean)]
          [edit-menu:redo-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:redo-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:redo-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:redo-string (-> String)]
          [edit-menu:redo-help-string (-> String)]
-         [edit-menu:between-redo-and-cut ((Instance Menu-Item%) -> Void)]
-         [edit-menu:get-cut-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:between-redo-and-cut (Menu-Item%-Instance -> Void)]
+         [edit-menu:get-cut-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-cut? (-> Boolean)]
          [edit-menu:cut-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:cut-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:cut-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:cut-string (-> String)]
          [edit-menu:cut-help-string (-> String)]
-         [edit-menu:between-cut-and-copy ((Instance Menu-Item%) -> Void)]
-         [edit-menu:get-copy-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:between-cut-and-copy (Menu-Item%-Instance -> Void)]
+         [edit-menu:get-copy-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-copy? (-> Boolean)]
          [edit-menu:copy-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:copy-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:copy-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:copy-string (-> String)]
          [edit-menu:copy-help-string (-> String)]
-         [edit-menu:between-copy-and-paste ((Instance Menu-Item%) -> Void)]
-         [edit-menu:get-paste-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:between-copy-and-paste (Menu-Item%-Instance -> Void)]
+         [edit-menu:get-paste-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-paste? (-> Boolean)]
          [edit-menu:paste-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:paste-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:paste-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:paste-string (-> String)]
          [edit-menu:paste-help-string (-> String)]
-         [edit-menu:between-paste-and-clear ((Instance Menu-Item%) -> Void)]
-         [edit-menu:get-clear-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:between-paste-and-clear (Menu-Item%-Instance -> Void)]
+         [edit-menu:get-clear-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-clear? (-> Boolean)]
          [edit-menu:clear-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:clear-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:clear-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:clear-string (-> String)]
          [edit-menu:clear-help-string (-> String)]
-         [edit-menu:between-clear-and-select-all ((Instance Menu-Item%) -> Void)]
-         [edit-menu:get-select-all-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:between-clear-and-select-all (Menu-Item%-Instance -> Void)]
+         [edit-menu:get-select-all-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-select-all? (-> Boolean)]
          [edit-menu:select-all-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:select-all-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:select-all-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:select-all-string (-> String)]
          [edit-menu:select-all-help-string (-> String)]
-         [edit-menu:between-select-all-and-find ((Instance Menu-Item%) -> Void)]
-         [edit-menu:get-find-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:between-select-all-and-find (Menu-Item%-Instance -> Void)]
+         [edit-menu:get-find-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-find? (-> Boolean)]
          [edit-menu:find-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:find-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:find-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:find-string (-> String)]
          [edit-menu:find-help-string (-> String)]
-         [edit-menu:get-find-from-selection-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:get-find-from-selection-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-find-from-selection? (-> Boolean)]
          [edit-menu:find-from-selection-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:find-from-selection-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:find-from-selection-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:find-from-selection-string (-> String)]
          [edit-menu:find-from-selection-help-string (-> String)]
-         [edit-menu:get-find-next-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:get-find-next-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-find-next? (-> Boolean)]
          [edit-menu:find-next-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:find-next-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:find-next-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:find-next-string (-> String)]
          [edit-menu:find-next-help-string (-> String)]
-         [edit-menu:get-find-previous-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:get-find-previous-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-find-previous? (-> Boolean)]
          [edit-menu:find-previous-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:find-previous-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:find-previous-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:find-previous-string (-> String)]
          [edit-menu:find-previous-help-string (-> String)]
-         [edit-menu:get-show/hide-replace-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:get-show/hide-replace-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-show/hide-replace? (-> Boolean)]
          [edit-menu:show/hide-replace-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:show/hide-replace-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:show/hide-replace-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:show/hide-replace-string (-> String)]
          [edit-menu:show/hide-replace-help-string (-> String)]
-         [edit-menu:get-replace-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:get-replace-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-replace? (-> Boolean)]
          [edit-menu:replace-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:replace-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:replace-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:replace-string (-> String)]
          [edit-menu:replace-help-string (-> String)]
-         [edit-menu:get-replace-all-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:get-replace-all-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-replace-all? (-> Boolean)]
          [edit-menu:replace-all-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:replace-all-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:replace-all-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:replace-all-string (-> String)]
          [edit-menu:replace-all-help-string (-> String)]
-         [edit-menu:get-find-case-sensitive-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:get-find-case-sensitive-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-find-case-sensitive? (-> Boolean)]
          [edit-menu:find-case-sensitive-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:find-case-sensitive-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:find-case-sensitive-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:find-case-sensitive-string (-> String)]
          [edit-menu:find-case-sensitive-help-string (-> String)]
-         [edit-menu:between-find-and-preferences ((Instance Menu-Item%) -> Void)]
-         [edit-menu:get-preferences-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:between-find-and-preferences (Menu-Item%-Instance -> Void)]
+         [edit-menu:get-preferences-item (-> (Option Menu-Item%-Instance))]
          [edit-menu:create-preferences? (-> Boolean)]
          [edit-menu:preferences-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [edit-menu:preferences-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [edit-menu:preferences-on-demand (Menu-Item%-Instance -> Void)]
          [edit-menu:preferences-string (-> String)]
          [edit-menu:preferences-help-string (-> String)]
-         [edit-menu:after-preferences ((Instance Menu-Item%) -> Void)]
-         [help-menu:before-about ((Instance Menu-Item%) -> Void)]
-         [help-menu:get-about-item (-> (Option (Instance Menu-Item%)))]
+         [edit-menu:after-preferences (Menu-Item%-Instance -> Void)]
+         [help-menu:before-about (Menu-Item%-Instance -> Void)]
+         [help-menu:get-about-item (-> (Option Menu-Item%-Instance))]
          [help-menu:create-about? (-> Boolean)]
          [help-menu:about-callback
-          ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
-         [help-menu:about-on-demand ((Instance Menu-Item%) -> Void)]
+          (Menu-Item%-Instance Control-Event%-Instance -> Void)]
+         [help-menu:about-on-demand (Menu-Item%-Instance -> Void)]
          [help-menu:about-string (-> String)]
          [help-menu:about-help-string (-> String)]
-         [help-menu:after-about ((Instance Menu-Item%) -> Void)]))
+         [help-menu:after-about (Menu-Item%-Instance -> Void)]))
 
 (define-type Frame:Standard-Menus-Mixin
   (All (r #:row)
@@ -718,11 +736,11 @@
          [get-entire-label (-> String)]
          [get-label-prefix (-> String)]
          [set-label-prefix (String -> Void)]
-         [get-canvas% (-> Editor-Canvas% #|FIXME (subclass?/c editor-canvas%)|#)]
+         [get-canvas% (-> ClassTop #|FIXME (subclass?/c editor-canvas%)|#)]
          [get-canvas<%> (-> (Instance Canvas:Basic%))]
          [get-editor% (-> Editor<%> #|FIXME (implementation?/c editor<%>)|#)]
          [get-editor<%> (-> Any #|FIXME interface?|#)]
-         [make-editor (-> (Instance Editor<%>))]
+         [make-editor (-> Editor<%>-Instance)]
          [revert (-> Void)]
          [save ([]
                 [(U 'guess 'standard 'text 'text-force-cr 'same 'copy)]
@@ -730,8 +748,8 @@
          [save-as ([]
                    [(U 'guess 'standard 'text 'text-force-cr 'same 'copy)]
                    . ->* . Boolean)]
-         [get-canvas (-> (Instance Canvas%))]
-         [get-editor (-> (Instance Editor<%>))]))
+         [get-canvas (-> Canvas%-Instance)]
+         [get-editor (-> Editor<%>-Instance)]))
   
 (define-type Frame:Editor-Mixin
   (All (r #:row)
@@ -802,7 +820,7 @@
          [search ((U 'forward 'backward) -> Void)]
          [search-replace (-> Boolean)]
          [replace-all (-> Void)]
-         [get-text-to-search (-> (Instance Text%))]
+         [get-text-to-search (-> Text%-Instance)]
          [set-text-to-search
           ((Option (Instance Text% #|FIXME (subclass?/c text%)|#)) -> Void)]
          [search-hidden? (-> Boolean)]
@@ -825,10 +843,10 @@
            [edit-menu:create-find? (-> #t)]
            ; FIXME: doc says "Overrides <method not found>" from here on
            [edit-menu:find-again-callback
-            ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
+            (Menu-Item%-Instance Control-Event%-Instance -> Void)]
            [edit-menu:create-find-again? (-> #t)]
            [edit-menu:find-again-backwards-callback
-            ((Instance Menu-Item%) (Instance Control-Event%) -> Void)]
+            (Menu-Item%-Instance Control-Event%-Instance -> Void)]
            [edit-menu:create-find-again-backwards? (-> #t)]
            ; end bug doc saying "Overrides <method not found>"
            [edit-menu:create-replace-all? (-> #t)]
@@ -877,18 +895,18 @@
 
 (define-type Group:%
   (Class [get-mdi-parent (-> (Option (Instance Frame%)))]
-         [get-frames (-> (Listof (Instance Frame:Basic<%>)))]
-         [frame-label-changed ((Instance Frame:Basic<%>) -> Void)]
+         [get-frames (-> (Listof Frame:Basic<%>-Instance))]
+         [frame-label-changed (Frame:Basic<%>-Instance -> Void)]
          [frame-shown/hidden (-> Void)]
-         [for-each-frame (((Instance Frame:Basic<%>) -> Void) -> Void)]
-         [get-active-frame (-> (Instance Frame:Basic<%>))]
-         [set-active-frame ((Instance Frame:Basic<%>) -> Void)]
-         [insert-frame ((Instance Frame:Basic<%>) -> Void)]
-         [remove-frame ((Instance Frame:Basic<%>) -> Void)]
+         [for-each-frame ((Frame:Basic<%>-Instance -> Void) -> Void)]
+         [get-active-frame (-> Frame:Basic<%>-Instance)]
+         [set-active-frame (Frame:Basic<%>-Instance -> Void)]
+         [insert-frame (Frame:Basic<%>-Instance -> Void)]
+         [remove-frame (Frame:Basic<%>-Instance -> Void)]
          [clear (-> Boolean)]
          [on-close-all (-> Void)]
          [can-close-all? (-> Boolean)]
-         [locate-file ((Option (Instance Frame:Basic<%>)) -> Path)]))
+         [locate-file ((Option Frame:Basic<%>-Instance) -> Path)]))
 
 ;; 19 Keymap
 (provide Keymap:Aug-Keymap<%>
@@ -898,9 +916,8 @@
 (define-type Keymap:Aug-Keymap<%>
   (Class #:implements Keymap%
          [get-chained-keymaps (-> (Listof (Instance Keymap%)))]
-         ;; TODO: not sure about HashTable's type parameters
-         [get-map-function-table (-> (HashTable Symbol String))]
-         [get-map-function-table/ht ((HashTable Symbol String) -> (HashTable Symbol String))]))
+         [get-map-function-table (-> (HashTable String String))]
+         [get-map-function-table/ht ((HashTable String String) -> (HashTable String String))]))
 
 (define-type Keymap:Aug-Keymap-Mixin
   (All (r #:row)
@@ -955,53 +972,69 @@
          Mode:Host-Text<%>
          Mode:Host-Text-Mixin)
 
+(define-type File-Format (U 'guess 'same 'copy 'standard 'text 'text-force-cr))
+(define-type Image-Kind (U 'unknown 'unknown/mask 'unknown/alpha
+                           'gif 'gif/mask 'gif/alpha
+                           'jpeg 'png 'png/mask 'png/alpha
+                           'xbm 'xpm 'bmp 'pict))
+(define-type Draw-Caret (U 'no-caret 'show-inactive-caret 'show-caret (Pairof Natural Natural)))
+(define-type Edit-Op (U 'undo 'redo 'clear 'cut 'copy 'paste
+                        'kill 'select-all 'insert-text-box
+                        'insert-pasteboard-box 'insert-image))
+
 (define-type Mode:Surrogate-Text<%>
-  (Class [on-enable-surrogate ((Instance Text%) -> Any)]
-         [on-disable-surrogate ((Instance Text%) -> Any)]))
+  (Class [on-enable-surrogate (Text%-Instance -> Any)]
+         [on-disable-surrogate (Text%-Instance -> Any)]))
 
 (define-type Mode:Surrogate-Text%
   (Class #:implements Mode:Surrogate-Text<%>
-         ;; FIXME: lots of suspicious `Any` in doc
-         [on-change ((Instance Text%) (-> Any) -> Any)]
-         [on-char ((Instance Text%) (-> Any) Any -> Any)]
-         [on-default-char ((Instance Text%) (-> Any) Any -> Any)]
-         [on-default-client ((Instance Text%) (-> Any) Any -> Any)]
-         [on-display-size ((Instance Text%) (-> Any) -> Any)]
-         [on-edit-sequence ((Instance Text%) (-> Any) -> Any)]
-         [on-event ((Instance Text%) (-> Any) Any -> Any)]
-         [on-focus ((Instance Text%) (-> Any) Any -> Any)]
-         [on-load-file ((Instance Text%) (-> Any) Any Any -> Any)]
-         [on-local-char ((Instance Text%) (-> Any) Any -> Any)]
-         [on-local-event ((Instance Text%) (-> Any) Any -> Any)]
-         [on-new-box ((Instance Text%) (-> Any) Any -> Any)]
-         [on-new-image-snip ((Instance Text%) (-> Any) Any Any Any Any -> Any)]
-         [on-paint ((Instance Text%) (-> Any) Any Any Any Any Any Any Any Any Any -> Any)]
-         [on-save-file ((Instance Text%) (-> Any) Any Any -> Any)]
-         [on-snip-modified ((Instance Text%) (-> Any) Any Any -> Any)]
-         [on-change-style ((Instance Text%) (-> Any) Any Any -> Any)]
-         [on-delete ((Instance Text%) (-> Any) Any Any -> Any)]
-         [on-insert ((Instance Text%) (-> Any) Any Any -> Any)]
-         [on-new-string-snip ((Instance Text%) (-> Any) -> Any)]
-         [on-new-tab-snip ((Instance Text%) (-> Any) -> Any)]
-         [on-set-size-constraint ((Instance Text%) (-> Any) -> Any)]
-         [after-change-style ((Instance Text%) (-> Any) Any Any -> Any)]
-         [after-delete ((Instance Text%) (-> Any) Any Any -> Any)]
-         [after-insert ((Instance Text%) (-> Any) Any Any -> Any)]
-         [after-set-position ((Instance Text%) (-> Any) -> Any)]
-         [after-set-size-constraint ((Instance Text%) (-> Any) -> Any)]
-         [after-edit-sequence ((Instance Text%) (-> Any) -> Any)]
-         [after-load-file ((Instance Text%) (-> Any) Any -> Any)]
-         [after-save-file ((Instance Text%) (-> Any) Any -> Any)]
-         [can-change-style? ((Instance Text%) (-> Any) Any Any -> Any)]
-         [can-delete? ((Instance Text%) (-> Any) Any Any -> Any)]
-         [can-insert? ((Instance Text%) (-> Any) Any Any -> Any)]
-         [can-set-size-constraint? ((Instance Text%) (-> Any) -> Any)]
-         [can-do-edit-operation? ([(Instance Text%) (-> Any) Any]
+         [on-change (Text%-Instance (-> Void) -> Void)]
+         [on-char (Text%-Instance (-> Void) Key-Event%-Instance -> Void)]
+         [on-default-char (Text%-Instance (-> Void) Key-Event%-Instance -> Void)]
+         [on-default-client (Text%-Instance (-> Any) Any -> Any)]
+         [on-display-size (Text%-Instance (-> Void) -> Void)]
+         [on-edit-sequence (Text%-Instance (-> Void) -> Void)]
+         [on-event (Text%-Instance (-> Void) Mouse-Event%-Instance -> Void)]
+         [on-focus (Text%-Instance (-> Void) Any -> Void)]
+         [on-load-file (Text%-Instance (-> Void) Path File-Format -> Void)]
+         [on-local-char (Text%-Instance (-> Void) Key-Event%-Instance -> Void)]
+         [on-local-event (Text%-Instance (-> Void) Mouse-Event%-Instance -> Void)]
+         [on-new-box (Text%-Instance (-> Snip%-Instance) (U 'text 'pasteboard) -> Snip%-Instance)]
+         #;[on-new-image-snip ; TODO: reeanable when Image-Snip% is available
+          (Text%-Instance (-> (Instance Image-Snip%)) Path Image-Kind Any Any -> (Instance Image-Snip%))]
+         [on-paint
+          (Text%-Instance (-> Void) Any (Instance DC<%>) Real Real Real Real Real Real Draw-Caret -> Void)]
+         [on-save-file (Text%-Instance (-> Void) Path File-Format -> Void)]
+         [on-snip-modified (Text%-Instance (-> Void) Snip%-Instance Any -> Void)]
+         [on-change-style (Text%-Instance (-> Any) Natural Natural -> Any)]
+         [on-delete (Text%-Instance (-> Void) Natural Natural -> Void)]
+         [on-insert (Text%-Instance (-> Void) Natural Natural -> Void)]
+         [on-new-string-snip
+          (Text%-Instance (-> (Instance String-Snip%)) -> (Instance String-Snip%))]
+         [on-new-tab-snip (Text%-Instance (-> (Instance Tab-Snip%)) -> (Instance Tab-Snip%))]
+         [on-set-size-constraint (Text%-Instance (-> Void) -> Void)]
+         [after-change-style (Text%-Instance (-> Void) Natural Natural -> Void)]
+         [after-delete (Text%-Instance (-> Void) Natural Natural -> Void)]
+         [after-insert (Text%-Instance (-> Void) Natural Natural -> Void)]
+         [after-set-position (Text%-Instance (-> Void) -> Void)]
+         [after-set-size-constraint (Text%-Instance (-> Void) -> Void)]
+         [after-edit-sequence (Text%-Instance (-> Void) -> Void)]
+         [after-load-file (Text%-Instance (-> Void) Any -> Void)]
+         [after-save-file (Text%-Instance (-> Void) Any -> Void)]
+         [can-change-style? (Text%-Instance (-> Boolean) Natural Natural -> Boolean)]
+         [can-delete? (Text%-Instance (-> Boolean) Natural Natural -> Boolean)]
+         [can-insert? (Text%-Instance (-> Boolean) Natural Natural -> Boolean)]
+         [can-set-size-constraint? (Text%-Instance (-> Boolean) -> Boolean)]
+         [can-do-edit-operation? ([Text%-Instance (-> Boolean) Edit-Op]
                                   [Any]
-                                  . ->* . Any)]
-         [can-load-file? ((Instance Text%) (-> Any) Any Any -> Any)]
-         [can-save-file? ((Instance Text%) (-> Any) Any Any -> Any)]
-         [put-file ((Instance Text%) (-> Any) Any Any -> Any)]))
+                                  . ->* . Boolean)]
+         [can-load-file? (Text%-Instance (-> Boolean) Path File-Format -> Boolean)]
+         [can-save-file? (Text%-Instance (-> Boolean) Path File-Format -> Boolean)]
+         [put-file
+          (Text%-Instance
+           (-> (Option Path-String))
+           (Option Path-String) (Option Path-String)
+           -> (Option Path-String))]))
   
 (define-type Mode:Host-Text<%>
   (Class [get-surrogate (-> (Option (Instance Mode:Surrogate-Text<%>)))]
@@ -1079,7 +1112,7 @@
          [get-default-percentages
           (Positive-Integer -> (Listof Nonnegative-Real #|FIXME (between/c 0 1)|#))]
          [right-click-in-gap
-          ((Instance Mouse-Event%) (Instance Subarea<%>) (Instance Subarea<%>) -> Void)]
+          (Mouse-Event%-Instance (Instance Subarea<%>) (Instance Subarea<%>) -> Void)]
          [set-percentages ((Listof Real) -> Void)]
          [get-percentages (-> (Listof Real))]
          [get-vertical? (-> Boolean)]
@@ -1117,7 +1150,14 @@
 (define-type Panel:Horizontal-Dragable%
   (Class #:implements Panel:Horizontal-Dragable<%>))
 
-(define-type Panel:Splitter<%> (Class)) ;; FIXME doc says nothign???
+(define-type Panel:Splitter<%>
+  (Class [split-vertical ((Instance Canvas<%>)
+                          ((Instance Panel:Splitter<%>) -> (Instance Canvas<%>))
+                          -> (Instance Canvas<%>))]
+         [split-horizontal ((Instance Canvas<%>)
+                            ((Instance Panel:Splitter<%>) -> (Instance Canvas<%>))
+                            -> (Instance Canvas<%>))]
+         [collapse ((Instance Canvas<%>) -> Void)]))
 
 (define-type Panel:Splitter-Mixin
   (All (r #:row)
@@ -1125,16 +1165,7 @@
            #:implements Area-Container<%>
            #:implements Panel:Dragable<%>)
     ->
-    (Class #:row-var r #:implements Panel:Splitter<%>
-           [split-vertical
-            ((Instance Canvas<%>)
-             ((Instance Panel:Splitter<%>) -> (Instance Canvas<%>))
-             -> (Instance Canvas<%>))]
-           [split-horizontal
-            ((Instance Canvas<%>)
-             ((Instance Panel:Splitter<%>) -> (Instance Canvas<%>))
-             -> (Instance Canvas<%>))]
-           [collapse ((Instance Canvas<%>) -> Void)])))
+    (Class #:row-var r #:implements Panel:Splitter<%>)))
 
 (define-type Panel:Discrete-Sizes<%>
   (Class [set-orientation (Boolean -> Void)]
@@ -1196,7 +1227,7 @@
          Racket:Set-Mode-Mixin)
 
 (define-type Racket:Sexp-Snip<%>
-  (Class [get-saved-snips (-> (Listof (Instance Snip%)))]))
+  (Class [get-saved-snips (-> (Listof Snip%-Instance))]))
 
 (define-type Racket:Sexp-Snip%
   (Class #:implements Snip%
@@ -1208,7 +1239,7 @@
          #:implements Mode:Host-Text<%>
          #:implements Color:Text<%>
          [get-limit (-> Integer)]
-         [balance-parens ((Instance Key-Event%) -> Void)]
+         [balance-parens (Key-Event%-Instance -> Void)]
          [tabify-on-return? (-> Boolean)]
          [tabify ([] [Integer] . ->* . Void)]
          [tabify-selection ([] [Integer Integer] . ->* . Void)]
@@ -1250,7 +1281,7 @@
     ->
     (Class #:row-var r #:implements Racket:Text<%>)))
 
-(define-type Racket:Text-Mode<%> (Class)) ;; FIXME: doc says nothing?
+(define-type Racket:Text-Mode<%> (Class))
 
 (define-type Racket:Text-Mode-Mixin
   (All (r #:row)
@@ -1341,7 +1372,7 @@
 (define-type Text:Basic<%>
   (Class #:implements Text%
          [highlight-range
-          ([Natural Natural (U String (Instance Color%))]
+          ([Natural Natural (U String Color%-Instance)]
            [Boolean
             (U 'high 'low)
             (U 'rectangle 'ellipse 'hollow-ellipse 'dot)
@@ -1349,13 +1380,13 @@
             #:key Any]
            . ->* . ; FIXME: result type depends on `adjust-on-insert/delete`
            (U Void (-> Void)))]
-         [unhighlight-range ([Natural Natural (U String (Instance Color%))]
+         [unhighlight-range ([Natural Natural (U String Color%-Instance)]
                              [Boolean (U 'rectangle 'ellipse 'hollow-ellipse)]
                              . ->* . Void)]
          [unhighlight-ranges/key (Any -> Void)]
          [unhighlight-ranges ((Natural
                                Natural
-                               (Instance Color%)
+                               Color%-Instance
                                Boolean
                                (U 'rectangle 'ellipse 'hollow-ellipse)
                                (U Boolean Natural)
@@ -1366,7 +1397,7 @@
          [get-styles-fixed (-> Boolean)]
          [get-fixed-style (-> (Instance Style<%>))]
          [set-styles-fixed (Boolean -> Void)]
-         [move/copy-to-edit ([(Instance Text%) Integer Integer Integer]
+         [move/copy-to-edit ([Text%-Instance Integer Integer Integer]
                              [#:try-to-move? Boolean]
                              . ->* . Void)]
          [initial-autowrap-bitmap
@@ -1474,9 +1505,8 @@
 (define-type Text:Searching-Mixin
   (All (r #:row)
     (Class #:row-var r
-           ;; FIXME name class: `copy` from Editor<%> and Text%
-           ;#:implements Editor:Keymap<%>
-           #:implements Text:Basic<%>)
+           #:implements Text:Basic<%>
+           #:implements Editor:Keymap<%>)
     ->
     (Class #:row-var r #:implements Text:Searching<%>)))
 
@@ -1486,13 +1516,14 @@
 (define-type Text:Return-Mixin
   (All (r #:row)
     (Class #:row-var r #:implements Text%)
-    -> ; FIXME: what to do with `constructor` in doc?
-    (Class #:row-var r #:implements Text:Return<%>)))
+    ->
+    (Class (init [return (-> Boolean)])
+           #:row-var r #:implements Text:Return<%>)))
 
 (define-type Text:Wide-Snip<%>
   (Class #:implements Text:Basic<%>
-         [add-wide-snip ((Instance Snip%) -> Void)]
-         [add-tall-snip ((Instance Snip%) -> Void)]))
+         [add-wide-snip (Snip%-Instance -> Void)]
+         [add-tall-snip (Snip%-Instance -> Void)]))
 
 (define-type Text:Wide-Snip-Mixin
   (All (r #:row)
@@ -1502,8 +1533,8 @@
 
 (define-type Text:Delegate<%>
   (Class #:implements Text:Basic<%>
-         [get-delegate (-> (Option (Instance Text%)))]
-         [set-delegate ((Option (Instance Text%)) -> Void)]))
+         [get-delegate (-> (Option Text%-Instance))]
+         [set-delegate ((Option Text%-Instance) -> Void)]))
 
 (define-type Text:1-Pixel-String-Snip%
   (Class #:implements String-Snip%)) ; FIXME: ok?
@@ -1569,9 +1600,9 @@
          [set-unread-start-point (Integer -> Void)]
          [set-allow-edits (Boolean -> Void)]
          [get-allow-edits (-> Boolean)]
-         [insert-between ((U (Instance Snip%) String) -> Void)]
-         [insert-before ((U (Instance Snip%) String) -> Void)]
-         [submit-to-port? ((Instance Key-Event%) -> Boolean)]
+         [insert-between ((U Snip%-Instance String) -> Void)]
+         [insert-before ((U Snip%-Instance String) -> Void)]
+         [submit-to-port? (Key-Event%-Instance -> Boolean)]
          [on-sumit (-> Void)]
          [send-eof-to-in-port (-> Void)]
          [send-eof-to-box-in-port (-> Void)]
@@ -1579,9 +1610,9 @@
          [clear-output-ports (-> Void)]
          [clear-input-port (-> Void)]
          [clear-box-input-port (-> Void)]
-         [get-out-style-delta (-> (U (Instance Style-Delta%) String))]
-         [get-err-style-delta (-> (U (Instance Style-Delta%) String))]
-         [get-value-style-delta (-> (U (Instance Style-Delta%) String))]
+         [get-out-style-delta (-> (U Style-Delta%-Instance String))]
+         [get-err-style-delta (-> (U Style-Delta%-Instance String))]
+         [get-value-style-delta (-> (U Style-Delta%-Instance String))]
          [get-in-port (-> Input-Port)]
          [get-in-box-port (-> Input-Port)]
          [get-out-port (-> Output-Port)]
@@ -1609,10 +1640,10 @@
 (define-type Text:Autocomplete<%>
   (Class #:implements Text%
          [auto-complete (-> Void)]
-         [get-autocomplete-border-color (-> (U String (Instance Color%)))]
-         [get-autocomplete-background-color (-> (U String (Instance Color%)))]
-         [get-autocomplete-selected-color (-> (U String (Instance Color%)))]
-         [completion-mode-key-event? ((Instance Key-Event%) -> Boolean)]
+         [get-autocomplete-border-color (-> (U String Color%-Instance))]
+         [get-autocomplete-background-color (-> (U String Color%-Instance))]
+         [get-autocomplete-selected-color (-> (U String Color%-Instance))]
+         [completion-mode-key-event? (Key-Event%-Instance -> Boolean)]
          [get-all-words (-> (Listof String))]
          [get-word-at (Positive-Integer -> String)]))
 

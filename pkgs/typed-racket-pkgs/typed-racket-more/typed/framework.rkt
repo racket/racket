@@ -3,13 +3,11 @@
 ;; A typed wrapper for the framework library
 
 (require framework
-         framework/splash ; TODO: why do i have to require this separately??
-         #;(for-syntax (rep type-rep))
+         framework/splash
          (for-syntax (only-in (rep type-rep)
                               make-Instance
                               make-HeterogeneousVector
-                              [make-Opaque -opq]
-                              #;[make-Listof -Listof]))
+                              [make-Opaque -opq]))
          "racket/private/gui-types.rkt"
          (for-syntax (submod "racket/private/gui-types.rkt" #%type-decl))
          "private/framework-types.rkt"
@@ -18,10 +16,6 @@
 (provide (all-from-out "private/framework-types.rkt"))
 
 (begin-for-syntax
- ;; TODO hacks
- (define -Listof make-Listof) ; TODO: where does make-Listof come from? And I can't use -Listof...
- (define (-Paramof s) (-Param s s))
- (define (-neListof s) (-pair s (-Listof s)))
  (define -Button% (parse-type #'Button%))
  (define -Event% (parse-type #'Event%))
  (define -Color% (parse-type #'Color%))
@@ -95,7 +89,7 @@
  (define -DC<%>-Instance (make-Instance -DC<%>)))
 
 (type-environment
- [application:current-app-name (-Paramof -String)]
+ [application:current-app-name (-Param -String)]
  ;; 3 Autosave
  [autosave:autosavable<%> (parse-type #'Autosave:Autosavable<%>)]
  [autosave:register
@@ -197,7 +191,7 @@
  [color:text-mode-mixin (parse-type #'Color:Text-Mode-Mixin)]
  [color:text-mode% (parse-type #'Color:Text-Mode%)]
  [color:get-parenthesis-colors-table
-  (-> (-Listof (-Tuple (list -Symbol
+  (-> (-lst (-Tuple (list -Symbol
                              -String
                              (-vec -Color%-Instance)
                              (Un (-val 'low) (-val 'high))))))]
@@ -230,7 +224,7 @@
  [editor:set-current-preferred-font-size (-Nat . -> . -Void)]
  [editor:get-current-preferred-font-size (-> -Nat)]
  [editor:font-size-pref->current-font-size
-  ((make-HeterogeneousVector (list (-HT (-neListof (-Tuple (list -Nat -Nat))) -Nat)
+  ((make-HeterogeneousVector (list (-HT (-ne-lst (-Tuple (list -Nat -Nat))) -Nat)
                                    -Nat))
    . -> .
    -Nat)]
@@ -248,8 +242,8 @@
  [editor:get-standard-style-list
   (-> (make-Instance (parse-type #'Style-List%)))]
  [editor:add-after-user-keymap
-  (-Keymap%-Instance (-Listof -Keymap%-Instance)
-   . -> . (-Listof -Keymap%-Instance))]
+  (-Keymap%-Instance (-lst -Keymap%-Instance)
+   . -> . (-lst -Keymap%-Instance))]
  ;; 12 Exit
  [exit:exiting? (-> -Boolean)]
  [exit:set-exiting (-Boolean . -> . -Void)]
@@ -261,10 +255,10 @@
  [exit:user-oks-exit (-> -Boolean)]
  ;; 13 Finder
  [finder:dialog-parent-parameter
-  (-Paramof (Un -False -Dialog%-Instance -Frame%-Instance))]
- [finder:default-extension (-Paramof -String)]
+  (-Param (Un -False -Dialog%-Instance -Frame%-Instance))]
+ [finder:default-extension (-Param -String)]
  [finder:default-filters
-  (-Paramof (-Listof (-Tuple (list -String -String))))]
+  (-Param (-lst (-Tuple (list -String -String))))]
 
  [finder:common-put-file (->opt
                           [-String
@@ -371,9 +365,9 @@
  [frame:reorder-menus (-Frame%-Instance . -> . -Void)]
  [frame:remove-empty-menus (-Frame%-Instance . -> . -Void)]
  [frame:current-icon
-  (-Paramof  (Un -False -Bitmap%-Instance (-pair -Bitmap%-Instance -Bitmap%-Instance)))]
+  (-Param  (Un -False -Bitmap%-Instance (-pair -Bitmap%-Instance -Bitmap%-Instance)))]
  [frame:lookup-focus-table
-  (->opt [-Eventspace] (-Listof (make-Instance (parse-type #'Frame:Focus-Table<%>))))]
+  (->opt [-Eventspace] (-lst (make-Instance (parse-type #'Frame:Focus-Table<%>))))]
  ;; 15 Group
  [group:% (parse-type #'Group:%)]
  [group:get-the-frame-group (-> (make-Instance (parse-type #'Group:%)))]
@@ -394,7 +388,7 @@
    (-Button%-Instance -Event%-Instance . -> . Univ)
    (-Button%-Instance -Event%-Instance . -> . Univ)
    [-String -String]
-   #:confirm-style (-Listof -Symbol) #f
+   #:confirm-style (-lst -Symbol) #f
    (-values (list -Button%-Instance -Button%-Instance)))]
  [gui-utils:next-untitled-name (-> -String)]
  [gui-utils:cursor-delay (cl-> [{} -Real]
@@ -428,12 +422,12 @@
  [#:opaque Handler:Handler handler:handler?]
  [handler:handler-name (-Handler:Handler . -> . -String)]
  [handler:handler-extension
-  (-Handler:Handler . -> . (Un (-Path . -> . -Boolean) (-Listof -String)))]
+  (-Handler:Handler . -> . (Un (-Path . -> . -Boolean) (-lst -String)))]
  [handler:handler-handler
   (-Handler:Handler . -> . (-Path . -> . -Frame:Editor<%>-Instance))]
  [handler:insert-format-handler
   (-String
-   (Un -String (-Listof -String) (-Path . -> . -Boolean))
+   (Un -String (-lst -String) (-Path . -> . -Boolean))
    (-Path . -> . (-opt -Frame:Editor<%>-Instance))
    . -> . -Void)]
  [handler:find-named-format-handler
@@ -445,7 +439,7 @@
    [(-> -Frame:Editor<%>-Instance)]
    . ->opt . (-opt -Frame:Editor<%>-Instance))]
  [handler:current-create-new-window
-  (-Paramof ((-opt -Path) . -> . -Frame%-Instance))]
+  (-Param ((-opt -Path) . -> . -Frame%-Instance))]
  [handler:open-file ([(Un -False -Path -String)]
                      . ->opt . (-opt (make-Instance (parse-type #'Frame:Basic<%>))))]
  [handler:install-recent-items (-Menu%-Instance . -> . -Void)]
@@ -473,12 +467,12 @@
  [keymap:remove-user-keybindings-file (Univ . -> . Univ)]
  [keymap:add-user-keybindings-file (Univ . -> . Univ)]
  [keymap:add-to-right-button-menu
-  (-Paramof  ((make-Instance -Popup-Menu%)
+  (-Param  ((make-Instance -Popup-Menu%)
             -Editor<%>-Instance
             -Event%-Instance
             . -> . -Void))]
  [keymap:add-to-right-button-menu/before
-  (-Paramof  ((make-Instance -Popup-Menu%)
+  (-Param  ((make-Instance -Popup-Menu%)
             -Editor<%>-Instance
             -Event%-Instance
             . -> . -Void))]
@@ -489,7 +483,7 @@
  [keymap:get-user (-> -Keymap%-Instance)]
  [keymap:get-global (-> -Keymap%-Instance)]
  [keymap:get-search (-> -Keymap%-Instance)]
- [keymap:make-meta-prefix-list (-String [-Boolean] . ->opt . (-Listof -String))]
+ [keymap:make-meta-prefix-list (-String [-Boolean] . ->opt . (-lst -String))]
  [keymap:send-map-function-meta
   (-Keymap%-Instance
    -String
@@ -502,7 +496,7 @@
  [keymap:setup-global (-Keymap%-Instance . -> . -Void)]
  [keymap:setup-search (-Keymap%-Instance . -> . -Void)]
  [keymap:set-chained-keymaps ((make-Instance (parse-type #'Keymap:Aug-Keymap<%>))
-                              (-Listof -Keymap%-Instance)
+                              (-lst -Keymap%-Instance)
                               . -> . -Void)]
  [keymap:remove-chained-keymap (-Editor<%>-Instance
                                 (make-Instance (parse-type #'Keymap:Aug-Keymap<%>))
@@ -551,19 +545,19 @@
  [panel:horizontal-discrete-sizes% (parse-type #'Panel:Horizontal-Discrete-Sizes%)]
  [panel:vertical-discrete-sizes% (parse-type #'Panel:Vertical-Discrete-Sizes%)]
  [panel:dragable-container-size
-  ((-Listof (-Tuple (list -Real -Real -Boolean -Boolean)))
+  ((-lst (-Tuple (list -Real -Real -Boolean -Boolean)))
    -Real
    -Boolean
    . -> . (-values (list -Real -Real)))]
  [panel:dragable-place-children
-  ((-Listof (-Tuple (list -Real -Real -Boolean -Boolean)))
+  ((-lst (-Tuple (list -Real -Real -Boolean -Boolean)))
    -Real
    -Real
-   (-Listof -Real #|between/c 0 1|#)
+   (-lst -Real #|between/c 0 1|#)
    -Real
    -Boolean
-   . -> . (-values (list (-Listof (-Tuple (list -Nat -Nat -Nat -Nat)))
-                         (-Listof (-Tuple (list -Nat -Nat))))))]
+   . -> . (-values (list (-lst (-Tuple (list -Nat -Nat -Nat -Nat)))
+                         (-lst (-Tuple (list -Nat -Nat))))))]
  ;; 24 Pasteboard
  [pasteboard:basic% (parse-type #'Pasteboard:Basic%)]
  [pasteboard:standard-style-list% (parse-type #'Pasteboard:Standard-Style-List%)]
@@ -575,10 +569,10 @@
  [path-utils:generate-autosave-name ((Un -False -Pathlike -SomeSystemPath) . -> . -String)]
  [path-utils:generate-backup-name (-Path . -> . -Path)]
  ;; 26 Preferences
- [preferences:put-preferences/gui ((-Listof -Symbol) (-Listof Univ) . -> . Univ)]
+ [preferences:put-preferences/gui ((-lst -Symbol) (-lst Univ) . -> . Univ)]
  [preferences:get-preference/gui (-Symbol [(-> -Void)] . ->opt . Univ)]
  [preferences:add-panel
-  ((Un -String (-neListof -String))
+  ((Un -String (-ne-lst -String))
    (-Area-Container-Window<%>-Instance . -> . -Area-Container-Window<%>-Instance)
    . -> . Univ)]
  [preferences:add-editor-checkbox-panel (-> -Void)]
@@ -613,8 +607,8 @@
   (->optkey
    -Symbol -Sexp (-> Univ -Boolean)
    []
-   #:aliases (-Listof -Symbol) #f
-   #:rewrite-aliases (-Listof (-> Univ Univ)) #f
+   #:aliases (-lst -Symbol) #f
+   #:rewrite-aliases (-lst (-> Univ Univ)) #f
    -Void)]
  [preferences:default-set? (-Symbol . -> . -Boolean)]
  [preferences:set-un/marshall
@@ -626,9 +620,9 @@
  [#:opaque Exn:Unknown-Preference exn:unknown-preference?]
  [exn:struct:unknown-preference -Struct]
  [preferences:low-level-put-preferences
-  (-Paramof ((-Listof -Symbol) (-Listof Univ) . -> . Univ))]
+  (-Param ((-lst -Symbol) (-lst Univ) . -> . Univ))]
  [preferences:low-level-get-preference
-  (-Paramof (-Symbol [(-> Univ)] . ->opt . Univ))]
+  (-Param (-Symbol [(-> Univ)] . ->opt . Univ))]
  [#:opaque Preferences:Snapshot preferences:snapshot?]
  [preferences:restore-prefs-snapshot (-Preferences:Snapshot . -> . -Void)]
  [preferences:get-prefs-snapshot (-> -Preferences:Snapshot)]
@@ -647,9 +641,9 @@
  [racket:get-keymap (-> -Keymap%-Instance)]
  [racket:add-coloring-preferences-panel (-> Univ)]
  [racket:get-color-prefs-table
-  (-> (-Listof (-Tuple (list -Symbol -Color%-Instance -String))))]
+  (-> (-lst (-Tuple (list -Symbol -Color%-Instance -String))))]
  [racket:get-white-on-black-color-prefs-table
-  (-> (-Listof (-Tuple (list -Symbol -Color%-Instance -String))))]
+  (-> (-lst (-Tuple (list -Symbol -Color%-Instance -String))))]
  [racket:short-sym->pref-name (-Symbol . -> . -Symbol)]
  [racket:short-sym->style-name (-String . -> . -Symbol)]
  [racket:get-wordbreak-map (-> (make-Instance -Editor-Wordbreak-Map%))]
@@ -721,9 +715,9 @@
  [text:range-caret-space? (-Text:Range . -> . -Boolean)]
  [text:range-style (-Text:Range . -> . -Nat)] ; FIXME: doc says nat...
  [text:range-color (-Text:Range . -> . (Un -String -Color%-Instance))]
- [text:autocomplete-append-after (-Paramof -String)]
- [text:autocomplete-limit (-Paramof -PosInt)]
- [text:get-completions/manuals ((-opt (-Listof -Symbol)) . -> . (-Listof -String))]
+ [text:autocomplete-append-after (-Param -String)]
+ [text:autocomplete-limit (-Param -PosInt)]
+ [text:get-completions/manuals ((-opt (-lst -Symbol)) . -> . (-lst -String))]
  [text:lookup-port-name ((-opt (make-Instance (parse-type #'Editor:Basic<%>))) . -> . -Symbol)]
  ;; 30 Splash
  [start-splash
@@ -775,26 +769,26 @@
                       (Un -String -Nat)
                       . -> . -Void)]
  [test:keystroke ((Un -Char -Symbol)
-                  [(-Listof (Un (-val 'alt) (-val 'control) (-val 'meta) (-val 'shift)
+                  [(-lst (Un (-val 'alt) (-val 'control) (-val 'meta) (-val 'shift)
                                 (-val 'noalt) (-val 'nocontrol) (-val 'nometa) (-val 'noshift)))]
                   . ->opt . -Void)]
- [test:menu-select ((list -String) (-Listof -String) . ->* . -Void)]
+ [test:menu-select ((list -String) (-lst -String) . ->* . -Void)]
  [test:mouse-click ((Un (-val 'left) (-val 'middle) (-val 'right))
                     -Int
                     -Int
-                    [(-Listof (Un (-val 'alt) (-val 'control) (-val 'meta) (-val 'shift)
+                    [(-lst (Un (-val 'alt) (-val 'control) (-val 'meta) (-val 'shift)
                                   (-val 'noalt) (-val 'nocontrol) (-val 'nometa) (-val 'noshift)))]
                     . ->opt . -Void)]
  [test:run-interval (cl-> [{-Real} -Void]
                           [{} -Real])]
- [test:current-get-eventspaces (-Paramof (-> (-Listof -Eventspace)))]
+ [test:current-get-eventspaces (-Param (-> (-lst -Eventspace)))]
  [test:new-window (-Window<%>-Instance . -> . -Void)]
  [test:close-top-level-window (-Top-Level-Window<%>-Instance . -> . -Void)]
  [test:top-level-focus-window-has? ((-Area<%>-Instance . -> . -Boolean) . -> . -Boolean)]
  [test:number-pending-actions (-> -Nat)]
  [test:reraise-error (-> -Void)]
  [test:run-one ((-> -Void) . -> . -Void)]
- [test:use-focus-table (-Paramof (Un -Boolean (-val 'debug)))]
+ [test:use-focus-table (-Param (Un -Boolean (-val 'debug)))]
  [test:get-active-top-level-window (-> (Un -False -Frame%-Instance -Dialog%-Instance))]
  [label-of-enabled/shown-button-in-top-level-window? (-String . -> . -Boolean)]
  [enabled-shown-button? (-Button%-Instance . -> . -Boolean)]
