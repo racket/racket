@@ -3,6 +3,7 @@
          racket/contract
          racket/gui/base
          string-constants
+         setup/path-to-relative
          framework
          "find-completions.rkt")
 
@@ -154,7 +155,7 @@
                                     the-completions)
                             the-completions))]
             [n (in-naturals)])
-        (send lb append (path->string (list-ref i 1)))
+        (send lb append (path->relative-string/library (list-ref i 1)))
         ;; data holds a path => open the file
         ;; data holds a string => add that past the last / in 'tf'
         ;; when dir?=#t, then data always holds a path
