@@ -164,6 +164,10 @@
            (make-Vector sexp)
            (make-Box sexp)
            t)))
+(define/decl -Flat
+  (-mu flat
+       (Un -Null -Number -Boolean -Symbol -String -Keyword -Char
+           (-pair flat flat))))
 (define/decl -Sexp (-Sexpof (Un)))
 (define Syntax-Sexp (-Sexpof Any-Syntax))
 (define Ident (-Syntax -Symbol))

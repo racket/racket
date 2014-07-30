@@ -20,7 +20,7 @@
  "base-structs.rkt"
  racket/file
  (only-in racket/private/pre-base new-apply-proc)
- (only-in (types abbrev) [-Boolean B] [-Symbol Sym])
+ (only-in (types abbrev) [-Boolean B] [-Symbol Sym] -Flat)
  (only-in (types numeric-tower) [-Number N])
  (only-in (rep type-rep)
           make-ClassTop
@@ -1146,8 +1146,8 @@
      ((-> ManyUniv) ((list) Univ . ->* . b) . -> . b)))]
 
 ;; Section 10.2
-[raise (cl->* (Univ . -> . (Un))
-              (Univ Univ . -> . (Un)))]
+[raise (cl->* ((Un -Flat -Exn) . -> . (Un))
+              ((Un -Flat -Exn) Univ . -> . (Un)))]
 [error
  (cl->* (-> Sym (Un))
         (->* (list -String) Univ (Un))

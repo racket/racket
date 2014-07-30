@@ -10,7 +10,7 @@
 
 (require (for-template racket/base (prefix-in k: '#%kernel)))
 
-(provide initialize-structs -Date -Srcloc -Date -Arity-At-Least)
+(provide initialize-structs -Date -Srcloc -Date -Arity-At-Least -Exn)
 
 (define-syntax define-hierarchy
   (syntax-rules (define-hierarchy)
@@ -82,7 +82,7 @@
         (define-hierarchy exn:fail:contract:continuation (#:kernel-maker k:exn:fail:contract:continuation) ())
         (define-hierarchy exn:fail:contract:variable (#:kernel-maker k:exn:fail:contract:variable) ()))
 
-      (define-hierarchy exn:fail:syntax (#:kernel-maker k:exn:fail:syntax) ([exprs : (-lst (-Syntax Univ))]))
+      (define-hierarchy exn:fail:syntax (#:kernel-maker k:exn:fail:syntax) ([exprs : (-lst Any-Syntax)]))
 
       (define-hierarchy exn:fail:read (#:kernel-maker k:exn:fail:read)
         ([srclocs : (-lst Univ)]) ;; cce: Univ here should be srcloc
