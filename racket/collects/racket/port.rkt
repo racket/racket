@@ -584,6 +584,8 @@
                             [name (object-name orig-in)]
                             [delta 0]
                             #:init-position [init-position 1])
+  (define buffer-mode (or (file-stream-buffer-mode orig-in)
+                          'block))
   (make-input-port/read-to-peek
    name
    (lambda (s)
@@ -595,7 +597,14 @@
    void
    #f
    void
-   init-position))
+   init-position
+   (case-lambda
+    [() buffer-mode]
+    [(mode)
+     (when (file-stream-buffer-mode orig-in)
+       (file-stream-buffer-mode orig-in mode))
+     (set! buffer-mode mode)])
+   (eq? buffer-mode 'block)))
 
 (define relocate-input-port
   (lambda (p line col pos [close? #t])

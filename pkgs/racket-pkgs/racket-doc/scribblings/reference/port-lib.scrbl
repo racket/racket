@@ -327,25 +327,45 @@ it defaults to @racket[0].
 The resulting port's initial position (as reported by @racket[file-position])
 is @racket[(- init-position 1)], no matter the position of @racket[in].
 
+The resulting port supports buffering, and a @racket['block] buffer
+mode allows the port to peek further into @racket[in] than
+requested. The resulting port's initial buffer mode is
+@racket['block], unless @racket[in] supports buffer mode and its mode
+is initially @racket['none] (i.e., the initial buffer mode is taken
+from @racket[in] when it supports buffering). If @racket[in] supports
+buffering, adjusting the resulting port's buffer mode via
+@racket[file-stream-buffer-mode] adjusts @racket[in]'s buffer mode.
+
 For example, when you read from a peeking port, you
-see the same answers as when you read from the original port.
+see the same answers as when you read from the original port:
 
 @examples[#:eval port-eval
 (define an-original-port (open-input-string "123456789"))
 (define a-peeking-port (peeking-input-port an-original-port))
+(file-stream-buffer-mode a-peeking-port 'none)
 (read-string 3 a-peeking-port)
 (read-string 3 an-original-port)]
 
-But beware, the read from the original port is invisible to the peeking
+Beware that the read from the original port is invisible to the peeking
 port, which keeps its own separate internal counter, and thus
 interleaving reads on the two ports can produce confusing results.
 Continuing the example before, if we read three more characters from
-the peeking port, we end up skipping over the @litchar{456} in the port.
+the peeking port, we end up skipping over the @litchar{456} in the port
+(but only because we disabled buffering above):
 
 @examples[#:eval port-eval
 (read-string 3 a-peeking-port)
 ]
-}
+
+If we had left the buffer mode of @racket[a-peeking-port] alone, that
+last @racket[read-string] would have likely produced @racket["456"] as
+a result of buffering bytes from @racket[an-original-port] earlier.
+
+
+@history[#:changed "6.1.0.3" @elem{Enabled buffering and buffer-mode
+                                   adjustments via @racket[file-stream-buffer-mode],
+                                   and set the port's initial buffer mode to that of
+                                   @racket[in].}]}
 
 
 
