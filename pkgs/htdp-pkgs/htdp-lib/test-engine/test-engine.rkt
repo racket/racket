@@ -211,7 +211,8 @@
 	   (lambda () (send rep display-test-results test-display))))]
        [event-space 
 	(parameterize ([(dynamic-require 'mred/mred 'current-eventspace) event-space])
-	  ((dynamic-require 'mred/mred 'queue-callback) (lambda () (send test-display display-results))))]
+	  ((dynamic-require 'mred/mred 'queue-callback)
+           (lambda () (send test-display display-results))))]
        [else (send test-display display-results)]))
 
     (define/public (display-untested port)

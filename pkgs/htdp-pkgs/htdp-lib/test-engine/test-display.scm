@@ -278,6 +278,14 @@
           (print (string-constant test-engine-actual-value-differs-error)
                  (formatter (unequal-test fail))
                  (formatter (unequal-actual fail)))]
+	 [(satisfied-failed? fail)
+	  (print "Actual value ~F does not satisfy ~a."
+	         (formatter (satisfied-failed-actual fail))
+                 (satisfied-failed-name fail))
+	  #;
+          (print (string-constant test-engine-actual-value-differs-error)
+                 (formatter (unequal-test fail))
+                 (formatter (unequal-actual fail)))]
          [(outofrange? fail)
           (print (string-constant test-engine-actual-value-not-within-error)
                  (formatter (outofrange-test fail))
