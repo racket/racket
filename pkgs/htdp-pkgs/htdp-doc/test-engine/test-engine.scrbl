@@ -69,7 +69,21 @@ likely to fail:
 ]
 
 It is an error for @racket[expr] or @racket[expected-expr] to produce a function
-value or an inexact number.} 
+value or an inexact number.}
+
+@defform[(check-satisfied expr property?)]{
+Checks whether the value of the @racket[expr] expression satisfies 
+the @racket[property?] predicate (which must evaluate to a function of one
+argument). 
+
+@examples[#:eval (mk-eval (require test-engine/racket-tests))
+
+(check-satisfied 1 odd?)
+
+(check-satisfied 1 even?)
+
+(test)
+]} 
 
 @defform[(check-within expr expected-expr delta-expr)
           #:contracts ([delta-expr number?])]{
