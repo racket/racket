@@ -9312,9 +9312,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     SCHEME_EXPAND_OBSERVE_NEXT(observer);
 
     if (kind == SAVED_MODFORM_KIND) {
-      expanded_l = scheme_make_pair(SCHEME_CDR(e), expanded_l);
-      SCHEME_CAR(p) = SCHEME_CAR(e);
-      prev_p = p;
+      expanded_l = scheme_make_pair(e, expanded_l);
       p = SCHEME_CDR(p);      
     } else if ((kind == PROVIDE_MODFORM_KIND)
                || (kind == MODULE_MODFORM_KIND)) {

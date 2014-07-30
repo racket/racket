@@ -116,5 +116,21 @@
             '(module m '#%kernel
                (#%declare #:cross-phase-persistent))))))
 
+;; Check that `expand` produces valies syntax
+(let ()
+  (define e
+    (syntax->datum
+     (parameterize ([current-namespace (make-base-namespace)])
+       (expand '(module m '#%kernel
+                  (#%declare #:cross-phase-persistent))))))
+  (let loop ([e e])
+    (cond
+     [(syntax? e) (loop (syntax-e e))]
+     [(pair? e) (loop (car e)) (loop (cdr e))]
+     [(null? e) (void)]
+     [(symbol? e) (void)]
+     [(keyword? e) (void)]
+     [else (error 'expand-test "unexpected value: ~e" e)])))
+
 (displayln "All tests passed.")
 
