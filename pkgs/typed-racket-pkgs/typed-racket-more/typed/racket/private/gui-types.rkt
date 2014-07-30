@@ -1911,6 +1911,8 @@
          Editor-Data-Class%
          Editor-Stream-In%
          Editor-Stream-Out%
+         Editor-Stream-In-Base%
+         Editor-Stream-Out-Base%
          Keymap%
          Pasteboard%
          Text%)
