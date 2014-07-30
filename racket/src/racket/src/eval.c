@@ -1367,6 +1367,12 @@ static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, S
     return rands;
 }
 
+static Scheme_Object *do_eval_k_readjust_mark(void)
+{
+  MZ_CONT_MARK_POS -= 2; /* undo increment in do_eval_stack_overflow() */
+  return do_eval_k();
+}
+
 static Scheme_Object *do_eval_stack_overflow(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
                                              int get_value)
 {
@@ -1390,7 +1396,14 @@ static Scheme_Object *do_eval_stack_overflow(Scheme_Object *obj, int num_rands, 
   } else
     p->ku.k.p2 = (void *)rands;
   p->ku.k.i2 = get_value;
-  return scheme_handle_stack_overflow(do_eval_k);
+
+  /* In case we got here via scheme_force_value_same_mark(), in case
+     overflow handling causes the thread to sleep, and in case another
+     thread tries to get this thread's continuation marks: ensure tha
+     the mark pos is not below any current mark. */
+  MZ_CONT_MARK_POS += 2;
+
+  return scheme_handle_stack_overflow(do_eval_k_readjust_mark);
 }
 
 static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_Wind *b, 

@@ -1429,9 +1429,18 @@ Scheme_Object *
 scheme_force_value_same_mark(Scheme_Object *obj)
 {
   Scheme_Object *v;
-  
+
   MZ_CONT_MARK_POS -= 2;
+  /* At this point, if the thread is swapped out and we attempt to get
+     the continuation marks of the thread, then MZ_CONT_MARK_POS may
+     be inconsistent with the first mark on the stack. We assume that
+     a thread swap will not happen until scheme_do_eval(), where
+     the first possibility for a swap is on stack overflow, and
+     in that case MZ_CONT_MARK_POS is adjusted back before overflow
+     handling (which can cause the thread to swap out). */
+
   v = force_values(obj, 1);
+
   MZ_CONT_MARK_POS += 2;
 
   return v;
@@ -1443,7 +1452,10 @@ scheme_force_one_value_same_mark(Scheme_Object *obj)
   Scheme_Object *v;
   
   MZ_CONT_MARK_POS -= 2;
+  /* See above about thread swaps */
+
   v = force_values(obj, 0);
+
   MZ_CONT_MARK_POS += 2;
 
   return v;
