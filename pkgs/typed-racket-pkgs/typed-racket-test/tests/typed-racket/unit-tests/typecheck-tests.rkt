@@ -427,7 +427,8 @@
         (tc-e (real->extfl #e-1e-8192) -NonPosExtFlonum)
         (tc-err (let: ([z : 10000000000000 10000000000000]) z)) ; unsafe
         (tc-err (let: ([z : -4611686018427387904 -4611686018427387904]) z)) ; unsafe
-        (tc-e/t (let: ([z : -4611686018427387905 -4611686018427387905]) z) (-val -4611686018427387905))
+        (tc-e/t (let: ([z : -4611686018427387905 -4611686018427387905]) z)
+                (-val -4611686018427387905))
         (tc-err (let: ([z : -1073741825 -1073741825]) z)) ; unsafe
         (tc-e/t (let: ([z : -1073741824 -1073741824]) z) (-val -1073741824))
         (tc-e/t (let: ([z : 268435455 268435455]) z) (-val 268435455))
@@ -437,7 +438,8 @@
 
         [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-filter)]
         [tc-e/t (lambda: ([x : Number]) 3) (t:-> -Number -PosByte : -true-filter)]
-        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> -Number -Boolean -PosByte : -true-filter)]
+        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3)
+                (t:-> -Number -Boolean -PosByte : -true-filter)]
         [tc-e/t (lambda () 3) (t:-> -PosByte : -true-filter)]
         [tc-e (values 3 4) #:ret (ret (list -PosByte -PosByte) (list -true-filter -true-filter))]
         [tc-e (cons 3 4) (-pair -PosByte -PosByte)]
@@ -480,7 +482,8 @@
         [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
                 (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]
         [tc-e/t (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (t:-> -Number -Number -Number)]
-        [tc-e/t (tr:case-lambda [([a : Number] [b : Number]) (+ a b)]) (t:-> -Number -Number -Number)]
+        [tc-e/t (tr:case-lambda [([a : Number] [b : Number]) (+ a b)])
+                (t:-> -Number -Number -Number)]
         [tc-e/t (let: ([x : Number 5]) x) -Number]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -PosIndex]
         [tc-e (let-values ([(x y) (values 3 #t)]) (and (= x 1) (not y)))
@@ -491,7 +494,8 @@
         [tc-e (map #{values @ Symbol} '(a b c)) (-pair -Symbol (make-Listof -Symbol))]
         [tc-e (andmap add1 (ann '() (Listof Number))) (t:Un (-val #t) -Number)]
         [tc-e (ormap add1 (ann '() (Listof Number))) (t:Un (-val #f) -Number)]
-        [tc-e (letrec: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
+        [tc-e (letrec: ([fact : (Number -> Number)
+                              (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                        (fact 20))
               -Number]
         [tc-e (let: fact : Number ([n : Number 20])
@@ -536,7 +540,8 @@
                       (cond [(pair? x) 1]
                             [(null? x) 1]))
               -One]
-        [tc-e/t (lambda: ([x : Number] . [y : Number *]) (car y)) (->* (list -Number) -Number -Number)]
+        [tc-e/t (lambda: ([x : Number] . [y : Number *]) (car y))
+                (->* (list -Number) -Number -Number)]
         [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3) -Number]
         [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4 5) -Number]
         [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4) -Number]
@@ -544,7 +549,8 @@
         [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4 6 7)) -Number]
         [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '()) -Number]
 
-        [tc-e/t (lambda: ([x : Number] . [y : Boolean *]) (car y)) (->* (list -Number) -Boolean -Boolean)]
+        [tc-e/t (lambda: ([x : Number] . [y : Boolean *]) (car y))
+                (->* (list -Number) -Boolean -Boolean)]
         [tc-e ((lambda: ([x : Number] . [y : Boolean *]) (car y)) 3) -Boolean]
         [tc-e (apply (lambda: ([x : Number] . [y : Boolean *]) (car y)) 3 '(#f)) -Boolean]
         [tc-e (lambda args (void)) #:ret (ret (t:-> -String -Void) -true-filter)
@@ -614,7 +620,8 @@
         [tc-e (string-join '("hello" "world") #:before-first "a") -String]
         [tc-e (add-between '(1 2 3) 0) (-lst -Byte)]
         [tc-e (add-between '(1 2 3) 'a) (-lst (t:Un -PosByte (-val 'a)))]
-        [tc-e ((inst add-between Positive-Byte Symbol) '(1 2 3) 'a #:splice? #t #:before-first '(b)) (-lst (t:Un -PosByte -Symbol))]
+        [tc-e ((inst add-between Positive-Byte Symbol) '(1 2 3) 'a #:splice? #t #:before-first '(b))
+              (-lst (t:Un -PosByte -Symbol))]
 
         [tc-e (apply (plambda: (a) [x : a *] x) '(5)) (-lst -PosByte)]
         [tc-e (apply append (list '(1 2 3) '(4 5 6))) (-lst -PosByte)]
@@ -1010,7 +1017,8 @@
 
         [tc-err (apply append (list 1) (list 2) (list 3) (list (list 1) "foo"))]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list 1))) (-lst -PosByte)]
-        [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list "foo"))) (-lst (t:Un -String -PosByte))]
+        [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list "foo")))
+              (-lst (t:Un -String -PosByte))]
         [tc-e (plambda: (b ...) [y : b ... b] (apply append (map list y)))
          #:ret (ret (-polydots (b) (->... (list) (b b) (-lst Univ))) -true-filter)]
         [tc-e/t (plambda: (b ...) [y : (Listof Integer) ... b] (apply append y))
@@ -1051,11 +1059,14 @@
                  . t:-> . -PosByte : -true-filter)]
 
         [tc-e/t (plambda: (z x y ...) () (inst map z x y ... y))
-              (-polydots (z x y) (t:-> (cl->*
-                                        ((t:-> x z) (-pair x (-lst x)) . t:-> . (-pair z (-lst z)))
-                                        ((list ((list x) (y y) . ->... . z) (-lst x)) ((-lst y) y) . ->... . (-lst z)))
-                                       : -true-filter 
-                                       : (-id-path #'map)))]
+              (-polydots (z x y)
+                         (t:-> (cl->*
+                                ((t:-> x z) (-pair x (-lst x)) . t:-> . (-pair z (-lst z)))
+                                ((list ((list x) (y y) . ->... . z) (-lst x)) 
+                                 ((-lst y) y) 
+                                 . ->... . (-lst z)))
+                               : -true-filter 
+                               : (-id-path #'map)))]
 
         ;; error tests
         [tc-err (+ 3 #f)]
@@ -1133,13 +1144,15 @@
                    (lambda: ([y : (a ... a -> Number)])
                      (apply y zs))
                    ys)))
-              (-polydots (a) ((list) ((list) (a a) . ->... . -Number) . ->* . ((list) (a a) . ->... . (-lst -Number)) : -true-filter))]
+              (-polydots (a) ((list) ((list) (a a) . ->... . -Number) . ->* .
+                                     ((list) (a a) . ->... . (-lst -Number)) : -true-filter))]
         [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]
                 (lambda: [zs : a ... a]
                   (map (lambda: ([y : (a ... a -> Number)])
                          (apply y zs))
                        ys)))
-              (-polydots (a) ((list) ((list) (a a) . ->... . -Number) . ->* . ((list) (a a) . ->... . (-lst -Number)) : -true-filter))]
+              (-polydots (a) ((list) ((list) (a a) . ->... . -Number) . ->* .
+                                     ((list) (a a) . ->... . (-lst -Number)) : -true-filter))]
 
         [tc-e/t (lambda: ((x : (All (t) t)))
                        ((inst (inst x (All (t) (t -> t)))
@@ -1177,7 +1190,8 @@
               (-HT -String -Symbol)]
         [tc-e (hash-has-key? (make-hash '((1 . 2))) 1) -Boolean]
 
-        [tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
+        [tc-err (let: ([fact : (Number -> Number)
+                             (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))
           #:ret (ret -Number)]
 
@@ -1198,7 +1212,9 @@
                              'whatever))
          #:ret (ret (-val 'whatever) -true-filter)]
         [tc-e
-         (call-with-values (lambda () ((inst time-apply Number Number Number Number Number Number Number) + (list 1 2 3 4 5 6)))
+         (call-with-values (lambda () 
+                             ((inst time-apply Number Number Number Number Number Number Number)
+                              + (list 1 2 3 4 5 6)))
                            (lambda: ([v : (Listof Number)]
                                      [cpu : Number]
                                      [user : Number]
@@ -1256,7 +1272,9 @@
                x
                (lambda (z) (eq? x z))))
          (make-pred-ty (-val eof))]
-        [tc-e ((inst map Number (Pairof Number Number)) car (ann (list (cons 1 2) (cons 2 3) (cons 4 5)) (Listof (Pairof Number Number))))
+        [tc-e ((inst map Number (Pairof Number Number))
+               car
+               (ann (list (cons 1 2) (cons 2 3) (cons 4 5)) (Listof (Pairof Number Number))))
               (-lst -Number)]
         [tc-err (list (values 1 2))
           #:ret (ret (-Tuple (list -Bottom)))]
@@ -1401,24 +1419,30 @@
 
         (tc-e (regexp-match "foo" (string->path "tmp")) (-opt (-pair -String (-lst (-opt -String)))))
         (tc-e (regexp-match #"foo" (string->path "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
-        (tc-e (regexp-match "foo" (open-input-string "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
-        (tc-e (regexp-match #"foo" (open-input-string "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match "foo" (open-input-string "tmp"))
+              (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match #"foo" (open-input-string "tmp"))
+              (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
 
         (tc-err (regexp-try-match "foo" "foobar")
           #:ret (ret (t:Un (-val #f) (-pair -Bytes (-lst (t:Un (-val #f) -Bytes))))))
-        (tc-e (regexp-try-match "foo" (open-input-string "foobar")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-try-match "foo" (open-input-string "foobar"))
+              (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
 
         (tc-err (regexp-match-peek "foo" "foobar")
           #:ret (ret (t:Un (-val #f) (-pair -Bytes (-lst (t:Un (-val #f) -Bytes))))))
-        (tc-e (regexp-match-peek "foo" (open-input-string "foobar")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match-peek "foo" (open-input-string "foobar"))
+              (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
 
         (tc-err (regexp-match-peek-immediate "foo" "foobar")
           #:ret (ret (t:Un (-val #f) (-pair -Bytes (-lst (t:Un (-val #f) -Bytes))))))
-        (tc-e (regexp-match-peek-immediate "foo" (open-input-string "foobar")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match-peek-immediate "foo" (open-input-string "foobar"))
+              (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
 
 
 
-        [tc-e (regexp-match/end "foo" "foobar") #:ret (ret (list (-opt (-pair -String (-lst (-opt -String)))) (-opt -Bytes)))]
+        [tc-e (regexp-match/end "foo" "foobar")
+              #:ret (ret (list (-opt (-pair -String (-lst (-opt -String)))) (-opt -Bytes)))]
 
         (tc-e (regexp-split "foo" "foobar") (-pair -String (-lst -String)))
         (tc-e (regexp-split "foo" #"foobar") (-pair -Bytes (-lst -Bytes)))
@@ -1454,7 +1478,8 @@
         (tc-e (file-or-directory-modify-seconds "dir") -NonNegFixnum)
         (tc-e (file-or-directory-modify-seconds "dir" #f) -NonNegFixnum)
         (tc-e (file-or-directory-modify-seconds "dir" 20) -Void)
-        (tc-e (file-or-directory-modify-seconds "dir" #f (lambda () "error")) (t:Un -NonNegFixnum -String))
+        (tc-e (file-or-directory-modify-seconds "dir" #f (lambda () "error"))
+              (t:Un -NonNegFixnum -String))
         (tc-e (file-or-directory-modify-seconds "dir" 20 (lambda () "error")) (t:Un -Void -String))
 
         (tc-e (file-or-directory-permissions "tmp") (-lst (one-of/c 'read 'write 'execute)))
@@ -1493,8 +1518,10 @@
 
         (tc-e (pathlist-closure (list "thpm" "htmp")) (-lst -Path))
         (tc-e (fold-files (lambda: ((p : Path) (type : Symbol) (res : 'res))
-                            (if (eq? type 'dir) (values res #t) (values res 'ignored))) 'res)  (-val 'res))
-        (tc-e (fold-files (lambda: ((p : Path) (type : Symbol) (res : 'res)) res) 'res "tmp" #f)  (-val 'res))
+                            (if (eq? type 'dir) (values res #t) (values res 'ignored))) 'res)
+              (-val 'res))
+        (tc-e (fold-files (lambda: ((p : Path) (type : Symbol) (res : 'res)) res) 'res "tmp" #f)
+              (-val 'res))
 
         (tc-e (make-directory* "tmp/a/b/c") -Void)
 
@@ -1563,16 +1590,19 @@
 
         (tc-e (udp-addresses (udp-open-socket)) (list -String -String))
         (tc-e (udp-addresses (udp-open-socket) #f) (list -String -String))
-        (tc-e (udp-addresses (udp-open-socket) #t) (list -String -NonNegFixnum -String -NonNegFixnum))
+        (tc-e (udp-addresses (udp-open-socket) #t)
+              (list -String -NonNegFixnum -String -NonNegFixnum))
 
         ;Byte converters
         (tc-e (bytes-open-converter "UTF-8" "UTF-8") (-opt -Bytes-Converter))
         (tc-e (let ()
                (define: c : Bytes-Converter (assert (bytes-open-converter "UTF-8" "UTF-8")))
-               (bytes-convert c #"abcde"))  (list -Bytes -Nat (one-of/c 'complete 'continues 'aborts 'error)))
+               (bytes-convert c #"abcde"))
+              (list -Bytes -Nat (one-of/c 'complete 'continues 'aborts 'error)))
         (tc-e (let ()
                (define: c : Bytes-Converter (assert (bytes-open-converter "UTF-8" "UTF-8")))
-               (bytes-convert c #"abcde" 0 5 (make-bytes 10)))  (list -Nat -Nat (one-of/c 'complete 'continues 'aborts 'error)))
+               (bytes-convert c #"abcde" 0 5 (make-bytes 10)))
+              (list -Nat -Nat (one-of/c 'complete 'continues 'aborts 'error)))
 
         (tc-e (let ()
                (define: c : Bytes-Converter (assert (bytes-open-converter "UTF-8" "UTF-8")))
@@ -1583,14 +1613,16 @@
                (bytes-convert-end c (make-bytes 10)))  (list -Nat (one-of/c 'complete 'continues)))
 
         ;Subprocess
-        (tc-e (subprocess #f #f #f (string->path "/usr/bin/echo") "string" (string->path "path") #"bytes")
+        (tc-e (subprocess #f #f #f (string->path "/usr/bin/echo")
+                          "string" (string->path "path") #"bytes")
               (list
                 -Subprocess
                 -Input-Port
                 -Output-Port
                 -Input-Port))
 
-        (tc-e (subprocess (current-output-port) (current-input-port) (current-error-port) (string->path "/usr/bin/echo") 'exact "arg")
+        (tc-e (subprocess (current-output-port) (current-input-port) (current-error-port)
+                          (string->path "/usr/bin/echo") 'exact "arg")
               (list
                 -Subprocess
                 (-val #f)
@@ -1651,14 +1683,20 @@
                 (compiled-module-expression? e)) -Boolean)
 
         ;Impersonator Property
-        (tc-e (make-impersonator-property 'prop) (list -Impersonator-Property (t:-> Univ -Boolean) (t:-> Univ Univ)))
-        (tc-e (let-values: ((((prop : Impersonator-Property) (pred : (Any -> Any)) (acc : (Any -> Any)))
+        (tc-e (make-impersonator-property 'prop)
+              (list -Impersonator-Property (t:-> Univ -Boolean) (t:-> Univ Univ)))
+        (tc-e (let-values: ((((prop : Impersonator-Property)
+                              (pred : (Any -> Any))
+                              (acc : (Any -> Any)))
                              (make-impersonator-property 'prop)))
                (impersonator-property? prop))
               #:ret (ret -Boolean -true-filter))
 
         ;Security Guards
-        (tc-e (make-security-guard (current-security-guard) (lambda args (void)) (lambda args (void))) -Security-Guard)
+        (tc-e (make-security-guard (current-security-guard)
+                                   (lambda args (void))
+                                   (lambda args (void)))
+              -Security-Guard)
         (tc-e (let: ((s : Security-Guard (current-security-guard)))
                 (security-guard? s))
               #:ret (ret -Boolean -true-filter))
@@ -1730,7 +1768,8 @@
               (make-Evt -String))
         (tc-e (sync (replace-evt always-evt (lambda (x) 3)))
               (-mu x (make-Evt x)))
-        (tc-e (sync (replace-evt always-evt (lambda (x) (alarm-evt (+ (current-inexact-milliseconds) 1000)))))
+        (tc-e (sync (replace-evt always-evt (lambda (x)
+                                              (alarm-evt (+ (current-inexact-milliseconds) 1000)))))
               (-mu x (make-Evt x)))
         (tc-err (let: ([a : (U (Evtof Any) String) always-evt])
                   (if (handle-evt? a) a (string->symbol a)))
@@ -1750,11 +1789,14 @@
         ;Random Numbers
         (tc-e (make-pseudo-random-generator) -Pseudo-Random-Generator)
         (tc-e (let: ((pg : Pseudo-Random-Generator (make-pseudo-random-generator)))
-                (pseudo-random-generator->vector pg)) (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)))
+                (pseudo-random-generator->vector pg))
+              (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)))
 
         ;Structure Type Properties
-        (tc-e (make-struct-type-property 'prop) (list -Struct-Type-Property (t:-> Univ -Boolean) (t:-> Univ Univ)))
-        (tc-e (let-values: ((((prop : Struct-Type-Property) (pred : (Any -> Any)) (acc : (Any -> Any)))
+        (tc-e (make-struct-type-property 'prop)
+              (list -Struct-Type-Property (t:-> Univ -Boolean) (t:-> Univ Univ)))
+        (tc-e (let-values: ((((prop : Struct-Type-Property)
+                              (pred : (Any -> Any)) (acc : (Any -> Any)))
                              (make-struct-type-property 'prop)))
                (struct-type-property? prop))
               #:ret (ret -Boolean -true-filter))
@@ -1808,7 +1850,8 @@
         [tc-e (#%variable-reference) -Variable-Reference]
         [tc-e (#%variable-reference x) -Variable-Reference]
         [tc-e (#%variable-reference +) -Variable-Reference]
-        [tc-e (apply (λ: ([x : String] [y : String]) (string-append x y)) (list "foo" "bar")) -String]
+        [tc-e (apply (λ: ([x : String] [y : String])
+                       (string-append x y)) (list "foo" "bar")) -String]
         [tc-e (apply (plambda: (a) ([x : a] [y : a]) x) (list "foo" "bar")) -String]
         [tc-e (ann
                (case-lambda [(x) (add1 x)]
@@ -1848,7 +1891,10 @@
                 (= 0 x))
               -Boolean]
 
-        [tc-e/t (ann (lambda: ([x : Boolean]) (if x x #t)) (Boolean -> #t)) (t:-> -Boolean (-val #t))]
+        [tc-e/t (ann (lambda: ([x : Boolean])
+                       (if x x #t))
+                     (Boolean -> #t))
+                (t:-> -Boolean (-val #t))]
 
         [tc-e (sequence? 'foo)
               -Boolean]
@@ -2693,11 +2739,15 @@
          #:expected (ret (make-HeterogeneousVector (list -Byte -Byte)) -false-filter -no-obj)]
 
        [tc-err (values 'x)
-         #:ret (ret (list -Symbol -Symbol) (list -bot-filter -bot-filter) (list -empty-obj -empty-obj))
+         #:ret (ret (list -Symbol -Symbol)
+                    (list -bot-filter -bot-filter)
+                    (list -empty-obj -empty-obj))
          #:expected (ret (list -Symbol -Symbol) (list -no-filter -no-filter ) (list -no-obj -no-obj))]
 
        [tc-err (values 'x 'y 'z)
-         #:ret (ret (list -Symbol -Symbol) (list -bot-filter -bot-filter) (list -empty-obj -empty-obj))
+         #:ret (ret (list -Symbol -Symbol)
+                    (list -bot-filter -bot-filter)
+                    (list -empty-obj -empty-obj))
          #:expected (ret (list -Symbol -Symbol) (list -no-filter -no-filter ) (list -no-obj -no-obj))]
 
        [tc-err (values 'y)
@@ -2971,28 +3021,44 @@
 
 
        [tc-e
-         (tr:lambda xs (tr:lambda (x) (apply values (map (tr:lambda (z) (tr:lambda (y) (symbol? x))) xs))))
+         (tr:lambda xs (tr:lambda (x) 
+                         (apply values (map (tr:lambda (z) (tr:lambda (y) (symbol? x))) xs))))
          #:ret
            (ret (-polydots (a ...)
-                  (->... (list) (a a) (-values (list
-                                        (t:-> Univ (-values-dots (list) (t:-> Univ -Boolean : (-FS (-filter -Symbol (list 1 0)) -top)) 'a)))))))
-         #:expected
+                  (->... (list) (a a)
+                         (-values (list
+                                   (t:-> Univ
+                                         (-values-dots 
+                                          (list)
+                                          (t:-> Univ -Boolean 
+                                                : (-FS (-filter -Symbol (list 1 0)) -top)) 'a)))))))
+           #:expected
            (ret (-polydots (a ...)
-                  (->... (list) (a a) (-values (list
-                                        (t:-> Univ (-values-dots (list) (t:-> Univ -Boolean : (-FS (-filter -Symbol (list 1 0)) -top)) 'a)))))))]
+                  (->... 
+                   (list) (a a) 
+                   (-values 
+                    (list
+                     (t:-> Univ 
+                           (-values-dots 
+                            (list) 
+                            (t:-> Univ -Boolean : (-FS (-filter -Symbol (list 1 0)) -top)) 'a)))))))]
 
        [tc-err
          (inst (eval '3) Any)
          #:ret (ret -Bottom)]
        [tc-err
          (lambda xs (inst (apply values (plambda: (b) ([x : b]) x) xs) Symbol))
-         #:ret (ret (-polydots (a ...) (->... (list) (a a) (-values-dots (list (t:-> -Symbol -Symbol)) a 'a))))
-         #:expected (ret (-polydots (a ...) (->... (list) (a a) (-values-dots (list (t:-> -Symbol -Symbol)) a 'a))))]
+         #:ret (ret (-polydots (a ...) (->... (list) (a a)
+                                              (-values-dots (list (t:-> -Symbol -Symbol)) a 'a))))
+         #:expected (ret (-polydots (a ...) 
+                                    (->... (list) (a a)
+                                           (-values-dots (list (t:-> -Symbol -Symbol)) a 'a))))]
 
        [tc-err
          (lambda xs (andmap (lambda: ([x : (Vectorof Any)]) x) xs))
          #:ret (ret (-polydots (a ...) (->... (list) ((-vec a) a) (t:Un (-val #f) (-vec Univ)))))
-         #:expected (ret (-polydots (a ...) (->... (list) ((-vec a) a) (t:Un (-val #f) (-vec Univ)))))]
+         #:expected (ret (-polydots (a ...) (->... (list) ((-vec a) a)
+                                                   (t:Un (-val #f) (-vec Univ)))))]
        [tc-err
          (lambda xs (andmap (lambda: ([x : #f]) x) xs))
          #:ret (ret (-polydots (a ...) (->... (list) ((-val #f) a) (-val #f))))
@@ -3240,7 +3306,8 @@
          (-vec (t:Un (-val ':a) (-val ':b) (-mu X (-vec (t:Un (-val ':a) (-val ':b) X)))))
          #:expected (-mu X (-vec (t:Un (-val ':a) (-val ':b) X)))]
    [tc-l (#(:a) . :b)
-         (-pair (-vec (t:Un (-val ':a) (-mu X (-pair (-vec (t:Un (-val ':a) X)) (t:Un (-val ':b) X)))))
+         (-pair (-vec (t:Un (-val ':a)
+                            (-mu X (-pair (-vec (t:Un (-val ':a) X)) (t:Un (-val ':b) X)))))
                 (-val ':b))
          #:expected (-mu X (-pair (-vec (t:Un (-val ':a) X)) (t:Un (-val ':b) X)))]
    [tc-l/err #(1 2) #:expected (make-HeterogeneousVector (list -Number -Symbol))
