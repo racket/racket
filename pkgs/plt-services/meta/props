@@ -716,7 +716,7 @@ path/s is either such a string or a list of them.
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-coverage.rkt" responsible (robby matthias) drdr:command-line (raco "test" "-m" "--fresh-user" *)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-save-file.rkt" responsible (robby matthias) drdr:command-line (raco "test" "-m" "--fresh-user" *)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-sharing-modules.rkt" drdr:timeout 800
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/teachpack.rkt" responsible (robby matthias) drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/teachpack.rkt" responsible (robby matthias) drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 150
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/test-engine-test.rkt" responsible (sperber) drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 480
 "pkgs/drracket-pkgs/drracket-test/tests/jpr" responsible (mflatt)
 "pkgs/ds-store-pkgs" responsible (mflatt)
