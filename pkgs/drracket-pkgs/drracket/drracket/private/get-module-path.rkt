@@ -140,6 +140,11 @@
     (adjust-lb)
     (update-buttons))
   
+  (define (path->rel-string p alt-racket-info)
+    (if alt-racket-info
+        (path->string p)
+        (path->relative-string/library p)))
+  
   (define (adjust-lb)
     (send lb clear)
     (unless (equal? (send tf get-value) "")
@@ -155,7 +160,7 @@
                                     the-completions)
                             the-completions))]
             [n (in-naturals)])
-        (send lb append (path->relative-string/library (list-ref i 1)))
+        (send lb append (path->rel-string (list-ref i 1) alt-racket-info))
         ;; data holds a path => open the file
         ;; data holds a string => add that past the last / in 'tf'
         ;; when dir?=#t, then data always holds a path
