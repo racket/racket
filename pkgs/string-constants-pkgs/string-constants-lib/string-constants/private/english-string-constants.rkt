@@ -1900,7 +1900,7 @@ please adhere to these guidelines:
                             " either abort the current one or wait for it to finish.")
   
   ;; open a file via a collection path (new "Open" menu item in DrRacket)
-  (open-collection-path "Open Collection Path...")
+  (open-require-path "Open Require Path...")
   (enter-subcollection "Enter subcollection") ; button in new dialog
   (path-to-racket-binary "Path to binary")
   (use-a-different-racket "Use a different racket")

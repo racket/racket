@@ -3752,7 +3752,7 @@
       [define/override file-menu:between-open-and-revert
         (lambda (file-menu)
           (new menu:can-restore-menu-item%
-               [label (string-constant open-collection-path)]
+               [label (string-constant open-require-path)]
                [shortcut (if (member 'shift (get-default-shortcut-prefix)) #f #\o)]
                [shortcut-prefix (if (member 'shift (get-default-shortcut-prefix))
                                     (get-default-shortcut-prefix)
@@ -3776,7 +3776,11 @@
                     (get-module-path-from-user
                      #:init (or editing-module-path
                                 (preferences:get 'drracket:open-module-path-last-used))
-                     #:pref 'drracket:open-module-path-last-used))
+                     #:pref 'drracket:open-module-path-last-used
+                     #:current-directory 
+                     (and editing-path
+                          (let-values ([(base name dir?) (split-path editing-path)])
+                            base))))
                   (when pth (handler:edit-file pth)))])
           (super file-menu:between-open-and-revert file-menu)
           (make-object separator-menu-item% file-menu))]

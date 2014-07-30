@@ -819,7 +819,7 @@
             (handler:open-file)
             #t)))
     (new menu-item%
-         [label (string-constant open-collection-path)]
+         [label (string-constant open-require-path)]
          [shortcut #\o]
          [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))]
          [parent file-menu]

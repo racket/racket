@@ -12,7 +12,8 @@
    (->i ()
         (#:init [init string?] 
          #:pref [pref symbol?]
-         #:dir? [dir? boolean?])
+         #:dir? [dir? boolean?]
+         #:current-directory [current-directory (or/c path-string? #f)])
         [res (dir?)
              (if (or (not dir?)
                      (unsupplied-arg? dir?))
@@ -21,8 +22,10 @@
 
 (define (get-module-path-from-user #:init [init-value ""] 
                                    #:pref [pref-sym #f]
-                                   #:dir? [dir? #f])
-  
+                                   #:dir? [dir? #f]
+                                   #:current-directory 
+                                   [_the-current-directory #f])
+  (define the-current-directory (or _the-current-directory (current-directory)))
   (define dlg%
     (class dialog%
       (define/override (on-subwindow-char receiver event)
@@ -144,6 +147,7 @@
              (get-clcl/clcp)))
       (define the-completions 
         (find-completions (send tf get-value) 
+                          the-current-directory
                           #:alternate-racket alt-racket-info))
       (for ([i (in-list (if dir?
                             (filter (λ (i) (directory-exists? (list-ref i 1)))
