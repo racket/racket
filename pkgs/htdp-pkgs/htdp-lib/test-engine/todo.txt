@@ -1,0 +1,45 @@
+
+;; *****************************************************************************
+
+BIGGEST FAILURE: 
+   There is no single point of control for anything here. 
+
+
+
+
+TestEngine : 
+  -- split up to test at various language levels
+  -- run automated tests (at the moment the test suite isn't really tested)
+
+;; *****************************************************************************
+To add a check-* feature to the HtDP languages, you need to: 
+
+1. htdp-lib/test-engine
+   create the basic functionality in racket-tests.rkt 
+   add a structure to test-info.scm for reporting test failures 
+   modify test-display.scm test-engine.rkt so that they display failures in
+   gui and repl, respectively 
+
+2. htdp-test/test-engine:
+   add tests to TestEngineTest.rkt
+
+3. htdp-lib/lang:
+   propagate the new name in 
+   htdp-beginner.rkt htdp-beginner-abbr.rkt htdp-intermediate.rkt htdp-intermediate-lambda.rkt htdp-advanced.rkt
+   
+   raco setup htdp; drracket test-file-for-new-syntax-in-bsl-and-isl+ [see 2]
+
+4. htdp-doc/test-engine
+   htdp-doc/lang/scribblings 
+
+   edit the following, follow the check-random example: 
+    beginner.scrbl 
+    beginner-abbr.scrbl 
+    intermediate.scrbl
+    intermediate-lambda.scrbl 
+    advanced.scrbl 
+    prim-ops.rkt 
+    std-grammar.rkt
+
+   raco setup scribblings
+

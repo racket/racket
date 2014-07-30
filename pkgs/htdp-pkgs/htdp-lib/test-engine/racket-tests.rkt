@@ -1,5 +1,9 @@
 #lang racket/base
 
+;; *****************************************
+;; SEE todo.txt FOR HOW TO ADD A NEW FEATURE
+;; *****************************************
+
 (require lang/private/teachprims
          (for-syntax racket/base
                      lang/private/rewrite-error-message)
