@@ -7390,7 +7390,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   m->tt_requires = scheme_null;
   m->dt_requires = scheme_null;
 
-  if (iim && iim->phaseless && rec[drec].comp)
+  if (iim && iim->phaseless)
     m->phaseless = scheme_true;
 
   if (iidx) {

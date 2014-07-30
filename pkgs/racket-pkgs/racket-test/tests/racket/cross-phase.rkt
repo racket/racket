@@ -108,5 +108,13 @@
                'ok))
       (error 'cross-phase "redeclaration should have been disallowed"))))
 
+;; Check that `expand` allows cross-phase modules:
+(parameterize ([current-namespace (make-base-namespace)])
+  (void
+   (expand (datum->syntax
+            #f
+            '(module m '#%kernel
+               (#%declare #:cross-phase-persistent))))))
+
 (displayln "All tests passed.")
 
