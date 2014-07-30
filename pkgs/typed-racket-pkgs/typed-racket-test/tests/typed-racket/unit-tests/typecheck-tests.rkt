@@ -296,6 +296,7 @@
   ;; Needed for constructing TR types in expected values
   (for-syntax
     (rep type-rep filter-rep object-rep)
+    (base-env base-structs)
     (rename-in (types abbrev union numeric-tower filter-ops utils resolve)
                [Un t:Un]
                [-> t:->])))
@@ -3177,12 +3178,11 @@
         #:msg #rx"expected: Symbol.*given: Any"]
        
        [tc-err
-        (raise (λ ([x : Number]) (add1 x)))
-        #:ret (ret (Un))]
+        (raise (λ ([x : Number]) (add1 x)))]
        
        [tc-err
-        (exn:fail:syntax "" (current-continuation-marks) (list (datum->syntax #f add1)))
-        #:ret (ret -Exn)]
+        (raise (exn:fail:syntax "" (current-continuation-marks)
+                                (list (datum->syntax #f add1))))]
 
        ;; PR 14218
        [tc-e (ann (values "foo" "bar") (Values String String))
