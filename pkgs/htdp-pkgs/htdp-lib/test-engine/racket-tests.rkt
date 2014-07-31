@@ -188,7 +188,7 @@
 (define-syntax (check-satisfied stx)
   (syntax-case stx ()
     [(_ actual:exp expected-property:exp)
-     (symbol? (syntax-e #'expected-property:exp))
+     (identifier? #'expected-property:exp)
      (check-expect-maker stx
                          #'check-values-property 
                          #'(lambda (x) (expected-property:exp x))
