@@ -137,9 +137,9 @@ The function produced by @racketidfont{get-info} reflects information
 about the expected syntax of the input stream. The first argument to the
 function serves as a key on such information; acceptable keys and the
 interpretation of results is up to external tools, such as DrRacket (see
-@seclink[#:doc '(lib "scribblings/tools/tools.scrbl")
-        "drracket:module-language-tools"
-        #:indirect? #t]{the DrRacket documentation}).
+@seclink["_lang-based_Languages_in_DrRacket"
+         #:doc '(lib "scribblings/tools/tools.scrbl")
+         #:indirect? #t]{the DrRacket documentation}).
 If no information is available for a given key, the result should be
 the second argument.
 @mz-examples[
