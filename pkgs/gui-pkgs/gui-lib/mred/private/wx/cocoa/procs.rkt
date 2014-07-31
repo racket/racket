@@ -16,7 +16,7 @@
          "dc.rkt"
          "printer-dc.rkt"
          "menu-bar.rkt"
-         "agl.rkt"
+         "cgl.rkt"
          "sound.rkt"
          "keycode.rkt"
          "../../lock.rkt"

@@ -1,3 +1,4 @@
+#lang racket/base
 ;; $Id: gears.rkt,v 1.8 2005/01/12 12:49:10 mflatt Exp $
 ;;
 ;; This is a version of the venerable "gears" demo for PLT Scheme 200 using
@@ -31,22 +32,24 @@
 ;;
 ;; Updated to newer sgl interface by Scott Owens
 
-
-(module gears mzscheme
-(require mred
-         mzlib/class
-         mzlib/math
+(require racket/draw
+         racket/class
+         racket/math
          sgl
          sgl/gl-vectors)
 
+(provide gears%)
 
 (define controls? #t)
 
-(define gears-canvas%
-  (class* canvas% ()
+(define gears%
+  (class object%
+    (init-field with-gl-context
+                swap-gl-buffers
+                refresh
+                verbose?)
 
-    (inherit refresh with-gl-context swap-gl-buffers get-parent
-	     get-top-level-window)
+    (super-new)
 
     (define rotation 0.0)
 
@@ -59,6 +62,9 @@
     (define gear3 #f)
 
     (define step? #f)
+
+    (define/public (ready?)
+      (and gear1 #t))
 
     (define/public (run)
       (set! step? #t)
@@ -232,25 +238,16 @@
             (gl-vertex (* r0 cos-angle) (* r0 sin-angle) half-width)))
         (gl-end)))
 
-    (define/private (report-no-gl)
-      (message-box "Gears"
-		   (string-append
-		    "There was an error initializing OpenGL. "
-		    "Maybe OpenGL is not supported on the current platform.")
-		   (get-top-level-window)
-		   '(ok stop))
-      (exit 1))
-
-    (define/override (on-size width height)
+    (define/public (set-size width height)
       (with-gl-context
-       #:fail (lambda () (report-no-gl))
        (lambda ()
 
-         (unless gear1
-           (printf "  RENDERER:   ~A\n" (gl-get-string 'renderer))
-           (printf "  VERSION:    ~A\n" (gl-get-string 'version))
-           (printf "  VENDOR:     ~A\n" (gl-get-string 'vendor))
-           (printf "  EXTENSIONS: ~A\n" (gl-get-string 'extensions)))
+         (when verbose?
+           (unless gear1
+             (printf "  RENDERER:   ~A\n" (gl-get-string 'renderer))
+             (printf "  VERSION:    ~A\n" (gl-get-string 'version))
+             (printf "  VENDOR:     ~A\n" (gl-get-string 'vendor))
+             (printf "  EXTENSIONS: ~A\n" (gl-get-string 'extensions))))
 
          (gl-viewport 0 0 width height)
          (gl-matrix-mode 'projection)
@@ -296,23 +293,13 @@
 
            (gl-enable 'normalize))))
       (refresh))
-
-    (define sec (current-seconds))
-    (define frames 0)
     
-    (define/override (on-paint)
+    (define/public (draw)
       (when gear1
-	(when (>= (- (current-seconds) sec) 5)
-	  (send (get-parent) set-status-text (format "~a fps" (/ (exact->inexact frames) 5)))
-	  (set! sec (current-seconds))
-	  (set! frames 0))
-	(set! frames (add1 frames))
-        
 	(when step?
 	  ;; TODO: Don't increment this infinitely.
 	  (set! rotation (+ 2.0 rotation)))
 	(with-gl-context
-         #:fail (lambda () (report-no-gl))
 	 (lambda ()
 
 	   (gl-clear-color 0.0 0.0 0.0 0.0)
@@ -344,35 +331,83 @@
 	   (gl-pop-matrix)
 
 	   (swap-gl-buffers)
-	   (gl-flush)))
-	(when step?
-	  (set! step? #f)
-	  (queue-callback (lambda x (send this run)) #f))))
+	   (gl-flush))))
+      (cond
+       [step?
+        (set! step? #f)
+        #t]
+       [else #f]))))
 
-    (super-instantiate () (style '(gl no-autoclear)))))
-(define (f)
-  (let* ((f (make-object frame% "gears.rkt" #f))
-         (c (instantiate gears-canvas% (f) (min-width 300) (min-height 300))))
+(module+ main
+  (require racket/gui/base)
+  
+  (define gears-canvas%
+    (class* canvas% ()
+      (inherit refresh with-gl-context swap-gl-buffers get-parent
+               get-top-level-window)
+
+      (define gears (new gears%
+                         [with-gl-context
+                          (lambda (thunk)
+                            (with-gl-context
+                             #:fail (lambda () (report-no-gl))
+                             thunk))]
+                         [swap-gl-buffers
+                          (lambda () (swap-gl-buffers))]
+                         [refresh
+                          (lambda () (refresh))]
+                         [verbose? #t]))
+
+      (define/public (get-gears) gears)
+      
+      (super-new [style '(gl no-autoclear)])
+
+      (define/private (report-no-gl)
+        (message-box "Gears"
+                     (string-append
+                      "There was an error initializing OpenGL. "
+                      "Maybe OpenGL is not supported on the current platform.")
+                     (get-top-level-window)
+                     '(ok stop))
+        (exit 1))
+
+      (define/override (on-size width height)
+        (send gears set-size width height))
+
+      (define sec (current-seconds))
+      (define frames 0)
+      
+      (define/override (on-paint)
+        (when (send gears ready?)
+          (when (>= (- (current-seconds) sec) 5)
+            (send (get-parent) set-status-text (format "~a fps" (/ (exact->inexact frames) 5)))
+            (set! sec (current-seconds))
+            (set! frames 0))
+          (set! frames (add1 frames))
+          
+          (when (send gears draw)
+            (queue-callback (lambda x (send gears run)) #f))))))
+
+  (let* ((f (new frame% [label "gears.rkt"]))
+         (c (new gears-canvas% (parent f) (min-width 300) (min-height 300))))
+    (define g (send c get-gears))
     (send f create-status-line)
     (when controls?
       (let ((h (instantiate horizontal-panel% (f)
                  (alignment '(center center)) (stretchable-height #f))))
         (instantiate button%
-          ("Start" h (lambda (b e) (send b enable #f) (send c run)))
+          ("Start" h (lambda (b e) (send b enable #f) (send g run)))
           (stretchable-width #t) (stretchable-height #t))
         (let ((h (instantiate horizontal-panel% (h)
                    (alignment '(center center)))))
-          (instantiate button% ("Left" h (lambda x (send c move-left)))
+          (instantiate button% ("Left" h (lambda x (send g move-left)))
             (stretchable-width #t))
           (let ((v (instantiate vertical-panel% (h)
                      (alignment '(center center)) (stretchable-width #f))))
-            (instantiate button% ("Up" v (lambda x (send c move-up)))
+            (instantiate button% ("Up" v (lambda x (send g move-up)))
               (stretchable-width #t))
-            (instantiate button% ("Down" v (lambda x (send c move-down)))
+            (instantiate button% ("Down" v (lambda x (send g move-down)))
               (stretchable-width #t)))
-          (instantiate button% ("Right" h (lambda x (send c move-right)))
+          (instantiate button% ("Right" h (lambda x (send g move-right)))
             (stretchable-width #t)))))
     (send f show #t)))
-  (f)
-)
-;;eof
