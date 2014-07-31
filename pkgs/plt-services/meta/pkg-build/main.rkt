@@ -1088,7 +1088,7 @@
           (make-file-or-directory-link doc (build-path doc-dir (~a doc "@" pkg))))]
        [else
         ;; Extract successfully built but not fully installed documentation:
-        (printf "Trying to extract ~s docs\n" pkg)
+        (substatus "Trying to extract ~s docs\n" pkg)
         (with-handlers ([exn:fail? (lambda (exn)
                                      (eprintf "~a\n" (exn-message exn)))])
           (extract-documentation (pkg-zip-file pkg) pkg doc-dir))]))
@@ -1108,13 +1108,13 @@
         (when (and (list? adds)
                    (ormap (lambda (a) (and (pair? a) (eq? (car a) 'doc)))
                           adds))
-          (printf "Trying to salvage ~s docs\n" pkg)
+          (substatus "Trying to salvage ~s docs\n" pkg)
           (with-handlers ([exn:fail? (lambda (exn)
                                        (eprintf "~a\n" (exn-message exn)))])
             (extract-documentation zip-file pkg doc-dir))
           (for ([f (in-list (hash-ref prev-docs pkg null))])
             (unless (directory-exists? (build-path doc-dir f))
-              (printf "Salvaging previously built ~a\n" f)
+              (substatus "Salvaging previously built ~a\n" f)
               (copy-directory/files (build-path prev-doc-dir f)
                                     (build-path doc-dir f)))))))
 
