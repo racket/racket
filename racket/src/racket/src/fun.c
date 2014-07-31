@@ -9259,6 +9259,16 @@ static Scheme_Object *jump_to_alt_continuation()
 #ifdef USE_WIN32_TIME
 /* Number of milliseconds from 1601 to 1970: */
 # define MSEC_OFFSET 11644473600000
+
+mzlonglong get_hectonanoseconds_as_longlong()
+{
+  FILETIME ft;
+  mzlonglong v;
+  GetSystemTimeAsFileTime(&ft);
+  v = ((mzlonglong)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+  v -= ((mzlonglong)MSEC_OFFSET * 10000);
+  return v;
+}
 #endif
 
 intptr_t scheme_get_milliseconds(void)
@@ -9274,12 +9284,7 @@ intptr_t scheme_get_milliseconds(void)
   return (intptr_t)(now.time * 1000 + now.millitm);
 # else
 #  ifdef USE_WIN32_TIME
-  FILETIME ft;
-  mzlonglong v;
-  GetSystemTimeAsFileTime(&ft);
-  v = ((mzlonglong)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
-  v = (v / 10000) - MSEC_OFFSET;
-  return (intptr_t)v;
+  return (intptr_t)(get_hectonanoseconds_as_longlong() / (mzlonglong)10000);
 #  else
   struct timeval now;
   gettimeofday(&now, NULL);
@@ -9311,9 +9316,7 @@ double scheme_get_inexact_milliseconds(void)
 #  ifdef USE_WIN32_TIME
   FILETIME ft;
   mzlonglong v;
-  GetSystemTimeAsFileTime(&ft);
-  v = ((mzlonglong)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
-  v -= ((mzlonglong)MSEC_OFFSET) * 10000;
+  v = get_hectonanoseconds_as_longlong();
   return (double)(v / 10000) + (((double)(v % 10000)) / 10000.0);
 #  else
   struct timeval now;
@@ -9388,7 +9391,7 @@ intptr_t scheme_get_thread_milliseconds(Scheme_Object *thrd)
 intptr_t scheme_get_seconds(void)
 {
 #ifdef USE_WIN32_TIME
-  return scheme_get_milliseconds() / 1000;
+  return (intptr_t)(get_hectonanoseconds_as_longlong() / (mzlonglong)10000000);
 #else
 # ifdef USE_PALMTIME
   return TimGetSeconds();
