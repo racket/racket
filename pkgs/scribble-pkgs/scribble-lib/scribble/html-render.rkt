@@ -1403,14 +1403,19 @@
                              (if (and (not (list? cvt))
                                       (equal? request 'png@2x-bytes))
                                  (/ v 2.0)
-                                 v))])
+                                 v))]
+                    [number->decimal-string (lambda (s)
+                                              (number->string
+                                               (if (integer? s)
+                                                   s
+                                                   (exact->inexact s))))])
                (list
                 (add-padding
                  cvt
                  `(img ([src ,(install-file "pict.png" bstr)]
                         [alt "image"]
-                        [width ,(number->string (scale w))]
-                        [height ,(number->string (scale h))]))))))]
+                        [width ,(number->decimal-string (scale w))]
+                        [height ,(number->decimal-string (scale h))]))))))]
           [(case request
              [(svg-bytes)
               (or (convert e 'svg-bytes+bounds8)
