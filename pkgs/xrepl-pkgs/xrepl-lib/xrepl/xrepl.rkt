@@ -37,6 +37,9 @@
 (defautoload setup/path-to-relative path->relative-string/setup)
 (defautoload syntax/modcode         get-module-code)
 (defautoload racket/path            find-relative-path)
+(defautoload setup/xref             load-collections-xref)
+(defautoload scribble/xref          xref-binding->definition-tag)
+(defautoload scribble/blueboxes     fetch-blueboxes-strs)
 
 ;; similar, but just for identifiers
 (define hidden-namespace (make-base-namespace))
@@ -637,6 +640,9 @@
      (define-values [src-mod src-id nominal-src-mod nominal-src-id
                      src-phase import-phase nominal-export-phase]
        (apply values b))
+     (define tag
+       (xref-binding->definition-tag (load-collections-xref) b 0))
+     (define bluebox-strs (and tag (fetch-blueboxes-strs tag)))
      (set! src-mod         (->relname (mpi->name src-mod)))
      (set! nominal-src-mod (->relname (mpi->name nominal-src-mod)))
      (printf "; `~s' is a bound identifier~a,\n" sym at-phase)
@@ -650,7 +656,11 @@
                        (if (not (eq? sym nominal-src-id))
                          (format " where it is defined as `~s'" nominal-src-id)
                          ""))))
-     (printf "~a" (phase->name nominal-export-phase ";   (exported-~a)\n"))]))
+     (printf "~a" (phase->name nominal-export-phase ";   (exported-~a)\n"))
+     (when bluebox-strs
+       (displayln ";   documentation:")
+       (for-each (λ (s) (display ";     ") (displayln s))
+                 bluebox-strs))]))
 (define (describe-module sexpr mod-path/sym also?)
   (define get
     (if (symbol? mod-path/sym)
