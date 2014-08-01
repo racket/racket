@@ -823,9 +823,9 @@ static void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *out
   Scheme_Deferred_Expr *clos;
   Scheme_Closure_Data *data;
   Letrec_Check_Frame *inner, *new_frame;
-  Scheme_Object *tmp, *val, *uvars, *pvars, *tmp_uvars, *tmp_pvars, *deferred_uvars, *deferred_pvars;
+  Scheme_Object *tmp, *val, *uvars, *pvars, *deferred_uvars, *deferred_pvars;
   Scheme_Object *after_i, *subexpr_ls;
-  int i, old_subexpr, num_params, length_diff, position;
+  int i, old_subexpr, num_params, position;
 
   /* gets the closed over data from clos, which will always be a
      deferred expression that contains a closure */
@@ -925,31 +925,9 @@ static void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *out
       deferred_pvars = pvars;
     }
   }
-        
-  /* we trust the enclosing let to know the statuses of variables up
-     until (and including) it's own LHS variables, and then we
-     switch over to the deferred expression's environment.  so, we
-     compute the length difference of the two lists and chop off
-     what we need to from the uvars/pvars we currently have, then
-     append the lists together */
-  length_diff = scheme_list_length(uvars) - scheme_list_length(deferred_uvars);
 
-  tmp_uvars = scheme_null;
-  tmp_pvars = scheme_null;
-  while (length_diff > 0) {
-    tmp = scheme_make_pair(SCHEME_CAR(uvars), tmp_uvars);
-    tmp_uvars = tmp;
-    tmp = scheme_make_pair(SCHEME_CAR(pvars), tmp_pvars);
-    tmp_pvars = tmp;
-    uvars = SCHEME_CDR(uvars);
-    pvars = SCHEME_CDR(pvars);
-    length_diff--;
-  }
-  tmp_uvars = scheme_reverse(tmp_uvars);
-  tmp_pvars = scheme_reverse(tmp_pvars);
-
-  uvars = scheme_append(tmp_uvars, deferred_uvars);
-  pvars = scheme_append(tmp_pvars, deferred_pvars);
+  uvars = deferred_uvars;
+  pvars = deferred_pvars;
 
   /* establish that we actually get a lambda back */
   if (SCHEME_TYPE(data) != scheme_compiled_unclosed_procedure_type) {
