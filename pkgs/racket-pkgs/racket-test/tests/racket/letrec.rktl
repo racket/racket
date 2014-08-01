@@ -95,4 +95,37 @@
    c)
  letrec-exn?)
 
+(err/rt-test
+ (letrec ([b (let ([d (lambda () c)])
+               (d))]
+          [c 1])
+   b)
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ([b (let-values ([(a) 5]
+                          [(e d) (values 1 (lambda () c))])
+               (d))]
+          [c 1])
+   b)
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ([b (let-values ([(e d) (values 1 (lambda () c))]
+                          [(a) 5])
+               (d))]
+          [c 1])
+   b)
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ([b (let ([e (lambda ()
+                        (let ([d (lambda () c)])
+                          (d)))])
+               (e))]
+          [c 1])
+   b)
+ letrec-exn?)
+
+
 (report-errs)

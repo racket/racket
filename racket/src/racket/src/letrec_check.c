@@ -180,7 +180,7 @@ static Letrec_Check_Frame *get_nearest_rhs(Letrec_Check_Frame *frame)
       scheme_signal_error("get_nearest_rhs: subexpr is negative");
     }
     if ((frame->subexpr & LET_RHS_EXPR) &&
-        (frame->frame_type & FRAME_TYPE_LETREC))
+        (frame->frame_type != FRAME_TYPE_CLOSURE))
       { return frame; }
   }
     
@@ -420,7 +420,7 @@ static int lookup_var(int position, Scheme_Object *vars, Letrec_Check_Frame *fra
      so we don't have to do any offsetting */
   if ((frame->frame_type == FRAME_TYPE_LET) &&
       (frame->subexpr & LET_RHS_EXPR)) {
-    return lookup_var(position, vars, frame->next);
+    return lookup_var(position, SCHEME_CDR(vars), frame->next);
   }
   if (position >= frame->count) {
     /* we're not in the right frame yet, so offset pos by the
@@ -429,7 +429,7 @@ static int lookup_var(int position, Scheme_Object *vars, Letrec_Check_Frame *fra
 
     /* if is is not a letrec, or we are in the body of the letrec,
        there are no uvars/pvars for this frame, so don't cdr */
-    if ((frame->frame_type != FRAME_TYPE_LETREC) ||
+    if ((frame->frame_type == FRAME_TYPE_CLOSURE) ||
         (frame->subexpr & LET_BODY_EXPR)) {
       return lookup_var(position, vars, frame->next);
     } 
@@ -824,7 +824,7 @@ static void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *out
   Scheme_Closure_Data *data;
   Letrec_Check_Frame *inner, *new_frame;
   Scheme_Object *tmp, *val, *uvars, *pvars, *tmp_uvars, *tmp_pvars, *deferred_uvars, *deferred_pvars;
-  Scheme_Object *after_i, *i_wrapped, *subexpr_ls;
+  Scheme_Object *after_i, *subexpr_ls;
   int i, old_subexpr, num_params, length_diff, position;
 
   /* gets the closed over data from clos, which will always be a
@@ -848,14 +848,19 @@ static void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *out
     scheme_signal_error("letrec_check_deferred_expr: vars different lengths");
   }
 
-  after_i = scheme_null;
-  for (i = position - 1; i >= 0; i--) {
-    i_wrapped = scheme_make_integer(i);
-    tmp = scheme_make_pair(i_wrapped, after_i);
-    after_i = tmp;
+  if (outer->frame_type == FRAME_TYPE_LETREC) {
+    after_i = scheme_null;
+    for (i = position - 1; i >= 0; i--) {
+      after_i = scheme_make_pair(scheme_make_integer(i), after_i);
+    }
+  } else {
+    after_i = scheme_null;
+    for (i = position; i < outer->count; i++) {
+      after_i = scheme_make_pair(scheme_make_integer(i), after_i);
+    }
   }
 
-  if (outer->frame_type == FRAME_TYPE_LETREC) {
+  if (outer->frame_type != FRAME_TYPE_CLOSURE) {
     if (SCHEME_NULLP(uvars)) {
       scheme_signal_error("letrec_check_deferred_expr: uvars is null");
     }
@@ -877,18 +882,15 @@ static void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *out
          referenced during the evaluation of a RHS binding (i.e. in
          an unsafe context in a RHS) so we check those first.
                
-         we treat 1 thru i as protected, because this reference must
-         occur in a binding after i (and therefore 1 thru i have
-         values).  the rest of the LHS variables and those LHS
-         variables from outer letrecs are unprotected.
+         Letrec: we treat 1 thru i as unprotected, because this
+         binding happens before those remaining bindinings are
+         ready. For let[*], the counting is i+1 and up, instead.
       */
       deferred_uvars = merge_vars(uvars, pvars);
       tmp = scheme_make_pair(after_i, SCHEME_CDR(deferred_uvars));
       deferred_uvars = tmp;
       deferred_pvars = rem_vars(pvars);
-    }
-        
-    else if (type & LET_BODY_EXPR) {
+    } else if (type & LET_BODY_EXPR) {
       /* the next worst thing that can happen is that a LHS variable
          is referenced during the body, where a variable from an
          outer letrec might appear.
@@ -931,7 +933,7 @@ static void letrec_check_deferred_expr(Scheme_Object *o, Letrec_Check_Frame *out
      what we need to from the uvars/pvars we currently have, then
      append the lists together */
   length_diff = scheme_list_length(uvars) - scheme_list_length(deferred_uvars);
-    
+
   tmp_uvars = scheme_null;
   tmp_pvars = scheme_null;
   while (length_diff > 0) {
@@ -1020,7 +1022,8 @@ static void process_deferred_bindings_rhs(Letrec_Check_Frame *frame) {
   Scheme_Object **def, *tmp;
   int i, count, subexpr;
 
-  subexpr = frame->subexpr;
+  subexpr = LET_RHS_EXPR;
+  frame->subexpr = LET_BODY_EXPR; /* so pos_has_ref consults the frame */
   def = frame->def;
   count = frame->count;
 
@@ -1038,6 +1041,7 @@ static void process_deferred_bindings_rhs(Letrec_Check_Frame *frame) {
     else if (!(pos_has_ref(i, frame, subexpr))) {
     }
   }
+  frame->subexpr = LET_RHS_EXPR; /* so recursive checking works out */
   while (!SCHEME_NULLP(frame->deferred_with_rhs_ref)) {
     if (!SCHEME_PAIRP(frame->deferred_with_rhs_ref)) {
       scheme_signal_error("process_deferred_bindings_rhs: ls is not a ls");
@@ -1137,7 +1141,7 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
 {
   Letrec_Check_Frame *frame;
   Scheme_Compiled_Let_Value *clv;
-  Scheme_Object *body, *new_uvars_level, *new_pvars_level, *i_wrapped, *tmp, *val;
+  Scheme_Object *body, *new_uvars_level, *new_pvars_level, *val;
   int i, j, k;
 
   /* gets the information out of our header about the number of
@@ -1177,43 +1181,40 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
   frame = init_letrec_check_frame(frame_type, count, old_frame, head);
 
   /* add a new level to our uvars and pvars if this is a letrec */
+  new_pvars_level = scheme_null;
+  new_uvars_level = scheme_null;
   if (frame_type == FRAME_TYPE_LETREC) {
-    new_pvars_level = scheme_null;
-    new_uvars_level = scheme_null;
-        
     for (i = 0; i < count; i++) {
-      i_wrapped = scheme_make_integer(i);
-      tmp = scheme_make_pair(i_wrapped, new_pvars_level);
-      new_pvars_level = tmp;
+      new_pvars_level = scheme_make_pair(scheme_make_integer(i),
+                                         new_pvars_level);
     }
-
-    /* new_pvars_level = (i i-1 ... 1 0) */
-    /* new_uvars_level = () */
+    k = head->count;
   } else {
-    new_pvars_level = NULL;
-    new_uvars_level = NULL;
+    for (i = count; i--; ) {
+      new_pvars_level = scheme_make_pair(scheme_make_integer(i),
+                                         new_pvars_level);
+    }
+    k = 0;
   }
+  
+  /* new_pvars_level = (i i-1 ... 1 0) for letrec,
+     or                (0 1 ... i-1 i) for let[*] */
+  /* new_uvars_level = () */
 
   body = head->body;
 
   frame->subexpr = LET_RHS_EXPR;
 
   /* loops through every right hand side */
-  k = head->count;
   clv = NULL;
   for (i = num_clauses; i--;) {
     clv = (Scheme_Compiled_Let_Value *)body;
 
-    if (frame_type == FRAME_TYPE_LETREC) {
-      new_uvars = scheme_make_pair(new_uvars_level, uvars);
-      new_pvars = scheme_make_pair(new_pvars_level, pvars);
-    }
-    else {
-      new_uvars = uvars;
-      new_pvars = pvars;
-    }
+    new_uvars = scheme_make_pair(new_uvars_level, uvars);
+    new_pvars = scheme_make_pair(new_pvars_level, pvars);
 
-    k -= clv->count;
+    if (frame_type == FRAME_TYPE_LETREC)
+      k -= clv->count;
 
     if (clv->count == 0) {
       val = letrec_check_expr(clv->value, frame, new_uvars, new_pvars,
@@ -1222,7 +1223,7 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
                                  be reachable: */
                               scheme_null);
     }
-    else if (frame_type == FRAME_TYPE_LETREC) {
+    else {
       Scheme_Object *new_pos;
 
       if (clv->count == 1) {
@@ -1244,20 +1245,17 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
       val = letrec_check_expr(clv->value, frame, new_uvars, new_pvars,
                               new_pos);
     }
-    else {
-      val = letrec_check_expr(clv->value, frame, new_uvars, new_pvars,
-                              pos);
-    }
+
+    if (frame_type != FRAME_TYPE_LETREC)
+      k += clv->count;
         
-    if (frame_type == FRAME_TYPE_LETREC) {
-      /* then remove the current LHS variable from the
-         protectables variables as it is now protected */
-      for (j = 0; j < clv->count; j++) {
-        if (SCHEME_NULLP(new_pvars_level)) {
-          scheme_signal_error("letrec_check_lets: new_pvars_level is null");
-        }
-        new_pvars_level = SCHEME_CDR(new_pvars_level);
+    /* then remove the current LHS variable from the
+       protectables variables as it is now protected */
+    for (j = 0; j < clv->count; j++) {
+      if (SCHEME_NULLP(new_pvars_level)) {
+        scheme_signal_error("letrec_check_lets: new_pvars_level is null");
       }
+      new_pvars_level = SCHEME_CDR(new_pvars_level);
     }
         
     clv->value = val;
@@ -1265,9 +1263,7 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
     body = clv->body;
   }
 
-  if (frame_type != FRAME_TYPE_LET) {
-    process_deferred_bindings(frame);
-  }
+  process_deferred_bindings_rhs(frame);
 
   /* body is already the right value thanks to the for */
   frame->subexpr = LET_BODY_EXPR;
