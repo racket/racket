@@ -33,6 +33,7 @@
 ;; error.
 
 #lang mzscheme
+
 (require mzlib/etc
          mzlib/list
          mzlib/math
@@ -61,6 +62,7 @@
                     "rewrite-error-message.rkt"
                     "teach-shared.rkt"
                     "rewrite-error-message.rkt"
+                    racket/syntax
                     syntax/kerncase
                     syntax/stx
                     syntax/struct
@@ -75,13 +77,42 @@
                     test-engine/racket-tests)
 
 (define-for-syntax EXPECTED-HEADER
-  "expected a variable name, or a function name and its variables (in parentheses), but found ~a")
+  "expected a variable name, or a function name and its variables (in parentheses), but ~a")
 
 (define-for-syntax EXPECTED-MATCH-PATTERN
   "expected a pattern--answer clause after the expression following `match', but nothing's there")
 
 (define-for-syntax EXPECTED-FUNCTION-NAME
   "expected a function after the open parenthesis, but found a structure name")
+
+(define-for-syntax EXPECTED-MUTABLE
+  "expected a mutable variable after set!, but found a variable that cannot be modified: ~a")
+
+(define-for-syntax EXPECTED-1
+  "expected at least one binding (in parentheses) after the function name, but found none")
+
+(define-for-syntax EXPECTED-1-FIELD
+  "expected at least one field name (in parentheses) after the structure name, but nothing's there")
+
+(define-for-syntax EXPECTED-CLAUSE
+  "expected a clause with a question and an answer, but found a clause with only one part")
+
+(define-for-syntax EXPECTED-GOOD-CLAUSE
+  "expected a clause with a question and an answer, but found a clause with ~a parts")
+
+(define-for-syntax EXPECTED-MORE-THAN-NOTHING
+  (string-append
+   "expected a clause with at least one choice (in parentheses) and an answer after the expression,"
+   " but nothing's there"))
+
+(define-for-syntax EXPECTED-SYMBOL-OR-NUMBER+
+  "expected a symbol (without its quote) or a number as a choice, but found ~a")
+
+(define-for-syntax EXPECTED-SYMBOL-OR-NUMBER
+  "expected a symbol (without its quote) or a number as a choice, but nothing's there")
+
+(define-for-syntax EXPECTED-CLAUSE-WITH-CHOICE
+  "expected a clause with at least one choice (in parentheses) and an answer, but found ~a")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; run-time helpers
@@ -646,14 +677,15 @@
         stx
         (syntax non-name)
         EXPECTED-HEADER
-        (something-else/kw (syntax non-name)))]
+        (string-append "found " (something-else/kw (syntax non-name))))]
       ;; Missing name:
       [(_)
        (teach-syntax-error
         'define
         stx
         #f
-        "expected a variable name, or a function name and its variables (in parentheses), but nothing's there")]
+        EXPECTED-HEADER
+        "nothing's there")]
       [_else
        (bad-use-error 'define stx)]))
   
@@ -816,263 +848,271 @@
               "expected nothing after the field names, but found ~a extra part~a"
               (length rest)
               (if (> (length rest) 1) "s" ""))))
-         (let-values ([(struct: constructor-name predicate-name getter-names setter-names)
-                       (make-struct-names name fields stx)]
-                      [(field-count) (length fields)]
-                      [(signature-name) (car (generate-temporaries (list name)))]
-                      [(parametric-signature-name) 
-                       (datum->syntax name
-                                      (string->symbol
-                                       (string-append (symbol->string (syntax->datum name))
-                                                      "-of")))])
-           (let* ([to-define-names (list* constructor-name predicate-name
-                                          (if setters?
-                                              (append getter-names setter-names)
-                                              getter-names))]
-                  [proc-names to-define-names])
-             (with-syntax ([compile-info (kw-app build-struct-expand-info name fields #f (not setters?) #t null null
-                                                 #:omit-struct-type? #t)]
-                           [(field_/no-loc ...) (map (λ (x) (datum->syntax x (syntax->datum x) #f)) (syntax->list #'(field_ ...)))])
-               (let-values ([(defn0 bind-names)
-                             (wrap-func-definitions 
-                              first-order? 
-                              (list* 'constructor 
-                                     'predicate
-                                     (map (lambda (x) 'selector) (cddr proc-names)))
-                              proc-names
-                              (list* (- (length proc-names) 2)
-                                     1
-                                     (map (lambda (x) 1) (cddr proc-names)))
-                              (lambda (def-proc-names)
-                                (with-syntax ([(def-proc-name ...) def-proc-names]
-                                              [(proc-name ...) proc-names]
-                                              [(getter-name ...) getter-names])
-                                  (stepper-syntax-property
-                                   #`(define-values (#,signature-name #,parametric-signature-name def-proc-name ...)
-                                       (let ()
-                                         
-                                         (define-values (type-descriptor
-                                                         raw-constructor
-                                                         raw-predicate
-                                                         raw-generic-access
-                                                         raw-generic-mutate)
-                                           (make-struct-type 'name_
+         [define-values (struct: constructor-name predicate-name getter-names setter-names)
+           (make-struct-names name fields stx)]
+         [define field# (length fields)]
+         [define signature-name (car (generate-temporaries (list name)))]
+         [define parametric-signature-name (datum->syntax name (format-symbol "~a-of" name))]
+         [define to-define-names (list* constructor-name predicate-name
+                                        (if setters?
+                                            (append getter-names setter-names)
+                                            getter-names))]
+         [define proc-names to-define-names]
+         (define fields-without-location 
+           (map (λ (x) (datum->syntax x (syntax->datum x) #f)) (syntax->list #'(field_ ...))))
+         (with-syntax ([compile-info 
+                        (kw-app build-struct-expand-info name fields #f (not setters?) #t null null
+                                #:omit-struct-type? #t)]
+                       [(field_/no-loc ...) fields-without-location])
+           (define-values (defn0 bind-names)
+             (wrap-func-definitions 
+              first-order? 
+              (list* 'constructor 
+                     'predicate
+                     (map (lambda (x) 'selector) (cddr proc-names)))
+              proc-names
+              (list* (- (length proc-names) 2)
+                     1
+                     (map (lambda (x) 1) (cddr proc-names)))
+              (lambda (def-proc-names)
+                (with-syntax ([(def-proc-name ...) def-proc-names]
+                              [(proc-name ...) proc-names]
+                              [(getter-id ...) getter-names])
+                  (define defns
+                    #`(define-values (#,signature-name #,parametric-signature-name def-proc-name ...)
+                        (let ()
+                          (define-values (type-descriptor
+                                          raw-constructor
+                                          raw-predicate
+                                          raw-generic-access
+                                          raw-generic-mutate)
+                            (make-struct-type
+                             'name_
+                             #f
+                             #,field# 1
+                             #f ; auto-v
+                             (list
+                              (cons prop:print-convert-constructor-name
+                                    '#,constructor-name)
+                              (cons prop:print-converter
+                                    (lambda (r recur)
+                                      (list '#,constructor-name
+                                            #,@(map-with-index
+                                                (lambda (i _)
+                                                  #`(recur (raw-generic-access r #,i)))
+                                                fields))))
+                              (cons prop:custom-print-quotable
+                                    'never)
+                              (cons prop:custom-write
+                                    ;; Need a transparent-like printer, but hide auto field.
+                                    ;; This simplest way to do that is to create an instance
+                                    ;; of a transparet structure with the same name and field values.
+                                    (let-values ([(struct:plain make-plain plain? plain-ref plain-set)
+                                                  (make-struct-type 'name_ #f #,field# 0 #f null #f)])
+                                      (lambda (r port mode)
+                                        (let ((v (make-plain
+                                                  #,@(map-with-index (lambda (i _)
+                                                                       #`(raw-generic-access r #,i))
+                                                                     fields))))
+                                          (cond
+                                            [(eq? mode #t) (write v port)]
+                                            [(eq? mode #f) (display v port)]
+                                            [else (print v port mode)])))))
+                              (cons prop:equal+hash
+                                    (list
+                                     (lambda (r1 r2 equal?)
+                                       (and #,@(map-with-index 
+                                                (lambda (i field-spec)
+                                                  #`(equal? (raw-generic-access r1 #,i)
+                                                            (raw-generic-access r2 #,i)))
+                                                fields)))
+                                     (make-equal-hash 
+                                      (lambda (r i) (raw-generic-access r i)) #,field#) 
+                                     (make-equal2-hash
+                                      (lambda (r i) (raw-generic-access r i)) #,field#)))
+                              (cons prop:lazy-wrap
+                                    (make-lazy-wrap-info
+                                     (lambda args (apply #,constructor-name args))
+                                     (list #,@(map-with-index
+                                               (lambda (i _) 
+                                                 #`(lambda (r) (raw-generic-access r #,i)))
+                                               fields))
+                                     (list #,@(map-with-index
+                                               (lambda (i _)
+                                                 #`(lambda (r v) (raw-generic-mutate r #,i v)))
+                                               fields))
+                                     (lambda (r)
+                                       (raw-generic-access r #,field#))
+                                     (lambda (r v)
+                                       (raw-generic-mutate r #,field# v)))))
+                             ;; give `check-struct-wraps!' access
+                             (make-inspector)))
+                          
+                          #,@(map-with-index (lambda (i name field-name)
+                                               #`(define #,name
+                                                   (let ([raw (make-struct-field-accessor
+                                                               raw-generic-access
+                                                               #,i
+                                                               '#,field-name)])
+                                                     (lambda (r)
+                                                       (raw r)))))
+                                             getter-names
+                                             fields)
+                          #,@(map-with-index (lambda (i name field-name)
+                                               #`(define #,name 
+                                                   (let ([raw (make-struct-field-mutator
+                                                               raw-generic-mutate
+                                                               #,i
+                                                               '#,field-name)])
+                                                     (lambda (r v)
+                                                       (raw r v)))))
+                                             setter-names
+                                             fields)
+                          (define #,predicate-name raw-predicate)
+                          (define #,constructor-name raw-constructor)
+                          
+                          (define #,signature-name (signature (predicate raw-predicate)))
+                          
+                          #,(if setters?
+                                #`(define (#,parametric-signature-name field_ ...)
+                                    (signature
+                                     (combined 
+                                      (at name_ (predicate raw-predicate))
+                                      (at field_ (signature:property getter-id field_/no-loc)) ...)))
+                                #`(define (#,parametric-signature-name field_ ...)
+                                    (let* ((sigs (list field_/no-loc ...))
+                                           (sig
+                                            (make-lazy-wrap-signature 'name_ #t
+                                                                      type-descriptor
+                                                                      raw-predicate
+                                                                      sigs
+                                                                      #'name_)))
+                                      (let ((arbs (map signature-arbitrary sigs)))
+                                        (when (andmap values arbs)
+                                          (set-signature-arbitrary! 
+                                           sig
+                                           (apply arbitrary-record
+                                                  #,constructor-name 
+                                                  (list #,@getter-names)
+                                                  arbs))))
+                                      sig)))
+                          
+                          (values #,signature-name #,parametric-signature-name proc-name ...))))
+                  ;; --- IN ---
+                  (stepper-syntax-property defns 'stepper-black-box-expr stx)))))
+           ;; --------------------------------------------------------------------------------
+           (define struct-name-size (string-length (symbol->string (syntax-e #'name_))))
+           (define struct-name/locally-introduced (syntax-local-introduce #'name_))
+           
+           (define struct-name-to-maker-directive
+             (vector (syntax-local-introduce constructor-name)
+                     5
+                     struct-name-size
+                     struct-name/locally-introduced
+                     0
+                     struct-name-size))
+           
+           (define struct-name-to-predicate-directive
+             (vector (syntax-local-introduce predicate-name)
+                     0
+                     struct-name-size
+                     struct-name/locally-introduced
+                     0
+                     struct-name-size))
+           
+           (define (struct->selector-directive selector)
+             (define selector-name/locally-introduced (syntax-local-introduce selector))
+             (vector selector-name/locally-introduced
+                     0
+                     struct-name-size
+                     struct-name/locally-introduced
+                     0
+                     struct-name-size))
+           
+           (define (field->selector-directive field selector)
+             (define field-name/locally-introduced (syntax-local-introduce field))
+             (define field-name-size (string-length (symbol->string (syntax-e field))))
+             (define selector-name/locally-introduced (syntax-local-introduce selector))
+             (vector selector-name/locally-introduced
+                     (+ struct-name-size 1)
+                     field-name-size
+                     field-name/locally-introduced
+                     0
+                     field-name-size))
+           
+           (define (struct->setter-directive setter)
+             (define setter-name/locally-introduced (syntax-local-introduce setter))
+             (vector setter-name/locally-introduced
+                     ;; set-name_-field!
+                     ;; 012|--->|
+                     (string-length "set-")
+                     struct-name-size
+                     struct-name/locally-introduced
+                     0
+                     struct-name-size))
+           
+           (define (field->setter-directive field setter)
+             (define field-name/locally-introduced (syntax-local-introduce field))
+             (define field-name-size (string-length (symbol->string (syntax-e field))))
+             (define setter-name/locally-introduced (syntax-local-introduce setter))
+             (vector setter-name/locally-introduced
+                     ;; set-name_-field!
+                     ;; 012|4...X|--->
+                     (+ (string-length "set-") struct-name-size 1)
+                     field-name-size
+                     field-name/locally-introduced
+                     0
+                     field-name-size))
+           
+           (define signature-name-directive #f)
+           (define parametric-signature-name-directive #f)
+           
+           (define all-directives
+             (list* signature-name-directive
+                    parametric-signature-name-directive
+                    struct-name-to-maker-directive
+                    struct-name-to-predicate-directive
+                    (map field->selector-directive fields getter-names)
+                    (map struct->selector-directive getter-names)
+                    (map field->setter-directive fields setter-names)
+                    (map struct->setter-directive setter-names)))
+           
+           ;; --------------------------------------------------------------------------------
+           (define defn1 defn0)
+           (define defn2 
+             (quasisyntax/loc stx
+                      (begin
+                        #,(stepper-syntax-property
+                           #`(define-syntaxes (name_) 
+                               (let ()
+                                 (racket:define-struct info ()
+                                                       #:super struct:struct-info
+                                                       ;; support `signature'
+                                                       #:property 
+                                                       prop:procedure
+                                                       (lambda (_ stx)
+                                                         (syntax-case stx ()
+                                                           [(self . args)
+                                                            (raise-syntax-error
                                                              #f
-                                                             #,field-count 1
-                                                             #f ; auto-v
-                                                             (list
-                                                              (cons prop:print-convert-constructor-name
-                                                                    '#,constructor-name)
-                                                              (cons prop:print-converter
-                                                                    (lambda (r recur)
-                                                                      (list '#,constructor-name
-                                                                            #,@(map-with-index (lambda (i _)
-                                                                                                 #`(recur (raw-generic-access r #,i)))
-                                                                                               fields))))
-                                                              (cons prop:custom-print-quotable
-                                                                    'never)
-                                                              (cons prop:custom-write
-                                                                    ;; Need a transparent-like printer, but hide auto field.
-                                                                    ;; This simplest way to do that is to create an instance
-                                                                    ;; of a transparet structure with the same name and field values.
-                                                                    (let-values ([(struct:plain make-plain plain? plain-ref plain-set)
-                                                                                  (make-struct-type 'name_ #f #,field-count 0 #f null #f)])
-                                                                      (lambda (r port mode)
-                                                                        (let ((v (make-plain
-                                                                                  #,@(map-with-index (lambda (i _)
-                                                                                                       #`(raw-generic-access r #,i))
-                                                                                                     fields))))
-                                                                          (cond
-                                                                            [(eq? mode #t) (write v port)]
-                                                                            [(eq? mode #f) (display v port)]
-                                                                            [else (print v port mode)])))))
-                                                              (cons prop:equal+hash
-                                                                    (list
-                                                                     (lambda (r1 r2 equal?)
-                                                                       (and #,@(map-with-index (lambda (i field-spec)
-                                                                                                 #`(equal? (raw-generic-access r1 #,i)
-                                                                                                           (raw-generic-access r2 #,i)))
-                                                                                               fields)))
-                                                                     (make-equal-hash (lambda (r i) (raw-generic-access r i)) #,field-count) 
-                                                                     (make-equal2-hash (lambda (r i) (raw-generic-access r i)) #,field-count)))
-                                                              (cons prop:lazy-wrap
-                                                                    (make-lazy-wrap-info
-                                                                     (lambda args (apply #,constructor-name args))
-                                                                     (list #,@(map-with-index (lambda (i _)
-                                                                                                #`(lambda (r) (raw-generic-access r #,i)))
-                                                                                              fields))
-                                                                     (list #,@(map-with-index (lambda (i _)
-                                                                                                #`(lambda (r v) (raw-generic-mutate r #,i v)))
-                                                                                              fields))
-                                                                     (lambda (r)
-                                                                       (raw-generic-access r #,field-count))
-                                                                     (lambda (r v)
-                                                                       (raw-generic-mutate r #,field-count v)))))
-                                                             ;; give `check-struct-wraps!' access
-                                                             (make-inspector)))
-                                         
-                                         #,@(map-with-index (lambda (i name field-name)
-                                                              #`(define #,name
-                                                                  (let ([raw (make-struct-field-accessor
-                                                                              raw-generic-access
-                                                                              #,i
-                                                                              '#,field-name)])
-                                                                    (lambda (r)
-                                                                      (raw r)))))
-                                                            getter-names
-                                                            fields)
-                                         #,@(map-with-index (lambda (i name field-name)
-                                                              #`(define #,name 
-                                                                  (let ([raw (make-struct-field-mutator
-                                                                              raw-generic-mutate
-                                                                              #,i
-                                                                              '#,field-name)])
-                                                                    (lambda (r v)
-                                                                      (raw r v)))))
-                                                            setter-names
-                                                            fields)
-                                         (define #,predicate-name raw-predicate)
-                                         (define #,constructor-name raw-constructor)
-                                         
-                                         (define #,signature-name (signature (predicate raw-predicate)))
-                                         
-                                         #,(if setters?
-                                               #`(define (#,parametric-signature-name field_ ...)
-                                                   (signature
-                                                    (combined (at name_ (predicate raw-predicate))
-                                                              (at field_ (signature:property getter-name field_/no-loc)) ...)))
-                                               #`(define (#,parametric-signature-name field_ ...)
-                                                   (let* ((sigs (list field_/no-loc ...))
-                                                          (sig
-                                                           (make-lazy-wrap-signature 'name_ #t
-                                                                                     type-descriptor
-                                                                                     raw-predicate
-                                                                                     sigs
-                                                                                     #'name_)))
-                                                     (let ((arbs (map signature-arbitrary sigs)))
-                                                       (when (andmap values arbs)
-                                                         (set-signature-arbitrary! 
-                                                          sig
-                                                          (apply arbitrary-record
-                                                                 #,constructor-name 
-                                                                 (list #,@getter-names)
-                                                                 arbs))))
-                                                     sig)))
-                                         
-                                         (values #,signature-name #,parametric-signature-name proc-name ...)))
-                                   'stepper-black-box-expr
-                                   stx))))])
-                 ;; --------------------------------------------------------------------------------
-                 (define struct-name-size (string-length (symbol->string (syntax-e #'name_))))
-                 (define struct-name/locally-introduced (syntax-local-introduce #'name_))
-                 
-                 (define struct-name-to-maker-directive
-                   (vector (syntax-local-introduce constructor-name)
-                           5
-                           struct-name-size
-                           struct-name/locally-introduced
-                           0
-                           struct-name-size))
-                 
-                 (define struct-name-to-predicate-directive
-                   (vector (syntax-local-introduce predicate-name)
-                           0
-                           struct-name-size
-                           struct-name/locally-introduced
-                           0
-                           struct-name-size))
-                 
-                 (define (struct->selector-directive selector)
-                   (define selector-name/locally-introduced (syntax-local-introduce selector))
-                   (vector selector-name/locally-introduced
-                           0
-                           struct-name-size
-                           struct-name/locally-introduced
-                           0
-                           struct-name-size))
-                 
-                 (define (field->selector-directive field selector)
-                   (define field-name/locally-introduced (syntax-local-introduce field))
-                   (define field-name-size (string-length (symbol->string (syntax-e field))))
-                   (define selector-name/locally-introduced (syntax-local-introduce selector))
-                   (vector selector-name/locally-introduced
-                           (+ struct-name-size 1)
-                           field-name-size
-                           field-name/locally-introduced
-                           0
-                           field-name-size))
-                 
-                 (define (struct->setter-directive setter)
-                   (define setter-name/locally-introduced (syntax-local-introduce setter))
-                   (vector setter-name/locally-introduced
-                           ;; set-name_-field!
-                           ;; 012|--->|
-                           (string-length "set-")
-                           struct-name-size
-                           struct-name/locally-introduced
-                           0
-                           struct-name-size))
-                 
-                 (define (field->setter-directive field setter)
-                   (define field-name/locally-introduced (syntax-local-introduce field))
-                   (define field-name-size (string-length (symbol->string (syntax-e field))))
-                   (define setter-name/locally-introduced (syntax-local-introduce setter))
-                   (vector setter-name/locally-introduced
-                           ;; set-name_-field!
-                           ;; 012|4...X|--->
-                           (+ (string-length "set-") struct-name-size 1)
-                           field-name-size
-                           field-name/locally-introduced
-                           0
-                           field-name-size))
-                 
-                 (define signature-name-directive #f)
-                 (define parametric-signature-name-directive #f)
-                 
-                 (define all-directives
-                   (list* signature-name-directive
-                          parametric-signature-name-directive
-                          struct-name-to-maker-directive
-                          struct-name-to-predicate-directive
-                          (map field->selector-directive fields getter-names)
-                          (map struct->selector-directive getter-names)
-                          (map field->setter-directive fields setter-names)
-                          (map struct->setter-directive setter-names)))
-                 
-                 ;; --------------------------------------------------------------------------------
-                 (let* ([defn
-                          (quasisyntax/loc stx
-                            (begin
-                              #,(stepper-syntax-property
-                                 #`(define-syntaxes (name_) 
-                                     (let ()
-                                       (racket:define-struct info ()
-                                                             #:super struct:struct-info
-                                                             ;; support `signature'
-                                                             #:property 
-                                                             prop:procedure
-                                                             (lambda (_ stx)
-                                                               (syntax-case stx ()
-                                                                 [(self . args)
-                                                                  (raise-syntax-error
-                                                                   #f
-                                                                   EXPECTED-FUNCTION-NAME
-                                                                   stx
-                                                                   #'self)]
-                                                                 [_ #'#,signature-name])))
-                                       ;; support `shared'
-                                       (make-info (lambda () compile-info))))
-                                 'stepper-skip-completely
-                                 #t)
-                              #,defn0))]
-                        [defn (check-definitions-new 'define-struct
-                                                     stx 
-                                                     (list* name parametric-signature-name to-define-names)
-                                                     defn
-                                                     (and setters? bind-names))]
-                        [defn (syntax-property defn 'disappeared-use (list (syntax-local-introduce #'name_)))]
-                        [defn (syntax-property defn 'sub-range-binders all-directives)])
-                   defn))))))]
+                                                             EXPECTED-FUNCTION-NAME
+                                                             stx
+                                                             #'self)]
+                                                           [_ #'#,signature-name])))
+                                 ;; support `shared'
+                                 (make-info (lambda () compile-info))))
+                           'stepper-skip-completely
+                           #t)
+                        #,defn1)))
+           (define defn3
+             (check-definitions-new 'define-struct
+                                    stx 
+                                    (list* name parametric-signature-name to-define-names)
+                                    defn2
+                                    (and setters? bind-names)))
+           (define defn4
+             (syntax-property defn3 'disappeared-use (list struct-name/locally-introduced)))
+           (syntax-property defn4 'sub-range-binders all-directives)))]
       [(_ name_ something . rest)
        (teach-syntax-error
         'define-struct
@@ -1085,7 +1125,7 @@
         'define-struct
         stx
         #f
-        "expected at least one field name (in parentheses) after the structure name, but nothing's there")]
+        EXPECTED-1-FIELD)]
       [(_)
        (teach-syntax-error
         'define-struct
@@ -1180,17 +1220,20 @@
        
        (with-syntax ([(name? variant? ...)
                       (map (lambda (stx)
-                             (datum->syntax stx (string->symbol (format "~a?" (syntax->datum stx))) stx))
+                             (datum->syntax stx (format-symbol "~a?" (syntax->datum stx)) stx))
                            (syntax->list #'(name variant ...)))])
-         ;; Here we are using an explicit loop and the "/proc" functions instead of producing a syntax with "..."
-         ;; to preserve the syntax location information.
-         (with-syntax ([the-definition (advanced-define/proc (syntax/loc stx (define (name? x) (or (variant? x) ...))))]
+         ;; Here we are using an explicit loop and the "/proc" functions instead of producing 
+         ;; a syntax with "..." to preserve the syntax location information.
+         (with-syntax ([the-definition 
+                        (advanced-define/proc 
+                         (syntax/loc stx (define (name? x) (or (variant? x) ...))))]
                        [(the-struct-definitions ...)
                         (map
                          (lambda (v)
                            (syntax-case v ()
                              [(variant field ...)
-                              (advanced-define-struct/proc (syntax/loc stx (define-struct variant (field ...))))]))
+                              (advanced-define-struct/proc
+                               (syntax/loc stx (define-struct variant (field ...))))]))
                          (syntax->list #'((variant field ...) ...)))])
            (syntax/loc stx (begin the-definition the-struct-definitions ...))))]
       [(_ name_ (variant field ...) ... something . rest)
@@ -1314,8 +1357,9 @@
                (stepper-ignore-checker 
                 (syntax/loc stx (#%app values (beginner-top-continue id))))
                
-               ;; identifier-finding only returns useful information when inside a module. At the top-level we need to
-               ;; do the check at runtime. Also, note that at the top level there is no need for stepper annotations
+               ;; identifier-finding only returns useful information when inside a module. 
+               ;; At the top-level we need to  do the check at runtime. Also, note that at 
+               ;; the top level there is no need for stepper annotations
                (syntax/loc stx (#%app top/check-defined #'id)))
            
            (syntax/loc stx (#%top . id)))]))
@@ -1352,17 +1396,19 @@
                  [check-preceding-exprs
                   (lambda (stop-before)
                     (let/ec k
-                      (for-each (lambda (clause)
-                                  (if (eq? clause stop-before)
-                                      (k #t)
-                                      (syntax-case clause ()
-                                        [(question answer)
-                                         (begin
-                                           (unless (and (identifier? (syntax question))
-                                                        (module-identifier=? (syntax question) #'beginner-else))
-                                             (local-expand-for-error (syntax question) 'expression null))
-                                           (local-expand-for-error (syntax answer) 'expression null))])))
-                                clauses)))])
+                      (for-each 
+                       (lambda (clause)
+                         (if (eq? clause stop-before)
+                             (k #t)
+                             (syntax-case clause ()
+                               [(question answer)
+                                (begin
+                                  (unless
+                                      (and (identifier? (syntax question))
+                                           (module-identifier=? (syntax question) #'beginner-else))
+                                    (local-expand-for-error (syntax question) 'expression null))
+                                  (local-expand-for-error (syntax answer) 'expression null))])))
+                       clauses)))])
             (let ([checked-clauses
                    (map
                     (lambda (clause)
@@ -1376,10 +1422,11 @@
                               clause
                               "found an else clause that isn't the last clause ~
                                     in its cond expression"))
-                           (with-syntax ([new-test (stepper-syntax-property (syntax #t) 'stepper-else #t)])
+                           (with-syntax ([new-test (stepper-syntax-property #'#t 'stepper-else #t)])
                              (syntax/loc clause (new-test answer))))]
                         [(question answer)
-                         (with-syntax ([verified (stepper-ignore-checker (syntax (verify-boolean question 'cond)))])
+                         (with-syntax ([verified (stepper-ignore-checker 
+                                                  #'(verify-boolean question 'cond))])
                            (syntax/loc clause (verified answer)))]
                         [()
                          (check-preceding-exprs clause)
@@ -1394,7 +1441,7 @@
                           'cond
                           stx
                           clause
-                          "expected a clause with a question and an answer, but found a clause with only one part")]
+                          EXPECTED-CLAUSE)]
                         [(question? answer? ...)
                          (check-preceding-exprs clause)
                          (let ([parts (syntax->list clause)])
@@ -1410,7 +1457,7 @@
                             'cond
                             stx
                             parts
-                            "expected a clause with a question and an answer, but found a clause with ~a parts"
+                            EXPECTED-GOOD-CLAUSE
                             (length parts)))]
                         [_else
                          (teach-syntax-error
@@ -1421,12 +1468,14 @@
                           (something-else clause))]))
                     clauses)])
               ;; Add `else' clause for error (always):
-              (let ([clauses (append checked-clauses 
-                                     (list 
-                                      (with-syntax ([error-call (syntax/loc stx (error 'cond "all question results were false"))])
-                                        (syntax [else error-call]))))])
-                (with-syntax ([clauses clauses])
-                  (syntax/loc stx (cond . clauses))))))]
+              (define error-call (syntax/loc stx (error 'cond "all question results were false")))
+              [define clauses
+                (append checked-clauses 
+                        (list 
+                         (with-syntax ([error-call error-call]) 
+                           (syntax [else error-call]))))]
+              (with-syntax ([clauses clauses])
+                (syntax/loc stx (cond . clauses)))))]
          [_else (bad-use-error 'cond stx)]))))
   
   (define beginner-else/proc
@@ -1505,12 +1554,16 @@
                                   (stepper-syntax-property
                                    (quasisyntax/loc 
                                        stx
-                                     (if #,(stepper-ignore-checker (quasisyntax/loc stx (verify-boolean #,(car remaining) 'swhere)))
+                                     (if #,(stepper-ignore-checker 
+                                            (quasisyntax/loc stx
+                                              (verify-boolean #,(car remaining) 'swhere)))
                                          #,@(case where
-                                              [(or) #`(#t
-                                                       #,(loop (+ clauses-consumed 1) (cdr remaining)))]
-                                              [(and) #`(#,(loop (+ clauses-consumed 1) (cdr remaining))
-                                                        #f)])))
+                                              [(or) 
+                                               #`(#t
+                                                  #,(loop (+ clauses-consumed 1) (cdr remaining)))]
+                                              [(and)
+                                               #`(#,(loop (+ clauses-consumed 1) (cdr remaining))
+                                                  #f)])))
                                    'stepper-hint
                                    stepper-tag)
                                   'stepper-and/or-clauses-consumed
@@ -2085,7 +2138,7 @@
                       'recur
                       stx
                       (syntax empty-seq)
-                      "expected at least one binding (in parentheses) after the function name, but found none")]
+                      EXPECTED-1)]
                     [(_form fname . rest)
                      (identifier/non-kw? (syntax fname))
                      (bad-let-form 'recur (syntax (_form . rest)) stx)]
@@ -2424,7 +2477,7 @@
                                'set!
                                stx
                                (syntax id)
-                               "expected a mutable variable after set!, but found a variable that cannot be modified: ~a"
+                               EXPECTED-MUTABLE
                                (syntax-e #'id)))]
                            [else 
                             (teach-syntax-error
@@ -2448,13 +2501,14 @@
                                "this variable is not defined")]
                              [(and (list? binding)
                                    (or (not (module-path-index? (car binding)))
-                                       (let-values ([(path rel) (module-path-index-split (car binding))])
+                                       (let-values ([(path rel) 
+                                                     (module-path-index-split (car binding))])
                                          path)))
                               (teach-syntax-error
                                'set!
                                #'id
                                #f
-                               "expected a mutable variable after set!, but found a variable that cannot be modified: ~a"
+                               EXPECTED-MUTABLE
                                (syntax-e #'id))])))
                        ;; Check the RHS
                        (check-single-expression 'set!
@@ -2465,12 +2519,20 @@
                        
                        (if continuing?
                            (stepper-syntax-property
-                            (quasisyntax/loc stx (begin #,(datum->syntax #'here `(set! ,#'id ,@(syntax->list #'(expr ...))) stx) set!-result))
+                            (quasisyntax/loc stx
+                              (begin
+                                #,(datum->syntax #'here 
+                                                 `(set! ,#'id ,@(syntax->list #'(expr ...))) 
+                                                 stx)
+                                set!-result))
                             'stepper-skipto
                             (append skipto/cdr
                                     skipto/first))
-                           (stepper-ignore-checker (quasisyntax/loc stx (#%app values #,(advanced-set!-continue/proc
-                                                                                         (syntax/loc stx (_ id expr ...))))))))]
+                           (stepper-ignore-checker 
+                            (quasisyntax/loc stx
+                              (#%app values 
+                                     #,(advanced-set!-continue/proc
+                                        (syntax/loc stx (_ id expr ...))))))))]
                     [(_ id . __)
                      (teach-syntax-error
                       'set!
@@ -2521,7 +2583,8 @@
                       who
                       stx
                       (syntax->list #'parts)
-                      "expected a question and an answer, but found ~a parts" (length (syntax->list #'parts)))]
+                      "expected a question and an answer, but found ~a parts" 
+                      (length (syntax->list #'parts)))]
                     [_else
                      (bad-use-error who stx)])))))])
       (values (mk 'when (quote-syntax when))
@@ -2554,7 +2617,8 @@
            'let
            stx
            #f
-           "expected at least one binding (in parentheses) after ~a, but nothing's there" (syntax->datum (syntax name)))]
+           "expected at least one binding (in parentheses) after ~a, but nothing's there"
+           (syntax->datum (syntax name)))]
          [(_form name . rest)
           (identifier/non-kw? (syntax name))
           (bad-let-form 'let (syntax (_form . rest)) stx)]
@@ -2620,7 +2684,7 @@
            'case
            stx
            #f
-           "expected a clause with at least one choice (in parentheses) and an answer after the expression, but nothing's there")]
+           EXPECTED-MORE-THAN-NOTHING)]
          [(_ v-expr clause ...)
           (let ([clauses (syntax->list (syntax (clause ...)))])
             (for-each
@@ -2655,7 +2719,7 @@
                                           'case
                                           stx
                                           e
-                                          "expected a symbol (without its quote) or a number as a choice, but found ~a"
+                                          EXPECTED-SYMBOL-OR-NUMBER+
                                           (something-else e)))))
                                    elems))]
                       [_else (teach-syntax-error
@@ -2669,7 +2733,7 @@
                        'case
                        stx
                        choices
-                       "expected a symbol (without its quote) or a number as a choice, but nothing's there"))
+                       EXPECTED-SYMBOL-OR-NUMBER))
                     (check-single-expression 'case
                                              "for the answer in the case clause"
                                              clause
@@ -2680,28 +2744,30 @@
                    'case
                    stx
                    clause
-                   "expected a clause with at least one choice (in parentheses) and an answer, but found an empty part")]
+                   EXPECTED-CLAUSE-WITH-CHOICE
+                   "an empty part")]
                  [_else
                   (teach-syntax-error
                    'case
                    stx
                    clause
-                   "expected a clause with at least one choice (in parentheses) and an answer, but found ~a"
+                   EXPECTED-CLAUSE-WITH-CHOICE
                    (something-else clause))]))
              clauses)
             ;; Add `else' clause for error, if necessary:
-            (let ([clauses (let loop ([clauses clauses])
-                             (cond
-                               [(null? clauses)
-                                (list
-                                 (syntax/loc stx
-                                   [else (error 'cases "the expression matched none of the choices")]))]
-                               [(syntax-case (car clauses) (beginner-else)
-                                  [(beginner-else . _) (syntax/loc (car clauses) (else . _))]
-                                  [_else #f])
-                                => 
-                                (lambda (x) (cons x (cdr clauses)))]
-                               [else (cons (car clauses) (loop (cdr clauses)))]))])
+            (let ([clauses
+                   (let loop ([clauses clauses])
+                     (cond
+                       [(null? clauses)
+                        (list
+                         (syntax/loc stx
+                           [else (error 'cases "the expression matched none of the choices")]))]
+                       [(syntax-case (car clauses) (beginner-else)
+                          [(beginner-else . _) (syntax/loc (car clauses) (else . _))]
+                          [_else #f])
+                        => 
+                        (lambda (x) (cons x (cdr clauses)))]
+                       [else (cons (car clauses) (loop (cdr clauses)))]))])
               (with-syntax ([clauses clauses])
                 (syntax/loc stx (case v-expr . clauses)))))]
          [_else (bad-use-error 'case stx)]))))
@@ -3010,7 +3076,9 @@
          #,(let loop ([stx (syntax-case stx ()
                              [(_ stx) (syntax stx)])]
                       [depth 0])
-             (syntax-case stx (intermediate-unquote intermediate-unquote-splicing intermediate-quasiquote)
+             (syntax-case stx (intermediate-unquote 
+                               intermediate-unquote-splicing
+                               intermediate-quasiquote)
                [(intermediate-unquote x)
                 (if (zero? depth)
                     (syntax (unquote x))
@@ -3097,20 +3165,22 @@
 (define-syntax (for-all stx)
   (syntax-case stx ()
     ((_ (?clause ...) ?body)
-     (with-syntax ((((?id ?arb) ...)
-                    (map (lambda (pr)
-                           (syntax-case pr ()
-                             ((?id ?signature)
-                              (identifier? #'?id)
-                              (with-syntax ((?error-call
-                                             (syntax/loc #'?signature (error "Signature does not have a generator"))))
-                                #'(?id
-                                   (or (signature-arbitrary (signature ?signature))
-                                       ?error-call))))
-                             (_
-                              (raise-syntax-error #f "incorrect `for-all' clause - should have form (id contr)"
-                                                  pr))))
-                         (syntax->list #'(?clause ...)))))
+     (with-syntax
+         ((((?id ?arb) ...)
+           (map (lambda (pr)
+                  (syntax-case pr ()
+                    ((?id ?signature)
+                     (identifier? #'?id)
+                     (with-syntax
+                         ((?error-call
+                           (syntax/loc #'?signature (error "Signature does not have a generator"))))
+                       #'(?id
+                          (or (signature-arbitrary (signature ?signature))
+                              ?error-call))))
+                    (_
+                     (raise-syntax-error #f "incorrect `for-all' clause - should have form (id contr)"
+                                         pr))))
+                (syntax->list #'(?clause ...)))))
        
        (stepper-syntax-property #'(quickcheck:property 
                                    ((?id ?arb) ...) ?body)
@@ -3184,18 +3254,10 @@
   (ensure-real 'expect-range "First" val)
   (ensure-real 'expect-range "Second" min)
   (ensure-real 'expect-range "Third" max)
-  (quickcheck:property ()
-                       (and (<= min val)
-                            (<= val max))))
+  (quickcheck:property () (and (<= min val) (<= val max))))
 
 (define (expect-member-of val . candidates)
-  (quickcheck:property () 
-                       (ormap (lambda (cand)
-                                (teach-equal? val cand))
-                              candidates)))
+  (quickcheck:property () (ormap (lambda (cand) (teach-equal? val cand)) candidates)))
 
-(define Property (signature (predicate (lambda (x)
-                                         (or (boolean? x)
-                                             (property? x))))))
-
-
+(define Property
+  (signature (predicate (lambda (x) (or (boolean? x) (property? x))))))
