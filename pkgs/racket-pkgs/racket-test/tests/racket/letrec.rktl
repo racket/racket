@@ -127,5 +127,27 @@
    b)
  letrec-exn?)
 
+(err/rt-test
+ (letrec ([b (with-continuation-mark
+                 'x
+                 (lambda () c)
+               ((continuation-mark-set-first
+                 (current-continuation-marks)
+                 'x)))]
+          [c 1])
+   c)
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ([b (with-continuation-mark
+                 'x
+                 (lambda () c)
+               (+ (random)
+                  ((continuation-mark-set-first
+                    (current-continuation-marks)
+                    'x))))]
+          [c 1])
+   c)
+ letrec-exn?)
 
 (report-errs)

@@ -738,14 +738,20 @@ static Scheme_Object *letrec_check_wcm(Scheme_Object *o, Letrec_Check_Frame *fra
                                        Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_With_Continuation_Mark *wcm;
-  Scheme_Object *val;
+  Scheme_Object *val, *val_uvars, *val_pvars, *val_pos;
 
   wcm = (Scheme_With_Continuation_Mark *)o;
     
   val = letrec_check_expr(wcm->key, frame, uvars, pvars, pos);
   wcm->key = val;
-  val = letrec_check_expr(wcm->val, frame, uvars, pvars, pos);
+
+  /* Since a value can be accessed through `current-continuaton-marks`... */
+  val_uvars = merge_vars(uvars, pvars);
+  val_pvars = rem_vars(pvars);
+  val_pos = scheme_false;
+  val = letrec_check_expr(wcm->val, frame, val_uvars, val_pvars, val_pos);
   wcm->val = val;
+
   val = letrec_check_expr(wcm->body, frame, uvars, pvars, pos);
   wcm->body = val;
     
