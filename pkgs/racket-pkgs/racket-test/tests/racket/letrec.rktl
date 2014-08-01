@@ -88,4 +88,11 @@
    y)
  letrec-exn?)
 
+(err/rt-test
+ (letrec ([a 1]
+          [b (set! a (lambda () c))]
+          [c (a)])
+   c)
+ letrec-exn?)
+
 (report-errs)

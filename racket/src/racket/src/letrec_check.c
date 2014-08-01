@@ -1319,13 +1319,19 @@ static Scheme_Object *letrec_check_set(Scheme_Object *o, Letrec_Check_Frame *fra
                                        Scheme_Object *uvars, Scheme_Object *pvars, Scheme_Object *pos)
 {
   Scheme_Set_Bang *sb;
-  Scheme_Object *val;
+  Scheme_Object *val, *rhs_uvars, *rhs_pvars, *rhs_pos;
   int position;
 
   sb = (Scheme_Set_Bang *)o;
   val = sb->val;
 
-  val = letrec_check_expr(val, frame, uvars, pvars, pos);
+  /* Treat `set!` as allowing the right-hand side to escape.  (We
+     could do better if `sb->var` is a variable that we know about.) */
+  rhs_uvars = merge_vars(uvars, pvars);
+  rhs_pvars = rem_vars(pvars);
+  rhs_pos = scheme_false;
+
+  val = letrec_check_expr(val, frame, rhs_uvars, rhs_pvars, rhs_pos);
   sb->val = val;
 
   if (SAME_TYPE(SCHEME_TYPE(sb->var), scheme_local_type)) {
