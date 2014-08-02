@@ -13,6 +13,7 @@
          racket/class
          racket/list
          racket/contract
+         racket/pretty
          syntax/boundmap
          scribble/manual-struct)
 
@@ -30,7 +31,7 @@
     ;; represents the top-level of a single program. The first value
     ;; is called once for each top-level expression and the second
     ;; value is called once, after all expansion is complete.
-    (define (make-traversal user-namespace user-directory)
+    (define (make-traversal user-namespace user-directory [print-extra-info? #f])
       (let* ([tl-phase-to-binders (make-hash)]
              [tl-phase-to-varrefs (make-hash)]
              [tl-phase-to-varsets (make-hash)]
@@ -85,7 +86,22 @@
                                              sub-identifier-binding-directives)
                          (annotate-contracts sexp 
                                              (hash-ref phase-to-binders 0 (λ () (make-id-set)))
-                                             binding-inits))]
+                                             binding-inits)
+                         (when print-extra-info?
+                           (print-extra-info (list (list 'phase-to-binders phase-to-binders)
+                                                   (list 'phase-to-varrefs phase-to-varrefs)
+                                                   (list 'phase-to-varsets phase-to-varsets)
+                                                   (list 'phase-to-tops phase-to-tops)
+                                                   (list 'phase-to-requires phase-to-requires)
+                                                   (list 'binding-inits binding-inits)
+                                                   (list 'templrefs templrefs)
+                                                   (list 'module-lang-requires module-lang-requires)
+                                                   (list 'requires requires)
+                                                   (list 'require-for-syntaxes require-for-syntaxes)
+                                                   (list 'require-for-templates require-for-templates)
+                                                   (list 'require-for-labels require-for-templates)
+                                                   (list 'sub-identifier-binding-directives
+                                                         sub-identifier-binding-directives)))))]
                       [else
                        (annotate-basic sexp
                                        user-namespace user-directory
@@ -102,6 +118,16 @@
               (λ ()
                 (parameterize ([current-directory (or user-directory (current-directory))]
                                [current-load-relative-directory user-directory])
+                  (when print-extra-info?
+                    (print-extra-info (list (list 'tl-phase-to-binders tl-phase-to-binders)
+                                            (list 'tl-phase-to-varrefs tl-phase-to-varrefs)
+                                            (list 'tl-phase-to-varsets tl-phase-to-varsets)
+                                            (list 'tl-phase-to-tops tl-phase-to-tops)
+                                            (list 'tl-templrefs tl-templrefs)
+                                            (list 'tl-module-lang-requires tl-module-lang-requires)
+                                            (list 'tl-phase-to-requires tl-module-lang-requires)
+                                            (list 'tl-sub-identifier-binding-directives 
+                                                  tl-sub-identifier-binding-directives))))
                   (annotate-variables user-namespace
                                       user-directory
                                       tl-phase-to-binders
@@ -115,6 +141,23 @@
         (values expanded-expression expansion-completed)))
     
     
+(define (print-extra-info stuff)
+  (for ([info (in-list stuff)])
+    (printf "~s\n" (car info))
+    (pretty-print
+     (let loop ([info (cadr info)])
+       (cond
+         [(hash? info)
+          (for/hash ([(k v) (in-hash info)])
+            (values (loop k) (loop v)))]
+         [(free-identifier-mapping? info)
+          (free-identifier-mapping-map
+           info
+           (λ (k v) (list (loop k) '=> (loop v))))]
+         [(pair? info) (cons (loop (car info)) (loop (cdr info)))]
+         [else info])))
+    (newline)))
+
     ;; type req/tag = (make-req/tag syntax sexp boolean)
     (define-struct req/tag (req-stx req-sexp used?))
     

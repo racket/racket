@@ -1725,7 +1725,7 @@ If the namespace does not, they are colored the unbound color.
            (define-values (pos text) (send editor get-pos/text event))
            (when (and pos (is-a? text text%))
              (send editor syncheck:build-popup-menu menu pos text #f))))))
-            
+    
     (define syncheck-frame<%>
       (interface ()
         syncheck:button-callback
@@ -2060,7 +2060,7 @@ If the namespace does not, they are colored the unbound color.
         (inherit open-status-line close-status-line update-status-line ensure-rep-hidden)
         ;; syncheck:button-callback : (case-> (-> void) ((union #f syntax) -> void)
         ;; this is the only function that has any code running on the user's thread
-        (define/public (syncheck:button-callback)
+        (define/public (syncheck:button-callback #:print-extra-info? [print-extra-info? #f])
           (when (send check-syntax-button is-enabled?)
             (open-status-line 'drracket:check-syntax:status)
             (update-status-line 'drracket:check-syntax:status status-init)
@@ -2163,7 +2163,8 @@ If the namespace does not, they are colored the unbound color.
                 (update-status-line 'drracket:check-syntax:status status-expanding-expression)
                 (set!-values (expanded-expression expansion-completed) 
                              (make-traversal (current-namespace)
-                                             (current-directory))) ;; set by set-directory above
+                                             (current-directory)
+                                             print-extra-info?)) ;; set by set-directory above
                 (set! user-custodian (current-custodian))))
             
             (set-syncheck-running-mode 'button)

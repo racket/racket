@@ -2,6 +2,7 @@
 
   (require "private/drracket-test-util.rkt"
            drracket/private/syncheck/local-member-names
+           drracket/syncheck-drracket-button
            string-constants/string-constant
            "private/gui.rkt"
            racket/path
@@ -26,15 +27,15 @@
   ;;                        (listof (list number number) (listof string)))
   ;;                        (-> any)
   ;;                        (any -> void?)  -- argument is the result of the setup thunk
-  (define-struct test (line input expected arrows tooltips setup teardown) #:transparent)
+  (define-struct test (line input expected arrows tooltips setup teardown extra-info?) #:transparent)
   (define-struct (dir-test test) () #:transparent)
   
   (define-struct rename-test (line input pos old-name new-name output) #:transparent)
   
   (define build-test/proc
     (λ (line input expected [arrow-table '()] #:tooltips [tooltips #f] 
-             #:setup [setup void] #:teardown [teardown void])
-      (make-test line input expected arrow-table tooltips setup teardown)))
+             #:setup [setup void] #:teardown [teardown void] #:extra-info? [extra-info? #f])
+      (make-test line input expected arrow-table tooltips setup teardown extra-info?)))
   
   (define-syntax (build-test stx)
     (syntax-case stx ()
@@ -53,7 +54,7 @@
       [(_ args ...)
        (with-syntax ([line (syntax-line stx)])
          ;; #f is for the tooltip portion of the test, just skip 'em
-         #'(make-dir-test line args ... #f void void))]))
+         #'(make-dir-test line args ... #f void void #f))]))
   
   ;; tests : (listof test)
   (define tests
@@ -1056,7 +1057,8 @@
                    ("red"                  imported)
                    (")"                    default-color))
                  '(((26 29) (47 50))
-                   ((6 17) (19 25))))
+                   ((6 17) (19 25)))
+                 #:extra-info? #t)
      
      (build-test "#lang racket/base\n(require '#%kernel)\npair?"
                  '(("#lang racket/base\n(" default-color)
@@ -1427,7 +1429,7 @@
   (define (close-the-error-window-test drs)
     (clear-definitions drs)
     (insert-in-definitions drs "(")
-    (click-check-syntax-button drs)
+    (click-check-syntax-button drs #f)
     (wait-for-computation drs)
     (unless (queue-callback/res (λ () (send drs syncheck:error-report-visible?)))
       (error 'close-the-error-window-test "error report window never appeared"))
@@ -1450,7 +1452,8 @@
                [tooltips (test-tooltips test)]
                [relative (find-relative-path save-dir (collection-file-path "list.rkt" "racket"))]
                [setup (test-setup test)]
-               [teardown (test-teardown test)])
+               [teardown (test-teardown test)]
+               [extra-info? (test-extra-info? test)])
            (define setup-result (setup))
            (define input (if (procedure? pre-input)
                              (pre-input setup-result)
@@ -1459,10 +1462,15 @@
              [(dir-test? test)
               (insert-in-definitions drs (format input (path->require-string relative)))]
              [else (insert-in-definitions drs input)])
-           (click-check-syntax-and-check-errors drs test)
+           (click-check-syntax-and-check-errors drs test extra-info?)
            
            ;; need to check for syntax error here
-           (let ([got (get-annotated-output drs)])
+           (let ([got (get-annotated-output drs)]
+                 [got-arrows (queue-callback/res (λ () (send defs syncheck:get-bindings-table)))])
+             (when extra-info? 
+               (printf "got-arrows\n")
+               (pretty-print got-arrows)
+               (newline))
              (compare-output (cond
                                [(dir-test? test)
                                 (map (lambda (x)
@@ -1475,7 +1483,7 @@
                                 expected])
                              got
                              arrows 
-                             (queue-callback/res (λ () (send defs syncheck:get-bindings-table)))
+                             got-arrows
                              input
                              (test-line test)))
            (when tooltips
@@ -1486,7 +1494,7 @@
            (teardown setup-result))]
         [(rename-test? test)
          (insert-in-definitions drs (rename-test-input test))
-         (click-check-syntax-and-check-errors drs test)
+         (click-check-syntax-and-check-errors drs test #f)
          (define menu-item
            (queue-callback/res
             (λ ()
@@ -1663,8 +1671,8 @@
   (define (get-annotated-output drs)
     (queue-callback/res (λ () (get-string/style-desc (send drs get-definitions-text)))))
   
-  (define (click-check-syntax-and-check-errors drs test)
-    (click-check-syntax-button drs)
+  (define (click-check-syntax-and-check-errors drs test extra-info?)
+    (click-check-syntax-button drs extra-info?)
     (wait-for-computation drs)
     (when (queue-callback/res (λ () (send (send drs get-definitions-text) in-edit-sequence?)))
       (error 'syncheck-test.rkt "still in edit sequence for ~s" test))
@@ -1675,8 +1683,8 @@
                  test
                  err))))
   
-  (define (click-check-syntax-button drs)
-    (test:run-one (lambda () (send (send drs syncheck:get-button) command))))
+  (define (click-check-syntax-button drs extra-info?)
+    (test:run-one (lambda () (send drs syncheck:button-callback #:print-extra-info? extra-info?))))
 
   (main)
 
