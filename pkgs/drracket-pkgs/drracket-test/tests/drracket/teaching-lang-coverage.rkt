@@ -52,9 +52,13 @@
         (t #rx"Advanced Student$"
            #<<--
 (define-struct foo (x))
-
-(: make-foo (Number -> foo))
-(: foo-x (foo -> Number))
+;; ----------------------------------------------------
+;; MF: something broke about signatures 
+;; Shriram said at Dagstuhl that he doesn't use them,
+;; and I don't know of anyone else who uses them in *SL
+;; ----------------------------------------------------
+;; (: make-foo (Number -> foo))
+;; (: foo-x (foo -> Number))
 
 (define x (make-foo 5))
 (foo-x x)
