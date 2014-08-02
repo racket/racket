@@ -251,6 +251,13 @@
                     [else
                      (loop fst)
                      (body-loop (car bodies) (cdr bodies))]))))
+            
+            (define (add-module-lang-require stx) 
+              (define key (list (syntax-source stx)
+                                (syntax-position stx)
+                                (syntax-span stx)))
+              (hash-set! module-lang-requires key #t))
+            
             (syntax-case* stx-obj (#%plain-lambda case-lambda if begin begin0 let-values letrec-values
                                                   set! quote quote-syntax with-continuation-mark
                                                   #%plain-app #%top #%plain-module-begin
@@ -381,7 +388,7 @@
               [(module m-name lang (#%plain-module-begin bodies ...))
                (begin
                  (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
-                 (hash-set! module-lang-requires (syntax lang) #t)
+                 (add-module-lang-require (syntax lang))
                  (annotate-require-open user-namespace user-directory (syntax lang))
                  (define module-name (syntax-e #'m-name))
                  (define sub-requires
@@ -396,7 +403,7 @@
                  (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (define module-name (syntax-e #'m-name))
                  (when (syntax-e #'lang)
-                   (hash-set! module-lang-requires (syntax lang) #t)
+                   (add-module-lang-require (syntax lang))
                    (annotate-require-open user-namespace user-directory (syntax lang))
                    (define sub-requires
                      (hash-ref! phase-to-requires 
@@ -664,27 +671,28 @@
     ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] hash-table[syntax -o> #t]
     ;;             -> void
     (define (color-unused requires unused module-lang-requires)
-      (hash-for-each
-       unused
-       (λ (k v)
-         (for-each (λ (stx)
-                     (unless (hash-ref module-lang-requires stx #f)
-                       (define defs-text (current-annotations))
-                       (define source-editor (find-source-editor stx))
-                       (when (and defs-text source-editor)
-                         (define pos (syntax-position stx))
-                         (define span (syntax-span stx))
-                         (when (and pos span)
-                           (define start (- pos 1))
-                           (define fin (+ start span))
-                           (send defs-text syncheck:add-background-color
-                                 source-editor start fin "firebrick")))
-                       (color stx unused-require-style-name)))
-                   (hash-ref requires k
-                             (λ ()
-                               (error 'syncheck/traversals.rkt 
-                                      "requires doesn't have a mapping for ~s"
-                                      k)))))))
+      (for ([(k v) (in-hash unused)])
+        (define requires-stxes
+          (hash-ref requires k
+                    (λ ()
+                      (error 'syncheck/traversals.rkt 
+                             "requires doesn't have a mapping for ~s"
+                             k))))
+        (for ([stx (in-list requires-stxes)])
+          (unless (hash-ref module-lang-requires (list (syntax-source stx)
+                                                       (syntax-position stx)
+                                                       (syntax-span stx)) #f)
+            (define defs-text (current-annotations))
+            (define source-editor (find-source-editor stx))
+            (when (and defs-text source-editor)
+              (define pos (syntax-position stx))
+              (define span (syntax-span stx))
+              (when (and pos span)
+                (define start (- pos 1))
+                (define fin (+ start span))
+                (send defs-text syncheck:add-background-color
+                      source-editor start fin "firebrick")))
+            (color stx unused-require-style-name)))))
     
     ;; id-level : integer-or-#f-or-'lexical identifier -> symbol
     (define (id-level phase-level id)
