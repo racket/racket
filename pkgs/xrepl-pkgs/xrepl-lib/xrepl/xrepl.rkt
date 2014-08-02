@@ -24,12 +24,14 @@
 (define autoloaded-specs (make-hasheq))
 (define (autoloaded? sym) (hash-ref autoloaded-specs sym #f))
 (define-syntax-rule (defautoload libspec id ...)
-  (begin (define (id . args)
-           (set! id (parameterize ([current-namespace (here-namespace)])
-                      (dynamic-require 'libspec 'id)))
-           (hash-set! autoloaded-specs 'libspec #t)
-           (hash-set! autoloaded-specs 'id #t)
-           (apply id args))
+  (begin (define id
+           (make-keyword-procedure
+            (λ (kws kw-args . args)
+              (set! id (parameterize ([current-namespace (here-namespace)])
+                         (dynamic-require 'libspec 'id)))
+              (hash-set! autoloaded-specs 'libspec #t)
+              (hash-set! autoloaded-specs 'id #t)
+              (keyword-apply id kws kw-args args))))
          ...))
 
 (defautoload racket/system          system system*)
@@ -39,7 +41,7 @@
 (defautoload racket/path            find-relative-path)
 (defautoload setup/xref             load-collections-xref)
 (defautoload scribble/xref          xref-binding->definition-tag)
-(defautoload scribble/blueboxes     fetch-blueboxes-strs)
+(defautoload scribble/blueboxes     fetch-blueboxes-strs make-blueboxes-cache)
 
 ;; similar, but just for identifiers
 (define hidden-namespace (make-base-namespace))
@@ -627,6 +629,7 @@
                              (let-values ([(base name dir?) (split-path mod)])
                                (and (path? base) base)))])
           (describe-module dtm mod bind?))))))
+(define blueboxes-cache #f)
 (define (describe-binding sym b level)
   (define at-phase (phase->name level " (~a)"))
   (cond
@@ -642,7 +645,9 @@
        (apply values b))
      (define tag
        (xref-binding->definition-tag (load-collections-xref) b 0))
-     (define bluebox-strs (and tag (fetch-blueboxes-strs tag)))
+     (unless blueboxes-cache (set! blueboxes-cache (make-blueboxes-cache #t)))
+     (define bluebox-strs
+       (and tag (fetch-blueboxes-strs tag #:blueboxes-cache blueboxes-cache)))
      (set! src-mod         (->relname (mpi->name src-mod)))
      (set! nominal-src-mod (->relname (mpi->name nominal-src-mod)))
      (printf "; `~s' is a bound identifier~a,\n" sym at-phase)
