@@ -1004,14 +1004,7 @@
            (define struct-name-size (string-length (symbol->string (syntax-e #'name_))))
            (define struct-name/locally-introduced (syntax-local-introduce #'name_))
            
-	   (define signature-name-directive
-	     (vector (syntax-local-introduce constructor-name)
-                     5
-                     struct-name-size
-                     struct-name/locally-introduced
-                     0
-                     struct-name-size))
-	     
+	   (define signature-name-directive #f)
            (define parametric-signature-name-directive #f)
 
            (define struct-name-to-maker-directive
@@ -1105,7 +1098,15 @@
                                                       EXPECTED-FUNCTION-NAME
                                                       stx
                                                       #'self)]
-                                                    [_ #'#,signature-name])))
+                                                    [else
+						      (raise-syntax-error
+                                                      #f
+                                                      (format "structure type; do you mean make-~a"
+							(syntax-e #'name_))
+						      stx
+                                                      stx)
+						      #;#'#,signature-name
+						      ])))
                           ;; support `shared'
                           (make-info (lambda () compile-info))))
                     'stepper-skip-completely
@@ -1115,7 +1116,7 @@
              (check-definitions-new 'define-struct
                                     stx 
                                     (list* name parametric-signature-name to-define-names)
-                                    defn1
+                                    defn2
                                     (and setters? bind-names)))
            (define defn4
              (syntax-property defn3 'disappeared-use (list struct-name/locally-introduced)))
