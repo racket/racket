@@ -1470,7 +1470,10 @@
              (when extra-info? 
                (printf "got-arrows\n")
                (pretty-print got-arrows)
-               (newline))
+               (newline)
+               
+               (printf "'drracket:syncheck:show-arrows? ~s\n"
+                       (preferences:get 'drracket:syncheck:show-arrows?)))
              (compare-output (cond
                                [(dir-test? test)
                                 (map (lambda (x)

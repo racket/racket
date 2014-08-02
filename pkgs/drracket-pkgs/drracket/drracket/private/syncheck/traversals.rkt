@@ -101,7 +101,24 @@
                                                    (list 'require-for-templates require-for-templates)
                                                    (list 'require-for-labels require-for-templates)
                                                    (list 'sub-identifier-binding-directives
-                                                         sub-identifier-binding-directives)))))]
+                                                         sub-identifier-binding-directives)))
+                           (define vars (set))
+                           (let loop ([thing (list phase-to-varrefs phase-to-binders)])
+                             (cond
+                               [(pair? thing) (loop (car thing)) (loop (cdr thing))]
+                               [(hash? thing) (for ([(k v) (in-hash thing)])
+                                                (loop k)
+                                                (loop v))]
+                               [(free-identifier-mapping? thing)
+                                (free-identifier-mapping-for-each
+                                 thing
+                                 (λ (k v) (loop v)))]
+                               [(syntax? thing) (set! vars (set-add vars thing))]))
+                           (printf "--- vars\n")
+                           (for ([x (in-set vars)])
+                             (for ([y (in-set vars)])
+                               (printf "  ~s\n  ~s\n  ~s\n" x y (free-identifier=? x y))))
+                           (printf "--- vars\n\n")))]
                       [else
                        (annotate-basic sexp
                                        user-namespace user-directory
