@@ -879,7 +879,7 @@
                               [(proc-name ...) proc-names]
                               [(getter-id ...) getter-names])
                   (define defns
-                    #`(define-values (#,signature-name #,parametric-signature-name def-proc-name ...)
+                    #`(define-values (#;#,signature-name #,parametric-signature-name def-proc-name ...)
                         (let ()
                           (define-values (type-descriptor
                                           raw-constructor
@@ -997,13 +997,23 @@
                                                   arbs))))
                                       sig)))
                           
-                          (values #,signature-name #,parametric-signature-name proc-name ...))))
+                          (values #;#,signature-name #,parametric-signature-name proc-name ...))))
                   ;; --- IN ---
                   (stepper-syntax-property defns 'stepper-black-box-expr stx)))))
            ;; --------------------------------------------------------------------------------
            (define struct-name-size (string-length (symbol->string (syntax-e #'name_))))
            (define struct-name/locally-introduced (syntax-local-introduce #'name_))
            
+	   (define signature-name-directive
+	     (vector (syntax-local-introduce constructor-name)
+                     5
+                     struct-name-size
+                     struct-name/locally-introduced
+                     0
+                     struct-name-size))
+	     
+           (define parametric-signature-name-directive #f)
+
            (define struct-name-to-maker-directive
              (vector (syntax-local-introduce constructor-name)
                      5
@@ -1064,9 +1074,6 @@
                      0
                      field-name-size))
            
-           (define signature-name-directive #f)
-           (define parametric-signature-name-directive #f)
-           
            (define all-directives
              (list* signature-name-directive
                     parametric-signature-name-directive
@@ -1081,34 +1088,34 @@
            (define defn1 defn0)
            (define defn2 
              (quasisyntax/loc stx
-                      (begin
-                        #,(stepper-syntax-property
-                           #`(define-syntaxes (name_) 
-                               (let ()
-                                 (racket:define-struct info ()
-                                                       #:super struct:struct-info
-                                                       ;; support `signature'
-                                                       #:property 
-                                                       prop:procedure
-                                                       (lambda (_ stx)
-                                                         (syntax-case stx ()
-                                                           [(self . args)
-                                                            (raise-syntax-error
-                                                             #f
-                                                             EXPECTED-FUNCTION-NAME
-                                                             stx
-                                                             #'self)]
-                                                           [_ #'#,signature-name])))
-                                 ;; support `shared'
-                                 (make-info (lambda () compile-info))))
-                           'stepper-skip-completely
-                           #t)
-                        #,defn1)))
+               (begin
+                 #,(stepper-syntax-property
+                    #`(define-syntaxes (name_) 
+                        (let ()
+                          (racket:define-struct info ()
+                                                #:super struct:struct-info
+                                                ;; support `signature'
+                                                #:property 
+                                                prop:procedure
+                                                (lambda (_ stx)
+                                                  (syntax-case stx ()
+                                                    [(self . args)
+                                                     (raise-syntax-error
+                                                      #f
+                                                      EXPECTED-FUNCTION-NAME
+                                                      stx
+                                                      #'self)]
+                                                    [_ #'#,signature-name])))
+                          ;; support `shared'
+                          (make-info (lambda () compile-info))))
+                    'stepper-skip-completely
+                    #t)
+                 #,defn1)))
            (define defn3
              (check-definitions-new 'define-struct
                                     stx 
                                     (list* name parametric-signature-name to-define-names)
-                                    defn2
+                                    defn1
                                     (and setters? bind-names)))
            (define defn4
              (syntax-property defn3 'disappeared-use (list struct-name/locally-introduced)))
