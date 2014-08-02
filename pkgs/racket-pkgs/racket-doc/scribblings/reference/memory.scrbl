@@ -139,6 +139,25 @@ A will executor is @tech{ready for synchronization} when
 @racket[will-execute] would not block; @resultItself{will executor}.
 
 
+These examples show how to run cleanup actions when
+no synchronization is necessary. It simply runs the registered
+executors as they become ready in another thread.
+@mz-examples[(define an-executor (make-will-executor))
+             (eval:alts (void
+                         (thread
+                          (λ ()
+                            (let loop ()
+                              (will-execute an-executor)
+                              (loop)))))
+                        (void))
+             (define (executor-proc v) (printf "a-box is now garbage\n"))
+             (define a-box-to-track (box #f))
+             (will-register an-executor a-box-to-track executor-proc)
+             (eval:alts (collect-garbage) (void))
+             (set! a-box-to-track #f)
+             (eval:alts (collect-garbage) (executor-proc))]
+
+
 @defproc[(make-will-executor) will-executor?]{
 
 Returns a new will executor with no managed values.}
