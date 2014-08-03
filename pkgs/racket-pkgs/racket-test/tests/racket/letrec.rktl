@@ -150,4 +150,14 @@
    c)
  letrec-exn?)
 
+(test '(1)
+      'complex-forcing-path
+      (let-values (((_tri)
+                    (letrec-values (((all-types) 1))
+                      (lambda (x) all-types))))
+        (letrec-values (((quad-super-type) _tri)
+                        ((offsets) (map quad-super-type (list 1))))
+          offsets)))
+
+
 (report-errs)

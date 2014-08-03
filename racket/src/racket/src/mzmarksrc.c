@@ -1335,11 +1335,8 @@ mark_letrec_check_frame {
   gcMARK2(frame->def, gc);
   gcMARK2(frame->next, gc);
   gcMARK2(frame->ref, gc);
-  gcMARK2(frame->checked, gc);
   gcMARK2(frame->head, gc);
-  gcMARK2(frame->deferred_with_rhs_ref, gc);
-  gcMARK2(frame->deferred_with_body_ref, gc);
-  gcMARK2(frame->deferred_with_no_ref, gc);
+  gcMARK2(frame->deferred_chain, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Letrec_Check_Frame));
@@ -1351,9 +1348,7 @@ mark_scheme_deferred_expr {
   
   gcMARK2(clos->expr, gc);
   gcMARK2(clos->frame, gc);
-  gcMARK2(clos->uvars, gc);
-  gcMARK2(clos->pvars, gc);
-  gcMARK2(clos->subexpr_ls, gc);
+  gcMARK2(clos->chain_next, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Deferred_Expr));
