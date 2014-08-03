@@ -1467,7 +1467,7 @@
            ;; need to check for syntax error here
            (let ([got (get-annotated-output drs)]
                  [got-arrows (queue-callback/res (λ () (send defs syncheck:get-bindings-table)))])
-             (when extra-info? 
+             (when extra-info?
                (printf "got-arrows\n")
                (pretty-print got-arrows)
                (newline)
@@ -1689,7 +1689,25 @@
   (define (click-check-syntax-button drs extra-info?)
     (test:run-one (lambda () (send drs syncheck:button-callback #:print-extra-info? extra-info?))))
 
-  (main)
+(let ()
+  (define ns (make-base-namespace))
+  (define stx
+    (parameterize ([current-namespace ns])
+      (expand #'(module m racket/base
+                  (define red 1)
+                  (module+ tests red)))))
+  (define ids '())
+  (let loop ([stx stx])
+    (cond
+      [(pair? stx) (loop (car stx)) (loop (cdr stx))]
+      [(identifier? stx)
+       (when (equal? (syntax-e stx) 'red) (set! ids (cons stx ids)))]
+      [(syntax? stx) (loop (syntax-e stx))]))
+  (for ([x (in-list ids)])
+    (for ([y (in-list ids)])
+      (printf "  ~s\n  ~s\n  ~s\n\n" x y (free-identifier=? x y)))))
+
+(main)
 
 (module+ test
   (module config info
