@@ -1777,7 +1777,7 @@
                             " Brechen Sie entweder den laufenden Prozess ab oder warten, bis er fertig ist.")
 
   ;; open a file via a collection path (new "Open" menu item in DrRacket)
-  ;; now obsolete; replaced by open-require-path (open-collection-path "Collection-Pfad öffnen...")
+  (open-require-path "Require-Pfad öffnen...")
   (enter-subcollection "Sub-Collection betreten") ; button in new dialog
   
   (path-to-racket-binary "Pfad zur Programmdatei")
