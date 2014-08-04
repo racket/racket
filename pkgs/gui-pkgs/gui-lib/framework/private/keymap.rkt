@@ -172,10 +172,9 @@
         (cond
           [(eq? (system-type) 'windows)
            (cond
-             [(or (and (regexp-match? #rx"a:c" cs)
-                       (not (regexp-match? #rx"~a:c" cs)))
-                  (and (regexp-match? #rx"c:m" cs)
-                       (not (regexp-match? #rx"~c:m" cs))))
+             [(and (regexp-match? #rx"c:m" cs)
+		   (not (regexp-match? #rx"~c:m" cs))
+		   (not (regexp-match? #rx"~g:" cs)))
               #f]
              [(or (has-key? #\a) (has-key? #\d))
               #f]
@@ -262,6 +261,7 @@
            [meta (if neg? #f 'd/c)]
            [command (if neg? #f 'd/c)]
            [lock 'd/c]
+           [altgr 'd/c]
            [question-mark 'd/c]
            
            [do-key
@@ -282,6 +282,7 @@
                       [(#\d) (set! command val)]
                       [(#\m) (set! meta val)]
                       [(#\l) (set! lock val)]
+                      [(#\g) (set! altgr val)]
                       [(#\?) (set! question-mark val)])))
                 mods)
       
@@ -296,6 +297,10 @@
                       (do-key #\m meta)
                       (do-key #\s shift)
                       (do-key #\l lock)
+		      (and (eq? 'windows (system-type))
+			   control
+			   meta
+			   (do-key #\g altgr))
                       canon-key)))))
   
   ;; split-out : char (listof char) -> (listof (listof char))
@@ -331,9 +336,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   (define (make-meta-prefix-list key [mask-control? #f])
+    ;; Note: key canonicalization will remove "~g" when redundant
     (list (if mask-control?
-              (string-append "m:" key)
-              (string-append "~c:m:" key))
+	      (string-append "~g:m:" key)
+              (string-append "~c:~g:m:" key))
           (string-append "ESC;" key)))
   
   (define (send-map-function-meta keymap key func [mask-control? #f] 

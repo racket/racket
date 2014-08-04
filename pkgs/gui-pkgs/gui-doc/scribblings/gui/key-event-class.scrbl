@@ -27,19 +27,21 @@ See also @|mousekeydiscuss|.
                  [caps-down any/c #f]
                  [mod3-down any/c #f]
                  [mod4-down any/c #f]
-                 [mod5-down any/c #f])]{
+                 [mod5-down any/c #f]
+                 [control+meta-is-altgr any/c #f])]{
 
 See the corresponding @racketidfont{get-} and @racketidfont{set-}
  methods for information about @racket[key-code], @racket[shift-down],
  @racket[control-down], @racket[meta-down], @racket[mod3-down], @racket[mod4-down],
  @racket[mod5-down], @racket[alt-down], @racket[x], @racket[y], 
  @racket[time-stamp], @racket[caps-down], @racket[mod3-down],
- @racket[mod4-down], and @racket[mod5-down].
+ @racket[mod4-down], @racket[mod5-down], and @racket[control+meta-is-altgr].
 
 The release key code, as returned by @method[key-event%
 get-key-release-code], is initialized to @racket['press].
 
-@history[#:changed "1.1" @elem{Added @racket[mod3-down], @racket[mod4-down], and @racket[mod5-down].}]
+@history[#:changed "1.1" @elem{Added @racket[mod3-down], @racket[mod4-down], and @racket[mod5-down].}
+         #:changed "1.2" @elem{Added @racket[control+meta-is-altgr].}]
 }
 
 @defmethod[(get-alt-down)
@@ -61,11 +63,23 @@ Returns @racket[#t] if the Caps Lock key was on for the event.
            boolean?]{
 Returns @racket[#t] if the Control key was down for the event.
 
-On Mac OS X, if a control-key press is combined with a mouse button
+On Mac OS X, if a Control-key press is combined with a mouse button
  click, the event is reported as a right-button click and
 @method[key-event% get-control-down] for the event reports @racket[#f].
 
 }
+
+
+@defmethod[(get-control+meta-is-altgr)
+           boolean?]{
+
+Returns @racket[#t] if a Control plus Meta event should be treated as
+an AltGr event on Windows: the Control key was the left one and the
+Alt key was the right one (typed that way on a keyboard with a right
+Alt key, or produced by a single AltGr key).
+
+@history[#:added "1.2"]}
+
 
 @defmethod[(get-key-code)
            (or/c char? key-code-symbol?)]{
@@ -340,6 +354,15 @@ On Mac OS X, if a control-key press is combined with a mouse button
  @racket[#f].
 
 }
+
+@defmethod[(control+meta-is-altgr [down? any/c])
+           void?]{
+
+Sets whether a Control plus Meta combination on Windows should be
+treated as an AltGr combinations. See @racket[get-control+meta-is-altgr].
+
+@history[#:added "1.2"]}
+
 
 @defmethod[(set-key-code [code (or/c char? key-code-symbol?)])
            void?]{
