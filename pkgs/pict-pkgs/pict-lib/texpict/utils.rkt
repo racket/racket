@@ -4,8 +4,8 @@
            racket/class
            racket/draw
            racket/math
+           file/convertible
            racket/gui/dynamic
-           racket/snip
            "mrpict.rkt")
 
   ;; Utilities for use with mrpict
@@ -105,7 +105,7 @@
                           pict?)]
    [bitmap (-> (or/c path-string?
                      (is-a?/c bitmap%)
-                     (is-a?/c image-snip%))
+                     convertible?)
                pict?)]
    )
 
@@ -1005,22 +1005,25 @@
 
   (define bitmap-draft-mode (make-parameter #f (lambda (x) (and x #t))))
 
-  (define (bitmap filename)
-    (let ([bm (cond
-	       [(bitmap-draft-mode) #f]
-	       [(filename . is-a? . bitmap%) filename]
-	       [(path-string? filename) (make-object bitmap% filename 'unknown/alpha)]
-	       [(and (gui-available?)
-                     (filename . is-a? . (gui-dynamic-require 'image-snip%)))
-                (send filename get-bitmap)])])
-      (if (and bm (send bm ok?))
-	  (let ([w (send bm get-width)]
-		[h (send bm get-height)])
-	    (dc
-	     (lambda (dc x y)
-	       (send dc draw-bitmap bm x y 'solid black-color (send bm get-loaded-mask)))
-	     w h))
-	  (frame (inset (colorize (text "bitmap failed") "red") 2)))))
+(define (bitmap arg)
+  (define bm
+    (cond
+      [(bitmap-draft-mode) #f]
+      [(arg . is-a? . bitmap%) arg]
+      [(path-string? arg) (make-object bitmap% arg 'unknown/alpha)]
+      [(convertible? arg)
+       (define bytes (convert arg 'png-bytes #f))
+       (and bytes (read-bitmap (open-input-bytes bytes)))]))
+  (cond
+    [(and bm (send bm ok?))
+     (define w (send bm get-width))
+     (define h (send bm get-height))
+     (dc
+      (λ (dc x y)
+        (send dc draw-bitmap bm x y 'solid black-color (send bm get-loaded-mask)))
+      w h)]
+    [else
+     (frame (inset (colorize (text "bitmap failed") "red") 2))]))
   
   (define find-brush
     (lambda (color [style 'solid])
