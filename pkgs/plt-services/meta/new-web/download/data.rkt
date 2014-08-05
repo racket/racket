@@ -216,26 +216,29 @@
             "([0-9p.]+)"            ; version
             "/("                    ; file
             "(racket(?:-textual|-minimal)?)" ; package
-            "-\\3-"                 ; -<version>-
+            "(-\\3)?-"              ; version, maybe
             "([^.]+)"               ; platform
             "\\."
             "([a-z]+)"              ; suffix
             "))$")))
 
-(define (make-installer2 size path version file package platform suffix)
+(define (make-installer2 size path version file package version-again platform suffix)
   (define binary? (not (regexp-match #rx"^src" platform)))
-  (installer path file (version->release version) (string->number size)
-             (string->symbol package) binary? platform suffix))
-
+  (and version-again ; if no version again, then it's a versionless variant to omit
+       (installer path file (version->release version) (string->number size)
+                  (string->symbol package) binary? platform suffix)))
+  
 (define (parse-installers in)
   (port-count-lines! in)
-  (for/list ([line (in-lines in)] [num (in-naturals 1)])
-    (cond [(regexp-match installer-rx1 line)
-           => (lambda (m) (apply make-installer1 (cdr m)))]
-          [(regexp-match installer-rx2 line)
-           => (lambda (m) (apply make-installer2 (cdr m)))]
-          [else (error 'installers "bad installer data line#~a: ~s"
-                       num line)])))
+  (filter
+   values
+   (for/list ([line (in-lines in)] [num (in-naturals 1)])
+     (cond [(regexp-match installer-rx1 line)
+            => (lambda (m) (apply make-installer1 (cdr m)))]
+           [(regexp-match installer-rx2 line)
+            => (lambda (m) (apply make-installer2 (cdr m)))]
+           [else (error 'installers "bad installer data line#~a: ~s"
+                        num line)]))))
 
 (define (order->precedes order)
   (define =? (car order))
