@@ -844,5 +844,12 @@
 (st #f (make-bitmap 1000000 1000000) ok?)
 
 ;; ----------------------------------------
+;; No #<unsafe-undefined> checks on certain class instances
+
+(test #f 'undef-pen (impersonator? (new pen%)))
+(test #f 'undef-brush (impersonator? (new brush%)))
+(test #f 'undef-color (impersonator? (new color%)))
+
+;; ----------------------------------------
 
 (report-errs)

@@ -650,6 +650,16 @@
     (error 'notifications "not weak enough? ~e" count2)))
   
 ;; ----------------------------------------
+;; No #<unsafe-undefined> checks on certain class instances
+
+(test #f 'undef-snip (impersonator? (new snip%)))
+(test #f 'undef-string-snip% (impersonator? (new string-snip%)))
+(test #f 'undef-tab-snip% (impersonator? (new tab-snip%)))
+(test #f 'undef-image-snip% (impersonator? (new image-snip%)))
+(test #f 'undef-style-delta% (impersonator? (new style-delta%)))
+(test #f 'undef-style<%> (impersonator? (send (new style-list%) basic-style)))
+
+;; ----------------------------------------
 
 (report-errs)
 
