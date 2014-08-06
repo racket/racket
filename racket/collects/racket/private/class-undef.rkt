@@ -124,10 +124,15 @@
             (free-identifier=? #'decl #'declare-this-escapes))
        ;; Any method call or explicit use of `this` means a field
        ;; might be accessed outside of the `class` declaration,
-       ;; so any initialization afterward is too late:
-       (begin
-         (when ready (set! init-too-late? #t))
-         (loop #'(begin . body)))]
+       ;; so `super-new` had better be done, and any initialization
+       ;; afterward is too late:
+       (or (and ready
+                (not super-new?) 
+                (report #'body)
+                #t)
+           (begin
+             (when ready (set! init-too-late? #t))
+             (loop #'(begin . body))))]
 
       [(begin '(decl) . body)
        (and (identifier? #'decl)
