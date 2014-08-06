@@ -38,6 +38,7 @@
                "parser-tools"
                "pconvert-lib"
                "pict"
+               "pict-snip"
                "picturing-programs"
                "plai"
                "planet"
