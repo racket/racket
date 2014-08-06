@@ -188,6 +188,10 @@
          ;; Catalogs of packages to build (via an archive):
          #:pkg-catalogs [pkg-catalogs (list "http://pkgs.racket-lang.org/")]
 
+         ;; The Racket version to use in queries to archived catalogs;
+         ;; this version should be consistent with `snapshot-url`.
+         #:pkgs-for-version [pkgs-for-version (version)]
+
          ;; Extra packages to install within an installation so that
          ;; they're treated like packages included in the installer;
          ;; these should be built packages (normally from the snapshot
@@ -310,14 +314,15 @@
     (status "Archiving packages from\n")
     (show-list (cons snapshot-catalog pkg-catalogs))
     (make-directory* archive-dir)
-    (pkg-catalog-archive archive-dir
-                         (cons snapshot-catalog pkg-catalogs)
-                         #:state-catalog state-file
-                         #:relative-sources? #t
-                         #:package-exn-handler (lambda (name exn)
-                                                 (log-error "~a\nSKIPPING ~a"
-                                                            (exn-message exn)
-                                                            name))))
+    (parameterize ([current-pkg-lookup-version pkgs-for-version])
+      (pkg-catalog-archive archive-dir
+                           (cons snapshot-catalog pkg-catalogs)
+                           #:state-catalog state-file
+                           #:relative-sources? #t
+                           #:package-exn-handler (lambda (name exn)
+                                                   (log-error "~a\nSKIPPING ~a"
+                                                              (exn-message exn)
+                                                              name)))))
 
   (define snapshot-pkg-names
     (parameterize ([current-pkg-catalogs (list (string->url snapshot-catalog))])
