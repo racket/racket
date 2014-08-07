@@ -1475,8 +1475,13 @@ The @(examples-link "" #t "examples") directory demonstrates three use cases:
 In its first form, checks whether @racket[judgment] holds for any assignment of
 the pattern variables in @racket[judgment-id]'s output positions. In its second
 form, produces a list of terms by instantiating the supplied term template with
-each satisfying assignment of pattern variables. 
-See @racket[define-judgment-form] for examples.
+each satisfying assignment of pattern variables.
+
+@interaction[#:eval 
+             redex-eval
+             (judgment-holds (sum (s (s z)) (s z) n))
+             (judgment-holds (sum (s (s z)) (s z) n) n)]
+See @racket[define-judgment-form] for more examples.
 }
 
 @defform[(build-derivations judgment)]{
