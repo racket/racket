@@ -588,6 +588,14 @@
         #f))
 
 
+(let ()
+  (test (and (redex-match
+              empty-language
+              (natural ..._r)
+              (term ()))
+             #t)
+        #t))
+
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        
