@@ -140,10 +140,11 @@
     (adjust-lb)
     (update-buttons))
   
+  (define p->r-s/l-cache (make-hash))
   (define (path->rel-string p alt-racket-info)
     (if alt-racket-info
         (path->string p)
-        (path->relative-string/library p)))
+        (path->relative-string/library p #:cache p->r-s/l-cache)))
   
   (define (adjust-lb)
     (send lb clear)
