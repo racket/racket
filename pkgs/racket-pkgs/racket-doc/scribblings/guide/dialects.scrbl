@@ -86,7 +86,7 @@ Standard dialects of Scheme include the ones defined by @|r5rs| and
 
 @subsection[#:tag "r5rs"]{@|r5rs|}
 
-``@|r5rs|'' stands for @link["../r5rs-std/index.html"]{The
+``@|r5rs|'' stands for @link["../r5rs/r5rs-std/index.html"]{The
 Revised@superscript{5} Report on the Algorithmic Language Scheme}, and
 it is currently the most widely implemented Scheme standard.
 
