@@ -226,6 +226,14 @@
 
       @p{@nbsp}
 
+      @p{@b{Sponsors:}
+         @div[align: 'center]{
+         @p{@font[size: "+3"]{@a[href: "http://mbtype.com"]{Matthew Butterick}}}
+         @p{@sponsor["NU ACM" "acm.ccs.neu.edu" 2011:nuacm]}
+        }}
+
+      @p{@nbsp}
+
       @p{@b{Previous years:}}
       @ul{@li{@2013:index}
           @li{@2012:index}
