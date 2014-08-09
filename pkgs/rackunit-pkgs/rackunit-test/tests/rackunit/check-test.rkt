@@ -127,6 +127,33 @@
                              (data _ _ (data x y z))
                              (equal? (+ x y z) 6))))
    
+   (test-case "Trivial check-match/values test"
+              (check-match/values "whatever" (values _)))
+   
+   (test-case "Simple check-match/values test"
+              (check-match/values (values 1 2 3) (values _ _ 3)))
+   
+   (test-case "check-match/values with nested struct"
+              (let ()
+                (struct data (f1 f2 f3))
+                (define (f)
+                  (values (data 1 2 (data 1 2 3))
+                          (data 4 5 (data 6 7 8))))
+                (check-match/values (f)
+                                    (values (data _ 2 (data _ _ _))
+                                            (data _ 5 (data _ _ _))))))
+   
+   (test-case "check-match/values with nested struct and a binding pred"
+              (let ()
+                (struct data (f1 f2 f3))
+                (define (f)
+                  (values (data 1 2 (data 1 2 3))
+                          (data 4 5 (data 6 7 8))))
+                (check-match/values (f)
+                                    (values (data _ 2 (data x y z))
+                                            (data _ 5 (data a b c)))
+                                    #:when (equal? (+ x y z a b c) 27))))
+   
    ;; Failures
    (make-failure-test "check-equal? failure"
                       check-equal? 1 2)
