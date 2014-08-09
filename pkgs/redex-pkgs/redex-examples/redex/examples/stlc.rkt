@@ -5,20 +5,20 @@
 (define-language λ
   (e (e e)
      x
-     (λ (x t) e)
+     (λ (x τ) e)
      (if0 e e e)
      (+ e e)
      number)
-  (t (t -> t) num)
+  (τ (τ -> τ) num)
   (x variable-not-otherwise-mentioned))
 
 (define-extended-language λv λ
-  (v (λ (x t) e) number)
+  (v (λ (x τ) e) number)
   (E hole
      (v E) (E e)
      (if0 E e e)
      (+ E e) (+ v E))
-  (Γ · (x t Γ)))
+  (Γ · (x τ Γ)))
 
 (define red
   (reduction-relation
@@ -34,7 +34,7 @@
         "if0f"
         (side-condition 
           (not (= 0 (term number)))))
-   (--> (in-hole E ((λ (x t) e) v))
+   (--> (in-hole E ((λ (x τ) e) v))
         (in-hole E (subst x v e))
         "βv")))
 
@@ -46,11 +46,11 @@
 (define-metafunction λv
   subst : x any any -> any
   ;; 1. x_1 bound, so don't continue in λ body
-  [(subst x_1 any_1 (λ (x_1 t_1) any_2))
-   (λ (x_1 t_1) any_2)]
+  [(subst x_1 any_1 (λ (x_1 τ_1) any_2))
+   (λ (x_1 τ_1) any_2)]
   ;; 2. general purpose capture avoiding case
-  [(subst x_1 any_1 (λ (x_2 t_2) any_2))
-   (λ (x_new t_2)
+  [(subst x_1 any_1 (λ (x_2 τ_2) any_2))
+   (λ (x_new τ_2)
      (subst x_1 any_1
             (subst-var x_2 x_new
                        any_2)))
@@ -76,7 +76,7 @@
 
 (define-judgment-form λv
   #:mode (typeof I I O)
-  #:contract (typeof Γ e t)
+  #:contract (typeof Γ e τ)
   
   [---------------------
    (typeof Γ number num)]
@@ -87,28 +87,28 @@
    (typeof Γ (+ e_1 e_2) num)]
   
   [(typeof Γ e_1 num)
-   (typeof Γ e_2 t)
-   (typeof Γ e_3 t)
+   (typeof Γ e_2 τ)
+   (typeof Γ e_3 τ)
    ------------------------------
-   (typeof Γ (if0 e_1 e_2 e_3) t)]
+   (typeof Γ (if0 e_1 e_2 e_3) τ)]
   
-  [(where t (lookup Γ x))
+  [(where τ (lookup Γ x))
    ----------------------
-   (typeof Γ x t)]
+   (typeof Γ x τ)]
   
-  [(typeof Γ e_1 (t_2 -> t))
-   (typeof Γ e_2 t_2)
+  [(typeof Γ e_1 (τ_2 -> τ))
+   (typeof Γ e_2 τ_2)
    --------------------------
-   (typeof Γ (e_1 e_2) t)]
+   (typeof Γ (e_1 e_2) τ)]
   
-  [(typeof (x_1 t_1 Γ) e t)
+  [(typeof (x_1 τ_1 Γ) e τ)
    ----------------------------------------
-   (typeof Γ (λ (x_1 t_1) e) (t_1 -> t))])
+   (typeof Γ (λ (x_1 τ_1) e) (τ_1 -> τ))])
 
 (define-metafunction λv
-  lookup : Γ x -> t or #f
-  [(lookup (x t Γ) x) t]
-  [(lookup (x_1 t Γ) x_2) (lookup Γ x_2)]
+  lookup : Γ x -> τ or #f
+  [(lookup (x τ Γ) x) τ]
+  [(lookup (x_1 τ Γ) x_2) (lookup Γ x_2)]
   [(lookup · x) #f])
 
 
@@ -129,14 +129,14 @@
 
 
 (define (preservation e)
-  (define types (judgment-holds (typeof · ,e t) t))
+  (define types (judgment-holds (typeof · ,e τ) τ))
   (unless (null? types)
     (unless (= 1 (length types)) (error 'preservation "multiple types! ~s" e)))
   (cond
     [(null? types) #t]
     [else
      (for/and ([v (apply-reduction-relation* red e)])
-       (equal? (judgment-holds (typeof · ,v t) t)
+       (equal? (judgment-holds (typeof · ,v τ) τ)
                types))]))
 
 (define (try-it)
@@ -188,7 +188,7 @@
             (term (λ (x num) (λ (x num) x))))
 
 (define (typecheck G e)
-  (match (judgment-holds (typeof ,G ,e t) t)
+  (match (judgment-holds (typeof ,G ,e τ) τ)
     [(list) #f]
     [(list t) t]
     [_ (error 'typecheck
