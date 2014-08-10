@@ -113,7 +113,7 @@ information about running @|r5rs| programs with Racket.
 
 @subsection{@|r6rs|}
 
-``@|r6rs|'' stands for @link["../r6rs-std/index.html"]{The
+``@|r6rs|'' stands for @link["../r6rs/r6rs-std/index.html"]{The
 Revised@superscript{6} Report on the Algorithmic Language Scheme},
 which extends @|r5rs| with a module system that is similar to the
 Racket module system.
