@@ -11,7 +11,7 @@
 
 (define-type Bitmap-Message%
   (Class (init [parent (Instance Horizontal-Panel%)])
-         [set-bm ((Instance Bitmap%) -> Void)]))
+         [set-bm ((U (Instance Bitmap%) #f) -> Void)]))
 
 (require/typed "bitmap-message.rkt"
                [bitmap-message% Bitmap-Message%])
@@ -68,8 +68,7 @@
       (new choice%
            [label (string-constant fonts)]
            [parent info-bar]
-           [choices (map (λ: ((x : String)) (format "~a~a" x (get-w-size tmp-bdc x))) 
-                         (get-face-list))]
+           [choices (get-face-list)]
            [callback
             (λ: ([x : Any] [y : Any])
                 (let ([old (preferences:get 'drracket:large-letters-font)]
@@ -118,7 +117,7 @@
       (send txt lock #t)
       (send txt end-edit-sequence)
       (send count set-label (format columns-string (get-max-line-width txt)))
-      (send dark-msg set-bm bm)))
+      (send dark-msg set-bm (if (equal? str "") #f bm))))
   
   
   ;; CHANGE - get-face can return #f
@@ -135,17 +134,10 @@
                    (loop (+ i 1) (cdr faces))])]))))
   
   (send txt auto-wrap #f)
-  (update-txt " ")
+  (update-txt "")
   (send text-field focus)
   (send dlg show #t)
   (and ok? (send text-field get-value)))
-
-(: get-w-size ((Instance Bitmap-DC%) String -> String))
-(define (get-w-size dc face-name)
-  (let ([font (send the-font-list find-or-create-font 24 face-name 'default 'normal 'normal)])
-    (let-values ([(w h a d) (send dc get-text-extent "w" font)])
-      (format " (~a)" (floor (inexact->exact w))))))
-  
 
 (: get-max-line-width ((Instance Text:Basic%) -> Real))
 (define (get-max-line-width txt)
