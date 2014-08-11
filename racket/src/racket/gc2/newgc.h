@@ -106,13 +106,6 @@ typedef struct Page_Range {
   uintptr_t range_alloc_used;
 } Page_Range;
 
-typedef struct {
-  char *start;
-  intptr_t len;
-  short age;
-  short zeroed;
-} AllocCacheBlock;
-
 #ifdef MZ_USE_PLACES
 typedef struct NewGCMasterInfo {
   uintptr_t size;

@@ -5,8 +5,10 @@
       static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, size_t alignment, int dirty_ok, intptr_t *size_diff)
    Requires (defined earlier):
       my_qsort --- possibly from my_qsort.c
-      static void os_vm_free_pages(void *p, size_t len);
-      static void *os_vm_alloc_pages(size_t len);
+      static void os_free_pages(void *p, size_t len);
+      static void *os_alloc_pages(size_t len);
+      static void *ofm_malloc_zero(size_t len);
+      APAGE_SIZE (for cache heuristic)
 */
 
 /* Controls how often freed pages are actually returned to OS: */
@@ -18,10 +20,18 @@
 /* Controls how many extra pages are requested from OS at a time: */
 #define CACHE_SEED_PAGES 16
 
+typedef struct AllocCacheBlock {
+  char *start;
+  intptr_t len;
+  short age;
+  short zeroed;
+} AllocCacheBlock;
+
 static AllocCacheBlock *alloc_cache_create() {
   return ofm_malloc_zero(sizeof(AllocCacheBlock) * BLOCKFREE_CACHE_SIZE); 
 }
 
+#ifndef NO_ALLOC_CACHE_FREE
 static intptr_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree);
 static intptr_t alloc_cache_free(AllocCacheBlock *ac) {
   if (ac) {
@@ -31,6 +41,7 @@ static intptr_t alloc_cache_free(AllocCacheBlock *ac) {
   }
   return 0;
 }
+#endif
 
 static int alloc_cache_block_compare(const void *a, const void *b)
 {
@@ -172,6 +183,7 @@ static intptr_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree)
   return freed;
 }
 
+#ifndef NO_ALLOC_CACHE_FREE
 static intptr_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree)
 {
   int i;
@@ -188,6 +200,7 @@ static intptr_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree)
   }
   return freed;
 }
+#endif
 
 /* Instead of immediately freeing pages with munmap---only to mmap
    them again---we cache BLOCKFREE_CACHE_SIZE freed pages. A page is

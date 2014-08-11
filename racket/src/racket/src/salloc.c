@@ -1271,9 +1271,13 @@ static uintptr_t jit_prev_page = 0, jit_prev_length = 0;
 void *scheme_malloc_gcable_code(intptr_t size)
 {
   void *p;
+
+#ifdef USE_SENORA_GC
+  p = GC_malloc_code(size);
+#else
   p = scheme_malloc(size);
   
-#if defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+# if defined(MZ_CODE_ALLOC_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
   {
     /* [This chunk of code moved from our copy of GNU lightning to here.] */
     uintptr_t page, length, page_size;
@@ -1290,12 +1294,12 @@ void *scheme_malloc_gcable_code(intptr_t size)
        chunk of memory is used to compile multiple functions.  */
     if (!(page >= jit_prev_page && page + length <= jit_prev_page + jit_prev_length)) {
       
-# ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
+#  ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
       {
         DWORD old;
         VirtualProtect((void *)page, length, PAGE_EXECUTE_READWRITE, &old);
       }
-# else
+#  else
       {
         int r;
         r = mprotect ((void *) page, length, PROT_READ | PROT_WRITE | PROT_EXEC);
@@ -1303,7 +1307,7 @@ void *scheme_malloc_gcable_code(intptr_t size)
           scheme_log_abort("mprotect for generate-code page failed; aborting");
         }
       }
-# endif
+#  endif
 
       /* See if we can extend the previously mprotect'ed memory area towards
          higher addresses: the starting address remains the same as before.  */
@@ -1321,6 +1325,7 @@ void *scheme_malloc_gcable_code(intptr_t size)
         jit_prev_page = page, jit_prev_length = length;
     }
   }
+# endif
 #endif
 
   return p;

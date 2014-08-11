@@ -45,6 +45,7 @@ SGC_EXTERN void *GC_malloc_atomic(size_t size_in_bytes);
 SGC_EXTERN void *GC_malloc_stubborn(size_t size_in_bytes);
 SGC_EXTERN void *GC_malloc_uncollectable(size_t size_in_bytes);
 SGC_EXTERN void *GC_malloc_atomic_uncollectable(size_t size_in_bytes);
+SGC_EXTERN void *GC_malloc_code(size_t size_in_bytes);
 
 typedef void (*GC_collect_start_callback_Proc)(void);
 typedef void (*GC_collect_end_callback_Proc)(void);
