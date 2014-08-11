@@ -4544,7 +4544,7 @@ static Scheme_Object *do_load_handler(void *data)
     }
   }
 
-  if (scheme_module_code_cache) {
+  if (scheme_module_code_cache && SCHEME_TRUEP(modname)) {
     intptr_t got;
     int vers_size, hash_header_size;
 #   define HASH_HEADER_SIZE (4 + 20 + 16)
