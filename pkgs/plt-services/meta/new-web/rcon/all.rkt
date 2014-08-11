@@ -114,7 +114,7 @@
          special projects, like DrDr.})
     (list
      "Brian Mastenbrook" "http://brian.mastenbrook.net/"
-     "Making Things With Racket"
+     "Racket in Production"
       @p*{When electronic products come off the manufacturing line, they
           go through a multi-step program and test process to become sellable
           products. Wearable has been using Racket to automate this process for
