@@ -1799,7 +1799,7 @@ Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o)
     v = scheme_struct_type_property_ref(rename_transformer_property, o);
     if (SCHEME_BOXP(v)) v = SCHEME_BOX_VAL(v);
     if (SCHEME_INTP(v)) {
-      v = ((Scheme_Structure *)o)->slots[SCHEME_INT_VAL(v)];
+      v = scheme_struct_ref(o, SCHEME_INT_VAL(v));
       if (!is_stx_id(v)) {
         v = scheme_datum_to_syntax(scheme_intern_symbol("?"), scheme_false, scheme_false, 0, 0);
       }

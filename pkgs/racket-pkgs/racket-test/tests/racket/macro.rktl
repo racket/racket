@@ -1126,4 +1126,14 @@
 
 ;; ----------------------------------------
 
+(let ()
+ (struct foo (id)
+         #:property prop:rename-transformer 0)
+
+ (test 'x syntax-e
+       (rename-transformer-target
+        (chaperone-struct (foo #'x) foo-id (lambda (f x) x)))))
+
+;; ----------------------------------------
+
 (report-errs)
