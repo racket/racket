@@ -369,7 +369,7 @@ applications from @a[class: "introlink" href: (docs-path "web-server/")]{web ser
 
 @columns[2 style: "text-color: black"]{
   @h2[style: "font-size: 144%; margin-bottom: 6pt;"]{News}
-  @p[style: "font-size: 80%;"]{Racket @a[href: "http://blog.racket-lang.org/2014/05/racket-v601.html"]{version 6.0.1} is out!}
+  @p[style: "font-size: 80%;"]{Racket @a[href: "http://blog.racket-lang.org/2014/08/racket-v61.html"]{version 6.1} is out!}
 
   @p[style: "font-size: 80%;"]{@rcon[2014]{RacketCon 2014} will take place
   in St.@|nbsp|Louis on September 20. 
