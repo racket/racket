@@ -155,6 +155,11 @@ void scheme_init_place(Scheme_Env *env)
 
   scheme_finish_primitive_module(plenv);
 
+  /* Treat place creation as "unsafe", since the new place starts with
+     permissive guards that can access unsafe features that affect
+     existing places. */
+  scheme_protect_primitive_provide(plenv, scheme_intern_symbol("dynamic-place"));
+
 #ifdef MZ_USE_PLACES
   REGISTER_SO(all_child_places);
   

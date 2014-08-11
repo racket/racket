@@ -183,7 +183,11 @@ such as a distributed places node produced by @racket[create-place-node].
 
  The @racket[module-path] argument must not be a module path of the
  form @racket[(#,(racket quote) _sym)] unless the module is predefined (see
- @racket[module-predefined?]).}
+ @racket[module-predefined?]).
+
+The @racket[dynamic-place] binding is protected in the sense of
+ @racket[protect-out], so access to this operation can be prevented
+ by adjusting the code inspector (see @secref["modprotect"]).}
 
 
 @defproc[(dynamic-place* [module-path (or/c module-path? path?)]
@@ -228,7 +232,8 @@ The @racket[dynamic-place*] procedure returns four values:
 
 ]
 
-}
+The @racket[dynamic-place*] binding is protected in the same way as
+ @racket[dynamic-place].}
 
 @defform[(place id body ...+)]{
   Creates a place that evaluates @racket[body]
@@ -238,7 +243,9 @@ The @racket[dynamic-place*] procedure returns four values:
   @racket[body]s are lifted to a function that is exported by
   the module. The result of @racket[place] is a place descriptor,
   like the result of @racket[dynamic-place].
-}
+
+The @racket[place] binding is protected in the same way as
+ @racket[dynamic-place].}
 
 @defform/subs[(place* maybe-port ...
                       id 
@@ -251,7 +258,9 @@ The @racket[dynamic-place*] procedure returns four values:
  and @racket[#:err] expressions (at most one of each) to specify ports in the same way and
  with the same defaults as @racket[dynamic-place*]. The result of
  a @racket[place*] form is also the same as for  @racket[dynamic-place*].
- }
+
+The @racket[place*] binding is protected in the same way as
+ @racket[dynamic-place].}
 
 
 @defproc[(place-wait [p place?]) exact-integer?]{
