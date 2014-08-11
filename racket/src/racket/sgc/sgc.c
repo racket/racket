@@ -315,8 +315,9 @@
 /* SECTOR_SEGMENT_SIZE determines the alignment of collector blocks.
    Since it should be a power of 2, LOG_SECTOR_SEGMENT_SIZE is
    specified directly. A larger block size speeds up GC, but wastes
-   more unallocated bytes in same-size buckets. */
-#define LOG_SECTOR_SEGMENT_SIZE 14
+   more unallocated bytes in same-size buckets. The block size must
+   be at least as large as the OS's page size. */
+#define LOG_SECTOR_SEGMENT_SIZE 16
 #define SECTOR_SEGMENT_SIZE (1 << LOG_SECTOR_SEGMENT_SIZE)
 #define SECTOR_SEGMENT_MASK (~(SECTOR_SEGMENT_SIZE-1))
 
@@ -328,7 +329,7 @@
 
 /* Number of sector segments to be allocated at once with
    malloc() to avoid waste when obtaining the proper alignment. */
-#define SECTOR_SEGMENT_GROUP_SIZE 32
+#define SECTOR_SEGMENT_GROUP_SIZE 16
 
 /* Number of bits used in 32-bit level table for checking existence of
    a sector. Creates a table of (1 << SECTOR_LOOKUP_SHIFT) pointers
@@ -988,6 +989,10 @@ static void *ofm_malloc_zero(size_t len)
 {
   return mmap_sector((len >> LOG_SECTOR_SEGMENT_SIZE) + 1, 0);
 }
+
+/* Instead of calling mmap()/unmap() every time we need to
+   allocate/free a sector, use the allocation-cache layer from
+   "gc2" for non-executable pages: */
 
 # define APAGE_SIZE SECTOR_SEGMENT_SIZE
 # define NO_ALLOC_CACHE_FREE

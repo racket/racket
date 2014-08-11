@@ -1,17 +1,15 @@
 SenoraGC is a relatively portable conservative GC for a slightly
-cooperative environment.
+cooperative environment. Its API is based on the Boehm GC.
 
-The collector is intended mainly for debugging and memory tracing, but
-it can also act as a reasonbaly efficient, general-purpose,
-conservative collector. The standard Racket build uses SGC for
-certain platforms where Boehm's GC hasn't been ported, yet (notably,
-OSKit and BeOS).
+The collector was originally intended for debugging and memory
+tracing, but it can also act as a reasonbaly efficient,
+general-purpose, conservative collector.
 
-This collector is not recommended as a replacement for Boehm's GC if
-you can get Boehm's to work at all. SenoraGC MIGHT be useful if, for
-some reason, Boehm's collector does not work for your platform.
-SenoraGC MIGHT be useful as a debugging collector if you can figure
-out the [undocumented] debugging utilities.
+If you intend to use the CGC variant of Racket instead of the (usual)
+3m variant, then instead of SenoraGC, consider using the variant of
+the Boehm GC that is distributed with Racket; it should perform
+significantly better. Enable the Boehm GC by providing `--disable-sgc`
+to `configure`.
 
 Usage:
 
@@ -24,6 +22,6 @@ actually done automatically for static variables, but it can't be done
 portably in general. (See AUTO_STATIC_ROOTS_IF_POSSIBLE in the flags
 section.)
 
-GC space is allocated using malloc() and free(). Alternatively, the GC
-can define malloc() and free() itself if platform-specific allocation
-routines are supported.
+GC space is allocated using mmap() where available, malloc()
+otherwise. The GC can define malloc() and free() itself if
+platform-specific allocation routines are supported.

@@ -68,7 +68,7 @@ racket\src\README if you don't know about the two variants.)
 
 
 If you can't run "build.bat" or don't want to, you have to perform
-several steps: first builg RacketCGC, then build Racket3m, etc.
+several steps: first build RacketCGC, then build Racket3m, etc.
 
 Building RacketCGC and GRacketCGC
 ---------------------------------

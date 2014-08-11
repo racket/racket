@@ -2086,9 +2086,9 @@ char *scheme_version(void)
 # define VERSION_SUFFIX ""
 #else
 # ifdef USE_SENORA_GC
-#  define VERSION_SUFFIX " [cgc~]"
-# else
 #  define VERSION_SUFFIX " [cgc]"
+# else
+#  define VERSION_SUFFIX " [cgc/b]"
 # endif
 #endif
 
