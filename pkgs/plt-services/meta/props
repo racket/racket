@@ -856,6 +856,7 @@ path/s is either such a string or a list of them.
 "pkgs/parser-tools-pkgs" responsible (mflatt)
 "pkgs/pconvert-lib" responsible (robby)
 "pkgs/pict-pkgs" responsible (mflatt robby)
+"pkgs/pict-snip-pkgs" responsible (robby)
 "pkgs/picturing-programs" responsible (sbloch)
 "pkgs/plai" responsible (jay)
 "pkgs/plai/tests/test-random-mutator.rkt" responsible (jay robby)
