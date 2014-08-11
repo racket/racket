@@ -848,6 +848,10 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     menv = scheme_module_access(modname, env, mod_phase);
     
     if (!menv) {
+      Scheme_Object *modsrc;
+      modsrc = (env->module
+                ? scheme_get_modsrc(env->module)
+                : scheme_false);
       scheme_wrong_syntax("link", NULL, varname,
 			  "namespace mismatch;\n"
                           " reference to a module that is not available\n"
@@ -858,7 +862,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 			  env->phase,
                           modname,
                           mod_phase,
-                          env->module ? env->module->modsrc : scheme_false);
+                          modsrc);
       return NULL;
     }
 
@@ -911,6 +915,10 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     }
 
     if (bad_reason) {
+      Scheme_Object *modsrc;
+      modsrc = (env->module
+                ? scheme_get_modsrc(env->module)
+                : scheme_false);
       scheme_wrong_syntax("link", NULL, varname,
                           "bad variable linkage;\n"
                           " reference to a variable that %s\n"
@@ -922,7 +930,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
                           env->phase,
                           modname,
                           mod_phase,
-                          env->module ? env->module->modsrc : scheme_false);
+                          modsrc);
     }
 
     if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & (GLOB_IS_IMMUTATED | GLOB_IS_LINKED)))
@@ -1892,7 +1900,7 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
                            : "constant")
 			: "variable"),
 		       (Scheme_Object *)b->key,
-		       home->module->modsrc);
+		       scheme_get_modsrc(home->module));
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, b->key,
 		       "%s: " CANNOT_SET_ERROR_STR ";\n"

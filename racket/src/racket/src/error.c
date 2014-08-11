@@ -2597,7 +2597,7 @@ void scheme_unbound_global(Scheme_Bucket *b)
 		     name,
 		     errmsg,
 		     name,
-		     home->module->modsrc,
+		     scheme_get_modsrc(home->module),
                      phase,
                      phase_note);
   } else {

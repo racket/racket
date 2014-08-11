@@ -3579,6 +3579,8 @@ char *scheme_submodule_path_to_string(Scheme_Object *p, intptr_t *_len);
 
 Scheme_Object *scheme_annotate_existing_submodules(Scheme_Object *orig_fm, int incl_star);
 
+Scheme_Object *scheme_get_modsrc(Scheme_Module *m);
+
 /*========================================================================*/
 /*                         errors and exceptions                          */
 /*========================================================================*/
