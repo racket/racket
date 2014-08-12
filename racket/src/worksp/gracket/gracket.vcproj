@@ -63,6 +63,10 @@
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
 		</Configuration>
 		<Configuration
 			Name="BDebug|Win32"
@@ -106,6 +110,10 @@
 				DataExecutionPrevention="0"
 			/>
 			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
+			<Tool
 				Name="VCALinkTool"
 			/>
 			<Tool
@@ -122,9 +130,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 		<Configuration
@@ -180,6 +185,10 @@
 				DataExecutionPrevention="0"
 				TargetMachine="17"
 			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
 		</Configuration>
 		<Configuration
 			Name="BDebug|x64"
@@ -222,6 +231,10 @@
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -270,6 +283,10 @@
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
 		</Configuration>
 		<Configuration
 			Name="SDebug|Win32"
@@ -313,6 +330,10 @@
 				DataExecutionPrevention="0"
 			/>
 			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
+			<Tool
 				Name="VCALinkTool"
 			/>
 			<Tool
@@ -329,9 +350,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 		<Configuration
@@ -387,6 +405,10 @@
 				DataExecutionPrevention="0"
 				TargetMachine="17"
 			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
 		</Configuration>
 		<Configuration
 			Name="SDebug|x64"
@@ -429,6 +451,10 @@
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
