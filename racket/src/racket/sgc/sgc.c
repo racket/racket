@@ -121,11 +121,20 @@
 /* Instead of calling malloc() to get low-level memory, use
    sbrk() directly. (Unix) */
 
-#define GET_MEM_VIA_MMAP (SGC_STD_DEBUGGING_UNIX || defined(HAVE_MMAP_MPROTECT))
+#if SGC_STD_DEBUGGING_UNIX || defined(HAVE_MMAP_MPROTECT)
+# define GET_MEM_VIA_MMAP 1
+#else
+# define GET_MEM_VIA_MMAP 0
+#endif
 /* Instead of calling malloc() to get low-level memory, use
    mmap() directly. (Unix) */
 
-#define GET_MEM_VIA_VIRTUAL_ALLOC (SGC_STD_DEBUGGING_WINDOWS || defined(WIN32))
+#if SGC_STD_DEBUGGING_WINDOWS || defined(WIN32)
+# define GET_MEM_VIA_VIRTUAL_ALLOC 1
+# define LOG_SECTOR_SEGMENT_SIZE 16
+#else
+# define GET_MEM_VIA_VIRTUAL_ALLOC 0
+#endif
 /* Instead of calling malloc() to get low-level memory, use
    VirtualAlloc() directly. (Win32) */
 
@@ -287,7 +296,7 @@
 # include <windows.h>
 #endif
 
-#if !GET_MEM_VIA_MMAP
+#if !GET_MEM_VIA_MMAP && !GET_MEM_VIA_VIRTUAL_ALLOC
 # undef RELEASE_UNUSED_SECTORS
 # define RELEASE_UNUSED_SECTORS 0
 #endif
@@ -316,8 +325,11 @@
    Since it should be a power of 2, LOG_SECTOR_SEGMENT_SIZE is
    specified directly. A larger block size speeds up GC, but wastes
    more unallocated bytes in same-size buckets. The block size must
-   be at least as large as the OS's page size. */
-#define LOG_SECTOR_SEGMENT_SIZE 16
+   be at least as large as the OS's page size, and when using VirtualAlloc
+   on Windows it must exactly match the allocation granularity. */
+#ifndef LOG_SECTOR_SEGMENT_SIZE
+# define LOG_SECTOR_SEGMENT_SIZE 16
+#endif
 #define SECTOR_SEGMENT_SIZE (1 << LOG_SECTOR_SEGMENT_SIZE)
 #define SECTOR_SEGMENT_MASK (~(SECTOR_SEGMENT_SIZE-1))
 
@@ -1034,30 +1046,21 @@ static void flush_freed_sectors()
 #if GET_MEM_VIA_VIRTUAL_ALLOC
 static void *platform_plain_sector(int count, int executable)
 {
-  /* Since 64k blocks are used up by each call to VirtualAlloc,
-     use roughly the same trick as in the malloc-based alloc to
-     avoid wasting the address space. */
+  void *p;
 
-  static int prealloced;
-  static void *preallocptr;
+  p = VirtualAlloc(NULL, (count + 1) << LOG_SECTOR_SEGMENT_SIZE,
+                   MEM_COMMIT | MEM_RESERVE,
+                   executable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
   
-  if (!prealloced && (count < SECTOR_SEGMENT_GROUP_SIZE)) {
-    prealloced = SECTOR_SEGMENT_GROUP_SIZE;
-    preallocptr = VirtualAlloc(NULL, prealloced << LOG_SECTOR_SEGMENT_SIZE,
-			       MEM_COMMIT | MEM_RESERVE,
-			       executable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
-  }
-  
-  if (count <= prealloced) {
-    void *result = preallocptr;
-    preallocptr = ((char *)preallocptr) + (count << LOG_SECTOR_SEGMENT_SIZE);
-    prealloced -= count;
-    return result;
-  }
-  
-  return VirtualAlloc(NULL, count << LOG_SECTOR_SEGMENT_SIZE,
-		      MEM_COMMIT | MEM_RESERVE,
-		      executable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+  if ((uintptr_t)p & (SECTOR_SEGMENT_SIZE - 1))
+    abort();
+
+  return p;
+}
+
+static void free_plain_sector(void *p, int count, int executable)
+{
+  VirtualFree(p, 0, MEM_RELEASE);
 }
 #endif
 
