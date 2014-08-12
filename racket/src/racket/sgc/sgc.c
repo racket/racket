@@ -1653,11 +1653,11 @@ void GC_add_roots(void *start, void *end)
 
     mem_real_use += (sizeof(uintptr_t) * roots_size);
 
-    memcpy((void *)naya, (void *)roots, 
-	   sizeof(uintptr_t) * roots_count);
-
-    if (roots)
+    if (roots) {
+      memcpy((void *)naya, (void *)roots,
+             sizeof(uintptr_t) * roots_count);
       free_managed(roots);
+    }
 
     roots = naya;
   }
