@@ -81,6 +81,7 @@
 	(hash-set! used-symbols (string->symbol "scheme_thread_local_key") 1)
 	(hash-set! used-symbols (string->symbol "scheme_thread_locals") 1)
 	(hash-set! used-symbols (string->symbol "pthread_getspecific") 1)
+	(hash-set! used-symbols (string->symbol "scheme_get_mz_setjmp") 1)
         
         ;; For dependency tracking:
         (define depends-files (make-hash))
@@ -766,6 +767,9 @@
           (printf (if callee-restore?
                       "#define XFORM_RESET_VAR_STACK /* empty */\n"
                       "#define XFORM_RESET_VAR_STACK SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]);\n"))
+
+          ;; Indirect setjmp support:
+          (printf "#define scheme_mz_setjmp_post_xform(s) ((scheme_get_mz_setjmp())(s))\n")
           
           (unless pgc-really?
             (printf "#include \"cgc2.h\"\n"))
@@ -860,7 +864,7 @@
         ;; These don't act like functions, but we need to treat them
         ;;  specially:
         (define setjmp-functions
-          '(setjmp _setjmp scheme_setjmp scheme_mz_setjmp))
+          '(setjmp _setjmp scheme_setjmp scheme_mz_setjmp scheme_mz_setjmp_post_xform))
         
         ;; The non-functions table identifies symbols to ignore when
         ;; finding function calls

@@ -77,11 +77,16 @@ The CGC source code for RacketCGC and GRacketCGC is split into several
 projects that are grouped into a few solutions.  To build the `X'
 solution with Visual Studio, open the file racket\src\worksp\X\X.sln,
 but add `9' before ".sln" if you're using Visual Studio 2008 (i.e.,
-version 9.0).
+version 9.0). The solution files without a number are for Visual
+Studio 2010, but they should upgrade immediately for later versions.
 
  [The .vcproj files are used by the ...9.sln solutions, while the
-  .vcxproj files are used by the other .sln solutions. The latter
-  are compatible with Visual Studio 2010 and up.]
+  .vcxproj files are used by the other .sln solutions. The latter are
+  compatible with Visual Studio 2010. For Visual Studio versions later
+  than 2010, "build.bat" script auto-upgrades projects in a copy whose
+  file name ends with a literal "X" to match the current tool version,
+  but you can also just upgrade them within your version of Visual
+  Studio.]
 
 To build RacketCGC, build the Racket solution in
   racket\src\worksp\racket - makes racket\RacketCGC.exe

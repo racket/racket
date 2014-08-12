@@ -3,6 +3,7 @@
 #define scheme_longjmpup (scheme_extension_table->scheme_longjmpup)
 #define scheme_reset_jmpup_buf (scheme_extension_table->scheme_reset_jmpup_buf)
 #ifdef USE_MZ_SETJMP
+#define scheme_get_mz_setjmp (scheme_extension_table->scheme_get_mz_setjmp)
 #define scheme_mz_setjmp (scheme_extension_table->scheme_mz_setjmp)
 #define scheme_mz_longjmp (scheme_extension_table->scheme_mz_longjmp)
 #endif

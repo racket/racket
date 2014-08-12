@@ -24,7 +24,36 @@
 
 #include "schpriv.h"
 
-#ifndef _WIN64
+#ifdef _WIN64
+
+# ifdef USE_MZ_SETJMP_INDIRECT
+
+/* Implementation in "mzsj86w64.S", and these wrappers make
+   DLL exporting work: */
+
+extern int _scheme_mz_setjmp(mz_pre_jmp_buf b);
+extern void _scheme_mz_longjmp(mz_pre_jmp_buf b, int v);
+
+Scheme_Setjmp_Proc scheme_get_mz_setjmp(void)
+{
+  return _scheme_mz_setjmp;
+}
+
+void scheme_mz_longjmp(mz_pre_jmp_buf b, int v)
+{
+  _scheme_mz_longjmp(b, v);
+}
+
+int scheme_mz_setjmp(mz_pre_jmp_buf b)
+{
+  scheme_log_abort("internal error: setjmp wasn't indirect");
+  abort();
+  return 0;
+}
+
+# endif
+
+#else
 
 int __declspec(naked) scheme_mz_setjmp(mz_jmp_buf b)
 {

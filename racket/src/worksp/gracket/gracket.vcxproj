@@ -53,9 +53,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
-    <TargetName>$(ProjectName)CGC</TargetName>
+    <TargetName>GracketCGC</TargetName>
     <OutDir>..\..\..\lib\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -65,6 +66,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>

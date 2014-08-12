@@ -3,6 +3,7 @@ EXPORTS
  scheme_setjmpup_relative
  scheme_longjmpup
  scheme_reset_jmpup_buf
+ scheme_get_mz_setjmp
  scheme_mz_setjmp
  scheme_mz_longjmp
  scheme_clear_escape

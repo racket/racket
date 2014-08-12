@@ -53,9 +53,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
-    <TargetName>$(ProjectName)xxxxxxx</TargetName>
+    <TargetName>libracketxxxxxxx</TargetName>
     <OutDir>..\..\..\lib\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -66,6 +67,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -225,6 +227,12 @@
     <ClCompile Include="..\..\racket\src\type.c" />
     <ClCompile Include="..\..\racket\src\validate.c" />
     <ClCompile Include="..\..\racket\src\vector.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\racket\src\mzsj86w64.S">
+      <Command Condition="'$(Platform)'=='x64'">ml64.exe /c /Cx /Fo $(Platform)\$(Configuration)\mzsj86w64.obj ..\..\racket\src\mzsj86w64.S</Command>
+      <Outputs>$(Platform)\$(Configuration)\mzsj86w64.obj;%(Outputs)</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\libffi\libffi.vcxproj">

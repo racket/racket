@@ -42,6 +42,7 @@ MZ_EXTERN void scheme_longjmpup(Scheme_Jumpup_Buf *b);
 MZ_EXTERN void scheme_reset_jmpup_buf(Scheme_Jumpup_Buf *b);
 
 #ifdef USE_MZ_SETJMP
+MZ_EXTERN Scheme_Setjmp_Proc scheme_get_mz_setjmp(void);
 MZ_EXTERN int scheme_mz_setjmp(mz_pre_jmp_buf b);
 MZ_EXTERN void scheme_mz_longjmp(mz_pre_jmp_buf b, int v);
 #endif

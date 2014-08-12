@@ -716,3 +716,13 @@ void scheme_mz_longjmp(mz_pre_jmp_buf b, int v)
 }
 
 #endif
+
+
+#ifndef USE_MZ_SETJMP_INDIRECT
+Scheme_Setjmp_Proc scheme_get_mz_setjmp(void)
+{
+  scheme_log_abort("internal error: setjmp was indirect?");
+  abort();
+  return NULL;
+}
+#endif

@@ -593,7 +593,7 @@
    the actual size from the executable on startup: */
 # define WINDOWS_DEFAULT_STACK_SIZE 1048576
 
-# ifndef _WIN64
+# if !defined(_WIN64) || (_MSC_VER >= 1600)
 #  define USE_MZ_SETJMP
 # endif
 

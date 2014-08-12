@@ -22,6 +22,7 @@ int (*scheme_setjmpup_relative)(Scheme_Jumpup_Buf *b, void *base,
 void (*scheme_longjmpup)(Scheme_Jumpup_Buf *b);
 void (*scheme_reset_jmpup_buf)(Scheme_Jumpup_Buf *b);
 #ifdef USE_MZ_SETJMP
+Scheme_Setjmp_Proc (*scheme_get_mz_setjmp)(void);
 int (*scheme_mz_setjmp)(mz_pre_jmp_buf b);
 void (*scheme_mz_longjmp)(mz_pre_jmp_buf b, int v);
 #endif
@@ -952,8 +953,7 @@ int (*scheme_is_list)(Scheme_Object *obj1);
 int (*scheme_list_length)(Scheme_Object *list);
 int (*scheme_proper_list_length)(Scheme_Object *list);
 Scheme_Object *(*scheme_alloc_list)(int size);
-Scheme_Object *(*scheme_map_1)(Scheme_Object *(*f)(Scheme_Object*),
-			    Scheme_Object *l);
+Scheme_Object *(*scheme_map_1)(Scheme_Object *(*f)(Scheme_Object*), Scheme_Object *l);
 Scheme_Object *(*scheme_car)(Scheme_Object *pair);
 Scheme_Object *(*scheme_cdr)(Scheme_Object *pair);
 Scheme_Object *(*scheme_cadr)(Scheme_Object *pair);

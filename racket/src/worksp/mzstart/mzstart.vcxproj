@@ -39,6 +39,7 @@
     <OutDir>..\..\..\lib\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -60,10 +61,10 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
-      <OutputFile>..\..\..\lib\$(ProjectName).exe</OutputFile>
+      <OutputFile>..\..\..\lib\mzstart.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\..\lib\$(ProjectName).pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>..\..\..\lib\mzstart.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
@@ -89,10 +90,10 @@
       <AdditionalIncludeDirectories>..\starters</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <OutputFile>..\..\..\lib\$(ProjectName).exe</OutputFile>
+      <OutputFile>..\..\..\lib\mzstart.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\..\lib\$(ProjectName).pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>..\..\..\lib\mzstart.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>

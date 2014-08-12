@@ -61,14 +61,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
-    <TargetName>$(ProjectName)CGC</TargetName>
+    <TargetName>mzcomCGC</TargetName>
     <OutDir>..\..\..\lib\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Midl>
-      <TypeLibraryName>$(OutDir)$(ProjectName).tlb</TypeLibraryName>
+      <TypeLibraryName>$(OutDir)mzcom.tlb</TypeLibraryName>
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..;..\..\racket\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -77,6 +78,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -86,10 +88,10 @@
     <Link>
       <AdditionalOptions>/DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\..\lib\$(ProjectName)CGC.exe</OutputFile>
+      <OutputFile>..\..\..\lib\mzcomCGC.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\..\lib\$(ProjectName)CGC.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>..\..\..\lib\mzcomCGC.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <StackReserveSize>8388608</StackReserveSize>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -201,8 +203,8 @@
     <Link>
       <AdditionalOptions>/DELAYLOAD:libracket3mxxxxxxx.dll %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>delayimp.lib;..\..\..\lib\msvc\libracket3mxxxxxxx.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\..\lib\$(ProjectName).exe</OutputFile>
-      <ProgramDatabaseFile>..\..\..\lib\$(ProjectName).pdb</ProgramDatabaseFile>
+      <OutputFile>..\..\..\lib\mzcom.exe</OutputFile>
+      <ProgramDatabaseFile>..\..\..\lib\mzcom.pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='3m|x64'">
@@ -221,8 +223,8 @@
     <Link>
       <AdditionalOptions>/DELAYLOAD:libracket3mxxxxxxx.dll %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>delayimp.lib;..\..\..\lib\msvc\libracket3mxxxxxxx.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\..\lib\$(ProjectName).exe</OutputFile>
-      <ProgramDatabaseFile>..\..\..\lib\$(ProjectName).pdb</ProgramDatabaseFile>
+      <OutputFile>..\..\..\lib\mzcom.exe</OutputFile>
+      <ProgramDatabaseFile>..\..\..\lib\mzcom.pdb</ProgramDatabaseFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
   </ItemDefinitionGroup>

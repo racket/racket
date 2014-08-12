@@ -8,6 +8,10 @@ cl checkvs9.c
 checkvs9.exe
 if errorlevel 1 (set PLTSLNVER=9)
 
+cl genvsx.c
+genvsx.exe
+if errorlevel 1 (set PLTSLNVER=X)
+
 if not exist ..\..\etc  mkdir ..\..\etc
 if not exist ..\..\doc  mkdir ..\..\doc
 if not exist ..\..\share  mkdir ..\..\share
