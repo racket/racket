@@ -5388,7 +5388,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
 
   if (lazy_string) {
     full_s = lazy_string->s;
-    endset = lazy_string->end - lazy_string->start;
+    endset = lazy_string->blen;
   }
 
   if (iport) {
