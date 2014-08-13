@@ -4,7 +4,8 @@
          syntax/boundmap
          racket/struct-info
          ;macro-debugger/emit
-         "patterns.rkt")
+         "patterns.rkt"
+         "syntax-local-match-introduce.rkt")
 
 (provide ddk? parse-literal all-vars pattern-var? match:syntax-err
          match-expander-transform trans-match parse-struct
@@ -153,14 +154,15 @@
                           (set!-transformer-procedure transformer)
                           transformer)])
     (unless transformer (raise-syntax-error #f error-msg expander*))
-    (let* ([introducer (make-syntax-introducer)]
-           [mstx (introducer (syntax-local-introduce stx))]
-           [mresult (if (procedure-arity-includes? transformer 2) 
-                        (transformer expander* mstx)
-                        (transformer mstx))]
-           [result (syntax-local-introduce (introducer mresult))])
-      ;(emit-local-step stx result #:id expander)
-      (parse result))))
+    (define introducer (make-syntax-introducer))
+    (parameterize ([current-match-introducer introducer])
+      (let* ([mstx (introducer (syntax-local-introduce stx))]
+             [mresult (if (procedure-arity-includes? transformer 2) 
+                          (transformer expander* mstx)
+                          (transformer mstx))]
+             [result (syntax-local-introduce (introducer mresult))])
+        ;(emit-local-step stx result #:id expander)
+        (parse result)))))
 
 ;; raise an error, blaming stx
 (define (match:syntax-err stx msg)

@@ -661,6 +661,10 @@ Predicates for values which implement the appropriate match expander
 properties.
 }
 
+@defproc[(syntax-local-match-introduce [stx syntax?]) syntax?]{
+Like @racket[syntax-local-introduce], but for match expanders.
+}
+
 
 @defparam[match-equality-test comp-proc (any/c any/c . -> . any)]{
 

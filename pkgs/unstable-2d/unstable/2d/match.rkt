@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     racket/match/parse
+                     (only-in racket/match/parse parse)
                      racket/match/patterns)
          racket/match)
 
