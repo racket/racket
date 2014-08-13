@@ -147,10 +147,9 @@ mzlibrary:
 	$(MAKE) libracket.@LIBSFX@
 
 # For no-cgc-needed, we don't need to build the gc or link racketcgc, 
-# but gc2 depends on src objects; if building 3m without cgc becomes
-# more common, we could improve things to perform even less cgc-build work
+# but gc2 depends on a few plain-src objects
 no-cgc-needed:
-	cd src; $(MAKE) all
+	cd src; $(MAKE) plain-objs
 	$(MAKE) @FOREIGNTARGET@
 	$(MAKE) main.@LTO@
 	$(MAKE) mingw-other

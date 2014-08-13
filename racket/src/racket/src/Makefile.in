@@ -141,6 +141,9 @@ mzheaders: $(srcdir)/schemex.h $(srcdir)/schemexm.h $(srcdir)/schemex.inc $(srcd
 
 mzobjects: $(OBJS)
 
+# Linked into 3m:
+plain-objs: gmp.@LTO@ unwind.@LTO@
+
 $(srcdir)/schemex.h : $(srcdir)/schemef.h $(srcdir)/makex.rkt
 	racket $(srcdir)/makex.rkt < $(srcdir)/schemef.h > $(srcdir)/schemex.h
 
