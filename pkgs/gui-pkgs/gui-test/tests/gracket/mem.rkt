@@ -2,7 +2,7 @@
 
 (define source-dir (current-load-relative-directory))
 
-(define num-times 80)
+(define num-times 10)
 (define num-threads 3)
 
 (define dump-stats? #f)
@@ -53,12 +53,13 @@
     [else (get-panel% n)]))
 
 (define (get-image n)
-  (build-path (collection-path "icons")
+  (collection-file-path
    (case (modulo n 4)
      [(0) "mini-plt.xpm"]
      [(1) "lock.gif"]
      [(2) "help.bmp"]
-     [(3) "return.xbm"])))
+     [(3) "return.xbm"])
+   "icons"))
 
 (define (maker id n)
   (sleep)

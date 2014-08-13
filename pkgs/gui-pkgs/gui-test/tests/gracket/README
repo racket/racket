@@ -10,9 +10,9 @@ The "draw.rkt" test (use load/cd) tests drawing commands. Click the
 
 ---------------------------------------------------------------------------
 
-The "mem.rktl" test is loaded at startup:
-  gracket -r mem.rktl
-Creates a lot of frames and instance of other objects, reporting
+The "mem.rkt" test
+  gracket mem.rkt
+creates a lot of frames and instance of other objects, reporting
 memory information along the way. At the end, before the last memory
 dump, objects that are still allocated are displayed like this:
   (frame (1 . 5))
@@ -20,69 +20,3 @@ This means that the frame allocated by thread #1 at cycle 5
 (counting down from some number) hasn't been garbage-collected.
 If there's a few of these lines (around 10), that's ok.
 A large number of lines (say, 50) indicates a GC problem.
-
----------------------------------------------------------------------------
-
-[Out of date:]
-The "random.rktl" test is a randomized test of the GRacket classes that tests
-GRacket's stability. Load "random.rktl", and then run
-  (init)
-This attempts to create instances of classes using random
-intialization arguments. (init) can be run any number of times. 
-(2 is a good number) Then run
-  (call-all-random) 
-This calls every method of every class (skipping some "dangerous" ones
-that modify the file system) with a random instance and with random
-arguments.
-
-To avoid testing much of the wxMedia toolbox, which is likely to be
-platform-independent, (define skip-media? #t) before loading
-"random.rktl".
-
-
-==================================================
-Old Stuff
-==================================================
-
----------------------------------------------------------------------------
-
-The "imred.rktl" test is used to check for memory leaks in a loop
-invoking the gracket system. Call the `go' procedure with a list
-of symbol flags:
-  'force not included:
-     Use the current eventspaces; expects mred:run-exit-callbacks
-     to terminate everything properly
-  'force included:
-     Use a new eventspace; don't run mred:run-exit-callbacks and
-     call wx:kill-eventspace instead.
-  'console included:
-     Open a GRacket console
-  'thread included:
-     Spawn a sleeping-and-looping thread during each invocation.
-     Also tests semaphore-callback (because it has to)
-  'eventspace included:
-     Create a new sub-eventspace during each invocation with
-     a wx:frame% shown
-
----------------------------------------------------------------------------
-
-"startup" tests the startup flags of gracket.
-run "run.rktl" from that directory.
-
----------------------------------------------------------------------------
-
-"frame-edit.rktl" checks that various frames match with various
-edits. Under construction.
-
----------------------------------------------------------------------------
-
-"gui.rktl" tests:
- - save prompting (before closing unsaved files) and
- - autosaving 
-
-evaluate `(load "gui.rktl")' in the console to run.
-
-It also overwrites the file "tmp.rktd" in the testing directory.
-
----------------------------------------------------------------------------
-
