@@ -109,7 +109,7 @@ and directories:
 
  @item{directories/files named @filepath{tests} or
        @filepath{scribblings} (but see the exception below for
-       @filepath{doc} and @filepath{info.rkt};}
+       @filepath{doc} and @filepath{info.rkt});}
 
  @item{directories/files named in an @filepath{info.rkt} file's
        @racket[binary-omit-files] definition.}
