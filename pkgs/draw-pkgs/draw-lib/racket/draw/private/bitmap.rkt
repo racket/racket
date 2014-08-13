@@ -903,7 +903,8 @@
 
     (define/public (prep-alpha width height)
       (when (and (not b&w?)
-                 (not alpha-channel?))
+                 (not alpha-channel?)
+                 s)
         (unless alpha-s-up-to-date?
           (unless alpha-s
             (set! alpha-s (cairo_image_surface_create CAIRO_FORMAT_ARGB32
