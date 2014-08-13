@@ -8,6 +8,7 @@
          "define-forms.rkt"
          "struct.rkt"
          (for-syntax racket/lazy-require
+                     "syntax-local-match-introduce.rkt"
                      (only-in "stxtime.rkt"
                               match-...-nesting
                               match-expander?
@@ -19,7 +20,8 @@
   (lazy-require [racket/match/parse (parse)]))
 
 (provide (for-syntax match-...-nesting match-expander? legacy-match-expander?
-                     prop:match-expander prop:legacy-match-expander)
+                     prop:match-expander prop:legacy-match-expander
+                     syntax-local-match-introduce)
          match-equality-test
          define-match-expander
          struct* ==          

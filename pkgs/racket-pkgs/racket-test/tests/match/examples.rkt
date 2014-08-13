@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require scheme/match
-	 scheme/mpair
+(require racket/match
+         scheme/mpair
          scheme/control scheme/foreign
          (only-in racket/list split-at)
          (for-syntax scheme/base)
@@ -727,5 +727,12 @@
          (match (cons 1 1)
            [(cons a b) #:when (= a b) 1]
            [_ 0]))
+   
+   (test-case "syntax-local-match-introduce"
+     (define-match-expander foo
+       (lambda (stx) (syntax-local-match-introduce #'x)))
+     (check-equal? (match 42
+                     [(foo) x])
+                   42))
    
 ))
