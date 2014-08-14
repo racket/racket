@@ -10,6 +10,7 @@
                      "scribble-lib"
                      "snip-lib"))
 (define deps '("base"))
+(define update-implies '("pict-snip-lib"))
 
 (define pkg-desc "documentation part of \"pict\"")
 

@@ -8,6 +8,7 @@
                      "errortrace-doc"
                      "errortrace-lib"
                      "racket-doc"))
+(define update-implies '("profile-lib"))
 
 (define pkg-desc "documentation part of \"profile\"")
 

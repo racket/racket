@@ -15,3 +15,4 @@
 (define build-deps '("data-doc"
                      "mzscheme-doc"
                      "scheme-lib"))
+(define update-implies '("compatibility-lib"))

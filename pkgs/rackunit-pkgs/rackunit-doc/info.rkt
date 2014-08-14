@@ -12,3 +12,4 @@
                      "rackunit-gui"
                      "rackunit-lib"
                      "scribble-lib"))
+(define update-implies '("rackunit-lib"))

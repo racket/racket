@@ -22,6 +22,7 @@
                      "unstable-options-lib"
                      "unstable-parameter-group-lib"
                      "unstable-2d"))
+(define update-implies '("unstable-lib"))
 
 (define pkg-desc "tests for \"unstable\"")
 

@@ -10,3 +10,4 @@
 (define build-deps '("racket-index"
                      "data-lib"
                      "rackunit-lib"))
+(define update-implies '("data-lib"))

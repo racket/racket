@@ -6,6 +6,7 @@
                      "readline-lib"
                      "racket-doc"))
 (define deps '("base"))
+(define update-implies '("readline-lib"))
 
 (define pkg-desc "documentation part of \"readline\"")
 

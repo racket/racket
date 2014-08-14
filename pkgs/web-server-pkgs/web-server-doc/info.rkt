@@ -18,6 +18,7 @@
                      "web-server-lib"
                      "racket-doc"))
 (define deps '("base"))
+(define update-implies '("web-server-lib"))
 
 (define pkg-desc "documentation part of \"web-server\"")
 

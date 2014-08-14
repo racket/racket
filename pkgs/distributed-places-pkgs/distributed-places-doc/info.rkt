@@ -7,6 +7,7 @@
                "racket-doc"
                "sandbox-lib"
                "scribble-lib"))
+(define update-implies '("distributed-places-lib"))
 
 (define pkg-desc "documentation part of \"distributed-places\"")
 

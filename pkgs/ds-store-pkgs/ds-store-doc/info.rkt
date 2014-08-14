@@ -5,6 +5,7 @@
                "scribble-lib"
                "racket-doc"
                "ds-store-lib"))
+(define update-implies '("ds-store-lib"))
 
 (define scribblings '(("ds-store.scrbl")))
 

@@ -9,6 +9,7 @@
                      "racket-doc"
                      "unstable-latent-contract-lib"
                      "unstable-parameter-group-lib"))
+(define update-implies '("images-lib"))
 
 (define compile-omit-paths '("tests"))
 

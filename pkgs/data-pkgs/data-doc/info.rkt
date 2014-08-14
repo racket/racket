@@ -10,3 +10,4 @@
 (define build-deps '("data-lib"
                      "racket-doc"
                      "scribble-lib"))
+(define update-implies '("data-lib"))

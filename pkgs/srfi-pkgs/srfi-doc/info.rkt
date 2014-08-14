@@ -11,6 +11,7 @@
                      "r5rs-doc"
                      "r6rs-doc"
                      "compatibility-lib"))
+(define update-implies '("srfi-lib"))
 
 (define pkg-desc "documentation part of \"srfi\"")
 

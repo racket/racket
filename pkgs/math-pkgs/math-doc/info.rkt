@@ -14,6 +14,7 @@
                      "typed-racket-doc"
                      "typed-racket-lib"
                      "unstable-2d"))
+(define update-implies '("math-lib"))
 
 (define pkg-desc "Math library documentation")
 

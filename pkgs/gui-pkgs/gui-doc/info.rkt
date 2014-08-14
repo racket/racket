@@ -16,6 +16,7 @@
                      "racket-doc"
                      "string-constants-doc"))
 (define deps '("base"))
+(define update-implies '("gui-lib"))
 
 (define pkg-desc "documentation part of \"gui\"")
 

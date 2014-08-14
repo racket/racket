@@ -12,6 +12,7 @@
                      "planet-lib"
                      "rackunit-lib"
                      "scheme-lib"))
+(define update-implies '("planet-lib"))
 
 (define test-omit-paths
   '("tests/planet/examples"))

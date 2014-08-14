@@ -16,6 +16,7 @@
                      "pconvert-lib"
                      "unstable-flonum-lib"
                      "unstable"))
+(define update-implies '("typed-racket"))
 
 (define pkg-desc "tests for \"typed-racket\"")
 

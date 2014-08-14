@@ -14,6 +14,7 @@
                      "scribble-lib"
                      "slideshow-lib"
                      "racket-doc"))
+(define update-implies '("slideshow-lib"))
 
 (define pkg-desc "documentation part of \"slideshow\"")
 

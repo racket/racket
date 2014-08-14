@@ -16,6 +16,7 @@
                "unstable-flonum-lib"))
 
 (define build-deps '())
+(define update-implies '("plot-lib"))
 
 (define pkg-desc "Plot tests")
 

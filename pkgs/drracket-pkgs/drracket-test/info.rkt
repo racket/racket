@@ -15,6 +15,7 @@
                      "compiler-lib"
                      "cext-lib"
                      "string-constants-lib"))
+(define update-implies '("drracket"))
 
 (define pkg-desc "tests for \"drracket\"")
 

@@ -11,6 +11,7 @@
                      "rackunit-lib"
                      "profile-lib"
                      "wxme-lib"))
+(define update-implies '("htdp-lib"))
 
 (define pkg-desc "tests for \"htdp\"")
 

@@ -19,6 +19,7 @@
                      "typed-racket-more"
                      "racket-doc"))
 (define deps '("base"))
+(define update-implies '("typed-racket-lib"))
 
 (define pkg-desc "documentation part of \"typed-racket\"")
 

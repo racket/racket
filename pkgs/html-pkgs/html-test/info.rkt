@@ -13,3 +13,4 @@
     "base"
     "html-lib"
     "rackunit-lib"))
+(define update-implies '("html-lib"))

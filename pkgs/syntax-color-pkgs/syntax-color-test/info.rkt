@@ -10,3 +10,4 @@
 (define build-deps '("rackunit-lib"
                      "scheme-lib"
                      "syntax-color-lib"))
+(define update-implies '("syntax-color-lib"))

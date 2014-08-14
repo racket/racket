@@ -14,3 +14,4 @@
                      "racket-test"
                      "rackunit-lib"
                      "web-server-lib"))
+(define update-implies '("net-lib"))

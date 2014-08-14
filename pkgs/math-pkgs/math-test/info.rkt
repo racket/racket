@@ -10,6 +10,7 @@
                "typed-racket-more"))
 
 (define build-deps '())
+(define update-implies '("math-lib"))
 
 (define pkg-desc "Math library tests")
 

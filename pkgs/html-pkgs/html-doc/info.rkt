@@ -6,6 +6,7 @@
                      "html-lib"
                      "racket-doc"))
 (define deps '("base"))
+(define update-implies '("html-lib"))
 
 (define pkg-desc "documentation part of \"html\"")
 

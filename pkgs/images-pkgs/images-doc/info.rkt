@@ -17,6 +17,7 @@
                      "slideshow-lib"
                      "typed-racket-lib"
                      "unstable-latent-contract-lib"))
+(define update-implies '("images-lib"))
 
 (define pkg-desc "Documentation for images-lib")
 

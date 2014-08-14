@@ -9,6 +9,7 @@
                      "racket-doc"
                      "syntax-color-lib"))
 (define deps '("base"))
+(define update-implies '("syntax-color-lib"))
 
 (define pkg-desc "documentation part of \"syntax-color\"")
 
