@@ -144,8 +144,9 @@ following files (when they are not pruned):
        @racket[move-foreign-libs], any
        @racket[copy-shared-files] definition is changed to
        @racket[move-shared-files], any @racket[copy-man-pages]
-       definition is changed to @racket[move-man-pages], and any
-       @racket[build-deps] definition is removed.}
+       definition is changed to @racket[move-man-pages], any
+       @racket[build-deps] definition is removed, and any
+       @racket[update-implies] definition is removed.}
 
 ]
 

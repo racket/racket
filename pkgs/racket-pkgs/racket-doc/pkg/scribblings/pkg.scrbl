@@ -849,7 +849,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
        @DFlag{binary} mode.}
 
  @item{@racketidfont{implies} --- a list of strings and
-       @racket['core]. Each string refers to a package listed in the
+       @racket['core]. Each string refers to a package listed in
        @racketidfont{deps} and indicates that a dependency on the
        current package counts as a dependency on the named package;
        for example, the @pkgname{gui} package is defined to ensure
@@ -863,6 +863,12 @@ The following @filepath{info.rkt} fields are used by the package manager:
        @pkgname{base} package to declare it as the representative of
        core Racket libraries.}
 
+ @item{@racketidfont{update-implies} --- a list of strings. Each
+       string refers to a package listed in @racketidfont{deps}
+       or @racketidfont{build-deps}
+       and indicates that the implied packages are automatically updated
+       whenever the implying package is updated.}
+
  @item{@racketidfont{setup-collects} --- a list of path strings and/or
        lists of path strings, which are used as collection names to
        set up via @exec{raco setup} after the package is installed, or
@@ -872,6 +878,8 @@ The following @filepath{info.rkt} fields are used by the package manager:
        links).}
 
 ]
+
+@history[#:changed "6.1.0.5" @elem{Added @racketidfont{update-implies}.}]
 
 @; ----------------------------------------
 

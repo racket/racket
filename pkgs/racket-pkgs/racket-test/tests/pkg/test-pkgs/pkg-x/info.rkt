@@ -5,5 +5,8 @@
 (define deps '("pkg-z"))
 (define build-deps '("pkg-y"))
 
+(define implies '("pkg-z"))
+(define update-implies '("pkg-y"))
+
 (define binary-omit-files '("nobin-top.txt"))
 (define source-omit-files '("nosrc-top.txt"))

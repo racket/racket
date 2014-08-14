@@ -310,6 +310,7 @@
 (define ((fixup-info-definition get-info) defn)
   (match defn
     [`(define build-deps . ,v) #f]
+    [`(define update-implies . ,v) #f]
     [`(define assume-virtual-sources . ,v) #f]
     [`(define copy-foreign-libs . ,v)
      `(define move-foreign-libs . ,v)]

@@ -277,8 +277,8 @@
                    "  specification: ~e")
                deps)))
 
-(define (get-all-deps metadata-ns pkg-dir)
-  (append
+(define (get-all-deps* metadata-ns pkg-dir)
+  (values
    (get-metadata metadata-ns pkg-dir 
                  'deps (lambda () empty)
                  #:checker (check-dependencies 'deps))
@@ -286,9 +286,13 @@
                  'build-deps (lambda () empty)
                  #:checker (check-dependencies 'build-deps))))
 
-(define (get-all-implies metadata-ns pkg-dir deps)
+(define (get-all-deps metadata-ns pkg-dir)
+  (define-values (deps build-deps) (get-all-deps* metadata-ns pkg-dir))
+  (append deps build-deps))
+
+(define (get-all-deps-subset key metadata-ns pkg-dir deps)
   (get-metadata metadata-ns pkg-dir 
-                'implies (lambda () empty)
+                key (lambda () empty)
                 #:checker (lambda (l)
                             (unless (null? l)
                               (define deps-set (list->set
@@ -298,16 +302,24 @@
                                                      (or (string? v)
                                                          (eq? v 'core)))
                                                    l))
-                                (pkg-error (~a "invalid `implies' specification\n"
+                                (pkg-error (~a "invalid `~a' specification\n"
                                                "  specification: ~e")
+                                           key
                                            l))
                               (unless (andmap (lambda (i)
                                                 (or (eq? i 'core)
                                                     (set-member? deps-set i)))
                                               l)
-                                (pkg-error (~a "`implies' is not a subset of dependencies\n"
+                                (pkg-error (~a "`~a' is not a subset of dependencies\n"
                                                "  specification: ~e")
+                                           key
                                            l))))))
+
+(define (get-all-implies metadata-ns pkg-dir deps)
+  (get-all-deps-subset 'implies metadata-ns pkg-dir deps))
+
+(define (get-all-update-implies metadata-ns pkg-dir deps)
+  (get-all-deps-subset 'update-implies metadata-ns pkg-dir deps))
 
 (define (dependency->name dep)
   (package-source->name
@@ -1763,9 +1775,12 @@
         (or do-update-deps?
             update-implies?)
         (let ()
-          (define deps (get-all-deps metadata-ns pkg-dir))
+          (define-values (run-deps build-deps) (get-all-deps* metadata-ns pkg-dir))
+          (define deps (append run-deps build-deps))
           (define implies (list->set
-                           (get-all-implies metadata-ns pkg-dir deps)))
+                           (append
+                            (get-all-implies metadata-ns pkg-dir run-deps)
+                            (get-all-update-implies metadata-ns pkg-dir deps))))
           (define update-pkgs
             (append-map (λ (dep)
                            (define name (dependency->name dep))
