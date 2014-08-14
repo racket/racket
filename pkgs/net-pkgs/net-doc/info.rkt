@@ -15,3 +15,4 @@
                      "unstable-doc"
                      "web-server-doc"
                      "web-server-lib"))
+(define update-implies '("net-lib"))
