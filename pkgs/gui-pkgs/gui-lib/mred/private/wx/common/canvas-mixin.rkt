@@ -59,7 +59,7 @@
                                       h-pos v-pos)
       (void))
 
-    (define/public (reset-auto-scroll h-pos v-pos)
+    (define/public (reset-auto-scroll [h-pos -1] [v-pos -1])
       (let ([xb (box 0)]
             [yb (box 0)])
         (get-client-size xb yb)

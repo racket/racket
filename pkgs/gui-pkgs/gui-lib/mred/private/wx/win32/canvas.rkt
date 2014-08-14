@@ -286,6 +286,9 @@
                 [h (if (= h -1) (- (RECT-bottom r) (RECT-top r)) h)])
            (MoveWindow canvas-hwnd 0 0 (max 1 (- w COMBO-WIDTH)) h #t)
            (MoveWindow combo-hwnd 0 0 (max 1 w) (- h 2) #t)))
+       (when (and (is-auto-scroll?)
+                  (not (is-panel?)))
+         (reset-auto-scroll))
        (on-size))
 
      ;; this `on-size' method is for `editor-canvas%', only:

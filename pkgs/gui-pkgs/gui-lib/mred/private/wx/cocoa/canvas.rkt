@@ -532,7 +532,7 @@
        (fix-dc)
        (when (and (is-auto-scroll?)
                   (not (is-panel?)))
-         (reset-auto-scroll 0 0))
+         (reset-auto-scroll))
        (on-size))
 
      ;; this `on-size' method is for `editor-canvas%', only:
