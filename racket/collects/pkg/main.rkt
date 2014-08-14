@@ -523,7 +523,7 @@
    ([#:bool link () ("Link a directory package source in place (default for a directory)")]
     [#:bool static-link () ("Link in place, promising collections do not change")]
     [#:bool copy () ("Treat directory sources the same as other sources")]
-    [#:bool source () ("Strip package's built elements before installing; implies --copy")]
+    [#:bool source () ("Strip packages' built elements before installing; implies --copy")]
     [#:bool binary () ("Strip packages' source elements before installing; implies --copy")])
    #:install-copy-defns
    [(define link-dirs? (not (or copy source binary)))

@@ -32,7 +32,11 @@ A package is not specifically tagged as a @tech{source package},
 @tech{binary package}, or @tech{built package}. The different kinds of
 packages are just conventions based on the content of the package. All
 forms of packages can be mixed in an installation, and a package can
-be updated from any form to any other form.
+be updated from any form to any other form. Furthermore,
+@exec{raco pkg install} and @exec{raco pkg update} support
+@DFlag{source} and @DFlag{binary} flags, which can be used to convert
+a @tech{built package} to a @tech{source package} or @tech{binary
+package} on installation.
 
 Programmers normally supply only @tech{source packages}, while a
 package catalog service may convert each source package to a
