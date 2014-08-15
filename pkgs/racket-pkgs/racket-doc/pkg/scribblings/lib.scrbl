@@ -144,6 +144,7 @@ dependency.}
                     [#:in-place? in-place? boolean? #f]
                     [#:namespace namespace namespace? (make-base-namespace)]
                     [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
+                    [#:force-strip? force-string? boolean? #f]
                     [#:use-cache? use-cache? boolean? #f]
                     [#:quiet? quiet? boolean? #t])
          (values string? path? (or/c #f string?) boolean? (listof module-path?))]{
@@ -161,7 +162,9 @@ loaded.
 If @racket[strip] is not @racket[#f], then files and directories are
 removed from the prepared directory the same as when creating the
 corresponding kind of package. A directory that is staged in-place
-cannot be stripped.
+cannot be stripped. If @racket[force-strip?] is true, then a
+consistency check (intended to avoid stripping a source package as
+binary, for example) is skipped.
 
 If @racket[use-cache?] is true, then a local cache is consulted before
 downloading a particular package with a particular checksum. Note that
@@ -216,6 +219,7 @@ is true, error messages may suggest specific command-line flags for
                            [#:quiet? boolean? quiet? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
+                           [#:force-strip? force-string? boolean? #f]
                            [#:link-dirs? link-dirs? boolean? #f])
          (or/c 'skip
                #f
@@ -256,6 +260,7 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:quiet? boolean? quiet? #f]
                           [#:from-command-line? from-command-line? boolean? #f]
                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
+                          [#:force-strip? force-string? boolean? #f]
                           [#:link-dirs? link-dirs? boolean? #f])
         (or/c 'skip
               #f
@@ -318,7 +323,8 @@ The package lock must be held to allow reads; see
                            [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                            [#:quiet? boolean? quiet? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
-                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f])
+                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
+                           [#:force-strip? force-string? boolean? #f])
          (or/c 'skip
                #f
                (listof (or/c path-string?

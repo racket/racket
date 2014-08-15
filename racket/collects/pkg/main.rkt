@@ -196,6 +196,7 @@
                                   #:strip (or (and source 'source)
                                               (and binary 'binary)
                                               (and binary-lib 'binary-lib))
+                                  #:force-strip? force
                                   #:link-dirs? link-dirs?
                                   (for/list ([p (in-list sources)])
                                     (pkg-desc p a-type* name checksum #f))))))
@@ -256,6 +257,7 @@
                                  #:strip (or (and source 'source)
                                              (and binary 'binary)
                                              (and binary-lib 'binary-lib))
+                                 #:force-strip? force
                                  #:link-dirs? link-dirs?))))
                 (setup "updated" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
@@ -359,7 +361,8 @@
                                   #:use-cache? (not no-cache)
                                   #:strip (or (and source 'source)
                                               (and binary 'binary)
-                                              (and binary-lib 'binary-lib))))))
+                                              (and binary-lib 'binary-lib))
+                                  #:force-strip? force))))
                 (setup "migrated" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [create

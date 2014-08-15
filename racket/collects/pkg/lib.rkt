@@ -1080,6 +1080,7 @@
                             download-printf
                             metadata-ns
                             #:strip [strip-mode #f]
+                            #:force-strip? [force-strip? #f]
                             #:in-place? [in-place? #f]
                             #:in-place-clean? [in-place-clean? #f]
                             #:link-dirs? [link-dirs? #f])
@@ -1113,7 +1114,8 @@
                         #:use-cache? use-cache?
                         check-sums? download-printf
                         metadata-ns
-                        #:strip strip-mode)]
+                        #:strip strip-mode
+                        #:force-strip? force-strip?)]
    [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
     (define pkg-url (string->url pkg))
     (define scheme (url-scheme pkg-url))
@@ -1195,6 +1197,7 @@
                                              download-printf
                                              metadata-ns
                                              #:strip strip-mode
+                                             #:force-strip? force-strip?
                                              #:in-place? #t
                                              #:in-place-clean? #t)
                          (set! staged? #t)))
@@ -1283,7 +1286,8 @@
                                       check-sums?
                                       download-printf
                                       metadata-ns
-                                      #:strip strip-mode)
+                                      #:strip strip-mode
+                                      #:force-strip? force-strip?)
                   (set! staged? #t)))
               (λ ()
                  (when (or (file-exists? package-path)
@@ -1385,6 +1389,7 @@
                                   download-printf
                                   metadata-ns
                                   #:strip strip-mode
+                                  #:force-strip? force-strip?
                                   #:in-place? (not strip-mode)
                                   #:in-place-clean? #t)
               `(file ,(simple-form-path* pkg-path)))
@@ -1426,6 +1431,8 @@
                 (delete-directory pkg-dir)
                 (if strip-mode
                     (begin
+                      (unless force-strip?
+                        (check-strip-compatible strip-mode pkg-name pkg pkg-error))
                       (make-directory* pkg-dir)
                       (generate-stripped-directory strip-mode pkg pkg-dir))
                     (begin
@@ -1455,7 +1462,8 @@
                                      check-sums?
                                      download-printf
                                      metadata-ns
-                                     #:strip strip-mode))
+                                     #:strip strip-mode
+                                     #:force-strip? force-strip?))
     (when check-sums?
       (check-checksum given-checksum checksum "unexpected" pkg #f)
       (check-checksum checksum (install-info-checksum info) "incorrect" pkg #f))
@@ -1471,6 +1479,7 @@
                    #:namespace [metadata-ns (make-metadata-namespace)] 
                    #:in-place? [in-place? #f]
                    #:strip [strip-mode #f]
+                   #:force-strip? [force-strip? #f]
                    #:use-cache? [use-cache? #f]
                    #:quiet? [quiet? #t])
   (define i (stage-package/info (pkg-desc-source desc)
@@ -1482,7 +1491,8 @@
                                 (if quiet? void printf)
                                 metadata-ns
                                 #:in-place? in-place?
-                                #:strip strip-mode))
+                                #:strip strip-mode
+                                #:force-strip? force-strip?))
   (values (install-info-name i)
           (install-info-directory i)
           (install-info-checksum i)
@@ -1538,6 +1548,7 @@
          #:from-command-line? from-command-line?
          #:conversation conversation
          #:strip strip-mode
+         #:force-strip? force-strip?
          #:link-dirs? link-dirs?
          #:local-docs-ok? local-docs-ok?
          #:ai-cache ai-cache
@@ -1972,6 +1983,7 @@
                           check-sums? download-printf
                           metadata-ns
                           #:strip strip-mode
+                          #:force-strip? force-strip?
                           #:link-dirs? link-dirs?)))
   ;; For the top-level call, we need to double-check that all provided packages
   ;; were distinct:
@@ -2150,6 +2162,7 @@
                      #:from-command-line? [from-command-line? #f]
                      #:conversation [conversation #f]
                      #:strip [strip-mode #f]
+                     #:force-strip? [force-strip? #f]
                      #:link-dirs? [link-dirs? #f]
                      #:summary-deps [summary-deps empty])
   (define new-descs
@@ -2186,6 +2199,7 @@
                        #:updating? updating?
                        #:conversation conv
                        #:strip strip-mode
+                       #:force-strip? force-strip?
                        (for/list ([dep (in-list deps)])
                          (if (pkg-desc? dep)
                              dep
@@ -2209,6 +2223,7 @@
        #:from-command-line? from-command-line?
        #:conversation conversation
        #:strip strip-mode
+       #:force-strip? force-strip?
        #:link-dirs? link-dirs?
        #:local-docs-ok? (not strict-doc-conflicts?)
        #:ai-cache (box #f)
@@ -2416,6 +2431,7 @@
                     #:quiet? [quiet? #f]
                     #:from-command-line? [from-command-line? #f]
                     #:strip [strip-mode #f]
+                    #:force-strip? [force-strip? #f]
                     #:link-dirs? [link-dirs? #f])
   (define download-printf (if quiet? void printf))
   (define metadata-ns (make-metadata-namespace))
@@ -2466,6 +2482,7 @@
       #:quiet? quiet?
       #:from-command-line? from-command-line?
       #:strip strip-mode
+      #:force-strip? force-strip?
       #:all-platforms? all-platforms?
       #:force? force?
       #:ignore-checksums? ignore-checksums?
@@ -2537,7 +2554,8 @@
                      #:strict-doc-conflicts? [strict-doc-conflicts? #f]
                      #:use-cache? [use-cache? #t]
                      #:dep-behavior [dep-behavior #f]
-                     #:strip [strip-mode #f])
+                     #:strip [strip-mode #f]
+                     #:force-strip? [force-strip? #f])
   (define from-db
     (parameterize ([current-pkg-scope-version from-version])
       (installed-pkg-table #:scope 'user)))
@@ -2582,7 +2600,8 @@
                     #:dep-behavior (or dep-behavior 'search-auto)
                     #:quiet? quiet? 
                     #:from-command-line? from-command-line?
-                    #:strip strip-mode)
+                    #:strip strip-mode
+                    #:force-strip? force-strip?)
        (unless quiet?
          (printf "Packages migrated\n")))))
 
@@ -3711,6 +3730,7 @@
                         #:strict-doc-conflicts? boolean?
                         #:use-cache? boolean?
                         #:strip (or/c #f 'source 'binary 'binary-lib)
+                        #:force-strip? boolean?
                         #:link-dirs? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-remove
@@ -3740,6 +3760,7 @@
                         #:quiet? boolean?
                         #:from-command-line? boolean?
                         #:strip (or/c #f 'source 'binary 'binary-lib)
+                        #:force-strip? boolean?
                         #:link-dirs? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-migrate
@@ -3752,7 +3773,8 @@
                         #:use-cache? boolean?
                         #:quiet? boolean?
                         #:from-command-line? boolean?
-                        #:strip (or/c #f 'source 'binary 'binary-lib))
+                        #:strip (or/c #f 'source 'binary 'binary-lib)
+                        #:force-strip? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-catalog-show
    (->* ((listof string?))
@@ -3790,6 +3812,7 @@
                   (#:namespace namespace?
                                #:in-place? boolean?
                                #:strip (or/c #f 'source 'binary 'binary-lib)
+                               #:force-strip? boolean?
                                #:use-cache? boolean?
                                #:quiet? boolean?)
                   (values string?

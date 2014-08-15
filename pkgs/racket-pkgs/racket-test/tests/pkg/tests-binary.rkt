@@ -8,12 +8,12 @@
 
 (pkg-tests
 
- $ "raco pkg install --deps fail test-pkgs/pkg-x/" =exit> 1
- $ "raco pkg install --deps fail test-pkgs/pkg-y/" =exit> 1
- $ "raco pkg install --deps fail test-pkgs/pkg-x/ test-pkgs/pkg-z/" =exit> 1
- $ "raco pkg install --deps fail test-pkgs/pkg-y/ test-pkgs/pkg-z/" =exit> 1
- $ "raco pkg install --deps fail test-pkgs/pkg-x/ test-pkgs/pkg-y/" =exit> 1
- $ "raco pkg install --deps fail test-pkgs/pkg-y/ test-pkgs/pkg-x/" =exit> 1
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-x/" =exit> 1
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-y/" =exit> 1
+ $ "raco pkg install --deps fail --copt test-pkgs/pkg-x/ test-pkgs/pkg-z/" =exit> 1
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-y/ test-pkgs/pkg-z/" =exit> 1
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-x/ test-pkgs/pkg-y/" =exit> 1
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-y/ test-pkgs/pkg-x/" =exit> 1
 
  $ "raco pkg install --deps fail --copy test-pkgs/pkg-z/" =exit> 0
 
@@ -260,5 +260,16 @@
  $ "racket -l racket/base -l y/sub/s -e '(s)'" =stdout> "'s\n"
 
  $ "raco pkg remove pkg-x pkg-y pkg-z"
+
+ (shelly-case
+  "incompatible conversion request rejected"
+  $ "raco pkg install --binary test-pkgs/src-pkgs/pkg-z.zip"
+  =exit> 1 =stderr> #rx"not compatible"
+  $ "raco pkg install --binary-lib test-pkgs/src-pkgs/pkg-z.zip"
+  =exit> 1 =stderr> #rx"not compatible"
+  $ "raco pkg install --source test-pkgs/pkg-z.zip"
+  =exit> 1 =stderr> #rx"not compatible"
+  $ "raco pkg install --source test-pkgs/binary-lib-pkgs/pkg-z.zip"
+  =exit> 1 =stderr> #rx"not compatible")
 
  )

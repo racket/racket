@@ -17,6 +17,11 @@
 
 ;; Used by the top-level Makefile in the main Racket repository.
 
+;; Increment this number if something about the way packages are
+;; generated changes, so that previously generated packages are
+;; reliably replaced:
+(define package-format-version 2)
+
 (define pack-dest-dir #f)
 (define catalog-dirs null)
 (define native? #f)
@@ -60,6 +65,7 @@
 
 (define (stream-directory d)
   (define-values (i o) (make-pipe (* 100 4096)))
+  (write package-format-version o)
   (define (skip-path? p)
     (let-values ([(base name dir?) (split-path p)])
       (define s (path->string name))
