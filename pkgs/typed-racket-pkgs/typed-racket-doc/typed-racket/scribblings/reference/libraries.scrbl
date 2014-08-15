@@ -57,6 +57,7 @@ The following libraries are included with Typed Racket in the
 @defmodule/incl[typed/net/ftp]
 @defmodule/incl[typed/net/gifwrite]
 @defmodule/incl[typed/net/head]
+@defmodule/incl[typed/net/http-client]
 @defmodule/incl[typed/net/imap]
 @defmodule/incl[typed/net/mime]
 @defmodule/incl[typed/net/nntp]
