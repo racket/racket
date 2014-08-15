@@ -177,7 +177,8 @@
                           [rest (let loop ([a (cdr (syntax-e stx))] [head? #f])
                                   (cond
                                    [(identifier? a) (datum->syntax #f (syntax-e a) a a)]
-                                   [(and head? (pair? a) (free-identifier=? #'unsyntax (car a)))
+                                   [(and head? (pair? a) (and (identifier? (car a))
+                                                              (free-identifier=? #'unsyntax (car a))))
                                     a]
                                    [(pair? a) (cons (loop (car a) #t) 
                                                     (loop (cdr a) #f))]
