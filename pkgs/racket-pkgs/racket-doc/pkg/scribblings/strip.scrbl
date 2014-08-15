@@ -155,7 +155,7 @@ would be removed for a @tech{source package} and @tech{binary
 package}, and it performs the @filepath{.html} file updating of a
 @tech{binary package}.
 
-Finally, creating @tech{built package} or @tech{source package}
+Finally, creating @tech{binary package} or @tech{built package}
 ``unmoves'' files that were installed via @racket[move-foreign-libs],
 @racket[move-shared-files], or @racket[move-man-pages] definitions in
 an @filepath{info.rkt} file, retrieving them if they are not present
