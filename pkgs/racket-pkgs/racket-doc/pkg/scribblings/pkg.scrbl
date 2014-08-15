@@ -1049,6 +1049,42 @@ snapshot of all package sources (so that you do not depend on the
 original sources).
 
 
+@subsection{How can I install a package without its documentation?}
+
+If package is available in the form of a @tech{built package}, then
+you can use @exec{raco pkg install --binary-lib} to strip source,
+tests, and documentation from a package before installing it.
+
+@tech{Built packages} are typically provided by a snapshot or release
+site (where a Racket distribution downloaded from the site is
+configured to consult the site for packages), at least for packages
+associated with the distribution. Beware that
+@url{http://pkgs.racket-lang.org/} generally refers to @tech{source
+packages}, not @tech{built packages}. In the near future, built
+variants of the @url{http://pkgs.racket-lang.org/} packages will be
+provided at @url{http://pkg-build.racket-lang.org/catalog/}.
+
+Some packages have been split at the source level into separate
+library, test, and documentation packages. For example,
+@pkgname{net-lib} provides modules such as @racketmodname[net/cookie]
+without documentation, while @pkgname{net-doc} provides documentation
+and @pkgname{net-test} provides tests. The @pkgname{net} package
+depends on @pkgname{net-lib} and @pkgname{net-doc}, and it implies
+@pkgname{net-lib}, so you can install @pkgname{net} in a minimal
+Racket distribution to get the libraries with documentation (and lots
+of additional packages to support documentation), or install
+@pkgname{net-lib} to get just the libraries.
+
+If you develop a package that is especially widely used or is
+especially useful in a constrained installation environment, then
+splitting your package into @pkgname{-lib}, @pkgname{-doc}, and
+@pkgname{-test} components may be worthwhile. Most likely, you should
+keep the packages together in a single source-code repository and use
+metedata such as @racketidfont{implies} and
+@racketidfont{update-implies} (see @secref["metadata"]) so that the
+packages are updated in sync.
+
+
 @subsection{Why is the package manager so different than @|Planet1|?}
 
 There are two fundamental differences between @|Planet1| and this package manager.
