@@ -143,7 +143,7 @@ dependency.}
                     [#:checksum checksum (or/c #f string?) #f]
                     [#:in-place? in-place? boolean? #f]
                     [#:namespace namespace namespace? (make-base-namespace)]
-                    [#:strip strip (or/c #f 'source 'binary) #f]
+                    [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                     [#:use-cache? use-cache? boolean? #f]
                     [#:quiet? quiet? boolean? #t])
          (values string? path? (or/c #f string?) boolean? (listof module-path?))]{
@@ -190,7 +190,7 @@ The package lock must be held (allowing writes if @racket[set?] is true); see
 @defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
                      [dir path-string?]
                      [#:source source (or/c 'dir 'name)]
-                     [#:mode mode (or/c 'as-is 'source 'binary 'built)]
+                     [#:mode mode (or/c 'as-is 'source 'binary 'binary-lib 'built)]
                      [#:dest dest-dir (or/c (and/c path-string? complete-path?) #f)]
                      [#:quiet? quiet? boolean? #f]
                      [#:from-command-line? from-command-line? boolean? #f])
@@ -215,7 +215,7 @@ is true, error messages may suggest specific command-line flags for
                            [#:use-cache? use-cache? boolean? #t]
                            [#:quiet? boolean? quiet? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
-                           [#:strip strip (or/c #f 'source 'binary) #f]
+                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                            [#:link-dirs? link-dirs? boolean? #f])
          (or/c 'skip
                #f
@@ -255,7 +255,7 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:use-cache? use-cache? quiet? #t]
                           [#:quiet? boolean? quiet? #f]
                           [#:from-command-line? from-command-line? boolean? #f]
-                          [#:strip strip (or/c #f 'source 'binary) #f]
+                          [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                           [#:link-dirs? link-dirs? boolean? #f])
         (or/c 'skip
               #f
@@ -318,7 +318,7 @@ The package lock must be held to allow reads; see
                            [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                            [#:quiet? boolean? quiet? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
-                           [#:strip strip (or/c #f 'source 'binary) #f])
+                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f])
          (or/c 'skip
                #f
                (listof (or/c path-string?

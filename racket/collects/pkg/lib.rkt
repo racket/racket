@@ -3692,7 +3692,7 @@
          path-string?)
         (#:source (or/c 'dir 'name)
                   #:pkg-name (or/c #f string?)
-                  #:mode (or/c 'as-is 'source 'binary 'built)
+                  #:mode (or/c 'as-is 'source 'binary 'binary-lib 'built)
                   #:quiet? boolean?
                   #:from-command-line? boolean?
                   #:dest (or/c (and/c path-string? complete-path?) #f))
@@ -3710,7 +3710,7 @@
                         #:ignore-checksums? boolean?
                         #:strict-doc-conflicts? boolean?
                         #:use-cache? boolean?
-                        #:strip (or/c #f 'source 'binary)
+                        #:strip (or/c #f 'source 'binary 'binary-lib)
                         #:link-dirs? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-remove
@@ -3739,7 +3739,7 @@
                         #:skip-installed? boolean?
                         #:quiet? boolean?
                         #:from-command-line? boolean?
-                        #:strip (or/c #f 'source 'binary)
+                        #:strip (or/c #f 'source 'binary 'binary-lib)
                         #:link-dirs? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-migrate
@@ -3752,7 +3752,7 @@
                         #:use-cache? boolean?
                         #:quiet? boolean?
                         #:from-command-line? boolean?
-                        #:strip (or/c #f 'source 'binary))
+                        #:strip (or/c #f 'source 'binary 'binary-lib))
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-catalog-show
    (->* ((listof string?))
@@ -3789,7 +3789,7 @@
   [pkg-stage (->* (pkg-desc?)
                   (#:namespace namespace?
                                #:in-place? boolean?
-                               #:strip (or/c #f 'source 'binary)
+                               #:strip (or/c #f 'source 'binary 'binary-lib)
                                #:use-cache? boolean?
                                #:quiet? boolean?)
                   (values string?

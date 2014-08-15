@@ -22,6 +22,9 @@ faster. A drawback of a binary package is that it is version-specific
 and the source code may be less immediately accessible to other
 programmers.
 
+A @deftech{binary library package} is like a @tech{binary package},
+but it further omits documentation.
+
 A @deftech{built package} combines source and compiled elements. A
 @tech{built package} can be installed more quickly than source, as
 long as it is installed for a suitable Racket version, but the source
@@ -29,20 +32,21 @@ remains available as a back-up for other programmers to consult or to
 re-build for a different Racket version.
 
 A package is not specifically tagged as a @tech{source package},
-@tech{binary package}, or @tech{built package}. The different kinds of
+@tech{binary package}, @tech{binary library package}, or @tech{built
+package}. The different kinds of
 packages are just conventions based on the content of the package. All
 forms of packages can be mixed in an installation, and a package can
 be updated from any form to any other form. Furthermore,
 @exec{raco pkg install} and @exec{raco pkg update} support
-@DFlag{source} and @DFlag{binary} flags, which can be used to convert
-a @tech{built package} to a @tech{source package} or @tech{binary
-package} on installation.
+@DFlag{source}, @DFlag{binary}, @DFlag{binary-lib} flags, which can be used to convert
+a @tech{built package} to a @tech{source package}, @tech{binary
+package}, or @tech{binary library package}, respectively, on installation.
 
 Programmers normally supply only @tech{source packages}, while a
 package catalog service may convert each source package to a
-@tech{binary package} or @tech{built package}. Alternatively,
-programmers can create @tech{binary packages} or @tech{built packages}
-by using the @command-ref{create} subcommand with @DFlag{binary} or
+@tech{binary package}, @tech{binary library package}, or @tech{built package}. Alternatively,
+programmers can create @tech{binary packages}, @tech{binary library package}, or @tech{built packages}
+by using the @command-ref{create} subcommand with @DFlag{binary}, @DFlag{binary-lib}, or
 @DFlag{built}. As a convenience, the @command-ref{create} subcommand
 can also create a @tech{source package} from an installed package or
 repository checkout, dropping repository elements (such as a
@@ -50,7 +54,7 @@ repository checkout, dropping repository elements (such as a
 @command-ref{create} by default bundles a package directory as-is,
 with no filtering at all.
 
-Creating a @tech{source package}, @tech{binary package}, or
+Creating a @tech{source package}, @tech{binary package}, @tech{binary library package}, or
 @tech{built package} from a directory or package installation prunes
 the following files and directories:
 
@@ -68,10 +72,11 @@ the following files and directories:
 
 Any of the above can be suppressed, however, by a
 @racket[source-keep-files] (for @tech{source package} and @tech{built
-package} bundling) or @racket[binary-keep-files] (for @tech{binary
-package} and @tech{built package} bundling) definition in an
+package} bundling), @racket[binary-keep-files] (for @tech{binary
+package}, @tech{binary library package} @tech{built package} bundling),
+or @racket[binary-lib-keep-files] (for @tech{binary library package} bundling) definition in an
 @filepath{info.rkt} in the package or any subdirectory. A
-@racket[binary-keep-files] or @racket[binary-keep-files] definition
+@racket[source-keep-files], @racket[binary-keep-files], or @racket[binary-lib-keep-files] definition
 should bind the name to a list of paths relative to the
 @filepath{info.rkt} file.
 
@@ -150,12 +155,33 @@ following files (when they are not pruned):
 
 ]
 
+Creating a @tech{binary library package} prunes the following
+additional files and directories and makes additional adjustments
+compared to a @tech{binary package}:
+
+@itemlist[
+
+ @item{directories/files named @filepath{doc} are removed;}
+
+ @item{directories/files named in an @filepath{info.rkt} file's
+       @racket[binary-lib-omit-files] definition are removed; and}
+
+ @item{each @filepath{info.rkt} is adjusted to remove any
+       @racket[scribblings] definition.}
+
+]
+
+Any of the removals can be suppressed through
+@racketidfont{binary-lib-keep-files}, in addition to suppressions
+through @racketidfont{binary-keep-files}.
+
 Creating a @tech{built package} removes any file or directory that
-would be removed for a @tech{source package} and @tech{binary
+would be removed for a @tech{source package} @emph{and} @tech{binary
 package}, and it performs the @filepath{.html} file updating of a
 @tech{binary package}.
 
-Finally, creating @tech{binary package} or @tech{built package}
+Finally, creating a @tech{binary package}, @tech{binary library package},
+or @tech{built package}
 ``unmoves'' files that were installed via @racket[move-foreign-libs],
 @racket[move-shared-files], or @racket[move-man-pages] definitions in
 an @filepath{info.rkt} file, retrieving them if they are not present
@@ -169,14 +195,14 @@ support for copying a package-style directory to a given destination
 with the same file/directory omissions and updates as
 @command-ref{create}.}
 
-@defproc[(generate-stripped-directory [mode (or/c 'source 'binary 'built)]
+@defproc[(generate-stripped-directory [mode (or/c 'source 'binary 'binary-lib 'built)]
                                       [src-dir path-string?]
                                       [dest-dir path-string?])
           void?]{
 
 Copies @racket[src-dir] to @racket[dest-dir] with file/directory
 omissions and updates corresponding the creation of a @tech{source
-package}, @tech{binary package}, or @tech{built package} as indicated
+package}, @tech{binary package}, @tech{binary library package}, or @tech{built package} as indicated
 by @racket[mode].}
 
 

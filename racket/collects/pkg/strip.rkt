@@ -37,6 +37,9 @@
       (case mode
         [(source) (get-paths 'source-omit-files)]
         [(binary) (get-paths 'binary-omit-files)]
+        [(binary-lib) 
+         (union (get-paths 'binary-omit-files)
+                (get-paths 'binary-lib-omit-files))]
         [(built) 
          (intersect (get-paths 'source-omit-files)
                     (get-paths 'binary-omit-files))]))
@@ -44,6 +47,9 @@
       (case mode
         [(source) (get-paths 'source-keep-files)]
         [(binary) (get-paths 'binary-keep-files)]
+        [(binary-lib)
+         (union (get-paths 'binary-keep-files)
+                (get-paths 'binary-lib-keep-files))]
         [(built) 
          (union (get-paths 'source-keep-files)
                 (get-paths 'binary-keep-files))]))
@@ -74,7 +80,7 @@
         (case mode
           [(source)
            (regexp-match? #rx#"^(?:compiled|doc)$" bstr)]
-          [(binary)
+          [(binary binary-lib)
            (or (regexp-match? #rx#"^(?:tests|scribblings|.*(?:[.]scrbl|[.]dep|_scrbl[.]zo))$"
                               bstr)
                (and (regexp-match? #rx"[.](?:ss|rkt)$" bstr)
@@ -82,6 +88,10 @@
                     (file-exists? (let-values ([(base name dir?) (split-path (get-p))])
                                     (build-path base "compiled" (path-add-suffix name #".zo")))))
                (immediate-doc/css-or-doc/js?)
+               (case mode
+                 [(binary-lib)
+                  (regexp-match? #rx#"^(?:doc)$" bstr)]
+                 [else #f])
                ;; drop these, because they're recreated on fixup:
                (equal? #"info_rkt.zo" bstr)
                (equal? #"info_rkt.dep" bstr))]
@@ -109,17 +119,22 @@
       [else #f]))
   
   (define (fixup new-p path src-base level)
-    (unless (eq? mode 'source)
-      (define bstr (path->bytes path))
-      (cond
-       [(regexp-match? #rx"[.]html$" bstr)
-        (fixup-html new-p)]
-       [(and (eq? mode 'binary)
-             (equal? #"info.rkt" bstr))
-        (fixup-info new-p src-base level)]
-       [(and (eq? mode 'binary)
-             (regexp-match? #rx"[.]zo$" bstr))
-        (fixup-zo new-p)])))
+    (case mode
+      [(binary binary-lib built)
+       (define bstr (path->bytes path))
+       (cond
+        [(regexp-match? #rx"[.]html$" bstr)
+         (fixup-html new-p)]
+        [else
+         (case mode
+           [(binary binary-lib)
+            (cond
+             [(equal? #"info.rkt" bstr)
+              (fixup-info new-p src-base level mode)]
+             [(regexp-match? #rx"[.]zo$" bstr)
+              (fixup-zo new-p)])]
+           [else (void)])])]
+      [else (void)]))
   
   (define (explore base   ; containing directory relative to `dir`, 'base at start
                    paths  ; paths in `base'
@@ -184,10 +199,10 @@
   
   (explore 'same (directory-list dir) drops keeps #f level)
   (case mode
-    [(binary built) (unmove-files dir dest-dir drop-keep-ns)]
+    [(binary binary-lib built) (unmove-files dir dest-dir drop-keep-ns)]
     [else (void)])
   (case mode
-    [(binary) (assume-virtual dest-dir (eq? level 'collection))]
+    [(binary binary-lib) (assume-virtual dest-dir (eq? level 'collection))]
     [else (void)]))
 
 (define (fixup-html new-p)
@@ -262,8 +277,8 @@
      #:exists 'truncate/replace
      (lambda (out) (write-bytes new-bstr out)))))
 
-;; Used in binary mode:
-(define (fixup-info new-p src-base level)
+;; Used in binary[-lib] mode:
+(define (fixup-info new-p src-base level mode)
   (define dir (let-values ([(base name dir?) (split-path new-p)])
                 base))
   ;; check format:
@@ -284,7 +299,7 @@
          (#%module-begin
           (define assume-virtual-sources #t)
           . ,(filter values
-                     (map (fixup-info-definition get-info) defns)))))
+                     (map (fixup-info-definition get-info mode) defns)))))
     (define new-content
       (match content
         [`(module info ,info-lib (#%module-begin . ,defns))
@@ -307,7 +322,7 @@
       (unless (eq? level 'package)
         (managed-compile-zo new-p)))))
 
-(define ((fixup-info-definition get-info) defn)
+(define ((fixup-info-definition get-info mode) defn)
   (match defn
     [`(define build-deps . ,v) #f]
     [`(define update-implies . ,v) #f]
@@ -318,6 +333,10 @@
      `(define move-shared-files . ,v)]
     [`(define copy-man-pages . ,v)
      `(define move-man-pages . ,v)]
+    [`(define scribblings . ,v)
+     (case mode
+       [(binary-lib) #f]
+       [else defn])]
     [_ defn]))
 
 (define (unmove-files dir dest-dir metadata-ns)
