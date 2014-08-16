@@ -4078,6 +4078,21 @@ static int foldable_body(Scheme_Object *f)
   return (SCHEME_TYPE(d->code) > _scheme_values_types_);
 }
 
+int scheme_is_foldable_prim(Scheme_Object *f)
+{
+  if (SCHEME_PRIMP(f)
+      && ((((Scheme_Primitive_Proc *)f)->pp.flags & SCHEME_PRIM_OPT_MASK)
+          == SCHEME_PRIM_OPT_FOLDING))
+    return 1;
+
+  if (SCHEME_CLSD_PRIMP(f)
+      && ((((Scheme_Closed_Primitive_Proc *)f)->pp.flags & SCHEME_PRIM_OPT_MASK)
+          == SCHEME_PRIM_OPT_FOLDING))
+    return 1;
+
+  return 0;
+}
+
 Scheme_Object *scheme_make_application(Scheme_Object *v, Optimize_Info *info)
 {
   Scheme_Object *o;
@@ -4103,11 +4118,7 @@ Scheme_Object *scheme_make_application(Scheme_Object *v, Optimize_Info *info)
 
     f = SCHEME_CAR(v);
 
-    if ((SCHEME_PRIMP(f) && ((((Scheme_Primitive_Proc *)f)->pp.flags & SCHEME_PRIM_OPT_MASK)
-                             == SCHEME_PRIM_OPT_FOLDING))
-	|| (SCHEME_CLSD_PRIMP(f) 
-	    && ((((Scheme_Closed_Primitive_Proc *)f)->pp.flags & SCHEME_PRIM_OPT_MASK)
-                == SCHEME_PRIM_OPT_FOLDING))
+    if (scheme_is_foldable_prim(f)
 	|| (SAME_TYPE(SCHEME_TYPE(f), scheme_closure_type)
 	    && (foldable_body(f)))) {
       f = scheme_try_apply(f, SCHEME_CDR(v), info);
