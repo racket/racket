@@ -883,7 +883,6 @@
 #if defined(i386)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
-# define MZ_USE_DWARF_LIBUNWIND
 #endif
 #if defined(__x86_64__)
 # define MZ_USE_JIT_X86_64
