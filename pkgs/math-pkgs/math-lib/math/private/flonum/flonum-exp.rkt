@@ -6,7 +6,7 @@
          "flonum-polyfun.rkt"
          "../unsafe.rkt")
 
-(provide flexpm1 flexpsqr flgauss flexp1p flexp2)
+(provide flexpm1 flexpsqr flgauss flexp1p flexp2 flpow2near)
 
 (define expm1-poly-numer
   (make-flpolyfun
@@ -104,5 +104,9 @@
                   [flexp2s  (if flexp2s flexp2s (build-flexp2s))])
              (unsafe-vector-ref flexp2s (fl->exact-integer (fl+ x 1074.0))))]
           [else  (flexpt 2.0 x)]))
+  
+  (: flpow2near (-> Flonum Flonum))
+  (define (flpow2near a)
+    (flexp2 (flmax -1074.0 (flmin 1023.0 (flround (fl/ (fllog (flabs a)) (fllog 2.0)))))))
   
   )  ; begin-encourage-inline
