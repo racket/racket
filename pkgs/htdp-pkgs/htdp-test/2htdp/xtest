@@ -10,7 +10,6 @@ run() {
 
 cd tests 
 
-run random-seed-works.rkt
 run bitmap-as-image-in-universe.rkt
 run key-error.rkt
 run to-draw-error.rkt
@@ -28,11 +27,9 @@ run full-scene-visible.rkt
 run image-too-large.rkt
 run image-equality-performance-htdp.rkt
 run image-equality-performance.rkt
-run mouse-evt.rkt
 run on-tick-defined.rkt
 run perform-robby.rkt
 run profile-robby.rkt
-run release.rkt
 run stop.rkt
 run test-image.rkt
 run ufo-rename.rkt
@@ -45,7 +42,6 @@ run stop-when-crash.rkt
 run stop-when-not-boolean.rkt
 run on-tick-universe-with-limit.rkt
 run on-tick-with-limit.rkt
-run on-release-no-key.rkt
 run struct-universe.rkt
 run universe-receive.rkt
 run universe-restart.rkt
