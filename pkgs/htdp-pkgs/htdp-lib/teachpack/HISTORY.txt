@@ -1,4 +1,11 @@
 ------------------------------------------------------------------------
+Version NEXT 
+
+* added check-satisfied to test engine 
+* fixed 2htdp/universe so that an executable created from drracket 
+  behaves properly when run independently of drracket 
+
+------------------------------------------------------------------------
 Version 6.1				  [Wed Jul 23 11:42:44 EDT 2014]
 
 * added check-random to the test-engine so that students can test random
