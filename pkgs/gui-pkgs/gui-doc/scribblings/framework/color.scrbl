@@ -37,8 +37,11 @@
     @racket[get-token] returns the next token as 5 values:
 
     @itemize[
-    @item{An unused value.  This value is intended to represent the textual
-      component of the token and may be used as such in the future.}
+    @item{This value is intended to represent the textual
+      component of the token. If the second value returned by
+      @racket[get-token] is @racket['symbol] and this value is a string
+      then the value is used to differentiate between symbols and keywords
+      for the purpose of coloring and formatting, configurable from DrRacket's preference's editing menu.}
     @item{A symbol describing the type of the token.  This symbol is
       transformed into a style-name via the @racket[token-sym->style] argument.
       The symbols @racket['white-space] and @racket['comment] have special

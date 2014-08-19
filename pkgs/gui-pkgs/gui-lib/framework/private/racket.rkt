@@ -1320,6 +1320,7 @@
         (module-lexer/waived in offset mode))
       (cond
         [(and (eq? type 'symbol)
+              (string? lexeme)
               (get-keyword-type lexeme tabify-pref))
          (values lexeme 'keyword paren start end backup-delta new-mode)]
         [else
