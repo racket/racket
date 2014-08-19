@@ -1,6 +1,9 @@
 #lang racket
 
-(require 2htdp/universe 2htdp/image rackunit)
+;; testing the combination of random-seed and world programming 
+;; -----------------------------------------------------------------------------
+
+(require 2htdp/universe 2htdp/image)
 
 (define (main)
   (random-seed 1324)
@@ -11,12 +14,21 @@
    ;; it fails mostly with just time but not always, strange 
    
    (to-draw (λ (l) 
-              (text (if (> (length l) 3) "ok" (~a "press a again: " (- 2 (length l)))) 222 *color)))
+              (text (if (> (length l) 3)
+			"ok"
+			(~a "press a again: " (- 2 (length l))))
+		    222
+		    *color)))
+   
    (on-key (λ (l ke) 
              (if (and (key=? "a" ke) (<= (length l) 3)) (cons (random 100) l) l)))
+   
    (stop-when (λ (l) (>= (length l) 2)))))
+
 (define *color 'blue)
 
-(check-equal? (main) (begin (set! *color 'red) (main)))
+;; -----------------------------------------------------------------------------
+(require "test-aux.rkt")
 
-(module test racket/base)
+(testing
+  (check-equal? (main) (begin (set! *color 'red) (main))))

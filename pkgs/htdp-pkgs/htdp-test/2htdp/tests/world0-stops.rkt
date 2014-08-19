@@ -3,8 +3,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; does big-bang stop when the initial world is already a final world? does it draw the final image? 
 
-(require 2htdp/universe)
-(require 2htdp/image)
+(require 2htdp/universe 2htdp/image "test-aux.rkt")
 
 (define ((draw message) x)
   (display message) 
@@ -20,8 +19,7 @@
     (unless (string=? actual-output expected-output)
       (error 'failure "~a expected output ~e, output produced ~e" 'test expected-output actual-output))))
 
-(test (big-bang 0 (stop-when zero?) (on-tick add1) (to-draw (draw ""))) 0 "")
-
-(test (big-bang (stop-with 0) (on-tick add1) (to-draw (draw ""))) 0 "")
-
-(test (big-bang 0 (on-draw (draw 0)) (stop-when zero? (draw 1))) 0 "1")
+(testing
+  (test (big-bang 0 (stop-when zero?) (on-tick add1) (to-draw (draw ""))) 0 "")
+  (test (big-bang (stop-with 0) (on-tick add1) (to-draw (draw ""))) 0 "")
+  (test (big-bang 0 (on-draw (draw 0)) (stop-when zero? (draw 1))) 0 "1"))

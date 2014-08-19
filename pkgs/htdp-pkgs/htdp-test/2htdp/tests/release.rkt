@@ -1,7 +1,6 @@
 #lang scheme 
 
-(require 2htdp/universe)
-(require 2htdp/image)
+(require 2htdp/universe 2htdp/image "test-aux.rkt")
 
 (define (main r)
   (big-bang 1
@@ -14,7 +13,7 @@
                      r)
 	    (stop-when (lambda (x)
 			 (if (string? x)
-			     (>= (string-length x) 10)
+			     (>= (string-length x) 3)
 			     (>= x 5))))
             (on-key  (lambda (n key)
                        (if (string? n)
@@ -27,4 +26,4 @@
                           (if (key=? "a" key) 
                               1
                               n)))))
-(main 1)
+(testing (main 1))

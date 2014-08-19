@@ -1,6 +1,6 @@
 #lang racket/gui
 
-(require 2htdp/image 2htdp/universe)
+(require 2htdp/image 2htdp/universe "test-aux.rkt")
 
 (pad=? "left" "left")
 
@@ -57,8 +57,9 @@
   (begin (set! label (string-append txt label))
          (big-bang x0 (to-draw render) (on-pad phandler) clause ... )))
 
-(= -10-10i (run ""))
-(= -10-10i (run "press l, " (on-key (key-handler 'key))))
-(= -10-10i (run "press l, " (on-key (key-handler 'key)) (on-release (key-handler 'release))))
-(= -10-10i (run "press l, " (on-release (key-handler 'release))))
+(testing
+  (= -10-10i (run ""))
+  (= -10-10i (run "press l, " (on-key (key-handler 'key))))
+  (= -10-10i (run "press l, " (on-key (key-handler 'key)) (on-release (key-handler 'release))))
+  (= -10-10i (run "press l, " (on-release (key-handler 'release)))))
 

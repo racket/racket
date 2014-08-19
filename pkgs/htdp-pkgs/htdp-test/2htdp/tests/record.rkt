@@ -1,7 +1,6 @@
 #lang racket
 
-(require 2htdp/universe)
-(require 2htdp/image)
+(require 2htdp/universe 2htdp/image "test-aux.rkt")
 
 (define (draw-number n)
   (place-image (text (number->string n) 44 'red)
@@ -37,5 +36,6 @@
     (error 'record? "(~s, ~s) didn't record proper number of images: ~s" n dir 
            number-of-png)))
 
-(create-n-images 3 3 "images3/")
-(create-n-images 0 0 "images0/")
+(testing
+  (create-n-images 3 3 "images3/")
+  (create-n-images 0 0 "images0/"))
