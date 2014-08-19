@@ -424,6 +424,10 @@
 
 ;; (-> Object) -> Any
 (define (run-it o)
+  (send (o) last))
+
+#;
+(define (run-it o)
   (define esp (make-eventspace))
   (define thd (eventspace-handler-thread esp))
   (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
