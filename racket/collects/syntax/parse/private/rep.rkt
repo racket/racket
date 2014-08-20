@@ -17,7 +17,8 @@
          "rep-data.rkt"
          "rep-patterns.rkt"
          syntax/parse/private/residual-ct ;; keep abs. path
-         "kws.rkt")
+         "kws.rkt"
+         "pattern-expander-prop.rkt")
 
 ;; Error reporting
 ;; All entry points should have explicit, mandatory #:context arg
@@ -435,6 +436,8 @@
 
 ;; parse-*-pattern : stx DeclEnv boolean boolean -> Pattern
 (define (parse-*-pattern stx decls allow-head? allow-action?)
+  (define (recur stx)
+    (parse-*-pattern stx decls allow-head? allow-action?))
   (define (check-head! x)
     (unless allow-head?
       (wrong-syntax stx "head pattern not allowed here"))
@@ -449,6 +452,30 @@
                     ~seq ~optional ~! ~bind ~fail ~parse ~do
                     ~post ~peek ~peek-not ~delimit-cut ~commit ~reflect
                     ~splicing-reflect)
+    [id
+     (and (identifier? #'id)
+          (not (safe-name? #'id))
+          (pattern-expander? (syntax-local-value #'id (λ () #f))))
+     (let* ([proc (pattern-expander-proc (syntax-local-value #'id))]
+            [introducer (make-syntax-introducer)]
+            [mstx (introducer (syntax-local-introduce stx))]
+            [mresult (parameterize ([current-syntax-parse-pattern-introducer introducer])
+                       (proc mstx))]
+            [result (syntax-local-introduce (introducer mresult))])
+       (disappeared! #'id)
+       (recur result))]
+    [(id . rst)
+     (and (identifier? #'id)
+          (not (safe-name? #'id))
+          (pattern-expander? (syntax-local-value #'id (λ () #f))))
+     (let* ([proc (pattern-expander-proc (syntax-local-value #'id))]
+            [introducer (make-syntax-introducer)]
+            [mstx (introducer (syntax-local-introduce stx))]
+            [mresult (parameterize ([current-syntax-parse-pattern-introducer introducer])
+                       (proc mstx))]
+            [result (syntax-local-introduce (introducer mresult))])
+       (disappeared! #'id)
+       (recur result))]
     [wildcard
      (wildcard? #'wildcard)
      (begin (disappeared! stx)
