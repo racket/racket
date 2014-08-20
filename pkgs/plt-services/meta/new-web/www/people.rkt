@@ -37,12 +37,12 @@
     (person 'shriram "Shriram Krishnamurthi"
             #:url "http://www.cs.brown.edu/~sk/"))
    (place ; -------------------------------------------------------------------
-    'byu "Brigham Young University"
-    #:location "Provo, UT"
-    #:url "http://faculty.cs.byu.edu/~jay/"
-    #:pubs "http://faculty.cs.byu.edu/~jay/home/#(part._pubs)"
+    'vassar "Vassar College"
+    #:location "Poughkeepsie, NY"
+    #:url "http://jeapostrophe.github.io/home/"
+    #:pubs "http://jeapostrophe.github.io/home/#%28part._pubs%29"
     (person 'jay "Jay McCarthy"
-            #:url "http://faculty.cs.byu.edu/~jay/"))
+            #:url "http://jeapostrophe.github.io/home/"))
    (place ; -------------------------------------------------------------------
     'calpoly "California Polytechnic State University"
     #:location "San Luis Obispo, CA"
