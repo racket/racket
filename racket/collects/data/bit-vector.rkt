@@ -148,8 +148,7 @@
   bit-vector-copy
   #f)
 
-; A bit vector is represented as a vector of words.
-; Each word contains 30 or 62 bits depending on the size of a fixnum.
+;; A bit vector is represented as bytes.
 (serializable-struct bit-vector (words size)
   ; words     is the bytes of words
   ; size      is the number of bits in bitvector
@@ -187,11 +186,22 @@
            [nx (bit-vector-size x)]
            [ny (bit-vector-size y)])
        (and (= nx ny)
-            (for/and ([index (in-range (- (bytes-length vx) 1))])
-              (eq? (bytes-ref vx index)
-                   (bytes-ref vy index)))
-            ; TODO: check last word
-            )))
+            (or (zero? nx) ;zero-length bit-vectors are equal
+                (let ([last-index (sub1 (bytes-length vx))])
+                  (and
+                   ;; Check all but last byte.
+                   ;; These use all bits, therefore simple eq?.
+                   (for/and ([index (in-range (sub1 last-index))])
+                     (eq? (bytes-ref vx index)
+                          (bytes-ref vy index)))
+                   ;; Check the used bits of the last byte.
+                   (let ([used-bits (min 8 (remainder nx 256))])
+                     (eq? (bitwise-bit-field (bytes-ref vx last-index)
+                                             0
+                                             used-bits)
+                          (bitwise-bit-field (bytes-ref vy last-index)
+                                             0
+                                             used-bits)))))))))
    (define (hash-code x hc)
      (let ([v (bit-vector-words x)]
            [n (bit-vector-size x)])
