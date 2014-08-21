@@ -157,6 +157,7 @@
  (contract-out
   [fade-pict (->* ((real-in 0.0 1.0) pict? pict?) (#:combine (-> pict? pict? pict?)) pict?)]
   [slide-pict (-> pict? pict? pict? pict? (real-in 0.0 1.0) pict?)]
+  [slide-pict/center (-> pict? pict? pict? pict? (real-in 0.0 1.0) pict?)]
   [fade-around-pict (-> (real-in 0.0 1.0) pict? (-> pict? pict?) pict?)]
   [sequence-animations (->* () #:rest (listof (-> (real-in 0.0 1.0) pict?))
                             (-> (real-in 0.0 1.0) pict?))]

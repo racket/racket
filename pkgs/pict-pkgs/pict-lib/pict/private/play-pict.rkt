@@ -5,6 +5,7 @@
 
 (provide fade-pict
          slide-pict
+         slide-pict/center
          fade-around-pict
          sequence-animations
          reverse-animations
@@ -111,6 +112,14 @@
     (pin-over base
               (+ x1 (* (- x2 x1) n))
               (+ y1 (* (- y2 y1) n))
+              p)))
+
+(define (slide-pict/center base p p-from p-to n)
+  (let-values ([(x1 y1) (fail-gracefully (lambda () (cc-find base p-from)))]
+               [(x2 y2) (fail-gracefully (lambda () (cc-find base p-to)))])
+    (pin-over base
+              (- (+ x1 (* (- x2 x1) n)) (/ (pict-width p) 2))
+              (- (+ y1 (* (- y2 y1) n)) (/ (pict-height p) 2))
               p)))
 
 (define (fade-around-pict n base evolved)
