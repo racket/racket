@@ -2716,13 +2716,13 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
   return NULL;
 }
 
-static Scheme_Object *check_known2_pred(Optimize_Info *info, Scheme_App2_Rec *app)
+static Scheme_Object *check_known2_pred(Optimize_Info *info, Scheme_App2_Rec *app, Scheme_Object *rand)
 /* Simplify `(pred x)' where `x' is known to match a predicate */
 {
-  if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
+  if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
     if (relevant_predicate(app->rator)) {
       Scheme_Object *pred;
-      int pos = SCHEME_LOCAL_POS(app->rand);
+      int pos = SCHEME_LOCAL_POS(rand);
 
       if (optimize_is_mutated(info, pos))
         return NULL;
@@ -2742,15 +2742,15 @@ static Scheme_Object *check_known2_pred(Optimize_Info *info, Scheme_App2_Rec *ap
   return NULL;
 }
 
-static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app, const char *who, 
-                         Scheme_Object *expect_pred, Scheme_Object *unsafe)
+static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app, Scheme_Object *rand,
+                         const char *who, Scheme_Object *expect_pred, Scheme_Object *unsafe)
 /* Replace the rator with an unsafe version if we know that it's ok. Alternatively,
    the rator implies a check, so add type information for subsequent expressions. */
 {
   if (IS_NAMED_PRIM(app->rator, who)) {
-    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
+    if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
       Scheme_Object *pred;
-      int pos = SCHEME_LOCAL_POS(app->rand);
+      int pos = SCHEME_LOCAL_POS(rand);
       
       if (optimize_is_mutated(info, pos))
         return;
@@ -2808,6 +2808,29 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
     return make_discarding_app_sequence(arg_app, -1, (matches ? scheme_true : scheme_false), info);
 }
 
+static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *inside, Scheme_Object *orig) {
+  if (inside) {
+    switch (SCHEME_TYPE(inside)) {
+    case scheme_sequence_type:
+      if (((Scheme_Sequence *)inside)->count)
+        ((Scheme_Sequence *)inside)->array[((Scheme_Sequence *)inside)->count-1] = alt;
+      else
+        scheme_signal_error("internal error: strange inside replacement");
+      break;
+    case scheme_compiled_let_void_type:
+      ((Scheme_Let_Header *)inside)->body = alt;
+      break;
+    case scheme_compiled_let_value_type:
+      ((Scheme_Compiled_Let_Value *)inside)->body = alt;
+      break;
+    default:
+      scheme_signal_error("internal error: strange inside replacement");
+    }
+    return orig;
+  }
+  return alt;
+}
+
 static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_App2_Rec *app;
@@ -2858,54 +2881,56 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 
 static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimize_Info *info, int context, int rator_flags)
 {
-  Scheme_Object *le;
   int flags;
+  Scheme_Object *rand, *inside = NULL, *alt;
+  int delta = 0;
 
   info->size += 1;
 
+  /* Path for direct constant folding */
   if (SCHEME_TYPE(app->rand) > _scheme_compiled_values_types_) {
+    Scheme_Object *le;
     le = try_optimize_fold(app->rator, (Scheme_Object *)app, info);
     if (le)
       return le;
   }
 
-  if (SAME_OBJ(scheme_procedure_p_proc, app->rator)) {
-    if (lookup_constant_proc(info, app->rand)) {
-      info->preserves_marks = 1;
-      info->single_result = 1;
-      return scheme_true;
-    }
-  }
+  rand = app->rand;
 
-  if (SAME_OBJ(scheme_varref_const_p_proc, app->rator)) {
-    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_varref_form_type)) {
-      Scheme_Object *var = SCHEME_PTR1_VAL(app->rand);
-      if (SAME_OBJ(var, scheme_true)) {
-        return scheme_true;
-      } else if (SAME_OBJ(var, scheme_false)) {
-        return scheme_false;
-      } else if (scheme_compiled_propagate_ok(var, info)) {
-        /* can propagate => is a constant */
-        return scheme_true;
+  /* We can go inside a `begin' and a `let', which is useful in case
+     the argument was a function call that has been inlined. */
+  while (1) {
+    if (SAME_TYPE(SCHEME_TYPE(rand), scheme_compiled_let_void_type)) {
+      Scheme_Let_Header *head = (Scheme_Let_Header *)rand;
+      int i;
+      delta += head->count;
+      inside = rand;
+      rand = head->body;
+      for (i = head->num_clauses; i--; ) {
+        inside = rand;
+        rand = ((Scheme_Compiled_Let_Value *)rand)->body;
       }
+    } else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_sequence_type)) {
+      Scheme_Sequence *seq = (Scheme_Sequence *)rand;
+      if (seq->count) {
+        inside = rand;
+        rand = seq->array[seq->count-1];
+       } else
+        break;
+    } else
+      break;
+  }
+  
+  if (SCHEME_TYPE(rand) > _scheme_compiled_values_types_) {
+    Scheme_Object *app_o;
+    app_o = scheme_make_application(scheme_make_pair(app->rator,
+                                                     scheme_make_pair(rand, scheme_null)),
+                                    info);
+    /* scheme_make_application tries to fold the constants
+       only use app_o in that case */
+    if (SCHEME_TYPE(app_o) > _scheme_compiled_values_types_) {
+      return replace_tail_inside(app_o, inside, app->rand);
     }
-  }
-
-  if (SAME_OBJ(scheme_struct_type_p_proc, app->rator)) {
-    Scheme_Object *c;
-    c = get_struct_proc_shape(app->rand, info);
-    if (c && ((SCHEME_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_MASK)
-              == STRUCT_PROC_SHAPE_STRUCT))
-      return scheme_true;
-  }
-
-  if ((SAME_OBJ(scheme_values_func, app->rator)
-       || SAME_OBJ(scheme_list_star_proc, app->rator))
-      && (scheme_omittable_expr(app->rand, 1, -1, 0, info, info, 0, 0, ID_OMIT)
-          || single_valued_noncm_expression(app->rand, 5))) {
-    info->preserves_marks = 1;
-    info->single_result = 1;
-    return app->rand;
   }
 
   if (!is_nonmutating_primitive(app->rator, 1))
@@ -2920,144 +2945,202 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     info->single_result = -info->single_result;
   }
 
-  /* Check for things like (flonum? x) on an `x' known to have a flonum value. */
-  if (SCHEME_PRIMP(app->rator)
-      && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)
-      && SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
-    int pos = SCHEME_LOCAL_POS(app->rand);
-
-    if (!optimize_is_mutated(info, pos)) {
-      int t;
-      t = optimize_is_local_type_valued(info, pos);
-
-      if (t == SCHEME_LOCAL_TYPE_FLONUM) {
-        if (IS_NAMED_PRIM(app->rator, "flonum?"))
-          return scheme_true;
-      } else if (t == SCHEME_LOCAL_TYPE_FIXNUM) {
-        if (IS_NAMED_PRIM(app->rator, "fixnum?"))
-          return scheme_true;
-      } else if (t == SCHEME_LOCAL_TYPE_EXTFLONUM) {
-        if (IS_NAMED_PRIM(app->rator, "extflonum?"))
-          return scheme_true;
-      }
-    }
+  if ((SAME_OBJ(scheme_values_func, app->rator)
+        || SAME_OBJ(scheme_list_star_proc, app->rator))
+      && (context & OPT_CONTEXT_SINGLED
+          || scheme_omittable_expr(rand, 1, -1, 0, info, info, 0, delta, ID_OMIT)
+          || single_valued_noncm_expression(rand, 5))) {
+    info->preserves_marks = 1;
+    info->single_result = 1;
+    return replace_tail_inside(rand, inside, app->rand);
   }
 
   /* Check for things like (cXr (cons X Y)): */
   if (SCHEME_PRIMP(app->rator)
-      && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
-    Scheme_Object *rand, *inside = NULL, *alt = NULL;
+    && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
 
-    rand = app->rand;
-
-    /* We can go inside a `let', which is useful in case the argument
-       was a function call that has been inlined. */
-    while (SAME_TYPE(SCHEME_TYPE(rand), scheme_compiled_let_void_type)) {
-      Scheme_Let_Header *head = (Scheme_Let_Header *)rand;
-      int i;
-      inside = rand;
-      rand = head->body;
-      for (i = head->num_clauses; i--; ) {
-        inside = rand;
-	rand = ((Scheme_Compiled_Let_Value *)rand)->body;
-      }
-    }
-
-    if (SAME_TYPE(SCHEME_TYPE(rand), scheme_application2_type)) {
-      Scheme_App2_Rec *app2 = (Scheme_App2_Rec *)rand;
-      if (SAME_OBJ(scheme_list_proc, app2->rator)) {
-        if (IS_NAMED_PRIM(app->rator, "car")) {
-          /* (car (list X)) */
-          alt = make_discarding_sequence(scheme_void, app2->rand, info);
-        } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
-          /* (cdr (list X)) */
-          alt = make_discarding_sequence(app2->rand, scheme_null, info);
+    switch (SCHEME_TYPE(rand)) {
+    case scheme_application2_type:
+      {  
+        Scheme_App2_Rec *app2 = (Scheme_App2_Rec *)rand;
+        if (SAME_OBJ(scheme_list_proc, app2->rator)) {
+          if (IS_NAMED_PRIM(app->rator, "car")) {
+            /* (car (list X)) */
+            alt = make_discarding_sequence(scheme_void, app2->rand, info);
+            return replace_tail_inside(alt, inside, app->rand);
+          } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
+            /* (cdr (list X)) */
+            alt = make_discarding_sequence(app2->rand, scheme_null, info);
+            return replace_tail_inside(alt, inside, app->rand);
+          }
         }
-      }
-      if (!alt)
         alt = try_reduce_predicate(app->rator, app2->rator, 1, app2, NULL, NULL, info);
-    } else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_application3_type)) {
-      Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)rand;
-      if (IS_NAMED_PRIM(app->rator, "car")) {
-        if (SAME_OBJ(scheme_cons_proc, app3->rator)
-            || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)
-            || SAME_OBJ(scheme_list_proc, app3->rator)
-            || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
-          /* (car ({cons|list|list*} X Y)) */
-          alt = make_discarding_reverse_sequence(app3->rand2, app3->rand1, info);
-        }
-      } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
-        /* (cdr ({cons|list|list*} X Y)) */
-        if (SAME_OBJ(scheme_cons_proc, app3->rator)
-            || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)
-            || SAME_OBJ(scheme_list_proc, app3->rator)
-            || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
-          if (SAME_OBJ(scheme_list_proc, app3->rator)) {
+        if (alt)
+          return replace_tail_inside(alt, inside, app->rand);
+        break;
+      }
+    case scheme_application3_type:
+      {
+        Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)rand;
+        if (IS_NAMED_PRIM(app->rator, "car")) {
+          if (SAME_OBJ(scheme_cons_proc, app3->rator)
+              || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)
+              || SAME_OBJ(scheme_list_proc, app3->rator)
+              || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
+            /* (car ({cons|list|list*} X Y)) */
+            alt = make_discarding_reverse_sequence(app3->rand2, app3->rand1, info);
+            return replace_tail_inside(alt, inside, app->rand);
+          }
+        } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
+          if (SAME_OBJ(scheme_cons_proc, app3->rator)
+              || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)
+              || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
+            /* (cdr ({cons|list*} X Y)) */
+            alt = make_discarding_sequence(app3->rand1, app3->rand2, info);
+            return replace_tail_inside(alt, inside, app->rand);
+          } else if (SAME_OBJ(scheme_list_proc, app3->rator)) {
+            /* (cdr (list X Y)) */
             alt = scheme_make_application(scheme_make_pair(scheme_list_proc,
                                                            scheme_make_pair(app3->rand2,
                                                                             scheme_null)),
                                           info);
             SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
             alt = make_discarding_sequence(app3->rand1, alt, info);
-          } else
-            alt = make_discarding_sequence(app3->rand1, app3->rand2, info);
-        }
-      } else if (IS_NAMED_PRIM(app->rator, "cadr")) {
-        if (SAME_OBJ(scheme_list_proc, app3->rator)) {
-          /* (cadr (list X Y)) */
-          alt = make_discarding_sequence(app3->rand1, app3->rand2, info);
-        }
-      } else
-        alt = try_reduce_predicate(app->rator, app3->rator, 2, NULL, app3, NULL, info);
-    } else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_application_type)) {
-      Scheme_App_Rec *appr = (Scheme_App_Rec *)rand;
-      Scheme_Object *r = appr->args[0];
-      if (IS_NAMED_PRIM(app->rator, "car")) {
-        if ((appr->args > 0)
-            && (SAME_OBJ(scheme_list_proc, r)
-                || SAME_OBJ(scheme_list_star_proc, r))) {
-          /* (car ({list|list*} X Y ...)) */
-          alt = make_discarding_app_sequence(appr, 0, NULL, info);
-        }
-      } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
-        /* (cdr ({list|list*} X Y ...)) */
-        if ((appr->args > 0)
-            && (SAME_OBJ(scheme_list_proc, r)
-                || SAME_OBJ(scheme_list_star_proc, r))) {
-          Scheme_Object *al = scheme_null;
-          int k;
-          for (k = appr->num_args; k > 1; k--) {
-            al = scheme_make_pair(appr->args[k], al);
+            return replace_tail_inside(alt, inside, app->rand);
           }
-          al = scheme_make_pair(r, al);
-          alt = scheme_make_application(al, info);
-          SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
-          alt = make_discarding_sequence(appr->args[1], alt, info);
+        } else if (IS_NAMED_PRIM(app->rator, "cadr")) {
+          if (SAME_OBJ(scheme_list_proc, app3->rator)) {
+            /* (cadr (list X Y)) */
+            alt = make_discarding_sequence(app3->rand1, app3->rand2, info);
+            return replace_tail_inside(alt, inside, app->rand);
+          }
         }
-      } else
+        alt = try_reduce_predicate(app->rator, app3->rator, 2, NULL, app3, NULL, info);
+        if (alt)
+          return replace_tail_inside(alt, inside, app->rand);
+        break;
+      }
+    case scheme_application_type:
+      {
+        Scheme_App_Rec *appr = (Scheme_App_Rec *)rand;
+        Scheme_Object *r = appr->args[0];
+        if (IS_NAMED_PRIM(app->rator, "car")) {
+          if ((appr->args > 0)
+              && (SAME_OBJ(scheme_list_proc, r)
+                  || SAME_OBJ(scheme_list_star_proc, r))) {
+            /* (car ({list|list*} X Y ...)) */
+            alt = make_discarding_app_sequence(appr, 0, NULL, info);
+            return replace_tail_inside(alt, inside, app->rand);
+          }
+        } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
+          /* (cdr ({list|list*} X Y ...)) */
+          if ((appr->args > 0)
+              && (SAME_OBJ(scheme_list_proc, r)
+                  || SAME_OBJ(scheme_list_star_proc, r))) {
+            Scheme_Object *al = scheme_null;
+            int k;
+            for (k = appr->num_args; k > 1; k--) {
+              al = scheme_make_pair(appr->args[k], al);
+            }
+            al = scheme_make_pair(r, al);
+            alt = scheme_make_application(al, info);
+            SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+            alt = make_discarding_sequence(appr->args[1], alt, info);
+            return replace_tail_inside(alt, inside, app->rand);
+          }
+        }
         alt = try_reduce_predicate(app->rator, appr->args[0], appr->num_args, NULL, NULL, appr, info);
-    } else {
-      alt = check_known2_pred(info, app);
-      if (!alt) {
-        check_known2(info, app, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
-        check_known2(info, app, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
-        check_known2(info, app, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
-        check_known2(info, app, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
-        /* It's not clear that these are useful, since a chaperone check is needed anyway: */
-        check_known2(info, app, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
-        check_known2(info, app, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
+        if (alt)
+          return replace_tail_inside(alt, inside, app->rand);
+        break;
+      }
+    case scheme_local_type:
+      if (delta
+          && SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
+        /* rand is in the wrong coordinates, move it if possible*/
+        int pos = SCHEME_LOCAL_POS(rand);
+        if (pos >= delta)
+          rand = optimize_shift(rand, -delta, 0);
+        else
+          break;
+      }
+      
+      {
+        int pos = SCHEME_LOCAL_POS(rand);
+        if (!optimize_is_mutated(info, pos)) {
+          int t;
+          t = optimize_is_local_type_valued(info, pos);
+          if ((t == SCHEME_LOCAL_TYPE_FLONUM && IS_NAMED_PRIM(app->rator, "flonum?"))
+              ||(t == SCHEME_LOCAL_TYPE_FIXNUM && IS_NAMED_PRIM(app->rator, "fixnum?"))
+              ||(t == SCHEME_LOCAL_TYPE_EXTFLONUM && IS_NAMED_PRIM(app->rator, "extflonum?"))) {
+            return replace_tail_inside(scheme_true, inside, app->rand);
+          }
+        }
+      }
+ 
+      if (SAME_OBJ(scheme_procedure_p_proc, app->rator)) {
+        if (lookup_constant_proc(info, rand)) {
+          info->preserves_marks = 1;
+          info->single_result = 1;
+          return replace_tail_inside(scheme_true, inside, app->rand);
+        }
+      }      
+
+      alt = check_known2_pred(info, app, rand);
+      if (alt) 
+        return replace_tail_inside(alt, inside, app->rand);
+
+      check_known2(info, app, rand, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
+      check_known2(info, app, rand, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
+      check_known2(info, app, rand, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
+      check_known2(info, app, rand, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
+      /* It's not clear that these are useful, since a chaperone check is needed anyway: */
+      check_known2(info, app, rand, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
+      check_known2(info, app, rand, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
+
+      break;
+    default:
+      if (SAME_OBJ(scheme_procedure_p_proc, app->rator)) {
+        if (lookup_constant_proc(info, rand)) {
+          info->preserves_marks = 1;
+          info->single_result = 1;
+          return replace_tail_inside(scheme_true, inside, app->rand);
+        }
+      }      
+      break;
+    }
+  } else {
+    
+    if (SAME_OBJ(scheme_struct_type_p_proc, app->rator)) {
+        Scheme_Object *c;
+        c = get_struct_proc_shape(rand, info);
+        if (c && ((SCHEME_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_MASK)
+                  == STRUCT_PROC_SHAPE_STRUCT)) {
+          info->preserves_marks = 1;
+          info->single_result = 1;
+          return replace_tail_inside(scheme_true, inside, app->rand);
       }
     }
-
-    if (alt) {
-      if (inside) {
-        if (SAME_TYPE(SCHEME_TYPE(inside), scheme_compiled_let_void_type))
-          ((Scheme_Let_Header *)inside)->body = alt;
-        else
-          ((Scheme_Compiled_Let_Value *)inside)->body = alt;
-        return app->rand;
+  
+    if (SAME_OBJ(scheme_varref_const_p_proc, app->rator)
+        && SAME_TYPE(SCHEME_TYPE(rand), scheme_varref_form_type)) {
+        Scheme_Object *var = SCHEME_PTR1_VAL(rand);
+      if (SAME_OBJ(var, scheme_true)) {
+        info->preserves_marks = 1;
+        info->single_result = 1;
+        return replace_tail_inside(scheme_true, inside, app->rand);
+      } else if (SAME_OBJ(var, scheme_false)) {
+        info->preserves_marks = 1;
+        info->single_result = 1;
+        return replace_tail_inside(scheme_false, inside, app->rand);
+      } else {
+        if (var && scheme_compiled_propagate_ok(var, info)) {
+          /* can propagate => is a constant */
+          info->preserves_marks = 1;
+          info->single_result = 1;
+          return replace_tail_inside(scheme_true, inside, app->rand);
+        }
       }
-      return alt;
     }
   }
 

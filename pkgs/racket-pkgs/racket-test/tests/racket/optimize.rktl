@@ -1210,6 +1210,46 @@
                     (unsafe-cdr w)))
            #f)
 
+(test-comp '(lambda (w)
+              (list
+                (car (begin (random) w))
+                (cdr (begin (random) w))
+                (pair? (begin (random) w))
+                (null? (begin (random) w)))) 
+           '(lambda (w)
+              (list
+                (car (begin (random) w))
+                (unsafe-cdr (begin (random) w))
+                (begin (random) #t)
+                (begin (random) #f))))
+
+(test-comp '(lambda (w f)
+              (list
+                (car (let ([x (random)]) (f x x) w))
+                (cdr (let ([x (random)]) (f x x) w))
+                (pair? (let ([x (random)]) (f x x) w))
+                (null? (let ([x (random)]) (f x x) w))))
+           '(lambda (w f)
+              (list
+                (car (let ([x (random)]) (f x x) w))
+                (unsafe-cdr (let ([x (random)]) (f x x) w))
+                (let ([x (random)]) (f x x) #t)
+                (let ([x (random)]) (f x x) #f))))
+                
+; test for unary aplications
+(test-comp -1
+           '(- 1))
+(test-comp '(lambda (f) (begin (f) -1))
+           '(lambda (f) (- (begin (f) 1))))
+(test-comp '(letrec ([x (lambda (t) x)]) (x x) -1)
+           '(- (letrec ([x (lambda (t) x)]) (x x) 1)))
+(test-comp 1
+           '(car (cons 1 2)))
+(test-comp '(lambda (f) (begin (f) 1))
+           '(lambda (f) (car (begin (f) (cons 1 2)))))
+(test-comp '(letrec ([x (lambda (t) x)]) (x x) 1)
+           '(car (letrec ([x (lambda (t) x)]) (x x) (cons 1 2))))
+           
 (test-comp '(lambda (w z) (box? (list (cons (random w) z))))
            '(lambda (w z) (random w) #f))
 
@@ -1499,6 +1539,26 @@
               (values x))
            '(let ([x (+ (cons 1 2) 0)])
               x))
+(test-comp '(lambda (x)
+              (begin (random) x))
+           '(lambda (x)
+              (values (begin (random) x))))
+(test-comp '(lambda (x f)
+              (letrec ([z (lambda () z)]) (f z) x))
+           '(lambda (x f)
+              (values (letrec ([z (lambda () z)]) (f z) x))))
+(test-comp '(lambda (x f)
+              (letrec ([z (lambda () z)]) (f z) z))
+           '(lambda (x f)
+              (values (letrec ([z (lambda () z)]) (f z) z))))
+(test-comp '(lambda (f)
+              (let ([x (f)]) (list x x)))
+           '(lambda (f)
+              (let ([x (values (f))]) (list x x))))
+(test-comp '(lambda (f)
+              (if (f) 0 1))
+           '(lambda (f)
+              (if (values (f)) 0 1)))
 
 (test-comp '(let ([x (+ (cons 1 2) 0)])
               (- x 8))
@@ -1843,6 +1903,20 @@
                   88))
            '(let ([f (lambda (x) x)])
               (list f)))
+(test-comp '(let ([f (lambda (x) x)])
+              (list
+               f
+               f
+               (procedure? f)
+               (procedure? (begin (random) f))
+               (procedure? (letrec ([x (lambda (t) x)]) (x x) f))))
+           '(let ([f (lambda (x) x)])
+              (list
+               f
+               f
+               #t
+               (begin (random) #t)
+               (letrec ([x (lambda (t) x)]) (x x) #t))))
 
 (test-comp '(letrec ([f (case-lambda 
                          [(x) x]
@@ -2326,6 +2400,43 @@
               (let ([p (extfl+ n n)])
                 (extfl+ p p))))
 
+(test-comp '(lambda (n)
+              (let ([p (fl+ n n)])
+                (list 
+                  (flonum? p)
+                  (flonum? (begin (random) p))
+                  (flonum? (letrec ([x (lambda (t) x)]) (x x) p)))))
+           '(lambda (n)
+              (let ([p (fl+ n n)])
+                (list
+                  #t  
+                  (begin (random) #t)
+                  (letrec ([x (lambda (t) x)]) (x x) #t)))))
+(test-comp '(lambda (n)
+              (let ([p (fx+ n n)])
+                (list 
+                  (fixnum? p)
+                  (fixnum? (begin (random) p))
+                  (fixnum? (letrec ([x (lambda (t) x)]) (x x) p)))))
+           '(lambda (n)
+              (let ([p (fx+ n n)])
+                (list
+                  #t  
+                  (begin (random) #t)
+                  (letrec ([x (lambda (t) x)]) (x x) #t)))))
+(test-comp '(lambda (n)
+              (let ([p (extfl+ n n)])
+                (list 
+                  (extflonum? p)
+                  (extflonum? (begin (random) p))
+                  (extflonum? (letrec ([x (lambda (t) x)]) (x x) p)))))
+           '(lambda (n)
+              (let ([p (extfl+ n n)])
+                (list
+                  #t  
+                  (begin (random) #t)
+                  (letrec ([x (lambda (t) x)]) (x x) #t)))))
+
 ;; simple cross-module inlining
 (test-comp `(module m racket/base 
               (require racket/bool)
@@ -2683,6 +2794,25 @@
            `(lambda (b)
               (with-continuation-mark 'x 'y (box (box b)))))
 
+(test-comp `(lambda (x y f)
+              (set! x 5)
+              (list
+                (#%variable-reference x)
+                (#%variable-reference y)
+                (variable-reference-constant? (#%variable-reference x))
+                (variable-reference-constant? (#%variable-reference y))
+                (variable-reference-constant? (letrec ([z (lambda () z)]) (f z) (#%variable-reference x)))
+                (variable-reference-constant? (letrec ([z (lambda () z)]) (f z) (#%variable-reference y)))))
+           `(lambda (x y f)
+              (set! x 5)
+              (list
+                (#%variable-reference x)
+                (#%variable-reference y)
+                #f
+                #t
+                (letrec ([z (lambda () z)]) (f z) #f)
+                (letrec ([z (lambda () z)]) (f z) #t))))
+           
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check splitting of definitions
 (test-comp `(module m racket/base
