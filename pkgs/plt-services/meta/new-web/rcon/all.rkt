@@ -37,7 +37,6 @@
          also the co-author of @em{The Joy of Clojure} and author of
          @em{Functional JavaScript} and the upcoming release @em{The Art of
          Chupacabra Husbandry}.})
-    '("Claire Alvis" "https://github.com/calvis" #f #f #f)
     (list
      "Matthew Butterick" "http://practicaltypography.com/"
      "Like a Blind Squirrel in a Ferrari"
@@ -85,7 +84,22 @@
          main developers of Racket. He works primarily on Racket's run-time
          system, compiler, macro system, build system, package system,
          documentation language, and graphics/GUI libraries.})
-    '("Tony Garnock-Jones" "http://homepages.kcbbs.gen.nz/tonyg/" #f #f #f)
+    (list
+     "Tony Garnock-Jones" "http://homepages.kcbbs.gen.nz/tonyg/"
+     "Minimart: Organizing Squabbling Actors"
+     @p*{Actors are a great model for managing concurrency and communication
+         within programs. The Minimart #lang adds Actors to Racket; but Actors
+         alone are not enough. Programmers using Actors are often left to solve
+         issues such as event broadcasting, service naming and discovery, and
+         even crash-handling and exit signalling, on their own.
+
+         Minimart makes solutions to these problems part of the language
+         itself. I'll show how Minimart uses publish/subscribe programming and
+         "routing events" to manage and organize whole groups of Actors at a
+         time.}
+     @p*{Tony Garnock-Jones is a PhD candidate at Northeastern University's
+         Programming Research Laboratory, working on applying lessons from
+         distributed systems to programming language design.})
     (list
      "Greg Hendershott" "http://www.greghendershott.com/"
      "Emacs à la mode DrRacket"
