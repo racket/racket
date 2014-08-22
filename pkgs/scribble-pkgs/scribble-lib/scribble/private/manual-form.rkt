@@ -24,7 +24,9 @@
          racketgrammar racketgrammar*
          (rename-out [racketgrammar schemegrammar]
                      [racketgrammar* schemegrammar*])
-         var svar)
+         var svar
+         (for-syntax kind-kw id-kw link-target?-kw
+                     literals-kw subs-kw contracts-kw))
 
 (begin-for-syntax
  (define-splicing-syntax-class kind-kw
