@@ -682,6 +682,29 @@ static Scheme_Object *make_discarding_first_sequence(Scheme_Object *e1, Scheme_O
   return make_sequence_2(e1, e2);
 }
 
+static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *inside, Scheme_Object *orig) {
+  if (inside) {
+    switch (SCHEME_TYPE(inside)) {
+    case scheme_sequence_type:
+      if (((Scheme_Sequence *)inside)->count)
+        ((Scheme_Sequence *)inside)->array[((Scheme_Sequence *)inside)->count-1] = alt;
+      else
+        scheme_signal_error("internal error: strange inside replacement");
+      break;
+    case scheme_compiled_let_void_type:
+      ((Scheme_Let_Header *)inside)->body = alt;
+      break;
+    case scheme_compiled_let_value_type:
+      ((Scheme_Compiled_Let_Value *)inside)->body = alt;
+      break;
+    default:
+      scheme_signal_error("internal error: strange inside replacement");
+    }
+    return orig;
+  }
+  return alt;
+}
+
 static int is_inspector_call(Scheme_Object *a)
 {
   if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type)) {
@@ -1512,7 +1535,7 @@ static Scheme_Object *no_potential_size(Scheme_Object *v)
 static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data, Optimize_Info *info,
 				    int argc, Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
                                     int context,
-                                    int nested_count, Scheme_Object *orig, Scheme_Object *le_prev, intptr_t prev_offset)
+                                    int nested_count, Scheme_Object *orig, Scheme_Object *le_prev)
 {
   Scheme_Let_Header *lh;
   Scheme_Compiled_Let_Value *lv, *prev = NULL;
@@ -1531,11 +1554,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
     info->next->preserves_marks = info->preserves_marks;
     optimize_info_done(info, NULL);
 
-    if (le_prev) {
-      *((Scheme_Object **)(((char *)le_prev) + prev_offset)) = p;
-      return orig;
-    } else
-      return p;
+    return replace_tail_inside(p, le_prev, orig);
   }
 
   lh = MALLOC_ONE_TAGGED(Scheme_Let_Header);
@@ -1605,11 +1624,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
   info->preserves_marks = sub_info->preserves_marks;
   optimize_info_done(sub_info, NULL);
 
-  if (le_prev) {
-    *((Scheme_Object **)(((char *)le_prev) + prev_offset)) = p;
-    return orig;
-  } else
-    return p;
+  return replace_tail_inside(p, le_prev, orig);
 }
 
 int scheme_check_leaf_rator(Scheme_Object *le, int *_flags)
@@ -1647,28 +1662,41 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 {
   int offset = 0, single_use = 0, psize = 0;
   Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
-  intptr_t prev_offset = 0;
-  int nested_count = 0, outside_nested = 0, already_opt = optimized_rator, nonleaf;
+  int nested = 0, nested_count = 0, outside_nested = 0, already_opt = optimized_rator, nonleaf;
 
   if ((info->inline_fuel < 0) && info->has_nonleaf)
     return NULL;
 
   /* Move inside `let' bindings, so we can convert ((let (....) proc) arg ...)
      to (let (....) (proc arg ...)) */
-  while (optimized_rator && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_let_void_type)) {
-    Scheme_Let_Header *lh;
-    int i;
+  if (optimized_rator) {
+    while (1) {
+      if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_let_void_type)) {
+        Scheme_Let_Header *lh;
+        int i;
 
-    lh = (Scheme_Let_Header *)le;
-    prev = le;
-    prev_offset = (intptr_t)&(((Scheme_Let_Header *)0x0)->body);
-    le = lh->body;
-    for (i = 0; i < lh->num_clauses; i++) {
-      prev = le;
-      prev_offset = (intptr_t)&(((Scheme_Compiled_Let_Value *)0x0)->body);
-      le = ((Scheme_Compiled_Let_Value *)le)->body;
+        lh = (Scheme_Let_Header *)le;
+        prev = le;
+        le = lh->body;
+        for (i = 0; i < lh->num_clauses; i++) {
+          prev = le;
+          le = ((Scheme_Compiled_Let_Value *)le)->body;
+        }
+        nested_count += lh->count;
+        if (lh->count)
+          nested = 1;
+      } else if (SAME_TYPE(SCHEME_TYPE(le), scheme_sequence_type)) {
+        Scheme_Sequence *seq = (Scheme_Sequence *)le;
+        if (seq->count) {
+          prev = le;
+          le = seq->array[seq->count-1];
+          if (seq->count > 1)
+            nested = 1;
+        } else
+         break;
+      } else
+        break;
     }
-    nested_count += lh->count;
   }
 
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
@@ -1795,10 +1823,9 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       if ((sz >= 0) && (single_use || (sz <= threshold))) {
         Optimize_Info *sub_info;
         if (nested_count) {
-          /* Pessimistcally assume that we moved inside past an effect */
           sub_info = optimize_info_add_frame(info, nested_count, nested_count, 0);
-          sub_info->vclock++;
-          sub_info->kclock++;
+          /* We only go into `let` and `begin` only for an optimized rator, so
+             the virtual clock was already incremented as needed. */
           /* We could propagate bound values in sub_info, but relevant inlining
              and propagatation has probably already happened when the rator was
              optimized. */
@@ -1822,7 +1849,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 		     threshold,
 		     scheme_optimize_context_to_string(info->context));
           le = apply_inlined(le, data, sub_info, argc, app, app2, app3, context,
-                             nested_count, orig_le, prev, prev_offset);
+                             nested_count, orig_le, prev);
           if (nested_count)
             optimize_info_done(sub_info, NULL);
           return le;
@@ -2822,29 +2849,6 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
                                     info, id_offset);
   else
     return make_discarding_app_sequence(arg_app, -1, (matches ? scheme_true : scheme_false), info, id_offset);
-}
-
-static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *inside, Scheme_Object *orig) {
-  if (inside) {
-    switch (SCHEME_TYPE(inside)) {
-    case scheme_sequence_type:
-      if (((Scheme_Sequence *)inside)->count)
-        ((Scheme_Sequence *)inside)->array[((Scheme_Sequence *)inside)->count-1] = alt;
-      else
-        scheme_signal_error("internal error: strange inside replacement");
-      break;
-    case scheme_compiled_let_void_type:
-      ((Scheme_Let_Header *)inside)->body = alt;
-      break;
-    case scheme_compiled_let_value_type:
-      ((Scheme_Compiled_Let_Value *)inside)->body = alt;
-      break;
-    default:
-      scheme_signal_error("internal error: strange inside replacement");
-    }
-    return orig;
-  }
-  return alt;
 }
 
 static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *info, int context)
