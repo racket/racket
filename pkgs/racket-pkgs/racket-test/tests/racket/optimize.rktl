@@ -1004,6 +1004,23 @@
            '(lambda (g)
               (let ([r (read)])
                 (+ r r))))
+(test-comp '(lambda (g z)
+              ((begin 
+                 (read)
+                 (lambda () (+ z z)))))
+           '(lambda (g z)
+              (begin 
+                (read)
+                (+ z z))))
+(test-comp '(lambda (g z)
+              ((begin 
+                 (read)
+                 (lambda (x) (+ z z)))
+               g))
+           '(lambda (g z)
+              (begin 
+                (read)
+                (+ z z))))
 
 (test-comp '(lambda (w z)
               (let ([x (cons w z)])
