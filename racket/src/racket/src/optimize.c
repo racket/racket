@@ -1662,7 +1662,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 {
   int offset = 0, single_use = 0, psize = 0;
   Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
-  int nested = 0, nested_count = 0, outside_nested = 0, already_opt = optimized_rator, nonleaf;
+  int nested_count = 0, outside_nested = 0, already_opt = optimized_rator, nonleaf;
 
   if ((info->inline_fuel < 0) && info->has_nonleaf)
     return NULL;
@@ -1683,15 +1683,11 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
           le = ((Scheme_Compiled_Let_Value *)le)->body;
         }
         nested_count += lh->count;
-        if (lh->count)
-          nested = 1;
       } else if (SAME_TYPE(SCHEME_TYPE(le), scheme_sequence_type)) {
         Scheme_Sequence *seq = (Scheme_Sequence *)le;
         if (seq->count) {
           prev = le;
           le = seq->array[seq->count-1];
-          if (seq->count > 1)
-            nested = 1;
         } else
          break;
       } else
