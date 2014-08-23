@@ -1021,6 +1021,35 @@
               (begin 
                 (read)
                 (+ z z))))
+(test-comp '(lambda (g z)
+              (let ([get (lambda ()
+                           (begin
+                             (read)
+                             (lambda (x) (+ z z))))])
+                ((get) g)))
+           '(lambda (g z)
+              (begin
+                (read)
+                (+ z z))))
+(test-comp '(lambda ()
+              (let ([a (display "a")]
+                    [g (lambda (x) x)])
+                (list
+                 ((begin
+                    (display "b")
+                    g)
+                  a)
+                 g
+                 g)))
+           '(lambda ()
+              (let ([a (display "a")]
+                    [g (lambda (x) x)])
+                (list
+                 (begin
+                   (display "b")
+                   a)
+                 g
+                 g))))
 
 (test-comp '(lambda (w z)
               (let ([x (cons w z)])

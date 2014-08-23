@@ -2161,6 +2161,16 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
     return scheme_optimize_expr((Scheme_Object *)head, info, context);
   }
 
+  /* Convert ((begin .... E) arg ...) to (begin .... (E arg ...)). */
+  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_sequence_type)) {
+    Scheme_Sequence *seq = (Scheme_Sequence *)rator;
+
+    reset_rator(app, seq->array[seq->count - 1]);
+    seq->array[seq->count-1] = app;
+
+    return scheme_optimize_expr((Scheme_Object *)seq, info, context);
+  }
+
   return NULL;
 }
 
