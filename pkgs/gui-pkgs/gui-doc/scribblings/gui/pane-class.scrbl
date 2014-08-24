@@ -8,12 +8,17 @@ A pane is a both a container and a containee area. It serves only
  cannot be hidden or disabled like a @racket[panel%] object.
 
 A @racket[pane%] object has a degenerate placement strategy for
- managing its children; it places them all in the upper left corner
- and does not stretch any of them. The @racket[horizontal-pane%] and
- @racket[vertical-pane%] classes provide useful geometry management.
+ managing its children: it places each child as if it was the only
+ child of the panel.  The @racket[horizontal-pane%] and
+ @racket[vertical-pane%] classes provide useful geometry management
+ for multiple children.
 
 See also @racket[grow-box-spacer-pane%].
 
+@history[#:changed "1.3" @elem{Changed the placement strategy to
+                               stretch and align children, instead of
+                               placing all children at the top-left
+                               corner.}]
 
 @defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]

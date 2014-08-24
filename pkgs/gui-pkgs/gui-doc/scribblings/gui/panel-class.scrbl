@@ -11,11 +11,15 @@ A panel is a both a container and a containee window. It serves mainly
  object can be hidden or disabled.
 
 A @racket[panel%] object has a degenerate placement strategy for
- managing its children; it places them all in the upper left corner
- and does not stretch any of them.  The @racket[horizontal-panel%]
- and @racket[vertical-panel%] classes provide useful geometry
- management.
+ managing its children: it places each child as if it was the only
+ child of the panel.  The @racket[horizontal-panel%] and
+ @racket[vertical-panel%] classes provide useful geometry management
+ for multiple children.
 
+@history[#:changed "1.3" @elem{Changed the placement strategy to
+                               stretch and align children, instead of
+                               placing all children at the top-left
+                               corner.}]
 
 @defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%)
                                (is-a?/c panel%) (is-a?/c pane%))]
