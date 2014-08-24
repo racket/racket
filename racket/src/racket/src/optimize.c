@@ -682,6 +682,11 @@ static Scheme_Object *make_discarding_first_sequence(Scheme_Object *e1, Scheme_O
   return make_sequence_2(e1, e2);
 }
 
+static Scheme_Object *make_application_2(Scheme_Object *a, Scheme_Object *b, Optimize_Info *info)
+{
+  return scheme_make_application(scheme_make_pair(a, scheme_make_pair(b, scheme_null)), info);
+}
+
 static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *inside, Scheme_Object *orig) {
   if (inside) {
     switch (SCHEME_TYPE(inside)) {
@@ -2862,7 +2867,7 @@ static Scheme_Object *make_optimize_prim_application2(Scheme_Object *prim, Schem
 /* make (prim rand) and optimize it. rand must be already optimized */
 {
   Scheme_Object *alt;
-  alt = scheme_make_application(scheme_make_pair(prim, scheme_make_pair(rand, scheme_null)), info);
+  alt = make_application_2(prim, rand, info);
   /* scheme_make_application may use constant folding, check that alt is not a constant */
   if (SAME_TYPE(SCHEME_TYPE(alt), scheme_application2_type)) {
     int rator_flags = 0;
@@ -3037,10 +3042,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             return replace_tail_inside(alt, inside, app->rand);
           } else if (SAME_OBJ(scheme_list_proc, app3->rator)) {
             /* (cdr (list X Y)) */
-            alt = scheme_make_application(scheme_make_pair(scheme_list_proc,
-                                                           scheme_make_pair(app3->rand2,
-                                                                            scheme_null)),
-                                          info);
+            alt = make_application_2(scheme_list_proc, app3->rand2, info);
             SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
             alt = make_discarding_sequence(app3->rand1, alt, info, id_offset);
             return replace_tail_inside(alt, inside, app->rand);
