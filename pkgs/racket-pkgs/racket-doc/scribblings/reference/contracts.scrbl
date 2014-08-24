@@ -978,6 +978,14 @@ a sequence at all except that the former is more expensive than the latter.}
 Since the contract for @racket[x] does not depend on anything else, it does
 not come with any dependency sequence, not even @racket[()].
 
+This example is like the previous one, except the @racket[x] and @racket[y]
+arguments are now optional keyword arguments, instead of mandatory, by-position
+arguments:
+@racketblock[(->i ()
+                  (#:x [x number?]
+                   #:y [y (x) (>=/c x)])
+                  [result (x y) (and/c number? (>=/c (+ x y)))])]
+
 The contract expressions are not always evaluated in
 order. First, if there is no dependency for a given contract expression,
 the contract expression is evaluated at the time that the @racket[->i]
