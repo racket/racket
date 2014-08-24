@@ -420,6 +420,17 @@ static Scheme_Object *resolve_application3(Scheme_Object *o, Resolve_Info *orig_
     app->rand2 = le;
   }
 
+  /* Optimize `equal?' or `eqv?' test on certain types
+     to `eq?'. This is especially helpful for the JIT. 
+     This transformation is also performed at the
+     optimization layer, and we keep it just in case.*/
+  if ((SAME_OBJ(app->rator, scheme_equal_prim)
+       || SAME_OBJ(app->rator, scheme_eqv_prim))
+      && (scheme_eq_testable_constant(app->rand1)
+         || scheme_eq_testable_constant(app->rand2))) {
+    app->rator = scheme_eq_prim;
+  }
+
   set_app3_eval_type(app);
 
   info->max_let_depth += 2;

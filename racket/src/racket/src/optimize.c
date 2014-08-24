@@ -3170,7 +3170,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
                                          info, context);
 }
 
-static int eq_testable_constant(Scheme_Object *v)
+int scheme_eq_testable_constant(Scheme_Object *v)
 {
   if (SCHEME_SYMBOLP(v)
       || SCHEME_KEYWORDP(v)
@@ -3364,8 +3364,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
      to `eq?'. This is especially helpful for the JIT. */
   if ((SAME_OBJ(app->rator, scheme_equal_prim)
        || SAME_OBJ(app->rator, scheme_eqv_prim))
-      && (eq_testable_constant(app->rand1)
-         || eq_testable_constant(app->rand2))) {
+      && (scheme_eq_testable_constant(app->rand1)
+         || scheme_eq_testable_constant(app->rand2))) {
     app->rator = scheme_eq_prim;
     SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
     scheme_check_leaf_rator(scheme_eq_prim, &rator_flags);
