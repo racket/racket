@@ -33,6 +33,7 @@
          "parallel-build.rkt"
          "private/cc-struct.rkt"
          "link.rkt"
+         "private/dylib.rkt"
          "private/pkg-deps.rkt"
          "collection-name.rkt"
          (only-in pkg/lib pkg-directory
@@ -1572,10 +1573,12 @@
                                receipt-at-dest?
                                check-entry
                                build-dest-path
-                               this-platform?)
+                               this-platform?
+                               fixup-lib)
     (define (make-libs-step)
       (setup-printf #f (format "--- installing ~a ---" whats))
       (define installed-libs (make-hash))
+      (define dests (make-hash))
       (for ([cc ccs-to-compile])
         (begin-record-error cc what/title
                             (define info (cc-info cc))
@@ -1617,6 +1620,7 @@
                                  (record-lib receipt-path lib-name (cc-collection cc) (cc-path cc))
                                  #t)
                                 (unless already?
+                                  (hash-set! dests dest #t)
                                   (delete-directory/files dest #:must-exist? #f)
                                   (let-values ([(base name dir?) (split-path dest)])
                                     (when (path? base) (make-directory* base)))
@@ -1644,7 +1648,8 @@
                      (find-user-target-dir)
                      (find-user-lib-dir)
                      installed-libs
-                     ccs-to-compile))))
+                     ccs-to-compile)))
+      (for-each fixup-lib (hash-keys dests)))
 
     (define (same-content? a b)
       (cond
@@ -1740,7 +1745,10 @@
                            (unless (list-of relative-path-string? l)
                              (error "entry is not a list of relative path strings:" l)))
                          build-path
-                         this-platform?))
+                         this-platform?
+                         (if (eq? 'macosx (system-type))
+                             adjust-dylib-path/install
+                             void)))
 
   (define make-shares-step
     (make-copy/move-step "shared file"
@@ -1756,7 +1764,8 @@
                            (unless (list-of relative-path-string? l)
                              (error "entry is not a list of relative path strings:" l)))
                          build-path
-                         this-platform?))
+                         this-platform?
+                         void))
 
   (define make-mans-step
     (make-copy/move-step "man page"
@@ -1780,7 +1789,8 @@
                            (build-path d 
                                        (bytes->path-element (bytes-append #"man" (filename-extension n)))
                                        n))
-                         (lambda (info) #t)))
+                         (lambda (info) #t)
+                         void))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;       Package-dependency checking         ;;

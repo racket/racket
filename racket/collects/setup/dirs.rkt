@@ -326,7 +326,11 @@
                                         (build-path dir r)
                                         r)))
                             p))))]
-              [rel (and exe (get/set-dylib-path exe "Racket" #f))])
+              [rel (and exe
+                        (let ([l (get/set-dylib-path exe "Racket" #f)])
+                          (if (null? l)
+                              #f
+                              (car l))))])
          (cond
           [(not rel) #f] ; no framework reference found!?
           [(regexp-match

@@ -192,15 +192,18 @@ package}, it performs the @filepath{.html} file updating of a
 (added if it does not exist already) is adjusted to define
 @racket[package-content-state] as @racket[(list 'built (version))].
 
-Finally, creating a @tech{binary package}, @tech{binary library package},
-or @tech{built package}
-``unmoves'' files that were installed via @racket[move-foreign-libs],
-@racket[move-shared-files], or @racket[move-man-pages] definitions in
-an @filepath{info.rkt} file, retrieving them if they are not present
-at referenced location but are present in a user-specific target
-directory (i.e., the directory reported by @racket[find-user-lib-dir],
-@racket[find-user-share-dir], or @racket[find-user-man-dir],
-respectively).
+Finally, creating a @tech{binary package}, @tech{binary library
+package}, or @tech{built package} ``unmoves'' files that were
+installed via @racket[move-foreign-libs], @racket[move-shared-files],
+or @racket[move-man-pages] definitions in an @filepath{info.rkt} file,
+retrieving them if they are not present at referenced location but are
+present in a user-specific target directory (i.e., the directory
+reported by @racket[find-user-lib-dir], @racket[find-user-share-dir],
+or @racket[find-user-man-dir], respectively). On Mac OS X, when an
+unmoved file for @racket[move-foreign-libs] is a Mach-O file that
+includes a reference to another library in one of the directories reported by
+@racket[(get-lib-search-dirs)], then the reference is changed to a
+@litchar{@"@"loader_path/} reference.
 
 @defmodule[pkg/strip]{The @racketmodname[pkg/strip] module provides
 support for copying a package-style directory to a given destination

@@ -608,7 +608,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    path-string? relative-path?))] --- Files to copy into a
    directory where foreign libraries are found by @racket[ffi-lib].
    If @racket[install-platform] is defined, then the files are copied
-   only if the current platform matches the definition.}
+   only if the current platform matches the definition.
+
+   On Mac OS X, when a Mach-O file is copied, if the copied file
+   includes a library reference that starts @litchar{@"@"loader_path/},
+   and if the referenced library exists in a different location among
+   the paths listed by @racket[(get-lib-search-dirs)], then the
+   library reference is updated to an absolute path.}
 
  @item{@indexed-racket[move-foreign-libs] : @racket[(listof (and/c
    path-string? relative-path?))] --- Like @racket[copy-foreign-libs],
