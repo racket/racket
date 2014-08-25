@@ -338,25 +338,6 @@ static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *orig_
   return (Scheme_Object *)app;
 }
 
-static int eq_testable_constant(Scheme_Object *v)
-{
-  if (SCHEME_SYMBOLP(v)
-      || SCHEME_FALSEP(v)
-      || SAME_OBJ(v, scheme_true)
-      || SCHEME_VOIDP(v))
-    return 1;
-
-  if (SCHEME_CHARP(v) && (SCHEME_CHAR_VAL(v) < 256))
-    return 1;
-
-  if (SCHEME_INTP(v) 
-      && (SCHEME_INT_VAL(v) < (1 << 29))
-      && (SCHEME_INT_VAL(v) > -(1 << 29)))
-    return 1;
-
-  return 0;
-}
-
 static void set_app3_eval_type(Scheme_App3_Rec *app)
 {
   short et;
@@ -440,11 +421,13 @@ static Scheme_Object *resolve_application3(Scheme_Object *o, Resolve_Info *orig_
   }
 
   /* Optimize `equal?' or `eqv?' test on certain types
-     to `eq?'. This is especially helpful for the JIT. */
+     to `eq?'. This is especially helpful for the JIT. 
+     This transformation is also performed at the
+     optimization layer, and we keep it just in case.*/
   if ((SAME_OBJ(app->rator, scheme_equal_prim)
        || SAME_OBJ(app->rator, scheme_eqv_prim))
-      && (eq_testable_constant(app->rand1)
-	  || eq_testable_constant(app->rand2))) {
+      && (scheme_eq_testable_constant(app->rand1)
+         || scheme_eq_testable_constant(app->rand2))) {
     app->rator = scheme_eq_prim;
   }
 
@@ -1200,7 +1183,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 
       /* Check for (let ([x <expr>]) (<simple> x)) at end, and change to
          (<simple> <expr>). This transformation is more generally performed
-         at the optimization layer, the cocde here pre-dates the mode general
+         at the optimization layer, the code here pre-dates the mode general
          optimzation, and we keep it just in case. The simple case is easy here,
          because the local-variable offsets in <expr> do not change (as long as 
          <simple> doesn't access the stack). */

@@ -682,6 +682,11 @@ static Scheme_Object *make_discarding_first_sequence(Scheme_Object *e1, Scheme_O
   return make_sequence_2(e1, e2);
 }
 
+static Scheme_Object *make_application_2(Scheme_Object *a, Scheme_Object *b, Optimize_Info *info)
+{
+  return scheme_make_application(scheme_make_pair(a, scheme_make_pair(b, scheme_null)), info);
+}
+
 static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *inside, Scheme_Object *orig) {
   if (inside) {
     switch (SCHEME_TYPE(inside)) {
@@ -2857,6 +2862,22 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
     return make_discarding_app_sequence(arg_app, -1, (matches ? scheme_true : scheme_false), info, id_offset);
 }
 
+static Scheme_Object *make_optimize_prim_application2(Scheme_Object *prim, Scheme_Object *rand,
+                                                      Optimize_Info *info, int context)
+/* make (prim rand) and optimize it. rand must be already optimized */
+{
+  Scheme_Object *alt;
+  alt = make_application_2(prim, rand, info);
+  /* scheme_make_application may use constant folding, check that alt is not a constant */
+  if (SAME_TYPE(SCHEME_TYPE(alt), scheme_application2_type)) {
+    int rator_flags = 0;
+    scheme_check_leaf_rator(prim, &rator_flags);
+    return finish_optimize_application2((Scheme_App2_Rec *)alt, info, context, rator_flags);
+  } else
+    return alt;
+}
+
+
 static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_App2_Rec *app;
@@ -3021,10 +3042,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             return replace_tail_inside(alt, inside, app->rand);
           } else if (SAME_OBJ(scheme_list_proc, app3->rator)) {
             /* (cdr (list X Y)) */
-            alt = scheme_make_application(scheme_make_pair(scheme_list_proc,
-                                                           scheme_make_pair(app3->rand2,
-                                                                            scheme_null)),
-                                          info);
+            alt = make_application_2(scheme_list_proc, app3->rand2, info);
             SCHEME_APPN_FLAGS(((Scheme_App_Rec *)alt)) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
             alt = make_discarding_sequence(app3->rand1, alt, info, id_offset);
             return replace_tail_inside(alt, inside, app->rand);
@@ -3152,6 +3170,27 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
   return finish_optimize_any_application((Scheme_Object *)app, app->rator, 1,
                                          info, context);
+}
+
+int scheme_eq_testable_constant(Scheme_Object *v)
+{
+  if (SCHEME_SYMBOLP(v)
+      || SCHEME_KEYWORDP(v)
+      || SCHEME_FALSEP(v)
+      || SAME_OBJ(v, scheme_true)
+      || SCHEME_NULLP(v)
+      || SCHEME_VOIDP(v)
+      || SCHEME_EOFP(v))
+    return 1;
+
+  if (SCHEME_CHARP(v) && (SCHEME_CHAR_VAL(v) < 256))
+    return 1;
+
+  if (SCHEME_INTP(v) 
+      && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(v)))
+    return 1;
+
+  return 0;
 }
 
 static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *info, int context)
@@ -3323,6 +3362,24 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     }
   }
 
+  /* Optimize `equal?' or `eqv?' test on certain types
+     to `eq?'. This is especially helpful for the JIT. */
+  if ((SAME_OBJ(app->rator, scheme_equal_prim)
+       || SAME_OBJ(app->rator, scheme_eqv_prim))
+      && (scheme_eq_testable_constant(app->rand1)
+         || scheme_eq_testable_constant(app->rand2))) {
+    app->rator = scheme_eq_prim;
+    SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+    scheme_check_leaf_rator(scheme_eq_prim, &rator_flags);
+
+    /* eq? is foldable */
+    if (all_vals) {
+      le = try_optimize_fold(app->rator, NULL, (Scheme_Object *)app, info);
+      if (le)
+        return le;
+    }
+  }
+
   info->preserves_marks = !!(rator_flags & CLOS_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & CLOS_SINGLE_RESULT);
   if (rator_flags & CLOS_RESULT_TENTATIVE) {
@@ -3433,6 +3490,22 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
           && (is_local_type_expression(app->rand1, info) == SCHEME_LOCAL_TYPE_FIXNUM)) {
         app->rator = scheme_unsafe_fxrshift_proc;
         app->rand2 = scheme_make_integer(-(SCHEME_INT_VAL(app->rand2)));
+      }
+    } else if (SAME_OBJ(app->rator, scheme_eq_prim)) {
+      /* Try optimize: (eq? x #f) => (not x) and (eq? x '()) => (null? x) */
+      if (SCHEME_FALSEP(app->rand1)) {
+        info->size -= 1;
+        return make_optimize_prim_application2(scheme_not_prim, app->rand2, info, context);
+      } else if (SCHEME_FALSEP(app->rand2)) {
+        info->size -= 1;
+        return make_optimize_prim_application2(scheme_not_prim, app->rand1, info, context);
+      }
+      if (SCHEME_NULLP(app->rand1)) {
+        info->size -= 1;
+        return make_optimize_prim_application2(scheme_null_p_proc, app->rand2, info, context);
+      } else if (SCHEME_NULLP(app->rand2)) {
+        info->size -= 1;
+        return make_optimize_prim_application2(scheme_null_p_proc, app->rand1, info, context);
       }
     }
   }
@@ -3879,6 +3952,13 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
       && SCHEME_FALSEP(fb)) {
     info->size -= 2;
     return t;
+  }
+
+  /* Try optimize: (if x #f #t) => (not x) */
+  if (SCHEME_FALSEP(tb)
+      && SAME_OBJ(fb, scheme_true)) {
+    info->size -= 2;
+    return make_optimize_prim_application2(scheme_not_prim, t, info, context);
   }
 
   /* Try optimize: (if <omitable-expr> v v) => v */
