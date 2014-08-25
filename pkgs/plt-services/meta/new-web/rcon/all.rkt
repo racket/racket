@@ -18,11 +18,35 @@
 
 (define hotel @a[href: "http://www.stlunionstationhotel.com/"]{Union Station DoubleTree})
 
+(define fogus @name["http://www.fogus.me/"]{Michael Fogus})
+(define stchang @name["http://www.ccs.neu.edu/home/stchang/"]{Stephen Chang})
+(define brianm @name["http://brian.mastenbrook.net/"]{Brian Mastenbrook})
+(define danprager @name["https://www.youpatch.com/"]{Daniel Prager})
+(define davidv @name["https://github.com/david-vanderson/"]{David Vanderson})
+
+(define (speaker->title s)
+  (define talks
+    `((,fogus . "Extracting a Goose from a Klein Bottle")
+      (,mbutterick . "Like a Blind Squirrel in a Ferrari")
+      (,stchang . "A Boost-Inspired Graph Library for Racket")
+      (,jbc . "Stumbling around in the dark: failure partially averted")
+      (,mflatt . "Carry on Making that Racket")
+      (,tonyg . "Minimart: Organizing Squabbling Actors")
+      (,gregh . "Emacs à la mode DrRacket")
+      (,jay . "Get Bonus! Infinite Functional Entertainment at 60 FPS!")
+      (,brianm . "Racket in Production")
+      (,danprager . "YouPatch: A Racket-powered startup")
+      (,ntoronto . "Purely Functional 3D in Typed Racket")
+      (,davidv . "Racket for a networked multiplayer game")))
+  (dict-ref talks s))
+(define (speaker-slot s) @slot[#f s]{@(speaker->title s)})
+(define (session time title chair)
+  @slot[time #f]{@p{@title} Chair: @chair})
+
 (define speaker-info
   (list
    (list
-    "Michael Fogus" "http://www.fogus.me/"
-    "Extracting a Goose from a Klein Bottle"
+    fogus
      @p*{Racket is the most amazing language that no one's ever heard of.  This
          seemingly harsh assessment is prelude to a discussion on programming
          language development, innovation, marketing, open source, research,
@@ -38,8 +62,7 @@
          @em{Functional JavaScript} and the upcoming release @em{The Art of
          Chupacabra Husbandry}.})
     (list
-     "Matthew Butterick" "http://practicaltypography.com/"
-     "Like a Blind Squirrel in a Ferrari"
+     mbutterick
      @p*{At RacketCon last year, I talked about Pollen, a web-publishing system
          I wrote in Racket. This year, I'll recap what I've learned since then
          about typesetting in Racket, by redesigning Racket's documentation,
@@ -49,8 +72,7 @@
          is the author of @em{Typography for Lawyers} and the creator of
          @a[href: "practicaltypography.com"]{practicaltypography.com}.})
     (list
-     "Stephen Chang" "http://www.ccs.neu.edu/home/stchang/"
-     "A Boost-Inspired Graph Library for Racket"
+     stchang
      @p*{The Boost Graph Library (BGL) introduces many novel abstraction
          patterns for graph processing. I borrowed many of the BGL's ideas in
          implementing a graph library for Racket. This talk will show how the
@@ -62,8 +84,7 @@
          to study programming languages and has been hacking in Racket ever
          since.})
     (list
-     "John Clements" "http://www.brinckerhoff.org/JBCsite/index.html"
-     "Stumbling around in the dark: failure partially averted"
+     jbc
      @p*{Cal Poly includes a 10-week team-based domain-specific course for
          incoming freshmen. I teach this course using Racket, in the domain of
          Music. The challenge is to allow students with no programming
@@ -75,8 +96,7 @@
          San Luis Obispo. He is the author of DrRacket’s Stepper, and the RSound
          library, and this paragraph.})
     (list
-     "Matthew Flatt" "https://www.cs.utah.edu/~mflatt/"
-     "Carry on Making that Racket"
+     mflatt
      @p*{This talk will provide a brief introduction to Racket and Racketeers,
          a report on recent and current developments, and predictions for the
          future. Bring your questions, and I'll bring my Magic 8 Ball.}
@@ -85,8 +105,7 @@
          system, compiler, macro system, build system, package system,
          documentation language, and graphics/GUI libraries.})
     (list
-     "Tony Garnock-Jones" "http://homepages.kcbbs.gen.nz/tonyg/"
-     "Minimart: Organizing Squabbling Actors"
+     tonyg
      @p*{Actors are a great model for managing concurrency and communication
          within programs. The Minimart #lang adds Actors to Racket; but Actors
          alone are not enough. Programmers using Actors are often left to solve
@@ -101,8 +120,7 @@
          Programming Research Laboratory, working on applying lessons from
          distributed systems to programming language design.})
     (list
-     "Greg Hendershott" "http://www.greghendershott.com/"
-     "Emacs à la mode DrRacket"
+     gregh
      @p*{DrRacket is wonderful for both newcomers and Racket pros.
          Some people do like to use Emacs, especially when working with a wide
          variety of file types and languages. Racket-mode brings some of the
@@ -114,8 +132,7 @@
          advisor to technology companies such as Roland and JamHub. Soon after
          RacketCon he is joining the autumn batch at Hacker School.})
     (list
-     "Jay McCarthy" "http://jeapostrophe.github.io"
-     "Get Bonus! Infinite Functional Entertainment at 60 FPS!"
+     jay
      @p*{Hard real-time embedded systems with tight operating
          environments, a.k.a. console video games, are an exciting and
          challenging place to program functionally. The Get Bonus project is
@@ -127,8 +144,7 @@
          Racket's Web server, package system, networking libraries, and
          special projects, like DrDr.})
     (list
-     "Brian Mastenbrook" "http://brian.mastenbrook.net/"
-     "Racket in Production"
+     brianm
       @p*{When electronic products come off the manufacturing line, they
           go through a multi-step program and test process to become sellable
           products. Wearable has been using Racket to automate this process for
@@ -146,8 +162,7 @@
           Motorola on code generators in Common Lisp for five-nines
           telecommunication systems (among other things).})
     (list
-     "Daniel Prager" "https://www.youpatch.com/"
-     "YouPatch: A Racket-powered startup"
+     danprager
      @p*{@a[href: "youpatch.com"]{youpatch.com} began as a hack in Racket to
          save my wife PatchAndi 10 or so hours of effort to turn an image of
          Groucho Marx into the design for a patchwork quilt, and evolved into
@@ -169,8 +184,7 @@
          between Agile/Lean coaching and more entrepreneurial endeavours,
          including YouPatch!})
     (list
-     "Neil Toronto" "http://students.cs.byu.edu/~ntoronto/"
-     "Purely Functional 3D in Typed Racket"
+     ntoronto
       @p*{Efficient 3D engines use scene databases to quickly answer queries
           such as "What must be drawn if the viewer is here and looking this
           direction?" and "Return all non-opaque triangles in back-to-front
@@ -188,8 +202,7 @@
           computation at University of Maryland, College Park. He writes
           programs to draw pretty pictures in his nonexistent spare time.})
     (list
-     "David Vanderson" "https://github.com/david-vanderson/"
-     "Racket for a networked multiplayer game"
+     davidv
      @p*{I'll talk about using Racket features like easy serialization,
          threads, and eventspaces to smoothly go from a toy prototype to a
          playable networked game.}
@@ -218,11 +231,40 @@
 
        @p{@nbsp}
 
+       @p{@b{Schedule (talk summaries below) :}}
+       @session-sched[
+         @slot["9:30" #f]{Welcome}
+         @slot["9:30-10:30" #f]{Keynote}
+         @(speaker-slot fogus)
+         @slot["10:30-10:50" #f]{Break}
+         @(session "10:50-11:50" "Racketeering Essentials" "Matthias Felleisen")
+         @(speaker-slot mflatt)
+         @(speaker-slot danprager)
+         @slot["11:50-13:40" #f]{Lunch}
+         @(session "13:40-14:40" "Games and Graphics" "Robby Findler")
+         @(speaker-slot davidv)
+         @(speaker-slot jay)
+         @(speaker-slot ntoronto)
+         @slot["14:40-15:00" #f]{Break}
+         @(session "15:00-16:00" "Actors and Musicians" "Sam Tobin-Hochstadt")
+         @(speaker-slot brianm)
+         @(speaker-slot tonyg)
+         @(speaker-slot jbc)
+         @slot["16:00-16:20" #f]{Break}
+         @(session "16:20-17:20" "Libraries and Tools" "Claire Alvis")
+         @(speaker-slot mbutterick)
+         @(speaker-slot gregh)
+         @(speaker-slot stchang)
+         @slot["17:20" #f]{Closing Remarks}
+       ]
+
+       @p{@nbsp}
+
        @p{@b{Talks:}}
        @(apply ul
                (for/list ([speaker (in-list speaker-info)])
-                 (match-define (list name web-page title abstract bio) speaker)
-                 @li{@p*{@a[href: web-page]{@name} — @(or title "TBA")}
+                 (match-define (list name abstract bio) speaker)
+                 @li{@p*{@name — @(or (speaker->title name) "TBA")}
                      @(or abstract "")
                      @(or bio "")
                      @hr{}}))}
