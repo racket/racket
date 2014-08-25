@@ -966,15 +966,49 @@
 (test-comp 3 '(+ 1 2))
 (test-comp 65 '(char->integer #\A))
 (test-comp (expt 5 30)
-	   '(expt 5 (* 5 6)))
+           '(expt 5 (* 5 6)))
 (test-comp 88
-	   '(if (pair? null) 89 88))
+           '(if (pair? null) 89 88))
 (test-comp 89
-	   '(if (list? null) 89 88))
-(test-comp '(if _x_ 2 1)
-	   '(if (not _x_) 1 2))
-(test-comp '(if _x_ 2 1)
-	   '(if (not (not (not _x_))) 1 2))
+           '(if (list? null) 89 88))
+
+(test-comp '(lambda (x) (if x 2 1))
+           '(lambda (x) (if (not x) 1 2)))
+(test-comp '(lambda (x) (if x 2 1))
+           '(lambda (x) (if (not (not (not x))) 1 2)))
+(test-comp '(lambda (x) (not x))
+           '(lambda (x) (if x #f #t)))
+(test-comp '(lambda (x) (not x))
+           '(lambda (x) (eq? x #f)))
+(test-comp '(lambda (x) (not x))
+           '(lambda (x) (eq? #f x)))
+           
+(test-comp '(lambda (x) (null? x))
+           '(lambda (x) (eq? x '())))
+(test-comp '(lambda (x) (null? x))
+           '(lambda (x) (eq? '() x)))
+
+(test-comp '(lambda (x) (eq? x 7))
+           '(lambda (x) (equal? x 7)))
+(test-comp '(lambda (x) (eq? 7 x))
+           '(lambda (x) (equal? 7 x)))
+(test-comp '(lambda (x) (eq? x 7))
+           '(lambda (x) (eqv? x 7)))
+(test-comp '(lambda (x) (eq? 7 x))
+           '(lambda (x) (eqv? 7 x)))
+
+(test-comp #t
+           '(eq? 7 7))
+(test-comp #f
+           '(eq? 9 6))
+(test-comp #t
+           '(eqv? 7 7))
+(test-comp #f
+           '(eqv? 9 6))
+(test-comp #t
+           '(equal? 7 7))
+(test-comp #f
+           '(equal? 9 6))
 
 (test-comp '(let ([x 3]) x)
 	   '((lambda (x) x) 3))
