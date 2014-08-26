@@ -21,7 +21,8 @@
           (->* (tree-layout?) 
                (#:edge-color (or/c string? 
                                    (is-a?/c color%)
-                                   (list/c byte? byte? byte?)))
+                                   (list/c byte? byte? byte?))
+                #:edge-width (or/c 'unspecified real? #f))
                tree-edge?)]
           
 

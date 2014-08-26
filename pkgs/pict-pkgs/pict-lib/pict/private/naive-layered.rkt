@@ -22,7 +22,7 @@
                   [#f 
                    (define b (blank))
                    (cons b b)]
-                  [(tree-edge child color) 
+                  [(tree-edge child color _)
                    (loop child)])))
             (define this-root (launder (ghost pict)))
             (define children-roots (map car children-pairs))
@@ -43,14 +43,18 @@
                  (define this-tree-edge (car tree-edges))
                  (match this-tree-edge
                    [#f (loop main (cdr children-roots) (cdr tree-edges))]
-                   [(tree-edge child edge-color)
-                    (define w/line
+                   [(tree-edge child edge-color edge-width)
+                    (define *w/line
                       (colorize
                        (launder
                         (pin-line (ghost main)
                                   this-root cc-find
                                   child-root cc-find))
                        edge-color))
+                    (define w/line
+                      (if (eq? edge-width 'unspecified)
+                          *w/line
+                          (linewidth edge-width *w/line)))
                     (loop (cc-superimpose w/line main)
                           (cdr children-roots)
                           (cdr tree-edges))])]))])])))
