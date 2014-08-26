@@ -104,7 +104,9 @@
 
 (define lib-suffix (bytes->string/latin-1 (subbytes (system-type 'so-suffix) 1)))
 (define lib-suffix-re (regexp (string-append "\\." lib-suffix "$")))
-(define suffix-before-version? (not (equal? lib-suffix "dylib")))
+(define suffix-before-version? (and (not (equal? lib-suffix "dylib"))
+                                    (not (equal? lib-suffix "dll"))))
+(define version-sep (if (equal? lib-suffix "dll") "-" "."))
 
 (provide (protect-out (rename-out [get-ffi-lib ffi-lib]))
          ffi-lib? ffi-lib-name)
@@ -129,7 +131,8 @@
     (let* ([versions (if (list? version/s) version/s (list version/s))]
 	   [versions (map (lambda (v)
 			    (if (or (not v) (zero? (string-length v)))
-				"" (string-append "." v)))
+				""
+                                (string-append version-sep v)))
 			  versions)]
 	   [fullpath (lambda (p) (path->complete-path (cleanse-path p)))]
 	   [absolute? (absolute-path? name)]
