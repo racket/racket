@@ -2655,14 +2655,10 @@
         (update-pkg-cfg! 'installation-name val)]
        [(list (and key "download-cache-dir")
               val)
-        (unless (complete-path? val)
-          (pkg-error (~a "invalid value for config key\n"
-                         " not an absolute path\n"
-                         "  config key: ~a\n"
-                         "  given value: ~a")
-                     key
-                     val))
-        (update-pkg-cfg! (string->symbol key) val)]
+        (update-pkg-cfg! (string->symbol key) (if (complete-path? val)
+                                                  val
+                                                  (path->string
+                                                   (path->complete-path val))))]
        [(list (and key (or "download-cache-max-files"
                            "download-cache-max-bytes"))
               val)
