@@ -39,7 +39,11 @@
       (,ntoronto . "Purely Functional 3D in Typed Racket")
       (,davidv . "Racket for a networked multiplayer game")))
   (dict-ref talks s))
-(define (speaker-slot s) @slot[#f s]{@(speaker->title s)})
+(define (title->anchor t)
+  (string-replace t " " "-"))
+(define (speaker-slot s)
+  (define title (speaker->title s))
+  @slot[#f s]{@a[href: (string-append "#" (title->anchor title))]{@title}})
 (define (session time title chair)
   @slot[time #f]{@p{@title} Chair: @chair})
 
@@ -231,7 +235,7 @@
 
        @p{@nbsp}
 
-       @p{@b{Schedule (talk summaries below) :}}
+       @p{@b{Schedule:}}
        @session-sched[
          @slot["9:30" #f]{Welcome}
          @slot["9:30-10:30" #f]{Keynote}
@@ -264,10 +268,13 @@
        @(apply ul
                (for/list ([speaker (in-list speaker-info)])
                  (match-define (list name abstract bio) speaker)
-                 @li{@p*{@name — @(or (speaker->title name) "TBA")}
-                     @(or abstract "")
-                     @(or bio "")
-                     @hr{}}))}
+                 @a[id: (title->anchor (speaker->title name))
+                    @; to compensate for the header
+                    style: "padding-top: 60px; margin-top: -60px"]{
+                   @li{@p*{@name — @(or (speaker->title name) "TBA")}
+                          @(or abstract "")
+                          @(or bio "")
+                          @hr{}}}))}
 
     @columns[1 #:center? #f #:row? #f]{ }
 
