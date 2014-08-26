@@ -505,6 +505,25 @@ Like @racket[match-let*], but generalizes @racket[let*-values].}
 
 Like @racket[match-let], but generalizes @racket[letrec].}
 
+@defform[(match-letrec-values ([(pat ...) expr] ...) body ...+)]{
+
+Like @racket[match-let], but generalizes @racket[letrec-values].}
+
+@defform[(splicing-match-let ([pat expr] ...) body ...+)]{
+
+Like @racket[match-let], but generalizes @racket[splicing-let].}
+
+@defform[(splicing-match-let-values ([(pat ...) expr] ...) body ...+)]{
+
+Like @racket[match-let-values], but generalizes @racket[splicing-let-values].}
+
+@defform[(splicing-match-letrec ([pat expr] ...) body ...+)]{
+
+Like @racket[match-letrec], but generalizes @racket[splicing-letrec].}
+
+@defform[(splicing-match-letrec-values ([pat expr] ...) body ...+)]{
+
+Like @racket[match-letrec-values], but generalizes @racket[splicing-letrec-values].}
 
 @defform[(match-define pat expr)]{
 
