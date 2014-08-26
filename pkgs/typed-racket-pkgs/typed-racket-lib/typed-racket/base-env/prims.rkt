@@ -1244,6 +1244,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (begin
          (: nm : type)
          (define nm body)))]
+    [(-define (nm:id . formals:annotated-formals) : ret-ty body ...)
+     (with-syntax ([arrty (syntax/loc stx (formals.arg-ty ... -> ret-ty))])
+       (syntax/loc stx
+         (-define nm : arrty
+           (-lambda formals body ...))))]
+    ;; bug 14702: the below should generate a `:` annotation when possible
+    ;; currently, the above special case does the right thing for non-curried lambdas
     [(-define vars:maybe-lambda-type-vars
               formals:curried-formals
               return:return-ann
@@ -1258,6 +1265,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
         #`(define formals.erased body ... last-body*)
         #'-lambda
         #t #t))
+     (define type-ann
+       (and (attribute return.type)))
      ;; insert in type variables if necessary
      (define rhs*
        (syntax-parse rhs
