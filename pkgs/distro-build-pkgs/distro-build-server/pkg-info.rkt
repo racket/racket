@@ -16,7 +16,7 @@
 
 (define catalog-url
   (if (regexp-match? #rx"^[a-z]+:" catalog)
-      (string->url catalog-url)
+      (string->url catalog)
       (path->url (path->complete-path catalog))))
 
 (define details
