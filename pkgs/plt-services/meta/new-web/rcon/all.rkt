@@ -74,7 +74,7 @@
          ambitions.}
      @p*{Matthew Butterick is a writer, designer, and lawyer in Los Angeles. He
          is the author of @em{Typography for Lawyers} and the creator of
-         @a[href: "practicaltypography.com"]{practicaltypography.com}.})
+         @a[href: "http://practicaltypography.com/"]{practicaltypography.com}.})
     (list
      stchang
      @p*{The Boost Graph Library (BGL) introduces many novel abstraction
@@ -167,11 +167,11 @@
           telecommunication systems (among other things).})
     (list
      danprager
-     @p*{@a[href: "youpatch.com"]{youpatch.com} began as a hack in Racket to
-         save my wife PatchAndi 10 or so hours of effort to turn an image of
-         Groucho Marx into the design for a patchwork quilt, and evolved into
-         a bootstrapped startup aimed at democratising the hitherto elite art
-         of pixel quilt making.
+     @p*{@a[href: "https://www.youpatch.com/"]{youpatch.com} began as a hack in
+         Racket to save my wife PatchAndi 10 or so hours of effort to turn an
+         image of Groucho Marx into the design for a patchwork quilt, and
+         evolved into a bootstrapped startup aimed at democratising the hitherto
+         elite art of pixel quilt making.
 
          In this talk I recount the YouPatch story so far, discuss Racket's
          advantages for exploratory programming, and look at the options that
