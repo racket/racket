@@ -3640,6 +3640,15 @@
             installation
             default))))
 
+(define (get-all-pkg-scopes)
+  (append (let ([main (find-pkgs-dir)])
+            (reverse
+             (for/list ([d (get-pkgs-search-dirs)])
+               (if (equal? d main)
+                   'installation
+                   (simple-form-path d)))))
+          '(user)))
+
 (define (pkg-catalog-suggestions-for-module module-path
                                             #:catalog-file [catalog-file (choose-catalog-file)])
   (if (file-exists? catalog-file)
@@ -3830,6 +3839,8 @@
    (->* (module-path?)
         (#:catalog-file path-string?)
         (listof string?))]
+  [get-all-pkg-scopes
+   (-> (listof package-scope/c))]
   [get-all-pkg-names-from-catalogs
    (-> (listof string?))]
   [get-all-pkg-details-from-catalogs

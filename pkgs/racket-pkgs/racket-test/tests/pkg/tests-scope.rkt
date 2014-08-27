@@ -1,6 +1,9 @@
 #lang racket/base
 (require "shelly.rkt"
-         "util.rkt")
+         "util.rkt"
+         pkg/lib
+         setup/dirs
+         racket/format)
 
 (this-test-is-run-by-the-main-test)
 
@@ -10,6 +13,15 @@
 
    (shelly-case
     "default scope in different scopes"
+
+    (define main-dir (simplify-path (build-path (find-pkgs-dir) 'up)))
+    $ "racket -l racket/base -l pkg/lib -l setup/dirs -e '(cons (find-pkgs-dir) (get-all-pkg-scopes))'"
+    =stdout> (string-append (~v (list (build-path (fake-installation-dir) "pkgs")
+                                      (build-path main-dir "devel-pkgs")
+                                      (build-path main-dir "pkgs")
+                                      'installation
+                                      'user))
+                            "\n")
     $ "raco pkg show"
     $ "raco pkg config --set -i default-scope installation"
     $ "raco pkg config -u default-scope" =stdout> "installation\n" ; inherited

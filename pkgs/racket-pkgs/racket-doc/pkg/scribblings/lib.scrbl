@@ -434,6 +434,10 @@ The default @racket[catalog-file] is @racket[(current-pkg-catalog-file)]
 if that file exists, otherwise a file in the racket installation is
 tried.}
 
+@defproc[(get-all-pkg-scopes) (listof (or/c 'installation 'user path?))]{
+ Obtains a list of all the currently-available package scopes.
+
+ @history[#:added "6.1.0.5"]}
 
 @defproc[(get-all-pkg-names-from-catalogs) (listof string?)]{
 

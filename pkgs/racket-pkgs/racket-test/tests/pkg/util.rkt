@@ -24,6 +24,8 @@
   (and (file-exists? p)
        p))
 
+(define fake-installation-dir (make-parameter #f))
+
 (define (with-fake-installation* t #:default-scope [default-scope "installation"])
   (define tmp-dir
     (make-temporary-file ".racket.fake-installation~a" 'directory
@@ -63,7 +65,8 @@
            (path->string tmp-dir))
          (parameterize ([current-environment-variables
                          (environment-variables-copy
-                          (current-environment-variables))])
+                          (current-environment-variables))]
+                        [fake-installation-dir tmp-dir])
            (putenv "PLTCONFIGDIR" tmp-dir-s)
 	   (putenv "PATH" (~a (find-console-bin-dir)
 			      ":"
