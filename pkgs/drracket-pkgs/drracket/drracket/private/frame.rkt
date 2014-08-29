@@ -231,8 +231,7 @@
                                     (send receiver get-editor)
                                     receiver)
                                 event))
-        ;; (printf "user-key? ~s\n" user-key?) returns #t 
-        ;; for key release events -- is this a problem? (we'll find out!)
+        ;; (printf "user-key? ~s\n" user-key?)
         (or user-key?
             (super on-subwindow-char receiver event)))
       
