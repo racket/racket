@@ -3,11 +3,11 @@
 
 @title[#:tag "overview"]{Overview}
 
-The Racket run-time system is responsible for the implementation
+The Racket run-time system is responsible for the implementation of
 primitive datatypes such as numbers and strings, the evaluation and/or
 JIT compilation of Racket bytecode, the macro expansion and
 compilation of Racket from source to bytecode, the allocation and
-reclamation of memory used during evaluation, and the scheduling
+reclamation of memory used during evaluation, and the scheduling of
 concurrent threads and parallel tasks.
 
 Much of the language provided by @racketmodname[racket/base] is
