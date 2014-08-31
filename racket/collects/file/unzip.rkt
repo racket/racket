@@ -217,7 +217,7 @@
               ;; is immediately followed by a data descriptor
               (if (bitwise-bit-set? bits 3)
                   (skip-bytes 12 in)
-                  (file-position in (+ mark compressed))))))
+                  (skip-bytes (- (+ mark compressed) (file-position in)) in)))))
       (void))))
 
 ;; find-central-directory : input-port nat -> nat nat nat

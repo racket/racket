@@ -1,6 +1,7 @@
 #lang racket/base
 (require file/unzip
          racket/runtime-path
+         racket/port
          tests/eli-tester)
 
 (define-runtime-path unzip-me.zip "unzip-me.zip")
@@ -24,6 +25,8 @@
 (define (run-tests)
   (test-with-unzip unzip-me.zip)
   (call-with-input-file* unzip-me.zip test-with-unzip)
+  (call-with-input-file* unzip-me.zip
+                         (lambda(in_port) (test-with-unzip (input-port-append #f in_port))))
   (test-with-unzip-entry))
 
 (provide tests)
