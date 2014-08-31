@@ -549,14 +549,15 @@
   
   (define/private (do-key w msg wParam lParam is-char? is-up? default)
     (let ([e (maybe-make-key-event #f wParam lParam is-char? is-up? hwnd)])
-      (if (and e
-               (if (definitely-wants-event? w msg wParam e)
-                   (begin
-                     (queue-window-event this (lambda () (dispatch-on-char/sync e)))
-                     #t)
-                   (constrained-reply eventspace
-                                      (lambda () (dispatch-on-char e #t))
-                                      #t)))
+      (if (or (and e
+		   (if (definitely-wants-event? w msg wParam e)
+		       (begin
+			 (queue-window-event this (lambda () (dispatch-on-char/sync e)))
+			 #t)
+		       (constrained-reply eventspace
+					  (lambda () (dispatch-on-char e #t))
+					  #t)))
+	      (capture-all-key-events?))
           0
           (default w msg wParam lParam))))
 
@@ -739,6 +740,8 @@
     #f)
 
   (define/public (definitely-wants-event? w msg wParam e)
+    #f)
+  (define/public (capture-all-key-events?)
     #f)
 
   (define/public (dispatch-on-char/sync e)

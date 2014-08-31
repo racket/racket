@@ -154,6 +154,13 @@
 				  xp-label-font))))
 	  (super set-label s)))
 
+    ;; Avoid passing any key event to a button or checkbox. The
+    ;; `pre-on-char` of the frame will take care of changing space to
+    ;; a control action, but the control itself may use WM_KEYDOWN
+    ;; instead of WM_CHAR.
+    (define/override (capture-all-key-events?)
+      #t)
+
     (define/override (is-command? cmd)
       (= cmd BN_CLICKED))
 
