@@ -485,7 +485,25 @@
                                       src-catalog
                                       #:from-config? from-config
                                       #:state-catalog state
-                                      #:relative-sources? relative))]))]))
+                                      #:relative-sources? relative))]
+            ;; ----------------------------------------
+            [archive
+             "Create catalog from installed packages"
+             (define exclude-list (make-parameter null))
+             #:once-each
+             [#:bool include-deps () "Include dependencies of specified packages"]
+             #:multi
+             [(#:str pkg #f) exclude () "Exclude <pkg> from new catalog"
+              (exclude-list (cons pkg (exclude-list)))]
+             #:once-each
+             [#:bool relative () "Make source paths relative when possible"]
+             #:args (dest-dir pkg . pkgs)
+             (parameterize ([current-pkg-error (pkg-error 'pkgs-archive)])
+               (pkg-archive-pkgs dest-dir
+                                 (cons pkg pkgs)
+                                 #:include-deps? include-deps
+                                 #:exclude (exclude-list)
+                                 #:relative-sources? relative))]))]))
   (make-commands
    #:scope-flags
    ([(#:sym scope [installation user] #f) scope ()

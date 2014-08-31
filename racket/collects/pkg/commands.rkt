@@ -59,7 +59,7 @@
 
   (define-syntax-class option
     #:attributes (command-line variable (param 1) (call 1))
-    [pattern (k:kind arg:id (alias:str ...) doc:expr)
+    [pattern (k:kind arg:id (alias:str ...) doc:expr body:expr ...)
              #:do
              [(define arg-kw (symbol->keyword (syntax->datum #'arg)))
               (define arg-str (format "--~a" (syntax->datum #'arg)))
@@ -80,7 +80,8 @@
                [(alias ... #,arg-str)
                 k.arg-val ...
                 doc
-                (set! #,arg-var (k.fun k.arg-val ...))])])
+                (set! #,arg-var (k.fun k.arg-val ...))
+                body ...])])
 
   (define-syntax-class group-kind
     [pattern #:once-any]
@@ -127,8 +128,10 @@
                    help-strs:expr)])
 
   (define-syntax-class command
-    #:attributes (name function variables command-line)
-    [pattern (name:id doc:expr uh:usage-help ... og:option-group ... arg:arguments)
+    #:attributes (name function variables command-line (extra-defs 1))
+    #:literals (define)
+    [pattern (name:id  doc:expr (~and extra-defs (define x e)) ...
+                       uh:usage-help ... og:option-group ... arg:arguments)
              #:do
              [(define name-str (symbol->string (syntax->datum #'name)))]
              #:attr function
@@ -172,6 +175,7 @@
                          (syntax->list #'(c.name ...)))])
      (syntax/loc stx
        (begin
+         c.extra-defs ... ...
          c.function ...
          (provide (rename-out export-names ...))
          (module+ main
