@@ -138,7 +138,8 @@
   get-best-score
   chain-handle-mouse-event
   get-best-mouse-score
-  cycle-check)
+  cycle-check
+  chain-check-grab)
 
 (defclass keymap% object%
   
@@ -462,7 +463,8 @@
               (eq? code 'control)
               (eq? code 'rcontrol)
               (eq? code 'release))
-          prefixed?
+          (or prefixed?
+              (chain-check-grab obj event))
           (let ([score (get-best-score 
                         code
                         (send event get-other-shift-key-code)
@@ -555,6 +557,11 @@
                                  (grab-key-function #f this obj event))
                             1
                             result)))))))))
+
+  (define/public (chain-check-grab obj event)
+    (or (and grab-key-function #t)
+        (for/or ([c (in-list chain-to)])
+          (send c chain-check-grab obj event))))
 
   (def/public (set-grab-mouse-function [(make-procedure 4) grab])
     (set! grab-mouse-function grab))
