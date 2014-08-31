@@ -749,6 +749,31 @@ for @nonterm{key}.
  @history[#:added "6.0.17"]
 }
 
+@subcommand{@command/toc{archive} @nonterm{option} ... @nonterm{dest-dir} @nonterm{pkg} ...
+--- Copies information from installed packages named by @nonterm{pkgs}s
+    to a @filepath{catalog} directory catalog in @nonterm{dest-dir}, and also copies
+    all package sources to a @filepath{pkgs} directory in @nonterm{dest-dir}.
+
+    Packages sources are copied and repacked as needed, so that
+    all packages are written to the @filepath{pkgs} directory as
+    @filepath{.zip} archives. This conversion may change the checksum
+    on each archived package.
+
+    The @exec{archive} sub-command accepts
+    the following @nonterm{option}s:
+
+ @itemlist[
+ @item{@DFlag{include-deps} --- Includes the dependencies of the specified packages
+        in the resulting catalog.}
+ @item{@DFlag{exclude} @nonterm{pkg} --- Omits the specified @nonterm{pkg} from the
+        resulting catalog. This also causes the dependencies of @nonterm{pkg} to be
+        omitted if @DFlag{include-deps} is specified. This flag can be provided multiple times.}
+ @item{@DFlag{relative} --- Write package sources to @nonterm{dest-catalog} in relative-path form.}
+ ]
+
+ @history[#:added "6.1.0.8"]
+}
+
 @; ----------------------------------------
 
 @section[#:tag "metadata"]{Package Metadata}
