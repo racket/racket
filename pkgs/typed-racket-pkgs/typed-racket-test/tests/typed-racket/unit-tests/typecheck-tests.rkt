@@ -937,7 +937,25 @@
                                   (lambda: ([x : String] [y : Number]) (+ x y)))]
         ;; quote-syntax
         [tc-e/t #'3 (-Syntax -PosByte)]
-        [tc-e/t #'(2 3 4) (-Syntax (-lst* -PosByte -PosByte -PosByte))]
+        [tc-e/t #'(2 3 4) (-Syntax (-lst* (-Syntax -PosByte) (-Syntax -PosByte) (-Syntax -PosByte)))]
+        [tc-e/t #'id (-Syntax (-val 'id))]
+        [tc-e/t #'#(1 2 3) (-Syntax (make-HeterogeneousVector (list (-Syntax -One) (-Syntax -PosByte) (-Syntax -PosByte))))]
+        [tc-e/t (ann #'#(1 2 3) (Syntaxof (Vectorof (Syntaxof (U 1 2 3 'foo)))))
+                (-Syntax (-vec (-Syntax (t:Un (-val 1) (-val 2) (-val 3) (-val 'foo)))))]
+        [tc-e/t (ann #'#(1 2 3) (Syntaxof (Vector (Syntaxof (U 1 'foo))
+                                                  (Syntaxof (U 2 'bar))
+                                                  (Syntaxof (U 3 'baz)))))
+                (-Syntax (make-HeterogeneousVector (list (-Syntax (t:Un (-val 1) (-val 'foo)))
+                                                         (-Syntax (t:Un (-val 2) (-val 'bar)))
+                                                         (-Syntax (t:Un (-val 3) (-val 'baz))))))]
+        [tc-e/t #'#&2 (-Syntax (-box (-Syntax -PosByte)))]
+        [tc-e/t (ann #'#&2 (Syntaxof (Boxof (Syntaxof (U 2 'foo)))))
+                (-Syntax (-box (-Syntax (t:Un (-val 2) (-val 'foo)))))]
+        [tc-e/t #'#hash([1 . 1] [2 . 2]) (-Syntax (make-Hashtable -Int (-Syntax -PosByte)))]
+        [tc-e/t (ann #'#hash([1 . 1] [2 . 2]) (Syntaxof (HashTable (U 1 2 'foo)
+                                                                   (Syntaxof (U 1 2 'bar)))))
+                (-Syntax (make-Hashtable (t:Un (-val 1) (-val 2) (-val 'foo))
+                                         (-Syntax (t:Un (-val 1) (-val 2) (-val 'bar)))))]
 
         ;; testing some primitives
         [tc-e (let ([app apply]
