@@ -204,6 +204,11 @@
                   [edge-labels? #t]
                   [cache-arrow-drawing? #f])
       
+      (define/public (set-edge-label-font f)
+        (set! edge-label-font f)
+        (invalidate-bitmap-cache))
+      (define/public (get-edge-label-font) edge-label-font)
+      
       (define draw-arrow-heads? #t)
       (define flip-labels?      #t)
       (inherit refresh get-admin)
