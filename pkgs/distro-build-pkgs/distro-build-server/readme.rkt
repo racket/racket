@@ -18,7 +18,7 @@
       ===============================
 
       This is the
-        @|(hash-ref config '#:name "Racket")|
+        @|(drop-sort-annotations (hash-ref config '#:name "Racket"))|
       distribution for version @(version)@(maybe-stamp config).@;
 
       @(if (let ([src? (hash-ref config '#:source? #f)])
@@ -43,27 +43,33 @@
               [is (if (= 1 (length catalogs)) "is" "are")])
          (if (null? catalogs)
              ""
-             @~a{@"\n"The distribution has been configured so that when you install or
+             @~a{
+
+                 The distribution has been configured so that when you install or
                  update packages, the package catalog@|s| at@;
                  @(apply ~a (for/list ([catalog (in-list catalogs)])
                               @~a{@"\n"  @|catalog|}))
-                 @|is| consulted, first.@"\n"}))@;
+                 @|is| consulted first.
+
+                }))@;
       @(let* ([name (hash-ref config '#:install-name "")])
          (if (or (equal? name "")
                  (equal? name (version)))
              ""
-             @~a{@"\n"The distribution has been configured so that the installation
+             @~a{
+
+                 The distribution has been configured so that the installation
                  name is
                    @name
                  Multiple installations with this name share `user'-scoped packages,
                  which makes it easier to upgrade from such an installation to this one.
                  To avoid sharing (which is better for keeping multiple installations
                  active) use `raco pkg config -i --set name ...' to choose a different
-                 name for this installation.@"\n"}))@;
+                 name for this installation.
+
+                }))@;
      
-      Visit
-         http://racket-lang.org/ 
-      for more Racket resources.
+      Visit http://racket-lang.org/ for more Racket resources.
      
      
       License
@@ -79,6 +85,13 @@
       distribute it under the terms of the LGPL, which in particular means
       that you must release the source code for the modified software.  See
       share/COPYING_LESSER.txt for more information.})
+
+(define (drop-sort-annotations s)
+  ;; Any number of spaces is allowed around "{...}" and "|",
+  ;; so normalize that space while also removing "{...}":
+  (regexp-replace* #rx" *[|] *"
+                   (regexp-replace* #rx" *{[^}]*} *" s "")
+                   " | "))
 
 (define (make-source-notes config)
   (define src? (hash-ref config '#:source? #f))

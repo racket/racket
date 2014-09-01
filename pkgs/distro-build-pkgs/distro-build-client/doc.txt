@@ -393,7 +393,7 @@ configuration keywords to values.
  (make-macosx-notes config) -> string
     config : hash?
   Produces "README" content to tell Mac OS X users how to install a
-  distirbution folder. This function is used by `make-readme' when
+  distribution folder. This function is used by `make-readme' when
   `#:platform' in `config' is 'macosx.
 
 Names and Download Pages
