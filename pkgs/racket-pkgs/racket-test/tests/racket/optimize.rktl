@@ -4159,5 +4159,32 @@
              (report-answer-all 8)))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that cross-module inlining decmopiles a function
+;; with correct use counts on arguments (specifically: B is used
+;; twice, so the argument expression can't be inlined for two uses)
+
+(module module-with-cross-module-inlining racket/base
+  (require racket/function)
+
+  (module bad racket
+    (provide evil-func)
+    (define (evil-func A B)
+      (A B)
+      B))
+
+  (require (submod "." bad))
+
+  (define n 0)
+
+  (define (bar) (set! n (add1 n)) (void))
+
+  (evil-func (curry void) (bar))
+
+  (provide n))
+
+(test 1 dynamic-require ''module-with-cross-module-inlining 'n)
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

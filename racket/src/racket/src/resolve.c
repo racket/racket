@@ -3172,13 +3172,15 @@ static int unresolve_stack_push(Unresolve_Info *ui, int n, int r_only)
 
 static int *unresolve_stack_pop(Unresolve_Info *ui, int pos, int n)
 {
-  int *f;
+  int *f, i;
 
   ui->stack_pos = pos;
 
   if (n) {
     f = (int *)scheme_malloc_atomic(sizeof(int) * n);
-    memcpy(f, ui->flags + pos, n * sizeof(int));
+    for (i = 0; i < n; i++) {
+      f[i] = ui->flags[pos + (n - i -i)];
+    }
     ui->depth -= n;
   } else
     f = NULL;
