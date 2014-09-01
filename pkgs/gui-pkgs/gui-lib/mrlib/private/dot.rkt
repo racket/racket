@@ -86,8 +86,10 @@
                      snip
                      (- (unbox rb) (unbox lb))
                      (- (unbox bb) (unbox tb))
-                     (map (λ (c) (hash-ref num-ht c))
-                          (send snip get-children))))))
+                     (filter
+                      values
+                      (map (λ (c) (hash-ref num-ht c #f))
+                           (send snip get-children)))))))
       children-ht)))
 
 ;; run-dot : hash-table[snip -> (list i (listof number))] string -> void
