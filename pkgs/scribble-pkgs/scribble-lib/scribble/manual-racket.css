@@ -240,6 +240,39 @@ tbody > tr:first-child > td > .together {
  margin-right: 1em;
 }
 
+/* style patches: make fileboxed racketblocks & codeblocks look neater */
+
+blockquote.Rfilebox, blockquote.Rfilebox > blockquote.Rfilecontent {
+  margin-left: 0;
+}
+
+blockquote.Rfilebox > blockquote.Rfilecontent, 
+blockquote.Rfilebox > blockquote.Rfilecontent > blockquote.SCodeFlow {
+  margin-top: 0;
+}
+
+blockquote.Rfilebox > blockquote.Rfilecontent > blockquote.SCodeFlow {
+  padding-top: 0.7em;
+}
+
+blockquote.Rfilebox > p.Rfiletitle {
+  border-top: 1px dotted gray;
+  border-right: 1px dotted gray;
+  border-left: 1px dotted gray;
+}
+
+
+.SCodeFlow > .Rfilebox > .Rfilecontent {
+  padding-top: 0.7em;
+  padding-left: 1em;
+}
+
+.SCodeFlow > .Rfilebox > .Rfiletitle {
+  border-left: none;
+}
+
+/* end style patches */
+
 .SCodeFlow .Rfilebox {
     margin-left: -1em; /* see 17.2 of guide, module languages */
 }
