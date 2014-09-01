@@ -32,7 +32,7 @@
       (length
        (filter (lambda (f) (regexp-match "\\.png" (path->string f)))
                dlst))))
-  (unless (= expected-n number-of-png)
+  (unless (<= expected-n number-of-png)
     (error 'record? "(~s, ~s) didn't record proper number of images: ~s" n dir 
            number-of-png)))
 
