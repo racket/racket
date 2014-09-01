@@ -46,7 +46,6 @@ run struct-universe.rkt
 run universe-receive.rkt
 run universe-restart.rkt
 run name.rkt
-run pad1.rkt
 run pad1-handler.rkt
 run pad1-in-bsl.rkt
 run error-messages.rkt
