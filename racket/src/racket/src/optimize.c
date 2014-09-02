@@ -710,6 +710,32 @@ static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *ins
   return alt;
 }
 
+static void extract_tail_inside(Scheme_Object **_t2, Scheme_Object **_inside, int *_id_offset)
+{
+  while (1) {
+    if (SAME_TYPE(SCHEME_TYPE(*_t2), scheme_compiled_let_void_type)) {
+      Scheme_Let_Header *head = (Scheme_Let_Header *)*_t2;
+      int i;
+      *_inside = *_t2;
+      *_t2 = head->body;
+      *_id_offset += head->count;
+      for (i = head->num_clauses; i--; ) {
+        *_inside = *_t2;
+        *_t2 = ((Scheme_Compiled_Let_Value *)*_t2)->body;
+      }
+    } else if (SAME_TYPE(SCHEME_TYPE(*_t2), scheme_sequence_type)) {
+      Scheme_Sequence *seq = (Scheme_Sequence *)*_t2;
+      if (seq->count) {
+        *_inside = *_t2;
+        *_t2 = seq->array[seq->count-1];
+      } else
+        break;
+    } else
+      break;
+  }
+}
+
+
 static int is_inspector_call(Scheme_Object *a)
 {
   if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type)) {
@@ -1674,31 +1700,9 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   /* Move inside `let' bindings, so we can convert ((let (....) proc) arg ...)
      to (let (....) (proc arg ...)) */
-  if (optimized_rator) {
-    while (1) {
-      if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_let_void_type)) {
-        Scheme_Let_Header *lh;
-        int i;
-
-        lh = (Scheme_Let_Header *)le;
-        prev = le;
-        le = lh->body;
-        for (i = 0; i < lh->num_clauses; i++) {
-          prev = le;
-          le = ((Scheme_Compiled_Let_Value *)le)->body;
-        }
-        nested_count += lh->count;
-      } else if (SAME_TYPE(SCHEME_TYPE(le), scheme_sequence_type)) {
-        Scheme_Sequence *seq = (Scheme_Sequence *)le;
-        if (seq->count) {
-          prev = le;
-          le = seq->array[seq->count-1];
-        } else
-         break;
-      } else
-        break;
-    }
-  }
+  if (optimized_rator)
+    extract_tail_inside(&le, &prev, &nested_count);
+  
 
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
     /* Found a `((lambda' */
@@ -2110,69 +2114,46 @@ static void reset_rator(Scheme_Object *app, Scheme_Object *a)
 
 static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rator, Optimize_Info *info,
                                           int argc, int context)
+/* Convert ((let (....) E) arg ...) to (let (....) (E arg ...)) and
+   ((begin .... E) arg ...) to (begin .... (E arg ...)), in case
+   the `let' or `begin' is immediately apparent. We check for this 
+   pattern again in optimize_for_inline() after optimizing a rator. */
 {
-  /* Convert ((let (....) E) arg ...) to (let (....) (E arg ...)), in case
-     the `let' is immediately apparent. We check for this pattern again
-     in optimize_for_inline() after optimizing a rator. */
-  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_compiled_let_void_type)) {
-    Scheme_Let_Header *head = (Scheme_Let_Header *)rator;
-    Scheme_Compiled_Let_Value *clv;
-    int i;
+  Scheme_Object *orig_rator = rator, *inside = NULL;
+  int id_shift = 0;
+    
+  extract_tail_inside(&rator, &inside, &id_shift);
 
-    /* Handle ((let ([f ...]) f) arg ...) specially, so we can
-       adjust the flags for `f': */
-    if ((head->count == 1) && (head->num_clauses == 1)) {
-      clv = (Scheme_Compiled_Let_Value *)head->body;
-      rator = clv->body;
-      if (SAME_TYPE(SCHEME_TYPE(rator), scheme_local_type)
-          && (SCHEME_LOCAL_POS(rator) == 0)
-          && scheme_is_compiled_procedure(clv->value, 1, 1)) {
+  if (!inside)
+    return NULL;
 
-        reset_rator(app, scheme_false);
-        app = optimize_shift(app, 1, 0);
-        reset_rator(app, scheme_make_local(scheme_local_type, 0, 0));
+  /* Handle ((let ([f ...]) f) arg ...) specially, so we can adjust the flags for `f': */
+  if (SAME_TYPE(SCHEME_TYPE(inside), scheme_compiled_let_value_type)) {
+    Scheme_Compiled_Let_Value *clv = (Scheme_Compiled_Let_Value *)inside;
+    if ((clv->count == 1)
+        && (clv->position == 0)
+        && SAME_TYPE(SCHEME_TYPE(rator), scheme_local_type)
+        && (SCHEME_LOCAL_POS(rator) == 0)
+        && scheme_is_compiled_procedure(clv->value, 1, 1)) {
 
-        clv->body = app;
+      /* get a new rator with flags = 0 */
+      rator = scheme_make_local(scheme_local_type, 0, 0);
 
-        if (clv->flags[0] & SCHEME_WAS_APPLIED_EXCEPT_ONCE) {
-          clv->flags[0] -= SCHEME_WAS_APPLIED_EXCEPT_ONCE;
-          clv->flags[0] |= SCHEME_WAS_ONLY_APPLIED;
-        }
-
-        return scheme_optimize_expr((Scheme_Object *)head, info, context);
+      if (clv->flags[0] & SCHEME_WAS_APPLIED_EXCEPT_ONCE) {
+        clv->flags[0] -= SCHEME_WAS_APPLIED_EXCEPT_ONCE;
+        clv->flags[0] |= SCHEME_WAS_ONLY_APPLIED;
       }
     }
+  }
 
-    clv = NULL;
-    rator = head->body;
-    for (i = head->num_clauses; i--; ) {
-      clv = (Scheme_Compiled_Let_Value *)rator;
-      rator = clv->body;
-    }
-
+  if (id_shift) {
     reset_rator(app, scheme_false);
-    app = optimize_shift(app, head->count, 0);
-    reset_rator(app, rator);
-
-    if (clv)
-      clv->body = app;
-    else
-      head->body = app;
-
-    return scheme_optimize_expr((Scheme_Object *)head, info, context);
+    app = optimize_shift(app, id_shift, 0);
   }
+  reset_rator(app, rator);
+  orig_rator = replace_tail_inside(app, inside, orig_rator);
 
-  /* Convert ((begin .... E) arg ...) to (begin .... (E arg ...)). */
-  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_sequence_type)) {
-    Scheme_Sequence *seq = (Scheme_Sequence *)rator;
-
-    reset_rator(app, seq->array[seq->count - 1]);
-    seq->array[seq->count-1] = app;
-
-    return scheme_optimize_expr((Scheme_Object *)seq, info, context);
-  }
-
-  return NULL;
+  return scheme_optimize_expr(orig_rator, info, context);
 }
 
 static int is_nonmutating_primitive(Scheme_Object *rator, int n)
@@ -2946,27 +2927,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
   /* We can go inside a `begin' and a `let', which is useful in case
      the argument was a function call that has been inlined. */
-  while (1) {
-    if (SAME_TYPE(SCHEME_TYPE(rand), scheme_compiled_let_void_type)) {
-      Scheme_Let_Header *head = (Scheme_Let_Header *)rand;
-      int i;
-      id_offset += head->count;
-      inside = rand;
-      rand = head->body;
-      for (i = head->num_clauses; i--; ) {
-        inside = rand;
-        rand = ((Scheme_Compiled_Let_Value *)rand)->body;
-      }
-    } else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_sequence_type)) {
-      Scheme_Sequence *seq = (Scheme_Sequence *)rand;
-      if (seq->count) {
-        inside = rand;
-        rand = seq->array[seq->count-1];
-       } else
-        break;
-    } else
-      break;
-  }
+  extract_tail_inside(&rand, &inside, &id_offset);
 
   if (SCHEME_TYPE(rand) > _scheme_compiled_values_types_) {
     Scheme_Object *le;
@@ -3814,79 +3775,71 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 
   t = scheme_optimize_expr(t, info, OPT_CONTEXT_BOOLEAN | OPT_CONTEXT_SINGLED);
 
-  /* Try optimize: (if (not x) y z) => (if x z y) */
-  while (1) {
-    if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
-      Scheme_App2_Rec *app;
-
-      app = (Scheme_App2_Rec *)t;
-      if (SAME_PTR(scheme_not_prim, app->rator)) {
-	t = tb;
-	tb = fb;
-	fb = t;
-	t = app->rand;
-      } else
-	break;
-    } else
-      break;
-  }
-
-  if (expr_implies_predicate(t, info, 0, 5)) {
-    /* all predicates recognize non-#f things */
-    t = make_discarding_sequence(t, scheme_true, info, 0);
-  }
-
   /* Try to lift out `let`s and `begin`s around a test: */
   {
     Scheme_Object *inside = NULL, *t2 = t;
+    int id_offset = 0;
 
     while (1) {
-      if (SAME_TYPE(SCHEME_TYPE(t2), scheme_compiled_let_void_type)) {
-        Scheme_Let_Header *head = (Scheme_Let_Header *)t2;
-        int i;
-        inside = t2;
-        t2 = head->body;
-        for (i = head->num_clauses; i--; ) {
-          inside = t2;
-          t2 = ((Scheme_Compiled_Let_Value *)t2)->body;
-        }
-      } else if (SAME_TYPE(SCHEME_TYPE(t2), scheme_sequence_type)) {
-        Scheme_Sequence *seq = (Scheme_Sequence *)t2;
-        if (seq->count) {
-          inside = t2;
-          t2 = seq->array[seq->count-1];
+      extract_tail_inside(&t2, &inside, &id_offset);
+
+      /* Try optimize: (if (not x) y z) => (if x z y) */
+      if (SAME_TYPE(SCHEME_TYPE(t2), scheme_application2_type)) {
+        Scheme_App2_Rec *app = (Scheme_App2_Rec *)t2;
+        
+        if (SAME_PTR(scheme_not_prim, app->rator)) {
+          t2 = tb;
+          tb = fb;
+          fb = t2;
+          
+          t2 = app->rand;
+          t = replace_tail_inside(t2, inside, t);
         } else
           break;
       } else
         break;
     }
 
-    if (inside && (SCHEME_TYPE(t2) > _scheme_compiled_values_types_)) {
-      b->test = t2;
-      if (SAME_TYPE(SCHEME_TYPE(inside), scheme_sequence_type)) {
-        /* Special case to keep things flat: immediate (begin x #<void>) => x */
-        if (SAME_OBJ(t, inside) && (((Scheme_Sequence *)t)->count == 2))
-          t = ((Scheme_Sequence *)t)->array[0];
-        else
-          ((Scheme_Sequence *)inside)->array[((Scheme_Sequence *)inside)->count-1] = scheme_void;
-      } else if (SAME_TYPE(SCHEME_TYPE(inside), scheme_compiled_let_void_type))
-        ((Scheme_Let_Header *)inside)->body = scheme_void;
-      else
-        ((Scheme_Compiled_Let_Value *)inside)->body = scheme_void;
-      return make_sequence_2(t,
-                             scheme_optimize_expr((Scheme_Object *)b, info,
-                                                  scheme_optimize_tail_context(context)));
+    if (expr_implies_predicate(t2, info, id_offset, 5)) {
+      /* (if (let () (cons x y)) a b) => (if (begin (let () (begin x y #<void>)) #t) a b) */
+      /* all predicates recognize non-#f things */
+      t2 = optimize_ignored(t2, info, id_offset, 1, 0, 5);
+      t = replace_tail_inside(t2, inside, t);
+      
+      t2 = scheme_true;
+      id_offset = 0;
+      if (scheme_omittable_expr(t, 1, 5, 0, info, NULL, 0, 0, ID_OMIT)) {
+        t = scheme_true;
+        inside = NULL;
+      } else {       
+        t = make_sequence_2(t, scheme_true);
+        inside = t;
+      }
     }
-  }
+    
+    if (SCHEME_TYPE(t2) > _scheme_compiled_values_types_) {
+      /* Branch is statically known */
+      Scheme_Object *xb;
 
-  if (SCHEME_TYPE(t) > _scheme_compiled_values_types_) {
-    /* Branch is statically known */
-    optimize_info_seq_done(info, &info_seq);
-    info->size -= 1;
-    if (SCHEME_FALSEP(t))
-      return scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
-    else
-      return scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
+      optimize_info_seq_done(info, &info_seq);
+      info->size -= 1;
+
+      if (SCHEME_FALSEP(t2))
+        xb = scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
+      else
+        xb = scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
+      
+      if (id_offset){
+        replace_tail_inside(scheme_void, inside, NULL);
+        /* t and xb are not 'inside' the let's, so we use id_offset = 0 */
+        if (scheme_omittable_expr(t, 1, 5, 0, info, NULL, 0, 0, ID_OMIT))
+          return xb;
+        else
+          return make_sequence_2(t, xb);
+      } else {
+        return replace_tail_inside(xb, inside, t);
+      }
+    }
   }
 
   optimize_info_seq_step(info, &info_seq);
