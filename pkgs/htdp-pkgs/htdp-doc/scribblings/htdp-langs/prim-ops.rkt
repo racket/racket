@@ -627,7 +627,7 @@ Consider the following two examples in this context:
   @defform*[#:id [check-member-of check-member-of-id]
             [(check-member-of expression expression expression ...)]]{
 
-   Checks that the value of the first @racket[expression] as that of
+   Checks that the value of the first @racket[expression] is that of
    one of the following @racket[expression]s.
 
 @;%
