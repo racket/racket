@@ -217,7 +217,10 @@
               ;; is immediately followed by a data descriptor
               (if (bitwise-bit-set? bits 3)
                   (skip-bytes 12 in)
-                  (file-position in (+ mark compressed))))))
+                  (with-handlers
+                     ([(lambda(e) (or (exn:fail:filesystem? e) (exn:fail:contract? e)))
+                       (lambda _ (skip-bytes (- compressed (- (file-position in) mark)) in))])
+                    (file-position in (+ mark compressed)))))))
       (void))))
 
 ;; find-central-directory : input-port nat -> nat nat nat
