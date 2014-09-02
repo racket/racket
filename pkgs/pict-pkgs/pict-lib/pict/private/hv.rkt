@@ -33,9 +33,9 @@ Computational Geometry, Theory and Applications 2 (1992)
           [(and (not left-t) (not right-t)) 
            (dot-ize pict)]
           [(not left-t) 
-           (empty-left (dot-ize pict) x-spacing right-color (loop right-t (not l)))]
+           (empty-left (dot-ize pict) x-spacing right-color right-width (loop right-t (not l)))]
           [(not right-t)
-           (empty-right (dot-ize pict) y-spacing left-color (loop left-t (not l)))]
+           (empty-right (dot-ize pict) y-spacing left-color left-width (loop left-t (not l)))]
           [else
            (define left-p (loop left-t (not l)))
            (define right-p (loop right-t (not l)))
@@ -67,14 +67,16 @@ Computational Geometry, Theory and Applications 2 (1992)
    (ht-append (blank hgap 0) left)
    right))
 
-(define (empty-left pict hgap color sub-tree-p)
+(define (empty-left pict hgap color width sub-tree-p)
   (add-a-line (ht-append hgap pict sub-tree-p)
               color 
+              width
               sub-tree-p))
   
-(define (empty-right pict vgap color sub-tree-p)
+(define (empty-right pict vgap color width sub-tree-p)
   (add-a-line (vl-append vgap pict sub-tree-p)
               color
+              width
               sub-tree-p))
 
 (define (add-lines main left-color right-color left-width right-width t1 t2)
