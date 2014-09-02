@@ -451,7 +451,22 @@
       (define p (new horizontal-pane% [parent frm][alignment '(center center)]))
       (define (pb)
         (parameterize ([current-custodian play-back-custodian])
-          (thread (lambda () (play-back)))
+          (define done #false)
+          (define pb-thread
+            (thread
+             (lambda ()
+               (dynamic-wind void 
+                             (lambda () (play-back))
+                             (lambda () (set! done #true))))))
+          (define watcher
+            (thread
+             (lambda ()
+               (sync pb-thread)
+               (if done 
+                   (custodian-shutdown-all play-back-custodian) 
+                   (message-box
+                    "Error"
+                    "The creation of the animated gif failed, probably due to a lack of memory")))))
           (stop)))
       (define (switch)
         (send stop-button enable #f)
@@ -518,7 +533,7 @@
   (cond 
     [(or (empty? lox) (empty? (rest lox))) (map second lox)]
     [else 
-     ;; -----------------------------------------------------------------------------x
+     ;; -----------------------------------------------------------------------------
      (define raw-times (map first lox))
      (define intervals 
        (let loop ([l (rest raw-times)][last (first raw-times)])
