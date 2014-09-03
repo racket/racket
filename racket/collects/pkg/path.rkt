@@ -69,6 +69,9 @@
                                [orig-pkg `(catalog ,(cadr (pkg-info-orig-pkg v)))])
                   v)))))
 
+(define (mbind m f)
+  (and m (f m)))
+
 (define (path->pkg+subpath+collect* who given-p cache want-collect?)
   (unless (path-string? given-p)
     (raise-argument-error who "path-string?" given-p))
@@ -88,62 +91,72 @@
   (define p (explode given-p))
   (define (build-path* l)
     (if (null? l) 'same (apply build-path l)))
-  (for/fold ([pkg #f] [subpath #f] [collect #f])
-      ([scope (in-list (list* 'user
-                              (get-pkgs-search-dirs)))]
-       #:when (not pkg))
-    (define d (or (and cache
-                       (hash-ref cache `(dir ,scope) #f))
-                  (let ([d (explode (get-pkgs-dir scope))])
-                    (when cache (hash-set! cache `(dir ,scope) d))
-                    d)))
-    (define (read-pkg-db/cached)
-      (or (and cache
-               (hash-ref cache `(db ,scope) #f))
-          (let ([db (read-pkgs-db scope)])
-            (when cache (hash-set! cache `(db ,scope) db))
-            db)))
-    (cond
-     [(sub-path? < p d)
-      ;; Under the installation mode's package directory.
-      ;; We assume that no one else writes there, so the
-      ;; next path element is the package name (or the package
-      ;; name followed by "+<n>")
-      (define len (length d))
-      (define pkg-name (path-element->string (list-ref p len)))
-      (if (regexp-match? #rx"pkgs[.]rktd" pkg-name)
-          (values #f #f #f) ; don't count the database as a package
-          (values (if (regexp-match? #rx"[+]" pkg-name) ; +<n> used as an alternate path, sometimes
+  (define cdp (mbind (find-collects-dir) explode))
+  (cond
+    [(and cdp (sub-path? < p cdp))
+     (define len (length cdp))
+     ;; This might need to be something else in the future, if base
+     ;; gets smaller
+     (values "base"
+             (build-path* (list-tail p (add1 len)))
+             #f)]
+    [else
+     (for/fold ([pkg #f] [subpath #f] [collect #f])
+         ([scope (in-list (list* 'user
+                                 (get-pkgs-search-dirs)))]
+          #:when (not pkg))
+       (define d (or (and cache
+                          (hash-ref cache `(dir ,scope) #f))
+                     (let ([d (explode (get-pkgs-dir scope))])
+                       (when cache (hash-set! cache `(dir ,scope) d))
+                       d)))
+       (define (read-pkg-db/cached)
+         (or (and cache
+                  (hash-ref cache `(db ,scope) #f))
+             (let ([db (read-pkgs-db scope)])
+               (when cache (hash-set! cache `(db ,scope) db))
+               db)))
+       (cond
+         [(sub-path? < p d)
+          ;; Under the installation mode's package directory.
+          ;; We assume that no one else writes there, so the
+          ;; next path element is the package name (or the package
+          ;; name followed by "+<n>")
+          (define len (length d))
+          (define pkg-name (path-element->string (list-ref p len)))
+          (if (regexp-match? #rx"pkgs[.]rktd" pkg-name)
+            (values #f #f #f) ; don't count the database as a package
+            (values (if (regexp-match? #rx"[+]" pkg-name) ; +<n> used as an alternate path, sometimes
                       (regexp-replace #rx"[+].*$" pkg-name "")
                       pkg-name)
-                  (build-path* (list-tail p (add1 len)))
-                  (and want-collect?
-                       (let ([i (hash-ref (read-pkg-db/cached) pkg-name #f)])
-                         (and i (sc-pkg-info? i) (sc-pkg-info-collect i))))))]
-     [else
-      ;; Maybe it's a linked package
-      (define pkgs-dir (get-pkgs-dir scope))
-      (for/fold ([pkg #f] [subpath #f] [collect #f])
-          ([(k v) (in-hash (read-pkg-db/cached))]
-           #:when (not pkg))
-        (define orig (pkg-info-orig-pkg v))
-        (if (and (pair? orig)
-                 (or (eq? 'link (car orig))
-                     (eq? 'static-link (car orig))))
-            (let ([e (or (and cache
-                              (hash-ref cache `(pkg-dir ,(cadr orig)) #f))
-                         (let ([e (explode (simplify-path 
-                                            (path->complete-path (cadr orig) pkgs-dir) 
-                                            #f))])
-                           (when cache
-                             (hash-set! cache `(pkg-dir ,(cadr orig)) e))
-                           e))])
-              (if (sub-path? <= p e)
+                    (build-path* (list-tail p (add1 len)))
+                    (and want-collect?
+                         (let ([i (hash-ref (read-pkg-db/cached) pkg-name #f)])
+                           (and i (sc-pkg-info? i) (sc-pkg-info-collect i))))))]
+         [else
+          ;; Maybe it's a linked package
+          (define pkgs-dir (get-pkgs-dir scope))
+          (for/fold ([pkg #f] [subpath #f] [collect #f])
+              ([(k v) (in-hash (read-pkg-db/cached))]
+               #:when (not pkg))
+            (define orig (pkg-info-orig-pkg v))
+            (if (and (pair? orig)
+                     (or (eq? 'link (car orig))
+                         (eq? 'static-link (car orig))))
+              (let ([e (or (and cache
+                                (hash-ref cache `(pkg-dir ,(cadr orig)) #f))
+                           (let ([e (explode (simplify-path 
+                                              (path->complete-path (cadr orig) pkgs-dir) 
+                                              #f))])
+                             (when cache
+                               (hash-set! cache `(pkg-dir ,(cadr orig)) e))
+                             e))])
+                (if (sub-path? <= p e)
                   (values k
                           (build-path* (list-tail p (length e)))
                           (and (sc-pkg-info? v) (sc-pkg-info-collect v)))
                   (values #f #f #f)))
-            (values #f #f #f)))])))
+              (values #f #f #f)))]))]))
 
 (define (path->pkg+subpath+collect given-p #:cache [cache #f])
   (path->pkg+subpath+collect* 'path->pkg+subpath+collect given-p cache #t))

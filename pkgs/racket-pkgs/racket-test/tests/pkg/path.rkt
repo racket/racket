@@ -1,9 +1,16 @@
 #lang racket/base
 (require pkg/path
+         syntax/modresolve
          setup/dirs)
 
 (module+ test
   (require rackunit)
+
+  (check-equal? (path->pkg (resolve-module-path 'typed/racket #f))
+                "typed-racket-lib")
+
+  (check-equal? (path->pkg (resolve-module-path 'racket #f))
+                "base")
 
   (check-equal? (path->pkg (collection-file-path "path.rkt" "tests" "pkg"))
                 "racket-test")
