@@ -6497,7 +6497,9 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   memcpy(m, data, sizeof(Scheme_Module));
 
-  if (set_cache && m->code_key && !m->pre_submodules && !m->post_submodules) {
+  if (set_cache && m->code_key
+      && (!m->pre_submodules || SCHEME_NULLP(m->pre_submodules))
+      && (!m->post_submodules || SCHEME_NULLP(m->post_submodules))) {
     if (!scheme_module_code_cache) {
       REGISTER_SO(scheme_module_code_cache);
       scheme_module_code_cache = scheme_make_weak_equal_table();
