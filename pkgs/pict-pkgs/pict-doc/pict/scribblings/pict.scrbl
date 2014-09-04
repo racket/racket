@@ -70,10 +70,15 @@ include @racket['png-bytes], @racket['eps-bytes], @racket['pdf-bytes],
 @racket['svg-bytes], and variants such as @racket['png-bytes+bounds]
 and @racket['png-bytes+bounds8].
 
+A pict is serializable via @racketmodname[racket/serialize], but
+serialization loses sub-pict information (preserving only the pict's
+drawing and bounding box).
+
 @history[#:changed "1.2" @elem{Added support for
                                @racket['png-bytes+bounds],
                                @racket['png-bytes+bounds8] and similar
-                               variants.}]
+                               variants.}
+         #:changed "1.3" @elem{Enabled serialization.}]
 
 
 @defstruct[pict ([draw any/c]
