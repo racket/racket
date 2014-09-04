@@ -649,6 +649,18 @@
       (test 2 peek-bytes-avail!* b 0 #f s)
       (test 1 peek-bytes-avail!* b 1 #f s)
       (test 2 read-bytes-avail!* b s))))
+
+;; Make sure that blocking on a limited input port doesn't
+;; block in the case of a peek after available bytes:
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-char #\a o)
+  (write-char #\a o)
+  
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (write-char #\b o)))
+  (test 1 peek-bytes-avail! (make-bytes 1) 2 #f (make-limited-input-port i 10)))
 	     
 ;; ----------------------------------------
 ;; Conversion wrappers
