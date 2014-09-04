@@ -550,7 +550,7 @@ returned:
             [(matrix-map-cols
               [f ((Matrix A) -> (U #f (Matrix B)))] [M (Matrix A)] [fail (-> F)])
              (U F (Matrix B))])])]{
-Like @racket[matrix-map-cols], but maps @racket[f] over columns.
+Like @racket[matrix-map-rows], but maps @racket[f] over columns.
 }
 
 
