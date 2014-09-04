@@ -2907,6 +2907,7 @@ static void thread_is_dead(Scheme_Thread *r)
   
   r->list_stack = NULL;
 
+  r->t_set_parent = NULL;
   r->dw = NULL;
   r->init_config = NULL;
   r->cell_values = NULL;
