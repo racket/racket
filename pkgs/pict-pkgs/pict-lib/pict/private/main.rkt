@@ -1,9 +1,9 @@
 (module pict scheme/base
-  (require (rename-in texpict/mrpict
+  (require (rename-in "pict.rkt"
                       [hline t:hline]
                       [vline t:vline]
                       [frame t:frame])
-           (rename-in texpict/utils
+           (rename-in "utils.rkt"
                       [pin-line t:pin-line]
                       [pin-arrow-line t:pin-arrow-line]
                       [pin-arrows-line t:pin-arrows-line])
@@ -245,7 +245,7 @@
            frame
            pict-path?
            pin-line pin-arrow-line pin-arrows-line
-           (except-out (all-from-out texpict/mrpict)
+           (except-out (all-from-out "pict.rkt")
                        
                        dash-hline dash-vline
 
@@ -285,7 +285,7 @@
            (rename-out [drop drop-below-ascent]
                        [lift lift-above-baseline])
 
-           (except-out (all-from-out texpict/utils)
+           (except-out (all-from-out "utils.rkt")
                    
                        color-frame color-dash-frame
                        round-frame color-round-frame

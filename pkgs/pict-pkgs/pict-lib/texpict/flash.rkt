@@ -1,5 +1,5 @@
 (module flash mzscheme
-  (require "mrpict.rkt"
+  (require pict/private/pict
            mzlib/math
            mzlib/etc
            racket/draw
