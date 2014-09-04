@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/draw
          racket/gui/dynamic
+         racket/serialize
          (except-in racket/list drop)
          racket/contract/base
          racket/class
@@ -157,7 +158,14 @@
   #:mutable
   #:property prop:pict-convertible (λ (v) v)
   #:property file:prop:convertible (lambda (v mode default)
-                                     (convert-pict v mode default)))
+                                     (convert-pict v mode default))
+  #:property prop:serializable (make-serialize-info
+                                (lambda (p)
+                                  (convert-pict-to-vector p))
+                                #'pict-deserialize-info
+                                #f
+                                (or (current-load-relative-directory)
+                                    (current-directory))))
 (define-struct child (pict dx dy sx sy syx sxy))
 (define-struct bbox (x1 y1 x2 y2 ay dy))
 
@@ -1852,3 +1860,34 @@
                          (string->bytes/utf-8
                           (string-append "width=\"" (rem w) "\" height=\"" (rem h) "\"")))))]
     [else default]))
+
+(define (convert-pict-to-vector p)
+  (define dc (new record-dc%
+                  [width (pict-width p)]
+                  [height (pict-height p)]))
+  (draw-pict p dc 0 0)
+  (vector (send dc get-recorded-datum)
+          (pict-width p)
+          (pict-height p)
+          (pict-ascent p)
+          (pict-descent p)))
+
+(define (deserialize-pict datum w h d a)
+  (define draw (recorded-datum->procedure datum))
+  (make-pict `(prog ,(lambda (dc x y)
+                       (define t (send dc get-transformation))
+                       (send dc translate x y)
+                       (draw dc)
+                       (send dc set-transformation t))
+                    ,h)
+             w h d a
+             null
+             #f
+             #f))
+
+(define pict-deserialize-info
+  (make-deserialize-info deserialize-pict
+                         (lambda () (error "no cycles"))))
+
+(module+ deserialize-info
+  (provide pict-deserialize-info))
