@@ -1,5 +1,10 @@
 #lang scribble/doc
-@(require scribble/manual "utils.rkt" (for-label racket/sandbox racket/pretty))
+@(require scribble/manual
+          "utils.rkt"
+          (for-label racket/sandbox
+                     racket/pretty
+                     file/convertible
+                     racket/serialize))
 
 @title[#:tag "eval"]{Evaluation and Examples}
 
@@ -169,7 +174,15 @@ setting sandbox parameters to disable limits, setting the outputs to
 @racket['string], and not adding extra security guards.
 
 If @racket[pretty-print?] is true, the sandbox's printer is set to
-@racket[pretty-print-handler].}
+@racket[pretty-print-handler]. In that case, values that are convertible
+in the sense of @racket[convertible?] are printed using @racket[write-special],
+except that values that are serializable in the sense of @racket[serializable?]
+are serialized for tranfers from inside the sandbox to outside (which can avoid
+pulling code and support from the sandboxed environment into the document-rendering
+environment).
+
+@history[#:changed "1.6" @elem{Changed treatment of convertible values that are
+                               serializable.}]}
 
 
 @defproc[(make-base-eval-factory [mod-paths (listof module-path?)]
