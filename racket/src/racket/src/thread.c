@@ -5177,14 +5177,14 @@ int scheme_block_until(Scheme_Ready_Fun _f, Scheme_Needs_Wakeup_Fun fdf,
   init_schedule_info(&sinfo, NULL, 1, sleep_end);
 
   while (!(result = f((Scheme_Object *)data, &sinfo))) {
-    sleep_end = sinfo.sleep_end;
+    double now_sleep_end = sinfo.sleep_end;
     if (sinfo.spin) {
       init_schedule_info(&sinfo, NULL, 1, 0.0);
       scheme_thread_block(0.0);
       scheme_current_thread->ran_some = 1;
     } else {
-      if (sleep_end) {
-	delay = (float)(sleep_end - scheme_get_inexact_milliseconds());
+      if (now_sleep_end) {
+	delay = (float)(now_sleep_end - scheme_get_inexact_milliseconds());
 	delay /= 1000.0;
 	if (delay <= 0)
 	  delay = (float)0.00001;
@@ -5203,6 +5203,7 @@ int scheme_block_until(Scheme_Ready_Fun _f, Scheme_Needs_Wakeup_Fun fdf,
       p->block_check = NULL;
       p->block_needs_wakeup = NULL;
     }
+    sinfo.sleep_end = sleep_end;
   }
   p->ran_some = 1;
 
@@ -6647,11 +6648,10 @@ int scheme_syncing_ready(Syncing *syncing, Scheme_Schedule_Info *sinfo, int can_
 
  set_sleep_end_and_return:
 
-  syncing->sleep_end = sleep_end;
-  if (syncing->sleep_end
+  if (sleep_end
       && (!sinfo->sleep_end
-	  || (sinfo->sleep_end > syncing->sleep_end)))
-    sinfo->sleep_end = syncing->sleep_end;
+	  || (sinfo->sleep_end > sleep_end)))
+    sinfo->sleep_end = sleep_end;
 
   return result;
 }
