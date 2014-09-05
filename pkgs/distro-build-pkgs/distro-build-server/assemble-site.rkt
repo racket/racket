@@ -86,7 +86,8 @@
          (newline o))))))
 
 (build-catalog built-dir)
-(build-catalog native-dir)
+(when (directory-exists? native-dir)
+  (build-catalog native-dir))
 (let ([l (directory-list (build-path dest-dir catalog-dir "pkg"))])
   ;; Write list of packages:
   (define sl (map path-element->string l))
