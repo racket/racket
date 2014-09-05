@@ -18,7 +18,7 @@ static void os_protect_pages(void *p, size_t len, int writeable);
 static void os_free_pages(void *p, size_t len)
 {
   if (munmap(p, len)) {
-    GCPRINT(GCOUTF, "Unmap warning: %lx, %ld, %d\n", (long)p, (long)len, errno);
+    GCPRINT(GCOUTF, "unmap failed: %lx, %ld, %d\n", (long)p, (long)len, errno);
   }
 }
 
@@ -51,7 +51,8 @@ static void *os_alloc_pages(size_t len)
 
 static void os_protect_pages(void *p, size_t len, int writeable)
 {
-  mprotect(p, len, (writeable ? (PROT_READ | PROT_WRITE) : PROT_READ));
+  if (mprotect(p, len, (writeable ? (PROT_READ | PROT_WRITE) : PROT_READ)))
+    GCPRINT(GCOUTF, "mprotect failed: %lx, %ld, %d, %d\n", (long)p, (long)len, writeable, errno);
 }
 
 #include "rlimit_heapsize.c"
