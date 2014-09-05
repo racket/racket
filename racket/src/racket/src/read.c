@@ -5556,6 +5556,8 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       config = scheme_current_config();
 
       dir = scheme_get_param(config, MZCONFIG_LOAD_DIRECTORY);
+      if (SCHEME_TRUEP(dir))
+        dir = scheme_path_to_directory_path(dir);
       rp->relto = dir;
 
       rp->magic_sym = params->magic_sym;
