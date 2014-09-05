@@ -3248,7 +3248,11 @@ static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
   void *sh;
   int ready;
 
-  todo = (FFI_Orig_Place_Call *)malloc(sizeof(FFI_Orig_Place_Call));
+  if (cached_orig_place_todo) {
+    todo = cached_orig_place_todo;
+    cached_orig_place_todo = NULL;
+  } else
+    todo = (FFI_Orig_Place_Call *)malloc(sizeof(FFI_Orig_Place_Call));
   sh = scheme_get_signal_handle();
   todo->signal_handle = sh;
   todo->needs_queue = 1;
@@ -3299,7 +3303,10 @@ static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
     if (!todo->signal_handle) {
       /* Done */
       mzrt_mutex_unlock(orig_place_mutex);
-      free(todo);
+      if (!cached_orig_place_todo)
+	cached_orig_place_todo = todo;
+      else
+	free(todo);
       break;
     } else {
       /* Pause to allow actions such as a master GC.... */
