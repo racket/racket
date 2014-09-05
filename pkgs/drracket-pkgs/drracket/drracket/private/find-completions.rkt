@@ -24,7 +24,9 @@
 
 (define (ignore? x) 
   (or (member x '("compiled"))
-      (regexp-match #rx"~$" x)))
+      (if (equal? (system-type) 'windows)
+          (regexp-match #rx"[.]bak$" x)
+          (regexp-match #rx"~$" x))))
 
 (define (find-completions str the-current-directory #:alternate-racket [alternate-racket #f])
   (cond
