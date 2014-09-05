@@ -10803,7 +10803,7 @@ void scheme_wait_until_signal_received(void)
 # endif
 #else
 # if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
-  WaitForSingleObject((HANDLE)scheme_break_semaphore, 0);
+  WaitForSingleObject((HANDLE)scheme_break_semaphore, INFINITE);
 # endif
 #endif
   
