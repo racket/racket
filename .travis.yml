@@ -4,12 +4,18 @@ os:
   - osx
 env:
   - PATH=./racket/bin:$PATH
+  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-places"
+  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-futures"
+  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-extflonum"
+  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit"
+  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places"
+  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-extflonum"
 compiler:
   - gcc
   - clang
 # Just run tests for the core
 script:
-  - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test"
+  - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
   - racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
   - racket pkgs/racket-pkgs/racket-test/tests/racket/contract/all.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/json/json.rkt
