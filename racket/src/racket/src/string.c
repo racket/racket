@@ -4399,7 +4399,7 @@ static Scheme_Object *normalize_d(Scheme_Object *o, int kompat)
       }
       if (!klen)
 	s2[j++] = tmp;
-      memcpy(s2 + j, s2 + len + delta - snds, snds * sizeof(mzchar));
+      memmove(s2 + j, s2 + len + delta - snds, snds * sizeof(mzchar));
       j += snds;
     } else if ((s[i] >= MZ_JAMO_SYLLABLE_START)
 	       && (s[i] <= MZ_JAMO_SYLLABLE_END)) {
