@@ -356,11 +356,18 @@
 
 ;; Symbol Any (Any -> Boolean) String String -> Void 
 ;; raise a TP exception if low is not a list of world? elements 
-(define (check-arg-list tag low iworld? msg rank)
-  (check-arg tag (list? low) (format "list [of ~as]" msg) rank low)
-  (for-each (lambda (c) 
-              (check-arg tag (iworld? c) msg (format "(elements of) ~a" rank) c))
-            low))
+(define (check-arg-list tag low pred? msg ith)
+  (check-arg tag (list? low) (format "list [of ~as]" msg) ith low)
+  (for ((c (in-list low)))
+    (unless (pred? c)
+      (error 
+       tag
+       "expects a mail as (elements of) ~a argument, given list contains the element: ~e"
+       ith
+       c)))
+  #;
+  (check-arg tag  msg (format "(elements of) ~a" ith) c)
+  )
 
 ;; Symbol Any ->* Universe [Listof Mail] [Listof IWorld]
 (define (bundle> tag r)
