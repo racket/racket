@@ -547,6 +547,7 @@ typedef struct BlockOfMemory {
 # define ALL_FREE 0xAA
 
 # define _NOT_FREE(x) NOT_FREE(x)
+# define WHEN_FREE_BIT(x) x
 
 # define SHIFT_UNMARK_TO_FREE(x) ((x & ALL_UNMARKED) << 1)
 # define SHIFT_COPY_FREE_TO_UNMARKED(x) ((x & ALL_FREE) | ((x & ALL_FREE) >> 1))
@@ -567,6 +568,7 @@ typedef struct BlockOfMemory {
 # define ALL_UNMARKED 0xFF
 
 # define _NOT_FREE(x) 1
+# define WHEN_FREE_BIT(x) /* void */
 
 #endif /* DISTINGUISH_FREE_FROM_UNMARKED */
 
@@ -3942,11 +3944,11 @@ static void push_uncollectable_common(BlockOfMemory **blocks, GC_Set *set)
 	for (j = 0; start < top; start += size, j++) {
 	  int bit;
 	  int pos;
-	  int fbit;
+	  WHEN_FREE_BIT(int fbit);
 
 	  pos = POS_TO_UNMARK_INDEX(j);
 	  bit = POS_TO_UNMARK_BIT(j);
-	  fbit = POS_TO_FREE_BIT(j);
+	  WHEN_FREE_BIT(fbit = POS_TO_FREE_BIT(j));
 
 	  if (NOT_MARKED(block->free[pos] & bit)
 	      && _NOT_FREE(block->free[pos] & fbit)) {
@@ -4055,12 +4057,13 @@ static void mark_common_for_finalizations(BlockOfMemory **blocks, int atomic)
 	/* If not eager, mark data reachable from finalized block: */
 	if (!fn->eager_level) {
 	  int pos, apos;
-	  int bit, fbit;
+	  int bit;
+          WHEN_FREE_BIT(int fbit);
 
 	  pos = fn->u.pos;
 	  apos = POS_TO_UNMARK_INDEX(pos);
 	  bit = POS_TO_UNMARK_BIT(pos);
-	  fbit = POS_TO_FREE_BIT(pos);
+	  WHEN_FREE_BIT(fbit = POS_TO_FREE_BIT(pos));
 	  
 	  if (NOT_MARKED(block->free[apos] & bit)
 	      && _NOT_FREE(block->free[apos] & fbit)) {
@@ -4468,7 +4471,9 @@ static intptr_t last_gc_end;
 
 static void do_GC_gcollect(void *stack_now)
 {
+# if PRINT
   intptr_t root_marked;
+#endif
   int j;
 
 #if PRINT_INFO_PER_GC
@@ -4632,7 +4637,9 @@ static void do_GC_gcollect(void *stack_now)
   collect_trace_count = 0;
 # endif
 
+# if PRINT
   root_marked = mem_use;
+# endif
 
   PRINTTIME((STDERR, "gc: stack push start: %ld\n", GETTIMEREL()));
 
