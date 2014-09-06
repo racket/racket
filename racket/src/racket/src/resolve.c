@@ -3179,7 +3179,7 @@ static int *unresolve_stack_pop(Unresolve_Info *ui, int pos, int n)
   if (n) {
     f = (int *)scheme_malloc_atomic(sizeof(int) * n);
     for (i = 0; i < n; i++) {
-      f[i] = ui->flags[pos + (n - i -i)];
+      f[i] = ui->flags[pos + (n - i - 1)];
     }
     ui->depth -= n;
   } else
