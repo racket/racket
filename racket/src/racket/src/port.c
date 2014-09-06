@@ -9658,6 +9658,16 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   intptr_t spawn_status;
 #endif
 
+#if defined(PROCESS_FUNCTION) && !defined(MAC_CLASSIC_PROCESS_CONTROL)
+  /* avoid compiler warnings: */
+  to_subprocess[0] = -1;
+  to_subprocess[1] = -1;
+  from_subprocess[0] = -1;
+  from_subprocess[1] = -1;
+  err_subprocess[0] = -1;
+  err_subprocess[1] = -1;
+#endif
+
   /*--------------------------------------------*/
   /* Sort out ports (create later if necessary) */
   /*--------------------------------------------*/
