@@ -29,8 +29,8 @@
              (-> (-Syntax (-lst a)) (-lst (-Syntax a)))))]
  [stx-map (-polydots (c a b)
             (cl->*
-             (-> (-> (-Syntax a) c) (-pair a (-lst a)) (-pair c (-lst c)))
-             (-> (-> (-Syntax a) c) (-Syntax (-pair a (-lst a))) (-pair c (-lst c)))
+             (-> (-> a c) (-pair a (-lst a)) (-pair c (-lst c)))
+             (-> (-> a c) (-Syntax (-pair a (-lst a))) (-pair c (-lst c)))
              ((list
                ((list (-Syntax a)) ((-Syntax b) b) . ->... . c)
                (Un (-lst a) (-Syntax (-lst a))))

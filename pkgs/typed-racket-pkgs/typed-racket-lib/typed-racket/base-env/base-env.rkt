@@ -1455,7 +1455,7 @@
 [syntax-original? (-poly (a) (-> (-Syntax a) B))]
 [syntax-source-module (->opt (-Syntax Univ) [Univ] (Un (-val #f) -Path Sym -Module-Path-Index))]
 [syntax-e (-poly (a) (->acc (list (-Syntax a)) a (list -syntax-e)))]
-[syntax->list (-poly (a) (-> (-Syntax (-lst a)) (-lst (-Syntax a))))]
+[syntax->list (-poly (a) (-> (-Syntax (-lst a)) (-lst a)))]
 [syntax->datum (cl->* (-> Any-Syntax -Sexp)
                       (-> (-Syntax Univ) Univ))]
 
