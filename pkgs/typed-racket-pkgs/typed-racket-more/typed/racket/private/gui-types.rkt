@@ -281,7 +281,7 @@
          [get-clipping-region (-> (Option (Instance Region%)))]
          [get-device-scale (-> (Values Nonnegative-Real Nonnegative-Real))]
          [get-font (-> (Instance Font%))]
-         [get-gl-context (-> (Option GL-Context<%>))]
+         [get-gl-context (-> (Option (Instance GL-Context<%>)))]
          [get-initial-matrix (-> (Vector Real Real Real Real Real Real))]
          [get-origin (-> (Values Real Real))]
          [get-pen (-> (Instance Pen%))]
@@ -427,6 +427,7 @@
   (Class [get-accum-size (-> Natural)]
          [get-depth-size (-> Natural)]
          [get-double-buffered (-> Boolean)]
+         [get-legacy? (-> Boolean)]
          [get-multisample-size (-> Natural)]
          [get-share-context (-> (Option (Instance GL-Context<%>)))]
          [get-stencil-size (-> Natural)]
@@ -434,6 +435,7 @@
          [set-accum-size (Integer -> Void)]
          [set-depth-size (Integer -> Void)]
          [set-double-buffered (Any -> Void)]
+         [set-legacy? (-> Any Void)]
          [set-multisample-size (Integer -> Void)]
          [set-share-context ((Option (Instance GL-Context<%>)) -> Void)]
          [set-stencil-size (Integer -> Void)]
@@ -682,6 +684,7 @@
          [min-client-width
           (case-> (-> Natural)
                   (Natural -> Void))]
+         [on-char ((Instance Key-Event%) -> Void)]
          [on-event ((Instance Mouse-Event%) -> Void)]))
 
 (define-type Canvas%
@@ -734,7 +737,8 @@
          [with-gl-context ((-> Any) [#:fail (-> Any)] -> Any)]))
 
 (define-type Cursor%
-  (Class [ok? (-> Boolean)]))
+  (Class (init [id  Symbol])
+         [ok? (-> Boolean)]))
 
 (define-type Frame%
   (Class #:implements Top-Level-Window<%>
@@ -1715,6 +1719,7 @@
          #| FIXME
          [get-wordbreak-map (-> (Option (Instance Editor-Wordbreak-Map%)))]
          |#
+         [hide-caret (-> Any Void)]
          [insert
           (case->
            ;; collapsed cases for contract generation
