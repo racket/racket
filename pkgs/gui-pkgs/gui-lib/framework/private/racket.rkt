@@ -1787,7 +1787,7 @@
     (if (and (send text get-overwrite-mode) (= start-pos end-pos))
         (send text insert "[" start-pos (add1 start-pos) #f)
         (send text insert "[" start-pos 'same #f))
-    (when (eq? (send text classify-position pos) 'parenthesis)
+    (when (equal? (send text classify-position pos) 'parenthesis)
       (let* ([before-whitespace-pos (send text skip-whitespace pos 'backward #t)]
              [keyword/distance (find-keyword-and-distance before-whitespace-pos text)])
         (cond
@@ -1852,9 +1852,10 @@
                                                                 0)])
                             (cond
                               [(and second-backwards-match2
-                                    (eq? (send text classify-position second-backwards-match)
-                                         ;;; otherwise, this isn't a `let loop', it is a regular let!
-                                         'symbol)
+                                    (member (send text classify-position second-backwards-match)
+                                            ;;; otherwise, this isn't a `let loop',
+                                            ;;; it is a regular let
+                                            '(symbol keyword))
                                     (member "let" letrec-like-forms)
                                     (text-between-equal? "let"
                                                          text
@@ -1875,7 +1876,7 @@
       [(and (preferences:get 'framework:automatic-parens)
             (not (in-string/comment? text)))
        (send text insert real-char start-pos start-pos)
-       (when (eq? (send text classify-position start-pos) 'parenthesis)
+       (when (equal? (send text classify-position start-pos) 'parenthesis)
          (send text insert (case real-char
                            [(#\() #\)]
                            [(#\[) #\]]
