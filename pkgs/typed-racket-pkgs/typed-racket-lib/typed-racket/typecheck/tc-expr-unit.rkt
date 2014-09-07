@@ -296,7 +296,7 @@
        [_ (-Syntax (find-stx-type stx-e))])]
     [(or (? symbol?) (? null?) (? number?) (? extflonum?) (? boolean?) (? string?) (? char?)
          (? bytes?) (? regexp?) (? byte-regexp?) (? keyword?))
-     (tc-literal datum-stx expected)]
+     (tc-literal #`#,datum-stx expected)]
     [(cons car cdr)
      (match (and expected (resolve (restrict expected (-pair Univ Univ) 'orig)))
        [(Pair: car-t cdr-t) (-pair (find-stx-type car car-t) (find-stx-type cdr cdr-t))]
