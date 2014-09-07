@@ -81,6 +81,7 @@
 (test-magic-square-bracket 'let2 "(let (" "(let ([")
 (test-magic-square-bracket 'let3 "(let loop " "(let loop (")
 (test-magic-square-bracket 'let3 "(let loop (" "(let loop ([")
+(test-magic-square-bracket 'let4 "(let rec (" "(let rec ([")
 (test-magic-square-bracket 'cond1 "(cond " "(cond [")
 (test-magic-square-bracket 'cond2 "(cond [" "(cond [(")
 (test-magic-square-bracket 'with-syntax1 "(syntax-case x " "(syntax-case x (")
