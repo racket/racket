@@ -2,12 +2,16 @@
 (require racket/string)
 
 (define -platform-names-
+  ;; Maps regexp to replace argument, or to an association list
+  ;; of package to replace argument
   `(;; source platforms
     ["win"  "Windows source"]
     ["mac"  "Mac OS X source"]
     ["unix" "Unix source"]
-    ["src-builtpkgs" "Source + built packages"]
-    ["src"  "Source"]
+    ["src-builtpkgs" (("Racket" . "Unix Source + built packages")
+                      ("Minimal Racket" . "Source + built packages"))]
+    ["src"  (("Racket" . "Unix Source")
+             ("Minimal Racket" . "Source"))]
     ["src-builtpkgs-unix" "Unix source + built packages"]
     ["src-unix" "Unix source"]
     ;; binary platforms
@@ -295,13 +299,25 @@
 
 (define platform->name
   (let ([t (make-hash)])
-    (λ (platform)
-      (hash-ref! t platform
+    (λ (platform package)
+      (hash-ref! t (cons platform package)
         (λ () (or (for/or ([pn (in-list platform-names)])
                     ;; find out if a regexp applied by checking if the result
                     ;; is different (relies on regexp-replace returning the
                     ;; same string when fails)
-                    (let ([new (regexp-replace (car pn) platform (cadr pn))])
+                    (define raw-r (cadr pn))
+                    (define r (if (list? raw-r)
+                                  (let ([a (assoc package raw-r)])
+                                    (cond
+                                     [a (cdr a)]
+                                     [else
+                                      (lambda args
+                                        (error 'platform->name
+                                               "unrecognized package: ~e for platform: ~e"
+                                               package
+                                               platform))]))
+                                  raw-r))
+                    (let ([new (regexp-replace (car pn) platform r)])
                       (and (not (eq? new platform)) new)))
                   (error 'platform->name "unrecognized platform: ~e"
                          platform)))))))
