@@ -1421,7 +1421,7 @@
                                                        core-body ...)))
                            method-body ...)])
              m)
-           kw:kw-lambda^)
+           (~or kw:kw-lambda^ opt:opt-lambda^))
      (do-register #'self-param #'meth-name)]
     ;; case-lambda methods
     [(let-values ([(meth-name:id)
