@@ -320,8 +320,14 @@
         e* ...)]))
 
   (define-syntax (trace-lambda stx)
+    (define (infer-name-or-error)
+      (or (syntax-local-infer-name stx)
+        (raise-syntax-error
+          'trace-lambda
+          "Could not infer name; give a name explicitly using #:name"
+          stx)))
     (syntax-parse stx
-      [(_ (~optional (~seq #:name name:id) #:defaults ([name #`#,(syntax-local-infer-name stx)])) args body:expr ...)
+      [(_ (~optional (~seq #:name name:id) #:defaults ([name #`#,(infer-name-or-error)])) args body:expr ...)
       #'(let ([name (lambda args body ...)]) (trace name) name)]))
 
   (define-syntax (trace-define-syntax stx)
