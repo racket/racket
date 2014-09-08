@@ -52,4 +52,14 @@
                (λ (x y) x)
                'pos 'neg)
      1 "foo")
-   1))
+   1)
+  
+  (test/pos-blame
+   'parametric->/c7
+   '(let* ([c #f]
+           [f (contract
+               (parametric->/c (x) (-> x x))
+               (λ (x) (unless c (set! c x)) c)
+               'pos 'neg)])
+      (f 1)
+      (f 2))))
