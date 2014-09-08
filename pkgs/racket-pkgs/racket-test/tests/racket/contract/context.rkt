@@ -470,6 +470,12 @@
                            (vector-immutable #f)
                            'pos 'neg))
   
+  (context-test '("the range of")
+                '((contract (parametric->/c (x) (-> x x))
+                            (λ (x) 1)
+                            'pos 'neg)
+                  1))
+  
   (let* ([blame-pos (contract-eval '(make-blame (srcloc #f #f #f #f #f)
                                                 #f
                                                 (λ () 'integer?)
