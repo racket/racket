@@ -3293,7 +3293,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 {
   Generate_Closure_Data *gdata = (Generate_Closure_Data *)_data;
   Scheme_Closure_Data *data = gdata->data;
-  void *start_code, *tail_code, *code_end, *arity_code;
+  void *start_code, *tail_code, *code_end, *arity_code, *do_arity_code;
 #ifdef NEED_RETAIN_CODE_POINTERS
   void *retain_code = NULL;
 #endif
@@ -3340,10 +3340,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 
     arity_code = jit_get_ip();
   
-    if (!has_rest)
-      (void)jit_bnei_i(shared_arity_code, JIT_R1, num_params);
-    else
-      (void)jit_blti_i(shared_arity_code, JIT_R1, num_params);
+    do_arity_code = shared_arity_code;
   } else {
     arity_code = generate_lambda_simple_arity_check(num_params, has_rest, is_method, 0);
 #ifdef NEED_RETAIN_CODE_POINTERS
@@ -3352,7 +3349,14 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 #endif
     arity_code = jit_adjust_ip(arity_code);
     CHECK_NESTED_GENERATE();
+
+    do_arity_code = arity_code;
   }
+
+  if (!has_rest)
+    (void)jit_bnei_i(do_arity_code, JIT_R1, num_params);
+  else
+    (void)jit_blti_i(do_arity_code, JIT_R1, num_params);
 
   /* A tail call starts here. Caller must ensure that the stack is big
      enough, right number of arguments (at start of runstack), closure
