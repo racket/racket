@@ -27,6 +27,9 @@
 (define cache-path (build-path root "cache"))
 (make-directory* cache-path)
 
+(define SUMMARY-NAME "summary.rktd")
+(define SUMMARY-PATH (build-path cache-path SUMMARY-NAME))
+
 (define pkgs-path (build-path root "pkgs"))
 (make-directory* pkgs-path)
 
