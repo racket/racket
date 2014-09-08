@@ -1448,6 +1448,16 @@
                         (syntax/loc stx core)
                         (attribute kw.value))])
           m))]
+    [(~and (let-values ([(meth-name:id) core]) m)
+           opt:opt-lambda^)
+     (match-define (list required optional) (attribute opt.value))
+     (quasisyntax/loc stx
+       (let-values ([(meth-name)
+                     #,(opt-lambda-property
+                        (syntax/loc stx core)
+                        (list (add1 required) ; for `this` argument
+                              optional))])
+         m))]
     [_ stx]))
 
 ;; Set<Symbol> Set<Symbol> String -> Void

@@ -1505,4 +1505,14 @@
                (super-new)
                (define/public (foo [i #f]) (void))))
            (new a%))
-         (-object #:method ([foo (t:-> -Integer -Void)]))]))
+         (-object #:method ([foo (t:-> -Integer -Void)]))]
+   [tc-e (let ()
+           (define-type-alias A%
+             (Class [foo (->* [] [Integer] Void)]))
+           (: a% A%)
+           (define a%
+             (class object%
+               (super-new)
+               (define/public (foo [i #f]) (void))))
+           (new a%))
+         (-object #:method ([foo (cl->* (t:-> -Void) (t:-> -Integer -Void))]))]))
