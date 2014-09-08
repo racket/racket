@@ -8,9 +8,7 @@
          "common.rkt")
 
 (define SUMMARY-HOST "pkg-build.racket-lang.org")
-(define SUMMARY-NAME "summary.rktd")
 (define SUMMARY-URL (string-append "/" SUMMARY-NAME))
-(define SUMMARY-PATH (build-path cache-path SUMMARY-NAME))
 (define SUMMARY-ETAG-PATH (build-path cache-path (format "~a.etag" SUMMARY-NAME)))
 
 (define (extract-tag hs)

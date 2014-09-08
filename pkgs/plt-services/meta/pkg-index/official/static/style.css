@@ -155,6 +155,17 @@ tr#pi_delete_row td {
     text-align: center;
 }
 
+.packages tr td:nth-child(7) {
+    text-align: center;
+}
+.packages tr td:nth-child(7) a {
+    text-decoration: none;
+}
+
+.build_green { background-color: #ccffcc; }
+.build_yellow { background-color: #ffffcc; }
+.build_red { background-color: #ffcccc; }
+
 /* racket nav */
 .racketnav {
   background-color: #000000;

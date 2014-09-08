@@ -1,3 +1,4 @@
+var build_host = "http://pkg-build.racket-lang.org/";
 var dynamic_host = "pkgd.racket-lang.org";
 var dynamic_port = 443;
 
@@ -99,6 +100,29 @@ $( document ).ready(function() {
         $( "#pi_last_updated" ).text( format_time(pkgi['last-updated']) );
         $( "#pi_last_checked" ).text( format_time(pkgi['last-checked']) );
         $( "#pi_last_edit" ).text( format_time(pkgi['last-edit']) );
+
+        // XXX show the doc[0] content?
+        $('#pi_docs').html("").append( $.map( pkgi['build']['docs'], function ( doc, i ) {
+            if ( doc[2] ) {
+                return $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
+            else {
+                return $('<del>').html(doc[1]); } } ) );
+
+        if ( pkgi['build']['failure-log'] ) {
+                $('#pi_build')
+                .append($('<span>')
+                        .append($('<a>', { href: build_host + pkgi['build']['failure-log'] }).html( "fails" )));
+        } else if ( pkgi['build']['success-log'] && pkgi['build']['dep-failure-log'] ) {
+            $('#pi_build')                
+                .append($('<span>')
+                        .append($('<a>', { href: build_host + pkgi['build']['success-log'] }).html( "succeeds" ))
+                        .append(" with ")
+                        .append($('<a>', { href: build_host + pkgi['build']['dep-failure-log'] }).html( "dependency problems" )));
+        } else if ( pkgi['build']['success-log'] ) {
+            $('#pi_build')
+                .append($('<span>')
+                        .append($('<a>', { href: build_host + pkgi['build']['success-log'] }).html( "succeeds" )));
+        }
 
         $( "#pi_description" ).text( pkgi['description'] );
         make_editbutton ( "pi_description", pkgi['description'], submit_mod_description );
@@ -413,6 +437,25 @@ $( document ).ready(function() {
 
         var dom = value['dom_obj'];
 
+        var bstatus;
+        if ( value['build']['failure-log'] ) {
+            bstatus = $('<td>', {class: 'build_red'})
+                .append($('<span>')
+                       .append($('<a>', { href: build_host + value['build']['failure-log'] }).html( "fails" )));
+        } else if ( value['build']['success-log'] && value['build']['dep-failure-log'] ) {
+            bstatus = $('<td>', {class: 'build_red'})
+                .append($('<span>')
+                        .append($('<a>', { href: build_host + value['build']['success-log'] }).html( "succeeds" ))
+                        .append(" with ")
+                        .append($('<a>', { href: build_host + value['build']['dep-failure-log'] }).html( "dependency problems" )));
+        } else if ( value['build']['success-log'] ) {
+            bstatus = $('<td>', {class: 'build_green'})
+                .append($('<span>')
+                        .append($('<a>', { href: build_host + value['build']['success-log'] }).html( "succeeds" )));
+        } else {
+            bstatus = $('<td>').html("");
+        }
+
         dom.attr("class", ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old"))
             .data( "obj", value)
             .html("")
@@ -421,11 +464,17 @@ $( document ).ready(function() {
                     .append( curate_span ),
                 $('<td>').html("")
                     .append( jslink( value['name'], function () { open_info ( value ); }) ),
+                $('<td>').append( $.map( value['build']['docs'], function ( doc, i ) {
+                    if ( doc[2] ) {
+                        return $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
+                    else {
+                        return $('<del>').html(doc[1]); } } ) ),
                 $('<td>').append( $.map( value['authors'], function ( author, i ) {
                     return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
                 $('<td>').text( value['description'] ),
                 $('<td>').append( $.map( value['tags'], function ( tag, i ) {
-                    return addfilterlink ( tag, tag, "possible" ); } ) )); }
+                    return addfilterlink ( tag, tag, "possible" ); } ) ),
+                bstatus ); }
 
     var pkgdb = {};
     $.getJSON( "/pkgs-all.json.gz", function( resp ) {
