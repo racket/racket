@@ -3,7 +3,7 @@
          "blame.rkt"
          "misc.rkt"
          "guts.rkt"
-         (for-syntax racket/base))
+         (for-syntax "arr-i-parse.rkt" racket/base))
 (provide parametric->/c)
 
 (define-syntax (parametric->/c stx)
@@ -16,22 +16,24 @@
                                "expected an identifier"
                                stx
                                x)))
-       #'(make-polymorphic-contract opaque/c
+       #`(make-polymorphic-contract opaque/c
                                     '(x ...)
-                                    (lambda (x ...) c)))]))
+                                    (lambda (x ...) c)
+                                    '#,(compute-quoted-src-expression #'c)))]))
 
 
-(define-struct polymorphic-contract [barrier vars body]
+
+(define-struct polymorphic-contract [barrier vars body body-src-exp]
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:name
    (lambda (c)
-     `(parametric->/c ,(polymorphic-contract-vars c) ...))
+     `(parametric->/c ,(polymorphic-contract-vars c) ,(polymorphic-contract-body-src-exp c)))
    #:projection
    (lambda (c)
-     (lambda (blame)
-
+     (lambda (orig-blame)
+       (define blame (blame-add-context orig-blame #f))
        (define (wrap p)
          ;; values in polymorphic types come in from negative position,
          ;; relative to the poly/c contract
