@@ -443,7 +443,7 @@ $( document ).ready(function() {
                 .append($('<span>')
                        .append($('<a>', { href: build_host + value['build']['failure-log'] }).html( "fails" )));
         } else if ( value['build']['success-log'] && value['build']['dep-failure-log'] ) {
-            bstatus = $('<td>', {class: 'build_red'})
+            bstatus = $('<td>', {class: 'build_yellow'})
                 .append($('<span>')
                         .append($('<a>', { href: build_host + value['build']['success-log'] }).html( "succeeds" ))
                         .append(" with ")
