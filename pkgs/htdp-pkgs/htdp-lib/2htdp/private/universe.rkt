@@ -362,7 +362,7 @@
     (unless (pred? c)
       (error 
        tag
-       "expects a mail as (elements of) ~a argument, given list contains the element: ~e"
+       "expects a list of mails as ~a argument, given a list that contains: ~e"
        ith
        c)))
   #;
