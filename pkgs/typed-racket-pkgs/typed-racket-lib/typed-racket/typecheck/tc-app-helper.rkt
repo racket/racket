@@ -205,7 +205,16 @@
 ;;     and an expected type of Integer for the result of the application,
 ;;     we can disregard the Fixnum domain since it imposes a restriction that
 ;;     is not necessary to get the expected type
-(define (possible-domains doms rests drests rngs expected)
+;; This function can be used in permissive or restrictive mode.
+;; in permissive mode, domains that are not consistent with the expected type
+;; may still be considered possible. This is useful for error messages, where
+;; we want to collapse domains always, regardless of expected type. In
+;; restrictive mode, only domains that are consistent with the expected type can
+;; be considered possible. This is useful when computing the possibly empty set
+;; of domains that would *satisfy* the expected type, e.g. for the :query-type
+;; forms.
+;; TODO separating pruning and collapsing into separate functions may be nicer
+(define (possible-domains doms rests drests rngs expected [permissive? #t])
 
   ;; is fun-ty subsumed by a function type in others?
   (define (is-subsumed-in? fun-ty others)
@@ -265,8 +274,9 @@
 
   ;; if none of the cases return a subtype of the expected type, still do some
   ;; merging, but do it on the entire type
+  ;; only do this if we're in permissive mode
   (define-values (candidates parts-acc)
-    (if (null? candidates*)
+    (if (and permissive? (null? candidates*))
         (values cases orig)
         (values candidates* parts-acc*)))
 
@@ -311,7 +321,7 @@
 ;; Wrapper over possible-domains that works on types.
 (provide/cond-contract
   [cleanup-type ((Type/c) ((or/c #f Type/c)) . ->* . Type/c)])
-(define (cleanup-type t [expected #f])
+(define (cleanup-type t [expected #f] [permissive? #t])
   (match t
     ;; function type, prune if possible.
     [(Function/arrs: doms rngs rests drests kws)
