@@ -473,7 +473,9 @@
   [#:frees (λ (f) (f parent))])
 
 
+;; Syntax
 ;; t : Type
+;; t is the type of the result of syntax-e, not the result of syntax->datum
 (def-type Syntax ([t Type/c]) [#:key 'syntax])
 
 ;; A Row used in type instantiation

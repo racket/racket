@@ -149,6 +149,7 @@
 (define/decl -FlVector (make-Base 'FlVector #'flvector? flvector?))
 (define/decl -ExtFlVector (make-Base 'ExtFlVector #'extflvector? extflvector?))
 (define/decl -FxVector (make-Base 'FxVector #'fxvector? fxvector?))
+;; in the type (-Syntax t), t is the type of the result of syntax-e, not syntax->datum
 (define -Syntax make-Syntax)
 (define/decl In-Syntax
   (-mu e
