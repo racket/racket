@@ -251,7 +251,7 @@
   ;; iterate in lock step over the function types we analyze and the parts
   ;; that we will need to print the error message, to make sure we throw
   ;; away cases consistently
-  (define-values (candidates parts-acc)
+  (define-values (candidates* parts-acc*)
     (for/fold ([candidates '()] ; from cases
                [parts-acc '()]) ; from orig
         ([c (in-list cases)]
@@ -261,7 +261,14 @@
           (values (cons c candidates) ; we keep this one
                   (cons p parts-acc))
           ;; we discard this one
-          (values candidates parts-acc)))) 
+          (values candidates parts-acc))))
+
+  ;; if none of the cases return a subtype of the expected type, still do some
+  ;; merging, but do it on the entire type
+  (define-values (candidates parts-acc)
+    (if (null? candidates*)
+        (values cases orig)
+        (values candidates* parts-acc*)))
 
   ;; among the domains that fit with the expected type, we only need to
   ;; keep the most liberal
