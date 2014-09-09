@@ -103,10 +103,12 @@ $( document ).ready(function() {
 
         // XXX show the doc[0] content?
         $('#pi_docs').html("").append( $.map( pkgi['build']['docs'], function ( doc, i ) {
+            var dl;
             if ( doc[2] ) {
-                return $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
+                dl = $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
             else {
-                return $('<del>').html(doc[1]); } } ) );
+                dl = $('<del>').html(doc[1]); }
+            return $('<span>').append(dl, " ") } ) );
 
         if ( pkgi['build']['failure-log'] ) {
                 $('#pi_build')
@@ -465,10 +467,12 @@ $( document ).ready(function() {
                 $('<td>').html("")
                     .append( jslink( value['name'], function () { open_info ( value ); }) ),
                 $('<td>').append( $.map( value['build']['docs'], function ( doc, i ) {
+                    var dl;
                     if ( doc[2] ) {
-                        return $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
+                        dl = $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
                     else {
-                        return $('<del>').html(doc[1]); } } ) ),
+                        dl = $('<del>').html(doc[1]); }
+                    return $('<span>').append(dl, " ") } ) ),
                 $('<td>').append( $.map( value['authors'], function ( author, i ) {
                     return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
                 $('<td>').text( value['description'] ),
