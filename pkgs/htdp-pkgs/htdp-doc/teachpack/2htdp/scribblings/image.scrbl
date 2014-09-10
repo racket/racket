@@ -1433,7 +1433,7 @@ the parts that fit onto @racket[scene].
                    (ellipse 20 10 "solid" "navy"))]
 }
 
-@defproc[(color-frame [image image?] [color (or/c pen? image-color?)]) image?]{
+@defproc[(color-frame [color (or/c pen? image-color?)] [image image?]) image?]{
   Like @racket[frame], except with the given @racket[color].
        
   @history[#:added "1.1"]
