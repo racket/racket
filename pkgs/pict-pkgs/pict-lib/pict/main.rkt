@@ -144,10 +144,11 @@
   (vector (send c red) (send c green) (send c blue)))
 
 (define *-append/c
-  (->i ([r/p (or/c real? pict?)])
-       #:rest [more (listof pict?)]
-       #:pre (r/p more) (implies (null? more) (pict? r/p))
-       [result pict?]))
+  (->* ()
+       ()
+       #:rest (or/c (cons/c real? (listof pict?))
+                    (listof pict?))
+       pict?))
 
 (define (multiple-of-four-bytes? b)
   (zero? (modulo (bytes-length b) 4)))
