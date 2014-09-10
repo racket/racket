@@ -325,7 +325,10 @@
   (match t
     ;; function type, prune if possible.
     [(Function/arrs: doms rngs rests drests kws)
-     (match-let ([(list pdoms rngs rests drests) (possible-domains doms rests drests rngs (and expected (ret expected)))])
+     (match-let ([(list pdoms rngs rests drests)
+                  (possible-domains doms rests drests rngs
+                                    (and expected (ret expected))
+                                    permissive?)])
        (if (= (length pdoms) (length doms))
            ;; pruning didn't improve things, return the original
            ;; (Note: pruning may have reordered clauses, so may not be `equal?' to
