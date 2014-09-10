@@ -20,6 +20,8 @@
 (ann (stx->list (list #'a #'b)) (Listof (Syntaxof Symbol)))
 (ann (stx->list (list 'a 'b)) (Listof Symbol))
 (ann (add1 (car (stx->list '(1 2 3)))) Positive-Index)
+(ann (stx->list #'(a b . (c d))) (Listof (Syntaxof Symbol)))
+(ann (stx->list (cons #'a #'(b . (c d)))) (Listof (Syntaxof Symbol)))
 
 (ann (stx-car #'(a b)) (Syntaxof 'a))
 (ann (stx-cdr #'(a b)) (List (Syntaxof 'b)))
@@ -30,6 +32,9 @@
 (ann (stx-map (λ: ([id : Symbol]) (symbol=? id 'a))
               '(a b c d))
      (Listof Boolean))
+(ann (stx-map (λ: ([id : Identifier]) (free-identifier=? id #'a))
+              (cons #'a #'(b . (c d))))
+     (Listof Boolean))
 (ann (stx-map (λ: ([x : (Syntaxof Real)] [y : (Syntaxof Real)])
                 (+ (syntax-e x) (syntax-e y)))
               #'(1 2 3)
@@ -38,6 +43,11 @@
 (ann (stx-map +
               '(1 2 3)
               '(1 2 3))
+     (Listof Real))
+(ann (stx-map (λ: ([x : (Syntaxof Real)] [y : (Syntaxof Real)])
+                (+ (syntax-e x) (syntax-e y)))
+              #'(1 . (2 3))
+              (cons #'1 #'(2 . (3))))
      (Listof Real))
 
 (module-or-top-identifier=? #'a #'b)
