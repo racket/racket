@@ -11,6 +11,7 @@
          racket/private/performance-hint
          (for-syntax racket/base
                      racket/stxparam-exptime
+                     syntax/name
                      "arr-i-parse.rkt"
                      
                      (rename-in
@@ -787,7 +788,7 @@ evaluted left-to-right.)
            body))]
     [else stx]))
 
-(define-for-syntax (mk-wrapper-func/blame-id-info an-istx used-indy-vars)
+(define-for-syntax (mk-wrapper-func/blame-id-info stx an-istx used-indy-vars)
   
   (define-values (wrapper-proc-arglist
                   blame-ids args+rst
@@ -838,28 +839,28 @@ evaluted left-to-right.)
      arg-proj-vars indy-arg-proj-vars 
      wrapper-args indy-arg-vars
      indy-arg-vars ordered-args indy-res-vars ordered-ress))
-  
   (values
    (map cdr blame-ids)
-   #`(λ #,wrapper-proc-arglist
-       (λ (val)
-         (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
-         (let ([arg-checker
-                (λ #,(args/vars->arglist an-istx wrapper-args this-param)
-                  #,wrapper-body)])
-           (impersonate-procedure
-            val
-            (make-keyword-procedure
-             (λ (kwds kwd-args . args)
-               (with-continuation-mark
-                   contract-continuation-mark-key blame
-                 (keyword-apply arg-checker kwds kwd-args args)))
-             (λ args
-               (with-continuation-mark
-                   contract-continuation-mark-key blame
-                 (apply arg-checker args))))
-            impersonator-prop:contracted ctc
-            impersonator-prop:blame blame))))))
+   (with-syntax ([arg-checker (or (syntax-local-infer-name stx) 'arg-checker)])
+     #`(λ #,wrapper-proc-arglist
+         (λ (val)
+           (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
+           (let ([arg-checker
+                  (λ #,(args/vars->arglist an-istx wrapper-args this-param)
+                    #,wrapper-body)])
+             (impersonate-procedure
+              val
+              (make-keyword-procedure
+               (λ (kwds kwd-args . args)
+                 (with-continuation-mark
+                     contract-continuation-mark-key blame
+                   (keyword-apply arg-checker kwds kwd-args args)))
+               (λ args
+                 (with-continuation-mark
+                     contract-continuation-mark-key blame
+                   (apply arg-checker args))))
+              impersonator-prop:contracted ctc
+              impersonator-prop:blame blame)))))))
 
 (define-for-syntax (arg/res-to-indy-var indy-arg-vars ordered-args indy-res-vars ordered-ress var)
   (define (try vars ordered)
@@ -1068,7 +1069,7 @@ evaluted left-to-right.)
 (define-syntax (->i/m stx)
   (define an-istx (parse-->i stx))
   (define used-indy-vars (mk-used-indy-vars an-istx))
-  (define-values (blame-ids wrapper-func) (mk-wrapper-func/blame-id-info an-istx used-indy-vars))
+  (define-values (blame-ids wrapper-func) (mk-wrapper-func/blame-id-info stx an-istx used-indy-vars))
   (define val-first-wrapper-func (mk-val-first-wrapper-func/blame-id-info an-istx used-indy-vars))
   (define args+rst (append (istx-args an-istx)
                            (if (istx-rst an-istx)
