@@ -320,7 +320,7 @@
 
 ;; Wrapper over possible-domains that works on types.
 (provide/cond-contract
-  [cleanup-type ((Type/c) ((or/c #f Type/c)) . ->* . Type/c)])
+  [cleanup-type ((Type/c) ((or/c #f Type/c) any/c) . ->* . Type/c)])
 (define (cleanup-type t [expected #f] [permissive? #t])
   (match t
     ;; function type, prune if possible.
