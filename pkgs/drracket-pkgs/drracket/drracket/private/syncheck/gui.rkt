@@ -40,7 +40,7 @@ If the namespace does not, they are colored the unbound color.
          (for-syntax racket/base)
          (only-in ffi/unsafe register-finalizer)
          "../../syncheck-drracket-button.rkt"
-         "../../private/eval-helpers.rkt"
+         "../../private/eval-helpers-and-pref-init.rkt"
          "intf.rkt"
          "local-member-names.rkt"
          "colors.rkt"

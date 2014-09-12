@@ -4,7 +4,7 @@
          racket/match
          racket/contract
          (for-syntax racket/base)
-         "../../private/eval-helpers.rkt"
+         "../../private/eval-helpers-and-pref-init.rkt"
          "traversals.rkt"
          "local-member-names.rkt"
          "intf.rkt"

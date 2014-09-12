@@ -131,11 +131,6 @@
                          (listof (cons/c 'lib (listof string?))))
 (drr:set-default 'drracket:defs/ints-horizontal #f boolean?)
 
-(drr:set-default 'drracket:child-only-memory-limit (* 1024 1024 128)
-                         (λ (x) (or (boolean? x)
-                                    (exact-integer? x)
-                                    (x . >= . (* 1024 1024 8)))))
-
 (drr:set-default 'drracket:recent-language-names 
                          null 
                          (λ (x) 
