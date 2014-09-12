@@ -1034,6 +1034,8 @@ static void *allocate_big(const size_t request_size_bytes, int type)
      aligned for Sparcs. */
   allocate_size = COMPUTE_ALLOC_SIZE_FOR_BIG_PAGE_SIZE(request_size_bytes);
 
+  gc_if_needed_account_alloc_size(gc, allocate_size);
+
   /* We not only need APAGE_SIZE alignment, we
      need everything consisently mapped within an APAGE_SIZE
      segment. So round up. */
