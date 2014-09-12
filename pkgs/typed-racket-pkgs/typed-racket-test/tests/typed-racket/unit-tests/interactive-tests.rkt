@@ -114,6 +114,11 @@
     (test-form-exn #rx"either undefined or missing a type annotation"
       (a-name-that-isnt-bound))
 
+    ;; Make sure unannotated definitions with the wrong number of values
+    ;; don't produce an internal error
+    (test-form-exn #rx"Expression should produce 1 values"
+      (define zzzzz (values 1 2)))
+
     (test-form #rx"1"
       (:type 1))
     (test-form (regexp-quote "(U Positive-Byte Zero)")

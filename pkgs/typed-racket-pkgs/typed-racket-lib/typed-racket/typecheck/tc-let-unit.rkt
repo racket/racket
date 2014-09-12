@@ -218,7 +218,8 @@
     (cond [(null? clauses) (k)]
           [else
            (match-define (lr-clause names expr) (car clauses))
-           (match-define (list (tc-result: ts fs os) ...)
+           (match-define (or (tc-results: (list ts ...) _ (list os ...))
+                             (list (tc-result: ts _ os) ...))
              (get-type/infer names expr
                              (lambda (e) (tc-expr/maybe-expected/t e names))
                              tc-expr/check))
