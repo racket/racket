@@ -6,7 +6,7 @@
            racket/class
            syntax/toplevel
            framework
-           "eval-helpers.rkt"
+           "eval-helpers-and-pref-init.rkt"
            "local-member-names.rkt"
            drracket/private/drsig)
   

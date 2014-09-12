@@ -25,7 +25,7 @@
          "insert-large-letters.rkt"
          "get-defs.rkt"
          "local-member-names.rkt"
-         "eval-helpers.rkt"
+         "eval-helpers-and-pref-init.rkt"
          "parse-logger-args.rkt"
          "get-module-path.rkt"
          "named-undefined.rkt"

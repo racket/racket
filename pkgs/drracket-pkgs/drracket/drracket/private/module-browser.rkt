@@ -11,7 +11,7 @@
          string-constants
          mrlib/graph
          drracket/private/drsig
-         "eval-helpers.rkt"
+         "eval-helpers-and-pref-init.rkt"
          racket/unit
          racket/async-channel
          racket/match

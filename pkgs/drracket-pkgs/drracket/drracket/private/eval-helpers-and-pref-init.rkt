@@ -7,6 +7,7 @@
          setup/dirs
          planet/config
          pkg/lib
+         framework/preferences
          (prefix-in *** '#%foreign) ;; just to make sure it is here
          )
 
@@ -15,6 +16,12 @@
          (struct-out prefab-module-settings)
          transform-module
          get-init-dir)
+
+(preferences:set-default 'drracket:child-only-memory-limit
+                         (* 1024 1024 128)
+                         (λ (x) (or (not x)
+                                    (and (exact-integer? x)
+                                         (x . >= . (* 1024 1024 8))))))
 
 ;; get-init-dir : (or/c path? #f) -> path?
 ;; returns the initial directory for a program
