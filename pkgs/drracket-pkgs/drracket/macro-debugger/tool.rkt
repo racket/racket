@@ -14,7 +14,7 @@
          (for-syntax racket/base images/icons/tool)
          ;; FIXME:
          drracket/private/syncheck/local-member-names
-         drracket/private/eval-helpers)
+         drracket/private/eval-helpers-and-pref-init)
 
 ;; Capability name: 'macro-stepper:enabled
 
