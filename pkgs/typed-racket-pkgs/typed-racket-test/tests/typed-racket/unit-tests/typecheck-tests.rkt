@@ -3275,6 +3275,11 @@
                (tr:define (foo) : (Values String String) (values "foo" "bar"))
                (void))
              -Void]
+
+       ;; Make sure unannotated definitions with the wrong number of values
+       ;; don't produce an internal error
+       [tc-err (let () (define x (values 1 2)) (error "dummy"))
+               #:msg #rx"Expression should produce 1 values"]
         )
 
   (test-suite
