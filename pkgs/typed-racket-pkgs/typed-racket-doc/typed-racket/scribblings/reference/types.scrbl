@@ -613,9 +613,10 @@ functions and continuation mark functions.
 
   @ex[string?]
 
-  The filter specifies that when @racket[(string? x)] evaluates to a true value, the
-  variable @racket[x] can be assumed to have type @racket[String]. Likewise, if the
-  expression evaluates to @racket[#f], the variable has type @racket[String].
+  The filter specifies that when @racket[(string? x)] evaluates to a true value for
+  a conditional branch, the variable @racket[x] in that branch can be assumed to have
+  type @racket[String]. Likewise, if the expression evaluates to @racket[#f] in a branch,
+  the variable @emph{does not} have type @racket[String].
 
   In some cases, asymmetric type information is useful in filters. For example, the
   @racket[filter] function's first argument is specified with only a positive filter:
