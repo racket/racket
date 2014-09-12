@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribblings/reference/mz
-          (for-label compatibility/defmacro))
+          (for-label compatibility/defmacro
+                     syntax/parse))
 
 @title[#:tag "defmacro"]{Legacy macro support}
 
