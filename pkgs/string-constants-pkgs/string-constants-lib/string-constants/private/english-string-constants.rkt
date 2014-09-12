@@ -246,6 +246,7 @@ please adhere to these guidelines:
  (online-expansion-running "Background expansion running")
  (online-expansion-only-raw-text-files-supported "Only pure text files supported")
  (online-expansion-abnormal-termination "Background expansion terminated abnormally")
+ (online-expansion-abnormal-termination-out-of-memory "Background expansion terminated abnormally (out of memory)")
  (online-expansion-finished-successfully "Background expansion finished successfully")
   
  (jump-to-error "Jump to Error")
