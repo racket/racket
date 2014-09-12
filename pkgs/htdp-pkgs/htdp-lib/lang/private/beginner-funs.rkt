@@ -179,9 +179,9 @@
                                      Computes the square root of a number.
                                      @interaction[#:eval (bsl) (sqrt 9) (sqrt 2)]
                                      }
-  @defproc[(integer-sqrt [x number]) integer]{
-                                              Computes the integer (exact or inexact) square root of a number. 
-                                              @interaction[#:eval (bsl) (sqrt 11)]
+  @defproc[(integer-sqrt [x integer]) integer]{
+                                              Computes the integer (exact or inexact) square root of an integer.
+                                              @interaction[#:eval (bsl) (integer-sqrt 11)]
                                               }
   @defproc[(abs [x real]) real]{
                                 Determines the absolute value of a real number.
