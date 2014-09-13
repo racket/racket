@@ -174,8 +174,7 @@
          ;; the module (hence we haven't synthesized a type for yet).
          [_
           (match (get-type/infer vars #'expr tc-expr tc-expr/check)
-            [(or (list (tc-result: ts) ...)
-                 (tc-results: (list ts ...)))
+            [(list (tc-result: ts) ...)
              (for/list ([i (in-list vars)] [t (in-list ts)])
                (register-type i t)
                (free-id-table-set! unann-defs i #t)
