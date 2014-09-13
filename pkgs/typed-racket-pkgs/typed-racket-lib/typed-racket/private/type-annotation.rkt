@@ -93,7 +93,7 @@
                   (tc-result -Bottom))]
                [(tc-results: tys fs os)
                 (if (not (= (length stxs) (length tys)))
-                    (tc-error/expr #:return (ret (map (lambda _ (Un)) stxs))
+                    (tc-error/expr #:return (map (lambda _ (tc-result (Un))) stxs)
                                    "Expression should produce ~a values, but produces ~a values of types ~a"
                                    (length stxs) (length tys) (stringify tys))
                     (for/list ([stx (in-list stxs)] [ty (in-list tys)]
