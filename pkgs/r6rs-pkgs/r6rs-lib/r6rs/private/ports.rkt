@@ -164,7 +164,7 @@
             n)))
     (lambda (bytes skip evt)
       (check-disconnect)
-      (let ([n (peek-bytes-avail! bytes skip evt port)])
+      (let ([n (peek-bytes-avail!* bytes skip evt port)])
         (if (eq? n 0)
             (wrap-evt port (lambda (v) 0))
             n)))
