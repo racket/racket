@@ -72,9 +72,10 @@
                         (fresh-pat-vars input (make-hash))
                         (set! name-nums (unique-name-nums)))))
   (define fs (list (fail-cont empty-env
-                              (list (make-partial-rule fresh-pat (if (shuffle-clauses?)
-                                                                     (shuffle clauses)
-                                                                     (order-clauses clauses))
+                              (list (make-partial-rule fresh-pat 
+                                                       (if (shuffle-clauses?)
+                                                           (shuffle/favor-recursive-clauses clauses)
+                                                           (order-clauses clauses))
                                                        '() bound))
                               bound)))
   (define v-locs (make-hash))
@@ -159,7 +160,7 @@
             (make-partial-rule (prem-pat prem) 
                                (if (positive? bound)
                                    (if (shuffle-clauses?)
-                                       (shuffle prem-cls)
+                                       (shuffle/favor-recursive-clauses clauses)
                                        (order-clauses prem-cls))
                                    (order-clauses prem-cls))
                                (cons n tr-loc)
@@ -170,22 +171,30 @@
                      new-fringe
                      (cons (fail-cont env failure-fringe bound) fail))])]))
 
+(define (shuffle/favor-recursive-clauses cs)
+  (define candidates (apply append
+                            (for/list ([c (in-list cs)])
+                              (make-list (add1 (length (clause-prems c))) c))))
+  (let loop ([candidates candidates])
+    (cond
+      [(null? candidates) null]
+      [else
+       (define selected (list-ref candidates (random (length candidates))))
+       (cons selected (loop (remove* (list selected) candidates)))])))
+
 (define (order-clauses cs)
-  (define num-prems->cs (hash))
-  (for ([c cs])
-    (set! num-prems->cs
-          (hash-set num-prems->cs
-                    (length (clause-prems c))
-                    (set-add
-                     (hash-ref num-prems->cs
-                               (length (clause-prems c))
-                               (λ () (set)))
-                     c))))
+  (define num-prems->cs (make-hash))
+  (for ([c (in-list cs)])
+    (hash-set! num-prems->cs
+               (length (clause-prems c))
+               (set-add
+                (hash-ref num-prems->cs
+                          (length (clause-prems c))
+                          (set))
+                c)))
   (apply append
-         (for/list ([k (sort (hash-keys num-prems->cs) <)])
+         (for/list ([k (in-list (sort (hash-keys num-prems->cs) <))])
            (shuffle (set->list (hash-ref num-prems->cs k))))))
-
-
 
 (define (do-unification clse input env)
   (match-define (clause head-pat eq/dqs prems lang name) clse)
