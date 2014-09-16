@@ -1698,4 +1698,6 @@
   (All (r #:row)
     (Class #:row-var r #:implements Text%)
     ->
-    (Class #:row-var r #:implements Text:Line-Numbers<%>)))
+    (Class #:row-var r
+           #:implements Text%
+           #:implements Text:Line-Numbers<%>)))
