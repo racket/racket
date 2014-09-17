@@ -72,11 +72,12 @@
                         (fresh-pat-vars input (make-hash))
                         (set! name-nums (unique-name-nums)))))
   (define fs (list (fail-cont empty-env
-                              (list (make-partial-rule fresh-pat 
-                                                       (if (shuffle-clauses?)
-                                                           (shuffle/favor-recursive-clauses clauses)
-                                                           (order-clauses clauses))
-                                                       '() bound))
+                              (list (make-partial-rule 
+                                     fresh-pat 
+                                     (if (shuffle-clauses?)
+                                         (shuffle/favor-recursive-clauses clauses)
+                                         (order-clauses clauses))
+                                     '() bound))
                               bound)))
   (define v-locs (make-hash))
   (λ ()
@@ -160,7 +161,7 @@
             (make-partial-rule (prem-pat prem) 
                                (if (positive? bound)
                                    (if (shuffle-clauses?)
-                                       (shuffle/favor-recursive-clauses clauses)
+                                       (shuffle/favor-recursive-clauses prem-cls)
                                        (order-clauses prem-cls))
                                    (order-clauses prem-cls))
                                (cons n tr-loc)
