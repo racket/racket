@@ -4882,6 +4882,17 @@ static void find_next_thread(Scheme_Thread **return_arg) {
   next        = NULL;
 }
 
+static Scheme_Object *do_thread_block()
+{
+  Scheme_Thread *p = scheme_current_thread;
+  float sleep_time = p->sleep_end;
+  p->sleep_end = 0.0;
+
+  scheme_thread_block(sleep_time);
+
+  return scheme_false;
+}
+
 void scheme_thread_block(float sleep_time)
      /* If we're blocked, `sleep_time' is a max sleep time,
 	not a min sleep time. Otherwise, it's a min & max sleep time.
@@ -4921,6 +4932,17 @@ void scheme_thread_block(float sleep_time)
 #endif
 
   shrink_cust_box_array();
+
+  /* Scheduling queries might involve callbacks through the FFI that put
+     the runtime system into `scheme_no_stack_overflow` mode. Immitate
+     the foriegn-call entry point with an extra check that we have enough
+     stack to survive in foreign functions. */
+  if (!scheme_no_stack_overflow && scheme_is_stack_too_shallow()) {
+    p->sleep_end = sleep_time; /* an abuse of the `sleep_end` field to
+                                  pass `sleep_end` along */
+    (void)scheme_handle_stack_overflow(do_thread_block);
+    return;
+  }
 
   if (scheme_active_but_sleeping)
     scheme_wake_up();
