@@ -29,7 +29,7 @@
     `((,fogus . "Extracting a Goose from a Klein Bottle")
       (,mbutterick . "Like a Blind Squirrel in a Ferrari")
       (,stchang . "A Boost-Inspired Graph Library for Racket")
-      (,jbc . "Stumbling around in the dark: failure partially averted")
+      (,jbc . "Sound: why is it so darn imperative?")
       (,mflatt . "Carry on Making that Racket")
       (,tonyg . "Minimart: Organizing Squabbling Actors")
       (,gregh . "Emacs à la mode DrRacket")
@@ -89,13 +89,11 @@
          since.})
     (list
      jbc
-     @p*{Cal Poly includes a 10-week team-based domain-specific course for
-         incoming freshmen. I teach this course using Racket, in the domain of
-         Music. The challenge is to allow students with no programming
-         background to create full-featured music applications using only the
-         first few sections of HtDP. I report on the successes and failures of
-         these teams, illustrating the bizarre but creative code patterns that
-         the students exhibit.}
+     @p*{HtDP and big-bang provide an explicit-state, fully-testable framework
+         for simple student apps and games. Adapting this framework to handle
+         dynamically generated music is surprisingly difficult. I describe the
+         specific challenges of shoehorning music into a stateless and testable
+         milieu, and propose a solution, using a hybrid dataflow approach.}
      @p*{John Clements is an Associate Professor at Cal Poly State University in
          San Luis Obispo. He is the author of DrRacket’s Stepper, and the RSound
          library, and this paragraph.})
