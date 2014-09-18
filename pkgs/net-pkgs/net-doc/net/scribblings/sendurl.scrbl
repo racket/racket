@@ -12,7 +12,7 @@ browser preference is set.
 
 
 @defproc[(send-url [str string?] [separate-window? any/c #t]
-                   [#:escape escape? any/c #t])
+                   [#:escape? escape? any/c #t])
          void?]{
 
 Opens @racket[str], which represents a URL, in a platform-specific
