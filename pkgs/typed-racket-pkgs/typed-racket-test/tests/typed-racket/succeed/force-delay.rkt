@@ -6,4 +6,6 @@
 
 (force (delay 3))
 
+(force 3)
+
 (call-with-values (lambda () 3) list)

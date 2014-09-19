@@ -1179,7 +1179,9 @@
 
 ;; Section 10.3 (Delayed Evaluation)
 [promise? (make-pred-ty (-Promise Univ))]
-[force (-poly (a) (->acc (list (-Promise a)) a (list -force)))]
+[force (-poly (a) (cl->*
+		   (->acc (list (-Promise a)) a (list -force))
+		   (-> a a)))]
 [promise-forced? (-poly (a) (-> (-Promise a) B))]
 [promise-running? (-poly (a) (-> (-Promise a) B))]
 
