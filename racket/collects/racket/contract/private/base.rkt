@@ -131,7 +131,8 @@
 (define (force-recursive-contract ctc)
   (define current (recursive-contract-ctc ctc))
   (cond
-    [(or (symbol? current) (not current))
+    [(already-forced? ctc) current]
+    [else
      (define thunk (recursive-contract-thunk ctc))
      (define old-name (recursive-contract-name ctc))
      (set-recursive-contract-name! ctc (or current '<recursive-contract>))
@@ -149,9 +150,12 @@
      (set-recursive-contract-ctc! ctc forced-ctc)
      (set-recursive-contract-name! ctc (append `(recursive-contract ,(contract-name forced-ctc))
                                                (cddr old-name)))
-     forced-ctc]
-    [else current]))
+     forced-ctc]))
 
+(define (already-forced? ctc)
+  (define current (recursive-contract-ctc ctc))
+  (and current (not (symbol? current))))
+  
 (define (recursive-contract-projection ctc)
   (cond
     [(recursive-contract-list-contract? ctc)
@@ -176,8 +180,13 @@
   
 (define (recursive-contract-stronger this that)
   (and (recursive-contract? that)
-       (procedure-closure-contents-eq? (recursive-contract-thunk this)
-                                       (recursive-contract-thunk that))))
+       (or (procedure-closure-contents-eq? (recursive-contract-thunk this)
+                                           (recursive-contract-thunk that))
+           (if (and (already-forced? this)
+                    (already-forced? that))
+               (contract-stronger? (recursive-contract-ctc this)
+                                   (recursive-contract-ctc that))
+               #f))))
 
 (define ((recursive-contract-first-order ctc) val)
   (contract-first-order-passes? (force-recursive-contract ctc)

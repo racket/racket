@@ -27,8 +27,14 @@
          contract-first-order-passes?
          
          prop:contracted prop:blame
-         impersonator-prop:contracted impersonator-prop:blame
+         
+         impersonator-prop:contracts+blames
+         value-contracts-and-blames
+         
+         impersonator-prop:contracted
          has-contract? value-contract
+         
+         impersonator-prop:blame
          has-blame? value-blame
          
          ;; for opters
@@ -64,12 +70,29 @@
   (or (has-prop:contracted? v)
       (has-impersonator-prop:contracted? v)))
 
+(define (value-contracts-and-blames v)
+  (cond
+    [(and (has-prop:contracted? v)
+          (has-prop:blame? v))
+     (list (list (get-prop:contracted v)
+                 (get-prop:blame v)))]
+    [(and (has-impersonator-prop:contracted? v)
+          (has-impersonator-prop:blame? v))
+     (list (list (get-prop:contracted v)
+                 (get-prop:blame v)))]
+    [(has-impersonator-prop:contracts+blames? v)
+     (get-impersonator-prop:contracts+blames v)]
+    [else '()]))
+
 (define (value-contract v)
   (cond
     [(has-prop:contracted? v)
      (get-prop:contracted v)]
     [(has-impersonator-prop:contracted? v)
      (get-impersonator-prop:contracted v)]
+    [(has-impersonator-prop:contracts+blames? v)
+     (define l (get-impersonator-prop:contracts+blames v))
+     (list-ref (car l) 0)]
     [else #f]))
 
 (define (has-blame? v)
@@ -82,6 +105,9 @@
      (get-prop:blame v)]
     [(has-impersonator-prop:blame? v)
      (get-impersonator-prop:blame v)]
+    [(has-impersonator-prop:contracts+blames? v)
+     (define l (get-impersonator-prop:contracts+blames v))
+     (list-ref (car l) 1)]
     [else #f]))
 
 (define-values (prop:contracted has-prop:contracted? get-prop:contracted)
@@ -111,8 +137,14 @@
                 get-impersonator-prop:contracted)
   (make-impersonator-property 'impersonator-prop:contracted))
 
+;; bound to (non-empty-listof (list contract blame))
+(define-values (impersonator-prop:contracts+blames
+                has-impersonator-prop:contracts+blames?
+                get-impersonator-prop:contracts+blames)
+  (make-impersonator-property 'impersonator-prop:contracts+blames))
+
 (define-values (impersonator-prop:blame
-                has-impersonator-prop:blame? 
+                has-impersonator-prop:blame?
                 get-impersonator-prop:blame)
   (make-impersonator-property 'impersonator-prop:blame))
 
