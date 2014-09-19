@@ -19,16 +19,10 @@
          
          blame-add-missing-party
          
-         blame-same-parties?
-         
          raise-blame-error
          current-blame-format
          (struct-out exn:fail:contract:blame)
          blame-fmt->-string)
-
-(define (blame-same-parties? a b)
-  (and (equal? (blame-positive a) (blame-positive b))
-       (equal? (blame-negative a) (blame-negative b))))
 
 (define (blame=? a b equal?/recur)
   (and (equal?/recur (blame-source a) (blame-source b))
