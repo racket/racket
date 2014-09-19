@@ -64,7 +64,6 @@
  ;; from private/guts.rkt
  has-contract?
  value-contract
- value-contracts-and-blames
  has-blame?
  value-blame
  contract-continuation-mark-key

@@ -2708,12 +2708,6 @@ Produces the name used to describe the contract in error messages.
   @history[#:added "6.0.1.12"]
 }
 
-@defproc[(value-contracts-and-blame [v any/c]) (listof (list/c blame? contract?))]{
-  Returns the contracts and associated blame that are attached to @racket[v].
-
-  @history[#:added "6.1.0.8"]
-}
-
 @defproc[(contract-projection [c contract?]) (-> blame? (-> any/c any/c))]{
   Produces the projection defining a contract's behavior on protected values.
 }
