@@ -222,8 +222,7 @@
 
      @columns[6 #:center? #f #:row? #f]{
        @p{@b{(fourth RacketCon)} will be held in St. Louis on
-          the day after @a[href: "https://thestrangeloop.com/"]{Strange Loop}.
-          Stay turned for more information!}
+          the day after @a[href: "https://thestrangeloop.com/"]{Strange Loop}.}
        @p{@b{@a[href: "https://www.eventbrite.com/e/racketcon-2014-tickets-11408046775"]{Registration}}
           is open. Tickets are $30.}
        @p{@b{@a[href: "http://www.fogus.me/"]{Michael Fogus}} will be giving the keynote.}
@@ -231,10 +230,13 @@
        @p{RacketCon will be held at the @|hotel| (which is one of the Strange Loop venues).
           A @a[href: group-rate-url]{group rate} is available for RacketCon attendees.}
 
+       @p{RacketCon will be in the @bold{New York Central} conference room.}
+
        @p{@nbsp}
 
        @p{@b{Schedule:}}
        @session-sched[
+         @slot["9:00-9:30" #f]{Registration}
          @slot["9:30" #f]{Welcome}
          @slot["9:30-10:30" #f]{Keynote}
          @(speaker-slot fogus)
