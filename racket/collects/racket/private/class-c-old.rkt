@@ -825,6 +825,7 @@
    absents absent-fields 
    internal opaque? name)
   #:omit-define-syntaxes
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection class/c-proj
@@ -1118,6 +1119,7 @@
                              (λ args (ret #f))))))
 
 (define-struct base-object/c (methods method-contracts fields field-contracts)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property 
    #:projection object/c-proj
@@ -1177,9 +1179,20 @@
           (wrapped-class-info-neg-field-projs the-info)
           neg-party)]
         [else
-         (impersonate-struct val object-ref (λ (o c) new-cls)
-                             impersonator-prop:contracted ctc
-                             impersonator-prop:original-object original-obj)]))))
+         (define old-contracts-and-blames (value-contracts-and-blames val))
+         (cond
+           [(ormap (λ (pr)
+                     (define old-ctc (list-ref pr 0))
+                     (define old-blame (list-ref pr 1))
+                     (and (contract-stronger? old-ctc ctc)
+                          (blame-same-parties? old-blame blame)))
+                   old-contracts-and-blames)
+            val]
+           [else
+            (impersonate-struct val object-ref (λ (o c) new-cls)
+                                impersonator-prop:contracts+blames
+                                (cons (list ctc blame) old-contracts-and-blames)
+                                impersonator-prop:original-object original-obj)])]))))
 
 (define (instanceof/c-first-order ctc)
   (let ([cls-ctc (base-instanceof/c-class-ctc ctc)])
@@ -1187,14 +1200,21 @@
       (and (object? val)
            (contract-first-order-passes? cls-ctc (object-ref val))))))
 
+(define (instanceof/c-stronger this that)
+  (and (base-instanceof/c? that)
+       (contract-stronger? (base-instanceof/c-class-ctc this)
+                           (base-instanceof/c-class-ctc that))))
+
 (define-struct base-instanceof/c (class-ctc)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property 
    #:projection instanceof/c-proj
    #:name
    (λ (ctc)
      (build-compound-type-name 'instanceof/c (base-instanceof/c-class-ctc ctc)))
-   #:first-order instanceof/c-first-order))
+   #:first-order instanceof/c-first-order
+   #:stronger instanceof/c-stronger))
 
 (define (instanceof/c cctc)
   (let ([ctc (coerce-contract 'instanceof/c cctc)])
