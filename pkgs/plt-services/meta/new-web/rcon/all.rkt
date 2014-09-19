@@ -230,7 +230,7 @@
        @p{RacketCon will be held at the @|hotel| (which is one of the Strange Loop venues).
           A @a[href: group-rate-url]{group rate} is available for RacketCon attendees.}
 
-       @p{RacketCon will be in the @bold{New York Central} conference room.}
+       @p{RacketCon will be in the @b{New York Central} conference room.}
 
        @p{@nbsp}
 
