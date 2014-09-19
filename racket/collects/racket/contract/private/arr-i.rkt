@@ -845,11 +845,11 @@ evaluted left-to-right.)
      #`(λ #,wrapper-proc-arglist
          (λ (val)
            (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
-           (let ([arg-checker
-                  (λ #,(args/vars->arglist an-istx wrapper-args this-param)
-                    #,wrapper-body)])
-             (impersonate-procedure
-              val
+           (impersonate-procedure
+            val
+            (let ([arg-checker
+                   (λ #,(args/vars->arglist an-istx wrapper-args this-param)
+                     #,wrapper-body)])
               (make-keyword-procedure
                (λ (kwds kwd-args . args)
                  (with-continuation-mark
@@ -858,9 +858,9 @@ evaluted left-to-right.)
                (λ args
                  (with-continuation-mark
                      contract-continuation-mark-key blame
-                   (apply arg-checker args))))
-              impersonator-prop:contracted ctc
-              impersonator-prop:blame blame)))))))
+                   (apply arg-checker args)))))
+            impersonator-prop:contracted ctc
+            impersonator-prop:blame blame))))))
 
 (define-for-syntax (arg/res-to-indy-var indy-arg-vars ordered-args indy-res-vars ordered-ress var)
   (define (try vars ordered)
