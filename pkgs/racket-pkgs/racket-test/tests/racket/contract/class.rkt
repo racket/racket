@@ -2471,6 +2471,41 @@
       (chaperone-of? c+c% c%))
    #t)
   
+  (test/spec-passed/result
+   'lots-of-wrapping
+   '(let ()
+      (define state/c
+        (recursive-contract
+         (class/c
+          [m (-> any/c (instanceof/c state/c))]
+          [n (-> any/c (instanceof/c state/c))])))
+      
+      (define state% 
+        (class object%
+          (super-new)
+          (define/public (m) (send this n))
+          (define/public (n) (new state%))))
+      
+      (define tree-next
+        (contract 
+         (-> (instanceof/c state/c) (instanceof/c state/c))
+         (λ (o) (send o m))
+         'pos 'neg))
+      (define make-tree
+        (contract
+         (-> (instanceof/c state/c))
+         (λ () (new state%))
+         'pos
+         'neg))
+      
+      (define o1 (make-tree))
+      (define o2 (tree-next o1))
+      (define o3 (tree-next o2))
+      (= (length (value-contracts-and-blames o2))
+         (length (value-contracts-and-blames o3))))
+   #t)
+
+  
   (let ([expected-given?
          (λ (exn) (and (regexp-match? #rx"callback: contract violation" (exn-message exn))
                        (regexp-match? #rx"expected: boolean[?]" (exn-message exn))
