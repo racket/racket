@@ -170,7 +170,7 @@
 
   $ "raco pkg install pkg-test2"
   $ (~a "raco pkg archive " archive-d " pkg-test2")
-  =stdout> #rx"removing .* pkg-test1"
+  =stdout> #rx"Removing .* pkg-test1"
   $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
   $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip.CHECKSUM")
 
