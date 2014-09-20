@@ -111,17 +111,17 @@ $( document ).ready(function() {
             return $('<span>').append(dl, " ") } ) );
 
         if ( pkgi['build']['failure-log'] ) {
-                $('#pi_build')
+                $('#pi_build').html("")
                 .append($('<span>')
                         .append($('<a>', { href: build_host + pkgi['build']['failure-log'] }).html( "fails" )));
         } else if ( pkgi['build']['success-log'] && pkgi['build']['dep-failure-log'] ) {
-            $('#pi_build')                
+            $('#pi_build').html("")   
                 .append($('<span>')
                         .append($('<a>', { href: build_host + pkgi['build']['success-log'] }).html( "succeeds" ))
                         .append(" with ")
                         .append($('<a>', { href: build_host + pkgi['build']['dep-failure-log'] }).html( "dependency problems" )));
         } else if ( pkgi['build']['success-log'] ) {
-            $('#pi_build')
+            $('#pi_build').html("")
                 .append($('<span>')
                         .append($('<a>', { href: build_host + pkgi['build']['success-log'] }).html( "succeeds" )));
         }
@@ -466,14 +466,14 @@ $( document ).ready(function() {
                     .append( curate_span ),
                 $('<td>').html("")
                     .append( jslink( value['name'], function () { open_info ( value ); }) ),
-                $('<td>').append( $.map( value['build']['docs'], function ( doc, i ) {
+                $('<td>').html("").append( $.map( value['build']['docs'], function ( doc, i ) {
                     var dl;
                     if ( doc[2] ) {
                         dl = $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
                     else {
                         dl = $('<del>').html(doc[1]); }
                     return $('<span>').append(dl, " ") } ) ),
-                $('<td>').append( $.map( value['authors'], function ( author, i ) {
+                $('<td>').html("").append( $.map( value['authors'], function ( author, i ) {
                     return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
                 $('<td>').text( value['description'] ),
                 $('<td>').append( $.map( value['tags'], function ( tag, i ) {
@@ -591,8 +591,14 @@ $( document ).ready(function() {
                          value['versions']['default']['source'] = "";
                          value['versions']['default']['source_url'] = "";
                          value['versions']['default']['checksum'] = "";
+                         value['build'] = {};
+                         value['build']['success-log'] = false;
+                         value['build']['failure-log'] = false;
+                         value['build']['dep-failure-log'] = false;
+                         value['build']['conflicts-log'] = false;
+                         value['build']['docs'] = [];
 
-                         add_package_to_list (value);
+                         add_package_to_list(value);
                          evaluate_search();
                          open_info(value); }),
                      " | ",
