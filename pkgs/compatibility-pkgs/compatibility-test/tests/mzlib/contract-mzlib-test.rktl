@@ -4322,7 +4322,7 @@ so that propagation occurs.
   (ctest #f contract-stronger? (>=/c 2) (>=/c 3))
   (ctest #f contract-stronger? (<=/c 3) (<=/c 2))
   (ctest #t contract-stronger? (<=/c 2) (<=/c 3))
-  (ctest #f contract-stronger? (recursive-contract (<=/c 2)) (recursive-contract (<=/c 3)))
+  (ctest #t contract-stronger? (recursive-contract (<=/c 2)) (recursive-contract (<=/c 3)))
   (ctest #f contract-stronger? (recursive-contract (<=/c 3)) (recursive-contract (<=/c 2)))
   (let ([f (contract-eval '(λ (x) (recursive-contract (<=/c x))))])
     (test #t (contract-eval 'contract-stronger?) (contract-eval `(,f 1)) (contract-eval `(,f 1))))
