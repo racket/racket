@@ -174,16 +174,18 @@
        (λ (val)
          ((f blame-known) val)))]))
   
-(define (recursive-contract-stronger this that)
-  (and (recursive-contract? that)
-       (procedure-closure-contents-eq? (recursive-contract-thunk this)
-                                       (recursive-contract-thunk that))))
+(define (recursive-contract-stronger this that) (equal? this that))
+
+(define trail (make-parameter #f))
 
 (define ((recursive-contract-first-order ctc) val)
   (contract-first-order-passes? (force-recursive-contract ctc)
                                 val))
 
-(struct recursive-contract ([name #:mutable] thunk [ctc #:mutable] list-contract?))
+(struct recursive-contract ([name #:mutable] thunk [ctc #:mutable] list-contract?)
+  #:property prop:recursive-contract (λ (this)
+                                       (force-recursive-contract this)
+                                       (recursive-contract-ctc this)))
 
 (struct flat-recursive-contract recursive-contract ()
   #:property prop:custom-write custom-write-property-proc

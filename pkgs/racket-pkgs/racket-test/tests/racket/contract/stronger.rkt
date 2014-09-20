@@ -14,10 +14,22 @@
   (ctest #f contract-stronger? (>=/c 2) (>=/c 3))
   (ctest #f contract-stronger? (<=/c 3) (<=/c 2))
   (ctest #t contract-stronger? (<=/c 2) (<=/c 3))
-  (ctest #f contract-stronger? (recursive-contract (<=/c 2)) (recursive-contract (<=/c 3)))
+  (ctest #t contract-stronger? (recursive-contract (<=/c 2)) (recursive-contract (<=/c 3)))
   (ctest #f contract-stronger? (recursive-contract (<=/c 3)) (recursive-contract (<=/c 2)))
   (let ([f (contract-eval '(λ (x) (recursive-contract (<=/c x))))])
     (test #t (contract-eval 'contract-stronger?) (contract-eval `(,f 1)) (contract-eval `(,f 1))))
+  (ctest #t contract-stronger?
+         (letrec ([c (recursive-contract (-> (<=/c 5) c))]) c)
+         (letrec ([c (recursive-contract (-> (<=/c 3) c))]) c))
+  (ctest #t contract-stronger?
+         (letrec ([c (recursive-contract (-> (<=/c 3) c))]) c)
+         (letrec ([c (recursive-contract (-> (<=/c 1) c))]) c))
+  (ctest #t contract-stronger?
+         (letrec ([c (recursive-contract (-> (<=/c 3) c))]) c)
+         (letrec ([c (recursive-contract (-> (<=/c 1) (-> (<=/c 1) c)))]) c))
+  (ctest #t contract-stronger?
+         (letrec ([c (recursive-contract (-> (<=/c 1) (-> (<=/c 1) c)))]) c)
+         (letrec ([c (recursive-contract (-> (<=/c 1) (-> (<=/c 1) (-> (<=/c 1) c))))]) c))
   (ctest #t contract-stronger? (-> integer? integer?) (-> integer? integer?))
   (ctest #f contract-stronger? (-> boolean? boolean?) (-> integer? integer?))
   (ctest #t contract-stronger? (-> (>=/c 3) (>=/c 3)) (-> (>=/c 4) (>=/c 3)))
