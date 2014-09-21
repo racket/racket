@@ -2197,9 +2197,9 @@ static void chaperone_struct_set(const char *who, Scheme_Object *prim,
             return;
           }
         } 
-      } if (SCHEME_VECTORP(px->redirects)
-            && !(SCHEME_VEC_SIZE(px->redirects) & 1)
-            && SAME_OBJ(SCHEME_VEC_ELS(px->redirects)[1], scheme_undefined)) {
+      } else if (SCHEME_VECTORP(px->redirects)
+                 && !(SCHEME_VEC_SIZE(px->redirects) & 1)
+                 && SAME_OBJ(SCHEME_VEC_ELS(px->redirects)[1], scheme_undefined)) {
         /* chaperone on every field: check that current value is not undefined
            --- unless check is disabled by a mark (bit it's faster to check
            for `undefined` before checking the mark) */
@@ -2224,6 +2224,31 @@ void scheme_struct_set(Scheme_Object *sv, int pos, Scheme_Object *v)
     
     s->slots[pos] = v;
   }
+}
+
+int scheme_is_noninterposing_chaperone(Scheme_Object *o)
+/* Checks whether the immediate impersonator layer for `o` is known to
+   interpose on no operations (i.e., it's for impersonator properties,
+   only) */
+{
+  Scheme_Chaperone *px = (Scheme_Chaperone *)o;  
+  int i;
+
+  if (!SCHEME_VECTORP(px->redirects))
+    return 0;
+
+  if (SCHEME_VEC_SIZE(px->redirects) & 1)
+    return 0;
+
+  if (SCHEME_TRUEP(SCHEME_VEC_ELS(px->redirects)[0]))
+    return 0;
+
+  for (i = SCHEME_VEC_SIZE(px->redirects); i-- > PRE_REDIRECTS; ) {
+    if (!SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[i]))
+      return 0;
+  }
+
+  return 1;
 }
 
 static Scheme_Object **apply_guards(Scheme_Struct_Type *stype, int argc, Scheme_Object **args,
@@ -5714,8 +5739,9 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
   Scheme_Object *a[1], *inspector, *getter_positions = scheme_null;
   int i, offset, arity, non_applicable_op, repeat_op;
   const char *kind;
-  Scheme_Hash_Tree *props = NULL, *red_props = NULL, *setter_positions = NULL;
+  Scheme_Hash_Tree *props = NULL, *red_props = NULL, *empty_red_props = NULL, *setter_positions = NULL;
   intptr_t field_pos;
+  int empty_si_chaperone = 0, *empty_redirects = NULL;
 
   if (argc == 1) return argv[0];
 
@@ -5778,7 +5804,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     repeat_op = 0;
 
     if (offset == -2) {
-      if (SCHEME_TRUEP(si_chaperone))
+      if (SCHEME_TRUEP(si_chaperone) || empty_si_chaperone)
         scheme_contract_error(name,
                               "struct-info procedure supplied a second time",
                               "procedure", 1, a[0],
@@ -5804,10 +5830,9 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
         non_applicable_op = 1;
         arity = 0;
       } else {
-        if (!red_props)
-          red_props = scheme_make_hash_tree(0);
-        
-        if (scheme_hash_tree_get(red_props, prop))
+        if (red_props && scheme_hash_tree_get(red_props, prop))
+          repeat_op = 1;
+        if (empty_red_props && scheme_hash_tree_get(empty_red_props, prop))
           repeat_op = 1;
 
         arity = 2;
@@ -5820,6 +5845,8 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       if (!SCHEME_STRUCTP(val) || !scheme_is_struct_instance((Scheme_Object *)st, val))
         non_applicable_op = 1;
       else if (SCHEME_TRUEP(SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + field_pos]))
+        repeat_op = 1;
+      else if (empty_redirects && empty_redirects[offset + field_pos])
         repeat_op = 1;
       else {
         if (is_impersonator) {
@@ -5881,9 +5908,10 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
                             NULL);
 
     proc = argv[i];
-    if (!scheme_check_proc_arity(NULL, arity, i, argc, argv)) {
-      char buf[32];
-      sprintf(buf, "(procedure-arity-includes/c %d)", arity);
+    if (SCHEME_TRUEP(proc)
+        && !scheme_check_proc_arity(NULL, arity, i, argc, argv)) {
+      char buf[64];
+      sprintf(buf, "(or/c (procedure-arity-includes/c %d) #f)", arity);
       scheme_contract_error(name,
                             "operation's redirection procedure does not match the expected arity",
                             "given", 1, proc,
@@ -5894,8 +5922,8 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     }
 
     /* If the operation to chaperone was itself a chaperone, we need to
-       preserve and use he chaperoned variant of the operation. */
-    if (SCHEME_CHAPERONEP(a[0])) {
+       preserve and use the chaperoned variant of the operation. */
+    if (SCHEME_CHAPERONEP(a[0]) && SCHEME_TRUEP(proc)) {
       Scheme_Chaperone *ppx = (Scheme_Chaperone *)a[0];
       if (!is_impersonator
           && (SCHEME_CHAPERONE_FLAGS(ppx) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
@@ -5907,12 +5935,30 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       proc = scheme_make_pair(a[0], proc);
     }
 
-    if (prop)
-      red_props = scheme_hash_tree_set(red_props, prop, proc);
-    else if (st)
-      SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + field_pos] = proc;
-    else
-      si_chaperone = proc;
+    if (prop) {
+      if (SCHEME_TRUEP(prop)) {
+        if (!red_props)
+          red_props = scheme_make_hash_tree(0);
+        red_props = scheme_hash_tree_set(red_props, prop, proc);
+      } else {
+        if (!empty_red_props)
+          empty_red_props = scheme_make_hash_tree(0);
+        empty_red_props = scheme_hash_tree_set(empty_red_props, prop, proc);
+      }
+    } else if (st) {
+      if (SCHEME_TRUEP(proc))
+        SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + field_pos] = proc;
+      else {
+        if (!empty_redirects)
+          empty_redirects = MALLOC_N_ATOMIC(int, 2 * stype->num_slots);
+        empty_redirects[offset + field_pos] = 1;
+      }
+    } else {
+      if (SCHEME_TRUEP(proc))
+        si_chaperone = proc;
+      else
+        empty_si_chaperone = 1;
+    }
   }
 
   if (is_impersonator) {

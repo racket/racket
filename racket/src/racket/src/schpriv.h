@@ -1023,6 +1023,8 @@ void scheme_chaperone_hash_set(Scheme_Object *table, Scheme_Object *key, Scheme_
 
 Scheme_Object *scheme_chaperone_not_undefined(Scheme_Object *orig_val);
 
+int scheme_is_noninterposing_chaperone(Scheme_Object *obj);
+
 /*========================================================================*/
 /*                         syntax objects                                 */
 /*========================================================================*/

@@ -565,6 +565,13 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     return cmp;
 
   if (eql->for_chaperone 
+      && SCHEME_CHAPERONEP(obj2)
+      && scheme_is_noninterposing_chaperone(obj2)) {
+    obj2 = ((Scheme_Chaperone *)obj2)->prev;
+    goto top_after_next;
+  }
+
+  if (eql->for_chaperone 
       && SCHEME_CHAPERONEP(obj1)
       && (!(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)obj1) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
           || (eql->for_chaperone > 1))) {
