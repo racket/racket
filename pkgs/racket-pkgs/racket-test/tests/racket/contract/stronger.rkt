@@ -2,7 +2,8 @@
 (require "test-util.rkt")
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace 'racket/contract)])
+                (make-basic-contract-namespace 'racket/contract
+                                               'racket/class)])
 
   (contract-eval '(define-contract-struct couple (hd tl)))
   (contract-eval '(define-contract-struct triple (a b c)))
@@ -148,6 +149,10 @@
 
   (ctest #t contract-stronger? 'x symbol?)
   (ctest #f contract-stronger? symbol? 'x)
+  
+  (contract-eval
+   `(let ([c (class/c (m (-> any/c integer?)))])
+      (,test #t contract-stronger? (instanceof/c c) (instanceof/c c))))
   
   ;; chances are, this predicate will accept "x", but
   ;; we don't want to consider it stronger, since it 
