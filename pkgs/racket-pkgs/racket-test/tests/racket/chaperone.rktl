@@ -1449,6 +1449,8 @@
 ;; ----------------------------------------
 
 (let ()
+  (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
+  (define-values (prop:green green? green-ref) (make-struct-type-property 'green 'can-impersonate))
   (define (a-impersonator-of v) (a-x v))
   (define a-equal+hash (list
                         (lambda (v1 v2 equal?)
@@ -1459,7 +1461,8 @@
                           (hash (aa-y v2)))))
   (define (aa-y v) (if (a? v) (a-y v) (pre-a-y v)))
   (define-struct pre-a (x y)
-    #:property prop:equal+hash a-equal+hash)
+    #:property prop:equal+hash a-equal+hash
+    #:property prop:green 'color)
   (define-struct a (x y)
     #:property prop:impersonator-of a-impersonator-of
     #:property prop:equal+hash a-equal+hash)
@@ -1492,6 +1495,27 @@
     (err/rt-test (impersonator-of? (make-a-new-impersonator a1 1) a1))
     (err/rt-test (impersonator-of? (make-a-new-equal a1 1) a1))
     (err/rt-test (equal? (make-a-new-equal a1 1) a1))
+
+    (define a-pre-a (chaperone-struct (make-pre-a 17 1) pre-a-y (lambda (a v) v)))
+    (test 1 pre-a-y a-pre-a)
+    (test #t chaperone-of? a-pre-a a-pre-a)
+    (test #t chaperone-of? (make-pre-a 17 1) (chaperone-struct (make-pre-a 17 1) pre-a-y #f prop:blue 'color))
+    (test #f chaperone-of? (make-pre-a 17 1) (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color))
+    (test #t chaperone-of? a-pre-a (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color))
+    (test #t chaperone-of? (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color) a-pre-a)
+    (test #f chaperone-of? a-pre-a (chaperone-struct a-pre-a pre-a-y (lambda (a v) v) prop:blue 'color))
+    (test #f chaperone-of? a-pre-a (chaperone-struct a-pre-a green-ref (lambda (a v) v)))
+
+    (define (exn:second-time? e) (and (exn? e) (regexp-match? #rx"same value as" (exn-message e))))
+    (err/rt-test (chaperone-struct (make-pre-a 1 2) pre-a-y #f pre-a-y #f) exn:second-time?)
+    (err/rt-test (chaperone-struct (make-pre-a 1 2) pre-a-y (lambda (a v) v) pre-a-y #f) exn:second-time?)
+    (err/rt-test (chaperone-struct (make-pre-a 1 2) pre-a-y #f pre-a-y (lambda (a v) v)) exn:second-time?)
+
+    (eq? a-pre-a (chaperone-struct a-pre-a pre-a-y #f))
+    (eq? a-pre-a (chaperone-struct a-pre-a green-ref #f))
+
+    (test #t impersonator-of? (make-pre-a 17 1) (chaperone-struct (make-pre-a 17 1) pre-a-y #f prop:blue 'color))
+    (test #f impersonator-of? (make-pre-a 17 1) (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color))
     (void)))
 
 ;; ----------------------------------------
