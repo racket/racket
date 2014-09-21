@@ -204,12 +204,6 @@
 (define (arr->sexp arr)
   (match arr
     [(arr: dom rng rest drest kws)
-     (define out (open-output-string))
-     (define (fp . args) (apply fprintf out args))
-     (define (fp/filter fmt ret . rest)
-       (if (print-complex-filters?)
-           (apply fp fmt ret rest)
-           (fp "-> ~a" ret)))
      (append
       (list '->)
       (map type->sexp dom)
@@ -273,8 +267,6 @@
 ;; format->* : (Listof arr) -> S-Expression
 ;; Format arrs that correspond to a ->* type
 (define (format->* arrs)
-  (define out (open-output-string))
-  (define (fp . args) (apply fprintf out args))
   ;; see type-contract.rkt, which does something similar and this code
   ;; was stolen from/inspired by/etc.
   (match* ((first arrs) (last arrs))
