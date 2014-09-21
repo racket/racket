@@ -32,7 +32,7 @@
                  pretty-format-type)))
 (provide-printer)
 
-(provide special-dots-printing? print-complex-filters?
+(provide print-complex-filters?
          current-print-type-fuel current-print-unexpanded)
 
 
@@ -42,7 +42,6 @@
 ;; do we use simple type aliases in printing
 (define print-aliases #t)
 
-(define special-dots-printing? (make-parameter #f))
 (define print-complex-filters? (make-parameter #f))
 
 ;; this parameter controls how far down the type to expand type names
@@ -217,17 +216,8 @@
            (if req?
                (format "~a ~a" k (type->sexp t))
                (format "[~a ~a]" k (type->sexp t)))]))
-      (if rest
-          (list (type->sexp rest) (if (special-dots-printing?) '...* '*))
-          null)
-      (if drest
-          (if (special-dots-printing?)
-              (list (type->sexp (car drest))
-                    (string->symbol (format "...~a" (cdr drest))))
-              (list (type->sexp (car drest))
-                    '...
-                    (cdr drest)))
-          null)
+      (if rest  `(,(type->sexp rest) '*)                      null)
+      (if drest `(,(type->sexp (car drest)) ... ,(cdr drest)) null)
       (match rng
         [(AnyValues: (Top:)) '(AnyValues)]
         [(AnyValues: f) `(AnyValues : ,(filter->sexp f))]
@@ -466,12 +456,7 @@
      (define-values (covered remaining) (cover-union type ignored-names))
      (cons 'U (append covered (map t->s remaining)))]
     [(Pair: l r) `(Pairof ,(t->s l) ,(t->s r))]
-    [(ListDots: dty dbound)
-     (define dbound*
-       (if (special-dots-printing?)
-           (list (string->symbol (format "...~a" dbound)))
-           (list '... dbound)))
-     `(List ,(t->s dty) ,@dbound*)]
+    [(ListDots: dty dbound) `(List ,(t->s dty) ... ,dbound)]
     [(F: nm) nm]
     ;; FIXME (Values are not types and shouldn't need to be considered here
     [(AnyValues: (Top:)) 'AnyValues]
