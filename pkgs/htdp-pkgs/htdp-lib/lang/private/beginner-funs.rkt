@@ -276,9 +276,21 @@
                                          @interaction[#:eval (bsl) (even? 2)]
                                          }
   @defproc[(rational? [x any/c]) boolean?]{
-                                           Determines whether some value is a rational number. 
-                                           @interaction[#:eval (bsl) (rational? 1-2i)]
-                                           }
+   Determines whether some value is a rational number. 
+   @interaction[#:eval (bsl) 
+     (rational? 1)
+     (rational? -2.349)
+     (rational? #i1.23456789)
+     (rational? (sqrt -1))
+     (rational? pi)
+     (rational? e)
+     (rational? 1-2i)]
+  As the interactions show, the teaching languages considers many more
+  numbers as rationals than expected. In particular, @racket[pi] is a
+  rational number because it is only a finite approximation to the
+  mathematical π. Think of @racket[rational?] as a suggestion to think of
+  these numbers as fractions.
+  }
   @defproc[(inexact? [x number]) boolean?]{
                                            Determines whether some number is inexact.
                                            @interaction[#:eval (bsl) (inexact? 1-2i)]
