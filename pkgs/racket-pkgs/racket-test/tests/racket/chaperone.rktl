@@ -1529,6 +1529,7 @@
      (λ (kwds kwd-args . args)
         (apply values kwd-args args))
      (λ args (apply values args))))
+  (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
   
   (define g1 (chaperone-procedure f1 wrapper))
   (define g2 (chaperone-procedure f2 wrapper))
@@ -1541,6 +1542,21 @@
   (test #t chaperone-of? g2 f2)
   (test #t chaperone-of? g3 f2)
   (test #f chaperone-of? g3 g2)
+
+  (test #t chaperone-of? g1 (chaperone-procedure g1 #f prop:blue 'color))
+  (test #t chaperone-of? g2 (chaperone-procedure g2 #f prop:blue 'color))
+  (test #t chaperone-of? g3 (chaperone-procedure g3 #f prop:blue 'color))
+  (test #t chaperone-of? f3 (chaperone-procedure f3 #f prop:blue 'color))
+  (test #f chaperone-of? f3 (chaperone-procedure g3 #f prop:blue 'color))
+
+  (test #t eq? f1 (chaperone-procedure f1 #f))
+  (test #t eq? f3 (chaperone-procedure f3 #f))
+  (test #f eq? f3 (chaperone-procedure f3 #f prop:blue 'color))
+  (test #f eq? f1 (chaperone-procedure f1 #f impersonator-prop:application-mark 'x))
+  (test #f eq? f1 (chaperone-procedure f1 #f impersonator-prop:application-mark (cons 1 2)))
+  (test 8 (chaperone-procedure f2 #f prop:blue 'color) #:key 8)
+  (test 88 (chaperone-procedure f3 #f prop:blue 'color) #:key 88)
+  (test 'color blue-ref (chaperone-procedure f3 #f prop:blue 'color))
 
   (test #t equal? g1 f1)
   (test #t equal? g2 f2)

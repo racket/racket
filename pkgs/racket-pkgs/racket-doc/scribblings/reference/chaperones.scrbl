@@ -116,7 +116,7 @@ Otherwise, impersonators within @racket[v2] must be intact within
 
       ]}
 
- @item{If a part of @racket[v2] is a structure impersonator that was
+ @item{If a part of @racket[v2] is a structure or procedure impersonator that was
        created with no redirection procedures (i.e, @racket[#f] in
        place of all redirection procedures for specified operations),
        then the impersonated value is considered in place of that part
@@ -141,7 +141,7 @@ except that the mutability of vectors and boxes with @racket[v1] and
 Otherwise, chaperones within @racket[v2] must be intact within
 @racket[v1] analogous to way that @racket[impersonator-of?] requires
 that impersonators are preserved, except that @racket[prop:impersonator-of]
-has no analog for @racket[chaperone-of].}
+has no analog for @racket[chaperone-of?].}
 
 
 @defproc[(impersonator-ephemeron [v any/c]) ephemeron?]{
@@ -158,14 +158,15 @@ reachable in addition to any value that @racket[v] impersonates
 @section{Impersonator Constructors}
 
 @defproc[(impersonate-procedure [proc procedure?]
-                                [wrapper-proc procedure?]
+                                [wrapper-proc (or/c procedure? #f)]
                                 [prop impersonator-property?]
                                 [prop-val any] ... ...)
          (and/c procedure? impersonator?)]{
 
 Returns an impersonator procedure that has the same arity, name, and
 other attributes as @racket[proc]. When the impersonator procedure is
-applied, the arguments are first passed to @racket[wrapper-proc], and
+applied, the arguments are first passed to @racket[wrapper-proc]
+(when it is not @racket[#f]), and
 then the results from @racket[wrapper-proc] are passed to
 @racket[proc]. The @racket[wrapper-proc] can also supply a procedure
 that processes the results of @racket[proc].
@@ -193,6 +194,11 @@ list of replacements for the keyword arguments that were supplied to the
 impersonator (i.e., not counting optional arguments that were
 not supplied). The arguments must be ordered according to the sorted
 order of the supplied arguments' keywords.
+
+If @racket[wrapper] is @racket[#f], then applying the resulting
+impersonator is the same as applying @racket[proc]. If
+@racket[wrapper] is @racket[#f] and no @racket[prop] is provided, then
+the result is @racket[proc] unimpersonated.
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[procedure-impersonator] must be even) add impersonator properties
@@ -550,7 +556,7 @@ between @racket[impersonator-of?] and @racket[equal?]).}
 @section{Chaperone Constructors}
 
 @defproc[(chaperone-procedure [proc procedure?]
-                              [wrapper-proc procedure?]
+                              [wrapper-proc (or/c procedure? #f)]
                               [prop impersonator-property?]
                               [prop-val any] ... ...)
          (and/c procedure? chaperone?)]{

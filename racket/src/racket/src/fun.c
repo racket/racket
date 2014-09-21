@@ -3382,20 +3382,24 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
 
   if (!SCHEME_PROCP(val))
     scheme_wrong_contract(name, "procedure?", 0, argc, argv);
-  if (!SCHEME_PROCP(argv[1]))
-    scheme_wrong_contract(name, "procedure?", 1, argc, argv);
+  if (!SCHEME_FALSEP(argv[1]) && !SCHEME_PROCP(argv[1]))
+    scheme_wrong_contract(name, "(or/c procedure? #f)", 1, argc, argv);
 
   orig = get_or_check_arity(val, -1, NULL, 1);
-  naya = get_or_check_arity(argv[1], -1, NULL, 1);
+  if (SCHEME_FALSEP(argv[1]))
+    naya = scheme_false;
+  else {
+    naya = get_or_check_arity(argv[1], -1, NULL, 1);
 
-  if (!is_subarity(orig, naya))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "%s: arity of wrapper procedure does not cover arity of original procedure\n"
-                     "  wrapper: %V\n"
-                     "  original: %V",
-                     name,
-                     argv[1],
-                     argv[0]);
+    if (!is_subarity(orig, naya))
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "%s: arity of wrapper procedure does not cover arity of original procedure\n"
+                       "  wrapper: %V\n"
+                       "  original: %V",
+                       name,
+                       argv[1],
+                       argv[0]);
+  }
 
   props = scheme_parse_chaperone_props(name, 2, argc, argv);
   if (props) {
@@ -3406,14 +3410,18 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
         props = NULL; 
       else
         props = scheme_hash_tree_set(props, scheme_app_mark_impersonator_property, NULL);
-      /* app_mark should be (cons mark val) */
-      if (!SCHEME_PAIRP(app_mark))
-        app_mark = scheme_false;
     } else
       app_mark = scheme_false;
   } else
     app_mark = scheme_false;
 
+  if (SCHEME_FALSEP(argv[1]) && SCHEME_FALSEP(app_mark) && !props)
+    return argv[0];
+
+  /* app_mark should be (cons mark val) */
+  if (SCHEME_FALSEP(app_mark) && !SCHEME_PAIRP(app_mark))
+    app_mark = scheme_false;
+  
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
   px->iso.so.type = scheme_proc_chaperone_type;
   px->val = val;
@@ -3560,6 +3568,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     what = "chaperone";
   else
     what = "impersonator";
+
+  if (SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0])) {
+    /* no redirection procedure */
+    return _scheme_tail_apply(px->prev, argc, argv);
+  }
 
   /* Ensure that the original procedure accepts `argc' arguments: */
   if (argc != SCHEME_INT_VAL(SCHEME_VEC_ELS(px->redirects)[1])) {
