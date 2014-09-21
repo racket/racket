@@ -3,15 +3,15 @@
 ;; define a primitive operator that consumes a procedure.
 ;; See manual for more information.
 
-(module prim mzscheme
-  (require lang/error
-           (rename lang/htdp-beginner beginner-app #%app))
+#lang mzscheme
+(require lang/error
+  (rename lang/htdp-beginner beginner-app #%app))
   
-  (require-for-syntax (prefix fo: "private/firstorder.rkt")
+(require-for-syntax (prefix fo: "private/firstorder.rkt")
                       stepper/private/syntax-property)
   
-  (provide define-primitive
-	   define-higher-order-primitive
+(provide define-primitive
+         define-higher-order-primitive
 	   provide-primitive
 	   provide-higher-order-primitive
 	   provide-primitives
@@ -167,6 +167,4 @@
        (with-syntax ([ex-name ((make-syntax-introducer) #'name)])
 	 #'(begin
 	     (define-higher-order-primitive ex-name name (arg ...))
-	     (provide ex-name)))])))
-
-
+	     (provide ex-name)))]))
