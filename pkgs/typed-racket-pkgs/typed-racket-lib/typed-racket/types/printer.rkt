@@ -32,7 +32,7 @@
                  pretty-format-type)))
 (provide-printer)
 
-(provide print-complex-filters?
+(provide print-complex-filters? type-output-sexpr-tweaker
          current-print-type-fuel current-print-unexpanded)
 
 
@@ -42,6 +42,7 @@
 ;; do we use simple type aliases in printing
 (define print-aliases #t)
 
+(define type-output-sexpr-tweaker (make-parameter values))
 (define print-complex-filters? (make-parameter #f))
 
 ;; this parameter controls how far down the type to expand type names
@@ -97,7 +98,8 @@
   (port-count-lines! out)
   (write-string (make-string indent #\space) out)
   (parameterize ([pretty-print-current-style-table type-style-table])
-    (pretty-display (type->sexp type '()) out))
+    (pretty-display ((type-output-sexpr-tweaker) (type->sexp type '()))
+                    out))
   (string-trim #:left? #f (substring (get-output-string out) indent)))
 
 ;; filter->sexp : Filter -> S-expression
