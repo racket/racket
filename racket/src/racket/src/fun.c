@@ -3661,12 +3661,14 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
                      "procedure %s: arity mismatch;\n"
-                     " expected number of results not received from wrapper on the orignal\n"
+                     " expected number of results not received from wrapper on the original\n"
                      " procedure's arguments\n"
+                     "  original: %V\n"
                      "  wrapper: %V\n"
                      "  expected: %d or %d\n"
                      "  received: %d",
                      what,
+                     o,
                      SCHEME_VEC_ELS(px->redirects)[0],
                      argc, argc + 1,
                      c);
@@ -3720,9 +3722,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "procedure %s: wrapper's first result is not a procedure;\n"
                        " extra result compared to original argument count should be\n"
                        " a wrapper for the original procedure's result\n"
+                       "  original: %V\n"
                        "  wrapper: %V\n"
                        "  received: %V",
                        what,
+                       o,
                        SCHEME_VEC_ELS(px->redirects)[0],
                        post);
 
@@ -3773,11 +3777,14 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     
     if (!scheme_check_proc_arity(NULL, c, 0, -1, &post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "procedure-result chaperone: arity mismatch;\n"
+                       "procedure-result %s: arity mismatch;\n"
                        " wrapper does not accept the number of values produced by\n"
                        " the original procedure\n"
+                       "  original: %V\n"
                        "  wrapper: %V\n"
                        "  number of values: %d",
+                       what,
+                       o,
                        post,
                        c);
     
@@ -3818,10 +3825,12 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "procedure-result %s: result arity mismatch;\n"
                        " expected number of values not received from wrapper on the original\n"
                        " procedure's result\n"
+                       "  original: %V\n"
                        "  wrapper: %V\n"
                        "  expected: %d\n"
                        "  received: %d",
                        what,
+                       o,
                        post,
                        c, argc);
       return NULL;
