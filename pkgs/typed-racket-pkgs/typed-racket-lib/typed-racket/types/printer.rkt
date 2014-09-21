@@ -58,16 +58,12 @@
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Listof<Symbol>]
 (define (has-name? t)
-  (cond 
-   [print-aliases
-    (define candidates 
-      (for/list ([(n t*) (in-pairs (in-list (force (current-type-names))))]
-		 #:when (and (Type? t*) (type-equal? t t*)))
-	 n))
-    (if (null? candidates)
-        #f
-        (sort candidates string>? #:key symbol->string))]
-   [else #f]))
+  (define candidates
+    (for/list ([(n t*) (in-pairs (in-list (force (current-type-names))))]
+               #:when (and print-aliases (Type? t*) (type-equal? t t*)))
+      n))
+  (and (pair? candidates)
+       (sort candidates string>? #:key symbol->string #:cache-keys? #t)))
 
 ;; print-<thing> : <thing> Output-Port Boolean -> Void
 ;; print-type also takes an optional (Listof Symbol)
