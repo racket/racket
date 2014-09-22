@@ -69,7 +69,7 @@
             (let loop ([mode #f])
               (let-values ([(lexeme type data start end backup-delta mode)
                             (module-lexer in 0 mode)])
-                (if (eof-object? lexeme)
+                (if (equal? type 'eof)
                     null
                     (cons (list type (sub1 start) (sub1 end) 0)
                           (loop (if (dont-stop? mode)
