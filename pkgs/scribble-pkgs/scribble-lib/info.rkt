@@ -13,7 +13,8 @@
                "draw-lib" 
                "syntax-color-lib"
                "sandbox-lib"))
-(define build-deps '("rackunit-lib"))
+(define build-deps '("rackunit-lib"
+                     "eli-tester"))
 
 (define implies '("scribble-html-lib"))
 
