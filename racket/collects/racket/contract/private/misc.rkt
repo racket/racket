@@ -1514,19 +1514,18 @@
 
 
 (define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
-(define (flat-named-contract name predicate [generate #f])
+(define (flat-named-contract name pre-contract [generate #f])
   (cond
-    [(and (procedure? predicate)
-          (procedure-arity-includes? predicate 1))
-     (make-predicate-contract name predicate generate #f)]
-    [(flat-contract? predicate)
-     (make-predicate-contract name (flat-contract-predicate predicate) generate #f)]
+    [(and (not generate)
+          (coerce-contract/f pre-contract name))
+     =>
+     values]
+    [(flat-contract? pre-contract)
+     (make-predicate-contract name (flat-contract-predicate pre-contract) generate #f)]
     [else
      (raise-argument-error 'flat-named-contract
-                           (format "~s" `(or/c flat-contract?
-                                               (and/c procedure?
-                                                      (λ (x) (procedure-arity-include? x 1)))))
-                           predicate)]))
+                           "flat-contract?"
+                           pre-contract)]))
 
 (define printable/c
   (flat-named-contract

@@ -116,21 +116,18 @@ implement contracts~@cite{Strickland12}.
 @section[#:tag "data-structure-contracts"]{Data-structure Contracts}
 @declare-exporting-ctc[racket/contract/base]
 
-@defproc[(flat-named-contract [type-name any/c]
-                              [predicate flat-contract?]
+@defproc[(flat-named-contract [name any/c]
+                              [flat-contract flat-contract?]
                               [generator (or/c #f (-> contract (-> int? any))) #f])
          flat-contract?]{
+Produces a contract like @racket[flat-contract], but with the name @racket[name].
 
-On predicates, behaves like @racket[flat-contract], but the first argument must be the
-(quoted) name of a contract used for error reporting.
 For example,
-@racketblock[(flat-named-contract
-              'odd-integer
-              (lambda (x) (and (integer? x) (odd? x))))]
-turns the predicate into a contract with the name @tt{odd-integer}.
-
-On flat contracts, the new flat contract is the same as the old except for
-the name.
+@racketblock[(define/contract i
+               (flat-named-contract
+                'odd-integer
+                (lambda (x) (and (integer? x) (odd? x))))
+               2)]
 
 The generator argument adds a generator for the flat-named-contract. See
 @racket[contract-generate] for more information.
