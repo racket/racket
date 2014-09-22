@@ -150,6 +150,18 @@
   (ctest #t contract-stronger? 'x symbol?)
   (ctest #f contract-stronger? symbol? 'x)
   
+  (ctest #t contract-stronger?
+         (flat-named-contract 'name1 #f)
+         (flat-named-contract 'name2 #f))
+  (ctest #t contract-stronger?
+         (flat-named-contract 'name1 (flat-named-contract 'name2 #f))
+         (flat-named-contract 'name3 (flat-named-contract 'name4 #f)))
+  (ctest #t contract-stronger? (flat-named-contract 'name1 1) (flat-named-contract 'name2 1))
+  (ctest #t contract-stronger? (flat-named-contract 'name1 "x") (flat-named-contract 'name2 "x"))
+  (ctest #t contract-stronger? 
+         (flat-named-contract 'name2 (regexp "x"))
+         (flat-named-contract 'name2 (regexp "x")))
+  
   (contract-eval
    `(let ([c (class/c (m (-> any/c integer?)))])
       (,test #t contract-stronger? (instanceof/c c) (instanceof/c c))))
