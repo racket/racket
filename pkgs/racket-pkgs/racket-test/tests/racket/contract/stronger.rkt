@@ -3,8 +3,9 @@
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 'racket/contract
+                                               'racket/list
                                                'racket/class)])
-
+  
   (contract-eval '(define-contract-struct couple (hd tl)))
   (contract-eval '(define-contract-struct triple (a b c)))
   
@@ -56,7 +57,7 @@
   (let ([c (contract-eval '(->i () () any))])
     (test #t (contract-eval 'contract-stronger?) c c))
 
-  (ctest #f contract-stronger? 
+  (ctest #f contract-stronger?
          (->* () #:pre (zero? (random 10)) any) 
          (->* () #:pre (zero? (random 10)) any))
   (ctest #f contract-stronger? 
@@ -135,7 +136,15 @@
   
   (ctest #t contract-stronger? (cons/c boolean? integer?) (cons/c boolean? integer?))
   (ctest #f contract-stronger? (cons/c boolean? integer?) (cons/c integer? boolean?))
-  
+  (ctest #t contract-stronger? (cons/c number? (listof number?)) (non-empty-listof number?))
+  (ctest #t contract-stronger? (non-empty-listof number?) (cons/c number? (listof number?)))
+  (ctest #t contract-stronger? (cons/c number? (list/c number? number?)) (non-empty-listof number?))
+  (ctest #t contract-stronger? (cons/c number? (cons/c number? (listof number?))) (listof number?))
+  (ctest #t contract-stronger? 
+         (cons/c (<=/c 1) (cons/c (<=/c 2) (listof (<=/c 3)))) 
+         (listof (<=/c 4)))
+  (ctest #f contract-stronger? (listof number?) (cons/c number? (cons/c number? (listof any/c))))
+    
   (contract-eval
    `(let ()
       (define x (flat-rec-contract x (or/c (cons/c x '()) '())))
@@ -161,6 +170,15 @@
   (ctest #t contract-stronger? 
          (flat-named-contract 'name2 (regexp "x"))
          (flat-named-contract 'name2 (regexp "x")))
+  (ctest #t contract-stronger? (listof (<=/c 3)) (listof (<=/c 5)))
+  (ctest #t contract-stronger? (list/c (<=/c 3) (<=/c 3)) (list/c (<=/c 3) (<=/c 3)))
+  (ctest #f contract-stronger? (list/c (<=/c 3) (<=/c 3)) (list/c (<=/c 3) (<=/c 3) (<=/c 3)))
+  (ctest #f contract-stronger? (list/c (<=/c 3) (<=/c 3) (<=/c 3)) (list/c (<=/c 3) (<=/c 3)))
+  (ctest #t contract-stronger? (list/c (<=/c 3) (<=/c 3)) (listof (<=/c 5)))
+  (ctest #t contract-stronger? (list/c (<=/c 3) (<=/c 3)) (non-empty-listof (<=/c 5)))
+  (ctest #t contract-stronger? (list/c (<=/c 3)) (non-empty-listof (<=/c 5)))
+  (ctest #f contract-stronger? (list/c) (non-empty-listof (<=/c 5)))
+  (ctest #t contract-stronger? (list/c) (listof (<=/c 5)))
   
   (contract-eval
    `(let ([c (class/c (m (-> any/c integer?)))])
