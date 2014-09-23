@@ -32,6 +32,12 @@
           (cairo_scale cr s s)))
       (super init-cr-matrix cr))
 
+    (define/override (init-effective-matrix mx)
+      (when bm
+	(define s (send bm get-cairo-device-scale))
+	(unless (= s 1)
+          (cairo_matrix_scale mx s s))))
+
     (define/override (ok?) (and c #t))
 
     (define/private (do-set-bitmap v reset?)

@@ -183,8 +183,13 @@
     
     (define/override (init-cr-matrix cr)
       (unless (= backing-scale 1.0)
-	      (cairo_scale cr backing-scale backing-scale))
+        (cairo_scale cr backing-scale backing-scale))
       (super init-cr-matrix cr))
+
+    (define/override (init-effective-matrix mx)
+      (unless (= backing-scale 1.0)
+        (cairo_matrix_scale mx backing-scale backing-scale))
+      (super init-effective-matrix mx))
     
     (define/override (reset-config s)
       (set! backing-scale s)
