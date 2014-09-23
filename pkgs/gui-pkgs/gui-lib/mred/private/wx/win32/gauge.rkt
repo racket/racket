@@ -55,6 +55,8 @@
         (set-size #f #f 100 24)
         (set-size #f #f 24 100))
 
+    (define/override (size->screen v) (->screen* v))
+
     (define/public (get-value)
       (SendMessageW hwnd PBM_GETPOS 0 0))
     (define/public (set-value v)

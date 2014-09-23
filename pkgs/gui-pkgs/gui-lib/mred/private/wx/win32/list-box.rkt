@@ -268,6 +268,8 @@
     (set-control-font font)
     (set-size #f #f 40 60)
 
+    (define/override (size->screen v) (->screen* v))
+
     (define callback cb)
 
     (define/override (is-command? cmd)

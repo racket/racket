@@ -133,6 +133,8 @@
         (auto-size font label 60 20 12 0 #:scale-w 1.1 #:scale-h 1.1)]))
     (auto-size-button font label)
 
+    (define/override (size->screen v) (->screen* v))
+
     ;; XP doesn't show both bitmap and string labels,
     ;; so we synthesize a bitmap label when we have both
     (define xp-label-bitmap (and xp? orientation (car label)))
