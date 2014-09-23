@@ -1048,31 +1048,63 @@
 
 (define/subexpression-pos-prop promise/c
   (λ (ctc-in)
-    (let* ([ctc (coerce-contract 'promise/c ctc-in)]
-           [ctc-proc (contract-projection ctc)])
-      (define chap? (chaperone-contract? ctc))
-      (define c/i-struct (if chap? chaperone-struct impersonate-struct))
-      (define c/i-procedure (if chap? chaperone-procedure impersonate-procedure))
-      ((if chap? make-chaperone-contract make-contract)
-       #:name (build-compound-type-name 'promise/c ctc)
-       #:projection
-       (λ (blame)
-         (let ([p-app (ctc-proc (blame-add-context blame "the promise from"))])
-           (λ (val)
-             (unless (promise? val)
-               (raise-blame-error
-                blame
-                val
-                '(expected: "<promise>" given: "~e")
-                val))
-             (c/i-struct
-              val
-              promise-forcer (λ (_ proc) 
-                               (c/i-procedure
-                                proc
-                                (λ (promise)
-                                  (values p-app promise))))))))
-       #:first-order promise?))))
+    (define ctc (coerce-contract 'promise/c ctc-in))
+    (cond
+      [(chaperone-contract? ctc)
+       (chaperone-promise-ctc ctc)]
+      [else
+       (promise-ctc ctc)])))
+
+(define (promise-contract-val-first-proj ctc)
+  (define chap? (chaperone-promise-ctc? ctc))
+  (define c/i-struct (if chap? chaperone-struct impersonate-struct))
+  (define c/i-procedure (if chap? chaperone-procedure impersonate-procedure))
+  (define ctc-proc (get/build-val-first-projection (promise-base-ctc-ctc ctc)))
+  (λ (blame)
+    (define p-app (ctc-proc (blame-add-context blame "the promise from")))
+    (λ (val)
+      (if (promise? val)
+          (λ (neg-party)
+            (c/i-struct
+             val
+             promise-forcer
+             (λ (_ proc)
+               (c/i-procedure
+                proc
+                (λ (promise)
+                  (values (λ (val) ((p-app val) neg-party)) promise))))))
+          (λ (neg-party)
+            (raise-blame-error
+             blame #:missing-party neg-party
+             val
+             '(expected: "<promise>" given: "~e")
+             val))))))
+
+(define (promise-contract-name ctc)
+  (build-compound-type-name 'promise/c (promise-base-ctc-ctc ctc)))
+
+(define (promise-ctc-stronger? this that)
+  (and (promise-base-ctc? that)
+       (contract-stronger? (promise-base-ctc-ctc this)
+                           (promise-base-ctc-ctc that))))
+
+(struct promise-base-ctc (ctc))
+(struct chaperone-promise-ctc promise-base-ctc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:name promise-contract-name
+   #:val-first-projection promise-contract-val-first-proj
+   #:stronger promise-ctc-stronger?
+   #:first-order (λ (ctc) promise?)))
+(struct promise-ctc promise-base-ctc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:contract
+  (build-contract-property
+   #:name promise-contract-name
+   #:val-first-projection promise-contract-val-first-proj
+   #:stronger promise-ctc-stronger?
+   #:first-order (λ (ctc) promise?)))
 
 ;; (parameter/c in/out-ctc)
 ;; (parameter/c in-ctc out-ctc)
