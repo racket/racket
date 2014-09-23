@@ -195,6 +195,8 @@
   (ctest #t contract-stronger? (list/c (<=/c 3)) (non-empty-listof (<=/c 5)))
   (ctest #f contract-stronger? (list/c) (non-empty-listof (<=/c 5)))
   (ctest #t contract-stronger? (list/c) (listof (<=/c 5)))
+  (ctest #t contract-stronger? (promise/c (<=/c 2)) (promise/c (<=/c 3)))
+  (ctest #f contract-stronger? (promise/c (<=/c 3)) (promise/c (<=/c 2)))
   
   (contract-eval
    `(let ([c (class/c (m (-> any/c integer?)))])
