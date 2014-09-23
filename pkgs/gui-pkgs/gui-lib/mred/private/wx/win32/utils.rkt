@@ -47,6 +47,7 @@
               SelectObject
               WideCharToMultiByte
 	      GetDeviceCaps
+	      strip-&
 	      ->screen
 	      ->normal))
 
@@ -161,6 +162,13 @@
 (define-kernel32 WideCharToMultiByte (_wfun _UINT _DWORD _pointer _int
                                             _pointer _int _pointer _pointer
                                             -> _int))
+;; ----------------------------------------
+
+(define (strip-& s)
+  (if (string? s)
+      (regexp-replace* #rx"&(.)" s "\\1")
+      s))
+
 ;; ----------------------------------------
 
 (define-gdi32 GetDeviceCaps (_wfun _HDC _int -> _int))
