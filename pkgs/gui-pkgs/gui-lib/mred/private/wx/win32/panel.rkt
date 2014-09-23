@@ -112,7 +112,7 @@
                                               (if (memq 'border style)
                                                   WS_BORDER
                                                   0))
-                                 0 0 w h
+                                 0 0 (->screen w) (->screen h)
                                  (send parent get-content-hwnd)
                                  #f
                                  hInstance

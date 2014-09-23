@@ -78,10 +78,6 @@
 (define-gdi32 EndPage (_wfun _HDC -> (r : _int) -> (unless (positive? r) (failed 'EndPage))))
 (define-gdi32 EndDoc (_wfun _HDC -> (r : _int) -> (unless (positive? r) (failed 'EndDoc))))
 
-(define-gdi32 GetDeviceCaps (_wfun _HDC _int -> _int))
-
-(define LOGPIXELSX    88)
-(define LOGPIXELSY    90)
 (define PHYSICALOFFSETX 112)
 (define PHYSICALOFFSETY 113)
 
@@ -124,13 +120,9 @@
          ;; the hDevModes and hDevNames fields
          r)))))
 
-;; Pango uses the resolution of the screen to make point<->pixel
-;;  decisions for all devices (by default). So, we make on drawing unit in
-;;  a printing context match the relative drawing unit for the screen.
-(define SCREEN-DPI (let ([hdc (GetDC #f)])
-		     (begin0
-		      (exact->inexact (GetDeviceCaps hdc LOGPIXELSX))
-		      (ReleaseDC #f hdc))))
+;; Make on drawing unit in a printing context match the relative drawing
+;; unit for the screen, where the conceptual drawing unit is always 96dpi
+(define SCREEN-DPI 96)
 
 (define printer-dc%
   (class (record-dc-mixin (dc-mixin bitmap-dc-backend%))

@@ -40,7 +40,7 @@
                        "PLTTabPanel"
                        #f
                        (bitwise-ior WS_CHILD WS_VISIBLE)
-                       0 0 w h
+                       0 0 (->screen w) (->screen h)
                        hwnd
                        #f
                        hInstance
@@ -69,4 +69,5 @@
     (define/override (set-size x y w h)
       (super set-size x y w h)
       (unless (or (= w -1) (= h -1))
-        (MoveWindow client-hwnd 3 (+ label-h 3) (- w 6) (- h label-h 6) #t)))))
+        (MoveWindow client-hwnd (->screen 3) (->screen (+ label-h 3))
+		    (->screen (- w 6)) (->screen (- h label-h 6)) #t)))))

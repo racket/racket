@@ -751,31 +751,22 @@ Different kinds of bitmaps can produce different results:
        constrained resources only during the drawing process.}
 
  @item{Drawing to a bitmap produced by @racket[make-screen-bitmap]
-       from @racketmodname[racket/gui/base] or by @xmethod[canvas%
-       make-bitmap] uses the same platform-specific drawing operations
-       as drawing into a @racket[canvas%] instance. A bitmap produced
-       by @racket[make-screen-bitmap] is the same as one produced by
-       @racket[make-platform-bitmap] on Windows or Mac OS X, but it
-       may be sensitive to the X11 server on Unix. On Mac OS X, when
-       the main screen is in Retina mode (at the time that the bitmap
-       is created), the bitmap is also internally scaled so that one
-       drawing unit uses two pixels.
-
-       Use @racket[make-screen-bitmap] when drawing to a bitmap as an
-       offscreen buffer before transferring an image to the screen, or
-       when consistency with screen drawing is needed for some other
-       reason.}
-
- @item{Drawing to a bitmap produced by @racket[make-screen-bitmap]
-       from @racketmodname[racket/gui/base]
-       uses the same platform-specific drawing operations
-       as drawing into a @racket[canvas%] instance. A bitmap produced
-       by @racket[make-screen-bitmap] is the same as one produced by
-       @racket[make-platform-bitmap] on Windows or Mac OS X, but it
-       may be sensitive to the X11 server on Unix. On Mac OS X, when
-       the main screen is in Retina mode (at the time that the bitmap
-       is created), the bitmap is also internally scaled so that one
-       drawing unit uses two pixels.
+       from @racketmodname[racket/gui/base] uses the same
+       platform-specific drawing operations as drawing into a
+       @racket[canvas%] instance. A bitmap produced by
+       @racket[make-screen-bitmap] uses the same platform-specific
+       drawing as @racket[make-platform-bitmap] on Windows or Mac OS
+       X, but possibly scaled, and it may be sensitive to the X11
+       server on Unix.
+ 
+       On Mac OS X, when the main screen is in Retina mode (at the
+       time that the bitmap is created), the bitmap is also internally
+       scaled so that one drawing unit uses two pixels. Similarly, on
+       Windows, when the main display's text scale is configured at
+       the operating-system level (see @secref[#:doc '(lib
+       "scribblings/gui/gui.scrbl") "display-resolution"]), the bitmap
+       is internally scaled, where common configurations map a drawing
+       unit to @math{1.25}, @math{1.5}, or @math{2} pixels.
 
        Use @racket[make-screen-bitmap] when drawing to a bitmap as an
        offscreen buffer before transferring an image to the screen, or
@@ -787,9 +778,12 @@ Different kinds of bitmaps can produce different results:
        @racket[make-screen-bitmap], but on Mac OS X, the bitmap is
        optimized for drawing to the screen (by taking advantage of
        system APIs that can, in turn, take advantage of graphics
-       hardware).}
+       hardware).
+
+       Use @xmethod[canvas% make-bitmap] for similar purposes
+       as @racket[make-screen-bitmap], particularly when the bitmap
+       will be drawn later to a known target canvas.}
 
 ]
-
 
 @close-eval[draw-eval]

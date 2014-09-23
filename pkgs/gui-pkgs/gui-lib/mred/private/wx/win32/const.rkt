@@ -611,6 +611,8 @@
 
 (define HORZRES       8)
 (define VERTRES       10)
+(define LOGPIXELSX    88)
+(define LOGPIXELSY    90)
 
 (define CBS_DROPDOWNLIST #x0003)
 (define CB_INSERTSTRING #x014A)

@@ -1008,15 +1008,17 @@
     (init w h backing-scale)
     (super-make-object (make-alternate-bitmap-kind w h backing-scale))
 
-    (define s (build-cairo-surface w h))
+    (define s (build-cairo-surface w h backing-scale))
     ;; erase the bitmap
     (let ([cr (cairo_create s)])
       (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
       (cairo_paint cr)
       (cairo_destroy cr))
 
-    (define/public (build-cairo-surface w h)
-      (cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 w h))
+    (define/public (build-cairo-surface w h backing-scale)
+      (let ([sw (*i backing-scale w)]
+	    [sh (*i backing-scale h)])
+	(cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 sw sh)))
 
     (define/override (ok?) #t)
     (define/override (is-color?) #t)

@@ -104,8 +104,7 @@
        
       (define already-trying? #f)
       (define was-bad? #f)    ; hack around min-frame-size limitations
-      (define last-width -1)
-      (define last-height -1)
+      (define tried-sizes #hash())
        
       ;; pointer to panel in the frame for use in on-size
       (define panel #f)
@@ -352,19 +351,19 @@
                   [(and (= new-width correct-w) (= new-height correct-h))
                    ;; Good size; do panel
                    (set! was-bad? #f)
+		   (set! tried-sizes #hash())
                    (enforce-size min-w min-h
                                  (if sx? -1 min-w) (if sy? -1 min-h)
                                  1 1)
                    (set-panel-size)]
-                  [(and (= last-width correct-w) (= last-height correct-h)
+                  [(and (hash-ref tried-sizes (cons correct-w correct-h) #f)
                         was-bad?)
                    ;; We give up; do panel
                    (set-panel-size)]
                   [else
                    ;; Too large/small; try to fix it, but give up after a while
                    (set! was-bad? #t)
-                   (set! last-width correct-w)
-                   (set! last-height correct-h)
+		   (set! tried-sizes (hash-set tried-sizes (cons correct-w correct-h) #t))
                    (set! already-trying? #t)
                    (enforce-size -1 -1 -1 -1 1 1)
                    (set-size #f #f correct-w correct-h)

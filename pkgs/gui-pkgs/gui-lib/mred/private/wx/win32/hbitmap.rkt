@@ -25,7 +25,7 @@
 		 ;; RGB win32 bitmaps to RGB win32 bitmaps in a
 		 ;; way that sometimes mangles the alpha; avoid the
 		 ;; problem by first copying to a Cairo memory bitmap.
-		 (let* ([new-b (make-object bitmap% w h #f #f)]
+		 (let* ([new-b (make-object bitmap% w h #f #f (send bm get-backing-scale))]
 			[dc (make-object bitmap-dc% new-b)])
 		   (send dc draw-bitmap bm 0 0)
 		   (send dc set-bitmap #f)
@@ -36,14 +36,18 @@
          [to-frac (lambda (v) (/ v 255.0))]
          [screen-hdc (GetDC #f)]
          [hdc (CreateCompatibleDC screen-hdc)]
+	 [sc (->screen 1.0)]
+	 [scaled (lambda (v) (inexact->exact (ceiling (* v sc))))]
          [hbitmap (if b&w?
                       (CreateBitmap w h 1 1 #f)
-                      (CreateCompatibleBitmap screen-hdc w h))]
+                      (CreateCompatibleBitmap screen-hdc (scaled w) (scaled h)))]
          [old-hbitmap (SelectObject hdc hbitmap)])
     (ReleaseDC #f screen-hdc)
     (let* ([s (cairo_win32_surface_create hdc)]
            [cr (cairo_create s)])
       (cairo_surface_destroy s)
+      (unless (= sc 1)
+	(cairo_scale cr sc sc))
       (cairo_set_source_rgba cr 
                              (to-frac (GetRValue bg))
                              (to-frac (GetGValue bg))

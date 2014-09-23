@@ -53,7 +53,7 @@
         (let loop ([y 0] [w 0] [labels labels])
           (if (null? labels)
               (begin
-                (MoveWindow hwnd 0 0 w y #t)
+                (MoveWindow hwnd 0 0 (->screen w) (->screen y) #t)
                 null)
               (let* ([label (car labels)]
                      [bitmap? (label . is-a? . bitmap%)]
@@ -83,8 +83,12 @@
                               (auto-size font label 0 0 20 4
                                          (lambda (w1 h1)
                                            (if horiz?
-                                               (MoveWindow radio-hwnd (+ w SEP) 0 w1 h1 #t)
-                                               (MoveWindow radio-hwnd 0 (+ y SEP) w1 h1 #t))
+                                               (MoveWindow radio-hwnd (->screen (+ w SEP)) 0
+							   (->screen w1) (->screen h1)
+							   #t)
+                                               (MoveWindow radio-hwnd 0 (->screen (+ y SEP))
+							   (->screen w1) (->screen h1)
+							   #t))
                                            (values w1 h1)))])
                   (cons radio-hwnd
                         (loop (if horiz? (max y h) (+ y SEP h))
