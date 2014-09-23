@@ -260,9 +260,22 @@
           ((string-length x) . < . n)))))
 
 (define (between/c-stronger this that)
-  (and (between/c-s? that)
-       (<= (between/c-s-low that) (between/c-s-low this))
-       (<= (between/c-s-high this) (between/c-s-high that))))
+  (define this-low (between/c-s-low this))
+  (define this-high (between/c-s-high this))
+  (cond
+    [(between/c-s? that)
+     (and (<= (between/c-s-low that) this-low)
+          (<= this-high (between/c-s-high that)))]
+    [(</>-ctc? that)
+     (define that-x (</>-ctc-x that))
+     (cond
+       [(<-ctc? that)
+        (and (= this-low -inf.0)
+             (< this-high that-x))]
+       [(>-ctc? that)
+        (and (= this-high +inf.0)
+             (< that-x this-low))])]
+    [else #f]))
 
 (define (between/c-first-order ctc)
   (define n (between/c-s-low ctc))
@@ -359,29 +372,66 @@
   (check-between/c x y)
   (make-between/c-s x y))
 
-(define (</c x)
-  (flat-named-contract
-   `(</c ,x)
-   (λ (y) (and (real? y) (< y x)))
-   (λ (fuel)
-     (λ ()
-       (rand-choice
-        [1/10 -inf.0]
-        [1/10 (- x 0.01)]
-        [4/10 (- x (random))]
-        [else (- x (random 4294967087))])))))
+(define (make-</c->/c-contract-property name </> -/+ less/greater)
+  (build-flat-contract-property
+   #:name (λ (c) `(,name ,(</>-ctc-x c)))
+   #:first-order (λ (ctc) (define x (</>-ctc-x ctc)) (λ (y) (and (real? y) (</> y x))))
+   #:projection (λ (ctc)
+                  (define x (</>-ctc-x ctc))
+                  (λ (blame)
+                    (λ (val)
+                      (if (and (real? val) (</> val x))
+                          val
+                          (raise-blame-error
+                           blame val
+                           '(expected:
+                             "a number strictly ~a than ~v"
+                             given: "~v")
+                           less/greater
+                           x
+                           val)))))
+   #:generate
+   (λ (ctc)
+     (define x (</>-ctc-x ctc))
+     (λ (fuel)
+       (λ ()
+         (rand-choice
+          [1/10 -inf.0]
+          [1/10 (-/+ x 0.01)]
+          [4/10 (-/+ x (random))]
+          [else (-/+ x (random 4294967087))]))))
+   #:stronger </>-ctc-stronger))
 
-(define (>/c x)
-  (flat-named-contract
-    `(>/c ,x)
-    (λ (y) (and (real? y) (> y x)))
-    (λ (fuel) 
-      (λ ()
-        (rand-choice
-         [1/10 +inf.0]
-         [1/10 (+ x 0.01)]
-         [4/10 (+ x (random))]
-         [else (+ x (random 4294967087))])))))
+(define (</>-ctc-stronger this that)
+  (define this-x (</>-ctc-x this))
+  (cond
+    [(</>-ctc? that)
+     (cond
+       [(and (<-ctc? this) (<-ctc? that))
+        (<= this-x (</>-ctc-x that))]
+       [(and (>-ctc? this) (>-ctc? that))
+        (>= this-x (</>-ctc-x that))])]
+    [(between/c-s? that)
+     (cond
+       [(<-ctc? this)
+        (and (= (between/c-s-low that) -inf.0)
+             (<= this-x (between/c-s-high that)))]
+       [else
+        (and (= (between/c-s-high that) +inf.0)
+             (<= (between/c-s-low that) this-x))])]))
+
+
+(struct </>-ctc (x))
+(struct <-ctc </>-ctc ()
+  #:property prop:flat-contract
+  (make-</c->/c-contract-property '</c < - "less")
+  #:property prop:custom-write custom-write-property-proc)
+(define (</c x) (<-ctc x))
+(struct >-ctc </>-ctc ()
+  #:property prop:flat-contract
+  (make-</c->/c-contract-property '>/c > + "greater")
+  #:property prop:custom-write custom-write-property-proc)
+(define (>/c x) (>-ctc x))
 
 (define (check-two-args name arg1 arg2 pred1? pred2?)
   (unless (pred1? arg1)
