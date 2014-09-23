@@ -144,6 +144,8 @@
               (MoveWindow value-hwnd (->screen (quotient (- w value-w) 2)) (->screen (+ dy THICKNESS))
 			  (->screen value-w) (->screen value-h) #t))))))
 
+  (define/override (size->screen v) (->screen* v))
+
   (define/override (control-scrolled)
     (when value-hwnd
       (set-text (get-value)))

@@ -49,6 +49,7 @@
 	      GetDeviceCaps
 	      strip-&
 	      ->screen
+	      ->screen*
 	      ->normal))
 
 (define gdi32-lib (ffi-lib "gdi32.dll"))
@@ -188,6 +189,11 @@
 	   (if (exact? x)
 	       (ceiling (/ (* x screen-dpi) 96))
 	       (/ (* x screen-dpi) 96)))))
+(define (->screen* x)
+  (if (and (not (= screen-dpi 96))
+	   (exact? x))
+      (floor (/ (* x screen-dpi) 96))
+      (->screen x)))
 
 ;; Convert a screen measure to a normalize (conceptually 96-dpi) measure
 (define (->normal x)

@@ -323,6 +323,13 @@
   (define/public (notify-child-extent x y)
     (void))
 
+  ;; Converting from normalized to screen coordinates
+  ;; with just `->screen` can cause a child's right edge
+  ;; to extend beyond the parent's right edge, due to
+  ;; rounding via `ceiling`. Allow controls that would
+  ;; look bad to round down, instead.
+  (define/public (size->screen v) (->screen v))
+
   (define/public (set-size x y w h)
     (let-values ([(x y w h)
                   (if (or (not x)
@@ -336,7 +343,7 @@
                                 (if (= h -1) (->normal (- (RECT-bottom r) (RECT-top r))) h)))
                       (values x y w h))])
       (when parent (send parent notify-child-extent (+ x w) (+ y h)))
-      (MoveWindow hwnd (->screen x) (->screen y) (->screen w) (->screen h) #t))
+      (MoveWindow hwnd (->screen x) (->screen y) (size->screen w) (size->screen h) #t))
     (unless (and (= w -1) (= h -1))
       (on-resized))
     (queue-on-size)

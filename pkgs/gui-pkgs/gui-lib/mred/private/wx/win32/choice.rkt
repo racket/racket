@@ -62,6 +62,7 @@
                (lambda (w h)
                  (set-size #f #f w (* h 8))))
 
+    (define/override (size->screen v) (->screen* v))
 
     (define/override (ctlproc w msg wParam lParam default)
       (cond
