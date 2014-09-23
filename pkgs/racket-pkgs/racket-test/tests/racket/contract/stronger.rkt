@@ -183,6 +183,16 @@
   (ctest #t contract-stronger? (vector/c (<=/c 2) #:immutable #t) (vector/c (<=/c 3) #:immutable #t))
   (ctest #f contract-stronger? (vector/c (<=/c 3) #:immutable #t) (vector/c (<=/c 2) #:immutable #t))
   
+  (ctest #t contract-stronger? (box/c (<=/c 3)) (box/c (<=/c 3)))
+  (ctest #f contract-stronger? (box/c (<=/c 3)) (box/c (<=/c 2)))
+  (ctest #f contract-stronger? (box/c (<=/c 2)) (box/c (<=/c 3)))
+  (ctest #t contract-stronger? (box/c (<=/c 2) #:immutable #t) (box/c (<=/c 3) #:immutable #t))
+  (ctest #f contract-stronger? (box/c (<=/c 3) #:immutable #t) (box/c (<=/c 2) #:immutable #t))
+  (ctest #t contract-stronger? (box/c (<=/c 3) #:immutable #t) (box/c (<=/c 3)))
+  (ctest #t contract-stronger? (box/c (<=/c 3) #:immutable #f) (box/c (<=/c 3)))
+  (ctest #f contract-stronger? (box/c (<=/c 3)) (box/c (<=/c 3) #:immutable #t))
+  (ctest #f contract-stronger? (box/c (<=/c 3)) (box/c (<=/c 3) #:immutable #f))
+  
   (contract-eval
    `(let ()
       (define x (flat-rec-contract x (or/c (cons/c x '()) '())))
