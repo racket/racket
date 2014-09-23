@@ -110,7 +110,7 @@ $( document ).ready(function() {
                 dl = $('<del>').html(doc[1]); }
             return $('<span>').append(dl, " ") } ) );
 
-        if ( pkgi['build']['failure-log'] ) {
+        if ( pkgi['build'] && pkgi['build']['failure-log'] ) {
                 $('#pi_build').html("")
                 .append($('<span>')
                         .append($('<a>', { href: build_host + pkgi['build']['failure-log'] }).html( "fails" )));
@@ -440,23 +440,26 @@ $( document ).ready(function() {
         var dom = value['dom_obj'];
 
         var bstatus;
-        if ( value['build']['failure-log'] ) {
+        if ( value['build'] && value['build']['failure-log'] ) {
             bstatus = $('<td>', {class: 'build_red'})
                 .append($('<span>')
                        .append($('<a>', { href: build_host + value['build']['failure-log'] }).html( "fails" )));
-        } else if ( value['build']['success-log'] && value['build']['dep-failure-log'] ) {
+        } else if ( value['build'] && value['build']['success-log'] && value['build']['dep-failure-log'] ) {
             bstatus = $('<td>', {class: 'build_yellow'})
                 .append($('<span>')
                         .append($('<a>', { href: build_host + value['build']['success-log'] }).html( "succeeds" ))
                         .append(" with ")
                         .append($('<a>', { href: build_host + value['build']['dep-failure-log'] }).html( "dependency problems" )));
-        } else if ( value['build']['success-log'] ) {
+        } else if ( value['build'] && value['build']['success-log'] ) {
             bstatus = $('<td>', {class: 'build_green'})
                 .append($('<span>')
                         .append($('<a>', { href: build_host + value['build']['success-log'] }).html( "succeeds" )));
         } else {
             bstatus = $('<td>').html("");
         }
+
+        if (! value['build'] ) { value['build'] = {}; }
+        if (! value['build']['docs'] ) { value['build']['docs'] = []; }
 
         dom.attr("class", ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old"))
             .data( "obj", value)
@@ -481,7 +484,7 @@ $( document ).ready(function() {
                 bstatus ); }
 
     var pkgdb = {};
-    $.getJSON( "/pkgs-all.json.gz", function( resp ) {
+    $.getJSON( "/pkgs-all.json", function( resp ) {
         pkgdb = resp;
 
         var names = object_keys(pkgdb);

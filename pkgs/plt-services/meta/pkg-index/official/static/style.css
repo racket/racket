@@ -155,6 +155,9 @@ tr#pi_delete_row td {
     text-align: center;
 }
 
+.packages tr td:nth-child(1) {
+    min-width: 1em;
+}
 .packages tr td:nth-child(7) {
     text-align: center;
 }
