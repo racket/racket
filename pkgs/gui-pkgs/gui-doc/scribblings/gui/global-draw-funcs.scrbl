@@ -18,15 +18,19 @@ other actions depend on updating the display.}
                                     (or/c (>/c 0.0) #f)]{
 
 Returns the number of pixels that correspond to one drawing unit on a
-monitor.  The result is normally @racket[1.0], but it is @racket[2.0] on
-Mac OS X in Retina display mode.
+monitor.  The result is normally @racket[1.0], but it is @racket[2.0]
+on Mac OS X in Retina display mode, and on Windows it can be a value
+such as @racket[1.25], @racket[1.5], or @racket[2.0] when the operating-system
+scale for text is changed.  See also @secref["display-resolution"].
 
 On Mac OS X, the result can change at any time.  See also
 @xmethod[top-level-window<%> display-changed].
 
 If @racket[monitor] is not less than the current number of available
  monitors (which can change at any time), the is @racket[#f]. See also
- @xmethod[top-level-window<%> display-changed].}
+ @xmethod[top-level-window<%> display-changed].
+
+@history[#:changed "1.2" @elem{Added backing-scale support on Windows.}]}
 
 
 @defproc[(get-display-count) exact-positive-integer?]{
@@ -70,7 +74,8 @@ When the optional @racket[avoid-bars?] argument is true, for @racket[monitor]
 If @racket[monitor] is not less than the current number of available
  monitors (which can change at any time), the results are @racket[#f]
  and @racket[#f]. See also @xmethod[top-level-window<%> display-changed].
-}
+
+See also @secref["display-resolution"].}
 
 
 @defproc[(get-display-size [full-screen? any/c #f]
@@ -93,7 +98,9 @@ On Windows and Mac OS X, if the optional argument is true and @racket[monitor] i
 If @racket[monitor] is not less than the current number of available
  monitors (which can change at any time), the results are @racket[#f]
  and @racket[#f]. See also @xmethod[top-level-window<%> display-changed].
-}
+
+See also @secref["display-resolution"].}
+
 
 
 @defproc[(is-color-display?)

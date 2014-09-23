@@ -21,10 +21,23 @@
 
 (define font-cache (pango_win32_font_cache_new))
 
+(define (scale-font f)
+  (if (= 1 (->screen 1))
+      f
+      (make-font #:size (->screen (send f get-point-size))
+		 #:face (send f get-face)
+		 #:family (send f get-family)
+		 #:style (send f get-style)
+		 #:weight (send f get-weight)
+		 #:underlined? (send f get-underlined)
+		 #:smoothing (send f get-smoothing)
+		 #:size-in-pixels? (send f get-size-in-pixels)
+		 #:hinting (send f get-hinting))))
+
 (define (font->hfont f)
   (let* ([pfont (or (pango_font_map_load_font display-font-map
 					      display-context
-					      (send f get-pango))
+					      (send (scale-font f) get-pango))
 		    ;; font load failed, so fall back to default
 		    ;; font with the same size and style:
 		    (pango_font_map_load_font display-font-map

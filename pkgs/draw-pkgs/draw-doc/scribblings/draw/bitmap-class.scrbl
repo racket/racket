@@ -15,8 +15,10 @@ A bitmap has a @deftech{backing scale}, which is the number of pixels
  bitmap is used as a target for drawing or when the bitmap is drawn
  into another context.  For example, on Mac OS X when the main monitor
  is in Retina mode, @racket[make-screen-bitmap] returns a bitmap whose
- backing scale is @racket[2.0]. A monochrome bitmap always has a
- backing scale of @racket[1.0].
+ backing scale is @racket[2.0]. On Windows, the backing scale of a screen
+ bitmap corresponds to the system-wide text scale (see @secref[#:doc '(lib
+ "scribblings/gui/gui.scrbl") "display-resolution"]). A monochrome bitmap always
+ has a backing scale of @racket[1.0].
 
 A bitmap is convertible to @racket['png-bytes] through the
 @racketmodname[file/convertible] protocol.

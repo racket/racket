@@ -307,18 +307,18 @@
   (define/public (get-x)
     (let ([r (GetWindowRect hwnd)]
           [pr (GetWindowRect (send parent get-content-hwnd))])
-      (- (RECT-left r) (RECT-left pr))))
+      (->normal (- (RECT-left r) (RECT-left pr)))))
   (define/public (get-y)
     (let ([r (GetWindowRect hwnd)]
           [pr (GetWindowRect (send parent get-content-hwnd))])
-      (- (RECT-top r) (RECT-top pr))))
+      (->normal (- (RECT-top r) (RECT-top pr)))))
 
   (define/public (get-width)
     (let ([r (GetWindowRect hwnd)])
-      (- (RECT-right r) (RECT-left r))))
+      (->normal (- (RECT-right r) (RECT-left r)))))
   (define/public (get-height)
     (let ([r (GetWindowRect hwnd)])
-      (- (RECT-bottom r) (RECT-top r))))
+      (->normal (- (RECT-bottom r) (RECT-top r)))))
 
   (define/public (notify-child-extent x y)
     (void))
@@ -330,13 +330,13 @@
                           (= w -1)
                           (= h -1))
                       (let ([r (GetWindowRect hwnd)])
-                        (values (or x (RECT-left r))
-                                (or y (RECT-top r))
-                                (if (= w -1) (- (RECT-right r) (RECT-left r)) w)
-                                (if (= h -1) (- (RECT-bottom r) (RECT-top r)) h)))
+                        (values (or x (->normal (RECT-left r)))
+                                (or y (->normal (RECT-top r)))
+                                (if (= w -1) (->normal (- (RECT-right r) (RECT-left r))) w)
+                                (if (= h -1) (->normal (- (RECT-bottom r) (RECT-top r))) h)))
                       (values x y w h))])
       (when parent (send parent notify-child-extent (+ x w) (+ y h)))
-      (MoveWindow hwnd x y w h #t))
+      (MoveWindow hwnd (->screen x) (->screen y) (->screen w) (->screen h) #t))
     (unless (and (= w -1) (= h -1))
       (on-resized))
     (queue-on-size)
@@ -433,23 +433,23 @@
   (define/public (screen-to-client x y)
     (internal-screen-to-client x y))
   (define/public (internal-screen-to-client x y)
-    (let ([p (make-POINT (unbox x) (unbox y))])
+    (let ([p (make-POINT (->screen (unbox x)) (->screen (unbox y)))])
       (ScreenToClient (get-client-hwnd) p)
-      (set-box! x (POINT-x p))
-      (set-box! y (POINT-y p))))
+      (set-box! x (->normal (POINT-x p)))
+      (set-box! y (->normal (POINT-y p)))))
   (define/public (client-to-screen x y)
     (internal-client-to-screen x y))
   (define/public (internal-client-to-screen x y)
-    (let ([p (make-POINT (unbox x) (unbox y))])
+    (let ([p (make-POINT (->screen (unbox x)) (->screen (unbox y)))])
       (ClientToScreen (get-client-hwnd) p)
-      (set-box! x (POINT-x p))
-      (set-box! y (POINT-y p))))
+      (set-box! x (->normal (POINT-x p)))
+      (set-box! y (->normal (POINT-y p)))))
 
   (define/public (warp-pointer x y)
     (define xb (box x))
     (define yb (box y))
     (client-to-screen xb yb)
-    (void (SetCursorPos (unbox xb) (unbox yb))))
+    (void (SetCursorPos (->screen (unbox xb)) (->screen (unbox yb)))))
 
   (define/public (in-content? p)
     (ScreenToClient (get-client-hwnd) p)
@@ -477,13 +477,13 @@
 
   (define/public (get-client-size w h)
     (let ([r (GetClientRect (get-client-hwnd))])
-      (set-box! w (- (RECT-right r) (RECT-left r)))
-      (set-box! h (- (RECT-bottom r) (RECT-top r)))))
+      (set-box! w (->normal (- (RECT-right r) (RECT-left r))))
+      (set-box! h (->normal (- (RECT-bottom r) (RECT-top r))))))
 
   (define/public (get-size w h)
     (let ([r (GetWindowRect (get-client-hwnd))])
-      (set-box! w (- (RECT-right r) (RECT-left r)))
-      (set-box! h (- (RECT-bottom r) (RECT-top r)))))
+      (set-box! w (->normal (- (RECT-right r) (RECT-left r))))
+      (set-box! h (->normal (- (RECT-bottom r) (RECT-top r))))))
 
   (define cursor-handle #f)
   (define/public (set-cursor c)
@@ -586,7 +586,7 @@
      [(= msg WM_MOUSELEAVE)
       (let ([p (make-POINT 0 0)])
         (let ([f (and (GetCursorPos p)
-		      (location->window (POINT-x p) (POINT-y p)))])
+		      (location->window* (POINT-x p) (POINT-y p)))])
           (unless (and (eq? f (get-top-frame))
 		       (send f in-content? p))
             (do-mouse w msg #f 'leave wParam lParam))))
@@ -636,7 +636,7 @@
           [bit? (lambda (v b) (not (zero? (bitwise-and v b))))])
       (let ([make-e 
              (lambda (type)
-               (define-values (mx my) (adjust-event-position x y))
+               (define-values (mx my) (adjust-event-position (->normal x) (->normal y)))
                (new mouse-event%
                     [event-type type]
                     [left-down (case type
@@ -836,7 +836,7 @@
   (unless default-control-font
     (set! default-control-font
 	  (make-object font%
-		       (get-theme-font-size)
+		       (->normal (get-theme-font-size))
                        (logfont->pango-family
                          (get-theme-logfont))
 		       'system
@@ -850,13 +850,17 @@
 (define (queue-window-refresh-event win thunk)
   (queue-refresh-event (send win get-eventspace) thunk))
 
-(define (location->window x y)
+;; arguments in screen coordinates
+(define (location->window* x y)
   (let ([hwnd (WindowFromPoint (make-POINT x y))])
     (let loop ([hwnd hwnd])
       (and hwnd
            (or (let ([wx (any-hwnd->wx hwnd)])
                  (and wx (send wx get-top-frame)))
                (loop (GetParent hwnd)))))))
+
+(define (location->window x y)
+  (location->window* (->screen x) (->screen y)))
 
 (define (flush-display)
   (atomically

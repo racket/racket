@@ -33,7 +33,7 @@
   (vector
    (vector 'osapi_ptr_ptr->void SelectObject/raw blit-hdc hbitmap)
    (vector 'osapi_ptr_int_int_int_int_ptr_int_int_long->void
-           BitBlt/raw hdc x y w h blit-hdc 0 0 SRCCOPY)
+           BitBlt/raw hdc (->screen x) (->screen y) (->screen w) (->screen h) blit-hdc 0 0 SRCCOPY)
    (vector 'ptr_ptr->void SelectObject/raw blit-hdc #f)))
 
 (define (make-gc-show-desc hdc hbitmap x y w h)

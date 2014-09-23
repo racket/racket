@@ -30,8 +30,6 @@
 (define-user32 SetFocus (_wfun _HWND -> _HWND))
 (define-user32 BringWindowToTop (_wfun _HWND -> (r : _BOOL) -> (unless r (failed 'BringWindowToTop))))
 
-(define-gdi32 GetDeviceCaps (_wfun _HDC _int -> _int))
-
 (define-user32 DrawMenuBar (_wfun _HWND -> (r : _BOOL)
                                   -> (unless r (failed 'DrawMenuBar))))
 
@@ -98,10 +96,10 @@
 					       ;; otherwise, preserve order:
 					       pos
 					       ;; monitor rectangle, which is the goal:
-					       (list (RECT-left r)
-						     (RECT-top r)
-						     (RECT-right r)
-						     (RECT-bottom r)))
+					       (list (->normal (RECT-left r))
+						     (->normal (RECT-top r))
+						     (->normal (RECT-right r))
+						     (->normal (RECT-bottom r))))
 					      rects))
 				 #t)
 			 #f)
@@ -125,14 +123,14 @@
    [all?
     (atomically
      (let ([hdc (GetDC #f)])
-       (set-box! xb (GetDeviceCaps hdc HORZRES))
-       (set-box! yb (GetDeviceCaps hdc VERTRES))
+       (set-box! xb (->normal (GetDeviceCaps hdc HORZRES)))
+       (set-box! yb (->normal (GetDeviceCaps hdc VERTRES)))
        (ReleaseDC #f hdc)))]
    [else
     (let ([r (make-RECT 0 0 0 0)])
       (SystemParametersInfoW SPI_GETWORKAREA 0 r 0)
-      (set-box! xb (- (RECT-right r) (RECT-left r)))
-      (set-box! yb (- (RECT-bottom r) (RECT-top r))))]))
+      (set-box! xb (->normal (- (RECT-right r) (RECT-left r))))
+      (set-box! yb (->normal (- (RECT-bottom r) (RECT-top r)))))]))
 
 (define (display-origin xb yb avoid-bars? num fail)
   (cond
@@ -146,8 +144,8 @@
    [avoid-bars?
     (let ([r (make-RECT 0 0 0 0)])
       (SystemParametersInfoW SPI_GETWORKAREA 0 r 0)
-      (set-box! xb (RECT-left r))
-      (set-box! yb (RECT-top r)))]
+      (set-box! xb (->normal (RECT-left r)))
+      (set-box! yb (->normal (RECT-top r))))]
    [else
     (set-box! xb 0)
     (set-box! yb 0)]))
@@ -163,7 +161,7 @@
 (define (display-bitmap-resolution num fail)
   (if (or (zero? num)
           (num . < . (display-count)))
-      1.0
+      (->screen 1.0)
       (fail)))
 
 (define mouse-frame #f)
@@ -224,9 +222,9 @@
                           0
                           (bitwise-ior WS_CAPTION
                                        WS_MINIMIZEBOX)))
-                     (or x CW_USEDEFAULT)
-                     (or y CW_USEDEFAULT)
-                     w h
+                     (if x (->screen x) CW_USEDEFAULT)
+                     (if y (->screen y) CW_USEDEFAULT)
+                     (->screen w) (->screen h)
                      #f
                      #f
                      hInstance
@@ -359,16 +357,16 @@
         (when (or max-width max-height)
           (set-MINMAXINFO-ptMaxTrackSize!
            mmi
-           (make-POINT (or max-width
+           (make-POINT (or (->screen max-width)
                            (POINT-x (MINMAXINFO-ptMaxTrackSize mmi)))
-                       (or max-height
+                       (or (->screen max-height)
                            (POINT-y (MINMAXINFO-ptMaxTrackSize mmi))))))
         (when (or min-width min-height)
           (set-MINMAXINFO-ptMinTrackSize!
            mmi
-           (make-POINT (or min-width
+           (make-POINT (or (->screen min-width)
                            (POINT-x (MINMAXINFO-ptMinTrackSize mmi)))
-                       (or min-height
+                       (or (->screen min-height)
                            (POINT-y (MINMAXINFO-ptMinTrackSize mmi)))))))
       0]
      [(= msg WM_DISPLAYCHANGE)
@@ -517,22 +515,24 @@
 	    (set-box! wh (unbox sh))))
       (get-size w h)
       (MoveWindow hwnd
-                  (if (or (eq? mode 'both)
-                          (eq? mode 'horizontal))
-                      (max 0 
-			   (min (- (unbox sw) (unbox w))
-				(+ (quotient (- (unbox ww) (unbox w)) 2) 
-				   (unbox wx))))
-                      (get-x))
-                  (if (or (eq? mode 'both)
-                          (eq? mode 'vertical))
-		      (max 0
-			   (min (- (unbox sh) (unbox h))
-				(+ (quotient (- (unbox wh) (unbox h)) 2) 
-				   (unbox wy))))
-                      (get-x))
-                  (unbox w)
-                  (unbox h)
+		  (->screen
+		   (if (or (eq? mode 'both)
+			   (eq? mode 'horizontal))
+		       (max 0 
+			    (min (- (unbox sw) (unbox w))
+				 (+ (quotient (- (unbox ww) (unbox w)) 2) 
+				    (unbox wx))))
+		       (get-x)))
+		  (->screen
+		   (if (or (eq? mode 'both)
+			   (eq? mode 'vertical))
+		       (max 0
+			    (min (- (unbox sh) (unbox h))
+				 (+ (quotient (- (unbox wh) (unbox h)) 2) 
+				    (unbox wy))))
+		       (get-x)))
+                  (->screen (unbox w))
+                  (->screen (unbox h))
                   #t)))
 
   (define saved-child #f)
@@ -593,8 +593,8 @@
     (if (iconized?)
         (let ([wp (get-placement)])
           (let ([r (WINDOWPLACEMENT-rcNormalPosition wp)])
-            (set-box! w (- (RECT-right r) (RECT-left r)))
-            (set-box! h (- (RECT-bottom r) (RECT-top r)))))
+            (set-box! w (->normal (- (RECT-right r) (RECT-left r))))
+            (set-box! h (->normal (- (RECT-bottom r) (RECT-top r))))))
         (super get-size w h)))
 
   (define/override (get-client-size w h)
@@ -608,14 +608,14 @@
   (define/override (get-x)
     (if (iconized?)
         (let ([wp (get-placement)])
-          (RECT-left (WINDOWPLACEMENT-rcNormalPosition wp)))
-        (RECT-left (GetWindowRect hwnd))))
+          (->normal (RECT-left (WINDOWPLACEMENT-rcNormalPosition wp))))
+        (->normal (RECT-left (GetWindowRect hwnd)))))
 
   (define/override (get-y)
     (if (iconized?)
         (let ([wp (get-placement)])
-          (RECT-top (WINDOWPLACEMENT-rcNormalPosition wp)))
-        (RECT-top (GetWindowRect hwnd))))
+          (->normal (RECT-top (WINDOWPLACEMENT-rcNormalPosition wp))))
+        (->normal (RECT-top (GetWindowRect hwnd)))))
 
   (define/override (get-width)
     (if (iconized?)
@@ -688,4 +688,3 @@
     (popup-menu-with-char #\space))
 
   (define/public (display-changed) (void)))
-

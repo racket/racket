@@ -84,7 +84,7 @@
 
 (define (get-double-click-time) 500)
 (define (get-control-font-face) (get-theme-font-face))
-(define (get-control-font-size) (get-theme-font-size))
+(define (get-control-font-size) (->normal (get-theme-font-size)))
 (define (get-control-font-size-in-pixels?) #t)
 
 (define-user32 MessageBeep (_wfun _UINT -> _BOOL))
