@@ -158,6 +158,8 @@
      (define hwnd (or panel-hwnd canvas-hwnd))
      (define dc #f)
 
+     (define next-scroll-is-change? #f)
+
      (super-new [parent parent]
                 [hwnd hwnd]
                 [extra-hwnds (if panel-hwnd
@@ -237,7 +239,15 @@
          (when vscroll?
            (on-scroll-change SB_VERT (LOWORD wParam)))
          0]
-        [else (super wndproc w msg wParam lParam default)]))
+        [else
+	 (when (= msg WM_GESTURE)
+	   ;; The fall-though wndproc might generate a WM_*SCROLL
+	   ;; event for us, but we need to force an update,
+	   ;; because the generated event happens after the position
+	   ;; is changed. And if it doesn't generate a scroll, then
+	   ;; it's ok to have an occassional spurious update.
+	   (set! next-scroll-is-change? #t))
+	 (super wndproc w msg wParam lParam default)]))
      
      (define/override (wndproc-for-ctlproc w msg wParam lParam default)
        ;; act on clicks for a combo field:
@@ -492,7 +502,9 @@
                  [(= part SB_PAGEDOWN) (min (SCROLLINFO-nMax i) (+ (SCROLLINFO-nPos i) (SCROLLINFO-nPage i)))]
                  [(= part SB_THUMBTRACK) (SCROLLINFO-nTrackPos i)]
                  [else (SCROLLINFO-nPos i)])])
-           (unless (= new-pos (SCROLLINFO-nPos i))
+           (unless (or (= new-pos (SCROLLINFO-nPos i))
+		       next-scroll-is-change?)
+	     (set! next-scroll-is-change? #f)
              (set-SCROLLINFO-nPos! i new-pos)
              (set-SCROLLINFO-fMask! i SIF_POS)
              (SetScrollInfo canvas-hwnd dir i #t)
