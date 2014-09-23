@@ -14,6 +14,7 @@
          codeblock0
          typeset-code
          code)
+(module+ test (provide get-tokens))
 
 (define-for-syntax (do-codeblock stx)
   (syntax-parse stx
@@ -61,6 +62,55 @@
                       #:line-number-sep [line-number-sep 1]
                       #:block? [block? #t]
                       . strs)
+  (define-values (tokens bstr) (get-tokens strs context expand))
+  (define default-color meta-color)
+  ((if block? table (lambda (style lines) (make-element #f lines)))
+   block-color
+   ((if keep-lang-line? values cdr) ; FIXME: #lang can span lines
+    (list->lines
+     indent
+     #:line-numbers line-numbers
+     #:line-number-sep line-number-sep
+     #:block? block?
+     (let loop ([pos 0]
+                [tokens tokens])
+       (cond
+         [(null? tokens) (split-lines default-color (substring bstr pos))]
+         [(eq? (caar tokens) 'white-space) (loop pos (cdr tokens))]
+         [(= pos (cadar tokens))
+          (append (let ([style (caar tokens)]
+                        [get-str (lambda ()
+                                   (substring bstr (cadar tokens) (caddar tokens)))])
+                    (cond
+                      [(symbol? style)
+                       (let ([scribble-style
+                              (case style
+                                [(symbol) symbol-color]
+                                [(parenthesis hash-colon-keyword) paren-color]
+                                [(constant string) value-color]
+                                [(comment) comment-color]
+                                [else default-color])])
+                         (split-lines scribble-style (get-str)))]
+                      [(procedure? style)
+                       (list (style (get-str)))]
+                      [else (list style)]))
+                  (loop (caddar tokens) (cdr tokens)))]
+         [(> pos (cadar tokens))
+          (loop pos (cdr tokens))]
+         [else (append
+                (split-lines default-color (substring bstr pos (cadar tokens)))
+                (loop (cadar tokens) tokens))]))))))
+
+;; (listof string) boolean boolean -> tokens string
+;; tokens is a
+;; (cons metadata (listof (list T natural natural natural)))
+;; T being a symbol returned as a token type from the languages lexer
+;;   OR a function created by get-tokens
+;; the first number being the start position
+;; the second being the end position
+;; the third 0 if T is a symbol, and 1 if its a function
+;; the tokens are sorted by the start end end positions
+(define (get-tokens strs context expand)
   (let* ([xstr (apply string-append strs)]
          [bstr (regexp-replace* #rx"(?m:^$)" xstr "\xA0")]
          [in (open-input-string bstr)])
@@ -86,30 +136,30 @@
                    (let loop ()
                      (let ([v (read-syntax 'prog p)])
                        (cond
-                        [expand v]
-                        [(eof-object? v) null]
-                        [else (datum->syntax #f (cons v (loop)) v v)]))))))]
+                         [expand v]
+                         [(eof-object? v) null]
+                         [else (datum->syntax #f (cons v (loop)) v v)]))))))]
            [ids (let loop ([e e])
                   (cond
-                   [(and (identifier? e)
-                         (syntax-original? e))
-                    (let ([pos (sub1 (syntax-position e))])
-                      (list (list (lambda (str)
-                                    (to-element (syntax-property
-                                                 e
-                                                 'display-string
-                                                 str)
-                                                #:escapes? #f))
-                                  pos
-                                  (+ pos (syntax-span e))
-                                  1)))]
-                   [(syntax? e) (append (loop (syntax-e e))
-                                        (loop (or (syntax-property e 'origin)
-                                                  null))
-                                        (loop (or (syntax-property e 'disappeared-use)
-                                                  null)))]
-                   [(pair? e) (append (loop (car e)) (loop (cdr e)))]
-                   [else null]))]
+                    [(and (identifier? e)
+                          (syntax-original? e))
+                     (let ([pos (sub1 (syntax-position e))])
+                       (list (list (lambda (str)
+                                     (to-element (syntax-property
+                                                  e
+                                                  'display-string
+                                                  str)
+                                                 #:escapes? #f))
+                                   pos
+                                   (+ pos (syntax-span e))
+                                   1)))]
+                    [(syntax? e) (append (loop (syntax-e e))
+                                         (loop (or (syntax-property e 'origin)
+                                                   null))
+                                         (loop (or (syntax-property e 'disappeared-use)
+                                                   null)))]
+                    [(pair? e) (append (loop (car e)) (loop (cdr e)))]
+                    [else null]))]
            [link-mod (lambda (mp-stx priority #:orig? [always-orig? #f])
                        (if (or always-orig?
                                (syntax-original? mp-stx))
@@ -163,44 +213,8 @@
                          (lambda (a b)
                            (or (< (cadr a) (cadr b))
                                (and (= (cadr a) (cadr b))
-                                    (> (cadddr a) (cadddr b))))))]
-           [default-color meta-color])
-      ((if block? table (lambda (style lines) (make-element #f lines)))
-       block-color
-       ((if keep-lang-line? values cdr) ; FIXME: #lang can span lines
-        (list->lines
-         indent
-         #:line-numbers line-numbers
-         #:line-number-sep line-number-sep
-         #:block? block?
-         (let loop ([pos 0]
-                    [tokens tokens])
-           (cond
-            [(null? tokens) (split-lines default-color (substring bstr pos))]
-            [(eq? (caar tokens) 'white-space) (loop pos (cdr tokens))]
-            [(= pos (cadar tokens))
-             (append (let ([style (caar tokens)]
-                           [get-str (lambda ()
-                                      (substring bstr (cadar tokens) (caddar tokens)))])
-                       (cond
-                        [(symbol? style)
-                         (let ([scribble-style
-                                (case style
-                                  [(symbol) symbol-color]
-                                  [(parenthesis hash-colon-keyword) paren-color]
-                                  [(constant string) value-color]
-                                  [(comment) comment-color]
-                                  [else default-color])])
-                           (split-lines scribble-style (get-str)))]
-                        [(procedure? style)
-                         (list (style (get-str)))]
-                        [else (list style)]))
-                     (loop (caddar tokens) (cdr tokens)))]
-            [(> pos (cadar tokens))
-             (loop pos (cdr tokens))]
-            [else (append
-                   (split-lines default-color (substring bstr pos (cadar tokens)))
-                   (loop (cadar tokens) tokens))]))))))))
+                                    (> (cadddr a) (cadddr b))))))])
+      (values tokens bstr))))
 
 (define (typeset-code-line context expand lang-line . strs)
   (typeset-code
@@ -239,17 +253,17 @@
 
 (define (split-lines style s)
   (cond
-   [(regexp-match-positions #rx"(?:\r\n|\r|\n)" s)
-    => (lambda (m)
-         (append (split-lines style (substring s 0 (caar m)))
-                 (list 'newline)
-                 (split-lines style (substring s (cdar m)))))]
-   [(regexp-match-positions #rx" +" s)
-    => (lambda (m)
-         (append (split-lines style (substring s 0 (caar m)))
-                 (list (hspace (- (cdar m) (caar m))))
-                 (split-lines style (substring s (cdar m)))))]
-   [else (list (element style s))]))
+    [(regexp-match-positions #rx"(?:\r\n|\r|\n)" s)
+     => (lambda (m)
+          (append (split-lines style (substring s 0 (caar m)))
+                  (list 'newline)
+                  (split-lines style (substring s (cdar m)))))]
+    [(regexp-match-positions #rx" +" s)
+     => (lambda (m)
+          (append (split-lines style (substring s 0 (caar m)))
+                  (list (hspace (- (cdar m) (caar m))))
+                  (split-lines style (substring s (cdar m)))))]
+    [else (list (element style s))]))
 
 (define omitable (make-style #f '(omitable)))
 
@@ -264,14 +278,14 @@
   (define (break-list lst delim)
     (let loop ([l lst] [n null] [c null])
       (cond
-       [(null? l) (reverse (if (null? c) n (cons (reverse c) n)))]
-       [(eq? delim (car l)) (loop (cdr l) (cons (reverse c) n) null)]
-       [else (loop (cdr l) n (cons (car l) c) )])))
-
+        [(null? l) (reverse (if (null? c) n (cons (reverse c) n)))]
+        [(eq? delim (car l)) (loop (cdr l) (cons (reverse c) n) null)]
+        [else (loop (cdr l) n (cons (car l) c) )])))
+  
   (define lines (break-list l 'newline))
   (define line-cnt (length lines))
   (define line-cntl (string-length (format "~a" (+ line-cnt (or line-numbers 0)))))
-
+  
   (define (prepend-line-number n r)
     (define ln (format "~a" n))
     (define lnl (string-length ln))
@@ -283,7 +297,7 @@
                                           (cons (hspace diff) l1)
                                           l1)))
           r))
-
+  
   (define (make-line accum-line line-number)
     (define rest (cons indent-elem accum-line))
     (list ((if block? paragraph (lambda (s e) e))
@@ -291,7 +305,7 @@
            (if line-numbers
                (prepend-line-number line-number rest)
                rest))))
-
+  
   (for/list ([l (break-list l 'newline)]
              [i (in-naturals (or line-numbers 1))])
     (make-line l i)))
