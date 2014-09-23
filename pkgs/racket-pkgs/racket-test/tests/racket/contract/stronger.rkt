@@ -161,6 +161,28 @@
          (listof (<=/c 4)))
   (ctest #f contract-stronger? (listof number?) (cons/c number? (cons/c number? (listof any/c))))
     
+  (ctest #f contract-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
+  (ctest #f contract-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
+  (ctest #t contract-stronger? (vectorof (<=/c 3) #:immutable #t) (vectorof (<=/c 4) #:immutable #t))
+  (ctest #t contract-stronger? (vectorof (<=/c 3) #:immutable #t) (vectorof (<=/c 3)))
+  (ctest #f contract-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 3) #:immutable #t))
+  (ctest #f contract-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 3) #:immutable #f))
+  (ctest #t contract-stronger? (vectorof (<=/c 3) #:immutable #f) (vectorof (<=/c 3)))
+  (ctest #t contract-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 3)))
+  
+  (ctest #t contract-stronger? (vector/c (<=/c 3) (<=/c 3) (<=/c 3)) (vectorof (<=/c 3)))
+  (ctest #f contract-stronger? (vector/c (<=/c 3) (<=/c 3) (<=/c 3)) (vectorof (<=/c 4)))
+  (ctest #f contract-stronger? (vector/c (<=/c 3) (<=/c 3) (<=/c 3)) (vectorof (<=/c 2)))
+  (ctest #t contract-stronger? (vector/c (<=/c 3) (<=/c 3)) (vector/c (<=/c 3) (<=/c 3)))
+  (ctest #f contract-stronger? (vector/c (<=/c 3) (<=/c 3)) (vector/c (<=/c 3) (<=/c 2)))
+  (ctest #f contract-stronger? (vector/c (<=/c 3) (<=/c 2)) (vector/c (<=/c 3) (<=/c 3)))
+  (ctest #t contract-stronger? (vector/c (<=/c 3) #:immutable #t) (vector/c (<=/c 3)))
+  (ctest #t contract-stronger? (vector/c (<=/c 3) #:immutable #f) (vector/c (<=/c 3)))
+  (ctest #f contract-stronger? (vector/c (<=/c 3)) (vector/c (<=/c 3) #:immutable #t))
+  (ctest #f contract-stronger? (vector/c (<=/c 3)) (vector/c (<=/c 3) #:immutable #f))
+  (ctest #t contract-stronger? (vector/c (<=/c 2) #:immutable #t) (vector/c (<=/c 3) #:immutable #t))
+  (ctest #f contract-stronger? (vector/c (<=/c 3) #:immutable #t) (vector/c (<=/c 2) #:immutable #t))
+  
   (contract-eval
    `(let ()
       (define x (flat-rec-contract x (or/c (cons/c x '()) '())))
