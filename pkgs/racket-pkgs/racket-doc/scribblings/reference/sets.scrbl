@@ -319,7 +319,7 @@ Produces a set that includes all elements of @racket[st] except
 
 @defproc[(set-remove! [st generic-set?] [v any/c]) void?]{
 
-Adds the element @racket[v] to @racket[st].  This operation runs in constant
+Removes the element @racket[v] from @racket[st].  This operation runs in constant
 time for @tech{hash sets}. Has no fallback.
 
 }
