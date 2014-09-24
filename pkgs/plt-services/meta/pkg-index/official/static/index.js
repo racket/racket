@@ -22,6 +22,7 @@ $( document ).ready(function() {
     function dynamic_send ( u, o ) {
         o['email'] = localStorage['email'];
         o['passwd'] = localStorage['passwd'];
+        // xxx do a poll
         $.getJSON( dynamic_url(u), o, function (r) { return; } ); }
 
     function dynamic_pkgsend ( u, o ) {
@@ -299,10 +300,13 @@ $( document ).ready(function() {
             else {
                 h = ""; } } }
 
+    function init_search_terms() {
+        search_terms["!main-tests"] = true;
+        search_terms["!main-distribution"] = true; }
+
     { var h = window.location.hash;
       if ( h == "" ) {
-          search_terms["!main-tests"] = true;
-          search_terms["!main-distribution"] = true; }
+          init_search_terms(); }
       else {
           h = h.substring(1);
           parse_hash(h); } }
@@ -342,6 +346,12 @@ $( document ).ready(function() {
             delete search_terms[term];
             search_terms["!" + term] = true;
             evaluate_search(); } ); };
+    function resetfilterlink() {
+        return jslink("[reset all filters]", 
+                     function () {
+                         search_terms = {};
+                         init_search_terms(); 
+                         evaluate_search(); } ).addClass("resetlink"); }
 
     function evaluate_search () {
         var shown_terms = {};
@@ -395,7 +405,8 @@ $( document ).ready(function() {
             else if ( shown_terms[term] == 0 ) {
                 return [ term, " " ]; }
             else {
-                return addfilterlink ( term, term, "possible" ); } } ) );
+                return addfilterlink ( term, term, "possible" ); } } ) )
+            .append( resetfilterlink() );
         change_hash( new_h );
 
         $("#packages_table tr:visible:even").removeClass("even");
@@ -494,8 +505,21 @@ $( document ).ready(function() {
                         return addfilterlink ( tag, tag, "possible" ); } ) )),
                 bstatus ); }
 
+    function pollNotice(){
+        $.getJSON( "/notice.json", function( resp ) {
+            $("#server_notice").html(resp);
+            // If there is no notice, update every 5 minutes
+            if ( resp == "" ) {
+                $("#server_notice").hide();
+                setTimeout(pollNotice, 1000*60*5); }
+            // Otherwise, update every 5 seconds
+            else {
+                $("#server_notice").show();
+                setTimeout(pollNotice, 1000*5); } }); }
+    pollNotice();
+
     var pkgdb = {};
-    $.getJSON( "/pkgs-all.json.gz", function( resp ) {
+    $.getJSON( "/pkgs-all.json", function( resp ) {
         pkgdb = resp;
 
         var names = object_keys(pkgdb);

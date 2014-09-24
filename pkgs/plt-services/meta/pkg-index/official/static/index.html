@@ -14,24 +14,29 @@
     <link rel="icon" type="image/ico" />
     <link rel="shortcut icon" type="image/x-icon" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <link rel="stylesheet" href="http://racket-lang.org/gumby.css" />
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/gumby.css"></link>
+    <link rel="stylesheet" href="/style.css"></link>
   </head>
   <body>
-    <div class="navbar gumby-content" gumby-fixed="top" id="nav1"><div class="row">
-        <a class="five columns logo" href="http://racket-lang.org/"><img class="logo" src="http://racket-lang.org/logo-and-text.png" width="198" height="60" alt="Racket" /></a>
-        <ul class="five columns"><li></li>
-          <li></li>
-          <li></li>
-          <li></li></ul></div></div>
+
+    <div class="navbar gumby-content" style="position: fixed;" gumby-fixed="top" id="nav1"><div class="row"><a class="toggle" gumby-trigger="#nav1 > .row > ul" href="#"><i class="icon-menu"></i></a>
+        <a class="four columns logo" href="http://www.racket-lang.org/"><img class="logo" src="/logo-and-text.png" width="198" height="60" alt="Racket"></a>
+        <span class="one colums"></span> <ul class="five columns"><li><a href="http://pkgs.racket-lang.org/">Packages</a></li>
+          <li><a href="http://docs.racket-lang.org/">Documentation</a></li>
+          <li><a href="http://blog.racket-lang.org/">Blog</a></li>
+          <li><div class="medium metro info btn icon-left entypo
+                          icon-install"><a href="http://download.racket-lang.org/">Download</a></div></li></ul></div></div>
+    <div style="height: 60px;"></div>
 
     <div class="bodycontent">
     <div class="breadcrumb">
-      <span><a href="/">Packages</a></span>
+      <span><a href="/">&nbsp;</a></span>
       <span id="logout"></span>
     </div>
+    <div id="server_notice">
+    </div>
     <div>
-      <p id="search_help">Package search filters are
+      <p id="search_help">Search filters are
       below. <span style="font-weight: bold;">Bold</span> filters are
       used to select packages and <span style="font-weight: bold;
       text-decoration: line-through;">strike-through</span> tags are

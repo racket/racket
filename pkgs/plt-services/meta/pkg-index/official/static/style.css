@@ -42,6 +42,15 @@ body {
     margin: 1em;
 }
 
+#server_notice {
+    text-align: center;
+    background: #ffffcc;
+    padding-bottom: 0.5em;
+    color: black;
+    font-size: 150%;
+    font-weight: bold;
+}
+
 #logout {
     float: right;
 }
@@ -74,6 +83,7 @@ table.packages tbody tr.even {
 
 #search_help {
     text-align: center;
+    font-size: 80%;
     margin-bottom: 0em;
 }
 #search_menu {
@@ -83,6 +93,11 @@ table.packages tbody tr.even {
     margin-right: 1em;
     margin-top: 0em;
     margin-bottom: 0.5em;
+}
+a.resetlink {
+    font-weight: bold;
+    font-size: 80%;
+    color: black;
 }
 
 .menu_option {
