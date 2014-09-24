@@ -316,6 +316,20 @@
          (instanceof/c (class/c (m (-> any/c (<=/c 4)))))
          (instanceof/c (class/c (m (-> any/c (<=/c 3))))))
   
+  (ctest #t contract-stronger? (is-a?/c object%) (is-a?/c object%))
+  (ctest #t contract-stronger? (is-a?/c (class object% (super-new))) (is-a?/c object%))
+  (ctest #f contract-stronger? (is-a?/c object%) (is-a?/c (class object% (super-new))))
+  (contract-eval `(define one-interface<%> (interface ())))
+  (contract-eval `(define another-interface<%> (interface (one-interface<%>))))
+  (ctest #t contract-stronger? (is-a?/c another-interface<%>) (is-a?/c one-interface<%>))
+  (ctest #f contract-stronger? (is-a?/c one-interface<%>) (is-a?/c another-interface<%>))
+  (ctest #t contract-stronger? 
+         (is-a?/c (class* object% (one-interface<%>) (super-new)))
+         (is-a?/c one-interface<%>))
+  (ctest #f contract-stronger?
+         (is-a?/c one-interface<%>) 
+         (is-a?/c (class* object% (one-interface<%>) (super-new))))
+  
   ;; chances are, this predicate will accept "x", but
   ;; we don't want to consider it stronger, since it 
   ;; will not always accept "x".
