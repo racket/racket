@@ -6,6 +6,7 @@ a img {
     border: 0;
 }
 
+/*
 body {
     color: black;
     background-color: white;
@@ -13,17 +14,18 @@ body {
     margin: 0px;
     padding: 0px;
 }
+*/
 
 .breadcrumb {
     padding-left: 1em;
     padding-right: 1em;
-    background: #FFCC66;
+    background: black; /* #FFCC66; */
     font-size: 120%;
     font-weight: bold;
 }
 
 .breadcrumb a,span.not-this {
-    color: black;
+    color: white;
     text-decoration: none;
     font-weight: normal;
 }
@@ -48,23 +50,28 @@ table.packages {
 }
 
 table.packages thead tr {
-    background: #FFCC66;
+    color: white;
+    background: black; /* #FFCC66; */
 }
 
+/*
 table.packages tbody tr.even {
     background: #F5F5DC;
 }
+*/
 
 .recent td:nth-child(1):before {
     content: "*";
     color: red;
 }
 
-#menu {
-    text-align: center;
-    width: 100%;
-    margin-top: 1em;
-    margin-bottom: 1em;
+#search_menu {
+    text-align: left;
+    width: 95%;
+    margin-left: 1em;
+    margin-right: 1em;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
 }
 
 .menu_option {
@@ -114,9 +121,9 @@ div.delete {
 }
 
 #footer {
-    width: 90%;
+    width: 100%;
     text-align: right;
-    background: #FFCC66;
+    background: black; /* #FFCC66; */
     padding-right: 3em;
 }
 
@@ -170,6 +177,10 @@ tr#pi_delete_row td {
 .build_red { background-color: #ffcccc; }
 
 /* racket nav */
+.navbar {
+    margin-bottom: 0px;
+}
+
 .racketnav {
   background-color: #000000;
   color: #ffffff;
