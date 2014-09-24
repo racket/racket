@@ -221,16 +221,19 @@
      @h2{RacketCon: 20 September 2014}
 
      @columns[6 #:center? #f #:row? #f]{
-       @p{@b{(fourth RacketCon)} will be held in St. Louis on
+       @p{@b{(fourth RacketCon)} was held in St. Louis on
           the day after @a[href: "https://thestrangeloop.com/"]{Strange Loop}.}
-       @p{@b{@a[href: "https://www.eventbrite.com/e/racketcon-2014-tickets-11408046775"]{Registration}}
-          is open. Tickets are $30.}
-       @p{@b{@a[href: "http://www.fogus.me/"]{Michael Fogus}} will be giving the keynote.}
 
-       @p{RacketCon will be held at the @|hotel| (which is one of the Strange Loop venues).
-          A @a[href: group-rate-url]{group rate} is available for RacketCon attendees.}
+       @p{@b{@a[href: "http://www.fogus.me/"]{Michael Fogus}} gave the keynote.}
 
-       @p{RacketCon will be in the @b{New York Central} conference room.}
+       @p{A recording of the first half of the live video stream is available
+       at @a[href: "https://www.youtube.com/watch?v=oe2tK5Lxybc"]{YouTube}.
+       Full videos from the conference will available soon.}
+
+       @; @p{RacketCon will be held at the @|hotel| (which is one of the Strange Loop venues).
+       @;    A @a[href: group-rate-url]{group rate} is available for RacketCon attendees.}
+
+       @; @p{RacketCon will be in the @b{New York Central} conference room.}
 
        @p{@nbsp}
 
