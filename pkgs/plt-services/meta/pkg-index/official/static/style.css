@@ -65,12 +65,16 @@ table.packages tbody tr.even {
     color: red;
 }
 
+#search_help {
+    text-align: center;
+    margin-bottom: 0em;
+}
 #search_menu {
     text-align: left;
     width: 95%;
     margin-left: 1em;
     margin-right: 1em;
-    margin-top: 0.5em;
+    margin-top: 0em;
     margin-bottom: 0.5em;
 }
 
