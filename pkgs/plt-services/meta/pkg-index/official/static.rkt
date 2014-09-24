@@ -380,5 +380,6 @@
    #:program "static"
    #:args pkgs
    ;; FUTURE make this more efficient
+   (notify! "update upload being computed: the information below may not represent all recent changes and updates")
    (generate-static)
    (run-s3! pkgs)))

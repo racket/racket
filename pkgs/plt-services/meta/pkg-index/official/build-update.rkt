@@ -71,4 +71,6 @@
   (command-line
    #:program "build-update"
    #:args ()
-   (build-update!)))
+   (notify! "package build status being checked for updates")
+   (build-update!)
+   (notify! "")))
