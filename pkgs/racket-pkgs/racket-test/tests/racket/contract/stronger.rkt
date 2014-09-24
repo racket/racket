@@ -230,6 +230,9 @@
   (ctest #t contract-stronger? (promise/c (<=/c 2)) (promise/c (<=/c 3)))
   (ctest #f contract-stronger? (promise/c (<=/c 3)) (promise/c (<=/c 2)))
   
+  (ctest #t contract-stronger? (syntax/c (<=/c 3)) (syntax/c (<=/c 4)))
+  (ctest #f contract-stronger? (syntax/c (<=/c 4)) (syntax/c (<=/c 3)))
+  
   (ctest #t contract-stronger?
          (class/c (m (-> any/c (<=/c 3))))
          (class/c (m (-> any/c (<=/c 4)))))
