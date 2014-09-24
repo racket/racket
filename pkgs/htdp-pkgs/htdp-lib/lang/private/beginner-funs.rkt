@@ -508,7 +508,7 @@
                                                                                                                    @interaction[#:eval (bsl-eval) (range 0 10 2)]
                                                                                                                    }
   @defproc[((beginner-append append) [x list?][y list?][z list?]  ...) list?]{
-                                                                              Creates a single list from several, by juxtaposition of the items.  
+                                                                              Creates a single list from several, by concatenation of the items.  
                                                                               @interaction[#:eval (bsl) (append (cons 1 (cons 2 empty)) (cons "a" (cons "b" empty)))]
                                                                               }
   @defproc[(length (l list?)) natural-number?]{
@@ -801,7 +801,7 @@
                                             @interaction[#:eval (bsl) (string-copy "hello")]
                                             }
   @defproc[(string-append [s string] ...) string]{
-                                                  Juxtaposes the characters of several strings. 
+                                                  Concatenates the characters of several strings. 
                                                   @interaction[#:eval (bsl) (string-append "hello" " " "world" " " "good bye")]
                                                   }
   @defproc[(string=? [s string][t string][x string] ...) boolean?]{

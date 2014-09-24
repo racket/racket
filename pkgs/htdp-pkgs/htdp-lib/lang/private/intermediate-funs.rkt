@@ -48,7 +48,7 @@
 
   ("Lists"
     @defproc[((intermediate-append append) [l (listof any)] ...) (listof any)]{
-    Creates a single list from several, by juxtaposition of the items.
+    Creates a single list from several, by concatenation of the items.
     In ISL and up: @racket[append] also works when applied to one list or none. 
     @interaction[#:eval (isl)
 		  (append (cons 1 (cons 2 empty)) (cons "a" (cons "b" empty)))
