@@ -96,6 +96,7 @@
 (define-runtime-path build-update.rkt "build-update.rkt")
 (define-runtime-path static.rkt "static.rkt")
 (define-runtime-path s3.rkt "s3.rkt")
+(define-runtime-path notify.rkt "notify.rkt")
 
 (define run-sema (make-semaphore 1))
 (define (run! file args)
@@ -118,6 +119,8 @@
   (run! static.rkt pkgs))
 (define (run-s3! pkgs)
   (run! s3.rkt pkgs))
+(define (notify! m)
+  (run! notify.rkt (list m)))
 
 (define (signal-update! pkgs)
   (thread (λ () (run-update! pkgs))))
@@ -127,5 +130,10 @@
   (thread (λ () (run-static! pkgs))))
 (define (signal-s3! pkgs)
   (thread (λ () (run-s3! pkgs))))
+
+(define s3-config (build-path (find-system-path 'home-dir) ".s3cfg-plt"))
+(define s3-bucket "pkgs.racket-lang.org")
+
+(define s3cmd-path (find-executable-path "s3cmd"))
 
 (provide (all-defined-out))

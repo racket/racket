@@ -82,6 +82,7 @@
   (command-line
    #:program "update"
    #:args pkgs
+   (notify! "package sources being checked for updates")
    (cond
      [(empty? pkgs)
       (update-all)

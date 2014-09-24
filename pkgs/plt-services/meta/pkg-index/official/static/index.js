@@ -519,7 +519,7 @@ $( document ).ready(function() {
     pollNotice();
 
     var pkgdb = {};
-    $.getJSON( "/pkgs-all.json", function( resp ) {
+    $.getJSON( "/pkgs-all.json.gz", function( resp ) {
         pkgdb = resp;
 
         var names = object_keys(pkgdb);

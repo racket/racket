@@ -415,10 +415,10 @@
   (thread
    (λ ()
      (forever
-      (printf "Running scheduled update.\n")
-      (signal-update! empty)
       (printf "Running scheduled build update.\n")
       (signal-build-update!)
+      (printf "Running scheduled update.\n")
+      (signal-update! empty)      
       (sleep (* 1 60 60)))))
   (serve/servlet
    main-dispatch
