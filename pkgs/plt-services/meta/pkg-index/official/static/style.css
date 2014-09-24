@@ -171,16 +171,21 @@ tr#pi_delete_row td {
     min-width: 1em;
 }
 .packages .authors a {
+    font-size: small;
     display: block;
     color: black;
 }
-.packages .docs {
+.packages .doctags {
+    font-weight: bold;
     display: block;
 }
-.packages tr td:nth-child(6) {
-    text-align: center;
+.packages .doctags a {
+    font-weight: normal;
 }
-.packages tr td:nth-child(6) a {
+.packages tr td:nth-child(4) {
+    width: 19em;
+}
+.packages tr td:nth-child(4) a {
     text-decoration: none;
 }
 
