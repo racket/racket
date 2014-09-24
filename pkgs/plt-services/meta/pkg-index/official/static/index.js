@@ -303,9 +303,13 @@ $( document ).ready(function() {
           parse_hash(h); } }
 
     var expected_hash = "";
+    var default_search = "(!main-distribution)(!main-tests)";
     function change_hash ( v ) {
-        expected_hash = v;
-        window.location.hash = v; }
+        if ( v == default_search && expected_hash != v ) {
+            v = ""; }
+        if ( v != default_search ) {
+            expected_hash = v;
+            window.location.hash = v; } }
 
     $(window).bind( 'hashchange', function(e) {
         var actual_hash = window.location.hash;
