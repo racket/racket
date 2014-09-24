@@ -171,6 +171,9 @@ tr#pi_delete_row td {
     text-align: center;
 }
 
+.packages thead th:nth-child(1) {
+    font-size: xx-small;
+}
 .packages tr td:nth-child(1) {
     min-width: 1em;
 }

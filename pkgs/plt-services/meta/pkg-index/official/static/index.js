@@ -497,6 +497,8 @@ $( document ).ready(function() {
             var name = snames[name_i];
             add_package_to_list ( pkgdb[name] ); });
 
+        $("#packages_loading").hide();
+
         evaluate_search();
 
         if ( target_pkg && pkgdb[target_pkg] ) {
