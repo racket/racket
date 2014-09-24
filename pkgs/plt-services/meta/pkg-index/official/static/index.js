@@ -472,14 +472,15 @@ $( document ).ready(function() {
                     .append( jslink( value['name'], function () { open_info ( value ); }) )
                     .append($('<span>').attr("class","authors").html("").append( $.map( value['authors'], function ( author, i ) {
                         return addfilterlink ( author, "author:" + author, "possible" ); } ) )),
-                $('<td>').html("").append( $.map( value['build']['docs'], function ( doc, i ) {
-                    var dl;
-                    if ( doc[2] ) {
-                        dl = $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
-                    else {
-                        dl = $('<del>').html(doc[1]); }
-                    return $('<span>').append(dl, " ") } ) ),                
-                $('<td>').text( value['description'] ),
+                $('<td>').text( value['description'] )
+                    .append($('<span>').attr("class","docs").html(value['build']['docs'].length > 0 ? "Docs: " : "")
+                            .append( $.map( value['build']['docs'], function ( doc, i ) {
+                                var dl;
+                                if ( doc[2] ) {
+                                    dl = $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
+                                else {
+                                    dl = $('<del>').html(doc[1]); }
+                                return $('<span>').append(dl, " ") } ) )),
                 $('<td>').append( $.map( value['tags'], function ( tag, i ) {
                     return addfilterlink ( tag, tag, "possible" ); } ) ),
                 bstatus ); }
