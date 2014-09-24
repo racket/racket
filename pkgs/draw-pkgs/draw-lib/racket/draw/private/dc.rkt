@@ -240,13 +240,19 @@
 ;; at least for the Quartz and Win32 back-ends.
 ;; (But we create the font maps on demand.)
 ;; We fold hinting in, too, as an extra factor of 2.
-;; In the case of aligned hinting, at least, the font map
-;; might further depend on the transformation, at least
-;; for Windows, so each element of `font-maps` is
+;; In the case of aligned hinting on Windows, the font map
+;; might further depend on the transformation, so for that
+;; platform and ramge each element of `font-maps` is
 ;;  (vector font-map xform (hash xform -> font-map))
 ;; where the first two elements of the vector act as
 ;; a cache for the hash-table lookup.
 (define font-maps (make-vector 8 #f))
+
+(define UNALIGNED-INDEX 4)
+(define multi-font-map-boundary
+  (case (system-type)
+    [(windows) UNALIGNED-INDEX]
+    [else 0]))
 
 (define (dc-mixin backend%)
   (defclass* dc% backend% (dc<%>)
@@ -1310,7 +1316,7 @@
            [(smoothed) 3])
          (case (send font get-hinting)
            [(aligned) 0]
-           [(unaligned) 4])))
+           [(unaligned) UNALIGNED-INDEX])))
 
     (define/private (get-context cr smoothing-index font xform)
       (or (let ([c (vector-ref contexts smoothing-index)])
@@ -1330,26 +1336,36 @@
 	    c)))
 
     (define/private (get-font-map smoothing-index xform)
-      (define old-fmv (vector-ref font-maps smoothing-index))
-      (define fmv (or old-fmv (vector #f #f #hash())))
-      (unless old-fmv
-        (vector-set! font-maps smoothing-index fmv))
-      (or (and (equal? xform (vector-ref fmv 1))
-	       (vector-ref fmv 0))
-	  (let* ([fm (hash-ref (vector-ref fmv 2) xform #f)]
-		 [new-fm (or fm
-			     (pango_cairo_font_map_new))])
-	    (vector-set! fmv 0 new-fm)
-	    (vector-set! fmv 1 xform)
-	    (unless fm
-              (define ht (vector-ref fmv 2))
-              (define new-ht
-                ;; Limit the number of font maps that we cache:
-                (if ((hash-count ht) . < . 8)
-                    ht
-                    #hash()))
-              (vector-set! fmv 2 (hash-set new-ht xform new-fm)))
-	    new-fm)))
+      (cond
+       [(smoothing-index . < . multi-font-map-boundary)
+	(define old-fmv (vector-ref font-maps smoothing-index))
+	(define fmv (or old-fmv (vector #f #f #hash())))
+	(unless old-fmv
+	  (vector-set! font-maps smoothing-index fmv))
+	(or (and (equal? xform (vector-ref fmv 1))
+		 (vector-ref fmv 0))
+	    (let* ([fm (hash-ref (vector-ref fmv 2) xform #f)]
+		   [new-fm (or fm
+			       (pango_cairo_font_map_new))])
+	      (vector-set! fmv 0 new-fm)
+	      (vector-set! fmv 1 xform)
+	      (unless fm
+		(define ht (vector-ref fmv 2))
+		(define new-ht
+		  ;; Limit the number of font maps that we cache:
+		  (if ((hash-count ht) . < . 8)
+		      ht
+		      #hash()))
+		(vector-set! fmv 2 (hash-set new-ht xform new-fm)))
+	      new-fm))]
+       [else
+	(define fm (vector-ref font-maps smoothing-index))
+	(cond
+	 [fm fm]
+	 [else
+	  (define fm (pango_cairo_font_map_new))
+	  (vector-set! font-maps smoothing-index fm)
+	  fm])]))
 
     (define/private (do-text cr draw-mode s x y font combine? offset angle)
       (let* ([s (if (zero? offset) 
