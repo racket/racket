@@ -31,7 +31,7 @@ body {
 }
 
 .breadcrumb a:hover {
-    color: blue;
+    color: white;
     text-decoration: underline;
 }
 
@@ -165,10 +165,14 @@ tr#pi_delete_row td {
 .packages tr td:nth-child(1) {
     min-width: 1em;
 }
-.packages tr td:nth-child(7) {
+.packages .authors a {
+    display: block;
+    color: black;
+}
+.packages tr td:nth-child(6) {
     text-align: center;
 }
-.packages tr td:nth-child(7) a {
+.packages tr td:nth-child(6) a {
     text-decoration: none;
 }
 
