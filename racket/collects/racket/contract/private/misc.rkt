@@ -1037,14 +1037,24 @@
    #:val-first-projection list/c-chaperone/other-val-first-projection
    #:list-contract? (λ (c) #t)))
 
+(struct syntax-ctc (ctc)
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:name (λ (ctc) (build-compound-type-name 'syntax/c (syntax-ctc-ctc ctc)))
+   #:stronger (λ (this that)
+                (and (syntax-ctc? that)
+                     (contract-stronger? (syntax-ctc-ctc this)
+                                         (syntax-ctc-ctc that))))
+   #:first-order (λ (ctc) 
+                   (define ? (flat-contract-predicate (syntax-ctc-ctc ctc)))
+                   (λ (v)
+                     (and (syntax? v)
+                          (? (syntax-e v)))))))
+
 (define/subexpression-pos-prop (syntax/c ctc-in)
-  (let ([ctc (coerce-flat-contract 'syntax/c ctc-in)])
-    (flat-named-contract
-     (build-compound-type-name 'syntax/c ctc)
-     (let ([pred (flat-contract-predicate ctc)])
-       (λ (val)
-         (and (syntax? val)
-              (pred (syntax-e val))))))))
+  (define ctc (coerce-flat-contract 'syntax/c ctc-in))
+  (syntax-ctc ctc))
 
 (define/subexpression-pos-prop promise/c
   (λ (ctc-in)
