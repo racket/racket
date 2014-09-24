@@ -31,7 +31,7 @@
 ;; thread, and so the effect of a key is delayed. The following
 ;; enviornment variable is consulted by IBus on startup to
 ;; disable asynchronous mode.
-(putenv "IBUS_ENABLE_SYNC_MODE" "y")
+(void (putenv "IBUS_ENABLE_SYNC_MODE" "y"))
 
 (define-gtk gtk_init_check (_fun (_ptr io _int) (_ptr io _gcpointer) -> _gboolean))
 (define-gdk gdk_set_program_class (_fun _string -> _void))
