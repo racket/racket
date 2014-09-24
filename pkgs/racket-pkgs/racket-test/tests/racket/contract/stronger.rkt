@@ -330,6 +330,15 @@
          (is-a?/c one-interface<%>) 
          (is-a?/c (class* object% (one-interface<%>) (super-new))))
   
+  (ctest #t contract-stronger? (subclass?/c (class object% (super-new))) (subclass?/c object%))
+  (ctest #f contract-stronger? (subclass?/c object%) (subclass?/c (class object% (super-new))))
+  (ctest #t contract-stronger?
+         (implementation?/c another-interface<%>)
+         (implementation?/c one-interface<%>))
+  (ctest #f contract-stronger?
+         (implementation?/c one-interface<%>)
+         (implementation?/c another-interface<%>))
+  
   ;; chances are, this predicate will accept "x", but
   ;; we don't want to consider it stronger, since it 
   ;; will not always accept "x".
