@@ -49,7 +49,7 @@ $( document ).ready(function() {
        
         var mypkg_p = ($.inArray(me(), pkgi['authors'] ) != -1);
 
-        if ( mypkg_p || true ) {
+        if ( mypkg_p ) {
             $("#pi_edit_help").show(); } 
         else {
             $("#pi_edit_help").hide(); }
@@ -495,7 +495,7 @@ $( document ).ready(function() {
                 bstatus ); }
 
     var pkgdb = {};
-    $.getJSON( "/pkgs-all.json", function( resp ) {
+    $.getJSON( "/pkgs-all.json.gz", function( resp ) {
         pkgdb = resp;
 
         var names = object_keys(pkgdb);
