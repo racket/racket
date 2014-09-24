@@ -233,6 +233,12 @@
   (ctest #t contract-stronger? (syntax/c (<=/c 3)) (syntax/c (<=/c 4)))
   (ctest #f contract-stronger? (syntax/c (<=/c 4)) (syntax/c (<=/c 3)))
   
+  (ctest #t contract-stronger? (parametric->/c (x) (-> x x)) (parametric->/c (x) (-> x (or/c x #f))))
+  (ctest #f contract-stronger? (parametric->/c (x y) (-> x y)) (parametric->/c (x y) (-> x x y)))
+  (contract-eval `(define α (new-∀/c)))
+  (ctest #t contract-stronger? (-> α α) (-> α (or/c #f α)))
+  (ctest #f contract-stronger? (-> α (or/c #f α)) (-> α α))
+  
   (ctest #t contract-stronger?
          (class/c (m (-> any/c (<=/c 3))))
          (class/c (m (-> any/c (<=/c 4)))))
