@@ -336,7 +336,7 @@ $( document ).ready(function() {
 
     function evaluate_search () {
         var shown_terms = {};
-
+        
         $.each( $('#packages_table tr'), function (key, dom) {
             var value = $(dom).data("obj");
             var show = true;
@@ -374,19 +374,20 @@ $( document ).ready(function() {
         var shown_terms_skeys = shown_terms_keys.sort(function(a,b) {
             return ((a < b) ? -1 : ((a > b) ? 1 : 0)); });
 
-        change_hash( "" );
+        var new_h = "";
         $("#search_menu").html("").append( $.map( shown_terms_skeys, function ( term, i ) {
             if ( shown_terms[term] < 0 ) {
                 if ( shown_terms[term] == -1 ) {
-                    change_hash( window.location.hash + "(" + term + ")" );
+                    new_h = new_h + "(" + term + ")";
                     return changefilterlink ( term, term, "!" + term, "active" ); }
                 else {
-                    change_hash( window.location.hash + "(" + "!" + term + ")" );
+                    new_h = new_h + "(" + "!" + term + ")";
                     return removefilterlink ( term, "!" + term, "inactive" ); } }
             else if ( shown_terms[term] == 0 ) {
                 return [ term, " " ]; }
             else {
                 return addfilterlink ( term, term, "possible" ); } } ) );
+        change_hash( new_h );
 
         $("#packages_table tr:visible:even").removeClass("even");
         $("#packages_table tr:visible:odd").addClass("even"); };
