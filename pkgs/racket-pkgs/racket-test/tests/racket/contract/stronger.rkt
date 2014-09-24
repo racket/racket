@@ -230,9 +230,88 @@
   (ctest #t contract-stronger? (promise/c (<=/c 2)) (promise/c (<=/c 3)))
   (ctest #f contract-stronger? (promise/c (<=/c 3)) (promise/c (<=/c 2)))
   
-  (contract-eval
-   `(let ([c (class/c (m (-> any/c integer?)))])
-      (,test #t contract-stronger? (instanceof/c c) (instanceof/c c))))
+  (ctest #t contract-stronger?
+         (class/c (m (-> any/c (<=/c 3))))
+         (class/c (m (-> any/c (<=/c 4)))))
+  (ctest #f contract-stronger?
+         (class/c (m (-> any/c (<=/c 4))))
+         (class/c (m (-> any/c (<=/c 3)))))
+  (ctest #t contract-stronger?
+         (class/c (field [f integer?]))
+         (class/c (field [f integer?])))
+  (ctest #f contract-stronger?
+         (class/c (field [f (<=/c 3)]))
+         (class/c (field [f (<=/c 4)])))
+  (ctest #f contract-stronger?
+         (class/c (field [f (<=/c 4)]))
+         (class/c (field [f (<=/c 3)])))
+  (ctest #t contract-stronger?
+         (class/c (init [f (<=/c 3)]))
+         (class/c (init [f (<=/c 4)])))
+  (ctest #f contract-stronger?
+         (class/c (init [f (<=/c 4)]))
+         (class/c (init [f (<=/c 3)])))
+  (ctest #t contract-stronger?
+         (class/c (inherit [m (-> any/c (<=/c 3))]))
+         (class/c (inherit [m (-> any/c (<=/c 4))])))
+  (ctest #f contract-stronger?
+         (class/c (inherit [m (-> any/c (<=/c 4))]))
+         (class/c (inherit [m (-> any/c (<=/c 3))])))
+  (ctest #t contract-stronger?
+         (class/c (super [m (-> any/c (<=/c 3))]))
+         (class/c (super [m (-> any/c (<=/c 4))])))
+  (ctest #f contract-stronger?
+         (class/c (super [m (-> any/c (<=/c 4))]))
+         (class/c (super [m (-> any/c (<=/c 3))])))
+  (ctest #t contract-stronger?
+         (class/c (inner [m (-> any/c (<=/c 3))]))
+         (class/c (inner [m (-> any/c (<=/c 4))])))
+  (ctest #f contract-stronger?
+         (class/c (inner [m (-> any/c (<=/c 4))]))
+         (class/c (inner [m (-> any/c (<=/c 3))])))
+  (ctest #t contract-stronger?
+         (class/c (override [m (-> any/c (<=/c 3))]))
+         (class/c (override [m (-> any/c (<=/c 4))])))
+  (ctest #f contract-stronger?
+         (class/c (override [m (-> any/c (<=/c 4))]))
+         (class/c (override [m (-> any/c (<=/c 3))])))
+  (ctest #t contract-stronger?
+         (class/c (augment [m (-> any/c (<=/c 3))]))
+         (class/c (augment [m (-> any/c (<=/c 4))])))
+  (ctest #f contract-stronger?
+         (class/c (augment [m (-> any/c (<=/c 4))]))
+         (class/c (augment [m (-> any/c (<=/c 3))])))
+  (ctest #t contract-stronger?
+         (class/c (augride [m (-> any/c (<=/c 3))]))
+         (class/c (augride [m (-> any/c (<=/c 4))])))
+  (ctest #f contract-stronger?
+         (class/c (augride [m (-> any/c (<=/c 4))]))
+         (class/c (augride [m (-> any/c (<=/c 3))])))
+  (ctest #t contract-stronger?
+         (class/c (absent m n))
+         (class/c (absent m)))
+  (ctest #f contract-stronger?
+         (class/c (absent m))
+         (class/c (absent m n)))
+  (ctest #t contract-stronger?
+         (class/c (absent (field f g)))
+         (class/c (absent (field f))))
+  (ctest #f contract-stronger?
+         (class/c (absent (field f)))
+         (class/c (absent (field f g))))
+  (ctest #f contract-stronger?
+         (class/c (absent (field x)))
+         (class/c (absent x)))
+  (ctest #f contract-stronger?
+         (class/c (absent x))
+         (class/c (absent (field x))))
+  
+  (ctest #t contract-stronger?
+         (instanceof/c (class/c (m (-> any/c (<=/c 3)))))
+         (instanceof/c (class/c (m (-> any/c (<=/c 4))))))
+  (ctest #f contract-stronger?
+         (instanceof/c (class/c (m (-> any/c (<=/c 4)))))
+         (instanceof/c (class/c (m (-> any/c (<=/c 3))))))
   
   ;; chances are, this predicate will accept "x", but
   ;; we don't want to consider it stronger, since it 
