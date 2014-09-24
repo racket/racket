@@ -469,16 +469,16 @@ $( document ).ready(function() {
                 $('<td sorttable_customkey="' + value['last-updated'] + '">').html("")
                     .append( curate_span ),
                 $('<td>').html("")
-                    .append( jslink( value['name'], function () { open_info ( value ); }) ),
+                    .append( jslink( value['name'], function () { open_info ( value ); }) )
+                    .append($('<span>').attr("class","authors").html("").append( $.map( value['authors'], function ( author, i ) {
+                        return addfilterlink ( author, "author:" + author, "possible" ); } ) )),
                 $('<td>').html("").append( $.map( value['build']['docs'], function ( doc, i ) {
                     var dl;
                     if ( doc[2] ) {
                         dl = $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
                     else {
                         dl = $('<del>').html(doc[1]); }
-                    return $('<span>').append(dl, " ") } ) ),
-                $('<td>').html("").append( $.map( value['authors'], function ( author, i ) {
-                    return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
+                    return $('<span>').append(dl, " ") } ) ),                
                 $('<td>').text( value['description'] ),
                 $('<td>').append( $.map( value['tags'], function ( tag, i ) {
                     return addfilterlink ( tag, tag, "possible" ); } ) ),
