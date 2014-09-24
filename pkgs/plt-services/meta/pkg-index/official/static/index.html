@@ -35,7 +35,7 @@
       below. <span style="font-weight: bold;">Bold</span> filters are
       used to select packages and <span style="font-weight: bold;
       text-decoration: line-through;">strike-through</span> tags are
-      used to reject packages. Clicking a filter will toggle its
+      used to omit packages. Clicking a filter will toggle its
       status.</p>
       <p id="search_menu"></p>
     </div>
@@ -95,10 +95,10 @@
       <div id="pi_install" class="install">Install this package with:<br><br><tt>raco pkg install <span id="pi_name_inst"></span></tt><br><br>or, with the 'File|Install Package...' menu option in DrRacket.</div>
     </div>
 
-    <p id="packages_loading" style="text-align: center;">Loading...</td></tr>
+    <p id="packages_loading">Loading...</td></tr>
     <table class="packages sortable">
       <thead>
-        <tr>
+        <tr id="packages_headers">
           <th>Updated Recently</th>
           <th>Package</th>
           <th>Description</th>

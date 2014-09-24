@@ -35,6 +35,13 @@ body {
     text-decoration: underline;
 }
 
+#packages_loading {
+    text-align: center;
+    font-size: 400%;
+    font-family: Sans-Serif;
+    margin: 1em;
+}
+
 #logout {
     float: right;
 }
