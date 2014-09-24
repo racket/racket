@@ -502,6 +502,8 @@ $( document ).ready(function() {
         var snames = names.sort(function(a,b) {
             return ((a < b) ? -1 : ((a > b) ? 1 : 0)); })
 
+        $("#packages_headers").show();
+
         $.each( snames, function (name_i) {
             var name = snames[name_i];
             add_package_to_list ( pkgdb[name] ); });
@@ -570,6 +572,7 @@ $( document ).ready(function() {
 
     $( "#login_confirm_row" ).hide();
     $( "#login_code_row" ).hide();
+    $("#packages_headers").hide();
 
     function menu_logout () {
         logged_in = false;
