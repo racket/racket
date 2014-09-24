@@ -123,8 +123,13 @@ div.delete {
 #footer {
     width: 100%;
     text-align: right;
+    color: white;
     background: black; /* #FFCC66; */
     padding-right: 3em;
+}
+#footer a {
+    color: white;
+    font-weight: bold;
 }
 
 div.install {
@@ -168,6 +173,9 @@ tr#pi_delete_row td {
 .packages .authors a {
     display: block;
     color: black;
+}
+.packages .docs {
+    display: block;
 }
 .packages tr td:nth-child(6) {
     text-align: center;
