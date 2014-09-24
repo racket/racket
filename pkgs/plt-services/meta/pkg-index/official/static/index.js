@@ -49,6 +49,11 @@ $( document ).ready(function() {
        
         var mypkg_p = ($.inArray(me(), pkgi['authors'] ) != -1);
 
+        if ( mypkg_p || true ) {
+            $("#pi_edit_help").show(); } 
+        else {
+            $("#pi_edit_help").hide(); }
+
         function make_editbutton ( spot, initv, fun ) {
             if ( mypkg_p ) {
                 $( "#" + spot ).append( $('<button>')

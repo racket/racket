@@ -167,6 +167,11 @@ a.possible {
     color: red;
 }
 
+#pi_edit_help {
+    text-align: center;
+    font-size: small;
+}
+
 tr#pi_delete_row td {
     text-align: center;
 }
