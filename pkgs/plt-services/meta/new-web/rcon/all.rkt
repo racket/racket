@@ -47,6 +47,9 @@
 (define (session time title chair)
   @slot[time #f]{@p{@title} Chair: @chair})
 
+(define (slides-link url)
+  @p*{@a[href: (F url)]{[slides]}})
+
 (define speaker-info
   (list
    (list
@@ -64,7 +67,8 @@
          contributor to Clojure, ClojureScript, Datomic, and Transit. Fogus is
          also the co-author of @em{The Joy of Clojure} and author of
          @em{Functional JavaScript} and the upcoming release @em{The Art of
-         Chupacabra Husbandry}.})
+         Chupacabra Husbandry}.}
+     #f)
     (list
      mbutterick
      @p*{At RacketCon last year, I talked about Pollen, a web-publishing system
@@ -74,7 +78,8 @@
          ambitions.}
      @p*{Matthew Butterick is a writer, designer, and lawyer in Los Angeles. He
          is the author of @em{Typography for Lawyers} and the creator of
-         @a[href: "http://practicaltypography.com/"]{practicaltypography.com}.})
+         @a[href: "http://practicaltypography.com/"]{practicaltypography.com}.}
+     (slides-link "http://pollenpub.com/"))
     (list
      stchang
      @p*{The Boost Graph Library (BGL) introduces many novel abstraction
@@ -86,7 +91,8 @@
          University. In his early years, he worked as an electrical engineer
          before deciding that his life needed more abstraction. So he went off
          to study programming languages and has been hacking in Racket ever
-         since.})
+         since.}
+     (slides-link "stchang.pdf"))
     (list
      jbc
      @p*{HtDP and big-bang provide an explicit-state, fully-testable framework
@@ -96,7 +102,8 @@
          milieu, and propose a solution, using a hybrid dataflow approach.}
      @p*{John Clements is an Associate Professor at Cal Poly State University in
          San Luis Obispo. He is the author of DrRacket’s Stepper, and the RSound
-         library, and this paragraph.})
+         library, and this paragraph.}
+     #f)
     (list
      mflatt
      @p*{This talk will provide a brief introduction to Racket and Racketeers,
@@ -105,7 +112,8 @@
      @p*{Matthew Flatt is a professor at the University of Utah and one of the
          main developers of Racket. He works primarily on Racket's run-time
          system, compiler, macro system, build system, package system,
-         documentation language, and graphics/GUI libraries.})
+         documentation language, and graphics/GUI libraries.}
+     (slides-link "mflatt.pdf"))
     (list
      tonyg
      @p*{Actors are a great model for managing concurrency and communication
@@ -120,7 +128,8 @@
          time.}
      @p*{Tony Garnock-Jones is a PhD candidate at Northeastern University's
          Programming Research Laboratory, working on applying lessons from
-         distributed systems to programming language design.})
+         distributed systems to programming language design.}
+     (slides-link "tonyg.pdf"))
     (list
      gregh
      @p*{DrRacket is wonderful for both newcomers and Racket pros.
@@ -132,7 +141,8 @@
      @p*{Before becoming obsessed with Racket, Greg Hendershott founded
          and ran the music software company Cakewalk, and has served as an
          advisor to technology companies such as Roland and JamHub. Soon after
-         RacketCon he is joining the autumn batch at Hacker School.})
+         RacketCon he is joining the autumn batch at Hacker School.}
+     (slides-link "https://github.com/greghendershott/racket-mode"))
     (list
      jay
      @p*{Hard real-time embedded systems with tight operating
@@ -144,7 +154,8 @@
      @p*{Jay McCarthy is a visiting assistant professor at Vassar
          College and one of the developers of Racket. He works primarily on
          Racket's Web server, package system, networking libraries, and
-         special projects, like DrDr.})
+         special projects, like DrDr.}
+     (slides-link "jay.pdf"))
     (list
      brianm
       @p*{When electronic products come off the manufacturing line, they
@@ -162,7 +173,8 @@
           Chicago company that invented the wireless flash drive and develops
           the AirStash OS that makes it possible. In a past life he worked at
           Motorola on code generators in Common Lisp for five-nines
-          telecommunication systems (among other things).})
+          telecommunication systems (among other things).}
+      (slides-link "mastenbrook.pdf"))
     (list
      danprager
      @p*{@a[href: "https://www.youpatch.com/"]{youpatch.com} began as a hack in
@@ -184,7 +196,8 @@
          thinking, and teaching and coaching Agile approaches to software
          development and business. Nowadays he divides his professional time
          between Agile/Lean coaching and more entrepreneurial endeavours,
-         including YouPatch!})
+         including YouPatch!}
+     (slides-link "prager.pdf"))
     (list
      ntoronto
       @p*{Efficient 3D engines use scene databases to quickly answer queries
@@ -202,7 +215,8 @@
       @p*{Neil Toronto is a recent PhD graduate from Brigham Young University,
           now researching programming language support for reliable mathematical
           computation at University of Maryland, College Park. He writes
-          programs to draw pretty pictures in his nonexistent spare time.})
+          programs to draw pretty pictures in his nonexistent spare time.}
+      #f)
     (list
      davidv
      @p*{I'll talk about using Racket features like easy serialization,
@@ -210,7 +224,8 @@
          playable networked game.}
      @p*{David Vanderson has been a professional software developer for 10
          years.  He stumbled onto Racket a few years back and recently was
-         inspired by the game Artemis to make a coop game in Racket.})))
+         inspired by the game Artemis to make a coop game in Racket.}
+     (slides-link "vanderson.pdf"))))
 
 
 (define index
@@ -270,13 +285,14 @@
        @p{@b{Talks:}}
        @(apply ul
                (for/list ([speaker (in-list speaker-info)])
-                 (match-define (list name abstract bio) speaker)
+                 (match-define (list name abstract bio slides) speaker)
                  @a[id: (title->anchor (speaker->title name))
                     @; to compensate for the header
                     style: "padding-top: 60px; margin-top: -60px"]{
                    @li{@p*{@name — @(or (speaker->title name) "TBA")}
                           @(or abstract "")
                           @(or bio "")
+                          @(or slides "")
                           @hr{}}}))}
 
     @columns[1 #:center? #f #:row? #f]{ }
