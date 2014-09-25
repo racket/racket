@@ -10,6 +10,10 @@ RACKET = racket
 # shouldn't be the clone that implements `RACKET'), and other files
 # will be written and cached at "build":
 PLT_TOP = ../../../..
+# Beware that old packages can accumulate in "build/archive".
+# Discard that directory periodically to clean out old versions.
+# (The S3 update will independently preserve old uploaded versions
+# for at least one week.)
 
 # Along with the following, "~/.aws-keys" must have your AWS keys in
 # the form
