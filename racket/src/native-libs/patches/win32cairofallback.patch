@@ -1,0 +1,38 @@
+From 844455c14f8e9e4767fd661e475a9c6fdea9d22e Mon Sep 17 00:00:00 2001
+From: Massimo Valentini <mvalentini@src.gnome.org>
+Date: Wed, 11 Sep 2013 18:10:38 +0200
+Subject: [PATCH] Bug 53121 - My program runs successfully with...
+
+Cairo-1.10.2, but getting SIGSEGV with 1.12.2.
+---
+ src/win32/cairo-win32-display-surface.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/win32/cairo-win32-display-surface.c b/src/win32/cairo-win32-display-surface.c
+index 5ecdbee..965f2c4 100644
+--- a/cairo/src/win32/cairo-win32-display-surface.c
++++ b/cairo/src/win32/cairo-win32-display-surface.c
+@@ -455,17 +455,17 @@ _cairo_win32_display_surface_map_to_image (void                    *abstract_sur
+ 	surface->fallback =
+ 	    _cairo_win32_display_surface_create_for_dc (surface->win32.dc,
+ 							surface->win32.format,
+-							surface->win32.extents.width,
+-							surface->win32.extents.height);
++							surface->win32.extents.x + surface->win32.extents.width,
++							surface->win32.extents.y + surface->win32.extents.height);
+ 	if (unlikely (status = surface->fallback->status))
+ 	    goto err;
+ 
+ 	if (!BitBlt (to_win32_surface(surface->fallback)->dc,
+-		     0, 0,
++		     surface->win32.extents.x, surface->win32.extents.y,
+ 		     surface->win32.extents.width,
+ 		     surface->win32.extents.height,
+ 		     surface->win32.dc,
+-		     0, 0,
++		     surface->win32.extents.x, surface->win32.extents.y,
+ 		     SRCCOPY)) {
+ 	    status = _cairo_error (CAIRO_STATUS_DEVICE_ERROR);
+ 	    goto err;
+-- 
+1.7.6.5
