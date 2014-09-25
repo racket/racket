@@ -422,6 +422,7 @@ build-from-catalog:
 	$(RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/catalog-copy
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
+	rm -rf build/native
 
 # Although a client will build its own "collects", pack up the
 # server's version to be used by each client, so that every client has
@@ -431,12 +432,14 @@ origin-collects:
 	$(RACKET) -l distro-build/pack-collects
 
 # Now that we've built packages from local sources, create "built"
-# versions of the packages from the installation into "build/user":
+# versions of the packages from the installation into "build/user";
+# packages that exist in "build/native" are not repacked:
 built-catalog:
 	$(RACKET) -l distro-build/pack-built build/pkgs.rktd
 
 # Run a catalog server to provide pre-built packages, as well
-# as the copy of the server's "collects" tree:
+# as the copy of the server's "collects" tree; also serves
+# the "build/native" directory, if it exists:
 built-catalog-server:
 	if [ -d ".git" ]; then git update-server-info ; fi
 	$(RACKET) -l distro-build/serve-catalog $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT) $(SERVE_DURING_CMD_qq)
