@@ -30,7 +30,7 @@ versions:
  harfbuzz-0.9.27
  fontconfig-2.11.1
  freetype-2.5.3
- pango-1.36.6 (current Windows and PPC binaries are 1.36.3)
+ pango-1.36.6 (current PPC binaries are 1.36.3)
  poppler-0.24.5
  mpfr-3.1.2
  gmp-5.1.3

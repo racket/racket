@@ -119,6 +119,9 @@
 ;; Enable "symbol" fonts, and fix off-by-one:
 (define-runtime-path win32text-patch "patches/win32text.patch")
 
+;; Fix a problem with a surface connected to a clipped drawing context
+(define-runtime-path win32cairofallback-patch "patches/win32cairofallback.patch")
+
 ;; Needed when building with old GCC, such as 4.0:
 (define-runtime-path gmp-weak-patch "patches/gmp-weak.patch")
 
@@ -315,7 +318,8 @@
                        #:env path-flags
                        #:configure '("--enable-xlib=no")
                        #:patches (list cairo-coretext-patch
-                                       courier-new-patch))]
+                                       courier-new-patch
+                                       win32cairofallback-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
                           #:configure '("--without-icu")
                           #:patches (if win?
