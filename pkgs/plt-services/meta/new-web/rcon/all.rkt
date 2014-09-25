@@ -47,8 +47,8 @@
 (define (session time title chair)
   @slot[time #f]{@p{@title} Chair: @chair})
 
-(define (slides-link url)
-  @p*{@a[href: (F url)]{[slides]}})
+(define (slides-link url [caption "slides"])
+  @p*{@a[href: (F url)]{[@|caption|]}})
 
 (define speaker-info
   (list
@@ -79,7 +79,7 @@
      @p*{Matthew Butterick is a writer, designer, and lawyer in Los Angeles. He
          is the author of @em{Typography for Lawyers} and the creator of
          @a[href: "http://practicaltypography.com/"]{practicaltypography.com}.}
-     (slides-link "http://pollenpub.com/"))
+     (slides-link "http://pollenpub.com/" "link"))
     (list
      stchang
      @p*{The Boost Graph Library (BGL) introduces many novel abstraction
@@ -142,7 +142,7 @@
          and ran the music software company Cakewalk, and has served as an
          advisor to technology companies such as Roland and JamHub. Soon after
          RacketCon he is joining the autumn batch at Hacker School.}
-     (slides-link "https://github.com/greghendershott/racket-mode"))
+     (slides-link "https://github.com/greghendershott/racket-mode" "link"))
     (list
      jay
      @p*{Hard real-time embedded systems with tight operating
