@@ -193,6 +193,22 @@
   (ctest #f contract-stronger? (box/c (<=/c 3)) (box/c (<=/c 3) #:immutable #t))
   (ctest #f contract-stronger? (box/c (<=/c 3)) (box/c (<=/c 3) #:immutable #f))
   
+  (ctest #t contract-stronger? (hash/c integer? symbol?) (hash/c integer? symbol?))
+  (ctest #f contract-stronger? (hash/c integer? symbol?) (hash/c symbol? integer?))
+  (ctest #f contract-stronger? (hash/c (<=/c 2) symbol?) (hash/c (<=/c 3) symbol?))
+  (ctest #t contract-stronger?
+         (hash/c (<=/c 2) symbol? #:immutable #t)
+         (hash/c (<=/c 3) symbol? #:immutable #t))
+  (ctest #f contract-stronger?
+         (hash/c (<=/c 3) symbol? #:immutable #t)
+         (hash/c (<=/c 2) symbol? #:immutable #t))
+  (ctest #t contract-stronger?
+         (hash/c (<=/c 2) symbol? #:immutable #f)
+         (hash/c (<=/c 2) symbol?))
+  (ctest #f contract-stronger?
+         (hash/c (<=/c 2) symbol?)
+         (hash/c (<=/c 2) symbol? #:immutable #f))
+  
   (contract-eval
    `(let ()
       (define x (flat-rec-contract x (or/c (cons/c x '()) '())))
