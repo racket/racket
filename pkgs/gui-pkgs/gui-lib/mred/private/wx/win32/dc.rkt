@@ -31,7 +31,8 @@
 
 (define hwnd-param (make-parameter #f))
 
-(define need-clip-workarounds? #t)
+(define need-clip-text-workaround? #t)
+(define need-clip-refresh-workaround? #f) ; patched Cairo
 
 (define win32-bitmap%
   (class win32-no-hwnd-bitmap%
@@ -77,7 +78,7 @@
       ;; region is set, we draw text, and then the clipping
       ;; region is changed, the change doesn't take
       ;; until we draw more text --- but only with DDB surfaces.
-      (when need-clip-workarounds?
+      (when need-clip-text-workaround?
 	(let ([bm (internal-get-bitmap)])
 	  (when (bm . is-a? . win32-bitmap%)
 	    (SelectClipRgn (cairo_win32_surface_get_dc
@@ -131,11 +132,11 @@
 	    (define sh (->screen (unbox h)))
 	    (define r (make-RECT 0 0 sw sh))
 	    (define clip-type
-	      (if need-clip-workarounds?
+	      (if need-clip-refresh-workaround?
 		  (GetClipBox hdc r)
 		  SIMPLEREGION))
 	    (cond
-	     [(and need-clip-workarounds?
+	     [(and need-clip-refresh-workaround?
 		   (not (and (= clip-type SIMPLEREGION)
 			     (= (RECT-left r) 0)
 			     (= (RECT-top r) 0)
