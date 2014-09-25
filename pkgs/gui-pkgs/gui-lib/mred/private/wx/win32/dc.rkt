@@ -31,6 +31,8 @@
 
 (define hwnd-param (make-parameter #f))
 
+(define need-clip-workarounds? #t)
+
 (define win32-bitmap%
   (class win32-no-hwnd-bitmap%
     (init w h hwnd [gl-config #f])
@@ -74,9 +76,8 @@
       ;; Work around a Cairo(?) bug. When a clipping
       ;; region is set, we draw text, and then the clipping
       ;; region is changed, the change doesn't take
-      ;; until we draw more text --- but only under Win64,
-      ;; and only with DDB surfaces.
-      (when win64?
+      ;; until we draw more text --- but only with DDB surfaces.
+      (when need-clip-workarounds?
 	(let ([bm (internal-get-bitmap)])
 	  (when (bm . is-a? . win32-bitmap%)
 	    (SelectClipRgn (cairo_win32_surface_get_dc
@@ -130,11 +131,11 @@
 	    (define sh (->screen (unbox h)))
 	    (define r (make-RECT 0 0 sw sh))
 	    (define clip-type
-	      (if win64?
+	      (if need-clip-workarounds?
 		  (GetClipBox hdc r)
 		  SIMPLEREGION))
 	    (cond
-	     [(and win64?
+	     [(and need-clip-workarounds?
 		   (not (and (= clip-type SIMPLEREGION)
 			     (= (RECT-left r) 0)
 			     (= (RECT-top r) 0)
