@@ -955,8 +955,7 @@ TODO
         (send context enable-evaluation))
       
       (define/augment (submit-to-port? key)
-        (or (eq? (send key get-key-code) 'numpad-enter)
-            (send key get-control-down)
+        (or (send key get-control-down)
             (send key get-alt-down)
             (and prompt-position
                  (let ([lang (drracket:language-configuration:language-settings-language user-language-settings)])
