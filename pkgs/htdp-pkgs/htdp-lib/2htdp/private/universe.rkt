@@ -69,8 +69,12 @@
       
       (field 
        [universe 
-        (new checked-cell% [value0 universe0] [ok? check-with] 
-             [display (if (string? state) state (and state  "your server's state"))])])
+        (new checked-cell%
+	     [value0 universe0]
+	     [ok? check-with] 
+             [display (if (string? state) 
+                          (and (not (string=? "OliverFlatt" state)) state)
+                          (and state "your server's state"))])])
  
       ;; -----------------------------------------------------------------------
       ;; dealing with events
@@ -144,9 +148,12 @@
       ;; start and stop server, start and stop the universe
       
       (field [iworlds   '()] ;; [Listof World]
-             [gui      (new gui%
-                            [stop-server (lambda () (stop! (send universe get)))] 
-                            [stop-and-restart (lambda () (restart))])]
+             [gui
+	       (if (and (string? state) (string=? "OliverFlatt" state))
+		   (new dummy-gui%)
+		   (new gui%
+		     [stop-server (lambda () (stop! (send universe get)))] 
+		     [stop-and-restart (lambda () (restart))]))]
              [dr:custodian  (current-custodian)]
              [the-custodian (make-custodian)])
       
@@ -304,6 +311,13 @@
     ;; add menu, lock, and show 
     (copy-and-paste this)
     (send text lock #t)))
+
+;; throw away all messages, for Oliver to run on R Pi 
+(define dummy-gui%
+  (class object%
+    (super-new)
+    (define/public (show x) (void))
+    (define/public (add x) (void))))
 
 ;; -----------------------------------------------------------------------------
 ;; Frame Text -> Void
