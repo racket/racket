@@ -10,6 +10,7 @@ run() {
 
 cd tests 
 
+run universe-disappearing.rkt
 run bitmap-as-image-in-universe.rkt
 run key-error.rkt
 run to-draw-error.rkt

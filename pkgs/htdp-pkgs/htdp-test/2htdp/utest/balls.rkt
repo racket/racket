@@ -11,7 +11,17 @@
 ;; BallMail = (make-mail IWorld 'go)
 ;; Result   = (make-bundle [Listof IWorld] [Listof BallMail] '())
 
-(define Result0 (make-bundle '() '() '()))
+(define Result0 '() #;(make-bundle '() '() '()))
+
+;; -----------------------------------------------------------------------------
+;; Any -> [Listof IWorld]
+
+(define (run _)
+  (universe '() 
+            (on-new add-world)
+            (check-with list?)
+            (on-msg switch)
+            (on-disconnect disconnect)))
 
 ;; -----------------------------------------------------------------------------
 ;; [Listof IWorld] -> Result
@@ -78,12 +88,5 @@
 ;; -- run program run 
 
 (test)
-
-(define (run _)
-  (universe '() 
-            (on-new add-world)
-            (check-with list?)
-            (on-msg switch)
-            (on-disconnect disconnect)))
 
 ; (run 'go)
