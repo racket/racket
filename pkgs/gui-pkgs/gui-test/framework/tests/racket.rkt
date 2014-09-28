@@ -31,9 +31,15 @@
 (test-text-balanced? 8 "{foo} ((bar) [5.9])" 0 #f #t)
 (test-text-balanced? 9 "#(1 2 . 3)" 0 #f #t)
 
-(define (test-indentation which before after)
+(define-syntax (test-indentation stx) 
+  (syntax-case stx () 
+    [(_ . args) 
+     (with-syntax ([line (syntax-line stx)])
+       #'(test-indentation/proc line . args))]))
+
+(define (test-indentation/proc line before after)
   (test
-   (string->symbol (format "racket:test-indentation-~a" which))
+   (string->symbol (format "racket:test-indentation-line-~a" line))
    (λ (x) (equal? x after))
    (λ ()
      (queue-sexp-to-mred
@@ -45,16 +51,17 @@
          (send t tabify-all)
          (send t get-text))))))
 
-(test-indentation 1 "a" "a")
-(test-indentation 2 "(a\n b)" "(a\n b)")
-(test-indentation 3 "(a\nb)" "(a\n b)")
-(test-indentation 3 "(a b\nc)" "(a b\n   c)")
-(test-indentation 3 "(a ...\nb)" "(a ...\n b)")
-(test-indentation 4 "(lambda (x)\nb)" "(lambda (x)\n  b)")
-(test-indentation 5 "(lambdaa (x)\nb)" "(lambdaa (x)\n         b)")
-(test-indentation 6
-                  "(define x\n  (let/ec return\n    (when 1\n      (when 2\n\t\t      3))\n    2))"
+(test-indentation "a" "a")
+(test-indentation "(a\n b)" "(a\n b)")
+(test-indentation "(a\nb)" "(a\n b)")
+(test-indentation "(a b\nc)" "(a b\n   c)")
+(test-indentation "(a ...\nb)" "(a ...\n b)")
+(test-indentation "(lambda (x)\nb)" "(lambda (x)\n  b)")
+(test-indentation "(lambdaa (x)\nb)" "(lambdaa (x)\n         b)")
+(test-indentation "(define x\n  (let/ec return\n    (when 1\n      (when 2\n\t\t      3))\n    2))"
                   "(define x\n  (let/ec return\n    (when 1\n      (when 2\n        3))\n    2))")
+(test-indentation "(for/fold ([x 1])\n([y 2])\n3\n4)"
+                  "(for/fold ([x 1])\n          ([y 2])\n  3\n  4)")
 
 (define (test-magic-square-bracket which before after)
   (test
