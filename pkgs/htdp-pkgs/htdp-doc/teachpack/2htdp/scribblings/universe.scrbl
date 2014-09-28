@@ -1207,8 +1207,14 @@ The mandatory clauses of a @racket[universe] server description are
  universe. The event handler is called with the current state and the
  joining iworld, which isn't on the list yet. In particular, the handler may
  reject a @tech{world} program from participating in a @tech{universe},
- by simply returning the given state or by immediately including the new world in the third field of the resulting @racket[bundle] structure.}
-}
+ by simply returning the given state or by immediately including the new world in the third field of the resulting @racket[bundle] structure.
+
+@history[
+ #:changed 
+ "1.1" 
+ "allow universe handlers to return a plain universe state"]
+
+}}
 
 @item{
  @defform[(on-msg msg-expr)
@@ -1217,7 +1223,14 @@ The mandatory clauses of a @racket[universe] server description are
  tells DrRacket to apply @racket[msg-expr] to the current state of the
  universe, the world
  @racket[w] that sent the message, and the message itself.
- }
+
+@history[
+ #:changed 
+ "1.1" 
+ "allow universe handlers to return a plain universe state"]
+
+}
+
 }]
  All proper event handlers produce a state of the universe or a
  @emph{bundle}.  The state of the universe is safe-guarded by the server until the next event, and the mails
@@ -1243,7 +1256,14 @@ optional handlers:
               (on-tick tick-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{UniverseState}) (or/c (unsyntax @tech{UniverseState}) bundle?))])]{
- tells DrRacket to apply @racket[tick-expr] to the current state of the universe.}
+ tells DrRacket to apply @racket[tick-expr] to the current state of the
+ universe.
+
+@history[
+ #:changed 
+ "1.1" 
+ "allow universe handlers to return a plain universe state"]
+}
 
 @defform/none[#:literals (on-tick)
               (on-tick tick-expr rate-expr)
@@ -1251,7 +1271,14 @@ optional handlers:
               ([tick-expr (-> (unsyntax @tech{UniverseState}) (or/c (unsyntax @tech{UniverseState}) bundle?))]
                [rate-expr (and/c real? positive?)])]{
  tells DrRacket to apply @racket[tick-expr] as above; the clock ticks
- every  @racket[rate-expr] seconds.}
+ every  @racket[rate-expr] seconds.
+
+@history[
+ #:changed 
+ "1.1" 
+ "allow universe handlers to return a plain universe state"]
+
+}
 
 @defform/none[#:literals (on-tick)
               (on-tick tick-expr rate-expr)
@@ -1261,9 +1288,14 @@ optional handlers:
                [limit-expr (and/c integer? positive?)])]{
  tells DrRacket to apply @racket[tick-expr] as above; the clock ticks
  every  @racket[rate-expr] seconds. The universe stops when the clock has
- ticked more than @scheme[limit-expr] times.}
- }
+ ticked more than @scheme[limit-expr] times.
 
+@history[
+ #:changed 
+ "1.1" 
+ "allow universe handlers to return a plain universe state"]
+}
+}
 
 @item{
  @defform[#:literals (on-disconnect)
@@ -1275,7 +1307,13 @@ optional handlers:
  is the current state of the universe server, while the second argument is
  the (representation of the) world that got disconnected. The resulting
  bundle usually includes this second argument in the third field, telling
- DrRacket not to wait for messages from this world anymore.}
+ DrRacket not to wait for messages from this world anymore.
+
+@history[
+ #:changed 
+ "1.1" 
+ "allow universe handlers to return a plain universe state"]
+}
 }
 
 @item{
