@@ -75,7 +75,7 @@
         ("numpad7" . numpad7)
         ("numpad8" . numpad8)
         ("numpad9" . numpad9)
-        ("numpadenter" . #\u3)
+        ("numpadenter" . numpad-enter)
         ("f1" . f1)
         ("f2" . f2)
         ("f3" . f3)

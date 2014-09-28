@@ -175,8 +175,7 @@ The special key symbols attempt to capture useful keys that have no
 
  @item{@racket[#\return] --- the Enter or Return key (on all
       platforms), but not necessarily the Enter key near the numpad
-      (which is reported as @racket['numpad-enter] if the platform
-      distinguishes the two Enter keys)}
+      (which is reported as @racket['numpad-enter] Unix and Mac OS X)}
 
  @item{@racket[#\tab] --- the tab key}
 
@@ -206,7 +205,11 @@ On Windows, when the Control key is pressed without Alt, the key
 
 See also @method[key-event% get-other-shift-key-code].
 
-}
+@history[#:changed "6.1.0.8" @elem{Changed reporting of numpad Enter
+                                   to @racket['numpad-enter] as
+                                   documented, instead of
+                                   @racket[#\u03].}]}
+
 
 @defmethod[(get-key-release-code)
            (or/c char? key-code-symbol?)]{

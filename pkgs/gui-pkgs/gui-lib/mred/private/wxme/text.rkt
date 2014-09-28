@@ -629,7 +629,7 @@
           [(add) (ins #\+)]
           [(subtract) (ins #\-)]
           [(decimal) (ins #\.)]
-          [(#\u3) (ins #\return)] ; NUMPAD-ENTER
+          [(numpad-enter) (ins #\return)]
           [(#\return #\tab) (ins code)]
           [else
            (let ([vcode (if (char? code)
