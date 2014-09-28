@@ -21,7 +21,6 @@ run -t batch-io.rkt
 run -t batch-io2.rkt
 run -t batch-io3.rkt
 run -t batch-io-csv-ho.rkt
-run -t batch-io-xexpr.rkt
 run clause-once.rkt
 run full-scene-visible.rkt
 run image-too-large.rkt
