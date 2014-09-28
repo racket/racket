@@ -191,6 +191,7 @@
 
 (set-square-bracket-nonum-pref 'framework:square-bracket:letrec
                                (append (map symbol->string all-fors)
+                                       '("for/fold" "for/fold:" "for*/fold" "for*/fold:")
                                        '("let" 
                                          "let*" "let-values" "let*-values"
                                          "let-syntax" "let-struct" "let-syntaxes"
