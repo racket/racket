@@ -23,7 +23,7 @@
          (#xff63 . insert)
          (#xff80 . #\space) ; keypad
          (#xff89 . #\tab) ; keypad
-         (#xff8d . #\u3)  ; enter
+         (#xff8d . numpad-enter) ; was #\u3 in earlier versions
          (#xff91 . f1)
          (#xff92 . f2)
          (#xff93 . f3)
