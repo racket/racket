@@ -1,5 +1,7 @@
 #lang racket/base
-(require racket/file)
+(require racket/file
+	 racket/system
+	 racket/format)
 
 ;; Run this test on a Windows machine with a user that is allowed
 ;; to create symbolic links. Since that's not usually the case,
@@ -28,8 +30,9 @@
 (define sub (build-path temp-dir sub-name))
 (delete-directory/files sub #:must-exist? #f)
 (make-directory* sub)
-
-(define (go build tbuild rbuild)
+(define (go build tbuild rbuild
+	    #:mklink [make-____-__-directory-link make-file-or-directory-link]
+	    #:rmlink [delete-____ delete-file])
   (test #f (link-exists? (build "l1")))
 
   ;; t1 -> l1
@@ -73,7 +76,7 @@
   (delete-file (build "l2"))
 
   ;; Link to dir in dir with "." path elements
-  (make-file-or-directory-link (let ([p (rbuild "t1")])
+  (make-____-__-directory-link (let ([p (rbuild "t1")])
 				 (if (path? p)
 				     (build-path p 'same 'same "f2" 'same)
 				     (string-append p "\\.\\.\\f2\\.")))
@@ -81,7 +84,7 @@
   (test #t (directory-exists? (build "l2")))
   (test "t1-f2-f3" (file->string (build-path (build "l2") "f3")))
   (test (list (string->path "f3")) (directory-list (build "l2")))
-  (delete-file (build "l2"))
+  (delete-____ (build "l2"))
 
   ;; Link with ".." to cancel first link element
   (make-file-or-directory-link (let ([p (rbuild "t1")])
@@ -108,7 +111,7 @@
   (delete-file (build "l3"))
 
   ;; Trailing ".."
-  (make-file-or-directory-link (let ([p (rbuild "t1")])
+  (make-____-__-directory-link (let ([p (rbuild "t1")])
 				 (if (path? p)
 				     (build-path p 'up)
 				     (string-append p "\\..")))
@@ -118,7 +121,7 @@
   (test #t (directory-exists? (build "l3")))
   (test "(f4)" (file->string (build-path (build "l3") "f4")))
   (delete-file (build-path sub "f4"))
-  (delete-file (build "l3"))
+  (delete-____ (build "l3"))
 
   ;; Forward slashes (ok for absolute, not ok for relative)
   (define abs? (absolute-path? (rbuild "t1")))
@@ -174,8 +177,13 @@
   (define-values (base name dir) (split-path (in-sub/unc s)))
   (build-path base (trailing-space s)))
 
+(define (make-junction dest src)
+  (unless (system (~a "mklink /j " src " " dest))
+    (error)))
+
 (go in-sub in-sub values)
 (go in-sub in-sub in-sub)
+(go in-sub in-sub in-sub #:mklink make-junction #:rmlink delete-directory)
 (parameterize ([current-directory sub])
   (go values values values)
   (go values in-sub in-sub))
