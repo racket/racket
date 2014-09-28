@@ -1114,7 +1114,7 @@ for universe programs. For example:
 ]
 }
 
-@item{Each event handler produces a @emph{bundle}, which is a structure
+@item{Each event handler produces a state of the universe or a @emph{bundle}, which is a structure
  that contains the @tech{server}'s state, a list of mails to other worlds,
  and the list of @emph{iworld}s that are to be disconnected.
 
@@ -1148,7 +1148,10 @@ A @tech{server} keeps track of information about the @tech{universe} that
  a server tracks and how the information is represented depends on the
  situation and the programmer, just as with @tech{world} programs.
 
-@deftech{UniverseState} @racket[any/c] represents the server's state. For running
+@deftech{UniverseState} : @racket[any/c] 
+
+The design of a universe server demands that you come up with a data
+definition for all possible server states. For running
 @tech{universe}s, the teachpack demands that you come up with a data
 definition for (your state of the) @tech{server}.  Any piece of data can
 represent the state. We just assume that you introduce a data definition
@@ -1199,25 +1202,25 @@ The mandatory clauses of a @racket[universe] server description are
 @item{
  @defform[(on-new new-expr)
           #:contracts
-          ([new-expr (-> (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
+          ([new-expr (-> (unsyntax @tech{UniverseState}) iworld? (or/c (unsyntax @tech{UniverseState}) bundle?))])]{
  tells DrRacket to call the function @racket[new-expr] every time another world joins the
  universe. The event handler is called with the current state and the
  joining iworld, which isn't on the list yet. In particular, the handler may
  reject a @tech{world} program from participating in a @tech{universe},
- by simply including it in the resulting @racket[bundle] structure (third field).}
+ by simply returning the given state or by immediately including the new world in the third field of the resulting @racket[bundle] structure.}
 }
 
 @item{
  @defform[(on-msg msg-expr)
           #:contracts
-          ([msg-expr (-> (unsyntax @tech{UniverseState}) iworld? sexp? bundle?)])]{
+          ([msg-expr (-> (unsyntax @tech{UniverseState}) iworld? sexp? (or/c (unsyntax @tech{UniverseState}) bundle?))])]{
  tells DrRacket to apply @racket[msg-expr] to the current state of the
  universe, the world
  @racket[w] that sent the message, and the message itself.
  }
 }]
- All proper event handlers produce a @emph{bundle}.  The state in the
- bundle is safe-guarded by the server until the next event, and the mails
+ All proper event handlers produce a state of the universe or a
+ @emph{bundle}.  The state of the universe is safe-guarded by the server until the next event, and the mails
  are broadcast as specified.  The list of iworlds in the third field of the
  bundle is removed from the list of participants from which to expect
  messages.
@@ -1239,13 +1242,13 @@ optional handlers:
 @defform/none[#:literals (on-tick)
               (on-tick tick-expr)
               #:contracts
-              ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)])]{
+              ([tick-expr (-> (unsyntax @tech{UniverseState}) (or/c (unsyntax @tech{UniverseState}) bundle?))])]{
  tells DrRacket to apply @racket[tick-expr] to the current state of the universe.}
 
 @defform/none[#:literals (on-tick)
               (on-tick tick-expr rate-expr)
               #:contracts
-              ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)]
+              ([tick-expr (-> (unsyntax @tech{UniverseState}) (or/c (unsyntax @tech{UniverseState}) bundle?))]
                [rate-expr (and/c real? positive?)])]{
  tells DrRacket to apply @racket[tick-expr] as above; the clock ticks
  every  @racket[rate-expr] seconds.}
@@ -1253,7 +1256,7 @@ optional handlers:
 @defform/none[#:literals (on-tick)
               (on-tick tick-expr rate-expr)
               #:contracts
-              ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)]
+              ([tick-expr (-> (unsyntax @tech{UniverseState}) (or/c (unsyntax @tech{UniverseState}) bundle?))]
                [rate-expr (and/c real? positive?)]
                [limit-expr (and/c integer? positive?)])]{
  tells DrRacket to apply @racket[tick-expr] as above; the clock ticks
@@ -1266,7 +1269,7 @@ optional handlers:
  @defform[#:literals (on-disconnect)
 	  (on-disconnect dis-expr)
           #:contracts
-          ([dis-expr (-> (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
+          ([dis-expr (-> (unsyntax @tech{UniverseState}) iworld? (or/c (unsyntax @tech{UniverseState}) bundle?))])]{
  tells DrRacket to invoke @racket[dis-expr] every time a participating
  @tech{world} drops its connection to the server. The first argument
  is the current state of the universe server, while the second argument is
