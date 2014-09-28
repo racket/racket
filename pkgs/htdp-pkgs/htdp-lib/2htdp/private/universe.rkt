@@ -90,13 +90,16 @@
               (define nxt (name (send universe get) a ...))
               (cond
                 [(stop-the-world? nxt) (stop! (stop-the-world-world nxt))]
-                [else 
+                [(bundle? nxt) 
                  (define-values (u mails bad)
                    (bundle> n nxt))
                  (send universe set (format "value returned from ~a" 'name) u)
                  (unless (boolean? to-string) (send gui add (to-string u)))
                  (broadcast mails)
-                 (for-each (lambda (iw) (kill iw "disconnected ~a")) bad)])))))
+                 (for-each (lambda (iw) (kill iw "disconnected ~a")) bad)]
+                [else ;; plain universe state 
+                 (send universe set (format "value returned from ~a" 'name) nxt)
+                 (unless (boolean? to-string) (send gui add (to-string nxt)))])))))
       
       ;; [Listof Mail] -> Void
       ;; send payload of messages to designated worlds 
