@@ -1,6 +1,6 @@
 #! /bin/sh
 #|
-exec racket -tm "$0" ${1+"$@"}
+exec racket -t "$0" ${1+"$@"}
 |#
 
 #lang racket 
