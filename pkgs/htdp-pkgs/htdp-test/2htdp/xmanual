@@ -10,6 +10,7 @@ run() {
 
 cd tests 
 
+run -t batch-io-xexpr.rkt
 run random-seed-works.rkt
 run mouse-evt.rkt
 run release.rkt
