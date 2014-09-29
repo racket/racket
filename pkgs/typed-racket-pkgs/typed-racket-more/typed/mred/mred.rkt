@@ -39,8 +39,13 @@
                        (List Exact-Positive-Integer Exact-Positive-Integer Any)
                        (List Exact-Positive-Integer Exact-Positive-Integer Any Any)
                        (List Exact-Positive-Integer Exact-Positive-Integer Any Any Real)))
-         [get-width (-> Integer)]
-         [get-height (-> Integer)]))
+         [get-width (-> Exact-Positive-Integer)]
+         [get-height (-> Exact-Positive-Integer)]
+         [get-loaded-mask (-> (U #f (Instance Bitmap%)))]
+         [get-argb-pixels
+          (->* (Real Real Exact-Nonnegative-Integer Exact-Nonnegative-Integer Bytes)
+               (Any Any)
+               Void)]))
 
 (define-type Font-List%
   (Class
