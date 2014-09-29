@@ -1,6 +1,10 @@
 #lang racket/base
 (require web-server/http
          "common.rkt"
+         "update.rkt"
+         "notify.rkt"
+         "static.rkt"
+         "build-update.rkt"
          "jsonp.rkt"
          web-server/servlet-env
          racket/file
@@ -390,6 +394,9 @@
   (signal-update! (packages-of (current-user)))
   #t)
 
+(define jsonp/notice
+  (make-jsonp-responder (λ (args) (file->string notice-path))))
+
 (define-values (main-dispatch main-url)
   (dispatch-rules
    [("jsonp" "authenticate") jsonp/authenticate]
@@ -404,6 +411,7 @@
    [("jsonp" "package" "author" "del") jsonp/package/author/del]
    [("jsonp" "package" "curate") jsonp/package/curate]
    [("api" "upload") #:method "post" api/upload]
+   [("jsonp" "notice") jsonp/notice]
    [else redirect-to-static]))
 
 (define-syntax-rule (forever . body)

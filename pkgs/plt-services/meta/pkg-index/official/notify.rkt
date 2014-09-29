@@ -7,20 +7,7 @@
          "common.rkt")
 
 (define (upload-notice! m)
-  (define notice-p (format "~a/notice.json" static-path))
-  
-  (write-to-file m notice-p #:exists 'replace)
-  
-  (system* s3cmd-path
-           "-c" s3-config
-           "sync"
-           "-M"
-           "--acl-public"
-           "--delete-removed"
-           notice-p
-           (format "s3://~a/notice.json" s3-bucket))
-
-  (void))
+  (display-to-file m notice-path #:exists 'replace))
 
 (module+ main
   (require racket/cmdline)
@@ -28,3 +15,11 @@
    #:program "notify"
    #:args (message)
    (upload-notice! message)))
+
+(define (do-notify! l)
+  (upload-notice! (first l)))
+(define (notify! m)
+  (run! do-notify! (list m)))
+
+(provide do-notify!
+         notify!)

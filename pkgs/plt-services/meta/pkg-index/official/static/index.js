@@ -506,16 +506,17 @@ $( document ).ready(function() {
                 bstatus ); }
 
     function pollNotice(){
-        $.getJSON( "/notice.json", function( resp ) {
+        $.getJSON( dynamic_url("/jsonp/notice"), function( resp ) {
             $("#server_notice").html(resp);
             // If there is no notice, update every 5 minutes
-            if ( resp == "" ) {
+            if ( ! (/\S/.test(resp)) ) {
                 $("#server_notice").hide();
                 setTimeout(pollNotice, 1000*60*5); }
             // Otherwise, update every 5 seconds
             else {
                 $("#server_notice").show();
                 setTimeout(pollNotice, 1000*5); } }); }
+    $("#server_notice").hide();
     pollNotice();
 
     var pkgdb = {};
@@ -601,6 +602,9 @@ $( document ).ready(function() {
     function menu_logout () {
         logged_in = false;
         $("#logout").html( jslink( "login", function () { $( "#login" ).dialog( "open" ); } ) ); }
+    function menu_logging () {
+        logged_in = false;
+        $("#logout").html( "logging in..." ); }
     function menu_loggedin ( curate_p ) {
         logged_in = true;
         $("#logout").html("")
@@ -656,6 +660,7 @@ $( document ).ready(function() {
                          menu_logout (); }) ); }
 
     function initial_login () {
+        menu_logging();
         $.getJSON( dynamic_url("/jsonp/authenticate"),
                    { email: localStorage['email'], passwd: localStorage['passwd'], code: "" },
                    function( resp ) {

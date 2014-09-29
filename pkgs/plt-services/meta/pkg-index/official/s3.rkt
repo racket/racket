@@ -5,7 +5,8 @@
          racket/system
          file/gzip
          racket/match
-         "common.rkt")
+         "common.rkt"
+         "notify.rkt")
 
 (define (upload-all)
   (gzip (format "~a/pkgs-all.json" static-path)
@@ -39,6 +40,14 @@
 (define (upload-pkgs pkgs)
   ;; FUTURE make this more efficient
   (upload-all))
+(define (run-s3! pkgs)
+  (run! upload-pkgs pkgs))
+(define (signal-s3! pkgs)
+  (thread (λ () (run-s3! pkgs))))
+
+(provide upload-pkgs
+         run-s3!
+         signal-s3!)
 
 (module+ main
   (require racket/cmdline)
