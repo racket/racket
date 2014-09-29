@@ -164,7 +164,8 @@
           (define (loop)
             (apply sync 
                    (handle-evt (tcp-accept-evt tcp-listener) add-iworld)
-                   (map(lambda (p) (handle-evt (iworld-in p) (process-message p))) iworlds)))
+                   (map(lambda (p) (handle-evt (iworld-in p) (process-message p))) iworlds))
+            (loop))
           ;;; WHERE 
           (define tcp-listener 
             (with-handlers ((exn:fail:network? (lambda (x) (stop! x))))
@@ -174,23 +175,19 @@
             (define in (first in-out))
             (define out (second in-out))
             ;; is it possible to kill the server with lots of bad connections?
-            (with-handlers ((tcp-eof? (lambda _ (loop)))
+            (with-handlers ((tcp-eof? (lambda _ (void)))
                             (exn? (lambda (e)
                                     (printf "process registration failed!\n~a" 
-                                            (exn-message e))
-                                    (loop))))
+                                            (exn-message e)))))
               (tcp-process-registration
-               in out (lambda (info) (pnew (create-iworld in out info))))
-              (loop)))
+               in out (lambda (info) (pnew (create-iworld in out info))))))
           ;; IWorld -> [IPort -> Void]
           (define (process-message p)
             (lambda (in)
               (define (disc e)
-                (pdisconnect p)
-                (loop))
+                (pdisconnect p))
               (with-handlers ((tcp-eof? disc))
-                (pmsg p (tcp-receive in))
-                (loop))))
+                (pmsg p (tcp-receive in)))))
           ;; --- go universe go ---
           (set! iworlds '())
           (send universe set "initial expression" universe0)
