@@ -564,7 +564,7 @@
              (raise-listof-blame-error blame val (pe-listof-ctc? ctc) #f)))])))
 
 (define (listof-val-first-projection ctc)
-  (define elem-proj (contract-val-first-projection (listof-ctc-elem-c ctc)))
+  (define elem-proj (get/build-val-first-projection (listof-ctc-elem-c ctc)))
   (define pred? (if (pe-listof-ctc? ctc)
                     list?
                     non-empty-list?))
