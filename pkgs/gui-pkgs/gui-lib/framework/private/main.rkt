@@ -169,7 +169,6 @@
         (define deletions (list-ref marshed 1))
         (append additions (remove* deletions defaults))]))))
   
-
 (set-square-bracket-nonum-pref 'framework:square-bracket:local
                                '("local"))
 
@@ -189,9 +188,10 @@
                    untyped-fors)))
     all-fors))
 
+(define for/folds '("for/fold" "for/fold:" "for*/fold" "for*/fold:"))
 (set-square-bracket-nonum-pref 'framework:square-bracket:letrec
                                (append (map symbol->string all-fors)
-                                       '("for/fold" "for/fold:" "for*/fold" "for*/fold:")
+                                       for/folds
                                        '("let" 
                                          "let*" "let-values" "let*-values"
                                          "let-syntax" "let-struct" "let-syntaxes"
@@ -200,6 +200,8 @@
                                          "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
                                          "parameterize" "parameterize*"
                                          "with-syntax" "with-handlers")))
+
+(set-square-bracket-nonum-pref 'framework:square-bracket:for/fold for/folds)
 
 (preferences:set-default 'framework:white-on-black? #f boolean?)
 

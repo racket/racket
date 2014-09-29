@@ -100,6 +100,8 @@
 (test-magic-square-bracket 'local1 "(local " "(local [")
 (test-magic-square-bracket 'local2 "(local [" "(local [(")
 (test-magic-square-bracket 'local2 "(local [(define x 1)] " "(local [(define x 1)] (")
+(test-magic-square-bracket 'for/fold1 "(for/fold (" "(for/fold ([")
+(test-magic-square-bracket 'for/fold2 "(for/fold ([x 1]) (" "(for/fold ([x 1]) ([")
 
 
 (define (test-message-send/proc line before expected pos msg
