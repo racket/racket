@@ -1040,39 +1040,46 @@ definition in a @racket[~do] block.
 
 @section{Pattern Expanders}
 
+The grammar of @tech{syntax patterns} is extensible through the use of
+@deftech{pattern expanders}, which allow the definition of new pattern
+forms by rewriting them into existing pattern forms.
+
 @defproc[(pattern-expander [proc (-> syntax? syntax?)]) pattern-expander?]{
-returns a pattern-expander that uses @racket[proc] to transform the pattern.
+
+Returns a @tech{pattern expander} that uses @racket[proc] to transform the pattern.
 
 @myexamples[
-  (define-syntax ~foo
-    (pattern-expander
-     (syntax-rules ()
-       [(_ pat) pat])))
+(define-syntax ~maybe
+  (pattern-expander
+   (syntax-rules ()
+    [(~maybe pat ...)
+     (~optional (~seq pat ...))])))
 ]}
 
 @defthing[prop:pattern-expander (struct-type-property/c (-> pattern-expander? (-> syntax? syntax?)))]{
-a struct-type property for pattern-expanders.
 
-@myexamples[
-  (begin-for-syntax
-    (struct thing (proc pattern-expander) #:transparent
-      #:property prop:procedure (struct-field-index proc)
-      #:property prop:pattern-expander (λ (this) (thing-pattern-expander this))))
-  (define-syntax ~foo
-    (thing
-     (lambda (stx) #'"I am the macro ~foo")
-     (lambda (stx) #'"I am the pattern-expander ~foo")))
+A @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{structure type property} to
+identify structure types that act as @tech{pattern expanders} like the
+ones created by @racket[pattern-expander]. 
+
+@racketblock[
+(begin-for-syntax
+  (struct thing (proc pattern-expander)
+    #:property prop:procedure (struct-field-index proc)
+    #:property prop:pattern-expander (λ (this) (thing-pattern-expander this))))
+(define-syntax ~maybe
+  (thing
+   (lambda (stx) .... @#,(elem "macro behavior") ....)
+   (lambda (stx) .... @#,(elem "pattern-expander behavior") ....)))
 ]}
 
 @defproc[(pattern-expander? [v any/c]) boolean?]{
-returns @racket[#t] if @racket[v] is a pattern expander, otherwise returns @racket[#f].
-}
 
-@defproc[(pattern-expander-proc [pat-exp pattern-expander?]) (-> syntax? syntax?)]{
-returns the transformer procedure used by @racket[pat-exp].
+Returns @racket[#t] if @racket[v] is a @tech{pattern expander},
+@racket[#f] otherwise.
 }
 
 @defproc[(syntax-local-syntax-parse-pattern-introduce [stx syntax?]) syntax?]{
-like @racket[syntax-local-introduce], but for pattern-expanders.
-}
 
+Like @racket[syntax-local-introduce], but for @tech{pattern expanders}.
+}
