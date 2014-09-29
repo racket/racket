@@ -13,7 +13,9 @@
          racket/path
          racket/promise
          meta/pkg-index/basic/main
-         "common.rkt")
+         "common.rkt"
+         "notify.rkt"
+         "s3.rkt")
 
 (define convert-to-json
   (match-lambda
@@ -373,13 +375,24 @@
         (delete-file (build-path pkg-path f))
         (delete-file (build-path pkg-path (path-add-suffix f #".json")))))))
 
+(define (do-static pkgs)
+  (notify! "update upload being computed: the information below may not represent all recent changes and updates")
+   ;; FUTURE make this more efficient by looking at pkgs
+  (generate-static)
+  (run-s3! pkgs))
+(define (run-static! pkgs)
+  (run! do-static pkgs))
+(define (signal-static! pkgs)
+  (thread (λ () (run-static! pkgs))))
+
+(provide do-static
+         run-static!
+         signal-static!)
+
 (module+ main
   (require racket/cmdline)
 
   (command-line
    #:program "static"
    #:args pkgs
-   ;; FUTURE make this more efficient
-   (notify! "update upload being computed: the information below may not represent all recent changes and updates")
-   (generate-static)
-   (run-s3! pkgs)))
+   (do-static pkgs)))

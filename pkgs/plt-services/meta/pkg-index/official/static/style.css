@@ -45,14 +45,15 @@ body {
 #server_notice {
     text-align: center;
     background: #ffffcc;
-    padding-bottom: 0.5em;
+    padding-bottom: 0.25em;
     color: black;
-    font-size: 150%;
+    font-size: 75%;
     font-weight: bold;
 }
 
 #logout {
     float: right;
+    color: white;
 }
 
 .content {
