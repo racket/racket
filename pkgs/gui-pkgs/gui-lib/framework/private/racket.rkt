@@ -1772,7 +1772,8 @@
                       (set! real-char c))]
          [start-pos (send text get-start-position)]
          [end-pos (send text get-end-position)]
-         [letrec-like-forms (preferences:get 'framework:square-bracket:letrec)])
+         [letrec-like-forms (preferences:get 'framework:square-bracket:letrec)]
+         [for/fold-like-forms (preferences:get 'framework:square-bracket:for/fold)])
     (send text begin-edit-sequence #f #f)
     (if (and (send text get-overwrite-mode) (= start-pos end-pos))
         (send text insert "[" start-pos (add1 start-pos) #f)
@@ -1810,54 +1811,63 @@
                [(not (zero? before-whitespace-pos))
                 ;; this is the first thing in the sequence
                 ;; pop out one layer and look for a keyword.
-                (let ([b-w-p-char (send text get-character (- before-whitespace-pos 1))])
-                  (cond
-                    [(equal? b-w-p-char #\()
-                     (let* ([second-before-whitespace-pos (send text skip-whitespace 
-                                                                (- before-whitespace-pos 1)
-                                                                'backward
-                                                                #t)]
-                            [second-backwards-match (send text backward-match
-                                                          second-before-whitespace-pos
-                                                          0)])
-                       (cond
-                         [(not second-backwards-match)
-                          (change-to 3 #\()]
-                         [(and (beginning-of-sequence? text second-backwards-match)
-                               (ormap (λ (x) (text-between-equal? x
-                                                                  text
+                (define b-w-p-char (send text get-character (- before-whitespace-pos 1)))
+                (cond
+                  [(equal? b-w-p-char #\()
+                   (define second-before-whitespace-pos (send text skip-whitespace 
+                                                              (- before-whitespace-pos 1)
+                                                              'backward
+                                                              #t))
+                   (define second-backwards-match (send text backward-match
+                                                        second-before-whitespace-pos
+                                                        0))
+                   (cond
+                     [(not second-backwards-match)
+                      (change-to 3 #\()]
+                     [(and (beginning-of-sequence? text second-backwards-match)
+                           (ormap (λ (x) (text-between-equal? x
+                                                              text
+                                                              second-backwards-match
+                                                              second-before-whitespace-pos))
+                                  letrec-like-forms))
+                      ;; we found a let<mumble> keyword, so we get a square bracket
+                      (void)]
+                     [else
+                      ;; go back one more sexp in the same row, looking for `let loop' pattern
+                      (define second-before-whitespace-pos2 (send text skip-whitespace 
                                                                   second-backwards-match
-                                                                  second-before-whitespace-pos))
-                                      letrec-like-forms))
-                          ;; we found a let<mumble> keyword, so we get a square bracket
-                          (void)]
-                         [else
-                          ;; go back one more sexp in the same row, looking for `let loop' pattern
-                          (let* ([second-before-whitespace-pos2 (send text skip-whitespace 
-                                                                      second-backwards-match
-                                                                      'backward
-                                                                      #t)]
-                                 [second-backwards-match2 (send text backward-match
-                                                                second-before-whitespace-pos2
-                                                                0)])
-                            (cond
-                              [(and second-backwards-match2
-                                    (member (send text classify-position second-backwards-match)
-                                            ;;; otherwise, this isn't a `let loop',
-                                            ;;; it is a regular let
-                                            '(symbol keyword))
-                                    (member "let" letrec-like-forms)
-                                    (text-between-equal? "let"
-                                                         text
-                                                         second-backwards-match2
-                                                         second-before-whitespace-pos2))
-                               ;; found the `(let loop (' so we keep the [
-                               (void)]
-                              [else
-                               ;; otherwise, round.
-                               (change-to 4 #\()]))]))]
-                    [else 
-                     (change-to 5 #\()]))]
+                                                                  'backward
+                                                                  #t))
+                      (define second-backwards-match2 (send text backward-match
+                                                            second-before-whitespace-pos2
+                                                            0))
+                      (cond
+                        [(and second-backwards-match2
+                              (ormap (λ (x)
+                                       (text-between-equal? x
+                                                            text
+                                                            second-backwards-match2
+                                                            second-before-whitespace-pos2))
+                                     for/fold-like-forms))
+                         ;; found a for/fold-like form, so we keep the [
+                         (void)]
+                        [(and second-backwards-match2
+                              (member (send text classify-position second-backwards-match)
+                                      ;;; otherwise, this isn't a `let loop',
+                                      ;;; it is a regular let
+                                      '(symbol keyword))
+                              (member "let" letrec-like-forms)
+                              (text-between-equal? "let"
+                                                   text
+                                                   second-backwards-match2
+                                                   second-before-whitespace-pos2))
+                         ;; found the `(let loop (' so we keep the [
+                         (void)]
+                        [else
+                         ;; otherwise, round.
+                         (change-to 4 #\()])])]
+                  [else 
+                   (change-to 5 #\()])]
                [else 
                 (change-to 6 #\()]))])))
     (send text delete pos (+ pos 1) #f)
@@ -2063,18 +2073,19 @@
     (send f show #t)
     answers)
   
-  (define stupid-internal-definition-syntax1
-    (mk-list-box 'framework:square-bracket:letrec "Letrec" values (get-new-simple-keyword "Letrec")))
-  (define stupid-internal-definition-syntax3
-    (mk-list-box 'framework:square-bracket:local 
-                 "Local" 
-                 values
-                 (get-new-simple-keyword "Local")))
-  (define stupid-internal-definition-syntax2
-    (mk-list-box 'framework:square-bracket:cond/offset 
-                 "Cond" 
-                 (λ (l) (format "~a (~a)" (car l) (cadr l)))
-                 get-new-cond-keyword))
+  (mk-list-box 'framework:square-bracket:letrec "Letrec" values (get-new-simple-keyword "Letrec"))
+  (mk-list-box 'framework:square-bracket:local 
+               "Local" 
+               values
+               (get-new-simple-keyword "Local"))
+  (mk-list-box 'framework:square-bracket:for/fold 
+               "For/fold" 
+               values
+               (get-new-simple-keyword "For/fold"))
+  (mk-list-box 'framework:square-bracket:cond/offset 
+               "Cond" 
+               (λ (l) (format "~a (~a)" (car l) (cadr l)))
+               get-new-cond-keyword)
   
   (define check-box (new check-box% 
                          [parent main-panel]
