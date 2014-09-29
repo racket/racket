@@ -24,6 +24,7 @@
 (define danprager @name["https://www.youpatch.com/"]{Daniel Prager})
 (define davidv @name["https://github.com/david-vanderson/"]{David Vanderson})
 
+;; TODO better design would be to have a struct for talks
 (define (speaker->title s)
   (define talks
     `((,fogus . "Extracting a Goose from a Klein Bottle")
@@ -39,16 +40,49 @@
       (,ntoronto . "Purely Functional 3D in Typed Racket")
       (,davidv . "Racket for a networked multiplayer game")))
   (dict-ref talks s))
+(define (speaker->slides s)
+  (define slides
+    `((,stchang . "stchang.pdf")
+      (,mflatt . "mflatt.pdf")
+      (,tonyg . "tonyg.pdf")
+      (,jay . "jay.pdf")
+      (,brianm . "mastenbrook.pdf")
+      (,danprager . "prager.pdf")
+      (,davidv . "vanderson.pdf")))
+  (dict-ref slides s #f))
+(define (speaker->code s)
+  (define code
+    `((,mbutterick . "http://pollenpub.com/")
+      (,gregh . "https://github.com/greghendershott/racket-mode")
+      (,jay . "https://github.com/get-bonus/get-bonus")
+      (,davidv . "https://github.com/david-vanderson/warp")
+      (,ntoronto . "https://github.com/ntoronto/pict3d")
+      (,tonyg . "https://github.com/tonyg/minimart")
+      (,jbc . "https://github.com/jbclements/RSound")))
+  (dict-ref code s #f))
+(define (speaker->video s)
+  (define video
+    `((,fogus . "https://www.youtube.com/watch?v=2ZrM0aYaqJM&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=1")
+      (,mflatt . "https://www.youtube.com/watch?v=Uw8m4QF4k1E&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=2")
+      (,danprager . "https://www.youtube.com/watch?v=8psnTEjYIEA&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=3")
+      (,davidv . "https://www.youtube.com/watch?v=Fuz0BtltU1g&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=4")
+      (,jay . "https://www.youtube.com/watch?v=_x0Ob2HY8C4&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=5")
+      (,ntoronto . "https://www.youtube.com/watch?v=t3xdv4UP9-U&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=6")
+      (,brianm . "https://www.youtube.com/watch?v=GAmZIgs72wA&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=7")
+      (,tonyg . "https://www.youtube.com/watch?v=LIJHb8E4Mhk&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=8")
+      (,jbc . "https://www.youtube.com/watch?v=DkIVzHNjNEA&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=9")
+      (,mbutterick . "https://www.youtube.com/watch?v=IMz09jYOgoc&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=10")
+      (,gregh . "https://www.youtube.com/watch?v=QWiteH8PARQ&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=11")
+      (,stchang . "https://www.youtube.com/watch?v=SvYJF5HC19w&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=12")))
+  (dict-ref video s))
 (define (title->anchor t)
   (string-replace t " " "-"))
 (define (speaker-slot s)
   (define title (speaker->title s))
-  @slot[#f s]{@a[href: (string-append "#" (title->anchor title))]{@title}})
+  @slot[#f s #:slides (speaker->slides s) #:code (speaker->code s) #:video (speaker->video s)]{
+    @a[href: (string-append "#" (title->anchor title))]{@title}})
 (define (session time title chair)
   @slot[time #f]{@p{@title} Chair: @chair})
-
-(define (slides-link url [caption "slides"])
-  @p*{@a[href: (F url)]{[@|caption|]}})
 
 (define speaker-info
   (list
@@ -67,8 +101,7 @@
          contributor to Clojure, ClojureScript, Datomic, and Transit. Fogus is
          also the co-author of @em{The Joy of Clojure} and author of
          @em{Functional JavaScript} and the upcoming release @em{The Art of
-         Chupacabra Husbandry}.}
-     #f)
+         Chupacabra Husbandry}.})
     (list
      mbutterick
      @p*{At RacketCon last year, I talked about Pollen, a web-publishing system
@@ -78,8 +111,7 @@
          ambitions.}
      @p*{Matthew Butterick is a writer, designer, and lawyer in Los Angeles. He
          is the author of @em{Typography for Lawyers} and the creator of
-         @a[href: "http://practicaltypography.com/"]{practicaltypography.com}.}
-     (slides-link "http://pollenpub.com/" "link"))
+         @a[href: "http://practicaltypography.com/"]{practicaltypography.com}.})
     (list
      stchang
      @p*{The Boost Graph Library (BGL) introduces many novel abstraction
@@ -91,8 +123,7 @@
          University. In his early years, he worked as an electrical engineer
          before deciding that his life needed more abstraction. So he went off
          to study programming languages and has been hacking in Racket ever
-         since.}
-     (slides-link "stchang.pdf"))
+         since.})
     (list
      jbc
      @p*{HtDP and big-bang provide an explicit-state, fully-testable framework
@@ -102,8 +133,7 @@
          milieu, and propose a solution, using a hybrid dataflow approach.}
      @p*{John Clements is an Associate Professor at Cal Poly State University in
          San Luis Obispo. He is the author of DrRacket’s Stepper, and the RSound
-         library, and this paragraph.}
-     #f)
+         library, and this paragraph.})
     (list
      mflatt
      @p*{This talk will provide a brief introduction to Racket and Racketeers,
@@ -112,8 +142,7 @@
      @p*{Matthew Flatt is a professor at the University of Utah and one of the
          main developers of Racket. He works primarily on Racket's run-time
          system, compiler, macro system, build system, package system,
-         documentation language, and graphics/GUI libraries.}
-     (slides-link "mflatt.pdf"))
+         documentation language, and graphics/GUI libraries.})
     (list
      tonyg
      @p*{Actors are a great model for managing concurrency and communication
@@ -128,8 +157,7 @@
          time.}
      @p*{Tony Garnock-Jones is a PhD candidate at Northeastern University's
          Programming Research Laboratory, working on applying lessons from
-         distributed systems to programming language design.}
-     (slides-link "tonyg.pdf"))
+         distributed systems to programming language design.})
     (list
      gregh
      @p*{DrRacket is wonderful for both newcomers and Racket pros.
@@ -141,8 +169,7 @@
      @p*{Before becoming obsessed with Racket, Greg Hendershott founded
          and ran the music software company Cakewalk, and has served as an
          advisor to technology companies such as Roland and JamHub. Soon after
-         RacketCon he is joining the autumn batch at Hacker School.}
-     (slides-link "https://github.com/greghendershott/racket-mode" "link"))
+         RacketCon he is joining the autumn batch at Hacker School.})
     (list
      jay
      @p*{Hard real-time embedded systems with tight operating
@@ -154,8 +181,7 @@
      @p*{Jay McCarthy is a visiting assistant professor at Vassar
          College and one of the developers of Racket. He works primarily on
          Racket's Web server, package system, networking libraries, and
-         special projects, like DrDr.}
-     (slides-link "jay.pdf"))
+         special projects, like DrDr.})
     (list
      brianm
       @p*{When electronic products come off the manufacturing line, they
@@ -173,8 +199,7 @@
           Chicago company that invented the wireless flash drive and develops
           the AirStash OS that makes it possible. In a past life he worked at
           Motorola on code generators in Common Lisp for five-nines
-          telecommunication systems (among other things).}
-      (slides-link "mastenbrook.pdf"))
+          telecommunication systems (among other things).})
     (list
      danprager
      @p*{@a[href: "https://www.youpatch.com/"]{youpatch.com} began as a hack in
@@ -196,8 +221,7 @@
          thinking, and teaching and coaching Agile approaches to software
          development and business. Nowadays he divides his professional time
          between Agile/Lean coaching and more entrepreneurial endeavours,
-         including YouPatch!}
-     (slides-link "prager.pdf"))
+         including YouPatch!})
     (list
      ntoronto
       @p*{Efficient 3D engines use scene databases to quickly answer queries
@@ -215,8 +239,7 @@
       @p*{Neil Toronto is a recent PhD graduate from Brigham Young University,
           now researching programming language support for reliable mathematical
           computation at University of Maryland, College Park. He writes
-          programs to draw pretty pictures in his nonexistent spare time.}
-      #f)
+          programs to draw pretty pictures in his nonexistent spare time.})
     (list
      davidv
      @p*{I'll talk about using Racket features like easy serialization,
@@ -224,8 +247,7 @@
          playable networked game.}
      @p*{David Vanderson has been a professional software developer for 10
          years.  He stumbled onto Racket a few years back and recently was
-         inspired by the game Artemis to make a coop game in Racket.}
-     (slides-link "vanderson.pdf"))))
+         inspired by the game Artemis to make a coop game in Racket.})))
 
 
 (define index
@@ -285,15 +307,26 @@
        @p{@b{Talks:}}
        @(apply ul
                (for/list ([speaker (in-list speaker-info)])
-                 (match-define (list name abstract bio slides) speaker)
+                 (match-define (list name abstract bio) speaker)
                  @a[id: (title->anchor (speaker->title name))
                     @; to compensate for the header
                     style: "padding-top: 60px; margin-top: -60px"]{
                    @li{@p*{@name — @(or (speaker->title name) "TBA")}
                           @(or abstract "")
-                          @(or bio "")
-                          @(or slides "")
-                          @hr{}}}))}
+                          @(or bio "")}
+                       @p*{@(let ([slides (speaker->slides name)])
+                              (if slides
+                                  @a[href: slides]{[slides]}
+                                  ""))
+                           @(let ([code (speaker->code name)])
+                              (if code
+                                  @a[href: code]{[code]}
+                                  ""))
+                           @(let ([video (speaker->video name)])
+                              (if video
+                                  @a[href: video]{[video]}
+                                  ""))
+                           @hr{}}}))}
 
     @columns[1 #:center? #f #:row? #f]{ }
 
