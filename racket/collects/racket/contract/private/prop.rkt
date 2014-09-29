@@ -111,16 +111,24 @@
   (define prop (contract-struct-property a))
   (define stronger? (contract-property-stronger prop))
   (cond
-    [(let ([tc (trail)])
-       (and tc
-            (ormap (λ (pr) (and (equal? (car pr) a) (equal? (cdr pr) b)))
-                   (unbox tc))))
+    [(let ([th (trail)])
+       (and th
+            (for/or ([(a2 bs-h) (in-hash th)])
+              (and (eq? a a2)
+                   (for/or ([(b2 _) (in-hash bs-h)])
+                     (eq? b b2))))))
      #t]
     [(or (prop:recursive-contract? a) (prop:recursive-contract? b))
-     (parameterize ([trail (or (trail) (box '()))])
-       (define trail-b (trail))
-       (define trail-c (unbox trail-b))
-       (set-box! trail-b (cons (cons a b) trail-c))
+     (parameterize ([trail (or (trail) (make-hasheq))])
+       (define trail-h (trail))
+       (let ([a-h (hash-ref trail-h a #f)])
+         (cond
+           [a-h
+            (hash-set! a-h b #t)]
+           [else
+            (define a-h (make-hasheq))
+            (hash-set! trail-h a a-h)
+            (hash-set! a-h b #t)]))
        (contract-struct-stronger? (if (prop:recursive-contract? a)
                                       ((prop:recursive-contract-unroll a) a)
                                       a)
