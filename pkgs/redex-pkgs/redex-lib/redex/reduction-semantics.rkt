@@ -67,7 +67,8 @@
          redex-generator
          exn:fail:redex:generation-failure?
          (struct-out exn:fail:redex:test)
-         (struct-out counterexample))
+         (struct-out counterexample)
+         depth-dependent-order?)
 
 (provide variable-not-in
          variables-not-in)
