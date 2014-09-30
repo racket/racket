@@ -6,34 +6,14 @@
                      unstable/sequence
                      syntax/parse
                      syntax/parse/experimental/template
-                     racket/lazy-require))
+                     racket/lazy-require
+                     syntax/parse/lib/function-header))
 
 (begin-for-syntax
  (lazy-require [racket/match/patterns (bound-vars)]
                [racket/match/gen-match (go parse-id go/one)]))
 
 (provide define-forms)
-
-;; syntax classes for `define/match`
-(begin-for-syntax
-  (define-syntax-class function-header
-    (pattern ((~or header:function-header name:id) . args:args)
-             #:attr params
-             (template ((?@ . (?? header.params ()))
-                        . args.params))))
-
-  (define-syntax-class args
-    (pattern (arg:arg ...)
-             #:attr params #'(arg.name ...))
-    (pattern (arg:arg ... . rest:id)
-             #:attr params #'(arg.name ... rest)))
-
-  (define-splicing-syntax-class arg
-    #:attributes (name)
-    (pattern name:id)
-    (pattern [name:id default])
-    (pattern (~seq kw:keyword name:id))
-    (pattern (~seq kw:keyword [name:id default]))))
 
 (define-syntax-rule (define-forms parse-id
                       match match* match-lambda match-lambda*
