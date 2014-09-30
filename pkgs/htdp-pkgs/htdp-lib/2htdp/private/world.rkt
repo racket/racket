@@ -76,12 +76,8 @@
       
       (define/private (register-with-host)
         (define FMT "\nworking off-line\n")
-        (define FMTtry 
-          (string-append "unable to register with ~a after ~s tries" 
-                         FMT))                         
-        (define FMTcom 
-          (string-append "unable to register with ~a due to protocol problems" 
-                         FMT))
+        (define FMTtry (string-append "unable to register with ~a after ~s tries" FMT))                         
+        (define FMTcom (string-append "unable to register with ~a due to protocol problems" FMT))
         ;; Input-Port -> [-> Void]
         ;; create closure (for thread) to receive messages and signal events
         (define (RECEIVE in)
@@ -101,7 +97,7 @@
                    (define msg (tcp-receive in))
                    (cond
                     [(sexp? msg) (prec msg) RECEIVE] ;; break loop if EOF
-                    [#t (error 'RECEIVE "sexp expected, received: ~e" msg)])))))))
+                    [else (error 'RECEIVE "sexp expected, received: ~e" msg)])))))))
           RECEIVE)
         ;; --- now register, obtain connection, and spawn a thread for receiving
         (parameterize ([current-custodian *rec*])
