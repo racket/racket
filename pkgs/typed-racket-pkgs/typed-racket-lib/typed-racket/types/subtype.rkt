@@ -605,22 +605,18 @@
          [((Instance: (Class: _ _ field-map method-map augment-map _))
            (Instance: (Class: _ _ field-map* method-map* augment-map* _)))
           (define (subtype-clause? map map*)
-            ;; invariant: map and map* are sorted by key
-            (let loop ([A A0] [map map] [map* map*])
-              (cond [(or (empty? map) (empty? map*)) #t]
-                    [else
-                     (match-define (list name type) (car map))
-                     (match-define (list name* type*) (car map*))
-                     (cond [;; quit if 2nd obj lacks a name in 1st obj
-                            (symbol<? name* name)
-                            #f]
-                           [;; if 1st obj lacks a name in 2nd obj, try
-                            ;; the next one
-                            (symbol<? name name*)
-                            (loop A (cdr map) map*)]
-                           [else
-                            (define A* (subtype* A type type*))
-                            (and A* (loop A* (cdr map) (cdr map*)))])])))
+            (and (for/and ([key+type (in-list map*)])
+                   (match-define (list key type) key+type)
+                   (assq key map))
+                 (let/ec escape
+                   (for/fold ([A A0])
+                             ([key+type (in-list map)])
+                     (match-define (list key type) key+type)
+                     (define result (assq (car key+type) map*))
+                     (or (and (not result) A)
+                         (let ([type* (cadr result)])
+                           (or (subtype* A type type*)
+                               (escape #f))))))))
           (and ;; Note that init & augment clauses don't matter for objects
                (subtype-clause? method-map method-map*)
                (subtype-clause? field-map field-map*))]

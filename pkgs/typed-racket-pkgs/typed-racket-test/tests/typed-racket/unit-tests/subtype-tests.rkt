@@ -312,12 +312,35 @@
    [(-object #:method ((m (-> -Nat)) (n (-> -Nat))))
     (-object #:method ((m (-> -Nat))))]
    [(-object #:method ((f (-> -Nat))) #:augment ((m (-> -Nat)) (n (-> -Nat))))
-    (-object #:method ((m (-> -Nat))))]
+    (-object #:augment ((m (-> -Nat))))]
    [(-object #:field ((a -Nat)) #:method ((m (-> -Nat)) (n (-> -Nat))))
     (-object #:method ((m (-> -Nat))))]
+   [(-object #:field ((x -Symbol)))
+    (-object #:field ((x -Symbol)))]
+   [(-object #:field ((x -Symbol)))
+    (-object #:field ((x (Un -Symbol (-val #f)))))]
+   [FAIL
+    (-object #:field ((a -Symbol)))
+    (-object #:field ((x -Symbol)))]
+   [FAIL
+    (-object #:field ((a -Symbol)))
+    (-object #:field ((x -String)))]
+   [FAIL
+    (-object #:field ((x -Symbol)))
+    (-object #:field ((x -String)))]
+   [FAIL
+    (-object #:method ((m (-> -String)) (n (-> -String))))
+    (-object #:method ((x (-> -String))))]
+   [(-object #:method ((m (-> -String)) (n (-> -String))))
+    (-object #:method ((m (-> -String))))]
+   [FAIL
+    (-object #:method ())
+    (-object #:method ((m (-> -String))))]
    [FAIL
     (-object #:method ((m (-> -Nat)) (n (-> -Nat))))
     (-object #:method ((l (-> -Nat)) (m (-> -Nat))))]
+   [(-object #:method ((m (-> -Nat)) (n (-> -Nat))))
+    (-object #:method ((n (-> -Nat)) (m (-> -Nat))))]
    [FAIL
     (-class #:method ((m (-> -Nat))))
     (-class #:method ((m (-> -Nat))) #:augment ((m (-> -Nat))))]

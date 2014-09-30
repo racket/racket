@@ -735,6 +735,12 @@
            (define x (new c%))
            (void))
          -Void]
+   ;; failing instance subtyping
+   [tc-err (let ()
+             (define x (new (class object% (super-new) (define/public (m) "m"))))
+             (ann x (Object [n (-> String)]))
+             (error "foo"))
+           #:msg #rx"expected: .*n.*given:.*m.*"]
    ;; test use of `this` in field default
    [tc-e (let ()
            (class object%
