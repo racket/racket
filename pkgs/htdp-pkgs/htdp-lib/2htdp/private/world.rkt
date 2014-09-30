@@ -91,17 +91,17 @@
               in
               (lambda (in) 
                 (define dis (text "the universe disappeared" 11 'red))
-                (with-handlers ((tcp-eof? 
-                                 (compose (handler #f)
-                                          (lambda (e)
-                                            (set! draw (lambda (w) dis))
-                                            (pdraw)
-                                            e))))
-                  ;; --- "the universe disconnected" should come from here ---
-                  (define msg (tcp-receive in))
-                  (cond
-                    [(sexp? msg) (prec msg) (RECEIVE)] ;; break loop if EOF
-                    [#t (error 'RECEIVE "sexp expected, received: ~e" msg)]))))))
+                ((with-handlers ((tcp-eof? 
+                                  (compose (handler #f)
+                                           (lambda (e)
+                                             (set! draw (lambda (w) dis))
+                                             (pdraw)
+                                             (lambda () e)))))
+                   ;; --- "the universe disconnected" should come from here ---
+                   (define msg (tcp-receive in))
+                   (cond
+                    [(sexp? msg) (prec msg) RECEIVE] ;; break loop if EOF
+                    [#t (error 'RECEIVE "sexp expected, received: ~e" msg)])))))))
           RECEIVE)
         ;; --- now register, obtain connection, and spawn a thread for receiving
         (parameterize ([current-custodian *rec*])
