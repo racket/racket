@@ -85,7 +85,11 @@
 
 (define predef-pats (set 'any 'number 'string 'integer 'boolean 'real 'variable 'natural 'variable-not-otherwise-mentioned))
 (define (predef-pat? a)
-  (set-member? predef-pats a))
+  (or (set-member? predef-pats a)
+      (match a
+        [`(variable-except ,_ ...) #t]
+        [`(variable-prefix ,_) #t]
+        [_ #f])))
 (define (var? s)
   (symbol? s))
 (define (n-t? s)
@@ -573,7 +577,7 @@
                 (and/fail new-nts
                           (p*e `(cstr ,new-nts ,new-p) res-e))]
                [_
-                (and/fail (for/and ([n nts]) (check-nt n L res-p))
+                (and/fail (for/and ([n nts]) (check-nt n L res-p e))
                           (p*e `(cstr ,nts ,res-p) res-e))])))
   
 (define (u*-2nts n-t n-u e L)
@@ -583,7 +587,7 @@
 
 (define (u*-1nt p u e L)
   (and/fail
-   (check-nt p L u)
+   (check-nt p L u e)
    (if (hash-has-key? (compiled-lang-collapsible-nts L) p)
        (maybe-let ([bn-res (bind-names (fresh-pat-vars (hash-ref (compiled-lang-collapsible-nts L) p) (make-hash)) e L)])
          (unify* (p*e-p bn-res) u (p*e-e bn-res) L))
@@ -773,7 +777,7 @@
 
 (define (merge-ids/sorted l1 l2 lang)
   (and (for*/and ([nt1 l1] [nt2 l2])
-         (check-nt nt1 lang `(nt ,l2)))
+         (check-nt nt1 lang `(nt ,nt2) empty-env))
        (de-dupe/sorted (merge/sorted l1 l2))))
 
 (define (symbol<? s1 s2)
@@ -837,20 +841,6 @@
       [_
        (values (lvar id) res eqs)])))
 
-(provide check-nt
-         normalize-pat)
-
-(define check-nt
-  (let ([memo (make-hash)])
-    (λ (nt clang pat)
-      (define npat (normalize-pat clang pat))
-      (hash-ref memo (list nt clang npat)
-                (λ ()
-                  (define pat-ok? 
-                    (for/or ([ntp (in-list (map ((curry normalize-pat) clang) (nt-pats nt clang)))])
-                      (not-failed? (unify* npat ntp empty-env empty-lang))))
-                  (hash-set! memo (list nt clang npat) pat-ok?)
-                  pat-ok?)))))
 
 (define unsupported-pat-err-name (make-parameter #f))
 
@@ -863,58 +853,83 @@
                               "  pattern: ~a")
                pat))
 
-(define (normalize-pat lang pat)
-  (define err unsupported-pat-err)
-  (let loop ([pat pat])
-    (match-a-pattern #:allow-else pat
-                     [`any pat]
-                     [`number pat]
-                     [`string pat]
-                     [`natural pat]
-                     [`integer pat]
-                     [`real pat]
-                     [`boolean pat]
-                     [`variable pat]
-                     [`(variable-except ,s ...) `variable]
-                     [`(variable-prefix ,s) `variable]
-                     [`variable-not-otherwise-mentioned pat]
-                     [`hole (err pat)]
-                     [`(nt ,id)
-                      (loop (hash-ref (compiled-lang-collapsible-nts lang) id 'any))]
-                     [`(name ,name ,npat)
-                      (if (bound? npat)
-                          `any
-                          `(name ,name ,(loop npat)))]
-                     [`(mismatch-name ,name ,pat) (loop pat)]
-                     [`(in-hole ,p1 ,p2) (err pat)]
-                     [`(hide-hole ,p) (loop p)]
-                     [`(side-condition ,p ,g ,e)
-                      (err pat)]
-                     [`(cross ,s) (err pat)]
-                     [`(list ,sub-pats ...)
-                      `(list ,@(for/list ([sub-pat (in-list sub-pats)])
-                                 (match sub-pat
-                                   [`(repeat ,pat ,name ,mismatch)
-                                    (err sub-pat)]
-                                   [_
-                                    (loop sub-pat)])))]
-                     [(? (compose not pair?)) 
-                      pat]
-                     [_
-                      (match pat
-                        [`(variable-not-in ,p ,s)
-                         `variable])])))
+(define normalizing-nt (make-parameter #f))
 
-(provide nt-pats)
+(define check-nt
+  (let ([memo (make-hash)])
+    (λ (nt clang pat e)
+      (parameterize ([normalizing-nt nt])
+        (define npat (normalize-pat clang e pat))
+        (hash-ref memo (list nt clang npat)
+                  (λ ()
+                    (define pat-ok? 
+                      (for/or ([ntp (in-list (map (((curry normalize-pat) clang) e) (nt-pats nt clang)))])
+                        (not-failed? (unify* npat ntp empty-env clang))))
+                    (hash-set! memo (list nt clang npat) pat-ok?)
+                    pat-ok?))))))
+
+(define (normalize-pat lang e pat)
+  (define err unsupported-pat-err)
+  (let loop ([pat pat]
+             [depth 5])
+    (cond
+      [(depth . <= . 0) 'any]
+      [else
+       (match-a-pattern #:allow-else pat
+                        [`any pat]
+                        [`number pat]
+                        [`string pat]
+                        [`natural pat]
+                        [`integer pat]
+                        [`real pat]
+                        [`boolean pat]
+                        [`variable pat]
+                        [`(variable-except ,s ...) pat]
+                        [`(variable-prefix ,s) pat]
+                        [`variable-not-otherwise-mentioned pat]
+                        [`hole (err pat)]
+                        [`(nt ,id)
+                         (cond 
+                           [(and (normalizing-nt)
+                                 (eq? (normalizing-nt) id)) 'any]
+                           [(hash-has-key? (compiled-lang-collapsible-nts lang) id)
+                            (loop (hash-ref (compiled-lang-collapsible-nts lang) id) (sub1 depth))]
+                           [else pat])]
+                        [`(name ,name ,npat)
+                         (if (bound? npat)
+                             (match-let ([(p*e `(name ,n ,(bound)) e-new) (resolve pat e)])
+                               (loop (hash-ref (env-eqs e) (lvar n)) depth))
+                             `(name ,name ,(loop npat (sub1 depth))))]
+                        [`(mismatch-name ,name ,pat) (loop pat (sub1 depth))]
+                        [`(in-hole ,p1 ,p2) (err pat)]
+                        [`(hide-hole ,p) (loop p (sub1 depth))]
+                        [`(side-condition ,p ,g ,e)
+                         (err pat)]
+                        [`(cross ,s) (err pat)]
+                        [`(list ,sub-pats ...)
+                         `(list ,@(for/list ([sub-pat (in-list sub-pats)])
+                                    (match sub-pat
+                                      [`(repeat ,pat ,name ,mismatch)
+                                       (err sub-pat)]
+                                      [_
+                                       (loop sub-pat (sub1 depth))])))]
+                        [(? (compose not pair?)) 
+                         pat]
+                        [_
+                         (match pat
+                           [`(cstr ,cs ,p)
+                            (loop p (sub1 depth))]
+                           [`(variable-not-in ,p ,s)
+                            `variable])])])))
 
 (define (nt-pats nt lang)
   (define this-rhs
     (nt-rhs
      (let ([the-nt (findf (λ (lang-nt)
-                        (equal? nt (nt-name lang-nt)))
-                      (compiled-lang-lang lang))])
+                            (equal? nt (nt-name lang-nt)))
+                          (compiled-lang-lang lang))])
        (unless the-nt
-         (error 'unify "nonterminal ~s not found for provided language... nts found: ~s" 
+         (error 'unify "nonterminal ~a not found for provided language... nts found: ~a" 
                 nt (hash-keys (compiled-lang-nt-map lang))))
        the-nt)))
   (match this-rhs

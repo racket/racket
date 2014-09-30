@@ -2199,6 +2199,21 @@ with @racket[#:satisfying].}
                     (sum nat_1 nat_2 nat_3)
                     (equal? (term nat_1) (term nat_2)))]
 
+@defparam[depth-dependent-order? depth-dependent boolean?
+                                 #:value #t]{
+
+Toggles whether or not redex will dynamically adjust the
+chance that more recursive clauses of judgment forms or metafunctions 
+are chosen earlierwhen attempting to generate terms 
+with forms that use @racket[#:satisfying]. It is @racket[#t] by
+default, which causes redex to favor more recursive clauses at
+lower depths and less recursive clauses at depths closer to the
+limit, in an attempt to generate larger terms. When it is
+@racket[#f], all clause orderings have equal probability
+above the bound.
+
+}
+
 @defform/subs[(redex-generator language-id satisfying size-expr)
               ([satisfying (judgment-form-id @#,ttpattern ...)
                            (code:line (metafunction-id @#,ttpattern ...) = @#,ttpattern)])
