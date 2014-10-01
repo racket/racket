@@ -14,6 +14,7 @@
 
 (provide 
  (protect-out app
+              promote-to-gui!
               cocoa-start-event-pump
               cocoa-install-event-wakeup
               set-eventspace-hook!
@@ -112,27 +113,41 @@
 (define-appserv TransformProcessType (_fun _ProcessSerialNumber-pointer
                                            _uint32
                                            -> _OSStatus))
+(define NSApplicationActivationPolicyRegular 0)
+(define NSApplicationActivationPolicyAccessory 1)
 (unless (scheme_register_process_global "PLT_IS_FOREGROUND_APP" #f)
-  (let ([v (TransformProcessType (make-ProcessSerialNumber 0 kCurrentProcess)
-                                 kProcessTransformToForegroundApplication)])
-    (unless (zero? v)
-      (log-error (format "error from TransformProcessType: ~a" v)))))
+  (cond
+   [(version-10.6-or-later?)
+    ;; When a frame or root menu bar is created, we promote to
+    ;; NSApplicationActivationPolicyRegular:
+    (tellv app setActivationPolicy: #:type _int NSApplicationActivationPolicyAccessory)]
+   [else
+    (let ([v (TransformProcessType (make-ProcessSerialNumber 0 kCurrentProcess)
+                                   kProcessTransformToForegroundApplication)])
+      (unless (zero? v)
+        (log-error (format "error from TransformProcessType: ~a" v))))]))
 
 (define app-delegate (tell (tell RacketApplicationDelegate alloc) init))
 (tellv app setDelegate: app-delegate)
-(unless (scheme_register_process_global "Racket-GUI-no-front" #f)
-  (tellv app activateIgnoringOtherApps: #:type _BOOL #t)
-  ;; It may not be that easy...
-  (when (version-10.7-or-later?)
-    (with-autorelease
-     (import-class NSRunningApplication)
-     (unless (tell #:type _BOOL (tell NSRunningApplication currentApplication) ownsMenuBar)
-       ;; Looks like we haven't yet convinced the system to give us
-       ;; the menu bar. Perform a menu-bar dance that is based on
-       ;; http://stackoverflow.com/questions/7596643/when-calling-transformprocesstype-the-app-menu-doesnt-show-up
-       (tellv app-delegate performSelector: #:type _SEL (selector tryDockToFront:) 
-              withObject: #f 
-              afterDelay: #:type _double 0.1)))))
+
+(define (bring-to-front)
+  (unless (scheme_register_process_global "Racket-GUI-no-front" #f)
+    (tellv app activateIgnoringOtherApps: #:type _BOOL #t)
+    ;; It may not be that easy...
+    (when (version-10.7-or-later?)
+      (with-autorelease
+          (import-class NSRunningApplication)
+        (unless (tell #:type _BOOL (tell NSRunningApplication currentApplication) ownsMenuBar)
+          ;; Looks like we haven't yet convinced the system to give us
+          ;; the menu bar. Perform a menu-bar dance that is based on
+          ;; http://stackoverflow.com/questions/7596643/when-calling-transformprocesstype-the-app-menu-doesnt-show-up
+          (tellv app-delegate performSelector: #:type _SEL (selector tryDockToFront:) 
+                 withObject: #f
+                 afterDelay: #:type _double 0.1))))))
+(define (promote-to-gui!)
+  (when (version-10.6-or-later?)
+    (tellv app setActivationPolicy: #:type _int NSApplicationActivationPolicyRegular))
+  (bring-to-front))
 
 (define (try-dock-to-front)
   ;; Phase 2 of the 10.9 menu-bar dance started above:
@@ -169,6 +184,16 @@
     (log-error (format "error from CGDisplayRegisterReconfigurationCallback: ~a" v))))
 
 (tellv app finishLaunching)
+
+(when (version-10.9-or-later?)
+  (define NSActivityIdleSystemSleepDisabled (arithmetic-shift 1 20))
+  (define NSActivityUserInitiated #x00FFFFFF)
+  (tellv
+   (tell (tell NSProcessInfo processInfo)
+         beginActivityWithOptions: #:type _uint64 (- NSActivityUserInitiated
+                                                     NSActivityIdleSystemSleepDisabled)
+         reason: #:type _NSString "Racket default")
+   retain))
 
 ;; ------------------------------------------------------------
 ;; Create an event to post when Racket has been sleeping but is

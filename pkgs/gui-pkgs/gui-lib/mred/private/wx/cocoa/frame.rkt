@@ -323,6 +323,7 @@
 
     (define/public (direct-show on?)
       ;; in atomic mode
+      (when on? (promote-to-gui!))
       (when (and (not on?)
                  (eq? front this))
         (set! front #f)
@@ -597,6 +598,7 @@
       (when (or (tell #:type _BOOL cocoa isMainWindow)
                 (and (eq? this root-fake-frame)
                      (not (get-app-front-window))))
+        (promote-to-gui!)
         (install-mb)))
 
     (define/public (install-mb)

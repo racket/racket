@@ -15,7 +15,8 @@
          "frame.rkt"
          "cg.rkt"
          "utils.rkt"
-         "types.rkt")
+         "types.rkt"
+         "queue.rkt")
 
 (provide 
  (protect-out printer-dc%
@@ -94,6 +95,7 @@
 (define NSOkButton 1)
 
 (define (show-print-setup parent)
+  (promote-to-gui!)
   (let* ([pss (current-ps-setup)]
          [print-info (let ([pi (send pss get-native)])
                        (or pi
@@ -193,6 +195,8 @@
         (tellv view-cocoa unlockFocus)))
 
     (define/override (end-doc)
+      (promote-to-gui!)
+
       (define view-cocoa (as-objc-allocation-with-retain
                           (tell (tell PrinterView alloc) 
                                 initWithFrame: #:type _NSRect (make-NSRect

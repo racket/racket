@@ -19,6 +19,7 @@
 (define (file-selector message directory filename 
                        extension
                        filters style parent)
+  (promote-to-gui!)
   (let ([ns (as-objc-allocation-with-retain
              (if (memq 'put style)
                 (tell NSSavePanel savePanel)
