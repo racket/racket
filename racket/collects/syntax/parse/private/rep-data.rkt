@@ -229,7 +229,7 @@ expressions are duplicated, and may be evaluated in different scopes.
        [#:conventions list?]
        DeclEnv/c)]
  [declenv-lookup
-  (-> DeclEnv/c identifier? any)]
+  (->* [DeclEnv/c identifier?] [#:use-conventions? any/c] any)]
  [declenv-put-stxclass
   (-> DeclEnv/c identifier? identifier? arguments? (or/c syntax? #f)
       DeclEnv/c)]
