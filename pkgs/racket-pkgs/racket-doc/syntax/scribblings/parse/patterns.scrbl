@@ -36,6 +36,7 @@ means specifically @tech{@Spattern}.
                 [S-pattern
                  pvar-id
                  pvar-id:syntax-class-id
+                 pvar-id:literal-id
                  literal-id
                  (@#,ref[~var s-] id)
                  (@#,ref[~var s+] id syntax-class-id maybe-role)
@@ -239,6 +240,18 @@ An identifier can be either a @tech{pattern variable}, an
   Note that an @racket[id] of the form @racket[_:syntax-class-id] is
   legal; see the discussion of a @ref[~var s+] form with a zero-length
   @svar[pvar-id].
+}
+
+@item{If @racket[id] is of the form @racket[_pvar-id:literal-id],
+  where @racket[_literal-id] is in the literals list, then it is
+  equivalent to @racket[(~and (~var _pvar-id) literal-id)].
+
+  @myexamples[
+    (require (only-in racket/base [define def]))
+    (syntax-parse #'(def x 7)
+      #:literals (define)
+      [(d:define var:id body:expr) #'d])
+  ]
 }
 
 @item{Otherwise, @racket[id] is a @tech{pattern variable}, and the

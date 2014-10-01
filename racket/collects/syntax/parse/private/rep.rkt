@@ -686,9 +686,14 @@
         [(not (safe-name? id))
          (wrong-syntax id "expected identifier not starting with ~~ character")]
         [else
-         (let-values ([(name sc) (split-id/get-stxclass id decls)])
-           (cond [sc
-                  (parse-pat:var* id allow-head? name sc no-arguments "." #f #f)]
+         (let-values ([(name suffix) (split-id/get-stxclass id decls)])
+           (cond [(stxclass? suffix)
+                  (parse-pat:var* id allow-head? name suffix no-arguments "." #f #f)]
+                 [(or (den:lit? suffix) (den:datum-lit? suffix))
+                  (create-pat:and
+                   (list
+                    (create-pat:var name #f no-arguments null #f #t #f)
+                    (parse-pat:id/entry id decls allow-head? suffix)))]
                  [(declenv-apply-conventions decls id)
                   => (lambda (entry) (parse-pat:id/entry id decls allow-head? entry))]
                  [else (create-pat:var name #f no-arguments null #f #t #f)]))]))

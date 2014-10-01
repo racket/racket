@@ -252,7 +252,7 @@ expressions are duplicated, and may be evaluated in different scopes.
       stxclass?)]
  [split-id/get-stxclass
   (-> identifier? DeclEnv/c
-      (values identifier? (or/c stxclass? #f)))])
+      (values identifier? (or/c stxclass? den:lit? den:datum-lit? #f)))])
 
 ;; stxclass-lookup-config : (parameterof (U 'no 'try 'yes))
 ;;  'no means don't lookup, always use dummy (no nested attrs)
@@ -288,12 +288,16 @@ expressions are duplicated, and may be evaluated in different scopes.
          => (lambda (m)
               (define id
                 (datum->syntax id0 (string->symbol (cadr m)) id0 id0))
-              (define scname
+              (define suffix
                 (datum->syntax id0 (string->symbol (caddr m)) id0 id0))
-              (declenv-check-unbound decls id (syntax-e scname)
+              (declenv-check-unbound decls id (syntax-e suffix)
                                      #:blame-declare? #t)
-              (let ([sc (get-stxclass/check-arity scname id0 0 null)])
-                (values id sc)))]
+              (let ([suffix-entry (declenv-lookup decls suffix)])
+                (cond [(or (den:lit? suffix-entry) (den:datum-lit? suffix-entry))
+                       (values id suffix-entry)]
+                      [else
+                       (let ([sc (get-stxclass/check-arity suffix id0 0 null)])
+                         (values id sc))])))]
         [else (values id0 #f)]))
 
 ;; ----
