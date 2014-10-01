@@ -915,10 +915,10 @@
                                [(-HashTop) (-lst (-pair Univ Univ))]))]
 
 [hash-copy (-poly (a b) (-> (-HT a b) (-HT a b)))]
-[eq-hash-code (-poly (a) (-> a -Integer))]
-[eqv-hash-code (-poly (a) (-> a -Integer))]
-[equal-hash-code (-poly (a) (-> a -Integer))]
-[equal-secondary-hash-code (-poly (a) (-> a -Integer))]
+[eq-hash-code (-> Univ -Fixnum)]
+[eqv-hash-code (-> Univ -Fixnum)]
+[equal-hash-code (-> Univ -Fixnum)]
+[equal-secondary-hash-code (-> Univ -Fixnum)]
 [hash-iterate-first (-poly (a b)
                            ((-HT a b) . -> . (Un (-val #f) -Integer)))]
 [hash-iterate-next (-poly (a b)
