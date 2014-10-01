@@ -434,6 +434,17 @@
 (define (parse-head-pattern stx decls)
   (parse-*-pattern stx decls #t #f))
 
+(define ((make-not-shadowed? decls) id)
+  ;; Returns #f if id is in literals/datum-literals list.
+  ;; Conventions to not shadow pattern-form bindings, under the
+  ;; theory that conventions only apply to things already determined
+  ;; to be pattern variables.
+  (not (declenv-lookup decls id #:use-conventions? #f)))
+;; suitable as id=? argument to syntax-case*
+(define ((make-not-shadowed-id=? decls) lit-id pat-id)
+  (and (free-identifier=? lit-id pat-id)
+       (not (declenv-lookup decls pat-id #:use-conventions? #f))))
+
 ;; parse-*-pattern : stx DeclEnv boolean boolean -> Pattern
 (define (parse-*-pattern stx decls allow-head? allow-action?)
   (define (recur stx)
@@ -448,12 +459,15 @@
           [(not allow-head?) (action-pattern->single-pattern x)]
           [else
            (wrong-syntax stx "action pattern not allowed here")]))
-  (syntax-case stx (~var ~literal ~datum ~and ~or ~not ~rest ~describe
-                    ~seq ~optional ~! ~bind ~fail ~parse ~do
-                    ~post ~peek ~peek-not ~delimit-cut ~commit ~reflect
-                    ~splicing-reflect)
+  (define not-shadowed? (make-not-shadowed? decls))
+  (syntax-case* stx (~var ~literal ~datum ~and ~or ~not ~rest ~describe
+                     ~seq ~optional ~! ~bind ~fail ~parse ~do
+                     ~post ~peek ~peek-not ~delimit-cut ~commit ~reflect
+                     ~splicing-reflect)
+                (make-not-shadowed-id=? decls)
     [id
      (and (identifier? #'id)
+          (not-shadowed? #'id)
           (not (safe-name? #'id))
           (pattern-expander? (syntax-local-value #'id (λ () #f))))
      (let* ([proc (pattern-expander-proc (syntax-local-value #'id))]
@@ -466,6 +480,7 @@
        (recur result))]
     [(id . rst)
      (and (identifier? #'id)
+          (not-shadowed? #'id)
           (not (safe-name? #'id))
           (pattern-expander? (syntax-local-value #'id (λ () #f))))
      (let* ([proc (pattern-expander-proc (syntax-local-value #'id))]
@@ -477,7 +492,8 @@
        (disappeared! #'id)
        (recur result))]
     [wildcard
-     (wildcard? #'wildcard)
+     (and (wildcard? #'wildcard)
+          (not-shadowed? #'wildcard))
      (begin (disappeared! stx)
             (create-pat:any))]
     [~!
@@ -489,7 +505,8 @@
        (check-action!
         (create-action:cut)))]
     [reserved
-     (reserved? #'reserved)
+     (and (reserved? #'reserved)
+          (not-shadowed? #'reserved))
      (wrong-syntax stx "pattern keyword not allowed here")]
     [id
      (identifier? #'id)
@@ -573,11 +590,11 @@
      (check-action!
       (parse-pat:do stx decls))]
     [(head dots . tail)
-     (dots? #'dots)
+     (and (dots? #'dots) (not-shadowed? #'dots))
      (begin (disappeared! #'dots)
             (parse-pat:dots stx #'head #'tail decls))]
     [(head plus-dots . tail)
-     (plus-dots? #'plus-dots)
+     (and (plus-dots? #'plus-dots) (not-shadowed? #'plus-dots))
      (begin (disappeared! #'plus-dots)
             (parse-pat:plus-dots stx #'head #'tail decls))]
     [(head . tail)
@@ -613,8 +630,10 @@
 ;;                             -> (listof (list EllipsisHeadPattern stx/eh-alternative))
 (define (parse*-ellipsis-head-pattern stx decls allow-or?
                                       #:context [ctx (current-syntax-context)])
-  (syntax-case stx (~eh-var ~or ~between ~optional ~once)
+  (syntax-case* stx (~eh-var ~or ~between ~optional ~once)
+                (make-not-shadowed-id=? decls)
     [(~eh-var name eh-alt-set-id)
+     (disappeared! stx)
      (let ()
        (define prefix (name->prefix #'name "."))
        (define eh-alt-set (get-eh-alternative-set #'eh-alt-set-id))
@@ -629,6 +648,7 @@
     [(~or . _)
      allow-or?
      (begin
+       (disappeared! stx)
        (unless (stx-list? stx)
          (wrong-syntax stx "expected sequence of patterns"))
        (apply append
@@ -697,18 +717,18 @@
 
 (define (parse-pat:var stx decls allow-head?)
   (define name0
-    (syntax-case stx (~var)
-      [(~var name . _)
+    (syntax-case stx ()
+      [(_ name . _)
        (unless (identifier? #'name)
          (wrong-syntax #'name "expected identifier"))
        #'name]
       [_
        (wrong-syntax stx "bad ~~var form")]))
   (define-values (scname sc+args-stx argu pfx role)
-    (syntax-case stx (~var)
-      [(~var _name)
+    (syntax-case stx ()
+      [(_ _name)
        (values #f #f null #f #f)]
-      [(~var _name sc/sc+args . rest)
+      [(_ _name sc/sc+args . rest)
        (let-values ([(sc argu)
                      (let ([p (check-stxclass-application #'sc/sc+args stx)])
                        (values (car p) (cdr p)))])
@@ -826,8 +846,8 @@
 ;; ---
 
 (define (parse-pat:literal stx decls)
-  (syntax-case stx (~literal)
-    [(~literal lit . more)
+  (syntax-case stx ()
+    [(_ lit . more)
      (unless (identifier? #'lit)
        (wrong-syntax #'lit "expected identifier"))
      (let* ([chunks (parse-keyword-options/eol #'more phase-directive-table
@@ -934,8 +954,8 @@
                 (create-pat:or patterns)])]))
 
 (define (parse-pat:not stx decls)
-  (syntax-case stx (~not)
-    [(~not pattern)
+  (syntax-case stx ()
+    [(_ pattern)
      (let ([p (parameterize ((cut-allowed? #f))
                 (parse-single-pattern #'pattern decls))])
        (create-pat:not p))]
@@ -1017,28 +1037,28 @@
               (create-pat:post p)]))]))
 
 (define (parse-pat:peek stx decls)
-  (syntax-case stx (~peek)
-    [(~peek pattern)
+  (syntax-case stx ()
+    [(_ pattern)
      (let ([p (parse-head-pattern #'pattern decls)])
        (create-hpat:peek p))]))
 
 (define (parse-pat:peek-not stx decls)
-  (syntax-case stx (~peek-not)
-    [(~peek-not pattern)
+  (syntax-case stx ()
+    [(_ pattern)
      (let ([p (parse-head-pattern #'pattern decls)])
        (create-hpat:peek-not p))]))
 
 (define (parse-pat:parse stx decls)
-  (syntax-case stx (~parse)
-    [(~parse pattern expr)
+  (syntax-case stx ()
+    [(_ pattern expr)
      (let ([p (parse-single-pattern #'pattern decls)])
        (create-action:parse p #'expr))]
     [_
      (wrong-syntax stx "bad ~~parse pattern")]))
 
 (define (parse-pat:do stx decls)
-  (syntax-case stx (~do)
-    [(~do stmt ...)
+  (syntax-case stx ()
+    [(_ stmt ...)
      (create-action:do (syntax->list #'(stmt ...)))]
     [_
      (wrong-syntax stx "bad ~~do pattern")]))
@@ -1056,8 +1076,8 @@
 ;; parse*-optional-pattern : stx DeclEnv table
 ;;                        -> (values 
 (define (parse*-optional-pattern stx decls optional-directive-table)
-  (syntax-case stx (~optional)
-    [(~optional p . options)
+  (syntax-case stx ()
+    [(_ p . options)
      (let* ([head (parse-head-pattern #'p decls)]
             [chunks
              (parse-keyword-options/eol #'options optional-directive-table
@@ -1093,8 +1113,8 @@
 
 ;; parse*-ehpat/once : stx DeclEnv -> (list EllipsisHeadPattern stx)
 (define (parse*-ehpat/once stx decls)
-  (syntax-case stx (~once)
-    [(~once p . options)
+  (syntax-case stx ()
+    [(_ p . options)
      (let* ([head (parse-head-pattern #'p decls)]
             [chunks
              (parse-keyword-options/eol #'options
@@ -1113,8 +1133,8 @@
 
 ;; parse*-ehpat/bounds : stx DeclEnv -> (list EllipsisHeadPattern stx)
 (define (parse*-ehpat/bounds stx decls)
-  (syntax-case stx (~between)
-    [(~between p min max . options)
+  (syntax-case stx ()
+    [(_ p min max . options)
      (let ()
        (define head (parse-head-pattern #'p decls))
        (define minN (syntax-e #'min))
