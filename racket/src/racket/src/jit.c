@@ -2846,6 +2846,13 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       mz_rs_sync();
 
+      /* Box any unboxed values that will go into a closure */
+      for (i = 0; i < l->count; i++) {
+	if (generate_closure_prep((Scheme_Closure_Data *)l->procs[i], jitter))
+          prepped = 1;
+        CHECK_LIMIT();
+      }
+
       /* Create unfinished closures */
       for (i = 0; i < l->count; i++) {
 	((Scheme_Closure_Data *)l->procs[i])->context = (Scheme_Object *)l;
@@ -2853,12 +2860,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	CHECK_LIMIT();
 	jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_R0);
       }
-
-      for (i = 0; i < l->count; i++) {
-	if (generate_closure_prep((Scheme_Closure_Data *)l->procs[i], jitter))
-          prepped = 1;
-        CHECK_LIMIT();
-      }
+      /* We assume no allocation between last generated closure and
+         filling all closures, since the last one may be allocated as
+         "dirty". */
 
       /* Close them: */
       for (i = l->count; i--; ) {
