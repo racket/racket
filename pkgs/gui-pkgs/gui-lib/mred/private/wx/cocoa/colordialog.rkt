@@ -5,7 +5,8 @@
          racket/draw/private/color
          "../../lock.rkt"
          "utils.rkt"
-         "types.rkt")
+         "types.rkt"
+         "queue.rkt")
 
 (provide 
  (protect-out get-color-from-user))
@@ -16,6 +17,7 @@
 (define-cocoa NSDeviceRGBColorSpace _id)
 
 (define (get-color-from-user mode)
+  (promote-to-gui!)
   (cond
    [(eq? mode 'show)
     (tellv (tell NSColorPanel sharedColorPanel)

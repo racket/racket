@@ -24,6 +24,7 @@
               old-cocoa?
               version-10.6-or-later?
               version-10.7-or-later?
+              version-10.9-or-later?
               version-10.10-or-later?)
  with-autorelease
  call-with-autorelease
@@ -81,5 +82,7 @@
   (NSAppKitVersionNumber . >= . 1038))
 (define (version-10.7-or-later?)
   (NSAppKitVersionNumber . >= . 1138))
+(define (version-10.9-or-later?)
+  (NSAppKitVersionNumber . >= . 1187))
 (define (version-10.10-or-later?)
   (NSAppKitVersionNumber . >= . 1331))
