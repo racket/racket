@@ -120,16 +120,17 @@ expressions are duplicated, and may be evaluated in different scopes.
                     (bound-id-table-set table id literal)))])
     (make-declenv table conventions)))
 
-(define (declenv-lookup env id #:use-conventions? [use-conventions? #t])
-  (or (bound-id-table-ref (declenv-table env) id #f)
-      (and use-conventions?
-           (conventions-lookup (declenv-conventions env) id))))
+(define (declenv-lookup env id)
+  (bound-id-table-ref (declenv-table env) id #f))
+
+(define (declenv-apply-conventions env id)
+  (conventions-lookup (declenv-conventions env) id))
 
 (define (declenv-check-unbound env id [stxclass-name #f]
                                #:blame-declare? [blame-declare? #f])
   ;; Order goes: literals, pattern, declares
   ;; So blame-declare? only applies to stxclass declares
-  (let ([val (declenv-lookup env id #:use-conventions? #f)])
+  (let ([val (declenv-lookup env id)])
     (match val
       [(den:lit _i _e _ip _lp)
        (wrong-syntax id "identifier previously declared as literal")]
@@ -229,7 +230,9 @@ expressions are duplicated, and may be evaluated in different scopes.
        [#:conventions list?]
        DeclEnv/c)]
  [declenv-lookup
-  (->* [DeclEnv/c identifier?] [#:use-conventions? any/c] any)]
+  (-> DeclEnv/c identifier? any)]
+ [declenv-apply-conventions
+  (-> DeclEnv/c identifier? any)]
  [declenv-put-stxclass
   (-> DeclEnv/c identifier? identifier? arguments? (or/c syntax? #f)
       DeclEnv/c)]

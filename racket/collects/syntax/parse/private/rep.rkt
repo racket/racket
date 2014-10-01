@@ -439,11 +439,11 @@
   ;; Conventions to not shadow pattern-form bindings, under the
   ;; theory that conventions only apply to things already determined
   ;; to be pattern variables.
-  (not (declenv-lookup decls id #:use-conventions? #f)))
+  (not (declenv-lookup decls id)))
 ;; suitable as id=? argument to syntax-case*
 (define ((make-not-shadowed-id=? decls) lit-id pat-id)
   (and (free-identifier=? lit-id pat-id)
-       (not (declenv-lookup decls pat-id #:use-conventions? #f))))
+       (not (declenv-lookup decls pat-id))))
 
 ;; parse-*-pattern : stx DeclEnv boolean boolean -> Pattern
 (define (parse-*-pattern stx decls allow-head? allow-action?)
@@ -681,7 +681,21 @@
                                  "not allowed within ~~not pattern"))))
 
 (define (parse-pat:id id decls allow-head?)
-  (define entry (declenv-lookup decls id))
+  (cond [(declenv-lookup decls id)
+         => (lambda (entry) (parse-pat:id/entry id decls allow-head? entry))]
+        [(not (safe-name? id))
+         (wrong-syntax id "expected identifier not starting with ~~ character")]
+        [else
+         (let-values ([(name sc) (split-id/get-stxclass id decls)])
+           (cond [sc
+                  (parse-pat:var* id allow-head? name sc no-arguments "." #f #f)]
+                 [(declenv-apply-conventions decls id)
+                  => (lambda (entry) (parse-pat:id/entry id decls allow-head? entry))]
+                 [else (create-pat:var name #f no-arguments null #f #t #f)]))]))
+
+;; parse-pat:id/entry : Identifier .... DeclEntry -> SinglePattern
+;; Handle when meaning of identifier pattern is given by declenv entry.
+(define (parse-pat:id/entry id decls allow-head? entry)
   (match entry
     [(den:lit internal literal input-phase lit-phase)
      (create-pat:literal literal input-phase lit-phase)]
@@ -706,14 +720,8 @@
             (parse-pat:id/s id parser no-arguments attrs commit? "." #f)])]
     [(den:delayed parser class)
      (let ([sc (get-stxclass class)])
-       (parse-pat:var* id allow-head? id sc no-arguments "." #f parser))]
-    ['#f
-     (unless (safe-name? id)
-       (wrong-syntax id "expected identifier not starting with ~~ character"))
-     (let-values ([(name sc) (split-id/get-stxclass id decls)])
-       (if sc
-           (parse-pat:var* id allow-head? name sc no-arguments "." #f #f)
-           (create-pat:var name #f no-arguments null #f #t #f)))]))
+       (parse-pat:var* id allow-head? id sc no-arguments "." #f parser))]))
+
 
 (define (parse-pat:var stx decls allow-head?)
   (define name0
