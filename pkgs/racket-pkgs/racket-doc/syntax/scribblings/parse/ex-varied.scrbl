@@ -45,7 +45,7 @@ trivial.
 
 @racketblock[
 (define-splicing-syntax-class for-clause
-  #:attribute (norm)
+  #:attributes (norm)
   (pattern [var:id seq:expr]
            #:with norm #'[(var) seq])
   (pattern [(var:id ...) seq:expr]
@@ -99,8 +99,8 @@ than syntax, use the @racket[#:attr] keyword.
 ]
 
 Be careful! If we had used @racket[#:with] instead of @racket[#:attr],
-the @racket[#f] would have been coerced to a syntax object before
-being matched against the pattern @racket[default].
+a value produced by the right-hand side would be coerced to a syntax
+object before being matched against the pattern @racket[ast].
 
 Attributes with non-syntax values cannot be used in syntax
 templates. Use the @racket[attribute] form to get the value of an
