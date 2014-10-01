@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/class
-         "intf.rkt"
-         "local-member-names.rkt")
+         "syncheck-intf.rkt"
+         "syncheck-local-member-names.rkt")
 (provide color color-range
          find-source-editor
          find-source-editor/defs

@@ -1057,8 +1057,7 @@
                    ("red"                  imported)
                    (")"                    default-color))
                  '(((26 29) (47 50))
-                   ((6 17) (19 25)))
-                 #:extra-info? #t)
+                   ((6 17) (19 25))))
      
      (build-test "#lang racket/base\n(require '#%kernel)\npair?"
                  '(("#lang racket/base\n(" default-color)
@@ -1688,24 +1687,6 @@
   
   (define (click-check-syntax-button drs extra-info?)
     (test:run-one (lambda () (send drs syncheck:button-callback #:print-extra-info? extra-info?))))
-
-(let ()
-  (define ns (make-base-namespace))
-  (define stx
-    (parameterize ([current-namespace ns])
-      (expand #'(module m racket/base
-                  (define red 1)
-                  (module+ tests red)))))
-  (define ids '())
-  (let loop ([stx stx])
-    (cond
-      [(pair? stx) (loop (car stx)) (loop (cdr stx))]
-      [(identifier? stx)
-       (when (equal? (syntax-e stx) 'red) (set! ids (cons stx ids)))]
-      [(syntax? stx) (loop (syntax-e stx))]))
-  (for ([x (in-list ids)])
-    (for ([y (in-list ids)])
-      (printf "  ~s\n  ~s\n  ~s\n\n" x y (free-identifier=? x y)))))
 
 (main)
 

@@ -43,11 +43,12 @@ If the namespace does not, they are colored the unbound color.
          "../../private/eval-helpers-and-pref-init.rkt"
          "intf.rkt"
          "local-member-names.rkt"
-         "colors.rkt"
-         "traversals.rkt"
-         "annotate.rkt"
          "../tooltip.rkt"
          "blueboxes-gui.rkt"
+         drracket/private/syncheck/syncheck-intf
+         drracket/private/syncheck/colors
+         drracket/private/syncheck/traversals
+         drracket/private/syncheck/annotate
          framework/private/logging-timer)
 (provide tool@)
 

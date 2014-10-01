@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require "colors.rkt"
-         "intf.rkt"
-         "local-member-names.rkt"
+         "syncheck-intf.rkt"
+         "syncheck-local-member-names.rkt"
          "annotate.rkt"
          "contract-traversal.rkt"
          "xref.rkt"
@@ -875,7 +875,6 @@
         (when (pair? val) 
           (define start (car val))
           (define end (cdr val))
-          (define (get-str) (send (list-ref key 0) get-text (list-ref key 1) (list-ref key 2)))
           (define (show-starts)
             (add-mouse-over/loc (list-ref key 0) (list-ref key 1) (list-ref key 2)
                                 (cond

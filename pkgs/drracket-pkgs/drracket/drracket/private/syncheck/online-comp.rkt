@@ -4,11 +4,12 @@
          racket/match
          racket/contract
          (for-syntax racket/base)
+         drracket/private/syncheck/traversals
+         drracket/private/syncheck/syncheck-intf
+         drracket/private/syncheck/xref
          "../../private/eval-helpers-and-pref-init.rkt"
-         "traversals.rkt"
-         "local-member-names.rkt"
          "intf.rkt"
-         "xref.rkt")
+         "local-member-names.rkt")
 
 (provide go monitor)
 

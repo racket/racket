@@ -2,8 +2,8 @@
 (require racket/contract
          racket/class
          "private/syncheck/traversals.rkt"
-         "private/syncheck/intf.rkt"
-         "private/syncheck/local-member-names.rkt")
+         "private/syncheck/syncheck-intf.rkt"
+         "private/syncheck/syncheck-local-member-names.rkt")
 
 (provide/contract
  [make-traversal 
@@ -36,6 +36,3 @@
  syncheck:add-mouse-over-status
  syncheck:add-jump-to-definition
  syncheck:color-range)
-
-
-

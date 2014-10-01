@@ -37,7 +37,9 @@
                "tex-table"
                "unstable-lib"
                "drracket-plugin-lib"
-               "gui-pkg-manager-lib"))
+               "gui-pkg-manager-lib"
+               "drracket-tool-lib"
+               "drracket-tool-doc"))
 (define build-deps '("mzscheme-doc"
                      "net-doc"
                      "planet-doc"
@@ -52,7 +54,10 @@
                      "at-exp-lib"
                      "rackunit-lib"))
 
-(define implies '("drracket-plugin-lib"))
+;; implies drracket-tool-lib so that others dependencies don't break
+;; (redex, in particular, used to depend on drracket but it really
+;; needs only the parts in drracket-tool-lib)
+(define implies '("drracket-plugin-lib" "drracket-tool-lib"))
 
 (define pkg-desc "The DrRacket programming environment")
 

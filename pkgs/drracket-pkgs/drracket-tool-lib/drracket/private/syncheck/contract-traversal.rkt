@@ -1,6 +1,6 @@
 #lang racket/base
-(require "intf.rkt"
-         "local-member-names.rkt"
+(require "syncheck-intf.rkt"
+         "syncheck-local-member-names.rkt"
          "annotate.rkt"
          "colors.rkt"
          syntax/boundmap
