@@ -4,9 +4,12 @@
                      racket))
 
 @title{DrRacket Tools}
+@author{Robert Bruce Findler}
 
 This manual describes portions of DrRacket's functionality
 that are exposed via Racket APIs to be used with other editors.
+
+@table-of-contents[]
 
 @section{Accessing Check Syntax Programmatically}
 
