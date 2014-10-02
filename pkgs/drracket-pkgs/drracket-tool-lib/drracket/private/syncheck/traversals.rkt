@@ -251,6 +251,7 @@
                     (add-origins stx varrefs level-of-enclosing-module)
                     (add-disappeared-bindings stx binders varrefs level-of-enclosing-module)
                     (add-disappeared-uses stx varrefs level-of-enclosing-module)
+                    (add-mouse-over-tooltips stx)
                     (add-sub-range-binders stx 
                                            sub-identifier-binding-directives
                                            level
@@ -541,6 +542,20 @@
            (log-check-syntax-debug
             "found a vector in a 'sub-range-binders property that is ill-formed ~s"
             prop)])))
+
+(define mouse-over-tooltip-prop?
+  (vector/c #:flat? #t any/c exact-nonnegative-integer? exact-nonnegative-integer? string?))
+(define (add-mouse-over-tooltips stx)
+  (let loop ([prop (syntax-property stx 'mouse-over-tooltips)])
+    (cond
+      [(pair? prop)
+       (loop (car prop))
+       (loop (cdr prop))]
+      [(mouse-over-tooltip-prop? prop)
+       (add-mouse-over/loc (vector-ref prop 0)
+                           (vector-ref prop 1)
+                           (vector-ref prop 2)
+                           (vector-ref prop 3))])))
 
     ;; add-disappeared-bindings : syntax id-set integer -> void
     (define (add-disappeared-bindings stx binders disappaeared-uses level-of-enclosing-module)
