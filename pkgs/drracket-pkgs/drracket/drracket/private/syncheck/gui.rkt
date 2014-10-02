@@ -1464,6 +1464,9 @@ If the namespace does not, they are colored the unbound color.
               (send text position-location eol-pos xlb ylb #t #t)
               (define-values (x-off y-off)
                 (send text editor-location-to-dc-location (+ (unbox xlb) 4) (unbox ylb)))
+              (define (c n) (inexact->exact (round n)))
+              (define x-off-round (c x-off))
+              (define y-off-round (c y-off))
               (define window
                 (let loop ([ed text])
                   (cond
@@ -1474,9 +1477,8 @@ If the namespace does not, they are colored the unbound color.
                          (loop (send (send admin get-snip) get-editor))
                          #f)])))
               (cond
-                [(and window (position-integer? x-off) (position-integer? y-off))
-                 (define (c n) (inexact->exact (round n)))
-                 (define-values (gx gy) (send window client->screen (c x-off) (c y-off)))
+                [(and window (position-integer? x-off-round) (position-integer? y-off-round))
+                 (define-values (gx gy) (send window client->screen x-off-round y-off-round))
                  (values gx gy gx gy)]
                 [else
                  (values #f #f #f #f)]))
