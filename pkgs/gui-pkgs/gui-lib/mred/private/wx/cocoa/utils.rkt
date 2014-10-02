@@ -83,6 +83,6 @@
 (define (version-10.7-or-later?)
   (NSAppKitVersionNumber . >= . 1138))
 (define (version-10.9-or-later?)
-  (NSAppKitVersionNumber . >= . 1187))
+  (NSAppKitVersionNumber . >= . 1265))
 (define (version-10.10-or-later?)
   (NSAppKitVersionNumber . >= . 1331))
