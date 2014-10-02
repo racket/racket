@@ -471,12 +471,20 @@
      (let* ([a1 (make-a 1 2)]
             [get #f]
             [set #f]
-            [a2 (chaperone-struct a1 a-y (lambda (an-a v) (set! get v) v)
-                                  set-a-x! (lambda (an-a v) (set! set v) v))]
+            [a2-chap #f]
+            [a2 (chaperone-struct a1 a-y (lambda (an-a v)
+                                           (test #t eq? an-a a2-chap)
+                                           (set! get v) 
+                                           v)
+                                  set-a-x! (lambda (an-a v)
+                                             (test #t eq? an-a a2-chap)
+                                             (set! set v)
+                                             v))]
             [p1 (make-p 100)]
             [p-get #f]
             [p2 (chaperone-struct p1 green-ref (lambda (p v) (set! p-get v) v))]
             [a3 (chaperone-struct a1 a-x (lambda (a y) y) prop:blue 8)])
+       (set! a2-chap a2)
        (test 2 a-y a1)
        (test #f values get)
        (test #f values set)
