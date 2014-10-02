@@ -50,7 +50,8 @@
       (,danprager . "prager.pdf")
       (,davidv . "vanderson.pdf")
       (,ntoronto . "toronto.pdf")
-      (,fogus . "fogus.pdf")))
+      (,fogus . "fogus.pdf")
+      (,jbc . "clements.pdf")))
   (dict-ref slides s #f))
 (define (speaker->code s)
   (define code
