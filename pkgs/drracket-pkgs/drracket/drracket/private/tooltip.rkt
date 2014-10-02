@@ -23,8 +23,15 @@
       (and (is-shown?)
            (begin (show #f)
                   #t)))
-    (define/public (set-tooltip ls) 
-      (send yellow-message set-lab ls))
+    
+    ;; ls may contain strings that have newlines; break up the strings here
+    (define/public (set-tooltip ls)
+      (define broken-up-lines
+        (apply
+         append
+         (for/list ([str (in-list ls)])
+           (regexp-split #rx"\n" str))))
+      (send yellow-message set-lab broken-up-lines))
     
     (define/override (show on?)
       (when timer

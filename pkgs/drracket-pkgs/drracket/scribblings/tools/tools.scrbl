@@ -674,13 +674,14 @@ plugin API. See also @racketmodname[drracket/check-syntax].
 
 @subsection{Syntax Properties that Check Syntax Looks For}
 
-@section-index["disappeared-use" "disappeared-binding" "sub-range-binders"]
+@section-index["disappeared-use" "disappeared-binding" "sub-range-binders" "mouse-over-tooltips"]
 
 Check Syntax collects the values of the 
 @racket[syntax-property]s named 
 @racket['disappeared-use],
-@racket['disappeared-binding], and
-@racket['sub-range-binders], and uses them to add
+@racket['disappeared-binding], 
+@racket['sub-range-binders], and
+@racket['mouse-over-tooltips] and uses them to add
 additional arrows to the program text. These properties are
 intended for use when a macro discards or manufactures identifiers that,
 from the programmers perspective, should be binding each other.
@@ -706,7 +707,7 @@ The value of the @racket['sub-range-binders] property is expected
 to be a tree of @racket[cons] pairs (in any configuration) whose leaves
 are either ignored or are vectors of the shape
 @racketblock[(vector/c syntax? exact-nonnegative-integer? exact-nonnegative-integer?
-                       syntax? exact-nonnegative-integer? exact-nonnegative-integer?)].
+                       syntax? exact-nonnegative-integer? exact-nonnegative-integer?)]
 If the leaf is a vector, the first syntax object is expected to be an identifier whose
 bound occurrences should have arrows that point to the syntax object in the fourth
 position in the vector. The numbers indicate the starting point and the range inside
@@ -748,6 +749,32 @@ Here's an example:
 After putting this code in the DrRacket window, mouse over the words ``big'' and 
 ``generator'' to see arrows pointing to the individual pieces of the identifier
 @racket[_big-generator].
+
+The value of the @racket['mouse-over-tooltips] property is expected to be 
+to be a tree of @racket[cons] pairs (in any configuration) whose leaves
+are either ignored or are vectors of the shape
+@racketblock[(vector/c any/c exact-nonnegative-integer? exact-nonnegative-integer? string?)]
+Each vector's content indicates where to show a tooltip. The first three components are
+the @racket[syntax-source] indicating which file the tooltip goes in, the start and end position
+in the editor where mouseovers will show the tooltip, and the content of the tooltip.
+For example, here's a macro that shows the span of itself in a tooltip on mouseover:
+@codeblock{
+#lang racket
+(define-syntax (char-span stx)
+  (syntax-case stx ()
+    [(_ a)
+     (syntax-property
+      #'a
+      'mouse-over-tooltips
+      (vector
+       (syntax-source stx)
+       (syntax-position stx)
+       (+ (syntax-position stx)
+          (syntax-span stx))
+       (format "this expression\nspans ~a chars"
+               (syntax-span stx))))]))
+
+(char-span (+ 1 2))}
 
 Finally, Check Syntax only draws arrows between identifiers that are @racket[syntax-original?]
 or that have the @racket[syntax-property] @racket['original-for-check-syntax]
