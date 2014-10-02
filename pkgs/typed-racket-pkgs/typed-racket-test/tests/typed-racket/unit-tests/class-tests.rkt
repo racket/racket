@@ -1407,7 +1407,7 @@
                           (init-rest [rst : (List Symbol)])))
              (make-object c% "wrong"))
            #:ret (ret (make-Instance (make-Class #f null null null null (-Tuple (list -Symbol)))))
-           #:msg #rx"expected: Symbol.*given: String"]
+           #:msg #rx"expected: \\(List Symbol.*given: \\(List String"]
    ;; PR 14408, test init-field order
    [tc-e (let ()
            (define c%

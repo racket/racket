@@ -3280,6 +3280,12 @@
        ;; don't produce an internal error
        [tc-err (let () (define x (values 1 2)) (error "dummy"))
                #:msg #rx"Expression should produce 1 values"]
+
+       [tc-e (ann (list 'change-size 30)
+                  (U (List 'change-family Symbol)
+                     (List 'change-size Byte)))
+             (t:Un (-lst* (-val 'change-family) -Symbol)
+                   (-lst* (-val 'change-size) -Byte))]
         )
 
   (test-suite

@@ -76,6 +76,23 @@
     (add-typeof-expr form t)
     (cond-check-below t expected)))
 
+;; typecheck and return a truth value indicating a typecheck failure (#f)
+;; or success (any non-#f value)
+(define (tc-expr/check? form expected)
+  (parameterize ([current-type-error? #f])
+    (with-handlers ([exn:fail:syntax? (λ (_) #f)])
+      (dynamic-wind
+        (λ () (save-errors!))
+        (λ ()
+          (let ([result (tc-expr/check form expected)])
+            (and (not (current-type-error?)) result)))
+        (λ () (restore-errors!))))))
+
+(define (tc-expr/check/t? form expected)
+  (match (tc-expr/check? form expected)
+    [(tc-result1: t) t]
+    [#f #f]))
+
 (define (explicit-fail stx msg var)
   (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
          =>

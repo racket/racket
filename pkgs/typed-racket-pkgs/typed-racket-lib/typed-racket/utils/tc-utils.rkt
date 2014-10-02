@@ -14,6 +14,7 @@ don't depend on any other portion of the system
          current-orig-stx
          orig-module-stx
          expanded-module-stx
+         current-type-error?
          print-syntax?
          warn-unreachable?
          delay-errors?
@@ -23,6 +24,8 @@ don't depend on any other portion of the system
          locate-stx
          warn-unreachable
 
+         save-errors!
+         restore-errors!
          reset-errors!
          report-first-error
          report-all-errors
@@ -45,6 +48,10 @@ don't depend on any other portion of the system
 (define current-orig-stx (make-parameter #'here))
 (define orig-module-stx (make-parameter #f))
 (define expanded-module-stx (make-parameter #f))
+
+;; a parameter that represents whether a type error has occurred (#t) or
+;; not (#f) in the current dynamic extent
+(define current-type-error? (make-parameter #f))
 
 (define (stringify l [between " "])
   (define (intersperse v l)
@@ -185,6 +192,7 @@ don't depend on any other portion of the system
     (unless (syntax? stx)
       (int-err "erroneous syntax was not a syntax object: ~a ~a"
                stx (syntax->datum stx*)))
+    (current-type-error? #t)
     (if (delay-errors?)
         (set! delayed-errors (cons (make-err (apply format msg rest)
                                              (list stx))
@@ -224,6 +232,7 @@ don't depend on any other portion of the system
   (let* ([ostx (current-orig-stx)]
          [ostxs (if (list? ostx) ostx (list ostx))]
          [stxs (map locate-stx ostxs)])
+    (current-type-error? #t)
     ;; If this isn't original syntax, then we can get some pretty bogus error
     ;; messages.  Note that this is from a macro expansion, so that introduced
     ;; vars and such don't confuse the user.
