@@ -396,7 +396,7 @@
      (λ (fuel)
        (λ ()
          (rand-choice
-          [1/10 -inf.0]
+          [1/10 (-/+ +inf.0)]
           [1/10 (-/+ x 0.01)]
           [4/10 (-/+ x (random))]
           [else (-/+ x (random 4294967087))]))))
@@ -470,7 +470,7 @@
         (λ ()
           (let loop ([so-far (if (pe-listof-ctc? ctc)
                                  '()
-                                 (list eg))])
+                                 (list (eg)))])
             (rand-choice
              [1/5 so-far]
              [else (loop (cons (eg) so-far))])))
