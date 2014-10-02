@@ -10,10 +10,12 @@
               gdk_drawable_get_visual
               gdk_x11_drawable_get_xid
               gdk_x11_display_get_xdisplay
-              gdk_x11_visual_get_xvisual))
+              gdk_x11_visual_get_xvisual
+              gdk_x11_screen_get_screen_number))
 
 (define _GdkDrawable _pointer)
 (define _GdkDisplay (_cpointer 'GdkDisplay))
+(define _GdkScreen (_cpointer 'GdkScreen))
 (define _GdkVisual (_cpointer 'GdkVisual))
 (define _GdkPixmap (_cpointer 'GdkPixmap))
 (define _Visual (_cpointer 'Visual))
@@ -33,4 +35,7 @@
   #:make-fail make-not-available)
 
 (define-gdk gdk_x11_visual_get_xvisual (_fun _GdkVisual -> _Visual)
+  #:make-fail make-not-available)
+
+(define-gdk gdk_x11_screen_get_screen_number (_fun _GdkScreen -> _int)
   #:make-fail make-not-available)

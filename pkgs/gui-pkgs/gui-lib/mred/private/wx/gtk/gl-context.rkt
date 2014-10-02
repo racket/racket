@@ -1,12 +1,16 @@
 #lang racket/base
 (require racket/class
+         racket/promise
          ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
+         ffi/cvector
          (prefix-in draw: racket/draw/private/gl-context)
          racket/draw/private/gl-config
          "types.rkt"
-         "utils.rkt")
+         "utils.rkt"
+         "window.rkt"
+         "x11.rkt")
 
 (provide
  (protect-out prepare-widget-gl-context
@@ -19,180 +23,246 @@
 (define (ffi-lib/complaint-on-failure name vers)
   (ffi-lib name vers
            #:fail (lambda ()
-                    (log-warning "could not load GL library ~a ~a"
+                    (log-warning "could not load library ~a ~a"
                                  name vers)
                     #f)))
 
-(define gdkglext-lib (ffi-lib/complaint-on-failure "libgdkglext-x11-1.0" '("0")))
-(define gtkglext-lib (ffi-lib/complaint-on-failure "libgtkglext-x11-1.0" '("0")))
+;; ===================================================================================================
+;; X11/GLX FFI
 
-(define-ffi-definer define-gdkglext gdkglext-lib
+(define x-lib (ffi-lib/complaint-on-failure "libX11" '("")))
+(define gl-lib (ffi-lib/complaint-on-failure "libGL" '("1" "")))
+
+(define-ffi-definer define-x x-lib
   #:default-make-fail make-not-available)
-(define-ffi-definer define-gtkglext gtkglext-lib
+
+(define-ffi-definer define-glx gl-lib
   #:default-make-fail make-not-available)
 
-(define _GdkGLContext (_cpointer/null 'GdkGLContext))
-(define _GdkGLDrawable (_cpointer 'GdkGLDrawable))
-(define _GdkGLConfig (_cpointer 'GdkGLConfig))
-(define _GdkGLPixmap _GdkGLDrawable)
-(define _GdkPixmap _pointer)
+;; X #defines/typedefs/enums
+(define _Display (_cpointer 'Display))
+(define _XID _ulong)
+(define True 1)
+(define None 0)
 
-(define-gdkglext gdk_gl_init (_fun (_ptr i _int)
-                                   (_ptr i _pointer)
-                                   -> _void)
-  #:fail (lambda () void))
+;; GLX #defines/typedefs/enums
+(define _GLXFBConfig (_cpointer 'GLXFBConfig))
+(define _GLXContext (_cpointer/null 'GLXContext))
+(define _XVisualInfo (_cpointer 'XVisualInfo))
 
-(define-gtkglext gdk_gl_config_new (_fun (_list i _int) -> (_or-null _GdkGLConfig))
-  #:fail (lambda () (lambda args #f)))
-(define-gtkglext gdk_gl_config_new_for_screen (_fun _GdkScreen (_list i _int) -> (_or-null _GdkGLConfig)))
+(define GLX_DOUBLEBUFFER     5)
+(define GLX_STEREO           6)
+(define GLX_DEPTH_SIZE       12)
+(define GLX_STENCIL_SIZE     13)
+(define GLX_ACCUM_RED_SIZE   14)
+(define GLX_ACCUM_GREEN_SIZE 15)
+(define GLX_ACCUM_BLUE_SIZE  16)
+(define GLX_ACCUM_ALPHA_SIZE 17)
+;; GLX 1.3 and later:
+(define GLX_X_RENDERABLE     #x8012)
+(define GLX_RGBA_TYPE        #x8014)
+;; GLX 1.4 and later:
+(define GLX_SAMPLES          #x186a1)
 
-(define-gtk gtk_widget_get_screen (_fun _GtkWidget -> _GdkScreen))
-
-(define-gtkglext gtk_widget_set_gl_capability (_fun _GtkWidget
-                                                    _GdkGLConfig
-                                                    _GdkGLContext
-                                                    _gboolean
-                                                    _int
-                                                    -> _gboolean)
-  #:fail (lambda () (lambda args #f)))
-
-(define-gtkglext gtk_widget_get_gl_context (_fun _GtkWidget -> _GdkGLContext)
-  #:fail (lambda () (lambda args #f)))
-(define-gtkglext gtk_widget_get_gl_window (_fun _GtkWidget -> _GdkGLDrawable))
-
-(define-gdkglext gdk_gl_context_destroy (_fun _GdkGLContext -> _void)
+(define-x XFree (_fun _pointer -> _int)
   #:wrap (deallocator))
 
-(define-gdkglext gdk_gl_context_new (_fun _GdkGLDrawable _GdkGLContext _gboolean _int
-                                          -> _GdkGLContext)
-  #:wrap (allocator gdk_gl_context_destroy))
+(define-glx glXQueryVersion
+  (_fun _Display (major : (_ptr o _int)) (minor : (_ptr o _int))
+        -> (ret : _bool)
+        -> (values ret major minor)))
 
-(define-gdkglext gdk_gl_drawable_gl_begin (_fun _GdkGLDrawable
-                                                _GdkGLContext
-                                                -> _gboolean))
-(define-gdkglext gdk_gl_drawable_gl_end (_fun _GdkGLDrawable -> _void))
-(define-gdkglext gdk_gl_drawable_swap_buffers (_fun _GdkGLDrawable -> _void))
+(define-glx glXChooseFBConfig
+  (_fun _Display _int (_list i _int) (len : (_ptr o _int))
+        -> (_cvector o _GLXFBConfig len))
+  #:wrap (allocator (λ (v) (XFree (cvector-ptr v)))))
 
-(define-gdkglext gdk_pixmap_set_gl_capability (_fun _GdkPixmap _GdkGLConfig _pointer
-						    -> _GdkGLPixmap))
+(define-glx glXCreateNewContext
+  (_fun _Display _GLXFBConfig _int _GLXContext _bool -> _GLXContext))
 
-(define GDK_GL_RGBA_TYPE 0)
+(define-glx glXDestroyContext
+  (_fun _Display _GLXContext -> _void))
 
-(define GDK_GL_USE_GL                     1)
-(define GDK_GL_BUFFER_SIZE                2)
-(define GDK_GL_LEVEL                      3)
-(define GDK_GL_RGBA                       4)
-(define GDK_GL_DOUBLEBUFFER               5)
-(define GDK_GL_STEREO                     6)
-(define GDK_GL_AUX_BUFFERS                7)
-(define GDK_GL_RED_SIZE                   8)
-(define GDK_GL_GREEN_SIZE                 9)
-(define GDK_GL_BLUE_SIZE                  10)
-(define GDK_GL_ALPHA_SIZE                 11)
-(define GDK_GL_DEPTH_SIZE                 12)
-(define GDK_GL_STENCIL_SIZE               13)
-(define GDK_GL_ACCUM_RED_SIZE             14)
-(define GDK_GL_ACCUM_GREEN_SIZE           15)
-(define GDK_GL_ACCUM_BLUE_SIZE            16)
-(define GDK_GL_ACCUM_ALPHA_SIZE           17)
-(define GDK_GL_SAMPLE_BUFFERS             100000)
-(define GDK_GL_SAMPLES                    100001)
-(define GDK_GL_ATTRIB_LIST_NONE 0)
+(define-glx glXMakeCurrent
+  (_fun _Display _XID _GLXContext -> _bool))
 
-;; ----------------------------------------
+(define-glx glXSwapBuffers
+  (_fun _Display _XID -> _void))
 
-(define (config->GdkGLConfig d conf can-double?)
-  (gdk_gl_config_new (append
-		      (list GDK_GL_RGBA)
-                      (if can-double?
-                          (if (send conf get-double-buffered) (list GDK_GL_DOUBLEBUFFER) null)
-                          null)
-		      (if (send conf get-stereo) (list GDK_GL_STEREO) null)
-		      (list
-		       GDK_GL_DEPTH_SIZE (send conf get-depth-size)
-		       GDK_GL_STENCIL_SIZE (send conf get-stencil-size)
-		       GDK_GL_ACCUM_RED_SIZE (send conf get-accum-size)
-		       GDK_GL_ACCUM_GREEN_SIZE (send conf get-accum-size)
-		       GDK_GL_ACCUM_BLUE_SIZE (send conf get-accum-size)
-		       GDK_GL_ACCUM_ALPHA_SIZE (send conf get-accum-size))
-		      #;
-		      (list GDK_GL_SAMPLES (send conf get-multisample-size))
-		      (list GDK_GL_ATTRIB_LIST_NONE))))
+(define-glx glXIsDirect
+  (_fun _Display _GLXContext -> _bool))
 
-;; ----------------------------------------
+(define-glx glXGetVisualFromFBConfig
+  (_fun _Display _GLXFBConfig -> _XVisualInfo)
+  #:wrap (allocator XFree))
+
+(define-glx glXCreateGLXPixmap
+  (_fun _Display _XVisualInfo _XID -> _XID))
+
+(define-glx glXDestroyGLXPixmap
+  (_fun _Display _XID -> _void))
+
+(define-gtk gtk_widget_get_display (_fun _GtkWidget -> _GdkDisplay))
+(define-gtk gtk_widget_get_screen (_fun _GtkWidget -> _GdkScreen))
+(define-gtk gtk_widget_get_window (_fun _GtkWidget -> _GtkWindow))
+
+;; ===================================================================================================
+
+(define lazy-check-glx-version
+  (delay
+    (define-values (worked? glx-major glx-minor)
+      (glXQueryVersion (gdk_x11_display_get_xdisplay (gdk_display_get_default))))
+    
+    (unless worked?
+      (error 'check-glx-version "can't get GLX version for default display"))
+    
+    (when (or (< glx-major 1)
+              (and (= glx-major 1) (< glx-minor 3)))
+      (error 'check-glx-version "need GLX version 1.3 or greater; given version ~a.~a"
+             glx-major glx-minor))))
+
+(define (check-glx-version)
+  (force lazy-check-glx-version))
+
+;; ===================================================================================================
+
+(define out (current-output-port))
 
 (define gl-context% 
   (class draw:gl-context%
-    (init-field [gl gl]
-                [drawable drawable])
-
+    (init-field gl display drawable pixmap)
+    
     (define/override (get-handle) gl)
-
+    
+    (define/public (get-gtk-display) display)
+    (define/public (get-gtk-drawable) drawable)
+    (define/public (get-glx-pixmap) pixmap)
+    
+    (define (get-drawable-xid)
+      (if pixmap pixmap (gdk_x11_drawable_get_xid drawable)))
+    
     (define/override (draw:do-call-as-current t)
+      (define xdisplay (gdk_x11_display_get_xdisplay display))
       (dynamic-wind
-          (lambda ()
-            (gdk_gl_drawable_gl_begin drawable gl))
-          t
-          (lambda ()
-            (gdk_gl_drawable_gl_end drawable))))
-        
+       (lambda ()
+         (glXMakeCurrent xdisplay (get-drawable-xid) gl))
+       t
+       (lambda ()
+         (glXMakeCurrent xdisplay 0 #f))))
+    
     (define/override (draw:do-swap-buffers)
-      (gdk_gl_drawable_swap_buffers drawable))
+      (glXSwapBuffers (gdk_x11_display_get_xdisplay display)
+                      (get-drawable-xid)))
     
     (super-new)))
 
-;; ----------------------------------------
+;; ===================================================================================================
 
-(define inited? #f)
-(define (init!)
-  (unless inited? 
-    (set! inited? #t)
-    (gdk_gl_init 0 #f)))
+;; (or/c #f _GtkWidget) -> _GdkDisplay
+(define (gtk-maybe-widget-get-display widget)
+  (cond [widget  (gtk_widget_get_display widget)]
+        [else    (gdk_display_get_default)]))
 
-(define (prepare-widget-gl-context gtk config)
-  (init!)
-  (let ([share-context (and config (send config get-share-context))]
-        [config (config->GdkGLConfig #f ; (gtk_widget_get_screen gtk)
-                                     (or config
-                                         (new gl-config%))
-                                     #t)])
-    (when config
-	  (gtk_widget_set_gl_capability gtk
-					config
-					(if share-context
-                                            (send share-context get-handle)
-                                            #f)
-					#t
-					0))))
+;; (or/c #f _GtkWidget) -> _GdkScreen
+(define (gtk-maybe-widget-get-screen widget)
+  (cond [widget  (gtk_widget_get_screen widget)]
+        [else    (gdk_screen_get_default)]))
 
-(define (create-widget-gl-context gtk)
-  (init!)
-  (let ([gl (gtk_widget_get_gl_context gtk)])
-    (and gl
-	 (new gl-context% 
-	      [gl gl]
-	      [drawable (gtk_widget_get_gl_window gtk)]))))
+;; (or/c #f _GtkWidget) _GdkDrawable gl-config% boolean? -> gl-context%
+;;   where _GdkDrawable = (or/c _GtkWindow _GdkPixmap)
+(define (make-gtk-drawable-gl-context widget drawable conf can-double?)
+  (check-glx-version)
+  
+  ;; If widget isn't #f, use its display and screen
+  (define display (gtk-maybe-widget-get-display widget))
+  (define screen (gtk-maybe-widget-get-screen widget))
+  
+  ;; Get the X objects wrapped by the GDK objects
+  (define xdisplay (gdk_x11_display_get_xdisplay display))
+  (define xscreen (gdk_x11_screen_get_screen_number screen))
+  
+  ;; Create an attribute list using the GL config
+  (define xattribs
+    (append
+     (if can-double?
+         (if (send conf get-double-buffered) (list GLX_DOUBLEBUFFER True) null)
+         null)
+     (if (send conf get-stereo) (list GLX_STEREO True) null)
+     (list
+      GLX_X_RENDERABLE True  ; yes, we want to use OpenGL to render today
+      GLX_DEPTH_SIZE (send conf get-depth-size)
+      GLX_STENCIL_SIZE (send conf get-stencil-size)
+      GLX_ACCUM_RED_SIZE (send conf get-accum-size)
+      GLX_ACCUM_GREEN_SIZE (send conf get-accum-size)
+      GLX_ACCUM_BLUE_SIZE (send conf get-accum-size)
+      GLX_ACCUM_ALPHA_SIZE (send conf get-accum-size)
+      GLX_SAMPLES (send conf get-multisample-size)
+      None)))
+  
+  ;; Get all framebuffer configs for this display and screen that match the requested attributes
+  (define cfgs (glXChooseFBConfig xdisplay xscreen xattribs))
+  
+  (cond
+    [(zero? (cvector-length cfgs))  #f]
+    [else
+     ;; The framebuffer configs are sorted best-first, so choose the first
+     (define cfg (cvector-ref cfgs 0))
+     (define share-gl
+       (let ([share-ctxt  (send conf get-share-context)])
+         (and share-ctxt (send share-ctxt get-handle))))
+     
+     ;; Get a rendering context and wrap it
+     (define gl (glXCreateNewContext xdisplay cfg GLX_RGBA_TYPE share-gl #t))
+     ;; The above will return a direct rendering context when it can
+     (cond
+       [gl
+        ;; If there's no widget, this is for a pixmap, so get the stupid GLX wrapper for it or
+        ;; indirect rendering may crash on some systems (notably mine)
+        (define pixmap
+          (if widget #f (glXCreateGLXPixmap xdisplay
+                                            (glXGetVisualFromFBConfig xdisplay cfg)
+                                            (gdk_x11_drawable_get_xid drawable))))
+        
+        (define ctxt (new gl-context% [gl gl] [display display] [drawable drawable] [pixmap pixmap]))
+        ;; Refcount these so they don't go away until the finalizer below destroys the GLXContext
+        (g_object_ref display)
+        (g_object_ref drawable)
+        (register-finalizer
+         ctxt
+         (λ (ctxt)
+           (define gl (send ctxt get-handle))
+           (define display (send ctxt get-gtk-display))
+           (define drawable (send ctxt get-gtk-drawable))
+           (define pixmap (send ctxt get-glx-pixmap))
+           (define xdisplay (gdk_x11_display_get_xdisplay display))
+           (when pixmap (glXDestroyGLXPixmap xdisplay pixmap))
+           (glXDestroyContext xdisplay gl)
+           (g_object_unref drawable)
+           (g_object_unref display)))
+        ctxt]
+       [else  #f])]))
 
+(define (make-gtk-widget-gl-context widget conf)
+  (make-gtk-drawable-gl-context widget (gtk_widget_get_window widget) conf #t))
+
+(define (make-gtk-pixmap-gl-context pixmap conf)
+  (make-gtk-drawable-gl-context #f pixmap conf #f))
+
+;; ===================================================================================================
+
+(define widget-config-hash (make-weak-hasheq))
+
+(define (prepare-widget-gl-context widget conf)
+  (hash-set! widget-config-hash widget (if conf conf (make-object gl-config%))))
+
+(define (create-widget-gl-context widget)
+  (define conf (hash-ref widget-config-hash widget #f))
+  (and conf (make-gtk-widget-gl-context widget conf)))
 
 (define-local-member-name
   get-gdk-pixmap
   install-gl-context)
 
-(define (create-and-install-gl-context bm config)
-  (init!)
-  (let* ([share-context (send config get-share-context)]
-         [context-handle (if share-context (send share-context get-handle) #f)]
-         [config (config->GdkGLConfig #f config #f)])
-    (when config
-      (let ([gdkpx (send bm get-gdk-pixmap)])
-        (let ([glpx (gdk_pixmap_set_gl_capability gdkpx config #f)])
-          (and glpx
-               (let ([gl
-		      ;; currently uses "indirect" mode --- can we
-		      ;; reliably use direct in some environments?
-		      (gdk_gl_context_new glpx context-handle #f GDK_GL_RGBA_TYPE)])
-                 (and gl
-                      (send bm install-gl-context
-			    (new gl-context% 
-				 [gl gl]
-				 [drawable glpx]))))))))))
+(define (create-and-install-gl-context bm conf)
+  (define ctxt (make-gtk-pixmap-gl-context (send bm get-gdk-pixmap) conf))
+  (and ctxt (send bm install-gl-context ctxt)))
