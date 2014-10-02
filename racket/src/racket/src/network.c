@@ -72,6 +72,8 @@ static int mzerrno = 0;
 # define NOT_WINSOCK(x) x
 # define SOCK_ERRNO() errno
 # define WAS_EAGAIN(e) ((e == EWOULDBLOCK) || (e == EAGAIN) || (e == EINPROGRESS) || (e == EALREADY))
+# define WAS_ECONNREFUSED(e) (e == ECONNREFUSED)
+# define WAS_EBADADDRESS(e) (e == EINVAL)
 # define WAS_WSAEMSGSIZE(e) 0
 # define mz_AFNOSUPPORT EAFNOSUPPORT
 #endif
@@ -96,6 +98,8 @@ struct SOCKADDR_IN {
 # define SOCK_ERRNO() WSAGetLastError()
 # define WAS_EAGAIN(e) ((e == WSAEWOULDBLOCK) || (e == WSAEINPROGRESS))
 # define WAS_WSAEMSGSIZE(e) (e == WSAEMSGSIZE)
+# define WAS_ECONNREFUSED(e) (e == ECONNREFUSED)
+# define WAS_EBADADDRESS(e) 0
 # define mz_AFNOSUPPORT WSAEAFNOSUPPORT
 extern int scheme_stupid_windows_machine;
 # ifdef MZ_USE_PLACES
@@ -2901,8 +2905,9 @@ typedef struct Scheme_UDP_Evt {
   short for_read, with_addr;
   int offset, len;
   char *str;
-  char *dest_addr;
-  int dest_addr_len;
+  int dest_addr_count;
+  char **dest_addrs;
+  int *dest_addr_lens;
 } Scheme_UDP_Evt;
 
 static int udp_close_it(Scheme_Object *_udp)
@@ -3169,7 +3174,7 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
                            "  port number: %d\n"
                            "  system error: %E",
                            name, 
-                           port, address ? address : "#f", 
+                           address ? address : "#f", port,
                            errid);
         }
       }
@@ -3351,7 +3356,8 @@ static void udp_send_needs_wakeup(Scheme_Object *_udp, void *fds)
 #ifdef UDP_IS_SUPPORTED
 static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
 				     char *bstr, intptr_t start, intptr_t end,
-				     char *dest_addr, int dest_addr_len, int can_block)
+				     char *dest_addr, int dest_addr_len, int can_block,
+                                     int ignore_addr_failure)
 {
   intptr_t x;
   int errid = 0;
@@ -3387,7 +3393,9 @@ static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
 
     if (x == -1) {
       errid = SOCK_ERRNO();
-      if (WAS_EAGAIN(errid)) {
+      if (ignore_addr_failure && WAS_EBADADDRESS(errid)) {
+        return NULL;
+      } else if (WAS_EAGAIN(errid)) {
 	if (can_block) {
 	  /* Block and eventually try again. */
           Scheme_Object *sema;
@@ -3487,22 +3495,45 @@ static Scheme_Object *udp_send_it(const char *name, int argc, Scheme_Object *arg
       fill_evt->offset = start;
       fill_evt->len = end - start;
       if (udp_dest_addr) {
-	s = (char *)scheme_malloc_atomic(udp_dest_addr->ai_addrlen);
-	memcpy(s, udp_dest_addr->ai_addr, udp_dest_addr->ai_addrlen);
-	fill_evt->dest_addr = s;
-	fill_evt->dest_addr_len = udp_dest_addr->ai_addrlen;
-	mz_freeaddrinfo(udp_dest_addr);
+        GC_CAN_IGNORE struct mz_addrinfo *addr;
+        int j, *lens;
+        char **addrs;
+        for (j = 0, addr = udp_dest_addr; addr; addr = addr->ai_next) {
+          j++;
+        }
+        fill_evt->dest_addr_count = j;
+        addrs = MALLOC_N(char*, j);
+        fill_evt->dest_addrs = addrs;
+        lens = MALLOC_N_ATOMIC(int, j);
+        fill_evt->dest_addr_lens = lens;
+        for (j = 0, addr = udp_dest_addr; addr; addr = addr->ai_next, j++) {
+          s = (char *)scheme_malloc_atomic(addr->ai_addrlen);
+          memcpy(s, addr->ai_addr, addr->ai_addrlen);
+          fill_evt->dest_addrs[j] = s;
+          fill_evt->dest_addr_lens[j] = addr->ai_addrlen;
+        }
+        mz_freeaddrinfo(udp_dest_addr);
       }
       return scheme_void;
     } else {
       Scheme_Object *r;
-      r = do_udp_send_it(name, udp,
-			 SCHEME_BYTE_STR_VAL(argv[3+delta]), start, end,
-			 (udp_dest_addr ? (char *)udp_dest_addr->ai_addr : NULL),
-			 (udp_dest_addr ? udp_dest_addr->ai_addrlen : 0),
-			 can_block);
-      if (udp_dest_addr)
+      if (udp_dest_addr) {
+        GC_CAN_IGNORE struct mz_addrinfo *addr;
+        r = NULL;
+        for (addr = udp_dest_addr; !r && addr; addr = addr->ai_next) {
+          r = do_udp_send_it(name, udp,
+                             SCHEME_BYTE_STR_VAL(argv[3+delta]), start, end,
+                             (char *)addr->ai_addr,
+                             addr->ai_addrlen,
+                             can_block,
+                             !!addr->ai_next);
+        }
 	mz_freeaddrinfo(udp_dest_addr);
+      } else {
+        r = do_udp_send_it(name, udp,
+                           SCHEME_BYTE_STR_VAL(argv[3+delta]), start, end,
+                           NULL, 0, can_block, 1);
+      }
       return r;
     }
   } else {
@@ -3657,10 +3688,13 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t s
 
     if (x == -1) {
       errid = SOCK_ERRNO();
-      if (WAS_WSAEMSGSIZE(errid)) {
+      if (WAS_ECONNREFUSED(errid)) {
+        /* Delayed ICMP error. Ignore it and try again. */
+        errid = 0;
+      } else if (WAS_WSAEMSGSIZE(errid)) {
 	x = end - start;
 	errid = 0;
-      } if (WAS_EAGAIN(errid)) {
+      } else if (WAS_EAGAIN(errid)) {
 	if (can_block) {
 	  /* Block and eventually try again. */
           Scheme_Object *sema;
@@ -3858,11 +3892,16 @@ static int udp_evt_check_ready(Scheme_Object *_uw, Scheme_Schedule_Info *sinfo)
     }
   } else {
     if (uw->str) {
-      Scheme_Object *r;
-      r = do_udp_send_it("udp-send-evt", uw->udp, 
-			 uw->str, uw->offset, uw->offset + uw->len, 
-			 uw->dest_addr, uw->dest_addr_len,
-			 0);
+      Scheme_Object *r = NULL;
+      int j;
+      for (j = 0; !r && (j < (uw->dest_addrs ? uw->dest_addr_count : 1)); j++) {
+        r = do_udp_send_it("udp-send-evt", uw->udp, 
+                           uw->str, uw->offset, uw->offset + uw->len, 
+                           uw->dest_addrs ? uw->dest_addrs[j] : NULL,
+                           uw->dest_addrs ? uw->dest_addr_lens[j] : 0,
+                           0,
+                           j+1 < uw->dest_addr_count);
+      }
       if (SCHEME_TRUEP(r)) {
 	scheme_set_sync_target(sinfo, scheme_void, NULL, NULL, 0, 0, NULL);
 	return 1;
