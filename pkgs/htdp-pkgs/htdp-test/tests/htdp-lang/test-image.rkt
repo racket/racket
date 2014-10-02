@@ -74,13 +74,21 @@
         (send bdc set-bitmap bm-clip)
         (send bdc clear)
         (send bdc set-clipping-rect (/ extra-space 2) (/ extra-space 2) width height) 
-        (send snp draw bdc (/ extra-space 2) (/ extra-space 2) 0 0 (+ width extra-space) (+ height extra-space) 0 0 #f)
+        (send snp draw bdc
+              (/ extra-space 2) (/ extra-space 2) 
+              0 0
+              (+ width extra-space) (+ height extra-space)
+              0 0 #f)
         (send bdc set-clipping-region #f)
         (send bdc get-argb-pixels 0 0 (+ width extra-space) (+ height extra-space) s-clip)
         
         (send bdc set-bitmap bm-noclip)
         (send bdc clear)
-        (send snp draw bdc (/ extra-space 2) (/ extra-space 2) 0 0 (+ width extra-space) (+ height extra-space) 0 0 #f)
+        (send snp draw bdc
+              (/ extra-space 2) (/ extra-space 2)
+              0 0
+              (+ width extra-space) (+ height extra-space)
+              0 0 #f)
         (send bdc get-argb-pixels 0 0 (+ width extra-space) (+ height extra-space) s-noclip)
         (send bdc set-bitmap #f)
         
@@ -176,16 +184,6 @@
             blue blue blue)
       'color-list2
       (image->color-list (rectangle 3 3 "solid" 'blue)))
-(test (list blue blue blue
-            blue white blue
-            blue blue blue)
-      'color-list2
-      (image->color-list (rectangle 3 3 'outline 'blue)))
-(test (list blue blue blue
-            blue white blue
-            blue blue blue)
-      'color-list3
-      (image->color-list (rectangle 3 3 "outline" 'blue)))
 
 (test #t
       'color-list4
@@ -601,20 +599,8 @@
       (image=? (line -4 0 'red)
                (color-list->image (list red red red red red) 5 1 4 0)))
 
-;; note: next two tests may be platform-specific... I'm not sure.
-;; I developed them under macos x. -robby
-(test #t
-      'triangle1
-      (image=? (p00 (triangle 3 'outline 'red))
-               (color-list->image 
-                (list white red   white
-                      white red   white
-                      red   white red
-                      red   red   red)
-                3
-                4
-                0
-                0)))
+;; note: the next test may be platform-specific... I'm not sure.
+;; I developed it under macos x. -robby
 
 (test #t
       'triangle2
@@ -906,7 +892,7 @@
 (check-on-bitmap 'outline-star (star 4 10 20 'outline 'red))
 (check-on-bitmap 'regular-polygon (regular-polygon 4 10 'outline 'red))
 (check-on-bitmap 'line (line 10 7 'red))
-; (check-on-bitmap 'text (text "XX" 12 'red)) ;; this test fails for reasons I can't control ... -robby
+; (check-on-bitmap 'text (text "XX" 12 'red)) ;; this test fails for reasons I can't control  -robby
 (check-on-bitmap 'overlay1 (overlay (p00 (rectangle 1 4 'solid 'blue))
                                    (p00 (rectangle 4 1 'solid 'green))))
 (check-on-bitmap 'overlay2 (overlay/xy (p00 (rectangle 4 4 'solid 'blue))
