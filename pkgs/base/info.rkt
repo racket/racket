@@ -12,7 +12,7 @@
 
 (define collection 'multi)
 
-(define version "6.1.0.7")
+(define version "6.1.1.2")
 
 (define deps `("racket-lib"
                ["racket" #:version ,version]))
@@ -22,4 +22,3 @@
 (define pkg-desc "Racket libraries that are currently always available")
 
 (define pkg-authors '(mflatt))
-

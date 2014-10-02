@@ -232,12 +232,13 @@ indicate the operations to redirect, and the corresponding
 @racket[redirect-proc]s supply the redirections.
 
 The protocol for a @racket[redirect-proc] depends on the corresponding
-@racket[orig-proc]:
+@racket[orig-proc], where @racket[_self] refers to the value to which
+@racket[redirect-proc] is originally applied:
 
 @itemlist[
 
  @item{A structure-field accessor: @racket[redirect-proc]
-      must accept two arguments, @racket[v] and the value
+      must accept two arguments, @racket[_self] and the value
       @racket[_field-v] that @racket[orig-proc] produces for
       @racket[v]; it must return a replacement for
       @racket[_field-v]. The corresponding field must not be
@@ -247,7 +248,7 @@ The protocol for a @racket[redirect-proc] depends on the corresponding
       same field.}
 
  @item{A structure-field mutator: @racket[redirect-proc] must accept
-      two arguments, @racket[v] and the value @racket[_field-v]
+      two arguments, @racket[_self] and the value @racket[_field-v]
       supplied to the mutator; it must return a replacement for
       @racket[_field-v] to be propagated to @racket[orig-proc] and
       @racket[v].}
@@ -279,7 +280,12 @@ If any @racket[orig-proc] is itself an impersonator, then a use of the
 accessor or mutator that @racket[orig-proc] impersonates is redirected
 for the resulting impersonated structure to use @racket[orig-proc] on
 @racket[v] before @racket[redirect-proc] (in the case of accessor) or
-after @racket[redirect-proc] (in the case of a mutator).}
+after @racket[redirect-proc] (in the case of a mutator).
+
+@history[#:changed "6.1.1.2" @elem{Changed first argument to an
+                                   accessor or mutator
+                                   @racket[redirect-proc] from
+                                   @racket[v] to @racket[_self].}]}
 
 
 @defproc[(impersonate-vector [vec (and/c vector? (not/c immutable?))]
@@ -587,18 +593,20 @@ order of the supplied arguments' keywords.}
                            [prop-val any] ... ...)
           any/c]{
 
-Like @racket[impersonate-struct], but with the following refinements:
+Like @racket[impersonate-struct], but with the following refinements,
+where @racket[_self] refers to the value to which
+a @racket[redirect-proc] is originally applied:
 
 @itemlist[
 
  @item{With a structure-field accessor as @racket[orig-proc],
-      @racket[redirect-proc] must accept two arguments, @racket[v] and
+      @racket[redirect-proc] must accept two arguments, @racket[_self] and
       the value @racket[_field-v] that @racket[orig-proc] produces for
       @racket[v]; it must return a chaperone of @racket[_field-v]. The
       corresponding field may be immutable.}
 
  @item{With structure-field mutator as @racket[orig-proc],
-      @racket[redirect-proc] must accept two arguments, @racket[v] and
+      @racket[redirect-proc] must accept two arguments, @racket[_self] and
       the value @racket[_field-v] supplied to the mutator; it must
       return a chaperone of @racket[_field-v] to be propagated to
       @racket[orig-proc] and @racket[v].}
@@ -621,7 +629,12 @@ Like @racket[impersonate-struct], but with the following refinements:
  @item{Any accessor or mutator @racket[orig-proc] that is an
        @tech{impersonator} must be specifically a @tech{chaperone}.}
 
-]}
+]
+
+@history[#:changed "6.1.1.2" @elem{Changed first argument to an
+                                   accessor or mutator
+                                   @racket[redirect-proc] from
+                                   @racket[v] to @racket[_self].}]}
 
 
 @defproc[(chaperone-vector [vec vector?]
