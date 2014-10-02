@@ -254,7 +254,11 @@ OpenGL drawing through a context returned by @xmethod[dc<%> get-gl-context].
 For @racket[dc<%>] drawing, an OpenGL-supporting bitmap draws like a
 bitmap from @racket[make-screen-bitmap] on some platforms, while it
 draws like a bitmap instantiated directly from @racket[bitmap%] on
-other platforms.}
+other platforms.
+
+Be aware that on Unix systems, GLX may choose indirect rendering for OpenGL
+drawing to bitmaps, which can limit its features to OpenGL 1.4 or below.
+}
 
 
 @defproc[(make-gui-empty-namespace) namespace?]{
