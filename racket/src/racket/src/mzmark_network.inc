@@ -107,7 +107,8 @@ static int mark_udp_evt_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(uw->udp, gc);
   gcMARK2(uw->str, gc);
-  gcMARK2(uw->dest_addr, gc);
+  gcMARK2(uw->dest_addrs, gc);
+  gcMARK2(uw->dest_addr_lens, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
@@ -118,7 +119,8 @@ static int mark_udp_evt_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(uw->udp, gc);
   gcFIXUP2(uw->str, gc);
-  gcFIXUP2(uw->dest_addr, gc);
+  gcFIXUP2(uw->dest_addrs, gc);
+  gcFIXUP2(uw->dest_addr_lens, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
