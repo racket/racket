@@ -7,6 +7,7 @@
          ffi/cvector
          (prefix-in draw: racket/draw/private/gl-context)
          racket/draw/private/gl-config
+         "../../lock.rkt"
          "types.rkt"
          "utils.rkt"
          "window.rkt"
@@ -108,25 +109,27 @@
 
 ;; ===================================================================================================
 
-(define lazy-check-glx-version
+(define lazy-get-glx-version
   (delay
     (define-values (worked? glx-major glx-minor)
       (glXQueryVersion (gdk_x11_display_get_xdisplay (gdk_display_get_default))))
     
     (unless worked?
-      (error 'check-glx-version "can't get GLX version for default display"))
+      (error 'get-glx-version "can't get GLX version using default display"))
     
-    (when (or (< glx-major 1)
-              (and (= glx-major 1) (< glx-minor 3)))
-      (error 'check-glx-version "need GLX version 1.3 or greater; given version ~a.~a"
-             glx-major glx-minor))))
+    (define glx-version (+ glx-major (/ glx-minor 10)))
+    
+    (when (< glx-version #e1.3)
+      (error 'get-glx-version "need GLX version 1.3 or greater; given version ~a.~a"
+             glx-major glx-minor))
+    
+    glx-version))
 
-(define (check-glx-version)
-  (force lazy-check-glx-version))
+;; -> positive-exact-rational
+(define (get-glx-version)
+  (force lazy-get-glx-version))
 
 ;; ===================================================================================================
-
-(define out (current-output-port))
 
 (define gl-context% 
   (class draw:gl-context%
@@ -170,8 +173,8 @@
 
 ;; (or/c #f _GtkWidget) _GdkDrawable gl-config% boolean? -> gl-context%
 ;;   where _GdkDrawable = (or/c _GtkWindow _GdkPixmap)
-(define (make-gtk-drawable-gl-context widget drawable conf can-double?)
-  (check-glx-version)
+(define (make-gtk-drawable-gl-context widget drawable conf wants-double?)
+  (define glx-version (get-glx-version))
   
   ;; If widget isn't #f, use its display and screen
   (define display (gtk-maybe-widget-get-display widget))
@@ -184,10 +187,14 @@
   ;; Create an attribute list using the GL config
   (define xattribs
     (append
-     (if can-double?
+     ;; Be aware: we may get double buffering even if we don't ask for it
+     (if wants-double?
          (if (send conf get-double-buffered) (list GLX_DOUBLEBUFFER True) null)
          null)
      (if (send conf get-stereo) (list GLX_STEREO True) null)
+     ;; Only ask for multisampling of GLX 1.4 or higher
+     (if (>= glx-version #e1.4) (list GLX_SAMPLES (send conf get-multisample-size)) null)
+     ;; Finish out with standard GLX 1.3 attributes
      (list
       GLX_X_RENDERABLE True  ; yes, we want to use OpenGL to render today
       GLX_DEPTH_SIZE (send conf get-depth-size)
@@ -196,7 +203,6 @@
       GLX_ACCUM_GREEN_SIZE (send conf get-accum-size)
       GLX_ACCUM_BLUE_SIZE (send conf get-accum-size)
       GLX_ACCUM_ALPHA_SIZE (send conf get-accum-size)
-      GLX_SAMPLES (send conf get-multisample-size)
       None)))
   
   ;; Get all framebuffer configs for this display and screen that match the requested attributes
@@ -243,10 +249,12 @@
        [else  #f])]))
 
 (define (make-gtk-widget-gl-context widget conf)
-  (make-gtk-drawable-gl-context widget (gtk_widget_get_window widget) conf #t))
+  (atomically
+   (make-gtk-drawable-gl-context widget (gtk_widget_get_window widget) conf #t)))
 
 (define (make-gtk-pixmap-gl-context pixmap conf)
-  (make-gtk-drawable-gl-context #f pixmap conf #f))
+  (atomically
+   (make-gtk-drawable-gl-context #f pixmap conf #f)))
 
 ;; ===================================================================================================
 
