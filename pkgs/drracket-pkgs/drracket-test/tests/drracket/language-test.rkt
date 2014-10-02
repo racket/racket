@@ -187,12 +187,14 @@ the settings above should match r5rs
     (check-top-of-repl)
     
     (generic-settings #f)
-    (generic-output #t #t #t #t)
+    (generic-output #t #t #t #f)
     
     (test-hash-bang)
     (test-error-after-definition)
     
     (prepare-for-test-expression)
+    
+    (test-expression "(print '((x)))" "((x))")
     
     (test-expression "'|.|" "|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
@@ -1371,10 +1373,10 @@ the settings above should match r5rs
     (unless (if (procedure? answer)
                 (answer got)
                 (whitespace-string=? answer got))
-      (eprintf "FAILED ~s ~a, sharing ~a pretty? ~a\n            got ~s\n       expected ~s\n"
-               (language) option show-sharing pretty?
-               (shorten got)
-               (if (procedure? answer) (answer) answer))))
+      (eprintf "FAILED ~s ~a, sharing ~a \"Insert newlines in printed values\" ~a\n"
+               (language) option show-sharing pretty?)
+      (eprintf "     got ~s\n" (shorten got))
+      (eprintf "expected ~s\n" (if (procedure? answer) (answer) answer))))
   
   (clear-definitions drs)
   (type-in-definitions drs expression)

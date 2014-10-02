@@ -217,7 +217,8 @@
            #:case-sensitive [*case-sensitive '?]
            #:dynamic-panel-extras [dynamic-panel-extras void]
            #:get-debugging-radio-box [get-debugging-radio-box void]
-           #:debugging-radio-box-callback [debugging-radio-box-callback void])
+           #:debugging-radio-box-callback [debugging-radio-box-callback void]
+           #:include-print-mode? [include-print-mode? #t])
     (letrec ([parent (instantiate vertical-panel% ()
                        (parent _parent)
                        (alignment '(center center)))]
@@ -269,10 +270,13 @@
                                       (debugging-radio-box-callback a b))))]
              [output-style (make-object radio-box%
                              (string-constant output-style-label)
-                             (list (string-constant constructor-printing-style)
-                                   (string-constant quasiquote-printing-style)
-                                   (string-constant write-printing-style)
-                                   (string-constant print-printing-style))
+                             (flatten
+                              (list (string-constant constructor-printing-style)
+                                    (string-constant quasiquote-printing-style)
+                                    (string-constant write-printing-style)
+                                    (if include-print-mode?
+                                        (string-constant print-printing-style)
+                                        '())))
                              output-panel
                              (λ (rb evt) (enable-fraction-style))
                              '(horizontal vertical-label))]
@@ -305,7 +309,7 @@
             [(0) 'constructor]
             [(1) 'quasiquote]
             [(2) 'trad-write]
-            [(3) 'print])
+            [(3) (if include-print-mode? 'print 'trad-write)])
           (if (send fraction-style get-value)
               'repeating-decimal-e
               'mixed-fraction-e)
@@ -327,7 +331,7 @@
                  [(constructor) 0]
                  [(quasiquote) 1]
                  [(write trad-write) 2]
-                 [(print) 3]))
+                 [(print) (if include-print-mode? 3 2)]))
          (enable-fraction-style)
          (send fraction-style set-value (eq? (simple-settings-fraction-style settings)
                                              'repeating-decimal-e))
@@ -507,7 +511,8 @@
                         ;; style, because the sharing is being taken care of
                         ;; by the print-convert sexp construction when using
                         ;; other printing styles.
-                        (and (memq (simple-settings-printing-style settings) '(write print))
+                        (and (memq (simple-settings-printing-style settings)
+                                   '(trad-write write print))
                              (simple-settings-show-sharing settings))])
           (thunk)))))
       
