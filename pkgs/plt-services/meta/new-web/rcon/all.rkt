@@ -266,14 +266,7 @@
 
        @p{@b{@a[href: "http://www.fogus.me/"]{Michael Fogus}} gave the keynote.}
 
-       @p{A recording of the first half of the live video stream is available
-       at @a[href: "https://www.youtube.com/watch?v=oe2tK5Lxybc"]{YouTube}.
-       Full videos from the conference will available soon.}
-
-       @; @p{RacketCon will be held at the @|hotel| (which is one of the Strange Loop venues).
-       @;    A @a[href: group-rate-url]{group rate} is available for RacketCon attendees.}
-
-       @; @p{RacketCon will be in the @b{New York Central} conference room.}
+       @p{Videos of the talks are available, and linked to from the schedule.}
 
        @p{@nbsp}
 
