@@ -1040,6 +1040,19 @@
       =>
       (text "ab" 18 "blue"))
 
+(test (beside/align "bottom"
+                    empty-image
+                    (text "please?" 12 "green"))
+      =>
+      (text "please?" 12 "green"))
+(test (beside/align "bottom"
+                    (text "feed me " 18 "red")
+                    (text "please?" 12 "green") empty-image)
+      =>
+      (beside/align "bottom"
+                    (text "feed me " 18 "red")
+                    (text "please?" 12 "green")))
+
 ;; make sure this doesn't crash (there was a bug that would be triggered by drawing these guys)
 (test (equal? (scale 0.1 (text "Howdy!" 12 'black))
               (scale 0.1 (text "Howdy!" 12 'red)))
