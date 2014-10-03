@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/promise
+         racket/string
          ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
@@ -42,8 +43,10 @@
 
 ;; X #defines/typedefs/enums
 (define _Display (_cpointer 'Display))
+(define _XErrorEvent (_cpointer 'XErrorEvent))
 (define _XID _ulong)
 (define True 1)
+(define False 0)
 (define None 0)
 (define Success 0)
 
@@ -51,7 +54,7 @@
 (define _GLXFBConfig (_cpointer 'GLXFBConfig))
 (define _GLXContext (_cpointer/null 'GLXContext))
 (define _XVisualInfo (_cpointer 'XVisualInfo))
-
+;; Attribute tokens for glXGetConfig variants (all GLX versions):
 (define GLX_DOUBLEBUFFER     5)
 (define GLX_STEREO           6)
 (define GLX_DEPTH_SIZE       12)
@@ -65,14 +68,36 @@
 (define GLX_RGBA_TYPE        #x8014)
 ;; GLX 1.4 and later:
 (define GLX_SAMPLES          #x186a1)
+(define GLX_SAMPLE_BUFFERS   #x186a0)
+;; Attribute tokens for glXCreateContextAttribsARB (also GLX 1.4 and later):
+(define GLX_CONTEXT_MAJOR_VERSION_ARB #x2091)
+(define GLX_CONTEXT_MINOR_VERSION_ARB #x2092)
+(define GLX_CONTEXT_FLAGS_ARB         #x2094)
+(define GLX_CONTEXT_PROFILE_MASK_ARB  #x9126)
+;; GLX_CONTEXT_FLAGS_ARB bits
+(define GLX_CONTEXT_DEBUG_BIT_ARB              #x1)
+(define GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB #x2)
+;; GLX_CONTEXT_PROFILE_MASK_ARB bits
+(define GLX_CONTEXT_CORE_PROFILE_BIT_ARB          #x1)
+(define GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB #x2)
 
 (define-x XFree (_fun _pointer -> _int)
   #:wrap (deallocator))
+
+(define-x XSetErrorHandler
+  (_fun (_fun _Display _XErrorEvent -> _int)
+        -> (_fun _Display _XErrorEvent -> _int)))
+
+(define-x XSync
+  (_fun _Display _bool -> _void))
 
 (define-glx glXQueryVersion
   (_fun _Display (major : (_ptr o _int)) (minor : (_ptr o _int))
         -> (ret : _bool)
         -> (values ret major minor)))
+
+(define-glx glXQueryExtensionsString
+  (_fun _Display _int -> _string/utf-8))
 
 (define-glx glXChooseFBConfig
   (_fun _Display _int (_list i _int) (len : (_ptr o _int))
@@ -109,11 +134,24 @@
 (define-glx glXDestroyGLXPixmap
   (_fun _Display _XID -> _void))
 
+(define-glx glXGetProcAddressARB
+  (_fun _string -> _pointer))
+
+(define lazy-glXCreateContextAttribsARB
+  (delay
+    (function-ptr (glXGetProcAddressARB "glXCreateContextAttribsARB")
+                  (_fun _Display _GLXFBConfig _GLXContext _bool (_list i _int)
+                        -> _GLXContext))))
+
+(define (glXCreateContextAttribsARB . args)
+  (apply (force lazy-glXCreateContextAttribsARB) args))
+
 (define-gtk gtk_widget_get_display (_fun _GtkWidget -> _GdkDisplay))
 (define-gtk gtk_widget_get_screen (_fun _GtkWidget -> _GdkScreen))
 (define-gtk gtk_widget_get_window (_fun _GtkWidget -> _GtkWindow))
 
 ;; ===================================================================================================
+;; GLX versions and extensions queries
 
 (define lazy-get-glx-version
   (delay
@@ -135,7 +173,23 @@
 (define (get-glx-version)
   (force lazy-get-glx-version))
 
+(define lazy-glx-extensions
+  (delay
+    (define str
+      (glXQueryExtensionsString (gdk_x11_display_get_xdisplay (gdk_display_get_default))
+                                (gdk_x11_screen_get_screen_number (gdk_screen_get_default))))
+    (string-split str)))
+
+(define lazy-GLX_ARB_create_context?
+  (delay (member "GLX_ARB_create_context"
+                 (force lazy-glx-extensions))))
+
+(define lazy-GLX_ARB_create_context_profile?
+  (delay (member "GLX_ARB_create_context_profile"
+                 (force lazy-glx-extensions))))
+
 ;; ===================================================================================================
+;; Wrapper for the _GLXContext (if we can get one from GLX)
 
 (define gl-context% 
   (class draw:gl-context%
@@ -164,6 +218,68 @@
                       (get-drawable-xid)))
     
     (super-new)))
+
+;; ===================================================================================================
+;; Getting OpenGL contexts
+
+;; STUPIDITY ALERT
+
+;; Apparently, the designers of glXCreateNewContext and glXCreateContextAttribsARB didn't trust us to
+;; check return values or output arguments, so when these functions fail, they raise an X error and
+;; send an error code to the X error handler. X errors, by default, *terminate the program* and print
+;; an annoyingly vague, barely helpful error message.
+
+;; This is especially bad with glXCreateContextAttribsARB, which always fails (i.e. crashes the
+;; program) if we ask for an unsupported OpenGL version. Worse, this is the only way to find out
+;; which OpenGL versions are available!
+
+;; So we override the X error handler to silently fail, and sync right after the calls to make sure
+;; the errors are processed immediately. With glXCreateContextAttribsARB, we then try the next lowest
+;; OpenGL version. If all attempts to get a context fail, we return #f.
+
+(define (null-x-error-handler xdisplay xerrorevent)
+  ;; Do nothing
+  0)
+
+;; _Display _GLXFBConfig _GLXContext -> _GLXContext
+(define (glx-create-new-context xdisplay cfg share-gl)
+  (define old-handler #f)
+  (dynamic-wind
+   (λ () (set! old-handler (XSetErrorHandler null-x-error-handler)))
+   (λ ()
+     (define gl (glXCreateNewContext xdisplay cfg GLX_RGBA_TYPE share-gl #t))
+     ;; Sync to ensure errors are processed while we're throwing them away
+     (XSync xdisplay #f)
+     (unless gl (log-warning "gl-config: unable to get OpenGL context"))
+     gl)
+   (λ () (XSetErrorHandler old-handler))))
+
+;; OpenGL core versions we'll try to get, in order
+(define core-gl-versions '((4 5) (4 4) (4 3) (4 2) (4 1) (4 0) (3 3) (3 2) (3 1) (3 0)))
+
+;; _Display _GLXFBConfig _GLXContext -> _GLXContext
+(define (glx-create-core-context xdisplay cfg share-gl)
+  (let/ec return
+    (define old-handler #f)
+    (dynamic-wind
+     (λ () (set! old-handler (XSetErrorHandler null-x-error-handler)))
+     (λ ()
+       (for ([gl-version  (in-list core-gl-versions)])
+         (define gl-major (car gl-version))
+         (define gl-minor (cadr gl-version))
+         (define context-attribs
+           (list GLX_CONTEXT_MAJOR_VERSION_ARB gl-major
+                 GLX_CONTEXT_MINOR_VERSION_ARB gl-minor
+                 GLX_CONTEXT_PROFILE_MASK_ARB GLX_CONTEXT_CORE_PROFILE_BIT_ARB
+                 None))
+         (define gl
+           (glXCreateContextAttribsARB xdisplay cfg share-gl #t context-attribs))
+         ;; Sync to ensure errors are processed while we're throwing them away
+         (XSync xdisplay False)
+         (when gl (return gl))))
+     (λ () (XSetErrorHandler old-handler)))
+    (log-warning "gl-config: unable to get core context; falling back")
+    (glx-create-new-context xdisplay cfg share-gl)))
 
 ;; ===================================================================================================
 
@@ -248,9 +364,22 @@
        (let ([share-ctxt  (send conf get-share-context)])
          (and share-ctxt (send share-ctxt get-handle))))
      
-     ;; Get a rendering context and wrap it
-     (define gl (glXCreateNewContext xdisplay cfg GLX_RGBA_TYPE share-gl #t))
+     ;; Get a GL context
+     (define gl
+       (if (and (>= glx-version #e1.4)
+                (not (send conf get-legacy?))
+                (force lazy-GLX_ARB_create_context?)
+                (force lazy-GLX_ARB_create_context_profile?))
+           ;; If the GLX version is high enough, legacy? is #f, and GLX has the right extensions,
+           ;; try to get a core-profile context
+           (glx-create-core-context xdisplay cfg share-gl)
+           ;; Otherwise use the old method
+           (glx-create-new-context xdisplay cfg share-gl)))
      ;; The above will return a direct rendering context when it can
+     ;; If it doesn't, the context will be version 1.4 or lower, unless GLX is implemented with
+     ;; proprietary extensions (NVIDIA's drivers sometimes do this)
+     
+     ;; Now wrap the GLX context in a gl-context%
      (cond
        [gl
         ;; If there's no widget, this is for a pixmap, so get the stupid GLX wrapper for it or

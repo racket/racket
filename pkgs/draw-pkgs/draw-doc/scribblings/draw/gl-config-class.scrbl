@@ -148,7 +148,9 @@ Adjusts the configuration to request stereo or not.
 @defmethod[(get-legacy?)
            boolean?]{
 
-Reports whether to use legacy, "Compatibility" OpenGL or "Core" OpenGL.
+Determines whether to use legacy, "Compatibility" OpenGL or "Core" OpenGL.
+Core OpenGL profiles are currently supported on OS X (versions 10.7 and up)
+and Linux (if the graphics drivers support them).
 @history[#:added "1.2"]
 }
 @defmethod[(set-legacy? [legacy? any/c])
