@@ -45,6 +45,7 @@
 (define _XID _ulong)
 (define True 1)
 (define None 0)
+(define Success 0)
 
 ;; GLX #defines/typedefs/enums
 (define _GLXFBConfig (_cpointer 'GLXFBConfig))
@@ -77,6 +78,11 @@
   (_fun _Display _int (_list i _int) (len : (_ptr o _int))
         -> (_cvector o _GLXFBConfig len))
   #:wrap (allocator (λ (v) (XFree (cvector-ptr v)))))
+
+(define-glx glXGetFBConfigAttrib
+  (_fun _Display _GLXFBConfig _int (out : (_ptr o _int))
+        -> (ret : _int)
+        -> (values ret out)))
 
 (define-glx glXCreateNewContext
   (_fun _Display _GLXFBConfig _int _GLXContext _bool -> _GLXContext))
@@ -171,6 +177,11 @@
   (cond [widget  (gtk_widget_get_screen widget)]
         [else    (gdk_screen_get_default)]))
 
+;; _Display _GLXFBConfig int int -> int
+(define (glx-get-fbconfig-attrib xdisplay cfg attrib bad-value)
+  (define-values (err value) (glXGetFBConfigAttrib xdisplay cfg attrib))
+  (if (= err Success) value bad-value))
+
 ;; (or/c #f _GtkWidget) _GdkDrawable gl-config% boolean? -> gl-context%
 ;;   where _GdkDrawable = (or/c _GtkWindow _GdkPixmap)
 (define (make-gtk-drawable-gl-context widget drawable conf wants-double?)
@@ -192,8 +203,6 @@
          (if (send conf get-double-buffered) (list GLX_DOUBLEBUFFER True) null)
          null)
      (if (send conf get-stereo) (list GLX_STEREO True) null)
-     ;; Only ask for multisampling of GLX 1.4 or higher
-     (if (>= glx-version #e1.4) (list GLX_SAMPLES (send conf get-multisample-size)) null)
      ;; Finish out with standard GLX 1.3 attributes
      (list
       GLX_X_RENDERABLE True  ; yes, we want to use OpenGL to render today
@@ -203,16 +212,38 @@
       GLX_ACCUM_GREEN_SIZE (send conf get-accum-size)
       GLX_ACCUM_BLUE_SIZE (send conf get-accum-size)
       GLX_ACCUM_ALPHA_SIZE (send conf get-accum-size)
+      ;; GLX_SAMPLES is handled below - GLX regards it as an absolute lower bound, which makes it
+      ;; too easy for user programs to fail to get a context
       None)))
   
-  ;; Get all framebuffer configs for this display and screen that match the requested attributes
-  (define cfgs (glXChooseFBConfig xdisplay xscreen xattribs))
+  (define multisample-size (send conf get-multisample-size))
+  
+  ;; Get all framebuffer configs for this display and screen that match the requested attributes,
+  ;; then sort them to put the best in front
+  ;; GLX already sorts them pretty well, so we just need a stable sort on multisamples at the moment
+  (define cfgs
+    (let* ([cfgs  (cvector->list (glXChooseFBConfig xdisplay xscreen xattribs))]
+           ;; Keep all configs with multisample size <= requested (i.e. make multisample-size an
+           ;; abolute upper bound)
+           [cfgs  (if (< glx-version #e1.4)
+                      cfgs
+                      (filter (λ (cfg)
+                                (define m (glx-get-fbconfig-attrib xdisplay cfg GLX_SAMPLES 0))
+                                (<= m multisample-size))
+                              cfgs))]
+           ;; Sort all configs by multisample size, decreasing
+           [cfgs  (if (< glx-version #e1.4)
+                      cfgs
+                      (sort cfgs >
+                            #:key (λ (cfg) (glx-get-fbconfig-attrib xdisplay cfg GLX_SAMPLES 0))
+                            #:cache-keys? #t))])
+      cfgs))
   
   (cond
-    [(zero? (cvector-length cfgs))  #f]
+    [(null? cfgs)  #f]
     [else
      ;; The framebuffer configs are sorted best-first, so choose the first
-     (define cfg (cvector-ref cfgs 0))
+     (define cfg (car cfgs))
      (define share-gl
        (let ([share-ctxt  (send conf get-share-context)])
          (and share-ctxt (send share-ctxt get-handle))))
