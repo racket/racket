@@ -98,7 +98,7 @@ struct SOCKADDR_IN {
 # define SOCK_ERRNO() WSAGetLastError()
 # define WAS_EAGAIN(e) ((e == WSAEWOULDBLOCK) || (e == WSAEINPROGRESS))
 # define WAS_WSAEMSGSIZE(e) (e == WSAEMSGSIZE)
-# define WAS_ECONNREFUSED(e) (e == ECONNREFUSED)
+# define WAS_ECONNREFUSED(e) (e == WSAECONNREFUSED)
 # define WAS_EBADADDRESS(e) 0
 # define mz_AFNOSUPPORT WSAEAFNOSUPPORT
 extern int scheme_stupid_windows_machine;
