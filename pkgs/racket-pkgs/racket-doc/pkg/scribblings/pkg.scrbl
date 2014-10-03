@@ -1378,9 +1378,8 @@ require a lot of cross-Racket integration.
 
 @item{The official catalog server is bare bones. It could conceivably do a lot
 more: keep track of more statistics, enable "social" interactions
-about packages, link to documentation, problem reports, licenses,
-etc. Some of this is easy and obvious, but the community's needs are
-unclear.}
+about packages, licenses, etc. Some of this is easy and obvious, but the
+community's needs are unclear.}
 
 @item{It would be nice to encrypt information from the official
 @tech{package catalog} with a public key shipped with Racket, and
@@ -1404,10 +1403,9 @@ manual, rather than extending the documentation of the existing
 to have such "documentation plugins" in Scribble and support
 similar "plugin" systems elsewhere in the code-base.}
 
-@item{The user interface could be improved, including integration with
-DrRacket and a GUI. For example, it would be good if DrRacket would
-poll for package updates periodically and if when it was first started
-it would display available, popular packages.}
+@item{The user interface could be improved. For example, it would be good if
+DrRacket would poll for package updates periodically and if when it was first
+started it would display available, popular packages.}
 
 ]
 
