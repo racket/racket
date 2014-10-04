@@ -555,7 +555,7 @@
         
         ;; last2 is the start of the S-exp just before the one before "pos"
         (define last2
-          (if contains
+          (if last
               (let ([p (get-backward-sexp last)])
                 (if (and p (p . >= . limit))
                     p
@@ -665,6 +665,7 @@
            (do-indent (+ (visual-offset contains)
                          (procedure-indent)))]
           [(and (for/fold-style?)
+                last2
                 (= contains last2))
            (do-indent (- last (paragraph-start-position last-para)))]
           [(or (define-or-lambda-style?)
