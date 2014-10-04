@@ -1356,23 +1356,23 @@
                      (eq? (car arg) 'planet))
                 (raise-syntax-error 'bitmap "planet paths not yet supported" stx)]
                [(symbol? arg)
-                (let ([pieces (regexp-split #rx"/" (symbol->string arg))])
-                  (cond
-                    [(null? pieces)
-                     (raise-syntax-error 'bitmap "expected a path with a / in it" stx)]
-                    [else
-                     (define fn (last pieces))
-                     (define colls (reverse (cdr (reverse pieces))))
-                     (define candidate
-                       (apply collection-file-path fn colls
-                              #:fail
-                              (λ (msg) (raise-syntax-error 'bitmap msg stx))))
-                     (unless (file-exists? candidate)
-                       (raise-syntax-error 'bitmap 
-                                           (format "could not find ~s, expected it to be in ~a"
-                                                   arg candidate)
-                                           stx))
-                     (cons fn colls)]))]
+                (define pieces (regexp-split #rx"/" (symbol->string arg)))
+                (cond
+                  [(or (null? pieces) (null? (cdr pieces)))
+                   (raise-syntax-error 'bitmap "expected a path with a / in it" stx)]
+                  [else
+                   (define fn (last pieces))
+                   (define colls (reverse (cdr (reverse pieces))))
+                   (define candidate
+                     (apply collection-file-path fn colls
+                            #:fail
+                            (λ (msg) (raise-syntax-error 'bitmap msg stx))))
+                   (unless (file-exists? candidate)
+                     (raise-syntax-error 'bitmap 
+                                         (format "could not find ~s, expected it to be in ~a"
+                                                 arg candidate)
+                                         stx))
+                   (cons fn colls)])]
                [(string? arg)
                 (path->complete-path 
                  arg
