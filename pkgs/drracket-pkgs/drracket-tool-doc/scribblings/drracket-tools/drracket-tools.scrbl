@@ -2,6 +2,11 @@
 @(require scribble/eval
           (for-label drracket/check-syntax
                      racket))
+@(define syncheck-example-eval (make-base-eval))
+@(begin 
+   (syncheck-example-eval
+    '(require drracket/check-syntax racket/class)))
+               
 
 @title{DrRacket Tools}
 @author{Robert Bruce Findler}
@@ -14,6 +19,36 @@ that are exposed via Racket APIs to be used with other editors.
 @section{Accessing Check Syntax Programmatically}
 
 @defmodule[drracket/check-syntax]
+
+@defproc[(show-content [file-or-stx (or/c path-string?
+                                          (and/c syntax?
+                                                 (λ (x) (path-string? (syntax-source x)))))])
+         (listof vector?)]{
+
+This procedure composes the other pieces of this library together in a way that can be used
+for REPL-style experimentation with the results from Check Syntax, as shown in the example
+below. The list it returns has one vector for each call that would be made to the
+object in @racket[current-annotations]. Each vector's first element is a symbol naming
+a method in @racket[syncheck-annotations<%>] and the other elements of the vector are
+the arguments passed to the method.
+
+This doesn't work as well for use in a real tool, however, because it doesn't account for
+the callback procedures present in @method[syncheck-annotations<%> syncheck:add-arrow/name-dup]
+and @method[syncheck-annotations<%> syncheck:add-id-set] and the resulting vectors are probably less
+convenient to work with than direct method calls for most uses of this library. Nevertheless,
+it gives a quick feel for the results that can come back from Check Syntax.
+
+See @racket[annotations-mixin] for some example code to use the other parts of this library.
+
+  @interaction[#:eval
+               syncheck-example-eval
+               (let ([example-module
+                      '(module m racket (λ (x) x))])
+                 (show-content 
+                  (read-syntax
+                   (build-path (current-directory) "dummy-file.rkt")
+                   (open-input-string (format "~s" example-module)))))]
+}
 
 @defproc[(make-traversal [namespace namespace?]
                          [path (or/c #f path-string?)])
@@ -218,8 +253,6 @@ that are exposed via Racket APIs to be used with other editors.
   }
 }
 
-@(define syncheck-example-eval (make-base-eval))
-
 @defmixin[annotations-mixin () (syncheck-annotations<%>)]{
   Supplies all of the methods in @racket[syncheck-annotations<%>]
   with default behavior. Be sure to use this mixin to future-proof
@@ -242,7 +275,6 @@ that are exposed via Racket APIs to be used with other editors.
   call to @racket[datum->syntax].
   @interaction[#:eval
                syncheck-example-eval
-               (require drracket/check-syntax racket/class)
                (define arrows-collector%
                  (class (annotations-mixin object%)
                    (super-new)
@@ -279,8 +311,6 @@ that are exposed via Racket APIs to be used with other editors.
                (arrows `(λ (,(make-id 'x 1 #t)) x))]
 }
 
-@(close-eval syncheck-example-eval)
-
 @(define-syntax-rule 
    (syncheck-method-id x ...)
    (begin @defidform[x]{Bound to an identifier created with
@@ -307,3 +337,6 @@ that are exposed via Racket APIs to be used with other editors.
 @defproc[(module-browser [path path-string?]) void?]{
   Opens a window containing the module browser for @racket[path].
 }
+
+
+@(close-eval syncheck-example-eval)
