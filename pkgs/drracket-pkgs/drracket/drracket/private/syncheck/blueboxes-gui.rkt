@@ -6,7 +6,7 @@
          racket/runtime-path
          data/interval-map
          images/icons/misc
-         "../rectangle-intersect.rkt"
+         drracket/private/rectangle-intersect
          string-constants
          framework/private/logging-timer
          scribble/blueboxes)

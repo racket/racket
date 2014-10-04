@@ -25,7 +25,7 @@
          "rep.rkt"
          "eval-helpers-and-pref-init.rkt"
          "local-member-names.rkt"
-         "rectangle-intersect.rkt"
+         drracket/private/rectangle-intersect
          pkg/lib
          pkg/gui
          framework/private/logging-timer

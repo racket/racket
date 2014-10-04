@@ -2,6 +2,7 @@
 (require racket/unit
          racket/async-channel
          drracket/private/module-browser
+         drracket/private/standalone-module-browser
          rackunit)
 
 (define (fetch-files stx/fn)

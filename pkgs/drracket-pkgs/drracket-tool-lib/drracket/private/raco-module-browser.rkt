@@ -3,7 +3,7 @@
 
 (define file (command-line #:args (file) file))
 
-(define-runtime-path module-browser.rkt "module-browser.rkt")
+(define-runtime-path module-browser.rkt "standalone-module-browser.rkt")
 (define standalone-module-overview/file 
   (dynamic-require module-browser.rkt 'standalone-module-overview/file))
 

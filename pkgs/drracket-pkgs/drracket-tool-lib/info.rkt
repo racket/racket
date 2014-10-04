@@ -6,8 +6,10 @@
                "scribble-lib"
                "string-constants-lib"
                "scribble-lib"
-               "racket-index"))
-(define build-deps '("at-exp-lib"))
+               "racket-index"
+               "gui-lib"))
+(define build-deps '("at-exp-lib"
+                     "rackunit-lib"))
 
 (define pkg-desc "Code implementing programmatic interfaces to some IDE tools that DrRacket supports")
 
