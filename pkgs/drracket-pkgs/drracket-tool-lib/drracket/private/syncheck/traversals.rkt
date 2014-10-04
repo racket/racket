@@ -277,7 +277,6 @@
                                 (syntax-position stx)
                                 (syntax-span stx)))
               (hash-set! module-lang-requires key #t))
-            
             (syntax-case* stx-obj (#%plain-lambda case-lambda if begin begin0 let-values letrec-values
                                                   set! quote quote-syntax with-continuation-mark
                                                   #%plain-app #%top #%plain-module-begin
@@ -470,7 +469,7 @@
                                                  (λ () (make-hash))))
                    (define raw-module-path (phaseless-spec->raw-module-path stx))
                    (annotate-require-open user-namespace user-directory raw-module-path)
-                   (when (syntax-original? raw-module-path)
+                   (when (original-enough? raw-module-path)
                      (define key (syntax->datum raw-module-path))
                      (hash-set! require-ht
                                 key
@@ -1008,7 +1007,7 @@
     ;; relies on current-module-name-resolver, which in turn depends on
     ;; current-directory and current-namespace
     (define (annotate-require-open user-namespace user-directory require-spec)
-      (when (syntax-original? require-spec)
+      (when (original-enough? require-spec)
         (define source (find-source-editor require-spec))
         (when (and source
                    (syntax-position require-spec)
