@@ -299,3 +299,11 @@ that are exposed via Racket APIs to be used with other editors.
                     syncheck:add-jump-to-definition
                     syncheck:add-id-set 
                     syncheck:color-range]
+
+@section{Module Browser}
+
+@defmodule[drracket/module-browser]
+
+@defproc[(module-browser [path path-string?]) void?]{
+  Opens a window containing the module browser for @racket[path].
+}
