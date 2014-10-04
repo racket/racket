@@ -15,12 +15,14 @@
          racket/contract
          racket/pretty
          syntax/boundmap
-         scribble/manual-struct)
+         scribble/manual-struct
+         (for-syntax racket/base))
 
 (define-logger check-syntax)
 
 (provide make-traversal
-         current-max-to-send-at-once)
+         current-max-to-send-at-once
+         build-trace%)
 
 (define current-max-to-send-at-once (make-parameter +inf.0))
 
@@ -1306,3 +1308,43 @@
     ;; for-each-ids : id-set ((listof identifier) -> void) -> void
     (define (for-each-ids mapping f)
       (free-identifier-mapping-for-each mapping (λ (x y) (f y))))
+
+
+
+
+(define build-trace%
+  (class (annotations-mixin object%)
+    (init-field src)
+    (define trace '())
+
+    (define/override (syncheck:find-source-object stx)
+      (and (equal? src (syntax-source stx))
+           src))
+    
+    ;; send over the non _ variables in the message to the main drracket place
+    (define-syntax (log stx)
+      (syntax-case stx ()
+        [(_ name args ...)
+         (with-syntax ([(wanted-args ...)
+                        (filter (λ (x) (not (regexp-match #rx"^_" (symbol->string (syntax-e x)))))
+                                (syntax->list #'(args ...)))])
+           #'(define/override (name args ...)
+               (add-to-trace (vector 'name wanted-args ...))))]))
+
+    (log syncheck:add-tail-arrow _from-text from-pos _to-text to-pos)
+    (log syncheck:add-arrow/name-dup
+         _start-text start-pos-left start-pos-right
+         _end-text end-pos-left end-pos-right
+         actual? level require-arrow? name-dup?)
+    (log syncheck:add-mouse-over-status _text pos-left pos-right str)
+    (log syncheck:add-background-color _text color start fin)
+    (log syncheck:add-jump-to-definition _text start end id filename submods)
+    (log syncheck:add-definition-target _text start-pos end-pos id mods)
+    (log syncheck:add-require-open-menu _text start-pos end-pos file)
+    (log syncheck:add-docs-menu _text start-pos end-pos key the-label path definition-tag tag)
+    (log syncheck:add-id-set to-be-renamed/poss dup-name?)
+    
+    (define/public (get-trace) (reverse trace))
+    (define/public (add-to-trace thing) 
+      (set! trace (cons thing trace)))
+    (super-new)))
