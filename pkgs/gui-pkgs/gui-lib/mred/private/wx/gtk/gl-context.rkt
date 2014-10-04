@@ -89,7 +89,7 @@
         -> (_fun _Display _XErrorEvent -> _int)))
 
 (define-x XSync
-  (_fun _Display _bool -> _void))
+  (_fun _Display _int -> _void))
 
 (define-glx glXQueryVersion
   (_fun _Display (major : (_ptr o _int)) (minor : (_ptr o _int))
@@ -243,26 +243,35 @@
 
 ;; _Display _GLXFBConfig _GLXContext -> _GLXContext
 (define (glx-create-new-context xdisplay cfg share-gl)
+  ;; Sync right now, or the sync further on could crash Racket with an [xcb] error about events
+  ;; happening out of sequence
+  (XSync xdisplay False)
   (define old-handler #f)
   (dynamic-wind
-   (λ () (set! old-handler (XSetErrorHandler null-x-error-handler)))
+   (λ ()
+     (set! old-handler (XSetErrorHandler null-x-error-handler)))
    (λ ()
      (define gl (glXCreateNewContext xdisplay cfg GLX_RGBA_TYPE share-gl #t))
-     ;; Sync to ensure errors are processed while we're throwing them away
-     (XSync xdisplay #f)
      (unless gl (log-warning "gl-config: unable to get OpenGL context"))
      gl)
-   (λ () (XSetErrorHandler old-handler))))
+   (λ ()
+     ;; Sync to ensure errors are processed while we're throwing them away
+     (XSync xdisplay False)
+     (XSetErrorHandler old-handler))))
 
 ;; OpenGL core versions we'll try to get, in order
 (define core-gl-versions '((4 5) (4 4) (4 3) (4 2) (4 1) (4 0) (3 3) (3 2) (3 1) (3 0)))
 
 ;; _Display _GLXFBConfig _GLXContext -> _GLXContext
 (define (glx-create-core-context xdisplay cfg share-gl)
+  ;; Sync right now, or the sync further on could crash Racket with an [xcb] error about events
+  ;; happening out of sequence
+  (XSync xdisplay False)
   (let/ec return
     (define old-handler #f)
     (dynamic-wind
-     (λ () (set! old-handler (XSetErrorHandler null-x-error-handler)))
+     (λ ()
+       (set! old-handler (XSetErrorHandler null-x-error-handler)))
      (λ ()
        (for ([gl-version  (in-list core-gl-versions)])
          (define gl-major (car gl-version))
@@ -274,10 +283,11 @@
                  None))
          (define gl
            (glXCreateContextAttribsARB xdisplay cfg share-gl #t context-attribs))
-         ;; Sync to ensure errors are processed while we're throwing them away
-         (XSync xdisplay False)
          (when gl (return gl))))
-     (λ () (XSetErrorHandler old-handler)))
+     (λ ()
+       ;; Sync to ensure errors are processed while we're throwing them away
+       (XSync xdisplay False)
+       (XSetErrorHandler old-handler)))
     (log-warning "gl-config: unable to get core context; falling back")
     (glx-create-new-context xdisplay cfg share-gl)))
 
