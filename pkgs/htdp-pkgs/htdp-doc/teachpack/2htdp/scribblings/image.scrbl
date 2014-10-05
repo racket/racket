@@ -236,18 +236,9 @@ Unlike @racket[scene+curve], if the line passes outside of @racket[image], the i
                                   (rectangle 10 10 "solid" "red")))]
   
   
-  In most cases, combining an image with @racket[empty-image] produces the
-  original image (as shown in the above example). In some situations,
-  however, the combination can cause the resulting pict to have a different
-  baseline (see @racket[image-baseline]) and thus not
-  be equal.
-  
-  @image-examples[(image-baseline (above (text "Hello" 24 "olive") empty-image))
-                  (image-baseline (text "Hello" 24 "olive"))
-                  (equal? (above (text "Hello" 24 "olive") empty-image)
-                          (text "Hello" 24 "olive"))]
-  
-  }
+  Combining an image with @racket[empty-image] produces the
+  original image (as shown in the above example).  
+}
 
 @section{Polygons}
 
@@ -584,8 +575,8 @@ and the left and right are @racket[(- 180 angle)].
   Constructs an arbitrary regular star polygon (a generalization of the regular polygons). 
   The polygon is enclosed by a regular polygon with @racket[side-count] sides each
   @racket[side-length] long. The polygon is actually constructed by going from vertex to
-  vertex around the regular polgon, but connecting every @racket[step-count]-th vertex
-  (i.e., skipping every @racket[(- step-count 1)] verticies).
+  vertex around the regular polygon, but connecting every @racket[step-count]-th vertex
+  (i.e., skipping every @racket[(- step-count 1)] vertices).
   
   For example, if @racket[side-count] is @racket[5] and @racket[step-count] is @racket[2],
   then this function produces a shape just like @racket[star].

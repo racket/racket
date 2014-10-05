@@ -310,6 +310,17 @@
       =>
       #f)
 
+;; make sure equality doesn't compare baselines;
+;; these two images have different baselines but
+;; draw the same way (they draw nothing because their
+;; widths are 0)
+(test (equal?
+       (crop 0 0 0 1 
+             (rectangle 0 0 'solid "red"))
+       (crop 0 0 0 1
+             (rectangle 20 20 'solid "red")))
+      => #t)
+
 ;; make sure 'white and black match up with color structs
 (test (rectangle 10 10 'solid (make-color 255 255 255))
       =>
