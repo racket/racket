@@ -134,7 +134,8 @@ has been moved out).
 (define-struct/reg-mk ellipse (width height angle mode color) #:transparent #:omit-define-syntaxes)
 ;;
 ;;  - (make-text string angle number color
-;;               number (or/c #f string) family (or/c 'normal 'italic) (or/c 'normal 'light 'bold) boolean)
+;;               number (or/c #f string) family 
+;;               (or/c 'normal 'italic) (or/c 'normal 'light 'bold) boolean)
 ;;    NOTE: font can't be the raw mred font or else copy & paste won't work
 (define-struct/reg-mk text (string angle y-scale color size face family style weight underline) 
   #:omit-define-syntaxes #:transparent)
@@ -144,7 +145,8 @@ has been moved out).
 ;; a bitmap is:
 ;;  - (make-ibitmap (and/c (is-a?/c bitmap%) (lambda (x) (send x has-alpha-channel?)))
 ;;                  angle positive-real 
-;;                  hash[(list boolean[flip] number[x-scale] number[y-scale] number[angle]) -o> (is-a?/c bitmap%)])
+;;                  hash[(list boolean[flip] number[x-scale] number[y-scale] number[angle])
+;;                       -o> (is-a?/c bitmap%)])
 ;;    NOTE: bitmap copying needs to happen in 'write' and 'read' methods
 (define-struct/reg-mk ibitmap #:reflect-id bitmap (raw-bitmap angle x-scale y-scale cache)
   #:omit-define-syntaxes #:transparent
@@ -152,7 +154,8 @@ has been moved out).
 
 ;; a flip is:
 ;;   - (make-flip boolean bitmap)
-;; * the boolean is #t if the bitmap should be flipped vertically (after applying whatever rotation is in there)
+;; * the boolean is #t if the bitmap should be flipped vertically
+;;   (after applying whatever rotation is in there)
 ;; * this struct is here to avoid adding a field to bitmaps, so that old save files
 ;;   from when the library did not support flipping still load
 ;;   (since normalization will add a flip structure if necessary)
@@ -171,7 +174,8 @@ has been moved out).
 ;; a curve-segment is
 ;;
 ;;  - (make-curve-segment point real real point real real color)
-(define-struct/reg-mk curve-segment (start s-angle s-pull end e-angle e-pull color) #:transparent #:omit-define-syntaxes)
+(define-struct/reg-mk curve-segment (start s-angle s-pull end e-angle e-pull color)
+  #:transparent #:omit-define-syntaxes)
 
 ;; a normalized-shape (subtype of shape) is either
 ;;  - (make-overlay normalized-shape cn-or-simple-shape)
@@ -300,9 +304,9 @@ has been moved out).
                    [(is-a? that bitmap%) (bitmap->image that)]
                    [else that])])
             (and (is-a? that image%)
-                 (same-bb? bb (send that get-bb))
+                 (same-width/height? bb (send that get-bb))
                  (equal? pinhole (send that get-pinhole))
-                 (or (and (not (skip-image-equality-fast-path))  ;; this is here to make testing more effective
+                 (or (and (not (skip-image-equality-fast-path))  ;; this makes testing more effective
                           (equal? (get-normalized-shape) (send that get-normalized-shape)))
                      
                      ;; some shapes (ie, rectangles) draw 1 outside the bounding box
@@ -388,8 +392,9 @@ has been moved out).
     (define/public (compute-cached-bitmap)
       (when use-cached-bitmap?
         (unless cached-bitmap
-          (set! cached-bitmap (make-bitmap (min (+ (inexact->exact (round (bb-right bb))) 1) maximum-width) 
-                                           (min (+ (inexact->exact (round (bb-bottom bb))) 1) maximum-height)))
+          (set! cached-bitmap
+                (make-bitmap (min (+ (inexact->exact (round (bb-right bb))) 1) maximum-width) 
+                             (min (+ (inexact->exact (round (bb-bottom bb))) 1) maximum-height)))
           (define bdc (make-object bitmap-dc% cached-bitmap))
           (send bdc erase)
           (render-image this bdc 0 0)
@@ -432,9 +437,12 @@ has been moved out).
     (set-snipclass snip-class)))
 
 (define (same-bb? bb1 bb2)
-  (and (= (round (bb-right bb1)) (round (bb-right bb2)))
-       (= (round (bb-bottom bb1)) (round (bb-bottom bb2)))
+  (and (same-width/height? bb1 bb2)
        (= (round (bb-baseline bb1)) (round (bb-baseline bb2)))))
+
+(define (same-width/height? bb1 bb2)
+  (and (= (round (bb-right bb1)) (round (bb-right bb2)))
+       (= (round (bb-bottom bb1)) (round (bb-bottom bb2)))))
 
 (define racket/base:read read)
 (define image-snipclass% 
@@ -500,10 +508,10 @@ has been moved out).
                     [(and (eq? tag 'struct:bitmap)
                           (= arg-count 6))
                      ;; we changed the arity of the bitmap constructor from old versions,
-                     ;; so fix it up here.
-                     ;; it used to have these fields: (raw-bitmap raw-mask angle x-scale y-scale cache)
-                     ;; and the mask field was dropped in favor of always having an alpha bitmap in the 
-                     ;; raw-bitmap field. The bytes that were written out always had the mask
+                     ;; so fix it up here. it used to have these fields: 
+                     ;; (raw-bitmap raw-mask angle x-scale y-scale cache)
+                     ;; and the mask field was dropped in favor of always having an alpha bitmap in
+                     ;; the raw-bitmap field. The bytes that were written out always had the mask
                      ;; factored in, tho (which led to a bug) so we can just ignore the mask here
                      (make-ibitmap (list-ref parsed-args 0)
                                    (list-ref parsed-args 2)
