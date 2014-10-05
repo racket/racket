@@ -1310,7 +1310,7 @@ the parts that fit onto @racket[scene].
   The pen sizes are also scaled and thus draw thicker (or thinner)
   lines than the original image, unless the pen was size 
   @racket[0]. That pen size is treated specially to mean ``the
-  smallest available line'' and thus it always draws a one pixel
+  smallest available line'' and thus it always draws a one-pixel
   wide line; this is also the case for @racket['outline] and @racket["outline"]
   shapes that are drawn with an @racket[image-color?] instead of
   a @racket[pen].
@@ -1778,8 +1778,8 @@ lining them up on the their pinholes.
 
 When an image has a pinhole, the pinhole
 is drawn with crosshairs on the image.
-The crosshairs are drawn with a two one pixel wide black lines (one horizontal and one vertical)
-and two one pixel wide white lines,
+The crosshairs are drawn with two one-pixel wide black lines (one horizontal and one vertical)
+and two one-pixel wide white lines,
 where the black lines is drawn .5 pixels to the left and above the pinhole, and the
 white lines are drawn .5 pixels to the right and below the pinhole. 
 Accordingly, when the pixel is on an integral coordinate, then black and white lines all 
