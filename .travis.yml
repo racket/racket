@@ -4,12 +4,9 @@ os:
   - osx
 env:
   - PATH=./racket/bin:$PATH
-  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-places"
-  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-futures"
-  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-extflonum"
+  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-places --disable-futures --disable-extflonum"
   - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit"
-  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places"
-  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-extflonum"
+  - PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places --disable-futures --disable-extflonum"
 compiler:
   - gcc
   - clang
