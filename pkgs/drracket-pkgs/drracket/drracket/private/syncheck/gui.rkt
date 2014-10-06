@@ -1298,7 +1298,8 @@ If the namespace does not, they are colored the unbound color.
               (match cursor-tooltip
                 [(tooltip-spec strings x y w h)
                  ;; hiding keeps it from flashing the new tooltip in the old location
-                 (send tooltip-frame show #f)
+                 ;; but this hiding does strange things under linux, so don't do it there
+                 (unless (equal? (system-type) 'unix) (send tooltip-frame show #f))
                  (send tooltip-frame set-tooltip strings)
                  (send tooltip-frame show-over x y w h)]
                 ;; #f or 'out-of-sync
