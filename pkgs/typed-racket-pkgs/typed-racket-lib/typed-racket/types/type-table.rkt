@@ -12,7 +12,8 @@
          (rep type-rep)
          (types utils union printer)
          (typecheck tc-app-helper)
-         (utils tc-utils))
+         (utils tc-utils)
+         (for-template racket/base))
 
 (provide/cond-contract
  [add-typeof-expr (syntax? tc-results/c . -> . any/c)]
@@ -70,8 +71,11 @@
 (define (type-table->tooltips)
   (for/fold ([tooltips '()])
             ([(stx results) (in-hash table)]
-             #:when (syntax-source stx))
-    ;; #f if we should just skip this results
+             #:when (and (syntax-source stx)
+                         (syntax-position stx)
+                         (syntax-span stx)))
+    ;; `printed-types` is #f if we should skip the type because it's
+    ;; something not worth printing like Bottom or Error.
     (define printed-types
       (match results
         [(tc-result1: type)
@@ -89,27 +93,30 @@
                                               #:indent 2))))]
         [(tc-any-results: _) "AnyValues"]))
     (cond [(not printed-types) tooltips]
+          ;; Put the tooltip only on the parens for compound expressions
+          ;; but put them on the whole expression for literals. This avoids
+          ;; overlapping tooltips.
           [(or (not (pair? (syntax-e stx)))
                ;; special-case quote because there's no worry of overlap
                ;; in a (quote ...) and because literals expand out to a
                ;; use of quote.
-               (eq? (syntax-e (car (syntax-e stx))) 'quote))
+               (free-identifier=? (car (syntax-e stx)) #'quote))
            (cons (vector (syntax-source stx)
                          (sub1 (syntax-position stx))
                          (+ (sub1 (syntax-position stx)) (syntax-span stx))
                          printed-types)
                  tooltips)]
           [else
-           (append (list (vector (syntax-source stx)
-                                 (sub1 (syntax-position stx))
-                                 (syntax-position stx)
-                                 printed-types)
-                         (vector (syntax-source stx)
-                                 (sub1 (+ (sub1 (syntax-position stx))
-                                          (syntax-span stx)))
-                                 (+ (sub1 (syntax-position stx))
-                                    (syntax-span stx))
-                                 printed-types))
+           (list* (vector (syntax-source stx)
+                          (sub1 (syntax-position stx))
+                          (syntax-position stx)
+                          printed-types)
+                  (vector (syntax-source stx)
+                          (sub1 (+ (sub1 (syntax-position stx))
+                                   (syntax-span stx)))
+                          (+ (sub1 (syntax-position stx))
+                             (syntax-span stx))
+                          printed-types)
                    tooltips)])))
 
 ;; For expressions in test position keep track of if it evaluates to true/false
