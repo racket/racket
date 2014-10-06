@@ -25,6 +25,8 @@
  [tc-module (syntax? . c:-> . (values syntax? syntax?))]
  [tc-toplevel-form (syntax? . c:-> . c:any/c)])
 
+(define-logger online-check-syntax)
+
 (define unann-defs (make-free-id-table))
 
 (define (parse-typed-struct form)
@@ -342,6 +344,11 @@
   (do-time "Finished pass2")
   ;; check that declarations correspond to definitions
   (check-all-registered-types)
+  ;; log messages to check-syntax to show extra types / arrows before failures
+  (log-message online-check-syntax-logger
+               'info
+               "TR's tooltip syntaxes; this message is ignored"
+               (list (syntax-property #'(void) 'mouse-over-tooltips (type-table->tooltips))))
   ;; report delayed errors
   (report-all-errors)
   (define provide-tbl
