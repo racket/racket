@@ -73,7 +73,8 @@
             ([(stx results) (in-hash table)]
              #:when (and (syntax-source stx)
                          (syntax-position stx)
-                         (syntax-span stx)))
+                         (syntax-span stx))
+             #:unless (error-at-stx-loc? stx))
     ;; `printed-types` is #f if we should skip the type because it's
     ;; something not worth printing like Bottom or Error.
     (define printed-types
@@ -101,7 +102,9 @@
                ;; special-case quote because there's no worry of overlap
                ;; in a (quote ...) and because literals expand out to a
                ;; use of quote.
-               (free-identifier=? (car (syntax-e stx)) #'quote))
+               (let ([fst (car (syntax-e stx))])
+                 (and (identifier? fst)
+                      (free-identifier=? fst #'quote))))
            (cons (vector (syntax-source stx)
                          (sub1 (syntax-position stx))
                          (+ (sub1 (syntax-position stx)) (syntax-span stx))
