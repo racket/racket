@@ -56,6 +56,10 @@
 # include "schsys.h"
 #endif
 
+#ifndef SPLS_SUFFIX
+# define SPLS_SUFFIX ""
+#endif
+
 #include "schustr.inc"
 
 #ifdef USE_ICONV_DLL
@@ -420,8 +424,8 @@ scheme_init_string (Scheme_Env *env)
 #endif
   REGISTER_SO(platform_3m_path);
   REGISTER_SO(platform_cgc_path);
-  platform_cgc_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH);
-  platform_3m_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH MZ3M_SUBDIR);
+  platform_cgc_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX);
+  platform_3m_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX MZ3M_SUBDIR);
 
   REGISTER_SO(putenv_str_table);
 
@@ -2796,7 +2800,7 @@ static Scheme_Object *system_library_subpath(int argc, Scheme_Object *argv[])
 
 const char *scheme_system_library_subpath()
 {
-  return SCHEME_PLATFORM_LIBRARY_SUBPATH;
+  return SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX;
 }
 
 /* Our own strncpy - which would be really stupid, except the one for
