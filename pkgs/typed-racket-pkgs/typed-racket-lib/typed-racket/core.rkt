@@ -6,7 +6,7 @@
          (private with-types type-contract)
          (except-in syntax/parse id)
          racket/match racket/syntax
-         (types utils abbrev generalize)
+         (types utils abbrev generalize type-table)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
          (for-template (base-env top-interaction))
@@ -39,9 +39,11 @@
               ;; add in syntax property on useless expression to draw check-syntax arrows
               [check-syntax-help (syntax-property
                                   (syntax-property
-                                   #'(void)
-                                   'disappeared-binding (disappeared-bindings-todo))
-                                  'disappeared-use (disappeared-use-todo))])
+                                   (syntax-property
+                                    #'(void)
+                                    'disappeared-binding (disappeared-bindings-todo))
+                                   'disappeared-use (disappeared-use-todo))
+                                  'mouse-over-tooltips (type-table->tooltips))])
              ;; reconstruct the module with the extra code
              ;; use the regular %#module-begin from `racket/base' for top-level printing
              (arm #`(#%module-begin #,before-code optimized-body ... #,after-code check-syntax-help)))))))]))

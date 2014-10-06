@@ -9,13 +9,16 @@
          syntax/parse
          "../utils/utils.rkt"
          (contract-req)
-         (types utils union)
+         (rep type-rep)
+         (types utils union printer)
+         (typecheck tc-app-helper)
          (utils tc-utils))
 
 (provide/cond-contract
  [add-typeof-expr (syntax? tc-results/c . -> . any/c)]
  [type-of (syntax? . -> . tc-results/c)]
  [reset-type-table (-> any/c)]
+ [type-table->tooltips (-> (listof (vector/c any/c integer? integer? string?)))]
  [test-position-add-true (syntax? . -> . any)]
  [test-position-add-false (syntax? . -> . any)]
  [test-position-takes-true-branch (syntax? . -> . boolean?)]
@@ -61,6 +64,53 @@
                                         (syntax-source e)
                                         (syntax-line e)
                                         (syntax-column e))))))
+
+;; Convert the contents of the type table to a format that check-syntax
+;; can understand in order to draw type tooltips
+(define (type-table->tooltips)
+  (for/fold ([tooltips '()])
+            ([(stx results) (in-hash table)]
+             #:when (syntax-source stx))
+    ;; #f if we should just skip this results
+    (define printed-types
+      (match results
+        [(tc-result1: type)
+         (and (not (or (Error? type) (Bottom? type)))
+              ;; cleanup-type is essential here so that this doesn't slow
+              ;; down compilation excessively (e.g., serializing the 4k type
+              ;; of the + function)
+              (pretty-format-type (cleanup-type type)))]
+        [(tc-results: types)
+         (apply string-append
+                (for/list ([(type index) (in-indexed (in-list types))])
+                  (format "Value ~a:~n  ~a~n"
+                          (add1 index)
+                          (pretty-format-type (cleanup-type type)
+                                              #:indent 2))))]
+        [(tc-any-results: _) "AnyValues"]))
+    (cond [(not printed-types) tooltips]
+          [(or (not (pair? (syntax-e stx)))
+               ;; special-case quote because there's no worry of overlap
+               ;; in a (quote ...) and because literals expand out to a
+               ;; use of quote.
+               (eq? (syntax-e (car (syntax-e stx))) 'quote))
+           (cons (vector (syntax-source stx)
+                         (sub1 (syntax-position stx))
+                         (+ (sub1 (syntax-position stx)) (syntax-span stx))
+                         printed-types)
+                 tooltips)]
+          [else
+           (append (list (vector (syntax-source stx)
+                                 (sub1 (syntax-position stx))
+                                 (syntax-position stx)
+                                 printed-types)
+                         (vector (syntax-source stx)
+                                 (sub1 (+ (sub1 (syntax-position stx))
+                                          (syntax-span stx)))
+                                 (+ (sub1 (syntax-position stx))
+                                    (syntax-span stx))
+                                 printed-types))
+                   tooltips)])))
 
 ;; For expressions in test position keep track of if it evaluates to true/false
 (define test-position-table/true (make-hasheq))
