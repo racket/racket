@@ -107,6 +107,9 @@ The "native-pkgs" directory is a git submodule, so you'll need
 
 before you do anything else.
 
+The "native-pkgs" directory is also needed if you build for 64-bit
+Linux with the `--enable-natipkg` option to `configure`.
+
 
 More Instructions: Building Racket
 ==================================

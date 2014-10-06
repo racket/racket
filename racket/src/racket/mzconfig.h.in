@@ -92,4 +92,7 @@ typedef unsigned long uintptr_t;
 /* To disable extflonums when they would otherwise work: */
 #undef MZ_NO_EXTFLONUMS
 
+/* Library subpath */
+#undef SPLS_SUFFIX
+
 #endif
