@@ -953,11 +953,13 @@
                         [(and contract? lws)
                          (define doms (list-ref lws 0))
                          (define rngs (list-ref lws 1))
+                         (define separators (list-ref lws 2))
                          (render-metafunction-contract
                           (metafunc-proc-lang (metafunction-proc mf))
                           (metafunc-proc-name (metafunction-proc mf))
                           doms
-                          rngs)]
+                          rngs
+                          separators)]
                         [else #f])))
   (define all-eqns (map (λ (mf) (list-ref (metafunc-proc-pict-info (metafunction-proc mf)) 1)) mfs))
   (define all-lhss 
@@ -1141,14 +1143,25 @@
                              null
                              (list sc)))]))))]))
 
-(define (render-metafunction-contract lang name doms rngs)
+(define (render-metafunction-contract lang name doms rngs separators)
   (hbl-append (basic-text (format "~a" name) (metafunction-style))
               (basic-text " : " (default-style))
               (apply hbl-append (add-between (map (λ (x) (lw->pict lang x)) doms) 
                                              (basic-text " " (default-style))))
               (basic-text " → " (default-style))
-              (apply hbl-append (add-between (map (λ (x) (lw->pict lang x)) rngs)
-                                             (basic-text " " (default-style))))))
+              (apply hbl-append 
+                     (add-between (interleave-ctc-separators
+                                   (map (λ (x) (lw->pict lang x)) rngs)
+                                   (map (λ (x) (basic-text (format "~a" x) (default-style)))
+                                        separators))
+                                  (basic-text " " (default-style))))))
+
+(define (interleave-ctc-separators eles betweens)
+  (cond
+    [(null? betweens) eles]
+    [else (list* (car eles)
+                 (car betweens)
+                 (interleave-ctc-separators (cdr eles) (cdr betweens)))]))
 
 (define (metafunction-call name an-lw)
   (struct-copy lw an-lw

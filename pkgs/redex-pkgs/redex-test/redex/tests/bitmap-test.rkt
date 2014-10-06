@@ -148,6 +148,7 @@
          "metafunction-judgment-holds.png"))
 
 (define-metafunction lang
+  T : any any -> 1 ∪ (2 2) ∨ 1234
   [(T x y)
    1
    (side-condition (not (eq? (term x) (term y))))

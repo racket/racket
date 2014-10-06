@@ -1192,7 +1192,9 @@
             (raise-syntax-error 
              syn-error-name 
              "expected a previously defined metafunction" orig-stx prev-metafunction))))
-       (let*-values ([(contract-name dom-ctcs pre-condition codom-contracts post-condition pats)
+       (let*-values ([(contract-name dom-ctcs pre-condition 
+                                     codom-contracts codomain-separators post-condition
+                                     pats)
                       (split-out-contract orig-stx syn-error-name #'rest #f)]
                      [(name _) (defined-name (list contract-name) pats orig-stx)])
          (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
@@ -1217,6 +1219,7 @@
                                                                     (list pre-condition)
                                                                     #f)
                                                               #,codom-contracts
+                                                              '#,codomain-separators
                                                               #,(if post-condition
                                                                     (list post-condition)
                                                                     #f)
@@ -1265,7 +1268,7 @@
     [(_ orig-stx lang prev-metafunction-stx
         name name-predicate
         dom-ctcs-stx pre-condition-stx
-        codom-contracts-stx post-condition-stx
+        codom-contracts-stx codomain-separators-stx post-condition-stx
         pats-stx syn-error-name)
      (let ()
        (define (condition-or-false s)
@@ -1279,6 +1282,7 @@
        (define dom-ctcs (syntax-e #'dom-ctcs-stx))
        (define pre-condition (condition-or-false #'pre-condition-stx))
        (define codom-contracts (syntax-e #'codom-contracts-stx))
+       (define codomain-separators (syntax-e #'codomain-separators-stx))
        (define post-condition (condition-or-false #'post-condition-stx))
        (define pats (syntax-e #'pats-stx))
        (define syn-error-name (syntax-e #'syn-error-name))
@@ -1417,7 +1421,8 @@
                                          #,(with-syntax ([(dom-ctc ...) dom-ctcs])
                                              #`(list (to-lw dom-ctc) ...))
                                          #,(with-syntax ([(codom-ctc ...) codom-contracts])
-                                             #`(list (to-lw codom-ctc) ...)))
+                                             #`(list (to-lw codom-ctc) ...))
+                                         #,codomain-separators)
                                       #'#f)
                                 
                                 ;; body of mf
