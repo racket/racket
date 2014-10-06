@@ -34,6 +34,7 @@
          get-face-list
          get-family-builtin-face
          gl-context<%>
+         get-current-gl-context
          make-bitmap
          make-platform-bitmap
          read-bitmap

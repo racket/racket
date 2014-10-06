@@ -10,10 +10,12 @@
           racket/draw/private/color
           racket/draw/private/font
           racket/draw/private/gl-config
+          racket/draw/private/gl-context
           racket/draw/private/gradient
           racket/draw/private/pen
           racket/draw/private/region
           (for-syntax (only-in (rep type-rep) make-Instance))
+          (only-in typed/racket/base -> U)
           "private/gui-types.rkt"
           (for-syntax (submod "private/gui-types.rkt" #%type-decl)))
 
@@ -76,6 +78,7 @@
  [the-color-database (make-Instance (parse-type #'Color-Database<%>))]
  [font% (parse-type #'Font%)]
  [font-list% (parse-type #'Font-List%)]
+ [get-current-gl-context (parse-type #'(-> (U #f GL-Context<%>)))]
  [gl-config% (parse-type #'GL-Config%)]
  [linear-gradient% (parse-type #'Linear-Gradient%)]
  [pen% (parse-type #'Pen%)]
