@@ -151,7 +151,6 @@ don't depend on any other portion of the system
 (define (log-type-error msg stxes)
   (define stx (and (not (null? stxes)) (car stxes)))
   (when (and stx
-             (syntax-source stx)
              (syntax-position stx)
              (syntax-span stx))
     (define tooltip-info
@@ -160,15 +159,15 @@ don't depend on any other portion of the system
               (let ([fst (car (syntax-e stx))])
                 (and (identifier? fst)
                      (free-identifier=? fst #'quote))))
-          (list (vector (syntax-source stx)
+          (list (vector stx
                         (sub1 (syntax-position stx))
                         (+ (sub1 (syntax-position stx)) (syntax-span stx))
                         msg))
-          (list (vector (syntax-source stx)
+          (list (vector stx
                         (sub1 (syntax-position stx))
                         (syntax-position stx)
                         msg)
-                (vector (syntax-source stx)
+                (vector stx
                         (sub1 (+ (sub1 (syntax-position stx))
                                  (syntax-span stx)))
                         (+ (sub1 (syntax-position stx))
