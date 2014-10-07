@@ -5,4 +5,4 @@ Comment=DrRacket is an interactive, integrated, graphical programming environmen
 Terminal=false
 Type=Application
 Categories=Development;Education;
-Exec=drracket -singleInstance
+Exec=drracket -singleInstance %F
