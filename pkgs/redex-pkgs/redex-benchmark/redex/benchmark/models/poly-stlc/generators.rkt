@@ -3,7 +3,8 @@
 (require redex/examples/poly-stlc
          (only-in redex/private/generate-term pick-an-index)
          redex/reduction-semantics
-         racket/bool)
+         racket/bool
+         racket/match)
 
 (provide (all-defined-out))
 
@@ -31,6 +32,15 @@
   (define type 'ordered)
   (define (generate [index 0])
     (generate-term poly-stlc M #:i-th index)))
+
+(module+ typed-mod
+  (provide generate get-generator type)
+  (define type 'search)
+  (define (get-generator) generate)
+  (define (generate)
+    ((match-lambda [`(typeof • ,M ,τ) M]
+                   [#f #f])
+     (generate-term poly-stlc #:satisfying (typeof • M τ) 3))))
 
 (module+ check-mod
   (provide check)

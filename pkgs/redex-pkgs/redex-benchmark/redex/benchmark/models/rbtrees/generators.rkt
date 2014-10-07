@@ -33,6 +33,16 @@
   (define (generate [index 0])
     (generate-term rbtrees t #:i-th index)))
 
+(module+ typed-mod
+  (provide generate get-generator type)
+  (define type 'search)
+  (define (get-generator) generate)
+  (define (generate)
+    ((match-lambda 
+       [`(rb-tree ,t) t]
+       [#f #f])
+     (generate-term rbtrees #:satisfying (rb-tree t) 3))))
+
 (module+ check-mod
   (provide check)
   (define (check t)

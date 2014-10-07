@@ -67,6 +67,7 @@
 (include/rewrite "generators.rkt" generators bug-mod-rw stop-earlier-rw)
 
 (define small-counter-example
-  (term (l0 : (begin (cons v0 v0 v0) halt) end)))
+  (term ((l0 : (begin (cons v0 v0 v0) halt) end)
+          (l0 : (v0 : nil empty) empty))))
 
 (test small-counter-example)

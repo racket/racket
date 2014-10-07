@@ -2204,7 +2204,7 @@ with @racket[#:satisfying].}
 
 Toggles whether or not redex will dynamically adjust the
 chance that more recursive clauses of judgment forms or metafunctions 
-are chosen earlierwhen attempting to generate terms 
+are chosen earlier when attempting to generate terms 
 with forms that use @racket[#:satisfying]. It is @racket[#t] by
 default, which causes redex to favor more recursive clauses at
 lower depths and less recursive clauses at depths closer to the

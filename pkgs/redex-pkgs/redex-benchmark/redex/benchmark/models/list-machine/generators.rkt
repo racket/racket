@@ -2,6 +2,7 @@
 
 (require redex/examples/list-machine/list-machine
          redex/examples/list-machine/list-machine-typing
+         (prefix-in typed: redex/benchmark/models/list-machine/ls-typed-gen)
          (only-in redex/private/generate-term pick-an-index)
          redex/reduction-semantics
          racket/bool
@@ -15,14 +16,14 @@
   (define (get-generator) generate)
   (define type 'grammar)
   (define (generate)
-    (generate-term list-machine-typing (l0 : ι p) 7)))
+    (generate-term list-machine-typing ((l0 : ι p) Π) 7)))
 
 (module+ enum-mod
   (provide generate get-generator type)
   (define (get-generator) generate)
   (define type 'enum)
   (define (generate [p-value 0.5])
-    (generate-term list-machine-typing (l0 : ι p) #:i-th (pick-an-index p-value))))
+    (generate-term list-machine-typing ((l0 : ι p) Π) #:i-th (pick-an-index p-value))))
 
 (module+ ordered-mod
   (provide generate get-generator type)
@@ -33,10 +34,23 @@
               (set! index (add1 index))))))
   (define type 'ordered)
   (define (generate [index 0])
-    (generate-term list-machine-typing (l0 : ι p) #:i-th index)))
+    (generate-term list-machine-typing ((l0 : ι p) Π) #:i-th index)))
+
+(module+ typed-mod
+  (provide generate get-generator type)
+  (define (get-generator) generate)
+  (define type 'search)
+  (define (generate)
+    (match (generate-term typed:list-machine-typing
+                          #:satisfying
+                          (typed:check-program (l0 : ι p) Π)
+                          7)
+      [`(typed:check-program ,p ,Π)
+       `(,p ,Π)]
+      [#f #f])))
 
 (module+ check-mod
-  (provide check)
+  (provide check type-check check-progress)
   
   (define (check-progress p)
     (define r_0 (term (empty v0 ↦ nil)))
@@ -64,23 +78,13 @@
                     (match (car closure)
                       [`(,p ,r ,ι)
                        (equal? ι 'halt)])))))))
+
+  (define (type-check p Π)
+    (judgment-holds (check-program ,p ,Π)))
   
-  ;; TODO : change this to generate the program and type as a pair, (as the typed 
-  ;; generator does), so we are testing the different strategies fairly?
-  (define (type-check p)
-    ;; need to provide a program typing, so generate 10 randomly and
-    ;; see if any succeed...
-    ;; (succeeds more often than one might assume)
-    (let loop ([i 0])
-      (cond
-        [(i . > . 10) #f]
-        [else
-         (define guess-Π (generate-term list-machine-typing (l0 : (v0 : nil empty) Π) 7))
-         (or (and (judgment-holds (check-program ,p ,guess-Π))
-                  guess-Π)
-             (loop (add1 i)))])))
-  
-  (define (check p)
-    (or (not p)
-        (implies (type-check p) (check-progress p)))))
+  (define (check pΠ)
+    (or (not pΠ)
+        (match pΠ
+          [`(,p ,Π)
+           (implies (type-check p Π) (check-progress p))]))))
 
