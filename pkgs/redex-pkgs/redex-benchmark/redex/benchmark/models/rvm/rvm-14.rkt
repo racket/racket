@@ -39,6 +39,38 @@
   #:variables (rest rest1 rest2 ellipsis)
   #:exactly-once)
 
+(define-rewrite bug14a-jdg
+  ((where uninit (sref n s_2))
+   . rest)
+  ==> 
+  rest
+  #:context (define-judgment-form)
+  #:variables (rest)
+  #:exactly-once)
+
+(define-rewrite bug14b-jdg
+  ((uninits s_a)
+   . rest)
+  ==> 
+  rest
+  #:context (define-judgment-form)
+  #:variables (rest)
+  #:exactly-once)
+
+(define-rewrite bug14c-jdg
+  ([(closure-intact (imm-nc sl_1) (imm sl_2))
+    (closure-intact sl_1 sl_2)]
+   . rest)
+  ==> 
+  ([(closure-intact (imm-nc sl_1) (imm sl_2))
+    (closure-intact sl_1 sl_2)]
+   [(closure-intact (box sl_1) (imm sl_2))
+    (closure-intact sl_1 sl_2)]
+   . rest)
+  #:context (define-relation)
+  #:variables (rest)
+  #:exactly-once)
+
 (define-rewrite/compose bug14 bug14a bug14b bug14c)
 
 (include/rewrite (lib "redex/examples/racket-machine/grammar.rkt") grammar)
@@ -46,6 +78,8 @@
 (include/rewrite (lib "redex/examples/racket-machine/verification.rkt") verification bug14)
 
 (include/rewrite (lib "redex/examples/racket-machine/randomized-tests.rkt") randomized-tests rt-rw)
+
+(include/rewrite (lib "redex/benchmark/models/rvm/verif-jdg.rkt") verif-jdg bug14a-jdg bug14b-jdg bug14c-jdg)
 
 (include/rewrite "generators.rkt" generators bug-mod-rw)
 

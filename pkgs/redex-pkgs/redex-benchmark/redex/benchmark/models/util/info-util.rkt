@@ -5,7 +5,8 @@
          racket/runtime-path)
 
 (provide make-all-mods
-         make-path-root)
+         make-path-root
+         all-mods/type)
 
 (define-runtime-path here ".")
 
@@ -14,7 +15,8 @@
 (define type->genmod
   (hash 'grammar 'adhoc-mod
         'enum 'enum-mod
-        'ordered 'ordered-mod))
+        'ordered 'ordered-mod
+        'typed 'typed-mod))
 
 (define (get-name/modpaths filename type path-root)
   (define model-name (first (regexp-split #rx"\\." (last (regexp-split #rx"/" filename)))))

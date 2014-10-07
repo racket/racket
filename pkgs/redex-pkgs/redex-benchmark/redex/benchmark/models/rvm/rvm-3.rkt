@@ -11,14 +11,20 @@
 (define-rewrite bug3
   (abs-push n not s)
   ==> 
-  (abs-push n uninit s)
-  #:context (define-metafunction))
+  (abs-push n uninit s))
+
+(define-rewrite bug3-jdg
+  (abs-push n not sl)
+  ==> 
+  (abs-push n uninit sl))
 
 (include/rewrite (lib "redex/examples/racket-machine/grammar.rkt") grammar)
 
 (include/rewrite (lib "redex/examples/racket-machine/verification.rkt") verification bug3)
 
 (include/rewrite (lib "redex/examples/racket-machine/randomized-tests.rkt") randomized-tests rt-rw)
+
+(include/rewrite (lib "redex/benchmark/models/rvm/verif-jdg.rkt") verif-jdg bug3 bug3-jdg)
 
 (include/rewrite "generators.rkt" generators bug-mod-rw)
 

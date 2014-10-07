@@ -24,6 +24,12 @@
   (submod ".." randomized-tests)
   #:context (require))
 
+(define-rewrite bug-mod-4
+  redex/benchmark/models/rvm/verif-jdg
+  ==> 
+  (submod ".." verif-jdg)
+  #:context (require))
+
 ;; adjust large numbers to keep the reduction from blowing up
 (define-rewrite rt-rw
   [`(,(and (or 'let-void 'let-void-box) i) ,n ,e)
@@ -34,7 +40,7 @@
   #:exactly-once
   #:context (match))
 
-(define-rewrite/compose bug-mod-rw bug-mod-1 bug-mod-2 bug-mod-3)
+(define-rewrite/compose bug-mod-rw bug-mod-1 bug-mod-2 bug-mod-3 bug-mod-4)
 
 (define-syntax-rule (test cexp)
   (module+ test

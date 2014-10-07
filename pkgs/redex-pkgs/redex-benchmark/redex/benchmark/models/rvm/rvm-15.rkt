@@ -24,11 +24,25 @@
   #:context (match)
   #:exactly-once)
 
+(define-rewrite bug15-jdg
+  [(lam-verified?* ((lam τl nl e) el) sl m)
+   (vals τl)
+   (lam-verified? (lam τl nl e) sl m)
+   (lam-verified?* el sl m)]
+  ==>
+  [(lam-verified?* ((lam τl nl e) el) sl m)
+   (lam-verified? (lam τl nl e) sl m)
+   (lam-verified?* el sl m)]
+  #:context (define-judgment-form)
+  #:exactly-once)
+
 (include/rewrite (lib "redex/examples/racket-machine/grammar.rkt") grammar)
 
 (include/rewrite (lib "redex/examples/racket-machine/verification.rkt") verification bug15v)
 
 (include/rewrite (lib "redex/examples/racket-machine/randomized-tests.rkt") randomized-tests rt-rw bug15rt)
+
+(include/rewrite (lib "redex/benchmark/models/rvm/verif-jdg.rkt") verif-jdg bug15-jdg)
 
 (include/rewrite "generators.rkt" generators bug-mod-rw)
 

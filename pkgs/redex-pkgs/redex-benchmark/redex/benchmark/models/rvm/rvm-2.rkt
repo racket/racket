@@ -20,9 +20,22 @@
   #:variables (ellipsis1 ellipsis2)
   #:exactly-once)
 
+(define-rewrite bug2-jdg
+  [(redo-clrs ((n ν) γ) s (supdt (n- (n- (slen s) n) (S O)) not s_2))
+   (n< n (slen s))
+   (n≠ (n- (slen s) n) O)
+   (redo-clrs γ s s_2)]
+  ==>
+  [(redo-clrs ((n ν) γ) s (supdt (n- (n- (slen s) n) (S O)) not s_2))
+   (redo-clrs γ s s_2)]
+  #:context (define-judgment-form)
+  #:exactly-once)
+
 (include/rewrite (lib "redex/examples/racket-machine/grammar.rkt") grammar)
 
 (include/rewrite (lib "redex/examples/racket-machine/verification.rkt") verification bug2)
+
+(include/rewrite (lib "redex/benchmark/models/rvm/verif-jdg.rkt") verif-jdg bug2-jdg)
 
 (include/rewrite (lib "redex/examples/racket-machine/randomized-tests.rkt") randomized-tests rt-rw)
 
