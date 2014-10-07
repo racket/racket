@@ -545,7 +545,7 @@
             prop)])))
 
 (define mouse-over-tooltip-prop?
-  (vector/c #:flat? #t any/c exact-nonnegative-integer? exact-nonnegative-integer? string?))
+  (vector/c #:flat? #t syntax? exact-nonnegative-integer? exact-nonnegative-integer? string?))
 (define (add-mouse-over-tooltips stx)
   (let loop ([prop (syntax-property stx 'mouse-over-tooltips)])
     (cond
@@ -553,7 +553,7 @@
        (loop (car prop))
        (loop (cdr prop))]
       [(mouse-over-tooltip-prop? prop)
-       (add-mouse-over/loc (vector-ref prop 0)
+       (add-mouse-over/loc (find-source-editor (vector-ref prop 0))
                            (vector-ref prop 1)
                            (vector-ref prop 2)
                            (vector-ref prop 3))])))

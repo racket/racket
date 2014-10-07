@@ -71,8 +71,7 @@
 (define (type-table->tooltips)
   (for/fold ([tooltips '()])
             ([(stx results) (in-hash table)]
-             #:when (and (syntax-source stx)
-                         (syntax-position stx)
+             #:when (and (syntax-position stx)
                          (syntax-span stx))
              #:unless (error-at-stx-loc? stx))
     ;; `printed-types` is #f if we should skip the type because it's
@@ -105,17 +104,17 @@
                (let ([fst (car (syntax-e stx))])
                  (and (identifier? fst)
                       (free-identifier=? fst #'quote))))
-           (cons (vector (syntax-source stx)
+           (cons (vector stx
                          (sub1 (syntax-position stx))
                          (+ (sub1 (syntax-position stx)) (syntax-span stx))
                          printed-types)
                  tooltips)]
           [else
-           (list* (vector (syntax-source stx)
+           (list* (vector stx
                           (sub1 (syntax-position stx))
                           (syntax-position stx)
                           printed-types)
-                  (vector (syntax-source stx)
+                  (vector stx
                           (sub1 (+ (sub1 (syntax-position stx))
                                    (syntax-span stx)))
                           (+ (sub1 (syntax-position stx))
