@@ -162,28 +162,41 @@
                #:when (alias-contract-def *form)
                #:unless (in-ignore-table? *form))
       *form))
-  (for/fold ;; none of the contracts are generated to begin, so #f
-            ([contracts (make-list (length forms) #f)])
+
+  ;; Identify entries that are #f (non-initialized) or are a
+  ;; string (indicating failure with a reason)
+  (define (non-contract-entry? x)
+    (or (string? x) (not x)))
+
+  ;; Loop over each kind of contract to compute the most
+  ;; restrictive kind of contract that can be generated for the alias
+  (for/fold ([contracts (make-list (length forms) #f)])
             ([kind (in-list '(flat chaperone impersonator))])
     ;; clear out #f entries after each loop because a failure to generate
     ;; a flat contract doesn't rule out a chaperone or impersonator one
     (for ([k (in-list (dict-keys alias-info))])
       (define v (free-id-table-ref alias-info k #f))
       (when (string? v) (free-id-table-remove! alias-info k)))
-    ;; run this twice to ensure that contract failures in mutually
-    ;; recursive type aliases are found and turned into failure syntaxes
-    (for ([e (in-list forms)]
-          [ctc (in-list contracts)])
-      (when (or (string? ctc) (not ctc))
-        (generate-contract-def/alias e kind)))
+
+    (define new-contracts
+      ;; run this until fixpoint to ensure that contract failures in mutually
+      ;; recursive type aliases are found and turned into failure syntaxes
+      (let loop ([old contracts])
+        (define current
+          (for/list ([e (in-list forms)]
+                     [ctc (in-list contracts)])
+            ;; use the previous contract if it was successful (i.e., flat
+            ;; instead of chaperone, chaperone instead of impersonator)
+            ;; since we want the most specific
+            (and (non-contract-entry? ctc)
+                 (generate-contract-def/alias e kind))))
+        ;; we reach a fixpoint if the #f/string entries don't change
+        (if (equal? (filter non-contract-entry? current)
+                    (filter non-contract-entry? old))
+            current
+            (loop current))))
     (map (λ (new old) (or new old))
-         (for/list ([e (in-list forms)]
-                    [ctc (in-list contracts)])
-           ;; use the previous contract if it was successful (i.e., flat
-           ;; instead of chaperone, chaperone instead of impersonator)
-           ;; since we want the most specific
-           (and (or (string? ctc) (not ctc))
-                (generate-contract-def/alias e kind)))
+         new-contracts
          contracts)))
 
 ;; alias-contract-def : Syntax -> Syntax
