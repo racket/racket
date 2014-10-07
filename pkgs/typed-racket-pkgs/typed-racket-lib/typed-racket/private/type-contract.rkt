@@ -137,11 +137,13 @@
 ;; Syntax -> (Listof Syntax)
 ;; Generate contract definitions and contracted provides
 (define (change-provide-fixups forms)
-  (for/list ([form (in-list (flatten-all-begins forms))])
+  (for/list ([form (in-list forms)])
     (if (contract-def/provide-property form)
         (generate-contract-def/provide form)
         form)))
 
+;; Syntax -> (Listof Syntax)
+;; Generate contract definitions for type aliases and requires
 (define (change-contract-fixups forms)
   (define alias-defs (fixup-type-aliases forms))
   (define require-typed-defs
@@ -188,7 +190,7 @@
 ;; Return the alias contract definition property if it's applied on
 ;; the definition body, #f otherwise.
 (define (alias-contract-def stx)
-  (syntax-parse stx #:literals (define-values)
+  (syntax-parse stx #:literal-sets (kernel-literals)
     [(define-values (n) body)
      (contract-def/alias-property #'body)]
     [_ #f]))
@@ -251,7 +253,7 @@
 ;; ignored for contract generation
 (define (in-ignore-table? stx)
   (syntax-parse stx
-    #:literals (define-values)
+    #:literal-sets (kernel-literals)
     [(define-values (name:id) . body)
      (free-id-table-ref contract-ignore-table #'name #f)]
     [_ (int-err "should never happen - not a define-values: ~a"

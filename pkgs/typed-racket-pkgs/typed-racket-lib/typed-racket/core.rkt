@@ -36,7 +36,7 @@
               ;; add the real definitions of contracts on requires
               [transformed-body (begin0 (change-contract-fixups #'transformed-body) (do-time "Fixed contract ids"))]
               ;; add the real definitions of contracts on the after-code
-              [(after-code ...) (change-provide-fixups pre-after-code)]
+              [(after-code ...) (change-provide-fixups (flatten-all-begins pre-after-code))]
               ;; potentially optimize the code based on the type information
               [(optimized-body ...) (maybe-optimize #'transformed-body)] ;; has own call to do-time
               ;; add in syntax property on useless expression to draw check-syntax arrows

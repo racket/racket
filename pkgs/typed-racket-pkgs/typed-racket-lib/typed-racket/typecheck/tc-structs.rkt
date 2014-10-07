@@ -123,9 +123,7 @@
   ;; a type alias needs to be registered here too, to ensure
   ;; that parse-type will map the identifier to this Name type
   (define type-name (struct-names-type-name names))
-  (register-resolved-type-alias
-   type-name
-   (make-Name type-name null #f #f #t))
+  (register-resolved-type-alias type-name (-struct-name type-name))
   (register-type-name type-name
                       (make-Poly (struct-desc-tvars desc) sty)))
 
@@ -146,8 +144,7 @@
 
   ;; the base-type, with free type variables
   (define name-type
-    (make-Name (struct-names-type-name names)
-               null #f #f #t))
+    (-struct-name (struct-names-type-name names)))
   (define poly-base
     (if (null? tvars)
         name-type
@@ -283,7 +280,7 @@
            (c:listof Type/c) (c:or/c #f identifier?)
            c:any/c)
   (define parent-type
-    (and parent (resolve-name (make-Name parent null #f #f #t))))
+    (and parent (resolve-name (-struct-name parent))))
   (define parent-tys (map fld-t (get-flds parent-type)))
 
   (define names (get-struct-names nm fld-names #f))

@@ -304,8 +304,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (make-predicate stx)
   (syntax-parse stx
     [(_ ty:expr)
-     (let ((name (syntax-local-lift-expression
-                  (flat-contract-def-property #'#f #'ty))))
+     (let [(name (syntax-local-lift-expression
+                  (flat-contract-def-property #'#f #'ty)))]
        (define (check-valid-type _)
          (define type (parse-type #'ty))
          (define vars (fv type))

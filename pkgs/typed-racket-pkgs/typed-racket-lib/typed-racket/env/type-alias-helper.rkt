@@ -64,7 +64,7 @@
 (define (check-type-alias-contractive id type)
   (define/match (check type)
     [((Union: elems)) (andmap check elems)]
-    [((Name: name-id _ _ _ _))
+    [((Name/simple: name-id))
      (and (not (free-identifier=? name-id id))
           (check (resolve-once type)))]
     [((App: rator rands stx))
