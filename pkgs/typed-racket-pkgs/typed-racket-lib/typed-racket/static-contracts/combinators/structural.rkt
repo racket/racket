@@ -13,7 +13,8 @@
          (for-template racket/base
                        racket/contract/base
                        racket/set
-                       unstable/contract)
+                       unstable/contract
+                       "../../utils/evt-contract.rkt")
          racket/contract)
 
 
@@ -157,4 +158,5 @@
   ((parameter/sc (#:contravariant) (#:covariant)) parameter/c #:chaperone)
   ((sequence/sc . (#:covariant)) sequence/c #:impersonator)
   ((channel/sc . (#:invariant)) channel/c #:chaperone)
-  ((continuation-mark-key/sc (#:invariant)) continuation-mark-key/c #:chaperone))
+  ((continuation-mark-key/sc (#:invariant)) continuation-mark-key/c #:chaperone)
+  ((evt/sc (#:covariant)) tr:evt/c #:chaperone))
