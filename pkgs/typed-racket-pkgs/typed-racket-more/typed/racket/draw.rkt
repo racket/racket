@@ -54,6 +54,9 @@
           Radial-Gradient%
           Region%))
 
+(begin-for-syntax
+  (define -LoadFileKind (parse-type #'LoadFileKind)))
+
 (type-environment
  [the-brush-list (make-Instance (parse-type #'Brush-List%))]
  [the-pen-list (make-Instance (parse-type #'Pen-List%))]
@@ -62,8 +65,11 @@
   (->optkey -PosInt -PosInt [Univ] #:backing-scale -Real #f
             (make-Instance (parse-type #'Bitmap%)))]
  [read-bitmap
-  (->opt (Un -Pathlike) [-Symbol (Un (make-Instance (parse-type #'Color%)) (-val #f)) Univ]
-         (make-Instance (parse-type #'Bitmap%)))]
+  (->optkey (Un -Pathlike -Input-Port)
+            [-LoadFileKind (Un (make-Instance (parse-type #'Color%)) (-val #f)) Univ]
+            #:backing-scale -Real #f
+            #:try-@2x? Univ #f
+            (make-Instance (parse-type #'Bitmap%)))]
  [make-color
   (->optkey -Byte -Byte -Byte
             [-Real]
