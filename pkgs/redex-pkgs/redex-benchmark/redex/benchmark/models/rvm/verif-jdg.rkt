@@ -1,11 +1,7 @@
 #lang racket
 
-(require redex/reduction-semantics)
-(require "jdg-grammar.rkt")
-
-(require redex/private/gen-trace
-         (only-in redex/private/generate-term
-                  enable-gen-trace!))
+(require redex/reduction-semantics 
+         "jdg-grammar.rkt")
 
 (provide (all-defined-out))
 
