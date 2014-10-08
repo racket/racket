@@ -40,7 +40,7 @@
       (cond ((eof-object? line) #f)
             (else
              (set! phonelines (cons line phonelines))
-             (loop (read-line)))))
+             (loop (read-bytes-line)))))
     (set! phonelines (reverse phonelines))
     (do ([n (string->number n) (sub1 n)])
         ((negative? n))
