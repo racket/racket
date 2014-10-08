@@ -405,12 +405,14 @@ sorted. Then, for the purposes of building the table, a "|" separated
 by any number of spaces within a name is treated as a hierarchical
 delimiter, while anything within "{" and "}" in a hierarchical level
 is stripped from the displayed name along with surrounding spaces (so
-that it can affect sorting without being displayed).
+that it can affect sorting without being displayed). Anything after ";
+" within a "|"-separated part is rendered as a detail part of the
+label (e.g., in a smaller font).
 
 For example, the names
 
   "Racket | {2} Linux | 32-bit"
-  "Racket | {2} Linux | 64-bit"
+  "Racket | {2} Linux | 64-bit; built on Ubuntu"
   "Racket | {1} Windows | 32-bit"
   "Racket | {1} Windows | 64-bit"
   "Racket | {3} Source"
@@ -419,14 +421,15 @@ are shown (actually or conceptually) as
 
   Racket
    Windows
-     [32-bit]
+     [32-bit] <build on Ubuntu>
      [64-bit]
    Linux
      [32-bit]
      [64-bit]
    [Source]
 
-where the square-bracketed entries are hyperlinks.
+where the square-bracketed entries are hyperlinks and the
+angle-bracketed pieces are details.
 
 Examples
 --------
