@@ -203,7 +203,12 @@
         (hash 'success-log (pbl 'success-log)
               'failure-log (pbl 'failure-log)
               'dep-failure-log (pbl 'dep-failure-log)
-              'conflicts-log (pbl 'conflicts-log)
+              'conflicts-log 
+              (match (pbl 'conflicts-log)
+                [#f #f]
+                [(? path-string? f) f]
+                [(conflicts/indirect file)
+                 (list "indirect" file)])
               'docs
               (for/list ([d (in-list (or (pbl 'docs) empty))])
                 (match d
