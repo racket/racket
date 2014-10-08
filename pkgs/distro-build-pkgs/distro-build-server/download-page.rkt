@@ -189,7 +189,7 @@
 
   (define page-headers
     (style/inline   @~a|{ 
-                             .detail { font-size: small; }
+                             .detail { font-size: small; font-weight: normal; }
                              .checksum, .path { font-family: monospace; }
                              .group { background-color : #ccccff; padding-left: 0.5ex; }
                              .major { font-weight : bold; font-size : large; left-border: 1ex; }
@@ -220,6 +220,21 @@
                             a { text-decoration: none; }
                            }|))
 
+  (define (strip-detail s)
+    (if (string? s)
+        (regexp-replace #rx";.*" s "")
+        s))
+
+  (define (add-detail s e)
+    (define m (and (string? s)
+                   (regexp-match #rx"(?<=; )(.*)$" s)))
+    (cond
+     [m
+      (span e (span class: "detail"
+                    nbsp
+                    (cadr m)))]
+     [else e]))
+
   (define page-body
     (list
      (if page-title
@@ -249,17 +264,19 @@
           (tr (td
                (for/list ([col (in-list mid-cols)])
                  (span nbsp nbsp nbsp))
-               (if (past-success? inst)
-                   ;; Show missing installer
-                   (span class: (string-append "no-installer " level-class)
-                         last-col)
-                   ;; Link to installer
-                   (a class: (string-append "installer " level-class)
-                      href: (url->string
-                             (combine-url/relative
-                              (string->url installers-url)
-                              inst))
-                      last-col))
+               (add-detail
+                last-col
+                (if (past-success? inst)
+                    ;; Show missing installer
+                    (span class: (string-append "no-installer " level-class)
+                          (strip-detail last-col))
+                    ;; Link to installer
+                    (a class: (string-append "installer " level-class)
+                       href: (url->string
+                              (combine-url/relative
+                               (string->url installers-url)
+                               inst))
+                       (strip-detail last-col))))
                (get-site-help last-col))
               (td nbsp)
               (td (if (past-success? inst)
@@ -316,7 +333,9 @@
                   colspan: num-cols
                   (for/list ([col (in-list mid-cols)])
                     (span nbsp nbsp nbsp))
-                  last-col
+                  (add-detail
+                   last-col
+                   (strip-detail last-col))
                   (get-site-help last-col)))])))
      (if (and docs-url
               (not site))
