@@ -468,6 +468,8 @@
          (hash/sc (t->sc k) (t->sc v))]
         [(Channel: t)
          (channel/sc (t->sc t))]
+        [(Evt: t)
+         (evt/sc (t->sc t))]
         [else
          (fail #:reason "contract generation not supported for this type")]))))
 
