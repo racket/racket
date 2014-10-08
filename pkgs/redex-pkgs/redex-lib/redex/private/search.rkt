@@ -199,13 +199,13 @@
 (define get-dist
   (let ([cache (make-hash)])
     (λ (l depth max-depth)
-      (hash-ref cache (list l depth max-depth)
+      (hash-ref cache (list (length l) depth max-depth)
                 (λ ()
                   (define nperms (factorial (length l)))
                   (define d (binomial-dist (sub1 nperms) 
                                            (+ (/ depth max-depth) 
                                               (* 0.05 (- 0.5 (/ depth max-depth))))))
-                  (hash-set! cache d (list l depth max-depth))
+                  (hash-set! cache (list (length l) depth max-depth) d)
                   d)))))
 
 (define (nth-lexico-perm len n)
