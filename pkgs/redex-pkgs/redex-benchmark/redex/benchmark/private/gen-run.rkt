@@ -31,7 +31,7 @@
   (define get-gen (dynamic-require gen-mod-path 'get-generator))
   (define type (dynamic-require gen-mod-path 'type))
   (define check (dynamic-require check-mod-path 'check))
-  (run-generations get-gen check seconds #:name name #:type type))
+  (run-gen-and-check get-gen check seconds #:name name #:type type))
 
 (define (run-gen-and-check get-gen check seconds
                            #:name [name "unknown"]
