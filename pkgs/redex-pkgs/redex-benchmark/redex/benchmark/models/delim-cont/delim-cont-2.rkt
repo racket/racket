@@ -19,8 +19,9 @@
 (include/rewrite "generators.rkt" generators bug-mod-rw)
 
 (define small-counter-example
-  '(monitor (list/c (flat (λ (k : Bool) #t))) 
+  '(<> (monitor (list/c (flat (λ (var:k : Bool) #t))) 
             (cons #t (null Bool)) 
-            "" "" ""))
+            "" "" "")
+       ·))
 
 (test small-counter-example)

@@ -555,9 +555,9 @@
 (define-metafunction abort-lang
   [(call/cc (name v (λ (x_1 : (→ t_1 t_2)) e_1)) e)
    (call/comp
-    (λ (kont : (→ t_1 t_2))
-      (v (λ (x : t_1)
-           (abort t_2 e (λ (y : Unit) (kont x))))))
+    (λ (var:kont : (→ t_1 t_2))
+      (v (λ (var:x : t_1)
+           (abort t_2 e (λ (var:y : Unit) (var:kont var:x))))))
     e)])
 
 (define-metafunction abort-lang
