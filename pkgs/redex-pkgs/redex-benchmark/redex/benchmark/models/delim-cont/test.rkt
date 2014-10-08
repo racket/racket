@@ -12,7 +12,7 @@
  (tc · · (+ 1 2) t)
  t)
 (judgment-holds
- (tc · · ((λ (x : Num) (+ x 5)) 3) t)
+ (tc · · ((λ (var:x : Num) (+ var:x 5)) 3) t)
  t)
 (judgment-holds
  (tc · · (if (zero? 0) #t #f) t)
@@ -58,13 +58,13 @@
 (test-equal
  (term (no-match (% hole
                     tag_0 
-                    (λ (x : Num) (+ x 2)))
+                    (λ (var:x : Num) (+ var:x 2)))
                  tag_0))
  #f)
 (test-equal
  (term (no-match (% hole
                     tag_0
-                    (λ (x : Num) (+ x 2)))
+                    (λ (var:x : Num) (+ var:x 2)))
                  tag_1))
  #t)
 
@@ -72,7 +72,7 @@
 
 (check-equal? (abort-eval (term (+ 1 2)))
               3)
-(check-equal? (abort-eval (term (λ (x : Num) #t)))
+(check-equal? (abort-eval (term (λ (var:x : Num) #t)))
               'procedure)
 (check-equal? (abort-eval (term (make-prompt-tag Num Bool)))
               'prompt-tag)
@@ -93,141 +93,142 @@
 ;; eval and type checking tests
 ;; recursion
 (do-test
- (term ((μ (f : (→ Num Num))
-           (λ (n : Num)
-             (if (zero? n)
+ (term ((μ (var:f : (→ Num Num))
+           (λ (var:n : Num)
+             (if (zero? var:n)
                  1
-                 (* n (f (- n 1))))))
+                 (* var:n (var:f (- var:n 1))))))
         5))
  (term 120))
 
 ;; list recursion
 (do-test
- (term ((μ (f : (→ (List Num) Num))
-           (λ (lst : (List Num))
-             (case lst
+ (term ((μ (var:f : (→ (List Num) Num))
+           (λ (var:lst : (List Num))
+             (case var:lst
                (null = 0)
-               ((cons x1 x2) =
-                             (+ x1 (f x2))))))
+               ((cons var:x1 var:x2) =
+                             (+ var:x1 (var:f var:x2))))))
         (cons 5 (cons 6 (null Num)))))
  (term 11))
 
 ;; list contract
 (do-test
- (term (monitor (list/c (flat (λ (x : Num) (zero? x))))
+ (term (monitor (list/c (flat (λ (var:x : Num) (zero? var:x))))
                 (cons 0 (cons 6 (null Num)))
                 "pos" "neg" "con"))
  (term (ctc-error "pos" "con")))
 
 ;; no control effect
 (do-test
- (term (% 5 (make-prompt-tag Num Num) (λ (x : Num) x)))
+ (term (% 5 (make-prompt-tag Num Num) (λ (var:x : Num) var:x)))
  (term 5))
 
 ;; test basic abort & handle
 (do-test
- (term (let ([(pt : (Prompt Num Num))
+ (term (let ([(var:pt : (Prompt Num Num))
               (make-prompt-tag Num Num)])
-         (% (abort Num pt 5)
-            pt
-            (λ (x : Num) (+ x 1)))))
+         (% (abort Num var:pt 5)
+            var:pt
+            (λ (var:x : Num) (+ var:x 1)))))
  (term 6))
 
 ;; abort past a prompt
 (do-test
- (term (let ([(pt : (Prompt Num Num))
+ (term (let ([(var:pt : (Prompt Num Num))
               (make-prompt-tag Num Num)])
-         (% (% (abort Num pt 5)
+         (% (% (abort Num var:pt 5)
                (make-prompt-tag Num Num)
-               (λ (x : Num) (+ x 2)))
-            pt
-            (λ (x : Num) (+ x 1)))))
+               (λ (var:x : Num) (+ var:x 2)))
+            var:pt
+            (λ (var:x : Num) (+ var:x 1)))))
  (term 6))
 
 ;; abort to innermost prompt
 (do-test
- (term (let ([(pt : (Prompt Num Num))
+ (term (let ([(var:pt : (Prompt Num Num))
               (make-prompt-tag Num Num)])
-         (% (% (abort Num pt 5)
-               pt
-               (λ (x : Num) (+ x 2)))
-            pt
-            (λ (x : Num) (+ x 1)))))
+         (% (% (abort Num var:pt 5)
+               var:pt
+               (λ (var:x : Num) (+ var:x 2)))
+            var:pt
+            (λ (var:x : Num) (+ var:x 1)))))
  (term 7))
 
 ;; composable continuations
 (do-test
- (term (let ([(pt : (Prompt Num Num))
+ (term (let ([(var:pt : (Prompt Num Num))
               (make-prompt-tag Num Num)])
          (% (+ 1 (call/comp
-                  (λ (kont : (→ Num Num))
-                    (+ (kont 3) (kont 5)))
-                  pt))
-            pt
-            (λ (x : Num) x))))
+                  (λ (var:kont : (→ Num Num))
+                    (+ (var:kont 3) (var:kont 5)))
+                  var:pt))
+            var:pt
+            (λ (var:x : Num) var:x))))
  (term 11))
 
 (do-test
- (term (let ([(pt : (Prompt (→ Unit Num) Num))
+ (term (let ([(var:pt : (Prompt (→ Unit Num) Num))
               (make-prompt-tag (→ Unit Num) Num)])
          (% (+ 1 (call/comp
-                  (λ (kont : (→ Num Num))
-                    (abort Num pt
-                           (λ (x : Unit)
-                             (+ (kont 3) (kont 5)))))
-                  pt))
-            pt
-            (λ (kont : (→ Unit Num)) (kont unit)))))
+                  (λ (var:kont : (→ Num Num))
+                    (abort Num var:pt
+                           (λ (var:x : Unit)
+                             (+ (var:kont 3) (var:kont 5)))))
+                  var:pt))
+            var:pt
+            (λ (var:kont : (→ Unit Num)) (var:kont unit)))))
  (term 10))
 
 ;; call/cc encoding
 (do-test
- (term (let ([(pt : (Prompt (→ Unit Num) Num))
+ (term (let ([(var:pt : (Prompt (→ Unit Num) Num))
               (make-prompt-tag (→ Unit Num) Num)])
          (% (+ 1 (call/cc
-                  (λ (kont : (→ Num Num))
-                    (+ (kont 3) (kont 5)))
-                  pt))
-            pt
-            (λ (kont : (→ Unit Num)) (kont unit)))))
+                  (λ (var:kont : (→ Num Num))
+                    (+ (var:kont 3) 
+                       (var:kont 5)))
+                  var:pt))
+            var:pt
+            (λ (var:kont : (→ Unit Num)) (var:kont unit)))))
  (term 4))
 
 ;; handler destroys call/cc semantics
 (do-test
- (term (let ([(pt : (Prompt (→ Unit Num) Num))
+ (term (let ([(var:pt : (Prompt (→ Unit Num) Num))
               (make-prompt-tag (→ Unit Num) Num)])
          (% (+ 1 (call/cc
-                  (λ (kont : (→ Num Num))
-                    (+ (kont 3) (kont 5)))
-                  pt))
-            pt
-            (λ (kont : (→ Unit Num)) 18))))
+                  (λ (var:kon : (→ Num Num))
+                    (+ (var:kon 3) (var:kon 5)))
+                  var:pt))
+            var:pt
+            (λ (var:kon : (→ Unit Num)) 18))))
  (term 18))
 
 ;; continuation marks
 (do-test
- (term (let ([(mk : (Mark Num))
+ (term (let ([(var:mk : (Mark Num))
               (make-cm-key Num)])
          (call/cm
-          mk 5
-          (ccm mk Num))))
+          var:mk 5
+          (ccm var:mk Num))))
  (term (cons 5 (null Num))))
 
 (do-test
- (term (let ([(mk : (Mark Num))
+ (term (let ([(var:mk : (Mark Num))
               (make-cm-key Num)])
          (call/cm
-          mk 5
+          var:mk 5
           (call/cm
-           mk 7
-           (ccm mk Num)))))
+           var:mk 7
+           (ccm var:mk Num)))))
  (term (cons 7 (null Num))))
 
 ;; make sure wcms merge in weird cases
 (do-test
- (term ((λ (f : (→ Unit (List Num)))
-          (wcm ((key0 5) ·) (f unit)))
-        (λ (x : Unit)
+ (term ((λ (var:f : (→ Unit (List Num)))
+          (wcm ((key0 5) ·) (var:f unit)))
+        (λ (var:x : Unit)
           (wcm ((key0 3) ·) (ccm key0 Num)))))
  (term (cons 3 (null Num)))
  #:init-store (term (key0 : (Mark Num) ·))
@@ -235,45 +236,45 @@
 
 ;; continuation mark contracts
 (do-test
- (term (let ([(mk : (Mark Num))
-              (monitor (mark/c (flat (λ (x : Num) (zero? x))) Num)
+ (term (let ([(var:mk : (Mark Num))
+              (monitor (mark/c (flat (λ (var:x : Num) (zero? var:x))) Num)
                        (make-cm-key Num)
                        "pos"
                        "neg"
                        "con")])
          (call/cm
-          mk 5
-          (ccm mk Num))))
+          var:mk 5
+          (ccm var:mk Num))))
  (term (ctc-error "neg" "con")))
 
 (do-test
- (term (let ([(mk : (Mark Num))
-              (monitor (mark/c (flat (λ (x : Num) (zero? x))) Num)
+ (term (let ([(var:mk : (Mark Num))
+              (monitor (mark/c (flat (λ (var:x : Num) (zero? var:x))) Num)
                        (make-cm-key Num)
                        "pos"
                        "neg"
                        "con")])
          (call/cm
-          mk 0
-          (ccm mk Num))))
+          var:mk 0
+          (ccm var:mk Num))))
  (term (cons 0 (null Num))))
 
 ;; naive contract
 (do-test
- (term (let ([(pt : (Prompt Num Num))
+ (term (let ([(var:pt : (Prompt Num Num))
               (make-prompt-tag Num Num)])
-         (% (monitor (flat (λ (x : Num) (number? x)))
-                     (abort Num pt 5)
+         (% (monitor (flat (λ (var:x : Num) (number? var:x)))
+                     (abort Num var:pt 5)
                      "pos"
                      "neg"
                      "con")
-            pt
-            (λ (x : Num) (+ x 1)))))
+            var:pt
+            (λ (var:x : Num) (+ var:x 1)))))
  (term 6))
 
 ;; first-order checks
 (do-test
- (term (monitor (flat (λ (x : Num) (zero? x)))
+ (term (monitor (flat (λ (var:x : Num) (zero? var:x)))
                 5
                 "server"
                 "client"
@@ -282,24 +283,24 @@
 
 ;; prompt & abort in the same component, the tag elsewhere
 (do-test
- (term (let ([(pt : (Prompt Num Num))
-              (monitor (prompt-tag/c (flat (λ (x : Num) (zero? x)))
-                                     (flat (λ (x : Num) (zero? x)))
+ (term (let ([(var:pt : (Prompt Num Num))
+              (monitor (prompt-tag/c (flat (λ (var:x : Num) (zero? var:x)))
+                                     (flat (λ (var:x : Num) (zero? var:x)))
                                      Num Num)
                        (make-prompt-tag Num Num)
                        "server"
                        "client"
                        "con")])
-         (% (abort Num pt 3)
-            pt
-            (λ (x : Num) (+ x 1)))))
+         (% (abort Num var:pt 3)
+            var:pt
+            (λ (var:x : Num) (+ var:x 1)))))
  (term (ctc-error "client" "con")))
 
 ;; call/comp issue
 (do-test
- (term (let ([(pt : (Prompt Num Num))
-              (monitor (prompt-tag/c (flat (λ (x : Num) (zero? x)))
-                                     (flat (λ (x : Num) (zero? x)))
+ (term (let ([(var:pt : (Prompt Num Num))
+              (monitor (prompt-tag/c (flat (λ (var:x : Num) (zero? var:x)))
+                                     (flat (λ (var:x : Num) (zero? var:x)))
                                      Num Num)
                        (make-prompt-tag Num Num)
                        "server"
@@ -307,143 +308,143 @@
                        "con")])
          (% (+ 1
                (call/comp
-                (λ (k : (→ Num Num))
-                  (k 0))
-                pt))
-            pt
-            (λ (x : Num) (+ x 1)))))
+                (λ (var:k : (→ Num Num))
+                  (var:k 0))
+                var:pt))
+            var:pt
+            (λ (var:x : Num) (+ var:x 1)))))
  (term (ctc-error "client" "con")))
 
 ;; blame even on one side
 (do-test
- (term (let ([(pt1 : (Prompt Num Num))
+ (term (let ([(var:pt1 : (Prompt Num Num))
               (make-prompt-tag Num Num)])
-         (let ([(pt2 : (Prompt Num Num))
-                (monitor (prompt-tag/c (flat (λ (x : Num) (zero? x)))
-                                       (flat (λ (x : Num) (zero? (- x 5))))
+         (let ([(var:pt2 : (Prompt Num Num))
+                (monitor (prompt-tag/c (flat (λ (var:x : Num) (zero? var:x)))
+                                       (flat (λ (var:x : Num) (zero? (- var:x 5))))
                                        Num Num)
-                         pt1
+                         var:pt1
                          "client"
                          "server"
                          "con")])
            (% (+ 1 ; doesn't add to 5
                  (call/comp
-                  (λ (k : (→ Num Num))
-                    (k 3))
-                  pt1))
-              pt2
-              (λ (x : Num) (+ x 1))))))
+                  (λ (var:k : (→ Num Num))
+                    (var:k 3))
+                  var:pt1))
+              var:pt2
+              (λ (var:x : Num) (+ var:x 1))))))
  (term (ctc-error "server" "con")))
 
 ;; blame even on other side
 (do-test
- (term (let ([(pt1 : (Prompt Num Num))
+ (term (let ([(var:pt1 : (Prompt Num Num))
               (make-prompt-tag Num Num)])
-         (let ([(pt2 : (Prompt Num Num))
-                (monitor (prompt-tag/c (flat (λ (x : Num) (zero? x)))
-                                       (flat (λ (x : Num) (zero? (- x 5))))
+         (let ([(var:pt2 : (Prompt Num Num))
+                (monitor (prompt-tag/c (flat (λ (var:x : Num) (zero? var:x)))
+                                       (flat (λ (var:x : Num) (zero? (- var:x 5))))
                                        Num Num)
-                         pt1
+                         var:pt1
                          "server"
                          "client"
                          "con")])
            (% (+ 1 ; doesn't add to 5
                  (call/comp
-                  (λ (k : (→ Num Num))
-                    (k 3))
-                  pt2))
-              pt1
-              (λ (x : Num) (+ x 1))))))
+                  (λ (var:k : (→ Num Num))
+                    (var:k 3))
+                  var:pt2))
+              var:pt1
+              (λ (var:x : Num) (+ var:x 1))))))
  (term (ctc-error "server" "con")))
 
 ;; same with ho-contract
 (do-test
- (term (let ([(pt : (Prompt (→ Num Num) Num))
-              (monitor (prompt-tag/c (-> (flat (λ (x : Num) (zero? x)))
-                                         (flat (λ (x : Num) (number? x))))
-                                     (flat (λ (x : Num) (number? x)))
+ (term (let ([(var:pt : (Prompt (→ Num Num) Num))
+              (monitor (prompt-tag/c (-> (flat (λ (var:x : Num) (zero? var:x)))
+                                         (flat (λ (var:x : Num) (number? var:x))))
+                                     (flat (λ (var:x : Num) (number? var:x)))
                                      (→ Num Num) Num)
                        (make-prompt-tag (→ Num Num) Num)
                        "server"
                        "client"
                        "con")])
-         (% (abort Num pt (λ (x : Num) 5))
-            pt
-            (λ (x : (→ Num Num)) (x 8)))))
+         (% (abort Num var:pt (λ (var:x : Num) 5))
+            var:pt
+            (λ (var:x : (→ Num Num)) (var:x 8)))))
  (term (ctc-error "client" "con")))
 
 ;; again, but from other side
 (do-test
- (term (let ([(pt : (Prompt (→ Num Num) Num))
-              (monitor (prompt-tag/c (-> (flat (λ (x : Num) (zero? x)))
-                                         (flat (λ (x : Num) (zero? x))))
-                                     (flat (λ (x : Num) (zero? x)))
+ (term (let ([(var:pt : (Prompt (→ Num Num) Num))
+              (monitor (prompt-tag/c (-> (flat (λ (var:x : Num) (zero? var:x)))
+                                         (flat (λ (var:x : Num) (zero? var:x))))
+                                     (flat (λ (var:x : Num) (zero? var:x)))
                                      (→ Num Num) Num)
                        (make-prompt-tag (→ Num Num) Num)
                        "server"
                        "client"
                        "con")])
-         (% (abort Num pt (λ (x : Num) 3))
-            pt
-            (λ (f : (→ Num Num)) (f 0)))))
+         (% (abort Num var:pt (λ (var:x : Num) 3))
+            var:pt
+            (λ (var:f : (→ Num Num)) (var:f 0)))))
  (term (ctc-error "client" "con")))
 
 ;; abort across boundary w/ ho-value
 (do-test
- (term (let ([(do-prompt : (→ (→ (Prompt (→ Num Num) Num) Num) Num))
-              (let ([(pt : (Prompt (→ Num Num) Num))
+ (term (let ([(var:do-prompt : (→ (→ (Prompt (→ Num Num) Num) Num) Num))
+              (let ([(var:pt : (Prompt (→ Num Num) Num))
                      (make-prompt-tag (→ Num Num) Num)])
-                (monitor (-> (-> (prompt-tag/c (-> (flat (λ (x : Num) (zero? x)))
-                                                   (flat (λ (x : Num) (zero? x))))
-                                               (flat (λ (x : Num) (zero? x)))
+                (monitor (-> (-> (prompt-tag/c (-> (flat (λ (var:x : Num) (zero? var:x)))
+                                                   (flat (λ (var:x : Num) (zero? var:x))))
+                                               (flat (λ (var:x : Num) (zero? var:x)))
                                                (→ Num Num) Num)
-                                 (flat (λ (x : Num) (number? x))))
-                             (flat (λ (x : Num) (number? x))))
-                         (λ (f : (→ (Prompt (→ Num Num) Num) Num))
-                           (% (f pt)
-                              pt
-                              (λ (f : (→ Num Num)) (f 5))))
+                                 (flat (λ (var:x : Num) (number? var:x))))
+                             (flat (λ (var:x : Num) (number? var:x))))
+                         (λ (var:f : (→ (Prompt (→ Num Num) Num) Num))
+                           (% (var:f var:pt)
+                              var:pt
+                              (λ (var:f : (→ Num Num)) (var:f 5))))
                          "server"
                          "client"
                          "con"))])
-         (do-prompt
-          (λ (pt : (Prompt (→ Num Num) Num))
-            (abort Num pt (λ (v : Num) (+ v 1)))))))
+         (var:do-prompt
+          (λ (var:pt : (Prompt (→ Num Num) Num))
+            (abort Num var:pt (λ (var:v : Num) (+ var:v 1)))))))
  (term (ctc-error "server" "con"))) ;; MF: nice example but in a paper presentation you need to simplify
 
 ;; where the prompt flows across multiple boundaries
 (do-test
- (term (let ([(do-prompt : (→ (→ (Prompt (→ Num Num) Num) Num) Num))
-              (let ([(pt : (Prompt (→ Num Num) Num))
+ (term (let ([(var:do-prompt : (→ (→ (Prompt (→ Num Num) Num) Num) Num))
+              (let ([(var:pt : (Prompt (→ Num Num) Num))
                      (make-prompt-tag (→ Num Num) Num)])
-                (monitor (-> (-> (prompt-tag/c (-> (flat (λ (x : Num) (number? x)))
-                                                   (flat (λ (x : Num) (number? x))))
-                                               (flat (λ (x : Num) (number? x)))
+                (monitor (-> (-> (prompt-tag/c (-> (flat (λ (var:x : Num) (number? var:x)))
+                                                   (flat (λ (var:x : Num) (number? var:x))))
+                                               (flat (λ (var:x : Num) (number? var:x)))
                                                (→ Num Num) Num)
-                                 (flat (λ (x : Num) (number? x))))
-                             (flat (λ (x : Num) (number? x))))
-                         (λ (f : (→ (Prompt (→ Num Num) Num) Num))
-                           (% (f pt)
-                              pt
-                              (λ (f : (→ Num Num)) (f 1))))
+                                 (flat (λ (var:x : Num) (number? var:x))))
+                             (flat (λ (var:x : Num) (number? var:x))))
+                         (λ (var:f : (→ (Prompt (→ Num Num) Num) Num))
+                           (% (var:f var:pt)
+                              var:pt
+                              (λ (var:f : (→ Num Num)) (var:f 1))))
                          "A"
                          "B"
                          "con1"))])
-         (let ([(do-prompt-2 : (→ (→ (Prompt (→ Num Num) Num) Num) Num))
-                (monitor (-> (-> (prompt-tag/c (-> (flat (λ (x : Num) (zero? x)))
-                                                   (flat (λ (x : Num) (number? x))))
-                                               (flat (λ (x : Num) (number? x)))
+         (let ([(var:do-prompt-2 : (→ (→ (Prompt (→ Num Num) Num) Num) Num))
+                (monitor (-> (-> (prompt-tag/c (-> (flat (λ (var:x : Num) (zero? var:x)))
+                                                   (flat (λ (var:x : Num) (number? var:x))))
+                                               (flat (λ (var:x : Num) (number? var:x)))
                                                (→ Num Num) Num)
-                                 (flat (λ (x : Num) (number? x))))
-                             (flat (λ (x : Num) (number? x))))
-                         (λ (f : (→ (Prompt (→ Num Num) Num) Num))
-                           (do-prompt f))
+                                 (flat (λ (var:x : Num) (number? var:x))))
+                             (flat (λ (var:x : Num) (number? var:x))))
+                         (λ (var:f : (→ (Prompt (→ Num Num) Num) Num))
+                           (var:do-prompt var:f))
                          "B"
                          "C"
                          "con2")])
-           (do-prompt-2
-            (λ (pt : (Prompt (→ Num Num) Num))
-              (abort Num pt (λ (v : Num) (+ v 1))))))))
+           (var:do-prompt-2
+            (λ (var:pt : (Prompt (→ Num Num) Num))
+              (abort Num var:pt (λ (var:v : Num) (+ var:v 1))))))))
  (term (ctc-error "B" "con2")))
 
 #|
@@ -463,11 +464,11 @@
 
 ;; tests for bugs found by random generation
 (test-equal
- (term (subst (make-cm-key Bool) x 5))
+ (term (subst (make-cm-key Bool) var:x 5))
  (term (make-cm-key Bool)))
 
 (test-equal
- (term (subst (null Bool) x 5))
+ (term (subst (null Bool) var:x 5))
  (term (null Bool)))
 
 (test-equal
@@ -475,7 +476,7 @@
  'null)
 
 (test-equal
- (abort-eval (term (μ (B : Num) B)))
+ (abort-eval (term (μ (var:B : Num) var:B)))
  'non-terminating)
 
 (test-equal
@@ -485,13 +486,13 @@
 (test-equal
  (abort-eval
   (term (call/comp
-         (λ (Dp : (→ (Mark Bool) Num)) (make-cm-key Bool))
+         (λ (var:Dp : (→ (Mark Bool) Num)) (make-cm-key Bool))
          (make-prompt-tag (Mark (Con Num)) Num))))
  'missing-prompt)
 
 (test-equal
  (term (no-match (call/comp 
-                  (λ (K : (→ (Prompt (Mark Num) Bool) 
+                  (λ (var:K : (→ (Prompt (Mark Num) Bool) 
                              (List (Prompt Bool Unit)))) 
                     (make-prompt-tag (Mark Num) Bool)) 
                   (wcm · hole)) tag))
@@ -517,7 +518,7 @@
 (test-equal
  (term 
   (no-match (call/cm key (wcm · hole) 
-                     ((wcm · (λ (C : Bool) #f)) (unit? 3))) 
+                     ((wcm · (λ (var:C : Bool) #f)) (unit? 3))) 
             tag))
  #t)
 
@@ -526,13 +527,13 @@
   (term
    (number?
     (μ
-     (i : Num)
+     (var:i : Num)
      (-
       (+ (case 
              (null (Con (Con Bool))) 
            (null = 1) 
-           ((cons X u) = 2)) (if #t 0 0))
-      i)))))
+           ((cons var:X var:u) = 2)) (if #t 0 0))
+      var:i)))))
  'non-terminating)
 
 (test-equal
@@ -557,7 +558,7 @@
     (wcm
      ·
      (call/comp
-      (λ (Sa : (→ Num (Prompt (→ Num Unit) (Con Bool)))) 0)
+      (λ (var:Sa : (→ Num (Prompt (→ Num Unit) (Con Bool)))) 0)
       tag2)))
    t)
   t)
@@ -580,9 +581,9 @@
    (wcm
     ((key
       (PG
-       (flat (λ (G : Unit) #t))
+       (flat (λ (var:G : Unit) #t))
        (mark/c
-        (list/c (mark/c (flat (λ (b : Unit) #t)) Unit))
+        (list/c (mark/c (flat (λ (var:b : Unit) #t)) Unit))
         (List (Mark Unit)))
        tag
        "B"
@@ -590,7 +591,7 @@
        "CgXohMerymUWF"))
      ·)
     (monitor
-     (flat (λ (Mk : Unit) #t))
+     (flat (λ (var:Mk : Unit) #t))
      (abort Unit tag1 #t)
      "fO"
      "clRmiOfXGo"
@@ -603,7 +604,7 @@
  (judgment-holds
   (tc · (key : (Mark (Mark (Mark Num))) ·)
       (MG
-       (mark/c (mark/c (flat (λ (r : Num) #f)) Num) (Mark Num))
+       (mark/c (mark/c (flat (λ (var:r : Num) #f)) Num) (Mark Num))
        key
        "EVYdYcpulOg"
        "G"

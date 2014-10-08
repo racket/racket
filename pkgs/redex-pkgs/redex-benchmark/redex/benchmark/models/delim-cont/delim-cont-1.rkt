@@ -22,14 +22,15 @@
 (include/rewrite "generators.rkt" generators bug-mod-rw)
 
 (define small-counter-example 
-  '(ccm 
-    (monitor 
-     (mark/c 
-      (mark/c (flat (λ (p : Num) #t)) 
-              Num)
-      (Mark Num)) 
-     (make-cm-key (Mark Num))
-     "" "" "") 
-    (Mark Num)))
-
+  '(<> (ccm 
+        (monitor 
+         (mark/c 
+          (mark/c (flat (λ (var:p : Num) #t)) 
+                  Num)
+          (Mark Num)) 
+         (make-cm-key (Mark Num))
+         "" "" "") 
+        (Mark Num))
+       (keymT : (→ Num Unit) (call/cm : Bool ·))))
+  
 (test small-counter-example)
