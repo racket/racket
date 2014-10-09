@@ -214,7 +214,7 @@
            (if req?
                (format "~a ~a" k (type->sexp t))
                (format "[~a ~a]" k (type->sexp t)))]))
-      (if rest  `(,(type->sexp rest) '*)                      null)
+      (if rest  `(,(type->sexp rest) *)                       null)
       (if drest `(,(type->sexp (car drest)) ... ,(cdr drest)) null)
       (match rng
         [(AnyValues: (Top:)) '(AnyValues)]
