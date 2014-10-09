@@ -2,7 +2,7 @@
 
 (require typed/mred/mred
          typed/framework/framework
-         racket/class
+         typed/racket/class
          string-constants)
 
 (require/typed framework

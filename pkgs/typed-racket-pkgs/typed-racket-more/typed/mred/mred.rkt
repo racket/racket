@@ -1,6 +1,6 @@
 #lang typed/racket/base
 
-(require racket/class
+(require typed/racket/class
          typed/private/utils)
 
 (provide Frame%

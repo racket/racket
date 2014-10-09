@@ -1,18 +1,9 @@
 #lang racket/base
 
-(require (except-in racket/class
-                    class
-                    define/public
-                    define/override
-                    define/pubment
-                    define/augment
-                    define/private)
+(require racket/require
+         (subtract-in racket/class
+                      typed-racket/base-env/class-prims)
          typed-racket/base-env/class-prims)
 
-(provide class
-         define/public
-         define/override
-         define/pubment
-         define/augment
-         define/private
+(provide (all-from-out typed-racket/base-env/class-prims)
          (all-from-out racket/class))
