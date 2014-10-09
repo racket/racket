@@ -203,7 +203,11 @@ or @racket[find-user-man-dir], respectively). On Mac OS X, when an
 unmoved file for @racket[move-foreign-libs] is a Mach-O file that
 includes a reference to another library in one of the directories reported by
 @racket[(get-lib-search-dirs)], then the reference is changed to a
-@litchar{@"@"loader_path/} reference.
+@litchar{@"@"loader_path/} reference. On Unix, when an
+unmoved file for @racket[move-foreign-libs] is an ELF file whose
+RPATH configuration is @litchar{$ORIGIN:} followed by the path
+to the main installation's library directory as reported by
+@racket[(find-lib-dir)], then its RPATH value is set to @litchar{$ORIGIN}.
 
 @defmodule[pkg/strip]{The @racketmodname[pkg/strip] module provides
 support for copying a package-style directory to a given destination

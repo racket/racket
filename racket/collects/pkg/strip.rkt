@@ -9,7 +9,8 @@
          racket/list
          racket/set
          racket/format
-         setup/private/dylib)
+         setup/private/dylib
+         setup/private/elf)
 
 (provide generate-stripped-directory
          fixup-local-redirect-reference
@@ -408,7 +409,7 @@
         (unmove d (build-path dest-dir f)))))
   (define (unmove dir dest-dir)
     (define info (get-info/full dir #:namespace metadata-ns))
-    (define (unmove-tag tag find-dir fixup)
+    (define (unmove-tag tag find-dir fixup copy-one-file)
       (when info
         (define l (info tag (lambda () null)))
         (for ([f (in-list l)])
@@ -417,16 +418,24 @@
                      (or (file-exists? (build-path (find-dir) f))
                          (directory-exists? (build-path (find-dir) f))))
             (define uncopied (build-path dest-dir f))
-            (copy-directory/files (build-path (find-dir) f)
-                                  uncopied)
+            (define src (build-path (find-dir) f))
+            (if (file-exists? src)
+                (copy-one-file src uncopied)
+                (copy-directory/files src uncopied))
             (fixup uncopied)))))
 
     (unmove-tag 'move-foreign-libs find-user-lib-dir
-                (if (eq? 'macosx (system-type))
-                    adjust-dylib-path/uninstall
-                    void))
-    (unmove-tag 'move-shared-files find-user-share-dir void)
-    (unmove-tag 'move-man-pages find-user-man-dir void)
+                (case (system-type)
+                  [(macosx)
+                   adjust-dylib-path/uninstall]
+                  [else void])
+                (case (system-type)
+                  [(unix)
+                   copy-file/uninstall-elf-rpath]
+                  [else
+                   copy-file]))
+    (unmove-tag 'move-shared-files find-user-share-dir void copy-file)
+    (unmove-tag 'move-man-pages find-user-man-dir void copy-file)
     (unmove-in dir dest-dir))
   (unmove dir dest-dir))
 
