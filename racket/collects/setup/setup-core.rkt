@@ -34,6 +34,7 @@
          "private/cc-struct.rkt"
          "link.rkt"
          "private/dylib.rkt"
+         "private/elf.rkt"
          "private/pkg-deps.rkt"
          "collection-name.rkt"
          (only-in pkg/lib pkg-directory
@@ -1574,7 +1575,8 @@
                                check-entry
                                build-dest-path
                                this-platform?
-                               fixup-lib)
+                               fixup-lib
+                               copy-user-lib)
     (define (make-libs-step)
       (setup-printf #f (format "--- installing ~a ---" whats))
       (define installed-libs (make-hash))
@@ -1625,7 +1627,9 @@
                                   (let-values ([(base name dir?) (split-path dest)])
                                     (when (path? base) (make-directory* base)))
                                   (if (file-exists? src)
-                                      (copy-file src dest)
+                                      (if (cc-main? cc)
+                                          (copy-file src dest)
+                                          (copy-user-lib src dest))
                                       (copy-directory/files src dest)))
                                 src)
                               
@@ -1746,9 +1750,14 @@
                              (error "entry is not a list of relative path strings:" l)))
                          build-path
                          this-platform?
-                         (if (eq? 'macosx (system-type))
-                             adjust-dylib-path/install
-                             void)))
+                         (case (system-type)
+                           [(macosx)
+                            adjust-dylib-path/install]
+                           [else void])
+                         (case (system-type)
+                           [(unix)
+                            copy-file/install-elf-rpath]
+                           [else void])))
 
   (define make-shares-step
     (make-copy/move-step "shared file"
@@ -1765,7 +1774,8 @@
                              (error "entry is not a list of relative path strings:" l)))
                          build-path
                          this-platform?
-                         void))
+                         void
+                         copy-file))
 
   (define make-mans-step
     (make-copy/move-step "man page"
@@ -1790,7 +1800,8 @@
                                        (bytes->path-element (bytes-append #"man" (filename-extension n)))
                                        n))
                          (lambda (info) #t)
-                         void))
+                         void
+                         copy-file))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;       Package-dependency checking         ;;

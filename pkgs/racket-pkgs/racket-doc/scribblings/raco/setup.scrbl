@@ -614,7 +614,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    includes a library reference that starts @litchar{@"@"loader_path/},
    and if the referenced library exists in a different location among
    the paths listed by @racket[(get-lib-search-dirs)], then the
-   library reference is updated to an absolute path.}
+   library reference is updated to an absolute path.
+
+   On Unix, when an ELF file is copied, if the copied file includes an
+   RPATH setting of @litchar{$ORIGIN} and the file is being installed
+   to a user-specific location, then the file's RPATH is adjusted to
+   @litchar{$ORIGIN:} followed by the path to the main installation's
+   library directory as reported by @racket[(find-lib-dir)].}
 
  @item{@indexed-racket[move-foreign-libs] : @racket[(listof (and/c
    path-string? relative-path?))] --- Like @racket[copy-foreign-libs],
