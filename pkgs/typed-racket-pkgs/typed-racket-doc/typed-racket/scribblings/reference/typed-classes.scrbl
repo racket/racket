@@ -224,6 +224,23 @@ additional provides all other bindings from @racketmodname[racket/class].
   @define/foo-content[d/pr-element]
 }
 
+@deftogether[(@defform[(init init-decl ...)]
+              @defform[(init-field init-decl ...)]
+              @defform[(field field-decl ...)]
+              @defform[(inherit-field field-decl ...)]
+              @defform[(init-rest id/type)]
+              @defform[(public maybe-renamed/type ...)]
+              @defform[(pubment maybe-renamed/type ...)]
+              @defform[(override maybe-renamed/type ...)]
+              @defform[(augment maybe-renamed/type ...)]
+              @defform[(private id/type ...)]
+              @defform[(inherit maybe-renamed/type ...)])]{
+  These forms are mostly equivalent to the forms of the same names from
+  the @racketmodname[racket/class] library and will expand to them. However,
+  they also allow the initialization argument, field, or method names to be
+  annotated with types as described above for the @racket[class] form.
+}
+
 @section{Types}
 
 @defform[#:literals (init init-field init-rest field augment)

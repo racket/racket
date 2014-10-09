@@ -19,7 +19,8 @@
          (base-env base-types base-types-extra colon)
          ;; needed for parsing case-lambda/case-> types
          (only-in (base-env case-lambda) case-lambda)
-         (only-in racket/class init init-field field augment)
+         (prefix-in un: (only-in racket/class init init-field field augment))
+         (only-in typed/racket/class init init-field field augment)
 
          rackunit)
 
@@ -261,6 +262,8 @@
    [(Class) (-class)]
    [(Class (init [x Number] [y Number]))
     (-class #:init ([x -Number #f] [y -Number #f]))]
+   [(Class (un:init [x Number] [y Number]))
+    (-class #:init ([x -Number #f] [y -Number #f]))]
    [(Class (init [x Number] [y Number #:optional]))
     (-class #:init ([x -Number #f] [y -Number #t]))]
    [(Class (init [x Number]) (init-field [y Number]))
@@ -271,7 +274,11 @@
     (-class #:init ([x -Number #f]) #:method ([m (t:-> N N)]))]
    [(Class [m (Number -> Number)] (field [x Number]))
     (-class #:field ([x -Number]) #:method ([m (t:-> N N)]))]
+   [(Class [m (Number -> Number)] (un:field [x Number]))
+    (-class #:field ([x -Number]) #:method ([m (t:-> N N)]))]
    [(Class (augment [m (Number -> Number)]))
+    (-class #:augment ([m (t:-> N N)]))]
+   [(Class (un:augment [m (Number -> Number)]))
     (-class #:augment ([m (t:-> N N)]))]
    [(Class (augment [m (Number -> Number)]) (field [x Number]))
     (-class #:augment ([m (t:-> N N)]) #:field ([x -Number]))]

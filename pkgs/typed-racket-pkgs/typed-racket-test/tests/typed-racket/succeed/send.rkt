@@ -12,7 +12,7 @@
   (provide fish%))
 
 (module fish-client typed/racket/base
-  (require racket/class)
+  (require typed/racket/class)
   (require/typed (submod ".." fish) [fish% Fish%])
   
   (define-type-alias Fish% (Class (init [weight Real])

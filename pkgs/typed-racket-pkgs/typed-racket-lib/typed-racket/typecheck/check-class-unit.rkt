@@ -63,24 +63,25 @@
 (define-syntax-class internal-class-data
   #:literal-sets (kernel-literals)
   #:literals (class-internal values)
-  (pattern (begin (quote-syntax
-                   (class-internal
-                    (#:forall type-parameter:id ...)
-                    (#:all-inits all-init-names:id ...)
-                    (#:init init-names:name-pair ...)
-                    (#:init-field init-field-names:name-pair ...)
-                    (#:init-rest (~optional init-rest-name:id))
-                    (#:optional-init optional-names:id ...)
-                    (#:field field-names:name-pair ...)
-                    (#:public public-names:name-pair ...)
-                    (#:override override-names:name-pair ...)
-                    (#:private privates:id ...)
-                    (#:private-field private-fields:id ...)
-                    (#:inherit inherit-names:name-pair ...)
-                    (#:inherit-field inherit-field-names:name-pair ...)
-                    (#:augment augment-names:name-pair ...)
-                    (#:pubment pubment-names:name-pair ...)))
-                  (#%plain-app values))
+  (pattern (let-values ([() (begin (quote-syntax
+                                    (class-internal
+                                     (#:forall type-parameter:id ...)
+                                     (#:all-inits all-init-names:id ...)
+                                     (#:init init-names:name-pair ...)
+                                     (#:init-field init-field-names:name-pair ...)
+                                     (#:init-rest (~optional init-rest-name:id))
+                                     (#:optional-init optional-names:id ...)
+                                     (#:field field-names:name-pair ...)
+                                     (#:public public-names:name-pair ...)
+                                     (#:override override-names:name-pair ...)
+                                     (#:private privates:id ...)
+                                     (#:private-field private-fields:id ...)
+                                     (#:inherit inherit-names:name-pair ...)
+                                     (#:inherit-field inherit-field-names:name-pair ...)
+                                     (#:augment augment-names:name-pair ...)
+                                     (#:pubment pubment-names:name-pair ...)))
+                                   (#%plain-app values))])
+             _)
            #:with type-parameters #'(type-parameter ...)
            #:with all-init-internals #'(all-init-names ...)
            #:with init-internals #'(init-names.internal ...)
@@ -153,38 +154,19 @@
 (define-syntax-class class-expansion
   #:literals (let-values letrec-syntaxes+values #%plain-app quote)
   #:attributes (superclass-expr
-                type-parameters
-                all-init-internals
-                init-internals init-externals
-                init-field-internals init-field-externals
-                init-rest-name
-                optional-inits
-                field-internals field-externals
-                public-internals public-externals
-                override-internals override-externals
-                inherit-internals inherit-externals
-                inherit-field-internals inherit-field-externals
-                augment-internals augment-externals
-                pubment-internals pubment-externals
-                private-names private-field-names
                 make-methods
                 initializer-body
                 initializer-self-id
                 initializer-args-id)
-  (pattern (let-values ()
-             (letrec-syntaxes+values
-              ()
-              ((() ;; residual class: data
-                   :internal-class-data))
-              (#%plain-app
-               compose-class:id
-               name:expr
-               superclass-expr:expr
-               interface-expr:expr
-               internal:expr ...
-               (~and make-methods :make-methods-class)
-               (quote :boolean)
-               (quote #f))))))
+  (pattern (#%plain-app
+            compose-class:id
+            name:expr
+            superclass-expr:expr
+            interface-expr:expr
+            internal:expr ...
+            (~and make-methods :make-methods-class)
+            (quote :boolean)
+            (quote #f))))
 
 ;; This is similar to `type-declaration` from "internal-forms.rkt", but
 ;; the expansion is slightly different in a class so we use this instead.
@@ -234,89 +216,93 @@
      ;; FIXME: maybe should check the property on this expression
      ;;        as a sanity check too
      (define super-type (tc-expr #'cls.superclass-expr))
-     ;; Save parse attributes to pass through to helper functions
-     (define type-parameters (syntax->datum #'cls.type-parameters))
-     (define fresh-parameters (map gensym type-parameters))
-     (define parse-info
-       (hash 'type-parameters     type-parameters
-             'fresh-parameters    fresh-parameters
-             'superclass-expr     #'cls.superclass-expr
-             'make-methods        #'cls.make-methods
-             'initializer-self-id #'cls.initializer-self-id
-             'initializer-args-id #'cls.initializer-args-id
-             'initializer-body    #'cls.initializer-body
-             'optional-inits      (syntax->datum #'cls.optional-inits)
-             'only-init-internals (syntax->datum #'cls.init-internals)
-             'only-init-names     (syntax->datum #'cls.init-externals)
-             ;; the order of these names reflect the order in the class,
-             ;; so use this list when retaining the order is important
-             'init-internals      (syntax->datum #'cls.all-init-internals)
-             'init-rest-name     (and (attribute cls.init-rest-name)
-                                      (syntax-e (attribute cls.init-rest-name)))
-             'public-internals   (syntax->datum #'cls.public-internals)
-             'override-internals (syntax->datum #'cls.override-internals)
-             'pubment-internals  (syntax->datum #'cls.pubment-internals)
-             'augment-internals  (syntax->datum #'cls.augment-internals)
-             'method-internals
-             (set-union (syntax->datum #'cls.public-internals)
-                        (syntax->datum #'cls.override-internals))
-             'field-internals
-             (set-union (syntax->datum #'cls.field-internals)
-                        (syntax->datum #'cls.init-field-internals))
-             'inherit-internals
-             (syntax->datum #'cls.inherit-internals)
-             'inherit-field-internals
-             (syntax->datum #'cls.inherit-field-internals)
-             'init-names
-             (set-union (syntax->datum #'cls.init-externals)
-                        (syntax->datum #'cls.init-field-externals))
-             'field-names
-             (set-union (syntax->datum #'cls.field-externals)
-                        (syntax->datum #'cls.init-field-externals))
-             'public-names   (syntax->datum #'cls.public-externals)
-             'override-names (syntax->datum #'cls.override-externals)
-             'pubment-names  (syntax->datum #'cls.pubment-externals)
-             'augment-names  (syntax->datum #'cls.augment-externals)
-             'inherit-names  (syntax->datum #'cls.inherit-externals)
-             'inherit-field-names
-             (syntax->datum #'cls.inherit-field-externals)
-             'private-names  (syntax->datum #'cls.private-names)
-             'private-fields (syntax->datum #'cls.private-field-names)
-             'overridable-names
-             (set-union (syntax->datum #'cls.public-externals)
-                        (syntax->datum #'cls.override-externals))
-             'augmentable-names
-             (set-union (syntax->datum #'cls.pubment-externals)
-                        (syntax->datum #'cls.augment-externals))
-             'method-names
-             (set-union (syntax->datum #'cls.public-externals)
-                        (syntax->datum #'cls.override-externals)
-                        (syntax->datum #'cls.augment-externals)
-                        (syntax->datum #'cls.pubment-externals))
-             'all-internal
-             (append (syntax->datum #'cls.init-internals)
-                     (syntax->datum #'cls.init-field-internals)
-                     (syntax->datum #'cls.field-internals)
-                     (syntax->datum #'cls.public-internals)
-                     (syntax->datum #'cls.override-internals)
-                     (syntax->datum #'cls.inherit-internals)
-                     (syntax->datum #'cls.inherit-field-internals)
-                     (syntax->datum #'cls.pubment-internals)
-                     (syntax->datum #'cls.augment-internals))
-             'all-external
-             (append (syntax->datum #'cls.init-externals)
-                     (syntax->datum #'cls.init-field-externals)
-                     (syntax->datum #'cls.field-externals)
-                     (syntax->datum #'cls.public-externals)
-                     (syntax->datum #'cls.override-externals)
-                     (syntax->datum #'cls.inherit-externals)
-                     (syntax->datum #'cls.inherit-field-externals)
-                     (syntax->datum #'cls.pubment-externals)
-                     (syntax->datum #'cls.augment-externals))))
-     (with-timing
-      (do-timestamp (format "methods ~a" (dict-ref parse-info 'method-names)))
-      (extend-tvars/new type-parameters fresh-parameters
-        (do-check expected super-type parse-info)))]))
+     (define class-name-table
+       (car (trawl-for-property #'cls.make-methods tr:class:name-table-property)))
+     (syntax-parse class-name-table
+       [tbl:internal-class-data
+        ;; Save parse attributes to pass through to helper functions
+        (define type-parameters (syntax->datum #'tbl.type-parameters))
+        (define fresh-parameters (map gensym type-parameters))
+        (define parse-info
+          (hash 'type-parameters     type-parameters
+                'fresh-parameters    fresh-parameters
+                'superclass-expr     #'cls.superclass-expr
+                'make-methods        #'cls.make-methods
+                'initializer-self-id #'cls.initializer-self-id
+                'initializer-args-id #'cls.initializer-args-id
+                'initializer-body    #'cls.initializer-body
+                'optional-inits      (syntax->datum #'tbl.optional-inits)
+                'only-init-internals (syntax->datum #'tbl.init-internals)
+                'only-init-names     (syntax->datum #'tbl.init-externals)
+                ;; the order of these names reflect the order in the class,
+                ;; so use this list when retaining the order is important
+                'init-internals      (syntax->datum #'tbl.all-init-internals)
+                'init-rest-name     (and (attribute tbl.init-rest-name)
+                                         (syntax-e (attribute tbl.init-rest-name)))
+                'public-internals   (syntax->datum #'tbl.public-internals)
+                'override-internals (syntax->datum #'tbl.override-internals)
+                'pubment-internals  (syntax->datum #'tbl.pubment-internals)
+                'augment-internals  (syntax->datum #'tbl.augment-internals)
+                'method-internals
+                (set-union (syntax->datum #'tbl.public-internals)
+                           (syntax->datum #'tbl.override-internals))
+                'field-internals
+                (set-union (syntax->datum #'tbl.field-internals)
+                           (syntax->datum #'tbl.init-field-internals))
+                'inherit-internals
+                (syntax->datum #'tbl.inherit-internals)
+                'inherit-field-internals
+                (syntax->datum #'tbl.inherit-field-internals)
+                'init-names
+                (set-union (syntax->datum #'tbl.init-externals)
+                           (syntax->datum #'tbl.init-field-externals))
+                'field-names
+                (set-union (syntax->datum #'tbl.field-externals)
+                           (syntax->datum #'tbl.init-field-externals))
+                'public-names   (syntax->datum #'tbl.public-externals)
+                'override-names (syntax->datum #'tbl.override-externals)
+                'pubment-names  (syntax->datum #'tbl.pubment-externals)
+                'augment-names  (syntax->datum #'tbl.augment-externals)
+                'inherit-names  (syntax->datum #'tbl.inherit-externals)
+                'inherit-field-names
+                (syntax->datum #'tbl.inherit-field-externals)
+                'private-names  (syntax->datum #'tbl.private-names)
+                'private-fields (syntax->datum #'tbl.private-field-names)
+                'overridable-names
+                (set-union (syntax->datum #'tbl.public-externals)
+                           (syntax->datum #'tbl.override-externals))
+                'augmentable-names
+                (set-union (syntax->datum #'tbl.pubment-externals)
+                           (syntax->datum #'tbl.augment-externals))
+                'method-names
+                (set-union (syntax->datum #'tbl.public-externals)
+                           (syntax->datum #'tbl.override-externals)
+                           (syntax->datum #'tbl.augment-externals)
+                           (syntax->datum #'tbl.pubment-externals))
+                'all-internal
+                (append (syntax->datum #'tbl.init-internals)
+                        (syntax->datum #'tbl.init-field-internals)
+                        (syntax->datum #'tbl.field-internals)
+                        (syntax->datum #'tbl.public-internals)
+                        (syntax->datum #'tbl.override-internals)
+                        (syntax->datum #'tbl.inherit-internals)
+                        (syntax->datum #'tbl.inherit-field-internals)
+                        (syntax->datum #'tbl.pubment-internals)
+                        (syntax->datum #'tbl.augment-internals))
+                'all-external
+                (append (syntax->datum #'tbl.init-externals)
+                        (syntax->datum #'tbl.init-field-externals)
+                        (syntax->datum #'tbl.field-externals)
+                        (syntax->datum #'tbl.public-externals)
+                        (syntax->datum #'tbl.override-externals)
+                        (syntax->datum #'tbl.inherit-externals)
+                        (syntax->datum #'tbl.inherit-field-externals)
+                        (syntax->datum #'tbl.pubment-externals)
+                        (syntax->datum #'tbl.augment-externals))))
+        (with-timing
+          (do-timestamp (format "methods ~a" (dict-ref parse-info 'method-names)))
+          (extend-tvars/new type-parameters fresh-parameters
+                            (do-check expected super-type parse-info)))])]))
 
 ;; do-check : Type Type Dict -> Type
 ;; The actual type-checking

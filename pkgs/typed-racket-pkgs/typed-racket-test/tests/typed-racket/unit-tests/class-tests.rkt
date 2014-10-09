@@ -17,9 +17,7 @@
 
 ;; see typecheck-tests.rkt for rationale on imports
 (require rackunit
-         (except-in racket/class
-                    class define/public define/override
-                    define/pubment define/augment define/private)
+         typed/racket/class
          (except-in typed-racket/utils/utils private)
          (except-in (base-env extra-procs prims class-prims
                               base-types base-types-extra)
@@ -1325,8 +1323,8 @@
              (super-new)
              (: x String)
              (field [x : Symbol 0]))
-           #:ret (ret (-class #:field ([x -Symbol])))
-           #:msg #rx"duplicate type annotation.*new type: String"]
+           #:ret (ret (-class #:field ([x -String])))
+           #:msg #rx"duplicate type annotation.*new type: Symbol"]
    ;; fails, expected type and annotation don't match
    [tc-err (let ()
              (: c% (Class (field [x String])))

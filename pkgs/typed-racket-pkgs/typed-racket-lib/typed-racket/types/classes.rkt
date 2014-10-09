@@ -6,7 +6,9 @@
 (require "../utils/utils.rkt"
          (rep type-rep rep-utils)
          (types resolve)
-         (except-in racket/class private)
+         (prefix-in untyped: racket/class)
+         (except-in (base-env class-clauses)
+                    private)
          racket/dict
          racket/list
          racket/match
@@ -14,7 +16,7 @@
          syntax/stx
          (only-in unstable/list check-duplicate)
          (only-in unstable/sequence in-syntax)
-         (for-template racket/class))
+         (for-template (base-env class-clauses)))
 
 (provide Class:
          row-constraints
@@ -24,6 +26,11 @@
          check-row-constraints
          object-type-clauses
          class-type-clauses)
+
+(define-literal-set class-type-literals
+  (init init-field init-rest field augment
+   untyped:init untyped:init-field untyped:init-rest
+   untyped:field untyped:augment))
 
 ;; Data definitions
 ;;
@@ -37,11 +44,11 @@
 
 ;; Syntax classes for rows
 (define-splicing-syntax-class row-constraints
-  #:literals (init init-field field augment)
-  (pattern (~seq (~or (init iname:id ...)
-                      (init-field ifname:id ...)
-                      (field fname:id ...)
-                      (augment aname:id ...)
+  #:literal-sets (class-type-literals)
+  (pattern (~seq (~or ((~or init untyped:init) iname:id ...)
+                      ((~or init-field untyped:init-field) ifname:id ...)
+                      ((~or field untyped:field) fname:id ...)
+                      ((~or augment untyped:augment) aname:id ...)
                       mname:id)
                  ...)
             #:attr init-names (flatten/datum #'((iname ...) ...))
@@ -92,8 +99,9 @@
 (define-splicing-syntax-class (row-clauses parse-type)
   #:description "Row type clause"
   #:attributes (row)
-  #:literals (init-rest)
-  (pattern (~seq (~or (~optional (init-rest init-rest-type:expr))
+  #:literal-sets (class-type-literals)
+  (pattern (~seq (~or (~optional ((~or init-rest untyped:init-rest)
+                                  init-rest-type:expr))
                       (~var clause (type-clause parse-type)))
                  ...)
            #:attr inits (apply append (attribute clause.init-entries))
@@ -180,8 +188,9 @@
 (define-splicing-syntax-class object-type-clauses
   #:description "Object type clause"
   #:attributes (field-names field-types method-names method-types)
-  #:literals (field)
-  (pattern (~seq (~or (field field-clause:field-or-method-type ...)
+  #:literal-sets (class-type-literals)
+  (pattern (~seq (~or ((~or field untyped:field)
+                       field-clause:field-or-method-type ...)
                       method-clause:field-or-method-type)
                  ...)
            #:with field-names (flatten-class-clause #'((field-clause.label ...) ...))
@@ -204,10 +213,11 @@
   #:description "Class type clause"
   #:attributes (row-var extends-types
                 inits fields methods augments init-rest)
-  #:literals (init-rest)
+  #:literal-sets (class-type-literals)
   (pattern (~seq (~or (~optional (~seq #:row-var row-var:id))
                       (~seq #:implements extends-type:id)
-                      (~optional (init-rest init-rest-type:expr))
+                      (~optional ((~or init-rest untyped:init-rest)
+                                  init-rest-type:expr))
                       (~var clause (type-clause parse-type)))
                  ...)
            #:attr inits (apply append (attribute clause.init-entries))
@@ -250,8 +260,8 @@
 (define-syntax-class (type-clause parse-type)
   #:attributes (init-entries field-entries
                 method-entries augment-entries)
-  #:literals (init init-field field augment)
-  (pattern (init init-clause:init-type ...)
+  #:literal-sets (class-type-literals)
+  (pattern ((~or init untyped:init) init-clause:init-type ...)
            #:attr init-entries
                   (make-init-entries
                    #'(init-clause.label ...)
@@ -261,7 +271,8 @@
            #:attr field-entries null
            #:attr method-entries null
            #:attr augment-entries null)
-  (pattern (init-field init-field-clause:init-type ...)
+  (pattern ((~or init-field untyped:init-field)
+            init-field-clause:init-type ...)
            #:attr init-entries
                   (make-init-entries
                    #'(init-field-clause.label ...)
@@ -275,7 +286,7 @@
                    parse-type)
            #:attr method-entries null
            #:attr augment-entries null)
-  (pattern (field field-clause:field-or-method-type ...)
+  (pattern ((~or field untyped:field) field-clause:field-or-method-type ...)
            #:attr init-entries null
            #:attr field-entries
                   (make-field/augment-entries
@@ -284,7 +295,8 @@
                    parse-type)
            #:attr method-entries null
            #:attr augment-entries null)
-  (pattern (augment augment-clause:field-or-method-type ...)
+  (pattern ((~or augment untyped:augment)
+            augment-clause:field-or-method-type ...)
            #:attr init-entries null
            #:attr field-entries null
            #:attr method-entries null

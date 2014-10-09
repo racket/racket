@@ -73,6 +73,8 @@
   (tr:class:type-annotation tr:class:type-annotation)
   (tr:class:super tr:class:super)
   (tr:class:local-table tr:class:local-table)
+  (tr:class:name-table tr:class:name-table)
+  (tr:class:clause-ids tr:class:clause-ids)
   (tr:class:method tr:class:method)
   )
 
