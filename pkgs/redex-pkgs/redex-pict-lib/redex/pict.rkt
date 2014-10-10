@@ -100,7 +100,8 @@
                         'up-down
                         'up-down/vertical-side-conditions
                         'up-down/compact-side-conditions))]
- [delimit-ellipsis-arguments? (parameter/c any/c)])
+ [delimit-ellipsis-arguments? (parameter/c any/c)]
+ [use-homemade-white-brackets (parameter/c boolean?)])
 
 (provide/contract
  [label-font-size (parameter/c (and/c (between/c 1 255) integer?))]

@@ -3205,6 +3205,16 @@ precede ellipses that represent argument sequences; when it is
 @racket[#f] no commas appear in those positions.
 }
 
+@defparam[use-homemade-white-brackets homemade? boolean?]{
+This parameter controls the typesetting of the brackets in metafunction
+definitions and applications. When it is @racket[#f] (the default),
+Redex uses the unicode characters @litchar{〚} and  @litchar{〛}
+around the parameters. Otherwise, it uses two overlapping
+@litchar{[} and  @litchar{]} chars with a little whitespace between them.
+
+@history[#:added "1.1"]
+}
+
 @defparam[linebreaks breaks (or/c #f (listof boolean?))]{
   This parameter controls which cases in the metafunction 
   are rendered on two lines and which are rendered on one.
