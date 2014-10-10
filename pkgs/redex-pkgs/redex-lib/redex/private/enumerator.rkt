@@ -21,8 +21,9 @@
 (provide enum
          enum?
          size
-         encode
-         decode
+         (contract-out
+          (encode (-> enum? any/c exact-nonnegative-integer?))
+          (decode (-> enum? exact-nonnegative-integer? any/c)))
          empty/e
          const/e
          from-list/e
@@ -85,16 +86,14 @@
   (enum-size e))
 
 ;; decode : enum a, Nat -> a
-(define/contract (decode e n)
-  (-> enum? exact-nonnegative-integer? any/c)
+(define (decode e n)
   (if (and (< n (enum-size e))
            (>= n 0))
       ((enum-from e) n)
       (redex-error 'decode "Index into enumerator out of range. Tried to decode ~s in an enum of size ~s" n (size e))))
 
 ;; encode : enum a, a -> Nat
-(define/contract (encode e a)
-  (-> enum? any/c exact-nonnegative-integer?)
+(define (encode e a)
   ((enum-to e) a))
 
 ;; Helper functions
