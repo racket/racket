@@ -1059,8 +1059,9 @@
                       (cons (car fins) acc))])])))
   (values decon recon))
 
-;; list/e : listof (enum any) -> enum (listof any)
-(define (list/e . es)
+;; Attempt at mixing finite and infinite pairing in a more principled way
+;; Slower than using inf-fin-cons/e as in list/e
+(define (inf-fin-fair-list/e . es)
   (define nat/es
     (for/list ([e (in-list es)])
       (take/e nat/e (size e))))
@@ -1177,6 +1178,113 @@
                            rest-fis
                            (cons #f acc))])]))))
 
+(define (inf-fin-cons/e e1 e2)
+  (define s1 (size e1))
+  (define s2 (size e2))
+  (define fst-finite? (not (infinite? s1)))
+  (define fin-size
+    (cond [fst-finite? s1]
+          [else s2]))
+  (define (dec n)
+    (define-values (q r)
+      (quotient/remainder n fin-size))
+    (define x1 (decode e1 (if fst-finite? r q)))
+    (define x2 (decode e2 (if fst-finite? q r)))
+    (cons x1 x2))
+  (define/match (enc p)
+    [((cons x1 x2))
+     (define n1 (encode e1 x1))
+     (define n2 (encode e2 x2))
+     (define q (if fst-finite? n2 n1))
+     (define r (if fst-finite? n1 n2))
+     (+ (* fin-size q)
+        r)])
+  (enum (* s1 s2) dec enc))
+
+(define (list/e . es)
+  (define l (length es))
+  (cond
+   [(= l 0) (const/e '())]
+   [(= l 1) (map/e list car (car es))]
+   [(all-infinite? es) (apply box-list/e es)]
+   [(all-finite? es) (apply nested-cons-list/e es)]
+   [else
+    (define tagged-es
+      (for/list ([i (in-naturals)]
+                 [e (in-list es)])
+        (cons e i)))
+    (define-values (inf-eis fin-eis)
+      (partition (compose infinite?
+                          size
+                          car)
+                 tagged-es))
+    (define inf-es (map car inf-eis))
+    (define inf-is (map cdr inf-eis))
+    (define fin-es (map car fin-eis))
+    (define fin-is (map cdr fin-eis))
+    (define inf-slots
+      (reverse
+       (let loop ([inf-is inf-is]
+                  [fin-is fin-is]
+                  [acc '()])
+         (match* (inf-is fin-is)
+                 [('() '()) acc]
+                 [((cons _ _) '())
+                  (append (for/list ([_ (in-list inf-is)]) #t) acc)]
+                 [('() (cons _ _))
+                  (append (for/list ([_ (in-list fin-is)]) #f) acc)]
+                 [((cons ii rest-iis) (cons fi rest-fis))
+                  (cond [(ii . < . fi)
+                         (loop rest-iis
+                               fin-is
+                               (cons #t acc))]
+                        [else
+                         (loop inf-is
+                               rest-fis
+                               (cons #f acc))])]))))
+    (define/match (reconstruct infs-fins)
+      [((cons infs fins))
+       (let loop ([infs infs]
+                  [fins fins]
+                  [inf?s inf-slots]
+                  [acc '()])
+         (match inf?s
+           ['() (reverse acc)]
+           [(cons inf? rest)
+            (cond [inf?
+                   (loop (cdr infs)
+                         fins
+                         rest
+                         (cons (car infs) acc))]
+                  [else
+                   (loop infs
+                         (cdr fins)
+                         rest
+                         (cons (car fins) acc))])]))])
+    (define (deconstruct xs)
+      (let loop ([xs xs]
+                 [inf-acc '()]
+                 [fin-acc '()]
+                 [inf?s inf-slots])
+        (match* (xs inf?s)
+                [('() '()) (cons (reverse inf-acc)
+                                 (reverse fin-acc))]
+                [((cons x rest-xs) (cons inf? rest-inf?s))
+                 (cond [inf?
+                        (loop rest-xs
+                              (cons x inf-acc)
+                              fin-acc
+                              rest-inf?s)]
+                       [else
+                        (loop rest-xs
+                              inf-acc
+                              (cons x fin-acc)
+                              rest-inf?s)])])))
+    (map/e reconstruct
+           deconstruct
+           (inf-fin-cons/e (apply list/e inf-es)
+                   (apply list/e fin-es)))]))
+
 (define (nested-cons-list/e . es)
   (define l (length es))
   (define split-point (quotient l 2))
@@ -1187,7 +1295,6 @@
       (define-values (left right) (split-at lst split-point))
       (cons left right))
    (fin-cons/e (apply list/e left) (apply list/e right))))
-
 
 (define (all-infinite? es)
   (all-sizes-something? infinite? es))
