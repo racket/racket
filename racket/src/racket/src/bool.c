@@ -52,13 +52,14 @@ static Scheme_Object *chaperone_of (int argc, Scheme_Object *argv[]);
 static Scheme_Object *impersonator_of (int argc, Scheme_Object *argv[]);
 
 typedef struct Equal_Info {
+  /* All pointers, 0, or odd numbers, because it's allocated with scheme_malloc(): */
   intptr_t depth; /* always odd, so it looks like a fixnum */
   intptr_t car_depth; /* always odd => fixnum */
   Scheme_Hash_Table *ht;
   Scheme_Object *recur;
   Scheme_Object *next, *next_next;
   Scheme_Object *insp;
-  int for_chaperone; /* 2 => for impersonator */
+  intptr_t for_chaperone; /* 3 => for impersonator */
 } Equal_Info;
 
 static int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql);
@@ -978,7 +979,7 @@ int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2)
   eql.next = NULL;
   eql.next_next = NULL;
   eql.insp = NULL;
-  eql.for_chaperone = 2;
+  eql.for_chaperone = 3;
 
   return is_equal(obj1, obj2, &eql);
 }
