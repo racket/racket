@@ -813,7 +813,11 @@ static Scheme_Object *append_path(Scheme_Object *a, Scheme_Object *b)
 
 Scheme_Object *scheme_char_string_to_path(Scheme_Object *p)
 {
+#ifdef DOS_FILE_SYSTEM
+  p = scheme_char_string_to_byte_string(p);
+#else
   p = scheme_char_string_to_byte_string_locale(p);
+#endif
   p->type = SCHEME_PLATFORM_PATH_KIND;
   return p;
 }
@@ -889,7 +893,11 @@ Scheme_Object *scheme_path_to_char_string(Scheme_Object *p)
 {
   Scheme_Object *s;
 
+#ifdef DOS_FILE_SYSTEM
+  s = scheme_byte_string_to_char_string(p);
+#else
   s = scheme_byte_string_to_char_string_locale(p);
+#endif
 
   if (!SCHEME_CHAR_STRLEN_VAL(s))
     return scheme_make_utf8_string("?");
