@@ -195,11 +195,27 @@ static char *nl_langinfo(int which)
   for (i = 0; current_locale_name[i]; i++) {
     if (current_locale_name[i] == '.') {
       if (current_locale_name[i + 1]) {
-	int len, j = 0;
+	int len, j;
 	char *enc;
 	i++;
 	len = scheme_char_strlen(current_locale_name) - i;
-	enc = (char *)scheme_malloc_atomic(len + 1);
+	enc = (char *)scheme_malloc_atomic(2 + len + 1);
+
+        /* Check whether the encoding is numberic, in which case
+           we add "CP" in front to make it an encoding name */
+        for (j = i; current_locale_name[j]; j++) {
+          if (current_locale_name[j] > 127)
+            break;
+          if (!isdigit(current_locale_name[j]))
+            break;
+        }
+        if (!current_locale_name[j]) {
+          j = 2;
+          memcpy(enc, "CP", j);
+        } else {
+          j = 0;
+        }
+
 	while (current_locale_name[i]) {
 	  if (current_locale_name[i] > 127)
 	    return "UTF-8";
