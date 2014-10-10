@@ -1259,8 +1259,8 @@ int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym
           scheme_hash_set(rev_ht, SCHEME_CDR(a), scheme_true);
         }
       }
-      scheme_hash_set(marked_names, scheme_false, (Scheme_Object *)rev_ht);
     }
+    scheme_hash_set(marked_names, scheme_false, (Scheme_Object *)rev_ht);
   }
 
   if (scheme_hash_get(rev_ht, sym))
