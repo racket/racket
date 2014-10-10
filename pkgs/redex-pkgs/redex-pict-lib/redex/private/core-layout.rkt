@@ -48,6 +48,7 @@
          STIX?
          white-bracket-sizing
          apply-rewrites
+         use-homemade-white-brackets
          
          ;; for test suite
          build-lines
@@ -780,11 +781,21 @@
   (define label-font-size (make-parameter 14))
   (define delimit-ellipsis-arguments? (make-parameter #t))
   
-  (define (open-white-square-bracket) (white-bracket "["))
-  (define (close-white-square-bracket) (white-bracket "]"))
+(define use-homemade-white-brackets (make-parameter #f))
+(define (open-white-square-bracket) 
+  (if (use-homemade-white-brackets)
+      (white-bracket "[")
+      (basic-text "〚" (default-style))))
+(define (close-white-square-bracket)
+  (if (use-homemade-white-brackets)
+      (white-bracket "]")
+      (basic-text "〛" (default-style))))
 
-  #;"\u301a\u301b" ;; white square brackets
-  
+(define left-curly-bracket-upper-hook "⎧")
+(define left-curly-bracket-middle-piece "⎨")
+(define left-curly-bracket-lower-hook "⎩")
+(define curly-bracket-extension "⎪")
+
   ;; white-bracket : string -> pict
   ;; puts two of `str' next to each other to make 
   ;; a `white' version of the bracket.
