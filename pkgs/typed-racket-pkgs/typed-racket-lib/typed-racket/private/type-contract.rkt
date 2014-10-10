@@ -365,25 +365,17 @@
                                #:unless (memq name pubment-names))
              (values name type)))
          (class/sc (append
-                     (map (λ (n sc) (member-spec 'method n sc))
-                          public-names (map t->sc/method public-types))
-                     (map (λ (n sc) (member-spec 'inherit n sc))
-                          public-names (map t->sc/method public-types))
                      (map (λ (n sc) (member-spec 'override n sc))
                           override-names (map t->sc/method override-types))
-                     (map (λ (n sc) (member-spec 'super n sc))
-                          override-names (map t->sc/method override-types))
-                     (map (λ (n sc) (member-spec 'inner n sc))
-                          augment-names (map t->sc/method augment-types))
-                     (map (λ (n sc) (member-spec 'augment n sc))
+                     (map (λ (n sc) (member-spec 'pubment n sc))
                           pubment-names (map t->sc/method pubment-types))
+                     (map (λ (n sc) (member-spec 'augment n sc))
+                          augment-names (map t->sc/method augment-types))
                      (map (λ (n sc) (member-spec 'init n sc))
                           init-names (map t->sc/neg init-types))
                      (map (λ (n sc) (member-spec 'field n sc))
-                          field-names (map t->sc/both field-types))
-                     (map (λ (n sc) (member-spec 'inherit-field n sc))
                           field-names (map t->sc/both field-types)))
-                   #f empty empty)]
+                   #f)]
         [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred?)
          (cond
            [(dict-ref recursive-values nm #f)]

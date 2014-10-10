@@ -7,6 +7,7 @@
          racket/list racket/match
          unstable/contract
          racket/contract
+         racket/syntax
          (for-template racket/base racket/class)
          (for-syntax racket/base syntax/parse))
 
@@ -14,7 +15,7 @@
   (contract-out
     [struct member-spec ([modifier symbol?] [id symbol?] [sc static-contract?])]
     [object/sc ((listof object-member-spec?) . -> . static-contract?)]
-    [class/sc ((listof member-spec?) boolean? (listof identifier?) (listof identifier?) . -> . static-contract?)]
+    [class/sc ((listof member-spec?) boolean? . -> . static-contract?)]
     [instanceof/sc (static-contract? . -> . static-contract?)]))
 
 
@@ -38,17 +39,17 @@
      (define (sc->constraints v f)
        (merge-restricts* 'impersonator (map f (member-seq->list (combinator-args v)))))])
 
-(struct class-combinator combinator (opaque absent-fields absent-methods)
+(struct class-combinator combinator (opaque)
   #:transparent
   #:property prop:combinator-name "class/sc"
   #:methods gen:sc
     [(define (sc-map v f)
        (match v
-         [(class-combinator args opaque absent-fields absent-methods)
-          (class-combinator (member-seq-sc-map f args) opaque absent-fields absent-methods)]))
+         [(class-combinator args opaque)
+          (class-combinator (member-seq-sc-map f args) opaque)]))
      (define (sc-traverse v f)
        (match v
-         [(class-combinator args opaque absent-fields absent-methods)
+         [(class-combinator args opaque)
           (member-seq-sc-map f args)
           (void)]))
      (define (sc->contract v f)
@@ -100,33 +101,30 @@
 
 (define (object/sc specs)
   (object-combinator (member-seq specs)))
-(define (class/sc specs opaque absent-fields absent-methods)
-  (class-combinator (member-seq specs) opaque absent-fields absent-methods))
+(define (class/sc specs opaque)
+  (class-combinator (member-seq specs) opaque))
 (define (instanceof/sc class)
   (instanceof-combinator (list class)))
-
-(define (wrap mod ctc)
-  (define mod-stx
-    (case mod
-     [(method) #f]
-     [(field) #'field]
-     [(init) #'init]
-     [(init-field) #'init-field]
-     [(inherit) #'inherit]
-     [(inherit-field) #'inherit-field]
-     [(super) #'super]
-     [(inner) #'inner]
-     [(override) #'override]
-     [(augment) #'augment]
-     [(augride) #'augride]))
-  (if mod-stx #`(#,mod-stx #,ctc) ctc))
 
 (define ((member-spec->form f) v)
   (match v
     [(member-spec modifier id sc)
      (with-syntax ([ctc-stx (and sc (f sc) empty)]
                    [id-stx id])
-        (wrap modifier (if sc #`(#,id #,(f sc)) id)))]))
+       (define id/ctc
+         (if sc #`(#,id #,(f sc)) id))
+       (match modifier
+         ['method id/ctc]
+         ['augment #`(augment #,id/ctc)]
+         ['init #`(init #,id/ctc)]
+         ['field #`(field #,id/ctc)]))]))
+
+(define (spec->id/ctc f modifier vals)
+  (for/lists (_1 _2)
+             ([spec vals]
+              #:when (eq? modifier (member-spec-modifier spec)))
+    (values (member-spec-id spec)
+            (f (member-spec-sc spec)))))
 
 (define (object/sc->contract v f) 
   (match v
@@ -134,10 +132,34 @@
     #`(object/c #,@(map (member-spec->form f) vals))]))
 (define (class/sc->contract v f) 
   (match v
-   [(class-combinator (member-seq vals) opaque absent-fields absent-methods)
-    #`(class/c #,@(if opaque (list '#:opaque) empty)
-               #,@(map (member-spec->form f) vals)
-               (absent #,@absent-methods (field #,@absent-fields)))]))
+   [(class-combinator (member-seq vals) opaque)
+    (define-values (override-names override-ctcs)
+      (spec->id/ctc f 'override vals))
+    (define-values (pubment-names pubment-ctcs)
+      (spec->id/ctc f 'pubment vals))
+    (define/with-syntax (override-temp ...)
+      (generate-temporaries override-ctcs))
+    (define/with-syntax (pubment-temp ...)
+      (generate-temporaries pubment-ctcs))
+    (define/with-syntax (override-name ...) override-names)
+    (define/with-syntax (pubment-name ...) pubment-names)
+    (define/with-syntax (override-ctc ...) override-ctcs)
+    (define/with-syntax (pubment-ctc ...) pubment-ctcs)
+    (define vals-rest
+      (filter (λ (spec)
+                (not (memq (member-spec-modifier spec)
+                           '(override pubment))))
+              vals))
+    #`(let ([override-temp override-ctc] ...
+            [pubment-temp pubment-ctc] ...)
+        (class/c #,@(if opaque (list '#:opaque) empty)
+                 #,@(map (member-spec->form f) vals-rest)
+                 [override-name override-temp] ...
+                 (override [override-name override-temp] ...)
+                 (super [override-name override-temp] ...)
+                 (inherit [override-name override-temp] ...)
+                 [pubment-name pubment-temp] ...
+                 (inherit [pubment-name pubment-temp] ...)))]))
 (define (instance/sc->contract v f)
   (match v
    [(instanceof-combinator (list class))

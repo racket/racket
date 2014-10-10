@@ -189,21 +189,20 @@
               (t-sc (Un (-lst Univ) -Number) (or/sc number/sc (listof/sc any-wrap/sc)))
 
               ;; classes
-              (t-sc (-class) (class/sc null #f null null))
+              (t-sc (-class) (class/sc null #f))
               (t-sc (-class #:init ([x -Number #f] [y -Number #f]))
                     (class/sc (list (member-spec 'init 'x number/sc)
                                     (member-spec 'init 'y number/sc))
-                              #f null null))
+                              #f))
               (t-sc (-class #:init ([x -Number #f] [y -Number #t]))
                     (class/sc (list (member-spec 'init 'x number/sc)
                                     (member-spec 'init 'y number/sc))
-                              #f null null))
+                              #f))
               (t-sc (-class #:init ([x -Number #f]) #:init-field ([y -Integer #f]))
                     (class/sc (list (member-spec 'init 'x number/sc)
                                     (member-spec 'init 'y integer/sc)
-                                    (member-spec 'field 'y integer/sc)
-                                    (member-spec 'inherit-field 'y integer/sc))
-                              #f null null))
+                                    (member-spec 'field 'y integer/sc))
+                              #f))
 
               ;; typed/untyped interaction tests
               (t-int (-poly (a) (-> a a))
