@@ -66,6 +66,8 @@
   (define site "ftp.springer.de")
   (define path "pub/tex/latex/llncs/latex2e")
   (define file "llncs2e.zip")
+  (unless (directory-exists? (find-system-path 'addon-dir))
+    (make-directory (find-system-path 'addon-dir)))
   (log-error (format "Downloading via ftp://~a/~a/~a..." site path file))
   (define c (ftp-establish-connection site 21 "anonymous" "user@racket-lang.org"))
   (ftp-cd c path)
