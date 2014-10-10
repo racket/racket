@@ -294,8 +294,7 @@
    )
   #:transparent)
 
-(define/contract (mk-fin-layers es)
-  ((listof enum?) . -> . (listof fin-layer?))
+(define (mk-fin-layers es)
   (define (loop eis prev)
     (define non-emptys (filter (negate (compose empty/e? car)) eis))
     (match non-emptys
@@ -321,13 +320,9 @@
   (loop eis (fin-layer 0 eis)))
 
 ;; layers : Listof Enum -> Listof Upper-Bound
-(define/contract (disj-sum-layers es)
-  ((listof enum?) . -> . (vectorof upper-bound?))
+(define (disj-sum-layers es)
   (define fin-layers (mk-fin-layers es))
-  (define/contract (loop fin-layers prev)
-    (-> (listof fin-layer?)
-        upper-bound?
-        (listof upper-bound?))
+  (define (loop fin-layers prev)
     (match fin-layers
       ['() '()]
       [(cons (fin-layer cur-bound eis) rest-fin-layers)
@@ -358,10 +353,7 @@
     (for/list [(i (in-naturals))
                (e (in-list es))]
       (cons e i)))
-  (define/contract (loop fin-layers prev-layer)
-    (-> (listof fin-layer?)
-        list-layer?
-        (listof list-layer?))
+  (define (loop fin-layers prev-layer)
     (match fin-layers
       ['() '()]
       [(cons (fin-layer cur-bound vec-cur-inexhausteds) rest-fins)
@@ -436,12 +428,7 @@
           cur
           (find-e-index cur e-i)))
 
-(define/contract (find-layer-by-size i get-size zeroth ls)
-  (-> (or/c infinite? exact-nonnegative-integer?)
-      (any/c . -> . (or/c infinite? exact-nonnegative-integer?))
-      any/c
-      (vectorof any/c)
-      (values any/c any/c))
+(define (find-layer-by-size i get-size zeroth ls)
   ;; Find the lowest indexed elt that is still greater than i
   (define (loop lo hi)
     (define mid (quotient (lo . + . hi) 2))
@@ -1167,10 +1154,7 @@
                   dec
                   enc)])]))
 
-(define/contract (inf-slots infs fins)
-  (-> (listof number?)
-      (listof number?)
-      any/c)
+(define (inf-slots infs fins)
   (define sorted-infs (sort infs <))
   (define sorted-fins (sort fins <))
   (reverse
