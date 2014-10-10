@@ -144,13 +144,13 @@
       ;; Please don't reformat this!
       '(""   a 0 #t ()
         "a"  b 1 #f (#t)
-        "aa" c 2    (#t #t)
-        "b"  d 3    (#f)
-        "ba"   4    (#f #t)
-               5    (#t #t #t)
-               6    (#f #t #t)
-               7    (#t #f)
-               8    (#f #f)
+        "b"  c 2    (#f)
+        "c"  d 3    (#t #t)
+        "d"    4    (#f #t)
+               5    (#t #f)
+               6    (#f #f)
+               7    (#t #t #t)
+               8    (#f #t #t)
                9    (#t #f #t)))
  
  (check-bijection? multi-layered))
@@ -283,57 +283,6 @@
 
 (define (below/e n)
   (take/e nat/e n))
-
-;; mixed finite/infinite list/e tests
-(test-begin
-
- (check-equal?
-  (to-list (list/e (below/e 3) (below/e 3) (below/e 3)))
-  (to-list (take/e (list/e nat/e nat/e nat/e) 27)))
-
- (define n*2 (list/e nat/e (below/e 2)))
- (check-range? n*2 0 1 '((0 0)))
- (check-range? n*2 1 4 '((0 1) (1 0) (1 1)))
- (check-range? n*2 4 6 '((2 0) (2 1)))
- (check-range? n*2 6 8 '((3 0) (3 1)))
-
- (define n*1*2 (list/e nat/e (below/e 1) (below/e 2)))
- (check-range? n*1*2 0 1 '((0 0 0)))
- (check-range? n*1*2 1 4 '((0 0 1) (1 0 0) (1 0 1)))
- (check-range? n*1*2 4 6 '((2 0 0) (2 0 1)))
- (check-range? n*1*2 6 8 '((3 0 0) (3 0 1)))
-
- (define n*2*4 (list/e nat/e (below/e 2) (below/e 4)))
- (check-range? n*2*4 0 1 '((0 0 0)))
- (check-range? n*2*4 1 8 '((0 0 1) (0 1 1) (0 1 0)
-                           (1 0 0) (1 0 1) (1 1 0) (1 1 1)))
- (check-range? n*2*4 8 18 ;; (8 previous . + . (2 magnitude of exhausted enums
-               ;;             . * . (9 3^(number left) . - . 4 2^(number left)))
-
-               '((0 0 2) (0 1 2)
-                 (1 0 2) (1 1 2)
-                 (2 0 0) (2 1 0)
-                 (2 0 1) (2 1 1)
-                 (2 0 2) (2 1 2)))
- (check-range? n*2*4 18 32 ;; 18 + (2 * (4^2 - 3^2))
-               '((0 0 3) (0 1 3)
-                 (1 0 3) (1 1 3)
-                 (2 0 3) (2 1 3)
-                 (3 0 0) (3 1 0)
-                 (3 0 1) (3 1 1)
-                 (3 0 2) (3 1 2)
-                 (3 0 3) (3 1 3)))
- (check-range? n*2*4 32 40
-               '((4 0 0) (4 0 1) (4 0 2) (4 0 3)
-                 (4 1 0) (4 1 1) (4 1 2) (4 1 3)))
- (check-range? n*2*4 40 48
-               '((5 0 0) (5 0 1) (5 0 2) (5 0 3)
-                 (5 1 0) (5 1 1) (5 1 2) (5 1 3)))
- 
- (check-bijection? (list/e bool/e (cons/e bool/e bool/e) (fin/e 'foo 'bar 'baz)))
- (check-bijection? (list/e nat/e string/e (many/e bool/e)))
- (check-bijection? (list/e bool/e nat/e int/e string/e (cons/e bool/e bool/e)))
- )
 
 ;; multi-arg map/e test
 (define sums/e
