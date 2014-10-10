@@ -3,7 +3,7 @@
 
 @title[#:tag "unixpaths"]{@|AllUnix| Paths}
 
-In @|AllUnix| paths, a @litchar{/} separates elements of the path,
+In a path on @|AllUnix|, a @litchar{/} separates elements of the path,
 @litchar{.} as a path element always means the directory indicated by
 preceding path, and @litchar{..} as a path element always means the
 parent of the directory indicated by the preceding path. A leading
@@ -35,3 +35,13 @@ _path)]. Since that is not the case for other platforms, however,
 be used when converting individual path elements.
 
 On Mac OS X, Finder aliases are zero-length files.
+
+
+@section[#:tag "unixpathrep"]{Unix Path Representation}
+
+A path on @|AllUnix| is natively a byte string. For presentation to
+users and for other string-based operations, a path is converted
+to/from a string using the current locale's encoding with @litchar{?}
+(encoding) or @code{#\uFFFD} (decoding) in place of errors. Beware
+that the encoding may not accommodate all possible paths as
+distinct strings.
