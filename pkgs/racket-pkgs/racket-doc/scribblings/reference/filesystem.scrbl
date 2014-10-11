@@ -1101,7 +1101,7 @@ see @racket[open-output-file]) and to delete it when it is no longer
 needed.}
 
 @defproc[(call-with-atomic-output-file [file path-string?] 
-                                       [proc ([port input-port?] [tmp-path path?]  . -> . any)]
+                                       [proc ([port output-port?] [tmp-path path?]  . -> . any)]
                                        [#:security-guard security-guard (or/c #f security-guard?) #f])
          any]{
 
