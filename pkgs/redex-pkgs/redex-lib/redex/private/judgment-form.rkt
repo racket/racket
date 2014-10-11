@@ -145,7 +145,9 @@
 ;; ct-lang is an identifier  guaranteed to be bound by define-language
 ;;   that can be used to call rewrite-side-conditions/check-errs, but
 ;;   some extension of that language may end up being bound to rt-lang
-(define-for-syntax (bind-withs orig-name main rt-lang lang-nts ct-lang stx where-mode body names w/ellipses side-condition-unquoted? jf-results-id)
+(define-for-syntax (bind-withs orig-name main rt-lang lang-nts ct-lang stx
+                               where-mode body names w/ellipses
+                               side-condition-unquoted? jf-results-id)
   (with-disappeared-uses
    (let loop ([stx stx]
               [to-not-be-in main]
@@ -180,7 +182,8 @@
                      [(predicate)
                       #'combine-where-results/predicate]
                      [else (error 'unknown-where-mode "~s" where-mode)])
-                 (match-pattern (compile-pattern #,rt-lang `side-conditions-rewritten #t) (term e #:lang #,ct-lang))
+                 (match-pattern (compile-pattern #,rt-lang `side-conditions-rewritten #t)
+                                (term e #:lang #,ct-lang))
                  (λ (bindings)
                    (let ([x (lookup-binding bindings 'names)] ...)
                      (and binding-constraints ...
@@ -195,7 +198,7 @@
             #`(and (term s) ... #,(loop #'(y ...) to-not-be-in env)))]
        [((fresh x) y ...)
         (identifier? #'x)
-        #`(term-let ([x (variable-not-in #,to-not-be-in 'x)]) 
+        #`(term-let ([x (variable-not-in #,to-not-be-in 'x)])
                     #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) env))]
        [((fresh x name) y ...)
         (identifier? #'x)
@@ -205,7 +208,7 @@
                     #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) env))]
        [((fresh (y) (x ...)) z ...)
         #`(term-let ([(y #,'...)
-                      (variables-not-in #,to-not-be-in 
+                      (variables-not-in #,to-not-be-in
                                         (map (λ (_ignore_) 'y)
                                              (term (x ...))))])
                     #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) env))]
@@ -220,40 +223,44 @@
         (loop (cons #'j #'after) to-not-be-in env)]
        [((form-name pats ...) . after)
         (judgment-form-id? #'form-name)
-        (let*-values ([(premise) (syntax-case stx () [(p . _) #'p])]
-                      [(rest-clauses under-ellipsis?)
-                       (syntax-case #'after ()
-                         [(maybe-ellipsis . more)
-                          (ellipsis? #'maybe-ellipsis)
-                          (values #'more #t)]
-                         [_ (values #'after #f)])]
-                      [(judgment-form) (lookup-judgment-form-id #'form-name)]
-                      [(mode) (judgment-form-mode judgment-form)]
-                      [(judgment-proc) (judgment-form-proc judgment-form)]
-                      [(input-template output-pre-pattern) 
-                       (let-values ([(in out) (split-by-mode (syntax->list #'(pats ...)) mode)])
-                         (if under-ellipsis?
-                             (let ([ellipsis (syntax/loc premise (... ...))])
-                               (values #`(#,in #,ellipsis) #`(#,out #,ellipsis)))
-                             (values in out)))]
-                      [(syncheck-exp output-pattern output-names output-names/ellipses)
-                       (with-syntax ([(syncheck-exp output names names/ellipses)
-                                      (rewrite-side-conditions/check-errs ct-lang orig-name #t output-pre-pattern)])
-                         (values #'syncheck-exp
-                                 #'output
-                                 (syntax->list #'names)
-                                 (syntax->list #'names/ellipses)))]
-                      [(binding-constraints temporaries env+)
-                       (generate-binding-constraints output-names output-names/ellipses env orig-name)]
-                      [(rest-body) (loop rest-clauses #`(list judgment-output #,to-not-be-in) env+)]
-                      [(call)
-                       (let ([input (quasisyntax/loc premise (term #,input-template #:lang #,ct-lang))])
-                         (define (make-traced input)
-                           (quasisyntax/loc premise
-                             (call-judgment-form 'form-name #,judgment-proc '#,mode #,input #,(if jf-results-id #''() #f))))
-                         (if under-ellipsis?
-                             #`(repeated-premise-outputs #,input (λ (x) #,(make-traced #'x)))
-                             (make-traced input)))])
+        (let ()
+          (define premise (syntax-case stx () [(p . _) #'p]))
+          (define-values (rest-clauses under-ellipsis?)
+            (syntax-case #'after ()
+              [(maybe-ellipsis . more)
+               (ellipsis? #'maybe-ellipsis)
+               (values #'more #t)]
+              [_ (values #'after #f)]))
+          (define judgment-form (lookup-judgment-form-id #'form-name))
+          (define mode (judgment-form-mode judgment-form))
+          (define judgment-proc (judgment-form-proc judgment-form))
+          (define-values (input-template output-pre-pattern)
+            (let-values ([(in out) (split-by-mode (syntax->list #'(pats ...)) mode)])
+              (if under-ellipsis?
+                  (let ([ellipsis (syntax/loc premise (... ...))])
+                    (values #`(#,in #,ellipsis) #`(#,out #,ellipsis)))
+                  (values in out))))
+          (define-values (syncheck-exp output-pattern output-names output-names/ellipses)
+            (with-syntax ([(syncheck-exp output names names/ellipses)
+                           (rewrite-side-conditions/check-errs ct-lang orig-name #t
+                                                               output-pre-pattern)])
+              (values #'syncheck-exp
+                      #'output
+                      (syntax->list #'names)
+                      (syntax->list #'names/ellipses))))
+          (define-values (binding-constraints temporaries env+)
+            (generate-binding-constraints output-names output-names/ellipses env orig-name))
+          (define rest-body
+            (loop rest-clauses #`(list judgment-output #,to-not-be-in) env+))
+          (define call
+            (let ([input (quasisyntax/loc premise (term #,input-template #:lang #,ct-lang))])
+              (define (make-traced input)
+                (quasisyntax/loc premise
+                  (call-judgment-form 'form-name #,judgment-proc '#,mode #,input
+                                      #,(if jf-results-id #''() #f))))
+              (if under-ellipsis?
+                  #`(repeated-premise-outputs #,input (λ (x) #,(make-traced #'x)))
+                  (make-traced input))))
           (record-disappeared-uses (list #'form-name))
           (with-syntax ([(output-name ...) output-names]
                         [(output-name/ellipsis ...) output-names/ellipses]
