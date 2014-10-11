@@ -1757,7 +1757,7 @@
                          (case (system-type)
                            [(unix)
                             copy-file/install-elf-rpath]
-                           [else void])))
+                           [else copy-file])))
 
   (define make-shares-step
     (make-copy/move-step "shared file"
