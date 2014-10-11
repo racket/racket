@@ -49,6 +49,10 @@
          white-bracket-sizing
          apply-rewrites
          use-homemade-white-brackets
+         left-curly-bracket-upper-hook
+         left-curly-bracket-middle-piece
+         left-curly-bracket-lower-hook
+         curly-bracket-extension
          
          ;; for test suite
          build-lines

@@ -1122,7 +1122,8 @@ reduce it further).
                                    (where/hidden pat @#,tttterm)
                                    (judgment-holds 
                                     (judgment-form-id pat/term ...))
-                                   (clause-name name)])]{
+                                   (clause-name name)
+                                   (code:line or @#,tttterm)])]{
 
 The @racket[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
@@ -1219,8 +1220,19 @@ ensures that there is a unique match for that case. Without
 it, @racket[(term (- (x x) x))] would lead to an ambiguous
 match.
 
-@history[#:changed "1.4" @list{Added @racket[#:post] conditions.}]
+The @racket[or] clause is used to define a form of conditional
+right-hand side of a metafunction. In particular, if any of the
+@racket[where] or @racket[side-condition] clauses fail, then
+evaluation continues after an @racket[or] clause, treating the
+term that follows as the result (subject to any subsequent
+@racket[where] clauses or @racket[side-condition]s. This construction
+is equivalent to simply duplicating the left-hand side of the
+clause, once for each @racket[or] expression, but signals to
+the typesetting library to use a large left curly brace to group
+the conditions in the @racket[or].
 
+@history[#:changed "1.4" @list{Added @racket[#:post] conditions.}]
+         #:changed "1.5" @list{Added @racket[or] clauses.}]
 }
 
 @defform[(define-metafunction/extension f language 

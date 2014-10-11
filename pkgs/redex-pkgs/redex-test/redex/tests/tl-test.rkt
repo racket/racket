@@ -1305,6 +1305,24 @@
   (test (term (f (a b c))) 3)
   (test (term (f (a b))) #f))
   
+(let ()
+  ;; 'or' in metafunctions
+  (define-language L)
+  
+  (define-metafunction L
+    [(f any ...)
+     three
+     (where (any_1 any_2 any_3) (any ...))
+     or
+     two
+     (where (any_1 any_2) (any ...))
+     or
+     something-else])
+
+  (test (term (f a b c)) (term three))
+  (test (term (f a b)) (term two))
+  (test (term (f a)) (term something-else)))
+
 ;                                                                                                 
 ;                                                                                                 
 ;                                                                                                 

@@ -1109,7 +1109,8 @@
 
 (define-syntax (generate-lws stx)
   (syntax-case stx ()
-    [(_ relation? seq-of-lhs seq-of-lhs-for-lw seq-of-tl-side-cond/binds seq-of-rhs side-condition-unquoted?)
+    [(_ relation? seq-of-lhs seq-of-lhs-for-lw seq-of-tl-side-cond/binds seq-of-rhs 
+        side-condition-unquoted?)
      (with-syntax
          ([(rhs/lw ...) 
            (syntax-case #'relation? ()
@@ -1121,55 +1122,61 @@
            (map name-pattern-lws (syntax->list #'seq-of-lhs))]
           [((where/sc/lw ...) ...)
            ;; Also for pict, extract where bindings
-           (map (λ (hm)
-                  (map
-                   (λ (lst)
-                     (syntax-case lst (unquote side-condition where)
-                       [(form-name . _)
-                        (judgment-form-id? #'form-name)
-                        #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
-                       [(form-name . _)
-                        (judgment-form-id? #'form-name)
-                        #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
-                       [(where pat (unquote (f _ _)))
-                        (and (or (identifier? #'pat)
-                                 (let ([l (syntax->list #'pat)])
-                                   (and l (andmap identifier? (syntax->list #'pat)))))
-                             (or (free-identifier=? #'f #'variable-not-in)
-                                 (free-identifier=? #'f #'variables-not-in)))
-                        (with-syntax ([(ids ...)
-                                       (map to-lw/proc
-                                            (if (identifier? #'pat)
-                                                (list #'pat)
-                                                (syntax->list #'pat)))])
-                          #`(make-metafunc-extra-fresh
-                             (list ids ...)))]
-                       [(where pat exp)
-                        #`(make-metafunc-extra-where
-                           #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
-                       [(side-condition x)
-                        #`(make-metafunc-extra-side-cond
-                           #,(if (syntax-e #'side-condition-unquoted?)
-                                 (to-lw/uq/proc #'x)
-                                 (to-lw/proc #'x)))]
-                       [maybe-ellipsis
-                        (ellipsis? #'maybe-ellipsis)
-                        (to-lw/proc #'maybe-ellipsis)]))
-                   (visible-extras hm)))
-                (syntax->list #'seq-of-tl-side-cond/binds))]
+           (for/list ([hm (in-list (syntax->list #'seq-of-tl-side-cond/binds))])
+             (define the-extras (visible-extras hm))
+             (for/list ([lst (in-list the-extras)]
+                        [next (if (null? the-extras)
+                                  '()
+                                  (append (cdr the-extras) (list #f)))])
+               (syntax-case next (or)
+                 [or (to-lw/proc lst)]
+                 [else
+                  (syntax-case lst (unquote side-condition where or)
+                    [(form-name . _)
+                     (judgment-form-id? #'form-name)
+                     #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
+                    [(form-name . _)
+                     (judgment-form-id? #'form-name)
+                     #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
+                    [(where pat (unquote (f _ _)))
+                     (and (or (identifier? #'pat)
+                              (let ([l (syntax->list #'pat)])
+                                (and l (andmap identifier? (syntax->list #'pat)))))
+                          (or (free-identifier=? #'f #'variable-not-in)
+                              (free-identifier=? #'f #'variables-not-in)))
+                     (with-syntax ([(ids ...)
+                                    (map to-lw/proc
+                                         (if (identifier? #'pat)
+                                             (list #'pat)
+                                             (syntax->list #'pat)))])
+                       #`(make-metafunc-extra-fresh
+                          (list ids ...)))]
+                    [(where pat exp)
+                     #`(make-metafunc-extra-where
+                        #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
+                    [(side-condition x)
+                     #`(make-metafunc-extra-side-cond
+                        #,(if (syntax-e #'side-condition-unquoted?)
+                              (to-lw/uq/proc #'x)
+                              (to-lw/proc #'x)))]
+                    [or ''or]
+                    [(clause-name name)
+                     #''(clause-name name)]
+                    [maybe-ellipsis
+                     (ellipsis? #'maybe-ellipsis)
+                     (to-lw/proc #'maybe-ellipsis)])])))]
           [(((where-bind-id/lw . where-bind-pat/lw) ...) ...)
-           (map (λ (clauses)
-                  (for/fold ([binds '()]) ([clause (visible-extras clauses)])
-                    (syntax-case clause (where)
-                      [(form-name . pieces)
-                       (judgment-form-id? #'form-name)
-                       (let*-values ([(mode) (judgment-form-mode (lookup-judgment-form-id #'form-name))]
-                                     [(_ outs) (split-by-mode (syntax->list #'pieces) mode)])
-                         (for/fold ([binds binds]) ([out outs])
-                           (append (name-pattern-lws out) binds)))]
-                      [(where lhs rhs) (append (name-pattern-lws #'lhs) binds)]
-                      [_ binds])))
-                (syntax->list #'seq-of-tl-side-cond/binds))]
+           (for/list ([clauses (in-list (syntax->list #'seq-of-tl-side-cond/binds))])
+             (for/fold ([binds '()]) ([clause (visible-extras clauses)])
+               (syntax-case clause (where)
+                 [(form-name . pieces)
+                  (judgment-form-id? #'form-name)
+                  (let*-values ([(mode) (judgment-form-mode (lookup-judgment-form-id #'form-name))]
+                                [(_ outs) (split-by-mode (syntax->list #'pieces) mode)])
+                    (for/fold ([binds binds]) ([out outs])
+                      (append (name-pattern-lws out) binds)))]
+                 [(where lhs rhs) (append (name-pattern-lws #'lhs) binds)]
+                 [_ binds])))]
           [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
            ;; Also for pict, extract pattern bindings
            (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/uq/proc (cdr x))))
