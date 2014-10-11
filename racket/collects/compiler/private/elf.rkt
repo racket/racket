@@ -11,7 +11,8 @@
 (define LITTLEEND 1)
 (define BIGEND 2)
 
-(define SECTION-ALIGN 16) ; conservative?
+(define SECTION-TABLE-ALIGN 16) ; conservative enough?
+(define SECTION-ALIGN 16)       ; conservative enough?
 
 (define SHT_PROGBITS 1)
 (define SHT_NOBITS 8)
@@ -279,23 +280,35 @@
                     ;; New state:
                     section-name ; #f or name of new section
                     get-data     ; get data for new section (if any)
-                    ;; expansions must be after section headers, must
+                    ;; Expansions must be after section headers, must
                     ;; not be at the version beginning of a section,
                     ;; and beware of extending sections that need
                     ;; ".dynamic" support (such as the ".dynstr" section,
-                    ;; which is currently supported here):
+                    ;; which is currently supported here); each
+		    ;; expansion element has the form
+		    ;;  (list <offset> <expand-amt>)
                     expansions    ; list of (list position delta)
+		    ;; If `vaddr-moves` is not supplied, then
+		    ;; virtual-address adjustments are derived from
+		    ;; `expansions` based on the way it overlaps with
+		    ;; section offets. If those adjustments would move
+		    ;; any SHT_PROGBITS sections, though, then the
+		    ;; expanded section(s) must be moved, instead,
+		    ;; as described by `vaddr-moves`. Each element
+		    ;; has the form
+		    ;;  (list <old-vaddr> <length> <new-vaddr>)
+		    #:vaddr-moves [vaddr-moves #f]
                     finish)
   (define num-new-sections (if section-name 1 0))
   (let ([new-sec-pos (+ (* num-new-sections (elf-sh-offset elf))
                         (* (elf-sh-esize elf) (elf-sh-ecount elf)))]
         [new-sec-delta (round-up (* num-new-sections (elf-sh-esize elf))
-                                 SECTION-ALIGN)]
+                                 SECTION-TABLE-ALIGN)]
         [new-str-pos (+ (section-offset str-section)
                         (section-size str-section))]
         [new-str-delta (if section-name
                            (round-up (add1 (bytes-length section-name))
-                                     SECTION-ALIGN)
+                                     SECTION-TABLE-ALIGN)
                            0)]
         [class (elf-class elf)]
         [format (elf-format elf)])
@@ -316,13 +329,25 @@
                   (if get-data
                       (get-data (+ total-size new-str-delta new-sec-delta))
                       (values #"" 0 0))])
-      (define vm-expansions (filter
-                             values
-                             (for/list ([expansion (in-list expansions)])
-                               (define s (find-section-by-offset (car expansion) sections))
-                               (and s (list (+ (section-addr s)
-                                               (- (car expansion) (section-offset s)))
-                                            (cadr expansion))))))
+      (define vm-expansions
+	(if vaddr-moves
+	    (apply
+	     append
+	     (for/list ([move (in-list vaddr-moves)])
+	       (list
+		;; shift at start of region:
+		(list (car move)
+		      (- (caddr move) (car move)))
+		;; unshift at end of region:
+		(list (+ (car move) (cadr move))
+		      (- (car move) (caddr move))))))
+	    (filter
+	     values
+	     (for/list ([expansion (in-list expansions)])
+	       (define s (find-section-by-offset (car expansion) sections))
+	       (and s (list (+ (section-addr s)
+			       (- (car expansion) (section-offset s)))
+			    (cadr expansion)))))))
       (call-with-output-file*
        dest-file
        #:exists 'truncate
@@ -410,7 +435,12 @@
                (file-position out (adjust (+ (elf-sh-offset elf)
                                              (* i (elf-sh-esize elf))
                                              (at-class 14 16))))
-               (write-addr (vm-adjust addr))
+
+	       (define new-addr (vm-adjust addr))
+	       (unless (or (= new-addr addr)
+			   (not (= SHT_PROGBITS (section-type s))))
+		 (error 'expand-elf "cannot move SHT_PROGBITS section"))
+               (write-addr new-addr)
                (write-off (adjust offset))
 
                (unless (= SHT_NOBITS (section-type s))
@@ -586,13 +616,22 @@
               ;; New pos is just before last nul byte, to make sure it's
               ;; within the section:
               (sub1 (+ (section-offset dynstr) (section-size dynstr))))
+	    (define new-vm-addr
+	      (for/fold ([addr (section-addr dynstr)]) ([s (in-list sections)])
+		(max addr (+ (section-addr s) (section-size s)))))
             (expand-elf in dest-file
                         elf sections programs str-section strs (file-size src-file)
                         ;; No new section:
                         #f #f
-                        ;; Add rpath at end of dynstrs:
+                        ;; Add rpath at end of dynstrs, use virtual address
+			;; past all allocated:
                         (list
-                         (list new-str-pos (+ (bytes-length rpath) 1)))
+                         (list new-str-pos
+			       (round-up (+ (bytes-length rpath) 1) SECTION-ALIGN)))
+			#:vaddr-moves (list
+				       (list (section-addr dynstr)
+					     (section-size dynstr)
+					     (round-up new-vm-addr SECTION-ALIGN)))
                         (lambda (out adjust adjust*)
                           ;; Write new dynstr:
                           (file-position out (adjust* new-str-pos))
