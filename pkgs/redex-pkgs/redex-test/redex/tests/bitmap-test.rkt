@@ -182,7 +182,15 @@
   [(TL 2) (a
            ,(term-let ((x (term 1)))
                       (term x)) beside
-                      below)])
+                      below)]
+  [(TL any)
+   3333333333
+   (where 3 any)
+   or
+   2
+   (where 2 any)
+   or
+   0])
 
 ;; this tests that term-let is sucked away properly
 ;; when the metafunction is rendered
