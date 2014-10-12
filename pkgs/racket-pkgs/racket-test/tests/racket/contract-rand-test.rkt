@@ -47,6 +47,7 @@
 (check-not-exn (λ () (test-contract-generation (listof boolean?))))
 (check-not-exn (λ () (test-contract-generation (listof some-crazy-predicate?))))
 (check-not-exn (λ () (test-contract-generation (non-empty-listof boolean?))))
+(check-not-exn (λ () (test-contract-generation (list*of boolean?))))
 (check-not-exn (λ () (test-contract-generation (list/c boolean? number?))))
 (check-not-exn (λ () ((car (test-contract-generation (list/c (-> number? number?)))) 0)))
 
