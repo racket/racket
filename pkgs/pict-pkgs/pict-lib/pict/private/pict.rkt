@@ -875,8 +875,6 @@
 (define table
   (case-lambda
    [(ncol cells col-aligns row-aligns col-seps row-seps)
-    (unless (positive? ncol)
-      (raise-type-error 'table "positive column count" ncol))
     (let ([count (length cells)])
       (unless (zero? (remainder count ncol))
         (error 'table "cell count isn't divisble by the provided column count"))
