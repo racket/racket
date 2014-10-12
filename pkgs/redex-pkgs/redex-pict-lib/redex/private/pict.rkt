@@ -6,10 +6,9 @@
          racket/pretty
          racket/set
          (only-in racket/list drop-right last partition add-between
-                  splitf-at)
+                  splitf-at remove-duplicates)
          
-         texpict/mrpict
-         texpict/utils
+         pict
          
          redex/private/reduction-semantics
          redex/private/judgment-form
@@ -875,7 +874,7 @@
   (cond
     [mf-cases
      (define i 0)
-     (define sorted-cases (remove-dups (sort (filter number? mf-cases) <)))
+     (define sorted-cases (remove-duplicates (sort (filter number? mf-cases) <)))
      (define named-cases (apply set (filter string? mf-cases)))
      (apply 
       append
@@ -929,17 +928,6 @@
       (values (reverse rev-eqns) (reverse rev-concs) (reverse rev-eqn-names))]
     [else 
      (values eqns conclusions eqn-names)]))
-
-;; remove-dups : (listof number)[sorted] -> (listof number)[sorted]
-;; removes duplicate numbers from 'l'
-(define (remove-dups l)
-  (let loop ([l l])
-    (cond
-      [(null? (cdr l)) l]
-      [(= (car l) (cadr l))
-       (loop (cdr l))]
-      [else
-       (cons (car l) (loop (cdr l)))])))
 
 (define (metafunctions->pict/proc mfs contract? name)
   (unless (andmap (λ (mf) (equal? (metafunc-proc-lang (metafunction-proc (car mfs)))
@@ -1147,6 +1135,7 @@
        ;; two columns of non-spanning rows.
        (define max-w-before-rhs (apply 
                                  max
+                                 0
                                  (map (lambda (row)
                                         (match row
                                           [(list lhs 'fill 'fill)
@@ -1173,38 +1162,41 @@
                           0))]
                  [else row]))
              rows)))
-     (table 3
-            (adjust-for-fills
-             (apply append
-                    (for/list ([lhs/contract (in-list lhs/contracts)]
-                               [sc (in-list scs)]
-                               [rhs (in-list rhss)]
-                               [linebreak? (in-list linebreak-list)])
-                      (append
-                       (list
-                        (cond
-                          [(equal? rhs 'contract) ;; contract
-                           (list lhs/contract 'fill 'fill)]
-                          [linebreak?
-                           (list lhs/contract 'fill 'fill)]
-                          [(and sc (eq? style 'left-right/beside-side-conditions))
-                           (list lhs/contract =-pict (htl-append 10 rhs sc))]
-                          [else
-                           (list lhs/contract =-pict rhs)]))
-                       (if linebreak?
-                           (list
-                            (list (htl-append sep =-pict rhs)
-                                  'fill
-                                  'fill))
-                           null)
-                       (if (or (not sc)
-                               (and (not linebreak?)
-                                    (eq? style 'left-right/beside-side-conditions)))
-                           null
-                           (list
-                            (list sc 'fill 'fill)))))))
-            ltl-superimpose ltl-superimpose
-            sep sep)]
+     (define table-elements
+       (adjust-for-fills
+        (apply append
+               (for/list ([lhs/contract (in-list lhs/contracts)]
+                          [sc (in-list scs)]
+                          [rhs (in-list rhss)]
+                          [linebreak? (in-list linebreak-list)])
+                 (append
+                  (list
+                   (cond
+                     [(equal? rhs 'contract) ;; contract
+                      (list lhs/contract 'fill 'fill)]
+                     [linebreak?
+                      (list lhs/contract 'fill 'fill)]
+                     [(and sc (eq? style 'left-right/beside-side-conditions))
+                      (list lhs/contract =-pict (htl-append 10 rhs sc))]
+                     [else
+                      (list lhs/contract =-pict rhs)]))
+                  (if linebreak?
+                      (list
+                       (list (htl-append sep =-pict rhs)
+                             'fill
+                             'fill))
+                      null)
+                  (if (or (not sc)
+                          (and (not linebreak?)
+                               (eq? style 'left-right/beside-side-conditions)))
+                      null
+                      (list
+                       (list sc 'fill 'fill))))))))
+     (if (null? table-elements)
+         (blank)
+         (table 3 table-elements 
+                ltl-superimpose ltl-superimpose
+                sep sep))]
     [(vertical)
      (apply vl-append
             sep
