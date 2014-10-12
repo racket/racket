@@ -674,8 +674,8 @@ Like @racket[pin-over], but @racket[pict] is drawn before
 
 @defproc[(table [ncols exact-positive-integer?]
                 [picts (non-empty-listof pict?)]
-                [col-aligns (list*of (pict? pict? -> pict?))]
-                [row-aligns (list*of (pict? pict? -> pict?))]
+                [col-aligns (list*of (->* () #:rest (listof pict?) pict?))]
+                [row-aligns (list*of (->* () #:rest (listof pict?) pict?))]
                 [col-seps (list*of real?)]
                 [row-seps (list*of real?)])
          pict?]{
