@@ -20,7 +20,7 @@
          string-len/c
          false/c
          printable/c
-         listof non-empty-listof cons/c list/c
+         listof list*of non-empty-listof cons/c list/c
          promise/c
          syntax/c
          
@@ -468,9 +468,14 @@
     (define eg (generate/choose (listof-ctc-elem-c ctc) fuel))
     (if eg
         (λ ()
-          (let loop ([so-far (if (pe-listof-ctc? ctc)
-                                 '()
-                                 (list (eg)))])
+          (let loop ([so-far (cond
+                               [(pe-listof-ctc? ctc)
+                                '()]
+                               [(ne-listof-ctc? ctc)
+                                (list (eg))]
+                               [else
+                                ;; improper list
+                                (eg)])])
             (rand-choice
              [1/5 so-far]
              [else (loop (cons (eg) so-far))])))
@@ -488,17 +493,27 @@
        (define env (generate-env))
        (values
         (λ (lst)
-          (env-stash env elem-ctc (oneof lst)))
+          (env-stash env elem-ctc 
+                     (oneof
+                      (if (im-listof-ctc? ctc)
+                          (improper-list->list lst)
+                          lst))))
         (list elem-ctc)))]))
+
+(define (improper-list->list l)
+  (cond
+    [(pair? l) (cons (car l) (improper-list->list (cdr l)))]
+    [else (list l)]))
 
 (define (listof-stronger this that)
   (define this-elem (listof-ctc-elem-c this))
   (cond
     [(listof-ctc? that)
      (define that-elem (listof-ctc-elem-c that))
-     (and (if (pe-listof-ctc? this)
-              (pe-listof-ctc? that)
-              #t)
+     (and (cond
+            [(pe-listof-ctc? this) (pe-listof-ctc? that)]
+            [(im-listof-ctc? this) (im-listof-ctc? that)]
+            [else #t])
           (contract-stronger? this-elem that-elem))]
     [(the-cons/c? that)
      (define hd-ctc (the-cons/c-hd-ctc that))
@@ -520,9 +535,13 @@
 (define (non-empty-list? x) (and (pair? x) (list? x)))
 
 (define (list-name ctc)
-  (build-compound-type-name (if (pe-listof-ctc? ctc)
-                                'listof
-                                'non-empty-listof)
+  (build-compound-type-name (cond
+                              [(pe-listof-ctc? ctc)
+                               'listof]
+                              [(ne-listof-ctc? ctc)
+                               'non-empty-listof]
+                              [(im-listof-ctc? ctc)
+                               'list*of])
                             (listof-ctc-elem-c ctc)))
 
 (define (list-fo-check ctc)
@@ -538,8 +557,17 @@
        (and (list? v)
             (pair? v)
             (for/and ([e (in-list v)])
-              (elem-fo? e))))]))
-     
+              (elem-fo? e))))]
+    [(im-listof-ctc? ctc)
+     (λ (v)
+       (let loop ([v v])
+         (cond
+           [(pair? v) 
+            (and (elem-fo? (car v))
+                 (loop (cdr v)))]
+           [else
+            (elem-fo? v)])))]))
+
 (define (listof-projection ctc)
   (define elem-proj (contract-projection (listof-ctc-elem-c ctc)))
   (define pred? (if (pe-listof-ctc? ctc)
@@ -549,19 +577,37 @@
     (define elem-proj+blame (elem-proj (blame-add-listof-context blame)))
     (cond
       [(flat-listof-ctc? ctc)
-       (λ (val)
-         (if (pred? val)
-             (begin
-               (for ([x (in-list val)])
-                 (elem-proj+blame x))
-               val)
-             (raise-listof-blame-error blame val (pe-listof-ctc? ctc) #f)))]
+       (if (im-listof-ctc? ctc)
+           (λ (val)
+             (let loop ([val val])
+               (cond
+                 [(pair? val)
+                  (elem-proj+blame (car val))
+                  (loop (cdr val))]
+                 [else
+                  (elem-proj+blame val)]))
+             val)
+           (λ (val)
+             (if (pred? val)
+                 (begin
+                   (for ([x (in-list val)])
+                     (elem-proj+blame x))
+                   val)
+                 (raise-listof-blame-error blame val (pe-listof-ctc? ctc) #f))))]
       [else
-       (λ (val)
-         (if (pred? val)
-             (for/list ([x (in-list val)])
-               (elem-proj+blame x))
-             (raise-listof-blame-error blame val (pe-listof-ctc? ctc) #f)))])))
+       (if (im-listof-ctc? ctc)
+           (λ (val) 
+             (let loop ([val val])
+               (cond
+                 [(pair? val)
+                  (cons (elem-proj+blame (car val))
+                        (loop (cdr val)))]
+                 [else (elem-proj+blame val)])))
+           (λ (val)
+             (if (pred? val)
+                 (for/list ([x (in-list val)])
+                   (elem-proj+blame x))
+                 (raise-listof-blame-error blame val (pe-listof-ctc? ctc) #f))))])))
 
 (define (listof-val-first-projection ctc)
   (define elem-proj (get/build-val-first-projection (listof-ctc-elem-c ctc)))
@@ -572,22 +618,43 @@
     (define elem-proj+blame (elem-proj (blame-add-listof-context blame)))
     (cond
       [(flat-listof-ctc? ctc)
-       (λ (val)
-         (if (pred? val)
+       (if (im-listof-ctc? ctc)
+           (λ (val)
              (λ (neg-party)
-               (for ([x (in-list val)])
-                 ((elem-proj+blame x) neg-party))
-               val)
-             (λ (neg-party)
-               (raise-listof-blame-error blame val (pe-listof-ctc? ctc) neg-party))))]
+               (let loop ([val val])
+                 (cond
+                   [(pair? val)
+                    ((elem-proj+blame (car val)) neg-party)
+                    (loop (cdr val))]
+                   [else 
+                    ((elem-proj+blame val) neg-party)]))
+               val))
+           (λ (val)
+             (if (pred? val)
+                 (λ (neg-party)
+                   (for ([x (in-list val)])
+                     ((elem-proj+blame x) neg-party))
+                   val)
+                 (λ (neg-party)
+                   (raise-listof-blame-error blame val (pe-listof-ctc? ctc) neg-party)))))]
       [else
-       (λ (val)
-         (if (pred? val)
-             (λ (neg-party)
-               (for/list ([x (in-list val)])
-                 ((elem-proj+blame x) neg-party)))
-             (λ (neg-party)
-               (raise-listof-blame-error blame val (pe-listof-ctc? ctc) neg-party))))])))
+        (if (im-listof-ctc? ctc)
+            (λ (val)
+              (λ (neg-party)
+                (let loop ([val val])
+                  (cond
+                    [(pair? val)
+                     (cons ((elem-proj+blame (car val)) neg-party)
+                           (loop (cdr val)))]
+                    [else 
+                     ((elem-proj+blame val) neg-party)]))))
+            (λ (val)
+              (if (pred? val)
+                  (λ (neg-party)
+                    (for/list ([x (in-list val)])
+                      ((elem-proj+blame x) neg-party)))
+                  (λ (neg-party)
+                    (raise-listof-blame-error blame val (pe-listof-ctc? ctc) neg-party)))))])))
 
 (define flat-prop
   (build-flat-contract-property
@@ -598,7 +665,7 @@
    #:generate listof-generate
    #:exercise listof-exercise
    #:stronger listof-stronger
-   #:list-contract? (λ (c) #t)))
+   #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 (define chap-prop
   (build-chaperone-contract-property
    #:name list-name
@@ -608,7 +675,7 @@
    #:generate listof-generate
    #:exercise listof-exercise
    #:stronger listof-stronger
-   #:list-contract? (λ (c) #t)))
+   #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 (define full-prop
   (build-contract-property
    #:name list-name
@@ -618,7 +685,7 @@
    #:generate listof-generate
    #:exercise listof-exercise
    #:stronger listof-stronger
-   #:list-contract? (λ (c) #t)))
+   #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 
 (struct listof-ctc (elem-c))
 
@@ -654,9 +721,26 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract full-prop)
 
+;; improper lists
+(struct im-listof-ctc listof-ctc ())
+
+;; improper, flat
+(struct imf-listof-ctc im-listof-ctc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract flat-prop)
+;; improper, chaperone
+(struct imc-listof-ctc im-listof-ctc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:chaperone-contract chap-prop)
+;; improper, impersonator
+(struct imi-listof-ctc im-listof-ctc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:contract full-prop)
+
 (define (flat-listof-ctc? x)
   (or (pef-listof-ctc? x)
-      (nef-listof-ctc? x)))
+      (nef-listof-ctc? x)
+      (imf-listof-ctc? x)))
 
 (define (ne->pe-ctc ne-ctc)
   (define elem-ctc (listof-ctc-elem-c ne-ctc))
@@ -675,11 +759,17 @@
     [(chaperone-contract? c) (nec-listof-ctc c)]
     [else (nei-listof-ctc c)]))
 (define/subexpression-pos-prop (listof raw-c)
-  (define c (coerce-contract 'non-empty-listof raw-c))
+  (define c (coerce-contract 'listof raw-c))
   (cond
     [(flat-contract? c) (pef-listof-ctc c)]
     [(chaperone-contract? c) (pec-listof-ctc c)]
     [else (pei-listof-ctc c)]))
+(define/subexpression-pos-prop (list*of raw-c)
+  (define c (coerce-contract 'list*of raw-c))
+  (cond
+    [(flat-contract? c) (imf-listof-ctc c)]
+    [(chaperone-contract? c) (imc-listof-ctc c)]
+    [else (imi-listof-ctc c)]))
 
 
 (define (blame-add-car-context blame) (blame-add-context blame "the car of"))

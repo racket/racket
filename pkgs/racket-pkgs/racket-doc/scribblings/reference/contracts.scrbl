@@ -373,14 +373,56 @@ reasons of backwards compatibility.}
 
 Returns a contract that recognizes a list whose every element matches
 the contract @racket[c]. Beware that when this contract is applied to
-a value, the result is not necessarily @racket[eq?] to the input.}
+a value, the result is not necessarily @racket[eq?] to the input.
+
+@examples[#:eval (contract-eval)
+                 (define/contract some-numbers
+                   (listof number?)
+                   (list 1 2 3))
+                 (define/contract just-one-number
+                   (listof number?)
+                   11)]
+
+}
 
 
 @defproc[(non-empty-listof [c contract?]) list-contract?]{
 
 Returns a contract that recognizes non-empty lists whose elements match
 the contract @racket[c]. Beware that when this contract is applied to
-a value, the result is not necessarily @racket[eq?] to the input.}
+a value, the result is not necessarily @racket[eq?] to the input.
+
+@examples[#:eval (contract-eval)
+                 (define/contract some-numbers
+                   (non-empty-listof number?)
+                   (list 1 2 3))
+                                
+                 (define/contract not-enough-numbers
+                   (non-empty-listof number?)
+                   (list))]
+}
+
+@defproc[(list*of [c contract?]) contract?]{
+
+Returns a contract that recognizes improper lists whose elements match
+the contract @racket[c]. If an improper list is created with @racket[cons],
+then its @racket[car] position is expected to match @racket[c] and
+its @racket[cdr] position is expected to be @racket[(list*of c)]. Otherwise,
+it is expected to match @racket[c]. Beware that when this contract is applied to
+a value, the result is not necessarily @racket[eq?] to the input.
+
+@examples[#:eval (contract-eval)
+                 (define/contract improper-numbers
+                   (list*of number?)
+                   (cons 1 (cons 2 3)))
+                                
+                 (define/contract not-improper-numbers
+                   (list*of number?)
+                   (list 1 2 3))]
+
+@history[#:added "6.1.1.1"]
+}
+
 
 @defproc[(cons/c [car-c contract?] [cdr-c contract?]) contract?]{
 

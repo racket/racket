@@ -53,6 +53,11 @@
    #t)
   
   (test/spec-passed/result
+   'list-contract-10b
+   '(list-contract? (list*of any/c))
+   #f)
+  
+  (test/spec-passed/result
    'list-contract-11
    '(list-contract? (non-empty-listof any/c))
    #t)

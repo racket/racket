@@ -160,7 +160,9 @@
          (cons/c (<=/c 1) (cons/c (<=/c 2) (listof (<=/c 3)))) 
          (listof (<=/c 4)))
   (ctest #f contract-stronger? (listof number?) (cons/c number? (cons/c number? (listof any/c))))
-    
+  (ctest #t contract-stronger? (list*of (<=/c 2)) (list*of (<=/c 3)))
+  (ctest #f contract-stronger? (list*of (<=/c 3)) (list*of (<=/c 2)))
+  
   (ctest #f contract-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
   (ctest #f contract-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
   (ctest #t contract-stronger? (vectorof (<=/c 3) #:immutable #t) (vectorof (<=/c 4) #:immutable #t))
