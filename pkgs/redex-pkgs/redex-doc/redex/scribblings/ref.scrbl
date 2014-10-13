@@ -3217,14 +3217,38 @@ precede ellipses that represent argument sequences; when it is
 @racket[#f] no commas appear in those positions.
 }
 
-@defparam[use-homemade-white-brackets homemade? boolean?]{
+@defparam[white-square-bracket make-white-square-bracket (-> boolean? pict?)]{
 This parameter controls the typesetting of the brackets in metafunction
-definitions and applications. When it is @racket[#f] (the default),
-Redex uses the unicode characters @litchar{〚} and  @litchar{〛}
-around the parameters. Otherwise, it uses two overlapping
-@litchar{[} and  @litchar{]} chars with a little whitespace between them.
+definitions and applications. It is called to supply the two white bracket
+picts. If @racket[#t] is supplied, the function should return the open 
+white bracket (to be used at the left-hand side of an application) and if
+@racket[#f] is supplied, the function should return the close white bracket.
+
+It's default value is @racket[default-white-square-bracket]. See also
+@racket[homemade-white-square-bracket].
 
 @history[#:added "1.1"]
+}
+
+@defproc[(homemade-white-square-bracket [open? boolean?]) pict?]{
+ This function implements the default way that older versions
+ of Redex typeset whitebrackets. It uses two overlapping
+ @litchar{[} and  @litchar{]} chars with a little whitespace between them.
+
+ @history[#:added "1.1"]
+}
+
+@defproc[(default-white-square-bracket [open? boolean?]) pict?]{
+ This function returns picts built using
+ @litchar{〚} and  @litchar{〛}
+ in the style @racket[default-style], using
+ @racket[current-text] and @racket[default-font-size].
+
+ If these result in picts that are more than 1/2 whitespace,
+ then 1/3 of the whitespace is trimmed from sides (trimmed
+ only from the left of the open and the right of the close).
+ 
+ @history[#:added "1.1"]
 }
 
 @defparam[linebreaks breaks (or/c #f (listof boolean?))]{
