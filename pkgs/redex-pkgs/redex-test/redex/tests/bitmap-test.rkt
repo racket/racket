@@ -4,7 +4,7 @@
          pict)
 
 (module test racket/base) ; run by run-tests
-(use-homemade-white-brackets #t)
+(white-square-bracket homemade-white-square-bracket)
 
 ;; tests: 
 ;;  - language,
