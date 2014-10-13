@@ -18,13 +18,16 @@
 (define (jsexpr? x #:null [jsnull (json-null)])
   (let loop ([x x])
     (or (exact-integer? x)
-        (inexact-real? x)
+        (real-real? x)
         (boolean? x)
         (string? x)
         (eq? x jsnull)
         (and (list? x) (andmap loop x))
         (and (hash? x) (for/and ([(k v) (in-hash x)])
                          (and (symbol? k) (loop v)))))))
+
+(define (real-real? x) ; not nan or inf
+  (and (inexact-real? x) (not (member x '(+nan.0 +inf.0 -inf.0)))))
 
 ;; ----------------------------------------------------------------------------
 ;; Generation: Racket -> JSON
@@ -64,7 +67,7 @@
     (write-string (regexp-replace* rx-to-encode str escape) o)
     (write-bytes #"\"" o))
   (let loop ([x x])
-    (cond [(or (exact-integer? x) (inexact-real? x)) (write x o)]
+    (cond [(or (exact-integer? x) (real-real? x)) (write x o)]
           [(eq? x #f)     (write-bytes #"false" o)]
           [(eq? x #t)     (write-bytes #"true" o)]
           [(eq? x jsnull) (write-bytes #"null" o)]
