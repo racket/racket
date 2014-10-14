@@ -2,7 +2,6 @@
 (require rackunit
          racket/file
          racket/format
-         pkg/util
          (prefix-in db: pkg/db)
          "shelly.rkt"
          "util.rkt")
