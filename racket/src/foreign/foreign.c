@@ -3178,9 +3178,7 @@ static Scheme_Object *foreign_make_sized_byte_string(int argc, Scheme_Object *ar
     scheme_wrong_contract(MYNAME, "cpointer?", 0, argc, argv);
   if (!scheme_get_int_val(argv[1],&len))
     wrong_intptr(MYNAME, 1, argc, argv);
-  if (SCHEME_FALSEP(cp)) return scheme_false;
-  else return
-         scheme_make_sized_byte_string(SCHEME_FFIANYPTR_OFFSETVAL(cp),
+  return scheme_make_sized_byte_string(SCHEME_FFIANYPTR_OFFSETVAL(cp),
                                        len, 0);
 }
 #undef MYNAME
@@ -3304,9 +3302,9 @@ static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
       /* Done */
       mzrt_mutex_unlock(orig_place_mutex);
       if (!cached_orig_place_todo)
-	cached_orig_place_todo = todo;
+        cached_orig_place_todo = todo;
       else
-	free(todo);
+        free(todo);
       break;
     } else {
       /* Pause to allow actions such as a master GC.... */
