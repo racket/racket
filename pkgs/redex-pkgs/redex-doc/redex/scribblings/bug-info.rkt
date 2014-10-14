@@ -1,5 +1,4 @@
-#lang racket
-(require math/statistics)
+#lang racket/base
 
 (provide get-line-count
          get-counterexample
@@ -188,4 +187,3 @@
   (check-equal? (count-size '((1))) 3)
   (check-equal? (count-size '((1) (1))) 5)
   (check-equal? (count-size '((1) (1) (1) (1 1 1 1 1 1))) 14))
-
