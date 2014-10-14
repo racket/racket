@@ -389,6 +389,12 @@ Returns a byte string made of the given pointer and the given length.
 No copying is done.  This can be used as an alternative to make
 pointer values accessible in Racket when the size is known.
 
+Beware that the representation of a Racket byte string normally
+requires a nul terminator at the end of the byte string (after
+@racket[length] bytes), but some function work with a byte-string
+representation that has no such terminator---notably
+@racket[bytes-copy].
+
 If @racket[cptr] is an offset pointer created by @racket[ptr-add], the
 offset is immediately added to the pointer. Thus, this function cannot
 be used with @racket[ptr-add] to create a substring of a Racket byte
