@@ -15,6 +15,8 @@
 (test #f malloc 0 _int)
 (test #f malloc _int 0)
 
+(test 0 bytes-length (make-sized-byte-string #f 0))
+
 ;; Check integer-range checking:
 (let ()
   (define (try-int-boundary N _int _uint)
