@@ -2,7 +2,8 @@
 @(require scribble/manual
           scribble/bnf
           scribble/struct
-          scribble/eval)
+          scribble/eval
+          "scribblings/cite.rkt")
 
 @title{Redex: Practical Semantics Engineering}
 
@@ -23,6 +24,7 @@ and the @tt{examples} subdirectory in the @tt{redex} collection.
 @include-section["scribblings/ref.scrbl"]
 @include-section["scribblings/benchmark.scrbl"]
 
+@generate-bibliography[]
 @index-section[]
 
 
