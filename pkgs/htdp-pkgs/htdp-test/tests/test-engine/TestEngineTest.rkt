@@ -1,8 +1,10 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-advanced-reader.ss" "lang")((modname TestEngineTest) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ())))
-;; Expect 44 checks, 20 failures
-;; 2 must be uncommented to check error message for check-satisfied
+;; *****************************************************************************
+;; Expect 44 checks, 20 failures, the last one is finel
+;; *****************************************************************************
+;; 3 additonals must be uncommented to check error message for check-satisfied
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; MF: This test suite calls for serious re-organization: 
@@ -131,6 +133,7 @@
     (< (string-length (substring y 0 1)) x)))
 
 (define long10 (long? 10))
+#;
 (check-satisfied (trigger-exn-in-pred "") long10)
 
 (define (trigger-exn-in-pred x) x)
