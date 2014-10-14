@@ -15,7 +15,8 @@
          (struct-out eqn)
          (struct-out dqn)
          search/next
-         (struct-out gen-trace))
+         (struct-out gen-trace)
+         get-dist)
 
 ;; search tracing facility
 (provide enable-gen-trace!
@@ -191,24 +192,24 @@
                 #:key (λ (cls) (length (clause-prems cls)))))
 
 (define (random-order l depth max-depth #:key [key values])
-  (define bd (get-dist l depth max-depth))
+  (define len (length l))
+  (define bd (get-dist len depth max-depth))
   (define n (round ((distribution-sample bd))))
-  (define perm (nth-lexico-perm (length l) 
-                                (inexact->exact n)))
+  (define perm (nth-lexico-perm len (inexact->exact n)))
   (define l-sorted (reverse (sort (shuffle l) < #:key key)))
   (for/list ([i (in-list perm)])
     (list-ref l-sorted i)))
 
 (define get-dist
   (let ([cache (make-hash)])
-    (λ (l depth max-depth)
-      (hash-ref cache (list (length l) depth max-depth)
+    (λ (number-of-choices depth max-depth)
+      (hash-ref cache (list number-of-choices depth max-depth)
                 (λ ()
-                  (define nperms (factorial (length l)))
+                  (define nperms (factorial number-of-choices))
                   (define d (binomial-dist (sub1 nperms) 
                                            (+ (/ depth max-depth) 
                                               (* 0.05 (- 0.5 (/ depth max-depth))))))
-                  (hash-set! cache (list (length l) depth max-depth) d)
+                  (hash-set! cache (list number-of-choices depth max-depth) d)
                   d)))))
 
 (define (nth-lexico-perm len n)
