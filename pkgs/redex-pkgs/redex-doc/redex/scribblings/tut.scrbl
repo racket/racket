@@ -10,6 +10,7 @@
                       setup/main-collects)
           setup/dirs
           "tut-util.rkt"
+          "cite.rkt"
           (for-label racket/base
                      racket/gui
                      racket/pretty
@@ -1120,9 +1121,6 @@ fills as much of the width established by rendering @racket[red].
 
 Typeset @racket[types]. Use a compound rewriter so a use of @racket[(type Γ e t)]
 is rendered as @racketblock[Γ ⊢ e : t]
-
-@generate-bibliography[]
-
 
 @close-eval[amb-eval]
 

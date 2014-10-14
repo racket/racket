@@ -9,29 +9,39 @@
           redex/benchmark
           racket/include
           racket/runtime-path
+          "cite.rkt"
           (for-syntax racket/include)
-          (for-label racket/base
+          (for-label racket
                      racket/include
                      redex/benchmark
                      racket/date))
 
 @title[#:tag "benchmark"]{Automated Testing Benchmark}
 
-@defmodule*/no-declare[(redex/benchmark)]
-@declare-exporting[redex/benchmark]
+@defmodule[redex/benchmark]
 
-Redex's automated testing benchmark provides a collection of buggy models and
-utilities to test how efficiently methods of automatic test case 
-generation are able to find counterexamples for each bug. 
+Redex's automated testing benchmark provides a collection
+of buggy models and falsifiable properties to test how
+efficiently methods of automatic test case generation are
+able to find counterexamples for the bugs.
 
-The benchmark is organized by pairs of @emph{generate} and @emph{check} functions,
-as described in @secref{run}. Usually these are defined on a per-module basis,
-using pattern based rewrites applied to existing module definitions, as
-described in @secref{manage}. More specifically, generate and check
-functions are written for an existing (non-buggy) model, and then bugs
-are individually added to the model; for each bug, the benchmark measures
-how long, on average, different generate and check pairs take to find
-a counterexample.
+Each entry in the benchmark contains a @deftech{check} function
+and multiple @deftech{generate} functions. The @tech{check} function
+determines if a given example is a counterexample (i.e. if
+it uncovers the buggy behavior) and each of the @tech{generate}
+functions generates candidate examples to be tried. There are multiple
+ways to generate terms for each model. They typically correspond to different
+uses of @racket[generate-term], but could be any way to generate examples.
+See @racket[run-gen-and-check] for the precise contracts for @tech{generate}
+and @tech{check} functions.
+
+Most of the entries in the benchmark are small differences to existing, 
+bug-free models, where some small change to the model introduces the
+bug. These changes are described using @racket[define-rewrite].
+
+To run a benchmark entry with a particular generator, see @racket[run-gen-and-check/mods].
+
+@include-section["benchmark-models.scrbl"]
 
 @section[#:tag "manage"]{Managing Benchmark Modules}
 
@@ -108,36 +118,37 @@ Then:
 
 @section[#:tag "run"]{Running Benchmark Models}
 
-@defstruct*[run-results ([tries natural-number/c]
-                        [time natural-number/c]
-                        [cexps natural-number/c])]{
-Returned by @racket[run-gen-and-check]. Minimal results for one run of a generate and check pair.
-}
-
 @defproc[(run-gen-and-check [get-gen (-> (-> any/c))]
                             [check (-> any/c boolean?)]
                             [seconds natural-number/c]
                             [#:name name string? "unknown"]
                             [#:type type symbol? 'unknown]) 
                             run-results?]{
-Repeatedly generates random terms and checks if they are counterexamples
-to some property defined by @racket[check] (a term is considered a counterexample
-if @racket[check] returns @racket[#f] for that term).
-The thunk @racket[get-gen] is assumed to return a fresh @emph{generator}, which
-can then be called repeatedly to generate random terms. (The outer thunk is
-assumed to reset the generator, for generators that have internal state. The 
-generator is reset each time the property is found to be false.)
-Each term is passed to @racket[check] to see if it is a counterexample.
+Repeatedly @tech{generate}s random terms and @tech{check}s if they are counterexamples
+to some property defined by @racket[check], where a term is considered a counterexample
+if @racket[check] returns @racket[#f] for that term.
+
+The @racket[get-gen] thunk is called to build a generator of random terms
+(which may close over some state). A new generator is created each time the property
+is found to be false.
+
+Each @tech{generate}d term is passed to @racket[check] to see if it is a counterexample.
 The interval in milliseconds between counterexamples is
 tracked, and the process is repeated either until the time specified by
 @racket[seconds] has elapsed or the standard error in the average interval
 between counterexamples is less than 10% of the average.
 
-Returns an instance of @racket[run-results] containing the total number of
-terms generated, the total elapsed time, and the number of counterexamples found.
+The result is an instance of @racket[run-results] containing the total number of
+terms @tech{generate}d, the total elapsed time, and the number of counterexamples found.
 More detailed information can be obtained using the benchmark logging facilities,
 for which @racket[name] is refers to the name of the model, and @racket[type]
 is a symbol indicating the generation type used.
+}
+
+@defstruct*[run-results ([tries natural-number/c]
+                         [time natural-number/c]
+                         [cexps natural-number/c])]{
+  Minimal results for one run of a @tech{generate} and @tech{check} pair.
 }
 
 @defproc[(run-gen-and-check/mods [gen-mod-path module-path?]
@@ -184,7 +195,7 @@ The following events are logged (the symbol designating the event is in parenthe
 the form of the data logged for each event is shown):
 @itemlist[
           @item{Run starts (@racket['start]), logged when beginning a run with a new
-                            generate/check pair.
+                            @tech{generate}/@tech{check} pair.
                 @racketgrammar[#:literals (list quote)
                                data-list (list '#:model model '#:type gen)]}
           @item{Run completions (@racket['finished]), logged at the end of a run.
@@ -202,20 +213,20 @@ the form of the data logged for each event is shown):
                     are recalculated whenever a counterexample is found.
                 @racketgrammar[#:literals (list quote)
                                data-list (list '#:model model '#:type gen 
-                                               '#:average avg '#:stderr err)]}                                           
+                                               '#:average avg '#:stderr err)]}
           @item{Major garbage collections (@racket['gc-major]).
                 @racketgrammar[#:literals (list quote)
                                data-list (list '#:amount amount '#:time time)]}
           @item{Heartbeats (@racket['hearbeat]) are logged every 10 seconds by the benchmark
-                            as a liveness check.
+                            as a way to be sure that the benchmark has not crashed.
                 @racketgrammar[#:literals (list quote)
                                data-list (list '#:model model '#:type gen)]}
-          @item{Timeouts (@racket['timeout]), which occur when generating or checking a single
+          @item{Timeouts (@racket['timeout]), which occur when generating or @tech{check}ing a single
                          takes term longer than 5 minutes.
                 @racketgrammar[#:literals (list check generation quote)
                                data-list (list '#:during 'check '#:term term '#:model model
                                                '#:type gen)
-                                         (list '#:during 'generation '#:model model '#:type gen)]}                                            
+                                         (list '#:during 'generation '#:model model '#:type gen)]}
           ]
 
 @defproc[(benchmark-logging-to [filename string?]
@@ -235,7 +246,7 @@ logging facilities (see @secref{log}).
 
 @emph{TODO!}
 
-@section{Benchmark Models}
+@section[#:tag "sec:finding"]{Finding the Benchmark Models}
 
 The models included in the distribution of the benchmark are in the
 @filepath{redex/benchmark/models} subdirectory of the @racket[redex-benchmark]
@@ -244,12 +255,12 @@ pattern @filepath{<name>-info.rkt}, defining a module that provides the function
 
 @defproc[(all-mods)
          (listof (list/c string? module-path? module-path?))]{Returns a list of 
-generate and check pairs for a given model or set of models, such that for each 
+@tech{generate} and @tech{check} pairs for a given model or set of models, such that for each 
 pair the first element is the name of the model, the second is a module defining a 
-generator, and the third is a module defining a check function.}
+generator, and the third is a module defining a @tech{check} function.}
 
 The file @filepath{redex/benchmark/models/all-info.rkt} provides an @racket[all-mods]
-function listing all of the generate and check pairs included in the benchmark.
+function listing all of the @tech{generate} and @tech{check} pairs included in the benchmark.
 
 A command line interface is provided by the file 
 @filepath{redex/benchmark/run-benchmark.rkt}, 
@@ -257,5 +268,3 @@ which takes an ``info'' file as described above as its primary argument and prov
 options for running the listed tests. It automatically writes results from each run to
 a separate log file, all of which are located in a temporary directory.
 (The directory path is printed to standard out at the beginning of the run).
-
-
