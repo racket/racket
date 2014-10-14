@@ -174,14 +174,14 @@
   (syntax-case stx ()
     [(check-random e1 e2)
      (let ([test
-	     #`(lambda (rng k)
-		 (parameterize ((current-pseudo-random-generator rng)) (random-seed k)
-		   e1))]
-	   [actuals
-	     (list
-	       #`(lambda (rng k)
-		   (parameterize ((current-pseudo-random-generator rng)) (random-seed k)
-		     e2)))])
+            #`(lambda (rng k)
+                (parameterize ((current-pseudo-random-generator rng)) (random-seed k)
+                  e1))]
+           [actuals
+            (list
+             #`(lambda (rng k)
+                 (parameterize ((current-pseudo-random-generator rng)) (random-seed k)
+                   e2)))])
        (check-expect-maker stx #'check-random-values test actuals 'comes-from-check-expect))]
     [_ (raise-syntax-error 'check-random (argcount-error-message/stx 2 stx) stx)]))
 
@@ -189,11 +189,13 @@
   (syntax-case stx ()
     [(_ actual:exp expected-property:exp)
      (identifier? #'expected-property:exp)
-     (check-expect-maker stx
-                         #'check-values-property 
-                         #'(lambda (x) (expected-property:exp x))
-                         (list #'actual:exp (symbol->string (syntax-e #'expected-property:exp)))
-                         'comes-from-check-satisfied)]
+     (begin 
+       (check-expect-maker stx 
+                           #'check-values-property 
+                           #'actual:exp
+                           (list #'(lambda (x) (expected-property:exp x))
+                                 (symbol->string (syntax-e #'expected-property:exp)))
+                           'comes-from-check-satisfied))]
     [(_ actual:exp expected-property:exp) 
      (raise-syntax-error 'check-satisfied "expects named function in second position." stx)]
     [_ (raise-syntax-error 'check-satisfied (argcount-error-message/stx 2 stx) stx)]))
@@ -203,14 +205,18 @@
   ;; it, but it is possibly weird for students
   (send (send test-engine get-info) add-check)
   (run-and-check
-    (lambda (v p? _what-is-this?) (p? v))
-    (lambda (src format v1 v2 _) (make-satisfied-failed src format v2 property?))
-    test
-    actual
-    #f
-    src
-    test-engine
-    (list 'check-satisfied property?)))
+   ;; check
+   (lambda (p? v _what-is-this?) (p? v))
+   ;; maker
+   (lambda (src format v1 v2 _) (make-satisfied-failed src format v2 property?))
+   ;; test 
+   test
+   ;; expect 
+   actual
+   #f
+   src
+   test-engine
+   (list 'check-satisfied property?)))
 
 ;; check-values-expected: (-> scheme-val) (-> nat scheme-val) src test-engine -> void
 (define (check-random-values test actual-maker src test-engine)
@@ -361,30 +367,41 @@
 ;;                ( -> scheme-val) scheme-val scheme-val test-engine symbol? -> boolean
 (define (run-and-check check maker test expect range src test-engine kind)
   (match-let ([(list result result-val exn)
-        (with-handlers ([exn:fail:wish?
-                         (lambda (e)
-                           (define display (error-display-handler))
-                           (define name (exn:fail:wish-name e))
-                           (define args (exn:fail:wish-args e))
-                           (list (unimplemented-wish src (test-format) name args) 'error #f))]
-			[(lambda (x)
-			   (and (exn:fail:contract:arity? x)
-			        (pair? kind)
-				(eq? 'check-satisfied (car kind))))
-			 (lambda (_)
-			   (error-check (lambda (v) #f) (cadr kind) SATISFIED-FMT #t))]
-                        [exn:fail?
-                         (lambda (e)
-                           (define display (error-display-handler))
-                           (define msg (get-rewriten-error-message e))
-                           (list (make-unexpected-error src (test-format) expect msg e) 'error e))])
-          (define test-val (test))
-          (cond [(check expect test-val range) (list #t test-val #f)]
-                [else (list (maker src (test-format) test-val expect range) test-val #f)]))])
+               (with-handlers ([exn:fail:wish?
+                                (lambda (e)
+                                  (define display (error-display-handler))
+                                  (define name (exn:fail:wish-name e))
+                                  (define args (exn:fail:wish-args e))
+                                  (list (unimplemented-wish src (test-format) name args) 'error #f))]
+                               [(lambda (x)
+                                  (and (exn:fail:contract:arity? x)
+                                       (pair? kind)
+                                       (eq? 'check-satisfied (car kind))))
+                                (lambda (_)
+                                  (error-check (lambda (v) #f) (cadr kind) SATISFIED-FMT #t))]
+                               [exn:fail?
+                                (lambda (e)
+                                  (define display (error-display-handler))
+                                  (define msg (get-rewriten-error-message e))
+                                  (if (and (pair? kind) (eq? 'check-satisfied (car kind)))
+                                      (list (unsatisfied-error src (test-format) (cadr kind) msg e) 
+                                             'error e)
+                                      (list (unexpected-error src (test-format) expect msg e) 
+                                            'error e)))])
+                 (define test-val (test))
+                 (cond [(check expect test-val range) (list #t test-val #f)]
+                       [else (list (maker src (test-format) test-val expect range)
+                                   test-val
+                                   #f)]))])
     (cond [(check-fail? result)
-           (send (send test-engine get-info) check-failed result (check-fail-src result) exn)
+           (define c (send test-engine get-info))
+           (send c check-failed result (check-fail-src result) exn)
            (if exn (raise exn) #f)]
           [else #t])))
+
+(define (tee x)
+  (displayln `(tee ,x))
+  x)
 
 ;;Wishes
 (struct exn:fail:wish exn:fail (name args))

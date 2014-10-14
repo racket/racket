@@ -13,6 +13,7 @@
 
 ;; (make-unexpected-error src format string exn)
 (define-struct (unexpected-error check-fail) (expected message exn))
+(define-struct (unsatisfied-error check-fail) (expected message exn))
 ;; (make-unequal src format scheme-val scheme-val)
 (define-struct (unequal check-fail) (test actual))
 ;; (make-outofrange src format scheme-val scheme-val inexact)
@@ -140,6 +141,11 @@
            (apply print-with-values fstring print-string print-formatted vals)))
         (formatter (check-fail-format fail)))
     (cond
+      [(unsatisfied-error? fail)
+       (print 
+        "check-satisfied encountered an error instead of the expected kind of value, ~F. \n   :: ~a"
+        (formatter (unsatisfied-error-expected fail))
+        (unsatisfied-error-message fail))]
       [(unexpected-error? fail)
        (print
         "check-expect encountered the following error instead of the expected value, ~F. \n   :: ~a"

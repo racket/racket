@@ -123,3 +123,14 @@
   (member x (list 0 1 2 3 4 5 6 7 8 9)))
 
 (check-satisfied 4 odd?) ;; fails 
+
+;; -----------------------------------------------------------------------------
+
+(define (long? x)
+  (lambda (y)
+    (< (string-length (substring y 0 1)) x)))
+
+(define long10 (long? 10))
+(check-satisfied (trigger-exn-in-pred "") long10)
+
+(define (trigger-exn-in-pred x) x)
