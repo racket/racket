@@ -9,7 +9,6 @@
          racket/runtime-path
          racket/path
          racket/list
-         pkg/util
          "shelly.rkt"
          "util.rkt")
 
