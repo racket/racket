@@ -6,10 +6,11 @@
 
 @defmodule[net/git-checkout]{The @racketmodname[net/git-checkout]
 library provides support for extracting a directory tree from a Git
-repository that is hosted by a server that implements @tt{git://}
-protocol. The @racketmodname[net/git-checkout] library does not rely
-on external binaries (such as a @exec{git} client) or native libraries
-(such as @filepath{libgit}).}
+repository that is hosted by a server that implements the @tt{git://}
+protocol or the ``smart'' protocol over HTTP(S). The
+@racketmodname[net/git-checkout] library does not rely on external
+binaries (such as a @exec{git} client) or Git-specific native
+libraries (such as @filepath{libgit}).}
 
 When run as a program, @racket[net/git-checkout] accepts command-line
 arguments to drive the checkout. Use
@@ -22,19 +23,28 @@ for information on command-line arguments and flags.
                        [repository string?]
                        [#:dest-dir dest-dir path-string?]
                        [#:ref ref string? "master"]
+                       [#:transport transport (or/c 'git 'http 'https) 'git]
                        [#:depth depth (or/c #f positive-exact-integer?) 1]
                        [#:quiet? quiet? any/c #f]
                        [#:tmp-dir given-tmp-dir (or/c #f path-string?) #f]
                        [#:clean-tmp-dir? clean-tmp-dir? any/c (not given-tmp-dir)]
-                       [#:port port (integer-in 1 65535) 9418])
+                       [#:port port (integer-in 1 65535) (case transport
+                                                           [(git) 9418]
+                                                           [(http) 80]
+                                                           [(https) 443])])
          void?]{
 
-Contacts the @tt{git://} server at @racket[hostname] and @racket[port]
+Contacts the server at @racket[hostname] and @racket[port]
 to download the repository whose name on the server is
 @racket[repository] (normally ending in @filepath{.git}).  The tree
 within the repository that is identified by @racket[ref] (which can be
 a branch, tag, commit ID, or tree ID) is extracted to
 @racket[dest-dir].
+
+If @racket[transport] is @racket['git], then the server is contacted
+using Git's native transport. If @racket[transport] is
+@racket['http] or @racket['https], then the server is contacted using
+HTTP(S) and the ``smart'' Git protocol.
 
 A local clone of the repository is @emph{not} preserved, but is
 instead discarded after the tree is extracted to @racket[dest-dir].

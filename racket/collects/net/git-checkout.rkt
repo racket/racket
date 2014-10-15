@@ -5,7 +5,8 @@
          racket/port
          racket/string
          file/gunzip
-         openssl/sha1)
+         openssl/sha1
+         net/url)
 
 ;; Stefan Saasen's "Reimplementing 'git clone' in Haskell from the bottom up"
 ;;  http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/
@@ -19,12 +20,16 @@
 (define (git-checkout host
                       repo
                       #:dest-dir dest-dir
+                      #:transport [transport 'git]
                       #:ref [ref "master"]
                       #:depth [given-depth 1]
                       #:quiet? [quiet? #f]
                       #:tmp-dir [given-tmp-dir #f]
                       #:clean-tmp-dir? [clean-tmp-dir? (not given-tmp-dir)]
-                      #:port [port 9418])
+                      #:port [port (case transport
+                                     [(git) 9418]
+                                     [(http) 80]
+                                     [(https) 443])])
   (let retry-loop ([given-depth given-depth])
     (define tmp-dir (or given-tmp-dir
                         (make-temporary-file "git~a" 'directory)))
@@ -37,7 +42,7 @@
       (log-git-checkout-info msg))
     
     (status "Contacting ~a" host)
-    (define-values (i o) (tcp-connect host port))
+    (define-values (i o) (initial-connect transport host port repo))
     ((let/ec esc
        (dynamic-wind
         void
@@ -70,6 +75,7 @@
                                #f])))
 
           ;; Tell the server which commits we need
+          (set!-values (i o) (want-step transport host port repo i o))
           (for ([want-commit (in-list want-commits)]
                 [pos (in-naturals)])
             (write-pkt o "want " want-commit (if (zero? pos) " " "") "\n"))
@@ -77,8 +83,14 @@
             (write-pkt o "deepen " depth "\n"))
           (write-pkt o)
 
+          ;; Tell the server that we're ready for the objects
+          (write-pkt o "done\n")
+          (set!-values (i o) (done-step transport host port repo i o))
+
           (when depth
-            ;; If we wrote `deepen`, then the server replies with `shallow`s
+            ;; If we wrote `deepen`, then the server replies with `shallow`s.
+            ;; Note that these were available before writing `done` in the
+            ;; case of the 'git transport, but it works here for all transports.
             (let loop ()
               (define r (read-pkt i))
               (cond
@@ -90,7 +102,6 @@
                 (error 'git-checkout "expected shallow, got ~s" r)])))
 
           ;; Tell the server that we're ready for the objects
-          (write-pkt o "done\n")
           (define nak (read-pkt i))
           (unless (equal? #"NAK\n" nak)
             (error 'git-checkout "expected NAK, got ~s" nak))
@@ -146,6 +157,75 @@
         (lambda ()
           (close-input-port i)
           (close-output-port o)))))))
+
+;; ----------------------------------------
+;; Transports: git, http, and https
+
+;; initial-connect: transport-sym string natural string
+;;                  -> (values input-port output-port)
+;;  Contacts the server and returns an output port for writing
+;;  the request (ignored if not needed for the the transport)
+;;  and an input port from reading the available references
+(define (initial-connect transport host port repo)
+  (case transport
+    [(git)
+     (tcp-connect host port)]
+    [(http https)
+     (define i
+       (get-pure-port
+        (string->url
+         (~a transport "://" host ":" port "/" repo
+             "/info/refs?service=git-upload-pack"))))
+     (define ok? #f)
+     (dynamic-wind
+      void
+      (lambda ()
+        (unless (regexp-match-peek #px#"^[0-9a-f]{4}#" i)
+          (error 'git-checkout (~a "response is not consistent with the Git protocol\n"
+                                   "  initial portion: ~s")
+                 (read-bytes 64 i)))
+        (define pkt (read-pkt i))
+        (define term-pkt (read-pkt i))
+        (unless (eof-object? term-pkt)
+          (error 'git-checkout (~a "expected a null packet, received something else\n"
+                                   "  packet: ~s")
+                 term-pkt))
+        (set! ok? #t)
+        (values i (open-output-nowhere)))
+      (lambda ()
+        (unless ok? (close-input-port i))))]
+    [else
+     (error 'git-checkout "unrecognized transport\n  given: ~e" transport)]))
+
+;; want-step: transport-sym string natural string input-port output-port
+;;            -> (values input-port output-port)
+;;  Replaces the connection, if appropriate to the transport, for
+;;  writing the wanted references.
+(define (want-step transport host port repo i o)
+  (case transport
+    [(git) (values i o)]
+    [(http https)
+     (close-input-port i)
+     (values (open-input-bytes #"") (open-output-bytes))]))
+
+;; done-step: transport-sym string natural string input-port output-port
+;;            -> (values input-port output-port)
+;;  Replaces the connection, if appropriate to the transport, after
+;;  writing the wanted references and before reading the server's
+;;  response.
+(define (done-step transport host port repo i o)
+  (case transport
+    [(git) (values i o)]
+    [(http https)
+     (define s (get-output-bytes o))
+     (define i
+       (post-pure-port
+        (string->url
+         (~a transport "://" host ":" port "/" repo
+             "/git-upload-pack"))
+        s
+        (list "Content-Type: application/x-git-upload-pack-request")))
+     (values i (open-output-nowhere))]))
 
 ;; ----------------------------------------
 
@@ -678,9 +758,17 @@
   (define depth 1)
   (define ref "master")
   (define tmp-dir #f)
+  (define transport 'git)
 
   (define-values (host repo dest)
     (command-line
+     #:once-any
+     [("--git") "Use the Git transport (the default)"
+      (set! transport 'git)]
+     [("--http") "Use the \"smart\" HTTP transport"
+      (set! transport 'http)]
+     [("--https") "Use the \"smart\" HTTPS transport"
+      (set! transport 'https)]
      #:once-each
      [("--depth") d "Commit depth of <d> (default is 1, 0 means \"all\")"
       (set! depth (string->number d))
@@ -694,6 +782,7 @@
      (values host repo dest)))
 
   (git-checkout host repo
+                #:transport transport
                 #:dest-dir dest
                 #:tmp-dir tmp-dir
                 #:ref ref
