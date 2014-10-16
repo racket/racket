@@ -99,8 +99,7 @@ into each model.
                         (number->string num)
                         (symbol->string (get-category type num))
                         (number->string (get-counterexample-size type num))
-                        (element (style "ErrorDescriptionBox" '())
-                                 (list (get-error type num))))
+                        (list (get-error type num)))
                   (set! last-type type)))))]
   }
 }
