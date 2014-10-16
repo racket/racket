@@ -4,7 +4,8 @@
                 "numeric-tower-pict.rkt"
                 scribble/eval
                 racket/sandbox)
-       (require (for-label (only-meta-in 0 [except-in typed/racket for])))]
+       (require (for-label (only-meta-in 0 [except-in typed/racket for])
+                           racket/async-channel))]
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
@@ -412,6 +413,23 @@ corresponding to @racket[trest], where @racket[bound]
 @ex[(lambda: ([x : Any]) (if (channel? x) x (error "not a channel!")))]
 }
 
+@defform[(Async-Channelof t)]{An @rtech{asynchronous channel} on which only @racket[t]s can be sent.
+@ex[
+(require typed/racket/async-channel)
+(ann (make-async-channel) (Async-Channelof Symbol))
+]
+@history[#:added "1.1"]
+}
+
+@defidform[Async-ChannelTop]{is the type of an @rtech{asynchronous channel} with unknown
+  message type and is the supertype of all asynchronous channel types. This type typically
+  appears in programs via the combination of occurrence typing and
+  @racket[async-channel?].
+@ex[(require typed/racket/async-channel)
+    (lambda: ([x : Any]) (if (async-channel? x) x (error "not an async-channel!")))]
+@history[#:added "1.1"]
+}
+
 @defform*[[(Parameterof t)
            (Parameterof s t)]]{A @rtech{parameter} of @racket[t].  If two type arguments are supplied,
                                  the first is the type the parameter accepts, and the second is the type returned.
@@ -595,9 +613,10 @@ functions and continuation mark functions.
 
   @ex[string?]
 
-  The filter specifies that when @racket[(string? x)] evaluates to a true value, the
-  variable @racket[x] can be assumed to have type @racket[String]. Likewise, if the
-  expression evaluates to @racket[#f], the variable has type @racket[String].
+  The filter specifies that when @racket[(string? x)] evaluates to a true value for
+  a conditional branch, the variable @racket[x] in that branch can be assumed to have
+  type @racket[String]. Likewise, if the expression evaluates to @racket[#f] in a branch,
+  the variable @emph{does not} have type @racket[String].
 
   In some cases, asymmetric type information is useful in filters. For example, the
   @racket[filter] function's first argument is specified with only a positive filter:

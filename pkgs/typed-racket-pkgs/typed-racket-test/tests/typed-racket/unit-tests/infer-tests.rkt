@@ -225,6 +225,38 @@
     [infer-t (-lst* -String) (make-ListDots -Symbol 'b) #:indices '(b) #:fail]
     [infer-t (->* (list -Symbol) -Symbol -Void) (->* (list) (-v a) -Void) #:vars '(a) #:fail]
 
+    [infer-t (-> (-values (list -Bottom))) (-> (-values (list (-v b) (-v b)))) #:vars '(a)]
+    [infer-t (-> (-values (list (-v a)))) (-> (-values (list (-v b) (-v b)))) #:vars '(a)]
+
+    [infer-t
+     (-pair (->... (list) ((-v b) b) Univ) (make-ListDots (-lst (-v b)) 'b))
+     (-lst* (-> Univ Univ))
+     #:indices '(b) #:fail]
+    [infer-t
+     (-lst* (-> Univ Univ))
+     (-pair (->... (list) ((-v b) b) Univ) (make-ListDots (-lst (-v b)) 'b))
+     #:indices '(b) #:fail]
+    [infer-t
+     (-pair (->... (list) ((-v b) b) Univ) (make-ListDots (-v b) 'b))
+     (-pair (-> -Symbol Univ) (-lst -String))
+     #:indices '(b) #:fail]
+    [infer-t
+     (-pair (-> -Symbol Univ) (-lst -String))
+     (-pair (->... (list) ((-v b) b) Univ) (make-ListDots (-v b) 'b))
+     #:indices '(b) #:fail]
+
+    [infer-t
+      (-lst (-mu A (Un (-v b) (-lst A))))
+      (-mu C (Un (-v b2) (-lst C)))
+      #:vars '(b2)
+      #:result [(-vec (-v b2)) (-vec (-lst (-mu A (Un (-v b) (-lst A)))))]]
+
+    [infer-t
+      (-mlst (-val 'b))
+      (-mlst (-v a))
+      #:vars '(a)
+      #:result [(-seq (-v a)) (-seq (-val 'b))]]
+
     ;; Currently Broken
     ;(infer-t (make-ListDots -Symbol 'b) (-pair -Symbol (-lst -Symbol)) #:indices '(b))
     [i2-t (-v a) N ('a N)]

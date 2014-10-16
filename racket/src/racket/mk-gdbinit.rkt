@@ -11,7 +11,9 @@
 ;; can't see them. If "stypes.h" changes, then "mz-gdbinit" needs
 ;; to be re-built.
 
-(require racket/runtime-path)
+(require racket/runtime-path
+         racket/match
+         racket/set)
 
 (define-runtime-path stypes-path "src/stypes.h")
 
@@ -378,6 +380,13 @@ define psoq
       psox $OO $arg1+1
       set $OT = 0
     end
+<<build_types>>
+    if ( $OT > <<highest_type>> )
+      printf "invalid type"
+    end
+    if ( $OT < <<lowest_type>> )
+      printf "invalid type"
+    end
   end
 end
 document psoq
@@ -413,6 +422,17 @@ EOS
 (define styles (with-input-from-file stypes-path
                  (lambda () (read-string (* 2 (file-size stypes-path))))))
 
+(define types-table
+  (let ([types (regexp-match* #rx"[A-Za-z][A-Za-z0-9_]*, */[*] ([0-9]+) [*]/" styles)])
+    (for/list ([i types])
+      (define split (regexp-match #rx"([A-Za-z][A-Za-z0-9_]*), */[*] ([0-9]+) [*]/" i))
+      (cdr split))))
+
+(define highest-type (apply max (map (lambda (x) (string->number (cadr x))) types-table)))
+(define lowest-type  (apply min (map (lambda (x) (string->number (cadr x))) types-table)))
+
+(define handled-table (mutable-set))
+
 (call-with-output-file* "mz-gdbinit"
   #:exists 'truncate 
   (lambda (out)
@@ -420,10 +440,27 @@ EOS
       (let loop ()
         (let ([m (regexp-match #rx"<<([^>]*)>>" in 0 #f out)])
           (when m
-            (let ([m2 (regexp-match (format "~a, */[*] ([0-9]+) [*]/" (cadr m))
-                                    styles)])
-              (if m2
-                  (display (cadr m2) out)
-                  (error 'mk-gdbinit "cannot find type in stypes.h: ~e" (cadr m))))
+            (match (cadr m)
+              [#"build_types"
+               (for ([type types-table]
+                     #:unless (set-member? handled-table (cadr type)))
+                 (display (format #<<EOS
+    if ( $OT == ~a)
+      printf "~a"
+    end
+
+EOS
+                          (cadr type) (car type))
+                          out))]
+              [#"highest_type" (display highest-type out)]
+              [#"lowest_type"  (display lowest-type  out)]
+              [else
+               (let ([m2 (regexp-match (format "~a, */[*] ([0-9]+) [*]/" (cadr m))
+                                       styles)])
+                 (if m2
+                     (begin
+                       (display (cadr m2) out)
+                       (set-add! handled-table (cadr m2)))
+                     (error 'mk-gdbinit "cannot find type in stypes.h: ~e" (cadr m))))])
             (loop)))))
     (newline out)))

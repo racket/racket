@@ -132,11 +132,17 @@
   (let* ([control-down? (not (zero? (arithmetic-shift (GetKeyState VK_CONTROL) -1)))]
          [rcontrol-down? (and control-down?
                               (not (zero? (arithmetic-shift (GetKeyState VK_RCONTROL) -1))))]
+         [lcontrol-down? (and control-down?
+                              (not (zero? (arithmetic-shift (GetKeyState VK_LCONTROL) -1))))]
          [shift-down? (not (zero? (arithmetic-shift (GetKeyState VK_SHIFT) -1)))]
 	 [rshift-down? (and shift-down?
                             (not (zero? (arithmetic-shift (GetKeyState VK_RSHIFT) -1))))]
          [caps-down? (not (zero? (arithmetic-shift (GetKeyState VK_CAPITAL) -1)))]
-         [alt-down? (= (bitwise-and (HIWORD lParam) KF_ALTDOWN) KF_ALTDOWN)])
+         [alt-down? (= (bitwise-and (HIWORD lParam) KF_ALTDOWN) KF_ALTDOWN)]
+         [ralt-down? (and alt-down?
+			  (not (zero? (arithmetic-shift (GetKeyState VK_RMENU) -1))))]
+         [lalt-down? (and alt-down?
+			  (not (zero? (arithmetic-shift (GetKeyState VK_LMENU) -1))))])
     (let-values ([(id other-shift other-altgr other-shift-altgr)
                   (cond
 		   [(symbol? wParam)
@@ -177,7 +183,10 @@
 		   [else
                       ;; wParam is a virtual key code
                       (let ([id (hash-ref win32->symbol wParam #f)]
-                            [override-mapping? (and control-down? (not alt-down?))]
+                            [override-mapping? (and control-down?
+						    ;; not AltGR:
+						    (not (and lcontrol-down?
+							      ralt-down?)))]
                             [try-generate-release
                              (lambda ()
                                (let ([sc (THE_SCAN_CODE lParam)])
@@ -252,7 +261,11 @@
                               [x 0]
                               [y 0]
                               [time-stamp 0]
-                              [caps-down caps-down?])]
+                              [caps-down caps-down?]
+			      [control+meta-is-altgr (and control-down?
+                                                          alt-down?
+							  (not rcontrol-down?)
+							  (not lalt-down?))])]
 		      [as-key (lambda (v)
 				(if (integer? v) (integer->char v) v))])
 		 (when is-up?

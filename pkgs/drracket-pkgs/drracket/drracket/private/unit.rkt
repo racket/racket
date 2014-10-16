@@ -25,7 +25,7 @@
          "insert-large-letters.rkt"
          "get-defs.rkt"
          "local-member-names.rkt"
-         "eval-helpers.rkt"
+         "eval-helpers-and-pref-init.rkt"
          "parse-logger-args.rkt"
          "get-module-path.rkt"
          "named-undefined.rkt"
@@ -3752,7 +3752,7 @@
       [define/override file-menu:between-open-and-revert
         (lambda (file-menu)
           (new menu:can-restore-menu-item%
-               [label (string-constant open-collection-path)]
+               [label (string-constant open-require-path)]
                [shortcut (if (member 'shift (get-default-shortcut-prefix)) #f #\o)]
                [shortcut-prefix (if (member 'shift (get-default-shortcut-prefix))
                                     (get-default-shortcut-prefix)
@@ -3776,7 +3776,11 @@
                     (get-module-path-from-user
                      #:init (or editing-module-path
                                 (preferences:get 'drracket:open-module-path-last-used))
-                     #:pref 'drracket:open-module-path-last-used))
+                     #:pref 'drracket:open-module-path-last-used
+                     #:current-directory 
+                     (and editing-path
+                          (let-values ([(base name dir?) (split-path editing-path)])
+                            base))))
                   (when pth (handler:edit-file pth)))])
           (super file-menu:between-open-and-revert file-menu)
           (make-object separator-menu-item% file-menu))]
@@ -3852,6 +3856,16 @@
       
       (define/override (edit-menu:between-find-and-preferences edit-menu)
         (super edit-menu:between-find-and-preferences edit-menu)
+        
+        (define (aspell-callback f)
+          (define problem (aspell-problematic?))
+          (cond
+            [problem
+             (message-box (string-constant drscheme) problem)
+             (f #t)]
+            [else
+             (f #f)]))
+        
         (define (mk-menu-item checking-turned-on? 
                               turn-checking-on
                               pref-sym
@@ -3874,16 +3888,15 @@
                   (send item check (and on? (checking-turned-on? ed))))]
                [callback
                 (λ (item evt)
-                  (define problem (aspell-problematic?))
-                  (cond
-                    [problem
-                     (message-box (string-constant drscheme) problem)
-                     (preferences:set pref-sym #f)]
-                    [else
-                     (define ed (get-edit-target-object))
-                     (define old-val (checking-turned-on? ed))
-                     (preferences:set pref-sym (not old-val))
-                     (turn-checking-on ed (not old-val))]))]))
+                  (aspell-callback
+                   (λ (problem?)
+                     (cond
+                       [problem? (preferences:set pref-sym #f)]
+                       [else
+                        (define ed (get-edit-target-object))
+                        (define old-val (checking-turned-on? ed))
+                        (preferences:set pref-sym (not old-val))
+                        (turn-checking-on ed (not old-val))]))))]))
         (mk-menu-item (λ (ed) (send ed get-spell-check-strings)) 
                       (λ (ed new-val) (send ed set-spell-check-strings new-val))
                       'framework:spell-check-strings?
@@ -3894,6 +3907,94 @@
                       'framework:spell-check-text?
                       #\t
                       (string-constant spell-check-scribble-text))
+        
+        (new menu:can-restore-menu-item%
+             [label (string-constant spell-skip-to-next-misspelled-word)]
+             [shortcut (if (member 'shift (get-default-shortcut-prefix))
+                           #f
+                           #\n)]
+             [shortcut-prefix (if (member 'shift (get-default-shortcut-prefix))
+                                  (get-default-shortcut-prefix)
+                                  (cons 'shift (get-default-shortcut-prefix)))]
+             [parent edit-menu]
+             [demand-callback
+              (λ (item)
+                (define ed (get-edit-target-object))
+                (define on? (and ed 
+                                 (is-a? ed color:text<%>)
+                                 (= (send ed get-start-position) (send ed get-end-position))))
+                (send item enable on?))]
+             [callback
+              (λ (item evt)
+                (aspell-callback
+                 (λ (problem?)
+                   (unless problem?
+                     (define ed (get-edit-target-object))
+                     (define orig-pos (send ed get-start-position))
+                     
+                     (define (search start end mispelled?)
+                       (let loop ([p start])
+                         (cond
+                           [(< p end)
+                            (define sp (send ed get-spell-suggestions p))
+                            (define found-something? (if mispelled?
+                                                         (list? sp)
+                                                         (not (list? sp))))
+                            (cond
+                              [found-something? p]
+                              [else (loop (+ p 1))])]
+                           [else #f])))
+                     
+                     (define first-well-spelled (or (search orig-pos (send ed last-position) #f)
+                                                    (search 0 orig-pos #f)))
+                     (cond
+                       [first-well-spelled 
+                        (define mispelled (or (search first-well-spelled (send ed last-position) #t)
+                                              (search 0 first-well-spelled #t)))
+                        (cond
+                          [mispelled (send ed set-position mispelled)]
+                          [else (bell)])]
+                       [else (bell)])))))])
+        
+        (new menu:can-restore-menu-item%
+             [label (string-constant spell-suggest-corrections)]
+             [shortcut (if (member 'shift (get-default-shortcut-prefix))
+                           #f
+                           #\k)]
+             [shortcut-prefix (if (member 'shift (get-default-shortcut-prefix))
+                                  (get-default-shortcut-prefix)
+                                  (cons 'shift (get-default-shortcut-prefix)))]
+             [parent edit-menu]
+             [demand-callback
+              (λ (item)
+                (define ed (get-edit-target-object))
+                (define on? (and ed 
+                                 (is-a? ed color:text<%>)
+                                 (= (send ed get-start-position) (send ed get-end-position))))
+                (send item enable on?))]
+             [callback
+              (λ (item evt)
+                (aspell-callback
+                 (λ (problem?)
+                   (unless problem?
+                     (define ed (get-edit-target-object))
+                     (define orig-pos (send ed get-start-position))
+                     (match (send ed get-spell-suggestions orig-pos)
+                       [(list start end (cons first rest))
+                        (define suggestions (cons first rest))
+                        (define choice
+                          (get-choices-from-user (string-constant spell-correction-suggestions)
+                                                 (string-constant spell-choose-replacement-word)
+                                                 suggestions
+                                                 this
+                                                 '(0)))
+                        (when choice
+                          (send ed begin-edit-sequence)
+                          (send ed delete start end)
+                          (send ed insert (list-ref suggestions (car choice)) start start)
+                          (send ed end-edit-sequence))]
+                       [_ (bell)])))))])
+        
         (define dicts (get-aspell-dicts))
         (when dicts
           (define dicts-menu (new menu:can-restore-underscore-menu% 

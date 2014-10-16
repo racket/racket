@@ -5,8 +5,9 @@
            racket/base
            racket/dict
            racket/set
+           syntax/parse
            (base-env base-structs)
-           (env tvar-env type-alias-env)
+           (env tvar-env type-alias-env mvar-env)
            (utils tc-utils)
            (private parse-type)
            (rep type-rep)
@@ -18,33 +19,45 @@
          (base-env base-types base-types-extra colon)
          ;; needed for parsing case-lambda/case-> types
          (only-in (base-env case-lambda) case-lambda)
-         (only-in racket/class init init-field field augment)
+         (prefix-in un: (only-in racket/class init init-field field augment))
+         (only-in typed/racket/class init init-field field augment)
 
          rackunit)
 
 (provide tests)
 (gen-test-main)
 
+
+(define mutated-var #f)
+(define not-mutated-var #f)
+
 (begin-for-syntax
-  (do-standard-inits))
+  (do-standard-inits)
+  (register-mutated-var #'mutated-var))
 
 (define-syntax (pt-test stx)
-  (syntax-case stx (FAIL)
-    [(_ FAIL ty-stx)
-     (syntax/loc stx (pt-test FAIL ty-stx initial-tvar-env))]
-    [(_ FAIL ty-stx tvar-env)
+  (syntax-parse stx
+    [(_ (~datum FAIL) ty-stx:expr
+        (~optional tvar-env:expr #:defaults [(tvar-env #'initial-tvar-env)])
+        (~optional (~seq #:msg msg*:expr) #:defaults [(msg* #'#f)]))
      (quasisyntax/loc stx
        (test-case #,(format "~a" (syntax->datum #'ty-stx))
-         (unless
+         (define msg msg*)
+         (define actual-message
            (phase1-phase0-eval
-             (with-handlers ([exn:fail:syntax? (lambda (exn) #'#t)])
+             (with-handlers ([exn:fail:syntax? (lambda (exn) #`#,(exn-message exn))])
                (parameterize ([current-tvars tvar-env]
                               [delay-errors? #f])
                  (parse-type (quote-syntax ty-stx)))
-               #'#f))
-           (fail-check "No syntax error when parsing type."))))]
-    [(_ ts tv) (syntax/loc stx (pt-test ts tv initial-tvar-env))]
-    [(_ ty-stx ty-val tvar-env)
+               #'#f)))
+         (unless actual-message
+           (fail-check "No syntax error when parsing type."))
+         (when msg
+           (unless (regexp-match? msg actual-message)
+             (with-check-info (['expected msg] ['actual actual-message])
+               (fail-check "parse-type raised the wrong error message"))))))]
+    [(_ ty-stx:expr ty-val:expr
+        (~optional tvar-env:expr #:defaults [(tvar-env #'initial-tvar-env)]))
      (quasisyntax/loc
        stx
        (test-case #,(format "~a" (syntax->datum #'ty-stx))
@@ -117,6 +130,10 @@
     (-polydots (a) ((list) [a a] . ->... . N))]
    [(All (a ...) (-> (values a ...)))
     (-polydots (a) (t:-> (make-ValuesDots (list) a 'a)))]
+
+   ;; PR 14554, non-productive recursive type
+   [FAIL (Rec x (All (A #:row) x))]
+
    [(case-lambda (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]
                                                                       [(N N) N])]
    [(case-> (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]
@@ -140,9 +157,18 @@
    [(-> Any Boolean : #:+ (Number @ 0) #:- (! Number @ 0))
     (make-pred-ty -Number)]
    [(Any -> Boolean : #:+ (! Number @ 0) #:- (Number @ 0))
-    (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0 null) (-filter -Number 0 null)))]
+    (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0) (-filter -Number 0)))]
    [(-> Any Boolean : #:+ (! Number @ 0) #:- (Number @ 0))
-    (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0 null) (-filter -Number 0 null)))]
+    (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0) (-filter -Number 0)))]
+   [(-> Any (-> Any Boolean : #:+ (Number @ 1 0) #:- (! Number @ 1 0)))
+    (t:-> Univ
+          (t:->* (list Univ) -Boolean : (-FS (-filter -Number '(1 0)) (-not-filter -Number '(1 0)))))]
+   [(-> Any Any (-> Any Boolean : #:+ (Number @ 1 1) #:- (! Number @ 1 1)))
+    (t:-> Univ Univ
+          (t:->* (list Univ) -Boolean : (-FS (-filter -Number '(1 1)) (-not-filter -Number '(1 1)))))]
+   [(-> Any #:foo Any (-> Any Boolean : #:+ (Number @ 1 0) #:- (! Number @ 1 0)))
+    (->key Univ #:foo Univ #t
+           (t:->* (list Univ) -Boolean : (-FS (-filter -Number '(1 0)) (-not-filter -Number '(1 0)))))]
    [(All (a b) (-> (-> a Any : #:+ b) (Listof a) (Listof b)))
     (-poly (a b) (t:-> (asym-pred a Univ (-FS (-filter b 0) -top)) (-lst a) (-lst b)))]
    [(All (a b) (-> (-> a Any : #:+ (! b)) (Listof a) (Listof b)))
@@ -159,6 +185,26 @@
     (t:-> -Integer (-poly (x) (t:-> x x)))]
    [(-> Integer (All (X) (-> X X)))
     (t:-> -Integer (-poly (x) (t:-> x x)))]
+   [FAIL -> #:msg "incorrect use of -> type constructor"]
+   [FAIL (Any -> Any #:object 0) #:msg "expected the identifier `:'"]
+   [FAIL (-> Any Any #:+ (String @ x)) #:msg "expected the identifier `:'"]
+   [FAIL (-> Any Boolean : #:+ (Number @ 1 0) #:- (! Number @ 1 0))
+         #:msg "Index 1 used in"]
+   [FAIL (-> Any (-> Any Boolean : #:+ (Number @ 1 1) #:- (! Number @ 1 1)))
+         #:msg "larger than argument length"]
+
+
+   [(Any -> Boolean : #:+ (Symbol @ not-mutated-var))
+    (t:-> Univ -Boolean : (-FS (-filter -Symbol (-id-path #'not-mutated-var)) -top))]
+   [FAIL (Any -> Boolean : #:+ (Symbol @ mutated-var))
+         #:msg "may not reference identifiers that are mutated"]
+   [(Any -> Boolean : #:+ (! Symbol @ not-mutated-var))
+    (t:-> Univ -Boolean : (-FS (-not-filter -Symbol (-id-path #'not-mutated-var)) -top))]
+   [FAIL (Any -> Boolean : #:+ (! Symbol @ mutated-var))
+         #:msg "may not reference identifiers that are mutated"]
+   [FAIL (Any -> Boolean : #:+ (String @ unbound))
+         #:msg "may not reference identifiers that are unbound"]
+
 
    ;; ->* types
    [(->* (String Symbol) Void) (t:-> -String -Symbol -Void)]
@@ -178,6 +224,11 @@
     (->optkey -Integer [-String] #:bar -Integer #t -Void)]
    [(->* (Integer #:bar Integer) (String #:foo Integer) Void)
     (->optkey -Integer [-String] #:bar -Integer #t #:foo -Integer #f -Void)]
+   [(->* (Any (-> Any Boolean : #:+ (String @ 1 0))) Void)
+    (t:-> Univ (t:->* (list Univ) -Boolean : (-FS (-filter -String '(1 0)) -top))
+          -Void)]
+   [FAIL (->* (Any (-> Any Boolean : #:+ (String @ 2 0))) Void)
+         #:msg "Index 2 used in"]
 
    [(Opaque foo?) (make-Opaque #'foo?)]
    ;; PR 14122
@@ -211,6 +262,8 @@
    [(Class) (-class)]
    [(Class (init [x Number] [y Number]))
     (-class #:init ([x -Number #f] [y -Number #f]))]
+   [(Class (un:init [x Number] [y Number]))
+    (-class #:init ([x -Number #f] [y -Number #f]))]
    [(Class (init [x Number] [y Number #:optional]))
     (-class #:init ([x -Number #f] [y -Number #t]))]
    [(Class (init [x Number]) (init-field [y Number]))
@@ -221,7 +274,11 @@
     (-class #:init ([x -Number #f]) #:method ([m (t:-> N N)]))]
    [(Class [m (Number -> Number)] (field [x Number]))
     (-class #:field ([x -Number]) #:method ([m (t:-> N N)]))]
+   [(Class [m (Number -> Number)] (un:field [x Number]))
+    (-class #:field ([x -Number]) #:method ([m (t:-> N N)]))]
    [(Class (augment [m (Number -> Number)]))
+    (-class #:augment ([m (t:-> N N)]))]
+   [(Class (un:augment [m (Number -> Number)]))
     (-class #:augment ([m (t:-> N N)]))]
    [(Class (augment [m (Number -> Number)]) (field [x Number]))
     (-class #:augment ([m (t:-> N N)]) #:field ([x -Number]))]

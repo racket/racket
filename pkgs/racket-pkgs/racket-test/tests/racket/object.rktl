@@ -1927,6 +1927,11 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check error reporting for variable use before assignment
 
+(define (make-undefined-exn? name)
+  (lambda (exn)
+    (and (exn:fail:contract:variable? exn)
+         (eq? name (exn:fail:contract:variable-id exn)))))
+
 (let ()
   (define c%
     (class object%
@@ -1962,21 +1967,25 @@
       (field [s 1])
       (super-new)))
   
-  (err/rt-test (new d%) (lambda (exn)
-                          (and (exn:fail:contract:variable? exn)
-                               (eq? 'z (exn:fail:contract:variable-id exn)))))
-  (err/rt-test (new d!%) (lambda (exn)
-                           (and (exn:fail:contract:variable? exn)
-                                (eq? 'z (exn:fail:contract:variable-id exn)))))
-  (err/rt-test (new e%) (lambda (exn)
-                          (and (exn:fail:contract:variable? exn)
-                               (eq? 'z (exn:fail:contract:variable-id exn)))))
-  (err/rt-test (new d2%) (lambda (exn)
-                           (and (exn:fail:contract:variable? exn)
-                                (eq? 'f (exn:fail:contract:variable-id exn)))))
-  (err/rt-test (new e2%) (lambda (exn)
-                           (and (exn:fail:contract:variable? exn)
-                                (eq? 'f (exn:fail:contract:variable-id exn))))))
+  (err/rt-test (new d%) (make-undefined-exn? 'z))
+  (err/rt-test (new d!%) (make-undefined-exn? 'z))
+  (err/rt-test (new e%) (make-undefined-exn? 'z))
+  (err/rt-test (new d2%) (make-undefined-exn? 'f))
+  (err/rt-test (new e2%) (make-undefined-exn? 'f)))
+
+(let ()
+  (define c%
+    (class object%
+      (field [s #f])
+      (define/public (set-s)
+        (set! s #f))
+      (super-new)))
+  (define d%
+    (class c%
+      (inherit set-s)
+      (set-s)
+      (super-new)))
+  (err/rt-test (new d%) (make-undefined-exn? 's)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check optimization to omit use-before-definition chaperone:

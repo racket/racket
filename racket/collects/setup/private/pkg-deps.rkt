@@ -1,6 +1,7 @@
 #lang racket/base
 (require syntax/modread
          syntax/modcollapse
+         syntax/modresolve
          pkg/lib
          pkg/name
          racket/set
@@ -27,7 +28,9 @@
          coll-main?s
          coll-modes
          setup-printf setup-fprintf
-         check-unused? fix? verbose?)
+         check-unused? fix? verbose?
+         all-pkgs-lazily?
+         must-declare-deps?)
   ;; Tables
   (define missing (make-hash))
   (define skip-pkgs (make-hash))
@@ -44,7 +47,8 @@
   (define path-cache (make-hash))
   (define metadata-ns (make-base-namespace))
 
-  (hash-set! pkg-internal-deps "racket" null)
+  (hash-set! pkg-internal-deps "racket" (list (set) (set)))
+  (hash-set! pkg-external-deps "racket" (set))
   (hash-set! pkg-reps "racket" "racket")
   
   ;; ----------------------------------------
@@ -125,7 +129,7 @@
                                          (and i (i 'version (lambda () #f)))))))
     (define vers (cdr deps+build-deps+vers))
     (define deps+build-deps (car deps+build-deps+vers))
-    (unless deps+build-deps
+    (unless (or deps+build-deps must-declare-deps?)
       (hash-set! skip-pkgs pkg #t)
       (setup-printf #f "package declares no dependencies: ~s" pkg))
     (define deps+vers (if deps+build-deps
@@ -280,6 +284,12 @@
   ;; Check use of `mod' (in `mode') from `pkg' by file `f':
   (define reported (make-hash))
   (define (check-mod! mod mode pkg f dir)
+    (when (and all-pkgs-lazily?
+               (not (hash-ref mod-pkg mod #f)))
+      (define path (resolve-module-path mod #f))
+      (define pkg (path->pkg path #:cache path-cache))
+      (when pkg
+        (init-pkg-internals! pkg)))
     (define src-pkg (or (hash-ref mod-pkg mod #f)
                         'core))
     (when src-pkg
@@ -366,6 +376,21 @@
                      (module-compiled-submodules mod-code #f)))))))
 
   ;; ----------------------------------------
+  (define (find-compiled-directories path)
+    ;; Find all directories that can hold compiled bytecode for `path`
+    (filter
+     values
+     (for*/list ([root (in-list (current-compiled-file-roots))]
+                 [mode (in-list (use-compiled-file-paths))])
+       (define compiled-dir
+         (cond
+          [(eq? root 'same) (build-path path mode)]
+          [(relative-path? root) (build-path path root mode)]
+          [else (reroot-path (build-path path mode) root)]))
+       (and (directory-exists? compiled-dir)
+            compiled-dir))))
+
+  ;; ----------------------------------------
   (define main-db-file (build-path (find-doc-dir) "docindex.sqlite"))
   (define user-db-file (build-path (find-user-doc-dir) "docindex.sqlite"))
   (define (register-or-check-docs check? pkg path main?)
@@ -411,9 +436,9 @@
         [coll-main? (in-list coll-main?s)])
     (when verbose?
       (setup-printf #f " checking ~a" path))
-    (define dir (build-path path "compiled"))
-    (when (directory-exists? dir)
-      (define pkg (path->pkg dir #:cache path-cache))
+    (define dirs (find-compiled-directories path))
+    (for ([dir (in-list dirs)])
+      (define pkg (path->pkg path #:cache path-cache))
       (when (and pkg
                  (not (hash-ref skip-pkgs pkg #f)))
         (for ([f (directory-list dir)])

@@ -3709,12 +3709,12 @@ An example
 
 (define (find-method/who who in-object name)
   (cond
-    [(_object? in-object)
-     (define cls (object-ref in-object #f))
-     (define mth-idx (hash-ref (class-method-ht cls) name #f))
-     (if mth-idx
-         (vector-ref (class-methods cls) mth-idx)
-         (no-such-method who name cls))]
+    [(object-ref in-object #f) ; non-#f result implies `_object?`
+     => (lambda (cls)
+          (define mth-idx (hash-ref (class-method-ht cls) name #f))
+          (if mth-idx
+              (vector-ref (class-methods cls) mth-idx)
+              (no-such-method who name cls)))]
     [(wrapped-object? in-object)
      (define cls
        (let loop ([obj in-object])
@@ -4654,9 +4654,10 @@ An example
 (provide (protect-out get-field/proc)
          
          ;; for class-c-old.rkt:
-         make-naming-constructor prop:object _object? object-ref replace-ictc-blame
-         concretize-ictc-method field-info-extend-external field-info-extend-internal this-param
-         object-ref/unwrap impersonator-prop:original-object has-original-object? original-object
+         (protect-out
+          make-naming-constructor prop:object _object? object-ref replace-ictc-blame
+          concretize-ictc-method field-info-extend-external field-info-extend-internal this-param
+          object-ref/unwrap impersonator-prop:original-object has-original-object? original-object)
          ;; end class-c-old.rkt requirements
 
          field-info-internal-ref

@@ -960,7 +960,7 @@ Returns @racket[#t] if @racket[v] is a promise, @racket[#f] otherwise.}
 @; no actual library for this
 @section[#:tag "srfi-62" #:style 'unnumbered]{SRFI 62: S-expression comments}
 
-Original specification: @link["../srfi-std/srfi-62.html"]{SRFI 62}
+Original specification: @link["srfi-std/srfi-62.html"]{SRFI 62}
 
 This SRFI's syntax is part of Racket's default reader (no
 @racket[require] is needed).

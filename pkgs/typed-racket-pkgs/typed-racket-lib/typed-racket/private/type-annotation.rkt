@@ -4,7 +4,8 @@
          (rep type-rep)
          (utils tc-utils)
          (env global-env mvar-env scoped-tvar-env)
-         (except-in (types subtype union utils generalize))
+         (except-in (types subtype abbrev union utils generalize)
+                    -> ->* one-of/c)
          (private parse-type syntax-properties)
          (contract-req)
          syntax/parse
@@ -67,36 +68,40 @@
 (define (get-types stxs #:default [default #f])
   (map (lambda (e) (get-type e #:default default)) stxs))
 
-;; list[identifier] stx (stx -> tc-results/c) (stx tc-results/c -> tc-results/c) -> tc-results/c
 ;; stxs : the identifiers, possibly with type annotations on them
 ;; expr : the RHS expression
 ;; tc-expr : a function like `tc-expr' from tc-expr-unit
 ;; tc-expr/check : a function like `tc-expr/check' from tc-expr-unit
 (define/cond-contract (get-type/infer stxs expr tc-expr tc-expr/check)
-  ((listof identifier?) syntax? (syntax? . -> . tc-results/c) (syntax? tc-results/c . -> . tc-results/c) . -> . tc-results/c)
+  ((listof identifier?) syntax? (syntax? . -> . tc-results/c) (syntax? tc-results/c . -> . tc-results/c)
+   . -> . (listof tc-result?))
   (match stxs
     [(list stx ...)
      (let ([anns (for/list ([s (in-list stxs)]) (type-annotation s #:infer #t))])
        (if (for/and ([a (in-list anns)]) a)
-           (tc-expr/check expr (ret anns))
-           (let ([ty (tc-expr expr)])
-             (match ty
+           (match (tc-expr/check expr (ret anns))
+             [(tc-results: tys fs os)
+              (map tc-result tys fs os)])
+           (let ([res (tc-expr expr)])
+             (match res
                [(tc-any-results: _)
                 (tc-error/expr
                   "Expression should produce ~a values, but produces an unknown number of values"
                   (length stxs))]
+               [(tc-results: (list (== -Bottom)) _ _)
+                (for/list ([_ (in-range (length stxs))])
+                  (tc-result -Bottom))]
                [(tc-results: tys fs os)
                 (if (not (= (length stxs) (length tys)))
-                    (tc-error/expr #:return (ret (map (lambda _ (Un)) stxs))
+                    (tc-error/expr #:return (map (lambda _ (tc-result (Un))) stxs)
                                    "Expression should produce ~a values, but produces ~a values of types ~a"
                                    (length stxs) (length tys) (stringify tys))
-                    (combine-results
-                     (for/list ([stx (in-list stxs)] [ty (in-list tys)]
-                                [a (in-list anns)] [f (in-list fs)] [o (in-list os)])
-                       (cond [a (check-type stx ty a) (ret a f o)]
-                             ;; mutated variables get generalized, so that we don't infer too small a type
-                             [(is-var-mutated? stx) (ret (generalize ty) f o)]
-                             [else (ret ty f o)]))))]))))]))
+                    (for/list ([stx (in-list stxs)] [ty (in-list tys)]
+                               [a (in-list anns)] [f (in-list fs)] [o (in-list os)])
+                      (cond [a (check-type stx ty a) (tc-result a f o)]
+                            ;; mutated variables get generalized, so that we don't infer too small a type
+                            [(is-var-mutated? stx) (tc-result (generalize ty) f o)]
+                            [else (tc-result ty f o)])))]))))]))
 
 ;; check that e-type is compatible with ty in context of stx
 ;; otherwise, error

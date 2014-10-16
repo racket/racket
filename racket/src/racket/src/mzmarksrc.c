@@ -997,7 +997,6 @@ resolve_prefix_val {
   gcMARK2(rp->toplevels, gc);
   gcMARK2(rp->stxes, gc);
   gcMARK2(rp->delay_info_rpair, gc);
-  gcMARK2(rp->uses_unsafe, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -1010,7 +1009,6 @@ comp_prefix_val {
   gcMARK2(cp->inline_variants, gc);
   gcMARK2(cp->unbound, gc);
   gcMARK2(cp->stxes, gc);
-  gcMARK2(cp->uses_unsafe, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Comp_Prefix));
@@ -1337,11 +1335,8 @@ mark_letrec_check_frame {
   gcMARK2(frame->def, gc);
   gcMARK2(frame->next, gc);
   gcMARK2(frame->ref, gc);
-  gcMARK2(frame->checked, gc);
   gcMARK2(frame->head, gc);
-  gcMARK2(frame->deferred_with_rhs_ref, gc);
-  gcMARK2(frame->deferred_with_body_ref, gc);
-  gcMARK2(frame->deferred_with_no_ref, gc);
+  gcMARK2(frame->deferred_chain, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Letrec_Check_Frame));
@@ -1353,9 +1348,7 @@ mark_scheme_deferred_expr {
   
   gcMARK2(clos->expr, gc);
   gcMARK2(clos->frame, gc);
-  gcMARK2(clos->uvars, gc);
-  gcMARK2(clos->pvars, gc);
-  gcMARK2(clos->subexpr_ls, gc);
+  gcMARK2(clos->chain_next, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Deferred_Expr));
@@ -1879,7 +1872,8 @@ mark_udp_evt {
 
   gcMARK2(uw->udp, gc);
   gcMARK2(uw->str, gc);
-  gcMARK2(uw->dest_addr, gc);
+  gcMARK2(uw->dest_addrs, gc);
+  gcMARK2(uw->dest_addr_lens, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
@@ -2225,6 +2219,18 @@ mark_nack_guard_evt {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Nack_Guard_Evt));
+}
+
+mark_active_replace_evt {
+ mark:
+  Active_Replace_Evt *a = (Active_Replace_Evt *)p;
+
+  gcMARK2(a->syncing, gc);
+  gcMARK2(a->wrapper, gc);
+  gcMARK2(a->orig, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Active_Replace_Evt));
 }
 
 mark_chaperone {

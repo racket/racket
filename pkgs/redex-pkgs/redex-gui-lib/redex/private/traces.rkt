@@ -11,6 +11,7 @@
          racket/gui/base
          racket/class
          racket/file
+         racket/math
          framework)
 
 (preferences:set-default 'plt-reducer:show-bottom #t boolean?)
@@ -247,7 +248,7 @@
                 #:racket-colors? [racket-colors? #t]
                 #:scheme-colors? [scheme-colors? racket-colors?]
                 #:layout [layout void]
-                #:edge-label-font [edge-label-font #f]
+                #:edge-label-font [given-edge-label-font #f]
                 #:edge-labels? [edge-labels? #t]
                 #:filter [term-filter (lambda (x y) #t)]
                 #:graph-pasteboard-mixin [extra-graph-pasteboard-mixin values]
@@ -260,7 +261,7 @@
   (define saved-parameterization (current-parameterization))
   (define graph-pb
     (let ([pb (new (extra-graph-pasteboard-mixin graph-pasteboard%)
-                   [layout layout] [edge-label-font edge-label-font]
+                   [layout layout] [edge-label-font given-edge-label-font]
                    [edge-labels? edge-labels?])])
       (send pb set-flip-labels? #f)
       pb))
@@ -296,7 +297,8 @@
                       (callback (lambda (slider evt) 
                                   (send graph-pb begin-edit-sequence)
                                   (set-font-size (send slider get-value))
-                                  (send graph-pb end-edit-sequence)))))
+                                  (send graph-pb end-edit-sequence)
+                                  (send ec refresh)))))
   (define lower-panel (instantiate horizontal-panel% ()
                         (parent bottom-panel)
                         (stretchable-height #f)))
@@ -386,11 +388,11 @@
       (send delta set-size-mult 0)
       (send delta set-size-add size)
       (send standard set-delta delta)
-      (let loop ([snip (send graph-pb find-first-snip)])
-        (when snip
-          (when (is-a? snip reflowing-snip<%>)
-            (send snip reflow-program))
-          (loop (send snip next))))))
+      (send graph-pb set-arrowhead-params (* pi 1/4) size (* size 2/3))
+      (unless given-edge-label-font
+        (send graph-pb set-edge-label-font
+              (send the-font-list find-or-create-font 
+                    size 'default 'normal 'normal)))))
   
   ;; fill-out : (listof X) (listof X) -> (listof X)
   ;; produces a list whose length matches defaults but

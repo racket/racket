@@ -4,6 +4,7 @@
          pict)
 
 (module test racket/base) ; run by run-tests
+(white-square-bracket homemade-white-square-bracket)
 
 ;; tests: 
 ;;  - language,
@@ -20,11 +21,43 @@
 
 (btest (render-language lang #:nts '(e v)) "language-nox.png")
 
-(define-extended-language lang++ lang
-  (e .... number (+ e e))
-  (v .... number))
-
-(btest (render-language lang++) "extended-language.png")
+(let ()
+  (define-language L1
+    [a 1]
+    [b 2]
+    [c 3]
+    [d 4]
+    [e 5])
+  
+  (define-extended-language L2 L1
+    [d .... more-d]
+    [c different-c]
+    [b .... more-b]
+    [a different-a]
+    [f 6]
+    [g 7]
+    [h 8])
+  
+  (define-extended-language L3 L2
+    [c differenter-c]
+    [d .... yet-more-d]
+    [f different-f]
+    [g .... more-g])
+  
+  (btest
+   (apply
+    ht-append
+    2
+    (for*/list ([union? '(#f #t)]
+                [ext-order? '(#f #t)])
+      (parameterize ([extend-language-show-union union?]
+                     [extend-language-show-extended-order ext-order?])
+        (vc-append
+         2
+         (frame (language->pict L1))
+         (frame (language->pict L2))
+         (frame (language->pict L3))))))
+   "extended-language.png"))
 
 (define red
   (reduction-relation
@@ -63,7 +96,8 @@
           (--> 1 1 "a")
           (--> 2 2 "b" (computed-name "a"))
           (--> 3 3 (computed-name "c")))])
-  (btest (parameterize ([render-reduction-relation-rules (remq 'b (reduction-relation->rule-names R))])
+  (btest (parameterize ([render-reduction-relation-rules
+                         (remq 'b (reduction-relation->rule-names R))])
            (render-reduction-relation R))
          "reduction-relation-with-computed-labels-and-hiding.png"))
 
@@ -96,6 +130,7 @@
          "red-with-where-name.png"))
 
 (define-metafunction lang
+  S : x v e -> e
   [(S x v e) e])
 
 (btest (render-metafunction S)
@@ -114,6 +149,7 @@
          "metafunction-judgment-holds.png"))
 
 (define-metafunction lang
+  T : any any -> 1 ∪ (2 2) ∨ 1234
   [(T x y)
    1
    (side-condition (not (eq? (term x) (term y))))
@@ -121,11 +157,12 @@
   [(T x x) 
    (any_1 any_2)
    (where any_1 2)
-   (where any_2 2)])
+   (where any_2 2)]
+  [(T _ _ _) 1234])
 
-;; in this test, the metafunction has 2 clauses 
+;; in this test, the metafunction has 3 clauses 
 ;; with a side-condition on the first clause
-;; and a 'where' in the second clause
+;; a 'where' in the second clause, and an underscore
 (btest (parameterize ([metafunction-cases '("first-one" 1)])
          (render-metafunction T))
        "metafunction-T.png")
@@ -145,7 +182,15 @@
   [(TL 2) (a
            ,(term-let ((x (term 1)))
                       (term x)) beside
-                      below)])
+                      below)]
+  [(TL any)
+   3333333333
+   (where 3 any)
+   or
+   2
+   (where 2 any)
+   or
+   0])
 
 ;; this tests that term-let is sucked away properly
 ;; when the metafunction is rendered
@@ -254,7 +299,7 @@
 
 
 ;; make sure two metafunctions simultaneously rewritten line up properly
-(btest (render-metafunctions S T TL) "metafunctions-multiple.png")
+(btest (render-metafunctions S T TL #:contract? #t) "metafunctions-multiple.png")
 
 ;; make sure that the ellipses don't have commas before them.
 (define-metafunction lang
@@ -423,7 +468,6 @@
            ['extend rewrite-extend]
            ['lookup rewrite-lookup])
           (render-judgment-form typeof))
-         "stlc.png"))  
+         "stlc.png"))
 
-(printf "bitmap-test.rkt: ")
 (done)

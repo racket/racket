@@ -15,6 +15,8 @@
 (for ([(k v) (in-hash predicate-generator-table)])
   (check-not-exn (λ () (test-contract-generation k))))
 
+(check-not-exn (λ () (test-contract-generation natural-number/c)))
+
 ;; test =, eq?, and equal? contract random generators
 (check-not-exn (λ () (test-contract-generation 0)))
 (check-not-exn (λ () (test-contract-generation 'x)))
@@ -45,6 +47,7 @@
 (check-not-exn (λ () (test-contract-generation (listof boolean?))))
 (check-not-exn (λ () (test-contract-generation (listof some-crazy-predicate?))))
 (check-not-exn (λ () (test-contract-generation (non-empty-listof boolean?))))
+(check-not-exn (λ () (test-contract-generation (list*of boolean?))))
 (check-not-exn (λ () (test-contract-generation (list/c boolean? number?))))
 (check-not-exn (λ () ((car (test-contract-generation (list/c (-> number? number?)))) 0)))
 
@@ -82,6 +85,10 @@
 
 (check-exn exn:fail? (λ () ((test-contract-generation (-> char? integer?)) 0)))
 (check-not-exn (λ () ((test-contract-generation (-> integer? integer?)) 1)))
+(check-not-exn (λ () ((test-contract-generation (-> integer? any)) 1)))
+(check-not-exn (λ () ((test-contract-generation (-> integer? (-> integer? any))) 1)))
+(check-not-exn (λ () ((test-contract-generation (-> (-> integer? any) integer?))
+                      (λ (i) (values 1 2 3)))))
 (check-not-exn (λ () ((test-contract-generation (-> (-> integer? integer?) boolean?)) +)))
 (check-not-exn 
  (λ () ((test-contract-generation (-> some-crazy-predicate? some-crazy-predicate?)) 11)))
@@ -200,6 +207,20 @@
            (λ (x) 'not-a-string)
            'pos
            'neg))
+
+(check-exercise
+ 1
+ pos-exn?
+ (contract (->i ([i integer?] [b boolean?]) [result string?])
+           (λ (i b) 'not-a-string)
+           'pos 'neg))
+
+(check-exercise
+ 1
+ pos-exn?
+ (contract (->i ([i integer?] [b boolean?]) [result number?] #:post (result) (zero? result))
+           (λ (i b) 11)
+           'pos 'neg))
 
 ;; the tests below that use pos-exn? have a
 ;; (vanishingly small) probability of not passing. 

@@ -544,6 +544,98 @@
                 (make-semaphore))))
 
 ;; ----------------------------------------
+;; Replace waitables
+
+(arity-test replace-evt 2 2)
+
+(err/rt-test (replace-evt 10 void))
+(err/rt-test (replace-evt always-evt 10))
+
+(test 10 sync (replace-evt always-evt
+                           (lambda (r)
+                             (wrap-evt always-evt (lambda (v) 10)))))
+
+(test 10 sync (let loop ([n 10])
+                (if (zero? n)
+                    (wrap-evt always-evt (lambda (_) 0))
+                    (replace-evt always-evt
+                                 (lambda (r)
+                                   (wrap-evt
+                                    (loop (sub1 n))
+                                    add1))))))
+
+(let ()
+  (define nacks null)
+
+  (define (deep nacks? base n)
+    (if (zero? n)
+        base
+        (deep
+         nacks?
+         (choice-evt
+          (if nacks?
+              (nack-guard-evt (lambda (s)
+                                (set! nacks (cons s nacks))
+                                never-evt))
+              never-evt)
+          (replace-evt base
+                       (lambda (v) v)))
+         (sub1 n))))
+
+  (sync (deep #t always-evt 10))
+  (for-each sync nacks)
+
+  ;; - - - - - - - - - - - - - - - - - - - - - - - -
+
+  (set! nacks null)
+  (define-values (i o) (make-pipe))
+  (define t0
+    (thread
+     (lambda ()
+       (sync (deep #t i 10)))))
+  (sync (system-idle-evt))
+  (test #f sync/timeout 0 t0)
+  (write-byte 1 o)
+  (sync t0)
+  (for-each sync nacks)
+
+  ;; - - - - - - - - - - - - - - - - - - - - - - - -
+
+  ;; Pick something large enough that it would overflow if
+  ;; the implementation used the C stack. Note that quadratic
+  ;; behavior of nested `replace-evt`s means that we could
+  ;; never get an answe back from this depth:
+  (define overflow-depth 40000)
+
+  (read-byte i)
+  (set! nacks null)
+  (define t
+    (thread (lambda ()
+              (with-handlers ([exn:break? void])
+                (sync (deep #t i overflow-depth))))))
+  (sync (system-idle-evt))
+
+  (test #f sync/timeout 0 t)
+  (break-thread t)
+  (sync t)
+
+  (for-each sync nacks))
+
+(let ([e (replace-evt always-evt (lambda (x) 'non-evt))])
+  (test e sync e))
+
+(test always-evt sync always-evt (replace-evt never-evt (lambda () 10)))
+(err/rt-test (sync (replace-evt always-evt (lambda () 10))))
+
+(test 17 sync (replace-evt (wrap-evt always-evt 
+                                     (lambda (_)
+                                       (values 3 14)))
+                           (lambda (a b)
+                             (wrap-evt always-evt
+                                       (lambda (_)
+                                         (+ a b))))))
+
+;; ----------------------------------------
 ;; Structures as waitables
 
 ;; Bad property value:
@@ -906,7 +998,8 @@
   (check-threads-gcable 'guard (lambda () (sync (c (guard-evt (lambda () (make-semaphore)))))))
   (check-threads-gcable 'nack (lambda () (sync (c (nack-guard-evt (lambda (nack) (make-semaphore)))))))
   (check-threads-gcable 'poll (lambda () (sync (c (poll-guard-evt (lambda (poll?) (make-semaphore)))))))
-  (check-threads-gcable 'never (lambda () (sync (c never-evt)))))
+  (check-threads-gcable 'never (lambda () (sync (c never-evt))))
+  (check-threads-gcable 'replace (lambda () (sync (c (replace-evt always-evt (lambda (always) (make-semaphore))))))))
 (check/combine values)
 (check/combine (lambda (x) (choice-evt x (make-semaphore))))
 (check/combine (lambda (x) (choice-evt (make-semaphore) x)))
@@ -1277,6 +1370,20 @@
 (err/rt-test (sync/enable-break #f (make-semaphore 1)))
 (test #t semaphore? (sync/enable-break (make-semaphore 1)))
 (test #t semaphore? (sync/timeout/enable-break #f (make-semaphore 1)))
+
+;; ----------------------------------------
+
+;; zero-argument case:
+(test #f sync/timeout 0)
+(test #f sync
+      (handle-evt (system-idle-evt)
+                  (lambda (_) #f))
+      (thread (lambda () (sync))))
+
+(let ([t (thread (lambda () (with-handlers ([exn:break? void]) (sync))))])
+  (sync (system-idle-evt))
+  (break-thread t)
+  (test t sync t))
 
 ;; ----------------------------------------
 

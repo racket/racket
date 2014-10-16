@@ -220,25 +220,26 @@ Perfect!
 @margin-note{See @other-manual['(lib "scribblings/raco/raco.scrbl")]
 for more information on using @exec{raco}.}
 
-You can also package a collection for others to install by using the
-@exec{raco pack} command-line tool:
+You can also make your language available for others to install by
+using the Racket package manager (see @other-doc['(lib
+"pkg/scribblings/pkg.scrbl")]). After you create a @filepath{literal}
+package and register it with the Racket package catalog (see
+@secref["concept:catalog" #:doc '(lib "pkg/scribblings/pkg.scrbl")]),
+others can install it using @exec{raco pkg}:
 
-@commandline{raco pack --collect literal.plt literal}
+@commandline{raco pkg install literal}
 
-Then, others can install the @filepath{literal} collection using
-@exec{raco setup}:
+Once installed, others can invoke the language the same way: by using
+@racket[@#,hash-lang[] literal] at the top of a source file.
 
-@commandline{raco setup -A literal.plt}
+If you use a public source repository (e.g., GitHub), you can link
+your package to the source. As you improve the package, others can
+update their version using @exec{raco pkg}:
 
-@margin-note{See @other-manual['(lib "planet/planet.scrbl")] for more
-information about @|PLaneT| packages.}
+@commandline{raco pkg update literal}
 
-Another approach is to distribute your language as a @|PLaneT|
-package. A drawback of using a @|PLaneT| package is that users must
-type @racket[@#,hash-lang[] @#,racketmodname[planet]] followed by a
-@|PLaneT| path to access the language. The advantages are that the
-@|PLaneT| package can be installed automatically, it can be versioned,
-and it co-exists more easily with other packages.
+@margin-note{See @other-doc['(lib "pkg/scribblings/pkg.scrbl")] for more
+information about the Racket package manager.}
 
 @; ----------------------------------------
 @section[#:tag "language-get-info"]{Source-Handling Configuration}
@@ -312,7 +313,8 @@ racket
 
 This revised @racket[literal] implementation provides a
 @racketidfont{get-info} function. The @racketidfont{get-info} function
-will be applied to the source input stream and location information,
+is called by @racket[read-language] (which DrRacket calls) with the 
+source input stream and location information,
 in case query results should depend on the content of the module after
 the language name (which is not the case for @racket[literal]). The
 result of @racketidfont{get-info} is a function of two arguments. The

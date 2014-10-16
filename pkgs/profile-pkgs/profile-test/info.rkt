@@ -5,6 +5,7 @@
 (define build-deps '("base"
                      "eli-tester"
                      "profile-lib"))
+(define update-implies '("profile-lib"))
 
 (define pkg-desc "tests for \"profile\"")
 

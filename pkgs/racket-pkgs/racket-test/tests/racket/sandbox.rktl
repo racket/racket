@@ -658,7 +658,10 @@
   (define (try lang)
     (define e (make-evaluator lang))
     (e '(require ffi/unsafe))
-    (with-handlers ([exn? exn-message]) (e '(ffi-lib #f))))
+    (with-handlers ([exn? exn-message]) (e '(ffi-lib #f)))
+    (e '(require racket/place))
+    (with-handlers ([exn? exn-message]) (e '(place pch 10)))
+    (with-handlers ([exn? exn-message]) (e '(dynamic-place "x.rkt" 10))))
   (define r1 (try 'racket/base))
   (define r2 (try '(begin)))
   (test #t regexp-match?

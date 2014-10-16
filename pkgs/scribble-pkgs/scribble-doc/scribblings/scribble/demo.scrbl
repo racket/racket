@@ -265,6 +265,8 @@ This one is ``compact'':
 
 ]
 
+This paragraph follows the enumeration above.
+
 @; ======================================================================
 @section{Paragraph Spacing}
 
@@ -309,7 +311,8 @@ Links that are disabled (such as a next-page link on the last page)
 are each in a span ``nonavigation''.
 
 When a search box is included, then it is in ``searchform'' and then
-``searchbox''.
+``searchbox''. If no search box is included, then a ``nosearchform''
+@tt{div} is used.
 
 Finally, and not part of the nagivation bar, the bottom nagivation bar
 is followed by a @tt{div} with the name

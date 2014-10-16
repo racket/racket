@@ -5,6 +5,7 @@
 
 (require 2htdp/image) 
 (require 2htdp/universe)
+(require "test-aux.rkt")
 
 (define large 50)
 
@@ -17,8 +18,9 @@
 
 (define (deflate b) (max (- b 1) 1))
 
-(big-bang 20
-          (on-release blow-up)
-          (on-tick deflate)
-          (to-draw balloon 200 200)
-          (stop-when (lambda (w) (>= w large))))
+(testing
+  (big-bang 20
+    (on-release blow-up)
+    (on-tick deflate)
+    (to-draw balloon 200 200)
+    (stop-when (lambda (w) (>= w large)))))

@@ -1,7 +1,7 @@
 #lang racket/unit
 
 (require "../utils/utils.rkt"
-         (except-in (types utils abbrev union filter-ops) -> ->* one-of/c)
+         (except-in (types utils subtype abbrev union filter-ops remove-intersect) -> ->* one-of/c)
          (only-in (types abbrev) (-> t:->) [->* t:->*])
          (private type-annotation parse-type syntax-properties)
          (env lexical-env type-alias-env type-alias-helper mvar-env
@@ -29,7 +29,7 @@
   (append*
     (for/list ([names namess] [results results])
       (match results
-        [(tc-results: _ _ os)
+        [(list (tc-result: _ _ os) ...)
          (map list names os)]))))
 
 ;; Checks that the body has the expected type when names are bound to the types spcified by results.
@@ -37,7 +37,7 @@
 ;; TODO: make this function sane.
 (define/cond-contract (do-check expr->type namess expected-results exprs body expected)
   ((syntax? tc-results/c . -> . any/c)
-   (listof (listof identifier?)) (listof tc-results/c)
+   (listof (listof identifier?)) (listof (listof tc-result?))
    (listof syntax?) syntax? (or/c #f tc-results/c)
    . -> .
    tc-results/c)
@@ -48,34 +48,38 @@
         ([e-r   (in-list expected-results)]
          [names (in-list namess)])
         (match e-r
-          [(tc-results: e-ts (list (FilterSet: fs+ fs-) ...) os)
+          [(list (tc-result: e-ts (FilterSet: fs+ fs-) os) ...)
            (values e-ts
                    (apply append
                           (for/list ([n (in-list names)]
+                                     [t (in-list e-ts)]
                                      [f+ (in-list fs+)]
                                      [f- (in-list fs-)])
-                            (if (is-var-mutated? n)
-                                (list)
-                                (list (-imp (-not-filter (-val #f) n) f+)
-                                      (-imp (-filter (-val #f) n) f-))))))]
-          [(tc-results: e-ts (list (NoFilter:) ...) _)
+                            (cond
+                              [(not (overlap t (-val #f)))
+                               (list f+)]
+                              [(is-var-mutated? n)
+                               (list)]
+                              [else
+                               (list (-imp (-not-filter (-val #f) n) f+)
+                                     (-imp (-filter (-val #f) n) f-))]))))]
+          [(list (tc-result: e-ts (NoFilter:) _) ...)
            (values e-ts null)]))))
   ;; extend the lexical environment for checking the body
   (with-lexical-env/extend
-    namess
-    expected-types
+    (append* namess)
+    (append* expected-types)
     (replace-names
       (get-names+objects namess expected-results)
       (with-lexical-env/extend-props
         (apply append props)
         ;; type-check the rhs exprs
-        (for-each expr->type
-                  exprs
-                  expected-results)
+        (for ([expr (in-list exprs)] [results (in-list expected-results)])
+          (match results
+            [(list (tc-result: ts fs os) ...)
+             (expr->type expr (ret ts fs os))]))
         ;; typecheck the body
-        (if expected
-            (tc-body/check body (erase-filter expected))
-            (tc-body body))))))
+        (tc-body/check body (and expected (erase-filter expected)))))))
 
 (define (tc-expr/maybe-expected/t e names)
   (syntax-parse names
@@ -127,24 +131,20 @@
         (match-define (lr-clause name expr) remaining-clause)
         (values name expr)))
 
-    ;; Check those and gather an environment for use below
-    (define-values (env-names env-results)
-      (check-non-recursive-clauses ordered-clauses))
-
-    (replace-names (get-names+objects env-names env-results)
-      (with-lexical-env/extend env-names (map tc-results-ts env-results)
+    ;; Check those and then check the rest in the extended environment
+    (check-non-recursive-clauses
+      ordered-clauses
+      (lambda ()
         (cond
           ;; after everything, check the body expressions
           [(null? remaining-names)
-           (if expected
-             (tc-body/check body (erase-filter expected))
-             (tc-body body))]
+           (tc-body/check body (and expected (erase-filter expected)))]
           [else
            (define flat-names (apply append remaining-names))
            (do-check tc-expr/check
                      remaining-names
                      ;; types the user gave.
-                     (map (λ (l) (ret (map get-type l))) remaining-names)
+                     (map (λ (l) (map tc-result (map get-type l))) remaining-names)
                      remaining-exprs body expected)])))))
 
 ;; An lr-clause is a
@@ -210,23 +210,21 @@
   (values (append non-recursive non-binding)
           remaining))
 
-;; check-non-recursive-clauses : (Listof lr-clause) ->
-;;                               (Listof (Listof Identifier)) (Listof tc-results)
-;; Given a list of non-recursive clauses, check the clauses in order and
-;; build up a type environment for use in the second pass.
-(define (check-non-recursive-clauses clauses)
-  (let loop ([clauses clauses] [env-ids '()] [env-types '()])
-    (cond [(null? clauses) (values env-ids env-types)]
+;; check-non-recursive-clauses : (Listof lr-clause) (-> tc-results) -> tc-results
+;; Given a list of non-recursive clauses, check the clauses in order then call k
+;; in the built up environment.
+(define (check-non-recursive-clauses clauses k)
+  (let loop ([clauses clauses])
+    (cond [(null? clauses) (k)]
           [else
            (match-define (lr-clause names expr) (car clauses))
-           (define results
+           (match-define (list (tc-result: ts fs os) ...)
              (get-type/infer names expr
                              (lambda (e) (tc-expr/maybe-expected/t e names))
                              tc-expr/check))
-           (with-lexical-env/extend names (tc-results-ts results)
-             (loop (cdr clauses)
-                   (cons names env-ids)
-                   (cons results env-types)))])))
+           (with-lexical-env/extend names ts
+             (replace-names (map list names os)
+               (loop (cdr clauses))))])))
 
 ;; this is so match can provide us with a syntax property to
 ;; say that this binding is only called in tail position
@@ -249,7 +247,7 @@
          ;; the types of the exprs
          #;[inferred-types (map (tc-expr-t/maybe-expected expected) exprs)]
          ;; the annotated types of the name (possibly using the inferred types)
-         [types (for/list ([name (in-list names)] [e (in-list exprs)])
-                  (get-type/infer name e (tc-expr-t/maybe-expected expected)
-                                         tc-expr/check))])
-    (do-check void names types exprs body expected)))
+         [results (for/list ([name (in-list names)] [e (in-list exprs)])
+                    (get-type/infer name e (tc-expr-t/maybe-expected expected)
+                                           tc-expr/check))])
+    (do-check void names results exprs body expected)))

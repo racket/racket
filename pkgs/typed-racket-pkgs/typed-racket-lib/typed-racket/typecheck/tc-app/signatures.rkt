@@ -36,3 +36,6 @@
 (define-signature tc-app-special^
   ([cond-contracted tc/app-special checker/c]))
 
+(define-signature tc-app-contracts^
+  ([cond-contracted tc/app-contracts checker/c]))
+

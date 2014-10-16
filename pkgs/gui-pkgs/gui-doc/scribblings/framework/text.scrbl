@@ -963,7 +963,19 @@
 
     Both @racket[start] and @racket[end] must be less than
     @method[text:ports<%> get-insertion-point] (or else it is safe to delete
-    them so you don't need this method).
+    them via @method[text% delete], so you don't need this method).
+  }
+  
+  @defmethod[(insert/io [str string?] [pos exact-integer?]) void?]{
+    Inserts @racket[str] at the position @racket[start] without changing
+    the behavior of the ports (otherwise, inserting the text would break
+    internal invariants of the port).
+
+    The @racket[pos] argument must be less than
+    @method[text:ports<%> get-insertion-point] (or else it is safe to insert
+    the string via @method[text% insert], so you don't need this method).
+    
+    @history[#:added "1.2"]
   }
   
   @defmethod[(do-submission) void?]{

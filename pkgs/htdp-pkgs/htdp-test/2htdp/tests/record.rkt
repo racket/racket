@@ -1,7 +1,6 @@
 #lang racket
 
-(require 2htdp/universe)
-(require 2htdp/image)
+(require 2htdp/universe 2htdp/image "test-aux.rkt")
 
 (define (draw-number n)
   (place-image (text (number->string n) 44 'red)
@@ -33,13 +32,10 @@
       (length
        (filter (lambda (f) (regexp-match "\\.png" (path->string f)))
                dlst))))
-  (unless (= expected-n number-of-png)
+  (unless (<= expected-n number-of-png)
     (error 'record? "(~s, ~s) didn't record proper number of images: ~s" n dir 
            number-of-png)))
 
-(create-n-images 3 3 "images3/")
-(create-n-images 0 0 "images0/")
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))
+(testing
+  (create-n-images 3 3 "images3/")
+  (create-n-images 0 0 "images0/"))

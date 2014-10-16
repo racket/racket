@@ -2,8 +2,7 @@
 (require racket/runtime-path
          racket/file)
 
-(define-runtime-path root "root")
-(make-directory* root)
+(define root (getenv "PC_ROOT"))
 
 (define mins (build-path root "mins"))
 (make-directory* mins)

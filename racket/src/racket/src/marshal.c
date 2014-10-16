@@ -1108,9 +1108,6 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
 
   tv = scheme_make_pair(scheme_make_integer(rp->num_lifts), 
                         scheme_make_pair(tv, sv));
-  
-  if (rp->uses_unsafe)
-    tv = scheme_make_pair(scheme_true, tv);
 
   return tv;
 }
@@ -1146,7 +1143,6 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   rp->num_toplevels = (int)SCHEME_VEC_SIZE(tv);
   rp->num_stxes = (int)SCHEME_VEC_SIZE(sv);
   rp->num_lifts = (int)i;
-  rp->uses_unsafe = scheme_true;
 
   i = rp->num_toplevels;
   a = MALLOC_N(Scheme_Object *, i);
@@ -1154,8 +1150,6 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
     tl = SCHEME_VEC_ELS(tv)[i];
     if (!SCHEME_FALSEP(tl)
         && !SCHEME_SYMBOLP(tl)
-        && (!SCHEME_PAIRP(tl)
-            || !SCHEME_SYMBOLP(SCHEME_CAR(tl)))
         && !SAME_TYPE(SCHEME_TYPE(tl), scheme_variable_type)
         && !SAME_TYPE(SCHEME_TYPE(tl), scheme_module_variable_type))
       return NULL;

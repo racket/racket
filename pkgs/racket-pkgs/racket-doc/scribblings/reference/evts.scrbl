@@ -51,7 +51,7 @@ Returns @racket[#t] if @racket[v] is a @tech{synchronizable event},
 ]}
 
 
-@defproc[(sync [evt evt?] ...+) any]{
+@defproc[(sync [evt evt?] ...) any]{
 
 Blocks as long as none of the @tech{synchronizable events}
 @racket[evt]s are ready, as defined above.
@@ -67,11 +67,13 @@ random-number generator that controls this choice.
   (define ch (make-channel))
   (thread (λ () (displayln (sync ch))))
   (channel-put ch 'hellooooo)
-]}
+]
+
+@history[#:changed "6.1.0.3" @elem{Allow 0 arguments instead of 1 or more.}]}
 
 
 @defproc[(sync/timeout [timeout (or/c #f (and/c real? (not/c negative?)) (-> any))]
-                       [evt evt?] ...+) 
+                       [evt evt?] ...)
           any]{
 
 Like @racket[sync] if @racket[timeout] is @racket[#f]. If
@@ -95,10 +97,12 @@ See also @racket[alarm-evt] for an alternative timeout mechanism.
   (sync/timeout
    (λ () (displayln "no ready events"))
    never-evt)
-]}
+]
+
+@history[#:changed "6.1.0.3" @elem{Allow 1 argument instead of 2 or more.}]}
 
 
-@defproc[(sync/enable-break [evt evt?] ...+) any]{
+@defproc[(sync/enable-break [evt evt?] ...) any]{
 
 Like @racket[sync], but breaking is enabled (see
 @secref["breakhandler"]) while waiting on the @racket[evt]s. If
@@ -108,7 +112,7 @@ exception is raised, but not both.}
 
 
 @defproc[(sync/timeout/enable-break [timeout (or/c #f (and/c real? (not/c negative?)) (-> any))]
-                                    [evt evt?] ...+) 
+                                    [evt evt?] ...)
          any]{
 
 Like @racket[sync/enable-break], but with a timeout as for @racket[sync/timeout].}
@@ -146,7 +150,7 @@ Creates an event that is @tech{ready for synchronization} when
 @racket[evt] is @tech{ready for synchronization}, but whose
 @tech{synchronization result} is determined by applying @racket[wrap]
 to the @tech{synchronization result} of @racket[evt]. The number
-of arguments accetped by @racket[wrap] must match the number of values
+of arguments accepted by @racket[wrap] must match the number of values
 for the synchronization result of @racket[evt].
 
 The call to @racket[wrap] is
@@ -188,7 +192,7 @@ breaks explicitly disabled---when it is not wrapped by @racket[wrap-evt],
 ]}
 
 
-@defproc[(guard-evt [maker (-> evt?)]) evt?]{
+@defproc[(guard-evt [maker (-> (or/c evt? any/c))]) evt?]{
 
 Creates a value that behaves as an event, but that is actually an
 event maker.
@@ -208,7 +212,7 @@ synchronization} and whose @tech{synchronization result} is
 @racket[_guard].}
 
 
-@defproc[(nack-guard-evt [maker (evt? . -> . evt?)]) evt?]{
+@defproc[(nack-guard-evt [maker (evt? . -> . (or/c evt? any/c))]) evt?]{
 
 Like @racket[guard-evt], but when @racket[maker] is called, it is
 given a NACK (``negative acknowledgment'') event. After starting the
@@ -225,7 +229,7 @@ value). If the event returned by @racket[maker] is chosen, then the
 NACK event never becomes @tech{ready for synchronization}.}
 
 
-@defproc[(poll-guard-evt [maker (boolean? . -> . evt?)]) evt?]{
+@defproc[(poll-guard-evt [maker (boolean? . -> . (or/c evt? any/c))]) evt?]{
 
 Like @racket[guard-evt], but when @racket[maker] is called, it is
 provided a boolean value that indicates whether the event will be used
@@ -236,6 +240,29 @@ If @racket[#t] is supplied to @racket[maker], if breaks are
 disabled, if the polling thread is not terminated, and if polling the
 resulting event produces a @tech{synchronization result}, then the event
 will certainly be chosen for its result.}
+
+
+@defproc[(replace-evt [evt evt?] [maker (any/c ... . -> . (or/c evt? any/c))]) evt?]{
+
+Like @racket[guard-evt], but @racket[maker] is called only after
+@racket[evt] becomes @tech{ready for synchronization}, and the
+@tech{synchronization result} of @racket[evt] is passed to @racket[maker].
+
+The attempt to synchronize on @racket[evt] proceeds concurrently as
+the attempt to synchronize on the result @racket[_guard] from
+@racket[replace-evt]; despite that concurrency, if @racket[maker] is
+called, it is called in the thread that is synchronizing on
+@racket[_guard]. Synchronization can succeed for both @racket[evt] and
+another synchronized with @racket[_guard] at the same time; the
+single-choice guarantee of synchronization applies only to the result
+of @racket[maker] and other events synchronized with @racket[_guard].
+
+If @racket[maker] returns a non-event, then @racket[maker]'s
+result is replaced with an event that is @tech{ready for
+synchronization} and whose @tech{synchronization result} is
+@racket[_guard].
+
+@history[#:added "6.1.0.3"]}
 
 
 @defthing[always-evt evt?]{A constant event that is always @tech{ready

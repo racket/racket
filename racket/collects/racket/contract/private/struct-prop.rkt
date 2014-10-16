@@ -6,28 +6,30 @@
 (provide (rename-out [struct-type-property/c* struct-type-property/c]))
 
 (define (get-stpc-proj stpc)
-  (let ([get-val-proj
-         (contract-projection
-          (struct-type-property/c-value-contract stpc))])
-    (lambda (blame)
-      (let ([val-proj (get-val-proj (blame-swap blame))])
-        (lambda (x)
-          (unless (struct-type-property? x)
-            (raise-blame-error blame x
-                               '(expected "struct-type-property" given: "~e")
-                               x))
-          (let-values ([(nprop _pred _acc)
-                        (make-struct-type-property
-                         (wrap-name x)
-                         (lambda (val _info)
-                           (val-proj val))
-                         (list (cons x values)))])
-            nprop))))))
+  (define get-val-proj
+    (contract-projection
+     (struct-type-property/c-value-contract stpc)))
+  (λ (input-blame)
+    (define blame (blame-add-context input-blame "the struct property value of" #:swap? #t))
+    (define val-proj (get-val-proj blame))
+    (λ (x)
+      (unless (struct-type-property? x)
+        (raise-blame-error input-blame x
+                           '(expected "struct-type-property" given: "~e")
+                           x))
+      (define-values (nprop _pred _acc)
+        (make-struct-type-property
+         (wrap-name x)
+         (lambda (val _info)
+           (val-proj val))
+         (list (cons x values))))
+      nprop)))
 
 (define (wrap-name x)
   (string->symbol (format "wrapped-~a" (object-name x))))
 
 (struct struct-type-property/c (value-contract)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
              (build-contract-property
               #:name (lambda (c)

@@ -246,6 +246,7 @@ please adhere to these guidelines:
  (online-expansion-running "Background expansion running")
  (online-expansion-only-raw-text-files-supported "Only pure text files supported")
  (online-expansion-abnormal-termination "Background expansion terminated abnormally")
+ (online-expansion-abnormal-termination-out-of-memory "Background expansion terminated abnormally (out of memory)")
  (online-expansion-finished-successfully "Background expansion finished successfully")
   
  (jump-to-error "Jump to Error")
@@ -1804,6 +1805,10 @@ please adhere to these guidelines:
   ; puts the path to the spell program in the ~a and then the error message
   ; is put following this string (with a blank line in between)
   (spell-program-wrote-to-stderr-on-startup "The spell program (~a) printed an error message:")
+  (spell-skip-to-next-misspelled-word "Skip to Next Mispelled Word") ;; menu item
+  (spell-suggest-corrections "Suggest Spelling Corrections...") ;; menu item
+  (spell-correction-suggestions "Spelling Correction Suggestions") ;; dialog title
+  (spell-choose-replacement-word "Select a replacement word") ;; label in dialog 
   
   ;; GUI for installing a pkg package; available via File|Install Package...
   (install-pkg-install-by-source "Do What I Mean")         ; tab label
@@ -1896,7 +1901,7 @@ please adhere to these guidelines:
                             " either abort the current one or wait for it to finish.")
   
   ;; open a file via a collection path (new "Open" menu item in DrRacket)
-  (open-collection-path "Open Collection Path...")
+  (open-require-path "Open Require Path...")
   (enter-subcollection "Enter subcollection") ; button in new dialog
   (path-to-racket-binary "Path to binary")
   (use-a-different-racket "Use a different racket")

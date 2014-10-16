@@ -6,7 +6,7 @@
            racket/class
            syntax/toplevel
            framework
-           "eval-helpers.rkt"
+           "eval-helpers-and-pref-init.rkt"
            "local-member-names.rkt"
            drracket/private/drsig)
   
@@ -202,7 +202,7 @@
              (λ (spec)
                (if (symbol? spec)
                    spec
-                   ((current-module-name-resolver) spec #f #f)))])
+                   ((current-module-name-resolver) spec #f #f #t)))])
         (values (map get-name to-be-copied-module-specs)
                 (map get-name to-be-copied-gui-module-specs))))
     

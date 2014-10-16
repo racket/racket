@@ -87,7 +87,8 @@
   (init-properties [[bool? caps-down] #f]
                    [[bool? mod3-down] #f]
                    [[bool? mod4-down] #f]
-                   [[bool? mod5-down] #f])
+                   [[bool? mod5-down] #f]
+		   [[bool? control+meta-is-altgr] #f])
   (properties [[(make-alts symbol? char?) key-release-code] 'press]
               [[(make-or-false (make-alts symbol? char?)) other-shift-key-code] #f]
               [[(make-or-false (make-alts symbol? char?)) other-altgr-key-code] #f]

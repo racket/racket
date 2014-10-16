@@ -338,7 +338,7 @@ value from a raw pointer to a string:
 (cast buffer _pointer _string)
 ]
 
-Conversion via the @racket[_string] type causes the data refereced by
+Conversion via the @racket[_string] type causes the data referenced by
 the original pointer to be copied (and UTF-8 decoded), so the memory
 referenced by @racket[buffer] is no longer needed. Memory allocated
 with @racket[(malloc 'raw ...)] must be released with @racket[free]:

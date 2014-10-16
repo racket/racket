@@ -90,7 +90,7 @@
            (let ([c (send e get-key-code)])
              (unless (and (or (eq? c #\return) 
                               (eq? c #\newline)
-                              (eq? c #\u3)) ; numpad enter
+                              (eq? c 'numpad-enter))
                           return-cb
                           (return-cb (lambda () (callback 'text-field-enter) #t)))
                (as-exit (lambda () (super-on-char e)))))))]

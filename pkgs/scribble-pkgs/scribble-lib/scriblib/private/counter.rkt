@@ -19,13 +19,14 @@
       `(,(string->symbol (format "counter-~a" kind)) ,tag)
       `(counter (,(counter-name counter) ,tag ,@kind))))
 
-(define (counter-target counter tag label 
+(define (counter-target counter tag label
+                        #:target-style [target-style #f]
                         #:continue? [continue? #f]
                         . content)
   (let ([content (decode-content content)])
     (define c
       (make-target-element
-       #f
+       target-style
        (list
         (make-collect-element
          #f

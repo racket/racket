@@ -12,7 +12,7 @@
 
 ;; values of this struct leak outside, so it cannot be transparent
 (struct tree-layout (pict children))
-(struct tree-edge (child edge-color))
+(struct tree-edge (child edge-color edge-width))
 
 (define _tree-layout
   (let ([constructor tree-layout])
@@ -39,8 +39,10 @@
 
 (define _tree-edge
   (let ([constructor tree-edge])
-    (define (tree-edge child #:edge-color [edge-color "gray"])
-      (constructor child edge-color))
+    (define (tree-edge child
+                       #:edge-color [edge-color "gray"]
+                       #:edge-width [edge-width 'unspecified])
+      (constructor child edge-color edge-width))
     tree-edge))
 
 (define (binary-tree-layout? t)
@@ -53,7 +55,7 @@
 
 (define (binary-tree-edge? e)
   (match e
-    [(tree-edge t _) (binary-tree-layout? t)]
+    [(tree-edge t _ _) (binary-tree-layout? t)]
     [#f #t]))
 
 (define (compute-spacing t given-x-spacing given-y-spacing)
@@ -73,7 +75,7 @@
           (for ([edge (in-list children)])
             (match edge
               [#f (void)]
-              [(tree-edge child edge-color)
+              [(tree-edge child edge-color _)
                (loop child)]))]))
      
      (values (or given-x-spacing x-spacing)

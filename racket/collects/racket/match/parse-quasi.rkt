@@ -32,14 +32,15 @@
   (syntax-case stx (quasiquote unquote quote unquote-splicing)
     [(unquote p) (parse #'p)]
     [((unquote-splicing p) . rest)
-     (let ([pat (parse #'p)]
+     (let ([pat (parameterize ([in-splicing? #t]) (parse #'p))]
            [rpat (pq #'rest)])
        (if (null-terminated? pat)
-         (append-pats pat rpat)
-         (raise-syntax-error 'match "non-list pattern inside unquote-splicing"
-                             stx #'p)))]
+           (append-pats pat rpat)
+           (raise-syntax-error 'match "non-list pattern inside unquote-splicing"
+                               stx #'p)))]
     [(p dd . rest)
      (ddk? #'dd)
+     ;; FIXME: parameterize dd-parse so that it can be used here
      (let* ([count (ddk? #'dd)]
             [min (and (number? count) count)])
        (make-GSeq

@@ -254,7 +254,11 @@ OpenGL drawing through a context returned by @xmethod[dc<%> get-gl-context].
 For @racket[dc<%>] drawing, an OpenGL-supporting bitmap draws like a
 bitmap from @racket[make-screen-bitmap] on some platforms, while it
 draws like a bitmap instantiated directly from @racket[bitmap%] on
-other platforms.}
+other platforms.
+
+Be aware that on Unix systems, GLX may choose indirect rendering for OpenGL
+drawing to bitmaps, which can limit its features to OpenGL 1.4 or below.
+}
 
 
 @defproc[(make-gui-empty-namespace) namespace?]{
@@ -280,8 +284,9 @@ canvas in its default configuration.
 In particular, on Mac OS X when the main monitor is in Retina display
 mode, a drawing unit corresponds to two pixels, and the bitmap
 internally contains four times as many pixels as requested by
-@racket[width] and @racket[height]. See also
-@racket[get-display-backing-scale].
+@racket[width] and @racket[height]. On Windows, the backing scale
+is similarly increased by adjusting the operating-system text scale.
+See also @racket[get-display-backing-scale].
 
 See also @secref[#:doc '(lib "scribblings/draw/draw.scrbl") "Portability"].}
 

@@ -1156,7 +1156,7 @@ static void reset_wait_array(win_extended_fd_set *efd)
   /* Allocate an array that may be big enough to hold all events
      when we eventually call WaitForMultipleObjects. One of the three
      arrays will be big enough. */
-  int sz = (3 * (SCHEME_INT_VAL(efd->alloc) + SCHEME_INT_VAL(efd->num_handles))) + 2;
+  int sz = (3 * (SCHEME_INT_VAL(efd->alloc) + SCHEME_INT_VAL(efd->alloc_handles))) + 2;
   HANDLE *wa;
   wa = MALLOC_N_ATOMIC(HANDLE, sz);
   efd->wait_array = wa;
@@ -1170,16 +1170,27 @@ void *scheme_init_fdset_array(void *fdarray, int count)
     int i;
     win_extended_fd_set *fd;
     for (i = 0; i < count; i++) {
+      int reset = 0;
       fd = (win_extended_fd_set *)scheme_get_fdset(fdarray, i);
-      fd->sockets = NULL;
       fd->added = scheme_make_integer(0);
-      fd->alloc = scheme_make_integer(0);
-      fd->handles = NULL;
+      if (SCHEME_INT_VAL(fd->alloc) > (2 * SCHEME_INT_VAL(fd->last_alloc))) {
+	fd->alloc = scheme_make_integer(0);
+	fd->sockets = NULL;
+	reset = 1;
+      }
+      fd->last_alloc = scheme_make_integer(0);
       fd->num_handles = scheme_make_integer(0);
+      if (SCHEME_INT_VAL(fd->alloc_handles) > (2 * SCHEME_INT_VAL(fd->last_alloc_handles))) {
+	fd->alloc_handles = scheme_make_integer(0);
+	fd->handles = NULL;
+	fd->repost_sema = NULL;
+	reset = 1;
+      }
+      fd->last_alloc_handles = scheme_make_integer(0);
       fd->no_sleep = NULL;
       fd->wait_event_mask = scheme_make_integer(0);
-      fd->wait_array = NULL;
-      reset_wait_array(fdarray);
+      if (reset)
+	reset_wait_array(fdarray);
     }
   }
 # endif
@@ -1224,14 +1235,23 @@ void scheme_fdclr(void *fd, int n)
 #endif
 }
 
+#if defined(WIN32_FD_HANDLES)
+static int next_size(int v) { return (v ? (2 * v) : 10); }
+#endif
+
 void scheme_fdset(void *fd, int n)
 {
 #if defined(WIN32_FD_HANDLES)
   win_extended_fd_set *efd = (win_extended_fd_set *)fd;
+  if (SCHEME_INT_VAL(efd->added) >= SCHEME_INT_VAL(efd->last_alloc)) {
+    int na;
+    na = next_size(SCHEME_INT_VAL(efd->last_alloc));
+    efd->last_alloc = scheme_make_integer(na);
+  }
   if (SCHEME_INT_VAL(efd->added) >= SCHEME_INT_VAL(efd->alloc)) {
     SOCKET *naya;
     int na;
-    na = (SCHEME_INT_VAL(efd->alloc) * 2) + 10;
+    na = next_size(SCHEME_INT_VAL(efd->alloc));
     naya = (SOCKET *)scheme_malloc_atomic(na * sizeof(SOCKET));
     memcpy(naya, efd->sockets, SCHEME_INT_VAL(efd->alloc) * sizeof(SOCKET));
     efd->sockets = naya;
@@ -1361,21 +1381,28 @@ void scheme_add_fd_handle(void *h, void *fds, int repost)
 #if defined(WIN32_FD_HANDLES)
   win_extended_fd_set *efd = (win_extended_fd_set *)fds;
   OS_SEMAPHORE_TYPE *hs;
-  int i, *rps;
+  int i, new_i, *rps;
 
-  i = SCHEME_INT_VAL(efd->num_handles);
-  hs = MALLOC_N_ATOMIC(OS_SEMAPHORE_TYPE, i + 1);
-  rps = MALLOC_N_ATOMIC(int, i + 1);
-  hs[i] = (OS_SEMAPHORE_TYPE)h;
-  rps[i] = repost;
-  while (i--) {
-    hs[i] = efd->handles[i];
-    rps[i] = efd->repost_sema[i];
+  if (SCHEME_INT_VAL(efd->num_handles) == SCHEME_INT_VAL(efd->last_alloc_handles)) {
+    i = next_size(SCHEME_INT_VAL(efd->last_alloc_handles));
+    efd->last_alloc_handles = scheme_make_integer(1);
   }
+  if (SCHEME_INT_VAL(efd->num_handles) == SCHEME_INT_VAL(efd->alloc_handles)) {
+    i = SCHEME_INT_VAL(efd->alloc_handles);
+    new_i = next_size(i);
+    hs = MALLOC_N_ATOMIC(OS_SEMAPHORE_TYPE, new_i);
+    rps = MALLOC_N_ATOMIC(int, new_i);
+    memcpy(hs, efd->handles, sizeof(OS_SEMAPHORE_TYPE)*i);
+    memcpy(rps, efd->repost_sema, sizeof(int)*i);
+    efd->handles = hs;
+    efd->repost_sema = rps;
+    efd->alloc_handles = scheme_make_integer(new_i);
+    reset_wait_array(efd);
+  }
+  i = SCHEME_INT_VAL(efd->num_handles);
+  efd->handles[i] = (OS_SEMAPHORE_TYPE)h;
+  efd->repost_sema[i] = repost;
   efd->num_handles = scheme_make_integer(1 + SCHEME_INT_VAL(efd->num_handles));
-  efd->handles = hs;
-  efd->repost_sema = rps;
-  reset_wait_array(efd);
 #else
   /* Do nothing. */
 #endif
@@ -6060,7 +6087,7 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
   /* see "inotify.inc" */
   mz_inotify_init();
   if (!mz_inotify_ready())
-    errid = EAGAIN;
+    errid = mz_inotify_errid();
   else {
     fd = mz_inotify_add(filename);
     if (fd == -1)
@@ -6280,7 +6307,9 @@ static void filesystem_change_evt_need_wakeup (Scheme_Object *evt, void *fds)
 }
 #endif
 
-int scheme_fd_regular_file(intptr_t fd, int dir_ok)
+int scheme_fd_regular_file(intptr_t fd, int or_other)
+/* or_other == 1 => directory
+   or_other == 2 => directory or fifo */
 {
 #if defined(USE_FD_PORTS) && !defined(DOS_FILE_SYSTEM)
   int ok;
@@ -6290,11 +6319,23 @@ int scheme_fd_regular_file(intptr_t fd, int dir_ok)
     ok = fstat(fd, &buf);
   } while ((ok == -1) && (errno == EINTR));
 
-  if (!S_ISREG(buf.st_mode)
-      && (!dir_ok || !S_ISDIR(buf.st_mode)))
+  if (ok == -1) {
+    scheme_log(NULL, SCHEME_LOG_ERROR, 0,
+               "error while checking whether a file descriptor is a regular file: %d",
+               errno);
     return 0;
+  }
+
+  if (S_ISREG(buf.st_mode))
+    return 1;
+
+  if ((or_other >= 1) && S_ISDIR(buf.st_mode))
+    return 1;
+
+  if ((or_other >= 2) && S_ISFIFO(buf.st_mode))
+    return 1;
   
-  return 1;
+  return 0;
 #else
   return 0;
 #endif
@@ -6960,13 +7001,13 @@ fd_close_input(Scheme_Input_Port *port)
    rc = adj_refcount(fip->refcount, -1);
    if (!rc) {
      int cr;
+     (void)scheme_fd_to_semaphore(fip->fd, MZFD_REMOVE, 0);
      do {
        cr = close(fip->fd);
      } while ((cr == -1) && (errno == EINTR));
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
      release_lockf(fip->fd);
 # endif
-     (void)scheme_fd_to_semaphore(fip->fd, MZFD_REMOVE, 0);
    }
  }
 #endif
@@ -7669,6 +7710,10 @@ fd_write_ready (Scheme_Object *port)
     MZ_FD_SET(fop->fd, exnfds);
 
     do {
+      /* Mac OS X 10.8 and 10.9: select() seems to claim that a pipe
+         is always ready for output. To work around that problem,
+         kqueue() support is enabled for pipes, so we shouldn't get
+         here much for pipes. */
       sr = select(fop->fd + 1, NULL, writefds, exnfds, &time);
     } while ((sr == -1) && (errno == EINTR));
 #endif
@@ -8276,13 +8321,13 @@ fd_close_output(Scheme_Output_Port *port)
 
    if (!rc) {
      int cr;
+     (void)scheme_fd_to_semaphore(fop->fd, MZFD_REMOVE, 0);
      do {
        cr = close(fop->fd);
      } while ((cr == -1) && (errno == EINTR));
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
      release_lockf(fop->fd);
 # endif
-     (void)scheme_fd_to_semaphore(fop->fd, MZFD_REMOVE, 0);
    }
  }
 #endif
@@ -9613,6 +9658,16 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   intptr_t spawn_status;
 #endif
 
+#if defined(PROCESS_FUNCTION) && !defined(MAC_CLASSIC_PROCESS_CONTROL)
+  /* avoid compiler warnings: */
+  to_subprocess[0] = -1;
+  to_subprocess[1] = -1;
+  from_subprocess[0] = -1;
+  from_subprocess[1] = -1;
+  err_subprocess[0] = -1;
+  err_subprocess[1] = -1;
+#endif
+
   /*--------------------------------------------*/
   /* Sort out ports (create later if necessary) */
   /*--------------------------------------------*/
@@ -10426,7 +10481,7 @@ static void clean_up_wait(intptr_t result, OS_SEMAPHORE_TYPE *array,
       ReleaseSemaphore(array[result], 1, NULL);
   }
 
-  /* Clear out break semaphore */
+  /* Clear out break semaphore */  
   WaitForSingleObject((HANDLE)scheme_break_semaphore, 0);
 }
 
@@ -10785,7 +10840,7 @@ void scheme_wait_until_signal_received(void)
 # endif
 #else
 # if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
-  WaitForSingleObject((HANDLE)scheme_break_semaphore, 0);
+  WaitForSingleObject((HANDLE)scheme_break_semaphore, INFINITE);
 # endif
 #endif
   

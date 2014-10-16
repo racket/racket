@@ -29,34 +29,42 @@
 
 (define-type t1 (c1 (n number?)))
 
+(define ((ERR f) line#)
+  (format f (+ line# THIS-LINE#)))
+
+(define ERR1
+  (ERR "\\(exception \\(make-i #f\\) \"make-i.+\" '<no-expected-value> \"at line ~a\"\\)"))
+
+(define ERR2
+  (ERR "\\(exception \\(i-f #f\\) \"i-f.+\" '<no-expected-value> \"at line ~a\"\\)"))
+
+(define ERR3 
+  (ERR
+   "\\(exception \\(c1 \\(quote not-a-number\\)\\) \"c1.+\" '<no-expected-value> \"at line ~a\"\\)"))
+
+(define (ERR4 line#)
+  (string-append 
+   (regexp-quote "(exception (type-case t (list 1) (c () 1)) \"")
+   (regexp-quote "type-case: expected a value from type t, got: '(1)\"")
+   (regexp-quote " '<no-expected-value> \"at line ")
+   ((ERR "~a") line#)
+   (regexp-quote "\")")))
+
+(define THIS-LINE# 53)
+
 (eli:test
  (i 4)
- 
- (regexp-match "\\(exception \\(make-i #f\\) \"make-i.+\" '<no-expected-value> \"at line 36\"\\)"
-               (with-both-output-to-string (λ () (test/exn (make-i #f) "contract"))))
- 
- (regexp-match "\\(exception \\(i-f #f\\) \"i-f.+\" '<no-expected-value> \"at line 39\"\\)"
-               (with-both-output-to-string (λ () (test/exn (i-f #f) "contract"))))
- 
- 
- (type-case A (mta)
-            [mta () 1]
-            [a (x) 2])
+ (regexp-match (ERR1 4) (with-both-output-to-string (λ () (test/exn (make-i #f) "contract"))))
+ (regexp-match (ERR2 5) (with-both-output-to-string (λ () (test/exn (i-f #f) "contract"))))
+ (type-case A (mta) [mta () 1] [a (x) 2])
  =>
  1
+ (regexp-match (ERR3 9) (with-both-output-to-string (λ () (test (c1 'not-a-number) (list 5)))))
  
- (regexp-match "\\(exception \\(c1 \\(quote not-a-number\\)\\) \"c1.+\" '<no-expected-value> \"at line 49\"\\)"
-               (with-both-output-to-string (λ () (test (c1 'not-a-number) (list 5)))))
- 
- (regexp-match (regexp-quote "(exception (type-case t (list 1) (c () 1)) \"type-case: expected a value from type t, got: (1)\" '<no-expected-value> \"at line 53\")")
-               (with-both-output-to-string (λ ()
-                                             (test/exn
-                                              (type-case t (list 1) (c () 1))
-                                              "expected"))))
- 
- (type-case "foo" "bar") =error> "this must be a type defined with define-type"
- 
- (type-case + "bar") =error> "this must be a type defined with define-type"
+ (regexp-match 
+  (ERR4 (+ 12 1))
+  (with-both-output-to-string (λ () (test/exn (type-case t (list 1) (c () 1)) "expected"))))
 
- (type-case #f [x () 1]) =error> "this must be a type defined with define-type"
- )
+ (type-case "foo" "bar") =error> "this must be a type defined with define-type"
+ (type-case + "bar") =error> "this must be a type defined with define-type"
+ (type-case #f [x () 1]) =error> "this must be a type defined with define-type")

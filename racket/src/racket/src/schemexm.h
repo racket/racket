@@ -3,6 +3,7 @@
 #define scheme_longjmpup (scheme_extension_table->scheme_longjmpup)
 #define scheme_reset_jmpup_buf (scheme_extension_table->scheme_reset_jmpup_buf)
 #ifdef USE_MZ_SETJMP
+#define scheme_get_mz_setjmp (scheme_extension_table->scheme_get_mz_setjmp)
 #define scheme_mz_setjmp (scheme_extension_table->scheme_mz_setjmp)
 #define scheme_mz_longjmp (scheme_extension_table->scheme_mz_longjmp)
 #endif
@@ -398,6 +399,7 @@
 #define scheme_is_cpointer (scheme_extension_table->scheme_is_cpointer)
 #define scheme_get_proc_name (scheme_extension_table->scheme_get_proc_name)
 #define scheme_utf8_decode (scheme_extension_table->scheme_utf8_decode)
+#define scheme_utf8_decode_offset_prefix (scheme_extension_table->scheme_utf8_decode_offset_prefix)
 #define scheme_utf8_decode_as_prefix (scheme_extension_table->scheme_utf8_decode_as_prefix)
 #define scheme_utf8_decode_all (scheme_extension_table->scheme_utf8_decode_all)
 #define scheme_utf8_decode_prefix (scheme_extension_table->scheme_utf8_decode_prefix)

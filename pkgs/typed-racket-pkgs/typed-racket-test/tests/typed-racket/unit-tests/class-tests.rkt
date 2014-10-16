@@ -17,7 +17,7 @@
 
 ;; see typecheck-tests.rkt for rationale on imports
 (require rackunit
-         (except-in racket/class class)
+         typed/racket/class
          (except-in typed-racket/utils/utils private)
          (except-in (base-env extra-procs prims class-prims
                               base-types base-types-extra)
@@ -109,6 +109,39 @@
    [tc-err (send 4 m 3)
       #:ret (ret (-val 5) -bot-filter)
       #:expected (ret (-val 5) -no-filter -no-obj)]
+   ;; Fails, sending to multiple/unknown values
+   [tc-err (send (values 'a 'b) m 'c)
+           #:msg #rx"expected single value"]
+   [tc-err (send (eval "3") m 'c)
+           #:msg #rx"expected single value"]
+   ;; Send to a union of objects in various ways
+   [tc-e (let ()
+           (: f (-> (U (Object [m (-> String)])
+                       (Object [m (-> Symbol)]
+                               [n (-> Void)]))
+                    (U Symbol String)))
+           (define (f o) (send o m))
+           (f (new (class object% (super-new) (define/public (m) "foo")))))
+         (t:Un -String -Symbol)]
+   [tc-e (let ()
+           (: f (-> (U (Object [m (-> (values String Symbol))])
+                       (Object [m (-> (values Symbol String))]
+                               [n (-> Void)]))
+                    (values (U Symbol String) (U Symbol String))))
+           (define (f o) (send o m))
+           (f (new (class object% (super-new)
+                     (define/public (m) (values "foo" 'bar))))))
+         #:ret (ret (list (t:Un -String -Symbol) (t:Un -String -Symbol)))]
+   [tc-err
+    (let ()
+      (define obj
+        (if (> (random) 0.5)
+            (new (class object% (super-new)
+                   (define/public (m) "foo")))
+            (new (class object% (super-new)
+                   (define/public (m) (values "foo" "bar"))))))
+      (send obj m))
+    #:msg #rx"Expected the same number of values.*got 1 and 2"]
    ;; Field access via get-field
    [tc-e (let ()
            (: j% (Class (field [n Integer])
@@ -605,6 +638,35 @@
              (m 5))
            (void))
          -Void]
+   ;; test inherit method in another method (next 3)
+   [tc-e (let ()
+           (class (class object% (super-new)
+                    (: m (-> String String))
+                    (define/public (m x) (string-append x "m")))
+             (super-new)
+             (inherit m)
+             (: n (-> String))
+             (define/public (n) (m "foo")))
+           (void))
+         -Void]
+   [tc-e (let ()
+           (class (class object% (super-new)
+                    (: m (-> String String))
+                    (define/public (m x) (string-append x "m")))
+             (super-new)
+             (inherit m)
+             (define/public (n) (m "foo")))
+           (void))
+         -Void]
+   [tc-e (let ()
+           (class (class object% (super-new)
+                    (: m (-> String String))
+                    (define/public (m x) (string-append x "m")))
+             (super-new)
+             (inherit m)
+             (define/private (n) (m "foo")))
+           (void))
+         -Void]
    ;; test internal name with inherit
    [tc-e (let ()
            (class (class object% (super-new)
@@ -671,6 +733,12 @@
            (define x (new c%))
            (void))
          -Void]
+   ;; failing instance subtyping
+   [tc-err (let ()
+             (define x (new (class object% (super-new) (define/public (m) "m"))))
+             (ann x (Object [n (-> String)]))
+             (error "foo"))
+           #:msg #rx"expected: .*n.*given:.*m.*"]
    ;; test use of `this` in field default
    [tc-e (let ()
            (class object%
@@ -894,7 +962,8 @@
                               #:row (make-Row null `([x ,-Integer]) null null #f))
                             (-class
                               #:row (make-Row null `([x ,-Integer]) null null #f)
-                              #:field ([x -Integer]))))]
+                              #:field ([x -Integer])))
+                      -true-filter)]
    ;; fails, mixin argument is missing required field
    [tc-err (let ()
              (: f (All (A #:row (field x))
@@ -964,7 +1033,8 @@
                               #:row (make-Row null `([x ,-Integer]) null null #f))
                             (-class
                               #:row (make-Row null `([x ,-Integer]) null null #f)
-                              #:field ([x -Integer]))))]
+                              #:field ([x -Integer])))
+                      -true-filter)]
    ;; Check simple use of pubment
    [tc-e (let ()
            (define c%
@@ -1253,8 +1323,8 @@
              (super-new)
              (: x String)
              (field [x : Symbol 0]))
-           #:ret (ret (-class #:field ([x -Symbol])))
-           #:msg #rx"duplicate type annotation.*new type: String"]
+           #:ret (ret (-class #:field ([x -String])))
+           #:msg #rx"duplicate type annotation.*new type: Symbol"]
    ;; fails, expected type and annotation don't match
    [tc-err (let ()
              (: c% (Class (field [x String])))
@@ -1427,4 +1497,26 @@
    [tc-err (make-object (ann object% ClassTop))
            #:msg #rx"cannot instantiate.*ClassTop"]
    [tc-err (make-object 3)
-           #:msg #rx"value of a non-class type"]))
+           #:msg #rx"value of a non-class type"]
+   ;; PR 14726
+   ;; test opt-arg but non-keyword method
+   [tc-e (let ()
+           (define-type-alias A%
+             (Class [foo (->* [Integer] Void)]))
+           (: a% A%)
+           (define a%
+             (class object%
+               (super-new)
+               (define/public (foo [i #f]) (void))))
+           (new a%))
+         (-object #:method ([foo (t:-> -Integer -Void)]))]
+   [tc-e (let ()
+           (define-type-alias A%
+             (Class [foo (->* [] [Integer] Void)]))
+           (: a% A%)
+           (define a%
+             (class object%
+               (super-new)
+               (define/public (foo [i #f]) (void))))
+           (new a%))
+         (-object #:method ([foo (cl->* (t:-> -Void) (t:-> -Integer -Void))]))]))

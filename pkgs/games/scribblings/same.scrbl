@@ -11,10 +11,16 @@
    (dc
     (λ (dc dx dy)
       (define-values (ox oy) (send dc get-origin))
+      (define pen (send dc get-pen))
+      (define brush (send dc get-brush))
+      (define-values (scale-x scale-y) (send dc get-scale))
       (send dc set-origin (+ ox dx) (+ oy dy))
       (draw-board dc board-width board-height board w h
                   #f #f #f #f)
-      (send dc set-origin ox oy))
+      (send dc set-origin ox oy)
+      (send dc set-pen pen)
+      (send dc set-brush brush)
+      (send dc set-scale scale-x scale-y))
     w h))
 
 @(define (copy-board board)

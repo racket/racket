@@ -599,8 +599,6 @@
   s-text-space)
 
 (defclass style% object%
-  (super-new)
-
   (define style-list #f) ;; points back to the list owning the style
   (define/public (set-s-style-list sl) (set! style-list sl))
 
@@ -610,15 +608,6 @@
 
   (define join-shift-style #f)
   (define nonjoin-delta #f)
-
-  (define/public (get-s-name) name)
-  (define/public (set-s-name v) (set! name v))
-  (define/public (get-s-base-style) base-style)
-  (define/public (set-s-base-style v) (set! base-style v))
-  (define/public (get-s-join-shift-style) join-shift-style)
-  (define/public (get-s-nonjoin-delta) nonjoin-delta)
-  (define/public (set-s-join-shift-style v) (set! join-shift-style v))
-  (define/public (set-s-nonjoin-delta v) (set! nonjoin-delta v))
 
   ;; cache computation:
   (define trans-text? #f)
@@ -630,7 +619,7 @@
   (field [s-alignment 'bottom])
 
   (define cached-sizes 0)
-  (define/public (set-s-cached-sizes v) (set! cached-sizes v))
+
   (field [s-text-width 0.0]
          [s-text-height 0.0]
          [s-text-descent 0.0]
@@ -638,6 +627,18 @@
 
   (define children null)
 
+  (super-new)
+
+  (define/public (get-s-name) name)
+  (define/public (set-s-name v) (set! name v))
+  (define/public (get-s-base-style) base-style)
+  (define/public (set-s-base-style v) (set! base-style v))
+  (define/public (get-s-join-shift-style) join-shift-style)
+  (define/public (get-s-nonjoin-delta) nonjoin-delta)
+  (define/public (set-s-join-shift-style v) (set! join-shift-style v))
+  (define/public (set-s-nonjoin-delta v) (set! nonjoin-delta v))
+
+  (define/public (set-s-cached-sizes v) (set! cached-sizes v))
   (define/public (s-set-as-basic slist)
     (set! style-list slist)
 

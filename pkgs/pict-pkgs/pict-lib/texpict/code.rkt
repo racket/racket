@@ -1,5 +1,5 @@
 (module code racket/base
-  (require "mrpict.rkt"
+  (require pict/private/pict
            (prefix-in r: racket/base)
            mzlib/class
            mzlib/list

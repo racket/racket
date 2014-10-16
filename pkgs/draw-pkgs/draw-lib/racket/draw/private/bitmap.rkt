@@ -27,7 +27,8 @@
                       build-cairo-surface
                       quartz-bitmap%
                       win32-no-hwnd-bitmap%
-                      install-bitmap-dc-class!))
+                      install-bitmap-dc-class!
+                      surface-flush))
 
 (define -bitmap-dc% #f)
 (define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
@@ -39,7 +40,8 @@
 
 (define-local-member-name
   get-alphas-as-mask
-  set-alphas-as-mask)
+  set-alphas-as-mask
+  surface-flush)
 
 (define (bitmap-file-kind-symbol? s)
   (memq s '(unknown unknown/mask unknown/alpha
@@ -171,6 +173,9 @@
     (init-rest args)
     (super-new)
 
+    (define/public (surface-flush)
+      (cairo_surface_flush s))
+
     (define-values (alt? width height b&w? alpha-channel? s loaded-mask backing-scale)
       (case-args
        args
@@ -196,17 +201,22 @@
                                               (max (*i scale h) 1))])
            (cairo_surface_flush s)
            (cond
-            [b&w?
-             ;; Init transparent white:
-             (transparent-white! s w h)]
-            [alpha?
-             ;; Init transparent:
-             (bytes-fill! (cairo_image_surface_get_data s) 0)]
+            [(cairo_image_surface_get_data s)
+             (cond
+              [b&w?
+               ;; Init transparent white:
+               (transparent-white! s w h)]
+              [alpha?
+               ;; Init transparent:
+               (bytes-fill! (cairo_image_surface_get_data s) 0)]
+              [else
+               ;; Init all white, 255 alpha:
+               (bytes-fill! (cairo_image_surface_get_data s) 255)])
+             (cairo_surface_mark_dirty s)
+             s]
             [else
-             ;; Init all white, 255 alpha:
-             (bytes-fill! (cairo_image_surface_get_data s) 255)])
-           (cairo_surface_mark_dirty s)
-           s)
+             ;; bitmap creation failed
+             #f]))
          #f
          (* 1.0 scale))]
        [([(make-alts path-string? input-port?) filename]
@@ -236,7 +246,7 @@
                                                     (let ([v (bytes-ref bstr (+ A (* 4 i) (* j row-width)))])
                                                       (or (= v 0) (= v 255))))])
                                 (let ([mask-bm (make-object bitmap% w h b&w?)])
-                                  (send mask-bm set-alphas-as-mask 0 0 w h bstr row-width A)
+                                  (send mask-bm set-alphas-as-mask 0 0 w h bstr row-width A w h)
                                   mask-bm)))
                          ;; Force all alpha values to 255
                          (for* ([j (in-range h)]
@@ -589,7 +599,7 @@
                ;; Write a 1-bit png
                (let* ([b (ceiling (/ width 8))]
                       [rows (build-vector height (lambda (i) (make-bytes b)))]
-                      [data (begin (cairo_surface_flush s)
+                      [data (begin (surface-flush)
                                    (cairo_image_surface_get_data s))]
                       [row-width (cairo_image_surface_get_stride s)])
                  (for ([j (in-range height)])
@@ -686,7 +696,7 @@
       (or (if (or b&w? alpha-channel?)
               s
               (begin
-                (prep-alpha)
+                (prep-alpha (*i width backing-scale) (*i height backing-scale))
                 alpha-s))
           (get-empty-surface)))
 
@@ -731,7 +741,7 @@
       ;; Get pixels:
       (when (not get-alpha?)
         (let-values ([(A R G B) (argb-indices)])
-          (cairo_surface_flush s)
+          (surface-flush)
           (let ([data (cairo_image_surface_get_data s)]
                 [row-width (cairo_image_surface_get_stride s)]
                 [um (and (or (and alpha-channel? (not pre-mult?)) b&w?)
@@ -764,7 +774,7 @@
                         (unsafe-bytes-set! bstr (+ pi 3) (unmult (unsafe-bytes-ref data (+ ri B)))))))))))))
       (cond
        [get-alpha?
-        (get-alphas-as-mask x y w h bstr)]
+        (get-alphas-as-mask x y w h bstr width height)]
        [(and (not get-alpha?) (not alpha-channel?))
         ;; For non-alpha mode and no alpha channel; fill in 255s for alpha:
         (for ([j (in-range 0 (min h (- height y)))])
@@ -810,7 +820,7 @@
                      [(width) (if unscaled? (*i width backing-scale) width)]
                      [(height) (if unscaled? (*i height backing-scale) height)])
           (when (not set-alpha?)
-            (cairo_surface_flush s)
+            (surface-flush)
             (let ([data (cairo_image_surface_get_data s)]
                   [row-width (cairo_image_surface_get_stride s)]
                   [m (and (not pre-mult?) (get-mult-table))])
@@ -868,16 +878,18 @@
          [(and set-alpha?
                (not alpha-channel?))
           ;; Set alphas:
-          (set-alphas-as-mask x y w h bstr (* 4 w) 0)])
+          (set-alphas-as-mask x y w h bstr (* 4 w) 0
+                              (if unscaled? (*i width backing-scale) width)
+                              (if unscaled? (*i height backing-scale) height))])
         (drop-alpha-s)]))
 
-    (define/public (get-alphas-as-mask x y w h bstr)
+    (define/public (get-alphas-as-mask x y w h bstr width height)
       (let ([data (cairo_image_surface_get_data (if (or b&w? alpha-channel?)
                                                     (begin
-                                                      (cairo_surface_flush s)
+                                                      (surface-flush)
                                                       s)
                                                     (begin
-                                                      (prep-alpha)
+                                                      (prep-alpha width height)
                                                       (cairo_surface_flush alpha-s)
                                                       alpha-s)))]
             [row-width (cairo_image_surface_get_stride s)]
@@ -889,14 +901,15 @@
                     [q (+ row (* i 4))])
                 (bytes-set! bstr p (bytes-ref data (+ q A)))))))))
 
-    (define/public (prep-alpha)
+    (define/public (prep-alpha width height)
       (when (and (not b&w?)
-                 (not alpha-channel?))
+                 (not alpha-channel?)
+                 s)
         (unless alpha-s-up-to-date?
           (unless alpha-s
             (set! alpha-s (cairo_image_surface_create CAIRO_FORMAT_ARGB32
                                                       width height)))
-          (cairo_surface_flush s)
+          (surface-flush)
           (cairo_surface_flush alpha-s)
           (let ([data (cairo_image_surface_get_data s)]
                 [alpha-data (cairo_image_surface_get_data alpha-s)]
@@ -926,13 +939,13 @@
             (for ([i (in-range width)])
               (bytes-set! bstr (+ A (+ row (* i 4))) 0))))))
 
-    (define/public (set-alphas-as-mask x y w h bstr src-w src-A)
+    (define/public (set-alphas-as-mask x y w h bstr src-w src-A width height)
       (when (or b&w? (and (not b&w?) (not alpha-channel?)))
         (let ([data (cairo_image_surface_get_data s)]
               [row-width (cairo_image_surface_get_stride s)]
               [A (a-index)]
               [B (b-index)])
-          (cairo_surface_flush s)
+          (surface-flush)
           (for ([j (in-range y (min (+ y h) height))])
             (let ([row (* j row-width)]
                   [src-row (* (- j y) src-w)])
@@ -995,15 +1008,17 @@
     (init w h backing-scale)
     (super-make-object (make-alternate-bitmap-kind w h backing-scale))
 
-    (define s (build-cairo-surface w h))
+    (define s (build-cairo-surface w h backing-scale))
     ;; erase the bitmap
     (let ([cr (cairo_create s)])
       (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
       (cairo_paint cr)
       (cairo_destroy cr))
 
-    (define/public (build-cairo-surface w h)
-      (cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 w h))
+    (define/public (build-cairo-surface w h backing-scale)
+      (let ([sw (*i backing-scale w)]
+	    [sh (*i backing-scale h)])
+	(cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 sw sh)))
 
     (define/override (ok?) #t)
     (define/override (is-color?) #t)

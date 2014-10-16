@@ -216,11 +216,42 @@
 (define (parse-author as)
   (and as
       (apply authors
-         (for/list ([a (in-list (regexp-split #rx" *and *" as))])
+         (for/list ([a (in-list (regexp-split #rx" +and *" as))])
            (match (regexp-split #rx" +" a)
              [(list one) (org-author-name one)]
              [(list one two) (author-name one two)]
-             [(list-rest first rest) (author-name first (apply string-append (add-between rest " ")))])))))
+             [(list-rest first rest) 
+              (author-name first (apply string-append (add-between rest " ")))])))))
+
+(module+ test
+  (require rackunit)
+  
+  ;; use this as a predicate to hack around lack of 
+  ;; ability to use equal? on author element structs
+  (define (print-as-equal-string? a b)
+    (equal? (format "~s" a)
+            (format "~s" b)))
+  
+  (check 
+   print-as-equal-string? 
+   (parse-author "James Earl Jones")
+   (authors
+    (author-name "James Earl" "Jones")))
+  
+  (check
+   print-as-equal-string?
+   (parse-author "Tim Robbins and Morgan Freeman")
+   (authors (author-name "Tim" "Robbins")
+            (author-name "Morgan" "Freeman")))
+  
+  (check
+   print-as-equal-string? 
+   (parse-author "Edward L. Deci and Robert J. Vallerand and Luc G. Pelletier and Richard M. Ryan")
+   (authors (author-name "Edward L." "Deci")
+            (author-name "Robert J." "Vallerand")
+            (author-name "Luc G." "Pelletier")
+            (author-name "Richard M." "Ryan"))))
+
 (define (parse-pages ps)
   (match ps
     [(regexp #rx"^([0-9]+)\\-+([0-9]+)$" (list _ f l))

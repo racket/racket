@@ -8,12 +8,12 @@
 
 (pkg-tests
 
- $ "raco pkg install --deps fail test-pkgs/pkg-x/" =exit> 1
- $ "raco pkg install --deps fail test-pkgs/pkg-y/" =exit> 1
- $ "raco pkg install --deps fail test-pkgs/pkg-x/ test-pkgs/pkg-z/" =exit> 1
- $ "raco pkg install --deps fail test-pkgs/pkg-y/ test-pkgs/pkg-z/" =exit> 1
- $ "raco pkg install --deps fail test-pkgs/pkg-x/ test-pkgs/pkg-y/" =exit> 1
- $ "raco pkg install --deps fail test-pkgs/pkg-y/ test-pkgs/pkg-x/" =exit> 1
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-x/" =exit> 1
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-y/" =exit> 1
+ $ "raco pkg install --deps fail --copt test-pkgs/pkg-x/ test-pkgs/pkg-z/" =exit> 1
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-y/ test-pkgs/pkg-z/" =exit> 1
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-x/ test-pkgs/pkg-y/" =exit> 1
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-y/ test-pkgs/pkg-x/" =exit> 1
 
  $ "raco pkg install --deps fail --copy test-pkgs/pkg-z/" =exit> 0
 
@@ -33,6 +33,7 @@
 
  (make-directory* "test-pkgs/src-pkgs")
  (make-directory* "test-pkgs/built-pkgs")
+ (make-directory* "test-pkgs/binary-lib-pkgs")
  $ "raco pkg create --from-install --source --dest test-pkgs/src-pkgs pkg-x"
  $ "raco pkg create --from-install --source --dest test-pkgs/src-pkgs pkg-y"
  $ "raco pkg create --from-install --source --dest test-pkgs/src-pkgs pkg-z"
@@ -40,6 +41,10 @@
  $ "raco pkg create --from-install --binary --dest test-pkgs pkg-x"
  $ "raco pkg create --from-install --binary --dest test-pkgs pkg-y"
  $ "raco pkg create --from-install --binary --dest test-pkgs pkg-z"
+
+ $ "raco pkg create --from-install --binary-lib --dest test-pkgs/binary-lib-pkgs pkg-x"
+ $ "raco pkg create --from-install --binary-lib --dest test-pkgs/binary-lib-pkgs pkg-y"
+ $ "raco pkg create --from-install --binary-lib --dest test-pkgs/binary-lib-pkgs pkg-z"
 
  $ "raco pkg create --from-install --built --dest test-pkgs/built-pkgs pkg-x"
  $ "raco pkg create --from-install --built --dest test-pkgs/built-pkgs pkg-y"
@@ -80,7 +85,9 @@
           (unless (if (file-exists? f)
                       (file-exists? new-f)
                       (directory-exists? new-f))
-            (unless (regexp-match? #rx#"nosrc" (path->bytes f))
+            (unless (or (regexp-match? #rx#"nosrc" f)
+                        (and (regexp-match? #rx#"keep2" f)
+                             (regexp-match? #rx#"doc" f)))
               (error 'diff "missing ~s" new-f)))))))
   (unpack "x")
   (unpack "y")
@@ -90,21 +97,43 @@
  (shelly-case
    "check content of binary package"
    (make-directory* tmp-dir)
-   (define (unpack-bin name)
-     (let ([z (path->complete-path (format "test-pkgs/pkg-~a.zip" name))])
+   (define (unpack-bin name lib?)
+     (let ([z (path->complete-path (format "test-pkgs/~apkg-~a.zip"
+                                           (if lib? "binary-lib-pkgs/" "")
+                                           name))])
        (define d (build-path tmp-dir name))
+       (delete-directory/files d #:must-exist? #f)
        (make-directory* d)
        (parameterize ([current-directory d])
          (unzip z)
          (for ([f (in-directory)])
-           (when (or (and (regexp-match? #rx#"(?:[.](?:rkt|scrbl|dep)|_scrbl[.]zo)$" (path->bytes f))
-                          (not (regexp-match? #rx#"(?:info_rkt[.]dep)$" (path->bytes f))))
-                     (regexp-match? #rx#"nobin" (path->bytes f)))
-             (unless (regexp-match? #rx#"(?:info[.]rkt|keep.scrbl)$" (path->bytes f))
-               (error 'binary "extra ~s" f)))))))
-   (unpack-bin "x")
-   (unpack-bin "y")
-   (unpack-bin "z")
+           (when (or (and (regexp-match? #rx#"(?:[.](?:rkt|scrbl|dep)|_scrbl[.]zo)$" f)
+                          (not (regexp-match? #rx#"(?:info_rkt[.]dep)$" f)))
+                     (and (regexp-match? #rx#"nobin" f)
+                          (or lib?
+                              (not (regexp-match? #rx#"nobinlib" f)))))
+             (unless (regexp-match? #rx#"(?:info[.]rkt|keep.scrbl)$" f)
+               (error (if lib? 'binary-lib 'binary) "extra ~s" f)))
+           (when lib?
+             (when (and (regexp-match? #rx#"doc$" f)
+                        (not (regexp-match? #rx#"keep2" f)))
+               (error 'binary-lib "extra ~s" f)))
+           (when (regexp-match? #rx#"(?:info[.]rkt|info_rkt.zo)$" f)
+             (parameterize ([current-namespace (make-base-namespace)])
+               (define i (dynamic-require f '#%info-lookup))
+               (for ([key '(implies update-implies)])
+                 (define implies (i key (lambda () null)))
+                 (define deps (map (lambda (p) (if (pair? p) (car p) p))
+                                   (i 'deps (lambda () null))))
+                 (for ([s (in-list implies)])
+                   (unless (member s deps)
+                     (error 'binary "bad `~a'" key))))))))))
+   (unpack-bin "x" #f)
+   (unpack-bin "y" #f)
+   (unpack-bin "z" #f)
+   (unpack-bin "x" #t)
+   (unpack-bin "y" #t)
+   (unpack-bin "z" #t)
    (delete-directory/files tmp-dir))
 
   (shelly-case
@@ -130,17 +159,17 @@
           (when (file-exists? f)
             (unless (or (file-exists? (build-path sd f))
                         (file-exists? (build-path bd f)))
-              (unless (regexp-match? #rx#"(?:[.](?:dep)|_scrbl[.]zo)$" (path->bytes f))
+              (unless (regexp-match? #rx#"(?:[.](?:dep)|_scrbl[.]zo)$" f)
                 (error 'built "extra ~s" f))))
-          (when (regexp-match? #rx#"[.]zo$" (path->bytes f))
+          (when (regexp-match? #rx#"[.]zo$" f)
             (unless (file-exists? (path-replace-suffix f #".dep"))
               (error 'build "dep missing for ~s" f)))
-          (when (regexp-match? #rx#"[.](rkt|scrbl|ss)$" (path->bytes f))
+          (when (regexp-match? #rx#"[.](rkt|scrbl|ss)$" f)
             (let-values ([(base name dir?) (split-path f)])
               (unless (file-exists? (build-path (if (eq? base 'relative) 'same base)
                                                 "compiled" 
                                                 (path-add-suffix name #".zo")))
-                (unless (regexp-match? #rx#"^(?:info.rkt|x/keep.scrbl)$" (path->bytes f))
+                (unless (regexp-match? #rx#"^(?:info.rkt|x/keep.scrbl)$" f)
                   (error 'build "compiled file missing for ~s" f)))))))
       (parameterize ([current-directory sd])
         (for ([f (in-directory)])
@@ -231,5 +260,16 @@
  $ "racket -l racket/base -l y/sub/s -e '(s)'" =stdout> "'s\n"
 
  $ "raco pkg remove pkg-x pkg-y pkg-z"
+
+ (shelly-case
+  "incompatible conversion request rejected"
+  $ "raco pkg install --binary test-pkgs/src-pkgs/pkg-z.zip"
+  =exit> 1 =stderr> #rx"not compatible"
+  $ "raco pkg install --binary-lib test-pkgs/src-pkgs/pkg-z.zip"
+  =exit> 1 =stderr> #rx"not compatible"
+  $ "raco pkg install --source test-pkgs/pkg-z.zip"
+  =exit> 1 =stderr> #rx"not compatible"
+  $ "raco pkg install --source test-pkgs/binary-lib-pkgs/pkg-z.zip"
+  =exit> 1 =stderr> #rx"not compatible")
 
  )

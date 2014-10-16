@@ -12,6 +12,7 @@
                     setup/getinfo
                     setup/main-collects
                     setup/collection-name
+                    setup/matching-platform
                     setup/path-to-relative
                     setup/xref scribble/xref
                     ;; info -- no bindings from this are used
@@ -98,29 +99,40 @@ flags:
 
 @itemize[
 
- @item{@DFlag{jobs} @nonterm{n}, @DFlag{workers} @nonterm{n}, 
-   or @Flag{j} @nonterm{n} --- use up
-   to @nonterm{n} parallel processes.  By default, @exec{raco setup}
-   uses @racket[(processor-count)] jobs, which typically uses
-   all of the machine's processing cores.}
+@item{Constraining to specified collections or @|PLaneT| packages:
+@itemize[
 
  @item{@DFlag{only} --- restrict setup to specified collections and
    @|PLaneT| packages, even if none are specified. This mode is the
-   default if any collection is specified as a command-line argument,
-   through the @Flag{l} flag, or through the @Flag{P} flag.}
+   default if any collection is specified as a command-line argument
+   or through the @Flag{l}, @DFlag{pkgs}, or @Flag{P} flag.}
+
+ @item{@Flag{l} @nonterm{collection} @racket[...] --- constrain setup
+  actions to the specified @nonterm{collection}s (i.e., the same as
+  providing @nonterm{collections}s without a flag, but with no
+  possibility that a @nonterm{collection} is interpreted as a flag).}
+
+ @item{@DFlag{pkgs} @nonterm{pkg} @racket[...] --- constrain setup
+  actions to collections that are within (or partially within) the
+  named @nonterm{pkg}s.}
 
  @item{@Flag{P} @nonterm{owner} @nonterm{package-name} @nonterm{maj}
   @nonterm{min} --- constrain setup actions to the specified @|PLaneT|
   package, in addition to any other specified @|PLaneT| packages or
-  @nonterm{collections}.}
+  collections.}
 
- @item{@DFlag{tidy} --- remove metadata cache information and
-  documentation for non-existent collections (to clean up after removal)
-  even when setup actions are otherwise confined to specified collections.}
-
- @item{@DFlag{doc-index} --- builds collections that implement
+ @item{@DFlag{doc-index} --- build collections that implement
   documentation indexes (when documentation building is enabled), in
   addition to specified collections.}
+
+ @item{@DFlag{tidy} --- remove metadata cache information and
+  documentation for non-existent collections or documentation (to
+  clean up after removal), even when setup actions are otherwise
+  confined to specified collections.}
+
+]}
+@item{Constraining to specific tasks:
+@itemize[
 
  @item{@DFlag{clean} or @Flag{c} --- delete existing @filepath{.zo}
    files, thus ensuring a clean build from the source files. The exact
@@ -135,9 +147,9 @@ flags:
 
  @item{@DFlag{no-launcher} or @Flag{x} --- refrain from creating
    executables or installing @tt{man} pages (as specified in
-   @filepath{info.rkt}; see @secref["setup-info"].}
+   @filepath{info.rkt}; see @secref["setup-info"]).}
 
- @item{@DFlag{no-foreign-libs} --- refrain from installing foreign
+ @item{@DFlag{no-foreign-libs} or @Flag{F} --- refrain from installing foreign
    libraries (as specified in @filepath{info.rkt}; see
    @secref["setup-info"]).}
 
@@ -161,22 +173,23 @@ flags:
    documentation, render documentation to PDF and place files in
    @nonterm{dir}.}
 
- @item{@DFlag{no-user} or @Flag{U} --- refrain from any user-specific
-  (as opposed to installation-specific) setup actions.}
-
- @item{@DFlag{no-planet} --- refrain from any setup actions for
-  @|PLaneT| actions; this flags is implied by @DFlag{no-user}.}
-
- @item{@DFlag{avoid-main} --- refrain from any setup actions that
-  affect the installation, as opposed to user-specific actions.}
-
  @item{@DFlag{no-pkg-deps} or @Flag{K} --- refrain from checking
   whether dependencies among libraries are properly reflected by
   package-level dependency declarations, whether modules are declared
   by multiple packages, and whether package version dependencies are
-  satisfied. Dependency checking uses compiled bytecode and associated
-  @filepath{.dep} files, and it checks only files that are setup
-  against only packages that include files that are setup.}
+  satisfied. Dependency checking uses @filepath{.zo} files, associated
+  @filepath{.dep} files, and the documentation index. Unless
+  @DFlag{check-pkg-deps} is specified, dependency checking is disabled
+  if any collection is specified for @exec{raco setup}, and missing
+  dependencies are not treated as an error for a package that has no
+  dependency declarations.}
+
+ @item{@DFlag{check-pkg-deps} --- checks package dependencies (unless
+  explicitly disabled) even when specific collections are provided to
+  @exec{raco setup}, and even for packages that have no
+  dependency declarations. Currently, dependency checking related to
+  documentation cross-referencing is constrained to documents among
+  specified collections.}
 
  @item{@DFlag{fix-pkg-deps} --- attempt to correct dependency
   mismatches by adjusting package @filepath{info.rkt} files (which makes
@@ -189,15 +202,28 @@ flags:
   dependencies may be reported as unused only because compilation of
   relevant modules has been suppressed.}
 
- @item{@DFlag{mode} @nonterm{mode} --- use a @filepath{.zo} compiler
-   other than the default compiler, and put the resulting
-   @filepath{.zo} files in a subdirectory (of the usual place) named
-   by @nonterm{mode}. The compiler is obtained by using @nonterm{mode}
-   as a collection name, finding a @filepath{zo-compile.rkt} module in
-   that collection, and extracting its @racket[zo-compile] export. The
-   @racket[zo-compile] export should be a function like
-   @racket[compile]; see the @filepath{errortrace} collection for an
-   example.}
+]}
+@item{Constraining user versus installation setup:
+@itemize[
+
+ @item{@DFlag{no-user} or @Flag{U} --- refrain from any user-specific
+  (as opposed to installation-specific) setup actions.}
+
+ @item{@DFlag{no-planet} --- refrain from any setup actions for
+  @|PLaneT| actions; this flags is implied by @DFlag{no-user}.}
+
+ @item{@DFlag{avoid-main} --- refrain from any setup actions that
+  affect the installation, as opposed to user-specific actions.}
+
+]}
+@item{Selecting parallelism and other build modes:
+@itemize[
+
+ @item{@DFlag{jobs} @nonterm{n}, @DFlag{workers} @nonterm{n},
+   or @Flag{j} @nonterm{n} --- use up
+   to @nonterm{n} parallel processes.  By default, @exec{raco setup}
+   uses @racket[(processor-count)] jobs, which typically uses
+   all of the machine's processing cores.}
 
  @item{@DFlag{verbose} or @Flag{v} --- more verbose output about
    @exec{raco setup} actions.}
@@ -208,14 +234,26 @@ flags:
  @item{@DFlag{compiler-verbose} or @Flag{r} --- even more verbose
    output about dependency checks and compilation.}
 
+ @item{@DFlag{mode} @nonterm{mode} --- use a @filepath{.zo} compiler
+   other than the default compiler, and put the resulting
+   @filepath{.zo} files in a subdirectory (of the usual place) named
+   by @nonterm{mode}. The compiler is obtained by using @nonterm{mode}
+   as a collection name, finding a @filepath{zo-compile.rkt} module in
+   that collection, and extracting its @racket[zo-compile] export. The
+   @racket[zo-compile] export should be a function like
+   @racket[compile]; see the @filepath{errortrace} collection for an
+   example.}
+
+ @item{@DFlag{fail-fast} --- attempt to break as soon as any error is
+  discovered.}
+
  @item{@DFlag{pause} or @Flag{p} --- pause for user input if any
   errors are reported (so that a user has time to inspect output that
   might otherwise disappear when the @exec{raco setup} process ends).}
 
- @item{@Flag{l} @nonterm{collection} @racket[...] --- constrain setup
-  actions to the specified @nonterm{collection}s (i.e., the same as
-  providing @nonterm{collections}s without a flag, but with no
-  possibility that a @nonterm{collection} is interpreted as a flag.}
+]}
+@item{Unpacking @filepath{.plt} archives:
+@itemize[
 
  @item{@Flag{A} @nonterm{archive} @racket[...] --- Install each
   @nonterm{archive}; see @secref["raco-setup-A"].}
@@ -227,6 +265,7 @@ flags:
   install archive into the installation instead of a user-specific
   location.}
 
+]}
 
 ]
 
@@ -237,6 +276,10 @@ example, the following command line uses a single process to build
 collections during an install:
 
    @commandline{env PLT_SETUP_OPTIONS="-j 1" make install}
+
+@history[#:changed "1.2" @elem{Added the @DFlag{pkgs},
+                               @DFlag{check-pkg-deps}, and
+                               @DFlag{fail-fast} flags.}]
 
 @; ------------------------------------------------------------------------
 
@@ -282,16 +325,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    A list of documents to build. Each document in the list is itself
    represented as a list, where each document's list starts with a
    string that is a collection-relative path to the document's source
-   file. A directory for pre-rendered documentation is computed from the
-   source file name by starting with the directory of the @filepath{info.rkt}
-   file, adding @filepath{doc}, and then using the source file's name without
-   a suffix; if such a directory exists and does not have a
-   @filepath{synced.rktd} file, then it is treated as pre-rendered
-   documentation and moved into place, in which case the documentation source file
-   need not be present. (Moving documentation into place may require no movement
-   at all, depending on the way that the enclosing collection is installed, but 
-   movement includes adding a @filepath{synced.rktd} file to represent
-   the installation.)
+   file. A document name (which is derived from the source module's
+   name by default) is intended to be globally unique in the same way
+   as a package or module name.
 
    More precisely a @racketidfont{scribblings} entry must be a value
    that can be generated from an expression matching the following
@@ -321,7 +357,10 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    (described further below). If a document's list contains a fourth
    item, @racket[_name], it is a name to use for the generated
    documentation, instead of defaulting to the source file's name
-   (sans extension), where @racket[#f] means to use the default. If a
+   (sans extension), where @racket[#f] means to use the default; a
+   non-@racket[#f] value for @racket[_name] must fit the grammar
+   of a colelction-name element as checked by 
+   @racket[collection-name-element?]. If a
    document's list contains a fifth item, @racket[_out-k], it is used
    a hint for the number of files to use for the document's
    cross-reference information; see below. If a document's list
@@ -462,7 +501,19 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    less disables running the document in parallel to other documents.
    The main Racket reference is given a value of @racket[-11], the
    search page is given a value of @racket[10], and the default is
-   @racket[0].}
+   @racket[0].
+
+   A directory for pre-rendered documentation is computed from the
+   source file name by starting with the directory of the
+   @filepath{info.rkt} file, adding @filepath{doc}, and then using the
+   document name (which is usually the source file's name without a
+   suffix); if such a directory exists and does not have a
+   @filepath{synced.rktd} file, then it is treated as pre-rendered
+   documentation and moved into place, in which case the documentation
+   source file need not be present. Moving documentation into place
+   may require no movement at all, depending on the way that the
+   enclosing collection is installed, but movement includes adding a
+   @filepath{synced.rktd} file to represent the installation.}
 
  @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.
@@ -557,7 +608,19 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    path-string? relative-path?))] --- Files to copy into a
    directory where foreign libraries are found by @racket[ffi-lib].
    If @racket[install-platform] is defined, then the files are copied
-   only if the current platform matches the definition.}
+   only if the current platform matches the definition.
+
+   On Mac OS X, when a Mach-O file is copied, if the copied file
+   includes a library reference that starts @litchar{@"@"loader_path/},
+   and if the referenced library exists in a different location among
+   the paths listed by @racket[(get-lib-search-dirs)], then the
+   library reference is updated to an absolute path.
+
+   On Unix, when an ELF file is copied, if the copied file includes an
+   RPATH setting of @litchar{$ORIGIN} and the file is being installed
+   to a user-specific location, then the file's RPATH is adjusted to
+   @litchar{$ORIGIN:} followed by the path to the main installation's
+   library directory as reported by @racket[(find-lib-dir)].}
 
  @item{@indexed-racket[move-foreign-libs] : @racket[(listof (and/c
    path-string? relative-path?))] --- Like @racket[copy-foreign-libs],
@@ -586,18 +649,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    @racket[copy-man-pages], but the original file is removed after it
    is copied (which makes sense for precompiled packages).}
 
- @item{@indexed-racket[install-platform] : @racket[(or/c regexp?
-   string? symbol?)] --- Determines whether files are copied or moved
+ @item{@indexed-racket[install-platform] : @racket[platform-spec?]
+   --- Determines whether files are copied or moved
    for @racket[copy-foreign-libs], @racket[move-foreign-libs],
-   @racket[copy-shared-files], or @racket[move-shared-files]. If
-   @racket[install-platform] is defined as a regexp, then files are
-   copied/moved only if the regexp matches the result of
-   @racket[(system-library-subpath #f)]. If @racket[install-platform]
-   is defined as a string, then files are copied/moved only if the
-   @racket[(path->string (system-library-subpath #f))] produces the
-   same string. If @racket[install-platform] is defined as a symbol,
-   then files are copied/moved only if the @racket[(system-type)]
-   produces the same symbol.}
+   @racket[copy-shared-files], or @racket[move-shared-files]. 
+   See @racket[matching-platform?] for information on the way that the
+   specification is compared to @racket[(system-type)]
+   and @racket[(system-library-subpath #f)].}
 
  @item{@indexed-racket[install-collection] : @racket[path-string?]  --- A
    library module relative to the collection that provides
@@ -687,6 +745,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
                 [#:clean? clean? any/c #f]
                 [#:tidy? tidy? any/c #f]
                 [#:jobs jobs exact-nonnegative-integer? #f]
+                [#:fail-fast? fail-fast? any/c #f]
                 [#:get-target-dir get-target-dir (or/c #f (-> path-string?)) #f])
           boolean?]{
 Runs @exec{raco setup} with various options:
@@ -723,6 +782,9 @@ Runs @exec{raco setup} with various options:
 
  @item{@racket[jobs] --- if not @racket[#f], determines the maximum number of parallel
        tasks used for setup}
+
+ @item{@racket[fail-fast?] --- if true, breaks the current thread as soon as an
+       error is discovered}
 
  @item{@racket[get-target-dir] --- if not @racket[#f], treated as a
        value for @sigelem[setup-option^ current-target-directory-getter]}
@@ -875,6 +937,12 @@ form.}
     and for building the documentation.
     @defaults[@racket[(min (processor-count) 8)]]
   }
+
+@defboolparam[fail-fast on?]{
+  If on, breaks the original thread as soon as an error is discovered.
+  @defaults[@racket[#f]]
+
+  @history[#:added "1.2"]}
   
 @defboolparam[force-unpacks on?]{
   If on, ignore version and already-installed errors when unpacking a
@@ -1494,6 +1562,41 @@ lowercase hexadecimal digits, and the digits must form a number that
 is not the ASCII value of a letter, digit, @litchar{-}, @litchar{+},
 or @litchar{_}.}
 
+
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "matching-platform"]{API for Platform Specifications}
+
+@defmodule[setup/matching-platform]
+
+@history[#:added "6.0.1.13"]
+
+@defproc[(platform-spec? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a symbol, string, or regexp value
+(in the sense of @racket[regexp?]), @racket[#f] otherwise.}
+
+@defproc[(matching-platform? [spec platform-spec?]
+                             [#:system-type sys-type (or/c #f symbol?) (system-type)]
+                             [#:system-library-subpath sys-lib-subpath (or/c #f path?)
+                                                       (system-library-subpath #f)])
+         boolean?]{
+
+Reports whether @racket[spec] matches @racket[sys-type] or
+@racket[sys-lib-subpath], where @racket[#f] values for the latter are
+replaced with the default values.
+
+If @racket[spec] is a symbol, then the result is @racket[#t] if
+@racket[sys-type] is the same symbol, @racket[#f] otherwise.
+
+If @racket[spec] is a string, then the result is @racket[#t] if
+@racket[(path->string sys-lib-subpath)] is the same string,
+@racket[#f] otherwise.
+
+If @racket[spec] is a regexp value, then the result is @racket[#t] if
+the regexp matches @racket[(path->string sys-lib-subpath)],
+@racket[#f] otherwise.}
 
 @; ------------------------------------------------------------------------
 

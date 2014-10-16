@@ -155,6 +155,11 @@ void scheme_init_place(Scheme_Env *env)
 
   scheme_finish_primitive_module(plenv);
 
+  /* Treat place creation as "unsafe", since the new place starts with
+     permissive guards that can access unsafe features that affect
+     existing places. */
+  scheme_protect_primitive_provide(plenv, scheme_intern_symbol("dynamic-place"));
+
 #ifdef MZ_USE_PLACES
   REGISTER_SO(all_child_places);
   
@@ -560,6 +565,8 @@ static void do_place_kill(Scheme_Place *place)
     if (place_obj->signal_handle) { scheme_signal_received_at(place_obj->signal_handle); }
 
     place->result = place_obj->result;
+
+    place_obj->parent_signal_handle = NULL;
 
     if (refcount)
       resume_one_place_with_lock(place_obj);
@@ -1157,7 +1164,7 @@ static int place_wait_ready(Scheme_Object *_p) {
   if (!p->place_obj) return 1;
 
   mzrt_mutex_lock(p->place_obj->lock);
-  done = !p->place_obj->parent_signal_handle;
+  done = p->place_obj->dead;
   mzrt_mutex_unlock(p->place_obj->lock);
 
   if (done) {
@@ -2553,7 +2560,8 @@ void scheme_place_set_memory_use(intptr_t mem_use)
       scheme_signal_received_at(place_obj->parent_signal_handle);
     } else if (mem_use > (1 + place_obj->use_factor) * place_obj->prev_notify_memory_use) {
       /* make sure the parent notices that we're using more memory: */
-      scheme_signal_received_at(place_obj->parent_signal_handle);
+      if (place_obj->parent_signal_handle)
+        scheme_signal_received_at(place_obj->parent_signal_handle);
       place_obj->prev_notify_memory_use = mem_use;
     } else if (mem_use < place_obj->prev_notify_memory_use) {
       place_obj->prev_notify_memory_use = mem_use;
@@ -2589,8 +2597,10 @@ static void place_set_result(struct Scheme_Place_Object *place_obj, Scheme_Objec
 
   mzrt_mutex_lock(place_obj->lock);
   place_obj->result = status;
-  scheme_signal_received_at(place_obj->parent_signal_handle);
-  place_obj->parent_signal_handle = NULL;
+  if (place_obj->parent_signal_handle) {
+    scheme_signal_received_at(place_obj->parent_signal_handle);
+    place_obj->parent_signal_handle = NULL;
+  }
   place_obj->signal_handle = NULL;
   place_obj->dead = 1;
   mzrt_mutex_unlock(place_obj->lock);

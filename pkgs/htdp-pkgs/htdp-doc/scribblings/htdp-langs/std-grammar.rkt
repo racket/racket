@@ -11,13 +11,14 @@
 
 (define-syntax-rule (racketgrammar*+library
                      #:literals lits
-                     (check-expect check-random check-within check-member-of check-range check-error require)
+                     (check-expect check-random check-satisfied check-within check-member-of check-range check-error require)
                      form ...)
   (racketgrammar*
    #:literals lits
    form ...
    [test-case @#,racket[(check-expect expr expr)]
               @#,racket[(check-random expr expr)]
+              @#,racket[(check-satisifed expr name)]
               @#,racket[(check-within expr expr expr)]
               @#,racket[(check-member-of expr expr (... ...))]
               @#,racket[(check-range expr expr expr)]
@@ -32,11 +33,11 @@
 
 (define-syntax-rule (racketgrammar*+qq 
                      #:literals lits
-                     (check-expect check-random check-within check-member-of check-range check-error require)
+                     (check-expect check-random check-satisfied check-within check-member-of check-range check-error require)
                      form ...)
   (racketgrammar*+library
    #:literals lits
-   (check-expect check-random check-within check-member-of check-range check-error require)
+   (check-expect check-random check-satisfied check-within check-member-of check-range check-error require)
    form ...
    (...
     [quoted name

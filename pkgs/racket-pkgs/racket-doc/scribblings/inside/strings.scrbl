@@ -57,10 +57,29 @@ If @var{ipos} is non-@cpp{NULL}, it is filled with the first undecoded
  how many bytes were decoded before decoding stopped.
 
 If @var{permissive} is non-zero, it is used as the decoding of bytes
- that are not part of a valid UTF-8 encoding. Thus, the function
- result can be @cpp{-2} only if @var{permissive} is @cpp{0}.
+ that are not part of a valid UTF-8 encoding or if the input ends in the
+ middle of an encoding. Thus, the function
+ result can be @cpp{-1} or @cpp{-2} only if @var{permissive} is @cpp{0}.
 
 This function does not allocate or trigger garbage collection.}
+
+@function[(int scheme_utf8_decode_offset_prefix
+           [const-unsigned-char* s]
+           [int start]
+           [int end]
+           [mzchar* us]
+           [int dstart]
+           [int dend]
+           [intptr_t* ipos]
+           [char utf16]
+           [int permissive])]{
+
+Like @cpp{scheme_utf8_decode}, but returns @cpp{-1} if the input ends
+in the middle of a UTF-8 encoding even if @var{permission} is
+non-zero.
+
+@history[#:added "6.0.1.13"]}
+
 
 @function[(int scheme_utf8_decode_as_prefix
            [const-unsigned-char* s]
@@ -99,7 +118,7 @@ Like @cpp{scheme_utf8_decode}, but with fewer arguments. The
            [int permissive])]{
 
 Like @cpp{scheme_utf8_decode}, but with fewer arguments. The
- decoding produces UCS-4 @cpp{mzchar}s. If the buffer @var{us}
+ decoding produces UCS-4 @cpp{mzchar}s. The buffer @var{us}
  @bold{must} be non-@cpp{NULL}, and it is assumed to be long enough to hold the
  decoding (which cannot be longer than the length of the input, though
  it may be shorter). If @var{len} is negative, @cpp{strlen(@var{s})}

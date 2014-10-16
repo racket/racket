@@ -14,6 +14,7 @@
 (define deps '("base"
                "sandbox-lib"
                "scribble-lib"))
+(define update-implies '("xrepl-lib"))
 
 (define pkg-desc "documentation part of \"xrepl\"")
 

@@ -130,7 +130,7 @@
                                #:when (eq? 'vector (Type-key t)))
                       t))
        (match u-ts
-         [(list t0) (tc/app/check #'(#%plain-app . form) (ret t0))]
+         [(list t0) (tc/app #'(#%plain-app . form) (ret t0))]
          [_ (continue)])]
       ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
       [(or #f (tc-any-results: _) (tc-result1: _))

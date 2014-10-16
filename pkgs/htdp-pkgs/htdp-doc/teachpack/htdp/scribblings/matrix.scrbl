@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.rkt"
-          (for-label scheme teachpack/htdp/matrix lang/posn))
+          (for-label scheme teachpack/htdp/matrix htdp/matrix lang/posn))
 
 @teachpack["matrix"]{Matrix Functions}
 
@@ -77,3 +77,15 @@ creates a matrix minor from @racket[m] at (@racket[i],@racket[j])}
 
 @;defproc[(matrix-set! [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))] [x any/c]) matrix?]{like @racket[matrix-set] but uses a destructive update}
 
+@; -----------------------------------------------------------------------------
+
+@section{Matrix Snip}
+
+@(require (for-label (only-in mrlib/cache-image-snip cache-image-snip%)))
+
+@;defmodule[htdp/matrix]
+
+The @racket[htdp/matrix] teachpack exports the @racket[snip-class] object to
+support saving and reading matrix snips. 
+
+@defthing[snip-class (instance/of matrix-snip-class%)]{An object to support 2D matrix rendering.}

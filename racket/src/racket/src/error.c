@@ -1362,10 +1362,7 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
 
   if (argv == p->tail_buffer) {
     /* See calls in scheme_do_eval: */
-    GC_CAN_IGNORE Scheme_Object **tb;
-    p->tail_buffer = NULL; /* so args aren't zeroed */
-    tb = MALLOC_N(Scheme_Object *, p->tail_buffer_size);
-    p->tail_buffer = tb;
+    scheme_realloc_tail_buffer(p);
   }
 
   /* minc = 1 -> name is really a case-lambda or native proc */
@@ -2600,7 +2597,7 @@ void scheme_unbound_global(Scheme_Bucket *b)
 		     name,
 		     errmsg,
 		     name,
-		     home->module->modsrc,
+		     scheme_get_modsrc(home->module),
                      phase,
                      phase_note);
   } else {

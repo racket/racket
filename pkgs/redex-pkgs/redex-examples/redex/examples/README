@@ -34,6 +34,9 @@ to demonstrate various different uses of PLT Redex:
   delim-cont/: The model from Flatt, Yu, Findler, and Felleisen's ICFP
   '07 paper "Adding Delimited and Composable Control to a Production
   Programming Environment"
+  
+  let-poly.rkt: lambda calculus with list constants, let-polymorphism
+  and type inference
 
   letrec.rkt: shows how to model letrec with a store and
   some infinite looping terms
@@ -49,6 +52,8 @@ to demonstrate various different uses of PLT Redex:
   pi-calculus.rkt: a formulation of the pi calculus, following
   Milner's 1990 paper, "Functions as Processes"
 
+  poly-stlc.rkt: a polymorphic lambda calculus with list constants
+
   racket-machine/: an operational semantics for (much of) Racket
   bytecode
 
@@ -58,6 +63,12 @@ to demonstrate various different uses of PLT Redex:
 
   stlc.rkt: a semantics for a typed CBV language with multi-argument
   functions, conditionals, and addition
+
+  stlc+lists.rkt: simply typed lambda calculus with list and 
+  number types
+
+  stlc+lists+subst.rkt: identical to stlc+lists.rkt except that
+  capture avoiding substitution is defined explicitly 
 
   subject-reduction.rkt: demos traces/pred that type checks
   the term.

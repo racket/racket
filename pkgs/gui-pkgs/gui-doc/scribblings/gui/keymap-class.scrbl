@@ -186,9 +186,12 @@ The modifier identifiers are:
 
  @item{@litchar{l:} --- All platforms: Caps Lock}
 
+ @item{@litchar{g:} --- Windows: Control plus Alt as AltGr;
+                        see @xmethod[key-event% control+meta-is-altgr]}
+
  @item{@litchar{?:} --- All platforms: allow match to character produced by opposite 
                   use of Shift, AltGr/Option, and/or Caps Lock, when available; see
-@xmethod[key-event% get-other-shift-key-code]} 
+                  @xmethod[key-event% get-other-shift-key-code]}
 ]
 
 If a particular modifier is not mentioned in a state string, it
@@ -196,8 +199,8 @@ If a particular modifier is not mentioned in a state string, it
  @litchar{~} preceding a modifier makes the string match only states
  where the corresponding modifier is not pressed. If the state string
  begins with @litchar{:}, then the string matches a state only if
- modifiers (other than Caps Lock) not mentioned in the string are not
- pressed.
+ modifiers among Shift, Control, Option, Alt, Meta, and Command that are
+ not mentioned in the string are not pressed.
 
 A key identifier can be either a character on the keyboard (e.g.,
  @litchar{a}, @litchar{2}, @litchar{?}) or a special name. The
@@ -325,6 +328,10 @@ Examples:
  @item{@racket["~c:a"] --- matches whenever @litchar{a} is typed and neither
  the Shift key nor the Control key is pressed.}
 
+ @item{@racket["c:m:~g:x"] --- matches whenever @litchar{x} is typed
+ with Control and Alt (Windows) or Meta (Unix) is pressed, as long as
+ the Control-Alt combination is not formed by AltGr on Windows.}
+
  @item{@racket[":esc;:c:c"] --- matches an Escape key press (no
  modifiers) followed by a Control-C press (no modifiers other than
  Control).}
@@ -346,8 +353,10 @@ A function name does not have to be mapped to a handler before input
  can be changed without affecting the map from input states to
  function names.
 
-}
-                 
+
+@history[#:changed "1.2" @elem{Added @litchar{g:} and @litchar{~g:} support.}]}
+
+
 @defmethod[(remove-chained-keymap [keymap (is-a?/c keymap%)])
            void?]{
 

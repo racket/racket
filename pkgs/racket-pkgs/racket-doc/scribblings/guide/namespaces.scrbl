@@ -133,7 +133,7 @@ following interaction successfully accesses @racket[x] via
 (eval 'x)
 ]
 
-In contrast, try the following a simple module and running in directly
+In contrast, try the following simple module and running it directly
 in DrRacket or supplying the file as a command-line argument to
 @exec{racket}:
 
@@ -193,7 +193,7 @@ so @racket[''m] is the quoted form of the path.}
 The @racket[module->namespace] function is mostly useful from outside
 a module, where the module's full name is known. Inside a
 @racket[module] form, however, the full name of a module may not be
-known, because it may depend on where the module source is location
+known, because it may depend on where the module source is located
 when it is eventually loaded.
 
 From within a @racket[module], use @racket[define-namespace-anchor] to

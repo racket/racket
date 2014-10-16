@@ -1,5 +1,94 @@
 
 ###############################################################################
+## Command-line flags
+
+show_help() {
+  echo "Command-line flags:"
+  echo "/ --unix-style : install as Unix-style"
+  echo "\ --in-place : install in-place (not Unix-style)"
+  echo "  --dest <path> : install to <path>"
+  echo "  --create-dir : create destination for Unix-style if it does not exist"
+  echo "  --create-links <dir> : create links in <dir> for in-place install"
+  echo "  -h, --help : show this help"
+}
+
+where=""
+unixstyle=""
+accept_dirs=""
+SYSDIR=""
+SYSDIR_set=""
+
+while test $# -gt 0 ; do
+ case "$1" in
+  -h | --help)
+    show_help
+    exit 0
+    ;;
+  --unix-style)
+    if test "$unixstyle" != "" ; then
+      echo "conflicting or redundant flag: --unix-style"
+      exit 1
+    fi
+    unixstyle="Y"
+    accept_dirs="Y"
+    shift
+    ;;
+  --in-place)
+    if test "$unixstyle" != "" ; then
+      echo "conflicting or redundant flag: --in-place"
+      exit 1
+    fi
+    unixstyle="N"
+    SYSDIR_set="Y"
+    shift
+    ;;
+  --dest)
+    shift
+    if test $# -lt 1 ; then
+      echo "missing path for --dest"
+      exit 1
+    fi
+    where="$1"
+    if test "$where" = "" ; then
+      echo "empty path for --dest"
+      exit 1
+    fi
+    shift
+    ;;
+  --create-dir)
+    if test "$create_dir" != "" ; then
+      echo "redundant flag: --create-dir"
+      exit 1
+    fi
+    create_dir="Y"
+    shift
+    ;;
+  --create-links)
+    if test "$SYSDIR" != "" ; then
+      echo "redundant flag: --create-links"
+      exit 1
+    fi
+    shift
+    if test $# -lt 1 ; then
+      echo "missing path for --create-links"
+      exit 1
+    fi
+    SYSDIR="$1"
+    SYSDIR_set="Y"
+    if test "$SYSDIR" = "" ; then
+      echo "empty path for --create-links"
+      exit 1
+    fi
+    shift
+    ;;
+  *)
+    echo "unrecognized command-line argument: $1"
+    exit 1
+  ;;
+ esac
+done
+
+###############################################################################
 ## Utilities
 
 PATH=/usr/bin:/bin
@@ -91,67 +180,71 @@ echo ""
 ###############################################################################
 ## What kind of installation?
 
-echo "Do you want a Unix-style distribution?"
-echo "  In this distribution mode files go into different directories according"
-echo "  to Unix conventions.  A \"racket-uninstall\" script will be generated"
-echo "  to be used when you want to remove the installation.  If you say 'no',"
-echo "  the whole Racket directory is kept in a single installation directory"
-echo "  (movable and erasable), possibly with external links into it -- this is"
-echo "  often more convenient, especially if you want to install multiple"
-echo "  versions or keep it in your home directory."
-if test ! "x$RELEASED" = "xyes"; then
-  echo "*** This is a non-release build: such a Unix-style distribution is NOT"
-  echo "*** recommended, because it cannot be used to install multiple versions"
-  echo "*** in the default location."
+if test "$unixstyle" = ""; then
+  echo "Do you want a Unix-style distribution?"
+  echo "  In this distribution mode files go into different directories according"
+  echo "  to Unix conventions.  A \"racket-uninstall\" script will be generated"
+  echo "  to be used when you want to remove the installation.  If you say 'no',"
+  echo "  the whole Racket directory is kept in a single installation directory"
+  echo "  (movable and erasable), possibly with external links into it -- this is"
+  echo "  often more convenient, especially if you want to install multiple"
+  echo "  versions or keep it in your home directory."
+  if test ! "x$RELEASED" = "xyes"; then
+    echo "*** This is a non-release build: such a Unix-style distribution is NOT"
+    echo "*** recommended, because it cannot be used to install multiple versions"
+    echo "*** in the default location."
+  fi
+  unixstyle="x"
+  while test "$unixstyle" = "x"; do
+    echon "Enter yes/no (default: no) > "
+    read unixstyle
+    case "$unixstyle" in
+      [yY]* ) unixstyle="Y" ;;
+      [nN]* ) unixstyle="N" ;;
+      "" )    unixstyle="N" ;;
+      * )     unixstyle="x" ;;
+    esac
+  done
+  echo ""
 fi
-unixstyle="x"
-while test "$unixstyle" = "x"; do
-  echon "Enter yes/no (default: no) > "
-  read unixstyle
-  case "$unixstyle" in
-    [yY]* ) unixstyle="Y" ;;
-    [nN]* ) unixstyle="N" ;;
-    "" )    unixstyle="N" ;;
-    * )     unixstyle="x" ;;
-  esac
-done
-echo ""
 
 ###############################################################################
 ## Where do you want it?
 ## sets $where to the location: target path for wholedir, prefix for unixstyle
 
-if test "$unixstyle" = "Y"; then
-  echo "Where do you want to base your installation of $DISTNAME?"
-  echo "  (If you've done such an installation in the past, either"
-  echo "   enter the same directory, or run 'racket-uninstall' manually.)"
-  TARGET1="..."
-else
-  echo "Where do you want to install the \"$TARGET\" directory tree?"
-  TARGET1="$TARGET"
-fi
-echo "  1 - /usr/$TARGET1 [default]"
-echo "  2 - /usr/local/$TARGET1"
-echo "  3 - ~/$TARGET1 ($HOME/$TARGET1)"
-echo "  4 - ./$TARGET1 (here)"
-if test "$unixstyle" = "Y"; then
-  echo "  Or enter a different directory prefix to install in."
-else
-  echo "  Or enter a different \"racket\" directory to install in."
-fi
-echon "> "
-read where
+if test "$where" = ""; then
+  if test "$unixstyle" = "Y"; then
+    echo "Where do you want to base your installation of $DISTNAME?"
+    echo "  (If you've done such an installation in the past, either"
+    echo "   enter the same directory, or run 'racket-uninstall' manually.)"
+    TARGET1="..."
+  else
+    echo "Where do you want to install the \"$TARGET\" directory tree?"
+    TARGET1="$TARGET"
+  fi
+  echo "  1 - /usr/$TARGET1 [default]"
+  echo "  2 - /usr/local/$TARGET1"
+  echo "  3 - ~/$TARGET1 ($HOME/$TARGET1)"
+  echo "  4 - ./$TARGET1 (here)"
+  if test "$unixstyle" = "Y"; then
+    echo "  Or enter a different directory prefix to install in."
+  else
+    echo "  Or enter a different \"racket\" directory to install in."
+  fi
+  echon "> "
+  read where
 
-# numeric choice (make "." and "./" synonym for 4)
-if test "$unixstyle" = "Y"; then TARGET1=""
-else TARGET1="/$TARGET"; fi
-case "x$where" in
-  x | x1 ) where="/usr$TARGET1" ;;
-  x2     ) where="/usr/local${TARGET1}" ;;
-  x3     ) where="${HOME}${TARGET1}" ;;
-  x4 | x. | x./ ) where="`pwd`${TARGET1}" ;;
-  * ) expand_path_var where ;;
-esac
+  # numeric choice (make "." and "./" synonym for 4)
+  if test "$unixstyle" = "Y"; then TARGET1=""
+  else TARGET1="/$TARGET"; fi
+  case "x$where" in
+    x | x1 ) where="/usr$TARGET1" ;;
+    x2     ) where="/usr/local${TARGET1}" ;;
+    x3     ) where="${HOME}${TARGET1}" ;;
+    x4 | x. | x./ ) where="`pwd`${TARGET1}" ;;
+    * ) expand_path_var where ;;
+  esac
+fi
 
 ###############################################################################
 ## Default system directories prefixed by $1, mimic configure behavior
@@ -242,14 +335,16 @@ wholedir_install() {
   unpack_installation "$where"
   rm_on_abort=""
 
-  echo ""
-  echo "If you want to install new system links within the \"bin\", \"man\""
-  echo "  and \"share/applications\" subdirectories of a common directory prefix"
-  echo "  (for example, \"/usr/local\") then enter the prefix of an existing"
-  echo "  directory that you want to use.  This might overwrite existing symlinks,"
-  echo "  but not files."
-  echon "(default: skip links) > "
-  read SYSDIR
+  if test "$SYSDIR_set" != "Y"; then
+    echo ""
+    echo "If you want to install new system links within the \"bin\", \"man\""
+    echo "  and \"share/applications\" subdirectories of a common directory prefix"
+    echo "  (for example, \"/usr/local\") then enter the prefix of an existing"
+    echo "  directory that you want to use.  This might overwrite existing symlinks,"
+    echo "  but not files."
+    echon "(default: skip links) > "
+    read SYSDIR
+  fi
   if test "x$SYSDIR" = "x"; then :
   elif test ! -d "$SYSDIR"; then
     echo "\"$SYSDIR\" does not exist, skipping links."
@@ -312,8 +407,10 @@ unixstyle_install() {
     failwith "The entered base directory exists as a file: $where"
   elif test ! -d "$where"; then
     echo "Base directory does not exist: $where"
-    echon "  should I create it? (default: yes) "
-    read R; case "$R" in [nN]* ) abort ;; esac
+    if test "$create_dir" != "Y"; then
+      echon "  should I create it? (default: yes) "
+      read R; case "$R" in [nN]* ) abort ;; esac
+    fi
     "$mkdir" -p "$where" || failwith "could not create directory: $where"
   elif test ! -w "$where"; then
     failwith "The entered base directory is not writable: $where"
@@ -324,6 +421,7 @@ unixstyle_install() {
   set_dirs "$where"
   # loop for possible changes
   done="N"; retry="N"
+  if test "$accept_dirs" = "Y" ; then done="Y"; fi
   while test ! "$done" = "Y" || test "x$err" = "xY" ; do
     err="N"
     if test "$retry" = "N"; then

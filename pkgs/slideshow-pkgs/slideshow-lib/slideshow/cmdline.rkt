@@ -47,6 +47,7 @@
     (define screen-number 0)
     (define right-half-screen? #f)
     (define zero-margins? #f)
+    (define letterbox-color "black")
     
     (define init-page 0)
 
@@ -87,7 +88,7 @@
          (set! quad-view? #t)
          (set! pixel-scale 1/2))
         (("-n" "--no-stretch") "don't stretch the slide window to fit the screen"
-	 (set! no-stretch? #t))
+                               (set! no-stretch? #t))
         (("-s" "--size") w h "use a <w> by <h> window"
          (let ([nw (string->number w)]
                [nh (string->number h)])
@@ -95,7 +96,7 @@
              (die 'slideshow "bad width: ~e" w))
            (unless (and nh (< 0 nh 10000))
              (die 'slideshow "bad height: ~e" h))
-	   (set! screen-set? #t)
+           (set! screen-set? #t)
            (set! actual-screen-w nw)
            (set! actual-screen-h nh)))
         (("-a" "--squash") "scale to full window, even if not 4:3 aspect"
@@ -124,6 +125,9 @@
         (("--comment-on-slide") "display commentary on slide"
          (set! commentary? #t)
          (set! commentary-on-slide? #t))
+        (("--letterbox") color
+                         "set the color of the letter box; default to black"
+                         (set! letterbox-color color))
         (("--time") "time seconds per slide" (set! print-slide-seconds? #t))
         (("--clock") "show clock" (set! show-time? #t))
         #:ps
@@ -137,13 +141,13 @@
     (unless (zero? screen-number)
       (define-values (w h) (get-display-size #t #:monitor screen-number))
       (unless screen-set?
-	(set!-values (actual-screen-w actual-screen-h) (values w h)))
+        (set!-values (actual-screen-w actual-screen-h) (values w h)))
       (set!-values (use-screen-w use-screen-h) (values w h)))
 
     (when no-stretch?
       (when (> actual-screen-w screen-w)
-	(set! actual-screen-w screen-w)
-	(set! actual-screen-h screen-h)))
+        (set! actual-screen-w screen-w)
+        (set! actual-screen-h screen-h)))
 
     (when (or printing-mode condense?)
       (set! use-transitions? #f))

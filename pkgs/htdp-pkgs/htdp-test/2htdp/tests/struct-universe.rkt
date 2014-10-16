@@ -3,8 +3,13 @@
 (module shared racket/base
   (require 2htdp/universe 2htdp/image)
   
+  ;; Distinct from other tests:
+  (define PORT-NO 19203)
+
   (struct s (t) #:prefab)
-  (provide s s-t (all-from-out 2htdp/universe 2htdp/image)))
+
+  (provide s s-t (all-from-out 2htdp/universe 2htdp/image)
+           PORT-NO))
 
 (module client racket
   (require (submod ".." shared))
@@ -15,6 +20,7 @@
     (big-bang #true
               (to-draw (lambda (w) (text (if w "hello world" "good bye") 22 c)))
               (register LOCALHOST)
+              (port PORT-NO)
               #;
               (stop-when (lambda (w) (> count 3)))
               (on-receive 
@@ -40,7 +46,8 @@
                (lambda (state iw msg)
                  ;; display the received prefabbed struct's content 
                  (displayln (s-t msg))
-                 (make-bundle state '() '())))))
+                 (make-bundle state '() '())))
+              (port PORT-NO)))
   
   
   (provide server))
@@ -54,5 +61,4 @@
 
 (module+ test
   (module config info
-    (define lock-name "gui")
     (define random? #t)))

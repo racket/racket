@@ -7,6 +7,7 @@
                      "compatibility-lib"
                      "rackunit-lib"
                      "srfi-lib"))
+(define update-implies '("srfi-lib"))
 
 (define pkg-desc "tests for \"srfi\"")
 

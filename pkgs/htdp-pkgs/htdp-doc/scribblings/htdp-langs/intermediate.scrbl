@@ -9,8 +9,8 @@
 
 @racketgrammar*+qq[
 #:literals (define define-struct lambda cond else if and or require lib planet
-            local let let* letrec time check-expect check-random check-within check-error)
-(check-expect check-random check-within check-member-of check-range check-error require)
+            local let let* letrec time check-expect check-random check-satisfied check-within check-error)
+(check-expect check-random check-satisfied check-within check-member-of check-range check-error require)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
              expr
@@ -85,6 +85,7 @@ did in the @secref["beginner-abbr"] level.
                      or
                      check-expect
                      check-random
+                     check-satisfied
                      check-within
                      check-error
                      check-member-of

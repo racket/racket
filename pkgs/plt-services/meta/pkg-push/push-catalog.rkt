@@ -15,11 +15,11 @@
 ;; Versions to map to the empty source:
 (define compatibility-versions '("5.3.4" "5.3.5" "5.3.6"))
 
-(define-values (src-dir s3-hostname bucket dest-catalog)
+(define-values (src-dir s3-hostname bucket src-catalog dest-catalog)
   (command-line
    #:args
-   (src-dir s3-hostname bucket dest-catalog)
-   (values src-dir s3-hostname bucket dest-catalog)))
+   (src-dir s3-hostname bucket src-catalog dest-catalog)
+   (values src-dir s3-hostname bucket src-catalog dest-catalog)))
 
 (ensure-have-keys)
 (s3-host s3-hostname)
@@ -29,11 +29,15 @@
    (build-path (find-system-path 'home-dir) ".pkg-catalog-login")
    (lambda (i) (values (read i) (read i)))))
 
-(printf "Getting current packages at ~a...\n" dest-catalog)
+(define (status fmt . args)
+  (apply printf fmt args)
+  (flush-output))
+
+(status "Getting current packages at ~a...\n" src-catalog)
 (define current-pkgs
-  (parameterize ([current-pkg-catalogs (list (string->url dest-catalog))])
+  (parameterize ([current-pkg-catalogs (list (string->url src-catalog))])
     (get-all-pkg-details-from-catalogs)))
-(printf "... got it.\n")
+(status "... got it.\n")
 
 (define new-pkgs
   (let ([dir (build-path src-dir "catalog" "pkg")])
@@ -69,9 +73,9 @@
                                             '())))
                   "racket"))))])))
 
-(printf "Getting current S3 content...\n")
+(status "Getting current S3 content...\n")
 (define old-content (list->set (ls (string-append bucket "/pkgs"))))
-(printf "... got it.\n")
+(status "... got it.\n")
 
 ;; A list of `(cons checksum p)':
 (define new-checksums&files
@@ -92,7 +96,7 @@
 
 ;; Push one file at a given chcksum to the bucket
 (define (sync-one checksum p)
-  (printf "Checking ~a @ ~a\n" p checksum)
+  (status "Checking ~a @ ~a\n" p checksum)
 
   (define (at-checksum p)
     (string-append "pkgs/" checksum "/" p))
@@ -100,14 +104,14 @@
     (string-append bucket "/" (at-checksum p)))
 
   (define (put p content)
-    (printf "Putting ~a\n" p)
+    (status "Putting ~a\n" p)
     (define s (put/bytes p
                          content
                          "application/octet-stream"
                          #hash((x-amz-storage-class . "REDUCED_REDUNDANCY")
                                (x-amz-acl . "public-read"))))
     (unless (member (extract-http-code s) '(200))
-      (printf "put failed for ~s: ~s\n" p s)))
+      (error 'sync-one "put failed for ~s: ~s" p s)))
 
   (unless (set-member? old-content (at-checksum now))
     (put (at-bucket&checksum now)
@@ -119,16 +123,16 @@
 
 ;; Discard an obsolete file
 (define (purge-one checksum raw-p)
-  (printf "Removing ~a @ ~a\n" raw-p checksum)
+  (status "Removing ~a @ ~a\n" raw-p checksum)
 
   (define p (string-append bucket "/pkgs/" checksum "/" raw-p))
 
   (define s (delete p))
   (unless (member (extract-http-code s) '(200 204))
-    (printf "delete failed for ~s: ~s\n" p s)))
+    (error 'purge-one "delete failed for ~s: ~s" p s)))
 
 ;; Update the package catalog:
-(define (update-catalog the-email the-password the-post)
+(define (update-catalog the-email the-password the-post expected-result)
   (define the-url
     (let ([u (string->url dest-catalog)])
       (struct-copy url u
@@ -147,7 +151,16 @@
                                                       (string->bytes/utf-8 the-password)
                                                       the-post))))))
                     port->bytes))
-  (read (open-input-bytes bs)))
+  (define r (with-handlers ([exn:fail? (lambda (exn) exn)])
+              (read (open-input-bytes bs))))
+  (unless (equal? r expected-result)
+    (error 'update
+           (string-append
+            "unexpected result from catalog update\n"
+            "  result: ~a\n"
+            "  server response: ~s")
+           r
+           bs)))
 
 (define (add-compatibility-pkgs ht)
   (hash-set ht 'versions
@@ -202,13 +215,11 @@
                        (add-tag v "main-tests")]
                       [else v])))))])
   (unless (zero? (hash-count changed-pkgs))
-    (printf "Updating catalog:\n")
+    (status "Updating catalog at ~a:\n" dest-catalog)
     (for ([k (in-hash-keys changed-pkgs)])
-      (printf "  ~a\n" k))
-    (define r (update-catalog catalog-email catalog-password changed-pkgs))
-    (unless (equal? r #t)
-      (printf "unexpected result from catalog update: ~s\n" r))))
-(printf "Catalog updated\n")
+      (status "  ~a\n" k))
+    (update-catalog catalog-email catalog-password changed-pkgs #t)))
+(status "Catalog updated\n")
 
 ;; Look for files that can be discarded:
 (let ([new-checksums

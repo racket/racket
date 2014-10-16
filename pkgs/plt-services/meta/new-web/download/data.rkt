@@ -2,12 +2,16 @@
 (require racket/string)
 
 (define -platform-names-
+  ;; Maps regexp to replace argument, or to an association list
+  ;; of package to replace argument
   `(;; source platforms
     ["win"  "Windows source"]
     ["mac"  "Mac OS X source"]
     ["unix" "Unix source"]
-    ["src-builtpkgs" "Source + built packages"]
-    ["src"  "Source"]
+    ["src-builtpkgs" (("Racket" . "Unix Source + built packages")
+                      ("Minimal Racket" . "Source + built packages"))]
+    ["src"  (("Racket" . "Unix Source")
+             ("Minimal Racket" . "Source"))]
     ["src-builtpkgs-unix" "Unix source + built packages"]
     ["src-unix" "Unix source"]
     ;; binary platforms
@@ -78,8 +82,8 @@
      "crestani@informatik.uni-tuebingen.de"]
     ["Belgium (Infogroep, Vrije Universiteit Brussel)"
      "http://racket.infogroep.be/"
-     "Infogroep"
-     "research@infogroep.be"]
+     "Infogroep" ; fallback: Sam Vervaeck <svervaec@infogroep.be>
+     "server@infogroep.be"]
     #;
     ["Turkey, Istanbul (Bilgi University)"
      "http://russell.cs.bilgi.edu.tr/racket-installers/"
@@ -216,26 +220,29 @@
             "([0-9p.]+)"            ; version
             "/("                    ; file
             "(racket(?:-textual|-minimal)?)" ; package
-            "-\\3-"                 ; -<version>-
+            "(-\\3)?-"              ; version, maybe
             "([^.]+)"               ; platform
             "\\."
             "([a-z]+)"              ; suffix
             "))$")))
 
-(define (make-installer2 size path version file package platform suffix)
+(define (make-installer2 size path version file package version-again platform suffix)
   (define binary? (not (regexp-match #rx"^src" platform)))
-  (installer path file (version->release version) (string->number size)
-             (string->symbol package) binary? platform suffix))
-
+  (and version-again ; if no version again, then it's a versionless variant to omit
+       (installer path file (version->release version) (string->number size)
+                  (string->symbol package) binary? platform suffix)))
+  
 (define (parse-installers in)
   (port-count-lines! in)
-  (for/list ([line (in-lines in)] [num (in-naturals 1)])
-    (cond [(regexp-match installer-rx1 line)
-           => (lambda (m) (apply make-installer1 (cdr m)))]
-          [(regexp-match installer-rx2 line)
-           => (lambda (m) (apply make-installer2 (cdr m)))]
-          [else (error 'installers "bad installer data line#~a: ~s"
-                       num line)])))
+  (filter
+   values
+   (for/list ([line (in-lines in)] [num (in-naturals 1)])
+     (cond [(regexp-match installer-rx1 line)
+            => (lambda (m) (apply make-installer1 (cdr m)))]
+           [(regexp-match installer-rx2 line)
+            => (lambda (m) (apply make-installer2 (cdr m)))]
+           [else (error 'installers "bad installer data line#~a: ~s"
+                        num line)]))))
 
 (define (order->precedes order)
   (define =? (car order))
@@ -292,13 +299,25 @@
 
 (define platform->name
   (let ([t (make-hash)])
-    (λ (platform)
-      (hash-ref! t platform
+    (λ (platform package)
+      (hash-ref! t (cons platform package)
         (λ () (or (for/or ([pn (in-list platform-names)])
                     ;; find out if a regexp applied by checking if the result
                     ;; is different (relies on regexp-replace returning the
                     ;; same string when fails)
-                    (let ([new (regexp-replace (car pn) platform (cadr pn))])
+                    (define raw-r (cadr pn))
+                    (define r (if (list? raw-r)
+                                  (let ([a (assoc package raw-r)])
+                                    (cond
+                                     [a (cdr a)]
+                                     [else
+                                      (lambda args
+                                        (error 'platform->name
+                                               "unrecognized package: ~e for platform: ~e"
+                                               package
+                                               platform))]))
+                                  raw-r))
+                    (let ([new (regexp-replace (car pn) platform r)])
                       (and (not (eq? new platform)) new)))
                   (error 'platform->name "unrecognized platform: ~e"
                          platform)))))))

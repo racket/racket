@@ -771,7 +771,7 @@ static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])
 static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
 {
   Scheme_Thread *p;
-  Scheme_Object *vec, **a;
+  Scheme_Object *vec, **a, *plain_vec;
   intptr_t len, start, finish, i;
 
   vec = argv[0];
@@ -807,6 +807,16 @@ static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
       return SCHEME_VEC_ELS(vec)[start];
   }
 
+  if (!SAME_OBJ(vec, argv[0])) {
+    plain_vec = scheme_make_vector(len, NULL);
+    for (i = 0; i < len; i++) {
+      vec = scheme_chaperone_vector_ref(argv[0], start + i);
+      SCHEME_VEC_ELS(plain_vec)[i] = vec;
+    }
+    vec = plain_vec;
+    start = 0;
+  }
+
   p = scheme_current_thread;
   if (p->values_buffer && (p->values_buffer_size >= len))
     a = p->values_buffer;
@@ -819,15 +829,8 @@ static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
   p->ku.multiple.array = a;
   p->ku.multiple.count = len;
 
-  if (!SAME_OBJ(vec, argv[0])) {
-    for (i = 0; i < len; i++) {
-      vec = scheme_chaperone_vector_ref(argv[0], start + i);
-      a[i] = vec;
-    }
-  } else {
-    for (i = 0; i < len; i++) {
-      a[i] = SCHEME_VEC_ELS(vec)[start + i];
-    }
+  for (i = 0; i < len; i++) {
+    a[i] = SCHEME_VEC_ELS(vec)[start + i];
   }
 
   return SCHEME_MULTIPLE_VALUES;

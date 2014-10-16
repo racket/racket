@@ -15,7 +15,8 @@
                   PROP:timeout)
          "formats.rkt"
          "path-utils.rkt"
-         "analyze.rkt")
+         "analyze.rkt"
+         "status-analyze.rkt")
 
 (define (base-path pth)
   (define rev (current-rev))
@@ -289,6 +290,7 @@
     [else
      '" "]))
 
+(define drdr-start-request (make-parameter #f))
 (define (footer)
   `(div ([id "footer"])
         "Powered by " (a ([href "http://racket-lang.org/"]) "Racket") ". "
@@ -296,7 +298,11 @@
         (a ([href "/help"])
            "Need help?")
         (br)
-        "Current time: " ,(date->string (seconds->date (current-seconds)) #t)))
+        "Current time: " ,(date->string (seconds->date (current-seconds)) #t)
+        "Render time: "
+        ,(real->decimal-string
+          (- (current-inexact-milliseconds) (drdr-start-request)))
+        "ms"))
 
 (define (render-event e)
   (with-handlers ([exn:fail?
@@ -363,13 +369,17 @@
                     "#"))))
         (define prev-rev-url (format "/~a~a" (previous-rev) the-base-path))
         (define cur-rev-url (format "/~a~a" "current" the-base-path))
-        (define output (map render-event output-log))
+        (define s-output-log (log-divide output-log))
         (response/xexpr
-         `(html (head (title ,title)
-                      (script ([language "javascript"] [type "text/javascript"] [src "/jquery-1.6.2.min.js"]) "")
-                      (script ([language "javascript"] [type "text/javascript"] [src "/jquery.flot.js"]) "")
-                      (script ([language "javascript"] [type "text/javascript"] [src "/jquery.flot.selection.js"]) "")
-                      (link ([rel "stylesheet"] [type "text/css"] [href "/render.css"])))
+         `(html 
+           (head (title ,title)
+                 (script ([language "javascript"] [type "text/javascript"] 
+                          [src "/jquery-1.6.2.min.js"]) "")
+                 (script ([language "javascript"] [type "text/javascript"]
+                          [src "/jquery.flot.js"]) "")
+                 (script ([language "javascript"] [type "text/javascript"]
+                          [src "/jquery.flot.selection.js"]) "")
+                 (link ([rel "stylesheet"] [type "text/css"] [href "/render.css"])))
                 (body 
                  (div ([class "log, content"])
                       ,breadcrumb
@@ -396,10 +406,21 @@
                                  " "
                                  (a ([href ,(format "/diff/~a/~a~a" (previous-rev) (current-rev) the-base-path)])
                                     "See the difference")))
-                      ,@(if (empty? output)
+                      ,@(if (empty? output-log)
                             '()
-                            `((div ([class "output"]) " "
-                                   ,@output)))
+                            (append*
+                             (for/list ([o-block (in-list s-output-log)]
+                                        [i (in-naturals)])
+                               `((span ([id ,(format "output~a" i)]) " ")
+                                 ,(if (> (length s-output-log) (add1 i))
+                                    `(div ([class "error"])
+                                          (a ([href ,(format "#output~a" (add1 i))])
+                                             "Skip to the next STDERR block."))
+                                    "")
+                                 (div 
+                                  ([class "output"])
+                                  " "
+                                  ,@(map render-event o-block))))))
 
                       (p)
                       
@@ -1080,7 +1101,8 @@
      (printf "~a - ~a\n"
              (url->string (request-uri req))
              user-agent)
-     (top-dispatch req)]))
+     (parameterize ([drdr-start-request (current-inexact-milliseconds)])
+     (top-dispatch req))]))
 
 (date-display-format 'iso-8601)
 (cache/file-mode 'no-cache)

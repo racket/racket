@@ -32,7 +32,7 @@
 (define samth @name["http://www.ccs.neu.edu/~samth"]{Sam Tobin-Hochstadt})
 (define sk @name["http://www.cs.brown.edu/~sk"]{Shriram Krishnamurthi})
 (define jpolitz @name["http://jpolitz.github.com/"]{Joe Gibbs Politz})
-(define jay @name["http://faculty.cs.byu.edu/~jay/home/"]{Jay McCarthy})
+(define jay @name["http://jeapostrophe.github.io"]{Jay McCarthy})
 (define rbf @name["http://www.eecs.northwestern.edu/~robby"]{Robby Findler})
 (define jbc @name["http://www.brinckerhoff.org/clements/"]{John Clements})
 (define dyoo @name["http://hashcollision.org/"]{Danny Yoo})
@@ -111,6 +111,29 @@
         @td[width: "15%" nowrap: 'nowrap]{@time}
         @td[width: "25%"]{@speaker}
         @td[width: "60%"]{
+          @title
+          @span[style: "text-align: right"]{
+            @slides-elem @code-elem @video-elem}}})))
+
+;; like sched, but with talks grouped in sessions, and only session headers
+;; have times listed
+;; the interface could be prettier
+(define (session-sched . slots)
+  (table class: 'sched width: "100%" frame: 'hsides
+         cellspacing: 0 cellpadding: "3px"
+    (for/list ([sl (in-list slots)])
+      (match-define (slot* t speaker slides code video title) sl)
+      (define time
+        ;; "figure space" for alignment
+        (and t
+             (cons (and (regexp-match? #rx"^.:" t) (entity #x2007))
+                   (add-between (regexp-split #rx"-" t) ndash))))
+      (define slides-elem (and slides @a[href: slides]{[slides]}))
+      (define code-elem   (and code @a[href: code]{[code]}))
+      (define video-elem  (and video @a[href: video]{[video]}))
+      @tr[valign: 'top bgcolor: (if speaker "#ffffff" "#e8e8e8")]{
+        @td[width: "30%"]{@(or time speaker)}
+        @td[width: "70%"]{
           @title
           @span[style: "text-align: right"]{
             @slides-elem @code-elem @video-elem}}})))

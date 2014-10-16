@@ -13,7 +13,9 @@
          racket/path
          racket/promise
          meta/pkg-index/basic/main
-         "common.rkt")
+         "common.rkt"
+         "notify.rkt"
+         "s3.rkt")
 
 (define convert-to-json
   (match-lambda
@@ -44,9 +46,22 @@
    [x
     (error 'convert-to-json-key "~e" x)]))
 
+(define (file->value* p dv)
+  (if (file-exists? p)
+    (file->value p)
+    dv))
+
+;; From pkg-build/summary
+(struct doc/main (name path) #:prefab)
+(struct doc/extract (name path) #:prefab)
+(struct doc/salvage (name path) #:prefab)
+(struct doc/none (name) #:prefab)
+(struct conflicts/indirect (path) #:prefab)
+
 (define (generate-static)
   (define pkg-list (package-list))
   (define pkg-ht (make-hash))
+  (define build-summary (file->value* SUMMARY-PATH (hash)))
 
   (for ([pkg-name (in-list pkg-list)])
     (define ht (file->value (build-path pkgs-path pkg-name)))
@@ -174,12 +189,28 @@
        pkg-url-str]))
 
   (for ([pkg (in-hash-keys pkg-ht)])
+    (define pb (hash-ref build-summary pkg #f))
+    (define (pbl k)
+      (and pb (hash-ref pb k #f)))
+
     (hash-update!
      pkg-ht pkg
      (λ (ht)
        (define conflicts (package-conflicts? pkg))
        (hash-set*
         ht
+        'build
+        (hash 'success-log (pbl 'success-log)
+              'failure-log (pbl 'failure-log)
+              'dep-failure-log (pbl 'dep-failure-log)
+              'conflicts-log (pbl 'conflicts-log)
+              'docs
+              (for/list ([d (in-list (or (pbl 'docs) empty))])
+                (match d
+                  [(doc/main n p) (list "main" n p)]
+                  [(doc/extract n p) (list "extract" n p)]
+                  [(doc/salvage n p) (list "salvage" n p)]
+                  [(doc/none n) (list "none" n)])))
         'conflicts conflicts
         'versions
         (for/hash ([(v vht) (in-hash (hash-ref ht 'versions))])
@@ -210,7 +241,36 @@
                      st)]
                [st (if (empty? conflicts)
                      st
-                     (hash-set st ':conflicts: #t))])
+                     (hash-set st ':conflicts: #t))]
+               [st (if (pbl 'success-log)                     
+                     (hash-set st ':build-success: #t)
+                     st)]
+               [st (if (pbl 'failure-log)                     
+                     (hash-set st ':build-fail: #t)
+                     st)]
+               [st (if (pbl 'dep-failure-log)                     
+                     (hash-set st ':build-dep-fail: #t)
+                     st)]
+               [st (if (pbl 'conflicts-log)                     
+                     (hash-set st ':build-conflicts: #t)
+                     st)]
+               [pb-docs (pbl 'docs)]
+               [st (if (and pb-docs (cons? pb-docs)
+                            (andmap (λ (d)
+                                      (or (doc/main? d)
+                                          (doc/extract? d)
+                                          (doc/salvage? d)))
+                                    pb-docs))
+                     (hash-set st ':docs: #t)
+                     st)]
+               [st (if (and pb-docs (cons? pb-docs)
+                            (andmap (λ (d)
+                                      (or (doc/extract? d)
+                                          (doc/salvage? d)
+                                          (doc/none? d)))
+                                    pb-docs))
+                     (hash-set st ':docs-error: #t)
+                     st)])
           st)))))
 
 
@@ -315,12 +375,24 @@
         (delete-file (build-path pkg-path f))
         (delete-file (build-path pkg-path (path-add-suffix f #".json")))))))
 
+(define (do-static pkgs)
+  (notify! "update upload being computed: the information below may not represent all recent changes and updates")
+   ;; FUTURE make this more efficient by looking at pkgs
+  (generate-static)
+  (run-s3! pkgs))
+(define (run-static! pkgs)
+  (run! do-static pkgs))
+(define (signal-static! pkgs)
+  (thread (λ () (run-static! pkgs))))
+
+(provide do-static
+         run-static!
+         signal-static!)
+
 (module+ main
   (require racket/cmdline)
 
   (command-line
    #:program "static"
    #:args pkgs
-   ;; FUTURE make this more efficient
-   (generate-static)
-   (run-s3! pkgs)))
+   (do-static pkgs)))

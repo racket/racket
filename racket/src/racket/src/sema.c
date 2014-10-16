@@ -308,69 +308,79 @@ static Scheme_Object *semap(int n, Scheme_Object **p)
   return SCHEME_SEMAP(p[0]) ? scheme_true : scheme_false;
 }
 
+void did_post_sema(Scheme_Sema *t)
+{
+  while (t->first) {
+    Scheme_Channel_Syncer *w;
+    int consumed;
+
+    w = t->first;
+
+    t->first = w->next;
+    if (!w->next)
+      t->last = NULL;
+    else
+      t->first->prev = NULL;
+      
+    if ((!w->syncing || !w->syncing->result) && !pending_break(w->p)) {
+      if (w->syncing) {
+        w->syncing->result = w->syncing_i + 1;
+        if (w->syncing->disable_break)
+          w->syncing->disable_break->suspend_break++;
+        scheme_post_syncing_nacks(w->syncing);
+        if (!w->syncing->reposts || !w->syncing->reposts[w->syncing_i]) {
+          t->value -= 1;
+          consumed = 1;
+        } else
+          consumed = 0;
+        if (w->syncing->accepts && w->syncing->accepts[w->syncing_i])
+          scheme_accept_sync(w->syncing, w->syncing_i);
+      } else {
+        /* In this case, we will remove the syncer from line, but
+           someone else might grab the post. This is unfair, but it
+           can help improve throughput when multiple threads synchronize
+           on a lock. */
+        consumed = 1;
+      }
+      w->picked = 1;
+    } else
+      consumed = 0;
+
+    w->in_line = 0;
+    w->prev = NULL;
+    w->next = NULL;
+
+    if (w->picked) {
+      scheme_weak_resume_thread(w->p);
+      if (consumed)
+        break;
+    }
+    /* otherwise, loop to find one we can wake up */
+  }
+}
+
+static void sema_overflow()
+{
+  scheme_raise_exn(MZEXN_FAIL,
+		   "semaphore-post: the maximum post count has already been reached");
+}
+
 void scheme_post_sema(Scheme_Object *o)
 {
+  /* fast path is designed to avoid need for XFORM */
   Scheme_Sema *t = (Scheme_Sema *)o;
-  int v, consumed;
+  int v;
 
   if (t->value < 0) return;
 
-  v = t->value + 1;
+  v = (intptr_t)((uintptr_t)t->value + 1);
   if (v > t->value) {
     t->value = v;
 
-    while (t->first) {
-      Scheme_Channel_Syncer *w;
-
-      w = t->first;
-
-      t->first = w->next;
-      if (!w->next)
-	t->last = NULL;
-      else
-	t->first->prev = NULL;
-      
-      if ((!w->syncing || !w->syncing->result) && !pending_break(w->p)) {
-	if (w->syncing) {
-	  w->syncing->result = w->syncing_i + 1;
-	  if (w->syncing->disable_break)
-	    w->syncing->disable_break->suspend_break++;
-	  scheme_post_syncing_nacks(w->syncing);
-	  if (!w->syncing->reposts || !w->syncing->reposts[w->syncing_i]) {
-	    t->value -= 1;
-	    consumed = 1;
-	  } else
-	    consumed = 0;
-          if (w->syncing->accepts && w->syncing->accepts[w->syncing_i])
-            scheme_accept_sync(w->syncing, w->syncing_i);
-	} else {
-	  /* In this case, we will remove the syncer from line, but
-	     someone else might grab the post. This is unfair, but it
-	     can help improve throughput when multiple threads synchronize
-	     on a lock. */
-	  consumed = 1;
-	}
-	w->picked = 1;
-      } else
-	consumed = 0;
-
-      w->in_line = 0;
-      w->prev = NULL;
-      w->next = NULL;
-
-      if (w->picked) {
-	scheme_weak_resume_thread(w->p);
-	if (consumed)
-	  break;
-      }
-      /* otherwise, loop to find one we can wake up */
-    }
-
-    return;
-  }
-
-  scheme_raise_exn(MZEXN_FAIL,
-		   "semaphore-post: the maximum post count has already been reached");
+    if (t->first)
+      did_post_sema(t);
+  } else
+    sema_overflow();
 }
 
 void scheme_post_sema_all(Scheme_Object *o)
@@ -619,7 +629,7 @@ static int try_channel(Scheme_Sema *sema, Syncing *syncing, int pos, Scheme_Obje
   }
 }
 
-int scheme_try_plain_sema(Scheme_Object *o)
+XFORM_NONGCING int scheme_try_plain_sema(Scheme_Object *o)
 {
   Scheme_Sema *sema = (Scheme_Sema *)o;
 
@@ -944,13 +954,23 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
   return v;
 }
 
-int scheme_wait_sema(Scheme_Object *o, int just_try)
+static int slow_wait_sema(Scheme_Object *o, int just_try)
 {
   Scheme_Object *a[1];
 
   a[0] = o;
-
+  
   return scheme_wait_semas_chs(1, a, just_try, NULL);
+}
+
+int scheme_wait_sema(Scheme_Object *o, int just_try)
+{
+  /* fast path is designed to avoid need for XFORM */
+  if (((just_try >= 0) || !scheme_current_thread->external_break)
+      && scheme_try_plain_sema(o))
+    return 1;
+
+  return slow_wait_sema(o, just_try);
 }
 
 static Scheme_Object *block_sema_p(int n, Scheme_Object **p)

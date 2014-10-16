@@ -13,7 +13,7 @@
          (prefix-in setup: setup/setup)
          (for-syntax racket/base))
 
-(define (setup what no-setup? setup-collects jobs)
+(define (setup what no-setup? fail-fast? setup-collects jobs)
   (unless (or (eq? setup-collects 'skip)
               no-setup?
               (not (member (getenv "PLT_PKG_NOSETUP") '(#f ""))))
@@ -27,7 +27,8 @@
                                      setup-collects))
              #:tidy? #t
              #:make-doc-index? #t
-             #:jobs jobs)
+             #:jobs jobs
+             #:fail-fast? fail-fast?)
       ((current-pkg-error)
        "packages ~a, although setup reported errors"
        what))))
@@ -159,6 +160,7 @@
              [#:bool pkgs () ("Install only the specified packages, even when none are provided")]
              install-force-flags ...
              job-flags ...
+             [#:bool fail-fast () ("Break `raco setup' when it discovers an error")]
              #:args pkg-source
              install-copy-defns ...
              (call-with-package-scope
@@ -186,15 +188,19 @@
                                   #:all-platforms? all-platforms
                                   #:force? force
                                   #:ignore-checksums? ignore-checksums
+                                  #:strict-doc-conflicts? strict-doc-conflicts
                                   #:use-cache? (not no-cache)
                                   #:skip-installed? skip-installed
                                   #:update-deps? update-deps
                                   #:update-implies? (not ignore-implies)
-                                  #:strip (or (and source 'source) (and binary 'binary))
+                                  #:strip (or (and source 'source)
+                                              (and binary 'binary)
+                                              (and binary-lib 'binary-lib))
+                                  #:force-strip? force
                                   #:link-dirs? link-dirs?
                                   (for/list ([p (in-list sources)])
                                     (pkg-desc p a-type* name checksum #f))))))
-                (setup "installed" no-setup setup-collects jobs)))]
+                (setup "installed" no-setup fail-fast setup-collects jobs)))]
             ;; ----------------------------------------
             [update
              "Update packages"
@@ -244,12 +250,16 @@
                                  #:all-platforms? all-platforms
                                  #:force? force
                                  #:ignore-checksums? ignore-checksums
+                                 #:strict-doc-conflicts? strict-doc-conflicts
                                  #:use-cache? (not no-cache)
                                  #:update-deps? (or update-deps auto)
                                  #:update-implies? (not ignore-implies)
-                                 #:strip (or (and source 'source) (and binary 'binary))
+                                 #:strip (or (and source 'source)
+                                             (and binary 'binary)
+                                             (and binary-lib 'binary-lib))
+                                 #:force-strip? force
                                  #:link-dirs? link-dirs?))))
-                (setup "updated" no-setup setup-collects jobs)))]
+                (setup "updated" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [remove
              "Remove packages"
@@ -273,7 +283,7 @@
                                #:demote? demote
                                #:auto? auto
                                #:force? force)))
-                (setup "removed" no-setup setup-collects jobs)))]
+                (setup "removed" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [show
              "Show information about installed packages"
@@ -325,6 +335,7 @@
              #:once-any
              [#:bool source () ("Strip built elements of the package before installing")]
              [#:bool binary () ("Strip source elements of the package before installing")]
+             [#:bool binary-lib () ("Strip source elements and documentation before installing")]
              #:once-any
              scope-flags ...
              #:once-each
@@ -346,9 +357,13 @@
                                   #:force? force
                                   #:all-platforms? all-platforms
                                   #:ignore-checksums? ignore-checksums
+                                  #:strict-doc-conflicts? strict-doc-conflicts
                                   #:use-cache? (not no-cache)
-                                  #:strip (or (and source 'source) (and binary 'binary))))))
-                (setup "migrated" no-setup setup-collects jobs)))]
+                                  #:strip (or (and source 'source)
+                                              (and binary 'binary)
+                                              (and binary-lib 'binary-lib))
+                                  #:force-strip? force))))
+                (setup "migrated" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [create
              "Bundle package from a directory or installed package"
@@ -364,6 +379,7 @@
              [#:bool as-is () "Bundle the directory/package as-is (the default)"]
              [#:bool source () "Bundle sources only"]
              [#:bool binary () "Bundle bytecode and rendered documentation without sources"]
+             [#:bool binary-lib () "Bundle bytecode without sources or documentation"]
              [#:bool built () "Bundle sources, bytecode and rendered documentation"]
              #:once-each
              [(#:str dest-dir #f) dest () "Create output files in <dest-dir>"]
@@ -380,6 +396,7 @@
                            #:mode (cond
                                    [source 'source]
                                    [binary 'binary]
+                                   [binary-lib 'binary-lib]
                                    [built 'built]
                                    [else 'as-is])))]
             ;; ----------------------------------------
@@ -468,7 +485,25 @@
                                       src-catalog
                                       #:from-config? from-config
                                       #:state-catalog state
-                                      #:relative-sources? relative))]))]))
+                                      #:relative-sources? relative))]
+            ;; ----------------------------------------
+            [archive
+             "Create catalog from installed packages"
+             (define exclude-list (make-parameter null))
+             #:once-each
+             [#:bool include-deps () "Include dependencies of specified packages"]
+             #:multi
+             [(#:str pkg #f) exclude () "Exclude <pkg> from new catalog"
+              (exclude-list (cons pkg (exclude-list)))]
+             #:once-each
+             [#:bool relative () "Make source paths relative when possible"]
+             #:args (dest-dir pkg . pkgs)
+             (parameterize ([current-pkg-error (pkg-error 'pkgs-archive)])
+               (pkg-archive-pkgs dest-dir
+                                 (cons pkg pkgs)
+                                 #:include-deps? include-deps
+                                 #:exclude (exclude-list)
+                                 #:relative-sources? relative))]))]))
   (make-commands
    #:scope-flags
    ([(#:sym scope [installation user] #f) scope ()
@@ -509,6 +544,7 @@
    ([#:bool all-platforms () "Follow package dependencies for all platforms"]
     [#:bool force () "Ignore conflicts"]
     [#:bool ignore-checksums () "Ignore checksums"]
+    [#:bool strict-doc-conflicts () "Report doc-name conflicts, even for user scope"]
     [#:bool no-cache () "Disable download cache"])
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"]
@@ -517,10 +553,11 @@
    ([#:bool link () ("Link a directory package source in place (default for a directory)")]
     [#:bool static-link () ("Link in place, promising collections do not change")]
     [#:bool copy () ("Treat directory sources the same as other sources")]
-    [#:bool source () ("Strip package's built elements before installing; implies --copy")]
-    [#:bool binary () ("Strip packages' source elements before installing; implies --copy")])
+    [#:bool source () ("Strip packages' built elements before installing; implies --copy")]
+    [#:bool binary () ("Strip packages' source elements before installing; implies --copy")]
+    [#:bool binary-lib () ("Strip source & documentation before installing; implies --copy")])
    #:install-copy-defns
-   [(define link-dirs? (not (or copy source binary)))
+   [(define link-dirs? (not (or copy source binary binary-lib)))
     (define a-type (or (and link 'link) 
                        (and static-link 'static-link)
                        (and (eq? type 'dir) link-dirs? 'link)

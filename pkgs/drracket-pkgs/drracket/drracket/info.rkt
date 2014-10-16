@@ -13,6 +13,9 @@
 
 (define copy-man-pages '("drracket.1"))
 
+(define binary-keep-files '("private/launcher-mred-bootstrap.rkt"
+                            "private/launcher-mz-bootstrap.rkt"))
+
 ;; color-blind friendly palette from Paul Tol:
 ;; http://www.sron.nl/~pault/
 ;; using his Scheme for Marking Text colors
@@ -88,9 +91,3 @@
     'name "Tol's White on Black"
     'white-on-black-base? #t
     'colors tol-white-on-black-colors)))
-
-(define raco-commands
-  (list (list "dependencies-graph"
-              'drracket/private/standalone-module-browser
-              "opens a GUI window showing transitive module dependencies (aka `Module Browser')"
-              #f)))

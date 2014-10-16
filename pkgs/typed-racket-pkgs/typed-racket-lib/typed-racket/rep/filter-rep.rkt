@@ -5,7 +5,8 @@
          racket/lazy-require)
 
 ;; TODO use something other than lazy-require.
-(lazy-require ["type-rep.rkt" (Type/c Univ? Bottom?)])
+(lazy-require ["type-rep.rkt" (Type/c Univ? Bottom?)]
+              ["object-rep.rkt" (Path?)])
 
 (provide Filter/c FilterSet/c name-ref/c hash-name filter-equal?)
 
@@ -31,26 +32,28 @@
 (def-filter Bot () [#:fold-rhs #:base])
 (def-filter Top () [#:fold-rhs #:base])
 
-(def-filter TypeFilter ([t (and/c Type/c (not/c Univ?) (not/c Bottom?))] [p (listof PathElem?)] [v name-ref/c])
-  [#:intern (list (Rep-seq t) (map Rep-seq p) (hash-name v))]
-  [#:frees (λ (f) (combine-frees (map f (cons t p))))]
-  [#:fold-rhs (*TypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
+(def-filter TypeFilter ([t (and/c Type/c (not/c Univ?) (not/c Bottom?))] [p Path?])
+  [#:intern (list (Rep-seq t) (Rep-seq p))]
+  [#:frees (λ (f) (combine-frees (map f (list t p))))]
+  [#:fold-rhs (*TypeFilter (type-rec-id t) (object-rec-id p))])
 
-(def-filter NotTypeFilter ([t (and/c Type/c (not/c Univ?) (not/c Bottom?))] [p (listof PathElem?)] [v name-ref/c])
-  [#:intern (list (Rep-seq t) (map Rep-seq p) (hash-name v))]
-  [#:frees (λ (f) (combine-frees (map f (cons t p))))]
-  [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
+(def-filter NotTypeFilter ([t (and/c Type/c (not/c Univ?) (not/c Bottom?))] [p Path?])
+  [#:intern (list (Rep-seq t) (Rep-seq p))]
+  [#:frees (λ (f) (combine-frees (map f (list t p))))]
+  [#:fold-rhs (*NotTypeFilter (type-rec-id t) (object-rec-id p))])
 
 ;; implication
 (def-filter ImpFilter ([a Filter/c] [c Filter/c]))
 
 (def-filter OrFilter ([fs (and/c (length>=/c 2)
                                  (listof (or/c TypeFilter? NotTypeFilter? ImpFilter?)))])
+  [#:intern (map Rep-seq fs)]
   [#:fold-rhs (*OrFilter (map filter-rec-id fs))]
   [#:frees (λ (f) (combine-frees (map f fs)))])
 
 (def-filter AndFilter ([fs (and/c (length>=/c 2)
                                   (listof (or/c OrFilter? TypeFilter? NotTypeFilter? ImpFilter?)))])
+  [#:intern (map Rep-seq fs)]
   [#:fold-rhs (*AndFilter (map filter-rec-id fs))]
   [#:frees (λ (f) (combine-frees (map f fs)))])
 

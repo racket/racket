@@ -10,21 +10,19 @@
 ;; This macro is intended to make Eli proud.
 
 ;; Wow, RackUnit really sucks that test-begin/case don't work inside
-;; each other like this already
-(define (wrapping-test-case-around thunk)
-  (with-handlers ([exn:test:check?
-                   (λ (e)
-                     (raise (struct-copy
-                             exn:test:check e
-                             [stack (list* (make-check-name (current-test-name))
-                                           (exn:test:check-stack e))])))])
-    (thunk)))
+;; each other like this already. We Want's RackUnit's detailed printing
+;; of test failure, but not it's throw-away-the-exception behavior:
+(define-syntax-rule (exception-if-failed form sub ...)
+  (let ([done? #f])
+    (form sub ... (set! done? #t))
+    (unless done? (really-abort))))
+(define (really-abort)
+  ;; Here's how we avoid RackUnit's exception capture:
+  (abort-current-continuation (default-continuation-prompt-tag) void))
 (define-syntax-rule (check-begin e ...)
-  (parameterize ([current-test-case-around wrapping-test-case-around])
-    (test-begin e ...)))
+  (exception-if-failed test-begin e ...))
 (define-syntax-rule (check-case m e ...)
-  (parameterize ([current-test-case-around wrapping-test-case-around])
-    (test-case m e ...)))
+  (exception-if-failed test-case m e ...))
 
 (define-syntax-rule (check-similar? act exp name)
   (let ()
@@ -88,11 +86,11 @@
                              (loop)))))))
                   (to-proc 'wait)
                   (define cmd-status (to-proc 'exit-code))
-                  (when stdout (close-input-port stdout))
-                  (when stderr (close-input-port stderr))
                   (when stdin (close-output-port stdin))
                   (thread-wait stdout-t)
                   (thread-wait stderr-t)
+                  (when stdout (close-input-port stdout))
+                  (when stderr (close-input-port stderr))
                   (define actual-output
                     (get-output-string output-port))
                   (define actual-error

@@ -63,7 +63,8 @@
                [parent bp]) min-width 100)
     (send f show #t)))
 
-;; the obfuscation in the width and height defaults is so that error checking happens in the right order
+;; the obfuscation in the width and height defaults 
+;; is so that error checking happens in the right order
 (define/chk (save-image image
                         filename 
                         [width (if (image? image) (image-width image) 0)] 
@@ -160,24 +161,26 @@
 
 (define/chk (overlay/align x-place y-place image image2 . image3)
   (when (or (eq? x-place 'pinhole) (eq? y-place 'pinhole))
-    (check-dependencies 'overlay/align
-                        (and (send image get-pinhole)
-                             (send image2 get-pinhole)
-                             (andmap (λ (x) (send x get-pinhole))
-                                     image3))
-                        "when x-place or y-place is ~e or ~e, then all of the arguments must have pinholes"
-                        'pinhole "pinhole"))
+    (check-dependencies
+     'overlay/align
+     (and (send image get-pinhole)
+          (send image2 get-pinhole)
+          (andmap (λ (x) (send x get-pinhole))
+                  image3))
+     "when x-place or y-place is ~e or ~e, then all of the arguments must have pinholes"
+     'pinhole "pinhole"))
   (overlay/internal x-place y-place image (cons image2 image3) #t))
 
 (define/chk (underlay/align x-place y-place image image2 . image3)
   (when (or (eq? x-place 'pinhole) (eq? y-place 'pinhole))
-    (check-dependencies 'underlay/align
-                        (and (send image get-pinhole)
-                             (send image2 get-pinhole)
-                             (andmap (λ (x) (send x get-pinhole))
-                                     image3))
-                        "when x-place or y-place is ~e or ~e, then all of the arguments must have pinholes"
-                        'pinhole "pinhole"))
+    (check-dependencies
+     'underlay/align
+     (and (send image get-pinhole)
+          (send image2 get-pinhole)
+          (andmap (λ (x) (send x get-pinhole))
+                  image3))
+     "when x-place or y-place is ~e or ~e, then all of the arguments must have pinholes"
+     'pinhole "pinhole"))
   (let ([imgs (reverse (list* image image2 image3))])
     (overlay/internal x-place y-place (car imgs) (cdr imgs) #f)))
 
@@ -217,7 +220,8 @@
                           (car rst)
                           (if (< dx 0) 0 dx)
                           (if (< dy 0) 0 dy)
-                          first-pinhole?)
+                          first-pinhole?
+                          #f)
                (cdr rst)))])))
 
 (define (find-x-spot x-place image)
@@ -247,7 +251,8 @@
              image2
              (if (< dx 0) 0 dx)
              (if (< dy 0) 0 dy)
-             #t))
+             #t
+             #f))
 
 (define/chk (underlay/xy image dx dy image2)
   (overlay/δ image2
@@ -256,17 +261,27 @@
              image
              (if (< dx 0) (- dx) 0)
              (if (< dy 0) (- dy) 0)
+             #f
              #f))
 
-(define (overlay/δ image1 dx1 dy1 image2 dx2 dy2 first-pinhole?)
+(define (overlay/δ image1 dx1 dy1 image2 dx2 dy2 first-pinhole? beside-baseline?)
     (make-image (make-overlay (make-translate dx1 dy1 (image-shape image1))
                               (make-translate dx2 dy2 (image-shape image2)))
                 (make-bb (max (+ (get-right image1) dx1)
                               (+ (get-right image2) dx2))
                          (max (+ (get-bottom image1) dy1)
                               (+ (get-bottom image2) dy2))
-                         (max (+ (get-baseline image1) dy1)
-                              (+ (get-baseline image2) dy2)))
+                         (if beside-baseline?
+                             (let ([δ1 (- (get-bottom image1) (get-baseline image1))]
+                                   [δ2 (- (get-bottom image2) (get-baseline image2))]
+                                   [b1 (+ (get-baseline image1) dy1)]
+                                   [b2 (+ (get-baseline image2) dy2)])
+                               (cond
+                                 [(= δ1 δ2) (max b1 b2)]
+                                 [(< δ1 δ2) b2]
+                                 [else b1]))
+                             (max (+ (get-baseline image1) dy1)
+                                  (+ (get-baseline image2) dy2))))
                 #f
                 (if first-pinhole?
                     (let ([ph (send image1 get-pinhole)])
@@ -313,6 +328,7 @@
                           (car rst)
                           (get-right fst)
                           (if (< dy 0) 0 dy)
+                          #t
                           #t)
                (cdr rst)))])))
 
@@ -351,7 +367,8 @@
                           (car rst)
                           (if (< dx 0) 0 dx)
                           (get-bottom fst)
-                          #t)
+                          #t
+                          #f)
                (cdr rst)))])))
 
 (define/chk (overlay/offset image1 dx dy image2)
@@ -379,7 +396,8 @@
                snd
                (if (< dx 0) 0 dx)
                (if (< dy 0) 0 dy)
-               #t)))
+               #t
+               #f)))
 
 
 ;                                                                                                  
@@ -404,6 +422,16 @@
 (define/chk (crop x1 y1 width height image)
   (crop/internal x1 y1 width height image))
 
+(define/chk (crop/align x-place y-place width height image)
+  (define x-spot (find-x-spot x-place image))
+  (define y-spot (find-y-spot y-place image))
+  (define crop-rec (rectangle width height "solid" "black"))
+  (define w-off (find-x-spot x-place crop-rec))
+  (define h-off (find-y-spot y-place crop-rec))
+  (crop/internal (- x-spot w-off)
+                 (- y-spot h-off)
+                 width height image))
+
 (define (crop/internal x1 y1 width height image)
   (let ([points (rectangle-points width height)]
         [ph (send image get-pinhole)])
@@ -422,10 +450,11 @@
   (place-image/internal image1 x1 y1 image2 'middle 'middle))
 (define/chk (place-image/align image1 x1 y1 x-place y-place image2)
   (when (or (eq? x-place 'pinhole) (eq? y-place 'pinhole))
-    (check-dependencies 'place-image/align
-                        (send image1 get-pinhole)
-                        "when x-place or y-place is ~e or ~e, the the first image argument must have a pinhole"
-                        'pinhole "pinhole"))
+    (check-dependencies
+     'place-image/align
+     (send image1 get-pinhole)
+     "when x-place or y-place is ~e or ~e, the the first image argument must have a pinhole"
+     'pinhole "pinhole"))
   (place-image/internal image1 x1 y1 image2 x-place y-place))
 (define/chk (place-images images zero-or-more-posns image2)
   (check-place-images-dependency 'place-images images zero-or-more-posns)
@@ -459,6 +488,7 @@
                 scene
                 (if (< dx 0) (- dx) 0)
                 (if (< dy 0) (- dy) 0)
+                #f
                 #f))))
 
 (define/chk (scene+line image x1 y1 x2 y2 color)
@@ -502,7 +532,10 @@
 ;; draws a black frame around a image where the bounding box is
 ;; (useful for debugging images)
 
-(define/chk (frame image)
+(define/chk (frame image) (real-color-frame "black" image))
+(define/chk (color-frame color image) (real-color-frame color image))
+
+(define (real-color-frame color image)
   (make-image (make-overlay (image-shape 
                              (crop 0 0
                                    (get-right image)
@@ -510,7 +543,7 @@
                                    (rectangle (get-right image)
                                               (get-bottom image)
                                               'outline
-                                              (pen "black" 2 'solid 'round 'round))))
+                                              (pen color 2 'solid 'round 'round))))
                             (image-shape image))
               (make-bb (get-right image)
                        (get-bottom image)
@@ -683,13 +716,13 @@
                                    (text->font atomic-shape))])
        (rotated-rectangular-bounding-box w h (text-angle atomic-shape)))]
     [(flip? atomic-shape)
-     (let* ([bitmap (flip-shape atomic-shape)]
-            [bb (ibitmap-raw-bitmap bitmap)])
-       (let-values ([(l t r b)
-                     (rotated-rectangular-bounding-box (* (send bb get-width) (ibitmap-x-scale bitmap))
-                                                       (* (send bb get-height) (ibitmap-y-scale bitmap))
-                                                       (ibitmap-angle bitmap))])
-         (values l t r b)))]
+     (define bitmap (flip-shape atomic-shape))
+     (define bb (ibitmap-raw-bitmap bitmap))
+     (define-values (l t r b)
+       (rotated-rectangular-bounding-box (* (send bb get-width) (ibitmap-x-scale bitmap))
+                                         (* (send bb get-height) (ibitmap-y-scale bitmap))
+                                         (ibitmap-angle bitmap)))
+     (values l t r b)]
     [else
      (eprintf "using bad bounding box for ~s\n" atomic-shape)
      (values 0 0 100 100)]))
@@ -775,10 +808,9 @@
            [flipped? (flip-flipped? atomic-shape)])
        (make-flip flipped? 
                   (make-ibitmap (ibitmap-raw-bitmap bitmap)
-                                (bring-between (if flipped? 
-                                                   (- (ibitmap-angle bitmap) θ)
-                                                   (+ (ibitmap-angle bitmap) θ))
-                                               360)
+                                (bring-between 
+                                 (+ (ibitmap-angle bitmap) θ)
+                                 360)
                                 (ibitmap-x-scale bitmap)
                                 (ibitmap-y-scale bitmap)
                                 (make-hash))))]))
@@ -911,8 +943,13 @@
     [(text? atomic-shape)
      (error 'flip "cannot flip shapes that contain text")]
     [(flip? atomic-shape)
+     (define bitmap (flip-shape atomic-shape))
      (make-flip (not (flip-flipped? atomic-shape))
-                (flip-shape atomic-shape))]))
+                (make-ibitmap (ibitmap-raw-bitmap bitmap)
+                              (bring-between (- (ibitmap-angle bitmap)) 360)
+                              (ibitmap-x-scale bitmap)
+                              (ibitmap-y-scale bitmap)
+                              (make-hash)))]))
 
 (define (flip-point point) (make-point (point-x point) (- (point-y point))))
 (define (flip-points points) (map flip-point points))
@@ -1319,23 +1356,23 @@
                      (eq? (car arg) 'planet))
                 (raise-syntax-error 'bitmap "planet paths not yet supported" stx)]
                [(symbol? arg)
-                (let ([pieces (regexp-split #rx"/" (symbol->string arg))])
-                  (cond
-                    [(null? pieces)
-                     (raise-syntax-error 'bitmap "expected a path with a / in it" stx)]
-                    [else
-                     (define fn (last pieces))
-                     (define colls (reverse (cdr (reverse pieces))))
-                     (define candidate
-                       (apply collection-file-path fn colls
-                              #:fail
-                              (λ (msg) (raise-syntax-error 'bitmap msg stx))))
-                     (unless (file-exists? candidate)
-                       (raise-syntax-error 'bitmap 
-                                           (format "could not find ~s, expected it to be in ~a"
-                                                   arg candidate)
-                                           stx))
-                     (cons fn colls)]))]
+                (define pieces (regexp-split #rx"/" (symbol->string arg)))
+                (cond
+                  [(or (null? pieces) (null? (cdr pieces)))
+                   (raise-syntax-error 'bitmap "expected a path with a / in it" stx)]
+                  [else
+                   (define fn (last pieces))
+                   (define colls (reverse (cdr (reverse pieces))))
+                   (define candidate
+                     (apply collection-file-path fn colls
+                            #:fail
+                            (λ (msg) (raise-syntax-error 'bitmap msg stx))))
+                   (unless (file-exists? candidate)
+                     (raise-syntax-error 'bitmap 
+                                         (format "could not find ~s, expected it to be in ~a"
+                                                 arg candidate)
+                                         stx))
+                   (cons fn colls)])]
                [(string? arg)
                 (path->complete-path 
                  arg
@@ -1343,7 +1380,9 @@
                      (current-directory)))]
                [else (raise-syntax-error 
                       'bitmap 
-                      "expected the argument to specify a local path (via a string) or a module path (e.g. `icons/b-run.png')"
+                      (string-append
+                       "expected the argument to specify a local path (via a string)"
+                       " or a module path (e.g. `icons/b-run.png')")
                       stx)])])
        #`(bitmap/proc '#,path/lst))]))
 
@@ -1397,10 +1436,13 @@
               (bytes-ref bytes i)))]))
 
 (define/chk (color-list->bitmap color-list width height)
-  (check-dependencies 'color-list->bitmap
-                      (= (* width height) (length color-list))
-                      "the length of the color list to match the product of the width and the height, but the list has ~a elements and the width and height are ~a and ~a respectively"
-                      (length color-list) width height)
+  (check-dependencies 
+   'color-list->bitmap
+   (= (* width height) (length color-list))
+   (string-append
+    "the length of the color list to match the product of the width and the height,"
+    " but the list has ~a elements and the width and height are ~a and ~a respectively")
+   (length color-list) width height)
   (cond
     [(or (zero? width) (zero? height))
      (rectangle width height "solid" "black")]
@@ -1440,7 +1482,8 @@
 
 (define/chk (pinhole-x image) (let ([ph (send image get-pinhole)]) (and ph (point-x ph))))
 (define/chk (pinhole-y image) (let ([ph (send image get-pinhole)]) (and ph (point-y ph))))
-(define/chk (put-pinhole x1 y1 image) (make-image (image-shape image) (image-bb image) (image-normalized? image) (make-point x1 y1)))
+(define/chk (put-pinhole x1 y1 image) 
+  (make-image (image-shape image) (image-bb image) (image-normalized? image) (make-point x1 y1)))
 (define/chk (center-pinhole image) 
   (let ([bb (send image get-bb)])
     (make-image (image-shape image)
@@ -1448,7 +1491,8 @@
                 (image-normalized? image) 
                 (make-point (/ (bb-right bb) 2)
                             (/ (bb-baseline bb) 2)))))
-(define/chk (clear-pinhole image) (make-image (image-shape image) (image-bb image) (image-normalized? image) #f))
+(define/chk (clear-pinhole image)
+  (make-image (image-shape image) (image-bb image) (image-normalized? image) #f))
 
 (define build-color/color
   (let ([orig-make-color make-color])
@@ -1507,9 +1551,11 @@
          
          rotate
          crop
+         crop/align
          flip-vertical
          flip-horizontal
          frame
+         color-frame
 
          place-image
          place-image/align

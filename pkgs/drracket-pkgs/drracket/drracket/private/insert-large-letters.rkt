@@ -2,7 +2,7 @@
 
 (require typed/mred/mred
          typed/framework/framework
-         racket/class
+         typed/racket/class
          string-constants)
 
 (require/typed framework
@@ -11,7 +11,7 @@
 
 (define-type Bitmap-Message%
   (Class (init [parent (Instance Horizontal-Panel%)])
-         [set-bm ((Instance Bitmap%) -> Void)]))
+         [set-bm ((U (Instance Bitmap%) #f) -> Void)]))
 
 (require/typed "bitmap-message.rkt"
                [bitmap-message% Bitmap-Message%])
@@ -58,7 +58,7 @@
     (new text-field% 
          [parent dlg] 
          [label (string-constant text-to-insert)]
-         [callback (λ: ([x : Any] [y : Any]) (update-txt (send (assert text-field defined?) get-value)))]))
+         [callback (λ: ([x : Any] [y : Any]) (update-txt (send text-field get-value)))]))
   (: info-bar (Instance Horizontal-Panel%))
   (define info-bar (new horizontal-panel%
                         [parent dlg]
@@ -68,12 +68,11 @@
       (new choice%
            [label (string-constant fonts)]
            [parent info-bar]
-           [choices (map (λ: ((x : String)) (format "~a~a" x (get-w-size tmp-bdc x))) 
-                         (get-face-list))]
+           [choices (get-face-list)]
            [callback
             (λ: ([x : Any] [y : Any])
                 (let ([old (preferences:get 'drracket:large-letters-font)]
-                      [choice (send (assert font-choice defined?) get-selection)])
+                      [choice (send font-choice get-selection)])
                   (when choice
                     (preferences:set 'drracket:large-letters-font
                                      (cons (list-ref (get-face-list)
@@ -81,7 +80,7 @@
                                            (if old
                                                (cdr old)
                                                (send (get-default-font) get-point-size))))
-                    (update-txt (send (assert text-field defined?) get-value)))))])))
+                    (update-txt (send text-field get-value)))))])))
   
   (: count (Instance Message%))
   (define count (new message% [label (format columns-string 1000)] [parent info-bar]))
@@ -118,7 +117,7 @@
       (send txt lock #t)
       (send txt end-edit-sequence)
       (send count set-label (format columns-string (get-max-line-width txt)))
-      (send dark-msg set-bm bm)))
+      (send dark-msg set-bm (if (equal? str "") #f bm))))
   
   
   ;; CHANGE - get-face can return #f
@@ -130,22 +129,15 @@
           [(null? faces) (void)]
           [else (cond
                   [(equal? face (car faces))
-                   (send (assert font-choice defined?) set-selection i)]
+                   (send font-choice set-selection i)]
                   [else
                    (loop (+ i 1) (cdr faces))])]))))
   
   (send txt auto-wrap #f)
-  (update-txt " ")
-  (send (assert text-field defined?) focus)
+  (update-txt "")
+  (send text-field focus)
   (send dlg show #t)
-  (and ok? (send (assert text-field defined?) get-value)))
-
-(: get-w-size ((Instance Bitmap-DC%) String -> String))
-(define (get-w-size dc face-name)
-  (let ([font (send the-font-list find-or-create-font 24 face-name 'default 'normal 'normal)])
-    (let-values ([(w h a d) (send dc get-text-extent "w" font)])
-      (format " (~a)" (floor (inexact->exact w))))))
-  
+  (and ok? (send text-field get-value)))
 
 (: get-max-line-width ((Instance Text:Basic%) -> Real))
 (define (get-max-line-width txt)

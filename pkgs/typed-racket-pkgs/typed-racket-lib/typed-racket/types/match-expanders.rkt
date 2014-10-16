@@ -3,14 +3,15 @@
 
 (require "../utils/utils.rkt")
 
-(require (rep type-rep)
+(require (rep type-rep rep-utils)
          racket/match
          (types resolve)
          (contract-req)
          racket/set
          (for-syntax racket/base syntax/parse))
 
-(provide Listof: List: MListof: AnyPoly: AnyPoly-names:)
+(provide Listof: List: MListof: AnyPoly: AnyPoly-names: Function/arrs:
+         PredicateFilter:)
 
 
 (define-match-expander Listof:
@@ -28,9 +29,9 @@
   (lambda (stx)
     (syntax-parse stx
       [(_ elem-pats)
-       #'(app untuple (? values elem-pats) (Value: '()))]
+       #'(? Type? (app untuple (? values elem-pats) (Value: '())))]
       [(_ elem-pats #:tail tail-pat)
-       #'(app untuple (? values elem-pats) tail-pat)])))
+       #'(? Type? (app untuple (? values elem-pats) tail-pat))])))
 
 ;; Type/c -> (or/c (values/c #f #f) (values/c (listof Type/c) Type/c)))
 ;; Returns the prefix of types that are consed on to the last type (a non finite-pair type).
@@ -48,10 +49,10 @@
 (define-match-expander MListof:
   (lambda (stx)
     (syntax-parse stx
-      [(_ elem-pat)
+      [(_ elem-pat (~optional var-pat #:defaults ([var-pat #'var])))
        ;; see note above
-       #'(or (Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))
-             (Mu: var (Union: (list (MPair: elem-pat (F: var)) (Value: '())))))])))
+       #'(or (Mu: var-pat (Union: (list (Value: '()) (MPair: elem-pat (F: var-pat)))))
+             (Mu: var-pat (Union: (list (MPair: elem-pat (F: var-pat)) (Value: '())))))])))
 
 (define (unpoly t)
   (match t
@@ -87,3 +88,17 @@
     (syntax-parse stx
       [(_ vars dotted-vars body)
        #'(app unpoly-names vars dotted-vars body)])))
+
+(define-match-expander Function/arrs:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ doms rngs rests drests kws (~optional (~seq #:arrs arrs) #:defaults ([arrs #'_])))
+       #'(Function: (and arrs (list (arr: doms rngs rests drests kws) (... ...))))])))
+
+;; A match expander for matching the filter on a predicate. This assumes a standard
+;; predicate type of the shape (-> Any Any : SomeType)
+(define-match-expander PredicateFilter:
+  (λ (stx)
+    (syntax-parse stx
+      [(_ fs)
+       #'(Function: (list (arr: (list _) (Values: (list (Result: _ fs _))) _ _ _)))])))

@@ -99,8 +99,10 @@ Type-annotated versions of
 
 @deftogether[[
 @defform[(let/cc: v : t . body)]
-@defform[(let/ec: v : t . body)]]]{Type-annotated versions of
-@racket[let/cc] and @racket[let/ec].}
+@defform[(let/ec: v : t . body)]]]{
+Type-annotated versions of @racket[let/cc] and @racket[let/ec].
+As with @racket[let:], the type annotation is optional.
+}
 
 @defform*[[(define: v : t e)
            (define: (a ...) v : t e)

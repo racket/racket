@@ -66,6 +66,26 @@
 			   (k inside))
 			 0)))))
 
+(test 0 'deep-recursion-get-marks
+      (let ()
+        (define (nontail-mark-loop n)
+          (let loop ([n n])
+            (if (zero? n)
+                '(0)
+                (list (car (with-continuation-mark 'x n
+                             (apply list (loop (sub1 n)))))))))
+        (define orig-t (current-thread))
+        (define t (thread
+                   (lambda ()
+                     (let loop ([v #f])
+                       ;; We hope to try to get marks at a place when
+                       ;; the main thread overflows the C stack while
+                       ;; trying to handle a tail call.
+                       (loop (continuation-marks orig-t))))))
+	(nontail-mark-loop proc-depth)
+        (kill-thread t)
+        0))
+
 (define (read-deep depth)
   (define paren-port
     (let* ([depth depth]

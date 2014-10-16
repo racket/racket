@@ -1,4 +1,6 @@
-#lang racket
+#lang racket/base
+(require racket/contract/base)
+
 (define-struct event () #:prefab)
 (define-struct (stdout event) (bytes) #:prefab)
 (define-struct (stderr event) (bytes) #:prefab)
@@ -11,7 +13,11 @@
   (- (status-end s) (status-start s)))
 
 (provide/contract
- [struct event ()]
+ ;; Notice the event? is basically (or/c stdout? stderr?) because
+ ;; event is not exposed, so the only event?s that can exist are these
+ ;; two.
+ [event?
+  (-> any/c boolean?)]
  [struct (stdout event) ([bytes bytes?])]
  [struct (stderr event) ([bytes bytes?])]
  [struct status ([start number?]

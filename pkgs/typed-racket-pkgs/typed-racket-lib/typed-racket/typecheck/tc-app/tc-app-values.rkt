@@ -19,9 +19,9 @@
   #:literal-sets (values-literals)
   ;; call-with-values
   (pattern (call-with-values prod con)
-    (match (tc/funapp #'prod #'() (single-value #'prod) null #f)
+    (match (tc/funapp #'prod #'() (tc-expr/t #'prod) null #f)
       [(tc-results: ts fs os)
-       (tc/funapp #'con #'(prod) (single-value #'con) (map ret ts fs os) expected)]
+       (tc/funapp #'con #'(prod) (tc-expr/t #'con) (map ret ts fs os) expected)]
       [(tc-any-results: _)
        (tc/app-regular this-syntax expected)]))
   ;; special case for `values' with single argument

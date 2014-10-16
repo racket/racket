@@ -180,7 +180,8 @@
   (test-name '(between/c 5 6) (between/c 5 6))
   (test-name '(between/c -inf.0 +inf.0) (between/c -inf.0 +inf.0))
   (test-name '(integer-in 0 10) (integer-in 0 10))
-  (test-name '(between/c 1 10) (real-in 1 10))
+  (test-name '(real-in 1 10) (real-in 1 10))
+  (test-name '(between/c 1 10) (between/c 1 10))
   (test-name '(string-len/c 3) (string-len/c 3))
   (test-name 'natural-number/c natural-number/c)
   (test-name #f false/c)
@@ -216,17 +217,15 @@
 
   (test-name '(listof boolean?) (listof boolean?))
   (test-name '(listof any/c) (listof any/c))
-  (test-name '(listof boolean?) (listof boolean?))
-  (test-name '(listof any/c) (listof any/c))
-  (test-name '(listof boolean?) (listof boolean?))
   (test-name '(listof (-> boolean? boolean?)) (listof (-> boolean? boolean?)))
 
   (test-name '(non-empty-listof boolean?) (non-empty-listof boolean?))
   (test-name '(non-empty-listof any/c) (non-empty-listof any/c))
-  (test-name '(non-empty-listof boolean?) (non-empty-listof boolean?))
-  (test-name '(non-empty-listof any/c) (non-empty-listof any/c))
-  (test-name '(non-empty-listof boolean?) (non-empty-listof boolean?))
   (test-name '(non-empty-listof (-> boolean? boolean?)) (non-empty-listof (-> boolean? boolean?)))
+  
+  (test-name '(list*of boolean?) (list*of boolean?))
+  (test-name '(list*of any/c) (list*of any/c))
+  (test-name '(list*of (-> boolean? boolean?)) (list*of (-> boolean? boolean?)))
 
 
   (test-name '(vectorof boolean?) (vectorof boolean?))

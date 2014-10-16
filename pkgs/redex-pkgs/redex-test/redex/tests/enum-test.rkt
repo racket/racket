@@ -7,10 +7,10 @@
 
 (define-syntax (try-it stx)
   (syntax-case stx ()
-    [(_ N l p)
+    [(_ l p)
      (with-syntax ([line (syntax-line stx)])
        #'(test-begin
-          (for ([i (in-range N)])
+          (for ([i (in-range 200)])
             (check-not-exn
              (λ ()
                 (define term
@@ -28,19 +28,19 @@
   (r real)
   (b boolean))
 
-(try-it 100 Base a)
-(try-it 100 Base num)
-(try-it 100 Base s)
-(try-it 100 Base nat)
-(try-it 100 Base i)
-(try-it 100 Base r)
-(try-it 2 Base b)
+(try-it Base a)
+(try-it Base num)
+(try-it Base s)
+(try-it Base nat)
+(try-it Base i)
+(try-it Base r)
+(try-it Base b)
 
 ;; Repeat test
 (define-language Rep
   (r (variable variable ...)))
 
-(try-it 100 Rep r)
+(try-it Rep r)
 
 ;; Recursion test
 (define-language Λc
@@ -49,8 +49,8 @@
      x)
   (x (variable-except λ)))
 
-(try-it 250 Λc e)
-(try-it 24 Λc x)
+(try-it Λc e)
+(try-it Λc x)
 
 ;; De Bruijn for performance comparison
 (define-language DBλc
@@ -59,7 +59,7 @@
      x)
   (x natural))
 
-(try-it 500 DBλc e)
+(try-it DBλc e)
 
 
 ;; Name test
@@ -67,7 +67,7 @@
   (n (number_1 number_1)))
 
 ;; Very slow, to be fixed
-(try-it 100 Named n)
+(try-it Named n)
 
 (define-language not-SKI
   (y x
@@ -76,8 +76,8 @@
      i)
   (x (variable-except s k i)))
 
-(try-it 22 not-SKI x)
-(try-it 25 not-SKI y)
+(try-it not-SKI x)
+(try-it not-SKI y)
 
 (define-language λv
   (e (e e ...)
@@ -92,26 +92,26 @@
      hole)
   (x (variable-except λ + if0)))
 
-(try-it 100 λv e)
-(try-it 100 λv v)
-(try-it 100 λv E)
-(try-it 25 λv x)
+(try-it λv e)
+(try-it λv v)
+(try-it λv E)
+(try-it λv x)
 
 ;; No longer supported
 (define-language M
   (m (x_!_1 x_!_1))
-  (p (number_!_1 number_!_1))
+  (p (string_!_1 string_!_1))
   (n (p_!_1 p_!_1))
-  (x number)
+  (x string)
 
   ;; Example of poorly behaved mismatch
   (ambig (y ... y ...)))
 
-(try-it 100 M m)
-(try-it 100 M n)
-(try-it 100 M p)
+(try-it M m)
+(try-it M n)
+(try-it M p)
 ;; Ambiguity kills us here
-;; (try-it 2 M (ambig_!_1 ambig_!_1))
+;; (try-it M (ambig_!_1 ambig_!_1))
 
 ;; test variable filtering
 (define-language Vars
@@ -120,9 +120,9 @@
   (varexc (variable-except x λ))
   (varnom variable-not-otherwise-mentioned))
 
-(try-it 100 Vars varpre)
-(try-it 100 Vars varexc)
-(try-it 100 Vars varnom)
+(try-it Vars varpre)
+(try-it Vars varexc)
+(try-it Vars varnom)
 
 ;; Named repeats
 (define-language NRep
@@ -133,11 +133,11 @@
   ;; The motherlode
   (v5 ((string_7 (((natural_1 variable_2) ..._1 any_3) ..._2)) ..._3 (((any_3 (variable_2 natural_1) ..._1) ..._2) string_7) ..._3)))
 
-(try-it 100 NRep v)
-(try-it 100 NRep v2)
-(try-it 100 NRep v3)
-(try-it 100 NRep v4)
-(try-it 100 NRep v5)
+(try-it NRep v)
+(try-it NRep v2)
+(try-it NRep v3)
+(try-it NRep v4)
+(try-it NRep v5)
 
 ;; Test production sort
 (define-language rec
@@ -147,8 +147,8 @@
      x)
   (x variable-not-otherwise-mentioned))
 
-(try-it 100 rec e)
-(try-it 100 rec v)
+(try-it rec e)
+(try-it rec v)
 
 ;; Hole/in-hole test
 (define-language Holes
@@ -159,13 +159,13 @@
   (i (in-hole ctx number))
   (i2 (in-hole hide real)))
 
-(try-it 4 Holes ctx)
-(try-it 100 Holes i)
-(try-it 100 Holes i2)
-(try-it 1 Holes hole)
-(try-it 100 Holes (in-hole hole number))
-(try-it 100 Holes (in-hole (cons hole boolean) (cons number string)))
-(try-it 100 Holes (in-hole (cons hole number_1) number_1))
+(try-it Holes ctx)
+(try-it Holes i)
+(try-it Holes i2)
+(try-it Holes hole)
+(try-it Holes (in-hole hole number))
+(try-it Holes (in-hole (cons hole boolean) (cons number string)))
+(try-it Holes (in-hole (cons hole number_1) number_1))
 
 ;; Cross test
 (define-language CrossLang
@@ -174,10 +174,10 @@
      x)
   (x variable-not-otherwise-mentioned))
 
-(try-it 100 CrossLang e)
-(try-it 100 CrossLang x)
-(try-it 100 CrossLang (cross e))
-(try-it 1 CrossLang (cross x))
-(try-it 100 CrossLang (in-hole (cross x) e))
-(try-it 100 CrossLang (in-hole (cross e) x))
+(try-it CrossLang e)
+(try-it CrossLang x)
+(try-it CrossLang (cross e))
+(try-it CrossLang (cross x))
+(try-it CrossLang (in-hole (cross x) e))
+(try-it CrossLang (in-hole (cross e) x))
 

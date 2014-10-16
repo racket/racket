@@ -1,5 +1,5 @@
 #lang racket
-(require redex)
+(require redex/reduction-semantics)
 
 (provide list-machine red 
          var-lookup var-set

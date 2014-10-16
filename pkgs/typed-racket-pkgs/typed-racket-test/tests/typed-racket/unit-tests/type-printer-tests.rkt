@@ -47,6 +47,12 @@
     (check-prints-as? (make-Mu 'x (Un -Null (-pair -Nat (make-F 'x))))
                       "(Listof Nonnegative-Integer)")
     (check-prints-as? (-lst* -String -Symbol) "(List String Symbol)")
+
+    ;; next three cases for PR 14552
+    (check-prints-as? (-mu x (Un (-pair x x) -Null)) "(Rec x (U Null (Pairof x x)))")
+    (check-prints-as? (-mu x (Un (-pair (-box x) x) -Null)) "(Rec x (U Null (Pairof (Boxof x) x)))")
+    (check-prints-as? (-mu x (Un (-mpair x x) -Null)) "(Rec x (U Null (MPairof x x)))")
+
     (check-prints-as? -Custodian "Custodian")
     (check-prints-as? (make-Opaque #'integer?) "(Opaque integer?)")
     (check-prints-as? (make-Vector -Nat) "(Vectorof Nonnegative-Integer)")
@@ -75,6 +81,10 @@
                       "(-> Any Boolean : String)")
     (check-prints-as? (asym-pred Univ -Boolean (-FS (-filter -String 0) -top))
                       "(-> Any Boolean : #:+ String)")
+    (check-prints-as? (-> Univ Univ -Boolean : (-FS (-filter -String 0) -top))
+                      "(-> Any Any Boolean)")
+    (check-prints-as? (-> Univ Univ -Boolean : (-FS (-filter -String 1) -top))
+                      "(-> Any Any Boolean)")
     ;; PR 14510 (next three tests)
     (check-prints-as? (-> Univ (-> Univ -Boolean : (-FS (-filter -String '(1 0))
                                                         (-not-filter -String '(1 0)))))

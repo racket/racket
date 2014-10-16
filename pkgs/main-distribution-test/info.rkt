@@ -28,7 +28,8 @@
                "images-test"
                "plot-test"
                "math-test"
-               "racket-benchmarks"))
+               "racket-benchmarks"
+               "drracket-tool-test"))
 
 (define pkg-desc "tests for \"main-distribution\"")
 

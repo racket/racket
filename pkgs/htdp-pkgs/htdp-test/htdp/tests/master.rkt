@@ -1,4 +1,4 @@
-;; The first three lines of this file were inserted by DrScheme. They record metadata
+;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-beginner-reader.ss" "lang")((modname master) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
 (require htdp/master)
@@ -24,5 +24,3 @@
 (eq? (check-guess 'white 'blue 'red 'green) 'nothing_correct)
 
 (check-expect (master check-guess) true)
-; (check-error (master 1) "master: primitive operator master expects a defined procedure name (usually `compare-guess') in this position")
-; (check-error (master first) ...)

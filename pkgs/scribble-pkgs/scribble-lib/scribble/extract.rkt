@@ -9,7 +9,11 @@
   (syntax-case stx ()
     [(_ module-path)
      (with-syntax ([get-docs (syntax-local-lift-require 
-                              #'(only (submod module-path srcdoc) get-docs)
+                              #`(only (submod #,@(syntax-case #'module-path (submod)
+                                                   [(submod e ...) #'(e ...)]
+                                                   [e #'(e)])
+                                              srcdoc)
+                                      get-docs)
                               (datum->syntax stx 'get-docs))]
                    [(wrap ...) wraps])
        #'(begin

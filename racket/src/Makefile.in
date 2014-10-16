@@ -135,10 +135,12 @@ install-no-post-collects:
 
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
-          @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -u \
-            "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
-            make-install-destdir-fix "$(srcdir)/.." \
-            $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"; \
+          if [ "$(SKIP_DESTDIR_FIX)" = "" ]; then \
+            @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -u \
+              "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
+              make-install-destdir-fix "$(srcdir)/.." \
+              $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"; \
+          fi \
         fi
 
 # 3m install ----------------------------------------

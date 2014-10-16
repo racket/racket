@@ -54,10 +54,14 @@ plain-in-place:
 	$(MAKE) pkg-links $(PKG_LINK_COPY_ARGS)
 	$(PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
+# For Windows: set up the following collections first, so that native
+# libraries are in place for use by a full setup:
+LIB_PRE_COLLECTS = racket db com
+
 win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-pkg-links $(PKG_LINK_COPY_ARGS)
-	$(WIN32_PLAIN_RACKET) $(LIBSETUP) -nxiID $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) racket
+	$(WIN32_PLAIN_RACKET) $(LIBSETUP) -nxiID $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) $(LIB_PRE_COLLECTS)
 	$(WIN32_PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 again:
@@ -76,6 +80,7 @@ PREFIX =
 
 CONFIG_PREFIX_ARGS = --prefix="$(PREFIX)" --enable-macprefix
 UNIX_RACO_ARGS = $(JOB_OPTIONS) --catalog build/local/catalog --auto -i
+UNIX_BASE_ARGS = SELF_FLAGS_qq="" SKIP_DESTDIR_FIX="skip"
 
 unix-style:
 	if [ "$(CPUS)" = "" ] ; \
@@ -87,9 +92,10 @@ cpus-unix-style:
 
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
-	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' SELF_FLAGS_qq=""
-	$(MAKE) local-catalog-maybe-native RACKET="$(PREFIX)/bin/racket"
-	"$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
+	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' $(UNIX_BASE_ARGS)
+	$(MAKE) local-catalog-maybe-native RACKET="$(DESTDIR)$(PREFIX)/bin/racket"
+	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
+	cd racket/src/build; $(MAKE) fix-paths
 
 error-need-prefix:
 	: ================================================================
@@ -153,7 +159,8 @@ racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 # Catalog for sources and native packages; use "local" to bootstrap
 # from package directories (in the same directory as this makefile)
 # plus the GitHub repository of raw native libraries. Otherwise, it's
-# a URL (spaces allowed).
+# a catalog URL (spaces allowed), and the catalog is copied to ensure
+# consistency across queries:
 SRC_CATALOG = local
 
 # A URL embedded in documentation for remote searches, where a Racket
@@ -184,6 +191,10 @@ RELEASE_MODE =
 # Set to "--source" to create an archive (instead of an "installer"
 # proper) on a client that has the run-time system in source form:
 SOURCE_MODE =
+
+# Set to "--versionless" to avoid a version number in an installer's
+# name or installation path:
+VERSIONLESS_MODE =
 
 # Set to "--mac-pkg" to create ".pkg"-based installers for Mac OS X,
 # instead of a ".dmg" for drag-and-drop installation:
@@ -261,10 +272,6 @@ REQUIRED_PKGS = racket-lib
 # Packages needed for building distribution:
 DISTRO_BUILD_PKGS = distro-build-lib
 
-# To bootstrap, we use some "distro-build" libraries directly,
-# instead of from an installed package:
-DISTBLD = pkgs/distro-build-pkgs/distro-build-server
-
 SVR_PRT = $(SERVER):$(SERVER_PORT)
 
 SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
@@ -278,7 +285,7 @@ WIN32_RACO = racket\racket $(USER_CONFIG) -N raco -l- raco
 X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
 LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
-SOURCE_USER_AUTO_q = --catalog "$(SRC_CATALOG)" $(USER_AUTO_OPTIONS)
+SOURCE_USER_AUTO_q = --catalog build/catalog-copy $(USER_AUTO_OPTIONS)
 REMOTE_USER_AUTO = --catalog $(SVR_CAT) $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
@@ -367,11 +374,11 @@ PACK_NATIVE = --native --pack build/native/pkgs \
               ++catalog build/native/catalog \
 	      ++catalog build/local/catalog
 native-catalog:
-	$(RACKET) $(DISTBLD)/pack-and-catalog.rkt $(PACK_NATIVE) native-pkgs
+	$(RACKET) racket/src/pack-all.rkt --mods $(PACK_NATIVE) native-pkgs
 
 # Create a catalog for all packages in this directory:
 local-source-catalog:
-	$(RACKET) $(DISTBLD)/pack-and-catalog.rkt ++catalog build/local/catalog pkgs
+	$(RACKET) racket/src/pack-all.rkt --mods ++catalog build/local/catalog pkgs
 
 # Clear out a package build in "build/user", and then install
 # packages:
@@ -383,7 +390,12 @@ fresh-user:
 	rm -rf build/user
 
 set-server-config:
-	$(RACKET) -l distro-build/set-server-config build/user/config/config.rktd $(CONFIG_MODE_q) "$(DOC_SEARCH)" "" "" ""
+	$(RACKET) -l distro-build/set-server-config build/user/config/config.rktd $(CONFIG_MODE_q) "" "" "$(DOC_SEARCH)" ""
+
+server-cache-config:
+	$(RACO) pkg config -i --set download-cache-dir build/cache
+	$(RACO) pkg config -i --set download-cache-max-files 1023
+	$(RACO) pkg config -i --set download-cache-max-bytes 671088640
 
 # Install packages from the source copies in this directory. The
 # packages are installed in user scope, but we set the add-on
@@ -393,6 +405,7 @@ set-server-config:
 packages-from-local:
 	$(RACO) pkg install $(LOCAL_USER_AUTO) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(MAKE) set-server-config
+	$(RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/local/catalog
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(LOCAL_USER_AUTO)
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
 
@@ -401,10 +414,15 @@ packages-from-local:
 # `SRC_CATALOG':
 build-from-catalog:
 	$(MAKE) fresh-user
+	rm -rf build/catalog-copy
+	$(RACO) pkg catalog-copy "$(SRC_CATALOG)" build/catalog-copy
+	$(MAKE) server-cache-config
 	$(RACO) pkg install --all-platforms $(SOURCE_USER_AUTO_q) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(MAKE) set-server-config
+	$(RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/catalog-copy
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
+	rm -rf build/native
 
 # Although a client will build its own "collects", pack up the
 # server's version to be used by each client, so that every client has
@@ -414,12 +432,14 @@ origin-collects:
 	$(RACKET) -l distro-build/pack-collects
 
 # Now that we've built packages from local sources, create "built"
-# versions of the packages from the installation into "build/user":
+# versions of the packages from the installation into "build/user";
+# packages that exist in "build/native" are not repacked:
 built-catalog:
-	$(RACKET) -l distro-build/pack-built
+	$(RACKET) -l distro-build/pack-built build/pkgs.rktd
 
 # Run a catalog server to provide pre-built packages, as well
-# as the copy of the server's "collects" tree:
+# as the copy of the server's "collects" tree; also serves
+# the "build/native" directory, if it exists:
 built-catalog-server:
 	if [ -d ".git" ]; then git update-server-info ; fi
 	$(RACKET) -l distro-build/serve-catalog $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT) $(SERVE_DURING_CMD_qq)
@@ -428,7 +448,7 @@ built-catalog-server:
 # which involves creating package archives in "binary" mode
 # instead of "built" mode:
 binary-catalog:
-	$(RACKET) -l- distro-build/pack-built --mode binary
+	$(RACKET) -l- distro-build/pack-built --mode binary build/pkgs.rktd
 binary-catalog-server:
 	$(RACKET) -l- distro-build/serve-catalog --mode binary $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT)
 
@@ -445,7 +465,8 @@ binary-catalog-server:
 
 PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_HOSTS)" \
             PKGS="$(PKGS)" BUILD_STAMP="$(BUILD_STAMP)" \
-	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
+	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
+            VERSIONLESS_MODE=$(VERSIONLESS_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)"\
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) UPLOAD="$(UPLOAD)" \
@@ -497,7 +518,7 @@ bundle-from-server:
 	$(RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
 
 UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
-DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(MAC_PKG_MODE) \
+DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) $(MAC_PKG_MODE) \
               "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
               "$(SIGN_IDENTITY)"
 
@@ -547,7 +568,8 @@ client-from-site:
 # ------------------------------------------------------------
 # Drive installer build across server and clients:
 
-DRIVE_ARGS_q = $(RELEASE_MODE) $(SOURCE_MODE) $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
+DRIVE_ARGS_q = $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) \
+               $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
                $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" \
                "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DRIVE_CMD_q = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)

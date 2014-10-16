@@ -49,21 +49,23 @@
            (require 2htdp/universe)
            (big-bang 0 (on-tick add1) stop-when))))
 
-;; -----------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------------------------------
 ;; purpose: catch illegal big-bang use w/o world expression
 
-(with-handlers ((exn:fail:syntax? 
-                 (lambda (x) 
-                   (unless (string=? (exn-message x) "big-bang: expected an initial state, but found a clause")
-                     (raise x)))))
+(with-handlers 
+    ((exn:fail:syntax? 
+      (lambda (x) 
+        (unless (string=? (exn-message x) "big-bang: expected an initial state, but found a clause")
+          (raise x)))))
   (eval '(module a scheme 
            (require 2htdp/universe)
-	   (big-bang (on-key add1)))))
+           (big-bang (on-key add1)))))
 
-(with-handlers ((exn:fail:syntax? 
-                 (lambda (x) 
-                   (unless (string=? (exn-message x) "universe: expected an initial state, but found a clause")
-                     (raise x)))))
+(with-handlers
+    ((exn:fail:syntax? 
+      (lambda (x) 
+        (unless (string=? (exn-message x) "universe: expected an initial state, but found a clause")
+          (raise x)))))
   (eval '(module a scheme 
            (require 2htdp/universe)
-	   (universe (on-msg sub1) (on-new add1)))))
+           (universe (on-msg sub1) (on-new add1)))))

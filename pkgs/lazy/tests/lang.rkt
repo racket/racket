@@ -201,6 +201,33 @@
    (! (andmap 1 (/ 1 0))) =error> "/: division by zero"
    ))
 
+(define (values-tests)
+  (test
+   ;; Tests from Luke Whittlesey
+   (! (let-values ([(x) (values (error "a"))]) 1)) => 1
+   (! (let-values ([(x y) (values (error "a") (error "b"))]) 1)) => 1
+   (! (let*-values ([(x) (values (error "a"))]) 1)) => 1
+   (! (let*-values ([(x0 x1) (values (error "a") (error "b"))] [(y) (values x0)]) 1)) => 1
+   (! (letrec ([x y] [y 1]) x)) =error> "y: undefined"
+   (! (letrec ([x (list y)] [y 1]) (car x))) => 1
+   (! (letrec-values ([(x) (values (error "a"))]) 1)) => 1
+   (! (letrec-values ([(x y) (values (error "a") (error "b"))]) 1)) => 1
+   (! (letrec-values ([(x) (values (list y))] [(y) (values 1)]) (car x))) => 1
+   (! (letrec-values ([(x0 x1) (values (list y0) (list y1))] [(y0 y1) (values 1 2)])
+        (+ (car x0) (car x1)))) => 3
+   (! (letrec-values ([(A) (values (list 'a B))]
+                      [(B) (values (list 'b A))]) (car A))) => 'a
+   (! (letrec-values ([(A) (values (list 'a B))]
+                      [(B) (values (list 'b A))]) (caadr A))) => 'b
+   (! (letrec-values ([(A) (values (list 'a B))]
+                      [(B) (values (list 'b A))]) (car B))) => 'b
+   (! (letrec-values ([(A) (values (list 'a B))]
+                      [(B) (values (list 'b A))]) (caadr B))) => 'a
+   ;; this errors because let-values (and other values-extractors) must force
+   ;; the rhs (one level down) to extract the values
+   (let-values ([(x) (error "a")]) 1) =error> "a"
+   ))
+
 (provide lang-tests)
 (module+ main (lang-tests))
 (define (lang-tests)
@@ -209,4 +236,5 @@
             (take-tests)
             (misc-tests)
             (pcps-tests)
-            (strictness-tests))))
+            (strictness-tests)
+            (values-tests))))

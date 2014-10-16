@@ -193,49 +193,49 @@
          "language argument does not contain a definition of the non-terminal ~a, needed by the reduction-relation"
          red-lang-nt))))
   
-  (let ([cp (compile-pattern
-             lang
-             `(in-hole (name ctxt ,pat)
-                       (name exp any))
-             #f)])
-    (build-reduction-relation
-     #f
-     lang
-     (map
-      (λ (make-proc)
-        (make-rewrite-proc
-         (λ (lang)
-           (let ([f (make-proc lang)])
-             (λ (main-exp exp extend acc)
-               (let loop ([ms (or (match-pattern cp exp) '())]
-                          [acc acc])
-                 (cond
-                   [(null? ms) acc]
-                   [else
-                    (let* ([mtch (car ms)]
-                           [bindings (mtch-bindings mtch)])
-                      (loop (cdr ms)
-                            (f main-exp
-                               (lookup-binding bindings 'exp)
-                               (λ (x) (extend (plug (lookup-binding bindings 'ctxt) x)))
-                               acc)))])))))
-         (rewrite-proc-name make-proc)
-         (rewrite-proc-lhs make-proc)
-         (rewrite-proc-lhs-src make-proc)
-         (rewrite-proc-id make-proc)))
-      (reduction-relation-make-procs red))
-     (reduction-relation-rule-names red)
-     (reduction-relation-lws red)
-     (let ([orig-pat (reduction-relation-domain-pat red)])
-       (cond
-         [(equal? orig-pat `any)
-          ;; special case for backwards compatibility:
-          ;; if there was no #:domain argument, then we
-          ;; probably should let the compatible closure also
-          ;; not have a domain
-          `any]
-         [else
-          `(in-hole ,pat ,orig-pat)])))))
+  (build-reduction-relation
+   #f
+   lang
+   (map
+    (λ (make-proc)
+      (make-rewrite-proc
+       (λ (lang)
+         (define f (make-proc lang))
+         (define cp (compile-pattern
+                     lang
+                     `(in-hole (name ctxt ,pat)
+                               (name exp any))
+                     #f))
+         (λ (main-exp exp extend acc)
+           (let loop ([ms (or (match-pattern cp exp) '())]
+                      [acc acc])
+             (cond
+               [(null? ms) acc]
+               [else
+                (let* ([mtch (car ms)]
+                       [bindings (mtch-bindings mtch)])
+                  (loop (cdr ms)
+                        (f main-exp
+                           (lookup-binding bindings 'exp)
+                           (λ (x) (extend (plug (lookup-binding bindings 'ctxt) x)))
+                           acc)))]))))
+       (rewrite-proc-name make-proc)
+       (rewrite-proc-lhs make-proc)
+       (rewrite-proc-lhs-src make-proc)
+       (rewrite-proc-id make-proc)))
+    (reduction-relation-make-procs red))
+   (reduction-relation-rule-names red)
+   (reduction-relation-lws red)
+   (let ([orig-pat (reduction-relation-domain-pat red)])
+     (cond
+       [(equal? orig-pat `any)
+        ;; special case for backwards compatibility:
+        ;; if there was no #:domain argument, then we
+        ;; probably should let the compatible closure also
+        ;; not have a domain
+        `any]
+       [else
+        `(in-hole ,pat ,orig-pat)]))))
 
 (define (apply-reduction-relation/tagged p v)
   (let loop ([procs (reduction-relation-procs p)]
@@ -754,11 +754,12 @@
       (define lang-nts (language-id-nts lang-id 'reduction-relation))
       (define (rw-sc pat) (rewrite-side-conditions/check-errs lang-id orig-name #t pat))
       (define-values (name computed-name sides/withs/freshs) (process-extras stx orig-name name-table extras))
+      (define rt-lang-id (car (generate-temporaries (list lang))))
       (with-syntax ([(from-syncheck-expr side-conditions-rewritten (names ...) (names/ellipses ...)) (rw-sc from)])
         (define body-code
           (bind-withs orig-name 
                       #'main-exp
-                      lang
+                      rt-lang-id
                       lang-nts
                       lang-id
                       sides/withs/freshs
@@ -799,11 +800,12 @@
               lhs-syncheck-expr
               (build-rewrite-proc/leaf 
                `side-conditions-rewritten
-               (λ (main-exp bindings)
-                 #,(bind-pattern-names 'reduction-relation
-                                       #'(names/ellipses ...)
-                                       #'((lookup-binding bindings 'names) ...)
-                                       #'body-code))
+               (λ (#,rt-lang-id)
+                 (λ (main-exp bindings)
+                   #,(bind-pattern-names 'reduction-relation
+                                         #'(names/ellipses ...)
+                                         #'((lookup-binding bindings 'names) ...)
+                                         #'body-code)))
                lhs-source
                name
                (λ (lang-id2) `lhs-w/extras))))))
@@ -925,13 +927,14 @@
   (do-reduction-relation/proc stx))
 
 (define (build-rewrite-proc/leaf side-conditions-rewritten 
-                                 build-really-matched 
+                                 build-really-matched/lang-arg
                                  lhs-source
                                  name
                                  lhs-w/extras-proc)
   (let ([case-id (gensym)])
     (make-rewrite-proc
      (λ (lang-id)
+       (define build-really-matched (build-really-matched/lang-arg lang-id))
        (let ([cp (compile-pattern lang-id side-conditions-rewritten #t)])
          (λ (main-exp exp f other-matches)
            (let ([mtchs (match-pattern cp exp)])
@@ -1186,8 +1189,12 @@
          (syntax-local-value 
           prev-metafunction
           (λ ()
-            (raise-syntax-error syn-error-name "expected a previously defined metafunction" orig-stx prev-metafunction))))
-       (let*-values ([(contract-name dom-ctcs codom-contracts pats)
+            (raise-syntax-error 
+             syn-error-name 
+             "expected a previously defined metafunction" orig-stx prev-metafunction))))
+       (let*-values ([(contract-name dom-ctcs pre-condition 
+                                     codom-contracts codomain-separators post-condition
+                                     pats)
                       (split-out-contract orig-stx syn-error-name #'rest #f)]
                      [(name _) (defined-name (list contract-name) pats orig-stx)])
          (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
@@ -1208,7 +1215,14 @@
                                                               name
                                                               name-predicate
                                                               #,dom-ctcs
+                                                              #,(if pre-condition
+                                                                    (list pre-condition)
+                                                                    #f)
                                                               #,codom-contracts
+                                                              '#,codomain-separators
+                                                              #,(if post-condition
+                                                                    (list post-condition)
+                                                                    #f)
                                                               #,pats
                                                               #,syn-error-name))
                                      (term-define-fn name name2))])
@@ -1242,28 +1256,73 @@
                                    (list the-clause-name #'id)))
              (set! the-clause-name #'id)
              stuffs)]
-          [_ (cons stuff+name stuffs)])))
+          [_ 
+           (cons stuff+name stuffs)])))
     (cons (cond
             [(not the-clause-name) #f]
             [(identifier? the-clause-name) (symbol->string (syntax-e the-clause-name))]
             [else the-clause-name])
           (reverse stuff-without-clause-name))))
 
+(define-for-syntax (eliminate-metafunction-ors stx)
+  (define (is-not-or? x)
+    (syntax-case x (or)
+      [or #f]
+      [else #t]))
+  (apply 
+   append
+   (for/list ([clause (in-list (syntax->list stx))])
+     (syntax-case clause ()
+       [(lhs . rhs+stuff)
+        (let ()
+          (define split 
+            (let loop ([lst (syntax->list #'rhs+stuff)])
+              (define batch (takef lst is-not-or?))
+              (cond
+                [(null? batch) '()]
+                [else 
+                 (define next (dropf lst is-not-or?))
+                 (if (pair? next)
+                     (cons batch (loop (cdr next)))
+                     (list batch))])))
+          (map (λ (x) (cons #'lhs x)) split))]))))
+
 (define-syntax (generate-metafunction stx)
   (syntax-case stx ()
-    [(_ orig-stx lang prev-metafunction name name-predicate dom-ctcs codom-contracts pats syn-error-name)
-     (let ([prev-metafunction (and (syntax-e #'prev-metafunction) #'prev-metafunction)]
-           [dom-ctcs (syntax-e #'dom-ctcs)]
-           [codom-contracts (syntax-e #'codom-contracts)]
-           [pats (syntax-e #'pats)]
-           [syn-error-name (syntax-e #'syn-error-name)])
+    [(_ orig-stx lang prev-metafunction-stx
+        name name-predicate
+        dom-ctcs-stx pre-condition-stx
+        codom-contracts-stx codomain-separators-stx post-condition-stx
+        pats-stx syn-error-name)
+     (let ()
+       (define (condition-or-false s)
+         (define info (syntax-e s))
+         (cond
+           [info
+            (unless (pair? info) (error 'condition-or-false "~s" s))
+            (car info)]
+           [else #f]))
+       (define prev-metafunction (and (syntax-e #'prev-metafunction-stx) #'prev-metafunction-stx))
+       (define dom-ctcs (syntax-e #'dom-ctcs-stx))
+       (define pre-condition (condition-or-false #'pre-condition-stx))
+       (define codom-contracts (syntax-e #'codom-contracts-stx))
+       (define codomain-separators (syntax-e #'codomain-separators-stx))
+       (define post-condition (condition-or-false #'post-condition-stx))
+       (define pats (syntax-e #'pats-stx))
+       (define syn-error-name (syntax-e #'syn-error-name))
        (define lang-nts
          (definition-nts #'lang #'orig-stx syn-error-name))
-       (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
-                     [(lhs-for-lw ...) (lhs-lws pats)])
+       (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...)
+                      (eliminate-metafunction-ors #'pats-stx)]
+                     [(lhs-for-lw ...) (lhs-lws pats)]
+                     [(((_1 lhs-with-ors-intact ...)
+                        rhs-with-ors-intact
+                        stuff-with-ors-intact ...) ...)
+                      pats])
          (with-syntax ([((rhs stuff+names ...) ...) #'((raw-rhses ...) ...)]
                        [(lhs ...) #'((lhs-clauses ...) ...)])
-           (with-syntax ([((clause-name stuff ...) ...) (extract-clause-names #'((stuff+names ...) ...))])
+           (with-syntax ([((clause-name stuff ...) ...) 
+                          (extract-clause-names #'((stuff+names ...) ...))])
              (parse-extras #'((stuff ...) ...))
              (with-syntax ([((syncheck-expr side-conditions-rewritten lhs-names lhs-namess/ellipses) ...) 
                             (map (λ (x) (rewrite-side-conditions/check-errs
@@ -1316,8 +1375,10 @@
                                                     (path->relative-string/library (syntax-source lhs)))
                                                (syntax-line lhs)
                                                (syntax-column lhs)))
-                                     pats)]
-                               [(dom-syncheck-expr dom-side-conditions-rewritten dom-names dom-names/ellipses)
+                                     (syntax->list #'(original-names ...)))]
+                               [(dom-syncheck-expr dom-side-conditions-rewritten 
+                                                   (dom-names ...)
+                                                   dom-names/ellipses)
                                 (if dom-ctcs
                                     (rewrite-side-conditions/check-errs
                                      #'lang
@@ -1325,13 +1386,19 @@
                                      #f
                                      dom-ctcs)
                                     #'((void) any () ()))]
-                               [((codom-syncheck-expr codom-side-conditions-rewritten codom-names codom-names/ellipses) ...)
+                               [((codom-syncheck-expr 
+                                  codom-side-conditions-rewritten
+                                  codom-names 
+                                  codom-names/ellipses) ...)
                                 (map (λ (codom-contract)
                                        (rewrite-side-conditions/check-errs
                                         #'lang
                                         syn-error-name
                                         #f
-                                        codom-contract))
+                                        (if post-condition
+                                            #`(side-condition (#,dom-ctcs #,codom-contract)
+                                                              (term #,post-condition))
+                                            codom-contract)))
                                      codom-contracts)]
                                [(rhs-fns ...)
                                 (map (λ (names names/ellipses rhs/where)
@@ -1369,7 +1436,6 @@
                                 #,(if prev-metafunction
                                       #`(metafunc-proc-cases #,(term-fn-get-id (syntax-local-value prev-metafunction)))
                                       #'null)])
-                           
                            (build-metafunction 
                             lang
                             cases
@@ -1378,12 +1444,24 @@
                               (make-metafunc-proc
                                (let ([name (lambda (x) (f/dom x))]) name)
                                '(clause-name ...)
-                               (generate-lws #f
-                                             (lhs ...)
-                                             (lhs-for-lw ...)
-                                             ((stuff ...) ...)
-                                             (rhs ...)
-                                             #t)
+                               (list
+                                ;; mf contract
+                                #,(if (and dom-ctcs codom-contracts)
+                                      #`(list
+                                         #,(with-syntax ([(dom-ctc ...) dom-ctcs])
+                                             #`(list (to-lw dom-ctc) ...))
+                                         #,(with-syntax ([(codom-ctc ...) codom-contracts])
+                                             #`(list (to-lw codom-ctc) ...))
+                                         #,codomain-separators)
+                                      #'#f)
+                                
+                                ;; body of mf
+                                (generate-lws #f
+                                              ((lhs-with-ors-intact ...) ...)
+                                              (lhs-for-lw ...)
+                                              ((stuff-with-ors-intact ...) ...)
+                                              (rhs-with-ors-intact ...)
+                                              #t))
                                lang
                                #t ;; multi-args?
                                'name
@@ -1400,7 +1478,13 @@
                                        (λ ()
                                          (add-mf-dqs #,(check-pats #'(list gen-clause ...)))))])))
                             #,(if dom-ctcs #'dsc #f)
+                            (λ (bindings) 
+                              #,(bind-pattern-names 'define-metafunction
+                                                    #'dom-names/ellipses
+                                                    #'((lookup-binding bindings 'dom-names) ...)
+                                                    #`(term #,pre-condition)))
                             `(codom-side-conditions-rewritten ...)
+                            #,(and post-condition #t)
                             'name))))
                     'disappeared-use
                     (map syntax-local-introduce 
@@ -1560,7 +1644,11 @@
    (syntax->list extras)))
 
 
-(define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pats name)
+(define (build-metafunction lang cases parent-cases 
+                            wrap
+                            dom-contract-pat pre-condition
+                            codom-contract-pats post-condition?
+                            name)
   (let* ([dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
          [codom-compiled-patterns (map (λ (codom-contract-pat) (compile-pattern lang codom-contract-pat #f))
                                        codom-contract-pats)]
@@ -1595,8 +1683,17 @@
                   (let ([cache-ref (hash-ref cache exp not-in-cache)])
                     (cond
                       [(or (not (caching-enabled?)) (eq? cache-ref not-in-cache))
+                       (define dom-match-result 
+                         (if dom-compiled-pattern
+                             (match-pattern dom-compiled-pattern exp)
+                             '()))
                        (when dom-compiled-pattern
-                         (unless (match-pattern dom-compiled-pattern exp)
+                         (unless dom-match-result
+                           (redex-error name
+                                        "~s is not in my domain"
+                                        `(,name ,@exp)))
+                         (unless (for/and ([mtch (in-list dom-match-result)])
+                                   (pre-condition (mtch-bindings mtch)))
                            (redex-error name
                                         "~s is not in my domain"
                                         `(,name ,@exp))))
@@ -1608,45 +1705,49 @@
                            [(null? ids) 
                             (redex-error name "no clauses matched for ~s" `(,name . ,exp))]
                            [else
-                            (let ([pattern (car lhss)]
-                                  [rhs (car rhss)]
-                                  [id (car ids)]
-                                  [continue (λ () (loop (cdr ids) (cdr lhss) (cdr rhss) (+ num 1)))])
-                              (let ([mtchs (match-pattern pattern exp)])
-                                (cond
-                                  [(not mtchs) (continue)]
-                                  [else
-                                   (let ([anss (apply append
-                                                      (filter values
-                                                              (map (λ (mtch) (rhs traced-metafunc (mtch-bindings mtch)))
-                                                                   mtchs)))]
-                                         [ht (make-hash)])
-                                     (for-each (λ (ans) (hash-set! ht ans #t)) anss)
-                                     (cond
-                                       [(null? anss)
-                                        (continue)]
-                                       [(not (= 1 (hash-count ht)))
-                                        (redex-error name "~a matched ~s ~a returned different results" 
-                                                     (if (< num 0)
-                                                         "a clause from an extended metafunction"
-                                                         (format "clause #~a (counting from 0)" num))
-                                                     `(,name ,@exp)
-                                                     (if (= 1 (length mtchs))
-                                                         "but"
-                                                         (format "~a different ways and "
-                                                                 (length mtchs))))]
-                                       [else
-                                        (let ([ans (car anss)])
-                                          (unless (ormap (λ (codom-compiled-pattern)
-                                                           (match-pattern codom-compiled-pattern ans))
-                                                         codom-compiled-patterns)
-                                            (redex-error name
-                                                         "codomain test failed for ~s, call was ~s"
-                                                         ans 
-                                                         `(,name ,@exp)))
-                                          (cache-result exp ans id)
-                                          (log-coverage id)
-                                          ans)]))])))]))]
+                            (define pattern (car lhss))
+                            (define rhs (car rhss))
+                            (define id (car ids))
+                            (define (continue) (loop (cdr ids) (cdr lhss) (cdr rhss) (+ num 1)))
+                            (define mtchs (match-pattern pattern exp))
+                            (cond
+                              [(not mtchs) (continue)]
+                              [else
+                               (define anss
+                                 (apply append
+                                        (filter values
+                                                (map (λ (mtch) (rhs traced-metafunc (mtch-bindings mtch)))
+                                                     mtchs))))
+                               (define ht (make-hash))
+                               (for-each (λ (ans) (hash-set! ht ans #t)) anss)
+                               (cond
+                                 [(null? anss)
+                                  (continue)]
+                                 [(not (= 1 (hash-count ht)))
+                                  (redex-error name "~a matched ~s ~a returned different results" 
+                                               (if (< num 0)
+                                                   "a clause from an extended metafunction"
+                                                   (format "clause #~a (counting from 0)" num))
+                                               `(,name ,@exp)
+                                               (if (= 1 (length mtchs))
+                                                   "but"
+                                                   (format "~a different ways and "
+                                                           (length mtchs))))]
+                                 [else
+                                  (define ans (car anss))
+                                  (unless (for/or ([codom-compiled-pattern 
+                                                    (in-list codom-compiled-patterns)])
+                                            (match-pattern codom-compiled-pattern 
+                                                           (if post-condition?
+                                                               (list exp ans)
+                                                               ans)))
+                                    (redex-error name
+                                                 "codomain test failed for ~s, call was ~s"
+                                                 ans 
+                                                 `(,name ,@exp)))
+                                  (cache-result exp ans id)
+                                  (log-coverage id)
+                                  ans])])]))]
                       [else 
                        (log-coverage (cdr cache-ref))
                        (car cache-ref)])))]

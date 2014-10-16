@@ -57,6 +57,7 @@
           [advanced-module-begin #%module-begin])
          check-expect
          check-random
+	 check-satisfied
          check-within
          check-error
          check-member-of

@@ -258,7 +258,16 @@ Returns a selector (of FFI type @racket[_SEL]) for the string form of
 @defproc[(objc-is-a? [obj _id] [cls _Class]) boolean?]{
 
 Check whether @racket[obj] is an instance of the Objective-C class
-@racket[cls].}
+@racket[cls] or a subclass.
+
+@history[#:changed "6.1.0.5" @elem{Recognize subclasses, instead of requiring an
+                                   exact class match.}]}
+
+@defproc[(objc-subclass? [subcls _Class] [cls _Class]) boolean?]{
+
+Check whether @racket[subcls] is @racket[cls] or a subclass.
+
+@history[#:added "6.1.0.5"]}
 
 @; ----------------------------------------------------------------------
 
@@ -288,6 +297,14 @@ Registers an Objective-C class.}
 @defproc[(object_getClass [obj _id]) _Class]{
 
 Returns the class of an object (or the meta-class of a class).}
+
+@defproc[(class_getSuperclass [cls _Class])
+         _Class]{
+
+Returns the superclass of @racket[cls] or @racket[#f] if @racket[cls]
+has no superclass.
+
+@history[#:added "6.1.0.5"]}
 
 @defproc[(class_addMethod [cls _Class] [sel _SEL] 
                           [imp procedure?]

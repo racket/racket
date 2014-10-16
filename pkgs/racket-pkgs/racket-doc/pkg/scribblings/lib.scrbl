@@ -8,7 +8,8 @@
                      (only-in pkg/db current-pkg-catalog-file)
                      net/url
                      syntax/modcollapse
-                     setup/getinfo))
+                     setup/getinfo
+                     setup/matching-platform))
 
 @title[#:tag "lib"]{Package Management Functions}
 
@@ -142,7 +143,8 @@ dependency.}
                     [#:checksum checksum (or/c #f string?) #f]
                     [#:in-place? in-place? boolean? #f]
                     [#:namespace namespace namespace? (make-base-namespace)]
-                    [#:strip strip (or/c #f 'source 'binary) #f]
+                    [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
+                    [#:force-strip? force-string? boolean? #f]
                     [#:use-cache? use-cache? boolean? #f]
                     [#:quiet? quiet? boolean? #t])
          (values string? path? (or/c #f string?) boolean? (listof module-path?))]{
@@ -160,7 +162,9 @@ loaded.
 If @racket[strip] is not @racket[#f], then files and directories are
 removed from the prepared directory the same as when creating the
 corresponding kind of package. A directory that is staged in-place
-cannot be stripped.
+cannot be stripped. If @racket[force-strip?] is true, then a
+consistency check (intended to avoid stripping a source package as
+binary, for example) is skipped.
 
 If @racket[use-cache?] is true, then a local cache is consulted before
 downloading a particular package with a particular checksum. Note that
@@ -189,7 +193,7 @@ The package lock must be held (allowing writes if @racket[set?] is true); see
 @defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
                      [dir path-string?]
                      [#:source source (or/c 'dir 'name)]
-                     [#:mode mode (or/c 'as-is 'source 'binary 'built)]
+                     [#:mode mode (or/c 'as-is 'source 'binary 'binary-lib 'built)]
                      [#:dest dest-dir (or/c (and/c path-string? complete-path?) #f)]
                      [#:quiet? quiet? boolean? #f]
                      [#:from-command-line? from-command-line? boolean? #f])
@@ -210,10 +214,12 @@ is true, error messages may suggest specific command-line flags for
                            [#:update-deps? update-deps? boolean? #f]
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
+                           [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                            [#:use-cache? use-cache? boolean? #t]
                            [#:quiet? boolean? quiet? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
-                           [#:strip strip (or/c #f 'source 'binary) #f]
+                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
+                           [#:force-strip? force-string? boolean? #f]
                            [#:link-dirs? link-dirs? boolean? #f])
          (or/c 'skip
                #f
@@ -249,10 +255,12 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:update-deps? update-deps? boolean? #f]
                           [#:force? force? boolean? #f]
                           [#:ignore-checksums? ignore-checksums? boolean? #f]
+                          [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                           [#:use-cache? use-cache? quiet? #t]
                           [#:quiet? boolean? quiet? #f]
                           [#:from-command-line? from-command-line? boolean? #f]
-                          [#:strip strip (or/c #f 'source 'binary) #f]
+                          [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
+                          [#:force-strip? force-string? boolean? #f]
                           [#:link-dirs? link-dirs? boolean? #f])
         (or/c 'skip
               #f
@@ -312,9 +320,11 @@ The package lock must be held to allow reads; see
                            [#:force? force? boolean? #f]
                            [#:use-cache? use-cache? boolean? #t]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
+                           [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                            [#:quiet? boolean? quiet? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
-                           [#:strip strip (or/c #f 'source 'binary) #f])
+                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
+                           [#:force-strip? force-string? boolean? #f])
          (or/c 'skip
                #f
                (listof (or/c path-string?
@@ -368,15 +378,44 @@ for extracting existing catalog information.
                               [#:from-config? from-config? boolean? #f]
                               [#:state-catalog state-catalog (or/c #f path-string?) #f]
                               [#:relative-sources? relative-sources? boolean? #f]
-                              [#:quiet? quiet? boolean? #f])
+                              [#:quiet? quiet? boolean? #f]
+                              [#:package-exn-handler package-exn-handler (string? exn:fail? . -> . any) (lambda (_pkg-name _exn) (raise _exn))])
          void?]{
 
 Implements @racket[pkg-catalog-archive-command].
 
+The @racket[package-exn-handler] argument handles any exception that
+is raised while trying to archive an individual package; the first
+argument is the package name, and the second is the exception. The
+default re-@racket[raise]s the exception, which aborts the archiving
+process, while a function that logs the exception message and returns
+would allow archiving to continue for other packages.
+
 The @racket[current-pkg-lookup-version] parameter determines the version
 for extracting existing catalog information.
 
-@history[#:added "6.0.1.7"]}
+@history[#:added "6.0.1.7"
+         #:changed "6.0.1.13" @elem{Added the @racket[#:package-exn-handler] argument.}]}
+
+@defproc[(pkg-archive-pkgs [dest-dir path-string?]
+                           [pkgs (listof path-string?)]
+                           [#:include-deps? include-deps? boolean? #f]
+                           [#:exclude exclude (listof string?) null]
+                           [#:relative-sources? relative-sources? boolean? #f]
+                           [#:quiet? quiet? boolean? #f]
+                           [#:package-exn-handler package-exn-handler (string? exn:fail? . -> . any) (lambda (_pkg-name _exn) (raise _exn))])
+         void?]{
+
+Implements @racket[pkg-archive-command].
+
+The @racket[package-exn-handler] argument handles any exception that
+is raised while trying to archive an individual package; the first
+argument is the package name, and the second is the exception. The
+default re-@racket[raise]s the exception, which aborts the archiving
+process, while a function that logs the exception message and returns
+would allow archiving to continue for other packages.
+
+@history[#:added "6.1.0.8"]}
 
 
 @defproc[(pkg-catalog-update-local [#:catalogs catalogs (listof string?) (pkg-config-catalogs)]
@@ -415,6 +454,10 @@ The default @racket[catalog-file] is @racket[(current-pkg-catalog-file)]
 if that file exists, otherwise a file in the racket installation is
 tried.}
 
+@defproc[(get-all-pkg-scopes) (listof (or/c 'installation 'user path?))]{
+ Obtains a list of all the currently-available package scopes.
+
+ @history[#:added "6.1.0.5"]}
 
 @defproc[(get-all-pkg-names-from-catalogs) (listof string?)]{
 
@@ -522,3 +565,29 @@ two-element list containing a string and a version (when
 Returns a list of module paths (normalized in the sense of
 @racket[collapse-module-path]) that are provided by the package
 represented by @racket[dir] and named @racket[pkg-name].}
+
+
+@defproc[(pkg-directory->additional-installs [dir path-string?]
+                                             [pkg-name string]
+                                             [#:namespace namespace namespace? (make-base-namespace)]
+                                             [#:system-type sys-type (or/c #f symbol?) (system-type)]
+                                             [#:system-library-subpath sys-lib-subpath (or/c #f path?)
+                                                                       (system-library-subpath #f)])
+         (listof (cons/c symbol? string?))]{
+
+Returns a list of pairs for items that are installed by the package
+represented by @racket[dir] and named @racket[pkg-name]. Installed
+items can include documentation, executables, foreign libraries, other
+shared files, and man pages---all as specified by @filepath{info.rkt}
+files. The symbol for each item gives it a category, such as
+@racket['doc] or @racket['exe], and the string part is a normalized
+name, such as the destination name for a document or a case-folded
+executable name without a file suffix.
+
+The @racket[sys-type] and @racket[sys-lib-subpath] arguments are used
+in the same way as for @racket[matching-platform?] to determine
+platform-specific installations as determined by
+@racketidfont{install-platform} definitions in @filepath{info.rkt}
+files.
+
+@history[#:added "6.0.1.13"]}

@@ -119,6 +119,8 @@ TO DO:
         void?)]
   [ssl-set-ciphers!
    (c-> ssl-context? string? void?)]
+  [ssl-set-server-name-identification-callback!
+   (c-> ssl-server-context? (c-> string? (or/c ssl-server-context? #f)) void?)]
   [ssl-seal-context!
    (c-> ssl-context? void?)]
   [ssl-default-verify-sources
@@ -190,7 +192,9 @@ TO DO:
   [ssl-abandon-port
    (c-> ssl-port? void?)]
   [ssl-port?
-   (c-> any/c boolean?)]))
+   (c-> any/c boolean?)])
+ supported-client-protocols
+ supported-server-protocols)
 
 (define ssl-load-fail-reason
   (or libssl-load-fail-reason
@@ -223,18 +227,18 @@ TO DO:
 (define-cpointer-type _EC_KEY*)
 (define-cstruct _GENERAL_NAME ([type _int] [d _ASN1_STRING*]))
 
-(define-ssl SSLv2_client_method (_fun -> _SSL_METHOD*))
-(define-ssl SSLv2_server_method (_fun -> _SSL_METHOD*))
-(define-ssl SSLv3_client_method (_fun -> _SSL_METHOD*))
-(define-ssl SSLv3_server_method (_fun -> _SSL_METHOD*))
-(define-ssl SSLv23_client_method (_fun -> _SSL_METHOD*))
-(define-ssl SSLv23_server_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_client_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_server_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_1_client_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_1_server_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_2_client_method (_fun -> _SSL_METHOD*))
-(define-ssl TLSv1_2_server_method (_fun -> _SSL_METHOD*))
+(define-ssl SSLv2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl SSLv2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl SSLv3_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl SSLv3_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl SSLv23_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl SSLv23_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_1_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_1_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
+(define-ssl TLSv1_2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
 
 (define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
 (define-crypto EC_KEY_free (_fun _EC_KEY* -> _void) #:wrap (deallocator))
@@ -256,6 +260,10 @@ TO DO:
   #:wrap (deallocator))
 (define-ssl SSL_CTX_new (_fun _SSL_METHOD* -> _SSL_CTX*)
   #:wrap (allocator SSL_CTX_free))
+(define-ssl SSL_CTX_callback_ctrl
+  (_fun _SSL_CTX* _int
+        (_fun #:in-original-place? #t _SSL* _pointer _pointer -> _int)
+        -> _long))
 (define-ssl SSL_CTX_ctrl (_fun _SSL_CTX* _int _long _pointer -> _long))
 (define (SSL_CTX_set_mode ctx m)
   (SSL_CTX_ctrl ctx SSL_CTRL_MODE m #f))
@@ -281,12 +289,14 @@ TO DO:
 (define-ssl SSL_write (_fun _SSL* _bytes _int -> _int))
 (define-ssl SSL_shutdown (_fun _SSL* -> _int))
 (define-ssl SSL_get_verify_result (_fun _SSL* -> _long))
+(define-ssl SSL_get_servername (_fun _SSL* _int -> _string))
 (define-ssl SSL_set_verify (_fun _SSL* _int _pointer -> _void))
 (define-ssl SSL_set_session_id_context (_fun _SSL* _bytes _int -> _int))
 (define-ssl SSL_renegotiate (_fun _SSL* -> _int))
 (define-ssl SSL_renegotiate_pending (_fun _SSL* -> _int))
 (define-ssl SSL_do_handshake (_fun _SSL* -> _int))
 (define-ssl SSL_ctrl (_fun _SSL* _int _long _pointer -> _long))
+(define-ssl SSL_set_SSL_CTX (_fun _SSL* _SSL_CTX* -> _SSL_CTX*))
 
 (define-crypto X509_free (_fun _X509* -> _void)
   #:wrap (deallocator))
@@ -380,6 +390,7 @@ TO DO:
 (define GEN_DNS 2)
 
 (define SSL_CTRL_OPTIONS 32)
+(define SSL_CTRL_SET_TLSEXT_SERVERNAME_CB 53)
 (define SSL_CTRL_SET_TLSEXT_HOSTNAME 55)
 (define SSL_CTRL_SET_TMP_DH 3)
 (define SSL_CTRL_SET_TMP_ECDH 4)
@@ -388,6 +399,9 @@ TO DO:
 (define SSL_OP_SINGLE_DH_USE #x00100000)
 
 (define TLSEXT_NAMETYPE_host_name 0)
+
+(define SSL_TLSEXT_ERR_OK 0)
+(define SSL_TLSEXT_ERR_NOACK 3)
 
 (define-mzscheme scheme_make_custodian (_fun _pointer -> _scheme))
 
@@ -461,7 +475,7 @@ TO DO:
 
 (define-struct ssl-context (ctx [verify-hostname? #:mutable] [sealed? #:mutable]))
 (define-struct (ssl-client-context ssl-context) ())
-(define-struct (ssl-server-context ssl-context) ())
+(define-struct (ssl-server-context ssl-context) ([servername-callback #:mutable #:auto]))
 
 (define-struct ssl-listener (l mzctx)
   #:property prop:evt (lambda (lst) (wrap-evt (ssl-listener-l lst) 
@@ -518,21 +532,53 @@ TO DO:
 (define default-encrypt 'sslv2-or-v3)
 
 (define (encrypt->method who e client?)
-  ((case e
-     [(sslv2-or-v3)
-      (if client? SSLv23_client_method SSLv23_server_method)]
-     [(sslv2)
-      (if client? SSLv2_client_method SSLv2_server_method)]
-     [(sslv3)
-      (if client? SSLv3_client_method SSLv3_server_method)]
-     [(tls)
-      (if client? TLSv1_client_method TLSv1_server_method)]
-     [(tls11)
-      (if client? TLSv1_1_client_method TLSv1_1_server_method)]
-     [(tls12)
-      (if client? TLSv1_2_client_method TLSv1_2_server_method)]
-     [else
-      (error 'encrypt->method "internal error, unknown encrypt: ~e" e)])))
+  (define f
+    (case e
+      [(sslv2-or-v3)
+       (if client? SSLv23_client_method SSLv23_server_method)]
+      [(sslv2)
+       (if client? SSLv2_client_method SSLv2_server_method)]
+      [(sslv3)
+       (if client? SSLv3_client_method SSLv3_server_method)]
+      [(tls)
+       (if client? TLSv1_client_method TLSv1_server_method)]
+      [(tls11)
+       (if client? TLSv1_1_client_method TLSv1_1_server_method)]
+      [(tls12)
+       (if client? TLSv1_2_client_method TLSv1_2_server_method)]
+      [else
+       (error 'encrypt->method "internal error, unknown encrypt: ~e" e)]))
+  (unless f
+    (raise (exn:fail:unsupported
+            (format "~a: requested protocol not supported\n  requested: ~e"
+                    who
+                    e)
+            (current-continuation-marks))))
+  (f))
+
+(define (filter-available l)
+  (cond
+   [(null? l) null]
+   [(cadr l) (cons (car l) (filter-available (cddr l)))]
+   [else (filter-available (cddr l))]))
+
+(define (supported-client-protocols)
+  (filter-available
+   (list 'sslv2-or-v3 SSLv23_client_method
+         'sslv2 SSLv2_client_method
+         'sslv3 SSLv3_client_method
+         'tls TLSv1_client_method
+         'tls11 TLSv1_1_client_method
+         'tls12 TLSv1_2_client_method)))
+
+(define (supported-server-protocols)
+  (filter-available
+   (list 'sslv2-or-v3 SSLv23_server_method
+         'sslv2 SSLv2_server_method
+         'sslv3 SSLv3_server_method
+         'tls TLSv1_server_method
+         'tls11 TLSv1_1_server_method
+         'tls12 TLSv1_2_server_method)))
 
 (define (make-context who protocol-symbol client?)
   (let ([meth (encrypt->method who protocol-symbol client?)])
@@ -694,6 +740,26 @@ TO DO:
     (unless (= result 1)
       (error 'ssl-set-ciphers! "setting cipher list failed"))
     (void)))
+
+(define (ssl-set-server-name-identification-callback! ssl-context proc)
+  (let ([cb (lambda (ssl ad ptr)
+	      (let ([ret (proc (SSL_get_servername ssl TLSEXT_NAMETYPE_host_name))])
+		(if (ssl-server-context? ret)
+		    (begin
+		      (SSL_set_SSL_CTX ssl (extract-ctx 'callback #f ret))
+		      SSL_TLSEXT_ERR_OK)
+		    ; this isn't an error, it just means "no change necessary"
+		    SSL_TLSEXT_ERR_NOACK)))])
+
+    ; hold onto cb so that the garbage collector doesn't reclaim
+    ; the function that openssl is holding onto.
+    (set-ssl-server-context-servername-callback! ssl-context cb)
+
+    (unless (= (SSL_CTX_callback_ctrl
+		(extract-ctx 'ssl-set-server-name-identification-callback! #t ssl-context)
+		SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
+		cb) 1)
+	    (error 'ssl-set-server-name-identification-callback! "setting server name identification callback failed"))))
 
 (define (ssl-set-verify-hostname! ssl-context on?)
   ;; to check not sealed:

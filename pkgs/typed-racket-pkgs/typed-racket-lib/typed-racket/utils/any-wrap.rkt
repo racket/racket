@@ -99,10 +99,7 @@
       ;; chaperones, or if i could tell if they were immutable.
       [(? struct?) (wrap-struct neg-party v)]
       [(? procedure?)
-       (if (procedure-arity-includes? v 0)
-           (chaperone-procedure v (case-lambda [() (values)]
-                                               [_ (fail neg-party v)]))
-           (chaperone-procedure v (lambda args (fail neg-party v))))]
+       (chaperone-procedure v (lambda args (fail neg-party v)))]
       [(? promise?)
        (chaperone-struct
         v

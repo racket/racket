@@ -24,12 +24,14 @@
 (define autoloaded-specs (make-hasheq))
 (define (autoloaded? sym) (hash-ref autoloaded-specs sym #f))
 (define-syntax-rule (defautoload libspec id ...)
-  (begin (define (id . args)
-           (set! id (parameterize ([current-namespace (here-namespace)])
-                      (dynamic-require 'libspec 'id)))
-           (hash-set! autoloaded-specs 'libspec #t)
-           (hash-set! autoloaded-specs 'id #t)
-           (apply id args))
+  (begin (define id
+           (make-keyword-procedure
+            (λ (kws kw-args . args)
+              (set! id (parameterize ([current-namespace (here-namespace)])
+                         (dynamic-require 'libspec 'id)))
+              (hash-set! autoloaded-specs 'libspec #t)
+              (hash-set! autoloaded-specs 'id #t)
+              (keyword-apply id kws kw-args args))))
          ...))
 
 (defautoload racket/system          system system*)
@@ -37,6 +39,9 @@
 (defautoload setup/path-to-relative path->relative-string/setup)
 (defautoload syntax/modcode         get-module-code)
 (defautoload racket/path            find-relative-path)
+(defautoload setup/xref             load-collections-xref)
+(defautoload scribble/xref          xref-binding->definition-tag)
+(defautoload scribble/blueboxes     fetch-blueboxes-strs make-blueboxes-cache)
 
 ;; similar, but just for identifiers
 (define hidden-namespace (make-base-namespace))
@@ -624,6 +629,7 @@
                              (let-values ([(base name dir?) (split-path mod)])
                                (and (path? base) base)))])
           (describe-module dtm mod bind?))))))
+(define blueboxes-cache #f)
 (define (describe-binding sym b level)
   (define at-phase (phase->name level " (~a)"))
   (cond
@@ -637,6 +643,11 @@
      (define-values [src-mod src-id nominal-src-mod nominal-src-id
                      src-phase import-phase nominal-export-phase]
        (apply values b))
+     (define tag
+       (xref-binding->definition-tag (load-collections-xref) b 0))
+     (unless blueboxes-cache (set! blueboxes-cache (make-blueboxes-cache #t)))
+     (define bluebox-strs
+       (and tag (fetch-blueboxes-strs tag #:blueboxes-cache blueboxes-cache)))
      (set! src-mod         (->relname (mpi->name src-mod)))
      (set! nominal-src-mod (->relname (mpi->name nominal-src-mod)))
      (printf "; `~s' is a bound identifier~a,\n" sym at-phase)
@@ -650,7 +661,11 @@
                        (if (not (eq? sym nominal-src-id))
                          (format " where it is defined as `~s'" nominal-src-id)
                          ""))))
-     (printf "~a" (phase->name nominal-export-phase ";   (exported-~a)\n"))]))
+     (printf "~a" (phase->name nominal-export-phase ";   (exported-~a)\n"))
+     (when bluebox-strs
+       (displayln ";   documentation:")
+       (for-each (λ (s) (display ";     ") (displayln s))
+                 bluebox-strs))]))
 (define (describe-module sexpr mod-path/sym also?)
   (define get
     (if (symbol? mod-path/sym)
@@ -1282,9 +1297,7 @@
     (define inp
       (case (object-name (current-input-port))
         [(readline-input)
-         (parameterize ([(dynamic-require
-                          (collection-file-path "pread.rkt" "readline")
-                          'readline-prompt)
+         (parameterize ([(dynamic-require 'readline/pread 'readline-prompt)
                          qtext])
            (read-line))]
         [else (write-bytes qtext) (flush-output) (read-line)]))

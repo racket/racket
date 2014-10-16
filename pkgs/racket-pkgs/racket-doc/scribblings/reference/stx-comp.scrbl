@@ -227,7 +227,10 @@ Same as @racket[(identifier-binding id-stx #f)].}
 
 Like @racket[identifier-binding], but produces a symbol that
 corresponds to the binding. The symbol result is the same for any
-identifiers that are @racket[free-identifier=?].
+identifiers that are @racket[free-identifier=?], but the result may
+also be the same for identifiers that are not
+@racket[free-identifier=?] (i.e., different symbols imply different
+bindings, but the same symbol does not imply the same binding).
 
 When @racket[identifier-binding] would produce a list, then the second
 element of that list is the result that

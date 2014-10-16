@@ -159,7 +159,7 @@
 
  (proc-doc/names
   number-snip:make-repeating-decimal-snip
-  (number? boolean? . -> . (is-a?/c snip%))
+  (real? boolean? . -> . (is-a?/c snip%))
   (num show-prefix?)
   @{Makes a number snip that shows the decimal expansion for @racket[number].
     The boolean indicates if a @litchar{#e} prefix appears on the number.
@@ -168,7 +168,7 @@
 
  (proc-doc/names
   number-snip:make-fraction-snip
-  (number? boolean? . -> . (is-a?/c snip%))
+  (real? boolean? . -> . (is-a?/c snip%))
   (num show-prefix-in-decimal-view?)
   @{Makes a number snip that shows a fractional view of @racket[number].
     The boolean indicates if a @litchar{#e} prefix appears on the number, when
@@ -487,7 +487,7 @@
 
  (proc-doc/names
   path-utils:generate-autosave-name
-  (string? . -> . string?)
+  (-> (or/c #f path-string? path-for-some-system?) path?)
   (filename)
   @{Generates a name for an autosave file from @racket[filename].})
 
@@ -656,24 +656,6 @@
     If the result of @racket[(preferences:get 'framework:file-dialogs)] is
     @racket['std] this calls @racket[finder:std-get-file], and if it is
     @racket['common], @racket[finder:common-get-file] is called.})
-
- (proc-doc/names
-  finder:common-get-file-list
-  (->* ()
-       ((or/c false/c path?)
-        string?
-        (or/c false/c byte-regexp?)
-        string?
-        (or/c false/c (is-a?/c top-level-window<%>)))
-       (or/c (listof path?) false/c))
-  (()
-   ((directory #f)
-    (prompt "Select File")
-    (filter #f)
-    (filter-msg "That filename does not have the right form.")
-    (parent #f)))
-  @{This procedure queries the user for a list of filenames, using a
-    platform-independent dialog box.})
 
  (proc-doc/names
   frame:setup-size-pref
@@ -859,7 +841,7 @@
 
  (proc-doc/names
   handler:find-named-format-handler
-  (string? . -> . (path? . -> . (is-a?/c frame:editor<%>)))
+  (-> string? (or/c #f (-> path? (is-a?/c frame:editor<%>))))
   (name)
   @{This function selects a format handler.  See also
     @racket[handler:insert-format-handler].
@@ -868,7 +850,7 @@
 
  (proc-doc/names
   handler:find-format-handler
-  (path? . -> . (path? . -> . (is-a?/c frame:editor<%>)))
+  (-> path? (or/c #f (-> path? (is-a?/c frame:editor<%>))))
   (filename)
   @{This function selects a format handler.  See also
     @racket[handler:insert-format-handler].
@@ -1480,7 +1462,7 @@
 
  (proc-doc/names
   racket:get-color-prefs-table
-  (-> (listof (list/c symbol? (is-a?/c color%))))
+  (-> (listof (list/c symbol? (is-a?/c color%) string?)))
   ()
   @{Returns a table mapping from symbols (naming the categories that the online
     colorer uses for Racket mode coloring) to their colors.
@@ -1493,7 +1475,7 @@
 
  (proc-doc/names
   racket:get-white-on-black-color-prefs-table
-  (-> (listof (list/c symbol? (is-a?/c color%))))
+  (-> (listof (list/c symbol? (is-a?/c color%) string?)))
   ()
   @{Returns a table mapping from symbols (naming the categories that the online
     colorer uses for Racket mode coloring) to their colors when the user

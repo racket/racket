@@ -1,5 +1,5 @@
 #;
-(exn-pred #rx"Expected result: AnyValues")
+(exn-pred #rx"expected: Integer")
 
 #lang typed/racket
 

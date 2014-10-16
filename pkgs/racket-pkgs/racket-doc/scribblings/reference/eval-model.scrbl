@@ -822,6 +822,11 @@ imports from its enclosing module or vice-versa, then @tech{visits} or
 @tech{instantiations} of the two modules are independent, and thier
 implementations may even be loaded from bytecode at different times.
 
+A submodule declared with @racket[module] can import any preceding
+submodule declared with @racket[module]. A submodule declared with
+@racket[module*] can import any preceding module declared with
+@racket[module*] and any submodule declared with @racket[module].
+
 When a submodule declaration has the form @racket[(module* _name #f
 ....)], then all of the bindings of the enclosing module's bodies are
 visible in the submodule's body, and the submodule implicitly imports

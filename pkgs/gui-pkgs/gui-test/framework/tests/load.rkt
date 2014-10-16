@@ -9,7 +9,7 @@
     (test
      (string->symbol file)
      void?
-     `(let ([mred-name ((current-module-name-resolver) 'mred #f #f)]
+     `(let ([mred-name ((current-module-name-resolver) 'mred #f #f #t)]
             [orig-namespace (current-namespace)])
         (parameterize ([current-namespace (make-base-namespace)])
           (namespace-attach-module orig-namespace mred-name)

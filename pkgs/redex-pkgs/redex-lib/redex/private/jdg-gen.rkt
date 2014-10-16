@@ -7,6 +7,7 @@
          (only-in "reduction-semantics.rkt"
                   do-test-match)
          "pat-unify.rkt"
+         (only-in "fresh.rkt" variable-not-in)
          (for-syntax racket/base))
 
 (provide pat->term
@@ -42,6 +43,8 @@
            `(,@(for/list ([p ps]) (recur p)))]
           [`(cstr (,nts ...) ,p)
            (recur p)]
+         [`(variable-not-in ,not-in-p ,sym)
+          (recur not-in-p)]
           [`(nt ,_)
            (okk (ok))]
           [(? predef-pat? _)
@@ -87,6 +90,8 @@
                       (let ([res (recur p)])
                         (unless (not-failed? res) (fail (unif-fail)))
                         res))))]
+        [`(variable-not-in ,not-in-p ,sym)
+         (variable-not-in (recur not-in-p) sym)]
         [_
          (make-term p lang)])))
   (and/fail 

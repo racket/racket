@@ -121,17 +121,28 @@
 /* Instead of calling malloc() to get low-level memory, use
    sbrk() directly. (Unix) */
 
-#define GET_MEM_VIA_MMAP SGC_STD_DEBUGGING_UNIX
+#if SGC_STD_DEBUGGING_UNIX || defined(HAVE_MMAP_MPROTECT)
+# define GET_MEM_VIA_MMAP 1
+#else
+# define GET_MEM_VIA_MMAP 0
+#endif
 /* Instead of calling malloc() to get low-level memory, use
    mmap() directly. (Unix) */
 
-#define GET_MEM_VIA_VIRTUAL_ALLOC SGC_STD_DEBUGGING_WINDOWS
+#if SGC_STD_DEBUGGING_WINDOWS || defined(WIN32)
+# define GET_MEM_VIA_VIRTUAL_ALLOC 1
+# define LOG_SECTOR_SEGMENT_SIZE 16
+#else
+# define GET_MEM_VIA_VIRTUAL_ALLOC 0
+#endif
 /* Instead of calling malloc() to get low-level memory, use
    VirtualAlloc() directly. (Win32) */
 
 #define RELEASE_UNUSED_SECTORS 1
 /* Instead of managing a list of unused sectors, they are
-   given back to the OS. This only works with mmap(). */
+   given back to the OS. This only works with mmap(), and
+   it's required for an allocator that distinguishes executable
+   and non-executable sectors. */
 
 #define DISTINGUISH_FREE_FROM_UNMARKED 0
 /* Don't let conservatism resurrect a previously-collected block */
@@ -285,7 +296,7 @@
 # include <windows.h>
 #endif
 
-#if !GET_MEM_VIA_MMAP
+#if !GET_MEM_VIA_MMAP && !GET_MEM_VIA_VIRTUAL_ALLOC
 # undef RELEASE_UNUSED_SECTORS
 # define RELEASE_UNUSED_SECTORS 0
 #endif
@@ -313,8 +324,12 @@
 /* SECTOR_SEGMENT_SIZE determines the alignment of collector blocks.
    Since it should be a power of 2, LOG_SECTOR_SEGMENT_SIZE is
    specified directly. A larger block size speeds up GC, but wastes
-   more unallocated bytes in same-size buckets. */
-#define LOG_SECTOR_SEGMENT_SIZE 12
+   more unallocated bytes in same-size buckets. The block size must
+   be at least as large as the OS's page size, and when using VirtualAlloc
+   on Windows it must exactly match the allocation granularity. */
+#ifndef LOG_SECTOR_SEGMENT_SIZE
+# define LOG_SECTOR_SEGMENT_SIZE 16
+#endif
 #define SECTOR_SEGMENT_SIZE (1 << LOG_SECTOR_SEGMENT_SIZE)
 #define SECTOR_SEGMENT_MASK (~(SECTOR_SEGMENT_SIZE-1))
 
@@ -326,7 +341,7 @@
 
 /* Number of sector segments to be allocated at once with
    malloc() to avoid waste when obtaining the proper alignment. */
-#define SECTOR_SEGMENT_GROUP_SIZE 32
+#define SECTOR_SEGMENT_GROUP_SIZE 16
 
 /* Number of bits used in 32-bit level table for checking existence of
    a sector. Creates a table of (1 << SECTOR_LOOKUP_SHIFT) pointers
@@ -532,6 +547,7 @@ typedef struct BlockOfMemory {
 # define ALL_FREE 0xAA
 
 # define _NOT_FREE(x) NOT_FREE(x)
+# define WHEN_FREE_BIT(x) x
 
 # define SHIFT_UNMARK_TO_FREE(x) ((x & ALL_UNMARKED) << 1)
 # define SHIFT_COPY_FREE_TO_UNMARKED(x) ((x & ALL_FREE) | ((x & ALL_FREE) >> 1))
@@ -552,6 +568,7 @@ typedef struct BlockOfMemory {
 # define ALL_UNMARKED 0xFF
 
 # define _NOT_FREE(x) 1
+# define WHEN_FREE_BIT(x) /* void */
 
 #endif /* DISTINGUISH_FREE_FROM_UNMARKED */
 
@@ -668,7 +685,7 @@ static void add_freepage(SectorFreepage *naya)
 #define EACH_TABLE_COUNT (1 << (LOG_SECTOR_SEGMENT_SIZE - LOG_PTR_SIZE))
 
 typedef struct GC_Set {
-  short atomic, uncollectable;
+  short atomic, uncollectable, code;
 #if ALLOW_SET_LOCKING
   short locked;
 #endif
@@ -709,8 +726,10 @@ static BlockOfMemory *common[2 * NUM_COMMON_SIZE]; /* second half is `ends' arra
 static BlockOfMemory *atomic_common[2 * NUM_COMMON_SIZE];
 static BlockOfMemory *uncollectable_common[2 * NUM_COMMON_SIZE];
 static BlockOfMemory *uncollectable_atomic_common[2 * NUM_COMMON_SIZE];
+static BlockOfMemory *code_common[2 * NUM_COMMON_SIZE];
 static MemoryChunk *others, *atomic_others;
 static MemoryChunk *uncollectable_others, *uncollectable_atomic_others;
+static MemoryChunk *code_others;
 
 static int *common_positionses[NUM_COMMON_SIZE];
 
@@ -721,6 +740,7 @@ static MemoryChunk *sys_malloc_others;
 
 #define do_malloc_ATOMIC 0x1
 #define do_malloc_UNCOLLECTABLE 0x2
+#define do_malloc_EXECUTABLE 0x4
 #if NO_ATOMIC
 # define do_malloc_ATOMIC_UNLESS_DISABLED 0
 #else
@@ -836,7 +856,7 @@ static void sgc_fprintf(int, const char *, ...);
 #if CHECK_FREES
 static void free_error(const char *msg)
 {
-  FPRINTF(STDERR, msg);
+  FPRINTF(STDERR, "%s", msg);
 }
 #endif
 
@@ -848,7 +868,7 @@ static SectorPage ***sector_pagetablesss[1 << 16];
 # define DECL_SECTOR_PAGETABLES SectorPage **sector_pagetables;
 # define GET_SECTOR_PAGETABLES(p) sector_pagetables = create_sector_pagetables(p)
 # define FIND_SECTOR_PAGETABLES(p) sector_pagetables = get_sector_pagetables(p)
-static void *malloc_plain_sector(int count);
+static void *malloc_plain_sector(int count, int executable);
 inline static SectorPage **create_sector_pagetables(uintptr_t p) {
   uintptr_t pos;
   SectorPage ***sector_pagetabless, **sector_pagetables;
@@ -856,7 +876,7 @@ inline static SectorPage **create_sector_pagetables(uintptr_t p) {
   sector_pagetabless = sector_pagetablesss[pos];
   if (!sector_pagetabless) {
     int c = (sizeof(SectorPage **) << 16) >> LOG_SECTOR_SEGMENT_SIZE;
-    sector_pagetabless = (SectorPage ***)malloc_plain_sector(c);
+    sector_pagetabless = (SectorPage ***)malloc_plain_sector(c, 0);
     memset(sector_pagetabless, 0, c << LOG_SECTOR_SEGMENT_SIZE);
     sector_pagetablesss[pos] = sector_pagetabless;
     sector_admin_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
@@ -868,7 +888,7 @@ inline static SectorPage **create_sector_pagetables(uintptr_t p) {
     if (c < 0)
       c = 0;
     c = 1 << c;
-    sector_pagetables = (SectorPage **)malloc_plain_sector(c);
+    sector_pagetables = (SectorPage **)malloc_plain_sector(c, 0);
     memset(sector_pagetables, 0, c << LOG_SECTOR_SEGMENT_SIZE);
     sector_admin_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
     sector_pagetabless[pos] = sector_pagetables;
@@ -913,7 +933,7 @@ static SectorPage **sector_pagetables;
 */
 
 #if GET_MEM_VIA_SBRK
-static void *platform_plain_sector(int count)
+static void *platform_plain_sector(int count, int executable)
 {
   caddr_t cur_brk = (caddr_t)sbrk(0);
   intptr_t lsbs = (uintptr_t)cur_brk & TABLE_LO_MASK;
@@ -933,53 +953,116 @@ static void *platform_plain_sector(int count)
 }
 #endif
 #if GET_MEM_VIA_MMAP
-static void *platform_plain_sector(int count)
+static void *mmap_sector(int count, int executable)
 {
+  uintptr_t pre_extra;
+  void *p;
 #ifdef MAP_ANON
-  return mmap(NULL, count << LOG_SECTOR_SEGMENT_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+  int fd = -1;
+  int flags = MAP_ANON;
 #else
   static int fd;
+  int flags = 0;
 
-  if (!fd) {
+  if (!fd)
     fd = open("/dev/zero", O_RDWR);
-  }
-  
-  return mmap(0, count << LOG_SECTOR_SEGMENT_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 #endif
+
+  p = mmap(NULL, (count + 1) << LOG_SECTOR_SEGMENT_SIZE, 
+           PROT_READ | PROT_WRITE | (executable ? PROT_EXEC : 0), 
+           MAP_PRIVATE | flags, fd, 0);
+  
+  pre_extra = (uintptr_t)p & (SECTOR_SEGMENT_SIZE - 1);
+  if (pre_extra)
+    pre_extra = SECTOR_SEGMENT_SIZE - pre_extra;
+  if (pre_extra)
+    munmap(p, pre_extra);
+  if (pre_extra < SECTOR_SEGMENT_SIZE)
+    munmap((char *)p + pre_extra + (count << LOG_SECTOR_SEGMENT_SIZE),
+           SECTOR_SEGMENT_SIZE - pre_extra);
+
+  return (char *)p + pre_extra;
 }
 
-static void free_plain_sector(void *p, int count)
+static void munmap_sector(void *p, int count)
 {
   munmap(p, count << LOG_SECTOR_SEGMENT_SIZE);
 }
+
+static void *os_alloc_pages(size_t len)
+{
+  return mmap_sector(len >> LOG_SECTOR_SEGMENT_SIZE, 0);
+}
+
+static void os_free_pages(void *p, size_t len)
+{
+  munmap_sector(p, len >> LOG_SECTOR_SEGMENT_SIZE);
+}
+
+static void *ofm_malloc_zero(size_t len)
+{
+  return mmap_sector((len >> LOG_SECTOR_SEGMENT_SIZE) + 1, 0);
+}
+
+/* Instead of calling mmap()/unmap() every time we need to
+   allocate/free a sector, use the allocation-cache layer from
+   "gc2" for non-executable pages: */
+
+# define APAGE_SIZE SECTOR_SEGMENT_SIZE
+# define NO_ALLOC_CACHE_FREE
+# include "../gc2/my_qsort.c"
+# include "../gc2/alloc_cache.c"
+static AllocCacheBlock *alloc_cache;
+
+static void *platform_plain_sector(int count, int executable)
+{
+  intptr_t sd;
+
+  if (executable)
+    return mmap_sector(count, 1);
+
+  if (!alloc_cache)
+    alloc_cache = alloc_cache_create();
+
+  return alloc_cache_alloc_page(alloc_cache,  count << LOG_SECTOR_SEGMENT_SIZE, LOG_SECTOR_SEGMENT_SIZE, 0, &sd);
+}
+
+static void free_plain_sector(void *p, int count, int executable)
+{
+  if (executable) {
+    munmap_sector(p, count);
+    return;
+  }
+
+  (void)alloc_cache_free_page(alloc_cache, p, count << LOG_SECTOR_SEGMENT_SIZE, 1, 1);
+}
+
+#define FLUSH_SECTOR_FREES
+static void flush_freed_sectors()
+{
+  if (alloc_cache)
+    alloc_cache_flush_freed_pages(alloc_cache);
+}
+
 #endif
 #if GET_MEM_VIA_VIRTUAL_ALLOC
-static void *platform_plain_sector(int count)
+static void *platform_plain_sector(int count, int executable)
 {
-  /* Since 64k blocks are used up by each call to VirtualAlloc,
-     use roughly the same trick as in the malloc-based alloc to
-     avoid wasting the address space. */
+  void *p;
 
-  static int prealloced;
-  static void *preallocptr;
+  p = VirtualAlloc(NULL, (count + 1) << LOG_SECTOR_SEGMENT_SIZE,
+                   MEM_COMMIT | MEM_RESERVE,
+                   executable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
   
-  if (!prealloced && (count < SECTOR_SEGMENT_GROUP_SIZE)) {
-    prealloced = SECTOR_SEGMENT_GROUP_SIZE;
-    preallocptr = VirtualAlloc(NULL, prealloced << LOG_SECTOR_SEGMENT_SIZE,
-			       MEM_COMMIT | MEM_RESERVE,
-			       PAGE_READWRITE);		
-  }
-  
-  if (count <= prealloced) {
-    void *result = preallocptr;
-    preallocptr = ((char *)preallocptr) + (count << LOG_SECTOR_SEGMENT_SIZE);
-    prealloced -= count;
-    return result;
-  }
-  
-  return VirtualAlloc(NULL, count << LOG_SECTOR_SEGMENT_SIZE,
-		      MEM_COMMIT | MEM_RESERVE,
-		      PAGE_READWRITE);
+  if ((uintptr_t)p & (SECTOR_SEGMENT_SIZE - 1))
+    abort();
+
+  return p;
+}
+
+static void free_plain_sector(void *p, int count, int executable)
+{
+  VirtualFree(p, 0, MEM_RELEASE);
 }
 #endif
 
@@ -991,7 +1074,7 @@ static void *platform_plain_sector(int count)
   <<
 # endif
 
-static void *platform_plain_sector(int count)
+static void *platform_plain_sector(int count, int executable)
 {
   static int prealloced;
   static void *preallocptr;
@@ -1035,11 +1118,11 @@ static void *platform_plain_sector(int count)
 }
 #endif
 
-static void *malloc_plain_sector(int count)
+static void *malloc_plain_sector(int count, int executable)
 {
   void *m;
 
-  m = platform_plain_sector(count);
+  m = platform_plain_sector(count, executable);
 
   if (!m) {
     if (GC_out_of_memory)
@@ -1075,7 +1158,7 @@ static void register_sector(void *naya, int need, intptr_t kind)
       if (c < 0)
         c = 0;
       c = 1 << c;
-      pagetable = (SectorPage *)malloc_plain_sector(c);
+      pagetable = (SectorPage *)malloc_plain_sector(c, 0);
       sector_pagetables[pagetableindex] = pagetable;
       sector_admin_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
       for (j = 0; j < SECTOR_LOOKUP_PAGESIZE; j++) {
@@ -1090,7 +1173,7 @@ static void register_sector(void *naya, int need, intptr_t kind)
   }
 }
 
-static void *malloc_sector(intptr_t size, intptr_t kind, int no_new)
+static void *malloc_sector(intptr_t size, intptr_t kind, int no_new, int executable)
 {
   intptr_t need;
   void *naya;
@@ -1113,7 +1196,7 @@ static void *malloc_sector(intptr_t size, intptr_t kind, int no_new)
     if (c < 0)
       c = 0;
     c = 1 << c;
-    sector_pagetables = (SectorPage **)malloc_plain_sector(c);
+    sector_pagetables = (SectorPage **)malloc_plain_sector(c, 0);
     sector_admin_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
     for (i = 0; i < (1 << SECTOR_LOOKUP_PAGESETBITS); i++)
       sector_pagetables[i] = NULL;
@@ -1164,14 +1247,14 @@ static void *malloc_sector(intptr_t size, intptr_t kind, int no_new)
   if (no_new)
     return NULL;
 
-  naya = malloc_plain_sector(need);
+  naya = malloc_plain_sector(need, executable);
   sector_mem_use += (need << LOG_SECTOR_SEGMENT_SIZE);
   register_sector(naya, need, kind);
 
   return naya;
 }
 
-static void free_sector(void *p)
+static void free_sector(void *p, int executable)
 {
   uintptr_t s = PTR_TO_INT(p), t;
   int c = 0;
@@ -1206,7 +1289,7 @@ static void free_sector(void *p)
 #endif
 
 #if RELEASE_UNUSED_SECTORS
-  free_plain_sector(p, c);
+  free_plain_sector(p, c, executable);
   sector_mem_use -= (c << LOG_SECTOR_SEGMENT_SIZE);
 #else
   sector_free_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
@@ -1283,7 +1366,7 @@ static void *realloc_collect_temp(void *v, intptr_t oldsize, intptr_t newsize)
 #elif GET_MEM_VIA_MMAP
   void *naya;
   
-  naya = platform_plain_sector((newsize + SECTOR_SEGMENT_SIZE - 1) >> LOG_SECTOR_SEGMENT_SIZE);
+  naya = platform_plain_sector((newsize + SECTOR_SEGMENT_SIZE - 1) >> LOG_SECTOR_SEGMENT_SIZE, 0);
   memcpy(naya, v, oldsize);
   if (v)
     munmap(v, (oldsize + SECTOR_SEGMENT_SIZE - 1) >> LOG_SECTOR_SEGMENT_SIZE);
@@ -1367,7 +1450,7 @@ static void *malloc_managed(intptr_t size)
     size += PTR_SIZE - (size & PTR_SIZE);
 
   if (!managed) {
-    managed = (Managed *)malloc_sector(SECTOR_SEGMENT_SIZE, sector_kind_other, 0);
+    managed = (Managed *)malloc_sector(SECTOR_SEGMENT_SIZE, sector_kind_other, 0, 0);
     managed->num_buckets = 0;
     manage_real_mem_use += SECTOR_SEGMENT_SIZE;
   }
@@ -1383,7 +1466,7 @@ static void *malloc_managed(intptr_t size)
     if (size < MAX_COMMON_SIZE) {
       int c;
 
-      mb = (ManagedBlock *)malloc_sector(SECTOR_SEGMENT_SIZE, sector_kind_managed, 0);
+      mb = (ManagedBlock *)malloc_sector(SECTOR_SEGMENT_SIZE, sector_kind_managed, 0, 0);
       manage_real_mem_use += SECTOR_SEGMENT_SIZE;
       managed->buckets[i].block = mb;
 
@@ -1394,7 +1477,7 @@ static void *malloc_managed(intptr_t size)
       managed->buckets[i].offset = c + sizeof(ManagedBlockHeader);
     } else {
       intptr_t l = size + sizeof(ManagedBlockHeader) + PTR_SIZE;
-      mb = (ManagedBlock *)malloc_sector(l, sector_kind_managed, 0);
+      mb = (ManagedBlock *)malloc_sector(l, sector_kind_managed, 0, 0);
       manage_real_mem_use += l;
       managed->buckets[i].block = mb;
       managed->buckets[i].perblock = 1;
@@ -1417,7 +1500,7 @@ static void *malloc_managed(intptr_t size)
     mb = mb->head.next;
   if (mb->head.count == perblock) {
     intptr_t l = offset + size * perblock;
-    mb->head.next = (ManagedBlock *)malloc_sector(l, sector_kind_managed, 0);
+    mb->head.next = (ManagedBlock *)malloc_sector(l, sector_kind_managed, 0, 0);
     manage_real_mem_use += l;
     mb->head.next->head.prev = mb;
     mb = mb->head.next;
@@ -1488,7 +1571,7 @@ static void free_managed(void *s)
 
 	  manage_real_mem_use -= (bucket->offset + bucket->size * bucket->perblock);
 
-	  free_sector(mb);
+	  free_sector(mb, 0);
 	}
 	return;
       }
@@ -1513,8 +1596,8 @@ static void init_size_map()
   int i, j, find_half;
   intptr_t k, next;
 
-  size_index_map = (intptr_t *)malloc_sector(MAX_COMMON_SIZE, sector_kind_other, 0);
-  size_map = (intptr_t *)malloc_sector(NUM_COMMON_SIZE * sizeof(intptr_t), sector_kind_other, 0);
+  size_index_map = (intptr_t *)malloc_sector(MAX_COMMON_SIZE, sector_kind_other, 0, 0);
+  size_map = (intptr_t *)malloc_sector(NUM_COMMON_SIZE * sizeof(intptr_t), sector_kind_other, 0, 0);
 
   /* This is two loops instead of one to avoid a gcc 2.92.2 -O2 x86 bug: */
   for (i = 0; i < 8; i++) {
@@ -1572,11 +1655,11 @@ void GC_add_roots(void *start, void *end)
 
     mem_real_use += (sizeof(uintptr_t) * roots_size);
 
-    memcpy((void *)naya, (void *)roots, 
-	   sizeof(uintptr_t) * roots_count);
-
-    if (roots)
+    if (roots) {
+      memcpy((void *)naya, (void *)roots,
+             sizeof(uintptr_t) * roots_count);
       free_managed(roots);
+    }
 
     roots = naya;
   }
@@ -1612,15 +1695,16 @@ static void GC_initialize(void)
   int i;
 
 #if PROVIDE_MALLOC_AND_FREE
-  num_common_sets = 5;
+  num_common_sets = 6;
 #else
-  num_common_sets = 4;
+  num_common_sets = 5;
 #endif
   common_sets = (GC_Set **)malloc_managed(sizeof(GC_Set*) * num_common_sets);
 
   common_sets[0] = (GC_Set *)malloc_managed(sizeof(GC_Set));
   common_sets[0]->atomic = 0;
   common_sets[0]->uncollectable = 0;
+  common_sets[0]->code = 0;
   common_sets[0]->blocks = common;
   common_sets[0]->block_ends = common + NUM_COMMON_SIZE;
   common_sets[0]->othersptr = &others;
@@ -1628,6 +1712,7 @@ static void GC_initialize(void)
   common_sets[1] = (GC_Set *)malloc_managed(sizeof(GC_Set));
   common_sets[1]->atomic = !NO_ATOMIC;
   common_sets[1]->uncollectable = 0;
+  common_sets[1]->code = 0;
   common_sets[1]->blocks = atomic_common;
   common_sets[1]->block_ends = atomic_common + NUM_COMMON_SIZE;
   common_sets[1]->othersptr = &atomic_others;
@@ -1635,6 +1720,7 @@ static void GC_initialize(void)
   common_sets[2] = (GC_Set *)malloc_managed(sizeof(GC_Set));
   common_sets[2]->atomic = 0;
   common_sets[2]->uncollectable = 1;
+  common_sets[2]->code = 1;
   common_sets[2]->blocks = uncollectable_common;
   common_sets[2]->block_ends = uncollectable_common + NUM_COMMON_SIZE;
   common_sets[2]->othersptr = &uncollectable_others;
@@ -1642,17 +1728,27 @@ static void GC_initialize(void)
   common_sets[3] = (GC_Set *)malloc_managed(sizeof(GC_Set));
   common_sets[3]->atomic = !NO_ATOMIC;
   common_sets[3]->uncollectable = 1;
+  common_sets[3]->code = 1;
   common_sets[3]->blocks = uncollectable_atomic_common;
   common_sets[3]->block_ends = uncollectable_atomic_common + NUM_COMMON_SIZE;
   common_sets[3]->othersptr = &uncollectable_atomic_others;
 
-#if PROVIDE_MALLOC_AND_FREE
   common_sets[4] = (GC_Set *)malloc_managed(sizeof(GC_Set));
-  common_sets[4]->atomic = 1;
-  common_sets[4]->uncollectable = 1;
-  common_sets[4]->blocks = sys_malloc;
-  common_sets[4]->block_ends = sys_malloc + NUM_COMMON_SIZE;
-  common_sets[4]->othersptr = &sys_malloc_others;
+  common_sets[4]->atomic = 0;
+  common_sets[4]->uncollectable = 0;
+  common_sets[4]->code = 1;
+  common_sets[4]->blocks = code_common;
+  common_sets[4]->block_ends = code_common + NUM_COMMON_SIZE;
+  common_sets[4]->othersptr = &code_others;
+
+#if PROVIDE_MALLOC_AND_FREE
+  common_sets[5] = (GC_Set *)malloc_managed(sizeof(GC_Set));
+  common_sets[5]->atomic = 1;
+  common_sets[5]->uncollectable = 1;
+  common_sets[5]->code = 0;
+  common_sets[5]->blocks = sys_malloc;
+  common_sets[5]->block_ends = sys_malloc + NUM_COMMON_SIZE;
+  common_sets[5]->othersptr = &sys_malloc_others;
 #endif
 
   for (i = 0; i < num_common_sets; i++) {
@@ -1679,7 +1775,7 @@ static void GC_initialize(void)
   }
 
 #if PROVIDE_MALLOC_AND_FREE
-  common_sets[4]->name = "Sysmalloc";
+  common_sets[5]->name = "Sysmalloc";
 #endif
 
   initialized = 1;
@@ -1976,7 +2072,7 @@ void GC_dump(void)
       FPRINTF(STDERR,
 	      "Set: %s [%s/%s]: ======================================\n", 
 	      cs->name,
-	      cs->atomic ? "atomic" : "pointerful",
+	      cs->atomic ? "atomic" : (cs->code ? "code" : "pointerful"),
 	      cs->uncollectable ? "eternal" : "collectable");
 
       for (i = 0; i < NUM_COMMON_SIZE; i++) {
@@ -2119,7 +2215,7 @@ void GC_dump(void)
       FPRINTF(STDERR,
 	      "%12s: %10ld  [%s/%s]\n",
 	      cs->name, cs->total,
-	      cs->atomic ? "atomic" : "pointerful",
+	      cs->atomic ? "atomic" : (cs->code ? "code" : "pointerful"),
 	      cs->uncollectable ? "eternal" : "collectable");
       total += cs->total;
     }
@@ -2188,7 +2284,7 @@ static void init_positions(int cpos, int size, int num_elems)
   int i, j, pos;
   int *positions;
 
-  positions = (int *)malloc_sector(num_offsets * sizeof(int), sector_kind_other, 0);
+  positions = (int *)malloc_sector(num_offsets * sizeof(int), sector_kind_other, 0, 0);
 
   for (i = 0, pos = 0, j = 0; i < num_offsets; ) {
     positions[i++] = pos;
@@ -2360,12 +2456,14 @@ static void *do_malloc(SET_NO_BACKINFO
 
     cpos = 0;
 
-    a = malloc_sector(size + size_align(sizeof(MemoryChunk)), sector_kind_chunk, 1);
+    a = malloc_sector(size + size_align(sizeof(MemoryChunk)), sector_kind_chunk, 1, 
+                      flags & do_malloc_EXECUTABLE);
     if (!a) {
       if (mem_use >= mem_limit)
 	GC_gcollect();
       
-      a = malloc_sector(size + size_align(sizeof(MemoryChunk)), sector_kind_chunk, 0);
+      a = malloc_sector(size + size_align(sizeof(MemoryChunk)), sector_kind_chunk, 0,
+                        flags & do_malloc_EXECUTABLE);
     }
 
     c = (MemoryChunk *)a;
@@ -2463,14 +2561,16 @@ static void *do_malloc(SET_NO_BACKINFO
     c = size_align(sizeof(BlockOfMemory)) + (PTR_SIZE - 1) + sizeElemBit;
   }
 
-  block = (BlockOfMemory *)malloc_sector(c, sector_kind_block, 1);
+  block = (BlockOfMemory *)malloc_sector(c, sector_kind_block, 1, 
+                                         flags & do_malloc_EXECUTABLE);
   if (!block) {
     if ((mem_use >= mem_limit) && !GC_dont_gc) {
       GC_gcollect();
       return do_malloc(KEEP_SET_INFO_ARG(set_no)
 		       size, common, othersptr, flags);
     } else
-      block = (BlockOfMemory *)malloc_sector(c, sector_kind_block, 0);
+      block = (BlockOfMemory *)malloc_sector(c, sector_kind_block, 0,
+                                             flags & do_malloc_EXECUTABLE);
   }
 
   
@@ -2675,6 +2775,13 @@ void *GC_malloc_atomic_uncollectable(size_t size)
 		   do_malloc_ATOMIC_UNLESS_DISABLED | do_malloc_UNCOLLECTABLE);
 }
 
+void *GC_malloc_code(size_t size)
+{
+  return do_malloc(KEEP_SET_INFO_ARG(4)
+		   size, code_common, &code_others,
+		   do_malloc_EXECUTABLE);
+}
+
 void *GC_malloc_specific(size_t size, GC_Set *set)
 {
   return do_malloc(KEEP_SET_INFO_ARG(set->no)
@@ -2691,7 +2798,7 @@ void *GC_malloc_stubborn(size_t size)
 #if PROVIDE_MALLOC_AND_FREE
 void *malloc(size_t size)
 {
-  return do_malloc(KEEP_SET_INFO_ARG(4)
+  return do_malloc(KEEP_SET_INFO_ARG(5)
 		   size, sys_malloc, 
 		   &sys_malloc_others, 
 		   do_malloc_ATOMIC | do_malloc_UNCOLLECTABLE);
@@ -2990,7 +3097,7 @@ static void free_chunk(MemoryChunk *k, MemoryChunk **prev, GC_Set *set)
 
   *prev = next;
 
-  free_sector(k);
+  free_sector(k, set->code);
   --num_chunks;
 }
 
@@ -3033,7 +3140,7 @@ void GC_free(void *p)
 	return;
       }
 #   if EXTRA_FREE_CHECKS
-      if (block->set_no != 4) {
+      if (block->set_no != 5) {
 	char b[256];
 	sprintf(b, "GC_free on ptr from wrong block! %lx\n", (intptr_t)p);
 	free_error(b);
@@ -3085,7 +3192,7 @@ void GC_free(void *p)
 	GC_initialize();
 
 # if CHECK_FREES && EXTRA_FREE_CHECKS
-      if (chunk->set_no != 4) {
+      if (chunk->set_no != 5) {
 	char b[256];
 	sprintf(b, "GC_free on ptr from wrong block! %lx\n", (intptr_t)p);
 	free_error(b);
@@ -3413,7 +3520,7 @@ static void collect_finish_common(BlockOfMemory **blocks,
 	--num_blocks;
 
 	*prev = block->next;
-	free_sector(block);
+	free_sector(block, set->code);
 	mem_real_use -= SECTOR_SEGMENT_SIZE;
 	block = *prev;
       } else {
@@ -3837,11 +3944,11 @@ static void push_uncollectable_common(BlockOfMemory **blocks, GC_Set *set)
 	for (j = 0; start < top; start += size, j++) {
 	  int bit;
 	  int pos;
-	  int fbit;
+	  WHEN_FREE_BIT(int fbit);
 
 	  pos = POS_TO_UNMARK_INDEX(j);
 	  bit = POS_TO_UNMARK_BIT(j);
-	  fbit = POS_TO_FREE_BIT(j);
+	  WHEN_FREE_BIT(fbit = POS_TO_FREE_BIT(j));
 
 	  if (NOT_MARKED(block->free[pos] & bit)
 	      && _NOT_FREE(block->free[pos] & fbit)) {
@@ -3950,12 +4057,13 @@ static void mark_common_for_finalizations(BlockOfMemory **blocks, int atomic)
 	/* If not eager, mark data reachable from finalized block: */
 	if (!fn->eager_level) {
 	  int pos, apos;
-	  int bit, fbit;
+	  int bit;
+          WHEN_FREE_BIT(int fbit);
 
 	  pos = fn->u.pos;
 	  apos = POS_TO_UNMARK_INDEX(pos);
 	  bit = POS_TO_UNMARK_BIT(pos);
-	  fbit = POS_TO_FREE_BIT(pos);
+	  WHEN_FREE_BIT(fbit = POS_TO_FREE_BIT(pos));
 	  
 	  if (NOT_MARKED(block->free[apos] & bit)
 	      && _NOT_FREE(block->free[apos] & fbit)) {
@@ -4363,7 +4471,9 @@ static intptr_t last_gc_end;
 
 static void do_GC_gcollect(void *stack_now)
 {
+# if PRINT
   intptr_t root_marked;
+#endif
   int j;
 
 #if PRINT_INFO_PER_GC
@@ -4527,7 +4637,9 @@ static void do_GC_gcollect(void *stack_now)
   collect_trace_count = 0;
 # endif
 
+# if PRINT
   root_marked = mem_use;
+# endif
 
   PRINTTIME((STDERR, "gc: stack push start: %ld\n", GETTIMEREL()));
 
@@ -4624,6 +4736,10 @@ static void do_GC_gcollect(void *stack_now)
 			  common_sets[j]->block_ends,
 			  common_sets[j]);
   }
+
+#ifdef FLUSH_SECTOR_FREES
+  flush_freed_sectors();
+#endif
 
   PRINTTIME((STDERR, "gc: all done: %ld\n", GETTIMEREL()));
 
@@ -4867,7 +4983,7 @@ void GC_store_path(void *v, uintptr_t src, void *path_data)
   if (len) {
     uintptr_t prev = 0;
 
-    trace_path_buffer[trace_path_buffer_pos++] = (void *)(len + 2);
+    trace_path_buffer[trace_path_buffer_pos++] = (void *)(intptr_t)(len + 2);
     trace_path_buffer[trace_path_buffer_pos++] = current_trace_source;
     trace_path_buffer[trace_path_buffer_pos++] = 0;
     for (i = 1; len--; i += 3) {

@@ -30,7 +30,7 @@ The core Racket run-time system is available in two main variants:
        the @racket[racket/gui/base] library. On Windows, the
        executable is called @as-index{@exec{GRacket.exe}}, and it is a
        GUI application (as opposed to a console application) that
-       implements singe-instance support. On Mac OS X, the
+       implements single-instance support. On Mac OS X, the
        @exec{gracket} script launches @as-index{@exec{GRacket.app}}.}
 
 ]

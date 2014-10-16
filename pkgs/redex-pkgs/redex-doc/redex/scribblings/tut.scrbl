@@ -10,6 +10,7 @@
                       setup/main-collects)
           setup/dirs
           "tut-util.rkt"
+          "cite.rkt"
           (for-label racket/base
                      racket/gui
                      racket/pretty
@@ -304,7 +305,7 @@ the language @racket[L] with a new non-terminal
                   
 The @racket[define-extended-language] form accepts the
 name of the new language, the name of the extended 
-langauge and then a series of non-terminals just
+language and then a series of non-terminals just
 like @racket[define-language].
 
 In the extended language, we can give all of the
@@ -360,7 +361,7 @@ the shape @racket[(types Γ e t)].
                      (types Γ (amb e ...) num)])]
 
 The first clause gives
-the typing rule for aplication expressions, saying
+the typing rule for application expressions, saying
 that if @racket[e_1] has the type 
 @racket[(→ t_2 t_3)] and @racket[e_2] has the type
 @racket[t_2], then the application expression 
@@ -370,8 +371,8 @@ Similarly, the other clauses give the typing
 rules for all of the other forms in the language.
 
 Most of the rules use use @racket[types], or give base types to atomic
-expressions, but the fourth rule is worth a special look. It says that
-if a variable typechecks in some environment, then it also type
+expressions, but the fifth rule is worth a special look. It says that
+if a variable type checks in some environment, then it also type
 checks in an extended environment, provided that the environment extension
 does not use the variable in question. 
 
@@ -447,7 +448,7 @@ has, returning a list of them (in this case, just one).
 In general, the @racket[judgment-holds] form's first argument
 is an instance of some judgment-form that should have concrete
 terms for the @racket[I] positions in the mode spec, and patterns
-in the positions labelled @racket[O]. Then, the second position
+in the positions labeled @racket[O]. Then, the second position
 in @racket[judgment-holds] is an expression that can use the
 pattern variables inside those @racket[O] positions. The result
 of @racket[judgment-holds] will be a list of terms, one for
@@ -744,7 +745,7 @@ The first rule replaces @racket[if0] expressions when the test position
 is @racket[0] by the second subexpression (the true branch). It uses
 the @racket[in-hole] pattern, the Redex notation for context decomposition.
 In this case, it decomposes a program into some @racket[P] with
-an approriate @racket[if0] expression inside, and then the right-hand
+an appropriate @racket[if0] expression inside, and then the right-hand
 side of the rule places @racket[e_1] into the same context.
 
 The rule for the false branch should apply when the test position is
@@ -941,7 +942,7 @@ a pattern (@racket[e] in this case), and a Racket expression that returns a
 boolean. It randomly generates expressions matching the pattern and then invokes
 the expression in an attempt to elicit @racket[#f] from the Racket expression.
 
-We can also ask redex-check how good of a job it is doing. 
+We can also ask @racket[redex-check] how good of a job it is doing. 
 Specifically, this expression re-runs the same random test, but
 this time sets up some instrumenting infrastructure to 
 determine how many of the reduction rules fire during the
@@ -961,7 +962,7 @@ fired.
                  (redex-check Ev e (progress-holds? (term e))))
                (covered-cases c))]
 
-Not many of them! To improve coverage, we can tell redex-check
+Not many of them! To improve coverage, we can tell @racket[redex-check]
 to try generating expressions using the patterns on the left-hand
 side of the rules to generate programs, and then check to see if progress for each of
 the expressions in the program:
@@ -1034,7 +1035,7 @@ program have the same type.
 
 @section{Typesetting the Reduction Relation}
 
-Redex's typsetting facilities accept languages, metafunctions, reduction relations,
+Redex's typesetting facilities accept languages, metafunctions, reduction relations,
 and judgment-forms and produce typeset output that can be included directly
 into a figure in a paper.
 
@@ -1063,9 +1064,9 @@ then we can use the pict primitives to combine typeset fragments into a larger w
 
 Generally speaking, Redex has reasonable default ways to typeset its
 definitions, except when they escapes to Racket. In that case,
-it typsets the code in a fixed-width font and makes the background pink to call our
+it typesets the code in a fixed-width font and makes the background pink to call our
 attention to it. While it is possible to use @racket[with-unquote-rewriter] to 
-tell Redex how to typset those regions, often it is easier to define a metafunction
+tell Redex how to typeset those regions, often it is easier to define a metafunction
 and call it. In this case, we can use @racket[different] (defined earlier).
 
 @m[(define if0-false-rule
@@ -1120,9 +1121,6 @@ fills as much of the width established by rendering @racket[red].
 
 Typeset @racket[types]. Use a compound rewriter so a use of @racket[(type Γ e t)]
 is rendered as @racketblock[Γ ⊢ e : t]
-
-@generate-bibliography[]
-
 
 @close-eval[amb-eval]
 

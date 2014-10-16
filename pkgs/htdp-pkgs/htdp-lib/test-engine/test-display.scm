@@ -274,10 +274,19 @@
           (print (string-constant test-engine-check-encountered-error)
                  (formatter (unexpected-error-expected fail))
                  (unexpected-error-message fail))]
+         [(unsatisfied-error? fail)
+          (print
+           "check-satisfied encountered an error instead of the expected kind of value, ~F. \n  :: ~a"
+           (unsatisfied-error-expected fail)
+           (unsatisfied-error-message fail))]
          [(unequal? fail)
           (print (string-constant test-engine-actual-value-differs-error)
                  (formatter (unequal-test fail))
                  (formatter (unequal-actual fail)))]
+	 [(satisfied-failed? fail)
+	  (print "Actual value ~F does not satisfy ~a."
+	         (formatter (satisfied-failed-actual fail))
+                 (satisfied-failed-name fail))]
          [(outofrange? fail)
           (print (string-constant test-engine-actual-value-not-within-error)
                  (formatter (outofrange-test fail))

@@ -10,7 +10,6 @@
          racket/list
          racket/format
          setup/dirs
-         pkg/util
          "shelly.rkt")
 
 (define-runtime-path test-directory ".")
@@ -23,6 +22,8 @@
   (define p (build-path c "info-domain" "compiled" "cache.rktd"))
   (and (file-exists? p)
        p))
+
+(define fake-installation-dir (make-parameter #f))
 
 (define (with-fake-installation* t #:default-scope [default-scope "installation"])
   (define tmp-dir
@@ -63,7 +64,8 @@
            (path->string tmp-dir))
          (parameterize ([current-environment-variables
                          (environment-variables-copy
-                          (current-environment-variables))])
+                          (current-environment-variables))]
+                        [fake-installation-dir tmp-dir])
            (putenv "PLTCONFIGDIR" tmp-dir-s)
 	   (putenv "PATH" (~a (find-console-bin-dir)
 			      ":"
@@ -173,7 +175,7 @@
     (format "Test installation of ~a" message)
     pre ...
     $ "racket -e '(require pkg-test1)'" =exit> 1
-    $ (format "raco pkg install ~a" pkg)
+    $ (format "raco pkg install --copy ~a" pkg)
     $ "racket -e '(require pkg-test1)'"
     more ...
     $ (format "raco pkg remove ~a" rm-pkg)
@@ -190,18 +192,24 @@
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test1.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-test1.zip"))
+                     "http://localhost:9999/pkg-test1.zip"
+                     'tags
+                     '("first")))
 
   (hash-set! *index-ht-1* "pkg-test2"
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test2.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-test2.zip"))
+                     "http://localhost:9999/pkg-test2.zip"
+                     'dependencies
+                     '("pkg-test1")))
 
   (hash-set! *index-ht-2* "pkg-test2-snd"
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test2.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-test2.zip")))
+                     "http://localhost:9999/pkg-test2.zip"
+                     'dependencies
+                     '("pkg-test1"))))
 
 (provide (all-defined-out))

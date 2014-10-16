@@ -599,6 +599,7 @@ code does the parsing and validation of the syntax.
 (provide
  parse-->i
  ->i-valid-app-shapes
+ compute-quoted-src-expression
  (struct-out istx)
  (struct-out arg/res)
  (struct-out arg)

@@ -222,3 +222,13 @@ one created by @racket[other-authors] renders as ``et al.''}
 Takes an author-name element and create one that represents the editor
 of a collection. If a @racket[name] is a string, it is parsed in the
 same way as by @racket[make-bib].}
+
+@defparam[abbreviate-given-names abbreviate? any/c]{
+  Shortens given names in calls to @racket[author] and @racket[make-bib]
+  to just the first initial when the parameter value is not @racket[#f].
+  Otherwise, does not change the author names.
+  
+  Defaults to @racket[#f].
+  
+  @history[#:added "1.5"]
+}

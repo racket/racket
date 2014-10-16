@@ -6,6 +6,7 @@
          set-flag-params
 	 setup-program-name
 	 specific-collections
+	 specific-packages
 	 specific-planet-dirs
 	 archives
 	 archive-implies-reindex
@@ -67,6 +68,7 @@
 (define-flag-param make-tidy #f)
 (define-flag-param make-doc-index #f)
 (define-flag-param check-dependencies #t)
+(define-flag-param always-check-dependencies #f)
 (define-flag-param fix-dependencies #f)
 (define-flag-param check-unused-dependencies #f)
 (define-flag-param call-install #t)
@@ -74,8 +76,10 @@
 (define-flag-param pause-on-errors #f)
 (define-flag-param force-unpacks #f)
 (define-flag-param doc-pdf-dest #f)
+(define-flag-param fail-fast #f)
 
 (define specific-collections (make-parameter null))
+(define specific-packages (make-parameter null))
 (define specific-planet-dirs (make-parameter null))
 
 (define archives (make-parameter null))

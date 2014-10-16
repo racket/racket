@@ -8,7 +8,7 @@
 (provide/contract
  [query-aspell (->* ((and/c string? (not/c #rx"[\n]")))
                     ((or/c #f string?))
-                    (listof (list/c number? number?)))]
+                    (listof (list/c number? number? (listof string?))))]
 
  ;; may return #f when aspell is really ispell or when
  ;; something goes wrong trying to get the list of dictionaries
@@ -174,20 +174,24 @@
                                (shutdown-aspell "got eof from process")]
                               [(equal? l "") (send-resp (reverse resp))]
                               [(regexp-match #rx"^[*]" l) (loop resp)]
-                              [(regexp-match #rx"^[&] ([^ ]*) [0-9]+ ([0-9]+)" l) 
+                              [(regexp-match #rx"^[&] ([^ ]*) [0-9]+ ([0-9]+): (.*)$" l) 
                                =>
                                (λ (m)
                                  (define word-len (string-length (list-ref m 1)))
                                  ;; subtract one to correct for the leading ^
                                  (define word-start (- (string->number (list-ref m 2)) 1))
-                                 (loop (cons (list word-start word-len) resp)))]
+                                 (define suggestions (list-ref m 3))
+                                 (loop 
+                                  (cons 
+                                   (list word-start word-len (regexp-split #rx", " suggestions))
+                                   resp)))]
                               [(regexp-match #rx"^[#] ([^ ]*) ([0-9]+)" l) 
                                =>
                                (λ (m)
                                  (define word-len (string-length (list-ref m 1)))
                                  ;; subtract one to correct for the leading ^
                                  (define word-start (- (string->number (list-ref m 2)) 1))
-                                 (loop (cons (list word-start word-len) resp)))]
+                                 (loop (cons (list word-start word-len '()) resp)))]
                               [else
                                (send-resp '())
                                (shutdown-aspell (format "could not parse aspell output line: ~s" l))])]

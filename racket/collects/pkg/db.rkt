@@ -5,6 +5,7 @@
          racket/path
          racket/file
          version/utils
+         setup/dirs
          db/private/pre)
 
 (provide 
@@ -120,7 +121,7 @@
 (define current-pkg-catalog-file
   (make-parameter (build-path
                    (find-system-path 'addon-dir)
-                   (version)
+                   (get-installation-name)
                    "pkgs"
                    "catalog.sqlite")))
 
@@ -130,8 +131,9 @@
       (lambda ()
         (define file (current-pkg-catalog-file))
         (define dir (path-only file))
-        (unless (directory-exists? dir)
-          (make-directory* dir))
+        (when dir
+          (unless (directory-exists? dir)
+            (make-directory* dir)))
         (set! db (sqlite3-connect #:database file
                                   #:mode 'create
                                   #:busy-retry-limit +inf.0)))

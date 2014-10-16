@@ -5,17 +5,16 @@
          racket/system
          file/gzip
          racket/match
-         "common.rkt")
-
-(define s3-config (build-path (find-system-path 'home-dir) ".s3cfg-plt"))
-(define s3-bucket "pkgs.racket-lang.org")
-
-(define s3cmd-path (find-executable-path "s3cmd"))
+         "common.rkt"
+         "notify.rkt")
 
 (define (upload-all)
   (gzip (format "~a/pkgs-all.json" static-path)
         (format "~a/pkgs-all.json.gz" static-path))
 
+  (delete-file (format "~a/pkgs-all.json" static-path))
+
+  (notify! "update upload in progress: there may be inconsistencies below")
   (system* s3cmd-path
            "-c" s3-config
            "sync"
@@ -34,14 +33,21 @@
            "--delete-removed"
            (format "~a/" static-path)
            (format "s3://~a/" s3-bucket))
-
-  
+  (notify! "")
 
   (void))
 
 (define (upload-pkgs pkgs)
   ;; FUTURE make this more efficient
   (upload-all))
+(define (run-s3! pkgs)
+  (run! upload-pkgs pkgs))
+(define (signal-s3! pkgs)
+  (thread (λ () (run-s3! pkgs))))
+
+(provide upload-pkgs
+         run-s3!
+         signal-s3!)
 
 (module+ main
   (require racket/cmdline)

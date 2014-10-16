@@ -32,7 +32,7 @@
      (with-deep-time-limit
       n
       (subprocess (current-output-port) 
-                  (current-input-port)
+                  #f ; because (current-input-port) = /dev/null in DrDr mode
                   (current-error-port)
                   (find-executable-path "cat")))))
   (check-exn

@@ -588,6 +588,14 @@
         #f))
 
 
+(let ()
+  (test (and (redex-match
+              empty-language
+              (natural ..._r)
+              (term ()))
+             #t)
+        #t))
+
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        
@@ -1185,6 +1193,15 @@
           '(2 1)))
   
   (let ()
+    
+    (define-metafunction empty-language
+      must-be-identity : natural_1 -> natural_1
+      [(must-be-identity any) 0])
+
+    (test (with-handlers ((exn:fail:redex? exn-message))
+            (term (must-be-identity 1)))
+          #rx"codomain test failed")
+    
     (define-metafunction empty-language
       [(same any_1 any_1) #t]
       [(same any_1 any_2) #f])
@@ -1197,7 +1214,37 @@
     (test (term (m 1 1)) 1)
     (test (with-handlers ((exn:fail:redex? exn-message))
             (term (m 1 2)))
-          #rx"is not in my domain"))
+          #rx"is not in my domain")
+    
+    (define-metafunction empty-language
+      is-nat : any -> boolean
+      [(is-nat natural) #t]
+      [(is-nat any) #f])
+
+    (define-metafunction empty-language
+      post-only : any_1 -> any_2
+      #:post (same any_1 any_2)
+      [(post-only any) 1])
+
+    (test (term (post-only 1)) 1)
+    (test (with-handlers ([exn:fail:redex? exn-message])
+            (term (post-only 2)))
+          #rx"codomain")
+
+    (define-metafunction empty-language
+      pre-and-post : any_1 -> any_2
+      #:pre (is-nat any_1)
+      #:post (same any_1 any_2)
+      [(pre-and-post any) 1])
+
+    (test (term (pre-and-post 1)) 1)
+    (test (with-handlers ([exn:fail:redex? exn-message])
+            (term (pre-and-post x)))
+          #rx"is not in my domain")
+    (test (with-handlers ([exn:fail:redex? exn-message])
+            (term (pre-and-post 2)))
+          #rx"codomain")
+    )
   
   (let ()
     (define-language L
@@ -1258,6 +1305,24 @@
   (test (term (f (a b c))) 3)
   (test (term (f (a b))) #f))
   
+(let ()
+  ;; 'or' in metafunctions
+  (define-language L)
+  
+  (define-metafunction L
+    [(f any ...)
+     three
+     (where (any_1 any_2 any_3) (any ...))
+     or
+     two
+     (where (any_1 any_2) (any ...))
+     or
+     something-else])
+
+  (test (term (f a b c)) (term three))
+  (test (term (f a b)) (term two))
+  (test (term (f a)) (term something-else)))
+
 ;                                                                                                 
 ;                                                                                                 
 ;                                                                                                 
@@ -2121,6 +2186,24 @@
     (test (apply-reduction-relation red2 (term (X q))) (list (term (X z)) 
                                                              (term (X w)))))
   
+  (let ()
+    (define-language L (M ::= number))
+    (define r (reduction-relation L (--> M M (where M M))))
+    (define-extended-language L1 L (M ::= string))
+    (define r1 (extend-reduction-relation r L1))
+    (test (apply-reduction-relation r1 "7") '("7")))
+
+  (let ()
+    (define-language L (M ::= number))
+    (define-extended-language L1 L (M ::= string))
+    (define-judgment-form L
+      #:mode (id I O)
+      #:contract (id any any)
+      [(id any any)])
+    (define t  (reduction-relation L (--> M M (judgment-holds (id M M)))))
+    (define t1 (extend-reduction-relation t L1))
+    (test (apply-reduction-relation t1 "7") '("7")))
+
   (test (reduction-relation->rule-names
          (reduction-relation
           empty-language
@@ -2728,6 +2811,34 @@
       (test (judgment-holds (Q (3 4) number_1) number_1)
                   '(14)))
 
+  (let () 
+    (define-judgment-form empty-language
+      #:mode (J I)
+      [(D any_x) ...
+       --------------
+       (J (any_x ...))])
+    (define-judgment-form empty-language
+      #:mode (D I)
+      [----------- nat
+       (D natural)]
+      [----------- num
+       (D number)])
+
+    ;; this test is designed to check to see if we are
+    ;; avoiding an exponential blow up. On my laptop,
+    ;; a list of length 14 was taking 2 seconds before
+    ;; the fix and 1 msec afterwards. After the fix,
+    ;; a list of length 100 (as below) was also taking 
+    ;; no time.
+    
+    (define-values (_ cpu real gc)
+      (time-apply
+       (λ ()
+         (judgment-holds (J ,(build-list 100 add1))))
+       '()))
+    (test (< cpu 1000) #t))
+
+
     
     (parameterize ([current-namespace (make-base-namespace)])
       (eval '(require errortrace))
@@ -3166,6 +3277,17 @@
       "no error raised"))
   
   (test #t (regexp-match? #rx"^compatible-closure:.*fred" err-msg)))
+
+;; this tests that context-closure (and thus compatible-closure)
+;; play along properly with way extend-reduction-relation handles
+;; language extensions
+(let ()
+  (define-language L0 (K ::= number))
+  (define r (reduction-relation L0 (--> 5 6)))
+  (define r0 (context-closure r L0 (hole K)))
+  (define-language L1 (K ::= string))
+  (define r1 (extend-reduction-relation r0 L1))
+  (test (apply-reduction-relation r1  (term (5 "14"))) (list '(6 "14"))))
   
   (let* ([R (reduction-relation
              empty-language

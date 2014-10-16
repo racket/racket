@@ -14,6 +14,7 @@ profile todo:
          errortrace/stacktrace
          racket/class
          racket/path
+         racket/bool
          racket/gui/base
          string-constants
          framework
@@ -22,6 +23,7 @@ profile todo:
          drracket/private/drsig
          "bindings-browser.rkt"
          "stack-checkpoint.rkt"
+         "ellipsis-snip.rkt"
          net/sendurl
          net/url
          racket/match
@@ -315,7 +317,8 @@ profile todo:
                           (oe annotated))])))))])
       debug-tool-eval-handler))
   
-  ;; make-debug-error-display-handler : (string (union TST exn) -> void) -> string (union TST exn) -> void
+  ;; make-debug-error-display-handler : 
+  ;;    (string (union TST exn) -> void) -> string (union TST exn) -> void
   ;; adds in the bug icon, if there are contexts to display
   (define (make-debug-error-display-handler orig-error-display-handler)
     (define (debug-error-display-handler msg exn)
@@ -346,8 +349,10 @@ profile todo:
                        (map cdr (filter cdr (cut-stack-at-checkpoint exn)))
                        '())]
            [port-name-matches-cache (make-hasheq)]
-           [stack1-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache)) stack1)]
-           [stack2-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache)) stack2)]
+           [stack1-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache))
+                                 stack1)]
+           [stack2-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache))
+                                 stack2)]
            [src-locs (cond
                        [(exn:srclocs? exn)
                         ((exn:srclocs-accessor exn) exn)]
@@ -358,8 +363,9 @@ profile todo:
                        [(pair? stack2)
                         (list (car stack2))]
                        [else '()])]
-           [src-locs-edition (and (pair? src-locs)
-                                  (srcloc->edition/pair defs ints (car src-locs) port-name-matches-cache))])
+           [src-locs-edition 
+            (and (pair? src-locs)
+                 (srcloc->edition/pair defs ints (car src-locs) port-name-matches-cache))])
 
       (print-planet-icon-to-stderr exn)
       (unless (exn:fail:user? exn)
@@ -367,7 +373,7 @@ profile todo:
           (unless (and (null? stack1) (null? stack2))
             (print-bug-to-stderr msg stack1 stack1-editions stack2 stack2-editions defs ints)))
         (display-srclocs-in-error src-locs src-locs-edition))
-      (display msg (current-error-port))
+      (display-error-message exn msg)
       (when (exn:fail:syntax? exn)
         (unless (error-print-source-location)
           (show-syntax-error-context (current-error-port) exn)))
@@ -385,6 +391,76 @@ profile todo:
              (send ints highlight-errors src-locs (if (null? stack1)
                                                       stack2
                                                       stack1))))))))
+  
+  (define (render-message lines)
+    (define collected (collect-hidden-lines lines))
+    (for ([x (in-list collected)]
+          [i (in-naturals)])
+      (unless (zero? i) (newline (current-error-port)))
+      (cond
+        [(string? x)
+         (display x (current-error-port))]
+        [(pair? x)
+         (define line (list-ref x 0))
+         (define to-show-later (list-ref x 1))
+         (write-string line (current-error-port) 0 (- (string-length line) 4))
+         (write-special (new ellipsis-snip% [extra to-show-later]) (current-error-port))
+         (display ":" (current-error-port))])))
+  
+  (define (display-error-message exn msg)
+    (cond
+      [(exn:fail? exn)
+       (define lines (regexp-split #rx"\n" msg))
+       (cond
+         [(ellipsis-candidate? lines)
+          (render-message lines)]
+         [else
+          (display msg (current-error-port))])]
+      [else 
+       (display msg (current-error-port))]))
+  
+  (define (collect-hidden-lines lines)
+    (let loop ([lines lines]
+               [ellipsis-line #f]
+               [collection #f])
+      (cond
+        [(null? lines)
+         (cond
+           [ellipsis-line
+            (list (list ellipsis-line collection))]
+           [else
+            '()])]
+        [else
+         (define line (car lines))
+         (cond
+           [ellipsis-line
+            (cond
+              [(regexp-match #rx"^   " line)
+               (loop (cdr lines) ellipsis-line (cons line collection))]
+              [else
+               (cons (list ellipsis-line collection)
+                     (loop (cdr lines) #f #f))])]
+           [else
+            (cond
+              [(regexp-match #rx"  [^ ].*[.][.][.]:$" line)
+               (loop (cdr lines) line '())]
+              [else
+               (cons line (loop (cdr lines) #f #f))])])])))
+  
+  (define (ellipsis-candidate? lines)
+    (and ((length lines) . > . 1)
+         (for/and ([x (in-list lines)]
+                   [i (in-naturals)])
+           
+           (and
+            ;; if it's not the first line, it is indented.
+            (implies (not (zero? i))
+                     (regexp-match? #rx"^ " x))
+            
+            ;; if it has the indentation to match a `field' line,
+            ;; it has a colon
+            (implies (regexp-match? #rx"^  [^ ]" x)
+                     (regexp-match? #rx":" x))))))
   
   (define (srcloc->edition/pair defs ints srcloc [port-name-matches-cache #f])
     (let ([src (srcloc-source srcloc)])
@@ -506,7 +582,8 @@ profile todo:
                      (install-pkg
                       tlw
                       (lambda (thunk)
-                        (parameterize ([error-display-handler drracket:init:original-error-display-handler])
+                        (parameterize ([error-display-handler 
+                                        drracket:init:original-error-display-handler])
                           (thunk)))
                       #:package-to-offer pkg)))
              (eprintf "  ")
@@ -526,7 +603,11 @@ profile todo:
         (when note%
           (let ([note (new note%)])
             (send note set-stacks cms1 cms2)
-            (send note set-callback (λ (snp) (show-backtrace-window/edition-pairs/two msg cms1 editions1 cms2 editions2 defs ints)))
+            (send note set-callback
+                  (λ (snp) (show-backtrace-window/edition-pairs/two msg 
+                                                                    cms1 editions1
+                                                                    cms2 editions2
+                                                                    defs ints)))
             (write-special note (current-error-port))
             (display #\space (current-error-port)))))))
   
@@ -810,7 +891,10 @@ profile todo:
                     (cond
                       [(and (< n (vector-length di-vec))
                             (< n (+ index how-many-at-once)))
-                       (show-frame ec text (vector-ref di-vec n) (vector-ref editions-vec n) (vector-ref skip-counts n) defs ints)
+                       (show-frame ec text (vector-ref di-vec n) 
+                                   (vector-ref editions-vec n)
+                                   (vector-ref skip-counts n)
+                                   defs ints)
                        (loop (+ n 1))]
                       [else
                        (set! index n)]))
@@ -881,7 +965,8 @@ profile todo:
            [else
             (define di2 (car dis))
             (define edition2 (car editions))
-            (define-values (res-dis res-editions skip-counts) (loop di2 edition2 (cdr dis) (cdr editions)))
+            (define-values (res-dis res-editions skip-counts)
+              (loop di2 edition2 (cdr dis) (cdr editions)))
             (if (equal? di di2)
                 (values res-dis res-editions (cons (+ (car skip-counts) 1) (cdr skip-counts)))
                 (values (cons di res-dis)
@@ -959,65 +1044,66 @@ profile todo:
   ;;                  -> 
   ;;                  void
   (define (insert-context editor-canvas text file start span defs ints)
-    (let-values ([(from-text close-text)
-                  (cond
-                    [(and ints (send ints port-name-matches? file))
-                     (values ints void)]
-                    [(and defs (send defs port-name-matches? file))
-                     (values defs void)]
-                    [(path? file)
-                     (let ([file (with-handlers ((exn:fail? (λ (x) #f)))
-                                   (normal-case-path (normalize-path file)))])
-                       (if file
-                           (cond
-                             [(send (group:get-the-frame-group)
-                                    locate-file
-                                    file)
-                              =>
-                              (λ (frame)
-                                (cond
-                                  [(is-a? frame drracket:unit:frame%)
-                                   (let loop ([tabs (send frame get-tabs)])
-                                     (cond
-                                       [(null? tabs) (values #f void)]
-                                       [else
-                                        (let* ([tab (car tabs)]
-                                               [defs (send tab get-defs)])
-                                          (if (with-handlers ((exn:fail? (λ (x) #f)))
-                                                (equal? (normalize-path (normal-case-path (send defs get-filename)))
-                                                        file))
-                                              (values defs void)
-                                              (loop (cdr tabs))))]))]
-                                  [(is-a? frame frame:editor<%>)
-                                   (values (send frame get-editor) void)]
-                                  [else (values #f void)]))]
-                             [(path? file)
-                              (let ([text (new text:basic%)])
-                                (if (send text load-file file)
-                                    (values text 
-                                            (λ () (send text on-close)))
-                                    (values #f (λ () (void)))))]
-                             [else
-                              (values #f void)])
-                           (values #f void)))]
-                    [(is-a? file editor<%>)
-                     (values file void)]
-                    [else (error 'insert-context "unknown file spec ~e" file)])])
-      (when from-text
-        (let* ([finish (+ start span -1)]
-               [context-text (copy/highlight-text from-text start finish)])
-          (send context-text lock #t)
-          (send context-text hide-caret #t)
-          (send text insert "  ")
-          (let ([snip (make-object editor-snip% context-text)])
-            (send snip use-style-background #t)
-            (send editor-canvas add-wide-snip snip)
-            (let ([p (send text last-position)])
-              (send text insert snip p p)
-              (send text insert #\newline)
-              (when (preferences:get 'framework:white-on-black?)
-                (send text change-style white-on-black-style p (+ p 1))))))
-        (close-text))))
+    (define-values (from-text close-text)
+      (cond
+        [(and ints (send ints port-name-matches? file))
+         (values ints void)]
+        [(and defs (send defs port-name-matches? file))
+         (values defs void)]
+        [(path? file)
+         (define normalized-file
+           (with-handlers ((exn:fail? (λ (x) #f)))
+             (normal-case-path (normalize-path file))))
+         (cond
+           [(not normalized-file) (values #f void)]
+           [(send (group:get-the-frame-group)
+                  locate-file
+                  normalized-file)
+            =>
+            (λ (frame)
+              (cond
+                [(is-a? frame drracket:unit:frame%)
+                 (let loop ([tabs (send frame get-tabs)])
+                   (cond
+                     [(null? tabs) (values #f void)]
+                     [else
+                      (let* ([tab (car tabs)]
+                             [defs (send tab get-defs)])
+                        (if (with-handlers ((exn:fail? (λ (x) #f)))
+                              (equal? 
+                               (normalize-path (normal-case-path (send defs get-filename)))
+                               normalized-file))
+                            (values defs void)
+                            (loop (cdr tabs))))]))]
+                [(is-a? frame frame:editor<%>)
+                 (values (send frame get-editor) void)]
+                [else (values #f void)]))]
+           [(path? normalized-file)
+            (let ([text (new text:basic%)])
+              (if (send text load-file normalized-file)
+                  (values text 
+                          (λ () (send text on-close)))
+                  (values #f (λ () (void)))))]
+           [else
+            (values #f void)])]
+        [(is-a? file editor<%>)
+         (values file void)]
+        [else (values #f void)]))
+    (when from-text
+      (let* ([finish (+ start span -1)]
+             [context-text (copy/highlight-text from-text start finish)])
+        (send context-text lock #t)
+        (send context-text hide-caret #t)
+        (send text insert "  ")
+        (let ([snip (make-object editor-snip% context-text)])
+          (send snip use-style-background #t)
+          (send editor-canvas add-wide-snip snip)
+          (let ([p (send text last-position)])
+            (send text insert snip p p)
+            (send text insert #\newline)
+            (when (preferences:get 'framework:white-on-black?)
+              (send text change-style white-on-black-style p (+ p 1))))))
+      (close-text)))
   
   (define white-on-black-style (make-object style-delta%))
   (define stupid-internal-define-syntax1 (send white-on-black-style set-delta-foreground "white"))
@@ -1307,7 +1393,8 @@ profile todo:
                                        [span (syntax-span stx)])
                                    (and pos
                                         span
-                                        (hash-ref! port-name-cache src (λ () (send (get-defs) port-name-matches? src)))
+                                        (hash-ref! port-name-cache src
+                                                   (λ () (send (get-defs) port-name-matches? src)))
                                         (list (mcar covered?)
                                               (make-srcloc (get-defs) #f #f pos span))))))))]
                
@@ -1562,7 +1649,10 @@ profile todo:
                                     (prof-info-time info)))))))
     (void))
   
-  (define (get-color-value/pref val max-val drracket:profile:low-color drracket:profile:high-color drracket:profile:scale)
+  (define (get-color-value/pref val max-val 
+                                drracket:profile:low-color
+                                drracket:profile:high-color
+                                drracket:profile:scale)
     (let* ([adjust
             (case drracket:profile:scale
               [(sqrt) sqrt]
@@ -1833,70 +1923,68 @@ profile todo:
         (unless profile-gui-constructed?
           (set! profile-gui-constructed? #t)
           (begin-container-sequence)
-          (let ()
-            (define _2
-              (set! profile-info-panel (instantiate horizontal-panel% ()
-                                         (parent profile-info-outer-panel)
-                                         (stretchable-height #f))))
-            (define profile-left-side (instantiate vertical-panel% (profile-info-panel)))
-            (define _3
-              (set! profile-info-editor-canvas (new canvas:basic% 
-                                                    (parent profile-info-panel)
-                                                    (editor (send (get-current-tab) get-profile-info-text)))))
-            (define profile-message (instantiate message% ()
-                                      (label (string-constant profiling))
-                                      (parent profile-left-side)))
-            (define _4
-              (set! profile-choice (instantiate radio-box% ()
-                                     (label #f)
-                                     (parent profile-left-side)
-                                     (callback
-                                      (λ (x y)
-                                        (let ([mode (profile-selection->mode (send profile-choice get-selection))])
-                                          (preferences:set 'drracket:profile-how-to-count mode)
-                                          (send (get-current-tab) set-sort-mode mode)
-                                          (send (get-current-tab) refresh-profile))))
-                                     (choices (list (string-constant profiling-time)
-                                                    (string-constant profiling-number))))))
-            (define _1
-              (send profile-choice set-selection
-                    (case (preferences:get 'drracket:profile-how-to-count)
-                      [(time) 0]
-                      [(count) 1])))
-            (define update-profile-button
-              (instantiate button% ()
-                (label (string-constant profiling-update))
-                (parent profile-left-side)
-                (callback
-                 (λ (x y)
-                   (send (get-current-tab) refresh-profile)))))
-            (define hide-profile-button 
-              (instantiate button% ()
-                (label (string-constant profiling-hide-profile))
-                (parent profile-left-side)
-                (callback
-                 (λ (x y)
-                   (send (get-current-tab) hide-profile)))))
-            (send profile-choice set-selection 
-                  (profile-mode->selection (preferences:get 'drracket:profile-how-to-count)))
+          (set! profile-info-panel (instantiate horizontal-panel% ()
+                                     (parent profile-info-outer-panel)
+                                     (stretchable-height #f)))
+          (define profile-left-side (instantiate vertical-panel% (profile-info-panel)))
+          (set! profile-info-editor-canvas 
+                (new canvas:basic% 
+                     (parent profile-info-panel)
+                     (editor (send (get-current-tab) get-profile-info-text))))
+          (define profile-message (instantiate message% ()
+                                    (label (string-constant profiling))
+                                    (parent profile-left-side)))
+          (set! profile-choice (new radio-box%
+                                    (label #f)
+                                    (parent profile-left-side)
+                                    (callback
+                                     (λ (x y)
+                                       (define mode
+                                         (profile-selection->mode 
+                                          (send profile-choice get-selection)))
+                                       (preferences:set 'drracket:profile-how-to-count mode)
+                                       (send (get-current-tab) set-sort-mode mode)
+                                       (send (get-current-tab) refresh-profile)))
+                                    (choices (list (string-constant profiling-time)
+                                                   (string-constant profiling-number)))))
+          (send profile-choice set-selection
+                (case (preferences:get 'drracket:profile-how-to-count)
+                  [(time) 0]
+                  [(count) 1]))
+          (define update-profile-button
+            (instantiate button% ()
+              (label (string-constant profiling-update))
+              (parent profile-left-side)
+              (callback
+               (λ (x y)
+                 (send (get-current-tab) refresh-profile)))))
+          (define hide-profile-button 
+            (instantiate button% ()
+              (label (string-constant profiling-hide-profile))
+              (parent profile-left-side)
+              (callback
+               (λ (x y)
+                 (send (get-current-tab) hide-profile)))))
+          (send profile-choice set-selection 
+                (profile-mode->selection (preferences:get 'drracket:profile-how-to-count)))
+          
+          (send profile-left-side stretchable-width #f)
+          
+          (let ([wid (max (send update-profile-button get-width)
+                          (send hide-profile-button get-width)
+                          (send profile-choice get-width)
+                          (send profile-message get-width))])
+            (send update-profile-button min-width wid)
+            (send hide-profile-button min-width wid)
+            (send profile-choice min-width wid))
+          (send profile-left-side set-alignment 'left 'center)
             
-            (send profile-left-side stretchable-width #f)
-            
-            (let ([wid (max (send update-profile-button get-width)
-                            (send hide-profile-button get-width)
-                            (send profile-choice get-width)
-                            (send profile-message get-width))])
-              (send update-profile-button min-width wid)
-              (send hide-profile-button min-width wid)
-              (send profile-choice min-width wid))
-            (send profile-left-side set-alignment 'left 'center)
-            
-            ;; hide profiling info initially, but reflow the container
-            ;; so that the invisible children get the right size.
-            (send this reflow-container)
-            (send profile-info-outer-panel change-children
-                  (λ (l)
-                    (remq profile-info-panel l))))
+          ;; hide profiling info initially, but reflow the container
+          ;; so that the invisible children get the right size.
+          (send this reflow-container)
+          (send profile-info-outer-panel change-children
+                (λ (l)
+                  (remq profile-info-panel l)))
           (end-container-sequence)))))
   
   (define (profile-selection->mode sel)
@@ -1948,156 +2036,150 @@ profile todo:
         (lock #f)
         (erase)
         (clear-old-results)
-        (let* (;; must copy them here in case the program is still running
-               ;; and thus updating them.
-               [infos '()]
-               [_ (let loop ([profile-info profile-info])
-                    (cond
-                      [(null? profile-info) (void)]
-                      [else 
-                       (let ([ht (car profile-info)])
-                         (hash-for-each
-                          ht
-                          (λ (key val)
-                            (when (any-info? val)
-                              (set! infos (cons (copy-prof-info val) infos))))))
-                       (loop (cdr profile-info))]))]
-               
-               ;; each editor that gets some highlighting is put
-               ;; into this table and an edit sequence is begun for it.
-               ;; after all ranges are updated, the edit sequences are all closed.
-               [in-edit-sequence (make-hasheq)]
-               [clear-highlight void]
-               [max-value (extract-maximum infos)]
-               
-               [port-name-matches-cache (make-hasheq)]
-               [show-highlight
-                (λ (info)
-                  (let* ([expr (prof-info-expr info)]
-                         [src (and (syntax-source expr)
-                                   definitions-text
-                                   (hash-ref! port-name-matches-cache
-                                              (syntax-source expr)
-                                              (λ () (send definitions-text port-name-matches? (syntax-source expr)))))]
-                         [pos (syntax-position expr)]
-                         [span (syntax-span expr)])
-                    (when (and (is-a? src text:basic<%>)
-                               (number? pos)
-                               (number? span))
-                      (unless (hash-ref in-edit-sequence src (λ () #f))
-                        (hash-set! in-edit-sequence src #t)
-                        (send src begin-edit-sequence #t #f))
-                      (let* ([color (get-color-value 
-                                     (if (eq? (preferences:get 'drracket:profile-how-to-count) 'time)
-                                         (prof-info-time info)
-                                         (prof-info-num info))
-                                     max-value)]
-                             [clr (send src highlight-range (- pos 1) (+ pos span -1) color)])
-                        (let ([old-thnk clear-highlight])
-                          (set! clear-highlight
-                                (λ ()
-                                  (clr)
-                                  (old-thnk))))))))]
-               [smaller-range?
-                (λ (x y)
-                  (let ([x-span (syntax-span (prof-info-expr x))]
-                        [y-span (syntax-span (prof-info-expr y))])
-                    (if (and x-span y-span)
-                        (< x-span y-span)
-                        #f)))]
-               
-               [show-line
-                (λ (info newline? highlight-line?)
-                  (let* ([expr (prof-info-expr info)]
-                         [expr-src (syntax-source expr)]
-                         [count (prof-info-num info)]
-                         [time (prof-info-time info)]
-                         [name (prof-info-name info)])
-                    (when newline? (send src-loc-editor insert "\n"))
-                    (when highlight-line? (small-blank-line src-loc-editor))
-                    (let ([before (send src-loc-editor last-position)])
-                      (insert-profile-src-loc src-loc-editor expr name)
-                      (let ([after (send src-loc-editor last-position)])
-                        (cond
-                          [(string? expr-src)
-                           (send src-loc-editor change-style (gui-utils:get-clickback-delta) before after)
-                           (let ([after (send src-loc-editor last-position)])
-                             (send src-loc-editor set-clickback 
-                                   before after 
-                                   (λ (text start end)
-                                     (open-file-and-goto-position expr-src (syntax-position expr)))))]
-                          [(is-a? expr-src editor:basic<%>)
-                           (send src-loc-editor change-style (gui-utils:get-clickback-delta) before after)
-                           (send src-loc-editor set-clickback
-                                 before after
-                                 (λ (text start end)
-                                   (let ([window (send expr-src get-top-level-window)]
-                                         [pos (syntax-position expr)])
-                                     (when window (send window show #t))
-                                     (when pos (send expr-src set-position (- pos 1)))
-                                     (send expr-src set-caret-owner #f 'global))))]
-                          [else (void)])))
-                    
-                    (when newline? (send time-editor insert "\n"))
-                    (when highlight-line? (small-blank-line time-editor))
-                    (send time-editor insert (format "~a" time))
-                    (send time-editor set-paragraph-alignment (send time-editor last-paragraph) 'right)
-                    
-                    (when newline? (send count-editor insert "\n")) 
-                    (when highlight-line? (small-blank-line count-editor))
-                    (send count-editor insert (format "~a" count))
-                    (send count-editor set-paragraph-alignment (send count-editor last-paragraph) 'right)))]
-               
-               [bigger-value?
-                (λ (x y)
-                  (let ([sel (if (eq? 'count (preferences:get 'drracket:profile-how-to-count))
-                                 prof-info-num
-                                 prof-info-time)])
-                    (> (sel x) (sel y))))]
-               
-               [cleanup-editor
-                (λ (ed)
-                  (let* ([ed-admin (send ed get-admin)]
-                         [snip (send ed-admin get-snip)]
-                         [bl (box 0)]
-                         [br (box 0)])
-                    (get-snip-location snip bl #f #f)
-                    (get-snip-location snip br #f #t)
-                    (let ([w (+ (- (unbox br) (unbox bl)) 4)])
-                      (send ed set-max-width w)
-                      (send ed set-min-width w)))
-                  (send ed hide-caret #t)
-                  (send ed lock #t))]
-               
-               [top-infos (top 100 (sort infos bigger-value?))])
-          (for-each show-highlight top-infos)
-          (initialize-editors)
-          (let loop ([infos top-infos]
-                     [newline? #f]
-                     [highlight-counter 0])
-            (cond
-              [(null? infos) (void)]
-              [else 
-               (show-line (car infos) newline? (and newline? (zero? highlight-counter)))
-               (loop (cdr infos) #t (modulo (+ highlight-counter 1) 2))]))
-          (cleanup-editor count-editor)
-          (cleanup-editor time-editor)
-          (cleanup-editor src-loc-editor)
-          
-          (hash-for-each
-           in-edit-sequence
-           (λ (key val)
-             (send key end-edit-sequence)))
-          (set! clear-old-results 
-                (λ ()
-                  (hash-for-each
-                   in-edit-sequence
-                   (λ (key val) (send key begin-edit-sequence #t #f)))
-                  (clear-highlight)
-                  (hash-for-each
-                   in-edit-sequence
-                   (λ (key val) (send key end-edit-sequence)))
-                  (set! clear-old-results void))))
+        (define infos '())
+        (let loop ([profile-info profile-info])
+          (cond
+            [(null? profile-info) (void)]
+            [else 
+             (let ([ht (car profile-info)])
+               (hash-for-each
+                ht
+                (λ (key val)
+                  (when (any-info? val)
+                    (set! infos (cons (copy-prof-info val) infos))))))
+             (loop (cdr profile-info))]))
+        
+        ;; each editor that gets some highlighting is put
+        ;; into this table and an edit sequence is begun for it.
+        ;; after all ranges are updated, the edit sequences are all closed.
+        (define in-edit-sequence (make-hasheq))
+        (define clear-highlight void)
+        (define max-value (extract-maximum infos))
+        
+        (define port-name-matches-cache (make-hasheq))
+        (define (show-highlight info)
+          (define expr (prof-info-expr info))
+          (define src 
+            (and (syntax-source expr)
+                 definitions-text
+                 (hash-ref! port-name-matches-cache
+                            (syntax-source expr)
+                            (λ () (send definitions-text port-name-matches? (syntax-source expr))))))
+          (define pos (syntax-position expr))
+          (define span (syntax-span expr))
+          (when (and (is-a? src text:basic<%>)
+                     (number? pos)
+                     (number? span))
+            (unless (hash-ref in-edit-sequence src (λ () #f))
+              (hash-set! in-edit-sequence src #t)
+              (send src begin-edit-sequence #t #f))
+            (let* ([color (get-color-value 
+                           (if (eq? (preferences:get 'drracket:profile-how-to-count) 'time)
+                               (prof-info-time info)
+                               (prof-info-num info))
+                           max-value)]
+                   [clr (send src highlight-range (- pos 1) (+ pos span -1) color)])
+              (let ([old-thnk clear-highlight])
+                (set! clear-highlight
+                      (λ ()
+                        (clr)
+                        (old-thnk)))))))
+        (define (smaller-range? x y)
+          (let ([x-span (syntax-span (prof-info-expr x))]
+                [y-span (syntax-span (prof-info-expr y))])
+            (if (and x-span y-span)
+                (< x-span y-span)
+                #f)))
+        
+        (define (show-line info newline? highlight-line?)
+          (let* ([expr (prof-info-expr info)]
+                 [expr-src (syntax-source expr)]
+                 [count (prof-info-num info)]
+                 [time (prof-info-time info)]
+                 [name (prof-info-name info)])
+            (when newline? (send src-loc-editor insert "\n"))
+            (when highlight-line? (small-blank-line src-loc-editor))
+            (let ([before (send src-loc-editor last-position)])
+              (insert-profile-src-loc src-loc-editor expr name)
+              (let ([after (send src-loc-editor last-position)])
+                (cond
+                  [(string? expr-src)
+                   (send src-loc-editor change-style (gui-utils:get-clickback-delta) before after)
+                   (let ([after (send src-loc-editor last-position)])
+                     (send src-loc-editor set-clickback 
+                           before after 
+                           (λ (text start end)
+                             (open-file-and-goto-position expr-src (syntax-position expr)))))]
+                  [(is-a? expr-src editor:basic<%>)
+                   (send src-loc-editor change-style (gui-utils:get-clickback-delta) before after)
+                   (send src-loc-editor set-clickback
+                         before after
+                         (λ (text start end)
+                           (let ([window (send expr-src get-top-level-window)]
+                                 [pos (syntax-position expr)])
+                             (when window (send window show #t))
+                             (when pos (send expr-src set-position (- pos 1)))
+                             (send expr-src set-caret-owner #f 'global))))]
+                  [else (void)])))
+            
+            (when newline? (send time-editor insert "\n"))
+            (when highlight-line? (small-blank-line time-editor))
+            (send time-editor insert (format "~a" time))
+            (send time-editor set-paragraph-alignment (send time-editor last-paragraph) 'right)
+            
+            (when newline? (send count-editor insert "\n")) 
+            (when highlight-line? (small-blank-line count-editor))
+            (send count-editor insert (format "~a" count))
+            (send count-editor set-paragraph-alignment (send count-editor last-paragraph) 'right)))
+        
+        (define (bigger-value? x y)
+          (let ([sel (if (eq? 'count (preferences:get 'drracket:profile-how-to-count))
+                         prof-info-num
+                         prof-info-time)])
+            (> (sel x) (sel y))))
+        
+        (define (cleanup-editor ed)
+          (let* ([ed-admin (send ed get-admin)]
+                 [snip (send ed-admin get-snip)]
+                 [bl (box 0)]
+                 [br (box 0)])
+            (get-snip-location snip bl #f #f)
+            (get-snip-location snip br #f #t)
+            (let ([w (+ (- (unbox br) (unbox bl)) 4)])
+              (send ed set-max-width w)
+              (send ed set-min-width w)))
+          (send ed hide-caret #t)
+          (send ed lock #t))
+        
+        (define top-infos (top 100 (sort infos bigger-value?)))
+        (for-each show-highlight top-infos)
+        (initialize-editors)
+        (let loop ([infos top-infos]
+                   [newline? #f]
+                   [highlight-counter 0])
+          (cond
+            [(null? infos) (void)]
+            [else 
+             (show-line (car infos) newline? (and newline? (zero? highlight-counter)))
+             (loop (cdr infos) #t (modulo (+ highlight-counter 1) 2))]))
+        (cleanup-editor count-editor)
+        (cleanup-editor time-editor)
+        (cleanup-editor src-loc-editor)
+        
+        (hash-for-each
+         in-edit-sequence
+         (λ (key val)
+           (send key end-edit-sequence)))
+        (set! clear-old-results 
+              (λ ()
+                (hash-for-each
+                 in-edit-sequence
+                 (λ (key val) (send key begin-edit-sequence #t #f)))
+                (clear-highlight)
+                (hash-for-each
+                 in-edit-sequence
+                 (λ (key val) (send key end-edit-sequence)))
+                (set! clear-old-results void)))
         (lock #t)
         (end-edit-sequence)
         (let ([canvas (get-canvas)])
@@ -2310,7 +2392,10 @@ profile todo:
             (let loop ([n 0])
               (when (n . <= . w)
                 (send pen set-color 
-                      (get-color-value/pref n w drracket:profile:low-color drracket:profile:high-color drracket:profile:scale))
+                      (get-color-value/pref n w 
+                                            drracket:profile:low-color
+                                            drracket:profile:high-color
+                                            drracket:profile:scale))
                 (send dc set-pen pen)
                 (send dc draw-line n 0 n h)
                 (send dc set-pen dummy-pen)

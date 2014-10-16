@@ -129,10 +129,11 @@ static Scheme_Object *clear_rs_arguments(Scheme_Object *v, int size, int delta) 
 
 THREAD_LOCAL_DECL(Scheme_Current_LWC *scheme_current_lwc);
 
-Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Native_Proc *code,
-                                                       void *data,
-                                                       int argc, 
-                                                       Scheme_Object **argv)
+static Scheme_Object *do_call_as_lwc(Scheme_Native_Proc *code,
+                                     void *data,
+                                     int argc,
+                                     Scheme_Object **argv,
+                                     MZ_MARK_STACK_TYPE cont_mark_stack_start)
 {
 #ifdef JIT_THREAD_LOCAL
 # define THDLOC &BOTTOM_VARIABLE
@@ -140,10 +141,28 @@ Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Native_Proc *code,
 # define THDLOC NULL
 #endif
   scheme_current_lwc->runstack_start = MZ_RUNSTACK;
-  scheme_current_lwc->cont_mark_stack_start = MZ_CONT_MARK_STACK;
+  scheme_current_lwc->cont_mark_stack_start = cont_mark_stack_start;
   return sjc.native_starter_code(data, argc, argv, THDLOC, code, (void **)&scheme_current_lwc->stack_start);
 #undef THDLOC
 }
+
+Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Native_Proc *code,
+                                                       void *data,
+                                                       int argc,
+                                                       Scheme_Object **argv)
+{
+  return do_call_as_lwc(code, data, argc, argv, MZ_CONT_MARK_STACK);
+}
+
+#ifdef MZ_USE_FUTURES
+Scheme_Object *scheme_force_value_same_mark_as_lightweight_continuation(Scheme_Object *v)
+{
+  /* Providing 0 as cont_mark_stack_start is the "same_mark" part:
+     it preserves any continuation marks that are in place as part
+     of the continuation. */
+  return do_call_as_lwc(sjc.force_value_same_mark_code, NULL, 0, NULL, 0);
+}
+#endif
 
 void scheme_fill_stack_lwc_end(void) XFORM_SKIP_PROC
 {
@@ -2827,6 +2846,13 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       mz_rs_sync();
 
+      /* Box any unboxed values that will go into a closure */
+      for (i = 0; i < l->count; i++) {
+	if (generate_closure_prep((Scheme_Closure_Data *)l->procs[i], jitter))
+          prepped = 1;
+        CHECK_LIMIT();
+      }
+
       /* Create unfinished closures */
       for (i = 0; i < l->count; i++) {
 	((Scheme_Closure_Data *)l->procs[i])->context = (Scheme_Object *)l;
@@ -2834,12 +2860,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	CHECK_LIMIT();
 	jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_R0);
       }
-
-      for (i = 0; i < l->count; i++) {
-	if (generate_closure_prep((Scheme_Closure_Data *)l->procs[i], jitter))
-          prepped = 1;
-        CHECK_LIMIT();
-      }
+      /* We assume no allocation between last generated closure and
+         filling all closures, since the last one may be allocated as
+         "dirty". */
 
       /* Close them: */
       for (i = l->count; i--; ) {
@@ -3152,7 +3175,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 /*                          procedure codegen                             */
 /*========================================================================*/
 
-static void generate_function_prolog(mz_jit_state *jitter, void *code, int max_let_depth)
+void scheme_generate_function_prolog(mz_jit_state *jitter)
 {
   int in;
   START_JIT_DATA();
@@ -3274,7 +3297,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 {
   Generate_Closure_Data *gdata = (Generate_Closure_Data *)_data;
   Scheme_Closure_Data *data = gdata->data;
-  void *start_code, *tail_code, *code_end, *arity_code;
+  void *start_code, *tail_code, *code_end, *arity_code, *do_arity_code;
 #ifdef NEED_RETAIN_CODE_POINTERS
   void *retain_code = NULL;
 #endif
@@ -3289,10 +3312,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   argv = gdata->argv;
   argv_delta = gdata->argv_delta;
 
-  generate_function_prolog(jitter, start_code, 
-			   /* max_extra_pushed may be wrong the first time around,
-			      but it will be right the last time around */
-			   WORDS_TO_BYTES(data->max_let_depth + jitter->max_extra_pushed));
+  scheme_generate_function_prolog(jitter);
   CHECK_LIMIT();
 
   cnt = generate_function_getarg(jitter, 
@@ -3320,13 +3340,11 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
       shared_arity_code = jit_adjust_ip(shared_arity_code);
       sjc.shared_arity_check[num_params][has_rest][is_method] = shared_arity_code;
     }
+    CHECK_NESTED_GENERATE();
 
     arity_code = jit_get_ip();
   
-    if (!has_rest)
-      (void)jit_bnei_i(shared_arity_code, JIT_R1, num_params);
-    else
-      (void)jit_blti_i(shared_arity_code, JIT_R1, num_params);
+    do_arity_code = shared_arity_code;
   } else {
     arity_code = generate_lambda_simple_arity_check(num_params, has_rest, is_method, 0);
 #ifdef NEED_RETAIN_CODE_POINTERS
@@ -3334,7 +3352,15 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     ((void **)retain_code)[1] = arity_code;
 #endif
     arity_code = jit_adjust_ip(arity_code);
+    CHECK_NESTED_GENERATE();
+
+    do_arity_code = arity_code;
   }
+
+  if (!has_rest)
+    (void)jit_bnei_i(do_arity_code, JIT_R1, num_params);
+  else
+    (void)jit_blti_i(do_arity_code, JIT_R1, num_params);
 
   /* A tail call starts here. Caller must ensure that the stack is big
      enough, right number of arguments (at start of runstack), closure
@@ -3358,7 +3384,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     /* check whether argv == runstack: */
     ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
     /* check whether we have at least one rest arg: */
-    ref3 = jit_bgti_p(jit_forward(), JIT_R1, cnt);
+    ref3 = jit_bgti_i(jit_forward(), JIT_R1, cnt);
     /* yes and no: make room for the scheme_null */
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
     CHECK_RUNSTACK_OVERFLOW();
@@ -4002,7 +4028,7 @@ static int do_generate_case_lambda_dispatch(mz_jit_state *jitter, void *_data)
 
   start_code = jit_get_ip();
   
-  generate_function_prolog(jitter, start_code, data->ndata->max_let_depth);
+  scheme_generate_function_prolog(jitter);
   CHECK_LIMIT();
   
   if (generate_case_lambda_dispatch(jitter, data->c, data->ndata, 1)) {

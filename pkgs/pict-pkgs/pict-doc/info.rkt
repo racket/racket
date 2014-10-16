@@ -13,6 +13,7 @@
                      "pict-lib"
                      "racket-doc"))
 (define deps '("base"))
+(define update-implies '("pict-lib"))
 
 (define pkg-desc "documentation part of \"pict\"")
 

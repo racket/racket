@@ -21,12 +21,13 @@
                ("gui-x86_64-macosx" #:platform "x86_64-macosx")
                ("gui-ppc-macosx" #:platform "ppc-macosx")
                ("gui-win32-i386" #:platform "win32\\i386")
-               ("gui-win32-x86_64" #:platform "win32\\x86_64")))
+               ("gui-win32-x86_64" #:platform "win32\\x86_64")
+               ("gui-x86_64-linux-natipkg" #:platform "x86_64-linux-natipkg")))
 (define build-deps '("at-exp-lib"
                      "rackunit-lib"))
 
 (define pkg-desc "implementation (no documentation) part of \"gui\"")
 
-(define pkg-authors '(mflatt))
+(define pkg-authors '(mflatt robby))
 
-(define version "1.1")
+(define version "1.3")

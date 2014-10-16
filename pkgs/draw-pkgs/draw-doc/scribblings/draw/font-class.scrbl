@@ -76,7 +76,8 @@ A @defterm{font} is an object which determines the appearance of text,
 @item{size-in-pixels? --- @racket[#t] if the size of the font
  is in logical drawing units (i.e., pixels for an unscaled screen or
  bitmap drawing context), @racket[#f] if the size of the font is in
- points (which can depend on screen resolution).}
+ ``points'', where a ``point'' is equal to 1 pixel on Max OS X and
+ @racket[(/ 96 72)] pixels on Windows and Unix}
 
 @item{hinting --- Whether font metrics should be rounded to integers:
  @itemize[
@@ -94,6 +95,8 @@ To avoid creating multiple fonts with the same characteristics, use
 See also
 @racket[font-name-directory<%>].
 
+@history[#:changed "1.2" @elem{Defined ``points'' as  @racket[(/ 96 72)] pixels on Windows,
+                               independent of the screen resolution.}]
 
 
 @defconstructor*/make[(()

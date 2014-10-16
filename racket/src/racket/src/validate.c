@@ -414,7 +414,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
   result = validate_expr(port, val, stack, tls, 
                          depth, letlimit, delta, 
                          num_toplevels, num_stxes, num_lifts, tl_use_map,
-                         tl_state, tl_timestamp + (stinfo.uses_super ? 1 : 0),
+                         tl_state, tl_timestamp + ((is_struct && stinfo.uses_super) ? 1 : 0),
                          NULL, !!only_var, 0, vc, 0, 0, NULL,
                          size-1, _st_ht);
 
@@ -1209,8 +1209,8 @@ static int validate_join_const(int result, int expected_results)
                             : 0));
 }
 
-static int is_functional_rator(Scheme_Object *rator, int num_args, int expected_results,
-                               Scheme_Hash_Table **_st_ht)
+static int is_functional_nonfailing_rator(Scheme_Object *rator, int num_args, int expected_results,
+                                          Scheme_Hash_Table **_st_ht)
 {
   if (_st_ht && *_st_ht && SAME_TYPE(SCHEME_TYPE(rator), scheme_toplevel_type)) {
     int flags = (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK);
@@ -1232,7 +1232,7 @@ static int is_functional_rator(Scheme_Object *rator, int num_args, int expected_
     }
   }
 
-  return scheme_is_functional_primitive(rator, num_args, expected_results);
+  return scheme_is_functional_nonfailing_primitive(rator, num_args, expected_results);
 }
 
 #define CAN_RESET_STACK_SLOT 0
@@ -1539,7 +1539,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         check_self_call_valid(app->args[0], port, vc, delta, stack);
 
       if (result) {
-        r = is_functional_rator(app->args[0], app->num_args, expected_results, _st_ht);
+        r = is_functional_nonfailing_rator(app->args[0], app->num_args, expected_results, _st_ht);
         result = validate_join(result, r);
       }
     }
@@ -1571,7 +1571,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         check_self_call_valid(app->rator, port, vc, delta, stack);
 
       if (result) {
-        r = is_functional_rator(app->rator, 1, expected_results, _st_ht);
+        r = is_functional_nonfailing_rator(app->rator, 1, expected_results, _st_ht);
         result = validate_join(result, r);
       }
     }
@@ -1609,7 +1609,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         check_self_call_valid(app->rator, port, vc, delta, stack);
 
       if (result) {
-        r = is_functional_rator(app->rator, 2, expected_results, _st_ht);
+        r = is_functional_nonfailing_rator(app->rator, 2, expected_results, _st_ht);
         result = validate_join(r, result);
       }
     }

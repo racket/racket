@@ -6,21 +6,23 @@
 
 @author["Matthew Flatt"]
 
-This manual describes Racket's C interface, which allows the
-interpreter to be extended by a dynamically-loaded library, or
-embedded within an arbitrary C/C++ program. The manual assumes
-familiarity with Racket as described in @|Racket|.
-
-For an alternative way of dealing with foreign code, see
-@other-manual['(lib "scribblings/foreign/foreign.scrbl")], which
-describes the @racketmodname[ffi/unsafe] module for manipulating
-low-level libraries and structures purely through Racket code.
+This manual describes the C interface of Racket's run-time system. The
+C interface is relevant primarily when interacting with foreign
+libraries as described in @other-manual['(lib
+"scribblings/foreign/foreign.scrbl")]; even though interactions with
+foreign code are constructed in pure Racket using the
+@racketmodname[ffi/unsafe] module, many details of representations,
+memory management, and concurrency are described here. This manual
+also describes embedding the Racket run-time system in larger programs
+and extending Racket directly with C-implemented libraries.
 
 @table-of-contents[]
 
 @; ------------------------------------------------------------------------
 
 @include-section["overview.scrbl"]
+@include-section["embedding.scrbl"]
+@include-section["extensions.scrbl"]
 @include-section["values.scrbl"]
 @include-section["memory.scrbl"]
 @include-section["namespaces.scrbl"]
@@ -38,7 +40,6 @@ low-level libraries and structures purely through Racket code.
 @include-section["custodians.scrbl"]
 @include-section["subprocesses.scrbl"]
 @include-section["misc.scrbl"]
-@include-section["hooks.scrbl"]
 
 @; ------------------------------------------------------------------------
 

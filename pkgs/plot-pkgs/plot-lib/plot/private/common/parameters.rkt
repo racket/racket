@@ -28,6 +28,7 @@
 (defparam plot-line-width width (>=/c 0) 1)
 (defparam plot-tick-size (>=/c 0) 10)
 (defparam plot-font-size size (>=/c 0) 11)
+(defparam plot-font-face face (or/c string? #f) #f)
 (defparam plot-font-family family font-family/c 'roman)
 (defparam plot-legend-anchor anchor anchor/c 'top-left)
 (defparam plot-legend-box-alpha alpha (real-in 0 1) 2/3)
@@ -75,7 +76,7 @@
     plot-foreground plot-foreground-alpha
     plot-background plot-background-alpha
     plot-line-width plot-tick-size
-    plot-font-size plot-font-family
+    plot-font-size plot-font-face plot-font-family
     plot-legend-anchor plot-legend-box-alpha
     plot-axes? plot-tick-labels
     plot-decorations?

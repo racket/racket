@@ -1,7 +1,6 @@
 #lang racket
 
-(require 2htdp/universe)
-(require 2htdp/image)
+(require 2htdp/universe 2htdp/image "test-aux.rkt")
 
 (define (f x) (circle 10 'solid 'red))
 
@@ -12,6 +11,7 @@
 
 (define txt "all questions were #f")
 
-(with-handlers ([exn? (lambda (e) (unless (string=? (exn-message e) txt) (raise e)))])
-  (big-bang 0 (on-tick g) (to-draw f))
-  (error 'error-in-tick "test failed"))
+(testing
+  (with-handlers ([exn? (lambda (e) (unless (string=? (exn-message e) txt) (raise e)))])
+    (big-bang 0 (on-tick g) (to-draw f))
+    (error 'error-in-tick "test failed")))

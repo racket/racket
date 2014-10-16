@@ -106,6 +106,9 @@
       (check implied-atomic?
              (-filter -Symbol #'x)
              (-and (-filter -Symbol 1) (-filter -Symbol #'x)))
+      (check implied-atomic?
+             (-not-filter (-val #f) #'x)
+             (-filter -Symbol #'x))
     )
 
     (test-suite "Implication"
@@ -121,5 +124,25 @@
               (-not-filter -Symbol #'y))
         (make-ImpFilter (-not-filter -Symbol #'x)
                         (-not-filter -Symbol #'y))))
+
+    (test-suite "Simplification"
+      (check-equal?
+        (-and (-filter -Symbol #'x) (-not-filter (-val #f) #'x))
+        (-filter -Symbol #'x))
+      (check-equal?
+        (-and (-not-filter (-val #f) #'x) (-filter -Symbol #'x))
+        (-filter -Symbol #'x))
+
+      (check-equal?
+        (-and (-filter (-val #f) #'y)
+              (-or (-filter (-val #f) #'y)
+                   (-filter (-val #f) #'x)))
+        (-filter (-val #f) #'y))
+
+      (check-equal?
+        (-and (-not-filter (-val #f) #'y)
+              (-or (-not-filter (-val #f) #'y)
+                   (-not-filter (-val #f) #'x)))
+        (-not-filter (-val #f) #'y)))
 
   ))

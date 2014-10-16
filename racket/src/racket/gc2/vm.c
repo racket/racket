@@ -20,12 +20,13 @@ enum {
 # define USE_BLOCK_CACHE
 #endif
 
+struct AllocCacheBlock;
 struct BlockCache;
 typedef struct MMU {
 #ifdef USE_BLOCK_CACHE
   struct BlockCache *block_cache;
 #elif !( defined(_WIN32) || defined(OSKIT) )
-  AllocCacheBlock *alloc_caches[2];
+  struct AllocCacheBlock *alloc_caches[2];
   Page_Range *page_range;
 #endif
   intptr_t memory_allocated;

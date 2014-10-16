@@ -1330,18 +1330,19 @@
 
 ;; Check that lazy decoding of strings works right with sending
 ;; unmatched output to a port:
-(for ([succeed? '(#f #t)])
+(for* ([succeed? '(#f #t)]
+       [char '(#\x #\u3BB)])
   (for ([N '(1 100 1000 1023 1024 10000)])
     (for ([M (list 0 (quotient N 2))])
       (define o (open-output-bytes))
       (void (regexp-match-positions #rx"y" 
                                     (string-append
-                                     (make-string N #\x) 
+                                     (make-string N char)
                                      (if succeed? "y" ""))
                                     M
                                     (+ N (if succeed? 1 0))
                                     o))
-    (test (- N M) bytes-length (get-output-bytes o)))))
+    (test (- N M) string-length (get-output-string o)))))
 
 (arity-test regexp 1 1)
 (arity-test regexp? 1 1)

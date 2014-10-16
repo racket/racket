@@ -1,0 +1,146 @@
+diff -u -r old/fontconfig-2.11.1/fontconfig/fontconfig.h new/fontconfig-2.11.1/fontconfig/fontconfig.h
+--- old/fontconfig-2.11.1/fontconfig/fontconfig.h	2014-10-07 06:54:53.000000000 -0600
++++ new/fontconfig-2.11.1/fontconfig/fontconfig.h	2014-10-07 17:44:20.000000000 -0600
+@@ -342,6 +342,9 @@
+ FcCacheCreateTagFile (const FcConfig *config);
+ 
+ /* fccfg.c */
++FcPublic void
++FcSetConfigDir (const FcChar8 *config_dir);
++
+ FcPublic FcChar8 *
+ FcConfigHome (void);
+ 
+@@ -582,6 +585,9 @@
+ FcPublic void
+ FcFini (void);
+ 
++FcPublic void
++FcSetFallbackDirs (const FcChar8 *font_dir,  const FcChar8 *cache_dir);
++
+ FcPublic int
+ FcGetVersion (void);
+ 
+Only in new/fontconfig-2.11.1/fontconfig: fontconfig.h~
+diff -u -r old/fontconfig-2.11.1/src/fccfg.c new/fontconfig-2.11.1/src/fccfg.c
+--- old/fontconfig-2.11.1/src/fccfg.c	2014-10-07 06:54:53.000000000 -0600
++++ new/fontconfig-2.11.1/src/fccfg.c	2014-10-07 17:44:11.000000000 -0600
+@@ -1834,6 +1834,22 @@
+ #define FONTCONFIG_FILE	"fonts.conf"
+ #endif
+ 
++static const FcChar8 * fc_config_dir = NULL;
++
++void
++FcSetConfigDir (const FcChar8 *config_dir)
++{
++  if (!fc_config_dir) {
++    fc_config_dir = (const FcChar8 *)strdup((const char *)config_dir);
++  }
++}
++
++FcChar8 *
++FcConfigDir (void)
++{
++  return fc_config_dir ? (FcChar8 *)fc_config_dir : (FcChar8 *)FONTCONFIG_PATH;
++}
++
+ static FcChar8 *
+ FcConfigFileExists (const FcChar8 *dir, const FcChar8 *file)
+ {
+@@ -1935,7 +1951,7 @@
+ 		strcat ((char *) fontconfig_path, "\\fonts");
+ 	}
+ #endif
+-    dir = (FcChar8 *) FONTCONFIG_PATH;
++        dir = (fc_config_dir ? (FcChar8 *)fc_config_dir : (FcChar8 *)FONTCONFIG_PATH);
+     path[i] = malloc (strlen ((char *) dir) + 1);
+     if (!path[i])
+ 	goto bail1;
+Only in new/fontconfig-2.11.1/src: fccfg.c~
+diff -u -r old/fontconfig-2.11.1/src/fcinit.c new/fontconfig-2.11.1/src/fcinit.c
+--- old/fontconfig-2.11.1/src/fcinit.c	2014-10-07 06:54:53.000000000 -0600
++++ new/fontconfig-2.11.1/src/fcinit.c	2014-10-07 17:43:44.000000000 -0600
+@@ -35,6 +35,26 @@
+ #pragma message("To suppress these warnings, define FC_NO_MT.")
+ #endif
+ 
++static const FcChar8 * fc_default_fonts = NULL;
++static const FcChar8 * fc_cachedir = NULL;
++
++void
++FcSetFallbackDirs (const FcChar8 *font_dir,  const FcChar8 *cache_dir)
++{
++  if (!fc_default_fonts) {
++    fc_default_fonts = (const FcChar8 *)strdup((const char *)font_dir);
++    fc_cachedir = (const FcChar8 *)strdup((const char *)cache_dir);
++  }
++}
++
++FcChar8 *
++FcFallbackCacheDir (void)
++{
++  return (fc_cachedir
++          ? fc_cachedir
++          : (const FcChar8 *)FC_CACHEDIR);
++}
++
+ static FcConfig *
+ FcInitFallbackConfig (void)
+ {
+@@ -43,9 +63,13 @@
+     config = FcConfigCreate ();
+     if (!config)
+ 	goto bail0;
+-    if (!FcConfigAddDir (config, (FcChar8 *) FC_DEFAULT_FONTS))
++    if (!FcConfigAddDir (config, (fc_default_fonts
++                                  ? fc_default_fonts
++                                  : (const FcChar8 *)FC_DEFAULT_FONTS)))
+ 	goto bail1;
+-    if (!FcConfigAddCacheDir (config, (FcChar8 *) FC_CACHEDIR))
++    if (!FcConfigAddCacheDir (config, (fc_cachedir
++                                       ? fc_cachedir
++                                       : (const FcChar8 *)FC_CACHEDIR)))
+ 	goto bail1;
+     return config;
+ 
+Only in new/fontconfig-2.11.1/src: fcinit.c~
+diff -u -r old/fontconfig-2.11.1/src/fcint.h new/fontconfig-2.11.1/src/fcint.h
+--- old/fontconfig-2.11.1/src/fcint.h	2014-10-07 06:54:53.000000000 -0600
++++ new/fontconfig-2.11.1/src/fcint.h	2014-10-07 09:42:02.000000000 -0600
+@@ -605,6 +605,9 @@
+ FcPrivate FcChar8 *
+ FcConfigXdgDataHome (void);
+ 
++FcPrivate FcChar8 *
++FcConfigDir (void);
++
+ FcPrivate FcExpr *
+ FcConfigAllocExpr (FcConfig *config);
+ 
+@@ -806,6 +809,9 @@
+ FcPrivate void
+ FcDefaultFini (void);
+ 
++FcPrivate FcChar8 *
++FcFallbackCacheDir (void);
++
+ /* fcdir.c */
+ 
+ FcPrivate FcBool
+Only in new/fontconfig-2.11.1/src: fcint.h~
+diff -u -r old/fontconfig-2.11.1/src/fcxml.c new/fontconfig-2.11.1/src/fcxml.c
+--- old/fontconfig-2.11.1/src/fcxml.c	2014-10-07 06:54:53.000000000 -0600
++++ new/fontconfig-2.11.1/src/fcxml.c	2014-10-07 09:42:42.000000000 -0600
+@@ -1997,6 +1997,10 @@
+     attr = FcConfigGetAttribute (parse, "prefix");
+     if (attr && FcStrCmp (attr, (const FcChar8 *)"xdg") == 0)
+ 	prefix = FcConfigXdgDataHome ();
++    if (attr && FcStrCmp (attr, (const FcChar8 *)"cfg") == 0)
++	prefix = FcConfigDir ();
++    if (attr && FcStrCmp (attr, (const FcChar8 *)"cache") == 0)
++	prefix = FcFallbackCacheDir ();
+     data = FcStrBufDoneStatic (&parse->pstack->str);
+     if (!data)
+     {
+Only in new/fontconfig-2.11.1/src: fcxml.c~

@@ -10,7 +10,10 @@
          syntax/parse
          syntax/stx
          ;; phase-shift down for use in tests below
-         (for-template (submod typed-racket/base-env/class-prims internal)))
+         (for-template (submod typed-racket/base-env/class-prims internal)
+                       (submod typed-racket/base-env/class-clauses internal)
+                       (only-in typed-racket/base-env/class-clauses
+                                class-clause clause init-clause)))
 
 (provide tests)
 (gen-test-main)
@@ -44,22 +47,6 @@
     (check-true (syntax-parses? #'([x y]) init-decl))
     (check-true (syntax-parses? #'(x 0) init-decl))
     (check-true (syntax-parses? #'([x y] 0) init-decl))
-    (check-true (syntax-parses? #'(init x y z) class-clause))
-    (check-true (syntax-parses? #'(public f g h) class-clause))
-    (check-true (syntax-parses? #'(public f) class-clause-or-other))
-
-    (check-equal?/id
-     (extract-names (list (clause #'(init x y z)
-                                  #'init
-                                  (list #'(x x) #'(y y) #'(z z))
-                                  (list #f #f #f))
-                          (clause #'(public f g h)
-                                  #'public
-                                  (list #'(f f) #'(g g) #'(h h))
-                                  (list #f #f #f))))
-     (make-immutable-free-id-table
-      (hash #'public (list #'(f f) #'(g g) #'(h h))
-            #'init (list #'(x x) #'(y y) #'(z z))))
 
     (check-equal?/id
      (get-optional-inits
@@ -67,5 +54,5 @@
                          (list #f) (list #t))
             (init-clause #'(init [(a b)]) #'init #'([a b])
                          (list #f) (list #f))))
-     (list #'x)))))
+     (list #'x))))
 

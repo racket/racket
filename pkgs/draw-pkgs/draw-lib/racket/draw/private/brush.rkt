@@ -79,8 +79,7 @@
     (unless (_stipple . is-a? . bitmap%)
       (raise-type-error (init-name 'brush%)
                         "bitmap% or #f"
-                        _stipple))
-    (set-stipple _stipple))
+                        _stipple)))
 
   (when _transformation
     (unless (transformation-vector? _transformation)
@@ -92,6 +91,9 @@
                             _transformation))))
 
   (super-new)
+
+  (when _stipple
+    (set-stipple _stipple))
 
   (define/public (set-immutable) (set! immutable? #t))
   (define/public (is-immutable?) (or immutable? (positive? lock-count)))

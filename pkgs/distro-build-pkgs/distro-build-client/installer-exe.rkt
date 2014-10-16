@@ -45,7 +45,7 @@
                        makensis
                        #:extension-registers [extregs null]
                        #:start-menus [startmenus null]
-                       #:release [release? #t]
+                       #:versionless [versionless? #t]
                        #:simple? [simple? #f]
                        #:auto-launch [auto-launch #f])
   (define distdir (regexp-replace* #rx" " distname "-"))
@@ -77,8 +77,8 @@
 ;; Full name for the package, and a short name for installer texts
 !define RKTHumanName "@|distname| v@|version| (@|winplatform|)"
 !define RKTShortName "@|distname|"
-!define RKTStartName "@|distname|@(if release? "" @~a{ v@|version|})"
-!define RKTDirName "@|distdir|@(if release? "" @~a{-@|version|})"
+!define RKTStartName "@|distname|@(if versionless? "" @~a{ v@|version|})"
+!define RKTDirName "@|distdir|@(if versionless? "" @~a{-@|version|})"
 !define RKTRegName "@|distdir|-@|winplatform|-@|version|"
 !define RKTProgFiles "$PROGRAMFILES@(if (equal? winplatform "x86_64") "64" "")"
 @(if simple? @~a{!define SimpleInstaller} "")
@@ -343,6 +343,7 @@ Section "Uninstall"
     Delete "$INSTDIR\*.exe"
     Delete "$INSTDIR\README*.*"
     RMDir /r "$INSTDIR\include"
+    RMDir /r "$INSTDIR\collects"
     RMDir /r "$INSTDIR\lib"
     RMDir /r "$INSTDIR\share"
     RMDir /r "$INSTDIR\etc"
@@ -406,7 +407,7 @@ SectionEnd
   (parameterize ([current-directory "bundle"])
     (system* makensis "/V3" "installer.nsi")))
 
-(define (installer-exe human-name base-name release? dist-suffix readme)
+(define (installer-exe human-name base-name versionless? dist-suffix readme)
   (define makensis (or (find-executable-path "makensis.exe")
                        (try-exe "c:\\Program Files\\NSIS\\makensis.exe")
                        (try-exe "c:\\Program Files (x86)\\NSIS\\makensis.exe")
@@ -426,7 +427,7 @@ SectionEnd
                  (version)
                  platform
                  makensis
-                 #:release release?
+                 #:versionless versionless?
                  #:extension-registers (get-extreg "bundle/racket")
                  #:start-menus (get-startmenu "bundle/racket")
                  #:auto-launch (get-auto-launch "bundle/racket"))

@@ -177,33 +177,48 @@ provides direct Scribble reader functionality for advanced needs.}
          (require (for-label scribble/reader))
 
 @; *** Start reader-import section ***
+@deftogether[(
 @defproc[(read [in input-port? (current-input-port)]) any]{}
 @defproc[(read-syntax [source-name any/c (object-name in)]
                       [in input-port? (current-input-port)])
-         (or/c syntax? eof-object?)]{
-These procedures implement the Scribble reader.  They do so by
-constructing a reader table based on the current one, and using that
-for reading.
-}
+         (or/c syntax? eof-object?)]
+)]{
 
+Implements the Scribble reader using the readtable produced by
+
+@racketblock[(make-at-readtable #:command-readtable 'dynamic
+                                #:datum-readtable 'dynamic)]
+
+@history[#:changed "1.1" @elem{Changed to use @racket['dynamic] for the command and datum readtables.}]}
+
+
+@deftogether[(
 @defproc[(read-inside [in input-port? (current-input-port)]) any]{}
 @defproc[(read-syntax-inside [source-name any/c (object-name in)]
                              [in input-port? (current-input-port)]
                              [#:command-char command-char char? #\@])
-         (or/c syntax? eof-object?)]{
-These @racketid[-inside] variants parse as if starting inside a
-@litchar["@{"]...@litchar["}"], and they return a (syntactic) list.
-The @racket[command-char] is used to customize the readtable.
-Useful for implementing languages that are textual by default (see
-@filepath{docreader.rkt} for example).
+         (or/c syntax? eof-object?)]
+)]{
+
+Like @racket[read] and @racket[read-syntax], but starting as if
+inside a @litchar["@{"]...@litchar["}"] to return a (syntactic) list,
+which is useful for implementing languages that are textual by default.
+
+The given @racket[command-char] is used to customize the readtable
+used by the reader, effectively passing it along to @racket[make-at-readtable].
+
+@history[#:changed "1.1" @elem{Changed to use @racket['dynamic] for the command and datum readtables.}]
 }
 
 @defproc[(make-at-readtable
           [#:readtable readtable readtable? (current-readtable)]
           [#:command-char command-char char? #\@]
+          [#:command-readtable command-readtable (or/c readtable? 'dynamic) readtable]
           [#:datum-readtable datum-readtable
-                             (or/c readtable? boolean?
-                                              (readtable? . -> . readtable?))
+                             (or/c readtable?
+                                   boolean?
+                                   (readtable? . -> . readtable?)
+                                   'dynamic)
                              #t]
           [#:syntax-post-processor syntax-post-proc
                                    (syntax? . -> . syntax?)
@@ -220,11 +235,31 @@ resulting reader in several ways:
 
 @item{@racket[command-char] --- the character used for @tech{@"@"-forms}.}
 
-@item{@racket[datum-readtable] --- determines the readtable used for
-  reading the datum part.  A @racket[#t] values uses the
-  @"@"-readtable, otherwise it can be a readtable, or a
-  readtable-to-readtable function that will construct one from the
-  @"@"-readtable.  The idea is that you may want to have completely
+@item{@racket[command-readtable] --- determines the readtable that is
+  extended for reading the command part of an @tech{@"@"-form}:
+
+  @itemlist[
+    @item{a readtable --- extended to make @litchar{|} a delimiter
+          instead of a symbol-quoting character}
+
+    @item{@racket['dynamic] --- extends @racket[(current-readtable)]
+          at the point where a command is parsed to make @litchar{|} a
+          delimiter}
+   ]}
+
+@item{@racket[datum-readtable] --- the readtable used for
+  reading the datum part of an @tech{@"@"-form}:
+
+  @itemlist[
+    @item{@racket[#t] --- uses the constructed @"@"-readtable itself}
+    @item{a readtable --- uses the given readtable}
+    @item{a readtable-to-readtable function --- called to construct a readtable
+          from the generated @"@"-readtable}
+    @item{@racket['dynamic] --- uses @racket[(current-readtable)] at the
+          point where the datum part is parsed}
+  ]
+
+  The idea is that you may want to have completely
   different uses for the datum part, for example, introducing a
   convenient @litchar{key=val} syntax for attributes.}
 
@@ -243,7 +278,11 @@ resulting reader in several ways:
           [_else (error "@ forms must have a body")])))
   ]}
 
-]}
+]
+
+@history[#:changed "1.1" @elem{Added @racket[#:command-readtable] and
+         the @racket['dynamic] option for @racket[#:datum-readtable].}]}
+
 
 @defproc[(make-at-reader [#:syntax? syntax? #t] [#:inside? inside? #f] ...)
           procedure?]{
@@ -267,6 +306,7 @@ reading.
 
 Note that if @racket[syntax?] is true, the @racket[read]-like function
 is constructed by simply converting a syntax result back into a datum.}
+
 
 @defproc[(use-at-readtable ...) void?]{
 

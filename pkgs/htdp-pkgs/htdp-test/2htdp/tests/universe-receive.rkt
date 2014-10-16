@@ -4,6 +4,9 @@
 (require 2htdp/universe)
 (require 2htdp/image)
 
+;; Distinct from other tests:
+(define PORT-NO 19202)
+
 ;; Nat Nat ->* World1 World2 [Listof IWorld]
 ;; launch a sending world, a receiving world, and a connecting universe
 (define (main rate limit)
@@ -30,7 +33,8 @@
      (universe '()
                (on-tick (lambda (s) (make-bundle s '() '())) 1 10)
                (on-new accept-another-world)
-	       (on-msg forward-message)))))
+               (on-msg forward-message)
+	       (port PORT-NO)))))
 
 ;; World1 = Number 
 
@@ -44,7 +48,8 @@
               (to-draw (draw 'red))
               (on-receive reset)
               (stop-when zero?)
-              (register LOCALHOST))))
+              (register LOCALHOST)
+              (port PORT-NO))))
 
 ;; World2 = Number 
 

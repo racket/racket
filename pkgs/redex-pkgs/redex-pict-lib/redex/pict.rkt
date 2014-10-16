@@ -61,6 +61,7 @@
 (provide/contract
  [render-language-nts (parameter/c (or/c false/c (listof (or/c string? symbol?))))]
  [extend-language-show-union (parameter/c boolean?)]
+ [extend-language-show-extended-order (parameter/c boolean?)]
  [current-text (parameter/c (-> string? text-style/c number? pict?))])
 
 (provide/contract
@@ -88,7 +89,7 @@
   (parameter/c reduction-rule-style/c)]
  [arrow-space (parameter/c natural-number/c)]
  [label-space (parameter/c natural-number/c)]
- [metafunction-cases (parameter/c (or/c #f (and/c pair? (listof (or/c exact-nonnegative-integer? string?)))))]
+ [metafunction-cases (parameter/c (or/c #f (listof (or/c exact-nonnegative-integer? string?))))]
  [judgment-form-cases (parameter/c (or/c #f (and/c (listof (or/c exact-nonnegative-integer? string?))
                                                    pair?)))]
  [metafunction-pict-style 
@@ -99,7 +100,11 @@
                         'up-down
                         'up-down/vertical-side-conditions
                         'up-down/compact-side-conditions))]
- [delimit-ellipsis-arguments? (parameter/c any/c)])
+ [delimit-ellipsis-arguments? (parameter/c any/c)]
+ 
+ [default-white-square-bracket (-> boolean? pict?)]
+ [homemade-white-square-bracket (-> boolean? pict?)]
+ [white-square-bracket (parameter/c (-> boolean? pict?))])
 
 (provide/contract
  [label-font-size (parameter/c (and/c (between/c 1 255) integer?))]

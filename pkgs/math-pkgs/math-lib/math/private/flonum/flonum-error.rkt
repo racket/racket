@@ -9,12 +9,14 @@
          fast-flsqr/error
          fast-fl//error
          fast-flfma/error
+         fast-flfsa/error
          fl+/error
          fl-/error
          fl*/error
          flsqr/error
          fl//error
-         flfma/error)
+         flfma/error
+         flfsa/error)
 
 (module untyped-defs racket/base
   (require (for-syntax racket/base)
@@ -87,6 +89,14 @@
   (define-syntax-rule (fast-flfma/error a-expr b-expr c-expr)
     (let*-values ([(y2 y1)  (fast-fl*/error a-expr b-expr)]
                   [(h0 h1)  (fast-fl+/error c-expr y1)]
+                  [(h3 h2)  (fast-fl+/error h0 y2)])
+      (values h3 (fl+ h2 h1))))
+  
+  ;(: fast-flfsa/error (Flonum Flonum Flonum -> (Values Flonum Flonum)))
+  ;; Returns a*a+b and its rounding error
+  (define-syntax-rule (fast-flfsa/error a-expr b-expr)
+    (let*-values ([(y2 y1)  (fast-flsqr/error a-expr)]
+                  [(h0 h1)  (fast-fl+/error b-expr y1)]
                   [(h3 h2)  (fast-fl+/error h0 y2)])
       (values h3 (fl+ h2 h1))))
   
@@ -194,6 +204,17 @@
              (define 1/n (/ 1.0 n))
              (define n^2 (* n n))
              (let-values ([(x2 x1)  (fast-flfma/error (* a 1/n) (* b 1/n) (* c 1/n 1/n))])
+               (values (* n^2 x2) (* n^2 x1)))]))
+    
+    (: flfsa/error (-> Flonum Flonum (Values Flonum Flonum)))
+    (define (flfsa/error a b)
+      (define-values (x2 x1) (fast-flfsa/error a b))
+      (cond [(flrational? (+ x2 x1))  (values x2 x1)]
+            [else
+             (define n (near-pow2 (flsqrt (abs a))))
+             (define 1/n (/ 1.0 n))
+             (define n^2 (* n n))
+             (let-values ([(x2 x1)  (fast-flfsa/error (* a 1/n) (* b 1/n 1/n))])
                (values (* n^2 x2) (* n^2 x1)))]))
     
     )  ; begin-encourage-inline

@@ -15,9 +15,9 @@ Produces a procedure that behaves like @racket[alloc], but the result
 of @racket[alloc] is given a finalizer that calls @racket[dealloc] on
 the result if it is not otherwise freed through a deallocator (as
 designated with @racket[deallocator]). In addition, @racket[alloc] is
-called in atomic mode (see @racket[start-atomic]); its result is
+called in @tech{atomic mode} (see @racket[call-as-atomic]); its result is
 received and registered in atomic mode, so that the result is reliably
-freed.
+freed as long as no exception is raised.
 
 The @racket[dealloc] procedure itself need not be specifically
 designated a deallocator (via @racket[deallocator]). If a deallocator
@@ -31,11 +31,11 @@ is called explicitly, it need not be the same as @racket[dealloc].}
 )]{
 
 Produces a procedure that behaves like @racket[dealloc]. The
-@racket[dealloc] procedure is called in atomic mode (see
-@racket[start-atomic]), and the reference count on one of its
+@racket[dealloc] procedure is called in @tech{atomic mode} (see
+@racket[call-as-atomic]), and the reference count on one of its
 arguments is decremented; if the reference count reaches zero, no
 finalizer associated by an @racket[allocator]- or
-@racket[referencer]-wrapped procedure is invoked when the value
+@racket[retainer]-wrapped procedure is invoked when the value
 becomes inaccessible.
 
 The optional @racket[get-arg] procedure determines which of
@@ -53,11 +53,11 @@ The @racket[releaser] procedure is a synonym for
          procedure?]{
 
 Produces a procedure that behaves like @racket[retain]. The procedure
-is called in atomic mode (see @racket[start-atomic]), and the
+is called in @tech{atomic mode} (see @racket[call-as-atomic]), and the
 reference count on one of its arguments is incremented, with
 @racket[release] recorded as the corresponding release procedure to be
 called by the finalizer on the retained object (unless some
-deallocator, as wrapped by @racket[deallocate], is explicitly called
+deallocator, as wrapped by @racket[deallocator], is explicitly called
 first).
 
 The optional @racket[get-arg] procedure determines which of

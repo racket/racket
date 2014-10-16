@@ -26,7 +26,7 @@
 	(override*
          [on-char (lambda (c)
                     (super-on-char c)
-                    (when (and (memq (send c get-key-code) '(#\return #\newline #\003))
+                    (when (and (memq (send c get-key-code) '(#\return #\newline numpad-enter))
                                (not locked?))
                       (set! locked? #t)
                       (evaluate (get-text prompt-pos (last-position)))))])

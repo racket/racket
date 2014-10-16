@@ -876,10 +876,19 @@
 
 ;; --------------------------------------------------
 
-(provide objc-is-a?)
+(provide objc-is-a?
+         objc-subclass?)
+
+(define-objc class_getSuperclass (_fun _Class -> _Class))
 
 (define (objc-is-a? v c)
-  (ptr-equal? (object-get-class v) c))
+  (objc-subclass? (object-get-class v) c))
+
+(define (objc-subclass? vc c)
+  (or (ptr-equal? vc c)
+      (let ([pc (class_getSuperclass vc)])
+        (and pc
+             (objc-subclass? pc c)))))
 
 ;; --------------------------------------------------
 

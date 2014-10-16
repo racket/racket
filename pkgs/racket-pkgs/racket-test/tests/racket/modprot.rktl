@@ -207,6 +207,49 @@
 
 ;; - - - - - - - - - - - - - - - - - - - -
 
+(define unsafe
+  '(module unsafe '#%kernel
+     (#%require '#%unsafe)
+     (display unsafe-car)))
+
+(require compiler/zo-structs
+         compiler/zo-marshal)
+
+(define unsafe-synth-zo
+  (let ([bstr
+         (zo-marshal
+          (compilation-top
+           10
+           (prefix 0
+                   (list 'dummy)
+                   null)
+           (mod 'unsafe
+                'unsafe
+                (module-path-index-join #f #f)
+                (prefix 0
+                        (list (module-variable (module-path-index-join ''#%unsafe #f)
+                                               'unsafe-car
+                                               -1
+                                               0
+                                               #f))
+                        null)
+                null
+                null
+                null ; body
+                null
+                null
+                0
+                (toplevel 0 0 #f #f)
+                #f
+                #f
+                null
+                null
+                null)))])
+    (parameterize ([read-accept-compiled #t])
+      (read (open-input-bytes bstr)))))
+
+;; - - - - - - - - - - - - - - - - - - - -
+
 (define (xeval e)
   (eval
    (if (bytes? e)
@@ -256,12 +299,35 @@
     (try two/protect three/snabbed (if (and fail-prot? np-ok?) #rx#"unexported .* stx" #rx#"one .13.") fail-three?)
     (try two/protect three/normal  (if fail-prot? #rx#"protected .* normal" #rx#"two .10.") fail-three?)))
 
+(define (unsafe-try unsafe get-inspector unsafe-fail? unsafe-ref-fail? read-fail?)
+  (let ([ns (make-base-namespace)]
+        [p (open-output-bytes)])
+    (parameterize ([current-namespace ns]
+                   [current-output-port p]
+                   [current-code-inspector (get-inspector)])
+      (with-handlers ([values (lambda (exn)
+                                (printf "~a\n" (exn-message exn)))])
+        (eval unsafe)
+        (unless unsafe-fail?
+          (dynamic-require ''unsafe #f))))
+    (test (or unsafe-fail? unsafe-ref-fail?) regexp-match? #rx"protected" (get-output-bytes p)))
+  (let-values ([(i o) (make-pipe)])
+    (if (bytes? unsafe)
+        (write-bytes unsafe o)
+        (write unsafe o))
+    (close-output-port o)
+    (parameterize ([read-accept-compiled #t]
+                   [current-code-inspector (get-inspector)])
+      (if read-fail?
+          (err/rt-test (void (read i)) exn:fail:read?)
+          (test #t not (not (read i)))))))
+
 ;; - - - - - - - - - - - - - - - - - - - -
 
 (define-values (zero-zo one-zo two/no-protect-zo two/protect-zo 
                         three/nabbed-zo three/pnabbed-zo three/snabbed-zo 
                         three/nfnabbed-zo three/nfpnabbed-zo three/nfsnabbed-zo 
-                        three/normal-zo)
+                        three/normal-zo unsafe-zo-bytes)
   (apply
    values
    (let ([ns (make-base-namespace)])
@@ -275,12 +341,12 @@
             (list zero one two/no-protect two/protect 
                   three/nabbed three/pnabbed three/snabbed 
                   three/nfnabbed three/nfpnabbed three/nfsnabbed 
-                  three/normal))))))
+                  three/normal unsafe))))))
 
 (define-values (zero-c one-c two/no-protect-c two/protect-c 
                         three/nabbed-c three/pnabbed-c three/snabbed-c 
                         three/nfnabbed-c three/nfpnabbed-c three/nfsnabbed-c 
-                        three/normal-c)
+                        three/normal-c unsafe-c)
   (apply
    values
    (let ([ns (make-base-namespace)])
@@ -291,27 +357,33 @@
             (list zero one two/no-protect two/protect 
                   three/nabbed three/pnabbed three/snabbed 
                   three/nfnabbed three/nfpnabbed three/nfsnabbed 
-                  three/normal))))))
+                  three/normal unsafe))))))
 
 ;; - - - - - - - - - - - - - - - - - - - -
+
+(define unsafe-zo (parameterize ([read-accept-compiled #t])
+                    (read (open-input-bytes unsafe-zo-bytes))))
 
 ;; source, no inspector change:
 (mp-try-all zero one two/no-protect two/protect 
             three/nabbed three/pnabbed three/snabbed three/nfnabbed three/nfpnabbed three/nfsnabbed
             three/normal
             current-code-inspector current-code-inspector #f #f #f #f #f)
+(unsafe-try unsafe current-code-inspector #f #f #f)
 
 ;; zo, no inspector change:
 (mp-try-all zero-zo one-zo two/no-protect-zo two/protect-zo 
             three/nabbed-zo three/pnabbed-zo three/snabbed-zo three/nfnabbed-zo three/nfpnabbed-zo three/nfsnabbed-zo 
             three/normal-zo
             current-code-inspector current-code-inspector #f #f #f #f #f)
+(unsafe-try unsafe-zo current-code-inspector #f #f #f)
 
 ;; compiled, no inspector change:
 (mp-try-all zero-c one-c two/no-protect-c two/protect-c 
             three/nabbed-c three/pnabbed-c three/snabbed-c three/nfnabbed-c three/nfpnabbed-c three/nfsnabbed-c 
             three/normal-c
             current-code-inspector current-code-inspector #f #f #f #f #f)
+(unsafe-try unsafe-c current-code-inspector #f #f #f)
 
 ;; compiled; changing inspectors does not affect access:
 (mp-try-all zero one two/no-protect-c two/protect-c 
@@ -322,6 +394,7 @@
             three/nabbed-c three/pnabbed-c three/snabbed-c three/nfnabbed-c three/nfpnabbed-c three/nfsnabbed-c 
             three/normal-c
             current-code-inspector make-inspector #f #f #f #f #f)
+(unsafe-try unsafe-c make-inspector #f #f #t)
 
 ;; zo and source; changing inspector affects access in various ways-----------------
 
@@ -329,11 +402,14 @@
             three/nabbed-zo three/pnabbed-zo three/snabbed-zo three/nfnabbed-zo three/nfpnabbed-zo three/nfsnabbed-zo 
             three/normal-zo
             make-inspector current-code-inspector #t #f #f #f #t)
+(unsafe-try unsafe-zo make-inspector #f #f #t)
+(unsafe-try unsafe-synth-zo make-inspector #f #t #f)
 
 (mp-try-all zero one two/no-protect two/protect 
             three/nabbed three/pnabbed three/snabbed-zo three/nfnabbed three/nfpnabbed three/nfsnabbed-zo 
             three/normal
             make-inspector current-code-inspector #t #f #t #f #t)
+(unsafe-try unsafe make-inspector #t #t #f)
 
 (mp-try-all zero-zo one-zo two/no-protect-zo two/protect-zo 
             three/nabbed-zo three/pnabbed-zo three/snabbed-zo three/nfnabbed-zo three/nfpnabbed-zo three/nfsnabbed-zo 
@@ -344,6 +420,25 @@
             three/nabbed three/pnabbed three/snabbed three/nfnabbed three/nfpnabbed three/nfsnabbed 
             three/normal
             current-code-inspector make-inspector #t #t #t #t #f)
+
+;; ----------------------------------------
+
+(err/rt-test (parameterize ([current-code-inspector (make-inspector (current-code-inspector))])
+               (dynamic-require 'racket/unsafe/ops 'unsafe-s16vector-ref)))
+
+(err/rt-test (parameterize ([current-code-inspector (make-inspector (current-code-inspector))])
+               (eval '(define-syntax foo (dynamic-require 'racket/unsafe/ops 'unsafe-s16vector-ref)))))
+
+(let ([n (make-base-namespace)])
+  (eval '(module m racket/base
+           (require (for-syntax racket/unsafe/ops))
+           (provide (for-syntax unsafe-s16vector-ref))))
+  (parameterize ([current-code-inspector (make-inspector (current-code-inspector))])
+    (err/rt-test
+     (eval '(module n racket/base
+              (require (for-syntax racket/base) 'm)
+              (begin-for-syntax unsafe-s16vector-ref)))
+     exn:fail:syntax?)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

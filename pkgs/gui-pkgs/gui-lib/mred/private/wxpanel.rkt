@@ -389,15 +389,37 @@
        [do-place-children
         (lambda (children-info width height)
           (check-place-children children-info width height)
+          (define m (border))
+          (define w (- width (* 2 m)))
+          (define h (- height (* 2 m)))
           (let loop ([children-info children-info])
             (if (null? children-info)
                 null
                 (let ([curr-info (car children-info)])
+                  (define cw (car curr-info))
+                  (define ch (cadr curr-info))
+                  (define w-stretch? (caddr curr-info))
+                  (define h-stretch? (cadddr curr-info))
                   (cons
                    (list
-                    0 0
-                    (car curr-info)     ; child-info-x-min
-                    (cadr curr-info))   ; child-info-y-min
+                    (if w-stretch?
+                        m
+                        (case h-align
+                          [(center) (quotient (- w cw) 2)]
+                          [(right) (- w cw)]
+                          [else 0]))
+                    (if h-stretch?
+                        m
+                        (case v-align
+                          [(center) (quotient (- h ch) 2)]
+                          [(bottom) (- h ch)]
+                          [else 0]))
+                    (if w-stretch?
+                        w
+                        cw)
+                    (if h-stretch?
+                        h
+                        ch))
                    (loop (cdr children-info)))))))])
 
       (define curr-spacing const-default-spacing)

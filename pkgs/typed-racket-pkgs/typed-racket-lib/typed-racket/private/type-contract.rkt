@@ -91,12 +91,7 @@
                              #:kind kind
                              (type->contract-fail typ prop))])
            (ignore ; should be ignored by the optimizer
-            (quasisyntax/loc
-                stx
-              (define-values (n)
-                (recursive-contract
-                 cnt
-                 #,(contract-kind->keyword kind)))))))]
+            (quasisyntax/loc stx (define-values (n) cnt)))))]
     [_ (int-err "should never happen - not a define-values: ~a"
                 (syntax->datum stx))]))
 
@@ -330,12 +325,14 @@
         [(VectorTop:) (only-untyped vector?/sc)]
         [(BoxTop:) (only-untyped box?/sc)]
         [(ChannelTop:) (only-untyped channel?/sc)]
+        [(Async-ChannelTop:) (only-untyped async-channel?/sc)]
         [(HashtableTop:) (only-untyped hash?/sc)]
         [(MPairTop:) (only-untyped mpair?/sc)]
         [(ThreadCellTop:) (only-untyped thread-cell?/sc)]
         [(Prompt-TagTop:) (only-untyped prompt-tag?/sc)]
         [(Continuation-Mark-KeyTop:) (only-untyped continuation-mark-key?/sc)]
         [(ClassTop:) (only-untyped class?/sc)]
+        [(StructTypeTop:) (struct-type/sc null)]
         ;; TODO Figure out how this should work
         ;[(StructTop: s) (struct-top/sc s)]
 
@@ -454,7 +451,12 @@
                                                 nm (recursive-sc-use nm*)))))
             (recursive-sc (list nm*) (list (struct/sc nm (ormap values mut?) fields))
                                 (recursive-sc-use nm*))]
-           [else (flat/sc #`(flat-named-contract '#,(syntax-e pred?) #,pred?))])]
+           [else (flat/sc #`(flat-named-contract '#,(syntax-e pred?) (lambda (x) (#,pred? x))))])]
+        [(StructType: s)
+         (if (from-untyped? typed-side)
+             (fail #:reason (~a "cannot import structure types from"
+                                "untyped code"))
+             (struct-type/sc null))]
         [(Syntax: (Base: 'Symbol _ _ _)) identifier?/sc]
         [(Syntax: t)
          (syntax/sc (t->sc t))]
@@ -466,6 +468,8 @@
          (hash/sc (t->sc k) (t->sc v))]
         [(Channel: t)
          (channel/sc (t->sc t))]
+        [(Evt: t)
+         (evt/sc (t->sc t))]
         [else
          (fail #:reason "contract generation not supported for this type")]))))
 

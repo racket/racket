@@ -11,5 +11,6 @@
                "racket-doc"
                "scribble-doc"
                "scribble-lib"))
+(define update-implies '("plt-web-lib"))
 
 (define scribblings '(("plt-web.scrbl")))

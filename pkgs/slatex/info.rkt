@@ -13,7 +13,8 @@
 (define deps '("scheme-lib"
                "base"
                "compatibility-lib"))
-(define build-deps '("eli-tester"
+(define build-deps '("racket-index"
+                     "eli-tester"
                      "racket-doc"
                      "scribble-lib"))
 

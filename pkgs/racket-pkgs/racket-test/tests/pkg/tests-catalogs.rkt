@@ -84,8 +84,10 @@
                                              123)))
                  o))))
      (add-whale! "345")
-     $ (~a "raco pkg catalog-show --catalog file://" (path->string dir2) " whale") =stdout> #rx"Checksum: 345"
-     $ (~a "raco pkg catalog-show --version 5.3.6 --catalog file://" (path->string dir2) " whale") =stdout> #rx"Checksum: 123"
+     $ (~a "raco pkg catalog-show --catalog file://" (path->string dir2) " whale")
+     =stdout> #rx"Checksum: 345"
+     $ (~a "raco pkg catalog-show --version 5.3.6 --catalog file://" (path->string dir2) " whale")
+     =stdout> #rx"Checksum: 123"
      $ "raco pkg catalog-show whale" =exit> 1
      
      $ (~a "raco pkg catalog-copy --merge " (path->string dir2) " " (path->string dest))
@@ -107,16 +109,17 @@
   $ (~a "raco pkg catalog-archive " archive-d " http://localhost:9990")
   $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
 
-  (define rx:pkg-test1 (regexp
-                        (~a (regexp-quote (~a "Source: " archive-d "/pkgs/pkg-test1.zip"))
-                            ".*"
-                            (regexp-quote (~a "Checksum: " (file->string 
-                                                            (build-path archive-d
-                                                                        "pkgs"
-                                                                        "pkg-test1.zip.CHECKSUM")))))))
+  (define (rx:pkg-test1 as-url?)
+    (regexp
+     (~a (regexp-quote (~a "Source: " (if as-url? "file://" "") archive-d "/pkgs/pkg-test1.zip"))
+         ".*"
+         (regexp-quote (~a "Checksum: " (file->string 
+                                         (build-path archive-d
+                                                     "pkgs"
+                                                     "pkg-test1.zip.CHECKSUM")))))))
   
   $ (~a "raco pkg catalog-show --catalog file://" archive-d "/catalog pkg-test1")
-  =stdout> rx:pkg-test1
+  =stdout> (rx:pkg-test1 #f)
 
   (delete-directory/files archive-d)
 
@@ -127,11 +130,15 @@
         " " archive-d)
   =stdout> #rx"== Archiving pkg-test1 =="
   $ (~a "raco pkg catalog-show --catalog file://" archive-d "/catalog pkg-test1")
-  =stdout> rx:pkg-test1
+  =stdout> (rx:pkg-test1 #t)
   $ (~a "grep archive " archive-d "/catalog/pkg/pkg-test1") ; relative path => no "archive"
   =exit> 1
   $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
   $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip") =exit> 1
+  $ (~a "raco pkg catalog-show --catalog file://" archive-d "/catalog pkg-test2")
+  =stdout> #px"Dependencies:\\s+ pkg-test1"
+  $ (~a "raco pkg catalog-show --catalog file://" archive-d "/catalog pkg-test1")
+  =stdout> #px"Tags: first"
 
   ;; Incremental update:
   $ (~a "raco pkg catalog-archive --from-config --relative"
@@ -150,4 +157,30 @@
   $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip") =exit> 1
   $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip.CHECKSUM") =exit> 1
   
+  ;; archive
+
+  (delete-directory/files archive-d)
+
+  $ (~a "raco pkg install pkg-test1")
+  $ (~a "raco pkg archive " archive-d " pkg-test1")
+  =stdout> #rx"== Archiving pkg-test1 =="
+  $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip.CHECKSUM")
+
+
+  $ "raco pkg install pkg-test2"
+  $ (~a "raco pkg archive " archive-d " pkg-test2")
+  =stdout> #rx"Removing .* pkg-test1"
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip.CHECKSUM")
+
+  (delete-directory/files archive-d)
+
+  $ (~a "raco pkg archive --include-deps " archive-d " pkg-test2")
+  =stdout> #rx"Archiving pkg-test1" ;; checking dependencies
+  $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip.CHECKSUM")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip.CHECKSUM")
+
   (delete-directory/files d)))

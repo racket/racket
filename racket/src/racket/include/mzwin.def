@@ -3,6 +3,7 @@ EXPORTS
  scheme_setjmpup_relative
  scheme_longjmpup
  scheme_reset_jmpup_buf
+ scheme_get_mz_setjmp
  scheme_mz_setjmp
  scheme_mz_longjmp
  scheme_clear_escape
@@ -338,6 +339,7 @@ EXPORTS
  scheme_is_cpointer
  scheme_get_proc_name
  scheme_utf8_decode
+ scheme_utf8_decode_offset_prefix
  scheme_utf8_decode_as_prefix
  scheme_utf8_decode_all
  scheme_utf8_decode_prefix

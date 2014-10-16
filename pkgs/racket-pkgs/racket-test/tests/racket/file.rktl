@@ -1398,19 +1398,21 @@
 (let ([dir (make-temporary-file "change~a" 'directory)])
   (define known-supported? (vector-ref (system-type 'fs-change) 0))
   (define known-file-supported? (vector-ref (system-type 'fs-change) 3))
-  (define (check-supported evt file?)
-    (when (if file?
-              known-file-supported?
-              known-supported?)
-      (test #t filesystem-change-evt? evt)))
+  (define (filesystem-change-evt* dir file?)
+    (if (if file?
+            known-file-supported?
+            known-supported?)
+        (let ([e (filesystem-change-evt dir)])
+          (test #t filesystem-change-evt? e)
+          e)
+        (filesystem-change-evt dir (lambda () #f))))
 
   (define (check f1-name f2-name as-file? known-x-supported?)
     (printf "checking ~s, ~s as ~a\n" f1-name f2-name (if as-file? "file" "dir"))
     (define f1 (build-path dir f1-name))
     (define f2 (build-path dir f2-name))
 
-    (define dir-e (filesystem-change-evt dir (lambda () #f)))
-    (check-supported dir-e #f)
+    (define dir-e (filesystem-change-evt* dir #f))
     (if as-file?
         (call-with-output-file* f1 (lambda (o) (fprintf o "1\n")))
         (make-directory f1))
@@ -1421,10 +1423,8 @@
         (call-with-output-file* f2 (lambda (o) (fprintf o "2\n")))
         (make-directory f2))
 
-    (define f1-e (filesystem-change-evt f1 (lambda () #f)))
-    (define f2-e (filesystem-change-evt f2 (lambda () #f)))
-    (check-supported f1-e #t)
-    (check-supported f2-e #t)
+    (define f1-e (filesystem-change-evt* f1 #t))
+    (define f2-e (filesystem-change-evt* f2 #t))
     
     (when f1-e
       (test #f sync/timeout 0 f1-e)
@@ -1529,62 +1529,6 @@
   
   (custodian-shutdown-all c)
   (port-closed? i))
-
-;;----------------------------------------------------------------------
-;; UDP
-
-(unless (eq? 'macos (system-type))
-  (load-relative "udp.rktl"))
-
-(when (eq? 'macos (system-type))
-  (err/rt-test (udp-open-socket) exn:misc:unsupported?)
-  ;; All others fail b/c can't supply a UDP.
-  )
-
-(test #f udp? 5)
-
-;; more type tests in udp.rktl, where we have UDP socket values
-(err/rt-test (udp-close 5))
-(err/rt-test (udp-bound? 5))
-(err/rt-test (udp-connected? 5))
-(err/rt-test (udp-bind! 5 #f 40000))
-(err/rt-test (udp-connect! 5 "localhost" 40000))
-(err/rt-test (udp-send-to 5 "localhost" 40000 #"hello"))
-(err/rt-test (udp-send-to* 5 "localhost" 40000 #"hello"))
-(err/rt-test (udp-send-to/enable-break 5 "localhost" 40000 #"hello"))
-(err/rt-test (udp-send 5 #"hello"))
-(err/rt-test (udp-send* 5 #"hello"))
-(err/rt-test (udp-send/enable-break 5 #"hello"))
-(err/rt-test (udp-receive! 5 (make-bytes 10)))
-(err/rt-test (udp-receive!* 5 (make-bytes 10)))
-(err/rt-test (udp-receive!/enable-break 5 (make-bytes 10)))
-(err/rt-test (udp-receive!-evt 5 (make-bytes 10)))
-(err/rt-test (udp-send-ready-evt 5))
-(err/rt-test (udp-receive-ready-evt 5))
-
-(arity-test udp-open-socket 0 2)
-(arity-test udp-close 1 1)
-(arity-test udp? 1 1)
-(arity-test udp-bound? 1 1)
-(arity-test udp-connected? 1 1)
-(arity-test udp-bind! 3 4)
-(arity-test udp-connect! 3 3)
-(arity-test udp-send-to 4 6)
-(arity-test udp-send-to* 4 6)
-(arity-test udp-send-to/enable-break 4 6)
-(arity-test udp-send 2 4)
-(arity-test udp-send* 2 4)
-(arity-test udp-send/enable-break 2 4)
-(arity-test udp-send-to-evt 4 6)
-(arity-test udp-send-evt 2 4)
-(arity-test udp-receive! 2 4)
-(arity-test udp-receive!* 2 4)
-(arity-test udp-receive!/enable-break 2 4)
-(arity-test udp-receive!-evt 2 4)
-(arity-test udp-send-ready-evt 1 1)
-(arity-test udp-receive-ready-evt 1 1)
-
-(Section 'file-after-udp)
 
 ;;----------------------------------------------------------------------
 ;; Security guards:

@@ -5,7 +5,8 @@
 (define deps '("base"
                "htdp"
                "drracket"))
-(define build-deps '("scheme-lib"
+(define build-deps '("racket-index"
+                     "scheme-lib"
                      "at-exp-lib"
                      "rackunit-lib"
                      "compatibility-lib"
@@ -13,8 +14,8 @@
                      "htdp"
                      "compiler-lib"
                      "cext-lib"
-                     "scribble-lib"
                      "string-constants-lib"))
+(define update-implies '("drracket"))
 
 (define pkg-desc "tests for \"drracket\"")
 

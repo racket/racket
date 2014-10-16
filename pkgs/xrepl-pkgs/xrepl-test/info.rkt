@@ -6,6 +6,7 @@
                      "base"
                      "eli-tester"
                      "xrepl-lib"))
+(define update-implies '("xrepl-lib"))
 
 (define pkg-desc "tests for \"xrepl\"")
 

@@ -281,7 +281,7 @@
          [get-clipping-region (-> (Option (Instance Region%)))]
          [get-device-scale (-> (Values Nonnegative-Real Nonnegative-Real))]
          [get-font (-> (Instance Font%))]
-         [get-gl-context (-> (Option GL-Context<%>))]
+         [get-gl-context (-> (Option (Instance GL-Context<%>)))]
          [get-initial-matrix (-> (Vector Real Real Real Real Real Real))]
          [get-origin (-> (Values Real Real))]
          [get-pen (-> (Instance Pen%))]
@@ -427,6 +427,7 @@
   (Class [get-accum-size (-> Natural)]
          [get-depth-size (-> Natural)]
          [get-double-buffered (-> Boolean)]
+         [get-legacy? (-> Boolean)]
          [get-multisample-size (-> Natural)]
          [get-share-context (-> (Option (Instance GL-Context<%>)))]
          [get-stencil-size (-> Natural)]
@@ -434,6 +435,7 @@
          [set-accum-size (Integer -> Void)]
          [set-depth-size (Integer -> Void)]
          [set-double-buffered (Any -> Void)]
+         [set-legacy? (-> Any Void)]
          [set-multisample-size (Integer -> Void)]
          [set-share-context ((Option (Instance GL-Context<%>)) -> Void)]
          [set-stencil-size (Integer -> Void)]
@@ -675,6 +677,10 @@
 
 (define-type Canvas<%>
   (Class #:implements Subwindow<%>
+         [accept-tab-focus (case-> [-> Boolean]
+                                   [Any -> Void])]
+         [flush (-> Void)]
+         [get-canvas-background (-> (Option (Instance Color%)))]
          [get-dc (-> (Instance DC<%>))]
          [min-client-height
           (case-> (-> Natural)
@@ -682,7 +688,14 @@
          [min-client-width
           (case-> (-> Natural)
                   (Natural -> Void))]
-         [on-event ((Instance Mouse-Event%) -> Void)]))
+         [on-char ((Instance Key-Event%) -> Void)]
+         [on-event ((Instance Mouse-Event%) -> Void)]
+         [on-paint (-> Void)]
+         [on-tab-in (-> Void)]
+         [resume-flush (-> Void)]
+         [set-canvas-background ((Instance Color%) -> Void)]
+         [set-resize-corner (Any -> Void)]
+         [suspend-flush (-> Void)]))
 
 (define-type Canvas%
   (Class #:implements Canvas<%>
@@ -734,7 +747,8 @@
          [with-gl-context ((-> Any) [#:fail (-> Any)] -> Any)]))
 
 (define-type Cursor%
-  (Class [ok? (-> Boolean)]))
+  (Class (init [id  Symbol])
+         [ok? (-> Boolean)]))
 
 (define-type Frame%
   (Class #:implements Top-Level-Window<%>
@@ -1715,6 +1729,7 @@
          #| FIXME
          [get-wordbreak-map (-> (Option (Instance Editor-Wordbreak-Map%)))]
          |#
+         [hide-caret (-> Any Void)]
          [insert
           (case->
            ;; collapsed cases for contract generation
@@ -1911,6 +1926,8 @@
          Editor-Data-Class%
          Editor-Stream-In%
          Editor-Stream-Out%
+         Editor-Stream-In-Base%
+         Editor-Stream-Out-Base%
          Keymap%
          Pasteboard%
          Text%)
@@ -2101,6 +2118,8 @@
                -> Void)]
          [on-save-file (Path Load/Save-Format -> Void)]
          [on-snip-modified ((Instance Snip%) Any -> Void)]
+         [on-goodbye-event ((Instance DC<%>) Real Real Real Real
+                            (Instance Mouse-Event%) -> Void)]
          [own-caret (Any -> Void)]
          [paste (case-> (-> Void) (Integer -> Void))]
          [paste-x-selection (case-> (-> Void) (Integer -> Void))]
@@ -2443,14 +2462,19 @@
 
 ;; racket/snip
 
-(provide Snip%
+(provide Readable-Snip<%>
+         Snip%
          Snip-Admin%
          Snip-Class%
          Snip-Class-List<%>
          String-Snip%
          Style<%>
          Style-Delta%
-         Style-List%)
+         Style-List%
+         Tab-Snip%)
+
+(define-type Readable-Snip<%>
+  (Class [read-special (Any (Option Natural) (Option Natural) (Option Natural) -> Any)]))
 
 (define-type Snip-Edit-Operation
   (U 'undo 'redo 'clear 'cut 'copy
@@ -2635,7 +2659,7 @@
          [get-version (-> Integer)]
          [read ((Instance Editor-Stream-In%) -> (Option (Instance Snip%)))]
          [read-header ((Instance Editor-Stream-In%) -> Boolean)]
-         [reading-header ((Instance Editor-Stream-In%) -> Boolean)]
+         [reading-version ((Instance Editor-Stream-In%) -> Integer)]
          [set-classname (String -> Void)]
          [set-version (Integer -> Void)]
          [write-header ((Instance Editor-Stream-Out%) -> Boolean)]))
@@ -2740,3 +2764,55 @@
          [insert (case-> (String Natural -> Void)
                          (String Natural Natural -> Void))]
          [read (Natural (Instance Editor-Stream-In%) -> Void)]))
+
+(define-type Tab-Snip%
+  (Class #:implements String-Snip%))
+
+;; 7 Editor Classes
+(provide Editor-Snip%
+         Editor-Wordbreak-Map%)
+(define-type Editor-Snip%
+  (Class #:implements Snip%
+         (init [editor (Option (Instance Editor<%>)) #:optional]
+               [with-border? Any #:optional]
+               [left-margin Natural #:optional]
+               [top-margin Natural #:optional]
+               [right-margin Natural #:optional]
+               [bottom-margin Natural #:optional]
+               [left-inset Natural #:optional]
+               [top-inset Natural #:optional]
+               [right-inset Natural #:optional]
+               [bottom-inset Natural #:optional]
+               [min-width Nonnegative-Real #:optional]
+               [max-width Nonnegative-Real #:optional]
+               [min-height Nonnegative-Real #:optional]
+               [max-height Nonnegative-Real #:optional])
+         [border-visible? (-> Boolean)]
+         [get-align-top-line (-> Boolean)]
+         [get-editor (-> (U #f (Instance Text%) (Instance Pasteboard%)))]
+         [get-inset ((Boxof Natural) (Boxof Natural) (Boxof Natural) (Boxof Natural) -> Void)]
+         [get-margin ((Boxof Natural) (Boxof Natural) (Boxof Natural) (Boxof Natural) -> Void)]
+         [get-max-height (-> (U Nonnegative-Real 'none))]
+         [get-max-width (-> (U Nonnegative-Real 'none))]
+         [get-min-height (-> (U Nonnegative-Real 'none))]
+         [get-min-width (-> (U Nonnegative-Real 'none))]
+         [get-tight-text-fit (-> Boolean)]
+         [resize (Nonnegative-Real Nonnegative-Real -> Boolean)]
+         [set-align-top-line (Any -> Void)]
+         [set-editor ((U (Instance Text%) (Instance Pasteboard%) #f) -> Void)]
+         [set-inset (Natural Natural Natural Natural -> Void)]
+         [set-margin (Natural Natural Natural Natural -> Void)]
+         [set-max-height ((U Nonnegative-Real 'none) -> Void)]
+         [set-max-width ((U Nonnegative-Real 'none) -> Void)]
+         [set-min-height ((U Nonnegative-Real 'none) -> Void)]
+         [set-min-width ((U Nonnegative-Real 'none) -> Void)]
+         [set-tight-text-fit (Any -> Void)]
+         [show-border (Any -> Void)]
+         [style-background-used? (-> Boolean)]
+         [use-style-background (Any -> Void)]))
+
+(define-type Wordbreak-Map-Value (U 'caret 'line 'selection 'user1 'user2))
+(define-type Editor-Wordbreak-Map%
+  (Class
+   [get-map (Char -> (Listof Wordbreak-Map-Value))]
+   [set-map (Char (Listof Wordbreak-Map-Value) -> Void)]))

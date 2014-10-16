@@ -71,10 +71,13 @@
   (define device-minor-bytes (read-bytes* 8 in))
   (define filename-prefix-bytes (read-bytes* 155 in))
   (define base-filename (bytes->path
-                         (if ustar?
-                             (bytes-append (nul-terminated filename-prefix-bytes)
-                                           (nul-terminated name-bytes))
-                             (nul-terminated name-bytes))))
+                         (let ([name (nul-terminated name-bytes)])
+                           (if ustar?
+                               (let ([prefix (nul-terminated filename-prefix-bytes)])
+                                 (if (zero? (bytes-length prefix))
+                                     name
+                                     (bytes-append prefix #"/" name)))
+                               name))))
   (when (absolute-path? base-filename)
     (error 'untar "won't extract a file with an absolute path: ~e" base-filename))
   (define stripped-filename (strip-prefix base-filename strip-count))

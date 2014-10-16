@@ -23,9 +23,9 @@
          "tooltip.rkt"
          drracket/private/drsig
          "rep.rkt"
-         "eval-helpers.rkt"
+         "eval-helpers-and-pref-init.rkt"
          "local-member-names.rkt"
-         "rectangle-intersect.rkt"
+         drracket/private/rectangle-intersect
          pkg/lib
          pkg/gui
          framework/private/logging-timer
@@ -79,6 +79,8 @@
 (define sc-only-raw-text-files-supported 
   (string-constant online-expansion-only-raw-text-files-supported))
 (define sc-abnormal-termination (string-constant online-expansion-abnormal-termination))
+(define sc-abnormal-termination-out-of-memory 
+  (string-constant online-expansion-abnormal-termination-out-of-memory))
 (define sc-jump-to-error (string-constant jump-to-error))
 (define sc-finished-successfully (string-constant online-expansion-finished-successfully))
 
@@ -2192,8 +2194,11 @@
          (line-of-interest)
          (send running-tab set-oc-status
                (clean (vector-ref res 0)
-                      (if (eq? (vector-ref res 0) 'abnormal-termination)
-                          (list (exn-info sc-abnormal-termination '() '() #f))
+                      (if (equal? (vector-ref res 0) 'abnormal-termination)
+                          (list (exn-info (if (regexp-match #rx"memory" (vector-ref res 1))
+                                              sc-abnormal-termination-out-of-memory
+                                              sc-abnormal-termination)
+                                          '() '() #f))
                           (vector-ref res 1))))
          (send running-tab set-dep-paths (list->set (vector-ref res 2)) #t)])
       (oc-maybe-start-something)))
@@ -2537,9 +2542,12 @@
   
   ;; in-module-language : tab -> module-language-settings or #f
   (define (tab-in-module-language tab)
-    (define settings (send (send tab get-defs) get-next-settings))
+    (define defs (send tab get-defs))
+    (define settings (send defs get-next-settings))
+    (define mode (send defs get-current-mode))
     (and (is-a? (drracket:language-configuration:language-settings-language settings)
                 module-language<%>)
+         (drracket:modes:mode-intended-to-edit-programs? mode)
          (drracket:language-configuration:language-settings-settings settings)))
   
   (define (initialize-prefs-panel)
@@ -2635,6 +2643,7 @@
       
       (define current-mode #f)
       
+      (define/public (get-current-mode) current-mode)
       (define/public (set-current-mode mode)
         (set! current-mode mode)
         (define surrogate (drracket:modes:mode-surrogate mode))

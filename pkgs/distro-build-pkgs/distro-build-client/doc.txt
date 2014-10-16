@@ -92,14 +92,16 @@ Each Windows client needs the following:
     Windows command line (like freeSSHd) or bash with access to
     cmd.exe (like Cygwin's opensshd)
   * git (unless the working directory is ready)
-  * Microsoft Visual Studio 9.0 (2008), installed in the
-    default folder:
-     C:\Program Files\Microsoft Visual Studio 9.0       (32-bit host)
-     C:\Program Files (x86)\Microsoft Visual Studio 9.0 (64-bit host)
+  * Microsoft Visual Studio (version >= 9.0, <= 12.0), installed
+    in the default folder:
+     C:\Program Files\Microsoft Visual Studio <vers>
+    or
+     C:\Program Files (x86)\Microsoft Visual Studio <vers>
   * Nullsoft Scriptable Install System (NSIS) verstion 2.x, installed
     in the default folder:
      C:\Program Files\NSIS\makensis.exe
-     or  C:\Program Files (x86)\NSIS\makensis.exe
+    or
+     C:\Program Files (x86)\NSIS\makensis.exe
     or installed so that `makensis' in your PATH.
 
 Site Configuration
@@ -211,10 +213,11 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
 
   #:configure '(<string> ...) --- arguments to `configure'
 
-  #:bits <integer> --- 32 or 64, affects Visual Studio path
+  #:bits <integer> --- 32 or 64, affects Visual Studio mode
 
-  #:vc <string*> --- "x86" or "x64" to select the Visual C build mode;
-    default depends on `#:bits'
+  #:vc <string*> --- provided to "vcvarsall/bat" to select the Visual
+    Studio build mode; the default is "x86" or "x86_amd64", depending
+    on `#:bits'
 
   #:sign-identity <string> --- provides an identity to be passed to
     `codesign` for code signing on Mac OS X (for all executables in a
@@ -254,9 +257,14 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     the value of `#:source?'
 
   #:source-pkgs? <boolean> --- if true, then packages are included in
-    th installer/archive only in source form; a true value works best
+    the installer/archive only in source form; a true value works best
     when the `#:source-runtime?' value is also #t; the default is the
     value of `#:source?'
+
+  #:versionless? <boolean> --- if true, avoids including the Racket
+    version number in an installer's name or in the installation path;
+    the default is determined by the `VERSIONLESS_MODE' makefile
+    variable
 
   #:mac-pkg? <boolean> --- if true, creates a ".pkg" for Mac OS X (in
     single-file format) instead of a ".dmg"; the default is #f
@@ -385,7 +393,7 @@ configuration keywords to values.
  (make-macosx-notes config) -> string
     config : hash?
   Produces "README" content to tell Mac OS X users how to install a
-  distirbution folder. This function is used by `make-readme' when
+  distribution folder. This function is used by `make-readme' when
   `#:platform' in `config' is 'macosx.
 
 Names and Download Pages
@@ -397,12 +405,14 @@ sorted. Then, for the purposes of building the table, a "|" separated
 by any number of spaces within a name is treated as a hierarchical
 delimiter, while anything within "{" and "}" in a hierarchical level
 is stripped from the displayed name along with surrounding spaces (so
-that it can affect sorting without being displayed).
+that it can affect sorting without being displayed). Anything after ";
+" within a "|"-separated part is rendered as a detail part of the
+label (e.g., in a smaller font).
 
 For example, the names
 
   "Racket | {2} Linux | 32-bit"
-  "Racket | {2} Linux | 64-bit"
+  "Racket | {2} Linux | 64-bit; built on Ubuntu"
   "Racket | {1} Windows | 32-bit"
   "Racket | {1} Windows | 64-bit"
   "Racket | {3} Source"
@@ -411,14 +421,15 @@ are shown (actually or conceptually) as
 
   Racket
    Windows
-     [32-bit]
+     [32-bit] <build on Ubuntu>
      [64-bit]
    Linux
      [32-bit]
      [64-bit]
    [Source]
 
-where the square-bracketed entries are hyperlinks.
+where the square-bracketed entries are hyperlinks and the
+angle-bracketed pieces are details.
 
 Examples
 --------

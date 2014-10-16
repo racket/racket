@@ -1,4 +1,5 @@
-var dynamic_host = "pkg.racket-lang.org";
+var build_host = "http://pkg-build.racket-lang.org/";
+var dynamic_host = "pkgd.racket-lang.org";
 var dynamic_port = 443;
 
 function dynamic_url ( u ) {
@@ -21,6 +22,7 @@ $( document ).ready(function() {
     function dynamic_send ( u, o ) {
         o['email'] = localStorage['email'];
         o['passwd'] = localStorage['passwd'];
+        // xxx do a poll
         $.getJSON( dynamic_url(u), o, function (r) { return; } ); }
 
     function dynamic_pkgsend ( u, o ) {
@@ -47,6 +49,11 @@ $( document ).ready(function() {
         change_hash( "[" + pkgi['name'] + "]" );
        
         var mypkg_p = ($.inArray(me(), pkgi['authors'] ) != -1);
+
+        if ( mypkg_p ) {
+            $("#pi_edit_help").show(); } 
+        else {
+            $("#pi_edit_help").hide(); }
 
         function make_editbutton ( spot, initv, fun ) {
             if ( mypkg_p ) {
@@ -99,6 +106,31 @@ $( document ).ready(function() {
         $( "#pi_last_updated" ).text( format_time(pkgi['last-updated']) );
         $( "#pi_last_checked" ).text( format_time(pkgi['last-checked']) );
         $( "#pi_last_edit" ).text( format_time(pkgi['last-edit']) );
+
+        // XXX show the doc[0] content?
+        $('#pi_docs').html("").append( $.map( pkgi['build']['docs'], function ( doc, i ) {
+            var dl;
+            if ( doc[2] ) {
+                dl = $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
+            else {
+                dl = $('<del>').html(doc[1]); }
+            return $('<span>').append(dl, " ") } ) );
+
+        if ( pkgi['build'] && pkgi['build']['failure-log'] ) {
+                $('#pi_build').html("")
+                .append($('<span>')
+                        .append($('<a>', { href: build_host + pkgi['build']['failure-log'] }).html( "fails" )));
+        } else if ( pkgi['build']['success-log'] && pkgi['build']['dep-failure-log'] ) {
+            $('#pi_build').html("")   
+                .append($('<span>')
+                        .append($('<a>', { href: build_host + pkgi['build']['success-log'] }).html( "succeeds" ))
+                        .append(" with ")
+                        .append($('<a>', { href: build_host + pkgi['build']['dep-failure-log'] }).html( "dependency problems" )));
+        } else if ( pkgi['build']['success-log'] ) {
+            $('#pi_build').html("")
+                .append($('<span>')
+                        .append($('<a>', { href: build_host + pkgi['build']['success-log'] }).html( "succeeds" )));
+        }
 
         $( "#pi_description" ).text( pkgi['description'] );
         make_editbutton ( "pi_description", pkgi['description'], submit_mod_description );
@@ -268,18 +300,25 @@ $( document ).ready(function() {
             else {
                 h = ""; } } }
 
+    function init_search_terms() {
+        search_terms["!main-tests"] = true;
+        search_terms["!main-distribution"] = true; }
+
     { var h = window.location.hash;
       if ( h == "" ) {
-          search_terms["!main-tests"] = true;
-          search_terms["!main-distribution"] = true; }
+          init_search_terms(); }
       else {
           h = h.substring(1);
           parse_hash(h); } }
 
     var expected_hash = "";
+    var default_search = "(!main-distribution)(!main-tests)";
     function change_hash ( v ) {
-        expected_hash = v;
-        window.location.hash = v; }
+        if ( v == default_search && expected_hash != v ) {
+            v = ""; }
+        if ( v != default_search ) {
+            expected_hash = v;
+            window.location.hash = v; } }
 
     $(window).bind( 'hashchange', function(e) {
         var actual_hash = window.location.hash;
@@ -307,10 +346,16 @@ $( document ).ready(function() {
             delete search_terms[term];
             search_terms["!" + term] = true;
             evaluate_search(); } ); };
+    function resetfilterlink() {
+        return jslink("[reset all filters]", 
+                     function () {
+                         search_terms = {};
+                         init_search_terms(); 
+                         evaluate_search(); } ).addClass("resetlink"); }
 
     function evaluate_search () {
         var shown_terms = {};
-
+        
         $.each( $('#packages_table tr'), function (key, dom) {
             var value = $(dom).data("obj");
             var show = true;
@@ -348,19 +393,21 @@ $( document ).ready(function() {
         var shown_terms_skeys = shown_terms_keys.sort(function(a,b) {
             return ((a < b) ? -1 : ((a > b) ? 1 : 0)); });
 
-        change_hash( "" );
+        var new_h = "";
         $("#search_menu").html("").append( $.map( shown_terms_skeys, function ( term, i ) {
             if ( shown_terms[term] < 0 ) {
                 if ( shown_terms[term] == -1 ) {
-                    change_hash( window.location.hash + "(" + term + ")" );
+                    new_h = new_h + "(" + term + ")";
                     return changefilterlink ( term, term, "!" + term, "active" ); }
                 else {
-                    change_hash( window.location.hash + "(" + "!" + term + ")" );
+                    new_h = new_h + "(" + "!" + term + ")";
                     return removefilterlink ( term, "!" + term, "inactive" ); } }
             else if ( shown_terms[term] == 0 ) {
                 return [ term, " " ]; }
             else {
-                return addfilterlink ( term, term, "possible" ); } } ) );
+                return addfilterlink ( term, term, "possible" ); } } ) )
+            .append( resetfilterlink() );
+        change_hash( new_h );
 
         $("#packages_table tr:visible:even").removeClass("even");
         $("#packages_table tr:visible:odd").addClass("even"); };
@@ -413,6 +460,28 @@ $( document ).ready(function() {
 
         var dom = value['dom_obj'];
 
+        var bstatus;
+        if ( value['build'] && value['build']['failure-log'] ) {
+            bstatus = $('<td>', {class: 'build_red'})
+                .append($('<span>')
+                       .append($('<a>', { href: build_host + value['build']['failure-log'] }).html( "fails" )));
+        } else if ( value['build'] && value['build']['success-log'] && value['build']['dep-failure-log'] ) {
+            bstatus = $('<td>', {class: 'build_yellow'})
+                .append($('<span>')
+                        .append($('<a>', { href: build_host + value['build']['success-log'] }).html( "succeeds" ))
+                        .append(" with ")
+                        .append($('<a>', { href: build_host + value['build']['dep-failure-log'] }).html( "dependency problems" )));
+        } else if ( value['build'] && value['build']['success-log'] ) {
+            bstatus = $('<td>', {class: 'build_green'})
+                .append($('<span>')
+                        .append($('<a>', { href: build_host + value['build']['success-log'] }).html( "succeeds" )));
+        } else {
+            bstatus = $('<td>').html("");
+        }
+
+        if (! value['build'] ) { value['build'] = {}; }
+        if (! value['build']['docs'] ) { value['build']['docs'] = []; }
+
         dom.attr("class", ((now - (60*60*24*2)) < value['last-updated'] ? "recent" : "old"))
             .data( "obj", value)
             .html("")
@@ -420,12 +489,35 @@ $( document ).ready(function() {
                 $('<td sorttable_customkey="' + value['last-updated'] + '">').html("")
                     .append( curate_span ),
                 $('<td>').html("")
-                    .append( jslink( value['name'], function () { open_info ( value ); }) ),
-                $('<td>').append( $.map( value['authors'], function ( author, i ) {
-                    return addfilterlink ( author, "author:" + author, "possible" ); } ) ),
-                $('<td>').text( value['description'] ),
-                $('<td>').append( $.map( value['tags'], function ( tag, i ) {
-                    return addfilterlink ( tag, tag, "possible" ); } ) )); }
+                    .append( jslink( value['name'], function () { open_info ( value ); }) )
+                    .append($('<span>').attr("class","authors").html("").append( $.map( value['authors'], function ( author, i ) {
+                        return addfilterlink ( author, "author:" + author, "possible" ); } ) )),
+                $('<td>').text( value['description'] )
+                    .append($('<span>').attr("class","doctags").html(value['build']['docs'].length > 0 ? "Docs: " : "")
+                            .append( $.map( value['build']['docs'], function ( doc, i ) {
+                                var dl;
+                                if ( doc[2] ) {
+                                    dl = $('<a>', { href: build_host + doc[2] } ).html(doc[1]); }
+                                else {
+                                    dl = $('<del>').html(doc[1]); }
+                                return $('<span>').append(dl, " ") } ) ))
+                    .append($('<span>').attr("class","doctags").html(value['tags'].length > 0 ? "Tags: " : "").append( $.map( value['tags'], function ( tag, i ) {
+                        return addfilterlink ( tag, tag, "possible" ); } ) )),
+                bstatus ); }
+
+    function pollNotice(){
+        $.getJSON( dynamic_url("/jsonp/notice"), function( resp ) {
+            $("#server_notice").html(resp);
+            // If there is no notice, update every 5 minutes
+            if ( ! (/\S/.test(resp)) ) {
+                $("#server_notice").hide();
+                setTimeout(pollNotice, 1000*60*5); }
+            // Otherwise, update every 5 seconds
+            else {
+                $("#server_notice").show();
+                setTimeout(pollNotice, 1000*5); } }); }
+    $("#server_notice").hide();
+    pollNotice();
 
     var pkgdb = {};
     $.getJSON( "/pkgs-all.json.gz", function( resp ) {
@@ -435,9 +527,13 @@ $( document ).ready(function() {
         var snames = names.sort(function(a,b) {
             return ((a < b) ? -1 : ((a > b) ? 1 : 0)); })
 
+        $("#packages_headers").show();
+
         $.each( snames, function (name_i) {
             var name = snames[name_i];
             add_package_to_list ( pkgdb[name] ); });
+
+        $("#packages_loading").hide();
 
         evaluate_search();
 
@@ -501,10 +597,14 @@ $( document ).ready(function() {
 
     $( "#login_confirm_row" ).hide();
     $( "#login_code_row" ).hide();
+    $("#packages_headers").hide();
 
     function menu_logout () {
         logged_in = false;
         $("#logout").html( jslink( "login", function () { $( "#login" ).dialog( "open" ); } ) ); }
+    function menu_logging () {
+        logged_in = false;
+        $("#logout").html( "logging in..." ); }
     function menu_loggedin ( curate_p ) {
         logged_in = true;
         $("#logout").html("")
@@ -538,8 +638,14 @@ $( document ).ready(function() {
                          value['versions']['default']['source'] = "";
                          value['versions']['default']['source_url'] = "";
                          value['versions']['default']['checksum'] = "";
+                         value['build'] = {};
+                         value['build']['success-log'] = false;
+                         value['build']['failure-log'] = false;
+                         value['build']['dep-failure-log'] = false;
+                         value['build']['conflicts-log'] = false;
+                         value['build']['docs'] = [];
 
-                         add_package_to_list (value);
+                         add_package_to_list(value);
                          evaluate_search();
                          open_info(value); }),
                      " | ",
@@ -554,6 +660,7 @@ $( document ).ready(function() {
                          menu_logout (); }) ); }
 
     function initial_login () {
+        menu_logging();
         $.getJSON( dynamic_url("/jsonp/authenticate"),
                    { email: localStorage['email'], passwd: localStorage['passwd'], code: "" },
                    function( resp ) {

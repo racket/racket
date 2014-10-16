@@ -14,6 +14,7 @@
          distro-build/url-options
          distro-build/display-time
          distro-build/readme
+         remote-shell/vbox
          "email.rkt")
 
 ;; See "config.rkt" for an overview.
@@ -23,6 +24,8 @@
 ;; ----------------------------------------
 
 (define default-release? #f)
+(define default-source? #f)
+(define default-versionless? #f)
 (define default-clean? #f)
 (define dry-run #f)
 
@@ -36,6 +39,10 @@
    #:once-each
    [("--release") "Create release-mode installers"
     (set! default-release? #t)]
+   [("--source") "Create source installers"
+    (set! default-source? #t)]
+   [("--versionless") "Avoid version number in names and paths"
+    (set! default-versionless? #t)]
    [("--clean") "Erase client directories before building"
     (set! default-clean? #t)]
    [("--dry-run") mode
@@ -106,8 +113,22 @@
 ;; ----------------------------------------
 ;; Managing VirtualBox machines
 
-(define VBoxManage (find-executable-path "VBoxManage"))
-(define use-headless? #t)
+(define (start-client c max-vm)
+  (define vbox (get-opt c '#:vbox))
+  (when vbox
+    (start-vbox-vm vbox
+                   #:max-vms max-vm
+                   #:dry-run? dry-run)))
+
+(define (stop-client c)
+  (define vbox (get-opt c '#:vbox))
+  (when vbox
+    (stop-vbox-vm vbox)))
+
+;; ----------------------------------------
+
+(define scp (find-executable-path "scp"))
+(define ssh (find-executable-path "ssh"))
 
 (define (system*/show exe . args)
   (displayln (apply ~a #:separator " " 
@@ -122,95 +143,6 @@
     [(frozen) (break-enabled #f) (semaphore-wait (make-semaphore))]
     [else
      (apply system* exe args)]))
-
-(define (system*/string . args)
-  (define s (open-output-string))
-  (parameterize ([current-output-port s])
-    (apply system* args))
-  (get-output-string s))
-
-(define (vbox-state vbox)
-  (define s (system*/string VBoxManage "showvminfo" vbox))
-  (define m (regexp-match #rx"(?m:^State:[ ]*([a-z]+(?: [a-z]+)*))" s))
-  (define state (and m (string->symbol (cadr m))))
-  (case state
-    [(|powered off| aborted) 'off]
-    [(running saved paused) state]
-    [(restoring) (vbox-state vbox)]
-    [else 
-     (eprintf "~a\n" s)
-     (error 'vbox-state "could not get virtual machine status: ~s" vbox)]))
-
-(define (vbox-control vbox what)
-  (system* VBoxManage "controlvm" vbox what))
-
-(define (vbox-start vbox)
-  (apply system* VBoxManage "startvm" vbox 
-         (if use-headless?
-             '("--type" "headless")
-             null))
-  ;; wait for the machine to get going:
-  (let loop ([n 0])
-    (unless (eq? 'running (vbox-state vbox))
-      (unless (= n 20)
-        (sleep 0.5)
-        (loop (add1 n))))))
-
-(define call-with-vbox-lock
-  (let ([s (make-semaphore 1)]
-        [lock-cust (current-custodian)])
-    (lambda (thunk)
-      (define t (current-thread))
-      (define ready (make-semaphore))
-      (define done (make-semaphore))
-      (parameterize ([current-custodian lock-cust])
-        (thread (lambda () 
-                  (semaphore-wait s)
-                  (semaphore-post ready)
-                  (sync t done)
-                  (semaphore-post s))))
-      (sync ready)
-      (thunk)
-      (semaphore-post done))))
-
-(define (start-client c max-vm)
-  (define vbox (get-opt c '#:vbox))
-  (define (check-count)
-    (define s (system*/string VBoxManage "list" "runningvms"))
-    (unless ((length (string-split s "\n")) . < . max-vm)
-      (error 'start-client "too many virtual machines running (>= ~a) to start: ~s"
-             max-vm
-             (client-name c))))
-  (when vbox
-    (printf "Starting VirtualBox machine ~s\n" vbox)
-    (flush-output)
-    (unless dry-run
-      (case (vbox-state vbox)
-        [(running) (void)]
-        [(paused) (vbox-control vbox "resume")]
-        [(off saved) (call-with-vbox-lock
-                      (lambda ()
-                        (check-count)
-                        (vbox-start vbox)))])
-      (unless (eq? (vbox-state vbox) 'running)
-        (error 'start-client "could not get virtual machine started: ~s" (client-name c)))
-      ;; pause a little to let the VM get networking ready, etc.
-      (sleep 3))))
-
-(define (stop-client c)
-  (define vbox (get-opt c '#:vbox))
-  (when vbox
-    (printf "Stopping VirtualBox machine ~s\n" vbox)
-    (flush-output)
-    (unless dry-run
-      (vbox-control vbox "savestate")
-      (unless (eq? (vbox-state vbox) 'saved)
-        (error 'start-client "virtual machine isn't in the expected saved state: ~s" c)))))
-
-;; ----------------------------------------
-
-(define scp (find-executable-path "scp"))
-(define ssh (find-executable-path "ssh"))
 
 (define (ssh-script host port user server-port kind . cmds)
   (for/and ([cmd (in-list cmds)])
@@ -309,7 +241,8 @@
   (define dist-catalogs (choose-catalogs c '("")))
   (define sign-identity (get-opt c '#:sign-identity ""))
   (define release? (get-opt c '#:release? default-release?))
-  (define source? (get-opt c '#:source? #f))
+  (define source? (get-opt c '#:source? default-source?))
+  (define versionless? (get-opt c '#:versionless? default-versionless?))
   (define source-pkgs? (get-opt c '#:source-pkgs? source?))
   (define source-runtime? (get-opt c '#:source-runtime? source?))
   (define mac-pkg? (get-opt c '#:mac-pkg? #f))
@@ -334,6 +267,7 @@
       " BUILD_STAMP=" (q build-stamp)
       " RELEASE_MODE=" (if release? "--release" (q ""))
       " SOURCE_MODE=" (if source-runtime? "--source" (q ""))
+      " VERSIONLESS_MODE=" (if versionless? "--versionless" (q ""))
       " PKG_SOURCE_MODE=" (if source-pkgs?
                               (q "--source --no-setup")
                               (q ""))
@@ -370,7 +304,7 @@
   (define vc (or (get-opt c '#:vc)
                  (if (= bits 32)
                      "x86"
-                     "x64")))
+                     "x86_amd64")))
   (define j (or (get-opt c '#:j) 1))
   (define (cmd . args) 
     (list "cmd" "/c" (shell-protect (apply ~a args) platform)))
@@ -385,10 +319,9 @@
         (cmd "cd " (q dir)
              " && git pull"))
    (cmd "cd " (q dir)
-        " && \"c:\\Program Files" (if (= bits 64) " (x86)" "") "\\Microsoft Visual Studio 9.0\\vc\\vcvarsall.bat\""
-        " " vc
+        " && racket\\src\\worksp\\msvcprep.bat " vc
         " && nmake win32-client" 
-       " JOB_OPTIONS=\"-j " j "\""
+        " JOB_OPTIONS=\"-j " j "\""
         (client-args c server server-port platform readme))))
 
 (define (client-build c)
@@ -411,6 +344,8 @@
                            rdme
                            (rdme (add-defaults c
                                                '#:release? default-release?
+                                               '#:source? default-source?
+                                               '#:versionless? default-versionless?
                                                '#:pkgs (string-split default-pkgs)
                                                '#:install-name (if (get-opt c '#:release? default-release?)
                                                                    ""

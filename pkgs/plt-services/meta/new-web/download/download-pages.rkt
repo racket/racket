@@ -18,6 +18,12 @@
                                 [(equal? (car a) package) #t]
                                 [(equal? (car b) package) #f]
                                 [else (string<? (cdr a) (cdr b))]))))
+  (define note-style '("font-size: 85%; display: none;"
+                       " margin-top: 1ex;"
+                       " padding: 1ex 1ex 1ex 1ex;"
+                       " text-align: left;"
+                       " line-height: 1.5em; "
+                       " background-color: #edd"))
   (list
    @columns[10 #:center? #t #:row? #t #:center-text? #t]{
     @h3[style: "text-align: center"]{Version @version (@(release-date-string release))}
@@ -60,13 +66,27 @@
           @row{@links[@license{License}
                        all-version-pages
                        @pre:installers{Snapshot Builds}]}))}
-  @columns[4 #:center? #t #:center-text? #t #:row? #t]{ @div[id: "linux_explain"
-           style: '("font-size: 75%; display: none;"
-                    " margin-top: 1ex;")]{
-        @b{Note about the Linux installers:} if you don't see an option for
+  @columns[6 #:center? #t #:center-text? #t #:row? #t]{
+      @div[id: "linux_explain"
+           style: note-style]{
+        @div{@b{About the Linux installers:}} If you don't see an option for
         your particular platform, try other Linux installers, starting from
         similar ones.  Very often, a build on one Linux variant will work on
         others too.}
+      @div[id: "builtpkgs_explain"
+           style: note-style]{
+        @div{@b{About source distributions:}} The @b{Source + built packages}
+           distribution is recommend, instead of the selected @b{Source} distribution.
+           The @b{Source + built packages} distribution includes pre-built,
+           platform-independent bytecode@";" it installs much faster than
+           plain source, and it is also compatible with fast installs of
+           additional Racket packages.}
+      @div[id: "source_explain"
+           style: note-style]{
+        @div{@b{About sources for Windows and Mac OS X:}} To build from source for
+           Windows or Mac OS X, download and build a @b{Minimal Racket} distribution
+           instead of a @b{Racket} distribution, and then install packages
+           with @div{@tt{raco pkg install -i main-distribution}}}
     @downloader-script[package (map car all-packages)]
     @noscript{
       Installers are available for the following platforms:
@@ -247,6 +267,8 @@
     // changes even when the arrow keys are used to move the selection -- since
     // then onchange is called only on blur)
     linux_expl_s = document.getElementById("linux_explain").style;
+    source_expl_s = document.getElementById("source_explain").style;
+    builtpkgs_expl_s = document.getElementById("builtpkgs_explain").style;
     selection_changed_timer = false;
     selection_changed = function() {
       var package_selector = document.getElementById("package_selector");
@@ -269,10 +291,29 @@
       if (selection_changed_timer) clearTimeout(selection_changed_timer);
       selection_changed_timer = setTimeout(do_selection_changed, 250);
     }
+    function some_selector_matches(rx) {
+       for (i = 0@";" i < selector.length@";" i++) {
+         if (selector[i].text.search(rx) >= 0)
+          return true;
+       }
+       return false;
+    }
     function do_selection_changed() {
       linux_expl_s.display =
-        (selector[selector.selectedIndex].text.search(/Linux/) >= 0) ?
-          "block" : "none";
+        (selector[selector.selectedIndex].text.search(/Linux/) >= 0)
+        ? "block"
+        : "none";
+      source_expl_s.display =
+        (selector[selector.selectedIndex].text.search(/Unix Source/) >= 0
+         && !some_selector_matches(/(Windows|Mac OS X) Source/))
+        ? "block"
+        : "none";
+      builtpkgs_expl_s.display =
+        (selector[selector.selectedIndex].text.search(/Source/) >= 0
+         && selector[selector.selectedIndex].text.search(/built/) < 0
+         && some_selector_matches(/built/))
+        ? "block"
+        : "none";
     }
     //
     function initialize_selector(selector) {
@@ -290,8 +331,8 @@
         var ord1 = getOrder(opt1[0]), ord2 = getOrder(opt2[0]);
              if (ord1 < ord2)       return -1;
         else if (ord1 > ord2)       return +1;
-        else if (opt1[2] < opt2[2]) return -1;
-        else if (opt1[2] > opt2[2]) return +1;
+        else if (opt1[4] < opt2[4]) return -1;
+        else if (opt1[4] > opt2[4]) return +1;
         else                        return  0;
       }
       // sort the options, need to use a temporary array

@@ -42,8 +42,8 @@
     (let ([v (get/set-dylib-path dest
 				 (byte-regexp (string->bytes/utf-8 p))
 				 #f)])
-      (if v
-	  (bytes->string/utf-8 v)
+      (if (pair? v)
+	  (bytes->string/utf-8 (car v))
 	  (begin
             (eprintf "warning: cannot find existing link for ~a in ~a\n"
                      p dest)

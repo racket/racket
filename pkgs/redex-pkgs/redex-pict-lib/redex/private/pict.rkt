@@ -5,10 +5,10 @@
          racket/match
          racket/pretty
          racket/set
-         (only-in racket/list drop-right last partition)
+         (only-in racket/list drop-right last partition add-between
+                  splitf-at remove-duplicates)
          
-         texpict/mrpict
-         texpict/utils
+         pict
          
          redex/private/reduction-semantics
          redex/private/judgment-form
@@ -21,7 +21,8 @@
          (prefix-in lw/rt: redex/private/loc-wrapper-rt))
 
 (require (for-syntax racket/base
-                     redex/private/term-fn))
+                     redex/private/term-fn
+                     syntax/parse))
 
 (provide render-term 
          term->pict
@@ -79,6 +80,7 @@
          judgment-form-cases
          compact-vertical-min-width
          extend-language-show-union
+         extend-language-show-extended-order
          set-arrow-pict!
          arrow->pict
          horizontal-bar-spacing
@@ -261,7 +263,6 @@
         (apply
          vl-append
          (add-between
-          (blank 0 (reduction-relation-rule-separation))
           (map (λ (rp)
                  (side-condition-combiner
                   (vl-append
@@ -274,7 +275,8 @@
                      (rp->pict-label rp)))
                    (rule-pict-rhs rp))
                   (rp->side-condition-pict rp +inf.0)))
-               rps))))))
+               rps)
+          (blank 0 (reduction-relation-rule-separation)))))))
 
 (define compact-vertical-min-width (make-parameter 0))
 
@@ -352,14 +354,14 @@
                 (apply 
                  hbl-append
                  (add-between
-                  (basic-text ", " (default-style))
-                  fresh-vars))
+                  fresh-vars
+                  (basic-text ", " (default-style))))
                 (basic-text " fresh" (default-style)))))]
          [lst (add-between
-               'comma
                (append
                 pattern-binds/sc
-                frsh))])
+                frsh)
+               'comma)])
     (if (null? lst)
         (blank)
         (let ([where ((where-make-prefix-pict))])
@@ -379,6 +381,9 @@
 (define where-make-prefix-pict
   (make-parameter (lambda ()
                     (basic-text " where " (default-style)))))
+(define otherwise-make-pict
+  (make-parameter (lambda ()
+                    (basic-text " otherwise" (default-style)))))
 
 (define (where-pict lhs rhs)
   ((where-combine) lhs rhs))
@@ -413,14 +418,6 @@
    ((current-text) " [" (label-style) (label-font-size))
    label
    ((current-text) "]" (label-style) (label-font-size))))
-
-(define (add-between i l)
-  (cond
-    [(null? l) l]
-    [else 
-     (cons (car l)
-           (apply append 
-                  (map (λ (x) (list i x)) (cdr l))))]))
 
 (define (make-horiz-space picts) (blank (pict-width (apply cc-superimpose picts)) 0))
 
@@ -580,7 +577,7 @@
 ;; raw-info : language-pict-info
 ;; nts : (listof symbol) -- the nts that the user expects to see
 (define (make-grammar-pict raw-info nts all-nts)
-  (let* ([info (remove-unwanted-nts nts (flatten-grammar-info raw-info all-nts))]
+  (let* ([info (remove-unwanted-nts nts (flatten-grammar-info raw-info all-nts nts))]
          [term-space 
           (launder
            (ghost
@@ -611,6 +608,7 @@
 
 
 (define extend-language-show-union (make-parameter #f))
+(define extend-language-show-extended-order (make-parameter #f))
 
 ;; remove-unwanted-nts : (listof symbol) flattened-language-pict-info -> flattened-language-pict-info
 (define (remove-unwanted-nts nts info)
@@ -622,32 +620,53 @@
 
 
 ;; flatten-grammar-info : language-pict-info (listof symbol) -> flattened-language-pict-info
-(define (flatten-grammar-info info all-nts)
-  (let ([union? (extend-language-show-union)])
+(define (flatten-grammar-info info all-nts wanted-nts)
+  (define (merge-line nt extension orig-line)
+    (cond
+     [(and extension orig-line)
+      (let ([rhss (cdr extension)])
+        (cons nt
+              (map (λ (x)
+                     (if (and (lw? x) (eq? '.... (lw-e x)))
+                         (struct-copy lw
+                                      x
+                                      [e
+                                       (lw->pict all-nts
+                                                 (find-enclosing-loc-wrapper
+                                                  (add-bars (cdr orig-line))))])
+                         x))
+                   (cdr extension))))]
+     [extension extension]
+     [else orig-line]))
+  (let ([union? (extend-language-show-union)]
+        [ext-order? (extend-language-show-extended-order)])
     (let loop ([info info])
       (cond
         [(vector? info) 
          (let ([orig (loop (vector-ref info 0))]
                [extensions (vector-ref info 1)])
            (if union?
-               (map (λ (orig-line)
-                      (let* ([nt (car orig-line)]
-                             [extension (assoc nt extensions)])
-                        (if extension
-                            (let ([rhss (cdr extension)])
-                              (cons nt
-                                    (map (λ (x) 
-                                           (if (and (lw? x) (eq? '.... (lw-e x)))
-                                               (struct-copy lw
-                                                            x
-                                                            [e
-                                                             (lw->pict all-nts
-                                                                       (find-enclosing-loc-wrapper
-                                                                        (add-bars (cdr orig-line))))])
-                                               x))
-                                         (cdr extension))))
-                            orig-line)))
-                    orig)
+               (cond
+                [(not ext-order?)
+                 ;; Use original order, adding extra extensions after:
+                 (define orig-nts (list->set (map car orig)))
+                 (append
+                  (map (λ (orig-line)
+                         (define nt (car orig-line))
+                         (merge-line nt (assoc nt extensions) orig-line))
+                       orig)
+                  (filter (lambda (extension) (not (set-member? orig-nts (car extension))))
+                          extensions))]
+                [else
+                 ;; Use extension order, adding any extra originals after:
+                 (define ext-nts (list->set (map car extensions)))
+                 (append
+                  (map (λ (extension)
+                         (define nt (car extension))
+                         (merge-line nt extension (assoc nt orig)))
+                       extensions)
+                  (filter (lambda (orig-line) (not (set-member? ext-nts (car orig-line))))
+                          orig))])
                extensions))]
         [else info]))))
 
@@ -748,21 +767,41 @@
                 (loop snd (cdr rst))))])))
 
 
-;                                                                                                          
-;                                                                                                          
-;                                                                                                          
-;                            ;              ;;;                                 ;    ;;                    
-;                           ;;             ;;;;                                ;;    ;;                    
-;  ;;;;;;; ;;;;    ;;;    ;;;;; ;;;;;;;   ;;;;; ;;;; ;;;; ;;;; ;;;    ;;;;;  ;;;;;        ;;;;   ;;;; ;;;  
-;  ;;;;;;;;;;;;;  ;;;;;  ;;;;;; ;;;;;;;;  ;;;;  ;;;; ;;;; ;;;;;;;;;  ;;;;;; ;;;;;; ;;;;  ;;;;;;  ;;;;;;;;; 
-;  ;;;; ;;; ;;;; ;;;; ;;  ;;;;      ;;;; ;;;;;; ;;;; ;;;; ;;;; ;;;; ;;;;;;;  ;;;;  ;;;; ;;;;;;;; ;;;; ;;;; 
-;  ;;;; ;;; ;;;; ;;;;;;;  ;;;;   ;;;;;;; ;;;;;; ;;;; ;;;; ;;;; ;;;; ;;;;     ;;;;  ;;;; ;;;; ;;; ;;;; ;;;; 
-;  ;;;; ;;; ;;;; ;;;;;    ;;;;; ;;  ;;;;  ;;;;  ;;;; ;;;; ;;;; ;;;; ;;;;;;;  ;;;;; ;;;; ;;;;;;;; ;;;; ;;;; 
-;  ;;;; ;;; ;;;;  ;;;;;;  ;;;;; ;;;;;;;;  ;;;;  ;;;;;;;;; ;;;; ;;;;  ;;;;;;  ;;;;; ;;;;  ;;;;;;  ;;;; ;;;; 
-;  ;;;; ;;; ;;;;   ;;;;    ;;;;  ;; ;;;;  ;;;;   ;;; ;;;; ;;;; ;;;;   ;;;;;   ;;;; ;;;;   ;;;;   ;;;; ;;;; 
-;                                                                                                          
-;                                                                                                          
-;                                                                                                          
+;                                       
+;                                       
+;                                       
+;                                       
+;                        ;              
+;                      ;;;              
+;  ;;; ;; ;;;    ;;;;  ;;;;  ;;;;;      
+;  ;;;;;;;;;;;  ;; ;;; ;;;; ;;;;;;;     
+;  ;;; ;;; ;;; ;;; ;;; ;;;  ;;  ;;;     
+;  ;;; ;;; ;;; ;;;;;;; ;;;    ;;;;; ;;;;
+;  ;;; ;;; ;;; ;;;     ;;;  ;;; ;;; ;;;;
+;  ;;; ;;; ;;;  ;;;;;; ;;;; ;;; ;;;     
+;  ;;; ;;; ;;;   ;;;;   ;;;  ;;;;;;     
+;                                       
+;                                       
+;                                       
+;                                       
+;                                                        
+;                                                        
+;                                                        
+;                                                        
+;   ;;;;                          ;  ;;;                 
+;  ;;;                          ;;;                      
+;  ;;;; ;;; ;;; ;;; ;;    ;;;   ;;;; ;;;   ;;;   ;;; ;;  
+;  ;;;; ;;; ;;; ;;;;;;;  ;;;;;  ;;;; ;;;  ;;;;;  ;;;;;;; 
+;  ;;;  ;;; ;;; ;;; ;;; ;;;  ;; ;;;  ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;; ;;; ;;; ;;; ;;;     ;;;  ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;; ;;; ;;; ;;; ;;;  ;; ;;;  ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;;;;;; ;;; ;;;  ;;;;;  ;;;; ;;;  ;;;;;  ;;; ;;; 
+;  ;;;   ;; ;;; ;;; ;;;   ;;;    ;;; ;;;   ;;;   ;;; ;;; 
+;                                                        
+;                                                        
+;                                                        
+;                                                        
+
 
 (define (make-=) (basic-text " = " (default-style)))
 
@@ -773,11 +812,12 @@
      #'(metafunctions->pict name)]))
 
 (define-syntax (metafunctions->pict stx)
-  (syntax-case stx ()
-    [(_ name1 name2 ...)
-     (and (identifier? #'name1)
-          (andmap identifier? (syntax->list #'(name2 ...))))
-     #'(metafunctions->pict/proc (list (metafunction name1) (metafunction name2) ...) 'metafunctions->pict)]))
+  (syntax-parse stx 
+    [(_ name1:id name2:id ... 
+        (~optional (~seq #:contract? contract-e:expr) #:defaults ([contract-e #'#f])))
+     #'(metafunctions->pict/proc (list (metafunction name1) (metafunction name2) ...)
+                                 contract-e
+                                 'metafunctions->pict)]))
 
 (define-syntax (relation->pict stx)
   (syntax-case stx ()
@@ -786,24 +826,39 @@
      #'(inference-rules-pict/relation 'form (metafunction name1))]))
 
 (define-syntax (render-metafunctions stx)
-  (syntax-case stx ()
-    [(_ name1 name2 ...)
-     (and (identifier? #'name)
-          (andmap identifier? (syntax->list #'(name2 ...))))
-     #'(render-metafunction/proc (list (metafunction name1) (metafunction name2) ...) #f 'render-metafunctions)]
-    [(_ name1 name2 ... #:file filename)
-     (and (identifier? #'name1)
-          (andmap identifier? (syntax->list #'(name2 ...))))
-     #'(render-metafunction/proc (list (metafunction name1) (metafunction name2) ...) filename 'render-metafunctions)]))
+  (syntax-parse stx
+    [(_ name1:id name2:id ... (~seq k:keyword e:expr) ...)
+     (define filename #'#f)
+     (define contract? #'#f)
+     (for ([kwd (in-list (syntax->list #'(k ...)))]
+           [e (in-list (syntax->list #'(e ...)))])
+       (cond
+         [(equal? '#:filename (syntax-e kwd))
+          (set! filename e)]
+         [(equal? '#:contract? (syntax-e kwd))
+          (set! contract? e)]
+         [else
+          (raise-syntax-error #f "unexpected keyword" stx kwd)]))
+     #`(render-metafunction/proc 
+        (list (metafunction name1) (metafunction name2) ...)
+        #,contract?
+        #,filename
+        'render-metafunctions)]))
 
 (define-syntax (render-metafunction stx)
-  (syntax-case stx ()
-    [(_ name)
-     (identifier? #'name)
-     #'(render-metafunction/proc (list (metafunction name)) #f 'render-metafunction)]
-    [(_ name file)
-     (identifier? #'name)
-     #'(render-metafunction/proc (list (metafunction name)) file 'render-metafunction)]))
+  (syntax-parse stx
+    [(_ name:id
+        (~optional file:expr #:defaults ([file #'#f]))
+        (~optional (~seq k:keyword e:expr)))
+     #`(render-metafunction/proc (list (metafunction name))
+                                 #,(cond
+                                     [(not (attribute k)) #'#f]
+                                     [(and (equal? (syntax-e (attribute k)) '#:contract?))
+                                      #'e]
+                                     [else
+                                      (raise-syntax-error #f "unknown keyword" stx #'k)])
+                                 file
+                                 'render-metafunction)]))
 
 (define-syntax (render-relation stx)
   (syntax-case stx ()
@@ -814,31 +869,39 @@
 
 (define metafunction-pict-style (make-parameter 'left-right))
 (define metafunction-cases (make-parameter #f))
-(define (select-mf-cases eqns case-labelss)
+(define (select-mf-cases contracts eqns case-labelss)
   (define mf-cases (metafunction-cases))
   (cond
     [mf-cases
      (define i 0)
-     (define sorted-cases (remove-dups (sort (filter number? mf-cases) <)))
+     (define sorted-cases (remove-duplicates (sort (filter number? mf-cases) <)))
      (define named-cases (apply set (filter string? mf-cases)))
      (apply 
       append
       (for/list ([eqns (in-list eqns)]
+                 [contract (in-list contracts)]
                  [case-labels (in-list case-labelss)])
         (filter
          values
-         (for/list ([eqn (in-list eqns)]
-                    [case-label (in-list case-labels)])
-           (begin0
-             (cond
-               [(and (pair? sorted-cases) (= i (car sorted-cases)))
-                (set! sorted-cases (cdr sorted-cases))
-                eqn]
-               [(set-member? named-cases case-label)
-                eqn]
-               [else #f])
-             (set! i (+ i 1)))))))]
-    [else (apply append eqns)]))
+         (cons 
+          contract
+          (for/list ([eqn (in-list eqns)]
+                     [case-label (in-list case-labels)])
+            (begin0
+              (cond
+                [(and (pair? sorted-cases) (= i (car sorted-cases)))
+                 (set! sorted-cases (cdr sorted-cases))
+                 eqn]
+                [(set-member? named-cases case-label)
+                 eqn]
+                [else #f])
+              (set! i (+ i 1))))))))]
+    [else (apply append 
+                 (for/list ([eqns (in-list eqns)]
+                            [contract (in-list contracts)])
+                   (if contract
+                       (cons contract eqns)
+                       eqns)))]))
 
 (define judgment-form-cases (make-parameter #f))
 (define (select-jf-cases eqns conclusions eqn-names)
@@ -866,20 +929,9 @@
     [else 
      (values eqns conclusions eqn-names)]))
 
-;; remove-dups : (listof number)[sorted] -> (listof number)[sorted]
-;; removes duplicate numbers from 'l'
-(define (remove-dups l)
-  (let loop ([l l])
-    (cond
-      [(null? (cdr l)) l]
-      [(= (car l) (cadr l))
-       (loop (cdr l))]
-      [else
-       (cons (car l) (loop (cdr l)))])))
-
-(define (metafunctions->pict/proc mfs name)
-  (unless (andmap (λ (mf) (eq? (metafunc-proc-lang (metafunction-proc (car mfs)))
-                               (metafunc-proc-lang (metafunction-proc mf))))
+(define (metafunctions->pict/proc mfs contract? name)
+  (unless (andmap (λ (mf) (equal? (metafunc-proc-lang (metafunction-proc (car mfs)))
+                                  (metafunc-proc-lang (metafunction-proc mf))))
                   mfs)
     (error name "expected metafunctions that are all drawn from the same language"))
   (define current-linebreaks (linebreaks))
@@ -887,30 +939,52 @@
   (define sep 2)
   (define style (metafunction-pict-style))
   (define (wrapper->pict lw) (lw->pict all-nts lw))
-  (define all-eqns (map (λ (mf) (metafunc-proc-pict-info (metafunction-proc mf))) mfs))
+  (define contracts (for/list ([mf (in-list mfs)]) 
+                      (define lws (list-ref (metafunc-proc-pict-info (metafunction-proc mf)) 0))
+                      (cond
+                        [(and contract? lws)
+                         (define doms (list-ref lws 0))
+                         (define rngs (list-ref lws 1))
+                         (define separators (list-ref lws 2))
+                         (render-metafunction-contract
+                          (metafunc-proc-lang (metafunction-proc mf))
+                          (metafunc-proc-name (metafunction-proc mf))
+                          doms
+                          rngs
+                          separators)]
+                        [else #f])))
+  (define all-eqns (map (λ (mf) (list-ref (metafunc-proc-pict-info (metafunction-proc mf)) 1)) mfs))
   (define all-lhss 
-    (map (λ (mf)
-           (map (lambda (eqn) 
-                  (wrapper->pict
-                   (metafunction-call (metafunc-proc-name (metafunction-proc mf))
-                                      (list-ref eqn 0))))
-                (metafunc-proc-pict-info (metafunction-proc mf))))
-         mfs))
+    (for/list ([mf (in-list mfs)])
+      (for/list ([eqn (in-list (list-ref (metafunc-proc-pict-info (metafunction-proc mf)) 1))])
+        (wrapper->pict
+         (metafunction-call (metafunc-proc-name (metafunction-proc mf))
+                            (list-ref eqn 0))))))
   (define case-labels (map (λ (mf) (metafunc-proc-clause-names (metafunction-proc mf))) mfs))
-  (define eqns (select-mf-cases all-eqns case-labels))
-  (define lhss (select-mf-cases all-lhss case-labels))
-  (define rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 2))) eqns))
+  (define eqns (select-mf-cases contracts all-eqns case-labels))
+  (define lhs/contracts (select-mf-cases contracts all-lhss case-labels))
+  
   (unless (or (not current-linebreaks)
               (= (length current-linebreaks) (length eqns)))
-    (error 'metafunction->pict "expected the current-linebreaks parameter to be a list whose length matches the number of cases in the metafunction (~a), but got ~s"
+    (error 'metafunction->pict
+           (string-append
+            "expected the current-linebreaks parameter to be a list"
+            " whose length matches the number of cases in the metafunction"
+            " plus one if there is a contract (~a), but got ~s")
            (length eqns)
            current-linebreaks))
   (define linebreak-list (or current-linebreaks
                              (map (lambda (x) #f) eqns)))
   (define mode (case style
-                 [(left-right left-right/vertical-side-conditions left-right/compact-side-conditions left-right/beside-side-conditions)
+                 [(left-right 
+                   left-right/vertical-side-conditions
+                   left-right/compact-side-conditions
+                   left-right/beside-side-conditions)
                   'horizontal]
-                 [(up-down up-down/vertical-side-conditions up-down/compact-side-conditions) 'vertical]
+                 [(up-down
+                   up-down/vertical-side-conditions
+                   up-down/compact-side-conditions)
+                  'vertical]
                  [else (error 'metafunctions->pict "unknown mode")]))
   (define =-pict (make-=))
   (define vertical-side-conditions?
@@ -921,47 +995,137 @@
     (memq style '(up-down/compact-side-conditions
                   left-right/compact-side-conditions
                   left-right*/compact-side-conditions)))
+  
+  (define (handle-single-side-condition scs)
+    (define-values (fresh where/sc) (partition metafunc-extra-fresh? scs))
+    (side-condition-pict 
+     (foldl (λ (clause picts) 
+              (foldr (λ (l ps) (cons (wrapper->pict l) ps))
+                     picts (metafunc-extra-fresh-vars clause)))
+            '() fresh)
+     (filter
+      values
+      (for/list ([thing (in-list where/sc)])
+        (match thing
+          [(struct metafunc-extra-where (lhs rhs))
+           (where-pict (wrapper->pict lhs) (wrapper->pict rhs))]
+          [(struct metafunc-extra-side-cond (expr))
+           (wrapper->pict expr)]
+          [`(clause-name ,n) #f])))
+     (cond
+       [vertical-side-conditions? 
+        ;; maximize line breaks:
+        0]
+       [compact-side-conditions?
+        ;; maximize line break as needed:
+        max-line-w/pre-sc]
+       [else 
+        ;; no line breaks:
+        +inf.0])))
+  
+  (define (build-brace-based-rhs stuff)
+    (define conds
+      (let loop ([stuff stuff])
+        (define-values (before after) (splitf-at stuff (λ (x) (not (equal? x 'or)))))
+        (if (null? after)
+            (list before)
+        (cons before (loop (cdr after))))))
+    (define last-line (- (length conds) 1))
+    (define rhs+scs (for/list ([cond-line (in-list conds)]
+                               [i (in-naturals)])
+                      (define rhs (wrapper->pict (car cond-line)))
+                      (define scs 
+                        (if (and (= last-line i) (null? (cdr cond-line)))
+                            ((otherwise-make-pict))
+                            (handle-single-side-condition (cdr cond-line))))
+                      (list rhs scs)))
+    (define rhs (map car rhs+scs))
+    (define scs (map cadr rhs+scs))
+    (define widest-rhs (apply max 0 (map pict-width rhs)))
+    (define widest-scs (apply max 0 (map pict-width scs)))
+    (add-left-brace
+     (apply vl-append
+            2
+            (for/list ([rhs (in-list rhs)]
+                       [scs (in-list scs)])
+              (htl-append (lbl-superimpose 
+                           rhs
+                           (blank widest-rhs 0))
+                          (lbl-superimpose 
+                           scs
+                           (blank widest-scs 0)))))))
+  
+  (define (add-left-brace pict)
+    (let loop ([i 0])
+      (define extender 
+        (apply
+         vl-append
+         (for/list ([_ (in-range i)])
+           (basic-text curly-bracket-extension (default-style)))))
+      (define left-brace
+        (vl-append (basic-text left-curly-bracket-upper-hook (default-style))
+                   extender
+                   (basic-text left-curly-bracket-middle-piece (default-style))
+                   extender
+                   (basic-text left-curly-bracket-lower-hook (default-style))))
+      (cond
+        [(< (pict-height pict) (pict-height left-brace))
+         (define top-bottom-diff (- (pict-height left-brace)
+                                    (pict-height pict)))
+         (inset (refocus (hc-append left-brace pict) pict)
+                (pict-width left-brace)
+                (/ top-bottom-diff 2)
+                0
+                (/ top-bottom-diff 2))]
+        [else (loop (+ i 1))])))
+
+  (define rhss (for/list ([eqn/contract (in-list eqns)])
+                 (cond
+                   [(pict? eqn/contract)
+                    'contract]
+                   [else
+                    (define sc-info (list-ref eqn/contract 1))
+                    (cond
+                      [(member 'or sc-info)
+                       (build-brace-based-rhs 
+                        (cons (list-ref eqn/contract 2)
+                              (reverse sc-info)))]
+                      [else
+                       (wrapper->pict (list-ref eqn/contract 2))])])))
+  
   (define max-line-w/pre-sc (and
                              compact-side-conditions?
-                             (apply
-                              max
-                              (map (lambda (lhs rhs linebreak?)
-                                     (cond
-                                      [(eq? mode 'vertical)
-                                       (max (+ (pict-width lhs) (pict-width =-pict))
-                                            (pict-width rhs))]
-                                      [linebreak?
-                                       (max (pict-width lhs)
-                                            (+ (pict-width rhs) sep (pict-width =-pict)))]
-                                      [else
-                                       (+ (pict-width lhs) (pict-width rhs) (pict-width =-pict)
-                                          (* 2 sep))]))
-                                   lhss rhss linebreak-list))))
+                             (for/fold ([biggest 0]) ([lhs/contract (in-list lhs/contracts)]
+                                                      [rhs (in-list rhss)]
+                                                      [linebreak? (in-list linebreak-list)])
+                               (cond
+                                 [(equal? rhs 'contract)
+                                  ;; this is a contract
+                                  (max biggest (pict-width lhs/contract))]
+                                 [(eq? mode 'vertical)
+                                  (max biggest
+                                       (+ (pict-width lhs/contract) (pict-width =-pict))
+                                       (pict-width rhs))]
+                                 [linebreak?
+                                  (max biggest
+                                       (pict-width lhs/contract)
+                                       (+ (pict-width rhs) sep (pict-width =-pict)))]
+                                 [else
+                                  (max biggest
+                                       (+ (pict-width lhs/contract)
+                                          (pict-width rhs)
+                                          (pict-width =-pict)
+                                          (* 2 sep)))]))))
+  
   (define scs (for/list ([eqn (in-list eqns)])
-                (let ([scs (reverse (list-ref eqn 1))])
-                  (if (null? scs)
-                      #f
-                      (let-values ([(fresh where/sc) (partition metafunc-extra-fresh? scs)])
-                        (side-condition-pict (foldl (λ (clause picts) 
-                                                      (foldr (λ (l ps) (cons (wrapper->pict l) ps))
-                                                             picts (metafunc-extra-fresh-vars clause)))
-                                                    '() fresh)
-                                             (map (match-lambda
-                                                    [(struct metafunc-extra-where (lhs rhs))
-                                                     (where-pict (wrapper->pict lhs) (wrapper->pict rhs))]
-                                                    [(struct metafunc-extra-side-cond (expr))
-                                                     (wrapper->pict expr)])
-                                                  where/sc)
-                                             (cond
-                                               [vertical-side-conditions? 
-                                                ;; maximize line breaks:
-                                                0]
-                                               [compact-side-conditions?
-                                                ;; maximize line break as needed:
-                                                max-line-w/pre-sc]
-                                               [else 
-                                                ;; no line breaks:
-                                                +inf.0])))))))
+                (cond
+                  [(pict? eqn) #f]
+                  [else
+                   (define scs (reverse (list-ref eqn 1)))
+                   (cond
+                     [(null? scs) #f]
+                     [(member 'or scs) #f]
+                     [else (handle-single-side-condition scs)])])))
   (case mode
     [(horizontal)
      (define (adjust-for-fills rows)
@@ -971,6 +1135,7 @@
        ;; two columns of non-spanning rows.
        (define max-w-before-rhs (apply 
                                  max
+                                 0
                                  (map (lambda (row)
                                         (match row
                                           [(list lhs 'fill 'fill)
@@ -997,50 +1162,77 @@
                           0))]
                  [else row]))
              rows)))
-     (table 3
-            (adjust-for-fills
-             (apply append
-                    (map (lambda (lhs sc rhs linebreak?)
-                           (append
-                            (list
-                             (cond
-                               [linebreak?
-                                (list lhs 'fill 'fill)]
-                               [(and sc (eq? style 'left-right/beside-side-conditions))
-                                (list lhs =-pict (htl-append 10 rhs sc))]
-                               [else
-                                (list lhs =-pict rhs)]))
-                            (if linebreak?
-                                (list
-                                 (list (htl-append sep =-pict rhs)
-                                       'fill
-                                       'fill))
-                                null)
-                            (if (or (not sc)
-                                    (and (not linebreak?)
-                                         (eq? style 'left-right/beside-side-conditions)))
-                                null
-                                (list
-                                 (list sc 'fill 'fill)))))
-                         lhss
-                         scs
-                         rhss
-                         linebreak-list)))
-            ltl-superimpose ltl-superimpose
-            sep sep)]
+     (define table-elements
+       (adjust-for-fills
+        (apply append
+               (for/list ([lhs/contract (in-list lhs/contracts)]
+                          [sc (in-list scs)]
+                          [rhs (in-list rhss)]
+                          [linebreak? (in-list linebreak-list)])
+                 (append
+                  (list
+                   (cond
+                     [(equal? rhs 'contract) ;; contract
+                      (list lhs/contract 'fill 'fill)]
+                     [linebreak?
+                      (list lhs/contract 'fill 'fill)]
+                     [(and sc (eq? style 'left-right/beside-side-conditions))
+                      (list lhs/contract =-pict (htl-append 10 rhs sc))]
+                     [else
+                      (list lhs/contract =-pict rhs)]))
+                  (if linebreak?
+                      (list
+                       (list (htl-append sep =-pict rhs)
+                             'fill
+                             'fill))
+                      null)
+                  (if (or (not sc)
+                          (and (not linebreak?)
+                               (eq? style 'left-right/beside-side-conditions)))
+                      null
+                      (list
+                       (list sc 'fill 'fill))))))))
+     (if (null? table-elements)
+         (blank)
+         (table 3 table-elements 
+                ltl-superimpose ltl-superimpose
+                sep sep))]
     [(vertical)
      (apply vl-append
             sep
             (apply append
-                   (map (lambda (lhs sc rhs)
-                          (cons
-                           (vl-append (htl-append lhs =-pict) rhs)
-                           (if (not sc)
-                               null
-                               (list sc))))
-                        lhss
-                        scs
-                        rhss)))]))
+                   (for/list ([lhs/contract (in-list lhs/contracts)]
+                              [sc (in-list scs)]
+                              [rhs (in-list rhss)])
+                     (cond
+                       [(equal? rhs 'contract) ;; contract
+                        (list lhs/contract)]
+                       [else
+                        (cons
+                         (vl-append (htl-append lhs/contract =-pict) rhs)
+                         (if (not sc)
+                             null
+                             (list sc)))]))))]))
+
+(define (render-metafunction-contract lang name doms rngs separators)
+  (hbl-append (basic-text (format "~a" name) (metafunction-style))
+              (basic-text " : " (default-style))
+              (apply hbl-append (add-between (map (λ (x) (lw->pict lang x)) doms) 
+                                             (basic-text " " (default-style))))
+              (basic-text " → " (default-style))
+              (apply hbl-append 
+                     (add-between (interleave-ctc-separators
+                                   (map (λ (x) (lw->pict lang x)) rngs)
+                                   (map (λ (x) (basic-text (format "~a" x) (default-style)))
+                                        separators))
+                                  (basic-text " " (default-style))))))
+
+(define (interleave-ctc-separators eles betweens)
+  (cond
+    [(null? betweens) eles]
+    [else (list* (car eles)
+                 (car betweens)
+                 (interleave-ctc-separators (cdr eles) (cdr betweens)))]))
 
 (define (metafunction-call name an-lw)
   (struct-copy lw an-lw
@@ -1122,14 +1314,14 @@
                                (basic-text "]" (default-style)))])]
     [else x]))
 
-(define (render-metafunction/proc mfs filename name)
+(define (render-metafunction/proc mfs contract? filename name)
   (cond
     [filename
-     (save-as-ps/pdf (λ () (metafunctions->pict/proc mfs name))
+     (save-as-ps/pdf (λ () (metafunctions->pict/proc mfs contract? name))
                      filename)]
     [else
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
-       (metafunctions->pict/proc mfs name))]))
+       (metafunctions->pict/proc mfs contract? name))]))
 
 (define (render-pict make-pict filename)
   (cond

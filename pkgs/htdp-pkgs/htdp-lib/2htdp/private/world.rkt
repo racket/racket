@@ -76,12 +76,8 @@
       
       (define/private (register-with-host)
         (define FMT "\nworking off-line\n")
-        (define FMTtry 
-          (string-append "unable to register with ~a after ~s tries" 
-                         FMT))                         
-        (define FMTcom 
-          (string-append "unable to register with ~a due to protocol problems" 
-                         FMT))
+        (define FMTtry (string-append "unable to register with ~a after ~s tries" FMT))                         
+        (define FMTcom (string-append "unable to register with ~a due to protocol problems" FMT))
         ;; Input-Port -> [-> Void]
         ;; create closure (for thread) to receive messages and signal events
         (define (RECEIVE in)
@@ -91,17 +87,17 @@
               in
               (lambda (in) 
                 (define dis (text "the universe disappeared" 11 'red))
-                (with-handlers ((tcp-eof? 
-                                 (compose (handler #f)
-                                          (lambda (e)
-                                            (set! draw (lambda (w) dis))
-                                            (pdraw)
-                                            e))))
-                  ;; --- "the universe disconnected" should come from here ---
-                  (define msg (tcp-receive in))
-                  (cond
-                    [(sexp? msg) (prec msg) (RECEIVE)] ;; break loop if EOF
-                    [#t (error 'RECEIVE "sexp expected, received: ~e" msg)]))))))
+                ((with-handlers ((tcp-eof? 
+                                  (compose (handler #f)
+                                           (lambda (e)
+                                             (set! draw (lambda (w) dis))
+                                             (pdraw)
+                                             (lambda () e)))))
+                   ;; --- "the universe disconnected" should come from here ---
+                   (define msg (tcp-receive in))
+                   (cond
+                    [(sexp? msg) (prec msg) RECEIVE] ;; break loop if EOF
+                    [else (error 'RECEIVE "sexp expected, received: ~e" msg)])))))))
           RECEIVE)
         ;; --- now register, obtain connection, and spawn a thread for receiving
         (parameterize ([current-custodian *rec*])
@@ -234,10 +230,10 @@
       ;; Image -> Void
       ;; show the image in the visible world
       (define/public (show pict0)
-	(define pict*
-	  (if (is-a? pict0 bitmap%)
-	      (rotate 0 pict0)
-	      pict0))
+        (define pict*
+          (if (is-a? pict0 bitmap%)
+              (rotate 0 pict0)
+              pict0))
         (define pict (add-game-pad pict*))
         (send visible begin-edit-sequence)
         (send visible lock #f)
@@ -279,63 +275,63 @@
            (def/cback pub (name arg ...) transform (object-name transform))]
           [(_ pub (name arg ...) transform tag)
            ;; Any ... -> Boolean
-	   (begin
-	     (pub name)
-		   
-           (define (name arg ...) 
-             (queue-callback 
-              (lambda ()
-                (define H (handler #t))
-                (with-handlers ([exn? H])
-                  ; (define tag (object-name transform))
-                  (define nw (transform (send world get) arg ...))
-                  (define (d) 
-                    (with-handlers ((exn? H))
-                      (pdraw))
-                    (set-draw#!))
-                  ;; ---
-                  ;; [Listof (Box [d | void])]
-                  (define w '()) 
-                  ;; set all to void, then w to null 
-                  ;; when a high priority draw is scheduledd
-                  ;; --- 
-                  (when (package? nw)
-                    (broadcast (package-message nw))
-                    (set! nw (package-world nw)))
-                  (cond
-                    [(stop-the-world? nw)
-                     (set! nw (stop-the-world-world nw))
-                     (send world set tag nw)
-                     (last-draw)
-                     (callback-stop! 'name)
-                     (enable-images-button)]
-                    [else 
-                     [define changed-world? (send world set tag nw)]
-                     [define stop? (stop (send world get))]
-                     ;; this is the old "Robby optimization" see checked-cell:
-                     ; unless changed-world? 
-                     (cond
-                       [(and draw (not stop?))
-                        (cond
-                          [(not drawing)
-                           (set! drawing #t)
-                           (let ([b (box d)])
-                             (set! w (cons b w))
-                             ;; low priority, otherwise it's too fast
-                             (queue-callback (lambda () ((unbox b))) #f))]
-                          [(< draw# 0)
-                           (set-draw#!)
-                           (for-each (lambda (b) (set-box! b void)) w)
-                           (set! w '())
-                           ;; high!!  the scheduled callback didn't fire
-                           (queue-callback (lambda () (d)) #t)]
-                          [else 
-                           (set! draw# (- draw# 1))])]
-                       [stop?
-                        (last-draw)
-                        (callback-stop! 'name)
-                        (enable-images-button)])
-                     changed-world?]))))))]))
+           (begin
+             (pub name)
+             
+             (define (name arg ...) 
+               (queue-callback 
+                (lambda ()
+                  (define H (handler #t))
+                  (with-handlers ([exn? H])
+                    ; (define tag (object-name transform))
+                    (define nw (transform (send world get) arg ...))
+                    (define (d) 
+                      (with-handlers ((exn? H))
+                        (pdraw))
+                      (set-draw#!))
+                    ;; ---
+                    ;; [Listof (Box [d | void])]
+                    (define w '()) 
+                    ;; set all to void, then w to null 
+                    ;; when a high priority draw is scheduledd
+                    ;; --- 
+                    (when (package? nw)
+                      (broadcast (package-message nw))
+                      (set! nw (package-world nw)))
+                    (cond
+                      [(stop-the-world? nw)
+                       (set! nw (stop-the-world-world nw))
+                       (send world set tag nw)
+                       (last-draw)
+                       (callback-stop! 'name)
+                       (enable-images-button)]
+                      [else 
+                       [define changed-world? (send world set tag nw)]
+                       [define stop? (stop (send world get))]
+                       ;; this is the old "Robby optimization" see checked-cell:
+                       ; unless changed-world? 
+                       (cond
+                         [(and draw (not stop?))
+                          (cond
+                            [(not drawing)
+                             (set! drawing #t)
+                             (let ([b (box d)])
+                               (set! w (cons b w))
+                               ;; low priority, otherwise it's too fast
+                               (queue-callback (lambda () ((unbox b))) #f))]
+                            [(< draw# 0)
+                             (set-draw#!)
+                             (for-each (lambda (b) (set-box! b void)) w)
+                             (set! w '())
+                             ;; high!!  the scheduled callback didn't fire
+                             (queue-callback (lambda () (d)) #t)]
+                            [else 
+                             (set! draw# (- draw# 1))])]
+                         [stop?
+                          (last-draw)
+                          (callback-stop! 'name)
+                          (enable-images-button)])
+                       changed-world?]))))))]))
       
       ;; tick, tock : deal with a tick event for this world 
       (def/cback pubment (ptock) (lambda (w) (pptock w)) (name-of-tick-handler))
@@ -431,7 +427,10 @@
 (define aworld%
   (class world% 
     ;; an argument-recording ppdraw
-    (field [image-history '()]) ;; [Listof Evt]
+    
+    ;; [Listof [List N Image]]
+    ;; a list of the displayed images combined with a time stamp 
+    (field [image-history '()]) 
     
     (super-new)
     (inherit-field world0 draw rate width height record?)
@@ -448,7 +447,22 @@
       (define p (new horizontal-pane% [parent frm][alignment '(center center)]))
       (define (pb)
         (parameterize ([current-custodian play-back-custodian])
-          (thread (lambda () (play-back)))
+          (define done #false)
+          (define pb-thread
+            (thread
+             (lambda ()
+               (dynamic-wind void 
+                             (lambda () (play-back))
+                             (lambda () (set! done #true))))))
+          (define watcher
+            (thread
+             (lambda ()
+               (sync pb-thread)
+               (if done 
+                   (custodian-shutdown-all play-back-custodian) 
+                   (message-box
+                    "Error"
+                    "The creation of the animated gif failed, probably due to a lack of memory")))))
           (stop)))
       (define (switch)
         (send stop-button enable #f)
@@ -468,7 +482,7 @@
     
     (define/override (ppdraw)
       (define image (super ppdraw))
-      (set! image-history (cons image image-history))
+      (set! image-history (cons (list (current-inexact-milliseconds) image) image-history))
       image)
     
     ;; --> Void
@@ -498,13 +512,46 @@
             (get-directory "image directory:" #f (current-directory))))
       (when img:dir
         (parameterize ([current-directory img:dir])
+          (define image-history-interpolated (interpolate-history image-history))
           (define imageN 
-            (if (empty? image-history)
+            (if (empty? image-history-interpolated)
                 (save-image (draw world0))
-                (first (map save-image image-history))))
+                (first (map save-image image-history-interpolated))))
           (show (text (format "creating ~a" ANIMATED-GIF-FILE) 18 'red))
           (create-animated-gif rate bmps)
           (show imageN))))))
+
+;; ---------------------------------------------------------------------------------------------------
+;; [Listof [List Real Image]] -> [Listof Image]
+;; for David's talk
+(define (interpolate-history lox0)
+  (define lox (reverse lox0))
+  (cond 
+    [(or (empty? lox) (empty? (rest lox))) (map second lox)]
+    [else 
+     ;; -----------------------------------------------------------------------------
+     (define raw-times (map first lox))
+     (define intervals 
+       (let loop ([l (rest raw-times)][last (first raw-times)])
+         (cond
+           [(empty? l) '()]
+           [else (cons (- (first l) last) (loop (rest l) (first l)))])))
+     (define delta (apply min intervals))
+     ;; -----------------------------------------------------------------------------
+     (define image1 (second (first lox)))
+     (let loop ([last-image image1][t (first (first lox))][lox (rest lox)][images (list image1)])
+       (cond
+         [(empty? lox) images]
+         [else (define stamp+image (first lox))
+               (define stamp (first stamp+image))
+               (define image (second stamp+image))
+               (define new-t (+ delta t))
+               (if (< new-t stamp)
+                   (loop last-image new-t lox (cons last-image images))
+                   (loop image      new-t (rest lox) (cons image  images)))]))]))
+
+;; ---------------------------------------------------------------------------------------------------
+
 
 ;; Number [Listof (-> bitmap)] -> Void
 ;; turn the list of thunks into animated gifs 

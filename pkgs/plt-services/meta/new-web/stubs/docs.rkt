@@ -31,6 +31,7 @@
               @"@"import url("@(site-css-path docs-site)");
               .navsettop, .tocset { top: 60px; }
               .versionbox { top: 64px; }
+              .hide_when_on_the_web { display: none; }
               }))
 
 (provide docs-path)

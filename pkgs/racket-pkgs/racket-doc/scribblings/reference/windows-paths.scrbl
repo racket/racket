@@ -3,7 +3,7 @@
 
 @(define MzAdd (italic "Racket-specific:"))
 
-@title[#:tag "windowspaths"]{Windows Path Conventions}
+@title[#:tag "windowspaths"]{Windows Paths}
 
 In general, a Windows pathname consists of an optional drive specifier
 and a drive-specific path. A Windows path can be @defterm{absolute}
@@ -101,7 +101,8 @@ include @litchar{\}.
        @litchar{\\}@nonterm{machine}@litchar{\}@nonterm{volume}
        counts as the drive specifier.}
 
-  @item{Normally, a path element cannot contain any of the following
+  @item{Normally, a path element cannot contain a character in the
+        range @racket[#\x00] to @racket[#\x1F] nor any of the following
         characters:
 
         @centerline{@litchar{<} @litchar{>} @litchar{:} @litchar{"} @litchar{/} @litchar{\} @litchar{|}}
@@ -234,6 +235,16 @@ directory.  In addition, a path syntactically refers to a directory if
 its last element is a same-directory or up-directory indicator (not
 quoted by a @litchar{\\?\} form), or if it refers to a root.
 
+Even on variants of Windows that support symbolic links, up-directory
+@litchar{..} indicators in a path are resolved syntactically, not
+sensitive to links. For example, if a path ends with @litchar{d\..\f}
+and @litchar{d} refers to a symbolic link that references a directory
+with a different parent than @litchar{d}, the path nevertheless refers
+to @litchar{f} in the same directory as @litchar{d}. A relative-path
+link is parsed as if prefixed with @litchar{\\?\REL} paths, except
+that @litchar{..}  and @litchar{.} elements are allowed throughout the
+path, and any number of redundant @litchar{/} separators are allowed.
+
 Windows paths are @techlink{cleanse}d as follows: In paths that start
 @litchar{\\?\}, redundant @litchar{\}s are removed, an extra
 @litchar{\} is added in a @litchar{\\?\REL} if an extra one is
@@ -304,3 +315,25 @@ produces @litchar{\\?\C:\x~\} and @litchar{\\?\REL\\aux};
 the @litchar{\\?\} is needed in these cases to preserve a
 trailing space after @litchar{x} and to avoid referring to the AUX
 device instead of an @filepath{aux} file.
+
+@section[#:tag "windowspathrep"]{Windows Path Representation}
+
+A path on Windows is natively a sequence of UTF-16 code units, where
+the sequence can include unpaired surrogates. This sequence is encoded
+as a byte string through an extension of UTF-8, where unpaired
+surrogates in the UTF-16 code-unit sequence are converted as if they
+were non-surrogate values. The extended encodings are implemented on
+Windows as the @racket["platform-UTF-16"] and
+@racket["platform-UTF-8"] encodings for @racket[bytes-open-converter].
+
+Racket's internal representation of a Windows path is a byte string,
+so that @racket[path->bytes] and @racket[bytes->path] are always
+inverses. When converting a path to a native UTF-16 code-unit
+sequence, @racket[#\tab] is used in place of platform-UTF-8 decoding
+errors (on the grounds that tab is normally disallowed as a character
+in a Windows path, unlike @code{#\uFFFD}).
+
+A Windows path is converted to a string by treating the platform-UTF-8
+encoding as a UTF-8 encoding with @code{#\uFFFD} in place of
+decoding errors. Similarly, a string is converted to a path by UTF-8
+encoding (in which case no errors are possible).

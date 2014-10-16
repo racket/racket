@@ -223,10 +223,11 @@ in a sub-expression, expansions stops for the sub-expression. If
 @racket[letrec-syntaxes+values], @racket[#%app],
 @racket[#%expression], @racket[#%top], and
 @racket[#%variable-reference] are added to @racket[stop-ids].  If
-@racket[#%app], @racket[#%top], or @racket[#%datum] appears in
-@racket[stop-ids], then application, top-level variable reference, and
+@racket[#%app] or @racket[#%datum] appears in
+@racket[stop-ids], then application and
 literal data expressions without the respective explicit form are not
-wrapped with the explicit form. If @racket[stop-ids] is @racket[#f]
+wrapped with the explicit form, and @racket[#%top] wrappers are
+never added (even with an empty @racket[stop-ids] list). If @racket[stop-ids] is @racket[#f]
 instead of a list, then @racket[stx] is expanded only as long as the
 outermost form of @racket[stx] is a macro (i.e., expansion does not
 proceed to sub-expressions). A fully expanded form can include the
@@ -290,7 +291,11 @@ generated value onto that list.
        fully)]))
 
 (show 1)
-]}
+]
+
+@history[#:changed "6.0.1.3" @elem{Changed treatment of @racket[#%top]
+                                   so that it is never introduced as
+                                   an explicit wrapper.}]}
 
 
 @defproc[(syntax-local-expand-expression [stx syntax?])

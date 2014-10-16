@@ -20,6 +20,10 @@
   (or (tc-results? v)
       (tc-any-results? v)))
 
+(define (tc-results1/c v)
+  (and (tc-results? v)
+       (= (length (tc-results-ts v)) 1)))
+
 ;; Contract to check that values are tc-results/c and do not contain -no-filter or -no-obj.
 ;; Used to contract the return values of typechecking functions.
 (define (full-tc-results/c r)
@@ -87,12 +91,12 @@
 
 ;; make-tc-result*: Type/c FilterSet/c Object? -> tc-result?
 ;; Smart constructor for a tc-result.
-(define (-tc-result type filter object)
+(define (-tc-result type [filter -top-filter] [object -empty-obj])
   (cond
     [(or (equal? type -Bottom) (equal? filter -bot-filter))
-     (make-tc-result -Bottom -bot-filter object)]
+     (tc-result -Bottom -bot-filter object)]
     [else
-     (make-tc-result type filter object)]))
+     (tc-result type filter object)]))
 
 
 ;; convenience function for returning the result of typechecking an expression
@@ -142,20 +146,21 @@
           [dbound symbol?])
          [res tc-results/c])])
 
-(define (combine-results tcs)
-  (match tcs
-    [(list (tc-result1: t f o) ...)
-     (ret t f o)]))
-
 (define tc-result-equal? equal?)
 
-(provide tc-result: tc-results: tc-any-results: tc-result1: Result1: Results:)
+(provide tc-result: tc-results: tc-any-results: tc-result1: Result1: Results:
+         tc-results)
 (provide/cond-contract
- [combine-results ((c:listof tc-results?) . c:-> . tc-results?)]
+ [rename -tc-result tc-result
+   (c:case->
+     (Type/c . c:-> . tc-result?)
+     (Type/c FilterSet/c Object? . c:-> . tc-result?))]
  [tc-any-results ((c:or/c Filter/c NoFilter?) . c:-> . tc-any-results?)]
  [tc-result-t (tc-result? . c:-> . Type/c)]
  [rename tc-results-ts* tc-results-ts (tc-results? . c:-> . (c:listof Type/c))]
  [tc-result-equal? (tc-result? tc-result? . c:-> . boolean?)]
+ [tc-result? (c:any/c . c:-> . boolean?)]
  [tc-results? (c:any/c . c:-> . boolean?)]
  [tc-results/c c:flat-contract?]
+ [tc-results1/c c:flat-contract?]
  [full-tc-results/c c:flat-contract?])

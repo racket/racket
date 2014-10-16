@@ -1160,5 +1160,102 @@
       (eval (mk m wrap?)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that module caching doesn't cause submodules
+;; to be loaded/declared too early
+
+(define (install-module-hashes! s start len c)
+  (define vlen (bytes-ref s (+ start 2)))
+  (define mode (integer->char (bytes-ref s (+ start 3 vlen))))
+  (case mode
+    [(#\T)
+     (define h (make-bytes 20 (+ 42 c)))
+     (bytes-copy! s (+ start 4 vlen) h)]
+    [(#\D)
+     (define (read-num rel-pos)
+       (define pos (+ start rel-pos))
+       (integer-bytes->integer s #t #f pos (+ pos 4)))
+     (define count (read-num (+ 4 vlen)))
+     (for/fold ([pos (+ 8 vlen)]) ([i (in-range count)])
+       (define pos-pos (+ pos 4 (read-num pos)))
+       (define mod-start (read-num pos-pos))
+       (define mod-len (read-num (+ pos-pos 4)))
+       (install-module-hashes! s (+ start mod-start) mod-len i)
+       (+ pos-pos 16))
+     (void)]
+    [else (error "unknown")]))
+
+(let ()
+  (define dir (find-system-path 'temp-dir))
+  (define tmx (build-path dir "tmx.rkt"))
+  (define e (compile '(module tmx racket/base
+                        (module s racket/base
+                          (provide x)
+                          (define x 1)))))
+  (make-directory* (build-path dir "compiled"))
+  (define zo-path (build-path dir "compiled" "tmx_rkt.zo"))
+
+  (define bstr
+    (let ([b (open-output-bytes)])
+      (write e b)
+      (let* ([s (get-output-bytes b)])
+        (install-module-hashes! s 0 (bytes-length s) 0)
+        s)))
+
+  (call-with-output-file zo-path
+    #:exists 'truncate
+    (lambda (o)
+      (write-bytes bstr o)))
+  (parameterize ([current-namespace (make-base-namespace)]
+                 [current-module-declare-name (make-resolved-module-path tmx)]
+                 [current-load-relative-directory dir])
+    (eval (parameterize ([read-accept-compiled #t])
+            (read (open-input-bytes bstr)))))
+  (parameterize ([current-namespace (make-base-namespace)])
+    (dynamic-require tmx #f)
+    (test #f module-declared? `(submod ,tmx s) #f)
+    (test 1 dynamic-require `(submod ,tmx s) 'x))
+  (delete-file zo-path))
+
+;; Check that module-code caching works
+(let ()
+  (define dir (find-system-path 'temp-dir))
+  (define tmx (build-path dir "tmx2.rkt"))
+  (define e (compile '(module tmx2 racket/kernel
+                        (#%provide x)
+                        (define-values (x) 1))))
+  (make-directory* (build-path dir "compiled"))
+  (define zo-path (build-path dir "compiled" "tmx2_rkt.zo"))
+
+  (define bstr
+    (let ([b (open-output-bytes)])
+      (write e b)
+      (let* ([s (get-output-bytes b)])
+        (install-module-hashes! s 0 (bytes-length s) 100)
+        s)))
+
+  (call-with-output-file zo-path
+    #:exists 'truncate
+    (lambda (o)
+      (write-bytes bstr o)))
+  (define first-namespace (make-base-namespace))
+  (parameterize ([current-namespace first-namespace]
+                 [current-module-declare-name (make-resolved-module-path tmx)]
+                 [current-load-relative-directory dir])
+    (eval (parameterize ([read-accept-compiled #t])
+            (read (open-input-bytes bstr)))))
+
+  ;; Mangle the bytecode file; cached variant should be used:
+  (call-with-output-file zo-path
+    #:exists 'update
+    (lambda (o)
+      (file-position o (- (file-size zo-path) 100))
+      (write-bytes (make-bytes 100 (char->integer #\!)) o)))
+
+  (test 2 add1
+        (parameterize ([current-namespace (make-base-namespace)])
+          (dynamic-require tmx 'x)))
+  (delete-file zo-path))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

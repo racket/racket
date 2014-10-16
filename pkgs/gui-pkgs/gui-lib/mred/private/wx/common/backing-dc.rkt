@@ -175,35 +175,56 @@
 (define (release-backing-bitmap bm)
   (send bm release-bitmap-storage))
 
+(define (scale-mixin %)
+  (class %
+    (define backing-scale 1.0)
+
+    (super-new)
+    
+    (define/override (init-cr-matrix cr)
+      (unless (= backing-scale 1.0)
+        (cairo_scale cr backing-scale backing-scale))
+      (super init-cr-matrix cr))
+
+    (define/override (init-effective-matrix mx)
+      (unless (= backing-scale 1.0)
+        (cairo_matrix_scale mx backing-scale backing-scale))
+      (super init-effective-matrix mx))
+    
+    (define/override (reset-config s)
+      (set! backing-scale s)
+      (super reset-config))))
+
 (define cairo-dc
-  (make-object (dc-mixin
-                (class default-dc-backend%
-                  (inherit reset-cr)
+  (make-object (scale-mixin
+		(dc-mixin
+		 (class default-dc-backend%
+                   (inherit reset-cr)
 
-                  (define cr #f)
-                  (define w 0)
-                  (define h 0)
+                   (define cr #f)
+                   (define w 0)
+                   (define h 0)
 
-                  (super-new)
+                   (super-new)
 
-                  (define/public (set-cr new-cr new-w new-h)
-                    (set! cr new-cr)
-                    (set! w new-w)
-                    (set! h new-h)
-                    (when cr
-                      (reset-cr cr)))
+                   (define/public (set-cr new-cr new-w new-h)
+                     (set! cr new-cr)
+                     (set! w new-w)
+                     (set! h new-h)
+                     (when cr
+                       (reset-cr cr)))
 
-                  (define/override (get-cr) cr)
+                   (define/override (get-cr) cr)
 
-                  (define/override (reset-clip cr)
-                    (super reset-clip cr)
-                    (cairo_rectangle cr 0 0 w h)
-                    (cairo_clip cr))))))
+                   (define/override (reset-clip cr)
+                     (super reset-clip cr)
+                     (cairo_rectangle cr 0 0 w h)
+                     (cairo_clip cr)))))))
 
-(define (backing-draw-bm bm cr w h [dx 0] [dy 0])
+(define (backing-draw-bm bm cr w h [dx 0] [dy 0] [backing-scale 1.0])
   (if (procedure? bm)
       (begin
-        (send cairo-dc reset-config)
+        (send cairo-dc reset-config backing-scale)
         (send cairo-dc set-cr cr w h)
 	(unless (and (zero? dx) (zero? dy))
 	  (send cairo-dc translate dx dy))
@@ -220,8 +241,6 @@
               (cairo_matrix_init_translate m 0 0)
               (cairo_matrix_scale m sc sc)
               (cairo_pattern_set_matrix (cairo_get_source cr) m))))
-        (cairo_new_path cr)
-        (cairo_rectangle cr 0 0 w h)
-        (cairo_fill cr)
+        (cairo_paint cr)
         (cairo_set_source cr s)
         (cairo_pattern_destroy s))))

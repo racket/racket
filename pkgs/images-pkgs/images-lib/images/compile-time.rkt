@@ -34,7 +34,7 @@
     (define alpha-p (open-output-bytes))
     (send alpha-bm save-file alpha-p 'jpeg quality)
     
-    (send bm get-argb-pixels 0 0 w h bs #f)
+    (send bm get-argb-pixels 0 0 w h bs #f #:unscaled? #t)
     (define rgb-bm (make-bitmap w h #f))
     (send rgb-bm set-argb-pixels 0 0 w h bs #f)
     (define rgb-p (open-output-bytes))

@@ -54,7 +54,9 @@
                       orig-file
                       alt-file)]
    [(and (not force?)
-         ((file-or-directory-modify-seconds orig-file)
+         ((file-or-directory-modify-seconds orig-file
+                                            #f
+                                            (lambda () -inf.0))
           . > .
           (file-or-directory-modify-seconds alt-file)))
     ;; return a warning:

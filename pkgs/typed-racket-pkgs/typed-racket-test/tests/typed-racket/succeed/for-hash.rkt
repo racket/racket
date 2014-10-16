@@ -76,3 +76,7 @@
 (for/hash: : (HashTable Symbol Symbol)
     ((v : Symbol '(a b c)))
   (values v v))
+
+(for/hash: : (HashTable Symbol Symbol)
+    ([(k b) (in-hash (make-immutable-hash '((a . a) (b . b))))])
+  (values k b))

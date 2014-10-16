@@ -16,7 +16,7 @@
          "dc.rkt"
          "printer-dc.rkt"
          "menu-bar.rkt"
-         "agl.rkt"
+         "cgl.rkt"
          "sound.rkt"
          "keycode.rkt"
          "../../lock.rkt"
@@ -86,7 +86,13 @@
 
 (define (get-double-click-time)
   500)
-(define (get-control-font-face) "Lucida Grande")
+(define (get-control-font-face)
+  ;; Using `(tell NSFont systemFontOfSize: ...)` gives us an OS-determined
+  ;; font, but my attempts to extract the name give something like ".LucidaGrandeUI"
+  ;; instead of "Lucida Grande"
+  (cond
+   [(version-10.10-or-later?) "Helvetica Neue"]
+   [else "Lucida Grande"]))
 (define (get-control-font-size) 13)
 (define (get-control-font-size-in-pixels?) #f)
 (define (cancel-quit) (void))

@@ -11,6 +11,7 @@
          racket/list
          racket/string
          compiler/cm
+         compiler/compilation-path
          planet/planet-archives
          planet/private/planet-shared
          (only-in planet/resolver resolve-planet-path)
@@ -24,6 +25,7 @@
          "unpack.rkt"
          "getinfo.rkt"
          "dirs.rkt"
+         "matching-platform.rkt"
          "main-collects.rkt"
          "path-to-relative.rkt"
          "path-relativize.rkt"
@@ -31,7 +33,12 @@
          "parallel-build.rkt"
          "private/cc-struct.rkt"
          "link.rkt"
-         "private/pkg-deps.rkt")
+         "private/dylib.rkt"
+         "private/elf.rkt"
+         "private/pkg-deps.rkt"
+         "collection-name.rkt"
+         (only-in pkg/lib pkg-directory
+                  pkg-single-collection))
 
 (define-namespace-anchor anchor)
 
@@ -137,8 +144,11 @@
 
   (define errors null)
   (define exit-code 0)
+  (define original-thread (current-thread))
   (define (append-error cc desc exn out err type)
-    (set! errors (cons (list cc desc exn out err type) errors)))
+    (set! errors (cons (list cc desc exn out err type) errors))
+    (when (fail-fast)
+      (break-thread original-thread)))
   (define (handle-error cc desc exn out err type)
       (if (verbose)
           ((error-display-handler)
@@ -158,7 +168,11 @@
   (define (show-errors port)
     (for ([e (reverse errors)])
       (match-let ([(list cc desc x out err type) e])
-        (setup-fprintf port type "during ~a for ~a" desc (if (cc? cc) (cc-name cc) cc))
+        (setup-fprintf port type "during ~a for ~a" desc (cond
+                                                          [(cc? cc) (cc-name cc)]
+                                                          [(path? cc)
+                                                           (path->relative-string/setup cc #:cache pkg-path-cache)]
+                                                          [else cc]))
         (unless (null? x) (for ([str (in-list (regexp-split #rx"\n" (exn->string x)))])
                             (setup-fprintf port #f "  ~a" str)))
         (unless (zero? (string-length out)) (eprintf "STDOUT:\n~a=====\n" out))
@@ -180,11 +194,33 @@
   
   (define make-docs?
     (and (make-docs)
-         ;; Double-check that "setup/scribble" is present.
-         (file-exists? (collection-file-path "scribble.rkt" "setup"))))
+         ;; Double-check that `setup/scribble' is present:
+         (let ([p (collection-file-path "scribble.rkt" "setup")])
+           (or (file-exists? p)
+               (file-exists? (get-compilation-bytecode-file p))))))
+
+  (define (pkg->collections pkg)
+    (define dir (pkg-directory pkg))
+    (cond
+     [dir
+      (define collect (pkg-single-collection dir #:name pkg))
+      (if collect
+          (list (list collect))
+          (for/list ([d (directory-list dir)]
+                     #:when (and (directory-exists? (build-path dir d))
+                                 (collection-name-element? (path->string d))))
+            (list d)))]
+     [else
+      (error 'pkd->collections
+             (string-append "package not found\n"
+                            "  package: ~a")
+             pkg)]))
     
   (define x-specific-collections
     (append* (specific-collections)
+             (apply append
+                    (map pkg->collections
+                         (specific-packages)))
              (if (and (make-doc-index)
                       make-docs?)
                  (append
@@ -668,7 +704,7 @@
                (assume-virtual-sources? cc)))))
 
   (define (clean-collection cc dependencies)
-    (begin-record-error cc "Cleaning"
+    (begin-record-error cc "cleaning"
       (define info (cc-info cc))
       (define paths
         (call-info
@@ -769,9 +805,9 @@
       (for ([cc ccs-to-compile])
         (let/ec k
           (begin-record-error cc (case part
-                                   [(pre)     "Early Install"]
-                                   [(general) "General Install"]
-                                   [(post)    "Post Install"])
+                                   [(pre)     "early install"]
+                                   [(general) "general install"]
+                                   [(post)    "post install"])
             (define fn
               (call-info (cc-info cc)
                 (case part
@@ -814,8 +850,8 @@
               (installer dir)]))))))
 
   (define (bytecode-file-exists? p)
-    (let-values ([(base name dir?) (split-path p)])
-      (define zo (build-path base mode-dir (path-add-suffix name #".zo")))
+    (parameterize ([use-compiled-file-paths (list mode-dir)])
+      (define zo (get-compilation-bytecode-file	p))
       (file-exists? zo)))
 
   (define (this-platform? info)
@@ -828,10 +864,7 @@
                                (string? v)
                                (symbol? v))
                      (error "entry is not regexp, string, or symbol:" v)))))
-    (cond
-     [(regexp? sys) (regexp-match? sys (system-library-subpath #f))]
-     [(symbol? sys) (eq? sys (system-type))]
-     [else (equal? sys (path->string (system-library-subpath #f)))]))
+    (matching-platform? sys))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Make zo                      ;;
@@ -855,19 +888,51 @@
   (define (clean-cc cc dir info)
     ;; Clean up bad .zos:
     (unless (assume-virtual-sources? cc)
-      (define c (build-path dir "compiled"))
-      (when (directory-exists? c)
-        (define ok-zo-files
-          (make-immutable-hash
-           (map (lambda (p)
-                  (cons (path-add-suffix p #".zo") #t))
-                (append (directory-list dir)
-                        (info 'virtual-sources (lambda () null))))))
-        (for ([p (directory-list c)])
-          (when (and (regexp-match #rx#".(zo|dep)$" (path-element->bytes p))
-                     (not (hash-ref ok-zo-files (path-replace-suffix p #".zo") #f)))
-            (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
-            (delete-file (build-path c p)))))))
+      (define roots
+        ;; If there's more than one relative root, then there will
+        ;; be multiple ways to get to a ".zo" file, and our strategy
+        ;; below will fail. Give up on checking relative roots in
+        ;; that case.
+        (let ([roots (current-compiled-file-roots)])
+          (if (1 . < . (for/sum ([r (in-list roots)])
+                         (if (or (eq? r 'same)
+                                 (relative-path? r))
+                             1
+                             0)))
+              ;; give up on relative:
+              (filter (lambda (p) (and (path? p) (absolute-path? p)))
+                      roots)
+              ;; all roots ok:
+              roots)))
+      ;; Try each compile-file root, but preserve the list of allowed
+      ;; bytecode files after it's computed the first time.
+      (for/fold ([ok-zo-files #f]) ([root (in-list roots)])
+        (define c (cond
+                   [(eq? root 'same) (build-path dir mode-dir)]
+                   [(relative-path? root)
+                    (build-path dir root mode-dir)]
+                   [else
+                    (reroot-path (build-path dir mode-dir) root)]))
+        (cond
+         [(directory-exists? c)
+          ;; Directory for compiled files exist...
+          (let ([ok-zo-files
+                 (or ok-zo-files
+                     ;; Build table of allowed ".zo" file names that can
+                     ;; appear in a "compiled" directory:
+                     (make-immutable-hash
+                      (map (lambda (p)
+                             (cons (path-add-suffix p #".zo") #t))
+                           (append (directory-list dir)
+                                   (info 'virtual-sources (lambda () null))))))])
+            ;; Check each file in `c` to see whether it can stay:
+            (for ([p (directory-list c)])
+              (when (and (regexp-match #rx#".(zo|dep)$" (path-element->bytes p))
+                         (not (hash-ref ok-zo-files (path-replace-suffix p #".zo") #f)))
+                (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
+                (delete-file (build-path c p))))
+            ok-zo-files)]
+         [else ok-zo-files]))))
 
   (define (with-specified-mode thunk)
     (if (not (compile-mode))
@@ -1197,7 +1262,7 @@
               (if no-specific-collections? #f (map cc-path ccs-to-compile))
               latex-dest auto-start-doc? (make-user)
               (make-tidy) (avoid-main-installation)
-              (lambda (what go alt) (record-error what "Building docs" go alt))
+              (lambda (what go alt) (record-error what "building docs" go alt))
               setup-printf))
 
   (define (make-docs-step)
@@ -1255,7 +1320,7 @@
     (define ((or-f f) x) (when x (f x)))
     (define created-launchers (make-hash))
     (for ([cc ccs-to-compile])
-      (begin-record-error cc "Launcher Setup"
+      (begin-record-error cc "launcher setup"
         (define info (cc-info cc))
         (define (make-launcher kind
                                launcher-names
@@ -1509,10 +1574,13 @@
                                receipt-at-dest?
                                check-entry
                                build-dest-path
-                               this-platform?)
+                               this-platform?
+                               fixup-lib
+                               copy-user-lib)
     (define (make-libs-step)
       (setup-printf #f (format "--- installing ~a ---" whats))
       (define installed-libs (make-hash))
+      (define dests (make-hash))
       (for ([cc ccs-to-compile])
         (begin-record-error cc what/title
                             (define info (cc-info cc))
@@ -1554,11 +1622,14 @@
                                  (record-lib receipt-path lib-name (cc-collection cc) (cc-path cc))
                                  #t)
                                 (unless already?
+                                  (hash-set! dests dest #t)
                                   (delete-directory/files dest #:must-exist? #f)
                                   (let-values ([(base name dir?) (split-path dest)])
                                     (when (path? base) (make-directory* base)))
                                   (if (file-exists? src)
-                                      (copy-file src dest)
+                                      (if (cc-main? cc)
+                                          (copy-file src dest)
+                                          (copy-user-lib src dest))
                                       (copy-directory/files src dest)))
                                 src)
                               
@@ -1581,7 +1652,8 @@
                      (find-user-target-dir)
                      (find-user-lib-dir)
                      installed-libs
-                     ccs-to-compile))))
+                     ccs-to-compile)))
+      (for-each fixup-lib (hash-keys dests)))
 
     (define (same-content? a b)
       (cond
@@ -1651,10 +1723,11 @@
                      [else
                       ;; remove the lib
                       (define lib-path (build-dest-path target-dir (bytes->path-element k)))
-                      (when (file-exists? lib-path)
+                      (when (or (file-exists? lib-path)
+                                (directory-exists? lib-path))
                         (setup-printf "deleting" (string-append what " ~a")
                                       (path->relative-string/* lib-path))
-                        (delete-file lib-path))
+                        (delete-directory/files lib-path))
                       ht])))
       (unless (equal? ht ht2)
         (setup-printf "updating" (format "~a list" what))
@@ -1665,7 +1738,7 @@
   (define make-foreign-libs-step
     (make-copy/move-step "foreign library"
                          "foreign libraries"
-                         "Foreign Library Setup"
+                         "foreign library setup"
                          'copy-foreign-libs
                          'move-foreign-libs
                          find-lib-dir
@@ -1676,12 +1749,20 @@
                            (unless (list-of relative-path-string? l)
                              (error "entry is not a list of relative path strings:" l)))
                          build-path
-                         this-platform?))
+                         this-platform?
+                         (case (system-type)
+                           [(macosx)
+                            adjust-dylib-path/install]
+                           [else void])
+                         (case (system-type)
+                           [(unix)
+                            copy-file/install-elf-rpath]
+                           [else copy-file])))
 
   (define make-shares-step
     (make-copy/move-step "shared file"
                          "shared files"
-                         "Share Files Setup"
+                         "share files setup"
                          'copy-shared-files
                          'move-shared-files
                          find-share-dir
@@ -1692,12 +1773,14 @@
                            (unless (list-of relative-path-string? l)
                              (error "entry is not a list of relative path strings:" l)))
                          build-path
-                         this-platform?))
+                         this-platform?
+                         void
+                         copy-file))
 
   (define make-mans-step
     (make-copy/move-step "man page"
                          "man pages"
-                         "Man Page Setup"
+                         "man page setup"
                          'copy-man-pages
                          'move-man-pages
                          find-man-dir
@@ -1716,7 +1799,9 @@
                            (build-path d 
                                        (bytes->path-element (bytes-append #"man" (filename-extension n)))
                                        n))
-                         (lambda (info) #t)))
+                         (lambda (info) #t)
+                         void
+                         copy-file))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;       Package-dependency checking         ;;
@@ -1740,7 +1825,9 @@
                                         setup-printf setup-fprintf
                                         (check-unused-dependencies)
                                         (fix-dependencies)
-                                        (verbose))
+                                        (verbose)
+                                        (not no-specific-collections?)
+                                        (always-check-dependencies))
       (set! exit-code 1)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1795,7 +1882,9 @@
   (do-install-part 'general)
   (do-install-part 'post)
 
-  (when (and (check-dependencies) no-specific-collections?)
+  (when (and (check-dependencies)
+             (or no-specific-collections?
+                 (always-check-dependencies)))
     (do-check-package-dependencies))
 
   (done))

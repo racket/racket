@@ -104,6 +104,8 @@
           (when (send defs get-in-module-language?)
             (send defs move-to-new-language))))))
   
+  (define-logger drracket-language)
+  
   (define definitions-text-mixin
     (mixin (text:basic<%> 
             drracket:unit:definitions-text<%>
@@ -168,94 +170,98 @@
              (clear-things-out)])))
       
       (define/public (move-to-new-language)
-        (let* ([port (open-input-text-editor this)]
-               ;; info-result : 
-               ;;  (or/c #f   [#lang without a known language]
-               ;;        (vector <get-info-proc>) 
-               ;;                [no #lang line, so we use the '#lang racket' info proc]
-               ;;        <get-info-proc>) [the get-info proc for the program in the definitions]
-               [info-result 
-                (with-handlers ([exn:fail? 
-                                 (λ (x)
-                                   (log-debug
-                                    (format 
-                                     "DrRacket: error duing call to read-language for ~a:\n  ~a"
-                                     (or (send this get-filename) "<<unsaved file>>")
-                                     (regexp-replace* #rx"\n(.)" (exn-message x) "\n\\1  ")))
-                                   #f)])
-                  (read-language 
-                   port
-                   (lambda () 
-                     ;; fall back to whatever #lang racket does if
-                     ;; we don't have a #lang line present in the file
-                     (vector (read-language (open-input-string "#lang racket"))))))])
+        (define port (open-input-text-editor this))
+        
+        (define (fallback)
+          ;; fall back to whatever #lang racket does if
+          ;; we don't have a #lang line present in the file
+          (log-drracket-language-debug "falling back to using #lang racket's read-language for ~a"
+                                       (or (send this get-filename) "<<unsaved file>>"))
+          (vector (read-language (open-input-string "#lang racket"))))
+        
+        ;; info-result : 
+        ;;  (or/c #f   [#lang without a known language]
+        ;;        (vector <get-info-proc>) 
+        ;;                [no #lang line, so we use the '#lang racket' info proc]
+        ;;        <get-info-proc>) [the get-info proc for the program in the definitions]
+        (define info-result 
+          (with-handlers ([exn:fail? 
+                           (λ (x)
+                             (log-drracket-language-debug
+                              (format
+                               "DrRacket: error duing call to read-language for ~a:\n  ~a"
+                               (or (send this get-filename) "<<unsaved file>>")
+                               (regexp-replace* #rx"\n(.)" (exn-message x) "\n\\1  ")))
+                             #f)])
+            (or (read-language port fallback)
+                (fallback))))
+        
+        ; sometimes I get eof here, but I don't know why and can't seem to 
+        ;; make it happen outside of DrRacket
+        (when (eof-object? info-result)
+          (eprintf "file ~s produces eof from read-language\n"
+                   (send this get-filename))
+          (eprintf "  port-next-location ~s\n"
+                   (call-with-values (λ () (port-next-location port)) list))
+          (eprintf "  str ~s\n"
+                   (let ([s (send this get-text)])
+                     (substring s 0 (min 100 (string-length s)))))
+          (set! info-result #f))
+        (define-values (line col pos) (port-next-location port))
+        (unless (equal? (get-text 0 pos) hash-lang-language)
+          (set! hash-lang-language (get-text 0 pos))
+          (set! hash-lang-last-location pos)
+          (clear-things-out)
+          (define info-proc 
+            (if (vector? info-result)
+                (vector-ref info-result 0)
+                info-result))
+          (define (ctc-on-info-proc-result ctc res)
+            (contract ctc 
+                      res
+                      (if (vector? info-result)
+                          'hash-lang-racket
+                          (get-lang-name pos))
+                      'drracket/private/module-language-tools))
           
-          ; sometimes I get eof here, but I don't know why and can't seem to 
-          ;; make it happen outside of DrRacket
-          (when (eof-object? info-result)
-            (eprintf "file ~s produces eof from read-language\n"
-                     (send this get-filename))
-            (eprintf "  port-next-location ~s\n"
-                     (call-with-values (λ () (port-next-location port)) list))
-            (eprintf "  str ~s\n"
-                     (let ([s (send this get-text)])
-                       (substring s 0 (min 100 (string-length s)))))
-            (set! info-result #f))
-          (let-values ([(line col pos) (port-next-location port)])
-            (unless (equal? (get-text 0 pos) hash-lang-language)
-              (set! hash-lang-language (get-text 0 pos))
-              (set! hash-lang-last-location pos)
-              (clear-things-out)
-              (define info-proc 
-                (if (vector? info-result)
-                    (vector-ref info-result 0)
-                    info-result))
-              (define (ctc-on-info-proc-result ctc res)
-                (contract ctc 
-                          res
-                          (if (vector? info-result)
-                              'hash-lang-racket
-                              (get-lang-name pos))
-                          'drracket/private/module-language-tools))
-              
-              (define lang-wants-big-defs/ints-labels?
-                (and info-proc (info-proc 'drracket:show-big-defs/ints-labels #f)))
-              (set-lang-wants-big-defs/ints-labels? lang-wants-big-defs/ints-labels?)
-              (send (send (get-tab) get-ints) set-lang-wants-big-defs/ints-labels?
-                    lang-wants-big-defs/ints-labels?)
-              
-              (set! extra-default-filters
-               (if info-result
-                   (or (ctc-on-info-proc-result
-                        (or/c #f (listof (list/c string? string?)))
-                        (info-proc 'drracket:default-filters #f))
-                       '())
-                   '()))
-              
-              (set! default-extension
-               (if info-result
-                   (or (ctc-on-info-proc-result
-                        (or/c #f (and/c string? (not/c #rx"[.]")))
-                        (info-proc 'drracket:default-extension #f))
-                       "")
-                   ""))
-              
-              (when info-result
-                (register-new-buttons
-                 (ctc-on-info-proc-result 
-                  (or/c #f (listof (or/c (list/c string?
-                                                 (is-a?/c bitmap%)
-                                                 (-> (is-a?/c drracket:unit:frame<%>) any))
-                                         (list/c string?
-                                                 (is-a?/c bitmap%)
-                                                 (-> (is-a?/c drracket:unit:frame<%>) any)
-                                                 (or/c real? #f)))))
-                  (or (info-proc 'drracket:toolbar-buttons #f)
-                      (info-proc 'drscheme:toolbar-buttons #f)))
-                 (ctc-on-info-proc-result 
-                  (or/c #f (listof symbol?))
-                  (or (info-proc 'drracket:opt-out-toolbar-buttons '())
-                      (info-proc 'drscheme:opt-out-toolbar-buttons '())))))))))
+          (define lang-wants-big-defs/ints-labels?
+            (and info-proc (info-proc 'drracket:show-big-defs/ints-labels #f)))
+          (set-lang-wants-big-defs/ints-labels? lang-wants-big-defs/ints-labels?)
+          (send (send (get-tab) get-ints) set-lang-wants-big-defs/ints-labels?
+                lang-wants-big-defs/ints-labels?)
+          
+          (set! extra-default-filters
+                (if info-result
+                    (or (ctc-on-info-proc-result
+                         (or/c #f (listof (list/c string? string?)))
+                         (info-proc 'drracket:default-filters #f))
+                        '())
+                    '()))
+          
+          (set! default-extension
+                (if info-result
+                    (or (ctc-on-info-proc-result
+                         (or/c #f (and/c string? (not/c #rx"[.]")))
+                         (info-proc 'drracket:default-extension #f))
+                        "")
+                    ""))
+          
+          (when info-result
+            (register-new-buttons
+             (ctc-on-info-proc-result 
+              (or/c #f (listof (or/c (list/c string?
+                                             (is-a?/c bitmap%)
+                                             (-> (is-a?/c drracket:unit:frame<%>) any))
+                                     (list/c string?
+                                             (is-a?/c bitmap%)
+                                             (-> (is-a?/c drracket:unit:frame<%>) any)
+                                             (or/c real? #f)))))
+              (or (info-proc 'drracket:toolbar-buttons #f)
+                  (info-proc 'drscheme:toolbar-buttons #f)))
+             (ctc-on-info-proc-result 
+              (or/c #f (listof symbol?))
+              (or (info-proc 'drracket:opt-out-toolbar-buttons '())
+                  (info-proc 'drscheme:opt-out-toolbar-buttons '())))))))
       
       
       (define/private (register-new-buttons buttons opt-out-ids)

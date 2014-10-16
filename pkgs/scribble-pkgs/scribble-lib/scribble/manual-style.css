@@ -88,6 +88,9 @@ p, .SIntrapara {
     line-height: 1.4;
 }
 
+.compact {
+  padding: 0 0 1em 0;
+}
 
 li {
     list-style-position: outside;
@@ -241,6 +244,12 @@ a:hover {
     height: 4rem;
 }
 
+.nosearchform {
+    margin: 0;
+    padding: 0;
+    height: 4rem;
+}
+
 .searchbox {
     font-size: 1rem;
     width: 12rem;
@@ -304,7 +313,20 @@ a:hover {
     border-left: 0.4rem solid #ccb;
 }
 
-.refcontent p {
+
+/* slightly different handling for margin-note* on narrow screens */
+@media all and (max-width:1260px) {
+     span.refcolumn {
+         float: right;
+         width: 50%;
+         margin-left: 1rem;
+         margin-bottom: 0.8rem;   
+         margin-top: 1.2rem; 
+     }
+
+}
+
+.refcontent, .refcontent p {
     line-height: 1.5;
     margin: 0;
 }

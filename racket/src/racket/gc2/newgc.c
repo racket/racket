@@ -426,18 +426,49 @@ void check_page_owner(NewGC *gc, const void *p)
 }
 #endif
 
-static void *malloc_pages(NewGC *gc, size_t len, size_t alignment, int dirty, int type, int expect_mprotect, void **src_block)
+static void *malloc_pages(NewGC *gc, size_t len, size_t alignment, int dirty, int type, int expect_mprotect,
+                          void **src_block, int abort_on_fail)
 {
   void *ptr;
   check_used_against_max(gc, len);
   ptr = mmu_alloc_page(gc->mmu, len, alignment, dirty, type, expect_mprotect, src_block);
-  if (!ptr) out_of_memory();
+  if (!ptr) {
+    if (!abort_on_fail)
+      return NULL;
+    out_of_memory();
+  }
 
 #ifdef POINTER_OWNERSHIP_CHECK
   shared_pagemap_set(ptr, len, gc);
 #endif
 
   return ptr;
+}
+
+
+static void *malloc_pages_maybe_fail(NewGC *gc, size_t len, size_t alignment, int dirty, int type, int expect_mprotect,
+                                     void **src_block, uintptr_t account_size)
+{
+  void *p;
+  int tried_gc = 0;
+
+  while (1) {
+    p = malloc_pages(gc, len, alignment, dirty, type, expect_mprotect,
+                     src_block, gc->in_unsafe_allocation_mode);
+    if (p) return p;
+
+    /* Try to handle allocation failure. */
+    if (!tried_gc) {
+      if (!gc->avoid_collection) {
+        collect_now(gc, 1);
+        gc->gen0.current_size += account_size;
+      }
+      tried_gc = 1;
+    } else if (GC_out_of_memory)
+      GC_out_of_memory();
+    else
+      out_of_memory();
+  }
 }
 
 static void free_pages(NewGC *gc, void *p, size_t len, int type, int expect_mprotect, void **src_block)
@@ -981,7 +1012,7 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   mpage *bpage;
   size_t allocate_size;
   size_t realpagesize;
-  void *addr;
+  void *addr, *src_block;
 
   if (GC_gen0_alloc_only) return NULL;
 
@@ -1005,30 +1036,31 @@ static void *allocate_big(const size_t request_size_bytes, int type)
 
   gc_if_needed_account_alloc_size(gc, allocate_size);
 
-  /* The following allocations may fail and escape if GC_out_of_memory is set.
-     We not only need APAGE_SIZE alignment, we 
+  /* We not only need APAGE_SIZE alignment, we
      need everything consisently mapped within an APAGE_SIZE
      segment. So round up. */
-  
-  bpage = malloc_mpage();
   realpagesize = round_to_apage_size(allocate_size);
 
   if (type == PAGE_ATOMIC)
-    addr = malloc_pages(gc, realpagesize, APAGE_SIZE, MMU_DIRTY, MMU_BIG_MED, MMU_NON_PROTECTABLE, &bpage->mmu_src_block);
+    addr = malloc_pages_maybe_fail(gc, realpagesize, APAGE_SIZE, MMU_DIRTY, MMU_BIG_MED, MMU_NON_PROTECTABLE,
+                                   &src_block, allocate_size);
   else
-    addr = malloc_pages(gc, realpagesize, APAGE_SIZE, MMU_ZEROED, MMU_BIG_MED, MMU_PROTECTABLE, &bpage->mmu_src_block);
+    addr = malloc_pages_maybe_fail(gc, realpagesize, APAGE_SIZE, MMU_ZEROED, MMU_BIG_MED, MMU_PROTECTABLE,
+                                   &src_block, allocate_size);
+
+  bpage = malloc_mpage();
 
   bpage->addr = addr;
   bpage->size = allocate_size;
   bpage->size_class = 2;
   bpage->page_type = type;
+  bpage->mmu_src_block = src_block;
   GCVERBOSEPAGE(gc, "NEW BIG PAGE", bpage);
 
   /* push new bpage onto GC->gen0.big_pages */
   bpage->next = gc->gen0.big_pages;
   if(bpage->next) bpage->next->prev = bpage;
   gc->gen0.big_pages = bpage;
-
 
   if (gc->saved_allocator) {
     /* MESSAGE ALLOCATION: orphan this page from the current GC; this
@@ -1051,13 +1083,17 @@ static void *allocate_big(const size_t request_size_bytes, int type)
 inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int pos, int type) {
   mpage *page;
   int n, ty;
+  void *src_block, *addr;
 
   ty = ((type == PAGE_ATOMIC) ? MED_PAGE_ATOMIC : MED_PAGE_NONATOMIC);
 
+  addr = malloc_pages_maybe_fail(gc, APAGE_SIZE, APAGE_SIZE, MMU_ZEROED, MMU_BIG_MED,
+                                 (type == MED_PAGE_NONATOMIC) ? MMU_PROTECTABLE : MMU_NON_PROTECTABLE,
+                                 &src_block, sz);
+
   page = malloc_mpage();
-  page->addr = malloc_pages(gc, APAGE_SIZE, APAGE_SIZE, MMU_ZEROED, MMU_BIG_MED,
-                            (type == MED_PAGE_NONATOMIC) ? MMU_PROTECTABLE : MMU_NON_PROTECTABLE,
-                            &page->mmu_src_block);
+  page->addr = addr;
+  page->mmu_src_block = src_block;
   page->size = sz;
   page->size_class = 1;
   page->page_type = PAGE_BIG;
@@ -1188,9 +1224,14 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
 
 inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_size) {
   mpage *page;
+  void *addr, *src_block;
+
+  addr = malloc_pages_maybe_fail(gc, page_size, APAGE_SIZE, MMU_DIRTY, MMU_SMALL_GEN0, MMU_NON_PROTECTABLE,
+                                 &src_block, page_size);
 
   page = malloc_mpage();
-  page->addr = malloc_pages(gc, page_size, APAGE_SIZE, MMU_DIRTY, MMU_SMALL_GEN0, MMU_NON_PROTECTABLE, &page->mmu_src_block);
+  page->addr = addr;
+  page->mmu_src_block = src_block;
   page->size_class = 0;
   page->size = PREFIX_SIZE;
   GEN0_ALLOC_SIZE(page) = page_size;
@@ -2031,7 +2072,7 @@ static void backtrace_new_page(NewGC *gc, mpage *page)
      only use the first few words: */
   page->backtrace = (void **)malloc_pages(gc, APAGE_SIZE, APAGE_SIZE, 
                                           MMU_ZEROED, MMU_BIG_MED, MMU_NON_PROTECTABLE, 
-                                          &page->backtrace_page_src);
+                                          &page->backtrace_page_src, 1);
 }
 
 # define backtrace_new_page_if_needed(gc, page) if (!page->backtrace) backtrace_new_page(gc, page)
@@ -3340,7 +3381,8 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         int protectable = (type == PAGE_ATOMIC) ? MMU_NON_PROTECTABLE : MMU_PROTECTABLE;
         /* Allocate and prep the page */
         work = malloc_mpage();
-        work->addr = malloc_pages(gc, APAGE_SIZE, APAGE_SIZE, MMU_DIRTY, MMU_SMALL_GEN1, protectable, &work->mmu_src_block);
+        work->addr = malloc_pages(gc, APAGE_SIZE, APAGE_SIZE, MMU_DIRTY, MMU_SMALL_GEN1, protectable,
+                                  &work->mmu_src_block, 1);
         work->generation = 1; 
         work->page_type = type;
         work->size = work->previous_size = PREFIX_SIZE;
@@ -3985,7 +4027,8 @@ mpage *allocate_compact_target(NewGC *gc, mpage *work)
 {
   mpage *npage;
   npage = malloc_mpage();
-  npage->addr = malloc_pages(gc, APAGE_SIZE, APAGE_SIZE, MMU_DIRTY, MMU_SMALL_GEN1, page_mmu_protectable(work), &npage->mmu_src_block);
+  npage->addr = malloc_pages(gc, APAGE_SIZE, APAGE_SIZE, MMU_DIRTY, MMU_SMALL_GEN1, page_mmu_protectable(work),
+                             &npage->mmu_src_block, 1);
   npage->previous_size = npage->size = PREFIX_SIZE;
   npage->generation = 1;
   npage->back_pointers = 0;
@@ -5075,14 +5118,25 @@ static void free_child_gc(void)
   gen0_free_big_pages(gc);
   gen0_free_entire_nursery(gc);
 
+  /* First, unprotect all pages. It's important to "queue" up all this work
+     as a batch to minimize commuincation with the OS and avoid fragmenting
+     the OS's table (in the case of Linux) that tracks page permissions. */
+  for(i = 0; i < PAGE_TYPES; i++) {
+    if(i != PAGE_ATOMIC) {
+      for (work = gc->gen1_pages[i]; work; work = next) {
+        next = work->next;
+        if (work->mprotected) {
+          work->mprotected = 0;
+          mmu_queue_write_unprotect_range(gc->mmu, work->addr, real_page_size(work), page_mmu_type(work), &work->mmu_src_block);
+        }
+      }
+    }
+  }
+  mmu_flush_write_unprotect_ranges(gc->mmu);
+
   for(i = 0; i < PAGE_TYPES; i++) {
     for (work = gc->gen1_pages[i]; work; work = next) {
       next = work->next;
-
-      if (work->mprotected)
-      {
-        mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
-      }
       GCVERBOSEPAGE(gc, "Cleaning up GC DYING", work);
       gen1_free_mpage(pagemap, work);
     }

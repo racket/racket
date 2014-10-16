@@ -181,3 +181,20 @@ TODO
                [value (cadr lst)])
            (cons (cons field value)
                  (field+detail-list->table who (cddr lst) onto)))]))
+
+;; Added by Jay
+
+(define (exn:not-break? x)
+  (not (exn:break? x)))
+
+(define (error-display x)
+  ((error-display-handler)
+   (if (exn? x)
+     (exn-message x)
+     "non-exn error:")
+   x))
+
+(provide
+ (contract-out
+  [exn:not-break? (-> any/c boolean?)]
+  [error-display (-> any/c void?)]))

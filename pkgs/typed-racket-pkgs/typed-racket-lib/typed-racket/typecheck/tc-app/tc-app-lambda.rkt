@@ -85,7 +85,7 @@
     ;; special case `for/list'
     [((val acc ...)
       ((~and inner-body (if e1 e2 e3:id)))
-      (null actuals ...))
+      (~and (null actuals ...) (null-exp . _)))
      #:when (free-identifier=? #'val #'e3)
      (let ([ts (for/list ([ac (in-syntax #'(actuals ...))]
                           [f (in-syntax #'(acc ...))])
@@ -99,6 +99,9 @@
                       [(tc-result1: (and t (Listof: _))) t]
                       [_ #f])
                     (generalize -Null))])
+       ;; this check is needed because the type annotation may come
+       ;; from `for/fold` and it won't necessarily be a list type
+       (tc-expr/check #'null-exp (ret acc-ty))
        (define-values (fun-results body-results)
          (tc/rec-lambda/check args body lp (cons acc-ty ts) expected))
        (add-typeof-expr lam fun-results)

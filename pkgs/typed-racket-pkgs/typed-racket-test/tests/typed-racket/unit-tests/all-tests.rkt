@@ -37,5 +37,8 @@
   "class-tests.rkt"
   "class-util-tests.rkt"
   "check-below-tests.rkt"
+  "init-env-tests.rkt"
   "filter-tests.rkt"
+  "metafunction-tests.rkt"
+  "generalize-tests.rkt"
   "rep-tests.rkt")

@@ -34,10 +34,26 @@ that render them as @racket[pict]s.
                                   (or/c string? 
                                         (is-a?/c color%)
                                         (list/c byte? byte? byte?))
-                                  "gray"])
+                                  "gray"]
+                    [#:edge-width edge-width
+                                  (or/c 'unspecified real? #f)
+                                  'unspecified])
          tree-edge?]{
   This function specifies an edge from some parent to the given @racket[node].
   It it intended to be used with @racket[tree-layout].
+
+  When @racket[edge-width] is @racket['unspecified], the line width will not be
+  set. This is intended to allow the line width to be set for the whole pict
+  via @racket[linewidth]. Otherwise, @racket[edge-width] is interpreted the
+  same way as the width argument for the @racket[linewidth] function.
+
+  @examples[#:eval
+            tree-layout-eval
+            (naive-layered (tree-layout
+                            (tree-edge #:edge-width 3 (tree-layout))
+                            (tree-edge #:edge-color "green" (tree-layout))))]
+
+  @history[#:changed "6.1.0.5" "Added an #:edge-width option"]
 }
 
 @defproc[(tree-layout? [v any/c]) boolean?]{

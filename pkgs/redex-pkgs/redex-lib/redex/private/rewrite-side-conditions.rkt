@@ -301,11 +301,11 @@
                          (set! ellipsis-number (+ ellipsis-number 1))
                          (values (format "..._r~a" ellipsis-number) #f)]
                         [(regexp-match? #rx"^[.][.][.]_r" ellipsis-pre-str)
-                         (values (string-append (substring ellipsis-str 0 4)
+                         (values (string-append (substring ellipsis-pre-str 0 4)
                                                 "r"
-                                                (substring ellipsis-str 
+                                                (substring ellipsis-pre-str 
                                                            4
-                                                           (string-length ellipsis-str)))
+                                                           (string-length ellipsis-pre-str)))
                                  #t)]
                         [(regexp-match? #rx"^[.][.][.]_" ellipsis-pre-str) 
                          (values ellipsis-pre-str #t)]

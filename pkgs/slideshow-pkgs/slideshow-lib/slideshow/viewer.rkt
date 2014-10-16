@@ -650,7 +650,7 @@
       (define gray-brush (make-object brush% "GRAY" 'solid))
       (define green-brush (make-object brush% "GREEN" 'solid))
       (define red-brush (make-object brush% "RED" 'solid))
-      (define black-brush (make-object brush% "BLACK" 'solid))
+      (define letterbox-brush (make-object brush% config:letterbox-color 'solid))
       (define black-pen (make-object pen% "BLACK" 1 'solid))
       (define clear-pen (make-object pen% "BLACK" 1 'transparent))
       (define red-color (make-object color% "RED"))
@@ -1091,7 +1091,7 @@
                  (< ush ch))
              (let ([b (send dc get-brush)]
                    [p (send dc get-pen)])
-               (send dc set-brush black-brush)
+               (send dc set-brush letterbox-brush)
                (send dc set-pen clear-pen)
                (when (< usw cw)
                  (let ([half (/ (- cw usw) 2)])

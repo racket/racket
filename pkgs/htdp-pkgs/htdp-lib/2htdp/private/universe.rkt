@@ -69,8 +69,12 @@
       
       (field 
        [universe 
-        (new checked-cell% [value0 universe0] [ok? check-with] 
-             [display (if (string? state) state (and state  "your server's state"))])])
+        (new checked-cell%
+	     [value0 universe0]
+	     [ok? check-with] 
+             [display (if (string? state) 
+                          (and (not (string=? "OliverFlatt" state)) state)
+                          (and state "your server's state"))])])
  
       ;; -----------------------------------------------------------------------
       ;; dealing with events
@@ -90,13 +94,16 @@
               (define nxt (name (send universe get) a ...))
               (cond
                 [(stop-the-world? nxt) (stop! (stop-the-world-world nxt))]
-                [else 
+                [(bundle? nxt) 
                  (define-values (u mails bad)
                    (bundle> n nxt))
                  (send universe set (format "value returned from ~a" 'name) u)
                  (unless (boolean? to-string) (send gui add (to-string u)))
                  (broadcast mails)
-                 (for-each (lambda (iw) (kill iw "disconnected ~a")) bad)])))))
+                 (for-each (lambda (iw) (kill iw "disconnected ~a")) bad)]
+                [else ;; plain universe state 
+                 (send universe set (format "value returned from ~a" 'name) nxt)
+                 (unless (boolean? to-string) (send gui add (to-string nxt)))])))))
       
       ;; [Listof Mail] -> Void
       ;; send payload of messages to designated worlds 
@@ -141,9 +148,12 @@
       ;; start and stop server, start and stop the universe
       
       (field [iworlds   '()] ;; [Listof World]
-             [gui      (new gui%
-                            [stop-server (lambda () (stop! (send universe get)))] 
-                            [stop-and-restart (lambda () (restart))])]
+             [gui
+	       (if (and (string? state) (string=? "OliverFlatt" state))
+		   (new dummy-gui%)
+		   (new gui%
+		     [stop-server (lambda () (stop! (send universe get)))] 
+		     [stop-and-restart (lambda () (restart))]))]
              [dr:custodian  (current-custodian)]
              [the-custodian (make-custodian)])
       
@@ -154,33 +164,25 @@
           (define (loop)
             (apply sync 
                    (handle-evt (tcp-accept-evt tcp-listener) add-iworld)
-                   (map(lambda (p) (handle-evt (iworld-in p) (process-message p))) iworlds)))
+                   (map (lambda (p) (handle-evt (iworld-in p) (process-message p))) iworlds))
+            (loop))
           ;;; WHERE 
           (define tcp-listener 
             (with-handlers ((exn:fail:network? (lambda (x) (stop! x))))
               (tcp-listen port 4 #t)))
-          ;; (list IPort OPort) -> Void 
+          ;; [list IPort OPort] -> Void 
           (define (add-iworld in-out)
             (define in (first in-out))
             (define out (second in-out))
             ;; is it possible to kill the server with lots of bad connections?
-            (with-handlers ((tcp-eof? (lambda _ (loop)))
-                            (exn? (lambda (e)
-                                    (printf "process registration failed!\n~a" 
-                                            (exn-message e))
-                                    (loop))))
-              (tcp-process-registration
-               in out (lambda (info) (pnew (create-iworld in out info))))
-              (loop)))
+            (with-handlers ((tcp-eof? (lambda _ (void)))
+                            (exn? (lambda (e) (printf "process registration failed!\n"))))
+              (tcp-process-registration in out (lambda (info) (pnew (create-iworld in out info))))))
           ;; IWorld -> [IPort -> Void]
           (define (process-message p)
             (lambda (in)
-              (define (disc e)
-                (pdisconnect p)
-                (loop))
-              (with-handlers ((tcp-eof? disc))
-                (pmsg p (tcp-receive in))
-                (loop))))
+              (with-handlers ((tcp-eof? (lambda (e) (pdisconnect p))))
+                (pmsg p (tcp-receive in)))))
           ;; --- go universe go ---
           (set! iworlds '())
           (send universe set "initial expression" universe0)
@@ -302,6 +304,13 @@
     (copy-and-paste this)
     (send text lock #t)))
 
+;; throw away all messages, for Oliver to run on R Pi 
+(define dummy-gui%
+  (class object%
+    (super-new)
+    (define/public (show x) (void))
+    (define/public (add x) (void))))
+
 ;; -----------------------------------------------------------------------------
 ;; Frame Text -> Void
 ;; add menu bar to frame for copying all of the text 
@@ -356,11 +365,18 @@
 
 ;; Symbol Any (Any -> Boolean) String String -> Void 
 ;; raise a TP exception if low is not a list of world? elements 
-(define (check-arg-list tag low iworld? msg rank)
-  (check-arg tag (list? low) (format "list [of ~as]" msg) rank low)
-  (for-each (lambda (c) 
-              (check-arg tag (iworld? c) msg (format "(elements of) ~a" rank) c))
-            low))
+(define (check-arg-list tag low pred? msg ith)
+  (check-arg tag (list? low) (format "list [of ~as]" msg) ith low)
+  (for ((c (in-list low)))
+    (unless (pred? c)
+      (error 
+       tag
+       "expects a list of mails as ~a argument, given a list that contains: ~e"
+       ith
+       c)))
+  #;
+  (check-arg tag  msg (format "(elements of) ~a" ith) c)
+  )
 
 ;; Symbol Any ->* Universe [Listof Mail] [Listof IWorld]
 (define (bundle> tag r)

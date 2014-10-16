@@ -5,11 +5,11 @@
 (define deps '("scheme-lib"
                "base"
                "compatibility-lib"
-               "draw-lib" "snip-lib"))
+               "draw-lib"))
 (define build-deps '("rackunit-lib"))
 
 (define pkg-desc "implementation (no documentation) part of \"pict\"")
 
 (define pkg-authors '(mflatt robby))
 
-(define version "1.1")
+(define version "1.3")

@@ -1,0 +1,9 @@
+ (require "srcdoc.rkt") package: manual-test
+
+(f) -> integer?
+
+Stuff
+
+(expr foo a)
+
+Returns expr.

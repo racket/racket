@@ -998,5 +998,142 @@
 (test (list #t 10 10) consistency-free-id)
 
 ;; ----------------------------------------
+;; Check `syntax-local-lift...` outside of macro:
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval `(module m racket/base
+           (require (for-syntax racket/base))
+           (let-syntax ([x (syntax-local-lift-expression #'(display "hi\n"))])
+             (void))))
+  (define o (open-output-bytes))
+  (parameterize ([current-output-port o])
+    (eval `(require 'm)))
+  (test "hi\n" get-output-string o))
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval `(module m racket/base
+           (require (for-syntax racket/base))
+           (define x 10)
+           (let-syntax ([x (syntax-local-lift-provide #'x)])
+             (void))))
+  (test 10 eval `(dynamic-require ''m 'x)))
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval `(module m racket/base
+           (require (for-syntax racket/base))
+           (let-syntax ([x (let ([x (syntax-local-lift-require #'racket/fixnum
+                                                               #'(displayln (fx+ 1 1)))])
+                             (syntax-local-lift-expression x)
+                             (void))])
+             (void))))
+  (define o (open-output-bytes))
+  (parameterize ([current-output-port o])
+    (eval `(require 'm)))
+  (test "2\n" get-output-string o))
+
+;; ----------------------------------------
+;; Lifting should not introduce `#%top` around
+;; the reference to the lifted identifier:
+
+(module lifting-doesnt-introduce-top-wrapper racket
+  ;; do the lifting
+  (define-syntax (m stx)
+    (syntax-local-lift-expression #'(+ 1 1)))
+
+  ;; catch the lift, try to put definitions in a let
+  (define-syntax (catch stx)
+    (syntax-case stx ()
+      [(_ body)
+       (syntax-case (local-expand/capture-lifts #'body (syntax-local-context) null)
+           (define-values begin)
+         [(begin (define-values (x ...) e ...) ... exp)
+          #'(let () (define-values (x ...) e ...) ... exp)])]))
+
+  (define z (catch (+ 1 (m))))
+
+  (provide z))
+
+(test 3 dynamic-require ''lifting-doesnt-introduce-top-wrapper 'z)
+
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (eval '(define-syntax (m stx)
+           (syntax-local-lift-expression #'(+ 1 1))))
+  (eval '(define-syntax (catch stx)
+           (syntax-case stx ()
+             [(_ body)
+              (syntax-case (local-expand/capture-lifts #'body (syntax-local-context) null)
+                  (define-values begin)
+                [(begin (define-values (x ...) e ...) ... exp)
+                 #'(let () (define-values (x ...) e ...) ... exp)])])))
+  (test 3 eval '(catch (+ 1 (m)))))
+
+(let-syntax ([m (lambda (stx)
+                  (define e (local-expand #'nonsuch 'expression null))
+                  (unless (identifier? e)
+                    (error 'test "bad expansion: ~e" e))
+                  #'(void))])
+  (m))
+(let-syntax ([m (lambda (stx)
+                  (define e (local-expand #'(#%top . nonsuch) 'expression null))
+                  (syntax-case e (#%top)
+                    [(#%top . id)
+                     (identifier? #'id)
+                     #'(void)]
+                    [else
+                     (error 'test "bad expansion: ~e" e)]))])
+  (m))
+
+(test 10 values
+      (let-syntax ([#%top (lambda (stx)
+                            (syntax-case stx ()
+                              [(_ . id) #'10]))])
+        (let-syntax ([m (lambda (stx)
+                          (local-expand #'nonsuch 'expression null))])
+          (m))))
+
+;; ----------------------------------------
+
+;; Check that `expand` produces valied syntax
+(let ()
+  (define (check mod)
+    (define e
+      (syntax->datum
+       (parameterize ([current-namespace (make-base-namespace)])
+         (expand mod))))
+    (let loop ([e e])
+      (cond
+       [(syntax? e) (loop (syntax-e e))]
+       [(pair? e) (loop (car e)) (loop (cdr e))]
+       [(null? e) (void)]
+       [(symbol? e) (void)]
+       [(keyword? e) (void)]
+       [(number? e) (void)]
+       [(boolean? e) (void)]
+       [else (error 'expand-test "unexpected value: ~e" e)])))
+  (check '(module m '#%kernel
+            (#%declare #:cross-phase-persistent)))
+  (check '(module m '#%kernel
+            (define-values (x) 10)))
+  (check '(module m racket/base
+            (require (for-syntax racket/base))
+            (define-syntax (m stx)
+              (syntax-local-lift-expression #'(+ 1 2)))
+            (list (m))))
+  (check '(module m racket/base
+            (module+ main 10))))
+
+;; ----------------------------------------
+
+(let ()
+ (struct foo (id)
+         #:property prop:rename-transformer 0)
+
+ (test 'x syntax-e
+       (rename-transformer-target
+        (chaperone-struct (foo #'x) foo-id (lambda (f x) x)))))
+
+;; ----------------------------------------
 
 (report-errs)

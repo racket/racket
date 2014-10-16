@@ -16,7 +16,8 @@
            #;
            (or/c (bytes? boolean? input-port? (or/c #f exact-integer?) . -> . any)
                  (bytes? boolean? input-port? . -> . any))
-           #:preserve-timestamps? any/c)
+           #:preserve-timestamps? any/c
+           #:utc-timestamps? any/c)
           . ->* . any)]
   
   [make-filesystem-entry-reader (() (#:dest 
@@ -39,7 +40,8 @@
   [zip-directory-includes-directory? (zip-directory? (or/c path-string? input-port?) . -> . boolean?)]
   [unzip-entry (((or/c path-string? input-port?) zip-directory? bytes?)
                 ((or/c (procedure-arity-includes/c 2) (procedure-arity-includes/c 3))
-                 #:preserve-timestamps? any/c)
+                 #:preserve-timestamps? any/c
+                 #:utc-timestamps? any/c)
                 . ->* .
                 any)]
 
@@ -173,7 +175,7 @@
   (void))
 
 ;; unzip-one-entry : input-port (bytes boolean input-port [exact-integer?] -> a) -> a
-(define (unzip-one-entry in read-entry preserve-timestamps?)
+(define (unzip-one-entry in read-entry preserve-timestamps? utc?)
   (let ([read-int (lambda (count) (read-integer count #f in #f))])
     (let* ([signature            (read-int 4)]
            [version              (read-bytes 2 in)]
@@ -206,16 +208,27 @@
               
               (if preserve-timestamps?
                   (read-entry filename dir? in (and (not dir?)
-                                                    (msdos-date+time->seconds date time)))
+                                                    (msdos-date+time->seconds date time utc?)))
                   (read-entry filename dir? in))
 
+              ;; Read until the end of the deflated stream when compressed size unknown
+              (when (bitwise-bit-set? bits 3)
+                (let loop () (unless (eof-object? (read-bytes 1024 in)) (loop))))
+
               (when t (kill-thread t)))
+
             (lambda ()
               ;; appnote VI-C : if bit 3 is set, then the file data
               ;; is immediately followed by a data descriptor
+              ;; appnote 4.3.9.3 : the value 0x08074b50 may appear
+              ;; as a data descriptor signature immediately
+              ;; following the file data
               (if (bitwise-bit-set? bits 3)
-                  (skip-bytes 12 in)
-                  (file-position in (+ mark compressed))))))
+                  ;; Read possibly signed data descriptor
+                  (let ([maybe-signature (read-int 4)])
+                    (skip-bytes (if (= maybe-signature #x08074b50) 12 8)
+                                in))
+                  (skip-bytes (- (+ mark compressed) (file-position in)) in)))))
       (void))))
 
 ;; find-central-directory : input-port nat -> nat nat nat
@@ -273,14 +286,15 @@
                         (skip-bytes (+ extra-length comment-length) in)
                         (cons filename (make-zip-entry relative-offset dir?)))))))))
 
-(define (msdos-date+time->seconds date time)
+(define (msdos-date+time->seconds date time utc?)
   (with-handlers ([exn:fail? (lambda (exn) #f)])
     (find-seconds (* 2 (bitwise-and #x1F time))
                   (bitwise-and #x3F (arithmetic-shift time -5))
                   (bitwise-and #x1F (arithmetic-shift time -11))
                   (bitwise-and #x1F date)
                   (bitwise-and #xF (arithmetic-shift date -5))
-                  (+ (bitwise-and #x7F (arithmetic-shift date -9)) 1980))))
+                  (+ (bitwise-and #x7F (arithmetic-shift date -9)) 1980)
+                  (not utc?))))
 
 ;; ===========================================================================
 ;; FRONT END
@@ -296,13 +310,16 @@
 ;; unzip : [(or/c path-string? input-port) (bytes boolean input-port -> any)] -> any
 (define unzip
   (lambda (in [read-entry (make-filesystem-entry-reader)]
-              #:preserve-timestamps? [preserve-timestamps? #f])
+              #:preserve-timestamps? [preserve-timestamps? #f]
+              #:utc-timestamps? [utc? #f])
     (call-with-input
      in
      (lambda (in)
        (when (= (peek-integer 4 #f in #f) *local-file-header*)
-         (unzip-one-entry in read-entry preserve-timestamps?)
-         (unzip in read-entry #:preserve-timestamps? preserve-timestamps?))))))
+         (unzip-one-entry in read-entry preserve-timestamps? utc?)
+         (unzip in read-entry
+                #:preserve-timestamps? preserve-timestamps?
+                #:utc-timestamps? utc?))))))
 
 (define (input-size in)
   (file-position in eof)
@@ -322,7 +339,8 @@
 ;; unzip-entry : (union string path) zip-directory bytes [(bytes boolean input-port -> a)] -> a
 (define unzip-entry
   (lambda (in dir entry-name [read-entry (make-filesystem-entry-reader)]
-              #:preserve-timestamps? [preserve-timestamps? #f])
+              #:preserve-timestamps? [preserve-timestamps? #f]
+              #:utc-timestamps? [utc? #f])
     (cond
      [(zip-directory-lookup entry-name dir)
       => (lambda (entry)
@@ -330,7 +348,7 @@
             in
             (lambda (in)
               (file-position in (zip-entry-offset entry))
-              (unzip-one-entry in read-entry preserve-timestamps?))))]
+              (unzip-one-entry in read-entry preserve-timestamps? utc?))))]
      [else (raise-entry-not-found entry-name)])))
 
 ;; ===========================================================================

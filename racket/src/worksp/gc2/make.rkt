@@ -160,18 +160,26 @@
 			   (check-timestamp t2 f)
 			   (>= t t2)))
 		       deps))))
-    (unless (system- (format "~a ~a /MT /Zi ~a /c ~a /Fdxsrc/ /Fo~a" cl.exe flags opt-flags c o))
+    (unless (system- (format "~a ~a /MT /Zi /GS- ~a /c ~a /Fdxsrc/ /Fo~a" cl.exe flags opt-flags c o))
       (error "failed compile"))))
 
 (define common-deps (list "../../racket/gc2/xform.rkt"
 			  "../../racket/gc2/xform-mod.rkt"))
 
 (define (find-build-file d f)
+  (define (find-release d2)
+    ;; An ".obj" location may depend on whether CGC was
+    ;; built with SGC or the Boehm GC
+    (or (for/or ([d '("srelease" "brelease")])
+          (define p (string-append d2 d "/"))
+          (and (file-exists? (build-path p f))
+               p))
+        (string-append d2 "release/")))
   (string-append
    (if win64?
-     (string-append "../" d "/x64/release")
-     (let ([d2 (string-append "../" d "/win32/release")])
-       (if (directory-exists? d2) d2 (string-append "../" d "/release"))))
+     (find-release (string-append "../" d "/x64/"))
+     (let ([d2 (find-release (string-append "../" d "/win32/"))])
+       (if (directory-exists? d2) d2 (find-release (string-append "../" d "/")))))
    "/" f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -306,7 +314,13 @@
 	     "xsrc/foreign.obj"
 	     (find-build-file "libracket" "gmp.obj")
 	     (find-build-file "racket" "libffi.lib")
-	     (map (lambda (n) (format "xsrc/~a.obj" n)) srcs))])
+             (append
+              (let ([f (and win64?
+                            (find-build-file "libracket" "mzsj86w64.obj"))])
+                (if (and f (file-exists? f))
+                    (list f)
+                    null))
+              (map (lambda (n) (format "xsrc/~a.obj" n)) srcs)))])
   (link-dll objs null null dll "" #f))
 
 (define (check-rc res rc)
@@ -327,7 +341,7 @@
 	    '("libracket3mxxxxxxx.dll")
 	    '("delayimp.lib")
 	    exe "" #t))
-(system- "mt.exe -manifest ../../../Racket.exe.manifest -outputresource:../../../Racket.exe;1")
+(system- "mt.exe -manifest ../racket/racket.manifest -outputresource:../../../Racket.exe;1")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -359,7 +373,7 @@
 	    '("advapi32.lib" 
 	      "delayimp.lib") 
 	    "../../../lib/GRacket.exe" " /subsystem:windows" #t))
-(system- "mt.exe -manifest ../../../lib/GRacket.exe.manifest -outputresource:../../../lib/GRacket.exe;1")
+(system- "mt.exe -manifest ../gracket/gracket.manifest -outputresource:../../../lib/GRacket.exe;1")
 
 (system- (format "~a /MT /O2 /DMZ_PRECISE_GC /I../../racket/include /I.. /c ../../racket/dynsrc/mzdyn.c /Fomzdyn3m.obj"
 		 cl.exe))

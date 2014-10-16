@@ -27,7 +27,7 @@
 (define-tc/app-syntax-class (tc/app-eq expected)
   (pattern (eq?:comparator v1 v2)
     ;; make sure the whole expression is type correct
-    (match* ((tc/funapp #'eq? #'(v1 v2) (single-value #'eq?)
+    (match* ((tc/funapp #'eq? #'(v1 v2) (tc-expr/t #'eq?)
                         (stx-map single-value #'(v1 v2)) expected)
              ;; check thn and els with the eq? info
              (tc/eq #'eq? #'v1 #'v2))
@@ -54,13 +54,9 @@
         (alt equal? equal?-able)))
   (match* ((single-value v1) (single-value v2))
     [((tc-result1: t _ o) (tc-result1: (Value: (? ok? val))))
-     (ret -Boolean
-          (-FS (-filter-at (-val val) o)
-               (-not-filter-at (-val val) o)))]
+     (ret -Boolean (-FS (-filter (-val val) o) (-not-filter (-val val) o)))]
     [((tc-result1: (Value: (? ok? val))) (tc-result1: t _ o))
-     (ret -Boolean
-          (-FS (-filter-at (-val val) o)
-               (-not-filter-at (-val val) o)))]
+     (ret -Boolean (-FS (-filter (-val val) o) (-not-filter (-val val) o)))]
     [((tc-result1: t _ o)
       (or (and (? (lambda _ (id=? #'member comparator)))
                (tc-result1: (List: (list (and ts (Value: _)) ...))))
@@ -70,8 +66,8 @@
                (tc-result1: (List: (list (and ts (Value: (? eq?-able))) ...))))))
      (let ([ty (apply Un ts)])
        (ret (Un (-val #f) t)
-            (-FS (-filter-at ty o)
-                 (-not-filter-at ty o))))]
+            (-FS (-filter ty o)
+                 (-not-filter ty o))))]
     [(_ _) (ret -Boolean)]))
 
 

@@ -3,7 +3,9 @@
 	 ffi/unsafe/define
 	 ffi/unsafe/alloc
          "../common/utils.rkt"
-         "types.rkt")
+	 "../../lock.rkt"
+         "types.rkt"
+	 "const.rkt")
 
 (provide
  define-mz
@@ -43,7 +45,12 @@
               ModifyMenuW
               RemoveMenu
               SelectObject
-              WideCharToMultiByte))
+              WideCharToMultiByte
+	      GetDeviceCaps
+	      strip-&
+	      ->screen
+	      ->screen*
+	      ->normal))
 
 (define gdi32-lib (ffi-lib "gdi32.dll"))
 (define user32-lib (ffi-lib "user32.dll"))
@@ -156,3 +163,43 @@
 (define-kernel32 WideCharToMultiByte (_wfun _UINT _DWORD _pointer _int
                                             _pointer _int _pointer _pointer
                                             -> _int))
+;; ----------------------------------------
+
+(define (strip-& s)
+  (if (string? s)
+      (regexp-replace* #rx"&(.)" s "\\1")
+      s))
+
+;; ----------------------------------------
+
+(define-gdi32 GetDeviceCaps (_wfun _HDC _int -> _int))
+
+(define screen-dpi
+  (atomically
+   (let ([hdc (GetDC #f)])
+     (begin0
+      (GetDeviceCaps hdc LOGPIXELSX)
+      (ReleaseDC #f hdc)))))
+
+;; Convert a normalized (conceptually 96-dpi) measure into a screen measure
+(define (->screen x)
+  (and x
+       (if (= screen-dpi 96)
+	   x
+	   (if (exact? x)
+	       (ceiling (/ (* x screen-dpi) 96))
+	       (/ (* x screen-dpi) 96)))))
+(define (->screen* x)
+  (if (and (not (= screen-dpi 96))
+	   (exact? x))
+      (floor (/ (* x screen-dpi) 96))
+      (->screen x)))
+
+;; Convert a screen measure to a normalize (conceptually 96-dpi) measure
+(define (->normal x)
+  (and x
+       (if (= screen-dpi 96)
+	   x
+	   (if (exact? x)
+	       (floor (/ (* x 96) screen-dpi))
+	       (/ (* x 96) screen-dpi)))))

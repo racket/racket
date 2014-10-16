@@ -59,7 +59,8 @@
   (type-inst type-inst)
   (type-label type-label)
   (type-dotted type-dotted)
-  (exn-handler typechecker:exn-handler #:mark)
+  (exn-predicate typechecker:exn-predicate)
+  (exn-handler typechecker:exn-handler)
   (exn-body typechecker:exn-body #:mark)
   (exn-handlers typechecker:exn-handlers #:mark)
   (struct-info struct-info)
@@ -72,6 +73,8 @@
   (tr:class:type-annotation tr:class:type-annotation)
   (tr:class:super tr:class:super)
   (tr:class:local-table tr:class:local-table)
+  (tr:class:name-table tr:class:name-table)
+  (tr:class:clause-ids tr:class:clause-ids)
   (tr:class:method tr:class:method)
   )
 

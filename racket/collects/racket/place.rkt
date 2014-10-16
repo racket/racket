@@ -15,8 +15,8 @@
          (for-syntax racket/base
                      racket/syntax))
 
-(provide dynamic-place
-         dynamic-place*
+(provide (protect-out dynamic-place
+                      dynamic-place*)
          place-sleep
          place-wait
          place-kill
@@ -29,8 +29,8 @@
          place-message-allowed?
          place-channel-put/get
          processor-count
-         place
-         place*
+         (protect-out place
+                      place*)
          (rename-out [pl-place-enabled? place-enabled?])
          place-dead-evt
          place-location?

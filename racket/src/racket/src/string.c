@@ -56,6 +56,10 @@
 # include "schsys.h"
 #endif
 
+#ifndef SPLS_SUFFIX
+# define SPLS_SUFFIX ""
+#endif
+
 #include "schustr.inc"
 
 #ifdef USE_ICONV_DLL
@@ -191,11 +195,27 @@ static char *nl_langinfo(int which)
   for (i = 0; current_locale_name[i]; i++) {
     if (current_locale_name[i] == '.') {
       if (current_locale_name[i + 1]) {
-	int len, j = 0;
+	int len, j;
 	char *enc;
 	i++;
 	len = scheme_char_strlen(current_locale_name) - i;
-	enc = (char *)scheme_malloc_atomic(len + 1);
+	enc = (char *)scheme_malloc_atomic(2 + len + 1);
+
+        /* Check whether the encoding is numberic, in which case
+           we add "CP" in front to make it an encoding name */
+        for (j = i; current_locale_name[j]; j++) {
+          if (current_locale_name[j] > 127)
+            break;
+          if (!isdigit(current_locale_name[j]))
+            break;
+        }
+        if (!current_locale_name[j]) {
+          j = 2;
+          memcpy(enc, "CP", j);
+        } else {
+          j = 0;
+        }
+
 	while (current_locale_name[i]) {
 	  if (current_locale_name[i] > 127)
 	    return "UTF-8";
@@ -420,8 +440,8 @@ scheme_init_string (Scheme_Env *env)
 #endif
   REGISTER_SO(platform_3m_path);
   REGISTER_SO(platform_cgc_path);
-  platform_cgc_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH);
-  platform_3m_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH MZ3M_SUBDIR);
+  platform_cgc_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX);
+  platform_3m_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX MZ3M_SUBDIR);
 
   REGISTER_SO(putenv_str_table);
 
@@ -2086,9 +2106,9 @@ char *scheme_version(void)
 # define VERSION_SUFFIX ""
 #else
 # ifdef USE_SENORA_GC
-#  define VERSION_SUFFIX " [cgc~]"
-# else
 #  define VERSION_SUFFIX " [cgc]"
+# else
+#  define VERSION_SUFFIX " [cgc/b]"
 # endif
 #endif
 
@@ -2796,7 +2816,7 @@ static Scheme_Object *system_library_subpath(int argc, Scheme_Object *argv[])
 
 const char *scheme_system_library_subpath()
 {
-  return SCHEME_PLATFORM_LIBRARY_SUBPATH;
+  return SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX;
 }
 
 /* Our own strncpy - which would be really stupid, except the one for
@@ -4399,7 +4419,7 @@ static Scheme_Object *normalize_d(Scheme_Object *o, int kompat)
       }
       if (!klen)
 	s2[j++] = tmp;
-      memcpy(s2 + j, s2 + len + delta - snds, snds * sizeof(mzchar));
+      memmove(s2 + j, s2 + len + delta - snds, snds * sizeof(mzchar));
       j += snds;
     } else if ((s[i] >= MZ_JAMO_SYLLABLE_START)
 	       && (s[i] <= MZ_JAMO_SYLLABLE_END)) {
@@ -5474,6 +5494,14 @@ intptr_t scheme_utf8_decode(const unsigned char *s, intptr_t start, intptr_t end
 {
   return utf8_decode_x(s, start, end, us, dstart, dend,
 		       ipos, NULL, utf16, utf16, NULL, 0, permissive);
+}
+
+intptr_t scheme_utf8_decode_offset_prefix(const unsigned char *s, intptr_t start, intptr_t end,
+                                          unsigned int *us, intptr_t dstart, intptr_t dend,
+                                          intptr_t *ipos, char utf16, int permissive)
+{
+  return utf8_decode_x(s, start, end, us, dstart, dend,
+		       ipos, NULL, utf16, utf16, NULL, 1, permissive);
 }
 
 intptr_t scheme_utf8_decode_as_prefix(const unsigned char *s, intptr_t start, intptr_t end,

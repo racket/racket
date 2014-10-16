@@ -18,9 +18,9 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Debug|Win32"
+			Name="BDebug|Win32"
 			OutputDirectory="..\..\..\lib"
-			IntermediateDirectory="Debug"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -60,7 +60,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Debug|x64"
+			Name="BDebug|x64"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
@@ -103,9 +103,9 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
+			Name="BRelease|Win32"
 			OutputDirectory="..\..\..\lib"
-			IntermediateDirectory="Release"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -148,7 +148,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|x64"
+			Name="BRelease|x64"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
@@ -193,9 +193,94 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="SGC|Win32"
+			Name="SDebug|Win32"
 			OutputDirectory="..\..\..\lib"
-			IntermediateDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE;USE_SENORA_GC"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="WS2_32.lib Shell32.lib User32.lib"
+				OutputFile="..\..\..\lib\libracketxxxxxxx.dll"
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
+				BaseAddress="0x10400000"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary="..\..\..\lib\msvc\libracketxxxxxxx.lib"
+			/>
+		</Configuration>
+		<Configuration
+			Name="SDebug|x64"
+			OutputDirectory="..\..\..\lib"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE;USE_SENORA_GC"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:X64"
+				AdditionalDependencies="WS2_32.lib Shell32.lib User32.lib"
+				OutputFile="..\..\..\lib\libracketxxxxxxx.dll"
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
+				BaseAddress="0x10400000"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary="..\..\..\lib\msvc\libracketxxxxxxx.lib"
+				TargetMachine="17"
+			/>
+		</Configuration>
+		<Configuration
+			Name="SRelease|Win32"
+			OutputDirectory="..\..\..\lib"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -209,7 +294,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE;USE_SENORA_GC;SGC_STD_DEBUGGING=1"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE;USE_SENORA_GC"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -238,7 +323,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="SGC|x64"
+			Name="SRelease|x64"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
@@ -254,7 +339,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE;USE_SENORA_GC;SGC_STD_DEBUGGING=1"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE;USE_SENORA_GC"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -291,51 +376,51 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\Racket\Src\Bignum.c"
+				RelativePath="..\..\racket\src\bignum.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Bool.c"
+				RelativePath="..\..\racket\src\bool.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\builtin.c"
+				RelativePath="..\..\racket\src\builtin.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Char.c"
+				RelativePath="..\..\racket\src\char.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Compenv.c"
+				RelativePath="..\..\racket\src\compenv.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Compile.c"
+				RelativePath="..\..\racket\src\compile.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Complex.c"
+				RelativePath="..\..\racket\src\complex.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Dynext.c"
+				RelativePath="..\..\racket\src\dynext.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Env.c"
+				RelativePath="..\..\racket\src\env.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Error.c"
+				RelativePath="..\..\racket\src\error.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Eval.c"
+				RelativePath="..\..\racket\src\eval.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\File.c"
+				RelativePath="..\..\racket\src\file.c"
 				>
 			</File>
 			<File
@@ -343,183 +428,183 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Fun.c"
+				RelativePath="..\..\racket\src\fun.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Future.c"
+				RelativePath="..\..\racket\src\future.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\gmp\gmp.c"
+				RelativePath="..\..\racket\src\gmp\gmp.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Hash.c"
+				RelativePath="..\..\racket\src\hash.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\jit.c"
+				RelativePath="..\..\racket\src\jit.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\jitalloc.c"
+				RelativePath="..\..\racket\src\jitalloc.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\jitarith.c"
+				RelativePath="..\..\racket\src\jitarith.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\jitcall.c"
+				RelativePath="..\..\racket\src\jitcall.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\jitcommon.c"
+				RelativePath="..\..\racket\src\jitcommon.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\jitinline.c"
+				RelativePath="..\..\racket\src\jitinline.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\jitprep.c"
+				RelativePath="..\..\racket\src\jitprep.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\jitstack.c"
+				RelativePath="..\..\racket\src\jitstack.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\jitstate.c"
+				RelativePath="..\..\racket\src\jitstate.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\List.c"
+				RelativePath="..\..\racket\src\list.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\letrec_check.c"
+				RelativePath="..\..\racket\src\letrec_check.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\module.c"
+				RelativePath="..\..\racket\src\module.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\marshal.c"
+				RelativePath="..\..\racket\src\marshal.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\mzrt.c"
+				RelativePath="..\..\racket\src\mzrt.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\mzsj86.c"
+				RelativePath="..\..\racket\src\mzsj86.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\network.c"
+				RelativePath="..\..\racket\src\network.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\numarith.c"
+				RelativePath="..\..\racket\src\numarith.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Number.c"
+				RelativePath="..\..\racket\src\number.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\numcomp.c"
+				RelativePath="..\..\racket\src\numcomp.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\numstr.c"
+				RelativePath="..\..\racket\src\numstr.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\optimize.c"
+				RelativePath="..\..\racket\src\optimize.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\place.c"
+				RelativePath="..\..\racket\src\place.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Port.c"
+				RelativePath="..\..\racket\src\port.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\portfun.c"
+				RelativePath="..\..\racket\src\portfun.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Print.c"
+				RelativePath="..\..\racket\src\print.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Rational.c"
+				RelativePath="..\..\racket\src\rational.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Read.c"
+				RelativePath="..\..\racket\src\read.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Regexp.c"
+				RelativePath="..\..\racket\src\regexp.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\resolve.c"
+				RelativePath="..\..\racket\src\resolve.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Salloc.c"
+				RelativePath="..\..\racket\src\salloc.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Sema.c"
+				RelativePath="..\..\racket\src\sema.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Setjmpup.c"
+				RelativePath="..\..\racket\src\setjmpup.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\sfs.c"
+				RelativePath="..\..\racket\src\sfs.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\String.c"
+				RelativePath="..\..\racket\src\string.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Struct.c"
+				RelativePath="..\..\racket\src\struct.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Symbol.c"
+				RelativePath="..\..\racket\src\symbol.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Syntax.c"
+				RelativePath="..\..\racket\src\syntax.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\thread.c"
+				RelativePath="..\..\racket\src\thread.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\Type.c"
+				RelativePath="..\..\racket\src\type.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\validate.c"
+				RelativePath="..\..\racket\src\validate.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\vector.c"
+				RelativePath="..\..\racket\src\vector.c"
 				>
 			</File>
 		</Filter>

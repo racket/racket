@@ -2,6 +2,9 @@
 (require pict
          texpict/code
          mzlib/unit
+         racket/contract
+         racket/class
+         racket/draw
          (for-syntax racket/base
                      syntax/to-string
                      mzlib/list))
@@ -16,13 +19,44 @@
 (define-code code typeset-code)
 
 (provide code
-         current-code-line-sep
-         get-current-code-font-size
          define-code
          (for-syntax prop:code-transformer
                      code-transformer?
                      make-code-transformer))
-(provide-signature-elements code^)
+(provide-signature-elements
+ (except code^
+         typeset-code
+         current-code-font
+         current-code-tt
+         current-comment-color
+         current-keyword-color
+         current-id-color
+         current-literal-color
+         current-const-color
+         current-base-color
+         current-reader-forms
+         code-align
+         current-keyword-list
+         current-const-list
+         current-literal-list))
+(provide
+ (contract-out
+  [typeset-code (-> syntax? pict?)]
+  [current-code-font (parameter/c text-style/c)]
+  [current-code-tt (parameter/c (-> string? pict?))]
+  [get-current-code-font-size (parameter/c (-> exact-nonnegative-integer?))]
+  [current-code-line-sep (parameter/c real?)]
+  [current-comment-color (parameter/c (or/c string? (is-a?/c color%)))]
+  [current-keyword-color (parameter/c (or/c string? (is-a?/c color%)))]
+  [current-id-color (parameter/c (or/c string? (is-a?/c color%)))]
+  [current-literal-color (parameter/c (or/c string? (is-a?/c color%)))]
+  [current-const-color (parameter/c (or/c string? (is-a?/c color%)))]
+  [current-base-color (parameter/c (or/c string? (is-a?/c color%)))]
+  [current-reader-forms (parameter/c (listof symbol?))]
+  [code-align (-> pict? pict?)]
+  [current-keyword-list (parameter/c (listof string?))]
+  [current-const-list (parameter/c (listof string?))]
+  [current-literal-list (parameter/c (listof string?))]))
 
 (provide define-exec-code/scale
          define-exec-code)

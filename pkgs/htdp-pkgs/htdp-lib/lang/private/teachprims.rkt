@@ -491,7 +491,6 @@ namespace.
   (case-lambda
     [(tag check-result format-msg actual)
      (unless check-result
-       (displayln `(cerr ,actual))
        (err tag (string-append "expected " (a-or-an format-msg) " " format-msg ", but received ~e")
             actual))]
     [(tag check-result format-msg actual snd)
@@ -571,7 +570,7 @@ namespace.
 
 (define-teach beginner string-whitespace? 
   (lambda (s)
-    (cerr 'string-upper-case? (string? s)  "string" s)
+    (cerr 'string-whitespace? (string? s)  "string" s)
     (andmap char-whitespace? (string->list s))))
 
 ;; -----------------------------------------------------------------------------

@@ -86,8 +86,10 @@
                      snip
                      (- (unbox rb) (unbox lb))
                      (- (unbox bb) (unbox tb))
-                     (map (λ (c) (hash-ref num-ht c))
-                          (send snip get-children))))))
+                     (filter
+                      values
+                      (map (λ (c) (hash-ref num-ht c #f))
+                           (send snip get-children)))))))
       children-ht)))
 
 ;; run-dot : hash-table[snip -> (list i (listof number))] string -> void
@@ -178,12 +180,15 @@
              (join (parse-node line)
                    (loop))]
             [(regexp-match #rx"^edge" line)
-             (join (parse-edge line)
+             (join (parse-edge draw-edges possibly-update-max-y line)
                    (loop))]
             [(regexp-match #rx"stop" line)
              void]
             [else
-             (error 'parse-file "didn't recognize line:\n  ~s" line)])))))
+             (error 'mrlib/private/dot "didn't recognize line:\n  ~s" line)])))))
+  
+  (define (possibly-update-max-y y)
+    (set! max-y (max y max-y)))
   
   (define (join p1 p2)
     (cond
@@ -220,31 +225,6 @@
       
       (set! max-y (max (+ y h) max-y))
       void))
-        
-  (define (parse-edge line)
-    (define (give-up)
-      (error 'redex "could not parse edge line:\n  ~s\n" line))
-    (let* ([m (regexp-match #rx"edge ([^ ]+) ([^ ]+) ([0-9]+) (.*)$" line)]
-           [_ (unless m (give-up))]
-           [from (list-ref m 1)]
-           [to (list-ref m 2)]
-           [point-count (string->number (list-ref m 3))]
-           [rest (list-ref m 4)]
-           [points 
-            (let loop ([pts point-count]
-                       [rest rest])
-              (if (zero? pts) 
-                  '()
-                  (let* ([m (regexp-match #rx"^([-0-9.]+) ([-0-9.]+) (.*)$" rest)]
-                         [_ (unless m (give-up))]
-                         [x (string->number (list-ref m 1))]
-                         [y (string->number (list-ref m 2))])
-                    (set! max-y (max y max-y))
-                    (cons (list x y)
-                          (loop (- pts 1)
-                                (list-ref m 3))))))])
-      (λ (dc left top right bottom dx dy)
-        (draw-edges dc dx dy points))))
   
   ;; chomp : string -> (values string (union #f string))
   ;; returns the first word at the beginning of the string
@@ -272,7 +252,7 @@
                  (values (list-ref m 1)
                          #f))]
               [else
-               (error 'chomp "~s" s)])])])))
+               (error 'mrlib/private/dot "~s" s)])])])))
             
   (define (draw-edges dc dx dy raw-points)
     (let ([points (map (λ (x) (list (inches->pixels (car x))
@@ -299,6 +279,43 @@
   (main)
   (values positions
           max-y))
+
+(define (parse-edge draw-edges possibly-update-max-y line)
+  (define (give-up)
+    (error 'mrlib/private/dot "could not parse edge line:\n  ~s\n" line))
+  (define m (regexp-match #rx"edge ([^ ]+) ([^ ]+) ([0-9]+) (.*)$" line))
+  (unless m (give-up))
+  (define from (list-ref m 1))
+  (define to (list-ref m 2))
+  (define point-count (string->number (list-ref m 3)))
+  (define rest (list-ref m 4))
+  (define points 
+    (let loop ([pts point-count]
+               [rest rest])
+      (cond
+        [(zero? pts) '()]
+        [else
+         (define m (regexp-match #rx"^([-0-9e.]+) ([-0-9e.]+) (.*)$" rest))
+         (unless m (give-up))
+         (define x (string->number (list-ref m 1)))
+         (define y (string->number (list-ref m 2)))
+         (unless x (give-up))
+         (unless y (give-up))
+         (possibly-update-max-y y)
+         (cons (list x y)
+               (loop (- pts 1)
+                     (list-ref m 3)))])))
+  (λ (dc left top right bottom dx dy)
+    (draw-edges dc dx dy points)))
+
+(module+ test
+  (parse-edge
+   void
+   void
+   (string-append
+    "edge s0 s2 13 1.4555 4.7222 1.1487 4.6131 0.81639 4.4528 0.56944 4.2222 0.15175 3.8322"
+    " 3.7007e-17 3.6409 0 3.0694 0 3.0694 0 3.0694 0 2.0972 0 1.1469 1.2205 0.56102 1.7932 0.33843"
+    " solid black")))
 
 (define (pixels->inches x) (/ x 72))
 (define (inches->pixels x) (* x 72))

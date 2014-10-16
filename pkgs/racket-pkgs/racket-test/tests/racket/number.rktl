@@ -1243,6 +1243,31 @@
 (test 1 bitwise-bit-field (bitwise-not (expt 2 101)) 70 71)
 (test 7144187 bitwise-bit-field (expt 3 75) 0 24)
 
+;; More boundary checking, especially for returning a
+;; value that goes negative if mistreated as a fixnum:
+(let ()
+  (define (bitwise-bit-field* n start end)
+    (bitwise-and (sub1 (arithmetic-shift 1 (- end start)))
+                 (arithmetic-shift n (- start))))
+
+  (define (check-bit-field n)
+    (for ([i (in-range 200)])
+      (define lo 0)
+      (define hi i)
+      (test (bitwise-bit-field* n lo hi)
+            bitwise-bit-field n lo hi))
+    (for ([j (in-range 0 100)])
+      (for ([i (in-range j 200)])
+        (define lo (- i j))
+        (define hi i)
+        (test (bitwise-bit-field* n lo hi)
+              bitwise-bit-field n lo hi))))
+
+  (check-bit-field -1)
+  (check-bit-field (sub1 (expt 2 30)))
+  (check-bit-field (sub1 (expt 2 62)))
+  (check-bit-field (sub1 (arithmetic-shift 1 300))))
+
 (test 42 bitwise-bit-field 42 0 32)
 (test (sub1 (expt 2 32)) bitwise-bit-field -1 32 64)
 

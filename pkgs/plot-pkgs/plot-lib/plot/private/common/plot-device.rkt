@@ -130,7 +130,7 @@
       (send dc set-text-mode 'transparent)
       (when clipping-rect?
         (send dc set-clipping-rect 0 0 dc-x-size dc-y-size))
-      (set-font (plot-font-size) (plot-font-family))
+      (set-font (plot-font-size) (plot-font-face) (plot-font-family))
       (set-text-foreground (plot-foreground))
       (set-pen (plot-foreground) (plot-line-width) 'solid)
       (set-brush (plot-background) 'solid)
@@ -213,21 +213,31 @@
     ;; -----------------------------------------------------------------------------------------------
     ;; Text parameters
     
-    (define font-hash (make-hash))
-    
-    ;; Sets the font, using hash table to cache fonts.
+    ;; Sets the font, using the-font-list to cache fonts.
     (define/public set-font
       (case-lambda
         [(font)  (send dc set-font font)]
-        [(size family)
+        [(size family) (set-font size #f family)]
+        [(size face family)
          (send dc set-font
-               (hash-ref! font-hash (vector size family)
-                          (λ () (make-object font% (real->font-size size) family
-                                  'normal 'normal #f 'default #t))))]))
+               (if face
+                   (send the-font-list find-or-create-font
+                         (real->font-size size)
+                         face
+                         family
+                         'normal
+                         'normal)
+                   (send the-font-list find-or-create-font
+                         (real->font-size size)
+                         family
+                         'normal
+                         'normal)))]))
     
     ;; Sets only the font size, not the family.
     (define/public (set-font-size size)
-      (set-font size (send (send dc get-font) get-family)))
+      (set-font size 
+                (send (send dc get-font) get-face)
+                (send (send dc get-font) get-family)))
     
     ;; Returns the character height, as an exact real.
     (define/public (get-char-height)

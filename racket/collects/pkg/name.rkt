@@ -15,7 +15,10 @@
                                   (values (or/c #f string?) (or/c #f package-source-format?)))]
   [package-source->name (->* (string?)
                              ((or/c #f package-source-format?))
-                             (or/c #f string?))]))
+                             (or/c #f string?))]
+  [package-source->path (->* (string?)
+                             ((or/c #f 'file 'dir 'link 'static-link))
+                             path?)]))
 
 (define rx:package-name #rx"^[-_a-zA-Z0-9]+$")
 (define rx:archive #rx"[.](plt|zip|tar|tgz|tar[.]gz)$")
@@ -200,3 +203,13 @@
 (define (package-source->name s [given-type #f])
   (define-values (name type) (package-source->name+type s given-type))
   name)
+
+(define (package-source->path s [type #f])
+  ((if (memq type '(dir link static-link))
+       path->directory-path
+       values)
+   (cond
+    [(regexp-match? #rx"^file://" s)
+     (url->path (string->url s))]
+    [else
+     (string->path s)])))

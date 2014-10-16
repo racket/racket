@@ -1893,7 +1893,7 @@
                             " abandonnez l'installation ou la mise à jour actuelle, ou attendez-en la fin.")
   
   ;; open a file via a collection path (new "Open" menu item in DrRacket)
-  (open-collection-path "Ouvrir un chemin de répertoires pour une collection...")
+  ;; now obsolete; replaced by open-require-path (open-collection-path "Ouvrir un chemin de répertoires pour une collection...")
   (enter-subcollection "Spécifier une sous-collection") ; button in new dialog
   (path-to-racket-binary "Chemin de répertoires vers le fichier binaire")
   (use-a-different-racket "Utiliser une version de racket différente")

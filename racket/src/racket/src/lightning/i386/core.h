@@ -69,7 +69,7 @@ struct jit_local_state {
 #ifdef JIT_X86_SSE
   union {
     int	   i[2];
-    long   l;
+    intptr_t   l;
     double d;
   } d_data;
   jit_insn *tmp_label;

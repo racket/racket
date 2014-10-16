@@ -428,7 +428,7 @@ scheme_init_number (Scheme_Env *env)
 
 #ifdef MZ_LONG_DOUBLE
   scheme_long_floating_point_zero = get_long_double_zero();
-#if defined(HUGE_VALL) && !defined(USE_DIVIDE_MAKE_INFINITY)
+#if defined(HUGE_VALL) && !defined(USE_DIVIDE_MAKE_INFINITY) && !defined(MZ_LONG_DOUBLE_API_IS_EXTERNAL)
   scheme_long_infinity_val = HUGE_VALL;
 #else
 #ifndef USE_LONG_INFINITY_FUNC
@@ -1814,7 +1814,7 @@ int scheme_long_minus_zero_p(long_double d)
 long_double scheme_real_to_long_double(Scheme_Object *r)
 {
   if (SCHEME_INTP(r))
-    return long_double_from_int(SCHEME_INT_VAL(r));
+    return long_double_from_intptr(SCHEME_INT_VAL(r));
   else if (SCHEME_DBLP(r))
     return long_double_from_double(SCHEME_DBL_VAL(r));
   else if (SCHEME_LONG_DBLP(r))
@@ -3990,7 +3990,7 @@ static Scheme_Object *exact_to_extfl (int argc, Scheme_Object *argv[])
   Scheme_Type t;
 
   if (SCHEME_INTP(o))
-    return scheme_make_long_double(long_double_from_int(SCHEME_INT_VAL(o)));
+    return scheme_make_long_double(long_double_from_intptr(SCHEME_INT_VAL(o)));
 
   t = _SCHEME_TYPE(o);
   if (t == scheme_float_type)
@@ -4276,9 +4276,9 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
             if (v2 < (sizeof(intptr_t) * 8)) {
               if (SCHEME_INTP(so)) {
                 if (v1 < (sizeof(intptr_t) * 8)) {
-                  intptr_t res;
-                  res = ((SCHEME_INT_VAL(so) >> v1) & (((intptr_t)1 << v2) - 1));
-                  return scheme_make_integer(res);
+                  uintptr_t res;
+                  res = ((uintptr_t)(SCHEME_INT_VAL(so) >> v1) & (((uintptr_t)1 << v2) - 1));
+                  return scheme_make_integer_value_from_unsigned(res);
                 } else if (SCHEME_INT_VAL(so) > 0) 
                   return scheme_make_integer(0);
               } else if (SCHEME_BIGPOS(so)) {
@@ -4297,7 +4297,7 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
                   d |= (((Scheme_Bignum *)so)->digits[vd + 1] << avail);
                 }
                 d = (d & (((bigdig)1 << v2) - 1));
-                return scheme_make_integer(d);
+                return scheme_make_integer_value_from_unsigned(d);
               }
             }
           }
@@ -5118,7 +5118,7 @@ static Scheme_Object *fx_to_extfl (int argc, Scheme_Object *argv[])
   WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("fx->extfl"));
   if (!SCHEME_INTP(argv[0])) scheme_wrong_contract("fx->extfl", "fixnum?", 0, argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
-  return scheme_make_long_double(long_double_from_int(v));
+  return scheme_make_long_double(long_double_from_intptr(v));
 #else
   return unsupported("fx->extfl");
 #endif
@@ -5291,7 +5291,7 @@ static Scheme_Object *unsafe_fx_to_extfl (int argc, Scheme_Object *argv[])
   intptr_t v;
   if (scheme_current_thread->constant_folding) return exact_to_extfl(argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
-  return scheme_make_long_double(long_double_from_int(v));
+  return scheme_make_long_double(long_double_from_intptr(v));
 #else
   return fx_to_extfl(argc, argv);
 #endif

@@ -4,7 +4,7 @@
          "patterns.rkt"
          "parse-helper.rkt"
          "parse-quasi.rkt"
-         (for-template (only-in "runtime.rkt" matchable?)
+         (for-template (only-in "runtime.rkt" matchable? mlist? mlist->list)
                        racket/base))
 
 (provide parse)
@@ -136,10 +136,10 @@
      (raise-syntax-error 'match "incorrect use of ... in pattern" stx #'..)]
     [(list p .. . rest)
      (ddk? #'..)
-     (dd-parse rearm+parse #'p #'.. (syntax/loc stx (list . rest)))]
+     (dd-parse rearm+parse #'p #'.. (syntax/loc stx (list . rest)) #'list?)]
     [(mlist p .. . rest)
      (ddk? #'..)
-     (dd-parse rearm+parse #'p #'.. (syntax/loc stx (list . rest)) #:mutable #t)]
+     (dd-parse rearm+parse #'p #'.. (syntax/loc stx (list . rest)) #'mlist? #:to-list #'mlist->list #:mutable #t)]
     [(list e es ...)
      (Pair (rearm+parse #'e) (rearm+parse (syntax/loc stx (list es ...))))]
     [(mlist e es ...)
@@ -150,7 +150,7 @@
      (rearm+parse #'e)]
     [(list-rest p dd . rest)
      (ddk? #'dd)
-     (dd-parse rearm+parse #'p #'dd (syntax/loc stx (list-rest . rest)))]
+     (dd-parse rearm+parse #'p #'dd (syntax/loc stx (list-rest . rest)) #'list?)]
     [(list-rest e . es)
      (Pair (rearm+parse #'e) (rearm+parse (syntax/loc #'es (list-rest . es))))]
     [(cons e1 e2) (Pair (rearm+parse #'e1) (rearm+parse #'e2))]

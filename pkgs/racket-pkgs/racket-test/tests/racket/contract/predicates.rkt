@@ -75,6 +75,10 @@
                         (define-struct s (a) #:mutable)
                         (define alpha (new-∃/c 'alpha))
                         (struct/c s alpha)))
+  
+  (ctest #f flat-contract? (let ()
+                             (define-struct s (a))
+                             (struct/dc s [a #:lazy any/c])))
 
   (ctest #t chaperone-contract?
          (let ()

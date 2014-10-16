@@ -23,7 +23,7 @@
   (match-define (list z-str) (format-tick-labels (plot-z-ticks) z-min z-max (list z)))
   (format "(~a,~a,~a)" x-str y-str z-str))
 
-(define ((label3d-render-proc label v color size family anchor angle
+(define ((label3d-render-proc label v color size face family anchor angle
                               point-color point-fill-color point-size point-line-width point-sym
                               alpha)
          area)
@@ -31,7 +31,7 @@
     (send area put-alpha alpha)
     ; label
     (send area put-text-foreground color)
-    (send area put-font size family)
+    (send area put-font size face family)
     (send area put-text (string-append " " label " ") v anchor angle (* 1/2 point-size)
           #:outline? #t #:layer plot3d-front-layer)
     ; point
@@ -45,6 +45,7 @@
           [v (sequence/c real?)] [label (or/c string? #f) #f]
           [#:color color plot-color/c (plot-foreground)]
           [#:size size (>=/c 0) (plot-font-size)]
+          [#:face face (or/c string? #f) (plot-font-face)]
           [#:family family font-family/c (plot-font-family)]
           [#:anchor anchor anchor/c (label-anchor)]
           [#:angle angle real? (label-angle)]
@@ -59,7 +60,7 @@
     (match-define (vector x y z) v)
     (renderer3d (vector (ivl x x) (ivl y y) (ivl z z)) #f #f
                 (label3d-render-proc
-                 label v color size family anchor angle
+                 label v color size face family anchor angle
                  point-color (cond [(eq? point-fill-color 'auto)  (->pen-color point-color)]
                                    [else  point-fill-color])
                  point-size point-line-width point-sym

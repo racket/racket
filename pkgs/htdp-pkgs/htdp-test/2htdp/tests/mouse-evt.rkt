@@ -2,7 +2,7 @@
 
 (require 2htdp/universe)
 (require htdp/image)
-(require test-engine/scheme-tests)
+(require "test-aux.rkt")
 
 (define-struct posn (x y) #:transparent)
 
@@ -24,8 +24,6 @@
     [else
      (place-image sq (posn-x a-world) (posn-y a-world) mt)]))
 
-(check-expect (mouse-handler 'w 100 100 "leave") (make-posn 250 250))
-
 (define (mouse-handler w x y me)
   (cond
     [(string=? "button-down" me) w]
@@ -41,6 +39,7 @@
 (define (main w)
   (big-bang world1 (on-draw draw) (stop-when out?) (on-mouse mouse-handler)))
 
-(test)
+(check-equal? (mouse-handler 'w 100 100 "leave") (make-posn 250 250))
 
-(main 0)
+(testing
+  (main 0))

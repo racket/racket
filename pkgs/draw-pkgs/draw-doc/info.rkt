@@ -11,6 +11,7 @@
                      "scribble-lib"
                      "draw-lib"
                      "racket-doc"))
+(define update-implies '("draw-lib"))
 
 (define pkg-desc "documentation part of \"draw\"")
 

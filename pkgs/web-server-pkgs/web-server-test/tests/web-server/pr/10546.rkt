@@ -1,6 +1,6 @@
 #lang racket
 
-(define here (current-directory))
+(define here (find-system-path 'temp-dir))
 (define txt (build-path here "some.txt"))
 
 (with-output-to-file txt
@@ -11,7 +11,7 @@ Here is some text that looks at @this
 END
   )))
 
-(with-output-to-file "relative.rkt"
+(with-output-to-file (build-path here "relative.rkt")
   #:exists 'replace
   (lambda ()
     (display #<<END
@@ -24,7 +24,7 @@ END
 END
   )))
 
-(with-output-to-file "absolute.rkt"
+(with-output-to-file (build-path here "absolute.rkt")
   #:exists 'replace
   (lambda ()
     (display #<<END
@@ -45,11 +45,12 @@ END
 )))
 
 (require tests/eli-tester)
-(define rel (dynamic-require "relative.rkt" 'ans))
-(define abs (dynamic-require "absolute.rkt" 'ans))
-(test
-  rel => abs
-  rel => "Here is some text that looks at 5")
+(parameterize ([current-directory here])
+  (define rel (dynamic-require "relative.rkt" 'ans))
+  (define abs (dynamic-require "absolute.rkt" 'ans))
+  (test
+   rel => abs
+   rel => "Here is some text that looks at 5"))
 
 
 

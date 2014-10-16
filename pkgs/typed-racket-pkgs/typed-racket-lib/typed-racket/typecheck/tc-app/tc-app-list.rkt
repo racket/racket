@@ -9,6 +9,7 @@
          (types abbrev utils union substitute)
          (rep type-rep)
          (env tvar-env)
+         (prefix-in i: (infer infer))
 
          (for-label
           racket/base
@@ -51,7 +52,7 @@
            [(tc-result1: (Listof: elem-type)) (ret elem-type)]
            [else (fail)]))
        ;; Do not check this in an environment where bound0 is a type variable.
-       (define f-type (tc-expr #'f))
+       (define f-type (tc-expr/t #'f))
        ;; Check that the function applies successfully to the element type
        ;; We need the bound to be considered a type var here so that inference works
        (match (extend-tvars (list bound0)
@@ -66,7 +67,7 @@
   ;; ormap/andmap of ... argument
   (pattern (~and form (m:boolmap f arg))
     (match-let* ([arg-ty (tc-expr/t #'arg)]
-                 [ft (tc-expr #'f)])
+                 [ft (tc-expr/t #'f)])
       (match (match arg-ty
                ;; if the argument is a ListDots
                [(ListDots: t bound)
@@ -81,22 +82,23 @@
         [_ (tc/app-regular #'form expected)])))
   ;; special case for `list'
   (pattern (list . args)
-    (match expected
-      [(tc-result1: (Listof: elem-ty))
-       (for ([i (in-syntax #'args)])
-         (tc-expr/check i (ret elem-ty)))
-       (ret (-lst elem-ty))]
-      [(tc-result1: (List: (? (lambda (ts) (= (syntax-length #'args)
-                                              (length ts)))
-                              ts)))
-       (ret (-Tuple
-              (for/list ([ac (in-syntax #'args)]
-                         [exp (in-list ts)])
-                (tc-expr/check/t ac (ret exp)))))]
-      [_ (ret (-Tuple (stx-map tc-expr/t #'args)))]))
+    (let ()
+      (define vs (stx-map (λ (x) (gensym)) #'args))
+      (define l-type (-Tuple (map make-F vs)))
+      (define subst
+        (match expected
+          [(tc-result1: t)
+           ;; We want to infer the largest vs that are still under the element types
+           (i:infer vs null (list l-type) (list t) (-values (list (-> l-type Univ))))]
+          [_ #f]))
+      (ret (-Tuple
+             (for/list ([i (in-syntax #'args)] [v (in-list vs)])
+                (if subst
+                    (tc-expr/check/t i (ret (subst-all subst (make-F v))))
+                    (tc-expr/t i)))))))
   ;; special case for `list*'
-  (pattern (list* . args)
-    (match-let* ([(list tys ... last) (stx-map tc-expr/t #'args)])
+  (pattern (list* (~between args:expr 1 +inf.0) ...)
+    (match-let* ([(list tys ... last) (stx-map tc-expr/t #'(args ...))])
       (ret (foldr -pair last tys))))
   ;; special case for `reverse' to propagate expected type info
   (pattern ((~and fun (~or reverse k:reverse)) arg)
@@ -111,4 +113,4 @@
          [(tc-result1: (List: ts))
           (ret (-Tuple (reverse ts)))]
          [arg-ty
-          (tc/funapp #'fun #'(arg) (single-value #'fun) (list arg-ty) expected)])])))
+          (tc/funapp #'fun #'(arg) (tc-expr/t #'fun) (list arg-ty) expected)])])))

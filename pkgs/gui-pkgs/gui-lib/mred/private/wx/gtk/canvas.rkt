@@ -242,6 +242,7 @@
               is-auto-scroll? is-disabled-scroll?
               get-virtual-width get-virtual-height
               refresh-for-autoscroll refresh-all-children
+	      reset-auto-scroll
               get-eventspace
 	      register-extra-gtk)
 
@@ -340,7 +341,8 @@
 
      (define for-gl? (memq 'gl style))
      (when for-gl?
-       (prepare-widget-gl-context client-gtk gl-config))
+       (prepare-widget-gl-context client-gtk gl-config)
+       (gtk_widget_set_double_buffered client-gtk #f))
 
      (define dc #f)
 
@@ -368,6 +370,9 @@
 
      (define/override (set-size x y w h)
        (super set-size x y w h)
+       (when (and (is-auto-scroll?)
+                  (not (is-panel?)))
+         (reset-auto-scroll))
        (on-size))
      
      (set! dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))

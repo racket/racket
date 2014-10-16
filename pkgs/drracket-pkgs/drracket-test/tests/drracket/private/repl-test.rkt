@@ -802,7 +802,7 @@ This produces an ACK message
    
    (mktest (to-strings
             '(let ([on (current-namespace)]
-                   [n ((current-module-name-resolver) 'mred #f #f)])
+                   [n ((current-module-name-resolver) 'mred #f #f #t)])
                (current-namespace (make-namespace))
                (namespace-attach-module on n))
             '(require texpict/utils)

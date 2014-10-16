@@ -315,12 +315,22 @@
   /************** x86/OpenBSD with gcc ****************/
               /* Thanks to Bengt Kleberg */
 
-#if defined(__OpenBSD__) && (defined(__i386__) || defined(i386) || defined(__x86_64__))
+#if defined(__OpenBSD__)
 
 # if defined(__x86_64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-openbsd"
-# else
+# elif defined(__i386__) || defined(i386)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-openbsd"
+# elif defined(__mips64__)
+#  if defined(__MIPSEL__)
+#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips64el-openbsd"
+#  else
+#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips64-openbsd"
+#  endif
+# elif defined(__hppa__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "hppa-openbsd"
+# else
+#  error Unported platform.
 # endif
 
 # include "uconfig.h"
@@ -358,8 +368,6 @@
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
 # define MZ_TRY_EXTFLONUMS
-#else
-# error Unported platform.
 #endif
 
 # define FLAGS_ALREADY_SET
@@ -430,7 +438,7 @@
   /************** SGI/IRIX with SGI cc ****************/
 
 #if  (defined(mips) || defined(__mips)) \
-     && !(defined(ultrix) || defined(__ultrix) || defined(linux))
+     && !(defined(ultrix) || defined(__ultrix) || defined(linux) || defined(__OpenBSD__))
 
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips-irix"
 
@@ -474,7 +482,8 @@
 
   /************** ALPHA/OSF1 with gcc ****************/
 
-# if (defined(__alpha) || defined(__alpha__)) && !defined(linux) && !defined(__NetBSD__)
+# if (defined(__alpha) || defined(__alpha__)) \
+    && !defined(linux) && !defined(__NetBSD__) && !defined(__OpenBSD__)
 
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-osf1"
 
@@ -562,19 +571,15 @@
 # if defined(_MSC_VER) || defined(__MINGW32__)
 #  define NO_READDIR
 #  define USE_FINDFIRST
-#  define NO_READLINK
 #  define MKDIR_NO_MODE_FLAG
 # endif
 # if defined(__BORLANDC__)
 #  define DIRENT_NO_NAMLEN
-#  define NO_READLINK
 #  define MKDIR_NO_MODE_FLAG
 # endif
 
 # define TIME_SYNTAX
-# define USE_FTIME
-# define USE_TIMEZONE_VAR_W_DLS
-# define USE_TZNAME_VAR
+# define USE_WIN32_TIME
 # define WINDOWS_GET_PROCESS_TIMES
 # define GETENV_FUNCTION
 # define DIR_FUNCTION
@@ -588,7 +593,7 @@
    the actual size from the executable on startup: */
 # define WINDOWS_DEFAULT_STACK_SIZE 1048576
 
-# ifndef _WIN64
+# if !defined(_WIN64) || (_MSC_VER >= 1600)
 #  define USE_MZ_SETJMP
 # endif
 
@@ -852,46 +857,6 @@
 
 # endif
 
-  /************** DOS with Borland C++ ****************/
-  /*          (Never successfully supported)          */
-
-#if defined(__BORLANDC__) && defined(__MSDOS__)
-
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "dos\\i386"
-
-# define USE_SENORA_GC
-# define DOS_FAR_POINTERS
-# define SMALL_HASH_TABLES
-
-# define SYSTEM_TYPE_NAME "dos"
-# define DOS_FILE_SYSTEM
-# define USE_GETDISK
-# define DIRENT_NO_NAMLEN
-# define NO_READLINK
-# define MKDIR_NO_MODE_FLAG
-
-# define TIME_SYNTAX
-# define USE_FTIME
-# define GETENV_FUNCTION
-# define DIR_FUNCTION
-
-# define DO_STACK_CHECK
-# define USE_STACKAVAIL
-# define STACK_SAFETY_MARGIN 15000
-
-# define IGNORE_BY_CONTROL_87
-
-# define DIR_INCLUDE
-# define IO_INCLUDE
-# define NO_SLEEP
-# define DONT_IGNORE_PIPE_SIGNAL
-
-# define REGISTER_POOR_MACHINE
-
-# define FLAGS_ALREADY_SET
-
-#endif
-
   /************ QNX *************/
 
 #if defined(__QNX__)
@@ -918,7 +883,6 @@
 #if defined(i386)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
-# define MZ_USE_DWARF_LIBUNWIND
 #endif
 #if defined(__x86_64__)
 # define MZ_USE_JIT_X86_64
@@ -1024,6 +988,8 @@
  
  /* USE_MACTIME uses the Mac toolbox to implement time functions. */
 
+ /* USE_WIN32_TIME uses the Win32 API to implement time functions. */
+
  /* CLOCK_IS_USER_TIME uses the system time for user milliseconds. */
 
  /* USER_TIME_IS_CLOCK uses the user time for system milliseconds. */
@@ -1078,8 +1044,6 @@
  /* NO_STAT_PROC means that there is no stat() function. */
 
  /* NO_MKDIR means that there is no mkdir() function. */
-
- /* NO_READLINK means that there is no readlink() function. */
 
  /* BROKEN_READLINK_NUL_TERMINATOR means that readlink() may
     report a length that includes trailing NUL terminators,

@@ -449,7 +449,9 @@ used to represent various atomic types:
 
  @item{@racket['string] --- a string}
 
- @item{@racket['date] --- a @racket[date] or @racket[date*]}
+ @item{@racket['date] --- a @racket[date] or @racket[date*]; when converting to
+       a @racket[date*], the timezone is reported as @racket["UTC"] and the
+       @racket[year-day] field is @racket[0]}
 
  @item{@racket['com-object] --- a @tech{COM object} as in @racket[com-object?]}
 

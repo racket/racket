@@ -584,6 +584,8 @@
                             [name (object-name orig-in)]
                             [delta 0]
                             #:init-position [init-position 1])
+  (define buffer-mode (or (file-stream-buffer-mode orig-in)
+                          'block))
   (make-input-port/read-to-peek
    name
    (lambda (s)
@@ -595,7 +597,14 @@
    void
    #f
    void
-   init-position))
+   init-position
+   (case-lambda
+    [() buffer-mode]
+    [(mode)
+     (when (file-stream-buffer-mode orig-in)
+       (file-stream-buffer-mode orig-in mode))
+     (set! buffer-mode mode)])
+   (eq? buffer-mode 'block)))
 
 (define relocate-input-port
   (lambda (p line col pos [close? #t])
@@ -1026,7 +1035,11 @@
                 (if (eq? n 0)
                     (if (and progress-evt (sync/timeout 0 progress-evt))
                         #f
-                        (wrap-evt port (lambda (x) 0)))
+                        (wrap-evt (if (zero? skip)
+                                      port
+                                      (choice-evt (or progress-evt never-evt)
+                                                  (peek-bytes-evt 1 skip progress-evt port)))
+                                  (lambda (x) 0)))
                     n)))))
       (define (try-again)
         (wrap-evt
@@ -1576,7 +1589,7 @@
                                                        bytes-convert/post-nl
                                                        bytes-convert)
                                                      c buf buf-start buf-end ready-bytes)])
-                  (unless (memq status '(continues complete))
+                  (unless (positive? got-c)
                     (decode-error "unable to make decoding progress"
                                   port))
                   (set! ready-start 0)

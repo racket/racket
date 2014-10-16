@@ -51,12 +51,10 @@ position structures returned by matrix-where?
 (require htdp/matrix-sig
          htdp/matrix-render-sig
          htdp/matrix-unit
-         mrlib/matrix-snip)
-
-(require mzlib/class
-         mzlib/string
-         mred
-         mrlib/matrix-snip)
+         mrlib/matrix-snip
+         ; mzlib/string
+         mzlib/class mrlib/matrix-snip
+         mred)
 
 ;; ---------------------------------------------------------------------------
 
@@ -192,3 +190,4 @@ position structures returned by matrix-where?
 (define-values/invoke-unit invisible-matrix@ (import) (export matrix^))
 
 (provide-signature-elements matrix^)
+(provide snip-class)

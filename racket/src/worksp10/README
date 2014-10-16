@@ -1,5 +1,0 @@
-This directory contains solution and project files for Visual Studio 2010.
-
-Only the solution and project files are here, so this directory cannot
-be used by itself to build Racket.  To build, you need to move files
-from here to their respective places in the "worksp" directory.

@@ -393,7 +393,9 @@
     (set-multisample-size (->m (integer-in 0 256) void?))
     (set-stencil-size (->m (integer-in 0 256) void?))
     (set-stereo (->m any/c void?))
-    (set-share-context (->m (or/c (is-a?/c gl-context%) #f) void?))))
+    (set-share-context (->m (or/c (is-a?/c gl-context%) #f) void?))
+    (get-legacy? (->m boolean?))
+    (set-legacy? (->m any/c void?))))
 
 (define bitmap%/c
   (class/c

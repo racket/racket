@@ -9,4 +9,8 @@
 (define pkg-authors '(jay mflatt))
 
 (define build-deps 
-  '("base" "html-lib" "rackunit-lib" "scribble-lib"))
+  '("racket-index"
+    "base"
+    "html-lib"
+    "rackunit-lib"))
+(define update-implies '("html-lib"))

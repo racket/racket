@@ -98,10 +98,11 @@
     (unless (_stipple . is-a? . bitmap%)
       (raise-type-error (init-name 'pen%)
                         "bitmap% or #f"
-                        _stipple))
-    (set-stipple _stipple))
+                        _stipple)))
 
   (super-new)
+
+  (when _stipple (set-stipple _stipple))
 
   (define/public (set-immutable) (set! immutable? #t))
   (define/public (is-immutable?) (or immutable? (positive? lock-count)))

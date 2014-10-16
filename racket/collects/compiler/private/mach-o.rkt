@@ -357,13 +357,13 @@
           (check-same exe-id (read-ulong p))
           (read-ulong p)
           (read-ulong p)
-          (check-same #x2 (read-ulong p))
+          (read-ulong p) ; 2 is executable, etc.
           (let* ([cnt (read-ulong p)]
                  [cmdssz (read-ulong p)])
             (read-ulong p)
             (when (equal? exe-id #xFeedFacf)
               (read-ulong p))
-            (let loop ([cnt cnt][base 0][delta 0][result #f])
+            (let loop ([cnt cnt] [base 0] [delta 0] [result null])
               (if (zero? cnt)
                   result
                   (let ([pos (file-position p)]
@@ -410,7 +410,7 @@
                                    (write-bytes (make-bytes (- newnamelen (bytes-length new-path)) 0) out)
                                    (flush-output out))
                                  (file-position p (+ pos sz delta))
-                                 (loop (sub1 cnt) pos delta segname))
+                                 (loop (sub1 cnt) pos delta (cons segname result)))
                                (begin
                                  (file-position p (+ pos sz))
                                  (loop (sub1 cnt) base delta result)))))]

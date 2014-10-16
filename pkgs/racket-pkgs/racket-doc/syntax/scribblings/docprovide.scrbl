@@ -5,6 +5,8 @@
 
 @defmodule[syntax/docprovide]
 
+@deprecated[@racketmodname[scribble/srcdoc]]
+
 @defform/subs[#:literals (all-from all-from-except)
               (provide-and-document doc-label-id doc-row ...)
               ([doc-row 

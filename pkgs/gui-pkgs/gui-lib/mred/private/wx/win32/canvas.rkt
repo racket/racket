@@ -105,7 +105,7 @@
                              "PLTTabPanel"
                              #f
                              (bitwise-ior WS_CHILD)
-                             0 0 w h
+                             0 0 (->screen w) (->screen h)
                              (send parent get-content-hwnd)
                              #f
                              hInstance
@@ -122,7 +122,7 @@
                                      (if panel-hwnd WS_VISIBLE 0)
                                      (if hscroll? WS_HSCROLL 0)
                                      (if vscroll? WS_VSCROLL 0))
-                        0 0 w h
+                        0 0 (->screen w) (->screen h)
                         (or panel-hwnd (send parent get-content-hwnd))
                         #f
                         hInstance
@@ -136,7 +136,7 @@
                                                   CBS_DROPDOWNLIST 
                                                   WS_HSCROLL WS_VSCROLL
                                                   WS_BORDER WS_CLIPSIBLINGS)
-                                     0 0 w h
+                                     0 0 (->screen w) (->screen h)
                                      panel-hwnd
                                      #f
                                      hInstance
@@ -148,7 +148,7 @@
                             "PLTTabPanel"
                             #f
                             (bitwise-ior WS_CHILD WS_CLIPSIBLINGS WS_VISIBLE)
-                            0 0 w h
+                            0 0 (->screen w) (->screen h)
                             canvas-hwnd
                             #f
                             hInstance
@@ -157,6 +157,8 @@
 
      (define hwnd (or panel-hwnd canvas-hwnd))
      (define dc #f)
+
+     (define next-scroll-is-change? #f)
 
      (super-new [parent parent]
                 [hwnd hwnd]
@@ -237,7 +239,15 @@
          (when vscroll?
            (on-scroll-change SB_VERT (LOWORD wParam)))
          0]
-        [else (super wndproc w msg wParam lParam default)]))
+        [else
+	 (when (= msg WM_GESTURE)
+	   ;; The fall-though wndproc might generate a WM_*SCROLL
+	   ;; event for us, but we need to force an update,
+	   ;; because the generated event happens after the position
+	   ;; is changed. And if it doesn't generate a scroll, then
+	   ;; it's ok to have an occassional spurious update.
+	   (set! next-scroll-is-change? #t))
+	 (super wndproc w msg wParam lParam default)]))
      
      (define/override (wndproc-for-ctlproc w msg wParam lParam default)
        ;; act on clicks for a combo field:
@@ -282,10 +292,13 @@
        (when panel-hwnd
          (let* ([r (and (or (= w -1) (= h -1))
                         (GetWindowRect hwnd))]
-                [w (if (= w -1) (- (RECT-right r) (RECT-left r)) w)]
-                [h (if (= h -1) (- (RECT-bottom r) (RECT-top r)) h)])
-           (MoveWindow canvas-hwnd 0 0 (max 1 (- w COMBO-WIDTH)) h #t)
-           (MoveWindow combo-hwnd 0 0 (max 1 w) (- h 2) #t)))
+                [w (if (= w -1) (->normal (- (RECT-right r) (RECT-left r))) w)]
+                [h (if (= h -1) (->normal (- (RECT-bottom r) (RECT-top r))) h)])
+           (MoveWindow canvas-hwnd 0 0 (->screen (max 1 (- w COMBO-WIDTH))) (->screen h) #t)
+           (MoveWindow combo-hwnd 0 0 (->screen (max 1 w)) (->screen (- h 2)) #t)))
+       (when (and (is-auto-scroll?)
+                  (not (is-panel?)))
+         (reset-auto-scroll))
        (on-size))
 
      ;; this `on-size' method is for `editor-canvas%', only:
@@ -489,7 +502,9 @@
                  [(= part SB_PAGEDOWN) (min (SCROLLINFO-nMax i) (+ (SCROLLINFO-nPos i) (SCROLLINFO-nPage i)))]
                  [(= part SB_THUMBTRACK) (SCROLLINFO-nTrackPos i)]
                  [else (SCROLLINFO-nPos i)])])
-           (unless (= new-pos (SCROLLINFO-nPos i))
+           (unless (or (= new-pos (SCROLLINFO-nPos i))
+		       next-scroll-is-change?)
+	     (set! next-scroll-is-change? #f)
              (set-SCROLLINFO-nPos! i new-pos)
              (set-SCROLLINFO-fMask! i SIF_POS)
              (SetScrollInfo canvas-hwnd dir i #t)
@@ -615,14 +630,14 @@
     (define/override (notify-child-extent x y)
       (let* ([content-hwnd (get-content-hwnd)]
              [r (GetWindowRect content-hwnd)]
-             [w (- (RECT-right r) (RECT-left r))]
-             [h (- (RECT-bottom r) (RECT-top r))])
+             [w (->normal (- (RECT-right r) (RECT-left r)))]
+             [h (->normal (- (RECT-bottom r) (RECT-top r)))])
         (when (or (> x w) (> y h))
           (let ([pr (GetWindowRect (get-client-hwnd))])
             (MoveWindow content-hwnd 
-                        (- (RECT-left r) (RECT-left pr)) 
+                        (- (RECT-left r) (RECT-left pr))
                         (- (RECT-top r) (RECT-top pr))
-                        (max w x) (max y h)
+                        (->screen (max w x)) (->screen (max y h))
                         #t)))))
 
     (define/override (reset-dc-for-autoscroll)
@@ -632,8 +647,8 @@
              [w (- (RECT-right r) (RECT-left r))]
              [h (- (RECT-bottom r) (RECT-top r))])
         (MoveWindow content-hwnd 
-                    (- (get-virtual-h-pos))
-                    (- (get-virtual-v-pos))
+                    (->screen (- (get-virtual-h-pos)))
+                    (->screen (- (get-virtual-v-pos)))
                     w h
                     #t)))
 

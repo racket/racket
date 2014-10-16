@@ -40,7 +40,7 @@ for the new structure subtype, then the resulting structure type has
 a subtype than in its base type.
 
 If @math{m'} of the original @math{m} fields are non-automatic (where
-@math{m'<m}), and @math{n'} of the new fields are automatic (where
+@math{m'<m}), and @math{n'} of the new fields are non-automatic (where
 @math{n'<n}), then @math{m'+n'} field values must be provided to the
 subtype's constructor procedure. Values for the first @math{m} fields
 of a subtype instance are accessed with selector procedures for the

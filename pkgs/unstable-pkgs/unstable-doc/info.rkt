@@ -32,6 +32,7 @@
                      "pict-doc"
                      "scribble-doc"
                      "slideshow-doc"))
+(define update-implies '("unstable-lib"))
 
 (define pkg-desc "documentation part of \"unstable\"")
 

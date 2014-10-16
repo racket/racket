@@ -1,0 +1,168 @@
+#lang racket/base
+(require racket/class
+         racket/draw
+         racket/list
+         racket/set
+         compiler/cm
+         setup/dirs
+         planet/config
+         pkg/lib
+         framework/preferences
+         (prefix-in *** '#%foreign) ;; just to make sure it is here
+         )
+
+(provide set-basic-parameters/no-gui
+         set-module-language-parameters
+         (struct-out prefab-module-settings)
+         transform-module
+         get-init-dir)
+
+(preferences:set-default 'drracket:child-only-memory-limit
+                         (* 1024 1024 128)
+                         (λ (x) (or (not x)
+                                    (and (exact-integer? x)
+                                         (x . >= . (* 1024 1024 8))))))
+
+;; get-init-dir : (or/c path? #f) -> path?
+;; returns the initial directory for a program
+;; that is saved in 'path/f' (with #f indicating
+;; an unsaved file)
+(define (get-init-dir path/f)
+  (cond
+    [path/f
+     (let-values ([(base name dir?) (split-path path/f)])
+       base)]
+    [else
+     (find-system-path 'home-dir)]))
+
+(struct prefab-module-settings
+  (command-line-args
+   collection-paths
+   compilation-on?
+   full-trace?
+   annotations
+   enforce-module-constants)
+  #:prefab)
+
+(define orig-namespace (current-namespace))
+
+(define (set-basic-parameters/no-gui)
+  (let ([cust (current-custodian)])
+    (define (drracket-plain-exit-handler arg)
+      (custodian-shutdown-all cust))
+    (exit-handler drracket-plain-exit-handler))
+  (current-thread-group (make-thread-group))
+  (current-command-line-arguments #())
+  (current-pseudo-random-generator (make-pseudo-random-generator))
+  (current-evt-pseudo-random-generator (make-pseudo-random-generator))
+  (read-curly-brace-as-paren #t)
+  (read-square-bracket-as-paren #t)
+  (error-print-width 250)
+  (current-ps-setup (make-object ps-setup%))
+  (current-namespace (make-base-empty-namespace))
+  ;; is this wise?
+  #;(namespace-attach-module orig-namespace ''#%foreign))
+  
+
+(define (set-module-language-parameters settings 
+                                        module-language-parallel-lock-client
+                                        currently-open-files
+                                        #:use-use-current-security-guard? [use-current-security-guard? #f])
+  (current-command-line-arguments (prefab-module-settings-command-line-args settings))
+  (let* ([default (current-library-collection-paths)]
+         [cpaths (append-map (λ (x) (if (symbol? x) default (list x)))
+                             (prefab-module-settings-collection-paths settings))])
+    (when (null? cpaths)
+      (eprintf "WARNING: your collection paths are empty!\n"))
+    (current-library-collection-paths cpaths))
+  
+  (compile-context-preservation-enabled (prefab-module-settings-full-trace? settings))
+  (compile-enforce-module-constants (prefab-module-settings-enforce-module-constants settings))
+  (define path->pkg-cache (make-hash))
+  (when (prefab-module-settings-compilation-on? settings)
+    (define pkg-directory-cache (make-hash))
+    (define (pkg-directory/use-cache pkg)
+      (cond
+        [(hash-ref pkg-directory-cache pkg #f)
+         =>
+         values]
+        [else
+         (define ans (pkg-directory pkg))
+         (hash-set! pkg-directory-cache pkg ans)
+         ans]))
+    
+    (define open-pkgs
+      (for/fold ([s (set)]) ([path (in-list currently-open-files)])
+        (define pkg (path->pkg path #:cache path->pkg-cache))
+        (if (and pkg
+                 (memq 'write
+                       (file-or-directory-permissions (pkg-directory/use-cache pkg))))
+            (set-add s pkg)
+            s)))
+    (for ([pkg (in-set open-pkgs)])
+      (log-info "DrRacket: enabling bytecode-file compilation for package ~s" pkg))
+    
+    (define skip-path?
+      (let* ([cd (find-collects-dir)]
+             [sd (find-share-dir)]
+             [no-dirs (append
+                       (list (CACHE-DIR))
+                       (if cd (list cd) null)
+                       (if sd (list sd) null))])
+        (λ (p) (or (file-stamp-in-paths p no-dirs)
+                   (let ([pkg (path->pkg p #:cache path->pkg-cache)])
+                     (and pkg
+                          (not (set-member? open-pkgs pkg))
+                          (file-stamp-in-paths p (list (pkg-directory/use-cache pkg)))))))))
+    
+    (define extra-compiled-file-path
+      (case (prefab-module-settings-annotations settings)
+        [(none) (build-path "compiled" "drracket")]
+        [(debug) (build-path "compiled" "drracket" "errortrace")]
+        [else #f]))
+    (when extra-compiled-file-path
+      ;; Add extra compiled-file path:
+      (use-compiled-file-paths
+       (cons extra-compiled-file-path
+             (use-compiled-file-paths)))
+      ;; If we ever skip a file, then don't use the extra compiled-file
+      ;; path for the skipped file's dependencies (because modules
+      ;; compiled against the non-DrRacket-generated bytecode might not
+      ;; work with any DrRacket-generated bytecode that is sitting around):
+      (current-load/use-compiled
+       (let ([orig (current-load/use-compiled)])
+         (lambda (path mod-name)
+           (if (and (member extra-compiled-file-path (use-compiled-file-paths))
+                    (skip-path? path))
+               (parameterize ([use-compiled-file-paths
+                               (remove extra-compiled-file-path 
+                                       (use-compiled-file-paths))])
+                 (orig path mod-name))
+               (orig path mod-name))))))
+    ;; Install the compilation manager:
+    (parallel-lock-client module-language-parallel-lock-client)
+    (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler 
+                                #t
+                                #:security-guard (and use-current-security-guard?
+                                                      (current-security-guard))))
+    (manager-skip-file-handler skip-path?)))
+
+(define (transform-module filename stx raise-hopeless-syntax-error)
+  (define-values (mod name lang body)
+    (syntax-case stx ()
+      [(module name lang . body)
+       (eq? 'module (syntax-e #'module))
+       (values #'module #'name #'lang #'body)]
+      [_ (raise-hopeless-syntax-error
+          (string-append "only a module expression is allowed, either\n"
+                         "    #lang <language-name>\n or\n"
+                         "    (module <name> <language> ...)\n")
+          stx)]))
+  (define name* (syntax-e name))
+  (unless (symbol? name*)
+    (raise-hopeless-syntax-error "bad syntax in name position of module"
+                                 stx name))
+  (let* (;; rewrite the module to use the racket/base version of `module'
+         [mod  (datum->syntax #'here 'module mod)]
+         [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx stx)])
+    (values name lang expr)))

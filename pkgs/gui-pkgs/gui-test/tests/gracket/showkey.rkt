@@ -47,7 +47,7 @@
                     "")))
       (define/override (on-char ev)
         (set! iter (add1 iter))
-        (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-codes: ~a\n  mods:~a~a~a~a~a~a~a~a\n" 
+        (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-codes: ~a\n  mods:~a~a~a~a~a~a~a~a~a\n"
                 (es-check)
                 iter
                 (let ([v (send ev get-key-code)])
@@ -70,6 +70,7 @@
                        vs))
                 (if (send ev get-meta-down) " META" "")
                 (if (send ev get-control-down) " CTL" "")
+                (if (send ev get-control+meta-is-altgr) " = ALTGR" "")
                 (if (send ev get-alt-down) " ALT" "")
                 (if (send ev get-shift-down) " SHIFT" "")
                 (if (send ev get-caps-down) " CAPS" "")

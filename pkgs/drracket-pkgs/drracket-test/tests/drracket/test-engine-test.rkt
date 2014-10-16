@@ -522,5 +522,4 @@
 
 (module+ test
   (module config info
-    (define lock-name "gui")
     (define timeout 480)))

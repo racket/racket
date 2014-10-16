@@ -118,7 +118,7 @@
            (λ (expanded type)
              (match type
                [(tc-result1: (and t (Function: _)) f o)
-                (let ([cleaned (cleanup-type t expected)])
+                (let ([cleaned (cleanup-type t expected #f)])
                   #`(display
                      #,(match cleaned
                          [(Function: '())

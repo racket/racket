@@ -1,5 +1,6 @@
 
-This variant of GNU Lightning version 1.2 is modified for Racket:
+This variant of GNU Lightning version 1.2 is modified for Racket in
+many ways, including the following:
 
  * For PowerPC, branches can be generated in long-jump mode, so that
    patched addresses are not limited to a 2^16 or 2^26 difference from
@@ -18,6 +19,9 @@ This variant of GNU Lightning version 1.2 is modified for Racket:
    support has many limitations, such as allowing no more than 3
    function arguments.
 
+ * For i386 and x86_64, "tiny" and "short" (on x86_64) jumps are
+   supported, along the lines of supporting long jumps on PowerPC.
+
  * "core-common.h" adds a `jit_code' field into the `x' union, instead
    of taking the address of `pc' and casting it to a `jit_code*',
    because the latter violates C99 aliasing rules.
@@ -31,6 +35,12 @@ This variant of GNU Lightning version 1.2 is modified for Racket:
    On x86, there are aso _fppush variants that ignore the provided
    registers and work in terms of the FP stack, instead.
 
+ * The ARM support was backported from Paulo César Pereira de
+   Andrade's original (pre-lightning-2.0) implementation. The register
+   assignment was changed, jump-length modes added, and so on. The
+   instruction-set choices are made statically based on pre-processor
+   definitions.
+
 ----------------------------------------
 
 GNU Lightning authors:
@@ -38,6 +48,7 @@ GNU Lightning authors:
  Paolo Bonzini <bonzini@gnu.org>
  i386 and PPC assemblers by Ian Piumarta <piumarta@inria.fr>
  Major PPC contributions by Laurent Michel <ldm@thorgal.homelinux.org>
+ ARM assembler by Paulo César Pereira de Andrade
 
 ----------------------------------------
 

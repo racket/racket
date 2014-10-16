@@ -46,23 +46,27 @@ Vol 7, #2, March 1981
                                (* x x-spacing)
                                (* y y-spacing)
                                node-pict))
-          (define (add-edge to color)
-            (set! main (cc-superimpose
-                        (colorize (launder (pin-line (ghost main)
-                                                     node-pict cc-find
-                                                     to cc-find))
-                                  color)
-                        main)))
+          (define (add-edge to color width)
+            (define colored
+              (colorize (launder (pin-line (ghost main)
+                                           node-pict cc-find
+                                           to cc-find))
+                        color))
+            (define with-linewidth
+              (if (eq? width 'unspecified)
+                  colored
+                  (linewidth width colored)))
+            (set! main (cc-superimpose with-linewidth main)))
           (match left-t
             [#f (void)]
-            [(tree-edge left-t left-color)
+            [(tree-edge left-t left-color left-width)
              (define left-pict (loop left-t left-xc (+ y 1)))
-             (add-edge left-pict left-color)])
+             (add-edge left-pict left-color left-width)])
           (match right-t
             [#f (void)]
-            [(tree-edge right-t right-color)
+            [(tree-edge right-t right-color right-width)
              (define right-pict (loop right-t right-xc (+ y 1)))
-             (add-edge right-pict right-color)])
+             (add-edge right-pict right-color right-width)])
           node-pict]))
      
      main]

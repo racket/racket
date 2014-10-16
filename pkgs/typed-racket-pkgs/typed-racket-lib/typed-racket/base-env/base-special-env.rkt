@@ -69,8 +69,8 @@
   [(make-template-identifier 'in-range 'racket/private/for)
    (cl->* (-> -Byte (-seq -Byte))
           (-> -Index (-seq -Index))
-          (-> -Fixnum (-seq -Fixnum))
-          (-> -Real (-seq -Int))
+          (-> -Fixnum (-seq -NonNegFixnum))
+          (-> -Real (-seq -Nat))
           (->opt -PosInt -Byte [-Int] (-seq -PosByte))
           (->opt -Nat -Byte [-Int] (-seq -Byte))
           (->opt -PosInt -Index [-Int] (-seq -PosIndex))
@@ -173,7 +173,7 @@
    (-> Univ Univ Univ)]
   ;; from the expansion of `with-syntax'
   [(make-template-identifier 'apply-pattern-substitute 'racket/private/stxcase)
-   (->* (list (-Syntax Univ) Univ) Univ Any-Syntax)]
+   (->* (list (-Syntax Univ) Univ) Univ (-Syntax Univ))]
   ;; same
   [(make-template-identifier 'with-syntax-fail 'racket/private/with-stx)
    (-> (-Syntax Univ) (Un))]

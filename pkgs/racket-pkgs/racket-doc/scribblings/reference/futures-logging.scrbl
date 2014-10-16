@@ -18,7 +18,7 @@ a data value that is an instance of a @racket[future-event]
 @tech{prefab} structure:
 
 @racketblock[
-(struct future-event (future-id proc-id action time)
+(struct future-event (future-id proc-id action time prim-name user-data)
   #:prefab)
 ]
 

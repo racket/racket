@@ -11,3 +11,4 @@
                      "eli-tester"
                      "rackunit-lib"
                      "srfi-lite-lib"))
+(define update-implies '("rackunit-lib"))

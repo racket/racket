@@ -4,7 +4,9 @@
          pkg/util
          racket/package
          (prefix-in pkg: pkg/lib)
-         "common.rkt")
+         "common.rkt"
+         "notify.rkt"
+         "static.rkt")
 
 (define (update-all)
   (update-checksums #f (package-list)))
@@ -19,8 +21,8 @@
       ([exn:fail?
         (λ (x)
           (define i (package-info pkg-name))
-          (package-info-set! 
-           pkg-name 
+          (package-info-set!
+           pkg-name
            (hash-set i 'checksum-error (exn-message x))))])
     (define i (package-info pkg-name))
     (define old-checksum
@@ -77,15 +79,28 @@
    (define* i (hash-set i 'dependencies dependencies))
    i))
 
+
+(define (do-update! pkgs)
+  (notify! "package sources being checked for updates")
+  (cond
+    [(empty? pkgs)
+     (update-all)
+     (run-static! empty)]
+    [else
+     (update-pkgs pkgs)
+     (run-static! pkgs)]))
+(define (run-update! pkgs)
+  (run! do-update! pkgs))
+(define (signal-update! pkgs)
+  (thread (λ () (run-update! pkgs))))
+
+(provide do-update!
+         run-update!
+         signal-update!)
+
 (module+ main
   (require racket/cmdline)
   (command-line
    #:program "update"
    #:args pkgs
-   (cond
-     [(empty? pkgs)
-      (update-all)
-      (run-static! empty)]
-     [else
-      (update-pkgs pkgs)
-      (run-static! pkgs)])))
+   (do-update! pkgs)))

@@ -51,9 +51,10 @@
 ;; Convenient constructors
 (define -App make-App)
 (define -mpair make-MPair)
-(define -Param make-Param)
+(define (-Param t1 [t2 t1]) (make-Param t1 t2))
 (define -box make-Box)
 (define -channel make-Channel)
+(define -async-channel make-Async-Channel)
 (define -thread-cell make-ThreadCell)
 (define -Promise make-Promise)
 (define -set make-Set)
@@ -67,6 +68,8 @@
   (apply Un (map -val args)))
 
 (define (-opt t) (Un (-val #f) t))
+
+(define (-ne-lst t) (-pair t (-lst t)))
 
 ;; Convenient constructor for Values
 ;; (wraps arg types with Result)
@@ -163,12 +166,17 @@
            (make-Vector sexp)
            (make-Box sexp)
            t)))
+(define/decl -Flat
+  (-mu flat
+       (Un -Null -Number -Boolean -Symbol -String -Keyword -Char
+           (-pair flat flat))))
 (define/decl -Sexp (-Sexpof (Un)))
 (define Syntax-Sexp (-Sexpof Any-Syntax))
 (define Ident (-Syntax -Symbol))
 (define -HT make-Hashtable)
 (define/decl -BoxTop (make-BoxTop))
 (define/decl -ChannelTop (make-ChannelTop))
+(define/decl -Async-ChannelTop (make-Async-ChannelTop))
 (define/decl -HashTop (make-HashtableTop))
 (define/decl -VectorTop (make-VectorTop))
 (define/decl -MPairTop (make-MPairTop))
@@ -241,23 +249,14 @@
 (define/cond-contract make-pred-ty
   (c:case-> (c:-> Type/c Type/c)
             (c:-> (c:listof Type/c) Type/c Type/c Type/c)
-            (c:-> (c:listof Type/c) Type/c Type/c
-                  (c:or/c integer? name-ref/c) Type/c)
-            (c:-> (c:listof Type/c) Type/c Type/c
-                  (c:or/c integer? name-ref/c) (c:listof PathElem?) Type/c))
+            (c:-> (c:listof Type/c) Type/c Type/c Object? Type/c))
   (case-lambda
-    [(in out t n p)
-     (make-Function
-      (list
-       (make-arr*
-	in out
-	#:filters (-FS (-filter t n p) (-not-filter t n p)))))]
-    [(in out t n)
-     (make-pred-ty in out t n null)]
+    [(in out t p)
+     (->* in out : (-FS (-filter t p) (-not-filter t p)))]
     [(in out t)
-     (make-pred-ty in out t 0 null)]
+     (make-pred-ty in out t (make-Path null (list 0 0)))]
     [(t)
-     (make-pred-ty (list Univ) -Boolean t 0 null)]))
+     (make-pred-ty (list Univ) -Boolean t (make-Path null (list 0 0)))]))
 
 (define/decl -true-filter (-FS -top -bot))
 (define/decl -false-filter (-FS -bot -top))

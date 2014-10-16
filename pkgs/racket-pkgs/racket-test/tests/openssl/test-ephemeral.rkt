@@ -8,7 +8,7 @@
 
 (define (test-ephemeral server-enable! client-ciphers)
   (let-values ([(r1 w2) (make-pipe 10)]
-	       [(r2 w1) (make-pipe 10)])
+               [(r2 w1) (make-pipe 10)])
     (define server-thread
       (thread (lambda ()
                 (define server-ctx (ssl-make-server-context 'tls12))
@@ -43,28 +43,33 @@
     (thread-wait server-thread)
     (void)))
 
-;; Test DHE ciphers (note: cipher spec is "EDH", contrary to openssl ciphers docs)
-(test-ephemeral (lambda (server-ctx)
-                  (ssl-server-context-enable-dhe! server-ctx ssl-dh4096-param-path))
-                "AES+EDH")
+(cond
+ [(memq 'tls12 (supported-server-protocols))
+  ;; Test DHE ciphers (note: cipher spec is "EDH", contrary to openssl ciphers docs)
+  (test-ephemeral (lambda (server-ctx)
+                    (ssl-server-context-enable-dhe! server-ctx ssl-dh4096-param-path))
+                  "AES+EDH")
 
-;; Test ECDHE ciphers
-(test-ephemeral (lambda (server-ctx)
-                  (ssl-server-context-enable-ecdhe! server-ctx 'secp192k1))
-                "ECDHE-RSA-AES128-SHA256")
+  ;; Test ECDHE ciphers
+  (test-ephemeral (lambda (server-ctx)
+                    (ssl-server-context-enable-ecdhe! server-ctx 'secp192k1))
+                  "ECDHE-RSA-AES128-SHA256")
 
-;; Sanity check for DHE: connection fails when enable! not called
-(check-exn
- #rx"connect failed"
- (lambda ()
-   ;; for DrDr, suppress accept error printing
-   (parameterize ((current-error-port (open-output-string)))
-     (test-ephemeral void "AES+EDH"))))
+  ;; Sanity check for DHE: connection fails when enable! not called
+  (check-exn
+   #rx"connect failed"
+   (lambda ()
+     ;; for DrDr, suppress accept error printing
+     (parameterize ((current-error-port (open-output-string)))
+       (test-ephemeral void "AES+EDH"))))
 
-;; Sanity check for ECDHE: connection fails when enable! not called
-(check-exn
- #rx"connect failed"
- (lambda ()
-   ;; for DrDr, suppress accept error printing
-   (parameterize ((current-error-port (open-output-string)))
-     (test-ephemeral void "ECDHE-RSA-AES128-SHA256"))))
+  ;; Sanity check for ECDHE: connection fails when enable! not called
+  (check-exn
+   #rx"connect failed"
+   (lambda ()
+     ;; for DrDr, suppress accept error printing
+     (parameterize ((current-error-port (open-output-string)))
+       (test-ephemeral void "ECDHE-RSA-AES128-SHA256"))))]
+ [else
+  (printf "TLS 1.2 not supported; skipping tests\n")])
+

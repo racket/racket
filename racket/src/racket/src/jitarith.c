@@ -681,7 +681,7 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
     } else {
 #ifdef MZ_LONG_DOUBLE
       long_double d;
-      d = long_double_from_int(second_const);
+      d = long_double_from_intptr(second_const);
       if (extfl) {
         mz_fpu_movi_ld_fppush(fpr1, d, JIT_R2)
       } else {
@@ -2124,7 +2124,7 @@ int scheme_generate_extflonum_arith(mz_jit_state *jitter, Scheme_Object *rator, 
 }
 
 
-#define MAX_NON_SIMPLE_ARGS 5
+#define MAX_NON_SIMPLE_ARGS 6
 
 static int extract_nary_arg(int reg, int n, mz_jit_state *jitter, Scheme_App_Rec *app, 
                             Scheme_Object **alt_args, int old_short_jumps)
@@ -2184,7 +2184,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
                                int dest)
 {
   int c, i, non_simple_c = 0, stack_c, use_fx = 1, trigger_arg = 0;
-  Scheme_Object *non_simples[1+MAX_NON_SIMPLE_ARGS], **alt_args, *v;
+  Scheme_Object *non_simples[MAX_NON_SIMPLE_ARGS], **alt_args, *v;
   Branch_Info for_nary_branch;
   Branch_Info_Addr nary_addrs[3];
   GC_CAN_IGNORE jit_insn *refslow, *reffx, *refdone;
@@ -2209,7 +2209,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   for (i = 0; i < c; i++) {
     v = app->args[i+1];
     if (!scheme_is_constant_and_avoids_r1(v)) {
-      if (non_simple_c < MAX_NON_SIMPLE_ARGS)
+      if (non_simple_c < (MAX_NON_SIMPLE_ARGS-1))
         non_simples[1+non_simple_c] = v;
       non_simple_c++;
     }
@@ -2227,7 +2227,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     }
   }
 
-  if ((non_simple_c <= MAX_NON_SIMPLE_ARGS) && (non_simple_c < c)) {
+  if ((non_simple_c <= (MAX_NON_SIMPLE_ARGS-1)) && (non_simple_c < c)) {
     stack_c = non_simple_c;
     alt_args = non_simples;
     non_simples[0] = app->args[0];

@@ -10,13 +10,13 @@
                "draw-lib"
                "pict-lib"
                "rackunit-lib"
-               "scribble-lib"
                "slideshow-lib"
                "typed-racket-lib"
                "typed-racket-more"
                "unstable-flonum-lib"))
 
 (define build-deps '())
+(define update-implies '("plot-lib"))
 
 (define pkg-desc "Plot tests")
 

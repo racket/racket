@@ -65,6 +65,8 @@
 
 (define WM_POWER                        #x0048)
 
+(define WM_GESTURE                      #x0119)
+
 ;; wParam for WM_POWER window message and DRV_POWER driver notification
 (define PWR_OK              1)
 (define PWR_FAIL            -1)
@@ -611,6 +613,8 @@
 
 (define HORZRES       8)
 (define VERTRES       10)
+(define LOGPIXELSX    88)
+(define LOGPIXELSY    90)
 
 (define CBS_DROPDOWNLIST #x0003)
 (define CB_INSERTSTRING #x014A)

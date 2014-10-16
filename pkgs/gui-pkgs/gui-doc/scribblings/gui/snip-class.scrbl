@@ -377,7 +377,8 @@ following symbols:
  @item{@indexed-racket['handles-all-mouse-events] --- this snip can
        handle mouse events that touch the snip or that immediately
        follow an event that touches the snip, even if the snip does
-       not have the keyboard focus}
+       not have the keyboard focus (see also
+       @method[snip% on-goodbye-event])}
 
  @item{@indexed-racket['width-depends-on-x] --- this snip's display
        width depends on the snip's x-@techlink{location} within the
@@ -632,6 +633,32 @@ Does nothing.
 
 }}
 
+@defmethod[(on-goodbye-event [dc (is-a?/c dc<%>)]
+                             [x real?]
+                             [y real?]
+                             [editorx real?]
+                             [editory real?]
+                             [event (is-a?/c mouse-event%)])
+           void?]{
+@methspec{
+
+Called to handle an event that is really aimed at another
+snip in order to give this snip a chance to clean up 
+as the mouse moves away. The arguments are the same
+as @method[snip% on-event].
+
+This method is called only when the snip has the
+@indexed-racket['handles-all-mouse-events] flag set
+(see @method[snip% get-flags] and @method[snip% set-flags]).
+
+}
+@methimpl{
+
+  Calls this object's @racket[_on-event] method
+
+}
+
+@history[#:added "1.1"]}
 
 @defmethod[(own-caret [own-it? any/c])
            void?]{

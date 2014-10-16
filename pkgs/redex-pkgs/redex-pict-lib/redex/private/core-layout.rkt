@@ -37,8 +37,13 @@
          literal-style
          metafunction-style
          delimit-ellipsis-arguments?
+         
          open-white-square-bracket
          close-white-square-bracket
+         default-white-square-bracket
+         homemade-white-square-bracket
+         white-square-bracket
+         
          just-before
          just-after
          with-unquote-rewriter
@@ -48,6 +53,11 @@
          STIX?
          white-bracket-sizing
          apply-rewrites
+         use-homemade-white-brackets
+         left-curly-bracket-upper-hook
+         left-curly-bracket-middle-piece
+         left-curly-bracket-lower-hook
+         curly-bracket-extension
          
          ;; for test suite
          build-lines
@@ -708,6 +718,7 @@
                                                pink-code-font
                                                (default-font-size)))))]
       [(and (symbol? atom)
+            (not (equal? atom '_))
             (regexp-match #rx"^([^_^]*)_([^^]*)\\^?(.*)$" (symbol->string atom)))
        =>
        (match-lambda
@@ -778,12 +789,62 @@
   (define metafunction-font-size (make-parameter (default-font-size)))
   (define label-font-size (make-parameter 14))
   (define delimit-ellipsis-arguments? (make-parameter #t))
-  
-  (define (open-white-square-bracket) (white-bracket "["))
-  (define (close-white-square-bracket) (white-bracket "]"))
 
-  #;"\u301a\u301b" ;; white square brackets
-  
+(define white-square-bracket-cache (make-hash))
+(define (default-white-square-bracket open?)
+  (define key (list (current-text) (default-style) (default-font-size) open?))
+  (cond
+    [(hash-ref white-square-bracket-cache key #f) => values]
+    [else
+     (define candidate ((current-text) (if open? "〚" "〛") (default-style) (default-font-size)))
+     (define w (inexact->exact (ceiling (pict-width candidate))))
+     (define h (inexact->exact (ceiling (pict-height candidate))))
+     (define bmp (make-bitmap w h))
+     (define bdc (make-object bitmap-dc% bmp))
+     (draw-pict candidate bdc 0 0)
+     (define bytes (make-bytes (* w h 4)))
+     (send bmp get-argb-pixels 0 0 w h bytes)
+     (define (white-pixel? x y)
+       (define c (* 4 (+ (* y w) x)))
+       (= (bytes-ref bytes c) 0))
+     (define outermost-x
+       (let/ec k
+         (for ([x (if open?
+                      (in-range w)
+                      (in-range (- w 1) -1 -1))])
+           (define the-y
+             (for/or ([y (in-range h)])
+               (and (not (white-pixel? x y))
+                    y)))
+           (when the-y
+             (k x)))))
+     (define pict
+       (cond 
+         [(if open?
+              (<= 1/2 (/ outermost-x w))
+              (<= 1/2 (/ (- w outermost-x) w)))
+          ;; when the entire half is white
+          (if open?
+              (inset/clip candidate (- (/ w 3)) 0 0 0)
+              (inset/clip candidate 0 0 (- (/ w 3)) 0))]
+         [else
+          candidate]))
+     (hash-set! white-square-bracket-cache key pict)
+     pict]))
+
+(define (homemade-white-square-bracket open?)
+  (white-bracket (if open? "[" "]")))
+
+(define white-square-bracket (make-parameter default-white-square-bracket))
+(define use-homemade-white-brackets (make-parameter #f))
+(define (open-white-square-bracket) ((white-square-bracket) #t))
+(define (close-white-square-bracket) ((white-square-bracket) #f))
+
+(define left-curly-bracket-upper-hook "⎧")
+(define left-curly-bracket-middle-piece "⎨")
+(define left-curly-bracket-lower-hook "⎩")
+(define curly-bracket-extension "⎪")
+
   ;; white-bracket : string -> pict
   ;; puts two of `str' next to each other to make 
   ;; a `white' version of the bracket.

@@ -6,7 +6,9 @@
 
   (module test racket/base)
 
-  (define-values (short-name x-flags x-specific-collections x-specific-planet-packages x-archives)
+  (define-values (short-name x-flags
+                             x-specific-collections x-specific-packages  x-specific-planet-packages
+                             x-archives)
     (parse-cmdline (current-command-line-arguments)))
 
   (define (has-x-flag? s)
@@ -23,6 +25,7 @@
     [trust-existing-zos (or (has-x-flag? 'trust-existing-zos)
                             (trust-existing-zos))]
     [specific-collections x-specific-collections]
+    [specific-packages x-specific-packages]
     [archives x-archives]
     [specific-planet-dirs x-specific-planet-packages]
     

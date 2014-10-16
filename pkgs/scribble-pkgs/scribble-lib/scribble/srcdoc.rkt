@@ -4,7 +4,8 @@
                      racket/require-transform
                      racket/provide-transform
                      syntax/stx
-                     syntax/private/modcollapse-noctc))
+                     syntax/private/modcollapse-noctc
+                     syntax/parse))
 
 (provide for-doc require/doc
          provide/doc ; not needed anymore
@@ -14,6 +15,7 @@
          proc-doc/names
          struct-doc
          struct*-doc
+         form-doc
          generate-delayed-documents
          begin-for-doc)
 
@@ -129,8 +131,10 @@
                         forms)])
       (with-syntax ([(p/c ...)
                      (map (lambda (form f)
-                            (quasisyntax/loc form
-                              (contract-out #,f)))
+                            (if (identifier? f)
+                                f
+                                (quasisyntax/loc form
+                                  (contract-out #,f))))
                           forms
                           (syntax->list #'(for-provide/contract ...)))])
         (generate-doc-submodule!)
@@ -565,6 +569,81 @@
           #'[id contract]
           #'(defthing id contract . desc)
           #'((only-in scribble/manual defthing))
+          #'id))])))
+
+(begin-for-syntax
+ (define-splicing-syntax-class kind-kw
+   #:description "#:kind keyword"
+   (pattern (~seq #:kind kind)
+            #:with (kind-seq ...) #'(#:kind kind))
+   (pattern (~seq)
+            #:with (kind-seq ...) #'()))
+
+ (define-splicing-syntax-class link-target?-kw
+   #:description "#:link-target? keyword"
+   (pattern (~seq #:link-target? expr)
+            #:with (link-target-seq ...) #'(#:link-target? expr))
+   (pattern (~seq)
+            #:with (link-target-seq ...) #'()))
+
+ (define-splicing-syntax-class id-kw
+   #:description "#:id keyword"
+   (pattern (~seq #:id [defined-id:id defined-id-expr])
+            #:with (id-seq ...) #'(#:id [defined-id:id defined-id-expr]))
+   (pattern (~seq #:id defined-id:id)
+            #:with (id-seq ...) #'(#:id defined-id))
+   (pattern (~seq #:id other)
+            #:with defined-id #'#f
+            #:with (id-seq ...) #'(#:id other))
+   (pattern (~seq)
+            #:with defined-id #'#f
+            #:with (id-seq ...) #'()))
+
+ (define-splicing-syntax-class literals-kw
+   #:description "#:literals keyword"
+   (pattern (~seq #:literals l)
+            #:with (literals-seq ...) #'(#:literals l))
+   (pattern (~seq)
+            #:with (literals-seq ...) #'()))
+
+ (define-splicing-syntax-class subs-kw
+   #:description "#:grammar keyword"
+   (pattern (~seq #:grammar g)
+            #:with (grammar-seq ...) #'(#:grammar g))
+   (pattern (~seq)
+            #:with (grammar-seq ...) #'()))
+
+ (define-splicing-syntax-class contracts-kw
+   #:description "#:contracts keyword"
+   (pattern (~seq #:contracts c)
+            #:with (contracts-seq ...) #'(#:contracts c))
+   (pattern (~seq)
+            #:with (contracts-seq ...) #'())))
+
+(define-provide/doc-transformer form-doc
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ k:kind-kw lt:link-target?-kw d:id-kw l:literals-kw spec
+          subs:subs-kw c:contracts-kw desc)
+       (with-syntax ([id (if (syntax-e #'d.defined-id)
+                             #'d.defined-id
+                             (syntax-case #'spec ()
+                               [(id . rest)
+                                (identifier? #'id)
+                                #'id]
+                               [_ #'unknown]))])
+         (values
+          #'id
+          #'(defform 
+              k.kind-seq ...
+              lt.link-target-seq ...
+              d.id-seq ...
+              l.literals-seq ...
+              spec
+              subs.grammar-seq ...
+              c.contracts-seq ...
+              . desc)
+          #'((only-in scribble/manual defform))
           #'id))])))
 
 (define-syntax (generate-delayed-documents stx)

@@ -3,6 +3,7 @@
          racket/contract
          racket/gui/base
          string-constants
+         setup/path-to-relative
          framework
          "find-completions.rkt")
 
@@ -12,7 +13,8 @@
    (->i ()
         (#:init [init string?] 
          #:pref [pref symbol?]
-         #:dir? [dir? boolean?])
+         #:dir? [dir? boolean?]
+         #:current-directory [current-directory (or/c path-string? #f)])
         [res (dir?)
              (if (or (not dir?)
                      (unsupplied-arg? dir?))
@@ -21,8 +23,10 @@
 
 (define (get-module-path-from-user #:init [init-value ""] 
                                    #:pref [pref-sym #f]
-                                   #:dir? [dir? #f])
-  
+                                   #:dir? [dir? #f]
+                                   #:current-directory 
+                                   [_the-current-directory #f])
+  (define the-current-directory (or _the-current-directory (current-directory)))
   (define dlg%
     (class dialog%
       (define/override (on-subwindow-char receiver event)
@@ -48,7 +52,12 @@
   (define lb (new list-box% 
                   [style (if dir? '(extended) '(single))]
                   [parent dlg] [choices '()] [label #f]
-                  [callback (λ (lb evt) (update-buttons))]))
+                  [callback (λ (lb evt)
+                              (cond
+                                [(equal? (send evt get-event-type) 'list-box-dclick)
+                                 (handle-list-box-double-click)]
+                                [else
+                                 (update-buttons)]))]))
                   
   (define different-racket-panel
     (new vertical-panel% 
@@ -131,6 +140,12 @@
     (adjust-lb)
     (update-buttons))
   
+  (define p->r-s/l-cache (make-hash))
+  (define (path->rel-string p alt-racket-info)
+    (if alt-racket-info
+        (path->string p)
+        (path->relative-string/library p #:cache p->r-s/l-cache)))
+  
   (define (adjust-lb)
     (send lb clear)
     (unless (equal? (send tf get-value) "")
@@ -139,13 +154,14 @@
              (get-clcl/clcp)))
       (define the-completions 
         (find-completions (send tf get-value) 
+                          the-current-directory
                           #:alternate-racket alt-racket-info))
       (for ([i (in-list (if dir?
                             (filter (λ (i) (directory-exists? (list-ref i 1)))
                                     the-completions)
                             the-completions))]
             [n (in-naturals)])
-        (send lb append (path->string (list-ref i 1)))
+        (send lb append (path->rel-string (list-ref i 1) alt-racket-info))
         ;; data holds a path => open the file
         ;; data holds a string => add that past the last / in 'tf'
         ;; when dir?=#t, then data always holds a path
@@ -212,7 +228,7 @@
       [else
        (define item-to-act-on (get-item-to-act-on))
        (cond
-         [item-to-act-on 
+         [item-to-act-on
           (define datum (send lb get-data item-to-act-on))
           (cond
             [(path? datum)
@@ -224,6 +240,23 @@
          [else
           (send ok-button enable #f)
           (send enter-sub-button enable #f)])]))
+  
+  (define (handle-list-box-double-click)
+    (cond
+      [dir?
+       (ok)]
+      [else
+       (define item-to-act-on (get-item-to-act-on))
+       (cond
+         [item-to-act-on 
+          (define datum (send lb get-data item-to-act-on))
+          (cond
+            [(path? datum)
+             (ok)]
+            [(string? datum)
+             (enter-sub)])]
+         [else
+          (void)])]))
   
   (define (get-item-to-act-on)
     (or (send lb get-selection)
@@ -342,3 +375,7 @@
 (preferences:set-default 'drracket:get-module-path-from-user-size 
                          (list 600 600)
                          (list/c exact-nonnegative-integer? exact-nonnegative-integer?))
+
+
+(module+ main
+  (get-module-path-from-user))

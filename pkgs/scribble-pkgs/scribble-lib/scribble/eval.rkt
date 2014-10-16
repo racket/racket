@@ -4,7 +4,9 @@
          (only-in "core.rkt" content?)
          racket/list
          file/convertible ;; attached into new namespace via anchor
+         racket/serialize ;; attached into new namespace via anchor
          racket/pretty ;; attached into new namespace via anchor
+         scribble/private/serialize ;; attached into new namespace via anchor
          racket/sandbox racket/promise racket/port
          racket/gui/dynamic
          (for-syntax racket/base syntax/srcloc unstable/struct)
@@ -241,7 +243,11 @@
                                        (and (convertible? obj) 1)))
                                     (pretty-print-print-hook
                                      (lambda (obj _mode out)
-                                       (write-special obj out))))
+                                       (write-special (if (serializable? obj)
+                                                          (make-serialized-convertible
+                                                           (serialize obj))
+                                                          obj)
+                                                      out))))
                        (map (current-print) v))
                      (close-output-port out)
                      in)))])))
@@ -346,8 +352,11 @@
                     [sandbox-namespace-specs
                      (append (sandbox-namespace-specs)
                              (if pretty-print?
-                                 '(racket/pretty file/convertible)
-                                 '(file/convertible)))])
+                                 '(racket/pretty)
+                                 '())
+                             '(file/convertible
+                               racket/serialize
+                               scribble/private/serialize))])
        (let ([e (apply make-evaluator lang ips)])
          (when pretty-print?
            (call-in-sandbox-context e

@@ -1178,7 +1178,7 @@
      (-> -Byte -PosInt B : (-FS (-and (-filter -PosByte 0) (-filter -PosByte 1)) -top))
      (-> -Byte -PosReal B : (-FS (-filter -PosByte 0) -top))
      (-> -PosInt -Byte B : (-FS -top (-and (-filter -PosByte 0) (-filter -PosByte 1))))
-     (-> -PosRat -Byte B : (-FS -top (-filter -PosByte 0)))
+     (-> -PosRat -Byte B : (-FS -top (-filter -PosByte 1)))
      (-> -Byte -Nat B : (-FS (-filter -Byte 1) -top))
      (-> -Nat -Byte B : (-FS -top (-and (-filter -Byte 0) (-filter -PosByte 1))))
      (-> -NonNegRat -Byte B : (-FS -top (-filter -PosByte 1)))

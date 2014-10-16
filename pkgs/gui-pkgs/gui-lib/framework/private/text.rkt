@@ -2340,6 +2340,20 @@
         (delete start end #f)
         (set! allow-edits? before-allowed?)))
     
+    (define/public-final (insert/io str start [style #f])
+      (unless (<= start insertion-point)
+        (error 'insert/io "expected start (~a) <= insertion-point (~a)"
+               start (string-length str) insertion-point))
+      (define len (string-length str))
+      (set! insertion-point (+ insertion-point len))
+      (set! unread-start-point (+ unread-start-point len))
+      (let ([before-allowed? allow-edits?])
+        (set! allow-edits? #t)
+        (insert str start start #f)
+        (when style
+          (change-style (add-standard style) start (+ start len)))
+        (set! allow-edits? before-allowed?)))
+      
     (define/public-final (get-in-port)
       (unless in-port (error 'get-in-port "not ready"))
       in-port)
@@ -2719,24 +2733,9 @@
              (channel-put write-chan (cons #f to-send))])
           #t))
       
-      (let* ([add-standard
-              (λ (sd)
-                (cond
-                  [(string? sd)
-                   (let ([style-list (get-style-list)])
-                     (or (send style-list find-named-style sd)
-                         (send style-list find-named-style "Standard")
-                         (send style-list basic-style)))]
-                  [sd
-                   (let* ([style-list (get-style-list)] 
-                          [std (send style-list find-named-style "Standard")])
-                     (if std
-                         (send style-list find-or-create-style std sd)
-                         (let ([basic (send style-list basic-style)])
-                           (send style-list find-or-create-style basic sd))))]))]
-             [out-style (add-standard (get-out-style-delta))]
-             [err-style (add-standard (get-err-style-delta))]
-             [value-style (add-standard (get-value-style-delta))])
+      (let ([out-style (add-standard (get-out-style-delta))]
+            [err-style (add-standard (get-err-style-delta))]
+            [value-style (add-standard (get-value-style-delta))])
         (set! out-port (make-output-port #f
                                          always-evt
                                          (make-write-bytes-proc out-style)
@@ -2762,6 +2761,23 @@
           (install-handlers out-port)
           (install-handlers err-port)
           (install-handlers value-port))))
+    
+    (define/private (add-standard sd)
+      (cond
+        [(string? sd)
+         (define style-list (get-style-list))
+         (or (send style-list find-named-style sd)
+             (send style-list find-named-style "Standard")
+             (send style-list basic-style))]
+        [sd
+         (define style-list (get-style-list))
+         (define std (send style-list find-named-style "Standard"))
+         (cond
+           [std
+            (send style-list find-or-create-style std sd)]
+           [else
+            (define basic (send style-list basic-style))
+            (send style-list find-or-create-style basic sd)])]))
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;;

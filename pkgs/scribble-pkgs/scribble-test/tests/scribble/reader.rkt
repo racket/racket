@@ -898,6 +898,26 @@ END-OF-TESTS
 (define -@error->   (mk-error-test scr:read))
 (define -\\error->  (mk-error-test read/BS))
 
+(define (make-@+-readtable #:command-readtable [command-readtable (current-readtable)]
+                           #:datum-readtable [datum-readtable (current-readtable)])
+  (make-readtable (scr:make-at-readtable #:command-readtable command-readtable
+                                         #:datum-readtable datum-readtable)
+                  #\+ 'terminating-macro (lambda args 'PLUS)))
+(define @+-readtable (make-@+-readtable))
+(define @c+-readtable (make-@+-readtable #:command-readtable 'dynamic))
+(define @d+-readtable (make-@+-readtable #:datum-readtable 'dynamic))
+(define @cd+-readtable (make-@+-readtable #:command-readtable 'dynamic
+                                          #:datum-readtable 'dynamic))
+
+(define-syntax-rule (@+checker a b readtable)
+  (equal? (parameterize ([current-readtable readtable])
+            (read (open-input-string a)))
+          b))
+(define-syntax-rule (a . -@+> . b) (@+checker a b @+-readtable))
+(define-syntax-rule (a . -@c+> . b) (@+checker a b @c+-readtable))
+(define-syntax-rule (a . -@d+> . b) (@+checker a b @d+-readtable))
+(define-syntax-rule (a . -@cd+> . b) (@+checker a b @cd+-readtable))
+
 ;; running the tests
 (provide reader-tests)
 (module+ main (reader-tests))
@@ -932,4 +952,15 @@ END-OF-TESTS
                       (format "bad result in\n    ~a\n  results:\n    ~s != ~s"
                               (regexp-replace* #rx"\n" t "\n    ")
                               x y)
-                      (matching? x y))))))))))
+                      (matching? x y))))))))
+
+    ;; Check static versus dynamic readtable for command (dynamic when "c" in the
+    ;; name) and datum (dynamic when "d" in the name) parts:
+    (-@+> "10" 10)
+    (-@+> "(+ @+[+] +)" '(PLUS (+ +) PLUS))
+    (-@+> "@+[+]" '(+ +))
+    (-@d+> "@+[+]" '(+ PLUS))
+    (-@d+> "(+ @+[+])" '(PLUS (+ PLUS)))
+    (-@c+> "@+[+]" '(PLUS +))
+    (-@c+> "@|+|" 'PLUS)
+    (-@cd+> "@+[+]" '(PLUS PLUS))))

@@ -88,4 +88,76 @@
    y)
  letrec-exn?)
 
+(err/rt-test
+ (letrec ([a 1]
+          [b (set! a (lambda () c))]
+          [c (a)])
+   c)
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ([b (let ([d (lambda () c)])
+               (d))]
+          [c 1])
+   b)
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ([b (let-values ([(a) 5]
+                          [(e d) (values 1 (lambda () c))])
+               (d))]
+          [c 1])
+   b)
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ([b (let-values ([(e d) (values 1 (lambda () c))]
+                          [(a) 5])
+               (d))]
+          [c 1])
+   b)
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ([b (let ([e (lambda ()
+                        (let ([d (lambda () c)])
+                          (d)))])
+               (e))]
+          [c 1])
+   b)
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ([b (with-continuation-mark
+                 'x
+                 (lambda () c)
+               ((continuation-mark-set-first
+                 (current-continuation-marks)
+                 'x)))]
+          [c 1])
+   c)
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ([b (with-continuation-mark
+                 'x
+                 (lambda () c)
+               (+ (random)
+                  ((continuation-mark-set-first
+                    (current-continuation-marks)
+                    'x))))]
+          [c 1])
+   c)
+ letrec-exn?)
+
+(test '(1)
+      'complex-forcing-path
+      (let-values (((_tri)
+                    (letrec-values (((all-types) 1))
+                      (lambda (x) all-types))))
+        (letrec-values (((quad-super-type) _tri)
+                        ((offsets) (map quad-super-type (list 1))))
+          offsets)))
+
+
 (report-errs)

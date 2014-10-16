@@ -59,6 +59,15 @@ different nodes.
 
 }
 
+@defmethod[(set-edge-label-font [font (is-a?/c font%)]) void?]{
+  Updates the font used to draw the edge labels.
+}
+
+@defmethod[(get-edge-label-font) (is-a?/c font%)]{
+  Returns the font currently being used to draw the edge labels
+}
+
+
 @defmethod[(draw-edges [dc (is-a?/c dc<%>)]
 [left real?]
 [top real?]
@@ -116,8 +125,9 @@ it just draws the line.
                                      [point3 (is-a?/c point%)]
                                      [point4 (is-a?/c point%)]) void?]{
 
-Updates the arguments @racket[point1], @racket[point2], @racket[point3], @racket[point4] with the coordinates
-of an arrowhead for a line that connects (@racket[from-x],@racket[from-y]) to (@racket[to-x],@racket[to-y]).
+Updates the arguments @racket[point1], @racket[point2], @racket[point3], @racket[point4]
+with the coordinates of an arrowhead for a line that connects (@racket[from-x],@racket[from-y])
+to (@racket[to-x],@racket[to-y]).
 }
 
 }

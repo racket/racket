@@ -29,9 +29,7 @@ To compile with MinGW tools, follow the Unix instructions below; do not
 use `--enable-shared', because DLLs will be generated automatically.
 The result is a Windows-style build, but without MzCOM. If you are using
 a variant of MinGW without "libdelayimp.a", get the implementation of
-"delayimp.c" from MinGW-w64 and compile it to "libdelayimp.a". When
-compiling with MinGW-w64 for 64-bit mode, the `--enable-sgc' flag
-to `configure' is currently required.
+"delayimp.c" from MinGW-w64 and compile it to "libdelayimp.a".
 
 To compile with Cygwin tools, follow the Unix instructions below, and be
 sure to configure with `--enable-shared'.  The result is a Unix-style
@@ -286,17 +284,6 @@ Cross-compilation requires at least two flags to `configure':
    This flag is needed because building and installing Racket requires
    running (an intermediate version of) Racket.
 
-A third `configure' flag is typical:
-
- * `--enable-sgc', which uses a simpler garbage collector for the
-   intermediate variant of Racket that is normally used only to build
-   the final variant (see CGC vs 3m below).
-
-   Otherwise, you may need to set CC_FOR_BUILD to a compiler for the
-   build platform, so that helper executables can be created in the
-   process of building the intermediate Racket that is used to build
-   the final Racket.
-
 Some less commonly needed `configure' flags:
 
  * `--enable-stackup', if the target platform's stack grows up.
@@ -312,7 +299,6 @@ the NDK, use (all on one line)
 
   configure --host=arm-linux-androideabi 
             --enable-sysroot="[ndk]/platforms/android-[N]/arch-arm"
-            --enable-sgc
             --enable-racket=racket
 
 where [ndk] is the path to the installed NDK, [N] is a target version
@@ -385,33 +371,29 @@ documentation for "config search paths" for more information.
 ========================================================================
 
 At a minimum, to port Racket to a new platform, edit "racket/sconfig.h"
-to provide a platform-specific compilation information.  As distributed,
-"racket/sconfig.h" contains configurations for the following platforms:
-
-              Windows (x86, x86_64)
-              Mac OS X (PPC, x86, x86_64)
-              Linux (x86, x86_64, PPC, 68k)
-              Cygwin (x86)
-              Solaris (x86, Sparc)
-              FreeBSD (x86, x86_64)
-              OpenBSD (x86)
-              NetBSD (x86)
-
-If your platform is not supported by the Boehm garbage collector
-(distributed with Racket source), provide the `--enable-sgc' flag to
-`configure'.
+to provide a platform-specific compilation information.
 
 ========================================================================
  Additional Compilation Notes
 ========================================================================
 
-Garbage Collector
+CGC Build Options
 -----------------
 
-The conservative garbage collector distributed with Racket (in the "gc"
-directory) has been modified slightly from Boehm's standard
-distribution.  Mostly, the change modify the way that object
-finalization is handled.
+As noted above in "CGC versus 3m", Racket builds a CGC variant in the
+process of creating the normal 3m variant. Within the CGC variant, two
+implementations are possible.
+
+By default, Racket CGC is implemented with SenoraGC (in the "sgc"
+directory), which is relativey portable. Provide `--disable-sgc` to
+instead use the Boehm GC (in the "gc" directory), which should perform
+better and was the default for Racket CGC through version 6.1.
+
+The variant of the Boehm GC that is included with Racket has been
+modified slightly from Boehm's standard distribution; mostly, the
+changes modify the way that object finalization is handled.
+
+[Currently, the Windows build still uses the Boehm GC by default.]
 
 Floating point, x87, SSE, Extflonums, and the JIT
 -------------------------------------------------

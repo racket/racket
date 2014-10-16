@@ -966,15 +966,49 @@
 (test-comp 3 '(+ 1 2))
 (test-comp 65 '(char->integer #\A))
 (test-comp (expt 5 30)
-	   '(expt 5 (* 5 6)))
+           '(expt 5 (* 5 6)))
 (test-comp 88
-	   '(if (pair? null) 89 88))
+           '(if (pair? null) 89 88))
 (test-comp 89
-	   '(if (list? null) 89 88))
-(test-comp '(if _x_ 2 1)
-	   '(if (not _x_) 1 2))
-(test-comp '(if _x_ 2 1)
-	   '(if (not (not (not _x_))) 1 2))
+           '(if (list? null) 89 88))
+
+(test-comp '(lambda (x) (if x 2 1))
+           '(lambda (x) (if (not x) 1 2)))
+(test-comp '(lambda (x) (if x 2 1))
+           '(lambda (x) (if (not (not (not x))) 1 2)))
+(test-comp '(lambda (x) (not x))
+           '(lambda (x) (if x #f #t)))
+(test-comp '(lambda (x) (not x))
+           '(lambda (x) (eq? x #f)))
+(test-comp '(lambda (x) (not x))
+           '(lambda (x) (eq? #f x)))
+           
+(test-comp '(lambda (x) (null? x))
+           '(lambda (x) (eq? x '())))
+(test-comp '(lambda (x) (null? x))
+           '(lambda (x) (eq? '() x)))
+
+(test-comp '(lambda (x) (eq? x 7))
+           '(lambda (x) (equal? x 7)))
+(test-comp '(lambda (x) (eq? 7 x))
+           '(lambda (x) (equal? 7 x)))
+(test-comp '(lambda (x) (eq? x 7))
+           '(lambda (x) (eqv? x 7)))
+(test-comp '(lambda (x) (eq? 7 x))
+           '(lambda (x) (eqv? 7 x)))
+
+(test-comp #t
+           '(eq? 7 7))
+(test-comp #f
+           '(eq? 9 6))
+(test-comp #t
+           '(eqv? 7 7))
+(test-comp #f
+           '(eqv? 9 6))
+(test-comp #t
+           '(equal? 7 7))
+(test-comp #f
+           '(equal? 9 6))
 
 (test-comp '(let ([x 3]) x)
 	   '((lambda (x) x) 3))
@@ -1004,11 +1038,58 @@
            '(lambda (g)
               (let ([r (read)])
                 (+ r r))))
+(test-comp '(lambda (g z)
+              ((begin 
+                 (read)
+                 (lambda () (+ z z)))))
+           '(lambda (g z)
+              (begin 
+                (read)
+                (+ z z))))
+(test-comp '(lambda (g z)
+              ((begin 
+                 (read)
+                 (lambda (x) (+ z z)))
+               g))
+           '(lambda (g z)
+              (begin 
+                (read)
+                (+ z z))))
+(test-comp '(lambda (g z)
+              (let ([get (lambda ()
+                           (begin
+                             (read)
+                             (lambda (x) (+ z z))))])
+                ((get) g)))
+           '(lambda (g z)
+              (begin
+                (read)
+                (+ z z))))
+(test-comp '(lambda ()
+              (let ([a (display "a")]
+                    [g (lambda (x) x)])
+                (list
+                 ((begin
+                    (display "b")
+                    g)
+                  a)
+                 g
+                 g)))
+           '(lambda ()
+              (let ([a (display "a")]
+                    [g (lambda (x) x)])
+                (list
+                 (begin
+                   (display "b")
+                   a)
+                 g
+                 g))))
 
 (test-comp '(lambda (w z)
               (let ([x (cons w z)])
                 (car x)))
            '(lambda (w z) w))
+
 (test-comp '(lambda (w z)
               (let ([x (cons w z)])
                 (cdr x)))
@@ -1029,6 +1110,98 @@
               (let ([x (list (cons 1 (cons w z)))])
                 (car (cdr (car x)))))
            '(lambda (w z) w))
+(test-comp '(lambda (w z)
+              (car (list w z)))
+           '(lambda (w z) w))
+(test-comp '(lambda (w z)
+              (car (list* w z)))
+           '(lambda (w z) w))
+(test-comp '(lambda (w z)
+              (car (list* w z w)))
+           '(lambda (w z) w))
+(test-comp '(lambda (w z)
+              (cdr (list w)))
+           '(lambda (w z) null))
+(test-comp '(lambda (w z)
+              (cdr (list w z)))
+           '(lambda (w z) (list z)))
+(test-comp '(lambda (w z)
+              (cdr (list w z w)))
+           '(lambda (w z) (list z w)))
+(test-comp '(lambda (w z)
+              (cdr (list* w z)))
+           '(lambda (w z) z))
+(test-comp '(lambda (w z)
+              (cdr (list* w z w)))
+           '(lambda (w z) (list* z w)))
+
+(test-comp '(lambda (w z)
+              (car (list w (random))))
+           '(lambda (w z) w)
+           #f)
+(test-comp '(lambda (w z)
+              (car (list w (random) (random))))
+           '(lambda (w z) w)
+           #f)
+(test-comp '(lambda (w z)
+              (cdr (list (random))))
+           '(lambda (w z) null)
+           #f)
+(test-comp '(lambda (w z)
+              (cdr (list (random) w)))
+           '(lambda (w z) (list w))
+           #f)
+(test-comp '(lambda (w z)
+              (cdr (list (random) w z)))
+           '(lambda (w z) (list w z))
+           #f)
+
+(test-comp '(lambda (w z) (pair? (list)))
+           '(lambda (w z) #f))
+(test-comp '(lambda (w z) (null? (list)))
+           '(lambda (w z) #t))
+(test-comp '(lambda (w z) (pair? (cons z w)))
+           '(lambda (w z) #t))
+(test-comp '(lambda (w z) (pair? (unsafe-cons-list z w)))
+           '(lambda (w z) #t))
+(test-comp '(lambda (w z) (pair? (list w)))
+           '(lambda (w z) #t))
+(test-comp '(lambda (w z) (pair? (list w z)))
+           '(lambda (w z) #t))
+(test-comp '(lambda (w z) (pair? (list w z w)))
+           '(lambda (w z) #t))
+(test-comp '(lambda (w z) (pair? (list w (random) w)))
+           '(lambda (w z) (random) #t))
+(test-comp '(lambda (w z) (pair? (list (read) (random) w)))
+           '(lambda (w z) (read) (random) #t))
+(test-comp '(lambda (w z) (pair? (list z (random) (read))))
+           '(lambda (w z) (random) (read) #t))
+(test-comp '(lambda (w z) (vector? (vector w z)))
+           '(lambda (w z) #t))
+(test-comp '(lambda (w z) (vector? (list 1)))
+           '(lambda (w z) #f))
+(test-comp '(lambda (w z) (mpair? (mcons 1 2)))
+           '(lambda (w z) #t))
+(test-comp '(lambda (w z) (box? (box 1)))
+           '(lambda (w z) #t))
+(test-comp '(lambda (w z) (box? (box-immutable 1)))
+           '(lambda (w z) #t))
+
+(test-comp '(lambda (w z) (pair? (cons w)))
+           '(lambda (w z) #f)
+           #f)
+(test-comp '(lambda (w z) (pair? (list* w)))
+           '(lambda (w z) #t)
+           #f)
+(test-comp '(lambda (w z) (pair? (list* w)))
+           '(lambda (w z) #f)
+           #f)
+(test-comp '(lambda (w z) (box? (box 1 2)))
+           '(lambda (w z) #t)
+           #f)
+(test-comp '(lambda (w z) (box? (box-immutable 1 2)))
+           '(lambda (w z) #t)
+           #f)
 
 (test-comp '(lambda (w z)
               (let ([x (list* w z)]
@@ -1038,6 +1211,165 @@
            '(lambda (w z)
               (error "bad")
               (equal? (list* w z) (list* z w))))
+
+(err/rt-test (pair? (list (values 1 2) 0)) exn:fail:contract:arity?)
+(test-comp '(lambda (w z)
+              (pair? (list (values 1 2) 0)))
+           '(lambda (w z)
+              (values (values 1 2))
+              #t))
+
+(test-comp '(lambda (w z)
+              (let ([l '(1 2)]
+                    [l2 (list w z)]
+                    [m (mcons 1 2)]
+                    [v (vector w w w)]
+                    [v2 (vector-immutable w w w)])
+                (list (car l)
+                      (cdr l)
+                      (mpair? l)
+                      (pair? l)
+                      (pair? l2)
+                      (mpair? m)
+                      (vector? v)
+                      (vector? v2)
+                      (null? v)
+                      v v v2 v2)))
+           '(lambda (w z)
+              (let ([l '(1 2)]
+                    [l2 (list w z)]
+                    [m (mcons 1 2)]
+                    [v (vector w w w)]
+                    [v2 (vector-immutable w w w)])
+                (list (unsafe-car l)
+                      (unsafe-cdr l)
+                      #f
+                      #t
+                      #t
+                      #t
+                      #t
+                      #t
+                      #f
+                      v v v2 v2))))
+
+(test-comp '(lambda (w z)
+              (if (list w z (random 7))
+                  (let ([l (list (random))])
+                    (if l
+                        (list (car l) (cdr l))
+                        'oops))
+                  "bad"))
+           '(lambda (w z)
+              (begin
+                (list w z (random 7))
+                (let ([l (list (random))])
+                  (list (unsafe-car l) (unsafe-cdr l))))))
+
+(test-comp '(lambda (w z)
+              (let ([l (if w
+                           (lambda () w)
+                           (lambda () z))])
+                (if (procedure? l)
+                    (list l l)
+                    2)))
+           '(lambda (w z)
+              (let ([l (if w
+                           (lambda () w)
+                           (lambda () z))])
+                (list l l))))
+
+(test-comp '(lambda (w z)
+              (list (if (pair? w)
+                        (car z)
+                        (car w))
+                    (cdr w)))
+           '(lambda (w z)
+              (list (if (pair? w)
+                        (car z)
+                        (car w))
+                    (unsafe-cdr w)))
+           #f)
+
+(test-comp '(lambda (w)
+              (list
+                (car (begin (random) w))
+                (cdr (begin (random) w))
+                (pair? (begin (random) w))
+                (null? (begin (random) w)))) 
+           '(lambda (w)
+              (list
+                (car (begin (random) w))
+                (unsafe-cdr (begin (random) w))
+                (begin (random) #t)
+                (begin (random) #f))))
+
+(test-comp '(lambda (w f)
+              (list
+                (car (let ([x (random)]) (f x x) w))
+                (cdr (let ([x (random)]) (f x x) w))
+                (pair? (let ([x (random)]) (f x x) w))
+                (null? (let ([x (random)]) (f x x) w))))
+           '(lambda (w f)
+              (list
+                (car (let ([x (random)]) (f x x) w))
+                (unsafe-cdr (let ([x (random)]) (f x x) w))
+                (let ([x (random)]) (f x x) #t)
+                (let ([x (random)]) (f x x) #f))))
+
+(test-comp '(lambda ()
+              (car (let ([y (random)])
+                     (list y (set! y 5)))))
+           '(lambda ()
+              (let ([y (random)])
+                (begin0 y (set! y 5)))))
+                
+; test for unary aplications
+(test-comp -1
+           '(- 1))
+(test-comp '(lambda (f) (begin (f) -1))
+           '(lambda (f) (- (begin (f) 1))))
+(test-comp '(letrec ([x (lambda (t) x)]) (x x) -1)
+           '(- (letrec ([x (lambda (t) x)]) (x x) 1)))
+(test-comp 1
+           '(car (cons 1 2)))
+(test-comp '(lambda (f) (begin (f) 1))
+           '(lambda (f) (car (begin (f) (cons 1 2)))))
+(test-comp '(letrec ([x (lambda (t) x)]) (x x) 1)
+           '(car (letrec ([x (lambda (t) x)]) (x x) (cons 1 2))))
+           
+(test-comp '(lambda (w z) (box? (list (cons (random w) z))))
+           '(lambda (w z) (random w) #f))
+
+(test-comp '(lambda (w)
+              (car (cons w (random))))
+           '(lambda (w)
+              (begin (random) w)))
+(test-comp '(lambda (w)
+              (begin
+                (list (random) w)
+                17))
+           '(lambda (w)
+              (begin (random) 17)))
+(test-comp '(lambda (w)
+              (begin0
+               17
+               (list (random) w)))
+           '(lambda (w)
+              (begin0 17 (random))))
+
+(test-comp '(lambda (w) (not (list w)))
+           '(lambda (w) #f))
+
+(test-comp '(lambda (a b)
+              (not (if a b (list 1 2))))
+           '(lambda (a b)
+              (not (if a b #t))))
+
+(test-comp '(lambda (w) (if (void (list w)) 1 2))
+           '(lambda (w) 1))
+
+(test null
+      call-with-values (lambda () (with-continuation-mark 'a 'b (values))) list)
 
 ;; Ok to move `box' past a side effect (that can't capture a
 ;; resumable continuation):
@@ -1145,6 +1477,9 @@
                 (quote-syntax no!))
            ''ok)
 
+(test-comp '(lambda (x) (not (if x #f 2)))
+           '(lambda (x) (not (if x #f #t))))
+
 (test-comp '(lambda (x) (if x x #f))
            '(lambda (x) x))
 (test-comp '(lambda (x) (if (cons 1 x) 78 78))
@@ -1154,9 +1489,112 @@
                               (if r r (something-else)))
                             (a1)
                             (a2)))
-           '(lambda (x)  (if (if (something) #t (something-else))
+           '(lambda (x) (if (if (something) #t (something-else))
+                            (a1)
+                            (a2))))
+
+(test-comp '(lambda (x) (if (if x x (something-else))
+                            (a1)
+                            (a2)))
+           '(lambda (x) (if (if x #t (something-else))
                              (a1)
                              (a2))))
+
+(test-comp '(lambda (x) (if x (something-else) x))
+           '(lambda (x) (if x (something-else) #f)))
+                             
+(test-comp '(lambda (x) (if (if x #t #f)
+                            (a1)
+                            (a2)))
+           '(lambda (x) (if x
+                            (a1)
+                            (a2))))
+
+(test-comp '(lambda (x) (if (if x x x)
+                            (a1)
+                            (a2)))
+           '(lambda (x) (if x
+                            (a1)
+                            (a2))))
+
+(test-comp '(lambda (x) (let ([r (something)])
+                          (if r #t (something-else))))
+           '(lambda (x) (if (something) #t (something-else))))
+
+(test-comp '(lambda (x) (let ([r (something)])
+                          (r)))
+           '(lambda (x) ((something))))
+(test-comp '(lambda (x) (let ([r (something)])
+                          (r (something-else))))
+           '(lambda (x) ((something) (something-else))))
+(test-comp '(lambda (x z) (let ([r (something)])
+                            (z r)))
+           '(lambda (x z) (z (something))))
+(test-comp '(lambda (x) (let ([r (something)])
+                          (r (something-else) 1 2)))
+           '(lambda (x) ((something) (something-else) 1 2)))
+(test-comp '(lambda (x z) (let ([r (something)])
+                            (with-continuation-mark r z (something-else))))
+           '(lambda (x z) (with-continuation-mark (something) z (something-else))))
+(test-comp '(lambda (x z) (let ([r (something)])
+                            (with-continuation-mark z r (something-else))))
+           '(lambda (x z) (with-continuation-mark z (something) (something-else))))
+(test-comp '(lambda (x z) (let ([r (something)])
+                            (set! z r)))
+           '(lambda (x z) (set! z (something))))
+(test-comp '(lambda (x z) (let ([r (something)])
+                            (call-with-values (lambda () (z)) r)))
+           '(lambda (x z) (call-with-values (lambda () (z)) (something))))
+
+;; Don't move closure allocation:
+(test-comp '(lambda (z) (let ([r (lambda () z)])
+                          (lambda () r)))
+           '(lambda (z) (lambda ()
+                          (lambda () z)))
+           #f)
+
+
+(test-comp '(if (let ([z (random)]) null) 1 2)
+           '(if (let ([z (random)]) #t) 1 2))
+
+(test-comp '(if (if (list? (cons 1 null)) null (void)) 1 2)
+           '1)
+
+(test-comp '(if (if (list? (cons 1 null)) 7 8) 1 2)
+           '1)
+
+(test-comp '(if (if (list? (cons 1 null)) #t #t) 1 2)
+           '1)
+
+(test-comp '(let ([x '(7)])
+              (list x x (if (if (list? (cons 1 null)) x 3) 0 1)))
+           '(let ([x '(7)])
+              (list x x 0)))
+(test-comp '(lambda (x)
+              (cons (car x)
+                    (if (let ([y (random)]) (pair? x)) 1 2)))
+           '(lambda (x)
+              (cons (car x)
+                    (begin (let ([y (random)]) (void (pair? x))) 1))))
+(test-comp '(lambda (x)
+              (cons (car x)
+                    (if (begin (random) (random) (pair? x)) 1 2)))
+           '(lambda (x)
+              (cons (car x)
+                    (begin (random) (random) 1))))
+(test-comp '(lambda (x)
+              (if (begin (random) (random) (cons x x)) 1 2))
+           '(lambda (x)
+              (begin (random) (random) 1)))
+(test-comp '(lambda (x)
+              (if (let ([n (random)]) (random n) (random n) (cons (car x) x)) 1 2))
+           '(lambda (x)
+              (begin (let ([n (random)]) (random n) (random n) (car x) (void)) 1)))
+(test-comp '(lambda (x)
+              (if (begin (random) (not (begin (random) x))) 1 2))
+           '(lambda (x)
+              (if (begin (random) (random) x) 2 1)))
+
 
 (test-comp '(lambda (y)
               (let ([f (lambda (x) x)])
@@ -1201,6 +1639,26 @@
               (values x))
            '(let ([x (+ (cons 1 2) 0)])
               x))
+(test-comp '(lambda (x)
+              (begin (random) x))
+           '(lambda (x)
+              (values (begin (random) x))))
+(test-comp '(lambda (x f)
+              (letrec ([z (lambda () z)]) (f z) x))
+           '(lambda (x f)
+              (values (letrec ([z (lambda () z)]) (f z) x))))
+(test-comp '(lambda (x f)
+              (letrec ([z (lambda () z)]) (f z) z))
+           '(lambda (x f)
+              (values (letrec ([z (lambda () z)]) (f z) z))))
+(test-comp '(lambda (f)
+              (let ([x (f)]) (list x x)))
+           '(lambda (f)
+              (let ([x (values (f))]) (list x x))))
+(test-comp '(lambda (f)
+              (if (f) 0 1))
+           '(lambda (f)
+              (if (values (f)) 0 1)))
 
 (test-comp '(let ([x (+ (cons 1 2) 0)])
               (- x 8))
@@ -1256,6 +1714,95 @@
                                                  (cons 3 4))])
                          (list x x y)))])
               (g values)))
+
+(test-comp '(letrec-values ([(g f) (values
+                                    ;; The `let`s provide names:
+                                    (let ([g (lambda () (f))]) g)
+                                    (let ([f (lambda () (g))]) f))])
+              (g))
+           '(letrec ([g (lambda () (f))]
+                     [f (lambda () (g))])
+              (g)))
+
+;; Since `list` is effect-free, `f` should not be checked for
+;; undefined. I don't see a way to test that, though.
+#;
+(letrec ([f (list
+             (let ([f (lambda () f)]) f))])
+  (car f))
+
+;; Make sure `values` splitting doesn't reorder expressions
+(let ([f (lambda (z)
+           (let-values ([(a b) (values (list (z 1)) (list (z 2)))])
+             (list a b)))])
+  (set! f f)
+  (let ([v 0])
+    (test '((1) (2)) f (lambda (n) (set! v n) n))
+    (test 2 values v)))
+
+(test-comp '(lambda (z)
+              ;; ok to reorder `(list z)` and `(list (z 2))`,
+              ;; which then allows more simplication:
+              (let-values ([(a b) (values (list z) (list (z 2)))])
+                (list a b)))
+           '(lambda (z)
+              (list (list z) (list (z 2)))))
+(test-comp '(lambda (z)
+              (let-values ([(a b) (values (list (z 2)) (list z))])
+                (list a b)))
+           '(lambda (z)
+              (let ([p (list z)])
+                (list (list (z 2)) p))))
+
+(test-comp '(lambda (z)
+              (let-values ([(x y)
+                            (if z
+                                (values z (list z))
+                                (values z (box z)))])
+                (list x y)))
+           '(lambda (z)
+              (list z (if z (list z) (box z)))))
+
+(test-comp '(lambda (z)
+              (let-values ([(x y)
+                            (if z
+                                (values 1 1)
+                                (let ([more (+ z z)])
+                                  (values 4 more)))])
+                (list x y)))
+           '(lambda (z)
+              (let ([r (if z 1 (+ z z))])
+                (list (if z 1 4) r))))
+
+(test-comp '(lambda (a b c f)
+              (let ((d (if a
+                           a
+                           b)))
+                (let ((e
+                       (if b
+                           c
+                           (if (= f 90000)
+                               #f
+                               (add1 c)))))
+                  (values d e))))
+           '(lambda (a b c f)
+              (values (if a a b)
+                      (if b c (if (= f 90000)
+                                  #f
+                                  (add1 c))))))
+
+(test-comp '(lambda (x y)
+              (let ([z (+ x y)])
+                (list (if x x y) z)))
+           '(lambda (x y)
+              (list (if x x y) (+ x y))))
+
+(test-comp '(lambda (x y)
+              (let ([z (car y)])
+                (if x x z)))
+           '(lambda (x y)
+              (if x x (car y)))
+           #f)
 
 (test-comp '(let-values ([(x y) (values 1 2)])
               (+ x y))
@@ -1456,6 +2003,20 @@
                   88))
            '(let ([f (lambda (x) x)])
               (list f)))
+(test-comp '(let ([f (lambda (x) x)])
+              (list
+               f
+               f
+               (procedure? f)
+               (procedure? (begin (random) f))
+               (procedure? (letrec ([x (lambda (t) x)]) (x x) f))))
+           '(let ([f (lambda (x) x)])
+              (list
+               f
+               f
+               #t
+               (begin (random) #t)
+               (letrec ([x (lambda (t) x)]) (x x) #t))))
 
 (test-comp '(letrec ([f (case-lambda 
                          [(x) x]
@@ -1565,6 +2126,11 @@
   (check '(case-lambda [() 1] [(x y) x]) '(0 2) '(1 3))
   (check '(lambda (x [y #f]) y) '(1 2) '(0 3)))
 
+(test-comp '(lambda ()
+              (let ([l '(1 2)])
+                (car l)))
+           '(lambda () 1))
+
 (let ([test-dropped
        (lambda (cons-name . args)
          (test-comp `(let ([x 5])
@@ -1666,7 +2232,8 @@
     (test-move '(cons 1 2 3) #f)
     (test-move '(mcons 1 2 3) #f)
     (test-move '(box 1 2) #f)
-    (test-move '(box-immutable 1 2) #f)))
+    (test-move '(box-immutable 1 2) #f)
+    (test-move '(quote (1 2)) #t)))
 
 ;; Check move in to `else` branch where `then`
 ;; branch might capture a continuation
@@ -1932,6 +2499,43 @@
            '(lambda (n)
               (let ([p (extfl+ n n)])
                 (extfl+ p p))))
+
+(test-comp '(lambda (n)
+              (let ([p (fl+ n n)])
+                (list 
+                  (flonum? p)
+                  (flonum? (begin (random) p))
+                  (flonum? (letrec ([x (lambda (t) x)]) (x x) p)))))
+           '(lambda (n)
+              (let ([p (fl+ n n)])
+                (list
+                  #t  
+                  (begin (random) #t)
+                  (letrec ([x (lambda (t) x)]) (x x) #t)))))
+(test-comp '(lambda (n)
+              (let ([p (fx+ n n)])
+                (list 
+                  (fixnum? p)
+                  (fixnum? (begin (random) p))
+                  (fixnum? (letrec ([x (lambda (t) x)]) (x x) p)))))
+           '(lambda (n)
+              (let ([p (fx+ n n)])
+                (list
+                  #t  
+                  (begin (random) #t)
+                  (letrec ([x (lambda (t) x)]) (x x) #t)))))
+(test-comp '(lambda (n)
+              (let ([p (extfl+ n n)])
+                (list 
+                  (extflonum? p)
+                  (extflonum? (begin (random) p))
+                  (extflonum? (letrec ([x (lambda (t) x)]) (x x) p)))))
+           '(lambda (n)
+              (let ([p (extfl+ n n)])
+                (list
+                  #t  
+                  (begin (random) #t)
+                  (letrec ([x (lambda (t) x)]) (x x) #t)))))
 
 ;; simple cross-module inlining
 (test-comp `(module m racket/base 
@@ -2290,6 +2894,25 @@
            `(lambda (b)
               (with-continuation-mark 'x 'y (box (box b)))))
 
+(test-comp `(lambda (x y f)
+              (set! x 5)
+              (list
+                (#%variable-reference x)
+                (#%variable-reference y)
+                (variable-reference-constant? (#%variable-reference x))
+                (variable-reference-constant? (#%variable-reference y))
+                (variable-reference-constant? (letrec ([z (lambda () z)]) (f z) (#%variable-reference x)))
+                (variable-reference-constant? (letrec ([z (lambda () z)]) (f z) (#%variable-reference y)))))
+           `(lambda (x y f)
+              (set! x 5)
+              (list
+                (#%variable-reference x)
+                (#%variable-reference y)
+                #f
+                #t
+                (letrec ([z (lambda () z)]) (f z) #f)
+                (letrec ([z (lambda () z)]) (f z) #t))))
+           
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check splitting of definitions
 (test-comp `(module m racket/base
@@ -2939,14 +3562,14 @@
 
 (let ()
   (define c1
-    '(module c1 racket/base
-       (void ((if (zero? (random 1))
-                  (lambda (f) (displayln (f)))
-                  #f)
-              (lambda ()
-                ;; This access of i should raise an exception:
-                i)))
-       (define i (random 1))))
+    '(module c1 racket/kernel
+       ((if (zero? (random 1))
+            (lambda (f) (display (f)))
+            #f)
+        (lambda ()
+          ;; This access of i should raise an exception:
+          i))
+       (define-values (i) (random 1))))
 
   (define o (open-output-bytes))
 
@@ -2971,20 +3594,15 @@
                                                     [(list a b)
                                                      (list (match a
                                                              [(application rator (list rand))
-                                                              (application 
+                                                              (application
                                                                rator
                                                                (list
-                                                                (match rand
-                                                                  [(application rator (list rand))
-                                                                   (application
-                                                                    rator
-                                                                    (list
-                                                                     (struct-copy 
-                                                                      lam rand
-                                                                      [body
-                                                                       (match (lam-body rand)
-                                                                         [(toplevel depth pos const? ready?)
-                                                                          (toplevel depth pos #t #t)])])))])))])
+                                                                (struct-copy 
+                                                                 lam rand
+                                                                 [body
+                                                                  (match (lam-body rand)
+                                                                    [(toplevel depth pos const? ready?)
+                                                                     (toplevel depth pos #t #t)])])))])
                                                            b)])])))]))
     o2))
 
@@ -3518,6 +4136,67 @@
   (provide result))
 
 (test 'c dynamic-require ''check-jit-registers-shortcut 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Check (non-)inference of flonums with `if` branches:
+
+(let ()
+  (define f (lambda (x)
+              (let ([v (if x 1 2.0)])
+                (fl+ v v))))
+  (set! f f)
+  (err/rt-test (f #t)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure compilation doesn't try to inline forever:
+
+(module cfg-extract-test racket/base
+  (define (report-answer-all k)
+    (k (list (random 10))))
+
+  (lambda ()
+    (let loop ([success-k 0]
+               [fail-k 1]
+               [k 0])
+      (let ([new-got-k
+             (lambda (val stream depth tasks next-k)
+               (let ([next-k (lambda (x y tasks)
+                               (loop (random)
+                                     1
+                                     (lambda (end tasks success-k fail-k)
+                                       (next-k success-k fail-k 8))))])
+                 (report-answer-all (lambda (tasks)
+                                      (success-k 0 1 2 3 next-k)))))])
+        (k 5 5 new-got-k
+           (lambda (tasks)
+             (report-answer-all 8)))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that cross-module inlining decmopiles a function
+;; with correct use counts on arguments (specifically: B is used
+;; twice, so the argument expression can't be inlined for two uses)
+
+(module module-with-cross-module-inlining racket/base
+  (require racket/function)
+
+  (module bad racket
+    (provide evil-func)
+    (define (evil-func A B)
+      (A B)
+      B))
+
+  (require (submod "." bad))
+
+  (define n 0)
+
+  (define (bar) (set! n (add1 n)) (void))
+
+  (evil-func (curry void) (bar))
+
+  (provide n))
+
+(test 1 dynamic-require ''module-with-cross-module-inlining 'n)
+
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

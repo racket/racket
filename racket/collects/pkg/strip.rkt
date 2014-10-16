@@ -5,16 +5,58 @@
          syntax/modread
          racket/match
          racket/file
+         racket/path
          racket/list
-         racket/set)
+         racket/set
+         racket/format
+         setup/private/dylib
+         setup/private/elf)
 
 (provide generate-stripped-directory
          fixup-local-redirect-reference
-         strip-binary-compile-info)
+         strip-binary-compile-info
+         check-strip-compatible)
 
 (define strip-binary-compile-info (make-parameter #t))
 
-(define (generate-stripped-directory mode dir dest-dir)
+(define (check-strip-compatible mode pkg dir error)
+  (define i (get-info/full dir))
+  (define raw-status (and i
+                          (i 'package-content-state (lambda () #f))))
+  (define status (and raw-status
+                      (list? raw-status)
+                      ((length raw-status) . >= . 2)
+                      (memq (car raw-status) '(source binary binary-lib built))
+                      (or (not (cadr raw-status))
+                          (string? (cadr raw-status)))
+                      raw-status))
+  (define (no)
+    (error (~a "package content is not compatible with the requested conversion\n"
+               "  package: " pkg "\n"
+               "  requested conversion: " mode "\n"
+               "  package content: " (if status (car status) "source") "\n"
+               "  content for version: " (or (and status (cadr status)) "none"))))
+  (case mode
+    [(source)
+     ;; Can't install binary[-lib]
+     (when (and status
+                (memq (car status) '(binary binary-lib)))
+       (no))]
+    [(built)
+     ;; Can't install binary[-lib] from wrong version
+     (when (and status
+                (memq (car status) '(binary binary-lib))
+                (not (equal? (version) (cadr status))))
+       (no))]
+    [(binary binary-lib)
+     ;; Need built or binary, and for the right version:
+     (unless (and status
+                  (memq (car status) '(built binary binary-lib))
+                  (equal? (version) (cadr status)))
+       (no))]))
+
+(define (generate-stripped-directory mode dir dest-dir
+                                     #:check-status? [check-status? #t])
   (define drop-keep-ns (make-base-namespace))
   (define (add-drop+keeps dir base drops keeps)
     (define get-info (get-info/full dir #:namespace drop-keep-ns))
@@ -36,6 +78,9 @@
       (case mode
         [(source) (get-paths 'source-omit-files)]
         [(binary) (get-paths 'binary-omit-files)]
+        [(binary-lib) 
+         (union (get-paths 'binary-omit-files)
+                (get-paths 'binary-lib-omit-files))]
         [(built) 
          (intersect (get-paths 'source-omit-files)
                     (get-paths 'binary-omit-files))]))
@@ -43,6 +88,9 @@
       (case mode
         [(source) (get-paths 'source-keep-files)]
         [(binary) (get-paths 'binary-keep-files)]
+        [(binary-lib)
+         (union (get-paths 'binary-keep-files)
+                (get-paths 'binary-lib-keep-files))]
         [(built) 
          (union (get-paths 'source-keep-files)
                 (get-paths 'binary-keep-files))]))
@@ -73,7 +121,7 @@
         (case mode
           [(source)
            (regexp-match? #rx#"^(?:compiled|doc)$" bstr)]
-          [(binary)
+          [(binary binary-lib)
            (or (regexp-match? #rx#"^(?:tests|scribblings|.*(?:[.]scrbl|[.]dep|_scrbl[.]zo))$"
                               bstr)
                (and (regexp-match? #rx"[.](?:ss|rkt)$" bstr)
@@ -81,30 +129,66 @@
                     (file-exists? (let-values ([(base name dir?) (split-path (get-p))])
                                     (build-path base "compiled" (path-add-suffix name #".zo")))))
                (immediate-doc/css-or-doc/js?)
+               (case mode
+                 [(binary-lib)
+                  (regexp-match? #rx#"^(?:doc)$" bstr)]
+                 [else #f])
                ;; drop these, because they're recreated on fixup:
                (equal? #"info_rkt.zo" bstr)
                (equal? #"info_rkt.dep" bstr))]
           [(built)
            (immediate-doc/css-or-doc/js?)])))
+
+  (define (keep-override-by-default? path dir)
+    (case mode
+      [(binary)
+       (define bstr (path->bytes path))
+       (define (path-elements)
+         (if (eq? dir 'base)
+             null
+             (map path-element->bytes (explode-path dir))))
+       (cond
+        [(or (equal? bstr #"doc")
+             (equal? bstr #"info.rkt"))
+         ;; Keep "doc" and "info.rkt" (that might be for
+         ;; documentation) when under "scribblings" and not under
+         ;; "tests":
+         (define l (path-elements))
+         (and (member #"scribblings" l)
+              (not (member #"tests" l)))]
+        [else #f])]
+      [else #f]))
   
   (define (fixup new-p path src-base level)
-    (unless (eq? mode 'source)
-      (define bstr (path->bytes path))
-      (cond
-       [(regexp-match? #rx"[.]html$" bstr)
-        (fixup-html new-p)]
-       [(and (eq? mode 'binary)
-             (equal? #"info.rkt" bstr))
-        (fixup-info new-p src-base level)]
-       [(and (eq? mode 'binary)
-             (regexp-match? #rx"[.]zo$" bstr))
-        (fixup-zo new-p)])))
+    (case mode
+      [(binary binary-lib built)
+       (define bstr (path->bytes path))
+       (cond
+        [(regexp-match? #rx"[.]html$" bstr)
+         (fixup-html new-p)]
+        [else
+         (case mode
+           [(binary binary-lib)
+            (cond
+             [(equal? #"info.rkt" bstr)
+              (fixup-info new-p src-base level mode)]
+             [(regexp-match? #rx"[.]zo$" bstr)
+              (fixup-zo new-p)])]
+           [(built)
+            (when (or (eq? level 'package)
+                      (eq? level 'package+collection))
+              (cond
+               [(equal? #"info.rkt" bstr)
+                (fixup-info new-p src-base level mode)]
+               [else (void)]))]
+           [else (void)])])]))
   
   (define (explore base   ; containing directory relative to `dir`, 'base at start
                    paths  ; paths in `base'
                    drops  ; hash table of paths (relative to start) to drop
                    keeps  ; hash table of paths (relative to start) to keep
-                   level) ; 'package, 'collection, or 'subcollection
+                   drop-all-by-default? ; in dropped directory?
+                   level) ; 'package, 'package+collection, 'collection, or 'subcollection
     (define next-level (case level
                          [(package) 'collection]
                          [else 'subcollection]))
@@ -112,30 +196,42 @@
       (define p (if (eq? base 'same)
                     path
                     (build-path base path)))
-      (when (and (not (hash-ref drops p #f))
-                 (or (hash-ref keeps p #f)
-                     (not (drop-by-default? 
-                           path
-                           (lambda () (build-path dir p))))))
-        (define old-p (build-path dir p))
-        (define new-p (build-path dest-dir p))
-        (cond
-         [(file-exists? old-p)
-          (copy-file old-p new-p)
-          (file-or-directory-modify-seconds
-           new-p
-           (file-or-directory-modify-seconds old-p))
-          (fixup new-p path base level)]
-         [(directory-exists? old-p)
-          (define-values (new-drops new-keeps)
-            (add-drop+keeps old-p p drops keeps))
-          (make-directory new-p)
-          (explore p
-                   (directory-list old-p)
-                   new-drops
-                   new-keeps
-                   next-level)]
-         [else (error 'strip "file or directory disappeared?")]))))
+      (define keep? (and (not (hash-ref drops p #f))
+                         (or (hash-ref keeps p #f)
+                             (and drop-all-by-default?
+                                  (keep-override-by-default?
+                                   path
+                                   base))
+                             (not (or drop-all-by-default?
+                                      (drop-by-default?
+                                       path
+                                       (lambda () (build-path dir p))))))))
+      (define old-p (build-path dir p))
+      (define new-p (build-path dest-dir p))
+      (cond
+       [(and keep? (file-exists? old-p))
+        (when drop-all-by-default?
+          (make-directory* (path-only new-p)))
+        (copy-file old-p new-p)
+        (file-or-directory-modify-seconds
+         new-p
+         (file-or-directory-modify-seconds old-p))
+        (fixup new-p path base level)]
+       [(directory-exists? old-p)
+        (define-values (new-drops new-keeps)
+          (add-drop+keeps old-p p drops keeps))
+        (when keep?
+          (if drop-all-by-default?
+              (make-directory* new-p)
+              (make-directory new-p)))
+        (explore p
+                 (directory-list old-p)
+                 new-drops
+                 new-keeps
+                 (not keep?)
+                 next-level)]
+       [keep? (error 'strip "file or directory disappeared?")]
+       [else (void)])))
 
   (define-values (drops keeps)
     (add-drop+keeps dir 'same #hash() #hash()))
@@ -145,15 +241,16 @@
       (cond
        [(or (not i)
             (not (eq? 'multi (i 'collection (lambda () #t)))))
-        'collection] ; single-collection package
-       [else 'package])))
+        'package+collection] ; single-collection package
+       [else 'package]))) 
   
-  (explore 'same (directory-list dir) drops keeps level)
+  (explore 'same (directory-list dir) drops keeps #f level)
   (case mode
-    [(binary built) (unmove-files dir dest-dir drop-keep-ns)]
+    [(binary binary-lib built) (unmove-files dir dest-dir drop-keep-ns)]
     [else (void)])
   (case mode
-    [(binary) (assume-virtual dest-dir (eq? level 'collection))]
+    [(built binary binary-lib)
+     (create-info-as-needed mode dest-dir level)]
     [else (void)]))
 
 (define (fixup-html new-p)
@@ -185,9 +282,9 @@
           (module-compiled-submodules
            (module-compiled-submodules mod
                                        #f
-                                       mod-subs)
+                                       new-mod-subs)
            #t
-           mod*-subs))))
+           new-mod*-subs))))
   (unless (eq? mod new-mod)
     (call-with-output-file*
      new-p
@@ -228,8 +325,8 @@
      #:exists 'truncate/replace
      (lambda (out) (write-bytes new-bstr out)))))
 
-;; Used in binary mode:
-(define (fixup-info new-p src-base level)
+;; Used in binary[-lib] mode:
+(define (fixup-info new-p src-base level mode)
   (define dir (let-values ([(base name dir?) (split-path new-p)])
                 base))
   ;; check format:
@@ -248,9 +345,13 @@
     (define (convert-mod info-lib defns)
       `(module info ,info-lib
          (#%module-begin
-          (define assume-virtual-sources #t)
+          ,@(case mode
+              [(binary binary-lib)
+               `((define assume-virtual-sources #t))]
+              [else '()])
+          (define package-content-state '(,mode ,(version)))
           . ,(filter values
-                     (map (fixup-info-definition get-info) defns)))))
+                     (map (fixup-info-definition get-info mode) defns)))))
     (define new-content
       (match content
         [`(module info ,info-lib (#%module-begin . ,defns))
@@ -268,22 +369,33 @@
     ;; sanity check:
     (unless (get-info/full dir #:namespace (make-base-namespace))
       (error 'pkg-binary-create "rewrite failed"))
-    ;; compile it, if not top level:
+    ;; compile it, if not package-level:
     (when (strip-binary-compile-info)
       (unless (eq? level 'package)
         (managed-compile-zo new-p)))))
 
-(define ((fixup-info-definition get-info) defn)
+(define ((fixup-info-definition get-info mode) defn)
   (match defn
-    [`(define build-deps . ,v) #f]
-    [`(define assume-virtual-sources . ,v) #f]
-    [`(define copy-foreign-libs . ,v)
-     `(define move-foreign-libs . ,v)]
-    [`(define copy-shared-files . ,v)
-     `(define move-shared-files . ,v)]
-    [`(define copy-man-pages . ,v)
-     `(define move-man-pages . ,v)]
-    [_ defn]))
+    [`(define package-content-state . ,v) #f]
+    [_
+     (case mode
+       [(built) defn]
+       [else
+        (match defn
+          [`(define build-deps . ,v) #f]
+          [`(define update-implies . ,v) #f]
+          [`(define assume-virtual-sources . ,v) #f]
+          [`(define copy-foreign-libs . ,v)
+           `(define move-foreign-libs . ,v)]
+          [`(define copy-shared-files . ,v)
+           `(define move-shared-files . ,v)]
+          [`(define copy-man-pages . ,v)
+           `(define move-man-pages . ,v)]
+          [`(define scribblings . ,v)
+           (case mode
+             [(binary-lib) #f]
+             [else defn])]
+          [_ defn])])]))
 
 (define (unmove-files dir dest-dir metadata-ns)
   ;; Determine whether any files slated for movement by
@@ -297,7 +409,7 @@
         (unmove d (build-path dest-dir f)))))
   (define (unmove dir dest-dir)
     (define info (get-info/full dir #:namespace metadata-ns))
-    (define (unmove-tag tag find-dir)
+    (define (unmove-tag tag find-dir fixup copy-one-file)
       (when info
         (define l (info tag (lambda () null)))
         (for ([f (in-list l)])
@@ -305,29 +417,54 @@
                      (not (directory-exists? (build-path dir f)))
                      (or (file-exists? (build-path (find-dir) f))
                          (directory-exists? (build-path (find-dir) f))))
-            (copy-directory/files (build-path (find-dir) f) 
-                                  (build-path dest-dir f))))))
-    (unmove-tag 'move-foreign-libs find-user-lib-dir)
-    (unmove-tag 'move-shared-files find-user-share-dir)
-    (unmove-tag 'move-man-pages find-user-man-dir)
+            (define uncopied (build-path dest-dir f))
+            (define src (build-path (find-dir) f))
+            (if (file-exists? src)
+                (copy-one-file src uncopied)
+                (copy-directory/files src uncopied))
+            (fixup uncopied)))))
+
+    (unmove-tag 'move-foreign-libs find-user-lib-dir
+                (case (system-type)
+                  [(macosx)
+                   adjust-dylib-path/uninstall]
+                  [else void])
+                (case (system-type)
+                  [(unix)
+                   copy-file/uninstall-elf-rpath]
+                  [else
+                   copy-file]))
+    (unmove-tag 'move-shared-files find-user-share-dir void copy-file)
+    (unmove-tag 'move-man-pages find-user-man-dir void copy-file)
     (unmove-in dir dest-dir))
   (unmove dir dest-dir))
 
-(define (assume-virtual dest-dir in-collection?)
+(define (create-info-as-needed mode dest-dir level)
   ;; If an "info.rkt" file doesn't exists in a collection,
-  ;; add one so that `assume-virtual-sources` is defined.
+  ;; add one so that `package-bundle-status` and/or
+  ;; `assume-virtual-sources` is defined.
   (cond
-   [in-collection?
+   [(or (eq? mode 'built)
+        (not (eq? level 'package)))
     (define info-path (build-path dest-dir "info.rkt"))
     (unless (file-exists? info-path)
       (call-with-output-file* 
        info-path
        (lambda (o)
-         (write `(module info setup/infotab (define assume-virtual-sources #t)) o)
+         (write `(module info setup/infotab
+                   ,@(case level
+                      [(package package+collection)
+                       `((define package-content-state '(,mode ,(version))))]
+                      [else '()])
+                   ,@(case mode
+                       [(binary binary-lib)
+                        `((define assume-virtual-sources #t))]
+                       [else '()]))
+                o)
          (newline o)))
       (when (strip-binary-compile-info)
         (managed-compile-zo info-path)))]
    [else
     (for ([f (in-list (directory-list dest-dir #:build? #t))])
       (when (directory-exists? f)
-        (assume-virtual f #t)))]))
+        (create-info-as-needed mode f 'collection)))]))

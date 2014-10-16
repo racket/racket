@@ -6,13 +6,13 @@
 
 @title[#:tag "optimization"]{Optimization in Typed Racket}
 
-Typed Racket provides a type-driven optimizer that rewrites well-typed
-programs to potentially make them faster. It should in no way make
-your programs slower or unsafe.
-
 @margin-note{For general information on Racket performance and
 benchmarking, see @secref[#:doc '(lib
 "scribblings/guide/guide.scrbl")]{performance}.}
+
+Typed Racket provides a type-driven optimizer that rewrites well-typed
+programs to potentially make them faster. It should in no way make
+your programs slower or unsafe.
 
 
 @section{Turning the optimizer off}
@@ -29,6 +29,11 @@ Typed Racket's optimizer can improve the performance of various common
 Racket idioms. However, it does a better job on some idioms than on
 others. By writing your programs using the right idioms, you can help
 the optimizer help you.
+
+To best take advantage of the Typed Racket optimizer, keep the following in
+mind. The @emph{Optimization Coach} package provides optimization coaching
+support to help you in this task.
+
 
 @subsection{Numeric types}
 Being type-driven, the optimizer makes most of its decisions based on
@@ -157,29 +162,6 @@ In many such cases, however, @seclink[#:doc '(lib
 "scribblings/guide/guide.scrbl") "define-struct"]{structs} are
 preferable to vectors. Typed Racket can optimize struct access in all
 cases.
-
-
-@subsection[#:tag "optimization-coach"]{Optimization coaching}
-
-The Optimization Coach package provides optimization coaching support to help
-you get the most of the Typed Racket optimizer. To install it, run the following
-command:
-
-@commandline{raco pkg install optimization-coach}
-
-After it is installed, an "Optimization Coach" button will appear on the
-DrRacket toolbar for Typed Racket programs.
-
-Similar information (albeit without in-depth explanations or advice) is
-available from the command line. When compiling a Typed Racket program, setting
-the racket @seclink[#:doc '(lib "scribblings/reference/reference.scrbl")
-"logging"]{logging} facilities to the @racket['debug] level and listening to
-the @racket['TR-optimizer] logger causes Typed Racket to display performance
-debugging information. Setting the Racket logging level can be done on the
-command line with the @racket[-W] flag:
-
-@commandline["racket -W debug@TR-optimizer my-typed-program.rkt"]
-
 
 @subsection[#:tag "contract-costs"]{Contract boundaries}
 

@@ -1,0 +1,18 @@
+#!/bin/sh
+
+run() {
+  exe="gracket"
+  if [ "x$1" = "x-t" ]; then exe="racket"; shift; fi
+  "$exe" "$1"
+  echo "done:--- $1 ---"
+  echo ""
+}
+
+cd tests 
+
+run -t batch-io-xexpr.rkt
+run random-seed-works.rkt
+run mouse-evt.rkt
+run release.rkt
+run on-release-no-key.rkt
+run pad1.rkt

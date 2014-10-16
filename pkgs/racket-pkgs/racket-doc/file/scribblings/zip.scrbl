@@ -15,6 +15,9 @@ compression is implemented by @racket[deflate].}
                                (if timestamp
                                    (lambda (p) timestamp)
                                    file-or-directory-modify-seconds)]
+              [#:utc-timestamps? utc-timestamps? any/c #f]
+              [#:round-timestamps-down? round-timestamps-down? any/c #f]
+              [#:path-prefix path-prefix (or/c #f path-string?) #f]
               [#:system-type sys-type symbol? (system-type)])
          void?]{
 
@@ -25,7 +28,7 @@ The given @racket[path]s are all expected to be
 relative path names of existing directories and files (i.e., relative
 to the current directory).  If a nested path is provided as a
 @racket[path], its ancestor directories are also added to the
-resulting zip file, up to the current directory (using
+resulting @exec{zip} file, up to the current directory (using
 @racket[pathlist-closure]).
 
 Files are packaged as usual for
@@ -36,11 +39,27 @@ distinction between owner/group/other permissions. Also, symbolic
 links are always followed.
 
 The @racket[get-timestamp] function is used to obtain the modification
-date to record in the archive for a file or directory, while
-@racket[sys-type] determines the system type recorded in the archive.
+date to record in the archive for a file or directory. Normally,
+@exec{zip} archives record modification dates in local time, but if
+@racket[utc-timestamps?] is true, then the UTC time is recorded.
+Timestamps in @exec{zip} archives are precise only to two seconds; by
+default, the time is rounded toward the future (like WinZip or PKZIP),
+but time is rounded toward the past (like Java) if
+@racket[round-timestamps-down?]  is true.
+
+The @racket[sys-type] argument determines the system type recorded in
+the archive.
+
+If @racket[path-prefix] is not @racket[#f], then it prefixes the name
+of each path as it is written in the @exec{zip} file, and directory
+entries are added for each element of @racket[path-prefix].
 
 @history[#:changed "6.0.0.3"
-         @elem{Added the @racket[#:get-timestamp] and @racket[#:system-type] arguments.}]}
+         @elem{Added the @racket[#:get-timestamp] and @racket[#:system-type] arguments.}
+         #:changed "6.0.1.12"
+         @elem{Added the @racket[#:path-prefix], @racket[#:utc-timestamps?], and 
+                @racket[#:utc-timestamps-down?] arguments.}]}
+         
 
 
 @defproc[(zip->output [paths (listof path-string?)]
@@ -51,17 +70,24 @@ date to record in the archive for a file or directory, while
                                        (if timestamp
                                            (lambda (p) timestamp)
                                            file-or-directory-modify-seconds)]
+                      [#:utc-timestamps? utc-timestamps? any/c #f]
+                      [#:round-timestamps-down? round-timestamps-down? any/c #f]
+                      [#:path-prefix path-prefix (or/c #f path-string?) #f]
                       [#:system-type sys-type symbol? (system-type)])
          void?]{
 
-Zips each of the given @racket[paths], and packages it as a zip
+Zips each of the given @racket[paths], and packages it as a @exec{zip}
 ``file'' that is written directly to @racket[out].  Unlike
-@racket[zip], the specified @racket[paths] are included as-is; if a
+@racket[zip], the specified @racket[paths] are included without
+closing over directories: if a
 directory is specified, its content is not automatically added, and
 nested directories are added without parent directories.
 
 @history[#:changed "6.0.0.3"
-         @elem{Added the @racket[#:get-timestamp] and @racket[#:system-type] arguments.}]}
+         @elem{Added the @racket[#:get-timestamp] and @racket[#:system-type] arguments.}
+         #:changed "6.0.1.12"
+         @elem{Added the @racket[#:path-prefix], @racket[#:utc-timestamps?], and 
+                @racket[#:utc-timestamps-down?] arguments.}]}
 
 
 @defboolparam[zip-verbose on?]{

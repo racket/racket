@@ -185,7 +185,6 @@
 
 (define-gdk gdk_screen_get_default (_fun -> _GdkScreen))
 
-
 (define (mnemonic-string orig-s)
   (string-join
    (for/list ([s (in-list (regexp-split #rx"&&" orig-s))])

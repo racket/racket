@@ -76,13 +76,21 @@
             (set! cksum (+ cksum d))
             (loop (sub1 q) (quotient n 8)))))
       (advance len))
+    (define attrib-path
+      (if link?
+          ;; For a link, use attributes of the containing directory:
+          (let-values ([(base name dir?) (split-path path)])
+            (or (and (path? base)
+                     base)
+                (current-directory)))
+          path))
     ;; see http://www.mkssoftware.com/docs/man4/tar.4.asp for format spec
     (write-block tar-name-length file-name)
-    (write-octal   8 (path-attributes path dir?))
+    (write-octal   8 (path-attributes attrib-path dir?))
     (write-octal   8 0)          ; always root (uid)
     (write-octal   8 0)          ; always root (gid)
     (write-octal  12 size)
-    (write-octal  12 (get-timestamp path))
+    (write-octal  12 (get-timestamp attrib-path))
     ;; set checksum later, consider it "all blanks" for cksum
     (set! cksum-p p) (set! cksum (+ cksum (* 8 32))) (advance 8)
     (write-block*  1 (if link? #"2" (if dir? #"5" #"0"))) ; type-flag: dir/file (no symlinks)

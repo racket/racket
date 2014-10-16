@@ -147,16 +147,11 @@ Scheme_Object *scheme_prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc
     return proc(argc, MZ_RUNSTACK, self);
 }
 
+#endif
+
 /* Various specific 'futurized' versions of primitives that may 
    be invoked directly from JIT code and are not considered thread-safe 
    (are not invoked via apply_multi_from_native, etc.) */
-
-Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v)
-{
-  return ts_scheme_force_value_same_mark(v);
-}
-
-#endif
 
 #ifdef MZ_USE_FUTURES
 static Scheme_Object *ts__scheme_tail_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
@@ -547,6 +542,17 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   return 1;
 }
 
+int scheme_generate_force_value_same_mark(mz_jit_state *jitter)
+{
+  GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
+  jit_movi_p(JIT_R0, SCHEME_TAIL_CALL_WAITING);
+  mz_prepare(1);
+  jit_pusharg_p(JIT_R0);
+  (void)mz_finish_lwe(ts_scheme_force_value_same_mark, refr);
+  jit_retval(JIT_R0);
+  return 1;
+}
+
 int scheme_generate_finish_apply(mz_jit_state *jitter)
 {
   GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
@@ -557,7 +563,7 @@ int scheme_generate_finish_apply(mz_jit_state *jitter)
 int scheme_generate_finish_tail_apply(mz_jit_state *jitter)
 {
   GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
-  (void)mz_finish_lwe(_scheme_tail_apply_from_native, refr);
+  (void)mz_finish_lwe(ts__scheme_tail_apply_from_native, refr);
   return 1;
 }
 
@@ -1824,6 +1830,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
             if (nc->code->start_code == scheme_on_demand_jit_code) {
               if (nc->code->arity_code != sjc.in_progress_on_demand_jit_arity_code) {
                 scheme_on_demand_generate_lambda(nc, 0, NULL, 0);
+                CHECK_NESTED_GENERATE();
               }
             }
             if (nc->code->start_code != scheme_on_demand_jit_code) {
@@ -2166,6 +2173,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 	sjc.shared_tail_code[dp][num_rands] = code;
       }
       code = sjc.shared_tail_code[dp][num_rands];
+      CHECK_NESTED_GENERATE();
       if (direct_self) {
         LOG_IT(("<-self\n"));
 	generate_self_tail_call(rator, jitter, num_rands, code, args_already_in_place, direct_flostack_offset, 
@@ -2231,6 +2239,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
           sjc.shared_non_tail_code[4][num_rands][mo] = code;
         }
         unboxed_code = sjc.shared_non_tail_code[4][num_rands][mo];
+        CHECK_NESTED_GENERATE();
       } else
         unboxed_code = NULL;
 #endif
@@ -2243,6 +2252,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       }
       LOG_IT(("<-non-tail %d %d %d\n", dp, num_rands, mo));
       code = sjc.shared_non_tail_code[dp][num_rands][mo];
+      CHECK_NESTED_GENERATE();
 
       if (nontail_self) {
         generate_nontail_self_setup(jitter);

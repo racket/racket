@@ -42,7 +42,7 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 # typically redirects to RUN_THIS_RACKET_CGC:
 RUN_THIS_RACKET_CGC = ../racket@CGC@
 
-XFORM_SETUP = @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/xform.rkt --setup .
+XFORM_SETUP = @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/xform.rkt --setup . --depends
 XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o
 XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
@@ -169,6 +169,7 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/main.c
 
 all: xsrc
+	$(MAKE) check-sdep
 	$(MAKE) $(XSRCDIR)/precomp.h
 	$(MAKE) xobjects
 	$(MAKE) ../racket3m
@@ -180,138 +181,132 @@ xsrc:
 
 xobjects: $(OBJS) main.@LTO@
 
-XFORMDEP = $(srcdir)/gc2.h $(srcdir)/gc2_obj.h $(srcdir)/xform.rkt $(srcdir)/xform-mod.rkt \
-           $(srcdir)/precomp.c $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
-           $(srcdir)/../sconfig.h ../mzconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schemef.h \
-           $(srcdir)/../src/stypes.h $(srcdir)/../include/schthread.h $(srcdir)/../src/mzrt.h \
-           $(srcdir)/../src/mzrt_cas.inc
+XFORMDEP_NOPRE = $(srcdir)/xform.rkt $(srcdir)/xform-mod.rkt
+XFORMDEP = $(XFORMDEP_NOPRE) $(XSRCDIR)/precomp.h
 
-LIGHTNINGDEP = $(srcdir)/../src/lightning/i386/core.h $(srcdir)/../src/lightning/i386/core-common.h \
-               $(srcdir)/../src/lightning/i386/asm.h $(srcdir)/../src/lightning/i386/asm-common.h \
-               $(srcdir)/../src/lightning/i386/fp.h $(srcdir)/../src/lightning/i386/fp-common.h \
-               $(srcdir)/../src/lightning/i386/funcs.h $(srcdir)/../src/lightning/i386/funcs-common.h \
-               $(srcdir)/../src/lightning/ppc/core.h $(srcdir)/../src/lightning/ppc/core-common.h \
-               $(srcdir)/../src/lightning/ppc/asm.h $(srcdir)/../src/lightning/ppc/asm-common.h \
-               $(srcdir)/../src/lightning/ppc/fp.h $(srcdir)/../src/lightning/ppc/fp-common.h \
-               $(srcdir)/../src/lightning/ppc/funcs.h $(srcdir)/../src/lightning/ppc/funcs-common.h
+MZRTDEP = $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
+          $(srcdir)/../sconfig.h ../mzconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schemef.h \
+          $(srcdir)/../src/stypes.h $(srcdir)/../include/schthread.h $(srcdir)/../src/mzrt.h \
+          $(srcdir)/../src/mzrt_cas.inc
 
-MZCLPFDEP = $(srcdir)/../src/mzclpf_decl.inc $(srcdir)/../src/mzclpf_pre.inc \
-            $(srcdir)/../src/mzclpf_post.inc
+# Uses ".sdep" content to dicard out-of-date ".c" and ".h" files in "xsrc":
+check-sdep :
+	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/check-sdep.rkt
 
-$(XSRCDIR)/precomp.h : $(XFORMDEP)  $(srcdir)/../src/schvers.h
+$(XSRCDIR)/precomp.h : $(XFORMDEP_NOPRE)  $(srcdir)/../src/schvers.h
 	env XFORM_PRECOMP=yes $(XFORM_NOPRECOMP) $(XSRCDIR)/precomp.h $(srcdir)/precomp.c
 
-$(XSRCDIR)/salloc.c: ../src/salloc.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/salloc.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/salloc.c $(SRCDIR)/salloc.c
-$(XSRCDIR)/bignum.c: ../src/bignum.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/bignum.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/bignum.c $(SRCDIR)/bignum.c
-$(XSRCDIR)/bool.c: ../src/bool.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/bool.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/bool.c $(SRCDIR)/bool.c
-$(XSRCDIR)/builtin.c: ../src/builtin.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/builtin.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/builtin.c $(SRCDIR)/builtin.c
-$(XSRCDIR)/char.c: ../src/char.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/char.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/char.c $(SRCDIR)/char.c
-$(XSRCDIR)/compenv.c: ../src/compenv.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/compenv.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/compenv.c $(SRCDIR)/compenv.c
-$(XSRCDIR)/compile.c: ../src/compile.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/compile.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/compile.c $(SRCDIR)/compile.c
-$(XSRCDIR)/complex.c: ../src/complex.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/complex.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/complex.c $(SRCDIR)/complex.c
-$(XSRCDIR)/dynext.c: ../src/dynext.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/dynext.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/dynext.c $(SRCDIR)/dynext.c
-$(XSRCDIR)/env.c: ../src/env.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+$(XSRCDIR)/env.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/env.c $(SRCDIR)/env.c
-$(XSRCDIR)/error.c: ../src/error.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/error.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/error.c $(SRCDIR)/error.c
-$(XSRCDIR)/eval.c: ../src/eval.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/eval.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/eval.c $(SRCDIR)/eval.c
-$(XSRCDIR)/file.c: ../src/file.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/file.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/file.c $(SRCDIR)/file.c
-$(XSRCDIR)/fun.c: ../src/fun.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/fun.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/fun.c $(SRCDIR)/fun.c
-$(XSRCDIR)/future.c: ../src/future.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/future.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/future.c $(SRCDIR)/future.c
-$(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/hash.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
-$(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP) $(MZCLPFDEP) $(LIGHTNINGDEP)
+$(XSRCDIR)/jit.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jit.c $(SRCDIR)/jit.c
-$(XSRCDIR)/jitalloc.c: ../src/jitalloc.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+$(XSRCDIR)/jitalloc.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jitalloc.c $(SRCDIR)/jitalloc.c
-$(XSRCDIR)/jitarith.c: ../src/jitarith.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+$(XSRCDIR)/jitarith.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jitarith.c $(SRCDIR)/jitarith.c
-$(XSRCDIR)/jitcall.c: ../src/jitcall.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+$(XSRCDIR)/jitcall.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jitcall.c $(SRCDIR)/jitcall.c
-$(XSRCDIR)/jitcommon.c: ../src/jitcommon.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+$(XSRCDIR)/jitcommon.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jitcommon.c $(SRCDIR)/jitcommon.c
-$(XSRCDIR)/jitinline.c: ../src/jitinline.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+$(XSRCDIR)/jitinline.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jitinline.c $(SRCDIR)/jitinline.c
-$(XSRCDIR)/jitprep.c: ../src/jitprep.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+$(XSRCDIR)/jitprep.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jitprep.c $(SRCDIR)/jitprep.c
-$(XSRCDIR)/jitstack.c: ../src/jitstack.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+$(XSRCDIR)/jitstack.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jitstack.c $(SRCDIR)/jitstack.c
-$(XSRCDIR)/jitstate.c: ../src/jitstate.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+$(XSRCDIR)/jitstate.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jitstate.c $(SRCDIR)/jitstate.c
-$(XSRCDIR)/marshal.c: ../src/marshal.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+$(XSRCDIR)/marshal.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/marshal.c $(SRCDIR)/marshal.c
-$(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+$(XSRCDIR)/module.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
-$(XSRCDIR)/letrec_check.c: ../src/letrec_check.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/letrec_check.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/letrec_check.c $(SRCDIR)/letrec_check.c
-$(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/list.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/list.c $(SRCDIR)/list.c
-$(XSRCDIR)/network.c: ../src/network.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/network.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/network.c $(SRCDIR)/network.c
-$(XSRCDIR)/numarith.c: ../src/numarith.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/numarith.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/numarith.c $(SRCDIR)/numarith.c
-$(XSRCDIR)/number.c: ../src/number.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/number.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/number.c $(SRCDIR)/number.c
-$(XSRCDIR)/numcomp.c: ../src/numcomp.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/numcomp.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/numcomp.c $(SRCDIR)/numcomp.c
-$(XSRCDIR)/numstr.c: ../src/numstr.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/numstr.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/numstr.c $(SRCDIR)/numstr.c
-$(XSRCDIR)/optimize.c: ../src/optimize.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+$(XSRCDIR)/optimize.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/optimize.c $(SRCDIR)/optimize.c
-$(XSRCDIR)/place.c: ../src/place.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+$(XSRCDIR)/place.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/place.c $(SRCDIR)/place.c
-$(XSRCDIR)/port.c: ../src/port.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/port.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/port.c $(SRCDIR)/port.c
-$(XSRCDIR)/portfun.c: ../src/portfun.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/portfun.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/portfun.c $(SRCDIR)/portfun.c
-$(XSRCDIR)/print.c: ../src/print.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/print.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/print.c $(SRCDIR)/print.c
-$(XSRCDIR)/rational.c: ../src/rational.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/rational.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/rational.c $(SRCDIR)/rational.c
-$(XSRCDIR)/read.c: ../src/read.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/read.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/read.c $(SRCDIR)/read.c
-$(XSRCDIR)/regexp.c: ../src/regexp.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/regexp.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/regexp.c $(SRCDIR)/regexp.c
-$(XSRCDIR)/resolve.c: ../src/resolve.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/resolve.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/resolve.c $(SRCDIR)/resolve.c
-$(XSRCDIR)/sema.c: ../src/sema.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/sema.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/sema.c $(SRCDIR)/sema.c
-$(XSRCDIR)/setjmpup.c: ../src/setjmpup.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/setjmpup.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/setjmpup.c $(SRCDIR)/setjmpup.c
-$(XSRCDIR)/sfs.c: ../src/sfs.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/sfs.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/sfs.c $(SRCDIR)/sfs.c
-$(XSRCDIR)/string.c: ../src/string.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/string.c: $(XFORMDEP)
 	$(XFORM_SETUP) --cpp "$(CPP) -I../src $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
-$(XSRCDIR)/struct.c: ../src/struct.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/struct.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/struct.c $(SRCDIR)/struct.c
-$(XSRCDIR)/symbol.c: ../src/symbol.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+$(XSRCDIR)/symbol.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/symbol.c $(SRCDIR)/symbol.c
-$(XSRCDIR)/syntax.c: ../src/syntax.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/syntax.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/syntax.c $(SRCDIR)/syntax.c
-$(XSRCDIR)/thread.c: ../src/thread.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/thread.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/thread.c $(SRCDIR)/thread.c
-$(XSRCDIR)/type.c: ../src/type.@LTO@ $(XFORMDEP) $(MZCLPFDEP)
+$(XSRCDIR)/type.c: $(XFORMDEP) $(MZCLPFDEP)
 	$(XFORM) $(XSRCDIR)/type.c $(SRCDIR)/type.c
-$(XSRCDIR)/validate.c: ../src/validate.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/validate.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/validate.c $(SRCDIR)/validate.c
-$(XSRCDIR)/vector.c: ../src/vector.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/vector.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/vector.c $(SRCDIR)/vector.c
-$(XSRCDIR)/foreign.c: ../../foreign/foreign.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/foreign.c: $(XFORMDEP)
 	$(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS) $(LIBFFI_INCLUDE_@OWN_LIBFFI@) -I${SRCDIR}/../../racket/src" @XFORMFLAGS@ -o $(XSRCDIR)/foreign.c $(SRCDIR)/../../foreign/foreign.c
-$(XSRCDIR)/main.c: ../main.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/main.c: $(XFORMDEP)
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/main.c $(DEF_C_DIRS) $(srcdir)/../main.c
 
 salloc.@LTO@: $(XSRCDIR)/salloc.c
@@ -372,7 +367,7 @@ marshal.@LTO@: $(XSRCDIR)/marshal.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/marshal.c -o marshal.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
-mzrt.@LTO@: $(SRCDIR)/mzrt.c $(SRCDIR)/mzrt.h $(XFORMDEP)
+mzrt.@LTO@: $(SRCDIR)/mzrt.c $(XFORMDEP) $(MZRTDEP)
 	$(CC) $(ALL_CFLAGS) -DMZ_PRECISE_GC -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
 network.@LTO@: $(XSRCDIR)/network.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/network.c -o network.@LTO@

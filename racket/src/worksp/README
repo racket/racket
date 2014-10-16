@@ -2,8 +2,8 @@ This directory contains
 
   - solution files and project files for building minimal Racket and
     related executables with Microsoft Visual Studio 2008
-    (a.k.a. version 9.0) and up, which work with the Express version
-    of Visual Studio;
+    (a.k.a. version 9.0) and up, including the Express versions of
+    Visual Studio;
 
   - mzconfig.h which is a manual version of information that is gathered
     automatically when using the "configure" script;
@@ -43,14 +43,23 @@ As always, please report bugs via one of the following:
 Building Racket and GRacket
 ---------------------------
 
-If you're using MSVC 2008, and if `cl.exe' and either `devenv.exe'
-or `vcexpress.exe' is in your path, then you can just run
+If you're using Visual Studio, and if `cl.exe' and `msbuild.exe'
+is in your path, then you can just run
     racket\src\worksp\build.bat
 from its own directory to perform all steps up to "Versioning",
 including the MzCOM steps.
 
+If `cl.exe' and `msbuild.exe' are not already in your path --- along
+with many associated environment variables --- then you can run
+"msvcprep.bat" to configure your environment, assuming that Visual
+Studio is in one of its usual locations. The "msvcprep.bat" script
+simply tries to find Visual Studio and run its "vcvarsall.bat". You
+may need to provide an argument such as "x86" or "x86_amd64" to select
+the build mode.
+
 If your MSVC environment is configured for 64-bit builds (e.g., by
-running "vcvarsall.bat" with "x64), then a 64-bit build is created.
+running "msvcprep.bat" or Microsoft's "vcvarsall.bat", with
+"x86_amd64" or "amd64"), then a 64-bit build is created.
 
 The CGC variants of Racket, GRacket, and MzCOM can be built via
 Visual Studio projects.  The 3m variants are built by a Racket script
@@ -59,25 +68,36 @@ racket\src\README if you don't know about the two variants.)
 
 
 If you can't run "build.bat" or don't want to, you have to perform
-several steps: first builg RacketCGC, then build Racket3m, etc.
+several steps: first build RacketCGC, then build Racket3m, etc.
 
 Building RacketCGC and GRacketCGC
 ---------------------------------
 
 The CGC source code for RacketCGC and GRacketCGC is split into several
 projects that are grouped into a few solutions.  To build the `X'
-solution with Visual Studio, open the file racket\src\worksp\X\X.sln.
+solution with Visual Studio, open the file racket\src\worksp\X\X.sln,
+but add `9' before ".sln" if you're using Visual Studio 2008 (i.e.,
+version 9.0). The solution files without a number are for Visual
+Studio 2010, but they should upgrade immediately for later versions.
+
+ [The .vcproj files are used by the ...9.sln solutions, while the
+  .vcxproj files are used by the other .sln solutions. The latter are
+  compatible with Visual Studio 2010. For Visual Studio versions later
+  than 2010, "build.bat" script auto-upgrades projects in a copy whose
+  file name ends with a literal "X" to match the current tool version,
+  but you can also just upgrade them within your version of Visual
+  Studio.]
 
 To build RacketCGC, build the Racket solution in
   racket\src\worksp\racket - makes racket\RacketCGC.exe
 
-  [When you open the solution, it may default to "Debug"
-   configuration.  Switch to "Release" before building.]
+  [When you open the solution, switch to a "Release" configuration
+   before building.]
 
 To build GRacketCGC, build the GRacket solution:
   racket\src\worksp\gracket - makes racket\GRacketCGC.exe
 
-  [Again, switch to the "Release" configuration if necessary.]
+  [Again, switch to a "Release" configuration if necessary.]
 
 The build processes for RacketCGC and GRacketCGC automatically builds
   libmzgc    - makes racket\lib\libmzgcxxxxxxx.dll and
@@ -121,9 +141,10 @@ Building Racket3m and GRacket3m
 
 After RacketCGC and GRacketCGC are built, you can can build 3m binaries:
 
-  1. Ensure that the Visual Studio command-line tools are in your path.
-     You may need to run "vcvarsall.bat" from your Visual Studio
-     installation, so that PATH and other environment variables are set.
+  1. Ensure that the Visual Studio command-line tools are in your
+     path.  You may need to run "msvcprep.bat" here or "vcvarsall.bat"
+     from your Visual Studio installation, so that PATH and other
+     environment variables are set.
 
   2. Change directories to racket\src\worksp\gc2 and run
 
@@ -255,3 +276,16 @@ libraries to embed Racket in an application.
 If you need Racket to link to a DLL-based C library (instead of
 statically linking to the C library within the Racket DLL), then compile
 Racket with the /MD flag.
+
+----------------------------
+SenoraGC versus the Boehm GC
+----------------------------
+
+The "Release" and "Debug" solution configurations use SenoraGC (SGC),
+while the "AltGCRelease" and "AltGCDebug" configurations use the
+variant of the Boehm GC that is included with Racket.
+
+In project files, "SRelease" and "SDebug" (as used by the "Release"
+and "Debug" solution configurations) build against SGC, while
+"BRelease" and "BDebug" (as used by the "AltGCRelease" and
+"AltGCDebug" solution configurations) build against the Boehm GC.

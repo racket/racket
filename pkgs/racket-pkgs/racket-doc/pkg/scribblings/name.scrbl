@@ -55,3 +55,19 @@ is called if a valid name cannot be inferred from @racket[source].
 If @racket[link-dirs?] is true, then a directory path is reported as
 type @racket['link] instead of @racket['dir].}
 
+
+@defproc[(package-source->path [source string?]
+                               [type (or/c #f 'file 'dir 'link 'static-link) #f])
+         path?]{
+
+Converts a file or directory package source to a filesystem path.
+
+The @racket[package-source->path] function is different from
+@racket[string->path] in the case that @racket[source] starts with
+@litchar{file://}. Also, if @racket[type] is @racket['dir],
+@racket['link], or @racket['static-link], then
+@racket[path->directory-path] is used to ensure that the result path
+refers to a directory.
+
+@history[#:added "10.0.1.11"]}
+

@@ -43,6 +43,46 @@
 (define (seen-before s t)
   (cons (Type-seq s) (Type-seq t)))
 
+;; Context, contains which type variables and indices to infer and which cannot be mentioned in
+;; constraints.
+(define-struct/cond-contract context
+  ([bounds (listof symbol?)]
+   [vars (listof symbol?)]
+   [indices (listof symbol?)]) #:transparent)
+
+(define (context-add-vars ctx vars)
+  (match ctx
+    [(context V X Y)
+     (context V (append vars X) Y)]))
+
+(define (context-add-var ctx var)
+  (match ctx
+    [(context V X Y)
+     (context V (cons var X) Y)]))
+
+(define (context-add ctx #:bounds [bounds empty] #:vars [vars empty] #:indices [indices empty])
+  (match ctx
+    [(context V X Y)
+     (context (append bounds V) (append vars X) (append indices Y))]))
+
+(define (inferable-index? ctx bound)
+  (match ctx
+    [(context _ _ Y)
+     (memq bound Y)]))
+
+(define ((inferable-var? ctx) var)
+  (match ctx
+    [(context _ X _)
+     (memq var X)]))
+
+(define (empty-cset/context ctx)
+  (match ctx
+    [(context _ X Y)
+     (empty-cset X Y)]))
+
+
+
+
 ;; Type Type Seen -> Seen
 ;; Add the type pair to the set of seen type pairs
 (define/cond-contract (remember s t A)
@@ -82,13 +122,15 @@
 (define (mover cset dbound vars f)
   (map/cset
    (lambda (cmap dmap)
+     (when (hash-has-key? (dmap-map dmap) dbound)
+       (int-err "Tried to move vars to dbound that already exists"))
      (% cons
         (hash-remove* cmap (cons dbound vars))
         (dmap-meet
          (singleton-dmap
           dbound
           (f cmap))
-         (make-dmap (hash-remove (dmap-map dmap) dbound)))))
+         dmap)))
    cset))
 
 ;; dbound : index variable
@@ -170,104 +212,89 @@
       [(_ seq) #'(app List->seq (? values seq))])))
 
 
-;; Maps dotted vars (combined with dotted types, to ensure global uniqueness)
-;; to "fresh" symbols.
-;; That way, we can share the same "fresh" variables between the elements of a
-;; cset if they're talking about the same dotted variable.
-;; This makes it possible to reduce the size of the csets, since we can detect
-;; identical elements that would otherwise differ only by these fresh vars.
-;; The domain of this map is pairs (var . dotted-type).
-;; The range is this map is a list of symbols generated on demand, as we need
-;; more dots.
-(define dotted-var-store (make-hash))
-;; Take (generate as needed) n symbols that correspond to variable var used in
-;; the context of type t.
-(define (var-store-take var t n)
-  (let* ([key (cons var t)]
-         [res (hash-ref dotted-var-store key '())])
-    (if (>= (length res) n)
-        ;; there are enough symbols already, take n
-        (take res n)
-        ;; we need to generate more
-        (let* ([new (build-list (- n (length res))
-                                (lambda (x) (gensym var)))]
-               [all (append res new)])
-          (hash-set! dotted-var-store key all)
-          all))))
-
-(define (generate-dbound-prefix v ty n)
-  (define vars (var-store-take v ty n))
+;; generate-dbound-prefix: Symbol Type/c Natural Symbol -> (Values (Listof Symbol) (Listof Type/c))
+;; Substitutes n fresh new variables, replaces dotted occurences of v in t with the variables (and
+;; maybe new-end), and then for each variable substitutes it in for regular occurences of v.
+(define (generate-dbound-prefix v ty n new-end)
+  (define vars (build-list n (lambda (x) (gensym v))))
+  (define ty* (substitute-dots (map make-F vars) (and new-end (make-F new-end)) v ty))
   (values
     vars
     (for/list ([var (in-list vars)])
-      (substitute (make-F var) v ty))))
+      (substitute (make-F var) v ty*))))
 
 
-(define/cond-contract (cgen/filter V X Y s t)
-  ((listof symbol?) (listof symbol?) (listof symbol?) Filter? Filter? . -> . (or/c #f cset?))
+(define/cond-contract (cgen/filter context s t)
+  (context? Filter? Filter? . -> . (or/c #f cset?))
   (match* (s t)
-    [(e e) (empty-cset X Y)]
-    [(e (Top:)) (empty-cset X Y)]
+    [(e e) (empty-cset/context context)]
+    [(e (Top:)) (empty-cset/context context)]
     ;; FIXME - is there something to be said about the logical ones?
-    [((TypeFilter: s p i) (TypeFilter: t p i)) (cgen/inv V X Y s t)]
-    [((NotTypeFilter: s p i) (NotTypeFilter: t p i)) (cgen/inv V X Y s t)]
+    [((TypeFilter: s p) (TypeFilter: t p)) (cgen/inv context s t)]
+    [((NotTypeFilter: s p) (NotTypeFilter: t p)) (cgen/inv context s t)]
     [(_ _) #f]))
 
 ;; s and t must be *latent* filter sets
-(define/cond-contract (cgen/filter-set V X Y s t)
-  ((listof symbol?) (listof symbol?) (listof symbol?) FilterSet? FilterSet? . -> . (or/c #f cset?))
+(define/cond-contract (cgen/filter-set context s t)
+  (context? FilterSet? FilterSet? . -> . (or/c #f cset?))
   (match* (s t)
-    [(e e) (empty-cset X Y)]
+    [(e e) (empty-cset/context context)]
     [((FilterSet: s+ s-) (FilterSet: t+ t-))
-     (% cset-meet (cgen/filter V X Y s+ t+) (cgen/filter V X Y s- t-))]
+     (% cset-meet (cgen/filter context s+ t+) (cgen/filter context s- t-))]
     [(_ _) #f]))
 
-(define/cond-contract (cgen/object V X Y s t)
-  ((listof symbol?) (listof symbol?) (listof symbol?) Object? Object? . -> . (or/c #f cset?))
+(define/cond-contract (cgen/object context s t)
+  (context? Object? Object? . -> . (or/c #f cset?))
   (match* (s t)
-    [(e e) (empty-cset X Y)]
-    [(e (Empty:)) (empty-cset X Y)]
+    [(e e) (empty-cset/context context)]
+    [(e (Empty:)) (empty-cset/context context)]
     ;; FIXME - do something here
     [(_ _) #f]))
 
-(define/cond-contract (cgen/seq V X Y s-seq t-seq)
-  ((listof symbol?) (listof symbol?) (listof symbol?) seq? seq? . -> . (or/c #f cset?))
+(define/cond-contract (cgen/seq context s-seq t-seq)
+  (context? seq? seq? . -> . (or/c #f cset?))
   (match*/early (s-seq t-seq)
     ;; The simplest case - both are null-end
     [((seq ss (null-end))
       (seq ts (null-end)))
-      (cgen/list V X Y ss ts)]
+      (cgen/list context ss ts)]
     ;; One is null-end the other is uniform-end
     [((seq ss (null-end))
       (seq ts (uniform-end t-rest)))
-     (cgen/list V X Y ss (extend ss ts t-rest))]
+     (cgen/list context ss (extend ss ts t-rest))]
     [((seq ss (uniform-end s-rest))
       (seq ts (null-end)))
      #f]
     ;; Both are uniform-end
     [((seq ss (uniform-end s-rest))
       (seq ts (uniform-end t-rest)))
-     (cgen/list V X Y
+     (cgen/list context
                 (cons s-rest ss)
                 (cons t-rest (extend ss ts t-rest)))]
     ;; dotted below, nothing above
     [((seq ss (dotted-end dty dbound))
       (seq ts (null-end)))
-     #:return-unless (memq dbound Y)
+     #:return-unless (inferable-index? context dbound)
      #f
      #:return-unless (<= (length ss) (length ts))
      #f
-     (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ts) (length ss))))
-     (% move-vars-to-dmap (cgen/list V (append vars X) Y (append ss new-tys) ts) dbound vars)]
+     (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ts) (length ss)) #f))
+     (define-values (ts-front ts-back) (split-at ts (length ss)))
+     (% cset-meet
+        (cgen/list context ss ts-front)
+        (% move-vars-to-dmap (cgen/list (context-add context #:vars vars) new-tys ts-back) dbound vars))]
     ;; dotted above, nothing below
     [((seq ss (null-end))
       (seq ts (dotted-end dty dbound)))
-     #:return-unless (memq dbound Y)
+     #:return-unless (inferable-index? context dbound)
      #f
      #:return-unless (<= (length ts) (length ss))
      #f
-     (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ss) (length ts))))
-     (% move-vars-to-dmap (cgen/list V (append vars X) Y ss (append ts new-tys)) dbound vars)]
+     (define-values (vars new-tys) (generate-dbound-prefix dbound dty (- (length ss) (length ts)) #f))
+     (define-values (ss-front ss-back) (split-at ss (length ts)))
+     (% cset-meet
+        (cgen/list context ss-front ts)
+        (% move-vars-to-dmap (cgen/list (context-add-vars context vars) ss-back new-tys) dbound vars))]
 
     ;; same dotted bound
     [((seq ss (dotted-end s-dty dbound))
@@ -275,60 +302,75 @@
      #:return-unless (= (length ss) (length ts))
      #f
      (% cset-meet
-        (cgen/list V X Y ss ts)
-        (if (memq dbound Y)
+        (cgen/list context ss ts)
+        (if (inferable-index? context dbound)
             (extend-tvars (list dbound)
-              (% move-vars+rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) null dbound))
-            (cgen V X Y s-dty t-dty)))]
+              (% move-vars+rest-to-dmap (cgen (context-add-var context dbound) s-dty t-dty) null dbound))
+            (cgen context s-dty t-dty)))]
 
     ;; bounds are different
-    [((seq ss (dotted-end s-dty (? (λ (db) (memq db Y)) dbound)))
-      (seq ts (dotted-end t-dty dbound*)))
-     #:return-unless (= (length ss) (length ts)) #f
-     #:return-when (memq dbound* Y) #f
-     (% cset-meet
-        (cgen/list V X Y ss ts)
-        (extend-tvars (list dbound*)
-          (% move-dotted-rest-to-dmap (cgen V (cons dbound X) Y s-dty t-dty) dbound dbound*)))]
     [((seq ss (dotted-end s-dty dbound))
-      (seq ts (dotted-end t-dty (? (λ (db) (memq db Y)) dbound*))))
+      (seq ts (dotted-end t-dty dbound*)))
+     #:when (inferable-index? context dbound)
+     #:return-unless (= (length ss) (length ts)) #f
+     #:return-when (inferable-index? context dbound*) #f
+     (% cset-meet
+        (cgen/list context ss ts)
+        (extend-tvars (list dbound*)
+          (% move-dotted-rest-to-dmap (cgen (context-add-var context dbound) s-dty t-dty) dbound dbound*)))]
+    [((seq ss (dotted-end s-dty dbound))
+      (seq ts (dotted-end t-dty dbound*)))
+     #:when (inferable-index? context dbound*)
      #:return-unless (= (length ss) (length ts)) #f
      (% cset-meet
-        (cgen/list V X Y ss ts)
+        (cgen/list context ss ts)
         (extend-tvars (list dbound)
-          (% move-dotted-rest-to-dmap (cgen V (cons dbound* X) Y s-dty t-dty) dbound* dbound)))]
+          (% move-dotted-rest-to-dmap (cgen (context-add-var context dbound*) s-dty t-dty) dbound* dbound)))]
 
     ;; * <: ...
     [((seq ss (uniform-end s-rest))
       (seq ts (dotted-end t-dty dbound)))
-     #:return-unless (memq dbound Y)
+     #:return-unless (inferable-index? context dbound)
      #f
      #:return-unless (<= (length ts) (length ss))
      #f
-     (define-values (vars new-tys) (generate-dbound-prefix dbound t-dty (- (length ss) (length ts))))
-     (% move-vars+rest-to-dmap
-        (% cset-meet
-           (cgen/list V (append vars X) Y ss (append ts new-tys))
-           (cgen V (cons dbound X) Y s-rest t-dty))
-        vars dbound #:exact #t)]
+     (define new-bound (gensym dbound))
+     (define-values (vars new-tys) (generate-dbound-prefix dbound t-dty (- (length ss) (length ts))
+                                                           new-bound))
+     (define-values (ss-front ss-back) (split-at ss (length ts)))
+     (% cset-meet
+        (cgen/list context ss-front ts)
+        (% move-vars+rest-to-dmap
+           (% cset-meet
+              (cgen/list (context-add context #:bounds (list new-bound) #:vars vars #:indices (list new-bound))
+                         ss-back new-tys)
+              (cgen (context-add-var context dbound) s-rest t-dty))
+           vars dbound #:exact #t))]
 
     [((seq ss (dotted-end s-dty dbound))
       (seq ts (uniform-end t-rest)))
      (cond
-       [(memq dbound Y)
+       [(inferable-index? context dbound)
+        (define new-bound (gensym dbound))
+        (define length-delta (- (length ts) (length ss)))
         (define-values (vars new-tys)
-          (generate-dbound-prefix dbound s-dty (max 0 (- (length ts) (length ss)))))
-        (% move-vars+rest-to-dmap
-           (% cset-meet
-              (cgen/list V (append vars X) Y (append ss new-tys) (extend ss ts t-rest))
-              (cgen V (cons dbound X) Y s-dty t-rest))
-           vars dbound)]
+          (generate-dbound-prefix dbound s-dty (max 0 length-delta) new-bound))
+        (% cset-meet
+           (cgen/list context ss (if (positive? length-delta)
+                                     (drop-right ts length-delta)
+                                     (extend ss ts t-rest)))
+           (% move-vars+rest-to-dmap
+              (% cset-meet
+                 (cgen/list (context-add context #:bounds (list new-bound) #:vars vars #:indices (list new-bound))
+                            new-tys (take-right ts (max 0 length-delta)))
+                 (cgen (context-add-var context dbound) s-dty t-rest))
+              vars dbound))]
        [else
         (extend-tvars (list dbound)
-          (cgen/seq (cons dbound V) X Y (seq ss (uniform-end s-dty)) t-seq))])]))
+          (cgen/seq (context-add context #:bounds (list dbound)) (seq ss (uniform-end s-dty)) t-seq))])]))
 
-(define/cond-contract (cgen/arr V X Y s-arr t-arr)
-  ((listof symbol?) (listof symbol?) (listof symbol?) arr? arr? . -> . (or/c #f cset?))
+(define/cond-contract (cgen/arr context s-arr t-arr)
+  (context? arr? arr? . -> . (or/c #f cset?))
 
   (match* (s-arr t-arr)
     [((arr: ss s s-rest s-drest s-kws) (arr: ts t t-rest t-drest t-kws))
@@ -343,45 +385,41 @@
      (and (null? s-kws)
           (null? t-kws)
           (% cset-meet
-           (cgen V X Y s t)
-           (cgen/seq V X Y t-seq s-seq)))]))
+           (cgen context s t)
+           (cgen/seq context t-seq s-seq)))]))
 
-(define/cond-contract (cgen/flds V X Y flds-s flds-t)
-  ((listof symbol?) (listof symbol?) (listof symbol?) (listof fld?) (listof fld?)  
-   . -> . (or/c #f cset?))
+(define/cond-contract (cgen/flds context flds-s flds-t)
+  (context? (listof fld?) (listof fld?)  . -> . (or/c #f cset?))
   (% cset-meet*
    (for/list/fail ([s (in-list flds-s)] [t (in-list flds-t)])
      (match* (s t)
        ;; mutable - invariant
-       [((fld: s _ #t) (fld: t _ #t)) (cgen/inv V X Y s t)]
+       [((fld: s _ #t) (fld: t _ #t)) (cgen/inv context s t)]
        ;; immutable - covariant
-       [((fld: s _ #f) (fld: t _ #f)) (cgen V X Y s t)]))))
+       [((fld: s _ #f) (fld: t _ #f)) (cgen context s t)]))))
 
-(define (cgen/inv V X Y s t)
-  (% cset-meet (cgen V X Y s t) (cgen V X Y t s)))
+(define (cgen/inv context s t)
+  (% cset-meet (cgen context s t) (cgen context t s)))
 
 
-;; V : a set of variables not to mention in the constraints
-;; X : the set of type variables to be constrained
-;; Y : the set of index variables to be constrained
+;; context : the context of what to infer/not infer
 ;; S : a type to be the subtype of T
 ;; T : a type
 ;; produces a cset which determines a substitution that makes S a subtype of T
 ;; implements the V |-_X S <: T => C judgment from Pierce+Turner, extended with
 ;; the index variables from the TOPLAS paper
-(define/cond-contract (cgen V X Y S T)
-  ((listof symbol?) (listof symbol?) (listof symbol?)
-   (or/c Values/c ValuesDots? AnyValues?) (or/c Values/c ValuesDots? AnyValues?)
+(define/cond-contract (cgen context S T)
+  (context? (or/c Values/c ValuesDots? AnyValues?) (or/c Values/c ValuesDots? AnyValues?)
    . -> . (or/c #F cset?))
   ;; useful quick loop
   (define/cond-contract (cg S T)
    (Type/c Type/c . -> . (or/c #f cset?))
-   (cgen V X Y S T))
+   (cgen context S T))
   (define/cond-contract (cg/inv S T)
    (Type/c Type/c . -> . (or/c #f cset?))
-   (cgen/inv V X Y S T))
-  ;; this places no constraints on any variables in X
-  (define empty (empty-cset X Y))
+   (cgen/inv context S T))
+  ;; this places no constraints on any variables
+  (define empty (empty-cset/context context))
   ;; this constrains just x (which is a single var)
   (define (singleton S x T)
     (insert empty x S T))
@@ -402,7 +440,7 @@
           [(_ (Univ:)) empty]
           ;; AnyValues
           [((AnyValues: s-f) (AnyValues: t-f))
-           (cgen/filter V X Y s-f t-f)]
+           (cgen/filter context s-f t-f)]
 
           [((or (Values: (list (Result: _ fs _) ...))
                 (ValuesDots: (list (Result: _ fs _) ...) _ _))
@@ -412,7 +450,7 @@
                (for/list ([f (in-list fs)])
                  (match f
                    [(FilterSet: f+ f-)
-                    (% cset-meet (cgen/filter V X Y f+ t-f) (cgen/filter V X Y f- t-f))]))))]
+                    (% cset-meet (cgen/filter context f+ t-f) (cgen/filter context f- t-f))]))))]
 
           ;; check all non Type/c first so that calling subtype is safe
 
@@ -420,17 +458,34 @@
           [((Result: s f-s o-s)
             (Result: t f-t o-t))
            (% cset-meet (cg s t)
-                        (cgen/filter-set V X Y f-s f-t)
-                        (cgen/object V X Y o-s o-t))]
+                        (cgen/filter-set context f-s f-t)
+                        (cgen/object context o-s o-t))]
 
-          ;; Values just delegate to cgen/seq
+          ;; Values just delegate to cgen/seq, except special handling for -Bottom.
+          ;; A single -Bottom in a Values means that there is no value returned and so any other
+          ;; Values or ValuesDots should be above it.
           [((ValuesSeq: s-seq) (ValuesSeq: t-seq))
-           (cgen/seq V X Y s-seq t-seq)]
+           ;; Check for a substition that S is below (ret -Bottom).
+           (define bottom-case
+             (match S
+               [(Values: (list (Result: s f-s o-s)))
+                (cgen context s -Bottom)]
+               [else #f]))
+           (define regular-case
+             (cgen/seq context s-seq t-seq))
+           ;; If we want the OR of the csets that the two cases return.
+           (cset-join
+             (filter values
+               (list bottom-case regular-case)))]
 
           ;; they're subtypes. easy.
           [(a b) 
            #:when (subtype a b)
            empty]
+
+          ;; Lists delegate to sequences
+          [((ListSeq: s-seq) (ListSeq: t-seq))
+           (cgen/seq context s-seq t-seq)]
 
           ;; refinements are erased to their bound
           [((Refinement: S _) T)
@@ -438,24 +493,24 @@
 
           ;; variables that are in X and should be constrained
           ;; all other variables are compatible only with themselves
-          [((F: (? (λ (e) (memq e X)) v)) T)
+          [((F: (? (inferable-var? context) v)) T)
            #:return-when
            (match T
              ;; fail when v* is an index variable
              [(F: v*) (and (bound-index? v*) (not (bound-tvar? v*)))]
              [_ #f])
            #f
-           ;; constrain v to be below T (but don't mention V)
-           (singleton (Un) v (var-demote T V))]
+           ;; constrain v to be below T (but don't mention bounds)
+           (singleton (Un) v (var-demote T (context-bounds context)))]
 
-          [(S (F: (? (lambda (e) (memq e X)) v)))
+          [(S (F: (? (inferable-var? context) v)))
            #:return-when
            (match S
              [(F: v*) (and (bound-index? v*) (not (bound-tvar? v*)))]
              [_ #f])
            #f
-           ;; constrain v to be above S (but don't mention V)
-           (singleton (var-promote S V) v Univ)]
+           ;; constrain v to be above S (but don't mention bounds)
+           (singleton (var-promote S (context-bounds context)) v Univ)]
 
           ;; recursive names should get resolved as they're seen
           [(s (? Name? t))
@@ -464,7 +519,7 @@
            (cg (resolve-once s) t)]
 
           ;; constrain b1 to be below T, but don't mention the new vars
-          [((Poly: v1 b1) T) (cgen (append v1 V) X Y b1 T)]
+          [((Poly: v1 b1) T) (cgen (context-add context #:bounds v1) b1 T)]
 
           ;; constrain *each* element of es to be below T, and then combine the constraints
           [((Union: es) T)
@@ -490,7 +545,7 @@
                          (cg proc proc*)]
                         [proc* #f]
                         [else empty])])
-             (% cset-meet proc-c (cgen/flds V X Y flds flds*)))]
+             (% cset-meet proc-c (cgen/flds context flds flds*)))]
 
           ;; two struct names, need to resolve b/c one could be a parent
           [((Name: n _ _ #t) (Name: n* _ _ #t))
@@ -502,7 +557,7 @@
            (% cset-meet (cg a a*) (cg b b*))]
           ;; sequences are covariant
           [((Sequence: ts) (Sequence: ts*))
-           (cgen/list V X Y ts ts*)]
+           (cgen/list context ts ts*)]
           [((Listof: t) (Sequence: (list t*)))
            (cg t t*)]
           [((Pair: t1 t2) (Sequence: (list t*)))
@@ -517,10 +572,10 @@
            (% cset-meet* (for/list/fail ([t (in-list ts)])
                            (cg t t*)))]
           [((HeterogeneousVector: ts) (HeterogeneousVector: ts*))
-           (% cset-meet (cgen/list V X Y ts ts*) (cgen/list V X Y ts* ts))]
+           (% cset-meet (cgen/list context ts ts*) (cgen/list context ts* ts))]
           [((HeterogeneousVector: ts) (Vector: s))
            (define ts* (map (λ _ s) ts)) ;; invariant, everything has to match
-           (% cset-meet (cgen/list V X Y ts ts*) (cgen/list V X Y ts* ts))]
+           (% cset-meet (cgen/list context ts ts*) (cgen/list context ts* ts))]
           [((HeterogeneousVector: ts) (Sequence: (list t*)))
            (% cset-meet* (for/list/fail ([t (in-list ts)])
                            (cg t t*)))]
@@ -551,24 +606,14 @@
                (and (subtype S t) t)))
            (% cg type t*)]
           [((Hashtable: k v) (Sequence: (list k* v*)))
-           (cgen/list V X Y (list k v) (list k* v*))]
+           (cgen/list context (list k v) (list k* v*))]
           [((Set: t) (Sequence: (list t*)))
            (cg t t*)]
 
-          ;; Lists delegate to sequences
-          [((ListSeq: s-seq) (ListSeq: t-seq))
-           (cgen/seq V X Y s-seq t-seq)]
-
-          ;; if we have two mu's, we rename them to have the same variable
-          ;; and then compare the bodies
-          ;; This relies on (B 0) only unifying with itself, 
-          ;; and thus only hitting the first case of this `match'
-          [((Mu-unsafe: s) (Mu-unsafe: t))
-           (cg s t)]
-
-          ;; other mu's just get unfolded
-          [(s (? Mu? t)) (cg s (unfold t))]
+          ;; Mu's just get unfolded
+          ;; We unfold S first so that unions are handled in S before T
           [((? Mu? s) t) (cg (unfold s) t)]
+          [(s (? Mu? t)) (cg s (unfold t))]
 
           ;; resolve applications
           [((App: _ _ _) _)
@@ -596,6 +641,8 @@
           [((MPair: s t) (MPair: s* t*))
            (% cset-meet (cg/inv s s*) (cg/inv t t*))]
           [((Channel: e) (Channel: e*))
+           (cg/inv e e*)]
+          [((Async-Channel: e) (Async-Channel: e*))
            (cg/inv e e*)]
           [((ThreadCell: e) (ThreadCell: e*))
            (cg/inv e e*)]
@@ -634,6 +681,7 @@
                t)]
           [((CustodianBox: t) (Evt: t*)) (cg S t*)]
           [((Channel: t) (Evt: t*)) (cg t t*)]
+          [((Async-Channel: t) (Evt: t*)) (cg t t*)]
           ;; we assume all HTs are mutable at the moment
           [((Hashtable: s1 s2) (Hashtable: t1 t2))
            ;; for mutable hash tables, both are invariant
@@ -653,7 +701,7 @@
             (for/list/fail ([t-arr (in-list t-arr)])
               ;; for each element of t-arr, we need to get at least one element of s-arr that works
               (let ([results (for*/list ([s-arr (in-list s-arr)]
-                                         [v (in-value (cgen/arr V X Y s-arr t-arr))]
+                                         [v (in-value (cgen/arr context s-arr t-arr))]
                                          #:when v)
                                v)])
                 ;; ensure that something produces a constraint set
@@ -733,25 +781,22 @@
                 (and entry (t-subst? entry))))
             (extend-idxs subst)))]))
 
-;; V : a set of variables not to mention in the constraints
-;; X : the set of type variables to be constrained
-;; Y : the set of index variables to be constrained
+;; context : the context of what to infer/not infer
 ;; S : a list of types to be the subtypes of T
 ;; T : a list of types
 ;; expected-cset : a cset representing the expected type, to meet early and
 ;;  keep the number of constraints in check. (empty by default)
 ;; produces a cset which determines a substitution that makes the Ss subtypes of the Ts
-(define/cond-contract (cgen/list V X Y S T
+(define/cond-contract (cgen/list context S T
                                  #:expected-cset [expected-cset (empty-cset '() '())])
-  (((listof symbol?) (listof symbol?) (listof symbol?) (listof Values/c) (listof Values/c))
-   (#:expected-cset cset?) . ->* . (or/c cset? #f))
+  ((context? (listof Values/c) (listof Values/c)) (#:expected-cset cset?) . ->* . (or/c cset? #f))
   (and (= (length S) (length T))
        (% cset-meet*
           (for/list/fail ([s (in-list S)] [t (in-list T)])
                          ;; We meet early to prune the csets to a reasonable size.
                          ;; This weakens the inference a bit, but sometimes avoids
                          ;; constraint explosion.
-            (% cset-meet (cgen V X Y s t) expected-cset)))))
+            (% cset-meet (cgen context s t) expected-cset)))))
 
 
 
@@ -771,13 +816,16 @@
       (or/c #f Values/c ValuesDots?))
      ((or/c #f Values/c AnyValues? ValuesDots?))
      . ->* . (or/c boolean? substitution/c))
-    (let* ([expected-cset (if expected
-                              (cgen null X Y R expected)
-                              (empty-cset '() '()))]
-           [cs  (and expected-cset
-                     (cgen/list null X Y S T #:expected-cset expected-cset))]
-           [cs* (% cset-meet cs expected-cset)])
-      (and cs* (if R (subst-gen cs* X Y R) #t))))
+    (define ctx (context null X Y ))
+    (define expected-cset
+      (if expected
+          (cgen ctx R expected)
+          (empty-cset '() '())))
+    (and expected-cset
+         (let* ([cs (cgen/list ctx S T #:expected-cset expected-cset)]
+                [cs* (% cset-meet cs expected-cset)])
+           (and cs* (if R (subst-gen cs* X Y R) #t)))))
+  ;(trace infer)
   infer)) ;to export a variable binding and not syntax
 
 ;; like infer, but T-var is the vararg type:
@@ -792,19 +840,16 @@
   (early-return
    (define short-S (take S (length T)))
    (define rest-S (drop S (length T)))
+   (define ctx (context null X (list dotted-var)))
    (define expected-cset (if expected
-                             (cgen null X (list dotted-var) R expected)
+                             (cgen ctx R expected)
                              (empty-cset '() '())))
    #:return-unless expected-cset #f
-   (define cs-short (cgen/list null X (list dotted-var) short-S T
-                               #:expected-cset expected-cset))
+   (define cs-short (cgen/list ctx short-S T #:expected-cset expected-cset))
    #:return-unless cs-short #f
-   (define new-vars (var-store-take dotted-var T-dotted (length rest-S)))
-   (define new-Ts (for/list ([v (in-list new-vars)])
-                            (substitute (make-F v) dotted-var
-                                        (substitute-dots (map make-F new-vars)
-                                                         #f dotted-var T-dotted))))
-   (define cs-dotted (cgen/list null (append new-vars X) (list dotted-var) rest-S new-Ts
+   (define-values (new-vars new-Ts)
+     (generate-dbound-prefix dotted-var T-dotted (length rest-S) #f))
+   (define cs-dotted (cgen/list (context-add-vars ctx new-vars) rest-S new-Ts
                                 #:expected-cset expected-cset))
    #:return-unless cs-dotted #f
    (define cs-dotted* (move-vars-to-dmap cs-dotted dotted-var new-vars))
@@ -816,3 +861,8 @@
    (subst-gen m X (list dotted-var) R)))
 
 
+;(trace subst-gen)
+;(trace cgen)
+;(trace cgen/list)
+;(trace cgen/arr)
+;(trace cgen/seq)

@@ -8,6 +8,7 @@
          "controller.rkt"
          "keymap.rkt"
          "util.rkt"
+         "text.rkt"
          "prefs.rkt")
 
 (provide syntax-snip%
@@ -27,7 +28,7 @@
              set-inset
              set-snipclass)
 
-    (define text (new text:standard-style-list%))
+    (define text (new browser-text%))
     (super-new (editor text) (with-border? #f))
 
     (set-margin 0 0 0 0)

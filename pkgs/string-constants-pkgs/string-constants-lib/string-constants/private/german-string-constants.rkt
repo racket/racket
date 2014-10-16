@@ -145,6 +145,7 @@
  (online-expansion-running "Hintergrund-Expansion läuft")
  (online-expansion-only-raw-text-files-supported "Nur reine Text-Dateien sind unterstützt")
  (online-expansion-abnormal-termination "Hintergrund-Expansion unglücklich abgebrochen")
+ (online-expansion-abnormal-termination-out-of-memory "Hintergrund-Expansion unglücklich abgebrochend (kein Speicher mehr)")
  (online-expansion-finished-successfully "Hintergrund-Expansion erfolgreich abgeschlossen")
 
  (jump-to-error "Zum Fehler springen")
@@ -1681,6 +1682,11 @@
   ; puts the path to the spell program in the ~a and then the error message
   ; is put following this string (with a blank line in between)
   (spell-program-wrote-to-stderr-on-startup "Der Rechtschreibchecker (~a) hat eine Fehlermeldung ausgegeben:")
+
+  (spell-skip-to-next-misspelled-word "Zum nächsten falsch geschriebenen Wort") ;; menu item
+  (spell-suggest-corrections "Rechtschreibkorrekturen vorschlagen...") ;; menu item
+  (spell-correction-suggestions "Vorschläge für Rechtschreibkorrekturen") ;; dialog title
+  (spell-choose-replacement-word "Austauschwort auswählen") ;; label in dialog 
   
   ;; GUI for installing a pkg package; available via File|Install Package...
   (install-pkg-install-by-source "Tu was ich meine") ; tab label
@@ -1744,6 +1750,7 @@
   (install-pkg-abort-promote "Beförderung abbrechen")
   (install-pkg-abort-migrate "Migration abbrechen")
   (install-pkg-abort-generic-action "Aktion abbrechen")
+  (install-pkg-close-terminal-output "Anzeige schließen")
   (install-pkg-show-all-options "Alle Optionen anzeigen")
   (install-pkg-migrate-available-installations "Verfügbare Installationen")
   (pkg-manager-menu-item "Paket-Manager...")
@@ -1757,6 +1764,7 @@
   (install-pkg-dependencies-force "Trotzdem: Installieren trotz fehlender Abhängigkeiten")
   (install-pkg-dependencies-search-ask "Fragen: bei jeder fehlenden Abhänigkeit fragen (nicht unterstützt in GUI)")
   (install-pkg-dependencies-search-auto "Auto: fehlende Abhänigkeiten automatisch installieren")
+  (install-pkg-dependencies-search-auto+update "Auto + Aktualisieren: Abhänigkeiten aktualisieren wann immer möglich")
 
   (install-pkg-dependencies-mode "Modus Abhängigkeiten")
 
@@ -1772,7 +1780,7 @@
                             " Brechen Sie entweder den laufenden Prozess ab oder warten, bis er fertig ist.")
 
   ;; open a file via a collection path (new "Open" menu item in DrRacket)
-  (open-collection-path "Collection-Pfad öffnen...")
+  (open-require-path "Require-Pfad öffnen...")
   (enter-subcollection "Sub-Collection betreten") ; button in new dialog
   
   (path-to-racket-binary "Pfad zur Programmdatei")

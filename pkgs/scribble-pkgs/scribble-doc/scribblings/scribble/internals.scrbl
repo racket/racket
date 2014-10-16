@@ -14,5 +14,6 @@
 @include-section["docreader.scrbl"]
 @include-section["xref.scrbl"]
 @include-section["tag.scrbl"]
+@include-section["blueboxes.scrbl"]
 @include-section["config.scrbl"]
 

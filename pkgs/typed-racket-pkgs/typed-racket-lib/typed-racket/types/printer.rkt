@@ -32,7 +32,7 @@
                  pretty-format-type)))
 (provide-printer)
 
-(provide special-dots-printing? print-complex-filters?
+(provide print-complex-filters? type-output-sexpr-tweaker
          current-print-type-fuel current-print-unexpanded)
 
 
@@ -42,7 +42,7 @@
 ;; do we use simple type aliases in printing
 (define print-aliases #t)
 
-(define special-dots-printing? (make-parameter #f))
+(define type-output-sexpr-tweaker (make-parameter values))
 (define print-complex-filters? (make-parameter #f))
 
 ;; this parameter controls how far down the type to expand type names
@@ -58,16 +58,12 @@
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Listof<Symbol>]
 (define (has-name? t)
-  (cond 
-   [print-aliases
-    (define candidates 
-      (for/list ([(n t*) (in-pairs (in-list (force (current-type-names))))]
-		 #:when (and (Type? t*) (type-equal? t t*)))
-	 n))
-    (if (null? candidates)
-        #f
-        (sort candidates string>? #:key symbol->string))]
-   [else #f]))
+  (define candidates
+    (for/list ([(n t*) (in-pairs (in-list (force (current-type-names))))]
+               #:when (and print-aliases (Type? t*) (type-equal? t t*)))
+      n))
+  (and (pair? candidates)
+       (sort candidates string>? #:key symbol->string #:cache-keys? #t)))
 
 ;; print-<thing> : <thing> Output-Port Boolean -> Void
 ;; print-type also takes an optional (Listof Symbol)
@@ -98,31 +94,28 @@
   (port-count-lines! out)
   (write-string (make-string indent #\space) out)
   (parameterize ([pretty-print-current-style-table type-style-table])
-    (pretty-display (type->sexp type '()) out))
+    (pretty-display ((type-output-sexpr-tweaker) (type->sexp type '()))
+                    out))
   (string-trim #:left? #f (substring (get-output-string out) indent)))
 
 ;; filter->sexp : Filter -> S-expression
 ;; Print a Filter (see filter-rep.rkt) to the given port
 (define (filter->sexp filt)
+  (define (name-ref->sexp name-ref)
+    (if (syntax? name-ref)
+        (syntax-e name-ref)
+        name-ref))
+  (define (path->sexps path)
+    (if (null? path)
+        '()
+        (list (map pathelem->sexp path))))
   (match filt
     [(FilterSet: thn els) `(,(filter->sexp thn) \| ,(filter->sexp els))]
     [(NoFilter:) '-]
-    [(NotTypeFilter: type (list) (? syntax? id))
-     `(! ,(type->sexp type) @ ,(syntax-e id))]
-    [(NotTypeFilter: type (list) id)
-     `(! ,(type->sexp type) @ ,id)]
-    [(NotTypeFilter: type path (? syntax? id))
-     `(! ,(type->sexp type) @ ,(map pathelem->sexp path) ,(syntax-e id))]
-    [(NotTypeFilter: type path id)
-     `(! ,(type->sexp type) @ ,(map pathelem->sexp path) ,id)]
-    [(TypeFilter: type (list) (? syntax? id))
-     `(,(type->sexp type) @ ,(syntax-e id))]
-    [(TypeFilter: type (list) id)
-     `(,(type->sexp type) @ ,id)]
-    [(TypeFilter: type path (? syntax? id))
-     `(,(type->sexp type) @ ,(map pathelem->sexp path) ,(syntax-e id))]
-    [(TypeFilter: type path id)
-     `(,(type->sexp type) @ ,(map pathelem->sexp path) ,id)]
+    [(NotTypeFilter: type (Path: path nm))
+     `(! ,(type->sexp type) @ ,@(path->sexps path) ,(name-ref->sexp nm))]
+    [(TypeFilter: type (Path: path nm))
+     `(,(type->sexp type) @ ,@(path->sexps path) ,(name-ref->sexp nm))]
     [(Bot:) 'Bot]
     [(Top:) 'Top]
     [(ImpFilter: a c)
@@ -208,12 +201,6 @@
 (define (arr->sexp arr)
   (match arr
     [(arr: dom rng rest drest kws)
-     (define out (open-output-string))
-     (define (fp . args) (apply fprintf out args))
-     (define (fp/filter fmt ret . rest)
-       (if (print-complex-filters?)
-           (apply fp fmt ret rest)
-           (fp "-> ~a" ret)))
      (append
       (list '->)
       (map type->sexp dom)
@@ -227,25 +214,16 @@
            (if req?
                (format "~a ~a" k (type->sexp t))
                (format "[~a ~a]" k (type->sexp t)))]))
-      (if rest
-          (list (type->sexp rest) (if (special-dots-printing?) '...* '*))
-          null)
-      (if drest
-          (if (special-dots-printing?)
-              (list (type->sexp (car drest))
-                    (string->symbol (format "...~a" (cdr drest))))
-              (list (type->sexp (car drest))
-                    '...
-                    (cdr drest)))
-          null)
+      (if rest  `(,(type->sexp rest) *)                       null)
+      (if drest `(,(type->sexp (car drest)) ... ,(cdr drest)) null)
       (match rng
         [(AnyValues: (Top:)) '(AnyValues)]
         [(AnyValues: f) `(AnyValues : ,(filter->sexp f))]
         [(Values: (list (Result: t (FilterSet: (Top:) (Top:)) (Empty:))))
          (list (type->sexp t))]
         [(Values: (list (Result: t
-                                 (FilterSet: (TypeFilter: ft pth (list 0 0))
-                                             (NotTypeFilter: ft pth (list 0 0)))
+                                 (FilterSet: (TypeFilter: ft (Path: pth (list 0 0)))
+                                             (NotTypeFilter: ft (Path: pth (list 0 0))))
                                  (Empty:))))
          ;; Only print a simple filter for single argument functions,
          ;; since parse-type only accepts simple latent filters on single
@@ -259,8 +237,9 @@
         ;; special case (even when complex printing is off) because it's
         ;; useful to users who use functions like `filter`.
         [(Values: (list (Result: t
-                                 (FilterSet: (TypeFilter: ft '() id) (Top:))
+                                 (FilterSet: (TypeFilter: ft (Path: '() (list 0 0))) (Top:))
                                  (Empty:))))
+         #:when (= 1 (length dom))
          `(,(type->sexp t) : #:+ ,(type->sexp ft))]
         [(Values: (list (Result: t fs (Empty:))))
          (if (print-complex-filters?)
@@ -276,8 +255,6 @@
 ;; format->* : (Listof arr) -> S-Expression
 ;; Format arrs that correspond to a ->* type
 (define (format->* arrs)
-  (define out (open-output-string))
-  (define (fp . args) (apply fprintf out args))
   ;; see type-contract.rkt, which does something similar and this code
   ;; was stolen from/inspired by/etc.
   (match* ((first arrs) (last arrs))
@@ -427,6 +404,7 @@
     [(StructTop: (Struct: nm _ _ _ _ _)) `(Struct ,(syntax-e nm))]
     [(BoxTop:) 'BoxTop]
     [(ChannelTop:) 'ChannelTop]
+    [(Async-ChannelTop:) 'Async-ChannelTop]
     [(ThreadCellTop:) 'ThreadCellTop]
     [(VectorTop:) 'VectorTop]
     [(HashtableTop:) 'HashTableTop]
@@ -435,10 +413,14 @@
     [(Continuation-Mark-KeyTop:) 'Continuation-Mark-KeyTop]
     [(App: rator rands stx)
      (list* (type->sexp rator) (map type->sexp rands))]
-    ;; special cases for lists
-    [(Listof: elem-ty)
+    ;; Special cases for lists. Avoid printing with these cases if the
+    ;; element type refers to the Mu variable (otherwise it prints the
+    ;; type variable with no binding).
+    [(Listof: elem-ty var)
+     #:when (not (memq var (fv elem-ty)))
      `(Listof ,(t->s elem-ty))]
-    [(MListof: elem-ty)
+    [(MListof: elem-ty var)
+     #:when (not (memq var (fv elem-ty)))
      `(MListof ,(t->s elem-ty))]
     ;; format as a string to preserve reader abbreviations and primitive
     ;; values like characters (when `display`ed)
@@ -461,6 +443,7 @@
     [(Box: e) `(Boxof ,(t->s e))]
     [(Future: e) `(Futureof ,(t->s e))]
     [(Channel: e) `(Channelof ,(t->s e))]
+    [(Async-Channel: e) `(Async-Channelof ,(t->s e))]
     [(ThreadCell: e) `(ThreadCellof ,(t->s e))]
     [(Promise: e) `(Promise ,(t->s e))]
     [(Ephemeron: e) `(Ephemeronof ,(t->s e))]
@@ -471,12 +454,7 @@
      (define-values (covered remaining) (cover-union type ignored-names))
      (cons 'U (append covered (map t->s remaining)))]
     [(Pair: l r) `(Pairof ,(t->s l) ,(t->s r))]
-    [(ListDots: dty dbound)
-     (define dbound*
-       (if (special-dots-printing?)
-           (list (string->symbol (format "...~a" dbound)))
-           (list '... dbound)))
-     `(List ,(t->s dty) ,@dbound*)]
+    [(ListDots: dty dbound) `(List ,(t->s dty) ... ,dbound)]
     [(F: nm) nm]
     ;; FIXME (Values are not types and shouldn't need to be considered here
     [(AnyValues: (Top:)) 'AnyValues]

@@ -310,6 +310,17 @@
       =>
       #f)
 
+;; make sure equality doesn't compare baselines;
+;; these two images have different baselines but
+;; draw the same way (they draw nothing because their
+;; widths are 0)
+(test (equal?
+       (crop 0 0 0 1 
+             (rectangle 0 0 'solid "red"))
+       (crop 0 0 0 1
+             (rectangle 20 20 'solid "red")))
+      => #t)
+
 ;; make sure 'white and black match up with color structs
 (test (rectangle 10 10 'solid (make-color 255 255 255))
       =>
@@ -1040,6 +1051,19 @@
       =>
       (text "ab" 18 "blue"))
 
+(test (beside/align "bottom"
+                    empty-image
+                    (text "please?" 12 "green"))
+      =>
+      (text "please?" 12 "green"))
+(test (beside/align "bottom"
+                    (text "feed me " 18 "red")
+                    (text "please?" 12 "green") empty-image)
+      =>
+      (beside/align "bottom"
+                    (text "feed me " 18 "red")
+                    (text "please?" 12 "green")))
+
 ;; make sure this doesn't crash (there was a bug that would be triggered by drawing these guys)
 (test (equal? (scale 0.1 (text "Howdy!" 12 'black))
               (scale 0.1 (text "Howdy!" 12 'red)))
@@ -1603,6 +1627,11 @@
       =>
       (to-img (make-object image-snip% green-blue-20x10-bitmap)))
 
+(let ([b (freeze (beside (rectangle 4 8 "solid" "blue") (rectangle 4 8 "solid" "red")))])
+  (test (flip-vertical (rotate 90 b))
+        =>
+        (rotate -90 b)))
+
 ;; make sure that raw image snips are equal to image snips
 (let ([i1 (make-object image-snip% (collection-file-path "bug09.png" "icons"))]
       [i2 (make-object image-snip% (collection-file-path "bug09.png" "icons"))])
@@ -1686,6 +1715,13 @@
       =>
       (rectangle 10 10 'solid 'black))
 
+(test (crop/align 'left 'top 10 10 (rectangle 20 20 'solid 'black))
+      =>
+      (rectangle 10 10 'solid 'black))
+(test (crop/align 'center 'center 10 10 (rectangle 20 20 'solid 'black))
+      =>
+      (rectangle 10 10 'solid 'black))
+
 (test (equal~? (crop 0 0 40 40 (circle 40 'solid 'red))
                (rotate 180 (crop 40 40 40 40 (circle 40 'solid 'red)))
                0.1)
@@ -1759,6 +1795,18 @@
       (underlay/xy (rectangle 40 40 'solid 'orange)
                    2 7
                    (circle 4 'solid 'black)))
+
+(test (above
+       (beside (crop/align "right" "bottom" 40 40 (circle 40 "solid" "palevioletred"))
+               (crop/align "left" "bottom" 40 40 (circle 40 "solid" "lightcoral")))
+       (beside (crop/align "right" "top" 40 40 (circle 40 "solid" "lightcoral"))
+               (crop/align "left" "top" 40 40 (circle 40 "solid" "palevioletred"))))
+      =>
+      (above
+       (beside (crop 40 40 40 40 (circle 40 "solid" "palevioletred"))
+               (crop 0 40 40 40 (circle 40 "solid" "lightcoral")))
+       (beside (crop 40 0 40 40 (circle 40 "solid" "lightcoral"))
+               (crop 0 0 40 40 (circle 40 "solid" "palevioletred")))))
 
 (let ()
   (define image1 (circle 8 'solid 'red))
@@ -2197,6 +2245,14 @@
       =>
       5)
 (test (pinhole-y (frame (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      6)
+(test (pinhole-x (color-frame "red"
+                              (center-pinhole (rectangle 10 12 'solid 'red))))
+      =>
+      5)
+(test (pinhole-y (color-frame 'blue
+                              (center-pinhole (rectangle 10 12 'solid 'red))))
       =>
       6)
 

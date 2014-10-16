@@ -1,6 +1,6 @@
 #lang racket
 
-(require 2htdp/universe 2htdp/image)
+(require 2htdp/universe 2htdp/image "test-aux.rkt")
 
 (define (make-images i)
   (cond
@@ -10,4 +10,4 @@
 (define DOT (circle 3 'solid 'red))
 (define BACKGROUND (empty-scene 100 400))
 
-(run-movie 1/8 (make-images 8))
+(testing (run-movie 1/8 (make-images 8)))

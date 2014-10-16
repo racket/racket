@@ -526,7 +526,8 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #define FP_EQV(x,y) x==y
 #define FP_LESS(x, y) x<y
 #define FP_IS_ZERO(x) x==0.0
-#define FP_TYPE_FROM_INT(x) (FP_TYPE)x
+#define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
+#define FP_TYPE_FROM_INTPTR(x) ((FP_TYPE)(x))
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 # define FIXNUM_FITS_FP(x) (!(SCHEME_INT_VAL(x) & ~(((intptr_t)1 << (FLOAT_M_BITS-1)) - 1)))
 # define BIGNUM_FITS_FP(x) 0
@@ -553,7 +554,8 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #define FP_NEG(x) -x
 #define FP_EQV(x,y) x==y
 #define FP_LESS(x, y) x<y
-#define FP_TYPE_FROM_INT(x) (FP_TYPE)x
+#define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
+#define FP_TYPE_FROM_INTPTR(x) ((FP_TYPE)(x))
 #define FIXNUM_FITS_FP(x) (!(SCHEME_INT_VAL(x) & ~(((intptr_t)1 << (FLOAT_M_BITS-1)) - 1)))
 #define FP_IS_ZERO(x) x==0.0
 #define BIGNUM_FITS_FP(x) 0
@@ -581,6 +583,7 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 # define FP_EQV(x,y) long_double_eqv(x,y)
 # define FP_LESS(x, y) long_double_less(x,y)
 # define FP_TYPE_FROM_INT(x) long_double_from_int(x)
+# define FP_TYPE_FROM_INTPTR(x) long_double_from_intptr(x)
 # define FIXNUM_FITS_FP(x) 1
 # define BIGNUM_FITS_FP(x) (scheme_integer_length(x) <= (FLOAT_M_BITS-1))
 # define FP_IS_ZERO(x) long_double_is_zero(x)
@@ -593,7 +596,7 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 # define FLOAT_M_BITS 64
 # define FLOAT_E_BITS 15
 # define FP_ZEROx get_long_double_zero()
-# define FP_POWx pow
+# define FP_POWx long_double_pow
 # define FP_MODFx long_double_modf
 # define FP_FREXPx long_double_frexp
 # define FP_LDEXP long_double_ldexp

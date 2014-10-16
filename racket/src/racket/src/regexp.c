@@ -2912,7 +2912,7 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen, rx_lazy_str_t *
   }
 }
 
-#define LAZY_STRING_CHUNK_SIZE 1024
+#define LAZY_STRING_CHUNK_SIZE 32
 
 static void read_more_from_lazy_string(Regwork *rw, rxpos need_total)
 {
@@ -5388,7 +5388,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
 
   if (lazy_string) {
     full_s = lazy_string->s;
-    endset = lazy_string->end - lazy_string->start;
+    endset = lazy_string->blen;
   }
 
   if (iport) {

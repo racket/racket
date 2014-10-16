@@ -42,6 +42,7 @@ MZ_EXTERN void scheme_longjmpup(Scheme_Jumpup_Buf *b);
 MZ_EXTERN void scheme_reset_jmpup_buf(Scheme_Jumpup_Buf *b);
 
 #ifdef USE_MZ_SETJMP
+MZ_EXTERN Scheme_Setjmp_Proc scheme_get_mz_setjmp(void);
 MZ_EXTERN int scheme_mz_setjmp(mz_pre_jmp_buf b);
 MZ_EXTERN void scheme_mz_longjmp(mz_pre_jmp_buf b, int v);
 #endif
@@ -672,6 +673,9 @@ MZ_EXTERN const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_e
 MZ_EXTERN intptr_t scheme_utf8_decode(const unsigned char *s, intptr_t start, intptr_t end, 
 				      unsigned int *us, intptr_t dstart, intptr_t dend,
 				      intptr_t *ipos, char utf16, int permissive);
+MZ_EXTERN intptr_t scheme_utf8_decode_offset_prefix(const unsigned char *s, intptr_t start, intptr_t end, 
+                                                    unsigned int *us, intptr_t dstart, intptr_t dend,
+                                                    intptr_t *ipos, char utf16, int permissive);
 MZ_EXTERN intptr_t scheme_utf8_decode_as_prefix(const unsigned char *s, intptr_t start, intptr_t end, 
 						unsigned int *us, intptr_t dstart, intptr_t dend,
 						intptr_t *ipos, char utf16, int permissive);
@@ -1152,13 +1156,12 @@ MZ_EXTERN int scheme_recur_equal(Scheme_Object *obj1, Scheme_Object *obj2, void 
 MZ_EXTERN Scheme_Object *scheme_build_list(int argc, Scheme_Object **argv);
 MZ_EXTERN Scheme_Object *scheme_build_list_offset(int argc, Scheme_Object **argv, int delta);
 
-MZ_EXTERN int scheme_is_list(Scheme_Object *obj1);
-MZ_EXTERN int scheme_list_length(Scheme_Object *list);
-MZ_EXTERN int scheme_proper_list_length(Scheme_Object *list);
+XFORM_NONGCING MZ_EXTERN int scheme_is_list(Scheme_Object *obj1);
+XFORM_NONGCING MZ_EXTERN int scheme_list_length(Scheme_Object *list);
+XFORM_NONGCING MZ_EXTERN int scheme_proper_list_length(Scheme_Object *list);
 
 MZ_EXTERN Scheme_Object *scheme_alloc_list(int size);
-MZ_EXTERN Scheme_Object *scheme_map_1(Scheme_Object *(*f)(Scheme_Object*),
-			    Scheme_Object *l);
+MZ_EXTERN Scheme_Object *scheme_map_1(Scheme_Object *(*f)(Scheme_Object*), Scheme_Object *l);
 
 MZ_EXTERN Scheme_Object *scheme_car(Scheme_Object *pair);
 MZ_EXTERN Scheme_Object *scheme_cdr(Scheme_Object *pair);

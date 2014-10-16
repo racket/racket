@@ -87,11 +87,18 @@
    tracks variable usage (including whether a variable is mutated or
    not). See "compile.c" along with "compenv.c".
 
-   The second pass, called "optimize", performs constant propagation,
-   constant folding, and function inlining; this pass mutates records
-   produced by the first pass. See "optimize.c".
+   The second pass, called "letrec_rec", determines which references
+   to `letrec'-bound variables need to be guarded with a run-time
+   check to prevent use before definition. The analysis result is
+   reflected by the insertion of `check-notunsafe-undefined`
+   calls. This this pass mutates records produced by the "compile"
+   pass.
 
-   The third pass, called "resolve", finishes compilation by computing
+   The third pass, called "optimize", performs constant propagation,
+   constant folding, and function inlining; this pass mutates records
+   produced by the "letrec_check" pass. See "optimize.c".
+
+   The fourth pass, called "resolve", finishes compilation by computing
    variable offsets and indirections (often mutating the records
    produced by the first pass). It is also responsible for closure
    conversion (i.e., converting closure content to arguments) and
@@ -100,7 +107,7 @@
    due to sharing (potentially cyclic) of closures that are "empty"
    but actually refer to other "empty" closures. See "resolve.c".
 
-   The fourth pass, "sfs", performs another liveness analysis on stack
+   The fifth pass, "sfs", performs another liveness analysis on stack
    slots and inserts operations to clear stack slots as necessary to
    make execution safe for space. In particular, dead slots need to be
    cleared before a non-tail call into arbitrary Racket code. This pass
@@ -118,8 +125,10 @@
 
    Just-in-time compilation:
 
-   If the JIT is enabled, then `eval' processes (perhaps unmarshaled
-   and validated) bytecode one more time: `lambda' and `case-lambda'
+   If the JIT is enabled, then an extra "jitprep" pass processes
+   bytecode one more time --- but only bytecode that is not going to
+   be marshaled, and possibly bytecode that was just  unmarshaled.
+   In this "jitprep" pass, the `lambda' and `case-lambda'
    forms are converted to native-code generators, instead of bytecode
    variants.  The code is not actually JITted until it is called; this
    preparation step merely sets up a JIT hook for each function. The
@@ -839,6 +848,10 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     menv = scheme_module_access(modname, env, mod_phase);
     
     if (!menv) {
+      Scheme_Object *modsrc;
+      modsrc = (env->module
+                ? scheme_get_modsrc(env->module)
+                : scheme_false);
       scheme_wrong_syntax("link", NULL, varname,
 			  "namespace mismatch;\n"
                           " reference to a module that is not available\n"
@@ -849,7 +862,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 			  env->phase,
                           modname,
                           mod_phase,
-                          env->module ? env->module->modsrc : scheme_false);
+                          modsrc);
       return NULL;
     }
 
@@ -902,6 +915,10 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     }
 
     if (bad_reason) {
+      Scheme_Object *modsrc;
+      modsrc = (env->module
+                ? scheme_get_modsrc(env->module)
+                : scheme_false);
       scheme_wrong_syntax("link", NULL, varname,
                           "bad variable linkage;\n"
                           " reference to a variable that %s\n"
@@ -913,7 +930,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
                           env->phase,
                           modname,
                           mod_phase,
-                          env->module ? env->module->modsrc : scheme_false);
+                          modsrc);
     }
 
     if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & (GLOB_IS_IMMUTATED | GLOB_IS_LINKED)))
@@ -1342,12 +1359,7 @@ static void unbound_global(Scheme_Object *obj)
 
 static void make_tail_buffer_safe()
 {
-  Scheme_Thread *p = scheme_current_thread;
-
-  GC_CAN_IGNORE Scheme_Object **tb;
-  p->tail_buffer = NULL; /* so args aren't zeroed */
-  tb = MALLOC_N(Scheme_Object *, p->tail_buffer_size);
-  p->tail_buffer = tb;
+  scheme_realloc_tail_buffer(scheme_current_thread);
 }
 
 static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, Scheme_Object **runstack)
@@ -1361,6 +1373,12 @@ static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, S
     return rands;
   } else
     return rands;
+}
+
+static Scheme_Object *do_eval_k_readjust_mark(void)
+{
+  MZ_CONT_MARK_POS -= 2; /* undo increment in do_eval_stack_overflow() */
+  return do_eval_k();
 }
 
 static Scheme_Object *do_eval_stack_overflow(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
@@ -1386,7 +1404,14 @@ static Scheme_Object *do_eval_stack_overflow(Scheme_Object *obj, int num_rands, 
   } else
     p->ku.k.p2 = (void *)rands;
   p->ku.k.i2 = get_value;
-  return scheme_handle_stack_overflow(do_eval_k);
+
+  /* In case we got here via scheme_force_value_same_mark(), in case
+     overflow handling causes the thread to sleep, and in case another
+     thread tries to get this thread's continuation marks: ensure tha
+     the mark pos is not below any current mark. */
+  MZ_CONT_MARK_POS += 2;
+
+  return scheme_handle_stack_overflow(do_eval_k_readjust_mark);
 }
 
 static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_Wind *b, 
@@ -1875,7 +1900,7 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
                            : "constant")
 			: "variable"),
 		       (Scheme_Object *)b->key,
-		       home->module->modsrc);
+		       scheme_get_modsrc(home->module));
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, b->key,
 		       "%s: " CANNOT_SET_ERROR_STR ";\n"
@@ -5627,15 +5652,6 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
   int i, j, tl_map_len;
 
   rs_save = rs = MZ_RUNSTACK;
-
-  if (rp->uses_unsafe) {
-    scheme_check_unsafe_accessible((SCHEME_FALSEP(rp->uses_unsafe)
-                                    ? (insp
-                                       ? insp
-                                       : genv->access_insp)
-                                    : rp->uses_unsafe),
-                                   genv);
-  }
 
   if (rp->num_toplevels || rp->num_stxes || rp->num_lifts) {
     i = rp->num_toplevels;

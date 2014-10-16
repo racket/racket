@@ -54,7 +54,9 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
         (set-port-next-location-from in p)
         (set-port-next-location-from in name-p)
         (define-values (_1 _2 start-pos) (port-next-location p))
-        (define get-info (with-handlers ([exn:fail? values]) (read-language p (λ () 'fail))))
+        (define get-info (with-handlers ([exn:fail? values]) 
+                           (or (read-language p (λ () 'fail))
+                               (λ (x y)  y))))
         (define-values (_3 _4 end-pos) (port-next-location p))
         (cond
           [(procedure? get-info)

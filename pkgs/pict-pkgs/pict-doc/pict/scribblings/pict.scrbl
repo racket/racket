@@ -64,9 +64,21 @@ picts. The functions @racket[pict-width], @racket[pict-height],
 @racket[pict-descent], and @racket[pict-ascent] extract bounding box
 information from a pict.
 
-A pict is a convertible datatype through the @racketmodname[file/convertible]
-protocol. Supported conversions include @racket['png-bytes],
-@racket['eps-bytes], and @racket['pdf-bytes].
+A pict is a convertible datatype through the
+@racketmodname[file/convertible] protocol. Supported conversions
+include @racket['png-bytes], @racket['eps-bytes], @racket['pdf-bytes],
+@racket['svg-bytes], and variants such as @racket['png-bytes+bounds]
+and @racket['png-bytes+bounds8].
+
+A pict is serializable via @racketmodname[racket/serialize], but
+serialization loses sub-pict information (preserving only the pict's
+drawing and bounding box).
+
+@history[#:changed "1.2" @elem{Added support for
+                               @racket['png-bytes+bounds],
+                               @racket['png-bytes+bounds8] and similar
+                               variants.}
+         #:changed "1.3" @elem{Enabled serialization.}]
 
 
 @defstruct[pict ([draw any/c]
@@ -123,29 +135,23 @@ A @racket[child] structure is normally not created directly with
 
 @section{Basic Pict Constructors}
 
-@defproc*[([(dc [draw ((is-a?/c dc<%>) real? real? . -> . any)]
-                [w real?]
-                [h real?])
-            pict?]
-           [(dc [draw ((is-a?/c dc<%>) real? real? . -> . any)]
-                [w real?]
-                [h real?]
-                [a real?]
-                [d real?])
-            pict?])]{
+@defproc[(dc [draw (-> (is-a?/c dc<%>) real? real? any)]
+             [w real?]
+             [h real?]
+             [a real? h]
+             [d real? 0])
+         pict?]{
 
 Creates an arbitrary self-rendering pict.  The arguments to the
 rendering procedure will be a drawing context and top-left location for
 drawing.
 
-The @racket[w] and @racket[h] arguments determine the width and height
-of the resulting pict's @tech{bounding box}.  In the three-argument case, the
-descent is @math{0} and the ascent is @racket[h] for the bounding
-box; in the five-argument case, @racket[a] and @racket[d] are used
-as the bounding box's ascent and descent.
+The @racket[w], @racket[h], @racket[a], and @racket[d] arguments 
+determine the width, height, ascent, and descent of the
+of the resulting pict's @tech{bounding box} respectively.
 
 When the rendering procedure is called, the current pen and brush will
-be solid and in the pict's color (and linewidth), and the scale and
+be @racket['solid] and in the pict's color and @racket[linewidth], and the scale and
 offset of the drawing context will be set. The text mode will be transparent, but
 the font and text colors are not guaranteed to be anything in
 particular.
@@ -167,9 +173,30 @@ particular.
         (send dc draw-path path dx dy)
         (send dc set-brush old-brush)
         (send dc set-pen old-pen))
-    50 50)
-]}
+    50 50)]
 
+The @racket[draw] is called during the dynamic extent of
+the call to @racket[dc] as part of the contract checking.
+
+Specifically, the pre-condition portion of the contract
+for @racket[dc] concocts a @racket[dc<%>] object with a 
+random initial state, calls the @racket[draw] argument 
+with that @racket[dc<%>] and then checks to make sure that 
+@racket[draw] the state of the  @racket[dc<%>] object
+is the same as it was before @racket[draw] was called.
+
+@examples[#:eval 
+          ss-eval
+          (dc (λ (dc dx dy)
+                (send dc set-brush "red" 'solid)
+                (send dc set-pen "black" 1 'transparent)
+                (send dc draw-ellipse dx dy 50 50))
+              50 50)]
+
+@history[#:changed "1.3" @list{The @racket[draw] argument is 
+                               now called by the @racket[#:pre] 
+                               condition of @racket[dc].}]
+}
 
 @defproc*[([(blank [size real? 0]) pict?]
            [(blank [w real?] [h real?]) pict?]
@@ -647,8 +674,8 @@ Like @racket[pin-over], but @racket[pict] is drawn before
 
 @defproc[(table [ncols exact-positive-integer?]
                 [picts (non-empty-listof pict?)]
-                [col-aligns (list*of (pict? pict? -> pict?))]
-                [row-aligns (list*of (pict? pict? -> pict?))]
+                [col-aligns (list*of (->* () #:rest (listof pict?) pict?))]
+                [row-aligns (list*of (->* () #:rest (listof pict?) pict?))]
                 [col-seps (list*of real?)]
                 [row-seps (list*of real?)])
          pict?]{
@@ -702,9 +729,21 @@ horizontal or vertical placement of each cell in the column or row.
 @defproc*[([(scale [pict pict?] [factor real?]) pict?]
            [(scale [pict pict?] [w-factor real?] [h-factor real?]) pict?])]{
 
-Scales a pict drawing, as well as its @tech{bounding box}. The drawing
-is scaled by adjusting the destination @racket[dc<%>]'s scale while
-drawing the original @racket[pict].}
+Scales a pict drawing, as well as its @tech{bounding box}, by multiplying
+it current size by @racket[factor] (if two arguments are supplied)
+or by multiplying the current width by @racket[w-factor] and current height by
+@racket[h-factor] (if three arguments are supplied).
+
+The drawing is scaled by adjusting the destination @racket[dc<%>]'s
+scale while drawing the original @racket[pict].
+
+@examples[#:eval
+          ss-eval
+          (filled-rectangle 80 40)
+          (scale (filled-rectangle 40 20) 2)
+          (scale (filled-rectangle 20 20) 4 2)]
+
+}
 
 @defproc*[([(scale-to-fit [pict pict?] [size-pict pict?]) pict?]
            [(scale-to-fit [pict pict?] [width real?] [height real?]) pict?])]{
@@ -718,6 +757,7 @@ drawing the original @racket[pict].}
          (or @racket[width] by @racket[height] box), but not necessarily
          both.
 }
+
 
 @defproc[(rotate [pict pict?] [theta real?]) pict?]{
 
@@ -733,7 +773,7 @@ line drops below the descent line, the two lines are flipped.}
 
 @defproc[(ghost [pict pict?]) pict?]{
 
-Creats a container picture that doesn't draw the child picture,
+Creates a container picture that doesn't draw the child picture,
 but uses the child's size.}
 
 
@@ -934,7 +974,7 @@ descent are extended.}
 
 Scales a color, making it brighter or darker. If the factor is less
 than 1, the color is darkened by multiplying the RGB components by the
-factor. If the factor is greater tham 1, the color is lightened by
+factor. If the factor is greater than 1, the color is lightened by
 dividing the gap between the RGB components and 255 by the factor.}
 
 @defproc[(color-series [dc (is-a?/c dc<%>)]
@@ -971,6 +1011,17 @@ as the ultimate drawing context, but it should measure text in the same
 way. Under normal circumstances, font metrics are the same for all
 drawing contexts, so the default value of @racket[dc-for-text-size] is
 a @racket[bitmap-dc%] that draws to a 1-by-1 bitmap.}
+
+
+@defparam[convert-bounds-padding padding (list/c (>=/c 0) (>=/c 0) (>=/c 0) (>=/c 0))]{
+
+A parameter that determines an amount of padding added to each edge of
+a @tech{pict} when converting to a format like @racket['png@2x-bytes+bounds8]
+(see @racketmodname[file/convertible]). The default value of the parameter
+is @racket['(3 3 3 3)], which adds three pixels to each edge to accommodate
+a small amount of drawing outside the pict's @tech{bounding box}.
+
+@history[#:added "1.2"]}
 
 
 @defproc[(draw-pict [pict pict?]

@@ -49,7 +49,8 @@
            [_ (err tag p)])))]))
 
 (define (err spec p . xtras)
-  (raise-syntax-error (cadr spec)
+  (define x (cadr spec))
+  (raise-syntax-error (if (syntax? x) (syntax-e x) x)
                       (if (null? xtras)
                           "illegal specification"
                           (string-append "illegal specification: " (car xtras)))
@@ -91,14 +92,17 @@
                [(or (free-identifier=? (caar spec) kw)
                     (free-identifier=? (caar spec) kw-alt))
                 ; (syntax->list (cdar spec))
-                (for/list ([i (syntax->list (cdar spec))])
-                  (define n  (string->symbol (format "~a handler" (syntax-e (caar spec)))))
-                  (syntax-property  i 'inferred-name n))]
+                (datum->syntax
+                 #f
+                 (for/list ([i (syntax->list (cdar spec))])
+                   (define n  (string->symbol (format "~a handler" (syntax-e (caar spec)))))
+                   (syntax-property  i 'inferred-name n))
+                 (cdar spec))]
                [else (loop (cdr spec))])))
          (if r 
              (let ([f (third s)])
                (if (procedure-arity-includes? f 2)
-                   (f r `',(car r))
+                   (f r `',(car (syntax->list r)))
                    (f r)))
              (fourth s)))
        Spec))

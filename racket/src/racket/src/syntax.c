@@ -45,6 +45,8 @@ ROSYM static Scheme_Object *lexical_symbol;
 ROSYM static Scheme_Object *protected_symbol;
 ROSYM static Scheme_Object *nominal_id_symbol;
 
+READ_ONLY Scheme_Object *scheme_syntax_p_proc;
+
 READ_ONLY static Scheme_Stx_Srcloc *empty_srcloc;
 READ_ONLY static Scheme_Object *empty_simplified;
 
@@ -407,11 +409,17 @@ XFORM_NONGCING static void DO_WRAP_POS_REVINIT(Wrap_Pos *w, Scheme_Object *k)
 
 void scheme_init_stx(Scheme_Env *env)
 {
+  Scheme_Object *o;
+
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
 
-  GLOBAL_FOLDING_PRIM_UNARY_INLINED("syntax?", syntax_p, 1, 1, 1, env);
+  REGISTER_SO(scheme_syntax_p_proc);
+  o = scheme_make_folding_prim(syntax_p, "syntax?", 1, 1, 1);
+  scheme_syntax_p_proc = o;
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
+  scheme_add_global_constant("syntax?", o, env);
 
   GLOBAL_FOLDING_PRIM("syntax->datum", syntax_to_datum, 1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("datum->syntax", datum_to_syntax, 2, 5, 1, env);
@@ -3089,6 +3097,7 @@ static Scheme_Object *get_old_module_env(Scheme_Object *stx)
   WRAP_POS awl;
   Scheme_Object *a, *last_id = NULL, *cancel_rename_id = scheme_false;
   Scheme_Object *result_id = scheme_false, *last_pr = NULL, *pr;
+  int saw_rename = 0;
 
   WRAP_POS_INIT(awl, ((Scheme_Stx *)stx)->wraps);
 
@@ -3147,13 +3156,20 @@ static Scheme_Object *get_old_module_env(Scheme_Object *stx)
         }
         last_id = set_identity;
       }
+
+      /* Only cancel via phase shift after we've seen a rename.
+         Canceling makes submodule contexts work, while not canceling
+         until after a rename makes inspection of a fully-expanded
+         module work in the case that a binding's indentifier cam from
+         another module. */
+      saw_rename = 1;
     } else if (SCHEME_BOXP(a)) {
       /* Phase shift: */
       Scheme_Object *vec;
 
       vec = SCHEME_BOX_VAL(a);
       a = SCHEME_VEC_ELS(vec)[5];
-      if (!SCHEME_FALSEP(a))
+      if (saw_rename && !SCHEME_FALSEP(a))
         cancel_rename_id = a;
     }
 
@@ -6603,7 +6619,7 @@ static Scheme_Object *extract_for_common_wrap(Scheme_Object *a, int get_mark, in
         else
           return SCHEME_CDR(v);
       }
-    } else if (!SCHEME_BOXP(v) && !SCHEME_VECTORP(v) && !SCHEME_HASHTRP(v) && !prefab_p(v)) {
+    } else if (!SCHEME_NULLP(v) && !SCHEME_BOXP(v) && !SCHEME_VECTORP(v) && !SCHEME_HASHTRP(v) && !prefab_p(v)) {
       /* It's atomic. */
       if (get_mark)
         return SCHEME_CDR(a);

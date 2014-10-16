@@ -19,6 +19,7 @@
            #:style-file (or/c #f path-string?)
            #:style-extra-files (listof path-string?)
            #:extra-files (listof path-string?)
+           #:image-preferences (listof (or/c 'ps 'pdf 'png 'svg 'gif))
            #:redirect (or/c #f string?)
            #:redirect-main (or/c #f string?)
            #:directory-depth exact-nonnegative-integer?
@@ -38,6 +39,7 @@
                 #:style-file [style-file #f]
                 #:style-extra-files [style-extra-files null]
                 #:extra-files [extra-files null]
+                #:image-preferences [image-preferences null]
                 #:redirect [redirect #f]
                 #:redirect-main [redirect-main #f]
                 #:directory-depth [directory-depth 0]
@@ -53,6 +55,7 @@
                        [style-file style-file]
                        [style-extra-files style-extra-files]
                        [extra-files extra-files]
+                       [image-preferences image-preferences]
                        [helper-file-prefix helper-file-prefix])])
     (when redirect
       (send renderer set-external-tag-path redirect))

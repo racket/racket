@@ -1,14 +1,19 @@
 # ------------------------------------------------------------
 # Configuration
 
-# This `racket' must have the the "distro-build" and "aws" packages
-# installed, where "aws" depends on "html-lib":
+# This `racket' must have the the "aws" package installed,
+# where "aws" depends on "html-lib", and it must be consistent
+# with "pack-all.rkt" in `PLT_TOP`.
 RACKET = racket
 
 # In `PLT_TOP', "build/latest" should be a git clone to update (and it
 # shouldn't be the clone that implements `RACKET'), and other files
 # will be written and cached at "build":
 PLT_TOP = ../../../..
+# Beware that old packages can accumulate in "build/archive".
+# Discard that directory periodically to clean out old versions.
+# (The S3 update will independently preserve old uploaded versions
+# for at least one week.)
 
 # Along with the following, "~/.aws-keys" must have your AWS keys in
 # the form
@@ -17,8 +22,9 @@ PLT_TOP = ../../../..
 S3_HOST = s3-us-west-2.amazonaws.com
 BUCKET = racket-packages
 
-# The catalog server to update:
-DEST_CATALOG = https://localhost:9004
+# The catalog server to read and update:
+SRC_CATALOG = https://localhost:9004
+DEST_CATALOG = $(SRC_CATALOG)
 
 # ------------------------------------------------------------
 # Targets
@@ -43,11 +49,11 @@ PACK_ARCHIVE = --at-checksum $(PLT_TOP)/build/archive/pkgs \
                --mods
 archive-catalog:
 	rm -rf $(PLT_TOP)/build/archive/catalog
-	$(RACKET) -l- distro-build/pack-and-catalog --native $(PACK_ARCHIVE) $(PLT_TOP)/build/latest/native-pkgs
-	$(RACKET) -l- distro-build/pack-and-catalog $(PACK_ARCHIVE) $(PLT_TOP)/build/latest/pkgs
+	$(RACKET) $(PLT_TOP)/racket/src/pack-all.rkt --native $(PACK_ARCHIVE) $(PLT_TOP)/build/latest/native-pkgs
+	$(RACKET) $(PLT_TOP)/racket/src/pack-all.rkt $(PACK_ARCHIVE) $(PLT_TOP)/build/latest/pkgs
 
 # Copy files from "build/archive" to $(BUCKET), and update
-# $(DEST_CATALOG):
-AWS_AND_CATALOG = $(S3_HOST) $(BUCKET) $(DEST_CATALOG)
+# $(DEST_CATALOG) relative to $(SRC_CATALOG):
+AWS_AND_CATALOG = $(S3_HOST) $(BUCKET) $(SRC_CATALOG) $(DEST_CATALOG)
 push-catalog:
 	$(RACKET) push-catalog.rkt $(PLT_TOP)/build/archive $(AWS_AND_CATALOG)

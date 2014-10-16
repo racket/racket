@@ -48,6 +48,8 @@ AC_ARG_ENABLE(pkgscope,[  --enable-pkgscope=<s>   set `raco pkg' default: instal
 
 AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled by default)], , enable_docs=yes)
 AC_ARG_ENABLE(usersetup, [  --enable-usersetup      setup user-specific files on install])
+AC_ARG_ENABLE(natipkg, [  --enable-natipkg        add "-natipkg" to library subpath])
+
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled], LIBTOOLPROG="$enableval", enable_lt=default)
@@ -66,8 +68,8 @@ AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS
 AC_ARG_ENABLE(mac64,   [  --enable-mac64          allow 64-bit Mac OS X build (enabled by default)], , enable_mac64=yes)
 
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)])
-AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
-AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging])
+AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC (enabled by default)], , enable_sgc=yes)
+AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging (expensive debug mode)])
 AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
 
 AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
@@ -276,6 +278,7 @@ show_explicitly_enabled "${enable_cgcdefault}" "CGC as default" "Note that this 
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
+show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
 
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
@@ -298,7 +301,7 @@ show_explicitly_disabled "${enable_places}" Places
 show_explicitly_enabled "${enable_futures}" Futures
 show_explicitly_disabled "${enable_futures}" Futures
 
-show_explicitly_enabled "${enable_sgc}" SGC
+show_explicitly_disabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this mode is not intended for normal Racket use"
 
@@ -1104,13 +1107,31 @@ if test "${check_for_mprotect}" = "yes" ; then
      #include <fcntl.h>
      int main() {
       void *p;
-      p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
-      mprotect(p, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC);
+      p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
+      mprotect(p, 2 << 16, PROT_READ | PROT_WRITE);
       return 0;
      }])], use_mprotect=yes, use_mprotect=no)
   AC_MSG_RESULT($use_mprotect)
   if test "${use_mprotect}" = "yes" ; then
      AC_DEFINE(HAVE_MMAP_MPROTECT,1,[Have mmap and mprotect])
+  fi
+
+  if test "${use_mprotect}" = "yes" && test "${enable_sgc}" != "yes" ; then
+    [ msg="mprotect with PROT_EXEC" ]
+    AC_MSG_CHECKING($msg)
+    AC_LINK_IFELSE([AC_LANG_SOURCE([
+       #include <sys/mman.h>
+       #include <fcntl.h>
+       int main() {
+        void *p;
+        p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
+        if (mprotect(p, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC)) return 1;
+        return 0;
+       }])], can_mprotect_exec=yes, can_mprotect_exec=no)
+    AC_MSG_RESULT($can_mprotect_exec)
+    if test "${can_mprotect_exec}" = "no" ; then
+      echo "Senora GC is required due to mprotect() failure"
+    fi
   fi
 fi
 
@@ -1443,6 +1464,12 @@ fi
 
 if test "${enable_docs}" = "no" ; then  
   INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} --no-docs"
+fi
+
+############## natipkg ################
+
+if test "${enable_natipkg}" = "yes" ; then
+  AC_DEFINE(SPLS_SUFFIX,"-natipkg",[Library subpath suffix])
 fi
 
 ############## Racket for Racket ################

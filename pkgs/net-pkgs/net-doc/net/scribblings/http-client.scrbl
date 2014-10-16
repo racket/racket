@@ -74,13 +74,18 @@ Closes the output side of @racket[hc], if it is live.
                           [#:close? close? boolean? #f]
                           [#:headers headers (listof (or/c bytes? string?)) empty]
                           [#:content-decode decodes (listof symbol?) '(gzip)]
-                          [#:data data (or/c false/c bytes? string?) #f])
+                          [#:data data (or/c false/c bytes? string? data-procedure/c) #f])
          void?]{
 
 Sends an HTTP request to @racket[hc] to the URI @racket[uri] using
 HTTP version @racket[version] the method @racket[method] and the
 additional headers given in @racket[headers] and the additional data
 @racket[data].
+
+If @racket[data] is a procedure, it will be called once with a
+procedure of one argument, which is a string or
+byte string to be written to the request body using
+chunked transfer encoding.
 
 If @racket[headers] does not contain an @litchar{Accept-Encoding}
 header, then a header indicating that encodings from @racket[decodes]
@@ -117,7 +122,7 @@ to do so.
                               [#:version version (or/c bytes? string?) #"1.1"]
                               [#:method method (or/c bytes? string? symbol?) #"GET"]
                               [#:headers headers (listof (or/c bytes? string?)) empty]
-                              [#:data data (or/c false/c bytes? string?) #f]
+                              [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
                               [#:content-decode decodes (listof symbol?) '(gzip)]
                               [#:close? close? boolean? #f])
          (values bytes? (listof bytes?) input-port?)]{
@@ -132,7 +137,7 @@ Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
                         [#:version version (or/c bytes? string?) #"1.1"]                          
                         [#:method method (or/c bytes? string? symbol?) #"GET"]
                         [#:headers headers (listof (or/c bytes? string?)) empty]
-                        [#:data data (or/c false/c bytes? string?) #f]
+                        [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
                         [#:content-decode decodes (listof symbol?) '(gzip)])
          (values bytes? (listof bytes?) input-port?)]{
 
@@ -143,6 +148,14 @@ sequence on a fresh HTTP connection produced by
 The HTTP connection is not returned, so it is always closed after one
 response, which is why there is no @racket[#:closed?] argument like
 @racket[http-conn-recv!].
+
+}
+
+@defthing[data-procedure/c chaperone-contract?]{
+
+Contract for a procedure that accepts a procedure of one
+argument, which is a string or byte string:
+@racket[(-> (-> (or/c bytes? string?) void?) any)].
 
 }
 

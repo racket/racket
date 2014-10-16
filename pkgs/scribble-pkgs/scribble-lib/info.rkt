@@ -2,8 +2,7 @@
 
 (define collection 'multi)
 
-(define deps '("racket-index"
-               "scheme-lib"
+(define deps '("scheme-lib"
                "base"
                "compatibility-lib"
                "scribble-text-lib"
@@ -22,4 +21,4 @@
 
 (define pkg-authors '(mflatt eli))
 
-(define version "1.3")
+(define version "1.6")

@@ -55,9 +55,11 @@ directory.
 On Mac OS X, see the notes below on git submodules, and then `make'
 (or `make in-place') creates a build in the "racket" directory.
 
-On Windows with Microsoft Visual Studio 9.0 (2008), see the notes
-below on git submodules, and then `nmake win32-in-place' creates a
-build in the "racket" directory.
+On Windows with Microsoft Visual Studio (any version between 2008/9.0
+and 2013/12.0), see the notes below on git submodules, and then `nmake
+win32-in-place' creates a build in the "racket" directory.  For
+information on configuring your command-line environment for Visual
+Studio, see "racket/src/worksp/README".
 
 In all cases, an in-place build includes (via links) packages that are
 in the "pkgs" directory.
@@ -68,18 +70,23 @@ See "More Instructions: Building Racket" below for more information.
 Quick Instructions: Unix-style Install
 ======================================
 
-On Unix, `make PREFIX=<dir>' builds and installs into <dir> with
-binaries in "<dir>/bin", packages in "<dir>/share/racket/pkgs",
+On Unix, `make unix-style PREFIX=<dir>' builds and installs into <dir>
+with binaries in "<dir>/bin", packages in "<dir>/share/racket/pkgs",
 documentation in "<dir>/share/racket/doc", etc.
 
 On Mac OS X, see the notes below on git submodules, and then `make
-PREFIX=<dir>' builds and installs into "<dir>" with binaries in
-"<dir>/bin", packges in "<dir>/share/pkgs", documentation in
-"<dir>/doc", etc.
+unix-style PREFIX=<dir>' builds and installs into "<dir>" with
+binaries in "<dir>/bin", packges in "<dir>/share/pkgs", documentation
+in "<dir>/doc", etc.
 
 On Windows, Unix-style install is not supported.
 
 A Unix-style install leaves no reference to this source directory.
+
+To split the build and install steps of a Unix-style installation,
+supply `DESTDIR=<dest-dir>` with `make unix-style PREFIX=<dir>`, which
+assembles the installation in "<dest-dir>". Then, copy the content of
+"<dest-dir>" to the target root.
 
 See "More Instructions: Building Racket" below for more information.
 
@@ -99,6 +106,9 @@ The "native-pkgs" directory is a git submodule, so you'll need
    git submodule update
 
 before you do anything else.
+
+The "native-pkgs" directory is also needed if you build for 64-bit
+Linux with the `--enable-natipkg` option to `configure`.
 
 
 More Instructions: Building Racket
@@ -294,9 +304,11 @@ configuration file there and omit the `CONFIG' argument to
 `make'. Supply `CONFIG_MODE=...' to pass a configuration mode on to
 your site-configuration module (accessible via the `current-mode'
 parameter). Supply `CLEAN_MODE=--clean' to make the default `#:clean?'
-configuration for a client #t instead of #f, and supply
-`RELEASE_MODE=--release' to make thde default `#:release?'
-configuration #t.
+configuration for a client #t instead of #f, supply
+`RELEASE_MODE=--release' to make the default `#:release?'
+configuration #t, supply `SOURCE_MODE=--source` to make the default
+`#:source?' configuration #t, and supply `VERSIONLESS_MODE=--version`
+to make the default `#:versionless?' configuration #t.
 
 A configuration file can specify the packages to include, host address
 of the server, distribution name, installer directory, and
@@ -473,6 +485,13 @@ In more detail:
      defaults that are suitable for infrequently updated release
      installations, as opposed to frequently updated snapshot
      installations.
+
+     To create a source archive, provide `SOURCE_MODE' as "--source"
+     to `make'.
+
+     To create an archive that omits the version number and also omit
+     and version number in installer paths, provide `VERSIONLESS_MODE' as
+     "--versionless" to `make'.
 
      To change the human-readable name of the distribution as embedded
      in the installer, provide `DIST_NAME' to `make'. The default

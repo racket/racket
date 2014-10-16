@@ -11,3 +11,4 @@
 
 (define pkg-authors '(ryanc))
 (define build-deps '("srfi-lite-lib"))
+(define update-implies '("db-lib"))

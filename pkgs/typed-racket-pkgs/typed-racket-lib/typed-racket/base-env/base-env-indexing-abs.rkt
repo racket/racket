@@ -215,12 +215,12 @@
 
 
 
-   [range (cl->* (-> (Un -Zero -NegInt) -Null)
-                 (-> -One (-lst* -One))
+   [range (cl->* (-> -NonPosReal -Null)
+                 (-> -One (-lst* -Zero))
                  (-> -Byte (-lst -Byte))
                  (-> -Index (-lst -Index))
-                 (-> -Fixnum (-lst -Fixnum))
-                 (-> -Real (-lst -Int))
+                 (-> -Fixnum (-lst -NonNegFixnum))
+                 (-> -Real (-lst -Nat))
                  (->opt -PosInt -Byte [-Int] (-lst -PosByte))
                  (->opt -Nat -Byte [-Int] (-lst -Byte))
                  (->opt -PosInt -Index [-Int] (-lst -PosIndex))
@@ -258,7 +258,7 @@
    [unsafe-vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [unsafe-vector*-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [vector-copy! (-poly (a) ((-vec a) index-type (-vec a) [index-type index-type] . ->opt . -Void))]
-   [make-vector (-poly (a) (cl-> [(index-type) (-vec (Un -Integer a))]
+   [make-vector (-poly (a) (cl-> [(index-type) (-vec (Un -Zero a))]
                                  [(index-type a) (-vec a)]))]
 
    ;; flvector ops

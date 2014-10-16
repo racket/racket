@@ -16,5 +16,5 @@
         (define s (read i))
         (unless (number? s) (error "release info does not start with a number of seconds"))
         (regexp-match #px"^[\\s]*" i) ; discard whitespace
-        (list (seconds->date s)
+        (list (seconds->date s #f) ; UTC
               (port->string i))))))

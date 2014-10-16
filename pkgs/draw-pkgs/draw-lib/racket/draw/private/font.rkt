@@ -119,6 +119,15 @@
      (cairo_destroy cr)
      (cairo_surface_destroy s))))
 
+(define dpi-scale
+  ;; Hard-wire 96dpi for Windows and Linux, but 72 dpi for Mac OS X
+  ;; (based on historical defaults on those platforms).
+  ;; If the actual DPI for the screen is different, we'll handle
+  ;; that by scaling to and from the screen.
+  (if (eq? 'macosx (system-type))
+      1.0
+      (/ 96.0 72.0)))
+
 (defclass font% object%
 
   (define table-key #f)
@@ -173,9 +182,8 @@
                                                       [(normal) PANGO_WEIGHT_MEDIUM]
                                                       [(light) PANGO_WEIGHT_LIGHT]
                                                       [(bold) PANGO_WEIGHT_BOLD])))
-          (if size-in-pixels?
-              (pango_font_description_set_absolute_size desc (* size PANGO_SCALE))
-              (pango_font_description_set_size desc (inexact->exact (floor (* size PANGO_SCALE)))))
+          (let ([size (if size-in-pixels? size (* dpi-scale size))])
+            (pango_font_description_set_absolute_size desc (* size PANGO_SCALE)))
           (install! desc)
           (atomically (hash-set! font-descs key desc))
           desc)))

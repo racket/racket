@@ -31,6 +31,7 @@
 (define current-quiet              (make-parameter #f))
 (define helper-file-prefix         (make-parameter #f))
 (define doc-command-line-arguments (make-parameter null))
+(define current-image-prefs        (make-parameter null)) ; reverse order
 
 (define (read-one str)
   (let ([i (open-input-string str)])
@@ -62,9 +63,12 @@
    [("--latex") "generate LaTeX-format output"
     (current-html #f)
     (current-render-mixin latex:render-mixin)]
-   [("--pdf") "generate PDF-format output (with PDFLaTeX)"
+   [("--pdf") "generate PDF-format output (via PDFLaTeX)"
     (current-html #f)
     (current-render-mixin pdf:render-mixin)]
+   [("--dvipdf") "generate PDF-format output (via LaTeX, dvips, and pstopdf)"
+    (current-html #f)
+    (current-render-mixin pdf:dvi-render-mixin)]
    [("--latex-section") n "generate LaTeX-format output for section depth <n>"
     (current-html #f)
     (let ([v (string->number n)])
@@ -85,6 +89,12 @@
    [("--dest-base") prefix "start support-file names with <prefix>"
     (helper-file-prefix prefix)]
    #:multi
+   [("++convert") fmt ("prefer image conversion to <fmt> (in given order)"
+                       " <fmt> as one of: ps pdf svg png gif")
+    (define sym (string->symbol fmt))
+    (unless (member sym '(ps pdf svg png gif))
+      (raise-user-error 'scribble "bad format for ++convert: ~s" fmt))
+    (current-image-prefs (cons sym (current-image-prefs)))]
    [("++style") file "add given .css/.tex file after others"
     (current-style-extra-files (cons file (current-style-extra-files)))]
    #:once-each
@@ -149,6 +159,7 @@
                files)
           #:dest-dir (current-dest-directory)
           #:render-mixin (current-render-mixin)
+          #:image-preferences (reverse (current-image-prefs))
           #:prefix-file (current-prefix-file)
           #:style-file (current-style-file)
           #:style-extra-files (reverse (current-style-extra-files))

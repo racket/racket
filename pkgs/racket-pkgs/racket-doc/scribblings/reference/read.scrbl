@@ -107,7 +107,7 @@ See @secref["readtables"] for an extended example that uses
 
 @defproc[(read-language [in input-port? (current-input-port)]
                         [fail-thunk (-> any) (lambda () (error ...))])
-         (any/c any/c . -> . any)]{
+         (or/c (any/c any/c . -> . any) #f)]{
 
 Reads from @racket[in] in the same way as @racket[read], but stopping as
 soon as a @tech{reader language} (or its absence) is determined.
@@ -125,20 +125,21 @@ or @litchar{#!}.
 When it finds a @litchar{#lang} or @litchar{#!} specification, instead
 of dispatching to a @racketidfont{read} or @racketidfont{read-syntax}
 function as @racket[read] and @racket[read-syntax] do,
-@racket[read-language] dispatches to a @racketidfont{get-info}
+@racket[read-language] dispatches to the @racketidfont{get-info}
 function (if any) exported by the same module. The result of the
 @racketidfont{get-info} function is the result of
 @racket[read-language] if it is a function of two arguments; if
 @racketidfont{get-info} produces any other kind of result, the
-@exnraise[exn:fail:contract].
+@exnraise[exn:fail:contract]. If no @racketidfont{get-info} function is
+exported, @racket[read-language] returns @racket[#f].
 
 The function produced by @racketidfont{get-info} reflects information
 about the expected syntax of the input stream. The first argument to the
 function serves as a key on such information; acceptable keys and the
 interpretation of results is up to external tools, such as DrRacket (see
-@seclink[#:doc '(lib "scribblings/tools/tools.scrbl")
-        "drracket:module-language-tools"
-        #:indirect? #t]{the DrRacket documentation}).
+@seclink["_lang-based_Languages_in_DrRacket"
+         #:doc '(lib "scribblings/tools/tools.scrbl")
+         #:indirect? #t]{the DrRacket documentation}).
 If no information is available for a given key, the result should be
 the second argument.
 @mz-examples[

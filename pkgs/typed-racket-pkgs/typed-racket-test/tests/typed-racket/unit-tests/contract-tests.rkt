@@ -60,6 +60,7 @@
     (namespace-require 'racket/contract)
     (namespace-require 'unstable/contract)
     (namespace-require 'typed-racket/utils/any-wrap)
+    (namespace-require 'typed-racket/utils/evt-contract)
     (namespace-require '(submod typed-racket/private/type-contract predicates))
     (current-namespace)))
 
@@ -119,7 +120,7 @@
               (t (->key -Symbol #:key -Boolean #t Univ))
               (t (make-Function
                    (list (make-arr* (list Univ) -Boolean #:kws (list (make-Keyword '#:key Univ #t))
-                                    #:filters (-FS (-filter -Symbol 0 null) (-not-filter -Symbol 0 null))))))
+                                    #:filters (-FS (-filter -Symbol 0) (-not-filter -Symbol 0))))))
               (t (-struct #'struct-name #f (list (make-fld -Symbol #'acc #f))))
               ;; Adapted from PR 13815
               (t (-poly (a) (-> a a)))
@@ -204,6 +205,7 @@
                                     (member-spec 'inherit-field 'y integer/sc))
                               #f null null))
 
+              ;; typed/untyped interaction tests
               (t-int (-poly (a) (-> a a))
                      (λ (f) (f 1))
                      (λ (x) 1)
@@ -218,4 +220,31 @@
                      (λ (f) (f "a" "b"))
                      (case-lambda [xs (car xs)]
                                   [(sym . xs) sym]))
+              (t-int (make-Evt -String)
+                     (λ (x) (channel-get x))
+                     (let ([ch (make-channel)])
+                       (thread (λ () (channel-put ch "ok")))
+                       ch)
+                     #:untyped)
+              (t-int/fail (make-Evt -String)
+                          (λ (x) (channel-get x))
+                          (let ([ch (make-channel)])
+                            (thread (λ () (channel-put ch 'bad)))
+                            ch)
+                          #:untyped
+                          #:msg #rx"promised: String.*produced: 'bad")
+              (t-int/fail (make-Evt (-> -String -String))
+                          (λ (x) ((sync x) 'bad))
+                          (let ([ch (make-channel)])
+                            (thread
+                             (λ ()
+                               (channel-put ch (λ (x) (string-append x "x")))))
+                            ch)
+                          #:typed
+                          #:msg #rx"expected: String.*given: 'bad")
+              (t-int/fail (make-Evt -String)
+                          (λ (x) (channel-put x "bad"))
+                          (make-channel)
+                          #:untyped
+                          #:msg #rx"cannot put on a channel")
               ))

@@ -37,12 +37,44 @@
             (unless (equal? opt expected)
               (fail-check))))))))
 
+(define-syntax (check-syntax stx)
+  (syntax-parse stx
+    [(_ argument* expected*)
+     #'(test-case (~a 'argument*)
+         (define argument argument*)
+         (define expected expected*)
+         (with-check-info*
+           (list (make-check-info 'original argument)
+                 (make-check-expected expected))
+           (λ ()
+             (let ([ctc (syntax->datum
+                          (instantiate
+                            (optimize argument #:trusted-positive #t)
+                            (λ (#:reason [reason #f]) (error 'nyi))
+                            'impersonator))])
+               (with-check-info* (list (make-check-actual ctc))
+                 (λ ()
+                   (unless (equal? ctc expected)
+                     (fail-check))))))))]))
+
 ;; Ids with unique identity so that equals works
 (define foo-id #'foo)
 (define bar-id #'bar)
 
-(define tests
-  (test-suite "Static Contract Optimizer Tests"
+(define syntax-tests
+  (test-suite "Optimized Syntax Tests"
+    (check-syntax list?/sc
+      'any/c)
+    (check-syntax (arr/sc null #f (list list?/sc))
+      '(-> any))
+    (check-syntax (hash/sc list?/sc list?/sc)
+      '(hash/c list? list?))
+
+    ))
+
+
+(define optimizer-tests
+  (test-suite "Optimizer Tests"
     ;; Lists
     (check-optimize (listof/sc any/sc)
       #:pos any/sc
@@ -292,3 +324,8 @@
                 (arr/sc (list any/sc) #f (list (listof/sc set?/sc))))))
 
     ))
+
+(define tests
+  (test-suite "Static Contracts"
+    syntax-tests
+    optimizer-tests))

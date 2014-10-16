@@ -47,6 +47,15 @@
 
 (define centertext-style (make-style "Centertext" figure-style-extras))
 
+;; See "figure.js":
+(define figure-target-style
+  (make-style #f
+              (list
+               (make-attributes '((x-target-lift . "Figure")))
+               (make-js-addition
+                (path->main-collects-relative
+                 (collection-file-path "figure.js" "scriblib"))))))
+
 (define (make-figure-ref c s)
   (element (style "FigureRef" (list* (command-extras (list s))
                                      figure-style-extras))
@@ -100,6 +109,7 @@
   (counter-target figures tag 
                   "Figure" 
                   (if continue? " (continued): " ": ")
+                  #:target-style figure-target-style
                   #:continue? continue?))
 
 (define (ref-proc initial)

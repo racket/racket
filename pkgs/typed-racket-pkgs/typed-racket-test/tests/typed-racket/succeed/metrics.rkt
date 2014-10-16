@@ -75,7 +75,7 @@
 ;; be explained by chance. higher numbers means higher confidence
 ;; that they cannot.
 (define: (chi-square [seqA : (Listof number)] [seqB : (Listof number)]) :  number
-  (with-handlers ([exn:fail? (lambda: ([e : str]) +nan.0)])
+  (with-handlers ([exn:fail? (lambda: ([e : exn]) +nan.0)])
     (let* ([ct-a (length seqA)]
            [ct-b (length seqB)]
            [total-subjects (+ ct-a ct-b)]
@@ -100,7 +100,7 @@
 ;; per-module : path ((listof expr) -> (number | #f)) -> (path -> (listof (number | #f)))  === Unit P
 (pdefine: (X) (per-module [f : ((Listof Sexpr) ->  X )]) : (Path -> (cons (U #f X) '()))
           (lambda: ([path : Path])
-                   (with-handlers ([exn:fail:read? (lambda: ([e : Void]) (list #f))])  ;; with handler
+                   (with-handlers ([exn:fail:read? (lambda: ([e : exn]) (list #f))])  ;; with handler
                      (let ([initial-sexp (with-input-from-file path read)])
                        (match initial-sexp
                          [`(module ,_ ,_  . , (? list? bodies)) ;; FIXME - use ... instead of .

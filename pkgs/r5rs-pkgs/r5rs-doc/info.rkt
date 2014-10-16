@@ -9,6 +9,7 @@
                      "compatibility-lib"
                      "racket-doc"))
 (define deps '("base"))
+(define update-implies '("r5rs-lib"))
 
 (define pkg-desc "documentation part of \"r5rs\"")
 

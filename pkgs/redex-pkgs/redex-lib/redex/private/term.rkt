@@ -8,6 +8,7 @@
                      (only-in racket/list flatten)
                      "keyword-macros.rkt"
                      "matcher.rkt")
+         (only-in "fresh.rkt" variable-not-in)
          syntax/datum
          "error.rkt"
          "lang-struct.rkt"
@@ -122,11 +123,11 @@
     (make-free-identifier-mapping))
   
   (define (rewrite stx)
-    (let-values ([(rewritten _) (rewrite/max-depth stx 0 #f)])
+    (let-values ([(rewritten _) (rewrite/max-depth stx 0 #f #f)])
       rewritten))
   
   (define (rewrite-application fn args depth srcloc-stx)
-    (let-values ([(rewritten max-depth) (rewrite/max-depth args depth #t)])
+    (let-values ([(rewritten max-depth) (rewrite/max-depth args depth #t #t)])
       (let ([result-id (car (generate-temporaries '(f-results)))])
         (with-syntax ([fn fn])
           (let loop ([func (if (judgment-form-id? #'fn)
@@ -144,15 +145,17 @@
                           (cons (syntax [res (func (quasidatum args))])
                                 outer-bindings))
                     (values result-id (min depth max-depth)))
-                  (loop (syntax (begin (mf-map func)))
-                        (syntax/loc args-stx (args (... ...)))
-                        (syntax (res (... ...)))
-                        (sub1 args-depth)))))))))
+                  (with-syntax ([dots (datum->syntax #'here '... arg-stx)])
+                    (loop (syntax (begin (mf-map func)))
+                          (syntax/loc args-stx (args dots))
+                          (syntax (res dots))
+                          (sub1 args-depth))))))))))
   
-  (define (rewrite/max-depth stx depth ellipsis-allowed?)
+  (define (rewrite/max-depth stx depth ellipsis-allowed? continuing-an-application?)
     (syntax-case stx (unquote unquote-splicing in-hole hole)
       [(metafunc-name arg ...)
-       (and (identifier? (syntax metafunc-name))
+       (and (not continuing-an-application?)
+            (identifier? (syntax metafunc-name))
             (if names
                 (not (memq (syntax->datum #'metafunc-name) names))
                 #t)
@@ -163,7 +166,8 @@
                                        #t)
          (rewrite-application f (syntax/loc stx (arg ...)) depth stx))]
       [(jf-name arg ...)
-       (and (identifier? (syntax jf-name))
+       (and (not continuing-an-application?)
+            (identifier? (syntax jf-name))
             (if names
                 (not (memq (syntax->datum #'jf-name) names))
                 #t)
@@ -236,7 +240,7 @@
        (let-values ([(x-rewrite max-depth)
                      (let i-loop ([xs (syntax->list (syntax (x ...)))])
                        (cond
-                         [(null? xs) (rewrite/max-depth #'y depth #t)]
+                         [(null? xs) (rewrite/max-depth #'y depth #t #f)]
                          [else
                           (let ([new-depth (if (and (not (null? (cdr xs)))
                                                     (identifier? (cadr xs))
@@ -245,7 +249,7 @@
                                                (+ depth 1)
                                                depth)])
                             (let-values ([(fst fst-max-depth)
-                                          (rewrite/max-depth (car xs) new-depth #t)]
+                                          (rewrite/max-depth (car xs) new-depth #t #f)]
                                          [(rst rst-max-depth)
                                           (i-loop (cdr xs))])
                               (values (cons fst rst)
@@ -330,9 +334,16 @@
      (d->pat #'d names)]))
 
 (define-for-syntax (d->pat d names)
-  (syntax-case d (... undatum in-hole undatum-splicing)
+  (syntax-case d (... undatum in-hole undatum-splicing variable-not-in term quote)
     [()
      #'(list)]
+    [(undatum (variable-not-in (term t) (quote s)))
+     (with-syntax ([t-pat (d->pat #'t names)])
+       #'(variable-not-in t-pat s))]
+    [(undatum (variable-not-in (term t1) (term t2)))
+     (with-syntax ([t1-pat (d->pat #'t1 names)]
+                   [t2-pat (d->pat #'t2 names)])
+       #'(variable-not-in t1-pat t2-pat))]
     [(undatum rest ...) ;; holes are also undatumed
      d]
     [(undatum-splicing rest ...)

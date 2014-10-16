@@ -64,7 +64,10 @@
  ;; from private/guts.rkt
  has-contract?
  value-contract
+ has-blame?
+ value-blame
  contract-continuation-mark-key
+ list-contract?
  
  ;; from private/case-arrow.rkt
  case->)

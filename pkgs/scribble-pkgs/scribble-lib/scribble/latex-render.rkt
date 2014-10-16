@@ -43,12 +43,25 @@
 (define-runtime-path skull-tex "scribble-skull.tex")
 (define skull-style (make-style #f (list (tex-addition skull-tex))))
 
-(define (render-mixin %)
+(define (render-mixin % #:image-mode [image-mode #f])
   (class %
-    (inherit-field prefix-file style-file style-extra-files)
+    (super-new)
+
+    (inherit-field prefix-file style-file style-extra-files image-preferences)
 
     (define/override (current-render-mode)
       '(latex))
+
+    (inherit sort-image-requests)
+    (define image-reqs 
+      (sort-image-requests (cond
+                            [(eq? image-mode 'pdf)
+                             '(pdf-bytes png@2x-bytes png-bytes)]
+                            [(eq? image-mode 'ps)
+                             '(eps-bytes)]
+                            [else
+                             '(pdf-bytes png@2x-bytes png-bytes eps-bytes)])
+                           image-preferences))
 
     (define/override (get-suffix) #".tex")
 
@@ -353,35 +366,57 @@
                                             (image-element-scale e) fn))]
                                  [(and (convertible? e)
                                        (not (disable-images))
-                                       (let ([ftag (lambda (v suffix) (and v (list v suffix)))]
-                                             [xlist (lambda (v) (and v (list v #f #f #f #f)))])
-                                         (or (ftag (convert e 'pdf-bytes+bounds) ".pdf")
-                                             (ftag (xlist (convert e 'pdf-bytes)) ".pdf")
-                                             (ftag (xlist (convert e 'eps-bytes)) ".ps")
-                                             (ftag (xlist (convert e 'png-bytes)) ".png"))))
+                                       (let ([ftag (lambda (v suffix [scale 1]) (and v (list v suffix scale)))]
+                                             [xxlist (lambda (v) (and v (list v #f #f #f #f #f #f #f #f)))]
+                                             [xlist (lambda (v) (and v (append v (list 0 0 0 0))))])
+                                         (for/or ([req (in-list image-reqs)])
+                                           (case req
+                                             [(eps-bytes)
+                                              (or (ftag (convert e 'eps-bytes+bounds8) ".ps")
+                                                  (ftag (xlist (convert e 'eps-bytes+bounds)) ".ps")
+                                                  (ftag (xxlist (convert e 'eps-bytes)) ".ps"))]
+                                             [(pdf-bytes)
+                                              (or (ftag (convert e 'pdf-bytes+bounds8) ".pdf")
+                                                  (ftag (xlist (convert e 'pdf-bytes+bounds)) ".pdf")
+                                                  (ftag (xxlist (convert e 'pdf-bytes)) ".pdf"))]
+                                             [(png@2x-bytes)
+                                              (or (ftag (convert e 'png@2x-bytes+bounds8) ".png" 0.5)
+                                                  (ftag (xxlist (convert e 'png@2x-bytes)) ".png" 0.5))]
+                                             [(png-bytes)
+                                              (or (ftag (convert e 'png-bytes+bounds8) ".png")
+                                                  (ftag (xxlist (convert e 'png-bytes)) ".png"))]))))
                                   => (lambda (bstr+info+suffix)
                                        (check-render)
                                        (let* ([bstr (list-ref (list-ref bstr+info+suffix 0) 0)]
                                               [suffix (list-ref bstr+info+suffix 1)]
-                                              [width (list-ref (list-ref bstr+info+suffix 0) 1)]
+                                              [scale (list-ref bstr+info+suffix 2)]
                                               [height (list-ref (list-ref bstr+info+suffix 0) 2)]
+                                              [pad-left (or (list-ref (list-ref bstr+info+suffix 0) 5) 0)]
+                                              [pad-top (or (list-ref (list-ref bstr+info+suffix 0) 6) 0)]
+                                              [pad-right (or (list-ref (list-ref bstr+info+suffix 0) 7) 0)]
+                                              [pad-bottom (or (list-ref (list-ref bstr+info+suffix 0) 8) 0)]
                                               [descent (and height
-                                                            (+ (list-ref (list-ref bstr+info+suffix 0) 3)
-                                                               (- (ceiling height) height)))]
+                                                            (- (+ (list-ref (list-ref bstr+info+suffix 0) 3)
+                                                                  (- (ceiling height) height))
+                                                               pad-bottom))]
+                                              [width (let ([w (list-ref (list-ref bstr+info+suffix 0) 1)])
+                                                       (and w (- w pad-left pad-right)))]
                                               [fn (install-file (format "pict~a" suffix) bstr)])
                                          (if descent
-                                             (printf "\\raisebox{-~abp}{\\makebox[~abp][l]{\\includegraphics{~a}}}" 
+                                             (printf "\\raisebox{-~abp}{\\makebox[~abp][l]{\\includegraphics[~atrim=~a ~a ~a ~a]{~a}}}" 
                                                      descent
-                                                     width 
+                                                     width
+                                                     (if (= scale 1) "" (format "scale=~a," scale))
+                                                     (/ pad-left scale) (/ pad-bottom scale) (/ pad-right scale) (/ pad-top scale)
                                                      fn)
                                              (printf "\\includegraphics{~a}" fn))))]
                                  [else
                                   (parameterize ([rendering-tt (or tt? (rendering-tt))])
                                     (super render-content e part ri))]))]
                  [wrap (lambda (e s tt?)
-                         (printf "\\~a{" s)
+                         (when s (printf "\\~a{" s))
                          (core-render e tt?)
-                         (printf "}"))])
+                         (when s (printf "}")))])
             (define (finish tt?)
               (cond
                [(symbol? style-name)
@@ -430,6 +465,10 @@
                           (printf "}")))]
                    [else
                     (wrap e style-name tt?)]))]
+               [(and (not style-name)
+                     style
+                     (memq 'exact-chars (style-properties style)))
+                (wrap e style-name 'exact)]
                [else
                 (core-render e tt?)]))
             (let loop ([l (if style (style-properties style) null)] [tt? #f])
@@ -566,6 +605,21 @@
               (when (string? s-name)
                 (printf "\\end{~a}" s-name)))
             (unless (or (null? blockss) (null? (car blockss)))
+              (define all-left-line?s
+                (if (null? cell-styless)
+                    null
+                    (for/list ([i (in-range (length (car cell-styless)))])
+                      (for/and ([cell-styles (in-list cell-styless)])
+                        (let ([cell-style (list-ref cell-styles i)])
+                          (or (memq 'left-border (style-properties cell-style))
+                              (memq 'border (style-properties cell-style))))))))
+              (define all-right-line?
+                (and (pair? cell-styless)
+                     (let ([i (sub1 (length (car cell-styless)))])
+                       (for/and ([cell-styles (in-list cell-styless)])
+                         (let ([cell-style (list-ref cell-styles i)])
+                           (or (memq 'right-border (style-properties cell-style))
+                               (memq 'border (style-properties cell-style))))))))
               (parameterize ([current-table-mode
                               (if inline? (current-table-mode) (list tableform t))]
                              [show-link-page-numbers
@@ -589,40 +643,98 @@
                               "")
                           (string-append*
                            (let ([l
-                                  (map (lambda (i cell-style)
-                                         (format "~a@{}"
+                                  (map (lambda (i cell-style left-line?)
+                                         (format "~a~a@{}"
+                                                 (if left-line? "|@{}" "")
                                                  (cond
                                                   [(memq 'center (style-properties cell-style)) "c"]
                                                   [(memq 'right (style-properties cell-style)) "r"]
                                                   [else "l"])))
                                        (car blockss)
-                                       (car cell-styless))])
-                             (if boxed? (cons "@{\\SBoxedLeft}" l) l)))
+                                       (car cell-styless)
+                                       all-left-line?s)])
+                             (let ([l (if all-right-line? (append l '("|")) l)])
+                               (if boxed? (cons "@{\\SBoxedLeft}" l) l))))
                           "")])
+                ;; Helper to add row-separating lines:
+                (define (add-clines prev-styles next-styles)
+                  (let loop ([pos 1] [start #f] [prev-styles prev-styles] [next-styles next-styles])
+                    (cond
+                     [(or (and prev-styles (null? prev-styles))
+                          (and next-styles (null? next-styles)))
+                      (when start
+                        (if (= start 1)
+                            (printf "\\hline ")
+                            (printf "\\cline{~a-~a}" start (sub1 pos))))]
+                     [else
+                      (define prev-style (and prev-styles (car prev-styles)))
+                      (define next-style (and next-styles (car next-styles)))
+                      (define line? (or (and prev-style
+                                             (or (memq 'bottom-border (style-properties prev-style))
+                                                 (memq 'border (style-properties prev-style))))
+                                        (and next-style
+                                             (or (memq 'top-border (style-properties next-style))
+                                                 (memq 'border (style-properties next-style))))))
+                      (when (and start (not line?))
+                        (printf "\\cline{~a-~a}" start (sub1 pos)))
+                      (loop (add1 pos) (and line? (or start pos))
+                            (and prev-styles (cdr prev-styles))
+                            (and next-styles (cdr next-styles)))])))
+                ;; Loop through rows:
                 (let loop ([blockss blockss]
-                           [cell-styless cell-styless])
+                           [cell-styless cell-styless]
+                           [prev-styles #f]) ; for 'bottom-border styles
                   (let ([flows (car blockss)]
                         [cell-styles (car cell-styless)])
+                    (unless index? (add-clines prev-styles cell-styles))
                     (let loop ([flows flows]
-                               [cell-styles cell-styles])
+                               [cell-styles cell-styles]
+                               [all-left-line?s all-left-line?s]
+                               [need-left? #f])
                       (unless (null? flows)
-                        (when index? (printf "\n\\item "))
-                        (unless (eq? 'cont (car flows))
-                          (let ([cnt (let loop ([flows (cdr flows)][n 1])
-                                       (cond [(null? flows) n]
-                                             [(eq? (car flows) 'cont)
-                                              (loop (cdr flows) (add1 n))]
-                                             [else n]))])
-                            (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
-                            (render-table-cell (car flows) part ri (/ twidth cnt) (car cell-styles) (not index?))
-                            (unless (= cnt 1) (printf "}"))
-                            (unless (null? (list-tail flows cnt)) (printf " &\n"))))
+                        (define right-line?
+                          (cond
+                           [index?
+                            (printf "\n\\item ")
+                            #f]
+                           [(eq? 'cont (car flows))
+                            #f]
+                           [else
+                            (let ([cnt (let loop ([flows (cdr flows)][n 1])
+                                         (cond [(null? flows) n]
+                                               [(eq? (car flows) 'cont)
+                                                (loop (cdr flows) (add1 n))]
+                                               [else n]))])
+                              (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
+                              (when (and (not (car all-left-line?s))
+                                         (or need-left?
+                                             (memq 'left-border (style-properties (car cell-styles)))
+                                             (memq 'border (style-properties (car cell-styles)))))
+                                (printf "\\vline "))
+                              (render-table-cell (car flows) part ri (/ twidth cnt) (car cell-styles) (not index?))
+                              (define right-line? (or (memq 'right-border (style-properties (list-ref cell-styles (sub1 cnt))))
+                                                      (memq 'border (style-properties (list-ref cell-styles (sub1 cnt))))))
+                              (when (and right-line? (null? (list-tail flows cnt)) (not all-right-line?))
+                                (printf "\\vline "))
+                              (unless (= cnt 1) (printf "}"))
+                              (unless (null? (list-tail flows cnt))
+                                (printf " &\n"))
+                              right-line?)]))
                         (unless (null? (cdr flows)) (loop (cdr flows)
-                                                          (cdr cell-styles)))))
-                    (unless (or index? (null? (cdr blockss)))
+                                                          (cdr cell-styles)
+                                                          (cdr all-left-line?s)
+                                                          right-line?))))
+                    (unless (or index?
+                                (and (null? (cdr blockss))
+                                     (not (for/or ([cell-style (in-list cell-styles)])
+                                            (or (memq 'bottom-border (style-properties cell-style))
+                                                (memq 'border (style-properties cell-style)))))))
                       (printf " \\\\\n"))
-                    (unless (null? (cdr blockss))
-                      (loop (cdr blockss) (cdr cell-styless)))))
+                    (cond
+                     [(null? (cdr blockss))
+                      (unless index? (add-clines cell-styles #f))]
+                     [else
+                      (loop (cdr blockss) (cdr cell-styless) cell-styles)])))
                 (unless inline?
                   (printf "\\end{~a}~a"
                           tableform
@@ -823,6 +935,10 @@
             [(#\}) (display "\\%7d")]
             [else (display c)]))]
        [else
+        ;; Start by normalizing to "combined" form, so that Racket characters
+        ;; are closer to Unicode characters (e.g., ä is one character, instead
+        ;; of a combining character followed by "a").
+        (let ([s (string-normalize-nfc s)])
           (let ([len (string-length s)])
             (let loop ([i 0])
               (unless (= i len)
@@ -840,8 +956,8 @@
                      [(#\<) (if (rendering-tt) "{\\Stttextless}" "$<$")]
                      [(#\|) (if (rendering-tt) "{\\Stttextbar}" "$|$")]
                      [(#\-) "{-}"] ;; avoid en- or em-dash
-                     [(#\`) "{`}"] ;; avoid double-quotes
-                     [(#\') "{'}"] ;; avoid double-quotes
+                     [(#\`) "{\\textasciigrave}"]
+                     [(#\') "{\\textquotesingle}"]
                      [(#\? #\! #\. #\:)
                       (if (rendering-tt) (format "{\\hbox{\\texttt{~a}}}" c) c)]
                      [(#\~) "$\\sim$"]
@@ -890,6 +1006,8 @@
                             [(#\”) "{''}"]
                             [(#\u2013) "{--}"]
                             [(#\u2014) "{---}"]
+                            [(#\〈) "$\\langle$"]
+                            [(#\〉) "$\\rangle$"]
                             [(#\∞) "$\\infty$"]
                             [(#\⇓) "$\\Downarrow$"]
                             [(#\↖) "$\\nwarrow$"]
@@ -1082,7 +1200,7 @@
                                      c)]
                                 [else c])])])
                           c)])))
-                (loop (add1 i)))))]))
+                (loop (add1 i))))))]))
     
     
     (define/private (box-character c)
@@ -1183,8 +1301,4 @@
       (make-toc-paragraph plain null))
 
     (define/override (local-table-of-contents part ri style)
-      (make-paragraph plain null))
-
-    ;; ----------------------------------------
-
-    (super-new)))
+      (make-paragraph plain null))))

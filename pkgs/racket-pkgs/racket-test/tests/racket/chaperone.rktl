@@ -199,6 +199,14 @@
     (test #f vector-ref b 0)
     (test #f vector-ref b2 0)))
 
+;; check interaction of chaperones and vector->values:
+(let ([b (vector 1 2 3)])
+  (let ([b2 (impersonate-vector b
+                                (lambda (b i v) (collect-garbage) v)
+                                (lambda (b i v) #f))])
+    (define-values (a b c) (vector->values b2))
+    (test '(1 2 3) list a b c)))
+
 ;; ----------------------------------------
 
 (test #t chaperone?/impersonator (chaperone-procedure (lambda (x) x) (lambda (y) y)))
@@ -645,6 +653,133 @@
    (set! got? #f)
    (test #t values (equal? d3 d1))
    (test '(#t) list got?)))
+
+;; Check use of chaperoned accessor to chaperone a structure:
+(let ()
+  (define-values (prop: prop? prop-ref) (make-struct-type-property 'prop))
+  (struct x [a]
+    #:mutable
+    #:property prop: 'secret)
+  (define v1 (x 'secret))
+  (define v2 (x 'public))
+  (define v3 (x #f))
+
+  ;; Original accessor and mutators can get 'secret and install 'garbage:
+  (test 'secret x-a v1)
+  (test (void) set-x-a! v3 'garbage)
+  (test 'garbage x-a v3)
+  (set-x-a! v3 #f)
+  (test 'secret prop-ref v1)
+  (test 'secret prop-ref struct:x)
+
+  (define get-a
+    (chaperone-procedure x-a
+                         (lambda (s)
+                           (values (lambda (r)
+                                     (when (eq? r 'secret)
+                                       (error "sssh!"))
+                                     r)
+                                   s))))
+  (define lie-a
+    (impersonate-procedure x-a
+                           (lambda (s)
+                             (values (lambda (r)
+                                       'whatever)
+                                     s))))
+  (define set-a!
+    (chaperone-procedure set-x-a!
+                         (lambda (s v)
+                           (when (eq? v 'garbage)
+                             (error "no thanks!"))
+                           (values s v))))
+  (define mangle-a!
+    (impersonate-procedure set-x-a!
+                           (lambda (s v)
+                             (values s 'garbage))))
+  (define get-prop
+    (chaperone-procedure prop-ref
+                         (case-lambda
+                          [(s)
+                           (values (lambda (r)
+                                     (when (eq? r 'secret)
+                                       (error "sssh!"))
+                                     r)
+                                   s)]
+                          [(s def)
+                           (values (lambda (r)
+                                     (when (eq? r 'secret)
+                                       (error "sssh!"))
+                                     r)
+                                   s
+                                   def)])))
+
+  (test 'public get-a v2)
+  (err/rt-test (get-a v1) exn:fail?)
+
+  (test (void) set-a! v3 'fruit)
+  (test 'fruit x-a v3)
+  (err/rt-test (set-a! v3 'garbage) exn:fail?)
+  (test 'fruit x-a v3)
+
+  (test 'whatever lie-a v1)
+  (test 'whatever lie-a v2)
+  (test (void) mangle-a! v3 'fruit)
+  (test 'garbage get-a v3)
+  (set-a! v3 #f)
+
+  (err/rt-test (get-prop v1) exn:fail?)
+  (err/rt-test (get-prop struct:x) exn:fail?)
+
+  (define (wrap v
+                #:chaperone-struct [chaperone-struct chaperone-struct]
+                #:get-a [get-a get-a]
+                #:set-a! [set-a! set-a!]
+                #:get-prop [get-prop get-prop])
+    (chaperone-struct v
+                      get-a (lambda (s v)
+                              (when (eq? v 'secret)
+                                (raise 'leaked!))
+                              v)
+                      set-a! (lambda (s v)
+                               v)
+                      get-prop (lambda (s v)
+                                 (when (eq? v 'secret)
+                                   (raise 'leaked-via-property!))
+                                 v)))
+
+  (test 'public x-a (wrap v2))
+  ;; Can't access 'secret by using `get-a` to chaperone:
+  (err/rt-test (x-a (wrap v1)) exn:fail?)
+  ;; More-nested chaperone takes precedence:
+  (err/rt-test (x-a (wrap (chaperone-struct v1 x-a
+                                            (lambda (s v)
+                                              (raise 'early)))))
+               (lambda (exn) (eq? exn 'early)))
+  ;; Double chaperone should be ok:
+  (err/rt-test (get-a (wrap v1)) exn:fail?)
+  ;; Can't allow 'garbage into a value chaperoned using `set-a!`:
+  (err/rt-test (set-x-a! (wrap v3) 'garbage) exn:fail?)
+  (err/rt-test (set-a! (wrap v3) 'garbage) exn:fail?)
+  ;; Can't access 'secret by using `get-prop` to chaperone:
+  (err/rt-test (prop-ref (wrap v1)) exn:fail?)
+
+  ;; Cannot chaperone using an impersonated operation:
+  (err/rt-test (wrap v2 #:get-a lie-a))
+  (err/rt-test (wrap v2 #:set-a! mangle-a!))
+  ;; Can impersonate with impersonated operation:
+  (test 'whatever x-a (wrap v2
+                            #:chaperone-struct impersonate-struct
+                            #:get-a lie-a
+                            #:get-prop (let ()
+                                         (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
+                                         ;; dummy, since property accessor cannot be impersonated:
+                                         prop:blue)))
+
+  ;; Currently, `chaperone-struct-type` does not accept
+  ;; a property accessor as an argument. Probably it should,
+  ;; in which case we need to test a chaperone put in place
+  ;; with `get-prop`.
+  (void))
 
 ;; ----------------------------------------
 
@@ -1237,6 +1372,32 @@
   (err/rt-test (sync (chaperone-evt evt redirect-3)))
   (err/rt-test (sync (chaperone-evt evt redirect-4))))
 
+;; check that evt-chaperone handling doesn't intefere with other chaperones:
+(let ()
+  (struct e (orig)
+    #:property prop:input-port 0)
+  (define an-e (e (open-input-string "s")))
+  (define checked? #f)
+  (test #t input-port? an-e)
+  (sync (chaperone-struct an-e
+                          e-orig
+                          (lambda (self v)
+                            (set! checked? #t)
+                            v)))
+  (test #t values checked?))
+(let ()
+  (struct e (orig)
+    #:property prop:evt 0)
+  (define an-e (e always-evt))
+  (define checked? #f)
+  (test #t evt? an-e)
+  (sync (chaperone-struct an-e
+                          e-orig
+                          (lambda (self v)
+                            (set! checked? #t)
+                            v)))
+  (test #t values checked?))
+
 ;; ----------------------------------------
 ;; channel chaperones
 
@@ -1288,6 +1449,8 @@
 ;; ----------------------------------------
 
 (let ()
+  (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
+  (define-values (prop:green green? green-ref) (make-struct-type-property 'green 'can-impersonate))
   (define (a-impersonator-of v) (a-x v))
   (define a-equal+hash (list
                         (lambda (v1 v2 equal?)
@@ -1298,7 +1461,8 @@
                           (hash (aa-y v2)))))
   (define (aa-y v) (if (a? v) (a-y v) (pre-a-y v)))
   (define-struct pre-a (x y)
-    #:property prop:equal+hash a-equal+hash)
+    #:property prop:equal+hash a-equal+hash
+    #:property prop:green 'color)
   (define-struct a (x y)
     #:property prop:impersonator-of a-impersonator-of
     #:property prop:equal+hash a-equal+hash)
@@ -1331,6 +1495,27 @@
     (err/rt-test (impersonator-of? (make-a-new-impersonator a1 1) a1))
     (err/rt-test (impersonator-of? (make-a-new-equal a1 1) a1))
     (err/rt-test (equal? (make-a-new-equal a1 1) a1))
+
+    (define a-pre-a (chaperone-struct (make-pre-a 17 1) pre-a-y (lambda (a v) v)))
+    (test 1 pre-a-y a-pre-a)
+    (test #t chaperone-of? a-pre-a a-pre-a)
+    (test #t chaperone-of? (make-pre-a 17 1) (chaperone-struct (make-pre-a 17 1) pre-a-y #f prop:blue 'color))
+    (test #f chaperone-of? (make-pre-a 17 1) (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color))
+    (test #t chaperone-of? a-pre-a (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color))
+    (test #t chaperone-of? (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color) a-pre-a)
+    (test #f chaperone-of? a-pre-a (chaperone-struct a-pre-a pre-a-y (lambda (a v) v) prop:blue 'color))
+    (test #f chaperone-of? a-pre-a (chaperone-struct a-pre-a green-ref (lambda (a v) v)))
+
+    (define (exn:second-time? e) (and (exn? e) (regexp-match? #rx"same value as" (exn-message e))))
+    (err/rt-test (chaperone-struct (make-pre-a 1 2) pre-a-y #f pre-a-y #f) exn:second-time?)
+    (err/rt-test (chaperone-struct (make-pre-a 1 2) pre-a-y (lambda (a v) v) pre-a-y #f) exn:second-time?)
+    (err/rt-test (chaperone-struct (make-pre-a 1 2) pre-a-y #f pre-a-y (lambda (a v) v)) exn:second-time?)
+
+    (eq? a-pre-a (chaperone-struct a-pre-a pre-a-y #f))
+    (eq? a-pre-a (chaperone-struct a-pre-a green-ref #f))
+
+    (test #t impersonator-of? (make-pre-a 17 1) (chaperone-struct (make-pre-a 17 1) pre-a-y #f prop:blue 'color))
+    (test #f impersonator-of? (make-pre-a 17 1) (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color))
     (void)))
 
 ;; ----------------------------------------
@@ -1344,6 +1529,7 @@
      (λ (kwds kwd-args . args)
         (apply values kwd-args args))
      (λ args (apply values args))))
+  (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
   
   (define g1 (chaperone-procedure f1 wrapper))
   (define g2 (chaperone-procedure f2 wrapper))
@@ -1356,6 +1542,21 @@
   (test #t chaperone-of? g2 f2)
   (test #t chaperone-of? g3 f2)
   (test #f chaperone-of? g3 g2)
+
+  (test #t chaperone-of? g1 (chaperone-procedure g1 #f prop:blue 'color))
+  (test #t chaperone-of? g2 (chaperone-procedure g2 #f prop:blue 'color))
+  (test #t chaperone-of? g3 (chaperone-procedure g3 #f prop:blue 'color))
+  (test #t chaperone-of? f3 (chaperone-procedure f3 #f prop:blue 'color))
+  (test #f chaperone-of? f3 (chaperone-procedure g3 #f prop:blue 'color))
+
+  (test #t eq? f1 (chaperone-procedure f1 #f))
+  (test #t eq? f3 (chaperone-procedure f3 #f))
+  (test #f eq? f3 (chaperone-procedure f3 #f prop:blue 'color))
+  (test #f eq? f1 (chaperone-procedure f1 #f impersonator-prop:application-mark 'x))
+  (test #f eq? f1 (chaperone-procedure f1 #f impersonator-prop:application-mark (cons 1 2)))
+  (test 8 (chaperone-procedure f2 #f prop:blue 'color) #:key 8)
+  (test 88 (chaperone-procedure f3 #f prop:blue 'color) #:key 88)
+  (test 'color blue-ref (chaperone-procedure f3 #f prop:blue 'color))
 
   (test #t equal? g1 f1)
   (test #t equal? g2 f2)

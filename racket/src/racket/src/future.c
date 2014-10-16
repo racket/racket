@@ -2373,9 +2373,8 @@ void *worker_thread_future_loop(void *arg)
           scheme_fill_lwc_start();
           jitcode = ((Scheme_Native_Closure *)rator)->code->start_code;
           v = scheme_call_as_lightweight_continuation(jitcode, rator, argc, argv);
-          if (SAME_OBJ(v, SCHEME_TAIL_CALL_WAITING)) {
-            v = scheme_ts_scheme_force_value_same_mark(v);
-          }
+          if (SAME_OBJ(v, SCHEME_TAIL_CALL_WAITING))
+            v = scheme_force_value_same_mark_as_lightweight_continuation(v);
         }
       }
 
@@ -2468,7 +2467,10 @@ static Scheme_Object *_apply_future_lw(future_t *ft)
                                             FUTURE_RUNSTACK_SIZE);
   
   if (SAME_OBJ(v, SCHEME_TAIL_CALL_WAITING)) {
-    v = scheme_ts_scheme_force_value_same_mark(v);
+    if (scheme_future_thread_state->is_runtime_thread)
+      v = scheme_force_value_same_mark(v);
+    else
+      v = scheme_force_value_same_mark_as_lightweight_continuation(v);
   }
 
   return v;

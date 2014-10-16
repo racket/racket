@@ -50,7 +50,7 @@
         Distributed Programming for First-Year Students}
       @slot["1:50-2:00" tewk
             #:slides (F "tewk-slides.pdf")
-            #:video (yt "xV4e0YYv6zA")]{Distributed Places}
+            #:video (yt "C88L4u306Ro")]{Distributed Places}
       @slot["2:00-2:10" dyoo
             #:slides (F "dyoo-slides-1.pdf")
             #:video (yt "A5v4gA1DY8I")]{DrBlocket}

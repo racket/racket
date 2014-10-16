@@ -11,11 +11,8 @@ static int mark_letrec_check_frame_MARK(void *p, struct NewGC *gc) {
   gcMARK2(frame->def, gc);
   gcMARK2(frame->next, gc);
   gcMARK2(frame->ref, gc);
-  gcMARK2(frame->checked, gc);
   gcMARK2(frame->head, gc);
-  gcMARK2(frame->deferred_with_rhs_ref, gc);
-  gcMARK2(frame->deferred_with_body_ref, gc);
-  gcMARK2(frame->deferred_with_no_ref, gc);
+  gcMARK2(frame->deferred_chain, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Letrec_Check_Frame));
@@ -27,11 +24,8 @@ static int mark_letrec_check_frame_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(frame->def, gc);
   gcFIXUP2(frame->next, gc);
   gcFIXUP2(frame->ref, gc);
-  gcFIXUP2(frame->checked, gc);
   gcFIXUP2(frame->head, gc);
-  gcFIXUP2(frame->deferred_with_rhs_ref, gc);
-  gcFIXUP2(frame->deferred_with_body_ref, gc);
-  gcFIXUP2(frame->deferred_with_no_ref, gc);
+  gcFIXUP2(frame->deferred_chain, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Letrec_Check_Frame));
@@ -51,9 +45,7 @@ static int mark_scheme_deferred_expr_MARK(void *p, struct NewGC *gc) {
   
   gcMARK2(clos->expr, gc);
   gcMARK2(clos->frame, gc);
-  gcMARK2(clos->uvars, gc);
-  gcMARK2(clos->pvars, gc);
-  gcMARK2(clos->subexpr_ls, gc);
+  gcMARK2(clos->chain_next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Deferred_Expr));
@@ -64,9 +56,7 @@ static int mark_scheme_deferred_expr_FIXUP(void *p, struct NewGC *gc) {
   
   gcFIXUP2(clos->expr, gc);
   gcFIXUP2(clos->frame, gc);
-  gcFIXUP2(clos->uvars, gc);
-  gcFIXUP2(clos->pvars, gc);
-  gcFIXUP2(clos->subexpr_ls, gc);
+  gcFIXUP2(clos->chain_next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Deferred_Expr));

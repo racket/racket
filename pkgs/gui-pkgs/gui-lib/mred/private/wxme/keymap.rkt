@@ -75,7 +75,7 @@
         ("numpad7" . numpad7)
         ("numpad8" . numpad8)
         ("numpad9" . numpad9)
-        ("numpadenter" . #\u3)
+        ("numpadenter" . numpad-enter)
         ("f1" . f1)
         ("f2" . f2)
         ("f3" . f3)
@@ -120,6 +120,8 @@
                     cmd-off?
                     caps-on?
                     caps-off?
+                    altgr-on?
+                    altgr-off?
 
                     score
 
@@ -136,7 +138,8 @@
   get-best-score
   chain-handle-mouse-event
   get-best-mouse-score
-  cycle-check)
+  cycle-check
+  chain-check-grab)
 
 (defclass keymap% object%
   
@@ -191,7 +194,7 @@
       (when old (old))))
 
   (define/private (find-key code other-code alt-code other-alt-code caps-code
-                            shift? ctrl? alt? meta? cmd? caps?
+                            shift? ctrl? alt? meta? cmd? caps? altgr?
                             prefix)
     (for*/fold ([best-key #f]
                 [best-score -1])
@@ -221,6 +224,9 @@
                (or (and (key-caps-on? key) caps?)
                    (and (key-caps-off? key) (not caps?))
                    (and (not (key-caps-on? key)) (not (key-caps-off? key))))
+               (or (and (key-altgr-on? key) altgr?)
+                   (and (key-altgr-off? key) (not altgr?))
+                   (and (not (key-altgr-on? key)) (not (key-altgr-off? key))))
                (eq? (key-seqprefix key) prefix))
           (let ([score (+ (key-score key)
                           (if (eqv? (key-code key) code)
@@ -233,7 +239,7 @@
                 (values best-key best-score)))
           (values best-key best-score))))
 
-  (define/private (do-map-function code shift ctrl alt meta cmd caps check-other?
+  (define/private (do-map-function code shift ctrl alt meta cmd caps altgr check-other?
                                    fname prev isprefix? fullset?)
     ;; look for existing key mapping:
     (let ([key
@@ -251,6 +257,8 @@
                          (eq? (key-cmd-off? key) (cmd . < . 0))
                          (eq? (key-caps-on? key) (caps . > . 0))
                          (eq? (key-caps-off? key) (caps . < . 0))
+                         (eq? (key-altgr-on? key) (altgr . > . 0))
+                         (eq? (key-altgr-off? key) (altgr . < . 0))
                          (eq? (key-check-other? key) check-other?)
                          (eq? (key-seqprefix key) prev)
                          key))
@@ -274,6 +282,8 @@
                       (if (shift . < . 0) "~s:" "")
                       (if (caps . > . 0) "l:" "")
                       (if (caps . < . 0) "~l:" "")
+                      (if (altgr . > . 0) "g:" "")
+                      (if (altgr . < . 0) "~g:" "")
                       (or (hash-ref rev-keylist code)
                           (format "~c" code)))])
                 (error (method-name 'keymap% 'map-function)
@@ -291,6 +301,7 @@
                          (meta . > . 0) (meta . < . 0)
                          (cmd . > . 0) (cmd . < . 0)
                          (caps . > . 0) (caps . < . 0)
+                         (altgr . > . 0) (altgr . < . 0)
                          (+ (if (shift . > . 0) 1 0)
                             (if (shift . < . 0) 5 0)
                             (if (ctrl . > . 0) 1 0)
@@ -303,6 +314,8 @@
                             (if (cmd . < . 0) 5 0)
                             (if (caps . > . 0) 1 0)
                             (if (caps . < . 0) 5 0)
+                            (if (altgr . > . 0) 1 0)
+                            (if (altgr . < . 0) 5 0)
                             (if check-other? 6 30))
                          check-other?
                          fullset?
@@ -351,12 +364,12 @@
                 (cond
                  [(regexp-match? #rx"^[?]:" str)
                   (sloop (substring str 2) downs ups #t)]
-                 [(regexp-match? #rx"^~[SsCcAaMmDdLl]:" str)
+                 [(regexp-match? #rx"^~[SsCcAaMmDdLlGg]:" str)
                   (let ([c (char-downcase (string-ref str 1))])
                     (if (memv c downs)
                         (bad-string (format "inconsistent ~a: modifier state" c))
                         (sloop (substring str 3) downs (cons c ups) others?)))]
-                 [(regexp-match? #rx"^[SsCcAaMmDdLl]:" str)
+                 [(regexp-match? #rx"^[SsCcAaMmDdLlGg]:" str)
                   (let ([c (char-downcase (string-ref str 0))])
                     (if (memv c ups)
                         (bad-string (format "inconsistent ~a: modifier state" c))
@@ -398,6 +411,7 @@
                                                     (modval #\m)
                                                     (modval #\d)
                                                     (modval #\l #f)
+                                                    (modval #\g #f)
                                                     others?
                                                     fname
                                                     prev-key
@@ -408,11 +422,11 @@
                                 (loop (cdr seq) newkey))))))])))))))
 
   (define/private (handle-event code other-code alt-code other-alt-code caps-code
-                                shift? ctrl? alt? meta? cmd? caps?
+                                shift? ctrl? alt? meta? cmd? caps? altgr?
                                 score)
     (let-values ([(key found-score)
                   (find-key code other-code alt-code other-alt-code caps-code
-                            shift? ctrl? alt? meta? cmd? caps? prefix)])
+                            shift? ctrl? alt? meta? cmd? caps? altgr? prefix)])
       (set! prefix #f)
 
       (if (and key (found-score . >= . score))
@@ -426,15 +440,15 @@
           (values #f #f #f))))
 
   (define/public (get-best-score code other-code alt-code other-alt-code caps-code
-                                 shift? ctrl? alt? meta? cmd? caps?)
+                                 shift? ctrl? alt? meta? cmd? caps? altgr?)
     (let-values ([(key score)
                   (find-key code other-code alt-code other-alt-code caps-code
-                            shift? ctrl? alt? meta? cmd? caps? prefix)])
+                            shift? ctrl? alt? meta? cmd? caps? altgr? prefix)])
       (for/fold ([s (if key score -1)])
           ([c (in-list chain-to)])
         (max s
              (send c get-best-score code other-code alt-code other-alt-code caps-code
-                   shift? ctrl? alt? meta? cmd? caps?)))))
+                   shift? ctrl? alt? meta? cmd? caps? altgr?)))))
 
   (def/public (set-grab-key-function [(make-procedure 4) grab])
     (set! grab-key-function grab))
@@ -444,11 +458,13 @@
 
   (def/public (handle-key-event [any? obj] [key-event% event])
     (let ([code (send event get-key-code)])
-      (or (eq? code 'shift)
-          (eq? code 'rshift)
-          (eq? code 'control)
-          (eq? code 'rcontrol)
-          (eq? code 'release)
+      (if (or (eq? code 'shift)
+              (eq? code 'rshift)
+              (eq? code 'control)
+              (eq? code 'rcontrol)
+              (eq? code 'release))
+          (or prefixed?
+              (chain-check-grab obj event))
           (let ([score (get-best-score 
                         code
                         (send event get-other-shift-key-code)
@@ -460,7 +476,8 @@
                         (send event get-alt-down)
                         (as-meta-key (send event get-meta-down))
                         (as-cmd-key (send event get-meta-down))
-                        (send event get-caps-down))])
+                        (send event get-caps-down)
+                        (send event get-control+meta-is-altgr))])
             (let ([was-prefixed? prefixed?])
               
               (let* ([r (chain-handle-key-event obj event #f prefixed? score)]
@@ -511,6 +528,7 @@
                                             (as-meta-key (send event get-meta-down))
                                             (as-cmd-key (send event get-meta-down))
                                             (send event get-caps-down)
+                                            (send event get-control+meta-is-altgr)
                                             score)])
                   (if h?
                       (if fname
@@ -539,6 +557,11 @@
                                  (grab-key-function #f this obj event))
                             1
                             result)))))))))
+
+  (define/public (chain-check-grab obj event)
+    (or (and grab-key-function #t)
+        (for/or ([c (in-list chain-to)])
+          (send c chain-check-grab obj event))))
 
   (def/public (set-grab-mouse-function [(make-procedure 4) grab])
     (set! grab-mouse-function grab))
@@ -593,7 +616,8 @@
                               (send event get-alt-down)
                               (as-meta-key (send event get-meta-down))
                               (as-cmd-key (send event get-meta-down))
-                              (send event get-caps-down)))))]))
+                              (send event get-caps-down)
+			      #f))))]))
 
   (define/private (other-handle-mouse-event obj event grab try-state score)
     (for/fold ([result 0])
@@ -676,6 +700,7 @@
                                                                     (as-meta-key (send event get-meta-down))
                                                                     (as-cmd-key (send event get-meta-down))
                                                                     (send event get-caps-down)
+                                                                    #f
                                                                     score)])
                       (cond
                        [(and h? fname)

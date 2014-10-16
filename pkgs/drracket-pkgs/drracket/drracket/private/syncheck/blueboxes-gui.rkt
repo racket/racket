@@ -4,13 +4,12 @@
          racket/class
          racket/math
          racket/runtime-path
-         racket/serialize
          data/interval-map
-         setup/dirs
          images/icons/misc
-         "../rectangle-intersect.rkt"
+         drracket/private/rectangle-intersect
          string-constants
-         framework/private/logging-timer)
+         framework/private/logging-timer
+         scribble/blueboxes)
 (provide docs-text-mixin
          docs-editor-canvas-mixin
          syncheck:add-docs-range
@@ -38,72 +37,6 @@
          [x0 x] [y0 (+ y h)]
          [x1 (+ x w)] [y1 y]
          [stops stops])))
-
-;; files->tag->offset : (listof (list file-path int hash[tag -o> (cons int int)]))
-(define (fetch-files->tag->offset)
-  (filter
-   values
-   (for*/list ([doc-search-dir (in-list (get-doc-search-dirs))]
-               [doc-dir-name (in-list (if (directory-exists? doc-search-dir)
-                                          (directory-list doc-search-dir)
-                                          '()))])
-     (define x (build-path doc-search-dir doc-dir-name "blueboxes.rktd"))
-     (and (file-exists? x)
-          (call-with-input-file x
-            (λ (port)
-              (port-count-lines! port)
-              (define first-line (read-line port))
-              (define pos (file-position port))
-              (define desed 
-                (with-handlers ([exn:fail? (λ (x) 
-                                             (log-warning "Failed to deserialize ~a: ~a"
-                                                          x
-                                                          (exn-message x))
-                                             #f)])
-                  (deserialize (read port))))
-              (and desed
-                   (list x
-                         (+ (string->number first-line) pos)
-                         desed))))))))
-
-(define files->tag->offset #f)
-
-(define (fetch-strs tag)
-  (define plain-strs (fetch-strs-for-single-tag tag))
-  (cond
-    [(and plain-strs
-          (pair? tag)
-          (eq? (car tag) 'def))
-     (define constructor-strs 
-       (fetch-strs-for-single-tag (cons 'construtor (cdr tag))))
-     (if constructor-strs
-         (append plain-strs 
-                 '("") 
-                 ;; cdr drops the "white label" line (constructor, presumably)
-                 (cdr constructor-strs))
-         plain-strs)]
-    [else
-     plain-strs]))
-
-(define (fetch-strs-for-single-tag tag)
-  (unless files->tag->offset 
-    (set! files->tag->offset (fetch-files->tag->offset)))
-  (for/or ([ent (in-list files->tag->offset)])
-    (define offset+lens (hash-ref (list-ref ent 2) tag #f))
-    (cond
-      [offset+lens
-       (apply
-        append
-        (for/list ([offset+len (in-list offset+lens)])
-          (define fn (list-ref ent 0))
-          (define offset (list-ref ent 1))
-          (call-with-input-file fn
-            (λ (port)
-              (port-count-lines! port)
-              (file-position port (+ (car offset+len) offset))
-              (for/list ([i (in-range (cdr offset+len))])
-                (read-line port))))))]
-      [else #f])))
 
 ;; the multiplication by 1.5 is suspicious, but it makes things
 ;; look right under mac os x (with fairly standard font settings)
@@ -455,7 +388,7 @@
             (define ir-end (list-ref tag+rng 1))
             (define tag (list-ref tag+rng 2))
             (define new-visit-docs-url (list-ref tag+rng 3))
-            (define new-strs (fetch-strs tag))
+            (define new-strs (fetch-blueboxes-strs tag #:blueboxes-cache blueboxes-cache))
             (when new-strs
               (before)
               (set! the-strs new-strs)
@@ -554,6 +487,8 @@
         [else (values #f #f)]))
 
     (super-new)))
+
+(define blueboxes-cache (make-blueboxes-cache #f))
 
 (define arrow-cursor (make-object cursor% 'arrow))
 

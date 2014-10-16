@@ -486,7 +486,7 @@
                        (not (eq? snip prev-mouse-snip)))
               (let-boxes ([x 0.0] [y 0.0])
                   (get-snip-position-and-location prev-mouse-snip #f x y)
-                (send prev-mouse-snip on-event dc (- x scrollx) (- y scrolly) x y event)))
+                (send prev-mouse-snip on-goodbye-event dc (- x scrollx) (- y scrolly) x y event)))
             (set! prev-mouse-snip #f)
             (if (and s-caret-snip (has-flag? (snip->flags s-caret-snip) HANDLES-EVENTS))
                 (let-boxes ([x 0.0] [y 0.0])
@@ -629,7 +629,7 @@
           [(add) (ins #\+)]
           [(subtract) (ins #\-)]
           [(decimal) (ins #\.)]
-          [(#\u3) (ins #\return)] ; NUMPAD-ENTER
+          [(numpad-enter) (ins #\return)]
           [(#\return #\tab) (ins code)]
           [else
            (let ([vcode (if (char? code)

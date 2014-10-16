@@ -10,3 +10,5 @@
 (define pkg-desc "The implementation of the Typed Racket language")
 
 (define pkg-authors '(samth stamourv))
+
+(define version "1.1")

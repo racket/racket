@@ -6,19 +6,22 @@ variants, we expect users to install C-implemented libraries (usually
 through the operating system's package manager). For Windows and Mac
 OS X, we supply pre-built libraries in platform-specific packages; the
 corresponding Racket packages include platform-specific dependencies
-on those packages.
+on those packages. The "x86_64-linux-natipkg" variant of Racket
+is like Windows and Mac OS X, expecting packages to supply native
+libraries for 64-bit Linux.
 
-This directory contains scripts and patches to build Windows and Mac
-OS X libraries in a consistent and portable way. Naturally, the script
-and patches are fragile, so we upgrade libraries
+This directory contains scripts and patches to build Windows, Mac OS
+X, and Linux libraries in a consistent and portable way. Naturally,
+the script and patches are fragile, so we upgrade libraries
 infrequently. Currently, we use the following external packages and
 versions:
 
  pkg-config-0.28
  sed-4.2 (Windows only, to avoid non-GNU `sed')
- openssl-1.0.1g (Windows only)
+ sqlite[-autoconf]-3080600 (Windows and Linux only)
+ openssl-1.0.1g (Windows and Linux only)
  libiconv-1.14 (Windows only)
- zlib-1.2.8 (Windows only)
+ zlib-1.2.8 (Windows and Linux only)
  libffi-3.0.13
  expat-2.1.0
  gettext-0.18.3.2
@@ -30,14 +33,32 @@ versions:
  harfbuzz-0.9.27
  fontconfig-2.11.1
  freetype-2.5.3
- pango-1.36.3
+ pango-1.36.6 (current PPC binaries are 1.36.3)
  poppler-0.24.5
  mpfr-3.1.2
  gmp-5.1.3
 
-The above lists is aimed at the graphics stack, and there are a few
-more libraries not covered here, yet. See "../mac/README.txt" and
-"../worksp/README" for more information.
+(Linux only:)
+ xtrans-1.3.5
+ inputproto-2.3.1
+ xextproto-7.3.0
+ kbproto-1.0.5
+ xproto-7.0.26
+ xcb-proto-1.11
+ renderproto-0.11.1
+ libpthread-stubs-0.3
+ libxcb-1.11
+ libXau-1.0.8
+ libX11-1.6.2
+ libXext-1.3.3
+ libXrender-0.9.8
+ freefont[-ttf]-20100919
+ atk-2.12.0
+ gdk-pixbuf-2.30.8
+ gtk+-2.24.24
+
+See "../mac/README.txt" for information about an additional
+library on Mac OS X.
 
 Preliminiaries
 --------------
@@ -68,6 +89,11 @@ Clang, then note that you'll need gcc-4.0 --- but the Pango version
 listed above relies on CoreText, which is available only with 10.5 and
 later.
 
+For Linux:
+
+The script assumes that `gcc`, `g++`, `m4`, and `chrpath` are
+installed, as well as X11 header files.
+
 Build Steps (assuming no version changes)
 -----------
 
@@ -80,7 +106,7 @@ Build Steps (assuming no version changes)
  * Run
 
      racket <here-dir>/build-all.rkt \
-        --{win,mac} \
+        --{win,mac,linux} \
         --m{32,64} \
         --archives <archive-dir>
 
@@ -91,7 +117,7 @@ Build Steps (assuming no version changes)
  * Run
 
      racket <here-dir>/install.rkt \
-        --{win,mac} \
+        --{win,mac,linux} \
         --m{32,64} \
         <native-pkgs-dir>
 
@@ -157,6 +183,16 @@ More details for Mac OS X:
  * All ".dylib"s should use two-level namespaces. Use `otool -vh' and
    look for "TWOLEVEL" in the output to double check that a library
    build uses two-level namespaces.
+
+More details for Linux:
+
+ * The `chrpath` tool is used to set the RAPTH of each generated
+   library to `$ORIGIN` so that other shared libraries will be found
+   when they are installed in the same package scope.
+
+ * A minimal set of fonts is installed in the installation's "share"
+   directory under "fonts". The Fontconfig package is patched to
+   redirect the default configuration location to that directory.
 
 When Library Versions Change
 ----------------------------

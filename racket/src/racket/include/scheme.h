@@ -957,7 +957,12 @@ typedef struct Scheme_Env Scheme_Env;
 /*========================================================================*/
 
 #ifdef USE_MZ_SETJMP
+# if defined(_WIN64)
+#  define USE_MZ_SETJMP_INDIRECT
+typedef intptr_t mz_pre_jmp_buf[31];
+# else
 typedef intptr_t mz_pre_jmp_buf[8];
+# endif
 #else
 # define mz_pre_jmp_buf jmp_buf
 #endif
@@ -1007,6 +1012,23 @@ typedef struct Scheme_Continuation_Jump_State {
   mzshort num_vals;
   char is_kill, is_escape, skip_dws;
 } Scheme_Continuation_Jump_State;
+
+#ifdef USE_MZ_SETJMP_INDIRECT
+/* Needed to avoid a direct reference to scheme_mz_setjmp,
+   which might be implemented in assembly and incompatible
+   with delayloading: */
+typedef int (*Scheme_Setjmp_Proc)(mz_pre_jmp_buf);
+# ifndef MZ_XFORM
+#  define scheme_call_mz_setjmp(s) ((scheme_get_mz_setjmp())(s))
+# else
+#  define scheme_call_mz_setjmp(s) scheme_mz_setjmp_post_xform(s)
+# endif
+#else
+# ifdef USE_MZ_SETJMP
+#  define scheme_call_mz_setjmp(s) scheme_mz_setjmp(s)
+# endif
+typedef int (*Scheme_Setjmp_Proc)(void*);
+#endif
 
 /* A mark position is in odd number, so that it can be
    viewed as a pointer (i.e., a fixnum): */
@@ -1686,20 +1708,20 @@ MZ_EXTERN Scheme_Object *scheme_eval_waiting;
 #ifndef USE_MZ_SETJMP
 # ifdef USE_UNDERSCORE_SETJMP
 #  define scheme_mz_longjmp(b, v) _longjmp(b, v)
-#  define scheme_mz_setjmp(b) _setjmp(b)
+#  define scheme_call_mz_setjmp(b) _setjmp(b)
 # else
 #  define scheme_mz_longjmp(b, v) longjmp(b, v)
-#  define scheme_mz_setjmp(b) setjmp(b)
+#  define scheme_call_mz_setjmp(b) setjmp(b)
 # endif
 #endif
 
 #ifdef MZ_USE_JIT
 MZ_EXTERN void scheme_jit_longjmp(mz_jit_jmp_buf b, int v);
 MZ_EXTERN void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b);
-# define scheme_jit_setjmp(b) (scheme_jit_setjmp_prepare(b), scheme_mz_setjmp((b)->jb))
+# define scheme_jit_setjmp(b) (scheme_jit_setjmp_prepare(b), scheme_call_mz_setjmp((b)->jb))
 #else
 # define scheme_jit_longjmp(b, v) scheme_mz_longjmp(b, v) 
-# define scheme_jit_setjmp(b) scheme_mz_setjmp(b) 
+# define scheme_jit_setjmp(b) scheme_call_mz_setjmp(b)
 #endif
 
 #ifdef MZ_PRECISE_GC

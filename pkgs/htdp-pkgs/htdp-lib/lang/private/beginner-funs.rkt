@@ -179,9 +179,9 @@
                                      Computes the square root of a number.
                                      @interaction[#:eval (bsl) (sqrt 9) (sqrt 2)]
                                      }
-  @defproc[(integer-sqrt [x number]) integer]{
-                                              Computes the integer (exact or inexact) square root of a number. 
-                                              @interaction[#:eval (bsl) (sqrt 11)]
+  @defproc[(integer-sqrt [x integer]) complex]{
+                                              Computes the integer or imaginary-integer square root of an integer.
+                                              @interaction[#:eval (bsl) (integer-sqrt 11) (integer-sqrt -11)]
                                               }
   @defproc[(abs [x real]) real]{
                                 Determines the absolute value of a real number.
@@ -276,9 +276,21 @@
                                          @interaction[#:eval (bsl) (even? 2)]
                                          }
   @defproc[(rational? [x any/c]) boolean?]{
-                                           Determines whether some value is a rational number. 
-                                           @interaction[#:eval (bsl) (rational? 1-2i)]
-                                           }
+   Determines whether some value is a rational number. 
+   @interaction[#:eval (bsl) 
+     (rational? 1)
+     (rational? -2.349)
+     (rational? #i1.23456789)
+     (rational? (sqrt -1))
+     (rational? pi)
+     (rational? e)
+     (rational? 1-2i)]
+  As the interactions show, the teaching languages considers many more
+  numbers as rationals than expected. In particular, @racket[pi] is a
+  rational number because it is only a finite approximation to the
+  mathematical π. Think of @racket[rational?] as a suggestion to think of
+  these numbers as fractions.
+  }
   @defproc[(inexact? [x number]) boolean?]{
                                            Determines whether some number is inexact.
                                            @interaction[#:eval (bsl) (inexact? 1-2i)]
@@ -496,7 +508,7 @@
                                                                                                                    @interaction[#:eval (bsl-eval) (range 0 10 2)]
                                                                                                                    }
   @defproc[((beginner-append append) [x list?][y list?][z list?]  ...) list?]{
-                                                                              Creates a single list from several, by juxtaposition of the items.  
+                                                                              Creates a single list from several, by concatenation of the items.  
                                                                               @interaction[#:eval (bsl) (append (cons 1 (cons 2 empty)) (cons "a" (cons "b" empty)))]
                                                                               }
   @defproc[(length (l list?)) natural-number?]{
@@ -789,7 +801,7 @@
                                             @interaction[#:eval (bsl) (string-copy "hello")]
                                             }
   @defproc[(string-append [s string] ...) string]{
-                                                  Juxtaposes the characters of several strings. 
+                                                  Concatenates the characters of several strings. 
                                                   @interaction[#:eval (bsl) (string-append "hello" " " "world" " " "good bye")]
                                                   }
   @defproc[(string=? [s string][t string][x string] ...) boolean?]{

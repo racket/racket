@@ -505,12 +505,15 @@
     (current-directory (dirname rktdir))
     (delete-directory rktdir)))
 
+(define (skip-dot-files!)
+  (current-skip-filter ; skip all dot-names
+   (lambda (p) (regexp-match? #rx"^[.]" (basename p)))))
+
 (define (make-install-copytree)
   (define copytree (move/copy-tree #f))
   (define origtree? (equal? "yes" (get-arg)))
   (current-directory rktdir)
-  (current-skip-filter ; skip all dot-names
-   (lambda (p) (regexp-match? #rx"^(?:[.].*)$" (basename p))))
+  (skip-dot-files!)
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (set! yes-to-all? #t) ; non-interactive
     (copytree "collects" 'collects)
@@ -571,7 +574,9 @@
   (case op
     [(move) (move/copy-distribution #t #f)]
     [(copy) (move/copy-distribution #f #f)]
-    [(bundle) (move/copy-distribution #f #t)]
+    [(bundle)
+     (skip-dot-files!)
+     (move/copy-distribution #f #t)]
     [(post-adjust) (post-adjust)]
     [(make-install-copytree)    (make-install-copytree)]
     [(make-install-destdir-fix) (make-install-destdir-fix)]

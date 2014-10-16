@@ -62,17 +62,7 @@
 (define pdf-bitmap (mk-bitmap draw1))
 (define html-bitmap (mk-bitmap draw2))
 
-(begin
+(module+ main
   (send pdf-bitmap save-file "../pdf.png" 'png)
-  (send html-bitmap save-file "../html.png" 'png))
-
-(match (current-command-line-arguments)
- [(vector "skip") (void)]
- [_ (send f show #t)])
-
-
-;; Test mode:
-(module test racket/base
-  (require syntax/location)
-  (parameterize ([current-command-line-arguments (vector "skip")])
-    (dynamic-require (quote-module-path "..") #f)))
+  (send html-bitmap save-file "../html.png" 'png)
+  (send f show #t))

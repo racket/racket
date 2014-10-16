@@ -699,25 +699,25 @@ path/s is either such a string or a list of them.
 "pkgs/drracket-pkgs/drracket/repo-time-stamp" responsible (eli)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket" drdr:random #t
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/easter-egg.rkt" drdr:timeout 480
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/example-tool.rkt" drdr:command-line (gracket *)
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/hangman.rkt" responsible (robby matthias) drdr:command-line (gracket *)
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/io.rkt" drdr:command-line (gracket *) drdr:timeout 500
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/language-test.rkt" responsible (robby matthias) drdr:command-line (gracket *) drdr:timeout 1500
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/memory-log.rkt" drdr:command-line (gracket *)
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/module-lang-test.rkt" drdr:command-line (gracket "-j" "-e" "(void (putenv \"PLTDRDRTEST\" \"yes\"))" "-t" *) drdr:timeout 800
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/example-tool.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/hangman.rkt" responsible (robby matthias) drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/io.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 500
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/language-test.rkt" responsible (robby matthias) drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 1500
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/memory-log.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/module-lang-test.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 800
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/no-write-and-frame-leak.rkt" drdr:timeout 500
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/repl-test-debug.rkt" drdr:command-line (gracket *) drdr:timeout 300
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/repl-test-debugprofile.rkt" drdr:command-line (gracket *) drdr:timeout 300
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/repl-test-misc.rkt" drdr:command-line (gracket *)
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/repl-test-raw.rkt" drdr:command-line (gracket *) drdr:timeout 300
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/repl-test-debug.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 300
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/repl-test-debugprofile.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 300
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/repl-test-misc.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/repl-test-raw.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 300
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/snip/run-all.rkt" drdr:timeout 800
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/snips.rkt" drdr:command-line (gracket *)
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/syncheck-test.rkt" drdr:command-line (gracket *) drdr:timeout 200
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-coverage.rkt" responsible (robby matthias) drdr:command-line (gracket *)
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-save-file.rkt" responsible (robby matthias) drdr:command-line (gracket *)
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/snips.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/syncheck-test.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 200
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-coverage.rkt" responsible (robby matthias) drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-save-file.rkt" responsible (robby matthias) drdr:command-line (raco "test" "-m" "--fresh-user" *)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-sharing-modules.rkt" drdr:timeout 800
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/teachpack.rkt" responsible (robby matthias) drdr:command-line (gracket *)
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/test-engine-test.rkt" responsible (sperber) drdr:command-line (gracket *) drdr:timeout 480
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/teachpack.rkt" responsible (robby matthias) drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 150
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/test-engine-test.rkt" responsible (sperber) drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 480
 "pkgs/drracket-pkgs/drracket-test/tests/jpr" responsible (mflatt)
 "pkgs/ds-store-pkgs" responsible (mflatt)
 "pkgs/eli-tester" responsible (eli)
@@ -729,19 +729,19 @@ path/s is either such a string or a list of them.
 "pkgs/future-visualizer-pkgs" responsible (jamesswaine)
 "pkgs/games" responsible (mflatt robby)
 "pkgs/games/chat-noir" responsible (robby matthias)
-"pkgs/games/paint-by-numbers/raw-problems/build-solution-sets.rkt" drdr:command-line (gracket *)
+"pkgs/games/paint-by-numbers/raw-problems/build-solution-sets.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
 "pkgs/gui-pkg-manager-pkgs" responsible (mflatt)
 "pkgs/gui-pkgs" responsible (mflatt)
 "pkgs/gui-pkgs/gui-doc/mrlib" responsible (robby)
 "pkgs/gui-pkgs/gui-doc/scribblings/framework" responsible (robby)
 "pkgs/gui-pkgs/gui-lib/framework" responsible (robby)
 "pkgs/gui-pkgs/gui-lib/mrlib" responsible (mflatt robby)
-"pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/actual-bigger.rkt" drdr:command-line (gracket *)
-"pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test-snip-lib.rkt" drdr:command-line (gracket *)
-"pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test.rkt" drdr:command-line (gracket *)
-"pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test2.rkt" drdr:command-line (gracket *)
+"pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/actual-bigger.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test-snip-lib.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/gui-pkgs/gui-lib/mrlib/private/aligned-pasteboard/tests/test2.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
 "pkgs/gui-pkgs/gui-test/framework" responsible (robby)
-"pkgs/gui-pkgs/gui-test/framework/tests/main.rkt" drdr:command-line (gracket *) drdr:timeout 360
+"pkgs/gui-pkgs/gui-test/framework/tests/main.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 360
 "pkgs/gui-pkgs/gui-test/tests/gracket/cache-image-snip-test.rktl" drdr:command-line #f
 "pkgs/gui-pkgs/gui-test/tests/gracket/dc.rktl" drdr:command-line #f
 "pkgs/gui-pkgs/gui-test/tests/gracket/draw-mem.rkt" drdr:random #t
@@ -765,21 +765,21 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-lib/teachpack" responsible (matthias)
 "pkgs/htdp-pkgs/htdp-lib/teachpack/balls.ss" drdr:command-line #f
 "pkgs/htdp-pkgs/htdp-lib/test-engine" responsible (kathyg)
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/full-scene-visible.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/full-scene-visible.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/image-equality-performance-htdp.rkt" responsible (robby)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/image-equality-performance.rkt" responsible (robby)
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/on-tick-universe-with-limit.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/perform-record.rkt" drdr:command-line (gracket *) drdr:timeout 300
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/perform-robby.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/on-tick-universe-with-limit.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/perform-record.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:timeout 300
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/perform-robby.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/random-seed-works.rkt" responsible (matthias) drdr:command-line #f
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/record-stop-when.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/record.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/release.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/struct-universe.rkt" drdr:command-line (gracket *) drdr:random #t
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/record-stop-when.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/record.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/release.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/struct-universe.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *) drdr:random #t
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/test-image.rkt" responsible (robby)
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/ufo-rename.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/universe-restart.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-test/2htdp/tests/world0-stops.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/ufo-rename.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/universe-restart.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/world0-stops.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
 "pkgs/htdp-pkgs/htdp-test/htdp/tests/gui.rkt" responsible (robby)
 "pkgs/htdp-pkgs/htdp-test/tests/htdp-lang" responsible (robby mflatt matthias)
 "pkgs/htdp-pkgs/htdp-test/tests/htdp-lang/advanced.rktl" drdr:command-line #f
@@ -856,6 +856,7 @@ path/s is either such a string or a list of them.
 "pkgs/parser-tools-pkgs" responsible (mflatt)
 "pkgs/pconvert-lib" responsible (robby)
 "pkgs/pict-pkgs" responsible (mflatt robby)
+"pkgs/pict-snip-pkgs" responsible (robby)
 "pkgs/picturing-programs" responsible (sbloch)
 "pkgs/plai" responsible (jay)
 "pkgs/plai/tests/test-random-mutator.rkt" responsible (jay robby)
@@ -1136,6 +1137,7 @@ path/s is either such a string or a list of them.
 "pkgs/redex-pkgs/redex-examples/redex/examples/racket-machine/randomized-tests.rkt" drdr:timeout 300
 "pkgs/redex-pkgs/redex-test/redex/tests/run-tests.rkt" drdr:timeout 360
 "pkgs/redex-pkgs/redex-test/redex/tests/ryr-test.rkt" drdr:timeout 200 drdr:random #t
+"pkgs/remote-shell-pkgs" responsible (mflatt)
 "pkgs/sandbox-lib" responsible (eli)
 "pkgs/scheme-lib" responsible (mflatt)
 "pkgs/scheme-lib/scheme/match.rkt" responsible (samth)

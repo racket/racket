@@ -22,7 +22,10 @@
          (contract-out
           [authors (->* (content?) #:rest (listof content?) element?)])
          other-authors
-         editor)
+         editor
+         abbreviate-given-names)
+
+(define abbreviate-given-names (make-parameter #f))
 
 (define autobib-style-extras
   (let ([abs (lambda (s)
@@ -443,14 +446,30 @@
         [else
          (define s (content->string a)) ;; plain text rendering
          (define m (regexp-match #px"^(.*) (([\\-]|\\p{L})+)$" s))
+         (define given-names (and m (cadr m)))
+         (define family-name (and m (caddr m)))
          (define names
-           (cond [m (string-append (caddr m) " " (cadr m))]
+           (cond [m (string-append family-name " " given-names)]
                  [else s]))
          (define cite
            (cond [m (caddr m)]
                  [else s]))
-         (make-author-element #f (list a) names cite)]))
+         (define element-content
+           (cond
+             [(and given-names (abbreviate-given-names))
+              (string-append (given-names->initials given-names) family-name)]
+             [else a]))
+         (make-author-element #f (list element-content) names cite)]))
 
+(define (given-names->initials str)
+  (regexp-replace* #rx"(.)[^ ]*( |$)" str "\\1. "))
+
+(module+ test
+  (require rackunit)
+  (check-equal? (given-names->initials "Matthew") "M. ")
+  (check-equal? (given-names->initials "Matthew R.") "M. R. ")
+  (check-equal? (given-names->initials "Matthew Raymond") "M. R. "))
+         
 (define (proceedings-location
          location
          #:pages [pages #f]
@@ -516,9 +535,14 @@
   (make-author-element
    #f
    (list
-    (format "~a ~a~a" first last (if suffix
-                                     (format " ~a" suffix)
-                                     "")))
+    (format "~a ~a~a" 
+            (if (abbreviate-given-names)
+                (given-names->initials first)
+                first)
+            last 
+            (if suffix
+                (format " ~a" suffix)
+                "")))
    (format "~a ~a~a" last first (if suffix
                                     (format " ~a" suffix)
                                     ""))

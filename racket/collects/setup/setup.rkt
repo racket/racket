@@ -10,13 +10,15 @@
                #:get-target-dir [get-target-dir #f]
                #:planet-specs [planet-specs #f]
                #:collections [collections #f]
+               #:pkgs [pkgs #f]
                #:make-docs? [make-docs? #t]
                #:make-doc-index? [make-doc-index? #f]
                #:make-user? [make-user? #t]
                #:clean? [clean? #f]
                #:tidy? [tidy? #f]
                #:avoid-main? [avoid-main? #f]
-               #:jobs [parallel #f])
+               #:jobs [parallel #f]
+               #:fail-fast? [fail-fast? #f])
   (parameterize 
    (;; Here's where we tell setup the archive file:
     [archives (if (or clean? (not file)) (archives) (list file))]
@@ -30,6 +32,8 @@
     [specific-planet-dirs (if planet-specs planet-specs (specific-planet-dirs))]
     
     [specific-collections (if collections collections (specific-collections))]
+
+    [specific-packages (if pkgs pkgs (specific-packages))]
     
     [make-only (if (or planet-specs collections) #t (make-only))]
     
@@ -42,6 +46,8 @@
     [make-tidy (if tidy? #t (make-tidy))]
 
     [avoid-main-installation (if avoid-main? #t (avoid-main-installation))]
+
+    [fail-fast fail-fast?]
     
     [clean (if clean? #t (clean))]
     [make-zo (if clean? #f (make-zo))]

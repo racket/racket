@@ -14,6 +14,7 @@
                      "web-server-lib"
                      "db-lib"
                      "racket-doc"))
+(define update-implies '("db-lib"))
 
 (define pkg-desc "documentation part of \"db\"")
 

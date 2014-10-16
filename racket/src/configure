@@ -796,6 +796,7 @@ enable_origtree
 enable_pkgscope
 enable_docs
 enable_usersetup
+enable_natipkg
 enable_shared
 enable_dynlib
 enable_lt
@@ -1441,6 +1442,7 @@ Optional Features:
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
+  --enable-natipkg        add "-natipkg" to library subpath
   --enable-shared         create shared libraries (ok, but not recommended)
   --enable-dynlib         same as --enable-shared
   --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled
@@ -1456,8 +1458,8 @@ Optional Features:
   --enable-macprefix      allow --prefix with a Mac OS X install
   --enable-mac64          allow 64-bit Mac OS X build (enabled by default)
   --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)
-  --enable-sgc            use Senora GC instead of the Boehm GC
-  --enable-sgcdebug       use Senora GC for debugging
+  --enable-sgc            use Senora GC instead of the Boehm GC (enabled by default)
+  --enable-sgcdebug       use Senora GC for debugging (expensive debug mode)
   --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-stackup        assume "up" if stack direction cannot be determined
@@ -2651,6 +2653,12 @@ if test "${enable_usersetup+set}" = set; then :
   enableval=$enable_usersetup;
 fi
 
+# Check whether --enable-natipkg was given.
+if test "${enable_natipkg+set}" = set; then :
+  enableval=$enable_natipkg;
+fi
+
+
 # Check whether --enable-shared was given.
 if test "${enable_shared+set}" = set; then :
   enableval=$enable_shared;
@@ -2738,6 +2746,8 @@ fi
 # Check whether --enable-sgc was given.
 if test "${enable_sgc+set}" = set; then :
   enableval=$enable_sgc;
+else
+  enable_sgc=yes
 fi
 
 # Check whether --enable-sgcdebug was given.
@@ -2985,6 +2995,7 @@ show_explicitly_enabled "${enable_cgcdefault}" "CGC as default" "Note that this 
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
+show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
 
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
@@ -3007,7 +3018,7 @@ show_explicitly_disabled "${enable_places}" Places
 show_explicitly_enabled "${enable_futures}" Futures
 show_explicitly_disabled "${enable_futures}" Futures
 
-show_explicitly_enabled "${enable_sgc}" SGC
+show_explicitly_disabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this mode is not intended for normal Racket use"
 
@@ -5496,8 +5507,8 @@ $as_echo_n "checking $msg... " >&6; }
      #include <fcntl.h>
      int main() {
       void *p;
-      p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
-      mprotect(p, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC);
+      p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
+      mprotect(p, 2 << 16, PROT_READ | PROT_WRITE);
       return 0;
      }
 _ACEOF
@@ -5514,6 +5525,36 @@ $as_echo "$use_mprotect" >&6; }
 
 $as_echo "#define HAVE_MMAP_MPROTECT 1" >>confdefs.h
 
+  fi
+
+  if test "${use_mprotect}" = "yes" && test "${enable_sgc}" != "yes" ; then
+     msg="mprotect with PROT_EXEC"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+       #include <sys/mman.h>
+       #include <fcntl.h>
+       int main() {
+        void *p;
+        p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
+        if (mprotect(p, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC)) return 1;
+        return 0;
+       }
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  can_mprotect_exec=yes
+else
+  can_mprotect_exec=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $can_mprotect_exec" >&5
+$as_echo "$can_mprotect_exec" >&6; }
+    if test "${can_mprotect_exec}" = "no" ; then
+      echo "Senora GC is required due to mprotect() failure"
+    fi
   fi
 fi
 
@@ -6481,6 +6522,14 @@ fi
 
 if test "${enable_docs}" = "no" ; then
   INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} --no-docs"
+fi
+
+############## natipkg ################
+
+if test "${enable_natipkg}" = "yes" ; then
+
+$as_echo "#define SPLS_SUFFIX \"-natipkg\"" >>confdefs.h
+
 fi
 
 ############## Racket for Racket ################

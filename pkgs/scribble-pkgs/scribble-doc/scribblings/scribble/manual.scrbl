@@ -482,48 +482,57 @@ representation of literal text. Use this when you have to talk about
 the individual characters in a stream of text, as when documenting
 a reader extension.}
 
-@defproc[(racketfont [pre-content pre-content?] ...) element?]{Typesets
-@tech{decode}d @racket[pre-content] as uncolored, unhyperlinked
-Racket. This procedure is useful for typesetting things like
-@racketfont{#lang}, which are not @racket[read]able by themselves.}
+@defproc[(racketfont [pre-content pre-content?] ...) element?]{The
+same as @racket[(tt pre-content ...)], which applies the @racket['tt]
+style to immediate strings and symbols among the @racket[pre-content]
+arguments.  Beware that @racket[pre-content] is @racket[decode]d as
+usual, making @racket[racketfont] a poor choice for typesetting
+literal code.}
+
+@defproc[(racketplainfont [pre-content pre-content?] ...) element?]{Applies
+the @racket['tt] style to @racket[pre-content]. Beware
+that @racket[pre-content] is @racket[decode]d as usual, making
+@racket[racketplainfont] a poor choice for typesetting literal code
+directly but useful for implementing code-formatting functions.
+
+@history[#:added "1.6"]}
 
 @defproc[(racketvalfont [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored as a value.}
+@racket[racketplainfont], but colored as a value.}
 
 @defproc[(racketresultfont [#:decode? decode? boolean? #t] [pre-content pre-content?] ...) element?]{
-  Like @racket[racketfont], but colored as a REPL result when @racket[decode?] is
-  @racket[#t]. When @racket[decode?] is @racket[#f], it also avoids @racket[decode]ing
-  its argument.
-}
+Like @racket[racketplainfont], but colored as a REPL result. When
+@racket[decode?] is @racket[#f], then unlike @racket[racketplainfont],
+@racket[racketresultfont] avoids @racket[decode]ing its argument.}
 
 @defproc[(racketidfont [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored as an identifier.}
+@racket[racketplainfont], but colored as an identifier.}
 
 @defproc[(racketvarfont [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored as a variable (i.e., an argument or
+@racket[racketplainfont], but colored as a variable (i.e., an argument or
 sub-form in a procedure being documented).}
 
 @defproc[(racketkeywordfont [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored as a syntactic form name.}
+@racket[racketplainfont], but colored as a syntactic form name.}
 
 @defproc[(racketparenfont [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored like parentheses.}
+@racket[racketplainfont], but colored like parentheses.}
 
 @defproc[(racketmetafont [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored as meta-syntax, such as backquote or
+@racket[racketplainfont], but colored as meta-syntax, such as backquote or
 unquote.}
 
 @defproc[(racketcommentfont [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored as a comment.}
+@racket[racketplainfont], but colored as a comment.}
 
 @defproc[(racketerror [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored as error-message text.}
+@racket[racketplainfont], but colored as error-message text.}
 
 @defproc[(racketmodfont [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored as module name.}
+@racket[racketplainfont], but colored as module name.}
 
 @defproc[(racketoutput [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored as output.}
+@racket[racketplainfont], but colored as output.}
 
 @defproc[(procedure [pre-content pre-content?] ...) element?]{Typesets
 @tech{decode}d @racket[pre-content] as a procedure name in a REPL

@@ -5,6 +5,7 @@
          racket/stxparam
          racket/contract/base
          pict
+         unstable/gui/pict/align
          "tag-pict.rkt")
 
 #|
@@ -273,11 +274,6 @@ In a placer function's arguments:
                   (find p pict-path))))
        (halign halign) (valign valign) (compose compose)))
 
-(define (pin-over/align scene x y halign valign pict)
-  (let ([localrefx (* (pict-width pict) (align->frac halign))]
-        [localrefy (* (pict-height pict) (align->frac valign))])
-    (pin-over scene (- x localrefx) (- y localrefy) pict)))
-
 ;; ----
 
 ;; apply-compose : compose real (listof (U #f pict real)) -> (values pict real)
@@ -303,47 +299,10 @@ In a placer function's arguments:
 
 ;; ----
 
-(define (align->frac align)
-  (case align
-    ((t l)   0)
-    ((c)   1/2)
-    ((b r)   1)))
-
-(define (align->h align)
-  (case align
-    ((lt lc lb) 'l)
-    ((ct cc cb) 'c)
-    ((rt rc rb) 'r)))
-
-(define (align->v align)
-  (case align
-    ((lt ct rt) 't)
-    ((lc cc rc) 'c)
-    ((lb cb rb) 'r)))
-
-(define (halign->vcompose halign)
-  (case halign
-    ((l) vl-append)
-    ((c) vc-append)
-    ((r) vr-append)))
-
-(define (valign->hcompose align)
-  (case align
-    ((t) ht-append)
-    ((c) hc-append)
-    ((b) hb-append)))
-
-;; ----
-
 (define (ghost* x)
   (if (pict? x) (ghost x) x))
 
 ;; ============================================================
 ;; Exports
-
-(define align/c
-  (or/c 'lt 'ct 'rt
-        'lc 'cc 'rc
-        'lb 'cb 'rb))
 
 (provide (all-defined-out))

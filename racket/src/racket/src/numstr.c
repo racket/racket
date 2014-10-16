@@ -999,14 +999,16 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 				  stxsrc, line, col, pos, span,
 				  indentation);
 
-      if (!SCHEME_LONG_DBLP(n2))
+      if (!SCHEME_LONG_DBLP(n2)) {
         n2 = scheme_exact_to_inexact(1, &n2); /* uses default conversion: float or double */
 
-      d2 = SCHEME_FLOAT_VAL(n2);
-      
-      /* This +nan.0 test looks unnecessary  -- Matthew, 08/14/01 */
-      if (MZ_IS_NAN(d2))
-	return scheme_false;
+        d2 = SCHEME_FLOAT_VAL(n2);
+
+        /* This +nan.0 test looks unnecessary  -- Matthew, 08/14/01 */
+        if (MZ_IS_NAN(d2))
+          return scheme_false;
+      } else
+        d2 = 0.0; /* not used; will signal error later */
 
       n1 = scheme_read_number(first, has_at - delta, 
 			      is_float, is_not_float, decimal_means_float,

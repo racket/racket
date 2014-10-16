@@ -1,10 +1,8 @@
 #lang racket/base
-(require (for-syntax racket/base
-                     "util.rkt")
+(require (for-syntax racket/base)
          "shelly.rkt"
          "util.rkt"
-         racket/port
-         (only-in pkg pkg-config-command))
+         racket/port)
 
 ;; By making these syntax-time includes, it made it so they would be
 ;; rebuilt and register as real dependencies.
@@ -15,7 +13,7 @@
          ([(tests-f ...)
            (for/list ([f-stx (in-list (syntax->list #'(f ...)))])
              (define f (syntax->datum f-stx))
-             `(file ,(format "tests-~a.rkt" f)))])
+             (format "tests-~a.rkt" f))])
        (syntax/loc stx
          (run-tests*
           (list (let ()

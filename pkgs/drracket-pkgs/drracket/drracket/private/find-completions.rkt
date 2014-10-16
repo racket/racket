@@ -16,7 +16,7 @@
 (provide
  (contract-out
   [alternate-racket-clcl/clcp (-> path-string? (values lcl/c lcp/c))]
-  [find-completions (->* (string?)
+  [find-completions (->* (string? path-string?)
                          (#:alternate-racket (or/c #f 
                                                    path-string?
                                                    (list/c lcl/c lcp/c)))
@@ -24,15 +24,36 @@
 
 (define (ignore? x) 
   (or (member x '("compiled"))
-      (regexp-match #rx"~$" x)))
+      (if (equal? (system-type) 'windows)
+          (regexp-match #rx"[.]bak$" x)
+          (regexp-match #rx"~$" x))))
 
-(define (find-completions string #:alternate-racket [alternate-racket #f])
-  (find-completions/internal string
-                             (find-all-collection-dirs alternate-racket)
-                             directory-list
-                             directory-exists?))
+(define (find-completions str the-current-directory #:alternate-racket [alternate-racket #f])
+  (cond
+    [(and (not (equal? str "")) (equal? (string-ref str 0) #\"))
+     (define no-quotes-string 
+       (cond
+         [(equal? (string-ref str (- (string-length str) 1)) #\")
+          (define no-last-quote (substring str 0 (- (string-length str) 1)))
+          (cond
+            [(equal? "" no-last-quote)
+             no-last-quote]
+            [else
+             (substring no-last-quote 1 (string-length no-last-quote))])]
+         [else
+          (substring str 1 (string-length str))]))
+     (define segments (regexp-split #rx"/" no-quotes-string))
+     (find-completions/internal segments
+                                (list (list "" the-current-directory))
+                                directory-list
+                                directory-exists?)]
+    [else
+     (find-completions-collection/internal str
+                                           (find-all-collection-dirs alternate-racket)
+                                           directory-list
+                                           directory-exists?)]))
 
-(define (find-completions/internal string collection-dirs dir->content is-dir?)
+(define (find-completions-collection/internal string collection-dirs dir->content is-dir?)
   (define segments (regexp-split #rx"/" string))
   (define first-candidates
     (cond
@@ -41,8 +62,11 @@
        (define reg (regexp (string-append "^" (regexp-quote (car segments)))))
        (filter (λ (line) (regexp-match reg (list-ref line 0)))
                collection-dirs)]))
+  (find-completions/internal (cdr segments) first-candidates dir->content is-dir?))
+
+(define (find-completions/internal segments first-candidates dir->content is-dir?)
   (define unsorted
-    (let loop ([segments (cdr segments)]
+    (let loop ([segments segments]
                [candidates first-candidates])
       (cond
         [(null? segments) candidates]
@@ -178,7 +202,7 @@
   (define/contract find-completions/c
     (-> string? (listof (list/c string? path?)) (-> path? (listof path?)) (-> path? boolean?)
         (listof (list/c string? path?)))
-    find-completions/internal)
+    find-completions-collection/internal)
   
   (define coll-table
     `(("racket" ,(string->path "/plt/pkgs/compatibility-pkgs/compatibility-lib/racket"))

@@ -41,7 +41,10 @@
     (unless (zero? how-many)
       (set! how-many (sub1 how-many))
       ;(sleep 1)
-      ;; (random-seed 12)
+      (define s (bitwise-and (+ (current-milliseconds) (random 100))
+                             (sub1 (expt 2 31))))
+      (printf "Random seed: ~s\n" s)
+      (random-seed s)
       (let loop ([board init-board]
                  [who init-who]
                  [who-moved "no one"]
@@ -52,6 +55,9 @@
            (go)]
           [(winner? board (other who))
            (printf "----------- ~a wins!-------------\n~a\n" (other who) (board->string 1 board))
+           (go)]
+          [(member board history)
+           (printf "----------- tie! -------------\n~a\n" (board->string 1 board))
            (go)]
           [else
            (printf "\n~a moved; ~a's turn\n~a\n" who-moved who (board->string 1 board))

@@ -43,25 +43,27 @@ port, it matches UTF-8 encodings (see @secref["encodings"]) of
 matching character streams; if a byte regexp is used with a character
 string, it matches bytes in the UTF-8 encoding of the string.
 
-Regular expressions can be compiled into a @deftech{regexp value} for
-repeated matches. The @racket[regexp] and @racket[byte-regexp]
-procedures convert a string or byte string (respectively) into a
-regexp value using one syntax of regular expressions that is most
-compatible to @exec{egrep}. The @racket[pregexp] and
-@racket[byte-pregexp] procedures produce a regexp value using a
-slightly different syntax of regular expressions that is more
-compatible with Perl.
+A regular expression that is represented as a string or byte string
+can be compiled to a @deftech{regexp value}, which can be used more
+efficiently by functions such as @racket[regexp-match] compared to the
+string or byte string form. The @racket[regexp] and
+@racket[byte-regexp] procedures convert a string or byte string
+(respectively) into a regexp value using a syntax of regular
+expressions that is most compatible to @exec{egrep}. The
+@racket[pregexp] and @racket[byte-pregexp] procedures produce a regexp
+value using a slightly different syntax of regular expressions that is
+more compatible with Perl.
 
-Two regular expressions are @racket[equal?] if they have the same
+Two @tech{regexp values} are @racket[equal?] if they have the same
 source, use the same pattern language, and are both character regexps
 or both byte regexps.
 
-A literal or printed regular expression starts with @litchar{#rx} or
-@litchar{#px}. @see-read-print["regexp"]{regular expressions} Regular
-expressions produced by the default reader are @tech{interned} in 
+A literal or printed @tech{regexp value} starts with @litchar{#rx} or
+@litchar{#px}. @see-read-print["regexp"]{regular expressions} Regexp
+values produced by the default reader are @tech{interned} in 
 @racket[read-syntax] mode.
 
-The internal size of a regexp value is limited to 32 kilobytes; this
+The internal size of a @tech{regexp value} is limited to 32 kilobytes; this
 limit roughly corresponds to a source string with 32,000 literal
 characters or 5,000 operators.
 
@@ -850,10 +852,10 @@ before the @litchar{\}. For example, the Racket constant
 @racket["\\1"] is @litchar{\1}.
 
 @examples[
-(regexp-replace "mi" "mi casa" "su")
-(regexp-replace "mi" "mi casa" string-upcase)
-(regexp-replace "([Mm])i ([a-zA-Z]*)" "Mi Casa" "\\1y \\2")
-(regexp-replace "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
+(regexp-replace #rx"mi" "mi casa" "su")
+(regexp-replace #rx"mi" "mi casa" string-upcase)
+(regexp-replace #rx"([Mm])i ([a-zA-Z]*)" "Mi Casa" "\\1y \\2")
+(regexp-replace #rx"([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
                 "\\1y \\2")
 (regexp-replace #rx"x" "12x4x6" "\\\\")
 (display (regexp-replace #rx"x" "12x4x6" "\\\\"))
@@ -882,9 +884,9 @@ a portion of @racket[input] for matching; the default is the entire
 string or the stream up to an end-of-file.
 
 @examples[
-(regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
+(regexp-replace* #rx"([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
                  "\\1y \\2")
-(regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
+(regexp-replace* #rx"([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
                  (lambda (all one two)
                    (string-append (string-downcase one) "y"
                                   (string-upcase two))))
@@ -908,9 +910,9 @@ order, so later replacements can apply to previous insertions.
 
 @examples[
 (regexp-replaces "zero-or-more?"
-                  '([#rx"-" "_"] [#rx"(.*)\\?$" "is_\\1"]))
+                 '([#rx"-" "_"] [#rx"(.*)\\?$" "is_\\1"]))
 (regexp-replaces "zero-or-more?"
-                  '(["e" "o"] ["o" "oo"]))
+                 '([#rx"e" "o"] [#rx"o" "oo"]))
 ]}
 
 @defproc*[([(regexp-replace-quote [str string?]) string?]
@@ -923,6 +925,6 @@ Concretely, every @litchar{\} and @litchar{&} in @racket[str] or
 @racket[bstr] is protected by a quoting @litchar{\}.
 
 @examples[
-(regexp-replace "UT" "Go UT!" "A&M")
-(regexp-replace "UT" "Go UT!" (regexp-replace-quote "A&M"))
+(regexp-replace #rx"UT" "Go UT!" "A&M")
+(regexp-replace #rx"UT" "Go UT!" (regexp-replace-quote "A&M"))
 ]}

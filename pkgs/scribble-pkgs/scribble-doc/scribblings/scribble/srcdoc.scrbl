@@ -126,7 +126,7 @@ arguments.
 }
 
 
-@defform[(thing-doc id contract-expr dec-expr)]{
+@defform[(thing-doc id contract-expr (desc-expr ...))]{
 
 Like @racket[proc-doc], but for an export of an arbitrary value.}
 
@@ -155,6 +155,37 @@ Like @racket[proc-doc], but for exporting a parameter.}
                      (desc-expr ...))]{
   Like @racket[struct*-doc], but for struct declarations that use @racket[define-struct].
 }
+
+
+@defform/subs[(form-doc options form-datum
+                maybe-grammar maybe-contracts
+                (desc-expr ...))
+              ([options (code:line maybe-kind maybe-link maybe-id maybe-literals)]
+               [maybe-kind code:blank
+                           (code:line #:kind kind-string-expr)]
+               [maybe-link code:blank
+                           (code:line #:link-target? link-target?-expr)]
+               [maybe-id code:blank
+                         (code:line #:id id)
+                         (code:line #:id [id id-expr])]
+               [maybe-literals code:blank
+                               (code:line #:literals (literal-id ...))]
+               [maybe-grammar code:blank
+                              (code:line #:grammar ([nonterm-id clause-datum ...+] ...))]
+               [maybe-contracts code:blank
+                                (code:line #:contracts ([subform-datum contract-expr-datum]
+                                                        ...))])]{
+
+Like @racket[proc-doc], but for an export of a syntactic form. If
+@racket[#:id] is provided, then @racket[id] is the exported identifier,
+otherwise the exported identifier is extracted from @racket[form-datum].
+
+See @racket[defform] for information on @racket[options],
+@racket[form-datum], @racket[maybe-grammar], and
+@racket[maybe-contracts].
+
+@history[#:added "1.6"]}
+
 
 @defform[(begin-for-doc form ...)]{
 

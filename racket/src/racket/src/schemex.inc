@@ -3,6 +3,7 @@
   scheme_extension_table->scheme_longjmpup = scheme_longjmpup;
   scheme_extension_table->scheme_reset_jmpup_buf = scheme_reset_jmpup_buf;
 #ifdef USE_MZ_SETJMP
+  scheme_extension_table->scheme_get_mz_setjmp = scheme_get_mz_setjmp;
   scheme_extension_table->scheme_mz_setjmp = scheme_mz_setjmp;
   scheme_extension_table->scheme_mz_longjmp = scheme_mz_longjmp;
 #endif
@@ -398,6 +399,7 @@
   scheme_extension_table->scheme_is_cpointer = scheme_is_cpointer;
   scheme_extension_table->scheme_get_proc_name = scheme_get_proc_name;
   scheme_extension_table->scheme_utf8_decode = scheme_utf8_decode;
+  scheme_extension_table->scheme_utf8_decode_offset_prefix = scheme_utf8_decode_offset_prefix;
   scheme_extension_table->scheme_utf8_decode_as_prefix = scheme_utf8_decode_as_prefix;
   scheme_extension_table->scheme_utf8_decode_all = scheme_utf8_decode_all;
   scheme_extension_table->scheme_utf8_decode_prefix = scheme_utf8_decode_prefix;

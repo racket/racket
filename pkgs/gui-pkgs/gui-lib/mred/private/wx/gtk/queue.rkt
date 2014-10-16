@@ -24,6 +24,15 @@
 ;; ------------------------------------------------------------
 ;; Gtk initialization
 
+;; When IBus is used for GtkIMContext (see "canvas.rkt"), recent
+;; versions may use a asynchronous mode that somehow doesn't
+;; cooperate with `g_main_context_query` Specifically, the
+;; asynchronous result doesn't wake up a sleeping Racket main
+;; thread, and so the effect of a key is delayed. The following
+;; enviornment variable is consulted by IBus on startup to
+;; disable asynchronous mode.
+(void (putenv "IBUS_ENABLE_SYNC_MODE" "y"))
+
 (define-gtk gtk_init_check (_fun (_ptr io _int) (_ptr io _gcpointer) -> _gboolean))
 (define-gdk gdk_set_program_class (_fun _string -> _void))
 

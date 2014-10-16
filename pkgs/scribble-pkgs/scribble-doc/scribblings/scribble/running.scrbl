@@ -35,6 +35,9 @@ its file suffix:
  @item{@DFlag{pdf} --- PDF @filepath{@|fn|.pdf} that is generated
        via @exec{pdflatex}}
 
+ @item{@DFlag{dvipdf} --- PDF @filepath{@|fn|.pdf} that is generated
+       via @exec{latex}, @exec{dvips}, and @exec{pstopdf}}
+
  @item{@DFlag{latex-section} @nonterm{n} --- LaTeX source
        @filepath{@|fn|.tex} plus additional @filepath{.tex} files to
        be included in the enclosing document's preamble, where the
@@ -68,6 +71,8 @@ When multiple documents are rendered at the same time, cross-reference
 information in one document is visible to the other documents. See
 @secref["xref-flags"] for information on references that cross
 documents that are built separately.
+
+@history[#:changed "1.4" @elem{Added @DFlag{dvipdf}.}]
 
 @section{Extra and Format-Specific Files}
 
@@ -164,6 +169,28 @@ in @filepath{a.scrbl} and @filepath{b.scrbl}, then
 builds @filepath{c.html} with cross-reference links into
 @filepath{a.html} and @filepath{b.html}.
 
+
+@section{Selecting an Image Format}
+
+Use the @DPFlag{convert} @nonterm{fmt} flag to select @nonterm{fmt} as
+a preferred image format to use when rendering a document that
+includes values that can be converted to different image formats. The
+@nonterm{fmt} argument can be @exec{pdf}, @exec{ps}, @exec{png},
+@exec{svg}, or @exec{gif}, but a renderer typically supports only a
+subset of those formats.
+
+Use @DPFlag{convert} @nonterm{fmt} multiple times to specify multiple
+preferred formats, where a @nonterm{fmt} earlier in the command line
+take precedence over @nonterm{fmt}s specified later.
+
+For example, to generate Latex sources with images in Encapsulated
+PostScript format (so that the result works with @exec{latex} instead
+of @exec{pdflatex}), combine @DFlag{latex} with @exec{@DPFlag{convert}
+ps}. To generate HTML pages with images converted to SVG format
+instead of PNG format, combine @DFlag{html} with
+@exec{@DPFlag{convert} svg}.
+
+@history[#:changed "1.4" @elem{Added @DPFlag{convert} support.}]
 
 @section{Passing Command-Line Arguments to Documents}
 

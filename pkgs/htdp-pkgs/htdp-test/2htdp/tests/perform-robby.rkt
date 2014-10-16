@@ -1,5 +1,5 @@
 #lang scheme
-(require 2htdp/universe 2htdp/image)
+(require 2htdp/universe 2htdp/image "test-aux.rkt")
 
 (define (slow)
   (let sloop ([n (expt 2 22)])
@@ -13,13 +13,10 @@
 (define (render w)
   (circle 30 'solid (if (odd? w) 'red 'green)))
 
-(big-bang 10
-          (on-tick update-world)
-          (on-draw render)
-          (stop-when zero?))
+(testing 
+  (big-bang 10
+    (on-tick update-world)
+    (on-draw render)
+    (stop-when zero?))
 
-(printf "done\n")
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))
+  (printf "done\n"))

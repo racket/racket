@@ -4,6 +4,7 @@
                      "base"
                      "errortrace-lib"
                      "scribble-lib"))
+(define update-implies '("errortrace-lib"))
 
 (define pkg-desc "documentation part of \"errortrace\"")
 

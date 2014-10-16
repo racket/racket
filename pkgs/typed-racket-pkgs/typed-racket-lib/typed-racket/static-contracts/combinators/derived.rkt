@@ -6,7 +6,7 @@
 
 (require "simple.rkt" "structural.rkt"
          (for-template racket/base racket/list racket/set racket/promise racket/mpair
-                       racket/class))
+                       racket/class racket/async-channel))
 (provide (all-defined-out))
 
 (define identifier?/sc (flat/sc #'identifier?))
@@ -28,8 +28,11 @@
 (define empty-hash/sc (and/sc hash?/sc (flat/sc #'(λ (h) (zero? (hash-count h))))))
 
 (define channel?/sc (flat/sc #'channel?))
+(define async-channel?/sc (flat/sc #'async-channel?))
 (define thread-cell?/sc (flat/sc #'thread-cell?))
 (define prompt-tag?/sc (flat/sc #'continuation-prompt-tag?))
 (define continuation-mark-key?/sc (flat/sc #'continuation-mark-key?))
 
 (define class?/sc (flat/sc #'class?))
+
+(define struct-type?/sc (flat/sc #'struct-type?))

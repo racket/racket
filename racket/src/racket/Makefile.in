@@ -147,10 +147,9 @@ mzlibrary:
 	$(MAKE) libracket.@LIBSFX@
 
 # For no-cgc-needed, we don't need to build the gc or link racketcgc, 
-# but gc2 depends on src objects; if building 3m without cgc becomes
-# more common, we could improve things to perform even less cgc-build work
+# but gc2 depends on a few plain-src objects
 no-cgc-needed:
-	cd src; $(MAKE) all
+	cd src; $(MAKE) plain-objs
 	$(MAKE) @FOREIGNTARGET@
 	$(MAKE) main.@LTO@
 	$(MAKE) mingw-other
@@ -350,7 +349,7 @@ unix-install:
 	cp $(srcdir)/dynsrc/starter-sh .
 	cd ..; cp racket/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
-	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@" @COLLECTS_PATH@ @CONFIG_PATH@
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
 	cd ..; echo 'CFLAGS=$(CFLAGS) $(CPPFLAGS)' >> "$(BUILDINFO)"
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
@@ -363,7 +362,7 @@ unix-install-cgc:
 	cd ..; $(ICP) racket/racket@CGC@ "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 	cd ..; cp racket/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
-	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@ @CONFIG_PATH@
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 unix-install-libs-cgc:
 	cd ..; $(ICP) racket/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
@@ -380,7 +379,7 @@ unix-install-3m:
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs-3m
 	cd ..; $(ICP) racket/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
-	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@ @CONFIG_PATH@
+	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 unix-install-libs-3m:
 	cd ..; $(ICP) racket/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
@@ -403,7 +402,7 @@ mingw-install-cgc:
 	cd ..; $(ICP) racket/lib/libmzgcxxxxxxx.dll "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
 	cd ..; $(ICP) racket/lib/libracketxxxxxxx.dll "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
 	cd ..; $(ICP) racket/racket@CGC@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@"
-	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@ @CONFIG_PATH@
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 mingw-install-cgc-final:
 	$(NOOP)
@@ -411,7 +410,7 @@ mingw-install-cgc-final:
 mingw-install-3m:
 	cd ..; $(ICP) racket/racket@MMM@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@"
 	cd ..; $(ICP) racket/lib/libracket3mxxxxxxx.dll "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
-	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@ @CONFIG_PATH@
+	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 mingw-install-3m-final:
 	$(NOOP)
@@ -424,33 +423,33 @@ FRAMEWORK_REL_PREFIX = "@executable_path/../lib/"
 
 osx-install:
 	$(MAKE) unix-install
-	rm -f $(MZFWDIR)/Racket
-	rm -rf $(MZFWDIR)/Versions/$(FWVERSION)
-	rm -rf $(MZFWDIR)/Versions/$(FWVERSION)_3m
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MZFWDIR) ; fi
-	mkdir -p @FRAMEWORK_INSTALL_DIR@
+	rm -f $(DESTDIR)$(MZFWDIR)/Racket
+	rm -rf $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)
+	rm -rf $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)_3m
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(DESTDIR)$(MZFWDIR) ; fi
+	mkdir -p $(DESTDIR)@FRAMEWORK_INSTALL_DIR@
 
 osx-install-cgc:
 	$(MAKE) unix-install-cgc
-	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)"
-	cp $(MZFW) $(MZFWDIR)/Versions/$(FWVERSION)/
-	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" "$(bindir)/racket@CGC_INSTALLED@"
-	$(STRIP_DEBUG) "$(bindir)/racket@CGC_INSTALLED@"
+	mkdir -p $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)
+	cp $(MZFW) $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)/
+	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" $(DESTDIR)"$(bindir)/racket@CGC_INSTALLED@"
+	$(STRIP_DEBUG) $(DESTDIR)"$(bindir)/racket@CGC_INSTALLED@"
 
 osx-install-cgc-final:
 	$(MAKE) unix-install-cgc-final
-	ln -s Versions/$(FWVERSION)/Racket $(MZFWDIR)/
+	ln -s Versions/$(FWVERSION)/Racket $(DESTDIR)$(MZFWDIR)/
 
 osx-install-3m:
 	$(MAKE) unix-install-3m
-	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)_3m"
-	cp $(MZFWMMM) $(MZFWDIR)/Versions/$(FWVERSION)_3m/
-	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" "$(bindir)/racket@MMM_INSTALLED@"
-	$(STRIP_DEBUG) "$(bindir)/racket@MMM_INSTALLED@"
+	mkdir -p $(DESTDIR)"$(MZFWDIR)/Versions/$(FWVERSION)_3m"
+	cp $(MZFWMMM) $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)_3m/
+	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" $(DESTDIR)"$(bindir)/racket@MMM_INSTALLED@"
+	$(STRIP_DEBUG) $(DESTDIR)"$(bindir)/racket@MMM_INSTALLED@"
 
 osx-install-3m-final:
 	$(MAKE) unix-install-3m-final
-	ln -s Versions/$(FWVERSION)_3m/Racket $(MZFWDIR)/
+	ln -s Versions/$(FWVERSION)_3m/Racket $(DESTDIR)$(MZFWDIR)/
 
 
 # Cygwin install ----------------------------------------

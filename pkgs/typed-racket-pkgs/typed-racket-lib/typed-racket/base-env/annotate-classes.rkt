@@ -7,6 +7,20 @@
          (for-label "colon.rkt"))
 (provide (all-defined-out))
 
+;; Data definitions
+;; ----------------
+;;
+;; A LambdaKeywords is a
+;;   (lambda-kws (Listof Keyword) (Listof Keyword))
+(struct lambda-kws (mand opt))
+
+;; interp.
+;;   - the first list contains the mandatory keywords
+;;   - the second list contains the optional keywords
+;;
+;; The TR lambda form sets this as a syntax property on lambda expansions
+;; to allow TR to check for missing keywords.
+
 (define-literal-set colon #:for-label (:))
 
 (define-splicing-syntax-class annotated-name
@@ -240,16 +254,36 @@
                 (~and (mand:mand-formal ... opt:opt-formal ...)
                       (~bind [rest.form #'()])))
            #:attr kw-property
-           (ormap values (append (attribute mand.kw) (attribute opt.kw)))
+           ;; separate raw keywords into mandatory and optional and
+           ;; put them in a struct for later use by tc-expr
+           (let ([kws (append (attribute mand.kw)
+                              (attribute opt.kw))]
+                 [opt?s (append (attribute mand.default)
+                                (attribute opt.default))])
+             (define-values (mand-kws opt-kws)
+               (for/fold ([mand-kws '()]
+                          [opt-kws '()])
+                         ([kw (in-list kws)]
+                          [opt? (in-list opt?s)]
+                          #:when kw)
+                 (if opt?
+                     (values mand-kws (cons (syntax-e kw) opt-kws))
+                     (values (cons (syntax-e kw) mand-kws) opt-kws))))
+             (and (or (not (null? mand-kws))
+                      (not (null? opt-kws)))
+                  (lambda-kws mand-kws opt-kws)))
            #:attr opt-property
            (list (length (attribute mand)) (length (attribute opt)))
            #:attr erased
            (template ((?@ . mand.form) ... (?@ . opt.form) ... . rest.form))))
 
 (define-syntax-class curried-formals
-  #:attributes (erased)
-  (pattern fun:id #:with erased #'fun)
+  #:attributes (erased fun-name)
+  (pattern fun:id
+           #:with fun-name #'fun
+           #:with erased #'fun)
   (pattern (fun:curried-formals . formals:lambda-formals)
+           #:with fun-name #'fun.fun-name
            #:with erased #`(fun.erased . #,(attribute formals.erased))))
 
 (define-splicing-syntax-class return-ann

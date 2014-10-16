@@ -84,7 +84,7 @@
              @tr{@td{@b{@v} @br @small{(@(release-date-string r))}}
                  @td{@TT{\cite[Version @v]{plt-tr@num}} @br
                      @TT|{@cite[(in-bib plt-tr|@num "Version |@v")]}|}
-                 @td{@link['html v], @link['pdf v]}})}
+                 @td{@link['html v] @link['pdf v]}})}
         @p{@small{Reminder: the release dates should not be included in the
                   entry or the citation.}}}})
   @list{@dt{@title-line[#t]}

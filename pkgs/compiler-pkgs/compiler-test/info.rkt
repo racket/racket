@@ -15,3 +15,4 @@
                      "gui-lib"
                      "htdp-lib"
                      "plai"))
+(define update-implies '("compiler-lib"))

@@ -243,9 +243,10 @@ On Windows, @racket[file-exists?]  reports @racket[#t] for all
 variations of the special filenames (e.g., @racket["LPT1"],
 @racket["x:/baddir/LPT1"]).}
 
+
 @defproc[(link-exists? [path path-string?]) boolean?]{
 
-Returns @racket[#t] if a link @racket[path] exists (@|AllUnix|),
+Returns @racket[#t] if a link @racket[path] exists,
 @racket[#f] otherwise.
 
 The predicates @racket[file-exists?]  or @racket[directory-exists?]
@@ -255,14 +256,23 @@ work on the final destination of a link or series of links, while
 path).
 
 This procedure never raises the @racket[exn:fail:filesystem]
-exception.}
+exception.
+
+On Windows, @racket[link-exists?] reports @racket[#t] for both
+symbolic links and junctions.
+
+@history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
 
 @defproc[(delete-file [path path-string?]) void?]{
 
 Deletes the file with path @racket[path] if it exists, otherwise the
 @exnraise[exn:fail:filesystem]. If @racket[path] is a link, the link
-is deleted rather than the destination of the link.}
+is deleted rather than the destination of the link.
+
+On Windows, @racket[delete-file] can delete a symbolic link, but not
+a junction. Use @racket[delete-directory] to delete a junction.}
+
 
 @defproc[(rename-file-or-directory [old path-string?]
                                    [new path-string?]
@@ -296,7 +306,8 @@ existing @racket[new].}
                                            [fail-thunk (-> any) (lambda () (raise (make-exn:fail:filesystem ....)))])
          any]{
 
-Returns the file or directory's last modification date in seconds
+@index['("file modification date and time")]{Returns}
+the file or directory's last modification date in seconds
 since midnight UTC, January 1, 1970 (see also @secref["time"]) when
 @racket[secs-n] is not provided or is @racket[#f].
 
@@ -393,12 +404,20 @@ rather than the link itself; if @racket[dest] refers to a link and
 @defproc[(make-file-or-directory-link [to path-string?] [path path-string?]) 
          void?]{
 
-Creates a link @racket[path] to @racket[to] on @|AllUnix|. The
+Creates a link @racket[path] to @racket[to]. The
 creation will fail if @racket[path] already exists. The @racket[to]
 need not refer to an existing file or directory, and @racket[to] is
 not expanded before writing the link. If the link is not created
-successfully,the @exnraise[exn:fail:filesystem]. On Windows, the
-@exnraise[exn:fail:unsupported] always.}
+successfully,the @exnraise[exn:fail:filesystem].
+
+On Windows XP and earlier, the @exnraise[exn:fail:unsupported]. On
+later versions of Windows, the creation of links tends to be
+disallowed by security policies. Furthermore, a relative-path link is
+parsed specially; see @secref["windowspaths"] for more information.
+When @racket[make-file-or-directory-link] succeeds, it creates a symbolic
+link as opposed to a junction.
+
+@history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "directories"]{Directories}
@@ -616,14 +635,13 @@ absolute path; it is an absolute path when searching in the
 Racket-specific shared-object library directories (as determined by
 @racket[get-lib-search-dirs]) locates the path. In this way, shared-object
 libraries that are installed specifically for Racket get carried
-along in distributions. The search tries using @racket[_str] directly,
+along in distributions. The search tries each directory in order;
+within a directory, the search tries using @racket[_str] directly,
 then it tries adding each version specified by @racket[_vers]---which defaults
 to @racket['(#f)]---along with
 a platform-specific shared-library extension---as produced by
 @racket[(system-type 'so-suffix)]. A @racket[_vers]
-can be a string, or it can be a list of strings and @racket[#f]; in the
-latter case, the versions are tried in order, where @racket[#f] omits
-the addition of the version.
+can be a string, or it can be a list of strings and @racket[#f].
 
 If @racket[expr] produces a list of the form @racket[(list 'module
 _module-path _var-ref)] or @racket[(list 'so _str (list
@@ -1083,7 +1101,7 @@ see @racket[open-output-file]) and to delete it when it is no longer
 needed.}
 
 @defproc[(call-with-atomic-output-file [file path-string?] 
-                                       [proc ([port input-port?] [tmp-path path?]  . -> . any)]
+                                       [proc ([port output-port?] [tmp-path path?]  . -> . any)]
                                        [#:security-guard security-guard (or/c #f security-guard?) #f])
          any]{
 

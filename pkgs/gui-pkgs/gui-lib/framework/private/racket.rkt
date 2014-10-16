@@ -522,199 +522,188 @@
     (define/public (tabify-on-return?) #t)
     (define/public (tabify [pos (get-start-position)])
       (unless (is-stopped?)
-        (let* ([tabify-prefs (preferences:get 'framework:tabify)]
-               [last-pos (last-position)]
-               [para (position-paragraph pos)]
-               [is-tabbable? (and (> para 0)
-                                  (not (memq (classify-position (- (paragraph-start-position para) 1))
-                                             '(comment string error))))]
-               [end (if is-tabbable? (paragraph-start-position para) 0)]
-               [limit (get-limit pos)]
-               ;; "contains" is the start of the initial sub-S-exp
-               ;;  in the S-exp that contains "pos". If pos is outside
-               ;;  all S-exps, this will be the start of the initial
-               ;;  S-exp
-               [contains 
-                (if is-tabbable?
-                    (backward-containing-sexp end limit)
-                    #f)]
-               [contain-para (and contains
-                                  (position-paragraph contains))]
-               ;; "last" is the start of the S-exp just before "pos"
-               [last 
-                (if contains
-                    (let ([p (get-backward-sexp end)])
-                      (if (and p (p . >= . limit))
-                          p
-                          (backward-match end limit)))
-                    #f)]
-               [last-para (and last
-                               (position-paragraph last))])
-          (define sizing-dc (or (get-dc) (make-object bitmap-dc% (make-bitmap 1 1))))
-          (letrec
-              ([find-offset
-                (λ (start-pos)
-                  (define tab-char? #f)
-                  (define end-pos
-                    (let loop ([p start-pos])
-                      (let ([c (get-character p)])
-                        (cond
-                          [(char=? c #\tab)
-                           (set! tab-char? #t)
-                           (loop (add1 p))]
-                          [(char=? c #\newline)
-                           p]
-                          [(char-whitespace? c)
-                           (loop (add1 p))]
-                          [else
-                           p]))))
-                  (define start-x (box 0))
-                  (define end-x (box 0))
-                  (position-location start-pos start-x #f #t #t)
-                  (position-location end-pos end-x #f #t #t)
-                  (define-values (w _1 _2 _3)
-                    (send sizing-dc get-text-extent "x" 
-                          (send (send (get-style-list)
-                                      find-named-style "Standard")
-                                get-font)))
-                  (values (inexact->exact (floor (/ (- (unbox end-x) (unbox start-x)) w)))
-                          end-pos
-                          tab-char?))]
-               
-               [visual-offset
-                (λ (pos)
-                  (let loop ([p (sub1 pos)])
-                    (if (= p -1)
-                        0
-                        (let ([c (get-character p)])
-                          (cond
-                            [(char=? c #\null) 0]
-                            [(char=? c #\tab)
-                             (let ([o (loop (sub1 p))])
-                               (+ o (- 8 (modulo o 8))))]
-                            [(char=? c #\newline) 0]
-                            [else (add1 (loop (sub1 p)))])))))]
-               [do-indent
-                (λ (amt)
-                  (define pos-start end)
-                  (define-values (gwidth curr-offset tab-char?) (find-offset pos-start))
-                  (unless (and (not tab-char?) (= amt (- curr-offset pos-start)))
-                    (delete pos-start curr-offset)
-                    (insert (make-string amt #\space) pos-start)))]
-               [get-proc
-                (λ ()
-                  (let ([id-end (get-forward-sexp contains)])
-                    (and (and id-end (> id-end contains))
-                         (let* ([text (get-text contains id-end)])
-                           (or (get-keyword-type text tabify-prefs)
-                               'other)))))]
-               [procedure-indent 
-                (λ ()
-                  (case (get-proc)
-                    [(begin define) 1]
-                    [(lambda) 3]
-                    [else 0]))]
-               [special-check
-                (λ ()
-                  (let* ([proc-name (get-proc)])
-                    (or (eq? proc-name 'define)
-                        (eq? proc-name 'lambda))))]
-               [curley-brace-sexp?
-                (λ ()
-                  (define up-p (find-up-sexp pos))
-                  (and up-p
-                       (equal? #\{ (get-character up-p))))]
-               
-               [indent-first-arg (λ (start)
-                                   (define-values (gwidth curr-offset tab-char?) (find-offset start))
-                                   gwidth)])
-            (when (and is-tabbable?
-                       (not (char=? (get-character (sub1 end))
-                                    #\newline)))
-              (insert #\newline (paragraph-start-position para)))
-            (cond
-              [(not is-tabbable?) 
-               (when (= para 0)
-                 (do-indent 0))]
-              [(let-values ([(gwidth real-start tab-char?) (find-offset end)]) 
-                 (and (<= (+ 3 real-start) (last-position))
-                      (string=? ";;;"
-                                (get-text real-start
-                                          (+ 2 real-start)))))
-               (void)]
-              [(not contains)
-               ;; Something went wrong matching. Should we get here?
-               (do-indent 0)]
-              ;; disable this to accommodate PLAI programs; 
-              ;; return to this when a #lang capability is set up.
-              #; 
-              [(curley-brace-sexp?)
-               ;; when we are directly inside an sexp that uses {}s,
-               ;; we indent in a more C-like fashion (to help Scribble)
-               (define first-curley (find-up-sexp pos))
-               (define containing-curleys
-                 (let loop ([pos first-curley])
-                   (let ([next (find-up-sexp pos)])
-                     (if (and next
-                              (equal? (get-character next) #\{))
-                         (+ (loop next) 1)
-                         1))))
-               (define close-first-curley (get-forward-sexp first-curley))
-               (define para (position-paragraph pos))
-               (when (and close-first-curley
-                          (<= (paragraph-start-position para) 
-                              close-first-curley 
-                              (paragraph-end-position para)))
-                 (set! containing-curleys (max 0 (- containing-curleys 1))))
-               (do-indent (* containing-curleys 2))]
-              [(not last) 
-               ;; We can't find a match backward from pos,
-               ;;  but we seem to be inside an S-exp, so 
-               ;;  go "up" an S-exp, and move forward past
-               ;;  the associated paren
-               (let ([enclosing (find-up-sexp pos)])
-                 (if enclosing
-                     (do-indent (+ (visual-offset enclosing) 1))
-                     (do-indent 0)))]
-              [(= contains last)
-               ;; There's only one S-expr in the S-expr
-               ;;  containing "pos"
-               (do-indent (+ (visual-offset contains)
-                             (procedure-indent)))]
-              [(special-check)
-               ;; In case of "define", etc., ignore the position of last 
-               ;;  and just indent under the "define"
-               (do-indent (add1 (visual-offset contains)))]
-              [(= contain-para last-para)
-               ;; So far, the S-exp containing "pos" was all on
-               ;;  one line (possibly not counting the opening paren),
-               ;;  so indent to follow the first S-exp's end
-               ;;  unless there are just two sexps and the second is an ellipsis.
-               ;;  in that case, we just ignore the ellipsis
-               (let ([name-length (let ([id-end (get-forward-sexp contains)])
-                                    (if id-end
-                                        (- id-end contains)
-                                        0))])
-                 (cond
-                   [(second-sexp-is-ellipsis? contains)
-                    (do-indent (visual-offset contains))]
-                   [(not (find-up-sexp pos))
-                    (do-indent (visual-offset contains))]
-                   [else
-                    (do-indent (+ (visual-offset contains)
-                                  name-length
-                                  (indent-first-arg (+ contains 
-                                                       name-length))))]))]
-              [else
-               ;; No particular special case, so indent to match first 
-               ;; S-expr that start on the previous line
-               (let loop ([last last][last-para last-para])
-                 (let* ([next-to-last (backward-match last limit)]
-                        [next-to-last-para (and next-to-last
-                                                (position-paragraph next-to-last))])
-                   (if (equal? last-para next-to-last-para)
-                       (loop next-to-last next-to-last-para)
-                       (do-indent (visual-offset last)))))])))))
+        (define tabify-prefs (preferences:get 'framework:tabify))
+        (define last-pos (last-position))
+        (define para (position-paragraph pos))
+        (define is-tabbable?
+          (and (> para 0)
+               (not (memq (classify-position (- (paragraph-start-position para) 1))
+                          '(comment string error)))))
+        (define end (if is-tabbable? (paragraph-start-position para) 0))
+        (define limit (get-limit pos))
+        
+        ;; "contains" is the start of the initial sub-S-exp
+        ;;  in the S-exp that contains "pos". If pos is outside
+        ;;  all S-exps, this will be the start of the initial
+        ;;  S-exp
+        (define contains
+          (if is-tabbable?
+              (backward-containing-sexp end limit)
+              #f))
+        (define contain-para (and contains
+                                  (position-paragraph contains)))
+        
+        ;; last is the start of the S-exp just before "pos"
+        (define last
+          (if contains
+              (let ([p (get-backward-sexp end)])
+                (if (and p (p . >= . limit))
+                    p
+                    (backward-match end limit)))
+              #f))
+        (define last-para (and last (position-paragraph last)))
+        
+        ;; last2 is the start of the S-exp just before the one before "pos"
+        (define last2
+          (if last
+              (let ([p (get-backward-sexp last)])
+                (if (and p (p . >= . limit))
+                    p
+                    (backward-match last limit)))
+              #f))
+        
+        (define sizing-dc (or (get-dc) (make-object bitmap-dc% (make-bitmap 1 1))))
+        (define (find-offset start-pos)
+          (define tab-char? #f)
+          (define end-pos
+            (let loop ([p start-pos])
+              (let ([c (get-character p)])
+                (cond
+                  [(char=? c #\tab)
+                   (set! tab-char? #t)
+                   (loop (add1 p))]
+                  [(char=? c #\newline)
+                   p]
+                  [(char-whitespace? c)
+                   (loop (add1 p))]
+                  [else
+                   p]))))
+          (define start-x (box 0))
+          (define end-x (box 0))
+          (position-location start-pos start-x #f #t #t)
+          (position-location end-pos end-x #f #t #t)
+          (define-values (w _1 _2 _3)
+            (send sizing-dc get-text-extent "x"
+                  (send (send (get-style-list)
+                              find-named-style "Standard")
+                        get-font)))
+          (values (inexact->exact (floor (/ (- (unbox end-x) (unbox start-x)) w)))
+                  end-pos
+                  tab-char?))
+        
+        (define (visual-offset pos)
+          (let loop ([p (sub1 pos)])
+            (if (= p -1)
+                0
+                (let ([c (get-character p)])
+                  (cond
+                    [(char=? c #\null) 0]
+                    [(char=? c #\tab)
+                     (let ([o (loop (sub1 p))])
+                       (+ o (- 8 (modulo o 8))))]
+                    [(char=? c #\newline) 0]
+                    [else (add1 (loop (sub1 p)))])))))
+        
+        (define (do-indent amt)
+          (define pos-start end)
+          (define-values (gwidth curr-offset tab-char?) (find-offset pos-start))
+          (unless (and (not tab-char?) (= amt (- curr-offset pos-start)))
+            (delete pos-start curr-offset)
+            (insert (make-string amt #\space) pos-start)))
+        (define (get-proc)
+          (define id-end (get-forward-sexp contains))
+          (and (and id-end (> id-end contains))
+               (let ([text (get-text contains id-end)])
+                 (or (get-keyword-type text tabify-prefs)
+                     'other))))
+        (define (procedure-indent)
+          (case (get-proc)
+            [(begin define) 1]
+            [(lambda) 3]
+            [else 0]))
+        (define (define-or-lambda-style?)
+          (define proc-name (get-proc))
+          (or (equal? proc-name 'define)
+              (equal? proc-name 'lambda)))
+        (define (for/fold-style?)
+          (define proc-name (get-proc))
+          (equal? proc-name 'for/fold))
+        
+        (define (indent-first-arg start)
+          (define-values (gwidth curr-offset tab-char?) (find-offset start))
+          gwidth)
+        
+        (when (and is-tabbable?
+                   (not (char=? (get-character (sub1 end))
+                                #\newline)))
+          (insert #\newline (paragraph-start-position para)))
+        
+        (cond
+          [(not is-tabbable?)
+           (when (= para 0)
+             (do-indent 0))]
+          [(let-values ([(gwidth real-start tab-char?) (find-offset end)])
+             (and (<= (+ 3 real-start) (last-position))
+                  (string=? ";;;"
+                            (get-text real-start
+                                      (+ 2 real-start)))))
+           (void)]
+          [(not contains)
+           ;; Something went wrong matching. Should we get here?
+           (do-indent 0)]
+          [(not last)
+           ;; We can't find a match backward from pos,
+           ;;  but we seem to be inside an S-exp, so
+           ;;  go "up" an S-exp, and move forward past
+           ;;  the associated paren
+           (define enclosing (find-up-sexp pos))
+           (if enclosing
+               (do-indent (+ (visual-offset enclosing) 1))
+               (do-indent 0))]
+          [(= contains last)
+           ;; this is the first expression in the define
+           (do-indent (+ (visual-offset contains)
+                         (procedure-indent)))]
+          [(and (for/fold-style?)
+                last2
+                (= contains last2))
+           (do-indent (- last (paragraph-start-position last-para)))]
+          [(or (define-or-lambda-style?)
+               (for/fold-style?))
+           ;; In case of "define", etc., ignore the position of last
+           ;;  and just indent under the "define"
+           (do-indent (add1 (visual-offset contains)))]
+          [(= contain-para last-para)
+           ;; So far, the S-exp containing "pos" was all on
+           ;;  one line (possibly not counting the opening paren),
+           ;;  so indent to follow the first S-exp's end
+           ;;  unless there are just two sexps and the second is an ellipsis.
+           ;;  in that case, we just ignore the ellipsis
+           (define id-end (get-forward-sexp contains))
+           (define name-length
+             (if id-end
+                 (- id-end contains)
+                 0))
+             (cond
+               [(second-sexp-is-ellipsis? contains)
+                (do-indent (visual-offset contains))]
+               [(not (find-up-sexp pos))
+                (do-indent (visual-offset contains))]
+               [else
+                (do-indent (+ (visual-offset contains)
+                              name-length
+                              (indent-first-arg (+ contains
+                                                   name-length))))])]
+          [else
+           ;; No particular special case, so indent to match first
+           ;; S-expr that starts on the previous line
+           (let loop ([last last][last-para last-para])
+             (let* ([next-to-last (backward-match last limit)]
+                    [next-to-last-para (and next-to-last
+                                            (position-paragraph next-to-last))])
+               (if (equal? last-para next-to-last-para)
+                   (loop next-to-last next-to-last-para)
+                   (do-indent (visual-offset last)))))])))
     
     ;; returns #t if `contains' is at a position on a line with an sexp, an ellipsis and nothing else.
     ;; otherwise, returns #f
@@ -1320,6 +1309,7 @@
         (module-lexer/waived in offset mode))
       (cond
         [(and (eq? type 'symbol)
+              (string? lexeme)
               (get-keyword-type lexeme tabify-pref))
          (values lexeme 'keyword paren start end backup-delta new-mode)]
         [else
@@ -1340,22 +1330,24 @@
                           (|{| |}|))))))
 
 ;; get-keyword-type : string (list ht regexp regexp regexp)
-;;                 -> (union #f 'lambda 'define 'begin)
+;;                 -> (or/c #f 'lambda 'define 'begin 'for/fold)
 (define (get-keyword-type text pref)
-  (let* ([ht (car pref)]
-         [beg-reg (cadr pref)]
-         [def-reg (caddr pref)]
-         [lam-reg (cadddr pref)])
-    (hash-ref
-     ht
-     (with-handlers ((exn:fail:read? (λ (x) #f)))
-       (read (open-input-string text)))
-     (λ () 
-       (cond
-         [(and beg-reg (regexp-match beg-reg text)) 'begin]
-         [(and def-reg (regexp-match def-reg text)) 'define]
-         [(and lam-reg (regexp-match lam-reg text)) 'lambda]
-         [else #f])))))
+  (define ht (car pref))
+  (define beg-reg (list-ref pref 1))
+  (define def-reg (list-ref pref 2))
+  (define lam-reg (list-ref pref 3))
+  (define for/fold-reg (list-ref pref 4))
+  (hash-ref
+   ht
+   (with-handlers ((exn:fail:read? (λ (x) #f)))
+     (read (open-input-string text)))
+   (λ () 
+     (cond
+       [(and beg-reg (regexp-match beg-reg text)) 'begin]
+       [(and def-reg (regexp-match def-reg text)) 'define]
+       [(and lam-reg (regexp-match lam-reg text)) 'lambda]
+       [(and for/fold-reg (regexp-match for/fold-reg text)) 'for/fold]
+       [else #f]))))
 
 
 ;; in-position? : text (list symbol) -> boolean
@@ -1781,12 +1773,13 @@
                       (set! real-char c))]
          [start-pos (send text get-start-position)]
          [end-pos (send text get-end-position)]
-         [letrec-like-forms (preferences:get 'framework:square-bracket:letrec)])
+         [letrec-like-forms (preferences:get 'framework:square-bracket:letrec)]
+         [for/fold-like-forms (preferences:get 'framework:square-bracket:for/fold)])
     (send text begin-edit-sequence #f #f)
     (if (and (send text get-overwrite-mode) (= start-pos end-pos))
         (send text insert "[" start-pos (add1 start-pos) #f)
         (send text insert "[" start-pos 'same #f))
-    (when (eq? (send text classify-position pos) 'parenthesis)
+    (when (equal? (send text classify-position pos) 'parenthesis)
       (let* ([before-whitespace-pos (send text skip-whitespace pos 'backward #t)]
              [keyword/distance (find-keyword-and-distance before-whitespace-pos text)])
         (cond
@@ -1819,53 +1812,63 @@
                [(not (zero? before-whitespace-pos))
                 ;; this is the first thing in the sequence
                 ;; pop out one layer and look for a keyword.
-                (let ([b-w-p-char (send text get-character (- before-whitespace-pos 1))])
-                  (cond
-                    [(equal? b-w-p-char #\()
-                     (let* ([second-before-whitespace-pos (send text skip-whitespace 
-                                                                (- before-whitespace-pos 1)
-                                                                'backward
-                                                                #t)]
-                            [second-backwards-match (send text backward-match
-                                                          second-before-whitespace-pos
-                                                          0)])
-                       (cond
-                         [(not second-backwards-match)
-                          (change-to 3 #\()]
-                         [(and (beginning-of-sequence? text second-backwards-match)
-                               (ormap (λ (x) (text-between-equal? x
-                                                                  text
+                (define b-w-p-char (send text get-character (- before-whitespace-pos 1)))
+                (cond
+                  [(equal? b-w-p-char #\()
+                   (define second-before-whitespace-pos (send text skip-whitespace 
+                                                              (- before-whitespace-pos 1)
+                                                              'backward
+                                                              #t))
+                   (define second-backwards-match (send text backward-match
+                                                        second-before-whitespace-pos
+                                                        0))
+                   (cond
+                     [(not second-backwards-match)
+                      (change-to 3 #\()]
+                     [(and (beginning-of-sequence? text second-backwards-match)
+                           (ormap (λ (x) (text-between-equal? x
+                                                              text
+                                                              second-backwards-match
+                                                              second-before-whitespace-pos))
+                                  letrec-like-forms))
+                      ;; we found a let<mumble> keyword, so we get a square bracket
+                      (void)]
+                     [else
+                      ;; go back one more sexp in the same row, looking for `let loop' pattern
+                      (define second-before-whitespace-pos2 (send text skip-whitespace 
                                                                   second-backwards-match
-                                                                  second-before-whitespace-pos))
-                                      letrec-like-forms))
-                          ;; we found a let<mumble> keyword, so we get a square bracket
-                          (void)]
-                         [else
-                          ;; go back one more sexp in the same row, looking for `let loop' pattern
-                          (let* ([second-before-whitespace-pos2 (send text skip-whitespace 
-                                                                      second-backwards-match
-                                                                      'backward
-                                                                      #t)]
-                                 [second-backwards-match2 (send text backward-match
-                                                                second-before-whitespace-pos2
-                                                                0)])
-                            (cond
-                              [(and second-backwards-match2
-                                    (eq? (send text classify-position second-backwards-match)
-                                         ;;; otherwise, this isn't a `let loop', it is a regular let!
-                                         'symbol)
-                                    (member "let" letrec-like-forms)
-                                    (text-between-equal? "let"
-                                                         text
-                                                         second-backwards-match2
-                                                         second-before-whitespace-pos2))
-                               ;; found the `(let loop (' so we keep the [
-                               (void)]
-                              [else
-                               ;; otherwise, round.
-                               (change-to 4 #\()]))]))]
-                    [else 
-                     (change-to 5 #\()]))]
+                                                                  'backward
+                                                                  #t))
+                      (define second-backwards-match2 (send text backward-match
+                                                            second-before-whitespace-pos2
+                                                            0))
+                      (cond
+                        [(and second-backwards-match2
+                              (ormap (λ (x)
+                                       (text-between-equal? x
+                                                            text
+                                                            second-backwards-match2
+                                                            second-before-whitespace-pos2))
+                                     for/fold-like-forms))
+                         ;; found a for/fold-like form, so we keep the [
+                         (void)]
+                        [(and second-backwards-match2
+                              (member (send text classify-position second-backwards-match)
+                                      ;;; otherwise, this isn't a `let loop',
+                                      ;;; it is a regular let
+                                      '(symbol keyword))
+                              (member "let" letrec-like-forms)
+                              (text-between-equal? "let"
+                                                   text
+                                                   second-backwards-match2
+                                                   second-before-whitespace-pos2))
+                         ;; found the `(let loop (' so we keep the [
+                         (void)]
+                        [else
+                         ;; otherwise, round.
+                         (change-to 4 #\()])])]
+                  [else 
+                   (change-to 5 #\()])]
                [else 
                 (change-to 6 #\()]))])))
     (send text delete pos (+ pos 1) #f)
@@ -1874,7 +1877,7 @@
       [(and (preferences:get 'framework:automatic-parens)
             (not (in-string/comment? text)))
        (send text insert real-char start-pos start-pos)
-       (when (eq? (send text classify-position start-pos) 'parenthesis)
+       (when (equal? (send text classify-position start-pos) 'parenthesis)
          (send text insert (case real-char
                            [(#\() #\)]
                            [(#\[) #\]]
@@ -2071,18 +2074,19 @@
     (send f show #t)
     answers)
   
-  (define stupid-internal-definition-syntax1
-    (mk-list-box 'framework:square-bracket:letrec "Letrec" values (get-new-simple-keyword "Letrec")))
-  (define stupid-internal-definition-syntax3
-    (mk-list-box 'framework:square-bracket:local 
-                 "Local" 
-                 values
-                 (get-new-simple-keyword "Local")))
-  (define stupid-internal-definition-syntax2
-    (mk-list-box 'framework:square-bracket:cond/offset 
-                 "Cond" 
-                 (λ (l) (format "~a (~a)" (car l) (cadr l)))
-                 get-new-cond-keyword))
+  (mk-list-box 'framework:square-bracket:letrec "Letrec" values (get-new-simple-keyword "Letrec"))
+  (mk-list-box 'framework:square-bracket:local 
+               "Local" 
+               values
+               (get-new-simple-keyword "Local"))
+  (mk-list-box 'framework:square-bracket:for/fold 
+               "For/fold" 
+               values
+               (get-new-simple-keyword "For/fold"))
+  (mk-list-box 'framework:square-bracket:cond/offset 
+               "Cond" 
+               (λ (l) (format "~a (~a)" (car l) (cadr l)))
+               get-new-cond-keyword)
   
   (define check-box (new check-box% 
                          [parent main-panel]
@@ -2102,88 +2106,84 @@
 (define (make-indenting-prefs-panel p)
   (define get-keywords
     (λ (hash-table)
-      (letrec ([all-keywords (hash-map hash-table list)]
-               [pick-out (λ (wanted in out)
-                           (cond
-                             [(null? in) (sort out string<=?)]
-                             [else (if (eq? wanted (cadr (car in))) 
-                                       (pick-out wanted (cdr in) 
-                                                 (cons (format "~s" (car (car in))) out))
-                                       (pick-out wanted (cdr in) out))]))])
-        (values  (pick-out 'begin all-keywords null)
-                 (pick-out 'define all-keywords null)
-                 (pick-out 'lambda all-keywords null)))))
-  (define-values (begin-keywords define-keywords lambda-keywords)
+      (define all-keywords (hash-map hash-table list))
+      (define (pick-out wanted in out)
+        (cond
+          [(null? in) (sort out string<?)]
+          [else (if (eq? wanted (cadr (car in))) 
+                    (pick-out wanted (cdr in) 
+                              (cons (format "~s" (car (car in))) out))
+                    (pick-out wanted (cdr in) out))]))
+      (values  (pick-out 'begin all-keywords null)
+               (pick-out 'define all-keywords null)
+               (pick-out 'lambda all-keywords null)
+               (pick-out 'for/fold all-keywords null))))
+  (define-values (begin-keywords define-keywords lambda-keywords for/fold-keywords)
     (get-keywords (car (preferences:get 'framework:tabify))))
-  (define add-button-callback
-    (λ (keyword-type keyword-symbol list-box)
-      (λ (button command)
-        (let ([new-one
-               (keymap:call/text-keymap-initializer
-                (λ ()
-                  (get-text-from-user
-                   (format (string-constant enter-new-keyword) keyword-type)
-                   (format (string-constant x-keyword) keyword-type))))])
-          (when new-one
-            (let ([parsed (with-handlers ((exn:fail:read? (λ (x) #f)))
-                            (read (open-input-string new-one)))])
-              (cond
-                [(and (symbol? parsed)
-                      (hash-ref (car (preferences:get 'framework:tabify))
-                                parsed
-                                (λ () #f)))
-                 (message-box (string-constant error)
-                              (format (string-constant already-used-keyword) parsed))]
-                [(symbol? parsed)
-                 (let* ([pref (preferences:get 'framework:tabify)]
-                        [ht (car pref)])
-                   (hash-set! ht parsed keyword-symbol)
-                   (preferences:set 'framework:tabify pref)
-                   (update-list-boxes ht))]
-                [else (message-box 
-                       (string-constant error)
-                       (format (string-constant expected-a-symbol) new-one))])))))))
-  (define delete-callback
-    (λ (list-box)
-      (λ (button command)
-        (define selections (send list-box get-selections))
-        (define symbols 
-          (map (λ (x) (read (open-input-string (send list-box get-string x)))) selections))
-        (for-each (λ (x) (send list-box delete x)) (reverse selections))
-        (define pref (preferences:get 'framework:tabify))
-        (define ht (car pref))
-        (for-each (λ (x) (hash-remove! ht x)) symbols)
-        (preferences:set 'framework:tabify pref))))
+  (define ((add-button-callback keyword-type keyword-symbol list-box) button command)
+    (define new-one
+      (keymap:call/text-keymap-initializer
+       (λ ()
+         (get-text-from-user
+          (format (string-constant enter-new-keyword) keyword-type)
+          (format (string-constant x-keyword) keyword-type)))))
+    (when new-one
+      (let ([parsed (with-handlers ((exn:fail:read? (λ (x) #f)))
+                      (read (open-input-string new-one)))])
+        (cond
+          [(and (symbol? parsed)
+                (hash-ref (car (preferences:get 'framework:tabify))
+                          parsed
+                          (λ () #f)))
+           (message-box (string-constant error)
+                        (format (string-constant already-used-keyword) parsed))]
+          [(symbol? parsed)
+           (let* ([pref (preferences:get 'framework:tabify)]
+                  [ht (car pref)])
+             (hash-set! ht parsed keyword-symbol)
+             (preferences:set 'framework:tabify pref)
+             (update-list-boxes ht))]
+          [else (message-box 
+                 (string-constant error)
+                 (format (string-constant expected-a-symbol) new-one))]))))
+  (define ((delete-callback list-box) button command)
+    (define selections (send list-box get-selections))
+    (define symbols 
+      (map (λ (x) (read (open-input-string (send list-box get-string x)))) selections))
+    (for-each (λ (x) (send list-box delete x)) (reverse selections))
+    (define pref (preferences:get 'framework:tabify))
+    (define ht (car pref))
+    (for-each (λ (x) (hash-remove! ht x)) symbols)
+    (preferences:set 'framework:tabify pref))
   (define main-panel (make-object horizontal-panel% p))
-  (define make-column
-    (λ (string symbol keywords bang-regexp)
-      (let* ([vert (make-object vertical-panel% main-panel)]
-             [_ (make-object message% (format (string-constant x-like-keywords) string) vert)]
-             [box (make-object list-box% #f keywords vert void '(multiple))]
-             [button-panel (make-object horizontal-panel% vert)]
-             [text (new text-field% 
-                        (label (string-constant indenting-prefs-extra-regexp))
-                        (callback (λ (tf evt) 
-                                    (let ([str (send tf get-value)])
-                                      (cond
-                                        [(equal? str "") 
-                                         (bang-regexp #f)]
-                                        [else
-                                         (with-handlers ([exn:fail?
-                                                          (λ (x)
-                                                            (color-yellow (send tf get-editor)))])
-                                           (bang-regexp (regexp str))
-                                           (clear-color (send tf get-editor)))]))))
-                        (parent vert))]
-             [add-button (make-object button% (string-constant add-keyword)
-                           button-panel (add-button-callback string symbol box))]
-             [delete-button (make-object button% (string-constant remove-keyword)
-                              button-panel (delete-callback box))])
-        (send* button-panel 
-          (set-alignment 'center 'center)
-          (stretchable-height #f))
-        (send add-button min-width (send delete-button get-width))
-        (values box text))))
+  (define (make-column string symbol keywords bang-regexp)
+    (define vert (make-object vertical-panel% main-panel))
+    (make-object message% (format (string-constant x-like-keywords) string) vert)
+    (define box (make-object list-box% #f keywords vert void '(multiple)))
+    (define button-panel (make-object horizontal-panel% vert))
+    (define text (new text-field% 
+                      (label (string-constant indenting-prefs-extra-regexp))
+                      (callback (λ (tf evt) 
+                                  (define str (send tf get-value))
+                                  (cond
+                                    [(equal? str "") 
+                                     (bang-regexp #f)]
+                                    [else
+                                     (with-handlers ([exn:fail?
+                                                      (λ (x)
+                                                        (color-yellow (send tf get-editor)))])
+                                       (bang-regexp (regexp str))
+                                       (clear-color (send tf get-editor)))])))
+                      (parent vert)))
+    (define add-button (make-object button% (string-constant add-keyword)
+                         button-panel (add-button-callback string symbol box)))
+    (define delete-button (make-object button% (string-constant remove-keyword)
+                            button-panel (delete-callback box)))
+    (send* button-panel 
+      (set-alignment 'center 'center)
+      (stretchable-height #f))
+    (send add-button min-width (send delete-button get-width))
+    (values box text))
   (define (color-yellow text)
     (let ([sd (make-object style-delta%)])
       (send sd set-delta-background "yellow")
@@ -2215,21 +2215,29 @@
                  'lambda
                  lambda-keywords
                  (λ (x) (update-pref 3 x))))
+  (define-values (for/fold-list-box for/fold-regexp-text)
+    (make-column "For/fold"
+                 'for/fold
+                 for/fold-keywords
+                 (λ (x) (update-pref 4 x))))
   (define (update-list-boxes hash-table)
-    (let-values ([(begin-keywords define-keywords lambda-keywords) (get-keywords hash-table)]
-                 [(reset) (λ (list-box keywords)
-                            (send list-box clear)
-                            (for-each (λ (x) (send list-box append x)) keywords))])
-      (reset begin-list-box begin-keywords)
-      (reset define-list-box define-keywords)
-      (reset lambda-list-box lambda-keywords)
-      #t))
+    (define-values (begin-keywords define-keywords lambda-keywords for/fold-keywords) 
+      (get-keywords hash-table))
+    (define (reset list-box keywords)
+      (send list-box clear)
+      (for-each (λ (x) (send list-box append x)) keywords))
+    (reset begin-list-box begin-keywords)
+    (reset define-list-box define-keywords)
+    (reset lambda-list-box lambda-keywords)
+    (reset for/fold-list-box for/fold-keywords)
+    #t)
   (define update-gui
     (λ (pref)
       (update-list-boxes (car pref))
-      (send begin-regexp-text set-value (or (object-name (cadr pref)) ""))
-      (send define-regexp-text set-value (or (object-name (caddr pref)) ""))
-      (send lambda-regexp-text set-value (or (object-name (cadddr pref)) ""))))
+      (send begin-regexp-text set-value (or (object-name (list-ref pref 1)) ""))
+      (send define-regexp-text set-value (or (object-name (list-ref pref 2)) ""))
+      (send lambda-regexp-text set-value (or (object-name (list-ref pref 3)) ""))
+      (send for/fold-regexp-text set-value (or (object-name (list-ref pref 4)) ""))))
   (preferences:add-callback 'framework:tabify (λ (p v) (update-gui v)))
   (update-gui (preferences:get 'framework:tabify))
   main-panel)

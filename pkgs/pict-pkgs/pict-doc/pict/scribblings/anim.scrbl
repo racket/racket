@@ -73,6 +73,17 @@ The @racket[p-from] and @racket[p-to] picts are typically
 @racket[launder]ed @racket[ghost]s of @racket[p] within @racket[base],
 but they can be any picts within @racket[base].}
 
+@defproc[(slide-pict/center [base pict?]
+                            [p pict?]
+                            [p-from pict?]
+                            [p-to pict?]
+                            [n (real-in 0.0 1.0)])
+         pict?]{
+
+  Like @racket[slide-pict], but aligns the center of @racket[p]
+  with @racket[p-from] and @racket[p-to].
+}
+
 @; --------------------------------------------------
 
 @section{Merging Animations}

@@ -36,9 +36,8 @@
 /* The implementations of the time primitives, such as
    `current-seconds', vary a lot from platform to platform. */
 #ifdef TIME_SYNTAX
-# ifdef USE_MACTIME
-#  include <OSUtils.h>
-#  include <Timer.h>
+# ifdef USE_WIN32_TIME
+#  include <Windows.h>
 # else
 #  ifndef USE_PALMTIME
 #   if defined(OSKIT) && !defined(OSKIT_TEST)
@@ -217,6 +216,15 @@ typedef void (*DW_PrePost_Proc)(void *);
 static void register_traversers(void);
 #endif
 
+#ifdef USE_WIN32_TIME
+typedef BOOL (WINAPI*GetTimeZoneInformationForYearProc_t)(USHORT wYear, void* pdtzi, LPTIME_ZONE_INFORMATION ptzi);
+static GetTimeZoneInformationForYearProc_t GetTimeZoneInformationForYearProc;
+
+typedef BOOL (WINAPI*SystemTimeToTzSpecificLocalTimeExProc_t)(void *lpTimeZoneInformation, 
+							      const SYSTEMTIME *lpUniversalTime,
+							      LPSYSTEMTIME lpLocalTime);
+static SystemTimeToTzSpecificLocalTimeExProc_t SystemTimeToTzSpecificLocalTimeExProc;
+#endif
 
 /* See call_cc: */
 typedef struct Scheme_Dynamic_Wind_List {
@@ -665,6 +673,20 @@ scheme_init_fun (Scheme_Env *env)
   original_default_prompt = MALLOC_ONE_TAGGED(Scheme_Prompt);
   original_default_prompt->so.type = scheme_prompt_type;
   original_default_prompt->tag = scheme_default_prompt_tag;
+
+#ifdef USE_WIN32_TIME
+  {
+    HMODULE hm;
+    hm = LoadLibrary("kernel32.dll");
+
+    GetTimeZoneInformationForYearProc
+      = (GetTimeZoneInformationForYearProc_t)GetProcAddress(hm, "GetTimeZoneInformationForYear");
+    SystemTimeToTzSpecificLocalTimeExProc
+      = (SystemTimeToTzSpecificLocalTimeExProc_t)GetProcAddress(hm, "SystemTimeToTzSpecificLocalTimeEx");
+
+    FreeLibrary(hm);
+  }
+#endif
 }
 
 void
@@ -1066,12 +1088,8 @@ void scheme_really_create_overflow(void *stack_base)
           p->values_buffer = NULL;
       } else if (reply == SCHEME_TAIL_CALL_WAITING) {
         p = scheme_current_thread;
-        if (p->ku.apply.tail_rands == p->tail_buffer) {
-          GC_CAN_IGNORE Scheme_Object **tb;
-          p->tail_buffer = NULL; /* so args aren't zeroed */
-          tb = MALLOC_N(Scheme_Object *, p->tail_buffer_size);
-          p->tail_buffer = tb;
-        }
+        if (p->ku.apply.tail_rands == p->tail_buffer)
+          scheme_realloc_tail_buffer(p);
       }
     }
 
@@ -1366,12 +1384,8 @@ force_values(Scheme_Object *obj, int multi_ok)
     GC_CAN_IGNORE Scheme_Object **rands;
       
     /* Watch out for use of tail buffer: */
-    if (p->ku.apply.tail_rands == p->tail_buffer) {
-      GC_CAN_IGNORE Scheme_Object **tb;
-      p->tail_buffer = NULL; /* so args aren't zeroed */
-      tb = MALLOC_N(Scheme_Object *, p->tail_buffer_size);
-      p->tail_buffer = tb;
-    }
+    if (p->ku.apply.tail_rands == p->tail_buffer)
+      scheme_realloc_tail_buffer(p);
 
     rator = p->ku.apply.tail_rator;
     rands = p->ku.apply.tail_rands;
@@ -1415,9 +1429,18 @@ Scheme_Object *
 scheme_force_value_same_mark(Scheme_Object *obj)
 {
   Scheme_Object *v;
-  
+
   MZ_CONT_MARK_POS -= 2;
+  /* At this point, if the thread is swapped out and we attempt to get
+     the continuation marks of the thread, then MZ_CONT_MARK_POS may
+     be inconsistent with the first mark on the stack. We assume that
+     a thread swap will not happen until scheme_do_eval(), where
+     the first possibility for a swap is on stack overflow, and
+     in that case MZ_CONT_MARK_POS is adjusted back before overflow
+     handling (which can cause the thread to swap out). */
+
   v = force_values(obj, 1);
+
   MZ_CONT_MARK_POS += 2;
 
   return v;
@@ -1429,7 +1452,10 @@ scheme_force_one_value_same_mark(Scheme_Object *obj)
   Scheme_Object *v;
   
   MZ_CONT_MARK_POS -= 2;
+  /* See above about thread swaps */
+
   v = force_values(obj, 0);
+
   MZ_CONT_MARK_POS += 2;
 
   return v;
@@ -1620,12 +1646,11 @@ scheme_tail_apply (Scheme_Object *rator, int num_rands, Scheme_Object **rands)
   if (num_rands) {
     Scheme_Object **a;
     if (num_rands > p->tail_buffer_size) {
-      Scheme_Object **tb;
-      tb = MALLOC_N(Scheme_Object *, num_rands);
-      p->tail_buffer = tb;
+      a = MALLOC_N(Scheme_Object *, num_rands);
+      p->tail_buffer = a;
       p->tail_buffer_size = num_rands;
-    }
-    a = p->tail_buffer;
+    } else
+      a = p->tail_buffer;
     p->ku.apply.tail_rands = a;
     for (i = num_rands; i--; ) {
       a[i] = rands[i];
@@ -3357,20 +3382,24 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
 
   if (!SCHEME_PROCP(val))
     scheme_wrong_contract(name, "procedure?", 0, argc, argv);
-  if (!SCHEME_PROCP(argv[1]))
-    scheme_wrong_contract(name, "procedure?", 1, argc, argv);
+  if (!SCHEME_FALSEP(argv[1]) && !SCHEME_PROCP(argv[1]))
+    scheme_wrong_contract(name, "(or/c procedure? #f)", 1, argc, argv);
 
   orig = get_or_check_arity(val, -1, NULL, 1);
-  naya = get_or_check_arity(argv[1], -1, NULL, 1);
+  if (SCHEME_FALSEP(argv[1]))
+    naya = scheme_false;
+  else {
+    naya = get_or_check_arity(argv[1], -1, NULL, 1);
 
-  if (!is_subarity(orig, naya))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "%s: arity of wrapper procedure does not cover arity of original procedure\n"
-                     "  wrapper: %V\n"
-                     "  original: %V",
-                     name,
-                     argv[1],
-                     argv[0]);
+    if (!is_subarity(orig, naya))
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "%s: arity of wrapper procedure does not cover arity of original procedure\n"
+                       "  wrapper: %V\n"
+                       "  original: %V",
+                       name,
+                       argv[1],
+                       argv[0]);
+  }
 
   props = scheme_parse_chaperone_props(name, 2, argc, argv);
   if (props) {
@@ -3381,14 +3410,18 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
         props = NULL; 
       else
         props = scheme_hash_tree_set(props, scheme_app_mark_impersonator_property, NULL);
-      /* app_mark should be (cons mark val) */
-      if (!SCHEME_PAIRP(app_mark))
-        app_mark = scheme_false;
     } else
       app_mark = scheme_false;
   } else
     app_mark = scheme_false;
 
+  if (SCHEME_FALSEP(argv[1]) && SCHEME_FALSEP(app_mark) && !props)
+    return argv[0];
+
+  /* app_mark should be (cons mark val) */
+  if (SCHEME_FALSEP(app_mark) && !SCHEME_PAIRP(app_mark))
+    app_mark = scheme_false;
+  
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
   px->iso.so.type = scheme_proc_chaperone_type;
   px->val = val;
@@ -3536,6 +3569,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   else
     what = "impersonator";
 
+  if (SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0])) {
+    /* no redirection procedure */
+    return _scheme_tail_apply(px->prev, argc, argv);
+  }
+
   /* Ensure that the original procedure accepts `argc' arguments: */
   if (argc != SCHEME_INT_VAL(SCHEME_VEC_ELS(px->redirects)[1])) {
     a[0] = px->prev;
@@ -3623,12 +3661,14 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
                      "procedure %s: arity mismatch;\n"
-                     " expected number of results not received from wrapper on the orignal\n"
+                     " expected number of results not received from wrapper on the original\n"
                      " procedure's arguments\n"
+                     "  original: %V\n"
                      "  wrapper: %V\n"
                      "  expected: %d or %d\n"
                      "  received: %d",
                      what,
+                     o,
                      SCHEME_VEC_ELS(px->redirects)[0],
                      argc, argc + 1,
                      c);
@@ -3682,9 +3722,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "procedure %s: wrapper's first result is not a procedure;\n"
                        " extra result compared to original argument count should be\n"
                        " a wrapper for the original procedure's result\n"
+                       "  original: %V\n"
                        "  wrapper: %V\n"
                        "  received: %V",
                        what,
+                       o,
                        SCHEME_VEC_ELS(px->redirects)[0],
                        post);
 
@@ -3735,11 +3777,14 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     
     if (!scheme_check_proc_arity(NULL, c, 0, -1, &post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "procedure-result chaperone: arity mismatch;\n"
+                       "procedure-result %s: arity mismatch;\n"
                        " wrapper does not accept the number of values produced by\n"
                        " the original procedure\n"
+                       "  original: %V\n"
                        "  wrapper: %V\n"
                        "  number of values: %d",
+                       what,
+                       o,
                        post,
                        c);
     
@@ -3780,10 +3825,12 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "procedure-result %s: result arity mismatch;\n"
                        " expected number of values not received from wrapper on the original\n"
                        " procedure's result\n"
+                       "  original: %V\n"
                        "  wrapper: %V\n"
                        "  expected: %d\n"
                        "  received: %d",
                        what,
+                       o,
                        post,
                        c, argc);
       return NULL;
@@ -9231,6 +9278,21 @@ static Scheme_Object *jump_to_alt_continuation()
 #define CLOCKS_PER_SEC 1000000
 #endif
 
+#ifdef USE_WIN32_TIME
+/* Number of milliseconds from 1601 to 1970: */
+# define MSEC_OFFSET 11644473600000
+
+mzlonglong get_hectonanoseconds_as_longlong()
+{
+  FILETIME ft;
+  mzlonglong v;
+  GetSystemTimeAsFileTime(&ft);
+  v = ((mzlonglong)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+  v -= ((mzlonglong)MSEC_OFFSET * 10000);
+  return v;
+}
+#endif
+
 intptr_t scheme_get_milliseconds(void)
   XFORM_SKIP_PROC
 /* this function can be called from any OS thread */
@@ -9243,9 +9305,8 @@ intptr_t scheme_get_milliseconds(void)
   MSC_IZE(ftime)(&now);
   return (intptr_t)(now.time * 1000 + now.millitm);
 # else
-#  ifdef PALMOS_STUFF
-  /* FIXME */
-  return 0;
+#  ifdef USE_WIN32_TIME
+  return (intptr_t)(get_hectonanoseconds_as_longlong() / (mzlonglong)10000);
 #  else
   struct timeval now;
   gettimeofday(&now, NULL);
@@ -9274,9 +9335,11 @@ double scheme_get_inexact_milliseconds(void)
   MSC_IZE(ftime)(&now);
   return (double)now.time * 1000.0 + (double)now.millitm;
 # else
-#  ifdef PALMOS_STUFF
-  /* FIXME */
-  return 0;
+#  ifdef USE_WIN32_TIME
+  FILETIME ft;
+  mzlonglong v;
+  v = get_hectonanoseconds_as_longlong();
+  return (double)(v / 10000) + (((double)(v % 10000)) / 10000.0);
 #  else
   struct timeval now;
   gettimeofday(&now, NULL);
@@ -9321,10 +9384,12 @@ intptr_t scheme_get_process_milliseconds(void)
       v = ((((mzlonglong)kr.dwHighDateTime << 32) + kr.dwLowDateTime)
 	   + (((mzlonglong)us.dwHighDateTime << 32) + us.dwLowDateTime));
       return (uintptr_t)(v / 10000);
-    }
+    } else
+      return 0; /* anything better to do? */
   }
-#   endif
+#   else
   return clock()  * 1000 / CLOCKS_PER_SEC;
+#   endif
 
 #  endif
 # endif
@@ -9347,11 +9412,8 @@ intptr_t scheme_get_thread_milliseconds(Scheme_Object *thrd)
 
 intptr_t scheme_get_seconds(void)
 {
-#ifdef USE_MACTIME
-  /* This is wrong, since it's not since January 1, 1970 */
-  unsigned long secs;
-  GetDateTime(&secs);
-  return secs;
+#ifdef USE_WIN32_TIME
+  return (intptr_t)(get_hectonanoseconds_as_longlong() / (mzlonglong)10000000);
 #else
 # ifdef USE_PALMTIME
   return TimGetSeconds();
@@ -9375,10 +9437,66 @@ intptr_t scheme_get_seconds(void)
 #endif
 }
 
-#if defined(USE_MACTIME) || defined(USE_PALMTIME)
-static int month_offsets[12] = { 0, 31, 59, 90,
-                                120, 151, 181, 212,
-                                243, 273, 304, 334 };
+#if defined(USE_WIN32_TIME)
+/* Assuming not a leap year (and adjusted elsewhere): */
+static int month_offsets[13] = { 0, 31, 59, 90,
+				 120, 151, 181, 212,
+				 243, 273, 304, 334,
+                                 365};
+
+# define dtxCOMP(f) if (a->f < b->f) return 1; if (a->f > b->f) return 0;
+
+static int is_start_day_before(SYSTEMTIME *a, SYSTEMTIME *b)
+{
+  dtxCOMP(wYear);
+
+  /* When comparing DST boundaries, we expect to get here,
+     because wYear will be 0 to mean "every year". */
+
+  dtxCOMP(wMonth);
+
+  /* When comparing DST boundaries, it's unlikely that we'll get here,
+     because that would mean that StdT and DST start in the same month. */
+
+  dtxCOMP(wDay); /* for DST boundaires, this is a week number */
+  dtxCOMP(wDayOfWeek);
+  dtxCOMP(wHour);
+  dtxCOMP(wMinute);
+
+  return 0;
+}
+
+static int is_day_before(SYSTEMTIME *a, SYSTEMTIME *b)
+/* a is a date, and b is a DST boundary spec */
+{
+  int dos, doc;
+
+  if (b->wYear) {
+    dtxCOMP(wYear);
+  }
+
+  dtxCOMP(wMonth);
+
+  /* "Date" of a Sunday this month, 0 to 6: */
+  dos = ((a->wDay - a->wDayOfWeek) + 7) % 7;
+  /* Date of first b->wDayOfWeek this month, 1 to 7: */
+  doc = (dos + b->wDayOfWeek) % 7;
+  if (doc == 0) doc = 7;
+  /* Date of change this year: */
+  doc = doc + ((b->wDay - 1) * 7);
+  if (doc > (month_offsets[b->wMonth] - month_offsets[b->wMonth-1]))
+    doc -= 7;
+  /* Above assumes that a time change doesn't occur on a leap day! */
+
+  if (a->wDay < doc)
+    return 1;
+
+  dtxCOMP(wHour);
+  dtxCOMP(wMinute);
+
+  return 0;
+}
+# undef dtxCOMP
 #endif
 
 #if (defined(OS_X) || defined(XONX)) && defined(__x86_64__)
@@ -9439,9 +9557,9 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
   int get_gmt;
   int hour, min, sec, month, day, year, wday, yday, dst;
   long tzoffset;
-#ifdef USE_MACTIME
-# define CHECK_TIME_T unsigned long
-  DateTimeRec localTime;
+#ifdef USE_WIN32_TIME
+# define CHECK_TIME_T uintptr_t
+  SYSTEMTIME localTime;
 #else
 # ifdef USE_PALMTIME
 #  define CHECK_TIME_T UInt32
@@ -9488,9 +9606,22 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
       && VALID_TIME_RANGE(lnow)) {
     int success;
 
-#ifdef USE_MACTIME
-    SecondsToDate(lnow, &localTime);
-    success = 1;
+#ifdef USE_WIN32_TIME
+    {
+      mzlonglong nsC;
+      FILETIME ft;
+      nsC = (((mzlonglong)lnow) * 10000000) + ((mzlonglong)MSEC_OFFSET * 10000);
+      ft.dwLowDateTime = nsC & (mzlonglong)0xFFFFFFFF;
+      ft.dwHighDateTime = nsC >> 32;
+      success = FileTimeToSystemTime(&ft, &localTime);
+      if (success && !get_gmt) {
+	SYSTEMTIME t2 = localTime;
+	if (SystemTimeToTzSpecificLocalTimeExProc)
+	  success = SystemTimeToTzSpecificLocalTimeExProc(NULL, &t2, &localTime);
+	else
+	  success = SystemTimeToTzSpecificLocalTime(NULL, &t2, &localTime);
+      }
+    }
 #else
 # ifdef USE_PALMTIME
     TimSecondsToDateTime(lnow, &localTime) ;
@@ -9504,65 +9635,53 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 #endif
 
     if (success) {
-#if defined(USE_MACTIME) || defined(USE_PALMTIME)
-# ifdef USE_MACTIME
-#  define mzDOW(localTime) localTime.dayOfWeek - 1
-# else
-#  define mzDOW(localTime) localTime.weekDay
-# endif
+#ifdef USE_WIN32_TIME
 
-      hour = localTime.hour;
-      min = localTime.minute;
-      sec = localTime.second;
+      hour = localTime.wHour;
+      min = localTime.wMinute;
+      sec = localTime.wSecond;
 
-      month = localTime.month;
-      day = localTime.day;
-      year = localTime.year;
+      month = localTime.wMonth;
+      day = localTime.wDay;
+      year = localTime.wYear;
 
-      wday = mzDOW(localTime);
+      wday = localTime.wDayOfWeek;
+      yday = month_offsets[localTime.wMonth-1] + day-1;
+      /* leap-year adjustment: */
+      if ((month > 2)
+	  && ((year % 4) == 0)
+	  && (((year % 100) != 0) || ((year % 400) == 0)))
+	yday++;
 
-      yday = month_offsets[localTime.month - 1] + localTime.day - 1;
-      /* If month > 2, is it a leap-year? */
-      if (localTime.month > 2) {
-# ifdef USE_MACTIME
-        unsigned long ttime;
-        DateTimeRec tester;
-
-	tester.year = localTime.year;
-        tester.hour = tester.minute = 0;
-        tester.second = 1;
-        tester.month = 1;
-        tester.day = 60;
-        DateToSeconds(&tester, &ttime);
-        SecondsToDate(ttime, &tester);
-        if (tester.month == 2)
-          /* It is a leap-year */
-          yday++;
-# else
-	/* PalmOS: */
-	if (DaysInMonth(2, year) > 28)
-	  yday++;
-# endif
+      dst = 0;
+      if (get_gmt) {
+	tzoffset = 0;
+	tzn = "UTC";
+      } else {
+	TIME_ZONE_INFORMATION tz;
+	if (GetTimeZoneInformationForYearProc)
+	  GetTimeZoneInformationForYearProc(localTime.wYear, NULL, &tz);
+	else
+	  (void)GetTimeZoneInformation(&tz);
+	if (tz.StandardDate.wMonth) {
+	  if (is_start_day_before(&tz.DaylightDate, &tz.StandardDate)) {
+	    /* northern hemisphere */
+	    dst = (!is_day_before(&localTime, &tz.DaylightDate)
+		   && is_day_before(&localTime, &tz.StandardDate));
+	  } else {
+	    /* southern hemisphere */
+	    dst = (is_day_before(&localTime, &tz.StandardDate)
+		   || !is_day_before(&localTime, &tz.DaylightDate));
+	  }
+	}
+	if (dst) {
+	  tzoffset = (tz.Bias + tz.DaylightBias) * -60;
+	  tzn = NARROW_PATH(tz.DaylightName);
+	} else {
+	  tzoffset = (tz.Bias + tz.StandardBias) * -60;
+	  tzn = NARROW_PATH(tz.StandardName);
+	}
       }
-
-# ifdef USE_MACTIME
-      {
-	MachineLocation loc;
-	ReadLocation(&loc);
-
-	dst = (loc.u.dlsDelta != 0);
-
-	tzoffset = loc.u.gmtDelta; /* 3-byte value in a long!! */
-	/* Copied from Inside mac: */
-	tzoffset = tzoffset & 0xFFFFFF;
-	if (tzoffset & (0x1 << 23))
-	  tzoffset |= 0xFF000000;
-      }
-# else
-      /* No timezone on PalmOS: */
-      tzoffset = 0;
-# endif
-
 #else
       hour = localTime->tm_hour;
       min = localTime->tm_min;

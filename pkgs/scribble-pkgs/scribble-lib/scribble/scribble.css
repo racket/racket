@@ -122,6 +122,10 @@ table td {
   padding: 0;
 }
 
+.nosearchform {
+  display: none;
+}
+
 .searchbox {
   width: 16em;
   margin: 0px;

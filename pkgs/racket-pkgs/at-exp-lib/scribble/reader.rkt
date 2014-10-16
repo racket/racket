@@ -535,13 +535,21 @@
 (provide make-at-readtable make-at-reader)
 
 (define ((make-at-readtable-or-inside-reader inside-reader?)
-         readtable command-char datum-readtable syntax-post-processor)
+         readtable command-char command-readtable datum-readtable syntax-post-processor)
+  (define (get-cmd-rt)
+    (if (readtable? cmd-rt)
+        cmd-rt
+        (cmd-rt)))
+  (define (get-datum-rt)
+    (if (eq? datum-rt 'dynamic)
+        (current-readtable)
+        datum-rt))
   (define dispatcher
-    (make-dispatcher #f command-char (lambda () cmd-rt) (lambda () datum-rt)
+    (make-dispatcher #f command-char get-cmd-rt get-datum-rt
                      syntax-post-processor))
   (define (make-inside-reader)
     (define dispatcher
-      (make-dispatcher #t command-char (lambda () cmd-rt) (lambda () datum-rt)
+      (make-dispatcher #t command-char get-cmd-rt get-datum-rt
                        syntax-post-processor))
     ;; use a name consistent with `make-at-reader'
     (named-lambda (at-read-syntax/inside [src default-src]
@@ -551,28 +559,34 @@
         (dispatcher #f inp (src-name src inp) line col pos))))
   (define at-rt
     (make-readtable readtable command-char 'non-terminating-macro dispatcher))
-  (define cmd-rt
+  (define command-bar
+    (lambda (char inp source-name line-num col-num position)
+      (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])
+        (unless m
+          (raise-read-error "unbalanced `|'" source-name
+                            line-num col-num position #f))
+        (datum->syntax
+         #f (string->symbol (bytes->string/utf-8 (cadr m)))
+         (vector source-name line-num col-num position
+                 (add1 (bytes-length (car m))))
+         orig-stx))))
+  (define (make-cmd-rt command-readtable)
     ;; similar to plain Racket (scribble, actually), but with `@' as usual and
     ;; and `|' as a terminating macro characters (otherwise it behaves the
     ;; same; the only difference is that `a|b|c' is three symbols)
-    (make-readtable readtable
+    (make-readtable command-readtable
       command-char 'non-terminating-macro dispatcher
-      #\| 'terminating-macro
-      (lambda (char inp source-name line-num col-num position)
-        (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])
-          (unless m
-            (raise-read-error "unbalanced `|'" source-name
-                              line-num col-num position #f))
-          (datum->syntax
-           #f (string->symbol (bytes->string/utf-8 (cadr m)))
-           (vector source-name line-num col-num position
-                   (add1 (bytes-length (car m))))
-           orig-stx)))))
+      #\| 'terminating-macro command-bar))
+  (define cmd-rt
+    (if (eq? command-readtable 'dynamic)
+        (readtable-cached make-cmd-rt)
+        (make-cmd-rt command-readtable)))
   (define datum-rt
     (cond [(or (not datum-readtable) (readtable? datum-readtable))
            datum-readtable]
           [(eq? #t datum-readtable) at-rt]
           [(procedure? datum-readtable) (datum-readtable at-rt)]
+          [(eq? datum-readtable 'dynamic) 'dynamic]
           [else (error 'make-at-readtable
                        "bad datum-readtable: ~e" datum-readtable)]))
   (if inside-reader? (make-inside-reader) at-rt))
@@ -580,20 +594,22 @@
 (define (make-at-readtable
          #:readtable             [readtable (current-readtable)]
          #:command-char          [command-char ch:command]
+         #:command-readtable     [command-readtable readtable]
          #:datum-readtable       [datum-readtable #t]
          #:syntax-post-processor [syntax-post-processor values])
   ((make-at-readtable-or-inside-reader #f)
-   readtable command-char datum-readtable syntax-post-processor))
+   readtable command-char command-readtable datum-readtable syntax-post-processor))
 
 (define (make-at-reader
          #:readtable             [readtable (current-readtable)]
          #:command-char          [command-char ch:command]
          #:datum-readtable       [datum-readtable #t]
+         #:command-readtable     [command-readtable readtable]
          #:syntax-post-processor [syntax-post-processor values]
          #:syntax?               [syntax-reader? #t]
          #:inside?               [inside-reader? #f])
   (let ([r ((make-at-readtable-or-inside-reader inside-reader?)
-            readtable command-char datum-readtable syntax-post-processor)])
+            readtable command-char command-readtable datum-readtable syntax-post-processor)])
     ;; the result can be a readtable or a syntax reader, depending on inside?,
     ;; convert it now to the appropriate reader
     (if inside-reader?
@@ -626,10 +642,14 @@
 
 ;; utilities for below
 (define make-default-at-readtable
-  (readtable-cached (lambda (rt) (make-at-readtable #:readtable rt))))
+  (readtable-cached (lambda (rt) (make-at-readtable #:readtable rt
+                                                    #:command-readtable 'dynamic
+                                                    #:datum-readtable 'dynamic))))
 (define make-default-at-reader/inside
   (readtable-cached
-   (lambda (rt) (make-at-reader #:inside? #t #:readtable rt))))
+   (lambda (rt) (make-at-reader #:inside? #t #:readtable rt
+                                #:command-readtable 'dynamic
+                                #:datum-readtable 'dynamic))))
 
 ;; ----------------------------------------------------------------------------
 ;; readers

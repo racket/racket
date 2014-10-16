@@ -9,4 +9,4 @@
 
 (define pkg-desc "Graphical user interface toolkit")
 
-(define pkg-authors '(mflatt))
+(define pkg-authors '(mflatt robby))

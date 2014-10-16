@@ -20,7 +20,7 @@
  "base-structs.rkt"
  racket/file
  (only-in racket/private/pre-base new-apply-proc)
- (only-in (types abbrev) [-Boolean B] [-Symbol Sym])
+ (only-in (types abbrev) [-Boolean B] [-Symbol Sym] -Flat)
  (only-in (types numeric-tower) [-Number N])
  (only-in (rep type-rep)
           make-ClassTop
@@ -174,6 +174,107 @@
            #:right? Univ #f
            #:repeat? Univ #f
            -String)]
+
+;; Section 4.3.6 (racket/format)
+[~a (->optkey []
+              #:rest Univ
+              #:separator -String #f
+              #:width (Un -Nat (-val #f)) #f
+              #:max-width (Un -Nat (-val +inf.0)) #f
+              #:min-width -Nat #f
+              #:limit-marker -String #f
+              #:align (one-of/c 'left 'center 'right) #f
+              #:pad-string -String #f
+              #:left-pad-string -String #f
+              #:right-pad-string -String #f
+              -String)]
+[~v (->optkey []
+              #:rest Univ
+              #:separator -String #f
+              #:width (Un -Nat (-val #f)) #f
+              #:max-width (Un -Nat (-val +inf.0)) #f
+              #:min-width -Nat #f
+              #:limit-marker -String #f
+              #:align (one-of/c 'left 'center 'right) #f
+              #:pad-string -String #f
+              #:left-pad-string -String #f
+              #:right-pad-string -String #f
+              -String)]
+[~s (->optkey []
+              #:rest Univ
+              #:separator -String #f
+              #:width (Un -Nat (-val #f)) #f
+              #:max-width (Un -Nat (-val +inf.0)) #f
+              #:min-width -Nat #f
+              #:limit-marker -String #f
+              #:align (one-of/c 'left 'center 'right) #f
+              #:pad-string -String #f
+              #:left-pad-string -String #f
+              #:right-pad-string -String #f
+              -String)]
+[~e (->optkey []
+              #:rest Univ
+              #:separator -String #f
+              #:width (Un -Nat (-val #f)) #f
+              #:max-width (Un -Nat (-val +inf.0)) #f
+              #:min-width -Nat #f
+              #:limit-marker -String #f
+              #:align (one-of/c 'left 'center 'right) #f
+              #:pad-string -String #f
+              #:left-pad-string -String #f
+              #:right-pad-string -String #f
+              -String)]
+[~r (->optkey -Real []
+              #:sign (Un (-val #f) (one-of/c '+ '++ 'parens)
+                         (-lst* (Un -String (-lst* -String -String))
+                                (Un -String (-lst* -String -String))
+                                (Un -String (-lst* -String -String))))
+                     #f
+              #:base (Un -Integer (-lst* (-val 'up) -Integer)) #f
+              #:precision (Un -Integer (-lst* (-val '=) -Integer)) #f
+              #:notation (Un (-val 'positional) (-val 'exponential)
+                             (-> -Real (one-of/c 'positional 'exponential)))
+                         #f
+              #:format-exponent (-opt (Un -String (-> -Integer -String))) #f
+              #:min-width -Integer #f
+              #:pad-string -String #f
+              -String)]
+[~.a (->optkey []
+               #:rest Univ
+               #:separator -String #f
+               #:width (Un -Nat (-val #f)) #f
+               #:max-width (Un -Nat (-val +inf.0)) #f
+               #:min-width -Nat #f
+               #:limit-marker -String #f
+               #:align (one-of/c 'left 'center 'right) #f
+               #:pad-string -String #f
+               #:left-pad-string -String #f
+               #:right-pad-string -String #f
+               -String)]
+[~.v (->optkey []
+               #:rest Univ
+               #:separator -String #f
+               #:width (Un -Nat (-val #f)) #f
+               #:max-width (Un -Nat (-val +inf.0)) #f
+               #:min-width -Nat #f
+               #:limit-marker -String #f
+               #:align (one-of/c 'left 'center 'right) #f
+               #:pad-string -String #f
+               #:left-pad-string -String #f
+               #:right-pad-string -String #f
+               -String)]
+[~.s (->optkey []
+               #:rest Univ
+               #:separator -String #f
+               #:width (Un -Nat (-val #f)) #f
+               #:max-width (Un -Nat (-val +inf.0)) #f
+               #:min-width -Nat #f
+               #:limit-marker -String #f
+               #:align (one-of/c 'left 'center 'right) #f
+               #:pad-string -String #f
+               #:left-pad-string -String #f
+               #:right-pad-string -String #f
+               -String)]
 
 ;; Section 4.4 (Byte Strings)
 [bytes (->* (list) -Integer -Bytes)]
@@ -513,8 +614,9 @@
 
 [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) (Un c (-val #f))))]
 [andmap (-polydots (a c d b) (cl->*
-                              ;; 1 means predicate on second argument
-                              (make-pred-ty (list (make-pred-ty (list a) c d) (-lst a)) c (-lst d) 1)
+                              (make-pred-ty (list (make-pred-ty (list a) c d) (-lst a)) c (-lst d)
+                                            ;; predicate on second argument
+                                            (-arg-path 1))
                               (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) (Un c (-val #t)))))]
 
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
@@ -813,10 +915,10 @@
                                [(-HashTop) (-lst (-pair Univ Univ))]))]
 
 [hash-copy (-poly (a b) (-> (-HT a b) (-HT a b)))]
-[eq-hash-code (-poly (a) (-> a -Integer))]
-[eqv-hash-code (-poly (a) (-> a -Integer))]
-[equal-hash-code (-poly (a) (-> a -Integer))]
-[equal-secondary-hash-code (-poly (a) (-> a -Integer))]
+[eq-hash-code (-> Univ -Fixnum)]
+[eqv-hash-code (-> Univ -Fixnum)]
+[equal-hash-code (-> Univ -Fixnum)]
+[equal-secondary-hash-code (-> Univ -Fixnum)]
 [hash-iterate-first (-poly (a b)
                            ((-HT a b) . -> . (Un (-val #f) -Integer)))]
 [hash-iterate-next (-poly (a b)
@@ -922,6 +1024,10 @@
 [procedure? (make-pred-ty top-func)]
 [compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
 [compose1 (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
+[procedure-rename (-> top-func -Symbol top-func)]
+[procedure->method (-> top-func top-func)]
+[procedure-closure-contents-eq? (-> top-func top-func -Boolean)]
+;; keyword-apply - hard to give a type
 [procedure-arity (-> top-func (Un -Nat -Arity-At-Least (-lst (Un -Nat -Arity-At-Least))))]
 [procedure-arity? (make-pred-ty (Un -Nat -Arity-At-Least (-lst (Un -Nat -Arity-At-Least))))]
 [procedure-arity-includes? (->opt top-func -Nat [Univ] B)]
@@ -942,14 +1048,14 @@
 [identity (-poly (a) (->acc (list a) a null))]
 [const (-poly (a) (-> a (->* '() Univ a)))]
 [negate (-polydots (a b c d)
-          (cl->* (-> (-> c Univ : (-FS (-filter a 0 null) (-not-filter b 0 null)))
-                     (-> c -Boolean : (-FS (-not-filter b 0 null) (-filter a 0 null))))
-                 (-> (-> c Univ : (-FS (-filter a 0 null) (-filter b 0 null)))
-                     (-> c -Boolean : (-FS (-filter b 0 null) (-filter a 0 null))))
-                 (-> (-> c Univ : (-FS (-not-filter a 0 null) (-filter b 0 null)))
-                     (-> c -Boolean : (-FS (-filter b 0 null) (-not-filter a 0 null))))
-                 (-> (-> c Univ : (-FS (-not-filter a 0 null) (-not-filter b 0 null)))
-                     (-> c -Boolean : (-FS (-not-filter b 0 null) (-not-filter a 0 null))))
+          (cl->* (-> (-> c Univ : (-FS (-filter a 0) (-not-filter b 0)))
+                     (-> c -Boolean : (-FS (-not-filter b 0) (-filter a 0))))
+                 (-> (-> c Univ : (-FS (-filter a 0) (-filter b 0)))
+                     (-> c -Boolean : (-FS (-filter b 0) (-filter a 0))))
+                 (-> (-> c Univ : (-FS (-not-filter a 0) (-filter b 0)))
+                     (-> c -Boolean : (-FS (-filter b 0) (-not-filter a 0))))
+                 (-> (-> c Univ : (-FS (-not-filter a 0) (-not-filter b 0)))
+                     (-> c -Boolean : (-FS (-not-filter b 0) (-not-filter a 0))))
                  (-> ((list) [d d] . ->... . Univ)
                      ((list) [d d] . ->... . -Boolean))))]
 ;; probably the most useful cases
@@ -1040,8 +1146,8 @@
      ((-> ManyUniv) ((list) Univ . ->* . b) . -> . b)))]
 
 ;; Section 10.2
-[raise (cl->* (Univ . -> . (Un))
-              (Univ Univ . -> . (Un)))]
+[raise (cl->* ((Un -Flat -Exn) . -> . (Un))
+              ((Un -Flat -Exn) Univ . -> . (Un)))]
 [error
  (cl->* (-> Sym (Un))
         (->* (list -String) Univ (Un))
@@ -1094,8 +1200,17 @@
  (-poly (a b) (->opt [Sym] (make-Prompt-Tagof a b)))]
 ;; default-continuation-prompt-tag is defined in "base-contracted.rkt"
 [call-with-current-continuation
- (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
-[call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
+ (-polydots (a b c)
+   (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
+          (-> (-> (->... (list a) (c c) (Un))
+                  (make-ValuesDots (list (-result b)) c 'c))
+              (make-ValuesDots (list (-result (Un a b))) c 'c))))]
+[call/cc
+ (-polydots (a b c)
+   (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
+          (-> (-> (->... (list a) (c c) (Un))
+                  (make-ValuesDots (list (-result b)) c 'c))
+              (make-ValuesDots (list (-result (Un a b))) c 'c))))]
 [call-with-composable-continuation
  (-polydots (b c a)
    (-> ;; takes a continuation and should return the same
@@ -1106,8 +1221,17 @@
        ;; return type here
        (make-ValuesDots '() a 'a)))]
 [call-with-escape-continuation
- (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
-[call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
+ (-polydots (a b c)
+   (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
+          (-> (-> (->... (list a) (c c) (Un))
+                  (make-ValuesDots (list (-result b)) c 'c))
+              (make-ValuesDots (list (-result (Un a b))) c 'c))))]
+[call/ec
+ (-polydots (a b c)
+   (cl->* (-> (-> (-> (Un)) (-values null)) (-values null))
+          (-> (-> (->... (list a) (c c) (Un))
+                  (make-ValuesDots (list (-result b)) c 'c))
+              (make-ValuesDots (list (-result (Un a b))) c 'c))))]
 [call-with-continuation-barrier (-poly (a) (-> (-> a) a))]
 [continuation-prompt-available? (-> (make-Prompt-TagTop) B)]
 [continuation?
@@ -1225,6 +1349,10 @@
 [poll-guard-evt
  (-poly (a) (-> (-> -Boolean (-evt a)) (-evt a)))]
 [always-evt (-mu x (-evt x))]
+[replace-evt (-poly (a b)
+               (cl->*
+                 (-> (-evt a) (-> a (-evt b)) (-evt b))
+                 (-> (-evt a) (-> a b) (-mu x (-evt x)))))]
 [never-evt (-evt (Un))]
 [system-idle-evt (-> (-evt -Void))]
 [alarm-evt (-> -Real (-mu x (-evt x)))]
@@ -1327,7 +1455,7 @@
 [syntax-original? (-poly (a) (-> (-Syntax a) B))]
 [syntax-source-module (->opt (-Syntax Univ) [Univ] (Un (-val #f) -Path Sym -Module-Path-Index))]
 [syntax-e (-poly (a) (->acc (list (-Syntax a)) a (list -syntax-e)))]
-[syntax->list (-poly (a) (-> (-Syntax (-lst a)) (-lst (-Syntax a))))]
+[syntax->list (-poly (a) (-> (-Syntax (-lst a)) (-lst a)))]
 [syntax->datum (cl->* (-> Any-Syntax -Sexp)
                       (-> (-Syntax Univ) Univ))]
 
@@ -1490,7 +1618,7 @@
 [syntax-local-lift-provide (-> Univ -Void)]
 [syntax-local-name (-> Univ)]
 [syntax-local-context (-> (Un (-val 'expression) (-val 'top-level) (-val 'module) (-val 'module-begin) (-lst Univ)))]
-[syntax-local-phase-level (-> (-opt -Int))]
+[syntax-local-phase-level (-> -Int)]
 [syntax-local-module-exports (-> -Module-Path (-values (list (-lst Sym) (-lst Sym) (-lst Sym))))]
 [syntax-local-get-shadower (-> (-Syntax Sym) (-Syntax Sym))]
 [syntax-local-certifier (->opt [B] (-poly (a) (->opt (-Syntax a) [Univ (-opt (-poly (b) (-> (-Syntax b) (-Syntax b))))] (-Syntax a))))]
@@ -1850,7 +1978,7 @@
 [read-syntax (->opt [Univ -Input-Port] (Un (-Syntax Univ) (-val eof)))]
 [read/recursive (->opt [-Input-Port (-opt -Char) (-opt -Read-Table) Univ] Univ)]
 [read-syntax/recursive (->opt [Univ -Input-Port (-opt -Char) (-opt -Read-Table) Univ] Univ)]
-[read-language (->opt [-Input-Port (-> ManyUniv)] (-> Univ Univ ManyUniv))]
+[read-language (->opt [-Input-Port (-> ManyUniv)] (-opt (-> Univ Univ ManyUniv)))]
 
 [read-case-sensitive (-Param Univ B)]
 [read-square-bracket-as-paren (-Param Univ B)]
@@ -2767,12 +2895,12 @@
 [assert (-poly (a b) (cl->*
                       (Univ (make-pred-ty (list a) Univ b) . -> . b)
                       (-> (Un a (-val #f)) a)))]
-[defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
+[defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0) (-filter -Undefined 0)))]
 
 ;; Syntax Manual
 ;; Section 2.1 (syntax/stx)
 ;; Needed for `with-syntax'
-[stx->list (-> (-Syntax Univ) (-lst (-Syntax Univ)))]
+[stx->list (-> (-Syntax Univ) (Un (-lst (-Syntax Univ)) (-val #f)))]
 [stx-list? (-> (-Syntax Univ) -Boolean)]
 
 ;; Keyword functions moved back to here:

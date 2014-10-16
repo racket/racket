@@ -43,6 +43,27 @@
 
 @(define e1 (mk-eval (require test-engine/racket-tests) (define (fahrenheit->celsius f) (* 5/9 (- f 32)))))
 
+@(define evil 
+(mk-eval
+ (require racket/list)
+ (require racket/bool)
+ (require test-engine/racket-tests)
+(define (sorted? l)
+  (cond
+    [(empty? (rest l)) true]
+    [else (and (<= (first l) (second l)) (sorted? (rest l)))]))
+
+(define (htdp-sort l)
+  (cond
+    [(empty? l) l]
+    [else (insert (first l) (htdp-sort (rest l)))]))
+
+(define (insert x l)
+  (cond
+    [(empty? l) (list x)]
+    [else (if (<= x (first l)) (cons x l) (cons (first l) (insert x (rest l))))]))
+))
+
 (define (typeset-type type)
   (let-values ([(in out) (make-pipe)])
     (parameterize ([pretty-print-columns 50])
@@ -152,6 +173,7 @@
                      or
                      check-expect
                      check-random
+		     check-satisfied
                      check-within
                      check-error
                      check-member-of
@@ -168,6 +190,7 @@
                   #'and @racket[and]
                   #'check-expect @racket[check-expect]
                   #'check-random @racket[check-random]
+		  #'check-satisfied @racket[check-satisfied]
                   #'check-within @racket[check-within]
                   #'check-error @racket[check-error]
                   #'check-member-of @racket[check-member-of]
@@ -184,6 +207,7 @@
                         and-id and-elem
                         check-expect-id check-expect-elem
                         check-random-id check-random-elem
+			check-satisfied-id check-satisfied-elem
                         check-within-id check-within-elem
                         check-error-id check-error-elem
                         check-member-of-id check-member-of-elem
@@ -400,6 +424,72 @@ It is an error for @racket[expr] or @racket[expected-expr] to produce a function
 value or an inexact number; see note on @racket[check-expect] for details.
 }
 
+  @defform*[#:id [check-satisfied check-satisfied-id]
+            [(check-satisfied expression predicate)]]{
+
+   Checks that the first @racket[expression] satisfies the named
+   @racket[predicate] (function of one argument).  Recall that
+   ``satisfies'' means ``the function produces a value other than
+   @racket[false].''
+
+Here are simple examples for @racket[check-satisfied]: 
+@interaction[
+#:eval 
+(mk-eval
+ (require test-engine/racket-tests))
+(check-satisfied 1 odd?)
+]
+@interaction[
+#:eval 
+(mk-eval
+ (require test-engine/racket-tests))
+(check-satisfied 1 even?)
+]
+
+In general @racket[check-satisfied] empowers program designers to use
+defined functions to formulate test suites: 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+;; [cons Number [List-of Number]] -> Boolean 
+;; a function for testing @racket[htdp-sort]
+
+(check-expect (sorted? (list 1 2 3)) true)
+(check-expect (sorted? (list 2 1 3)) false)
+
+(define (sorted? l)
+  (cond
+    [(empty? (rest l)) true]
+    [else (and (<= (first l) (second l)) (sorted? (rest l)))]))
+
+;; [List-of Number] -> [List-of Number]
+;; create a sorted version of the given list of numbers 
+
+(check-satisfied (htdp-sort (list 1 2 0 3)) sorted?)
+
+(define (htdp-sort l)
+  (cond
+    [(empty? l) l]
+    [else (insert (first l) (htdp-sort (rest l)))]))
+
+;; Number [List-of Number] -> [List-of Number]
+;; insert @racket[x] into @racket[l] at proper place 
+;; @bold{assume} @racket[l] is arranged in ascending order 
+;; the result is sorted in the same way 
+(define (insert x l)
+  (cond
+    [(empty? l) (list x)]
+    [else (if (<= x (first l)) (cons x l) (cons (first l) (insert x (rest l))))]))
+))
+@;%
+
+And yes, the results of @racket[htdp-sort] satisfy the @racket[sorted?] predicate:
+@interaction[
+#:eval evil 
+(check-satisfied (htdp-sort (list 1 2 0 3)) sorted?)
+]
+}
 
   @defform*[#:id [check-within check-within-id]
             [(check-within expression expected-expression delta)]]{
@@ -537,7 +627,7 @@ Consider the following two examples in this context:
   @defform*[#:id [check-member-of check-member-of-id]
             [(check-member-of expression expression expression ...)]]{
 
-   Checks that the value of the first @racket[expression] as that of
+   Checks that the value of the first @racket[expression] is that of
    one of the following @racket[expression]s.
 
 @;%

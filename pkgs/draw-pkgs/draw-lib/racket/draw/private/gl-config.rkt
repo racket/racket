@@ -7,6 +7,10 @@
 (defclass gl-config% object%
   (super-new)
 
+  (define legacy? #t)
+  (define/public (get-legacy?) legacy?)
+  (define/public (set-legacy? v) (set! legacy? (and v #t)))
+
   (define double-buffered? #t)
   (define/public (get-double-buffered) double-buffered?)
   (define/public (set-double-buffered v) (set! double-buffered? (and v #t)))

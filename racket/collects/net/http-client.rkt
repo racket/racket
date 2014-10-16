@@ -24,6 +24,11 @@
     (bytes->string/utf-8 bs)
     bs))
 
+(define (->bytes str)
+  (if (string? str)
+      (string->bytes/utf-8 str)
+      str))
+
 (define (read-bytes-line/not-eof ip kind)
   (define bs (read-bytes-line ip kind))
   (when (eof-object? bs)
@@ -93,14 +98,19 @@
     (abandon to)
     (set-http-conn-to! hc #f)))
 
+(define (write-chunk out data)
+  (let ([bytes (->bytes data)])
+    (define len (bytes-length bytes))
+    (unless (zero? len)
+      (fprintf out "~x\r\n~a\r\n" len bytes))))
+
 (define (http-conn-send! hc url-bs
                          #:version [version-bs #"1.1"]
                          #:method [method-bss #"GET"]
                          #:close? [close? #f]
                          #:headers [headers-bs empty]
                          #:content-decode [decodes '(gzip)]
-                         ;; xxx maybe support other kinds of data (ports and writing functions)
-                         #:data [data-bsf #f])
+                         #:data [data #f])
   (match-define (http-conn host port port-usual? to from _) hc)
   (fprintf to "~a ~a HTTP/~a\r\n" method-bss url-bs version-bs)
   (unless (regexp-member #rx"^(?i:Host:) +.+$" headers-bs)
@@ -114,21 +124,22 @@
   (unless (or (not (memq 'gzip decodes))
               (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
     (fprintf to "Accept-Encoding: gzip\r\n"))
-  (define data
-    (if (string? data-bsf)
-      (string->bytes/utf-8 data-bsf)
-      data-bsf))
-  (when data
-    (unless (regexp-member #rx"^(?i:Content-Length:) +.+$" headers-bs)
-      (fprintf to "Content-Length: ~a\r\n" (bytes-length data))))
+  (define body (->bytes data))
+  (cond [(procedure? body)
+         (fprintf to "Transfer-Encoding: chunked\r\n")]
+        [(and body
+              (not (regexp-member #rx"^(?i:Content-Length:) +.+$" headers-bs)))
+         (fprintf to "Content-Length: ~a\r\n" (bytes-length body))])
   (when close?
     (unless (regexp-member #rx"^(?i:Connection:) +.+$" headers-bs)
       (fprintf to "Connection: close\r\n")))
   (for ([h (in-list headers-bs)])
     (fprintf to "~a\r\n" h))
   (fprintf to "\r\n")
-  (when data
-    (display data to))
+  (cond [(procedure? body)
+         (body (λ (data) (write-chunk to data)))
+         (fprintf to "0\r\n\r\n")]
+        [body (display body to)])
   (flush-output to))
 
 (define (http-conn-status! hc)
@@ -258,7 +269,7 @@
                              #:version [version-bs #"1.1"]
                              #:method [method-bss #"GET"]
                              #:headers [headers-bs empty]
-                             #:data [data-bsf #f]
+                             #:data [data #f]
                              #:content-decode [decodes '(gzip)]
                              #:close? [close? #f])
   (http-conn-send! hc url-bs
@@ -267,7 +278,7 @@
                    #:close? close?
                    #:headers headers-bs
                    #:content-decode decodes
-                   #:data data-bsf)
+                   #:data data)
   (http-conn-recv! hc 
                    #:content-decode decodes
                    #:close? close?))
@@ -278,18 +289,22 @@
                        #:version [version-bs #"1.1"]
                        #:method [method-bss #"GET"]
                        #:headers [headers-bs empty]
-                       #:data [data-bsf #f]
+                       #:data [data #f]
                        #:content-decode [decodes '(gzip)])
   (define hc (http-conn-open host-bs #:ssl? ssl? #:port port))
   (http-conn-sendrecv! hc url-bs
                        #:version version-bs
                        #:method method-bss
                        #:headers headers-bs
-                       #:data data-bsf
+                       #:data data
                        #:content-decode decodes
                        #:close? #t))
 
+(define data-procedure/c
+  (-> (-> (or/c bytes? string?) void?) any))
+
 (provide
+ data-procedure/c
  (contract-out
   [http-conn?
    (-> any/c
@@ -317,7 +332,7 @@
                #:close? boolean?
                #:headers (listof (or/c bytes? string?))
                #:content-decode (listof symbol?)                           
-               #:data (or/c false/c bytes? string?))
+               #:data (or/c false/c bytes? string? data-procedure/c))
     void)]
   ;; Derived
   [http-conn-open
@@ -335,7 +350,7 @@
         (#:version (or/c bytes? string?)
                    #:method (or/c bytes? string? symbol?)
                    #:headers (listof (or/c bytes? string?))
-                   #:data (or/c false/c bytes? string?)
+                   #:data (or/c false/c bytes? string? data-procedure/c)
                    #:content-decode (listof symbol?) 
                    #:close? boolean?)
         (values bytes? (listof bytes?) input-port?))]
@@ -346,6 +361,6 @@
                 #:version (or/c bytes? string?)
                 #:method (or/c bytes? string? symbol?)
                 #:headers (listof (or/c bytes? string?))
-                #:data (or/c false/c bytes? string?)
+                #:data (or/c false/c bytes? string? data-procedure/c)
                 #:content-decode (listof symbol?))
         (values bytes? (listof bytes?) input-port?))]))

@@ -43,7 +43,7 @@ THREAD_LOCAL_DECL(static intptr_t jit_buffer_cache_size);
 THREAD_LOCAL_DECL(static int jit_buffer_cache_registered);
 
 #ifdef SET_DEFAULT_LONG_JUMPS
-static int default_long_jumps;
+static volatile int default_long_jumps;
 static volatile uintptr_t code_low, code_high;
 #endif
 
@@ -162,6 +162,16 @@ static int check_long_mode(uintptr_t low, uintptr_t size)
 
   return 0;
 }
+
+int scheme_check_long_mode(int jitter_long_jumps_default)
+{
+  /* In places are enabled, then we're relying on TSO here. If another
+     place provides a shared code pointer, then seeing that pointer
+     means that this place also sees any change to
+     `default_long_jumps` that was made before the pointer was
+     shared. */
+  return (jitter_long_jumps_default != default_long_jumps);
+}
 #endif
 
 
@@ -171,10 +181,20 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 			  int gcable,
 			  void *save_ptr,
 			  Scheme_Native_Closure_Data *ndata)
+/* The given generate() function is called at least twice: once to gather
+   the size of the generated code (at a temporary location), and again
+   to generate the final code at its final location. The size of the
+   generated code must not depend on the deistation address. The
+   `retain_start' field of hte jitter record passed to generate() will
+   be NULL for a sizing run and non-NULL for a generation run.
+
+   In the unlikely event that a 64-bit build switches from 32-bit
+   branches to 64-bit branches, generate() might be called an extra
+   time in either mode. */
 {
   mz_jit_state _jitter;
   mz_jit_state *jitter = &_jitter;
-  void *buffer;
+  void *buffer, *prev_buffer = NULL;
   int mappings_buffer[JIT_INIT_MAPPINGS_SIZE];
   int *mappings = mappings_buffer;
   intptr_t size = JIT_BUFFER_INIT_SIZE, known_size = 0;
@@ -279,9 +299,8 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
          then switch over to long-jump mode. */
       if (check_long_mode((uintptr_t)buffer, size)) {
         /* start over */
-        known_size = 0;
-        use_long_jumps = 1;
-        continue;
+        return scheme_generate_one(old_jitter, generate, data, gcable,
+                                   save_ptr, ndata);
       }
     }
 #endif
@@ -332,9 +351,8 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
     if (!use_long_jumps) {
       if (check_long_mode((uintptr_t)buffer, size)) {
         /* start over */
-        known_size = 0;
-        use_long_jumps = 1;
-        continue;
+        return scheme_generate_one(old_jitter, generate, data, gcable,
+                                   save_ptr, ndata);
       }
     }
 #endif
@@ -351,10 +369,35 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
     jitter->limit = (char *)jitter->limit + padding;
     if (PAST_LIMIT() || (jitter->retain_start
 			 && (jitter->retained > num_retained))) {
-      scheme_console_printf("JIT buffer overflow: %p [%p,%p] (%d)!!\n", 
+      scheme_console_printf("internal error in JIT;\n"
+                            " ending address %p not in [%p,%p] (%d)\n",
 			    jit_get_ip(), 
 			    buffer, jitter->limit,
 			    !!jitter->retain_start);
+      if (jitter->retain_start) {
+        const char *bp = buffer, *tend;
+        scheme_console_printf("  buffer content: {\n");
+        while (bp < jitter->limit) {
+          int d = 16;
+          while (d-- && (bp < jitter->limit)) {
+            scheme_console_printf("%d,", *(unsigned char *)(bp++));
+          }
+          scheme_console_printf("\n");
+        }
+        scheme_console_printf("}\n");
+        bp = (char *)prev_buffer;
+        tend = bp + ((char *)jitter->limit - (char *)buffer);
+        scheme_console_printf("  temporary buffer content: {\n");
+        while (bp < tend) {
+          int d = 16;
+          while (d-- && (bp < tend)) {
+            scheme_console_printf("%d,", *(unsigned char *)(bp++));
+          }
+          scheme_console_printf("\n");
+        }
+        scheme_console_printf("}\n");
+      }
+      scheme_log_abort("internal error: JIT buffer overflow");
       abort();
     }
 
@@ -398,6 +441,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 	  jit_buffer_cache = buffer;
 	  jit_buffer_cache_size = size;
 	}
+        prev_buffer = buffer;
       }
       /* looping to try again... */
     } else {

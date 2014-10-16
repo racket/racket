@@ -23,7 +23,7 @@ typedef struct mz_wd_t {
 } mz_wd_t;
 
 typedef struct mz_inotify_state_t {
-  int ready, fd;
+  int ready, errid, fd;
   mz_wd_t *wds;
   int size, count;
   int got;
@@ -114,18 +114,24 @@ static void mz_inotify_start(mz_inotify_state_t *s)
   int fd;
 
   fd = inotify_init();
-
-  s->ready = 1;
-  s->fd = fd;
+  if (fd == -1) {
+    s->errid = errno;
+  } else {
+    s->errid = 0;
+    s->ready = 1;
+    s->fd = fd;
+  }
 }
 
 static void mz_inotify_end(mz_inotify_state_t *s)
 {
   int rc;
 
-  do {
-    rc = close(s->fd);
-  } while (rc == -1 && errno == EINTR);
+  if (s->ready) {
+    do {
+      rc = close(s->fd);
+    } while (rc == -1 && errno == EINTR);
+  }
 
   if (s->wds) free(s->wds);
 
@@ -134,16 +140,17 @@ static void mz_inotify_end(mz_inotify_state_t *s)
 
 static void mz_inotify_init()
 {
-  if (!scheme_inotify_server) {
-    mz_inotify_state_t *s;
+  mz_inotify_state_t *s = scheme_inotify_server;
 
+  if (!s) {
     s = (mz_inotify_state_t *)malloc(sizeof(mz_inotify_state_t));
     memset(s, 0, sizeof(mz_inotify_state_t));
 
-    mz_inotify_start(s);
-
     scheme_inotify_server = s;
   }
+
+  if (!s->ready)
+    mz_inotify_start(s);
 }
 
 static int mz_inotify_ready()
@@ -151,6 +158,13 @@ static int mz_inotify_ready()
   mz_inotify_state_t *s = (mz_inotify_state_t *)scheme_inotify_server;
   
   return s->ready;
+}
+
+static int mz_inotify_errid()
+{
+  mz_inotify_state_t *s = (mz_inotify_state_t *)scheme_inotify_server;
+
+  return s->errid;
 }
 
 /* Other functions are called only if mz_inotify_ready() returns 1. */
@@ -166,7 +180,7 @@ static int mz_inotify_add(char *filename)
     int i;
     new_wds = (mz_wd_t *)malloc(sizeof(mz_wd_t) * new_size);
     memcpy(new_wds, s->wds, s->size * sizeof(mz_wd_t));
-    free(s->wds);
+    if (s->wds) free(s->wds);
     s->wds = new_wds;
     s->size = new_size;
     for (i = s->count; i < s->size; i++)

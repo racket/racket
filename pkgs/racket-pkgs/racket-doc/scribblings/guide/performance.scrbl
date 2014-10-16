@@ -39,8 +39,8 @@ Even so, DrRacket and programs developed within DrRacket use the same
 Racket virtual machine, so garbage collection times (see
 @secref["gc-perf"]) may be longer in DrRacket than when a program is
 run by itself, and DrRacket threads may impede execution of program
-threads. For the most reliable timing results for a program, run in
-plain @exec{racket} instead of in the DrRacket development environment.
+threads. @bold{For the most reliable timing results for a program, run in
+plain @exec{racket} instead of in the DrRacket development environment.}
 Non-interactive mode should be used instead of the
 @tech["REPL"] to benefit from the module system. See
 @secref["modules-performance"] for details.
@@ -355,6 +355,37 @@ functions and different contexts.
 Beware that, as ``unsafe'' in the library and function names suggest,
 misusing the exports of @racketmodname[racket/unsafe/ops] can lead to
 crashes or memory corruption.
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "regexp-perf"]{Regular Expression Performance}
+
+When a string or byte string is provided to a function like
+@racket[regexp-match], then the string is internally compiled into
+a @tech{regexp} value. Instead of supplying a string or byte string
+multiple times as a pattern for matching, compile the pattern once to
+a @tech{regexp} value using @racket[regexp], @racket[byte-regexp],
+@racket[pregexp], or @racket[byte-pregexp]. In place of a constant
+string or byte string, write a constant @tech{regexp} using an
+@litchar{#rx} or @litchar{#px} prefix.
+
+@racketblock[
+(define (slow-matcher str)
+  (regexp-match? "[0-9]+" str))
+
+(define (fast-matcher str)
+  (regexp-match? #rx"[0-9]+" str))
+
+(define (make-slow-matcher pattern-str)
+  (lambda (str)
+    (regexp-match? pattern-str str)))
+
+(define (make-fast-matcher pattern-str)
+  (define pattern-rx (regexp pattern-str))
+  (lambda (str)
+    (regexp-match? pattern-rx str)))
+]
+
 
 @; ----------------------------------------------------------------------
 

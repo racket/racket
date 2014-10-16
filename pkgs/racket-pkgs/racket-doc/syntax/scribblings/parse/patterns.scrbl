@@ -36,6 +36,7 @@ means specifically @tech{@Spattern}.
                 [S-pattern
                  pvar-id
                  pvar-id:syntax-class-id
+                 pvar-id:literal-id
                  literal-id
                  (@#,ref[~var s-] id)
                  (@#,ref[~var s+] id syntax-class-id maybe-role)
@@ -239,6 +240,18 @@ An identifier can be either a @tech{pattern variable}, an
   Note that an @racket[id] of the form @racket[_:syntax-class-id] is
   legal; see the discussion of a @ref[~var s+] form with a zero-length
   @svar[pvar-id].
+}
+
+@item{If @racket[id] is of the form @racket[_pvar-id:literal-id],
+  where @racket[_literal-id] is in the literals list, then it is
+  equivalent to @racket[(~and (~var _pvar-id) literal-id)].
+
+  @myexamples[
+    (require (only-in racket/base [define def]))
+    (syntax-parse #'(def x 7)
+      #:literals (define)
+      [(d:define var:id body:expr) #'d])
+  ]
 }
 
 @item{Otherwise, @racket[id] is a @tech{pattern variable}, and the
@@ -1032,4 +1045,54 @@ definition in a @racket[~do] block.
 (syntax-parse #'(1 2 3)
   [(a b (~do (printf "a was ~s\n" #'a)) c:id) 'ok])
 ]
+}
+
+
+
+@;{--------}
+
+@section{Pattern Expanders}
+
+The grammar of @tech{syntax patterns} is extensible through the use of
+@deftech{pattern expanders}, which allow the definition of new pattern
+forms by rewriting them into existing pattern forms.
+
+@defproc[(pattern-expander [proc (-> syntax? syntax?)]) pattern-expander?]{
+
+Returns a @tech{pattern expander} that uses @racket[proc] to transform the pattern.
+
+@myexamples[
+(define-syntax ~maybe
+  (pattern-expander
+   (syntax-rules ()
+    [(~maybe pat ...)
+     (~optional (~seq pat ...))])))
+]}
+
+@defthing[prop:pattern-expander (struct-type-property/c (-> pattern-expander? (-> syntax? syntax?)))]{
+
+A @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{structure type property} to
+identify structure types that act as @tech{pattern expanders} like the
+ones created by @racket[pattern-expander]. 
+
+@racketblock[
+(begin-for-syntax
+  (struct thing (proc pattern-expander)
+    #:property prop:procedure (struct-field-index proc)
+    #:property prop:pattern-expander (λ (this) (thing-pattern-expander this))))
+(define-syntax ~maybe
+  (thing
+   (lambda (stx) .... @#,(elem "macro behavior") ....)
+   (lambda (stx) .... @#,(elem "pattern-expander behavior") ....)))
+]}
+
+@defproc[(pattern-expander? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a @tech{pattern expander},
+@racket[#f] otherwise.
+}
+
+@defproc[(syntax-local-syntax-parse-pattern-introduce [stx syntax?]) syntax?]{
+
+Like @racket[syntax-local-introduce], but for @tech{pattern expanders}.
 }

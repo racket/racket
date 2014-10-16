@@ -33,7 +33,16 @@ Normally,
  @item{@racket[version] is a list of versions to try in order with
       @racket[#f] (i.e., no version) as the last element of the list;
       for example, @racket['("2" #f)] indicates version 2 with a
-      fallback to a versionless library.}
+      fallback to a versionless library.
+
+      When the library suffix as reported by @racket[(system-type
+      'so-suffix)] is @filepath{.dylib}, then a version is added to
+      @racket[path] after a @filepath{.} and before the
+      @filepath{.dylib} suffix. When the library suffix is
+      @filepath{.dll}, then a version is added to @racket[path] after a
+      @filepath{-} and before the @filepath{.dll} suffix. For any
+      other suffix, the version number is added after the suffix plus
+      @filepath{.}.}
 
 ]
 
@@ -110,7 +119,12 @@ Due to the way the operating system performs dynamic binding, loaded
 libraries are associated with Racket (or DrRacket) for the duration of
 the process. Re-evaluating @racket[ffi-lib] (or hitting the
 @onscreen{Run} button in DrRacket) will not force a re-load of the
-corresponding library.}
+corresponding library.
+
+@history[#:changed "6.1.0.5" @elem{Changed the way a version number is
+                                   added with a @filepath{.dll} suffix
+                                   to place it before the suffix,
+                                   instead of after.}]}
 
 @defproc[(get-ffi-obj [objname (or/c string? bytes? symbol?)]
                       [lib (or/c ffi-lib? path-string? #f)]

@@ -169,9 +169,6 @@ static int phaseless_rhs(Scheme_Object *val, int var_count, int phase);
 
 #define cons scheme_make_pair
 
-/* We'd prefer a field like modsrc, but with submodule info like modname: */
-#define MODSRCNAME modname
-
 /* global read-only kernel stuff */
 READ_ONLY static Scheme_Object *kernel_modname;
 READ_ONLY static Scheme_Object *kernel_symbol;
@@ -292,6 +289,7 @@ THREAD_LOCAL_DECL(static Scheme_Object *global_shift_cache);
 #define PROVIDE_MODFORM_KIND 3
 #define MODULE_MODFORM_KIND 4
 #define SAVED_MODFORM_KIND 5
+#define DECLARE_MODFORM_KIND 6
 
 /* combined bitwise: */
 #define NON_PHASELESS_IMPORT 0x1
@@ -1137,7 +1135,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
   Scheme_Object *name, *srcname, *srcmname, *fail_thunk;
   Scheme_Module *m, *srcm;
   Scheme_Env *menv, *lookup_env = NULL;
-  int i, count, protected = 0;
+  int i, count, protected = 0, check_protected_at_source = 0;
   const char *errname;
   intptr_t base_phase;
 
@@ -1301,7 +1299,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
                   scheme_contract_error(errname,
                                         "name is provided as syntax",
                                         "name", 1, name, 
-                                        "module", 1, srcm->MODSRCNAME,
+                                        "module", 1, scheme_get_modsrc(srcm),
                                         NULL);
                 }
               }
@@ -1320,6 +1318,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	else {
 	  srcmname = scheme_modidx_shift(srcmname, srcm->me->src_modidx, srcm->self_modidx);
 	  srcmname = scheme_module_resolve(srcmname, 1);
+          check_protected_at_source = 1;
 	}
 	srcname = srcm->me->rt->provide_src_names[i];
       }
@@ -1361,7 +1360,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	    scheme_contract_error(errname,
                                   "name is not provided",
                                   "name", 1, name, 
-                                  "module", 1, srcm->MODSRCNAME,
+                                  "module", 1, scheme_get_modsrc(srcm),
                                   NULL);
           }
 	  return NULL;
@@ -1388,6 +1387,28 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 
     menv = scheme_module_access(srcmname, lookup_env ? lookup_env : env, mod_phase);
 
+    if (check_protected_at_source) {
+      Scheme_Module_Phase_Exports *pt;
+      if (mod_phase == 0)
+        pt = menv->module->me->rt;
+      else if (mod_phase == 1)
+        pt = menv->module->me->et;
+      else if (menv->module->me->other_phases)
+        pt = (Scheme_Module_Phase_Exports *)scheme_hash_get(menv->module->me->other_phases,
+                                                            scheme_make_integer(mod_phase));
+      else
+        pt = NULL;
+      if (pt) {
+        count = pt->num_provides;
+        for (i = 0; i < count; i++) {
+          if (SAME_OBJ(name, pt->provides[i])) {
+            if (menv->module->exp_infos[mod_phase]->provide_protects)
+              protected = menv->module->exp_infos[mod_phase]->provide_protects[i];
+          }
+        }
+      }
+    }
+
     if (protected) {
       Scheme_Object *insp;
       insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
@@ -1395,14 +1416,14 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	scheme_contract_error(errname,
                               "name is protected",
                               "name", 1, name, 
-                              "module", 1, srcm->MODSRCNAME,
+                              "module", 1, scheme_get_modsrc(srcm),
                               NULL);
     }
 
     if (!menv || !menv->toplevel) {
       scheme_contract_error(errname,
                             "module inialization failed",
-                            "module", 1, srcm->MODSRCNAME,
+                            "module", 1, scheme_get_modsrc(srcm),
                             NULL);
     }
     
@@ -3418,7 +3439,7 @@ static Scheme_Object *wrap_module_in_top(Scheme_Object *m, Scheme_Object *t)
 static void reset_submodule_paths(Scheme_Module *m)
 {
   Scheme_Module *m2;
-  Scheme_Object *stack, *l, *l2, *v, *name, *submodule_path;
+  Scheme_Object *stack, *l, *l2, *v, *v2, *name, *submodule_path;
   int k;
 
   stack = scheme_make_pair((Scheme_Object *)m, scheme_null);
@@ -3426,12 +3447,10 @@ static void reset_submodule_paths(Scheme_Module *m)
     m = (Scheme_Module *)SCHEME_CAR(stack);
     stack = SCHEME_CDR(stack);
 
-    if (!m->submodule_path || SCHEME_NULLP(m->submodule_path))
-      submodule_path = scheme_make_pair(scheme_resolved_module_path_value(m->modname), scheme_null);
-    else {
-      submodule_path = m->submodule_path;
-      submodule_path = scheme_reverse(submodule_path);
-    }
+    submodule_path = scheme_resolved_module_path_value(m->modname);
+    if (SCHEME_SYMBOLP(submodule_path))
+      submodule_path = scheme_make_pair(submodule_path, scheme_null);
+    submodule_path = scheme_reverse(submodule_path);
 
     for (k = 0; k < 2; k++) {
       l = (k ? m->post_submodules : m->pre_submodules);
@@ -3449,9 +3468,9 @@ static void reset_submodule_paths(Scheme_Module *m)
             name = SCHEME_CAR(name);
           }
           v = scheme_reverse(scheme_make_pair(name, submodule_path));
-          m2->submodule_path = v;
-          v = scheme_intern_resolved_module_path(v);
-          m2->modname = v;
+          v2 = scheme_intern_resolved_module_path(v);
+          m2->modname = v2;
+          m2->submodule_path = SCHEME_CDR(v);
           
           l2 = scheme_make_pair((Scheme_Object *)m2, l2);
           stack = scheme_make_pair((Scheme_Object *)m2, stack);
@@ -4465,7 +4484,7 @@ static void check_certified(Scheme_Object *stx,
                           "access disallowed by code inspector to %s %s from module: %D",
                           prot ? "protected" : "unexported",
                           var ? "variable" : "syntax",
-                          env->module->MODSRCNAME);
+                          scheme_get_modsrc(env->module));
     }
   }
 }
@@ -4684,7 +4703,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
     intptr_t srclen;
     
     if (from_env->module)
-      srcstr = scheme_display_to_string(from_env->module->MODSRCNAME, &srclen);
+      srcstr = scheme_display_to_string(scheme_get_modsrc(from_env->module), &srclen);
     else {
       srcstr = "";
       srclen = 0;
@@ -4700,7 +4719,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
                         srclen ? "  importing module: " : "",
                         srcstr, srclen,
                         srclen ? "\n" : "",
-                        env->module->MODSRCNAME,
+                        scheme_get_modsrc(env->module),
                         env->mod_phase,
                         (position >= 0) ? " and at the expected position" : "");
   }
@@ -4814,7 +4833,7 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env,
                           "   but need (dynamic-require .... 0)\n"
                           "  module: %D\n"
                           "  phase: %d",
-                          menv->module->MODSRCNAME,
+                          scheme_get_modsrc(menv->module),
                           mod_phase);
       return NULL;
     }
@@ -5589,7 +5608,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
     if (SAME_OBJ(m->modname, SCHEME_CAR(l))) {
       scheme_contract_error("module",
                             "import cycle detected",
-                            "module in cycle", 1, m->MODSRCNAME,
+                            "module in cycle", 1, scheme_get_modsrc(m),
                             NULL);
     }
   }
@@ -5759,7 +5778,7 @@ static void eval_module_body(Scheme_Env *menv, Scheme_Env *env)
   }
 
 #ifdef MZ_USE_JIT
-  (void)scheme_module_run_start(menv, env, scheme_make_pair(menv->module->MODSRCNAME, scheme_true));
+  (void)scheme_module_run_start(menv, env, scheme_make_pair(scheme_get_modsrc(menv->module), scheme_true));
 #else
   (void)scheme_module_run_finish(menv, env);
 #endif
@@ -6478,7 +6497,9 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   memcpy(m, data, sizeof(Scheme_Module));
 
-  if (set_cache && m->code_key) {
+  if (set_cache && m->code_key
+      && (!m->pre_submodules || SCHEME_NULLP(m->pre_submodules))
+      && (!m->post_submodules || SCHEME_NULLP(m->post_submodules))) {
     if (!scheme_module_code_cache) {
       REGISTER_SO(scheme_module_code_cache);
       scheme_module_code_cache = scheme_make_weak_equal_table();
@@ -6641,6 +6662,22 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
 Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv)
 {
   return do_module_execute(data, genv, 1, 0, NULL, NULL);
+}
+
+Scheme_Object *scheme_get_modsrc(Scheme_Module *mod)
+{
+  Scheme_Object *p, *p2;
+
+  p = scheme_resolved_module_path_value(mod->modname);
+  if (SCHEME_PAIRP(p)) {
+    /* Construct a submodule path based on `modsrc` instead of `modname`. */
+    p2 = scheme_resolved_module_path_value(mod->modsrc);
+    if (SAME_OBJ(SCHEME_CAR(p), p2))
+      return mod->modname;
+    else
+      return scheme_intern_resolved_module_path(scheme_make_pair(p2, SCHEME_CDR(p)));
+  } else
+    return mod->modsrc;
 }
 
 static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec, Resolve_Prefix *rp)
@@ -7369,7 +7406,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   m->tt_requires = scheme_null;
   m->dt_requires = scheme_null;
 
-  if (iim && iim->phaseless && rec[drec].comp)
+  if (iim && iim->phaseless)
     m->phaseless = scheme_true;
 
   if (iidx) {
@@ -7811,7 +7848,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
   Scheme_Object *phase, *super_name, *name, *super_vec, *vec;
   Scheme_Object *l, *v, *super_defs, *key, *val;
   int i, j;
-  Scheme_Env *super_def_genv;
+  Scheme_Env *super_def_genv, *def_genv;
 
   ht = super_bxs->tables;
   for (i = ht->size; i--; ) {
@@ -7874,6 +7911,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
       super_defs = val;
 
       super_def_genv = find_env(super_genv, SCHEME_INT_VAL(phase));
+      def_genv = find_env(genv, SCHEME_INT_VAL(phase));
       
       required = (Scheme_Hash_Table *)get_required_from_tables(bxs->tables, 
                                                                scheme_bin_plus(phase, phase_shift));
@@ -7889,7 +7927,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
         SCHEME_VEC_ELS(vec)[1] = to_idx;
         v = scheme_tl_id_sym(super_def_genv, name, NULL, 2, NULL, NULL);
         SCHEME_VEC_ELS(vec)[2] = v;
-        if (scheme_lookup_in_table(super_def_genv->toplevel, (char *)name))
+        if (scheme_lookup_in_table(super_def_genv->toplevel, (char *)v))
           SCHEME_VEC_ELS(vec)[3] = scheme_true;
         else
           SCHEME_VEC_ELS(vec)[3] = scheme_false;
@@ -7899,9 +7937,9 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
         SCHEME_VEC_ELS(vec)[6] = name;
         SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
         SCHEME_VEC_ELS(vec)[8] = phase;
-        
-        name = SCHEME_STX_VAL(name); /* is this right? */
-        scheme_hash_set(required, name, vec);
+
+        v = scheme_tl_id_sym(def_genv, name, NULL, 2, NULL, NULL);
+        scheme_hash_set(required, v, vec);
       }
     }
   }
@@ -9135,7 +9173,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           if (!SCHEME_STX_NULLP(kws))
             scheme_wrong_syntax(who, NULL, e, IMPROPER_LIST_FORM);
           
-          kind = SAVED_MODFORM_KIND;
+          kind = DECLARE_MODFORM_KIND;
 	} else if (scheme_stx_module_eq_x(scheme_module_stx, fst, phase)
                    || scheme_stx_module_eq_x(scheme_modulestar_stx, fst, phase)) {
 	  /************ module[*] *************/
@@ -9294,6 +9332,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       SCHEME_CAR(p) = SCHEME_CAR(e);
       prev_p = p;
       p = SCHEME_CDR(p);      
+    } else if (kind == DECLARE_MODFORM_KIND) {
+      expanded_l = scheme_make_pair(e, expanded_l);
+      p = SCHEME_CDR(p);
     } else if ((kind == PROVIDE_MODFORM_KIND)
                || (kind == MODULE_MODFORM_KIND)) {
       /* handle `provide's and `module's in later passes */
@@ -9457,7 +9498,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     Scheme_Object *prev = NULL, *next;
     for (p = first; !SCHEME_NULLP(p); p = next) {
       next = SCHEME_CDR(p);
-      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0, NULL, NULL, -1, 0)) {
+      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0, NULL, NULL, 0, 0, 0)) {
 	if (prev)
 	  SCHEME_CDR(prev) = next;
 	else

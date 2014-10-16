@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual "utils.rkt"
           (for-syntax racket/base)
-          (for-label setup/main-collects))
+          (for-label setup/main-collects
+          racket/runtime-path))
 
 @(define-syntax def-section-like
    (syntax-rules ()
@@ -332,6 +333,7 @@ Examples:
 
 @tabular[#:style 'boxed
          #:column-properties '(left right)
+         #:row-properties '(bottom-border ())
          (list (list @bold{recipe}   @bold{vegetable})
                (list "caldo verde"   "kale")
                (list "kinpira gobō"  "burdock")
@@ -344,6 +346,7 @@ Examples:
 
   @tabular[#:style 'boxed
            #:column-properties '(left right)
+           #:row-properties '(bottom-border ())
            (list (list @bold{recipe}   @bold{vegetable})
                  (list "caldo verde"   "kale")
                  (list "kinpira gobō"  "burdock")
@@ -417,7 +420,16 @@ Wraps the @tech{decode}d @racket[pre-content] as an element with style
 
 @def-style-proc[italic]
 @def-style-proc[bold]
-@def-style-proc[tt]
+
+@defproc[(tt [pre-content pre-content?] ...) element?]{
+
+Similar to @racket[elem], but the @racket['tt] style is used for
+immediate strings and symbols among the @racket[pre-content]
+arguments.
+
+To apply the @racket['tt] style uniformly to all @racket[pre-content]
+arguments, use @racket[(elem #:style 'tt pre-content ...)], instead.}
+
 @def-style-proc[subscript]
 @def-style-proc[superscript]
 
@@ -468,8 +480,10 @@ See also @racket[verbatim].}
  the image cannot be displayed.
 
  If @racket[path] is a relative path, it is relative to the current
- directory, which is set by @exec{raco setup} and @exec{scribble} to
- the directory of the main document file. Instead of a path or string,
+ directory, which is set by @exec{raco setup} to
+ the directory of the main document file. (In general, however, it's
+ more reliable to express relative paths using
+ @racket[define-runtime-path].) Instead of a path or string,
  the @racket[path] argument can be a result of
  @racket[path->main-collects-relative].
 

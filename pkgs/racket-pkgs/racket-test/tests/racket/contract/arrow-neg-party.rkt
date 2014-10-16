@@ -16,7 +16,7 @@
                                 #f #t))
       (wrapped-extra-arg-arrow-extra-neg-party-argument
        (((contract-struct-val-first-projection c) blame) val))))
-
+  
   (test/spec-passed/result 
    'arity-as-string1
    '(arity-as-string (let ([f (λ (x) x)]) f))
@@ -167,7 +167,6 @@
       (->* (#:i integer? #:b boolean?) (#:c (listof char?) #:r regexp?) any)
       (λ (#:i i #:b b #:c [c '(#\a)] #:r [r #rx"x"]) 1))
      'neg #:i 1 #:b #t))
-  (exit)
   
   (test/neg-blame
    '->*neg-party11
@@ -243,4 +242,3 @@
         (list user db password port)))
      'neg #:database "db" #:password "password" #:user "user")
    (list "user" "db" "password" #f)))
-

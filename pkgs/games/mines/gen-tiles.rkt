@@ -3,6 +3,8 @@
   (require racket/gui
            racket/math)
 
+  (module test racket/base)
+
   (define SIZE 24)
 
   (define bm (make-object bitmap% SIZE SIZE))

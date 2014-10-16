@@ -819,16 +819,129 @@
      (list (cons 'absent meths))]
     [else
      (list `(absent ,@meths (field ,@fields)))]))
-             
+
+(define (class/c-stronger this that)
+  (define this-internal (class/c-internal this))
+  (cond
+    [(class/c? that)
+     (define that-internal (class/c-internal that))
+     (and 
+      ;; methods
+      (check-one-stronger class/c-methods class/c-method-contracts this that)
+      
+      ;; inits
+      (check-one-stronger class/c-inits class/c-init-contracts this that)
+      
+      ;; check both ways for fields (since mutable)
+      (check-one-stronger class/c-fields class/c-field-contracts this that) 
+      (check-one-stronger class/c-fields class/c-field-contracts that this)
+      
+
+      ;; inherits
+      (check-one-stronger internal-class/c-inherits internal-class/c-inherit-contracts
+                          this-internal that-internal)
+      ;; inherit fields, both ways
+      (check-one-stronger internal-class/c-inherit-fields internal-class/c-inherit-field-contracts
+                          this-internal that-internal)
+      (check-one-stronger internal-class/c-inherit-fields internal-class/c-inherit-field-contracts
+                          that-internal this-internal)
+      ;; supers
+      (check-one-stronger internal-class/c-supers internal-class/c-super-contracts
+                          this-internal that-internal)
+      ;; inners
+      (check-one-stronger internal-class/c-inners internal-class/c-inner-contracts
+                          this-internal that-internal)
+      ;; overrides
+      (check-one-stronger internal-class/c-overrides internal-class/c-override-contracts
+                          this-internal that-internal)
+      ;; augments
+      (check-one-stronger internal-class/c-augments internal-class/c-augment-contracts
+                          this-internal that-internal)
+      ;; augrides
+      (check-one-stronger internal-class/c-augrides internal-class/c-augride-contracts
+                          this-internal that-internal)
+      
+      (if (class/c-opaque? this) (class/c-opaque? that) #t)
+      (all-included? (class/c-absent-fields that) (class/c-absent-fields this))
+      (all-included? (class/c-absents that) (class/c-absents this)))]
+    [else #f]))
+
+(define (all-included? this-items that-items)
+  (for/and ([this-item (in-list this-items)])
+    (for/or ([that-item (in-list that-items)])
+      (equal? this-item that-item))))
+
+(define (check-one-stronger names-sel ctcs-sel this that)
+  ;; this is an O(n^2) loop that could be made asymptotically
+  ;; better with sorting, but since there are generally not a
+  ;; ton of methods, the naive loop appears to be faster.
+  ;; in the current racket, and assuming the code below is
+  ;; representative of the two approaches, the tradeoff point
+  ;; appears to be somewhere around 60 or 70 methods.
+#|
+    #lang racket
+    
+    (define (n2-way l1 l2)
+      (for/and ([x (in-list l1)])
+        (or (for/or ([y (in-list l2)])
+              #f)
+            #t)))
+    
+    (define (nlgn-way l1 l2)
+      (define sl1 (sort l1 <))
+      (define sl2 (sort l2 <))
+      (let loop ([l1 l1][l2 l2])
+        (cond
+          [(null? l1) #t]
+          [(null? l2) #t]
+          [(< (car l1) (car l2)) (loop (cdr l1) l2)]
+          [(< (car l2) (car l1)) (loop l1 (cdr l2))]
+          [else (loop (cdr l1) (cdr l2))])))
+    
+    
+    (define (try n c)
+      (define l1 (build-list n (λ (_) (random))))
+      (define l2 (build-list n (λ (_) (random))))
+      (time (for ([x (in-range c)])
+              (n2-way l1 l2) (n2-way l1 l2) (n2-way l1 l2)
+              (n2-way l1 l2) (n2-way l1 l2) (n2-way l1 l2)
+              (n2-way l1 l2) (n2-way l1 l2) (n2-way l1 l2)
+              (n2-way l1 l2) (n2-way l1 l2) (n2-way l1 l2)))
+      (time (for ([x (in-range c)])
+              (nlgn-way l1 l2) (nlgn-way l1 l2) (nlgn-way l1 l2)
+              (nlgn-way l1 l2) (nlgn-way l1 l2) (nlgn-way l1 l2)
+              (nlgn-way l1 l2) (nlgn-way l1 l2) (nlgn-way l1 l2)
+              (nlgn-way l1 l2) (nlgn-way l1 l2) (nlgn-way l1 l2))))
+    
+    
+    50
+    (try 50 10000)
+    60
+    (try 60 10000)
+    70
+    (try 70 10000)
+    80
+    (try 80 10000)
+ |#
+  
+  (for/and ([this-name (in-list (names-sel this))]
+            [this-ctc (in-list (ctcs-sel this))])
+    (for/or ([that-name (in-list (names-sel that))]
+             [that-ctc (in-list (ctcs-sel that))])
+      (and (equal? this-name that-name)
+           (contract-stronger? this-ctc that-ctc)))))
+
 (define-struct class/c 
   (methods method-contracts fields field-contracts inits init-contracts
    absents absent-fields 
    internal opaque? name)
   #:omit-define-syntaxes
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection class/c-proj
    #:name build-class/c-name
+   #:stronger class/c-stronger
    #:first-order
    (λ (ctc)
      (λ (cls)
@@ -1118,6 +1231,7 @@
                              (λ args (ret #f))))))
 
 (define-struct base-object/c (methods method-contracts fields field-contracts)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property 
    #:projection object/c-proj
@@ -1187,14 +1301,22 @@
       (and (object? val)
            (contract-first-order-passes? cls-ctc (object-ref val))))))
 
+ 
+(define (instanceof/c-stronger this that)
+  (and (base-instanceof/c? that)
+       (contract-stronger? (base-instanceof/c-class-ctc this)
+                           (base-instanceof/c-class-ctc that))))
+
 (define-struct base-instanceof/c (class-ctc)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property 
    #:projection instanceof/c-proj
    #:name
    (λ (ctc)
      (build-compound-type-name 'instanceof/c (base-instanceof/c-class-ctc ctc)))
-   #:first-order instanceof/c-first-order))
+   #:first-order instanceof/c-first-order
+   #:stronger instanceof/c-stronger))
 
 (define (instanceof/c cctc)
   (let ([ctc (coerce-contract 'instanceof/c cctc)])

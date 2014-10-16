@@ -268,6 +268,8 @@
     (set-control-font font)
     (set-size #f #f 40 60)
 
+    (define/override (size->screen v) (->screen* v))
+
     (define callback cb)
 
     (define/override (is-command? cmd)
@@ -371,8 +373,8 @@
            (set! max-col-width mx))
           (atomically
            (let ([col-desc (make-lvcolumn (bitwise-ior LVCF_WIDTH LVCF_MINWIDTH) #f)])
-             (set-LVCOLUMN-cx! col-desc w)
-             (set-LVCOLUMN-cxMin! col-desc mn)
+             (set-LVCOLUMN-cx! col-desc (->screen w))
+             (set-LVCOLUMN-cxMin! col-desc (->screen mn))
              (SendMessageW/ptr hwnd LVM_SETCOLUMNW col col-desc)
              (set! min-col-width mn)
              (set! max-col-width mx)))))
@@ -381,7 +383,7 @@
       (atomically
        (let ([col-desc (make-lvcolumn (bitwise-ior LVCF_WIDTH LVCF_MINWIDTH) #f)])
          (SendMessageW/ptr hwnd LVM_GETCOLUMNW col col-desc)
-         (let ([v (LVCOLUMN-cx col-desc)])
+         (let ([v (->normal (LVCOLUMN-cx col-desc))])
            (values (max v min-col-width) ; in XP, may have been sized too small
                    min-col-width
                    max-col-width)))))
@@ -417,7 +419,7 @@
 
     (define/public (number-of-visible-items)
       (if single-column?
-          (let ([ih (SendMessageW hwnd LB_GETITEMHEIGHT 0 0)])
+          (let ([ih (->normal (SendMessageW hwnd LB_GETITEMHEIGHT 0 0))])
             (let ([w (box 0)]
                   [h (box 0)])
               (get-client-size w h)

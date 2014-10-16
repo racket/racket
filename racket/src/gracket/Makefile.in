@@ -235,32 +235,32 @@ FRAMEWORK_REL_PREFIX="@executable_path/../../../"
 
 install-wx_mac:
 	$(MAKE) install-common
-	cd ..; rm -rf "$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app"
-	cd ..; rm -rf "$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app"
+	cd ..; rm -rf $(DESTDIR)"$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app"
+	cd ..; rm -rf $(DESTDIR)"$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app"
 
 install-wx_mac-cgc:
-	cd ..; $(ICP) -r gracket/GRacket@CGC@.app "$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app"
-	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu "$(srcdir)/../mac/rename-app.rkt" "$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app" "GRacket@CGC@" "GRacket@CGC_CAP_INSTALLED@"
-	/usr/bin/install_name_tool -change "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" "$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
-	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" "$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@" ../../../../collects ../../../../etc
-	@STRIP_DEBUG@ "$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
+	cd ..; $(ICP) -r gracket/GRacket@CGC@.app $(DESTDIR)"$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app"
+	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu "$(srcdir)/../mac/rename-app.rkt" $(DESTDIR)"$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app" "GRacket@CGC@" "GRacket@CGC_CAP_INSTALLED@"
+	/usr/bin/install_name_tool -change "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" $(DESTDIR)"$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
+	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" $(DESTDIR)"$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@" ../../../../collects ../../../../etc
+	@STRIP_DEBUG@ $(DESTDIR)"$(prefix)/lib/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
 
 install-wx_mac-cgc-final:
 	$(NOOP)
 
 install-wx_mac-3m:
-	cd ..; $(ICP) -r "gracket/GRacket@MMM@.app" "$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app"
-	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cqu "$(srcdir)/../mac/rename-app.rkt" "$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app" "GRacket@MMM@" "GRacket@MMM_CAP_INSTALLED@"
-	/usr/bin/install_name_tool -change "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" "$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
-	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" "$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@" "../../../../collects" ../../../../etc
-	@STRIP_DEBUG@ "$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
+	cd ..; $(ICP) -r "gracket/GRacket@MMM@.app" $(DESTDIR)"$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app"
+	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cqu "$(srcdir)/../mac/rename-app.rkt" $(DESTDIR)"$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app" "GRacket@MMM@" "GRacket@MMM_CAP_INSTALLED@"
+	/usr/bin/install_name_tool -change "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" $(DESTDIR)"$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
+	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" $(DESTDIR)"$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@" "../../../../collects" ../../../../etc
+	@STRIP_DEBUG@ $(DESTDIR)"$(prefix)/lib/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
 
 install-wx_mac-3m-final:
 	$(NOOP)
 
 install-wx_mac-post-collects:
-	cd ..; rm -rf $(prefix)/lib/Starter.app
-	cd ..; $(ICP) -r gracket/Starter.app $(prefix)/lib/.
+	cd ..; rm -rf $(DESTDIR)$(prefix)/lib/Starter.app
+	cd ..; $(ICP) -r gracket/Starter.app $(DESTDIR)$(prefix)/lib/.
 
 
 @INCLUDEDEP@ grmain.d

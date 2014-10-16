@@ -140,6 +140,8 @@ The pixel RGB values are taken from @racket[pixels]. The first byte
 
 If @racket[just-alpha?] is false, then the alpha value for each pixel is
  used only if the DC's current bitmap has an alpha channel. If 
+ @racket[just-alpha?] is true and the bitmap has an alpha channel, then the
+ bitmap is not modified. If
  @racket[just-alpha?] is true and the bitmap has no alpha channel, then each
  pixel is set based @italic{only} on the alpha value, but inverted to serve
  as a mask. Thus, when working with bitmaps that have an associated mask

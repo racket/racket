@@ -11,11 +11,12 @@ static void   os_protect_pages(void *p, size_t len, int writable);
 #define BC_MAX_BLOCK_SIZE (1 << 24)  /* 16 MB */
 
 struct block_desc;
-static AllocCacheBlock *alloc_cache_create();
-static ssize_t alloc_cache_free(AllocCacheBlock *);
-static ssize_t alloc_cache_free_page(AllocCacheBlock *blockfree, char *p, size_t len, int dirty, int originated_here);
-static ssize_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree);
-static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, size_t alignment, int dirty_ok, ssize_t *size_diff);
+struct AllocCacheBlock;
+static struct AllocCacheBlock *alloc_cache_create();
+static ssize_t alloc_cache_free(struct AllocCacheBlock *);
+static ssize_t alloc_cache_free_page(struct AllocCacheBlock *blockfree, char *p, size_t len, int dirty, int originated_here);
+static ssize_t alloc_cache_flush_freed_pages(struct AllocCacheBlock *blockfree);
+static void *alloc_cache_alloc_page(struct AllocCacheBlock *blockfree,  size_t len, size_t alignment, int dirty_ok, ssize_t *size_diff);
 
 static Page_Range *page_range_create();
 static void page_range_free(Page_Range *pr);
@@ -50,7 +51,7 @@ typedef struct block_group {
 typedef struct BlockCache {
   block_group atomic;
   block_group non_atomic;
-  AllocCacheBlock *bigBlockCache;
+  struct AllocCacheBlock *bigBlockCache;
   Page_Range *page_range;
   MMU *mmu;
 } BlockCache;
@@ -97,7 +98,7 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
     bg->block_size <<= 1;
   }
 
-  bd = (block_desc*) ofm_malloc(sizeof(block_desc));
+  bd = (block_desc*) ofm_malloc_zero(sizeof(block_desc));
   if (!bd) {
     os_free_pages(r, this_block_size);
     return NULL;

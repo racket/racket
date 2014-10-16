@@ -26,6 +26,8 @@
   (define/override (auto-size-button font label)
     (auto-size font label 0 0 20 0))
 
+  (define/override (size->screen v) (->screen v))
+
   (define/public (set-value v)
     (void (SendMessageW (get-hwnd) BM_SETCHECK (if v 1 0) 0)))
 

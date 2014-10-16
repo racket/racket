@@ -23,6 +23,7 @@
                      "srfi-doc"
                      "unstable-contract-lib"
                      "unstable-doc"))
+(define update-implies '("plot-lib"))
 
 (define pkg-desc "Documentation for plot")
 

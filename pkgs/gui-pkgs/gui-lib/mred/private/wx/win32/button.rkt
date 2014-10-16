@@ -133,6 +133,8 @@
         (auto-size font label 60 20 12 0 #:scale-w 1.1 #:scale-h 1.1)]))
     (auto-size-button font label)
 
+    (define/override (size->screen v) (->screen* v))
+
     ;; XP doesn't show both bitmap and string labels,
     ;; so we synthesize a bitmap label when we have both
     (define xp-label-bitmap (and xp? orientation (car label)))
@@ -153,6 +155,13 @@
 					orientation)
 				  xp-label-font))))
 	  (super set-label s)))
+
+    ;; Avoid passing any key event to a button or checkbox. The
+    ;; `pre-on-char` of the frame will take care of changing space to
+    ;; a control action, but the control itself may use WM_KEYDOWN
+    ;; instead of WM_CHAR.
+    (define/override (capture-all-key-events?)
+      #t)
 
     (define/override (is-command? cmd)
       (= cmd BN_CLICKED))

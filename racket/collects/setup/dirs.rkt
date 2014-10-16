@@ -117,7 +117,10 @@
 ;; Helpers
 
 (define (single p) (if p (list p) null))
-(define (extra a l) (if (and a (not (member a l))) (cons a l) l))
+(define (extra a l) (if (and a (not (member (path->directory-path a)
+                                            (map path->directory-path l))))
+                        (append l (list a))
+                        l))
 (define (combine-search l default)
   ;; Replace #f in list with default path:
   (if l
@@ -323,7 +326,11 @@
                                         (build-path dir r)
                                         r)))
                             p))))]
-              [rel (and exe (get/set-dylib-path exe "Racket" #f))])
+              [rel (and exe
+                        (let ([l (get/set-dylib-path exe "Racket" #f)])
+                          (if (null? l)
+                              #f
+                              (car l))))])
          (cond
           [(not rel) #f] ; no framework reference found!?
           [(regexp-match

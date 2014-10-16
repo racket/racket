@@ -93,7 +93,7 @@
           #:declare y nat
           'ok])
        #rx"^syntax-parse: "
-       #rx"do not appear in pattern")
+       #rx"identifier in #:declare clause does not appear in pattern")
 
 (tcerr "parse-single-pattern: reserved"
        (syntax-parse #'1
@@ -173,7 +173,7 @@
        (syntax-parser
         [x #:fail-unless #t #f #:declare x nat 'ok])
        #rx"^syntax-parser: "
-       #rx"#:declare can only follow")
+       #rx"#:declare can only appear")
 
 (tcerr "grab-decls: bad sc"
        (syntax-parser

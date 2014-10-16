@@ -46,7 +46,7 @@ information about packages:
 
         @item{@racket['source] (required) --- a @tech{package source}
               string, typically a remote URL. If this source is a
-              relative path, then it is treated as relative to the
+              relative URL, then it is treated as relative to the
               catalog.
 
               @history[#:changed "6.0.1.7" @elem{Added relative-path support

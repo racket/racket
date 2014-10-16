@@ -21,21 +21,21 @@ Computational Geometry, Theory and Applications 2 (1992)
      (match t
        [#f (blank)]
        [(tree-layout pict (list left right))
-        (define-values (left-t left-color) 
+        (define-values (left-t left-color left-width)
           (match left
-            [#f (values #f #f)]
-            [(tree-edge child color) (values child color)]))
-        (define-values (right-t right-color) 
+            [#f (values #f #f #f)]
+            [(tree-edge child color width) (values child color width)]))
+        (define-values (right-t right-color right-width)
           (match right
-            [#f (values #f #f)]
-            [(tree-edge child color) (values child color)]))
+            [#f (values #f #f #f)]
+            [(tree-edge child color width) (values child color width)]))
         (cond
           [(and (not left-t) (not right-t)) 
            (dot-ize pict)]
           [(not left-t) 
-           (empty-left (dot-ize pict) x-spacing right-color (loop right-t (not l)))]
+           (empty-left (dot-ize pict) x-spacing right-color right-width (loop right-t (not l)))]
           [(not right-t)
-           (empty-right (dot-ize pict) y-spacing left-color (loop left-t (not l)))]
+           (empty-right (dot-ize pict) y-spacing left-color left-width (loop left-t (not l)))]
           [else
            (define left-p (loop left-t (not l)))
            (define right-p (loop right-t (not l)))
@@ -44,7 +44,7 @@ Computational Geometry, Theory and Applications 2 (1992)
               x-spacing y-spacing
               left-p right-p))
            (pin-over
-            (add-lines main left-color right-color left-p right-p)
+            (add-lines main left-color right-color left-width right-width left-p right-p)
             (- (/ (pict-width pict) 2))
             (- (/ (pict-height pict) 2))
             pict)])]))
@@ -67,28 +67,35 @@ Computational Geometry, Theory and Applications 2 (1992)
    (ht-append (blank hgap 0) left)
    right))
 
-(define (empty-left pict hgap color sub-tree-p)
+(define (empty-left pict hgap color width sub-tree-p)
   (add-a-line (ht-append hgap pict sub-tree-p)
               color 
+              width
               sub-tree-p))
   
-(define (empty-right pict vgap color sub-tree-p)
+(define (empty-right pict vgap color width sub-tree-p)
   (add-a-line (vl-append vgap pict sub-tree-p)
               color
+              width
               sub-tree-p))
 
-(define (add-lines main left-color right-color t1 t2)
-  (add-a-line (add-a-line main left-color t1)
-              right-color t2))
+(define (add-lines main left-color right-color left-width right-width t1 t2)
+  (add-a-line (add-a-line main left-color left-width t1)
+              right-color right-width t2))
   
-(define (add-a-line main color sub)
-  (cc-superimpose
-   (launder
+(define (add-a-line main color width sub)
+  (define colored
     (colorize
-     (pin-line (ghost main)
-               main lt-find 
-               sub lt-find)
-     color))
+      (pin-line (ghost main)
+                main lt-find
+                sub lt-find)
+      color))
+  (define with-linewidth
+    (if (eq? width 'unspecified)
+        colored
+        (linewidth width colored)))
+  (cc-superimpose
+   (launder with-linewidth)
    main))
 
 (module+ test

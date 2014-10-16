@@ -5,6 +5,7 @@
          setup/path-to-relative
          "private/doc-path.rkt"
          setup/collects
+         setup/collection-name
          setup/main-doc
          setup/parallel-do
          setup/doc-db
@@ -28,6 +29,7 @@
          pkg/lib
          pkg/strip
          openssl/sha1
+         compiler/compilation-path
          (prefix-in u: net/url)
          (prefix-in html: scribble/html-render)
          (prefix-in latex: scribble/latex-render)
@@ -100,10 +102,11 @@
     docs]
    [else (filter main-doc? docs)])) ; Don't need them, so drop them
 
-(define (parallel-do-error-handler setup-printf doc errmsg outstr errstr)
-  (setup-printf "error running" (module-path-prefix->string (doc-src-spec doc)))
-  (eprintf "~a" errmsg)
-  (eprintf "~a" errstr))
+(define (parallel-do-error-handler with-record-error doc errmsg outstr errstr)
+  (with-record-error
+   (doc-src-file doc)
+   (lambda () (error errmsg))
+   void))
 
 ;; We use a lock to control writing to the database. It's not
 ;; strictly necessary, but place channels can deal with blocking
@@ -153,7 +156,7 @@
     (define (validate path [flags '()] [cat '(library)] [name #f] [out-count 1] [order-hint 0])
       (and (string? path) (relative-path? path)
            (list? flags) (andmap scribblings-flag? flags)
-           (or (not name) (and (path-string? name) (relative-path? name) name))
+           (or (not name) (collection-name-element? name))
            (and (list? cat)
                 (<= 1 (length cat) 2)
                 (symbol? (car cat))
@@ -349,7 +352,7 @@
                     (printf "~a" errstr)
                     (deserialize (fasl->s-exp r)))
                   (lambda (work errmsg outstr errstr) 
-                    (parallel-do-error-handler setup-printf work errmsg outstr errstr)))
+                    (parallel-do-error-handler with-record-error work errmsg outstr errstr)))
                  (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest 
                                                      auto-main? auto-user? main-doc-exists?
                                                      force-out-of-date? lock-ch)
@@ -679,7 +682,7 @@
                   (printf "~a" errstr)
                   (update-info! i (deserialize (fasl->s-exp r))))
                 (lambda (i errmsg outstr errstr) 
-                  (parallel-do-error-handler setup-printf (info-doc i) errmsg outstr errstr)))
+                  (parallel-do-error-handler with-record-error (info-doc i) errmsg outstr errstr)))
                (define-worker (build-again!-worker2 workerid verbosev latex-dest lock-ch
                                                     main-doc-exists?)
                  (define (with-record-error cc go fail-k)
@@ -851,7 +854,7 @@
 
 (define (pick-dest latex-dest doc)
   (cond [(path? latex-dest)
-         (let-values ([(base name dir?) (split-path (doc-src-file doc))])
+         (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
            (build-path latex-dest (path-replace-suffix name #".tex")))]
         [(not latex-dest)
          (cond
@@ -984,8 +987,8 @@
          doc)
 
   ;; First, move pre-rendered documentation, if any, into place
-  (let ([rendered-dir (let-values ([(base name dir?) (split-path (doc-src-file doc))])
-                        (build-path (doc-src-dir doc) "doc" (path-replace-suffix name #"")))])
+  (let ([rendered-dir (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
+                        (build-path (doc-src-dir doc) "doc" name))])
     (when (and (can-build? only-dirs doc)
                (directory-exists? rendered-dir)
                (not (file-exists? (build-path rendered-dir "synced.rktd")))
@@ -1001,13 +1004,10 @@
          [db-file (find-db-file doc latex-dest main-doc-exists?)]
          [stamp-file  (sxref-path latex-dest doc "stamp.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
-         [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
-                   (define path (build-path base "compiled" (path-add-suffix name ".zo")))
-                   (or (for/or ([root (in-list (current-compiled-file-roots))])
-                         (define p (reroot-path* path root))
-                         (and (file-exists? p) p))
-                       (if (and (not (file-exists? path))
-                                (file-exists? out-file))
+         [src-zo (let ([path (get-compilation-bytecode-file (doc-src-file doc))])
+                   (or (and (file-exists? path)
+                            path)
+                       (if (file-exists? out-file)
                            ;; assume installed as pre-rendered:
                            #f
                            ;; need to render, so complain if no source is available:
@@ -1022,13 +1022,13 @@
                                   (andmap string? v))
                              v
                              (list "" "" ""))))]
-         [renderer-path (let ([p (collection-file-path 
+         [renderer-path (let ([p (collection-file-path
+                                  #:check-compiled? #t
                                   (cond
                                    [(path? latex-dest) "latex-render.rkt"]
                                    [(not latex-dest) "html-render.rkt"])
                                   "scribble")])
-                          (let-values ([(base name dir?) (split-path p)])
-                            (build-path base "compiled" (path-add-suffix name ".zo"))))]
+                          (get-compilation-bytecode-file p))]
          [css-path (collection-file-path "scribble.css" "scribble")]
          [aux-sha1s (list (get-compiled-file-sha1 renderer-path)
                           (get-file-sha1 css-path))]

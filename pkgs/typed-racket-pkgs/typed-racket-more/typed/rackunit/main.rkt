@@ -171,7 +171,12 @@
 (require/typed/provide
  rackunit
  [current-check-handler
-  (Parameter (Any -> Any))]
+  (Parameter (-> (U (Rec flat
+                      (U Boolean Complex Char
+                         Null Symbol String
+                         Keyword (Pairof flat flat)))
+                 exn)
+                 Any))]
  [current-check-around
   (Parameter ((Thunk Any) -> Any))])
 

@@ -1,6 +1,6 @@
 #lang racket
-(require redex
-         "list-machine.rkt")
+(require redex/reduction-semantics
+         redex/examples/list-machine/list-machine)
 
 (provide list-machine-typing
          check-program

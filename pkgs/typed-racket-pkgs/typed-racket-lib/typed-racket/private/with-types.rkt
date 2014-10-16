@@ -1,6 +1,21 @@
 #lang racket/base
 
-(require racket/require racket/promise
+(require "../utils/utils.rkt"
+         (base-env base-types-extra extra-procs)
+         (except-in (base-env prims) with-handlers λ lambda define)
+         (env type-name-env type-alias-env type-env-structs
+              global-env tvar-env)
+         (private parse-type type-contract)
+         (typecheck tc-toplevel typechecker)
+         (types utils)
+         (utils lift tc-utils disarm arm)
+         racket/match
+         racket/promise
+         racket/require
+         syntax/parse
+         unstable/sequence
+         "../tc-setup.rkt"
+         "../standard-inits.rkt"
          (for-template
           (except-in racket/base for for* with-handlers lambda λ define
                      let let* letrec letrec-values let-values
@@ -12,23 +27,8 @@
                      for*/vector for*/hash for*/hasheq for*/hasheqv for*/and
                      for*/or for*/sum for*/product for*/first for*/last
                      for*/fold)
-          "../base-env/prims.rkt"
-          (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
-         "../base-env/extra-procs.rkt" (except-in "../base-env/prims.rkt" with-handlers λ lambda define)
-         "../tc-setup.rkt"
-         "../standard-inits.rkt"
-         syntax/parse racket/match
-         unstable/sequence  "../base-env/base-types-extra.rkt"
-         (path-up "env/type-name-env.rkt"
-                  "env/type-alias-env.rkt"
-                  "private/parse-type.rkt"
-                  "private/type-contract.rkt"
-                  "typecheck/typechecker.rkt"
-                  "env/type-env-structs.rkt"
-                  "env/global-env.rkt"
-                  "env/tvar-env.rkt"
-                  "utils/tc-utils.rkt"
-                  "types/utils.rkt"))
+          (base-env prims)
+          (prefix-in c: (combine-in racket/contract/region racket/contract/base))))
 
 (provide wt-core)
 
@@ -66,14 +66,14 @@
   (for ([i (in-syntax fvids)]
         [ty (in-list fv-types)])
     (register-type i ty))
-  (define expanded-body
+  (define-values (lifted-definitions expanded-body)
     (if expr?
         (with-syntax ([body body])
-          (local-expand #'(let () . body) ctx null))
+          (wt-expand #'(let () . body) ctx))
         (with-syntax ([(body ...) body]
                       [(id ...) exids]
                       [(ty ...) extys])
-          (local-expand #'(let () (begin (: id ty) ... body ... (values id ...))) ctx null))))
+          (wt-expand #'(let () (begin (: id ty) ... body ... (values id ...))) ctx))))
   (parameterize (;; do we report multiple errors
                  [delay-errors? #t]
                  ;; this parameter is just for printing types
@@ -91,6 +91,10 @@
                  ;; for error reporting
                  [orig-module-stx stx]
                  [expanded-module-stx expanded-body])
+    ;; we can treat the lifted definitions as top-level forms because they
+    ;; are only definitions and not forms that have special top-level meaning
+    ;; to TR
+    (tc-toplevel-form lifted-definitions)
     (tc-expr/check expanded-body (if expr? region-tc-result (ret ex-types))))
   (report-all-errors)
   (set-box! typed-context? old-context)
@@ -108,19 +112,33 @@
                                      #'(void)
                                      'disappeared-binding (disappeared-bindings-todo))
                                     'disappeared-use (disappeared-use-todo))])
-    (if expr?
-        (quasisyntax/loc stx
-          (begin check-syntax-help
-                 (c:with-contract typed-region
-                                  #:results (region-cnt ...)
-                                  #:freevars ([fv.id cnt] ...)
-                                  body)))
-        (syntax/loc stx
-          (begin
-            (define-values () (begin check-syntax-help (values)))
-            (c:with-contract typed-region
-                             ([ex-id ex-cnt] ...)
-                             (define-values (ex-id ...) body)))))))
+    (define fixed-up-definitions
+      (change-contract-fixups lifted-definitions))
+    (arm
+      (if expr?
+          (quasisyntax/loc stx
+            (begin check-syntax-help
+                   (c:with-contract typed-region
+                                    #:results (region-cnt ...)
+                                    #:freevars ([fv.id cnt] ...)
+                                    #,fixed-up-definitions
+                                    body)))
+          (quasisyntax/loc stx
+            (begin
+              (define-values () (begin check-syntax-help (values)))
+              (c:with-contract typed-region
+                               ([ex-id ex-cnt] ...)
+                               #,fixed-up-definitions
+                               (define-values (ex-id ...) body))))))))
+
+;; Syntax (U Symbol List) -> (values Syntax Syntax)
+;; local expansion for with-type expressions
+(define (wt-expand stx ctx)
+  (syntax-parse (local-expand/capture* stx ctx null)
+    #:literal-sets (kernel-literals)
+    [(begin (define-values (x ...) e ...) ... (let-values () . body))
+     (values (disarm* #'(begin (define-values (x ...) e ...) ...))
+             (disarm* (local-expand/capture* #'(let-values () . body) ctx null)))]))
 
 (define (wt-core stx)
   (define-syntax-class typed-id

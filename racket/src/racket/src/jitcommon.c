@@ -3274,6 +3274,25 @@ static int common12(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int common13(mz_jit_state *jitter, void *_data)
+{
+  /* *** force_value_same_mark_code *** */
+  /* Helper for futures: a synthetic functon that just forces values,
+     which will bounce back to the runtime thread (but with lightweight
+     continuation capture in place). */
+  sjc.force_value_same_mark_code = jit_get_ip();
+  scheme_generate_function_prolog(jitter);
+  CHECK_LIMIT();
+
+  scheme_generate_force_value_same_mark(jitter);
+  CHECK_LIMIT();
+
+  mz_pop_threadlocal();
+  mz_pop_locals();
+  jit_ret();
+  return 1;
+}
+
 int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
 {
   if (!common0(jitter, _data)) return 0;
@@ -3293,6 +3312,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   if (!common10(jitter, _data)) return 0;
   if (!common11(jitter, _data)) return 0;
   if (!common12(jitter, _data)) return 0;
+  if (!common13(jitter, _data)) return 0;
   return 1;
 }
 

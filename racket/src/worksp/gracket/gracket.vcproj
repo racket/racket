@@ -18,9 +18,9 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Release|Win32"
+			Name="BRelease|Win32"
 			OutputDirectory="..\..\..\lib"
-			IntermediateDirectory="Release"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -63,11 +63,15 @@
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
 		</Configuration>
 		<Configuration
-			Name="Debug|Win32"
+			Name="BDebug|Win32"
 			OutputDirectory="..\..\..\lib"
-			IntermediateDirectory="Debug"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -106,6 +110,10 @@
 				DataExecutionPrevention="0"
 			/>
 			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
+			<Tool
 				Name="VCALinkTool"
 			/>
 			<Tool
@@ -123,12 +131,9 @@
 			<Tool
 				Name="VCAppVerifierTool"
 			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
 		</Configuration>
 		<Configuration
-			Name="Release|x64"
+			Name="BRelease|x64"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
@@ -180,9 +185,13 @@
 				DataExecutionPrevention="0"
 				TargetMachine="17"
 			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
 		</Configuration>
 		<Configuration
-			Name="Debug|x64"
+			Name="BDebug|x64"
 			OutputDirectory="..\..\..\lib"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
@@ -222,6 +231,230 @@
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="SRelease|Win32"
+			OutputDirectory="..\..\..\lib"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCCLCompilerTool"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\racket\include"
+				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
+				OutputFile="..\..\..\lib\GRacketCGC.exe"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				IgnoreDefaultLibraryNames="libcd.lib"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="..\..\..\lib\GRacketCGC.pdb"
+				SubSystem="2"
+				StackReserveSize="8388608"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="SDebug|Win32"
+			OutputDirectory="..\..\..\lib"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\racket\include"
+				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
+				OutputFile="..\..\..\lib\GRacketCGC.exe"
+				SuppressStartupBanner="true"
+				IgnoreDefaultLibraryNames="libcd.lib"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="..\..\..\lib\GRacketCGC.pdb"
+				SubSystem="2"
+				StackReserveSize="8388608"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="SRelease|x64"
+			OutputDirectory="..\..\..\lib"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCCLCompilerTool"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\racket\include"
+				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions=" /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
+				OutputFile="..\..\..\lib\GRacketCGC.exe"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				IgnoreDefaultLibraryNames="libcd.lib"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="..\..\..\lib\GRacketCGC.pdb"
+				SubSystem="2"
+				StackReserveSize="8388608"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="SDebug|x64"
+			OutputDirectory="..\..\..\lib"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\racket\include"
+				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE,USE_SENORA_GC"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
+				OutputFile="..\..\..\lib\GRacketCGC.exe"
+				SuppressStartupBanner="true"
+				IgnoreDefaultLibraryNames="libcd.lib"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="..\..\..\lib\GRacketCGC.pdb"
+				SubSystem="2"
+				StackReserveSize="8388608"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="addman.bat&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>

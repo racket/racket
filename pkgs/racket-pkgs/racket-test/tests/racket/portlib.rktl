@@ -428,6 +428,29 @@
     (test 200 peek-byte p)
     (test 200 read-byte p)))
 
+;; Tests for `peeking-input-port`
+(let ()
+  (define (try-peeking buffer-mode)
+    (define an-original-port (open-input-string "123456789abc"))
+    (define a-peeking-port (peeking-input-port an-original-port))
+    (file-stream-buffer-mode a-peeking-port buffer-mode)
+    (test "123" read-string 3 a-peeking-port)
+    (test "456" read-string 3 a-peeking-port)
+
+    (test "123" read-string 3 an-original-port)
+
+    ;; It's not well defined what will happen now when buffering is
+    ;; enabled, but we can predict given the current implementation:
+    (test (if (eq? 'block buffer-mode) "789" "abc") read-string 3 a-peeking-port)
+
+    (test #f file-stream-buffer-mode an-original-port)
+    (test buffer-mode file-stream-buffer-mode a-peeking-port)
+    (test (void) file-stream-buffer-mode a-peeking-port 'none)
+    (test 'none file-stream-buffer-mode a-peeking-port))
+
+  (try-peeking 'none)
+  (try-peeking 'block))
+
 ;; read synchronization events
 (define (go mk-hello sync atest btest)
   (test #t list? (list mk-hello sync atest btest))
@@ -626,6 +649,18 @@
       (test 2 peek-bytes-avail!* b 0 #f s)
       (test 1 peek-bytes-avail!* b 1 #f s)
       (test 2 read-bytes-avail!* b s))))
+
+;; Make sure that blocking on a limited input port doesn't
+;; block in the case of a peek after available bytes:
+(let ()
+  (define-values (i o) (make-pipe))
+  (write-char #\a o)
+  (write-char #\a o)
+  
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (write-char #\b o)))
+  (test 1 peek-bytes-avail! (make-bytes 1) 2 #f (make-limited-input-port i 10)))
 	     
 ;; ----------------------------------------
 ;; Conversion wrappers
@@ -803,6 +838,29 @@
    (display #"\xFF\xFF" o) (flush-output o))
  (lambda (exn)
    (regexp-match? #rx"^reencode-output-port:" (exn-message exn))))
+
+;; Check that slow input stream is handled correctly:
+(let ()
+  (define poem (bytes-append #"\307\256\314\306\272\376\264\272\320\320\n\n\271\302\311\275\313\302\261\261"
+                             #"\274\326\315\244\316\367\n\313\256\303\346\263\365\306\275\324\306\275\305\265"
+                             #"\315\n\274\270\264\246\324\347\335\272\325\371\305\257\312\367\n\313\255\274"
+                             #"\322\320\302\321\340\327\304\264\272\304\340\n\302\322\273\250\275\245\323\373"
+                             #"\303\324\310\313\321\333\n\307\263\262\335\262\305\304\334\303\273\302\355\314"
+                             #"\343\n\327\356\260\256\272\376\266\253\320\320\262\273\327\343\n\302\314\321\356"
+                             #"\322\365\300\357\260\327\311\263\265\314\n"))
+  (define (slower p)
+    (make-input-port
+     (object-name p)
+     (lambda (bstr)
+       (if (zero? (random 2))
+           (wrap-evt (alarm-evt (+ (current-inexact-milliseconds) 5))
+                     (lambda (v) 0))
+           (read-bytes-avail! bstr p)))
+     #f
+     (lambda () (void))))
+  (define i (reencode-input-port (slower (open-input-bytes poem)) "gbk" #"?"))
+  (test #f regexp-match? #px#"temple" i)
+  (close-input-port i))
 
 ;; --------------------------------------------------
 

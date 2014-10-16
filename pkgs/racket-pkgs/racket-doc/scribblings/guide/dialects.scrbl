@@ -86,7 +86,7 @@ Standard dialects of Scheme include the ones defined by @|r5rs| and
 
 @subsection[#:tag "r5rs"]{@|r5rs|}
 
-``@|r5rs|'' stands for @link["../r5rs-std/index.html"]{The
+``@|r5rs|'' stands for @link["../r5rs/r5rs-std/index.html"]{The
 Revised@superscript{5} Report on the Algorithmic Language Scheme}, and
 it is currently the most widely implemented Scheme standard.
 
@@ -113,7 +113,7 @@ information about running @|r5rs| programs with Racket.
 
 @subsection{@|r6rs|}
 
-``@|r6rs|'' stands for @link["../r6rs-std/index.html"]{The
+``@|r6rs|'' stands for @link["../r6rs/r6rs-std/index.html"]{The
 Revised@superscript{6} Report on the Algorithmic Language Scheme},
 which extends @|r5rs| with a module system that is similar to the
 Racket module system.

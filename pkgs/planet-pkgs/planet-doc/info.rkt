@@ -11,3 +11,4 @@
 (define pkg-authors '(mflatt robby))
 (define build-deps '("racket-doc"
                      "scribble-doc"))
+(define update-implies '("planet-lib"))

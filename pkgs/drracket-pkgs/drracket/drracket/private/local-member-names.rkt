@@ -57,7 +57,8 @@
 ;; mode changing definitions text mixin
 (define-local-member-name 
   maybe-change-language
-  change-mode-to-match)
+  change-mode-to-match
+  get-current-mode)
 
 
 (provide (struct-out drracket:language-configuration:language-settings))
@@ -80,4 +81,4 @@
   
 
 (provide (struct-out drracket:modes:mode))
-(struct drracket:modes:mode (name surrogate repl-submit matches-language))
+(struct drracket:modes:mode (name surrogate repl-submit matches-language intended-to-edit-programs?))

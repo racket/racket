@@ -21,6 +21,7 @@
                      "racket-doc"
                      #;"at-exp-lib"
                      #;"rackunit-lib"))
+(define update-implies '("htdp-lib"))
 
 (define pkg-desc "documentation part of \"htdp\"")
 

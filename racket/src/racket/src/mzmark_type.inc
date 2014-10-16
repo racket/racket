@@ -2485,7 +2485,6 @@ static int resolve_prefix_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(rp->toplevels, gc);
   gcMARK2(rp->stxes, gc);
   gcMARK2(rp->delay_info_rpair, gc);
-  gcMARK2(rp->uses_unsafe, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -2496,7 +2495,6 @@ static int resolve_prefix_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(rp->toplevels, gc);
   gcFIXUP2(rp->stxes, gc);
   gcFIXUP2(rp->delay_info_rpair, gc);
-  gcFIXUP2(rp->uses_unsafe, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -2517,7 +2515,6 @@ static int comp_prefix_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(cp->inline_variants, gc);
   gcMARK2(cp->unbound, gc);
   gcMARK2(cp->stxes, gc);
-  gcMARK2(cp->uses_unsafe, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Comp_Prefix));
@@ -2529,7 +2526,6 @@ static int comp_prefix_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(cp->inline_variants, gc);
   gcFIXUP2(cp->unbound, gc);
   gcFIXUP2(cp->stxes, gc);
-  gcFIXUP2(cp->uses_unsafe, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Comp_Prefix));

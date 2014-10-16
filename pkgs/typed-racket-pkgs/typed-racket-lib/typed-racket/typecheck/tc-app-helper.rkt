@@ -45,24 +45,11 @@
        ;; objects yet.
        (let-values
            ([(o-a t-a) (for/lists (os ts)
-                         ([nm (in-range dom-count)]
+                         ([_ (in-range dom-count)]
                           [oa (in-sequence-forever (in-list o-a) -empty-obj)]
-                          [ta (in-sequence-forever (in-list t-a) #f)])
+                          [ta (in-sequence-forever (in-list t-a) Univ)])
                          (values oa ta))])
-           (match rng
-            [(AnyValues: f) (tc-any-results f)]
-            [(Values: results)
-             (define-values (t-r f-r o-r)
-               (for/lists (t-r f-r o-r)
-                 ([r (in-list results)])
-                 (open-Result r o-a t-a)))
-             (ret t-r f-r o-r)]
-            [(ValuesDots: results dty dbound)
-             (define-values (t-r f-r o-r)
-               (for/lists (t-r f-r o-r)
-                 ([r (in-list results)])
-                 (open-Result r o-a t-a)))
-             (ret t-r f-r o-r dty dbound)])))]
+           (values->tc-results rng o-a t-a)))]
     ;; this case should only match if the function type has mandatory keywords
     ;; but no keywords were provided in the application
     [((arr: _ _ _ _
@@ -118,7 +105,11 @@
                       (if tail-bound (cons tail-ty tail-bound) #f)))
   (cond
     [(null? doms)
-     (int-err "How could doms be null: ~a" ty)]
+     (tc-error/expr/fields
+      "cannot apply a function with unknown arity"
+      #:more (format "~a has type Procedure which cannot be applied"
+                     (name->function-str (and (identifier? f-stx) f-stx)))
+      #:return return)]
     [(and (= 1 (length doms)) (not (car rests)) (not (car drests)) (not tail-ty) (not tail-bound))
      (tc-error/expr
       #:return return
@@ -214,7 +205,16 @@
 ;;     and an expected type of Integer for the result of the application,
 ;;     we can disregard the Fixnum domain since it imposes a restriction that
 ;;     is not necessary to get the expected type
-(define (possible-domains doms rests drests rngs expected)
+;; This function can be used in permissive or restrictive mode.
+;; in permissive mode, domains that are not consistent with the expected type
+;; may still be considered possible. This is useful for error messages, where
+;; we want to collapse domains always, regardless of expected type. In
+;; restrictive mode, only domains that are consistent with the expected type can
+;; be considered possible. This is useful when computing the possibly empty set
+;; of domains that would *satisfy* the expected type, e.g. for the :query-type
+;; forms.
+;; TODO separating pruning and collapsing into separate functions may be nicer
+(define (possible-domains doms rests drests rngs expected [permissive? #t])
 
   ;; is fun-ty subsumed by a function type in others?
   (define (is-subsumed-in? fun-ty others)
@@ -239,8 +239,9 @@
                              [(Values: (list (Result: t _ _)))
                               t]
                              [(ValuesDots: (list (Result: t _ _)) _ _)
-                              t])])
-                  (subtype rng expected-ty))]))))
+                              t]
+                             [_ #f])])
+                  (and rng (subtype rng expected-ty)))]))))
 
   (define orig (map list doms rngs rests drests))
 
@@ -259,7 +260,7 @@
   ;; iterate in lock step over the function types we analyze and the parts
   ;; that we will need to print the error message, to make sure we throw
   ;; away cases consistently
-  (define-values (candidates parts-acc)
+  (define-values (candidates* parts-acc*)
     (for/fold ([candidates '()] ; from cases
                [parts-acc '()]) ; from orig
         ([c (in-list cases)]
@@ -269,7 +270,15 @@
           (values (cons c candidates) ; we keep this one
                   (cons p parts-acc))
           ;; we discard this one
-          (values candidates parts-acc)))) 
+          (values candidates parts-acc))))
+
+  ;; if none of the cases return a subtype of the expected type, still do some
+  ;; merging, but do it on the entire type
+  ;; only do this if we're in permissive mode
+  (define-values (candidates parts-acc)
+    (if (and permissive? (null? candidates*))
+        (values cases orig)
+        (values candidates* parts-acc*)))
 
   ;; among the domains that fit with the expected type, we only need to
   ;; keep the most liberal
@@ -311,12 +320,15 @@
 
 ;; Wrapper over possible-domains that works on types.
 (provide/cond-contract
-  [cleanup-type ((Type/c) ((or/c #f Type/c)) . ->* . Type/c)])
-(define (cleanup-type t [expected #f])
+  [cleanup-type ((Type/c) ((or/c #f Type/c) any/c) . ->* . Type/c)])
+(define (cleanup-type t [expected #f] [permissive? #t])
   (match t
     ;; function type, prune if possible.
-    [(Function: (list (arr: doms rngs rests drests kws) ...))
-     (match-let ([(list pdoms rngs rests drests) (possible-domains doms rests drests rngs (and expected (ret expected)))])
+    [(Function/arrs: doms rngs rests drests kws)
+     (match-let ([(list pdoms rngs rests drests)
+                  (possible-domains doms rests drests rngs
+                                    (and expected (ret expected))
+                                    permissive?)])
        (if (= (length pdoms) (length doms))
            ;; pruning didn't improve things, return the original
            ;; (Note: pruning may have reordered clauses, so may not be `equal?' to
@@ -337,16 +349,14 @@
   (match t
     [(or (Poly-names:
           msg-vars
-          (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...)))
+          (Function/arrs: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)))
          (PolyDots-names:
           msg-vars
-          (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...)))
+          (Function/arrs: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)))
          (PolyRow-names:
           msg-vars _
-          (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...))))
-     (let ([fcn-string (if name
-                           (format "function `~a'" (syntax->datum name))
-                           "function")])
+          (Function/arrs: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...))))
+     (let ([fcn-string (name->function-str name)])
        (if (and (andmap null? msg-doms)
                 (null? argtypes))
            (tc-error/expr (string-append
@@ -363,9 +373,9 @@
                                                                (list->seteq msg-vars)))
                                                  (string-append "Type Variables: " (stringify msg-vars) "\n")
                                                  ""))))))]
-    [(or (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...)))
-         (PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...)))
-         (PolyRow-names: msg-vars _ (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests kws) ...))))
+    [(or (Poly-names: msg-vars (Function/arrs: msg-doms msg-rngs msg-rests msg-drests kws))
+         (PolyDots-names: msg-vars (Function/arrs: msg-doms msg-rngs msg-rests msg-drests kws))
+         (PolyRow-names: msg-vars _ (Function/arrs: msg-doms msg-rngs msg-rests msg-drests kws)))
      (let ([fcn-string (if name
                            (format "function with keywords ~a" (syntax->datum name))
                            "function with keywords")])
@@ -386,3 +396,9 @@
                                                  (string-append "Type Variables: " (stringify msg-vars) "\n")
                                                  ""))))))]))
 
+;; name->function-str : (Option Identifier) -> String
+;; Produce a function name string for error messages
+(define (name->function-str name)
+  (if name
+      (format "function `~a'" (syntax->datum name))
+      "function"))

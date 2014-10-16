@@ -62,13 +62,8 @@ using the functions described in @secref["cert-procs"].
 @defproc[(ssl-connect [hostname string?]
                       [port-no (integer-in 1 65535)]
                       [client-protocol
-                       (or/c ssl-client-context? 
-                             'sslv2-or-v3
-                             'sslv2
-                             'sslv3
-                             'tls
-                             'tls11
-                             'tls12)
+                       (or/c ssl-client-context?
+                             'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
                        'sslv2-or-v3])
          (values input-port? output-port?)]{
 
@@ -177,14 +172,26 @@ The @racket[protocol] must be one of the following:
 
 Note that SSL protocol version 2 is deprecated on some platforms and may not be
 present in your system libraries. The use of SSLv2 may also compromise security; 
-thus, using SSLv3 is recommended.
-}
+thus, using SSLv3 is recommended. TLS 1.1 and 1.2 are relatively new and not
+always available. See also @racket[supported-client-protocols] and
+@racket[supported-server-protocols].
+
+@history[#:changed "6.1" @elem{Added @racket['tls11] and @racket['tls12].}]}
+
+
+@defproc[(supported-client-protocols)
+         (listof (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
+
+Returns a list of symbols representing protocols that are supported
+for clients on the current platform.}
 
 
 @defproc[(ssl-client-context? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a value produced by
-@racket[ssl-make-client-context], @racket[#f] otherwise.}
+@racket[ssl-make-client-context], @racket[#f] otherwise.
+
+@history[#:added "6.0.1.3"]}
 
 
 @; ----------------------------------------------------------------------
@@ -269,11 +276,19 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
 
 Like @racket[ssl-make-client-context], but creates a server context.}
 
+
 @defproc[(ssl-server-context? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a value produced by
 @racket[ssl-make-server-context], @racket[#f] otherwise.}
 
+@defproc[(supported-server-protocols)
+         (listof (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
+
+Returns a list of symbols representing protocols that are supported
+for servers on the current platform.
+
+@history[#:added "6.0.1.3"]}
 
 @; ----------------------------------------------------------------------
 
@@ -565,6 +580,53 @@ symbols naming a standard elliptic curve:
 Path for 4096-bit Diffie-Hellman parameters.
 }
 
+@defproc[(ssl-set-server-name-identification-callback!
+           [context ssl-server-context?]
+           [callback (string? . -> . (or/c ssl-server-context? #f))])
+         void?]{
+
+Provides an SSL server context with a procedure it can use for switching
+to alternative contexts on a per-connection basis. The procedure is given
+the hostname the client was attempting to connect to, to use as the basis
+for its decision.
+
+The client sends this information via the TLS
+@hyperlink["http://en.wikipedia.org/wiki/Server_Name_Indication"]{Server Name Identification}
+extension, which was created to allow @hyperlink["http://en.wikipedia.org/wiki/Virtual_hosting"]{virtual hosting}
+for secure servers.
+
+The suggested use it to prepare the appropriate server contexts, 
+define a single callback which can dispatch between them, and then
+apply it to all the contexts before sealing them. A minimal example:
+
+@racketblock[
+  (define ctx-a (ssl-make-server-context 'tls))
+  (define ctx-b (ssl-make-server-context 'tls))
+  ...
+  (ssl-load-certificate-chain! ctx-a "cert-a.pem")
+  (ssl-load-certificate-chain! ctx-b "cert-b.pem")
+  ...
+  (ssl-load-private-key! ctx-a "key-a.pem")
+  (ssl-load-private-key! ctx-b "key-b.pem")
+  ...
+  (define (callback hostname)
+    (cond [(equal? hostname "a") ctx-a]
+          [(equal? hostname "b") ctx-b]
+          ...
+          [else #f]))
+  (ssl-set-server-name-identification-callback! ctx-a callback)
+  (ssl-set-server-name-identification-callback! ctx-b callback)
+  ...
+  (ssl-seal-context! ctx-a)
+  (ssl-seal-context! ctx-b)
+  ...
+  (ssl-listen 443 5 #t #f ctx-a)
+]
+
+If the callback returns @racket[#f], the connection attempt will continue,
+using the original server context.
+
+}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "peer-verif"]{Peer Verification}

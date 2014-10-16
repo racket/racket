@@ -3,17 +3,18 @@
 ;; This module provides functions for parsing types written by the user
 
 (require "../utils/utils.rkt"
-         (except-in (rep type-rep object-rep filter-rep) make-arr)
+         (except-in (rep type-rep object-rep) make-arr)
          (rename-in (types abbrev union utils filter-ops resolve
                            classes subtype)
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util literal-syntax-class)
          syntax/stx (prefix-in c: (contract-req))
          syntax/parse unstable/sequence
-         (env tvar-env type-name-env type-alias-env
+         (env tvar-env type-name-env type-alias-env mvar-env
               lexical-env index-env row-constraint-env)
          (only-in racket/list flatten)
          racket/dict
+         racket/promise
          racket/format
          racket/match
          racket/syntax
@@ -63,6 +64,16 @@
 ;; interp. same as above
 (define current-referenced-class-parents (make-parameter #f))
 
+;; current-arities : Parameter<(Listof Natural)>
+;; Represents the stack of function arities in the potentially
+;; nested function type being parsed. The stack does not include the
+;; innermost function (since syntax classes can check that locally)
+(define current-arities (make-parameter null))
+
+(define-syntax-rule (with-arity arity e ...)
+  (parameterize ([current-arities (cons arity (current-arities))])
+    e ...))
+
 (define-literal-syntax-class #:for-label car)
 (define-literal-syntax-class #:for-label cdr)
 (define-literal-syntax-class #:for-label colon^ (:))
@@ -94,7 +105,6 @@
 ;; (Syntax -> Type) -> Syntax Any -> Syntax
 ;; See `parse-type/id`. This is a curried generalization.
 (define ((parse/id p) loc datum)
-  #;(printf "parse-type/id id : ~a\n ty: ~a\n" (syntax-object->datum loc) (syntax-object->datum stx))
   (let* ([stx* (datum->syntax loc datum loc loc)])
     (p stx*)))
 
@@ -112,7 +122,6 @@
 ;; Syntax -> Type
 ;; Parse a Forall type
 (define (parse-all-type stx)
-  ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
   (syntax-parse stx
     [(:All^ (vars:id ... v:id dd:ddd) . t:omit-parens)
      (define maybe-dup (check-duplicate-identifier (syntax->list #'(vars ... v))))
@@ -162,21 +171,19 @@
 ;; optional or mandatory depending on where it's used
 (define-splicing-syntax-class plain-kw-tys
   (pattern (~seq k:keyword t:expr)
-           #:attr mand-kw (make-Keyword (syntax-e #'k) (parse-type #'t) #t)
-           #:attr opt-kw  (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
+           #:attr mand-kw (delay (make-Keyword (syntax-e #'k) (parse-type #'t) #t))
+           #:attr opt-kw  (delay (make-Keyword (syntax-e #'k) (parse-type #'t) #f))))
 
 (define-splicing-syntax-class keyword-tys
   (pattern kw:plain-kw-tys #:attr Keyword (attribute kw.mand-kw))
   ;; custom optional keyword syntax for TR
   (pattern (~seq [k:keyword t:expr])
-           #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
+           #:attr Keyword (delay (make-Keyword (syntax-e #'k) (parse-type #'t) #f))))
 
 (define-syntax-class non-keyword-ty
-  (pattern (k e ...)
-           #:when (not (keyword? (syntax->datum #'k))))
-  (pattern t:expr
-           #:when (and (not (keyword? (syntax->datum #'t)))
-                       (not (syntax->list #'t)))))
+  (pattern (k:expr e ...))
+  (pattern (~and t:expr (~not :colon^) (~not :->^))
+           #:when (not (syntax->list #'t))))
 
 ;; syntax classes for parsing ->* function types
 (define-syntax-class ->*-mand
@@ -210,18 +217,6 @@
   (pattern :cdr^
            #:attr pe (make-CdrPE)))
 
-(define-splicing-syntax-class idx-obj
-  #:description "index object"
-  #:attributes (arg depth pair)
-  (pattern (~seq idx:nat)
-           #:attr arg (syntax-e #'idx)
-           #:attr depth 0
-           #:attr pair (list 0 (syntax-e #'idx)))
-  (pattern (~seq depth-idx:nat idx:nat)
-           #:attr arg (syntax-e #'idx)
-           #:attr depth (syntax-e #'depth-idx)
-           #:attr pair (list (syntax-e #'depth-idx)
-                             (syntax-e #'idx))))
 
 (define-syntax-class @
   #:description "@"
@@ -245,20 +240,12 @@
   #:attributes (prop)
   (pattern :Top^ #:attr prop -top)
   (pattern :Bot^ #:attr prop -bot)
-  (pattern (t:expr :@ pe:path-elem ... i:id)
-           #:attr prop (-filter (parse-type #'t) #'i (attribute pe.pe)))
-  (pattern (t:expr :@ ~! pe:path-elem ... i:idx-obj)
-           #:fail-unless (< (attribute i.arg) (length doms))
-           (format "Filter proposition's object index ~a is larger than argument length ~a"
-                   (attribute i.arg) (length doms))
-           #:attr prop (-filter (parse-type #'t) (attribute i.pair) (attribute pe.pe)))
-  (pattern (:! t:expr :@ pe:path-elem ... i:id)
-           #:attr prop (-not-filter (parse-type #'t) #'i (attribute pe.pe)))
-  (pattern (:! t:expr :@ ~! pe:path-elem ... i:idx-obj)
-           #:fail-unless (< (attribute i.arg) (length doms))
-           (format "Filter proposition's object index ~a is larger than argument length ~a"
-                   (attribute i.arg) (length doms))
-           #:attr prop (-not-filter (parse-type #'t) (attribute i.pair) (attribute pe.pe)))
+  ;; Here is wrong check
+  (pattern (t:expr :@ ~! pe:path-elem ... (~var o (filter-object doms)))
+           #:attr prop (-filter (parse-type #'t) (-acc-path (attribute pe.pe) (attribute o.obj))))
+  ;; Here is wrong check
+  (pattern (:! t:expr :@ ~! pe:path-elem ... (~var o (filter-object doms)))
+           #:attr prop (-not-filter (parse-type #'t) (-acc-path (attribute pe.pe) (attribute o.obj))))
   (pattern (:! t:expr)
            #:attr prop (-not-filter (parse-type #'t) 0))
   (pattern (and (~var p (prop doms)) ...)
@@ -269,6 +256,37 @@
            #:attr prop (-imp (attribute p1.prop) (attribute p2.prop)))
   (pattern t:expr
            #:attr prop (-filter (parse-type #'t) 0)))
+
+(define-splicing-syntax-class (filter-object doms)
+  #:description "filter object"
+  #:attributes (obj)
+  (pattern i:id
+           #:fail-unless (identifier-binding #'i)
+           "Filters for predicates may not reference identifiers that are unbound"
+           #:fail-when (is-var-mutated? #'i)
+           "Filters for predicates may not reference identifiers that are mutated"
+           #:attr obj (-id-path #'i))
+  (pattern idx:nat
+           #:do [(define arg (syntax-e #'idx))]
+           #:fail-unless (< arg (length doms))
+           (format "Filter proposition's object index ~a is larger than argument length ~a"
+                   arg (length doms))
+           #:attr obj (-arg-path arg 0))
+  (pattern (~seq depth-idx:nat idx:nat)
+           #:do [(define arg (syntax-e #'idx))
+                 (define depth (syntax-e #'depth-idx))]
+           #:fail-unless (<= depth (length (current-arities)))
+           (format "Index ~a used in a filter, but the use is only within ~a enclosing functions"
+                   depth (length (current-arities)))
+           #:do [(define actual-arg
+                   (if (zero? depth)
+                       (length doms)
+                       (list-ref (current-arities) (sub1 depth))))]
+           #:fail-unless (< arg actual-arg)
+           (format "Filter proposition's object index ~a is larger than argument length ~a"
+                   depth actual-arg)
+           #:attr obj (-arg-path arg (syntax-e #'depth-idx))))
+
 
 (define-syntax-class object
   #:attributes (object)
@@ -358,8 +376,6 @@
                   #:stx ty
                   "expected a function type for component of case-> type"
                   "given" t)]))))]
-      #;[(:Vectorof^ t)
-       (make-Vector (parse-type #'t))]
       [(:Rec^ x:id t)
        (let* ([var (syntax-e #'x)]
               [tvar (make-F var)])
@@ -376,6 +392,7 @@
                   [(Mu: _ body) (loop body)]
                   [(Poly: names body) (loop body)]
                   [(PolyDots: names body) (loop body)]
+                  [(PolyRow: _ _ body) (loop body)]
                   [else #t])))
              (unless productive
                (parse-error
@@ -401,57 +418,55 @@
       [((~and dom:non-keyword-ty (~not :->^)) ...
         :->^
         (~and (~seq rest-dom ...) (~seq (~or _ (~between :->^ 1 +inf.0)) ...)))
-       (let ([doms (for/list ([d (in-syntax #'(dom ...))])
-                     (parse-type d))])
-         (make-Function
-          (list (make-arr
-                 doms
-                 (parse-type (syntax/loc stx (rest-dom ...)))))))]
+       (define doms (syntax->list #'(dom ...)))
+       (with-arity (length doms)
+         (let ([doms (for/list ([d (in-list doms)])
+                       (parse-type d))])
+           (make-Function
+            (list (make-arr
+                   doms
+                   (parse-type (syntax/loc stx (rest-dom ...))))))))]
       [(~or (:->^ dom rng :colon^ latent:simple-latent-filter)
             (dom :->^ rng :colon^ latent:simple-latent-filter))
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
-       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type) 0 (attribute latent.path))]
-      [(~or (:->^ dom ... rng
-             :colon^ ~! (~var latent (full-latent (syntax->list #'(dom ...)))))
-            (dom ... :->^ rng
-             :colon^ ~! (~var latent (full-latent (syntax->list #'(dom ...))))))
-       ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
-       (->* (parse-types #'(dom ...))
-            (parse-type #'rng)
-            : (-FS (attribute latent.positive) (attribute latent.negative))
-            : (attribute latent.object))]
+       (with-arity 1
+         (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type)
+                       (-acc-path (attribute latent.path) (-arg-path 0))))]
       [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star rng)
             (dom:non-keyword-ty ... kws:keyword-tys ... rest:non-keyword-ty ddd:star :->^ rng))
-       (make-Function
-        (list (make-arr
-               (parse-types #'(dom ...))
-               (parse-values-type #'rng)
-               #:rest (parse-type #'rest)
-               #:kws (attribute kws.Keyword))))]
+       (with-arity (length (syntax->list #'(dom ...)))
+         (make-Function
+          (list (make-arr
+                 (parse-types #'(dom ...))
+                 (parse-values-type #'rng)
+                 #:rest (parse-type #'rest)
+                 #:kws (map force (attribute kws.Keyword))))))]
       [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound rng)
             (dom:non-keyword-ty ... rest:non-keyword-ty :ddd/bound :->^ rng))
-       (let* ([bnd (syntax-e #'bound)])
-         (unless (bound-index? bnd)
-           (parse-error
-            #:stx #'bound
-            "used a type variable not bound with ... as a bound on a ..."
-            "variable" bnd))
-         (make-Function
-          (list
-           (make-arr-dots (parse-types #'(dom ...))
-                          (parse-values-type #'rng)
-                          (extend-tvars (list bnd)
-                            (parse-type #'rest))
-                          bnd))))]
+       (with-arity (length (syntax->list #'(dom ...)))
+         (let* ([bnd (syntax-e #'bound)])
+           (unless (bound-index? bnd)
+             (parse-error
+              #:stx #'bound
+              "used a type variable not bound with ... as a bound on a ..."
+              "variable" bnd))
+           (make-Function
+            (list
+             (make-arr-dots (parse-types #'(dom ...))
+                            (parse-values-type #'rng)
+                            (extend-tvars (list bnd)
+                                          (parse-type #'rest))
+                            bnd)))))]
       [(~or (:->^ dom:non-keyword-ty ... rest:non-keyword-ty _:ddd rng)
             (dom:non-keyword-ty ... rest:non-keyword-ty _:ddd :->^ rng))
-       (let ([var (infer-index stx)])
-         (make-Function
-          (list
-           (make-arr-dots (parse-types #'(dom ...))
-                          (parse-values-type #'rng)
-                          (extend-tvars (list var) (parse-type #'rest))
-                          var))))]
+       (with-arity (length (syntax->list #'(dom ...)))
+         (let ([var (infer-index stx)])
+           (make-Function
+            (list
+             (make-arr-dots (parse-types #'(dom ...))
+                            (parse-values-type #'rng)
+                            (extend-tvars (list var) (parse-type #'rest))
+                            var)))))]
       #| ;; has to be below the previous one
      [(dom:expr ... :->^ rng)
       (->* (parse-types #'(dom ...))
@@ -459,23 +474,40 @@
       ;; use expr to rule out keywords
       [(~or (:->^ dom:non-keyword-ty ... kws:keyword-tys ... rng)
             (dom:non-keyword-ty ... kws:keyword-tys ... :->^ rng))
-      (let ([doms (for/list ([d (in-syntax #'(dom ...))])
-                    (parse-type d))])
-         (make-Function
-          (list (make-arr
-                 doms
-                 (parse-values-type #'rng)
-                 #:kws (attribute kws.Keyword)))))]
+       (define doms (syntax->list #'(dom ...)))
+       (with-arity (length doms)
+         (let ([doms (for/list ([d (in-list doms)])
+                       (parse-type d))])
+           (make-Function
+            (list (make-arr
+                   doms
+                   (parse-values-type #'rng)
+                   #:kws (map force (attribute kws.Keyword)))))))]
+      ;; This case needs to be at the end because it uses cut points to give good error messages.
+      [(~or (:->^ ~! dom:non-keyword-ty ... rng:expr
+             :colon^ (~var latent (full-latent (syntax->list #'(dom ...)))))
+            (dom:non-keyword-ty ... :->^ rng:expr
+             ~! :colon^ (~var latent (full-latent (syntax->list #'(dom ...))))))
+       ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
+       (with-arity (length (syntax->list #'(dom ...)))
+         (->* (parse-types #'(dom ...))
+              (parse-type #'rng)
+              : (-FS (attribute latent.positive) (attribute latent.negative))
+              : (attribute latent.object)))]
       [(:->*^ mand:->*-mand opt:->*-opt rest:->*-rest rng)
-       (define doms (for/list ([d (attribute mand.doms)])
-                      (parse-type d)))
-       (define opt-doms (for/list ([d (attribute opt.doms)])
-                          (parse-type d)))
-       (opt-fn doms opt-doms (parse-values-type #'rng)
-               #:rest (and (attribute rest.type)
-                           (parse-type (attribute rest.type)))
-               #:kws (append (attribute mand.kws)
-                             (attribute opt.kws)))]
+       (with-arity (length (attribute mand.doms))
+         (define doms (for/list ([d (attribute mand.doms)])
+                        (parse-type d)))
+         (define opt-doms (for/list ([d (attribute opt.doms)])
+                            (parse-type d)))
+         (opt-fn doms opt-doms (parse-values-type #'rng)
+                 #:rest (and (attribute rest.type)
+                             (parse-type (attribute rest.type)))
+                 #:kws (map force (append (attribute mand.kws)
+                                          (attribute opt.kws)))))]
+      [:->^
+       (parse-error #:delayed? #t "incorrect use of -> type constructor")
+       Err]
       [id:identifier
        (cond
          ;; if it's a type variable, we just produce the corresponding reference (which is in the HT)
@@ -489,15 +521,11 @@
          [(lookup-type-alias #'id parse-type (lambda () #f))
           =>
           (lambda (t)
-            ;(printf "found a type alias ~a\n" #'id)
             (when (current-referenced-aliases)
               (define alias-box (current-referenced-aliases))
               (set-box! alias-box (cons #'id (unbox alias-box))))
             (add-disappeared-use (syntax-local-introduce #'id))
             t)]
-         [(free-identifier=? #'id #'->)
-          (parse-error #:delayed? #t "incorrect use of -> type constructor")
-          Err]
          [else
           (parse-error #:delayed? #t (~a "type name `" (syntax-e #'id) "' is unbound"))
           Err])]
@@ -505,8 +533,6 @@
        (parse-error "bad syntax in Opaque")]
       [(:U^ . rest)
        (parse-error "bad syntax in Union")]
-      #;[(:Vectorof^ . rest)
-       (tc-error "bad syntax in Vectorof")]
       [(:Rec^ . rest)
        (parse-error "bad syntax in Rec")]
       [(t ... :->^ . rest)
@@ -822,7 +848,7 @@
 
 (define (parse-tc-results stx)
   (syntax-parse stx
-    [(:values^ t ...)
+    [((~or :Values^ :values^) t ...)
      (ret (parse-types #'(t ...))
           (stx-map (lambda (x) -no-filter) #'(t ...))
           (stx-map (lambda (x) -no-obj) #'(t ...)))]

@@ -238,11 +238,11 @@ static int generate_inlined_constant_test(mz_jit_state *jitter, Scheme_App2_Rec 
   }
 
   if (cnst2) {
-    ref2 = mz_beqi_p(jit_forward(), JIT_R0, cnst);
-    ref = mz_bnei_p(jit_forward(), JIT_R0, cnst2);
+    ref2 = jit_beqi_p(jit_forward(), JIT_R0, cnst);
+    ref = jit_bnei_p(jit_forward(), JIT_R0, cnst2);
     mz_patch_branch(ref2);
   } else {
-    ref = mz_bnei_p(jit_forward(), JIT_R0, cnst);
+    ref = jit_bnei_p(jit_forward(), JIT_R0, cnst);
   }
 
   if (for_branch) {
@@ -317,11 +317,11 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
       __END_INNER_TINY__(branch_short);
     }
     if (lo_ty == hi_ty) {
-      ref3 = jit_bnei_p(jit_forward(), JIT_R1, lo_ty);
+      ref3 = jit_bnei_i(jit_forward(), JIT_R1, lo_ty);
       ref4 = NULL;
     } else {
-      ref3 = jit_blti_p(jit_forward(), JIT_R1, lo_ty);
-      ref4 = jit_bgti_p(jit_forward(), JIT_R1, hi_ty);
+      ref3 = jit_blti_i(jit_forward(), JIT_R1, lo_ty);
+      ref4 = jit_bgti_i(jit_forward(), JIT_R1, hi_ty);
     }
     if (can_chaperone < 0) {
       /* Make sure it's not a impersonator */
@@ -1095,8 +1095,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
     ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
     jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
-    ref3 = jit_beqi_p(jit_forward(), JIT_R1, scheme_null_type);
-    ref4 = jit_bnei_p(jit_forward(), JIT_R1, scheme_pair_type);
+    ref3 = jit_beqi_i(jit_forward(), JIT_R1, scheme_null_type);
+    ref4 = jit_bnei_i(jit_forward(), JIT_R1, scheme_pair_type);
     CHECK_LIMIT();
 
     /* We have a pair. Optimistically check for PAIR_IS_LIST: */
@@ -2458,7 +2458,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
            didn't disturb R0: */
         if (for_branch) mz_SET_R0_STATUS_VALID(reg_status);
       } else {
-	ref = mz_bnei_p(jit_forward(), JIT_R0, a1);
+	ref = jit_bnei_p(jit_forward(), JIT_R0, a1);
         /* In case true is a fall-through, note that the test 
            didn't disturb R0 or R1: */
         if (for_branch) mz_SET_REG_STATUS_VALID(reg_status);
@@ -2532,7 +2532,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       CHECK_LIMIT();
     }
     
-    ref_f = jit_beqi_p(jit_forward(), JIT_R0, 0);
+    ref_f = jit_beqi_i(jit_forward(), JIT_R0, 0);
 
     if (for_branch) {
       scheme_add_branch_false(for_branch, ref_f);

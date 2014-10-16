@@ -13,12 +13,13 @@
 
 (define create-mode 'built)
 
-(command-line
- #:once-each
- [("--mode") mode "Create package archives for <mode>"
-  (set! create-mode (string->symbol mode))]
- #:args ()
- (void))
+(define pkg-info-file
+  (command-line
+   #:once-each
+   [("--mode") mode "Create package archives for <mode>"
+    (set! create-mode (string->symbol mode))]
+   #:args (pkg-info-file)
+   pkg-info-file))
 
 (define build-dir "build")
 (define dest-dir (build-path build-dir (~a create-mode)))
@@ -29,9 +30,12 @@
 (make-directory* pkg-dest-dir)
 (make-directory* catalog-pkg-dir)
 
+(define pkg-details (call-with-input-file* pkg-info-file read))
+
 (for ([pkg (in-list (installed-pkg-names))])
   (define native-zip (build-path native-dir (path-add-suffix pkg ".zip")))
   (unless (file-exists? native-zip)
+    (define ht (hash-ref pkg-details pkg (hash)))
     (define dest-zip (build-path pkg-dest-dir (~a pkg ".zip")))
     (pkg-create 'zip pkg
                 #:source 'name
@@ -46,10 +50,10 @@
                                            (simple-form-path dest-zip)))
                     'checksum (call-with-input-file* dest-zip sha1)
                     'name pkg
-                    'author "plt@racket-lang.org"
-                    'description "library"
-                    'tags '()
-                    'dependencies '()
-                    'modules '())
+                    'author (hash-ref ht 'author "plt@racket-lang.org")
+                    'description (hash-ref ht 'author "library")
+                    'tags (hash-ref ht 'tags '())
+                    'dependencies (hash-ref ht 'dependencies '())
+                    'modules (hash-ref ht 'modules '()))
               o)
        (newline o)))))

@@ -4,7 +4,8 @@
           "common.rkt"
           (for-label pkg
                      (except-in racket/base remove)
-                     setup/dirs))
+                     setup/dirs
+                     setup/matching-platform))
 
 @(define @|Planet1| @|PLaneT|)
 
@@ -117,32 +118,42 @@ The @tech{package source} types are:
 
 @itemlist[
 
-@item{a local file path naming an archive -- The name of the package
+@item{a local file path naming an archive (as a plain path or @litchar{file://} URL)
+--- The name of the package
 is the basename of the archive file. The @tech{checksum} for archive
 @filepath{f.@nonterm{ext}} is given by the file @filepath{f.@nonterm{ext}.CHECKSUM}.
 The valid archive formats
 are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz}, 
 @filepath{.tar.gz}, and
-@filepath{.plt}, each of which represents package content analogous
-to a directory,
-but the @filepath{.plt} format does not accommodate a 
+@filepath{.plt}.
+
+For example, @filepath{~/tic-tac-toe.zip} is an archive package
+source, and its @tech{checksum} would be inside
+@filepath{~/tic-tac-toe.zip.CHECKSUM}.
+
+An archive represents package content analogous to a directory, but if
+the archive's content is contained within a single top-level
+directory, then the directory's content (as opposed to the overall
+archive content) is used as the package content. The @filepath{.plt}
+format does not accommodate either an extra directory layer or a
 @tech{single-collection package} representation.
 
-For
-example, @filepath{~/tic-tac-toe.zip}'s @tech{checksum} would be inside
-@filepath{~/tic-tac-toe.zip.CHECKSUM}. 
-
-A package source is inferred to refer to a file
+A package source is inferred to refer to an archive file
 only when it has a suffix matching a valid archive format
 and when it starts with @litchar{file://} or does not start
 with alphabetic characters followed by @litchar{://}. The inferred
-package name is the filename without its suffix.}
+package name is the filename without its suffix.
 
-@item{a local directory -- The name of the package is the name of the
+@history[#:changed "6.0.1.12"
+         @elem{Changed treatment of an archive that contains all
+               content within a top-level directory.}]}
+
+@item{a local directory (as a plain path or @litchar{file://} URL)
+--- The name of the package is the name of the
 directory. The @tech{checksum} is not present.
 
 For example,
-@filepath{~/tic-tac-toe/} is directory package source.
+@filepath{~/tic-tac-toe/} is a directory package source.
 
 A package source is inferred to refer
 to a directory only when it does not have a file-archive suffix, does
@@ -151,7 +162,7 @@ with @litchar{file://} or does not start
 with alphabetic characters followed by @litchar{://}. The inferred
 package name is the directory name.}
 
-@item{a remote URL naming an archive -- This type follows the same
+@item{a remote URL naming an archive --- This type follows the same
 rules as a local file path, but the archive and @tech{checksum} files are
 accessed via HTTP(S).
 
@@ -167,7 +178,7 @@ that could be inferred as a file archive.
 The inferred package name is from the URL's file name in the same
 way as for a file package source.}
 
-@item{a remote URL naming a directory -- The remote directory must
+@item{a remote URL naming a directory --- The remote directory must
 contain a file named @filepath{MANIFEST} that lists all the contingent
 files. These are downloaded into a local directory and then the rules
 for local directory paths are followed. However, if the remote
@@ -184,7 +195,7 @@ file, and it is treated as a directory URL when it does not end with a
 path element that has an archive file suffix. The inferred package name
 is the directory name.}
 
-@item{a remote URL naming a GitHub repository -- The format for such
+@item{a remote URL naming a GitHub repository --- The format for such
 URLs is:
 
 @inset{@exec{git://github.com/}@nonterm{user}@exec{/}@nonterm{repo}@;
@@ -217,7 +228,7 @@ specified as a GitHub reference is automatically prefixed with
 is the last element of @nonterm{path} if it is
 non-empty, otherwise the inferred name is @nonterm{repo}.}
 
-@item{a @tech{package name} -- A @tech{package catalog} is
+@item{a @tech{package name} --- A @tech{package catalog} is
 consulted to determine the source and @tech{checksum} for the package.
 
 For
@@ -425,12 +436,19 @@ sub-commands.
 
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
+  @item{@DFlag{strict-doc-conflicts} --- Refuses to install in user @tech{package scope} when
+        documentation-directory names would conflict with other packages. ``Conflicting''
+        documentation names are normally allowed for installation in user @tech{package scope},
+        but strict checking ensures that installation would succeed in other @tech{package scopes}.}
+
   @item{@DFlag{no-cache} --- Disables use of the download cache.}
 
   @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Install and setup with @nonterm{n} parallel jobs.}
+
+  @item{@DFlag{fail-fast} --- Breaks @exec{raco setup} as soon as any error is encountered.}
  ]
 
 
@@ -477,6 +495,7 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{all-platforms} --- Same as for @command-ref{install}.}
  @item{@DFlag{force} --- Same as for @command-ref{install}.}
  @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
+ @item{@DFlag{strict-doc-conflicts} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
@@ -560,6 +579,7 @@ the given @nonterm{pkg}s.
   @item{@DFlag{all-platforms} --- Same as for @command-ref{install}.}
   @item{@DFlag{force} --- Same as for @command-ref{install}.}
   @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
+  @item{@DFlag{strict-doc-conflicts} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
@@ -729,6 +749,31 @@ for @nonterm{key}.
  @history[#:added "6.0.17"]
 }
 
+@subcommand{@command/toc{archive} @nonterm{option} ... @nonterm{dest-dir} @nonterm{pkg} ...
+--- Copies information from installed packages named by @nonterm{pkgs}s
+    to a @filepath{catalog} directory catalog in @nonterm{dest-dir}, and also copies
+    all package sources to a @filepath{pkgs} directory in @nonterm{dest-dir}.
+
+    Packages sources are copied and repacked as needed, so that
+    all packages are written to the @filepath{pkgs} directory as
+    @filepath{.zip} archives. This conversion may change the checksum
+    on each archived package.
+
+    The @exec{archive} sub-command accepts
+    the following @nonterm{option}s:
+
+ @itemlist[
+ @item{@DFlag{include-deps} --- Includes the dependencies of the specified packages
+        in the resulting catalog.}
+ @item{@DFlag{exclude} @nonterm{pkg} --- Omits the specified @nonterm{pkg} from the
+        resulting catalog. This also causes the dependencies of @nonterm{pkg} to be
+        omitted if @DFlag{include-deps} is specified. This flag can be provided multiple times.}
+ @item{@DFlag{relative} --- Write package sources to @nonterm{dest-catalog} in relative-path form.}
+ ]
+
+ @history[#:added "6.1.0.8"]
+}
+
 @; ----------------------------------------
 
 @section[#:tag "metadata"]{Package Metadata}
@@ -794,7 +839,8 @@ The following @filepath{info.rkt} fields are used by the package manager:
                @racket[(system-type)] when @racket[_platforms-spec] is
                a symbol or @racket[(path->string
                (system-library-subpath #f))] when
-               @racket[_platform-spec] is a regular expression.  For
+               @racket[_platform-spec] is a string or regular expression.
+               See also @racket[matching-platform?]. For
                example, platform-specific binaries can be placed into
                their own packages, with one separate package and one
                dependency for each supported platform.}
@@ -806,15 +852,18 @@ The following @filepath{info.rkt} fields are used by the package manager:
         
         ]
 
-       Each elements of the @racketidfont{deps} list determines a
+       Each element of the @racketidfont{deps} list determines a
        dependency on the @tech{package} whose name is inferred from
        the @tech{package source} (i.e., dependencies are on package
        names, not package sources), while the @tech{package source}
        indicates where to get the package if needed to satisfy the
        dependency.
 
-       Use the package name @racket["racket"] to specify a dependency
-       on the version of the Racket installation.}
+       Using the package name @racket["racket"] specifies a dependency
+       on the Racket run-time system, which is potentially useful when
+       a version is included in the dependency. For most purposes,
+       it's better to specify a versioned dependency on
+       @racket["base"], instead.}
 
  @item{@racketidfont{build-deps} --- like @racketidfont{deps}, but for
        dependencies that can be dropped in a @tech{binary package},
@@ -825,7 +874,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
        @DFlag{binary} mode.}
 
  @item{@racketidfont{implies} --- a list of strings and
-       @racket['core]. Each string refers to a package listed in the
+       @racket['core]. Each string refers to a package listed in
        @racketidfont{deps} and indicates that a dependency on the
        current package counts as a dependency on the named package;
        for example, the @pkgname{gui} package is defined to ensure
@@ -839,6 +888,12 @@ The following @filepath{info.rkt} fields are used by the package manager:
        @pkgname{base} package to declare it as the representative of
        core Racket libraries.}
 
+ @item{@racketidfont{update-implies} --- a list of strings. Each
+       string refers to a package listed in @racketidfont{deps}
+       or @racketidfont{build-deps}
+       and indicates that the implied packages are automatically updated
+       whenever the implying package is updated.}
+
  @item{@racketidfont{setup-collects} --- a list of path strings and/or
        lists of path strings, which are used as collection names to
        set up via @exec{raco setup} after the package is installed, or
@@ -847,7 +902,20 @@ The following @filepath{info.rkt} fields are used by the package manager:
        set up (plus collections for global documentation indexes and
        links).}
 
+ @item{@racketidfont{package-content-state} --- a list of two items;
+       the first item is @racket['binary], @racket['binary-lib], or
+       @racket['built], and the second item is either @racket[#f] or a
+       string to represent a Racket version for compiled content. This
+       information is used by @exec{raco pkg install} or @exec{raco
+       pkg update} witj @DFlag{source}, @DFlag{binary}, or
+       @DFlag{binary-lib} to ensure that the package content is
+       consistent with the requested conversion; see also
+       @secref["strip"]. Absence of this definition is treated the
+       same as @racket[(list 'source #f)].}
+
 ]
+
+@history[#:changed "6.1.0.5" @elem{Added @racketidfont{update-implies}.}]
 
 @; ----------------------------------------
 
@@ -1004,6 +1072,42 @@ You can go even further with
 which not only takes a snapshot of the catalog, but also takes a
 snapshot of all package sources (so that you do not depend on the
 original sources).
+
+
+@subsection{How can I install a package without its documentation?}
+
+If package is available in the form of a @tech{built package}, then
+you can use @exec{raco pkg install --binary-lib} to strip source,
+tests, and documentation from a package before installing it.
+
+@tech{Built packages} are typically provided by a snapshot or release
+site (where a Racket distribution downloaded from the site is
+configured to consult the site for packages), at least for packages
+associated with the distribution. Beware that
+@url{http://pkgs.racket-lang.org/} generally refers to @tech{source
+packages}, not @tech{built packages}. In the near future, built
+variants of the @url{http://pkgs.racket-lang.org/} packages will be
+provided at @url{http://pkg-build.racket-lang.org/catalog/}.
+
+Some packages have been split at the source level into separate
+library, test, and documentation packages. For example,
+@pkgname{net-lib} provides modules such as @racketmodname[net/cookie]
+without documentation, while @pkgname{net-doc} provides documentation
+and @pkgname{net-test} provides tests. The @pkgname{net} package
+depends on @pkgname{net-lib} and @pkgname{net-doc}, and it implies
+@pkgname{net-lib}, so you can install @pkgname{net} in a minimal
+Racket distribution to get the libraries with documentation (and lots
+of additional packages to support documentation), or install
+@pkgname{net-lib} to get just the libraries.
+
+If you develop a package that is especially widely used or is
+especially useful in a constrained installation environment, then
+splitting your package into @pkgname{-lib}, @pkgname{-doc}, and
+@pkgname{-test} components may be worthwhile. Most likely, you should
+keep the packages together in a single source-code repository and use
+metedata such as @racketidfont{implies} and
+@racketidfont{update-implies} (see @secref["metadata"]) so that the
+packages are updated in sync.
 
 
 @subsection{Why is the package manager so different than @|Planet1|?}

@@ -10,10 +10,10 @@
   (require srfi/42)
 
   (define (my-open-output-file filename)
-    (open-output-file filename 'replace 'text) )
+    (open-output-file (build-path (find-system-path 'temp-dir) filename) 'replace 'text) )
 
   (define (my-call-with-input-file filename thunk)
-    (call-with-input-file filename thunk 'text) )
+    (call-with-input-file (build-path (find-system-path 'temp-dir) filename) thunk 'text) )
 
 ; examples.scm starts here -------------------------------------------------
 

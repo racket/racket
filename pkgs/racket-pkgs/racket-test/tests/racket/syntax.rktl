@@ -112,6 +112,13 @@
 (syntax-test #'(lambda (x . 5) x))
 (syntax-test #'(lambda (x) x . 5))
 
+;; 25 is a threshold for non-shared arity-handling code:
+(module check-wrong-arity-many-arguments racket/base
+    ((lambda (a b c d e f g h i j k l m n o p q r s t u v w x y)
+       1)))
+(err/rt-test (dynamic-require ''check-wrong-arity-many-arguments #f)
+             exn:fail:contract:arity?)
+
 (err/rt-test (letrec ([not-ready not-ready]) 5)
              (lambda (exn)
                (and (exn:fail:contract:variable? exn)
@@ -1287,6 +1294,16 @@
 (err/rt-test (#%top . lambda) exn:fail:contract:variable?)
 (define x 5)
 (test 5 '#%top (#%top . x))
+
+(syntax-test #'(module m racket/base
+                 (define x 1)
+                 (let ([x 2]) (#%top . x))))
+
+(module ok-top-reference-within-module racket/base
+  (define x 1)
+  (define z (let ([y 2]) (#%top . x)))
+  (provide z))
+(test 1 dynamic-require ''ok-top-reference-within-module 'z)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests related to bytecode optimizer.

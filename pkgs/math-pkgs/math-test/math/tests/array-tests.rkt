@@ -170,7 +170,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; array->vector
 
-(let ([arr  (build-array #() (λ (js) 'foo))])
+(let ([arr : (Array Symbol) (build-array #() (λ (js) 'foo))])
   (check-equal? (array->vector* arr) 'foo)
   (check-equal? arr (vector*->array (array->vector* arr) symbol?)))
 

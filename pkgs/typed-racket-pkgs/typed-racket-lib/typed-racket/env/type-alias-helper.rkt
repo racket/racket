@@ -68,11 +68,13 @@
     [((Mu: _ body)) (check body)]
     [((Poly: names body)) (check body)]
     [((PolyDots: names body)) (check body)]
+    [((PolyRow: _ _ body)) (check body)]
     [(_) #t])
   (unless (check type)
-    (tc-error/stx
-     id
-     "Recursive types are not allowed directly inside their definition")))
+    (tc-error/fields
+     "parse error in type"
+     #:stx id
+     #:more "recursive types are not allowed directly inside their definition")))
 
 ;; get-type-alias-info : Listof<Syntax> -> Listof<Id> Dict<Id, TypeAliasInfo>
 ;;

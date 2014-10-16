@@ -138,7 +138,17 @@
   (test '(reset i) values (module-compiled-name (car (module-compiled-submodules a #f))))
   (define aa (module-compiled-submodules a #f (list (module-compiled-name a 'again))))
   (test '(reset again) values (module-compiled-name (car (module-compiled-submodules aa #f))))
-  (test '(reset again i) values (module-compiled-name (car (module-compiled-submodules (car (module-compiled-submodules aa #f)) #f)))))
+  (test '(reset again i) values (module-compiled-name (car (module-compiled-submodules (car (module-compiled-submodules aa #f)) #f))))
+
+  (define also-c (module-compiled-submodules c #f (module-compiled-submodules c #f)))
+  (test '(subm-example-0 a) values (module-compiled-name (car (module-compiled-submodules also-c #f))))
+  (define re-c
+    (let ([s (open-output-bytes)])
+      (write also-c s)
+      (parameterize ([read-accept-compiled #t])
+        (read (open-input-bytes (get-output-bytes s))))))
+  ;; Marshaling flips the order, which is ok:
+  (test '(subm-example-0 b) values (module-compiled-name (car (module-compiled-submodules re-c #f)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -883,6 +893,60 @@
 (module requires-submodule-for-label racket/base
   (module foo racket/base)
   (require (for-label (submod "." foo))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that submodule exports the right binding
+
+(module provides-id-not-id* racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ id)
+       (with-syntax ([id* (datum->syntax #f (syntax-e #'id))])
+         #'(begin
+             (define id* 'no)
+             (define id 'yes)))]))
+
+  (m x)
+
+  (module* sub #f
+    (provide x)))
+
+(module uses-id-not-id* racket/base
+  (require (submod 'provides-id-not-id* sub))
+  (define answer x)
+  (provide answer))
+
+(test 'yes dynamic-require ''uses-id-not-id* 'answer)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check binding in fully expanded module:
+
+(let ()
+  (define m
+    '(module m racket/kernel
+       (module foo racket
+         (provide def-wrap)
+         (define-syntax-rule (def-wrap)
+           (begin  (define y 1) y)))
+       (module bar racket/kernel
+         (#%require (submod ".." foo))
+         (def-wrap))))
+
+  (parameterize ([current-namespace (make-base-namespace)])
+    (define e (expand m))
+    ;; (pretty-print (syntax->datum e))
+    (syntax-case e (module)
+      [(module m _
+         (#%mb1
+          _
+          (module bar _
+            (#%mb2
+             (#%require (submod ".." foo))
+             (define-values (y) '1)
+             _))))
+       (test #t list? (identifier-binding #'y))])))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

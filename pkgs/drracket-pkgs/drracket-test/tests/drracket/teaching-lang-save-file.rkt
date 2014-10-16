@@ -46,7 +46,3 @@
          (delete-file fn)
          (unless (equal? result "1\n> ")
            (error 'save-teaching-lang-file.rkt "expected the program to produce 1 (followed by the prompt), got ~s" result)))))))
-
-(module+ test
-  (module config info
-    (define lock-name "gui")))

@@ -29,6 +29,10 @@
 (define quiet-program? #f)
 (define check-stderr? #f)
 (define table? #f)
+(define fresh-user? #f)
+(define empty-input? #f)
+(define heartbeat-secs #f)
+(define ignore-stderr-patterns null)
 
 (define jobs 0) ; 0 mean "default"
 (define task-sema (make-semaphore 1))
@@ -45,9 +49,12 @@
                                   n))
                            (* 4 60 60))) ; default: wait at most 4 hours
 
+(define test-exe-name (string->symbol (short-program+command-name)))
+
 ;; Stub for running a test in a process:
 (module process racket/base
-  (require rackunit/log)
+  (require rackunit/log
+           racket/file)
   ;; Arguments are a temp file to hold test results, the module
   ;; path to run, and the `dynamic-require` second argument:
   (define argv (current-command-line-arguments))
@@ -55,6 +62,12 @@
   (define test-module (read (open-input-string (vector-ref argv 1))))
   (define d (read (open-input-string (vector-ref argv 2))))
   (define args (list-tail (vector->list argv) 3))
+
+  ;; In case PLTUSERHOME is set, make sure relevant
+  ;; directories exist:
+  (define (ready-dir d)
+    (make-directory* d))
+  (ready-dir (find-system-path 'doc-dir))
 
   (parameterize ([current-command-line-arguments (list->vector args)])
     (dynamic-require test-module d)
@@ -125,6 +138,9 @@
                          (if check-stderr?
                              (tee-output-port (current-error-port) e)
                              (current-error-port))))
+      (define stdin (if empty-input?
+                        (open-input-bytes #"")
+                        (current-input-port)))
 
       (unless quiet?
         (when responsible
@@ -133,7 +149,11 @@
                    responsible))
         (when random?
           (fprintf stdout "raco test:~a @(test-random #t)\n"
-                   id)))
+                   id))
+        (when lock-name
+          (fprintf stdout "raco test:~a @(lock-name ~s)\n"
+                   id
+                   lock-name)))
       
       (define-values (result-code test-results)
         (case mode
@@ -143,6 +163,7 @@
            (define t
              (parameterize ([current-output-port stdout]
                             [current-error-port stderr]
+                            [current-input-port stdin]
                             [current-command-line-arguments (list->vector args)])
                (thread
                 (lambda ()
@@ -151,9 +172,9 @@
                   (set! done? #t)))))
            (unless (thread? (sync/timeout timeout t))
              (set! timeout? #t)
-             (error 'test "timeout after ~a seconds" timeout))
+             (error test-exe-name "timeout after ~a seconds" timeout))
            (unless done?
-             (error 'test "test raised an exception"))
+             (error test-exe-name "test raised an exception"))
            (define post (test-log #:display? #f #:exit? #f))
            (values 0
                    (cons (- (car post) (car pre))
@@ -164,7 +185,7 @@
              (parameterize ([current-custodian c])
                (dynamic-place* '(submod compiler/commands/test place)
                                'go
-                               #:in (current-input-port)
+                               #:in stdin
                                #:out stdout
                                #:err stderr)))
            
@@ -174,21 +195,35 @@
            ;; Wait for the place to finish:
            (unless (sync/timeout timeout (place-dead-evt pl))
              (set! timeout? #t)
-             (error 'test "timeout after ~a seconds" timeout))
+             (error test-exe-name "timeout after ~a seconds" timeout))
 
            ;; Get result code and test results:
            (values (place-wait pl)
                    (sync/timeout 0 pl))]
           [(process)
            (define tmp-file (make-temporary-file))
+           (define tmp-dir (and fresh-user?
+                                (make-temporary-file "home~a" 'directory)))
            (define ps
              (parameterize ([current-output-port stdout]
                             [current-error-port stderr]
                             [current-subprocess-custodian-mode 'kill]
-                            [current-custodian c])
+                            [current-custodian c]
+                            [current-environment-variables (environment-variables-copy
+                                                            (current-environment-variables))])
+               (when fresh-user?
+                 (environment-variables-set! (current-environment-variables)
+                                             #"PLTUSERHOME"
+                                             (path->bytes tmp-dir))
+                 (environment-variables-set! (current-environment-variables)
+                                             #"TMPDIR"
+                                             (path->bytes tmp-dir))
+                 (environment-variables-set! (current-environment-variables)
+                                             #"PLTADDONDIR"
+                                             (path->bytes (find-system-path 'addon-dir))))
                (apply process*/ports
                       stdout
-                      (current-input-port)
+                      stdin
                       stderr
                       (find-exe)
                       "-l"
@@ -203,11 +238,15 @@
            
            (unless (sync/timeout timeout (thread (lambda () (proc 'wait))))
              (set! timeout? #t)
-             (error 'test "timeout after ~a seconds" timeout))
+             (error test-exe-name "timeout after ~a seconds" timeout))
 
            (define results
              (with-handlers ([exn:fail:read? (lambda () #f)])
                (call-with-input-file* tmp-file read)))
+
+           (delete-file tmp-file)
+           (when tmp-dir
+             (delete-directory/files tmp-dir))
            
            (values (proc 'exit-code)
                    (and (pair? results)
@@ -220,10 +259,13 @@
 
       ;; Check results:
       (when check-stderr?
-        (unless (equal? #"" (get-output-bytes e))
-          (error 'test "non-empty stderr: ~e" (get-output-bytes e))))
+        (unless (let ([s (get-output-bytes e)])
+                  (or (equal? #"" s)
+                      (ormap (lambda (p) (regexp-match? p s))
+                             ignore-stderr-patterns)))
+          (error test-exe-name "non-empty stderr: ~e" (get-output-bytes e))))
       (unless (zero? result-code)
-        (error 'test "non-zero exit: ~e" result-code))
+        (error test-exe-name "non-zero exit: ~e" result-code))
       (cond
        [test-results
         (summary (car test-results) (cdr test-results) (current-label) #f 0)]
@@ -237,7 +279,7 @@
          (build-path lock-file-dir lock-name)
          'exclusive
          go
-         (lambda () (error 'test "could not obtain lock: ~s" lock-name)))
+         (lambda () (error test-exe-name "could not obtain lock: ~s" lock-name)))
         (go))))
 
 ;; For recording stderr while also propagating to the original stderr:
@@ -272,7 +314,7 @@
 (define (add-submod mod sm)
   (if (and (pair? mod) (eq? 'submod (car mod)))
       (append mod '(config))
-      (error 'test "cannot add test-config submodule to path: ~s" mod)))
+      (error test-exe-name "cannot add test-config submodule to path: ~s" mod)))
 
 (define (dynamic-require* p d
                           #:id id
@@ -449,6 +491,24 @@
                              (format " ~s" (format "~a" a)))))
             (flush-output))
           id)))
+     (define heartbeat-sema (make-semaphore))
+     (define heartbeat-t
+       (and heartbeat-secs
+            (thread (lambda ()
+                      (let loop ()
+                        (unless (sync/timeout heartbeat-secs heartbeat-sema)
+                          (call-with-semaphore
+                           ids-lock
+                           (lambda ()
+                             (printf "raco test: ~a[still on ~s]\n"
+                                     (if (jobs . <= . 1)
+                                         ""
+                                         (format "~a " id))
+                                     (let ([m (normalize-module-path p)])
+                                       (if (and (pair? mod) (eq? 'submod (car mod)))
+                                           (list* 'submod m (cddr mod))
+                                           m)))))
+                          (loop)))))))
      (begin0
       (dynamic-require* mod 0
                         #:id (if (jobs . <= . 1)
@@ -460,6 +520,9 @@
                         #:responsible responsible
                         #:lock-name lock-name
                         #:random? random?)
+      (when heartbeat-t
+        (semaphore-post heartbeat-sema)
+        (sync heartbeat-t))
       (call-with-semaphore
        ids-lock
        (lambda ()
@@ -491,13 +554,14 @@
                             #:sema s))
               (directory-list p)
               #:sema continue-sema)))]
-       [(and (file-exists? p)
-             (or (not check-suffix?)
+       [(and (or (not check-suffix?)
                  (regexp-match rx:default-suffixes p)
-                 (get-cmdline p #f))
-             (begin (check-info p)
-                    (not (omit-path? p))))
-        ;; The above `omit-path?` loads "info.rkt" files
+                 (get-cmdline p #f #:check-info? #t))
+             (or (not check-suffix?)
+                 (not (omit-path? p  #:check-info? #t))))
+        (unless check-suffix?
+          ;; make sure "info.rkt" information is loaded:
+          (check-info p))
         (define norm-p (normalize-info-path p))
         (define args (get-cmdline norm-p))
         (define timeout (get-timeout norm-p))
@@ -532,17 +596,25 @@
                  (cond
                   [(and did-one? first-avail?)
                    #f]
-                  [(module-declared? mod #t)
-                   (set! did-one? #t)
-                   (test-this-module mod #t)]
+                  [(with-handlers ([exn:fail?
+                                    (lambda (exn)
+                                      ;; If there's an error, then try running
+                                      ;; this submodule to let the error show.
+                                      ;; Log a warning, just in case.
+                                      (log-warning "submodule load failed: ~s"
+                                                   (exn-message exn))
+                                      'error)])
+                     (and (module-declared? mod #t)
+                          'ok))
+                   => (lambda (mode)
+                        (set! did-one? #t)
+                        (test-this-module mod (eq? mode 'ok)))]
                   [else
                    (set! something-wasnt-declared? #t)
                    #f]))
                (list
                 (and (and run-anyways? something-wasnt-declared?)
                      (test-this-module file-name #f))))))))]
-       [(not (file-exists? p))
-        (error 'test "given path ~e does not exist" p)]
        [else (summary 0 0 #f null 0)])]))
 
 (module paths racket/base
@@ -618,7 +690,10 @@
     [collections?
      (match (collection-paths e)
        [(list)
-        (error 'test "Collection ~e is not installed" e)]
+        (error test-exe-name
+               (string-append "collection not found\n"
+                              "  collection name: ~a")
+               e)]
        [l
         (with-summary
          `(collection ,e)
@@ -629,7 +704,11 @@
        (define p (resolved-module-path-name rmp))
        (and (file-exists? p) p))
      (match (find (string->symbol e))
-       [#f (error 'test "Library ~e does not exist" e)]
+       [#f
+        (error test-exe-name
+               (string-append "module not found\n"
+                              "  module path: ~a")
+               e)]
        [l
         (with-summary
          `(library ,l)
@@ -640,8 +719,17 @@
        (with-summary
         `(package ,e)
         (test-files pd #:sema continue-sema))
-       (error 'test "Package ~e is not installed" e))]
+       (error test-exe-name
+              (string-append "no such installed package\n"
+                             "  package name: ~a")
+              e))]
     [else
+     (unless (or (file-exists? e)
+                 (directory-exists? e))
+       (error test-exe-name
+              (string-append "no such file or directory\n"
+                             "  path: ~a")
+              e))
      (test-files e
                  #:check-suffix? check-suffix? 
                  #:sema continue-sema)]))
@@ -755,21 +843,30 @@
 (define (normalize-info-path p)
   (simplify-path (path->complete-path p) #f))
 
-(define (omit-path? p)
+(define (omit-path? p #:check-info? [check-info? #f])
+  (when check-info? (check-info p))
   (let ([p (normalize-info-path p)])
     (or (hash-ref omit-paths p #f)
         (let-values ([(base name dir?) (split-path p)])
           (and (path? base)
                (omit-path? base))))))
 
-(define (get-cmdline p [default null])
-  (hash-ref command-line-arguments p default))
+(define (get-cmdline p [default null] #:check-info? [check-info? #f])
+  (when check-info? (check-info p))
+  (hash-ref command-line-arguments
+            (if check-info? (normalize-info-path p) p)
+            default))
 
-(define (get-timeout p) (hash-ref timeouts p +inf.0))
+(define (get-timeout p)
+  ;; assumes `(check-info p)` has been called and `p` is normalized
+  (hash-ref timeouts p +inf.0))
 
-(define (get-lock-name p) (hash-ref lock-names p #f))
+(define (get-lock-name p)
+  ;; assumes `(check-info p)` has been called and `p` is normalized
+  (hash-ref lock-names p #f))
 
 (define (get-responsible p)
+  ;; assumes `(check-info p)` has been called and `p` is normalized
   (or (let loop ([p p])
         (or (hash-ref responsibles p #f)
             (let-values ([(base name dir?) (split-path p)])
@@ -789,7 +886,9 @@
                       (and (ok-responsible? v)
                            v))))))))
 
-(define (get-random p) (hash-ref randoms p #f))
+(define (get-random p)
+  ;; assumes `(check-info p)` has been called and `p` is normalized
+  (hash-ref randoms p #f))
 
 (define (ok-responsible? v)
   (or (string? v)
@@ -830,12 +929,14 @@
   "Configure defaults to imitate DrDr"
   (set! check-top-suffix? #t)
   (set! first-avail? #t)
+  (set! empty-input? #t)
   (when (zero? jobs)
     (set-jobs! (processor-count)))
   (unless default-timeout
     (set! default-timeout 90))
   (set! check-stderr? #t)
   (set! quiet-program? #t)
+  (set! fresh-user? #t)
   (set! table? #t)
   (unless default-mode
     (set! default-mode 'process))]
@@ -872,15 +973,30 @@
  [("--timeout") seconds
   "Set default timeout to <seconds>"
   (set! default-timeout (string->number* "timeout" seconds real?))]
+ [("--fresh-user")
+  "Fresh PLTUSERHOME, etc., for each test"
+  (set! fresh-user? #t)]
+ [("--empty-stdin")
+  "Call program with an empty stdin"
+  (set! empty-input? #t)]
  [("--quiet-program" "-Q")
   "Quiet the program"
   (set! quiet-program? #t)]
  [("--check-stderr" "-e")
   "Treat stderr output as a test failure"
   (set! check-stderr? #t)]
+ #:multi
+ [("++ignore-stderr") pattern
+  "Ignore standard error output if it matches #px\"<pattern>\""
+  (set! ignore-stderr-patterns
+        (cons (pregexp pattern) ignore-stderr-patterns))]
+ #:once-each
  [("--quiet" "-q")
   "Suppress `raco test: ...' message"
   (set! quiet? #t)]
+ [("--heartbeat")
+  "Periodically report that a test is still running"
+  (set! heartbeat-secs 5)]
  [("--table" "-t")
   "Print a summary table"
   (set! table? #t)]

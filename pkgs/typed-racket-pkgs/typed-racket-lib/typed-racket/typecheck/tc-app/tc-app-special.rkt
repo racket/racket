@@ -44,9 +44,9 @@
         [(tc-result1: (and t Poly?))
          (tc-expr/check #'quo (ret Univ))
          (tc/funapp #'op #'(quo arg)
-                    (ret (instantiate-poly t (extend (list Univ Univ)
-                                                     (stx-map type-annotation #'(i ...))
-                                                     Univ)))
+                    (instantiate-poly t (extend (list Univ Univ)
+                                                (stx-map type-annotation #'(i ...))
+                                                Univ))
                     (list (ret Univ) (single-value #'arg))
                     expected)]))
   ;; special-case for not - flip the filters

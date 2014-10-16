@@ -2,8 +2,9 @@
 (require racket/place
          racket/port
          racket/list
-         "eval-helpers.rkt"
+         "eval-helpers-and-pref-init.rkt"
          compiler/cm
+         framework/preferences
          syntax/readerr)
 (provide start)
 
@@ -93,7 +94,15 @@
 (struct exn:access exn:fail ())
 
 (define (new-job program-as-string path response-pc settings pc-status-expanding-place)
-  (define cust (make-custodian))
+  (define custodian-limit
+    (and (custodian-memory-accounting-available?)
+         (preferences:get 'drracket:child-only-memory-limit)))
+  (define cust-parent (make-custodian))
+  (define cust (parameterize ([current-custodian cust-parent])
+                 (make-custodian)))
+  (when custodian-limit
+    (custodian-limit-memory cust-parent custodian-limit cust-parent))
+  (define memory-killed-cust-box (make-custodian-box cust-parent #t))
   (define exn-chan (make-channel))
   (define extra-exns-chan (make-channel))
   (define result-chan (make-channel))
@@ -258,9 +267,12 @@
            (place-channel-put 
             response-pc
             (vector 'abnormal-termination 
-                    ;; note: this message is actually ignored: a string 
-                    ;; constant is used back in the drracket place
-                    "Expansion thread terminated unexpectedly"
+                    ;; note: this message is not used directly, a string 
+                    ;; constant is used back in the drracket place; but
+                    ;; this is checked to see if it was an out of memory error
+                    (if (custodian-box-value memory-killed-cust-box)
+                        "Expansion thread terminated unexpectedly"
+                        "Expansion thread terminated unexpectedly (out of memory)")
                     '()
                     
                     ;; give up on dep paths in this case:
@@ -310,6 +322,16 @@
                  [else ""]))
              (format "~a~a" (srcloc-source srcloc) pos))
              
+           (define (srcloc->srcinfo a-srcloc)
+             (cond
+               [(and (srcloc? a-srcloc)
+                     (equal? the-source (srcloc-source a-srcloc))
+                     (srcloc-position a-srcloc)
+                     (srcloc-span a-srcloc))
+                (vector (srcloc-position a-srcloc)
+                        (srcloc-span a-srcloc))]
+               [else #f]))
+           
            (define exn-infos
              (for/list ([an-exn (in-list (cons main-exn extra-exns))])
                (exn-info 
@@ -317,18 +339,24 @@
                  (if (exn? an-exn) 
                      (regexp-replace* #rx"[ \t]*\n[ \t]*" (exn-message an-exn) " ") 
                      (format "uncaught exn: ~s" an-exn)))
-                (if (exn:srclocs? an-exn)
-                    (sort
-                     (for/list ([srcloc ((exn:srclocs-accessor an-exn) an-exn)]
-                                #:when (and (srcloc? srcloc)
-                                            (equal? the-source (srcloc-source srcloc))
-                                            (srcloc-position srcloc)
-                                            (srcloc-span srcloc)))
-                       (vector (srcloc-position srcloc)
-                               (srcloc-span srcloc)))
-                     <
-                     #:key (λ (x) (vector-ref x 0)))
-                    '())
+                (cond
+                  [(exn:srclocs? an-exn)
+                   (sort
+                    (for/list ([srcloc ((exn:srclocs-accessor an-exn) an-exn)]
+                               #:when (srcloc->srcinfo srcloc))
+                      (srcloc->srcinfo srcloc))
+                    <
+                    #:key (λ (x) (vector-ref x 0)))]
+                  [(exn? an-exn)
+                   (define marks (continuation-mark-set->context
+                                  (exn-continuation-marks an-exn)))
+                   (define info
+                     (for/or ([mark-pr (in-list marks)])
+                       (srcloc->srcinfo (cdr mark-pr))))
+                   (cond
+                     [info (list info)]
+                     [else '()])]
+                  [else '()])
                 (if (exn? an-exn)
                     (let ([ctxt 
                            (continuation-mark-set->context
