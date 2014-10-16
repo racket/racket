@@ -1365,14 +1365,15 @@
              [(cons factor '())
               (prime-length-box-list/e es)]
              [(cons factor factors)
+              (define chunk-size (/ (length es) factor))
               (define chunk/es
-                (for/list ([es (in-list (chunks-of es factor))])
+                (for/list ([es (in-list (chunks-of es chunk-size))])
                   (loop factors es)))
               (map/e
                (λ (chunks)
                   (apply append chunks))
                (λ (xs)
-                  (chunks-of xs factor))
+                  (chunks-of xs chunk-size))
                (prime-length-box-list/e chunk/es))]))]))
 
 (define (prime-length-box-list/e es)
