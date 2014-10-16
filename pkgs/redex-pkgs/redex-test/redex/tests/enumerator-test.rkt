@@ -216,7 +216,10 @@
  (check-bijection? nats*bool)
 
  (check-bijection? nats*nats)
- (check-bijection? (list/e integer/e integer/e)))
+ (check-bijection? (list/e integer/e integer/e))
+ (check-bijection? (apply list/e
+                          (for/list ([i (in-range 24)])
+                            (map/e (curry cons i) cdr nat/e)))))
 
 
 ;; fair product tests
