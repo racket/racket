@@ -899,7 +899,7 @@ is a directory, the copy applies recursively to the directory's
 content. If a source is a link, the target of the link is copied
 rather than the link itself.
 
-If @racket[keep-modify-seconds?] is @racket[#f]false, then file copies
+If @racket[keep-modify-seconds?] is @racket[#f], then file copies
 keep only the properties kept by @racket[copy-file], If
 @racket[keep-modify-seconds?] is true, then each file copy also keeps
 the modification date of the original.}
