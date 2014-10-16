@@ -15,8 +15,7 @@
          (only-in math/number-theory
                   binomial
                   integer-root
-                  prime-divisors
-                  prime-exponents)
+                  factorize)
 
          "error.rkt")
 
@@ -1328,8 +1327,9 @@
 
 (define (prime-factorize k)
   (apply append
-         (for/list ([divisor (in-list (prime-divisors k))]
-                    [exponent (in-list (prime-exponents k))])
+         (for/list ([d-e (in-list (factorize k))])
+           (define divisor (first d-e))
+           (define exponent (second d-e))
            (for/list ([_ (in-range exponent)])
              divisor))))
 (module+ test
