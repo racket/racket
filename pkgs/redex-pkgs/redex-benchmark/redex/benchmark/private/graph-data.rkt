@@ -17,7 +17,12 @@
          plot/log-directory
          extract-log-names
          extract-names/log-directory
-         process-data)
+         process-data
+         
+         ;; hacky function exported only so that
+         ;; processing of the data can occur as a separate,
+         ;; run only once step
+         make-plot/data-stats/name-avgs)
 
 (define type-colors
   (make-parameter (let ([cur-c 0]
@@ -81,9 +86,21 @@
           file-exists?
           (directory-list dir-path
                           #:build? dir-path))))))
+
 (define (make-plot data all-names)
   (define-values (data-stats name-avgs)
     (process-data data all-names))
+  (define max-non-f-value-from-list-ref-d2
+    (apply max (filter values (map (λ (d) (list-ref d 2)) data))))
+  (make-plot/data-stats/name-avgs data-stats 
+                                  name-avgs 
+                                  all-names
+                                  max-non-f-value-from-list-ref-d2
+                                  #f))
+
+(define (make-plot/data-stats/name-avgs data-stats name-avgs all-names
+                                        max-non-f-value-from-list-ref-d2
+                                        include-only-models-with-data?)
   (define name-order (make-name-order name-avgs))
   (define (tlabel pre-tick)
     (define v (pre-tick-value pre-tick))
@@ -98,7 +115,7 @@
                  [plot-x-tick-label-anchor 'right]
                  [error-bar-width 12]
                  [plot-y-transform (axis-transform-bound log-transform 0.00001 +inf.0)]
-                 [plot-legend-anchor 'bottom-right]
+                 [plot-legend-anchor 'top-left]
                  [plot-x-ticks (ticks (linear-ticks-layout #:number 30 #:base 10
                                               #:divisors '(1))
                          (λ (_1 _2 pts) (map tlabel pts)))]
@@ -107,8 +124,14 @@
      (make-plot-renderers/internal data-stats name-avgs)
      #:x-min 0
      #:y-min 0.01
-     #:y-max (* 1.1 (/ (apply max (filter values (map (λ (d) (list-ref d 2)) data))) 1000))
-     #:x-max (+ 0.5 (length all-names)))))
+     #:y-max (* 10 (/ max-non-f-value-from-list-ref-d2 1000))
+     #:x-max (+ 0.5 
+                (if include-only-models-with-data?
+                    (for/sum ([(k val) (in-hash name-avgs)])
+                      (if (null? val)
+                          0
+                          1))
+                    (length all-names))))))
 
 (define (make-plot-renderers data all-names)
   (define-values (data-stats name-avgs)
