@@ -1358,17 +1358,18 @@
         [(= k 1) (map/e list car (car es))]
         [(not all-inf?) (apply list/e es)]
         [else
-         (define factors (reverse (prime-factorize k)))
+         (define factors (prime-factorize k))
          (let loop ([factors factors]
-                    [es es])
+                    [es es]
+                    [k k])
            (match factors
              [(cons factor '())
               (prime-length-box-list/e es)]
              [(cons factor factors)
-              (define chunk-size (/ (length es) factor))
+              (define chunk-size (/ k factor))
               (define chunk/es
                 (for/list ([es (in-list (chunks-of es chunk-size))])
-                  (loop factors es)))
+                  (loop factors es chunk-size)))
               (map/e
                (λ (chunks)
                   (apply append chunks))
