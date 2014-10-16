@@ -14,7 +14,9 @@
          math/flonum
          (only-in math/number-theory
                   binomial
-                  integer-root)
+                  integer-root
+                  prime-divisors
+                  prime-exponents)
 
          "error.rkt")
 
@@ -1324,18 +1326,59 @@
             (λ (xs) (map encode es xs))))
          (enum +inf.0 dec enc)]))
 
+(define (prime-factorize k)
+  (apply append
+         (for/list ([divisor (in-list (prime-divisors k))]
+                    [exponent (in-list (prime-exponents k))])
+           (for/list ([_ (in-range exponent)])
+             divisor))))
+(module+ test
+  (check-equal? (prime-factorize 14) '(2 7))
+  (check-equal? (prime-factorize 24) '(2 2 2 3)))
+(define (chunks-of l k)
+  (let loop ([l l]
+             [acc '()])
+    (cond [(empty? l) (reverse acc)]
+          [else
+           (define-values (chunk rest) (split-at l k))
+           (loop rest (cons chunk acc))])))
+(module+ test
+  (define 1-6 '(1 2 3 4 5 6))
+  (check-equal? (chunks-of 1-6 1) '((1) (2) (3) (4) (5) (6)))
+  (check-equal? (chunks-of 1-6 2) '((1 2) (3 4) (5 6)))
+  (check-equal? (chunks-of 1-6 3) '((1 2 3) (4 5 6)))
+  (check-equal? (chunks-of 1-6 6) '((1 2 3 4 5 6))))
+
 ;; Fair tupling via generalized
 ;; ordering is monotonic in the max of the elements of the list
 (define (box-list/e . es)
   (define all-inf? (all-infinite? es))
+  (define k (length es))
   (cond [(empty? es) (const/e '())]
+        [(= k 1) (map/e list car (car es))]
         [(not all-inf?) (apply list/e es)]
         [else
-         (define k (length es))
-         (map/e
-          (curry map decode es)
-          (curry map encode es)
-          (box-tuples/e k))]))
+         (define factors (reverse (prime-factorize k)))
+         (let loop ([factors factors]
+                    [es es])
+           (match factors
+             [(cons factor '())
+              (prime-length-box-list/e es)]
+             [(cons factor factors)
+              (define chunk/es
+                (for/list ([es (in-list (chunks-of es factor))])
+                  (loop factors es)))
+              (map/e
+               (λ (chunks)
+                  (apply append chunks))
+               (λ (xs)
+                  (chunks-of xs factor))
+               (prime-length-box-list/e chunk/es))]))]))
+
+(define (prime-length-box-list/e es)
+  (map/e (curry map decode es)
+         (curry map encode es)
+         (box-tuples/e (length es))))
 
 (define (box-tuples/e k)
   (enum +inf.0 (box-untuple k) (box-tuple k)))
