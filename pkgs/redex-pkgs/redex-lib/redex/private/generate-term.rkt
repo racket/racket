@@ -383,8 +383,8 @@
        (random-natural/no-mean prob-of-zero)))
 
 ;; random-natural/no-mean : [0,1] -> Nat
-(define (random-natural/no-mean prob-zero)
-  (define x (sample (geometric-dist prob-zero)))
+(define (random-natural/no-mean prob-of-zero)
+  (define x (sample (geometric-dist prob-of-zero)))
   (define m1 (expt 2 (exact-floor x)))
   (define m0 (quotient m1 2))
   (random-integer m0 m1))
