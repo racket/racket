@@ -1,3 +1,6 @@
+Version 6.1.1, October 2014
+Bug repairs and other changes noted in the documentation
+
 Version 6.1, July 2014
 Changed use-before-definition to be an error instead of producing
  an #<undefined> value
