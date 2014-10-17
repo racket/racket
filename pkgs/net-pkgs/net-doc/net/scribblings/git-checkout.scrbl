@@ -21,30 +21,37 @@ for information on command-line arguments and flags.
 
 @defproc[(git-checkout [hostname string?]
                        [repository string?]
-                       [#:dest-dir dest-dir path-string?]
+                       [#:dest-dir dest-dir (or/c path-string? #f)]
                        [#:ref ref string? "master"]
                        [#:transport transport (or/c 'git 'http 'https) 'git]
                        [#:depth depth (or/c #f positive-exact-integer?) 1]
-                       [#:quiet? quiet? any/c #f]
+                       [#:status-printf status-printf (string? any/c ... . -> . void?) (lambda args
+                                                                                         (apply printf args)
+                                                                                         (flush-output))]
                        [#:tmp-dir given-tmp-dir (or/c #f path-string?) #f]
                        [#:clean-tmp-dir? clean-tmp-dir? any/c (not given-tmp-dir)]
                        [#:port port (integer-in 1 65535) (case transport
                                                            [(git) 9418]
                                                            [(http) 80]
                                                            [(https) 443])])
-         void?]{
+         strung?]{
 
 Contacts the server at @racket[hostname] and @racket[port]
 to download the repository whose name on the server is
 @racket[repository] (normally ending in @filepath{.git}).  The tree
 within the repository that is identified by @racket[ref] (which can be
 a branch, tag, commit ID, or tree ID) is extracted to
-@racket[dest-dir].
+@racket[dest-dir], and the result id an ID corresponding to @racket[ref].
 
 If @racket[transport] is @racket['git], then the server is contacted
 using Git's native transport. If @racket[transport] is
 @racket['http] or @racket['https], then the server is contacted using
 HTTP(S) and the ``smart'' Git protocol.
+
+If @racket[dest-dir] is @racket[#f], then the result is an ID
+determined for @racket[ref] from just the server's report of the
+available branches and tags, or @racket[ref] itself if it does not
+match a branch or tag name and looks like an ID.
 
 A local clone of the repository is @emph{not} preserved, but is
 instead discarded after the tree is extracted to @racket[dest-dir].
@@ -61,9 +68,9 @@ objects, instead of the entire history of the branch or commit.  If
 @racket[ref] is any other commit ID or tree ID, then the entire
 repository is downloaded, including all branches.
 
-Status information is reported to the current output port unless
-@racket[quiet?] is true. The same information is always logged with
-the name @racket['git-checkout] at the @racket['info] level.
+Status information is reported via @racket[status-printf]. The same
+information is always logged with the name @racket['git-checkout] at
+the @racket['info] level.
 
 If @racket[tmp-dir] is not @racket[#f], then it is used to store a
 temporary clone of the repository, and the files are preserved unless
