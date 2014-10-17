@@ -217,4 +217,6 @@
    (-> -FlVector (-seq -Flonum))]
   [(make-template-identifier 'in-extflvector* 'racket/extflonum)
    (-> -ExtFlVector (-seq -ExtFlonum))]
+  [(make-template-identifier 'make-namespace-anchor 'racket/private/namespace)
+   (-> -Variable-Reference -Namespace-Anchor)]
   )
