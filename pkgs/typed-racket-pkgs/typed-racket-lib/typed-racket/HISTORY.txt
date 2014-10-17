@@ -1,3 +1,9 @@
+(add1 6.1.1)
+- DrRacket tooltips for types and type errors.
+6.1.1
+- Exception handling is now sound. Broke existing programs (e.g. marketplace).
+- More types for GUI and framework.
+- Support for casts and predicates in typed regions.
 6.1
 - Inference speedups.
 - Support for contracted functions in the base environment.
