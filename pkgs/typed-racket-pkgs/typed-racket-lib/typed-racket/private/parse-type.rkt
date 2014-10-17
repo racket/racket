@@ -731,8 +731,14 @@
   (syntax-parse stx
     [(kw (~var clause (class-type-clauses parse-type)))
      (add-disappeared-use #'kw)
-     (define parent-stxs (stx->list #'clause.extends-types))
-     (define parent-types (map parse-type parent-stxs))
+     (define parent-stxs (stx->list #'clause.implements))
+     (define parent/init-stx (attribute clause.implements/inits))
+     (define parent/init-type (and parent/init-stx (parse-type parent/init-stx)))
+     (define parent-types
+       (let ([types (map parse-type parent-stxs)])
+         (if parent/init-stx
+             (cons parent/init-type types)
+             types)))
      (define given-inits (attribute clause.inits))
      (define given-fields (attribute clause.fields))
      (define given-methods (attribute clause.methods))
@@ -755,7 +761,7 @@
            ;; Only proceed to create a class type when the parsing
            ;; process isn't looking for recursive type alias references.
            ;; (otherwise the merging process will error)
-           [(or (null? parent-stxs)
+           [(or (and (null? parent-stxs) (not parent/init-stx))
                 (not (current-referenced-aliases)))
 
             (check-function-types given-methods)
@@ -768,7 +774,8 @@
                          [methods given-methods]
                          [augments given-augments])
                   ([parent-type parent-types]
-                   [parent-stx  parent-stxs])
+                   [parent-stx  (append (or (list parent/init-stx) null)
+                                        parent-stxs)])
                 (merge-with-parent-type row-var parent-type parent-stx
                                         fields methods augments)))
 
@@ -780,8 +787,15 @@
               (check-constraints methods (caddr constraints))
               (check-constraints augments (cadddr constraints)))
 
+            ;; For the #:implements/inits entry, put the inits into the type
+            ;; as well. They are appended at the end to match the runtime behavior
+            ;; of init arguments.
+            (define parent-inits (get-parent-inits parent/init-type))
+
             (define class-type
-              (make-Class row-var given-inits fields methods augments given-init-rest))
+              (make-Class row-var
+                          (append given-inits parent-inits)
+                          fields methods augments given-init-rest))
 
             class-type]
            [else
@@ -809,11 +823,25 @@
             (set-box! alias-box (cons (current-type-alias-name)
                                       (unbox alias-box)))
             (define class-box (current-referenced-class-parents))
-            (set-box! class-box (append parent-stxs (unbox class-box)))
+            (set-box! class-box (append (if parent/init-stx
+                                            (cons parent/init-stx parent-stxs)
+                                            parent-stxs)
+                                        (unbox class-box)))
             ;; Ok to return Error here, since this type will
             ;; get reparsed in another pass
             (make-Error)
             ])]))
+
+;; get-parent-inits : (U Type #f) -> Inits
+;; Extract the init arguments out of a parent class type
+(define (get-parent-inits parent)
+  (cond [(not parent) null]
+        [else
+         (define resolved (resolve parent))
+         (match resolved
+           [(Class: _ inits _ _ _ _) inits]
+           [_ (parse-error "expected a class type for #:implements/inits clause"
+                           "given" resolved)])]))
 
 ;; check-function-types : Dict<Name, Type> -> Void
 ;; ensure all types recorded in the dictionary are function types

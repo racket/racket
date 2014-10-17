@@ -252,6 +252,7 @@ additional provides all other bindings from @racketmodname[racket/class].
                                        (field name+type ...)
                                        (augment name+type ...)
                                        (code:line #:implements type-alias-id)
+                                       (code:line #:implements/inits inits-id)
                                        (code:line #:row-var row-var-id)]
                     [init-type name+type
                                [id type #:optional]]
@@ -282,7 +283,8 @@ additional provides all other bindings from @racketmodname[racket/class].
 
   The order of initialization arguments in the type is significant, because
   it determines the types of by-position arguments for use with
-  @racket[make-object] and @racket[instantiate].
+  @racket[make-object] and @racket[instantiate]. A given @racket[Class] type
+  may also only contain a single @racket[init-rest] clause.
 
   @ex[
     (define drink%
@@ -300,6 +302,15 @@ additional provides all other bindings from @racketmodname[racket/class].
   for a subclass to include parts of its parent class type. The initialization argument
   types of the parent, however, are @emph{not} included because a subclass does not necessarily
   share the same initialization arguments as its parent class.
+
+  Initialization argument types can be included from the parent by providing
+  @racket[inits-id] with the @racket[#:implements/inits] keyword. This is identical
+  to the @racket[#:implements] clause except for the initialization argument
+  behavior. Only a single @racket[#:implements/inits] clause may be provided for
+  a single @racket[Class] type. The initialization arguments copied from the parent
+  type are appended to the initialization arguments specified via the @racket[init]
+  and @racket[init-field] clauses.
+
   Multiple @racket[#:implements] clauses may be provided for a single class
   type.
 

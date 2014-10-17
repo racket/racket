@@ -1572,4 +1572,64 @@
                (define/augment (m x) (inner 'bar-m m x))
                (define/augment (o x y) (inner 'bar-o o x y))))
            (void))
-         -Void]))
+         -Void]
+   ;; Test implements clauses
+   [tc-e (let ()
+           (define-type-alias A% (Class [foo (-> Void)]))
+           (define-type-alias B% (Class #:implements A% [bar (-> Void)]))
+           (: b% B%)
+           (define b% (class object%
+                        (super-new)
+                        (define/public (foo) (void))
+                        (define/public (bar) (void))))
+           (new b%))
+         (-object #:method ([foo (t:-> -Void)] [bar (t:-> -Void)]))]
+   [tc-err (let ()
+             (define-type-alias A% (Class [foo (-> Void)]))
+             (define-type-alias B% (Class #:implements A% [bar (-> Void)]))
+             (: b% B%)
+             (define b% (class object%
+                          (super-new)
+                          (define/public (bar) (void))))
+             (error "foo"))
+           #:msg "type mismatch.*required public method"]
+   [tc-e (let ()
+           (define-type-alias A% (Class (init [y Symbol])))
+           (define-type-alias B% (Class #:implements/inits A% (init [x String])))
+           (: b% B%)
+           (define b% (class object%
+                        (super-new)
+                        (init x y)))
+           (make-object b% "foo" 'bar)
+           (void))
+        -Void]
+   [tc-e (let ()
+           (define-type-alias A% (Class (init [y Symbol])))
+           (define-type-alias B% (Class [m (-> Void)]))
+           (define-type-alias C% (Class #:implements/inits A%
+                                        #:implements B%
+                                        (init [x String])))
+           (: c% C%)
+           (define c% (class object%
+                        (super-new)
+                        (define/public (m) (void))
+                        (init x y)))
+           (make-object c% "foo" 'bar)
+           (void))
+        -Void]
+   [tc-err (let ()
+             (define-type-alias A% (Class (init [y String])))
+             (define-type-alias B% (Class #:implements/inits A%
+                                          #:implements/inits A%))
+             (error "foo"))
+           ;; FIXME: this error message is pretty bad
+           #:msg "expected Class type clause"]
+   [tc-err (let ()
+             (define-type-alias A% (Class (init [y String])))
+             (define-type-alias B% (Class #:implements/inits A% (init [x String])))
+             (: b% B%)
+             (define b% (class object%
+                          (super-new)
+                          (init y x)))
+             (error "foo"))
+           #:msg "type mismatch"]))

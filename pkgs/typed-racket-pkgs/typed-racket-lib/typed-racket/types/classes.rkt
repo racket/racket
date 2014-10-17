@@ -211,11 +211,12 @@
 ;; dependencies
 (define-splicing-syntax-class (class-type-clauses parse-type)
   #:description "Class type clause"
-  #:attributes (row-var extends-types
+  #:attributes (row-var implements implements/inits
                 inits fields methods augments init-rest)
   #:literal-sets (class-type-literals)
   (pattern (~seq (~or (~optional (~seq #:row-var row-var:id))
-                      (~seq #:implements extends-type:id)
+                      (~seq #:implements implements-id:id)
+                      (~optional (~seq #:implements/inits implements/inits:id))
                       (~optional ((~or init-rest untyped:init-rest)
                                   init-rest-type:expr))
                       (~var clause (type-clause parse-type)))
@@ -226,7 +227,7 @@
            #:attr augments (apply append (attribute clause.augment-entries))
            #:attr init-rest (and (attribute init-rest-type)
                                  (parse-type (attribute init-rest-type)))
-           #:with extends-types #'(extends-type ...)
+           #:with implements #'(implements-id ...)
            #:fail-when
            (check-duplicate (map first (attribute inits)))
            "duplicate init or init-field clause"
