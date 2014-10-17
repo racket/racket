@@ -19,11 +19,13 @@
 ;; Like `git clone`, but producing just the checkout
 (define (git-checkout host
                       repo
-                      #:dest-dir dest-dir
+                      #:dest-dir dest-dir ; #f => only find checkout
                       #:transport [transport 'git]
                       #:ref [ref "master"]
                       #:depth [given-depth 1]
-                      #:quiet? [quiet? #f]
+                      #:status-printf [status-printf (lambda args
+                                                       (apply printf args)
+                                                       (flush-output))]
                       #:tmp-dir [given-tmp-dir #f]
                       #:clean-tmp-dir? [clean-tmp-dir? (not given-tmp-dir)]
                       #:port [port (case transport
@@ -36,9 +38,7 @@
     
     (define (status fmt . args)
       (define msg (apply format fmt args))
-      (unless quiet?
-        (displayln msg)
-        (flush-output))
+      (status-printf "~a\n" msg)
       (log-git-checkout-info msg))
     
     (status "Contacting ~a" host)
@@ -64,6 +64,13 @@
           (define-values (ref-commit    ; #f or an ID string
                           want-commits) ; list of ID string
             (select-commits ref refs status))
+
+          (unless dest-dir
+            (write-pkt o) ; clean termination
+            ((esc (lambda ()
+                    ;; If we get this far and `ref-commit` is #f,
+                    ;; then `ref` looks like a commit
+                    (or ref-commit ref)))))
 
           (define depth (and given-depth
                              ref-commit
@@ -147,8 +154,8 @@
              (extract-commit-tree (hex-string->bytes commit)
                                   obj-ids tmp dest-dir)
              
-             ;; Done
-             void)
+             ;; Done; return checkout id
+             (lambda () commit))
            (lambda ()
              (status "Cleaning up")
              (close-tmp-info tmp)
@@ -262,7 +269,7 @@
 ;;  just that one. Otherwise, we'll have to return a list of all
 ;;  IDs, and then we'll look for the reference later.
 (define (select-commits ref refs status)
-  (define ref-looks-like-id? (regexp-match? #rx"^[0-9a-fA-F]+$" ref))
+  (define ref-looks-like-id? (regexp-match? #rx"^[0-9a-f]+$" ref))
 
   (define ref-rx (byte-regexp (bytes-append
                                #"^refs/(?:heads|tags)/"
@@ -759,6 +766,10 @@
   (define ref "master")
   (define tmp-dir #f)
   (define transport 'git)
+  (define status-printf
+    (lambda args
+      (apply printf args)
+      (flush-output)))
 
   (define-values (host repo dest)
     (command-line
@@ -778,6 +789,8 @@
       (set! ref branch/tag/commit)]
      [("--tmp") dir "Write temporary files to <dir>"
       (set! tmp-dir dir)]
+     [("--quiet") "Suppress status printouts"
+      (set! status-printf void)]
      #:args (host repo dest)
      (values host repo dest)))
 
@@ -786,4 +799,5 @@
                 #:dest-dir dest
                 #:tmp-dir tmp-dir
                 #:ref ref
-                #:depth (if (eq? 0 depth) #f depth)))
+                #:depth (if (eq? 0 depth) #f depth)
+                #:status-printf status-printf))
