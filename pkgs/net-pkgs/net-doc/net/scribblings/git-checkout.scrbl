@@ -30,6 +30,7 @@ for information on command-line arguments and flags.
                                                                                          (flush-output))]
                        [#:tmp-dir given-tmp-dir (or/c #f path-string?) #f]
                        [#:clean-tmp-dir? clean-tmp-dir? any/c (not given-tmp-dir)]
+                       [#:verify-server? verify-server? any/c #t]
                        [#:port port (integer-in 1 65535) (case transport
                                                            [(git) 9418]
                                                            [(http) 80]
@@ -46,7 +47,10 @@ a branch, tag, commit ID, or tree ID) is extracted to
 If @racket[transport] is @racket['git], then the server is contacted
 using Git's native transport. If @racket[transport] is
 @racket['http] or @racket['https], then the server is contacted using
-HTTP(S) and the ``smart'' Git protocol.
+HTTP(S) and the ``smart'' Git protocol. In the case of @racket['https],
+the server's identity is verified unless @racket[verify-server?] is
+false or the @indexed-envvar{GIT_SSL_NO_VERIFY} environment variable
+is set.
 
 If @racket[dest-dir] is @racket[#f], then the result is an ID
 determined for @racket[ref] from just the server's report of the
