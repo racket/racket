@@ -118,6 +118,7 @@ The @tech{package source} types are:
 
 @itemlist[
 
+@; ----------------------------------------
 @item{a local file path naming an archive (as a plain path or @litchar{file://} URL)
 --- The name of the package
 is the basename of the archive file. The @tech{checksum} for archive
@@ -148,6 +149,7 @@ package name is the filename without its suffix.
          @elem{Changed treatment of an archive that contains all
                content within a top-level directory.}]}
 
+@; ----------------------------------------
 @item{a local directory (as a plain path or @litchar{file://} URL)
 --- The name of the package is the name of the
 directory. The @tech{checksum} is not present.
@@ -178,6 +180,7 @@ that could be inferred as a file archive.
 The inferred package name is from the URL's file name in the same
 way as for a file package source.}
 
+@; ----------------------------------------
 @item{a remote URL naming a directory --- The remote directory must
 contain a file named @filepath{MANIFEST} that lists all the contingent
 files. These are downloaded into a local directory and then the rules
@@ -192,23 +195,69 @@ source whose @tech{checksum} is found at
 
 A package source is inferred to be a URL the same for a directory or
 file, and it is treated as a directory URL when it does not end with a
-path element that has an archive file suffix. The inferred package name
-is the directory name.}
+path element that has an archive file suffix or a @filepath{.git}
+suffix. The inferred package name is the directory name.
 
-@item{a remote URL naming a GitHub repository --- The format for such
+@history[#:changed "6.1.1.1" @elem{Added special-casing of the @filepath{.git} suffix.}]}
+
+@; ----------------------------------------
+@item{a remote URL naming a Git repository --- The format for such
 URLs is:
+
+@inset{@nonterm{scheme}@exec{://@nonterm{host}/}...@exec{/}@nonterm{repo}@;
+@optional{@exec{.git}}@optional{@exec{/}}@optional{@exec{?path=}@nonterm{path}}@;
+@optional{@exec{#}@nonterm{rev}}}
+
+where @nonterm{scheme} is @litchar{git}, @litchar{http}, or
+@litchar{https}, and where @nonterm{host} is any address other than
+@litchar{github.com} (which is treated more specifically as a GitHub
+reference). The @nonterm{path} can contain multiple
+@litchar{/}-separated elements to form a path within the repository,
+and it defaults to the empty path. The @nonterm{rev} can be a branch,
+tag, or commit, and it defaults to @exec{master}.
+
+@margin-note{Due to properties of the Git protocol, the archive might
+be accessed more efficiently when @nonterm{rev} refers to a branch or
+tag (even if it is written as a commit). In those cases, the content
+typically can be obtained without downloading irrelevant history.}
+
+For example, @filepath{http://bitbucket.org/game/tic-tac-toe#master}
+is a Git package source. 
+
+A checkout of the repository at @nonterm{rev} provides the content of
+the package, and @nonterm{scheme} determines the protocol
+that is used to clone the repository. The package's @tech{checksum}
+is the hash identifying @nonterm{rev} if @nonterm{rev} is a branch or
+tag, otherwise @nonterm{rev} itself serves as the @tech{checksum}.
+
+A package source is inferred to be a Git reference when it starts with
+@litchar{git://} and the host is not @litchar{github.com}. A package
+source is also inferred to be a Git reference when it starts with
+@litchar{http://} or @litchar{https://} and the last non-empty path
+element ends in @litchar{.git}; a @litchar{.git} suffix is added if
+the source is otherwise specified to be a Git reference. The inferred
+package name is the last element of @nonterm{path} if it is non-empty,
+otherwise the inferred name is @nonterm{repo}.
+
+@history[#:changed "6.1.1.1" @elem{Added Git repository support.}]}
+
+@; ----------------------------------------
+@item{a remote URL naming a GitHub repository --- The format for such
+URLs is the same as for a Git repository reference starting
+@litchar{git://}, but with @litchar{github.com} as the host:
 
 @inset{@exec{git://github.com/}@nonterm{user}@exec{/}@nonterm{repo}@;
 @optional{@exec{.git}}@optional{@exec{/}}@optional{@exec{?path=}@nonterm{path}}@;
 @optional{@exec{#}@nonterm{rev}}}
 
-where @nonterm{path} can contain multiple @litchar{/}-separated
-elements to form a path within the repository, and defaults to the
-empty path. The @nonterm{rev} can be a branch, tag, or commit, and it
-defaults to @exec{master}.
-
 For example, @filepath{git://github.com/game/tic-tac-toe#master}
 is a GitHub package source.
+
+@margin-note{A Github repository source that starts with
+@litchar{git://} obtains the same content that would be accessed if
+@litchar{github.com} were not treated specially. The special treatment
+is preserved for historical reasons and because GitHub provides an
+interface that is always efficient.}
 
 For backward compatibility, an older format is also supported:
 
@@ -221,13 +270,14 @@ GitHub for any commit) is used as a remote URL archive path.  The
 is a branch or tag, otherwise @nonterm{rev} itself serves as the
 @tech{checksum}.
 
-A package source is inferred to be a GitHub reference when it
-starts with @litchar{git://} or @litchar{github://}; a package source that is otherwise
-specified as a GitHub reference is automatically prefixed with
-@filepath{git://github.com/}. The inferred package name
-is the last element of @nonterm{path} if it is
-non-empty, otherwise the inferred name is @nonterm{repo}.}
+A package source is inferred to be a GitHub reference when it starts
+with @litchar{git://github.com/} or @litchar{github://}; a package
+source that is otherwise specified as a GitHub reference is
+automatically prefixed with @litchar{git://github.com/}. The inferred
+package name is the last element of @nonterm{path} if it is non-empty,
+otherwise the inferred name is @nonterm{repo}.}
 
+@; ----------------------------------------
 @item{a @tech{package name} --- A @tech{package catalog} is
 consulted to determine the source and @tech{checksum} for the package.
 
@@ -342,7 +392,7 @@ sub-commands.
  @itemlist[
 
  @item{@DFlag{type} @nonterm{type} or @Flag{t} @nonterm{type} --- specifies an interpretation of the package source,
-       where @nonterm{type} is either @exec{file}, @exec{dir}, @exec{file-url}, @exec{dir-url}, @exec{github}, 
+       where @nonterm{type} is either @exec{file}, @exec{dir}, @exec{file-url}, @exec{dir-url}, @exec{git}, @exec{github}, 
        or @exec{name}.}
 
  @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- specifies the name of the package,
@@ -351,7 +401,7 @@ sub-commands.
 
  @item{@DFlag{checksum} @nonterm{checksum} --- specifies a checksum for the package,
        which normally makes sense only when a single @nonterm{pkg-source} is provided. The use of
-       @nonterm{checksum} depends on @nonterm{pkg-source}: for a GitHub source, @nonterm{checksum} selects a checksum;
+       @nonterm{checksum} depends on @nonterm{pkg-source}: for a Git or GitHub source, @nonterm{checksum} selects a checksum;
        for a @tech{package name}, file path, or remote URL as a source, @nonterm{checksum} specifies an expected checksum;
        for a directory path (including a remote directory URL without a @filepath{.CHECKSUM} file) as a source,
        @nonterm{checksum} assigns a checksum.}
@@ -589,7 +639,7 @@ the given @nonterm{pkg}s.
 @subcommand{@command/toc{create} @nonterm{option} ... @nonterm{directory-or-package}
 --- Bundles a package into an archive. Bundling
     is not needed for a package that is provided directly from a
-    GitHub repository or other non-archive formats. The @exec{create}
+    Git repository or other non-archive formats. The @exec{create}
     sub-command can create an archive from a directory (the default) or
     from an installed package. It can also adjust the archive's content
     to include only sources, only compiled bytecode and rendered documentation,
@@ -1051,7 +1101,7 @@ resolution through a @tech{package catalog}.
 If you want to control the resolution of package names (including
 specific @tech{checksum}s) but not necessary keep a copy of all package
 code (assuming that old @tech{checksum}s remain available, such as
-through Github), you can create a snapshot of the @tech{package name}
+through GitHub), you can create a snapshot of the @tech{package name}
 to @tech{package source} mapping by using @command-ref{catalog-copy}.
 For example,
 

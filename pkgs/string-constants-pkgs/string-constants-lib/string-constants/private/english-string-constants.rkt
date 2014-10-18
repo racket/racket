@@ -1828,6 +1828,7 @@ please adhere to these guidelines:
   (install-pkg-dir "Directory")
   (install-pkg-dir-url "Remote Directory")
   (install-pkg-file-url "Remote File")
+  (install-pkg-git "Git Repository")
   (install-pkg-github "Github")
   (install-pkg-name "Name (consulting resolver)")
   (install-pkg-inferred-as "Type inferred to be ~a") ; ~a gets install-pkg-{file,dir,...}

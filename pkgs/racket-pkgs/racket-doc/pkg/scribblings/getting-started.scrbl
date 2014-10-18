@@ -140,7 +140,7 @@ looking for a package.
 There are other ways to distribute and reference packages. For
 example, a package can be installed directly from a @filepath{.zip}
 file---available locally or served from on a web site---or from a
-Github repository. Such direct references make sense when a package is
+Git repository. Such direct references make sense when a package is
 not yet ready for wide distribution or when it will never be of
 interest to a wide audience. So, you may find non-catalog references
 in mailing-list posts, recommended by your friends, or advertised in
@@ -178,7 +178,7 @@ The argument that you provide to @command-ref{install} does not have
 to be a package name that is recognized by a @tech{package
 catalog}. In general, each argument to @command-ref{install} is a
 @tech{package source}. A @tech{package source} can refer to a
-@filepath{.zip} file, a @filepath{.tar} file, a Github repository, a
+@filepath{.zip} file, a @filepath{.tar} file, a Git repository, a
 directory-structured web site, or a few other possibilities. In each
 of those cases, a @tech{package name} is inferred from the
 @tech{package source}. After the package is installed, you use the
@@ -191,7 +191,7 @@ implementations. It simply maps each @tech{package name} to a
 @tech{package catalog}, it gets back a @tech{package source} for the
 actual package implementation, so each package installed from a
 @tech{package catalog} is actually installed from a @filepath{.zip}
-file, Github repository, etc. Registering with a @tech{package
+file, Git repository, etc. Registering with a @tech{package
 catalog} is just a way of making your package easier to find and
 update.
 
@@ -214,7 +214,7 @@ name} that was resolved by a @tech{package catalog}, then the
 @tech{package catalog} is consulted again to get the current
 @tech{checksum} for the package, and the package is updated if the
 @tech{checksum} doesn't match the current installation. If the package
-was installed directly from a Github reference, then Github is
+was installed directly from a Git reference, then the Git repository is
 consulted to get the current commit of a particular branch, and the
 package is updated if the commit identifier doesn't match the
 @tech{checksum} of the current installation.
@@ -263,7 +263,7 @@ supply the @DFlag{demote} flag to @command-ref{remove}.
 @section[#:tag "how-to-create"]{Creating Packages}
 
 A package normally starts life as a directory containing module files
-and grows up to become a Github repository that is registered with a
+and grows up to become a Git repository that is registered with a
 @tech{package catalog}.
 
 So, to create a package, first make a directory and select its name,
@@ -369,7 +369,7 @@ on GitHub, then
 repository for your package}. After that, your @tech{package source}
 is:
 
-@inset{@exec{git://github.com/@nonterm{user}/@nonterm{package}}}
+@inset{@exec{https://github.com/@nonterm{user}/@nonterm{package}.git}}
 
 If you want the package to be @nonterm{branch} instead of @exec{master},
 then add @filepath{#@nonterm{branch}} to the end of the package source.
@@ -380,7 +380,12 @@ Whenever you
 
 your changes will automatically be discovered by those who use
 @exec{raco pkg update} after installing from your
-github-based @tech{package source}.
+GitHub-based @tech{package source}.
+
+As of Racket version 6.1.1.1, other Git repository services can work
+just as well as GitHub---including Gitorious or BitBucket---as long as
+the server supports either the ``smart'' HTTP(S) protocol or the
+native Git protocol (but use a @exec{git://} path for the latter).
 
 @; - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -431,11 +436,11 @@ You only need to go to this site @emph{once} to list your package. The
 server will periodically check the package source you designate for
 updates.
 
-If you use this server, and if you use GitHub for deployment, then you
-will never need to open a web browser to update your package for end
-users. You just need to push to your GitHub repository, then within 24
-hours, the PLT @tech{package catalog} will notice, and @exec{raco
-pkg update} will work on your user's machines.
+If you use this server, and if you use a public Git repository for
+deployment, then you will never need to open a web browser to update
+your package for end users. You just need to push to your Git
+repository, then within 24 hours, the PLT @tech{package catalog} will
+notice, and @exec{raco pkg update} will work on your user's machines.
 
 @; - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -539,7 +544,7 @@ Finally, when listing your package on
 @url{http://pkgs.racket-lang-org}, you should supply a GitHub source
 using the URL format
 @tt{github://github.com/@nonterm{user}/@nonterm{repo}/@nonterm{rev}@optional{/@nonterm{path}}} (not
-the @tt{git:} format).
+the @tt{git://} or @exec{http://} format).
 
 @subsubsection{Version Exceptions}
 
@@ -550,7 +555,7 @@ when installing a given package using a specific version of Racket.
 
 For example, a package that uses on Racket 6.0-specific features could provide
 a @tech{version exception} for Racket 5.3.6 using a different branch in the
-package's Github repository, or a different zip archive, as package source.
+package's GitHub repository, or a different zip archive, as package source.
 Users installing the package from Racket 6.0 will use the default source for
 the package, while those using Racket 5.3.5 will use the alternative branch /
 archive.

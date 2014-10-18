@@ -520,9 +520,9 @@
    #:catalog-flags
    ([(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"])
    #:install-type-flags
-   ([(#:sym type [file dir file-url dir-url github name] #f) type ("-t") 
+   ([(#:sym type [file dir file-url dir-url git github name] #f) type ("-t") 
      ("Type of <pkg-source>;"
-      "valid <types>s are: file, dir, file-url, dir-url, github, or name;"
+      "valid <types>s are: file, dir, file-url, dir-url, git, github, or name;"
       "if not specified, the type is inferred syntactically")]
     [(#:str name #f) name ("-n") ("Name of package, instead of inferred"
                                   "(makes sense only when a single <pkg-source> is given)")]

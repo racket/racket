@@ -22,6 +22,7 @@
 (define sc-install-pkg-dir (string-constant install-pkg-dir))
 (define sc-install-pkg-dir-url (string-constant install-pkg-dir-url))
 (define sc-install-pkg-file-url (string-constant install-pkg-file-url))
+(define sc-install-pkg-git (string-constant install-pkg-git))
 (define sc-install-pkg-github (string-constant install-pkg-github))
 (define sc-install-pkg-name (string-constant install-pkg-name))
 (define sc-install-pkg-inferred-as (string-constant install-pkg-inferred-as))
@@ -224,6 +225,7 @@
                                        sc-install-pkg-dir
                                        sc-install-pkg-file-url
                                        sc-install-pkg-dir-url
+                                       sc-install-pkg-git
                                        sc-install-pkg-github
                                        sc-install-pkg-name)]))
     (define link-dir-checkbox (new check-box%
@@ -360,14 +362,16 @@
         [(2) 'dir]
         [(3) 'file-url]
         [(4) 'dir-url]
-        [(5) 'github]
-        [(6) 'name]))
+        [(5) 'git]
+        [(6) 'github]
+        [(7) 'name]))
     
     (define/private (type->str type)
       (case type
         [(file) sc-install-pkg-file]
         [(name) sc-install-pkg-name]
         [(dir) sc-install-pkg-dir]
+        [(git) sc-install-pkg-git]
         [(github) sc-install-pkg-github]
         [(file-url) sc-install-pkg-file-url]
         [(dir-url) sc-install-pkg-dir-url]

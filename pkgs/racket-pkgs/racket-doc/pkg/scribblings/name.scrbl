@@ -14,13 +14,15 @@ extracting a package name.}
 @defproc[(package-source-format? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is @racket['name] , @racket['file],
-@racket['dir], @racket['github], @racket['file-url],
+@racket['dir], @racket['git], @racket['github], @racket['file-url],
 @racket['dir-url], @racket['link], or @racket['static-link], and
 returns @racket[#f] otherwise.
 
 The @racket['link] and @racket['static-link] formats are the same as
 @racket['dir] in terms of parsing, but they are treated differently
-for tasks such as package installation.}
+for tasks such as package installation.
+
+@history[#:changed "6.1.1.1" @elem{Added @racket['git].}]}
 
 
 @defproc[(package-source->name [source string?]
