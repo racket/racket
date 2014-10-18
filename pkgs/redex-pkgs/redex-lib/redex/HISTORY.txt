@@ -1,3 +1,16 @@
+v6.1.1
+
+  * Performance improvements for example generation, both for 
+    enumerators (#:i-th in generate-term) and judgment forms
+    (#:satisfying in generate-term)
+
+  * Add short discussion of each of the benchmark programs
+
+  * Use unicode whitebracket characters for metafunction typesetting
+
+  * add support for "big left curly bracket"-style conditionals
+    when typesetting metafunctions
+
 v6.1
 
   * changed the semantics for _!_ variables when they are under
