@@ -4,12 +4,17 @@
          racket/match
          racket/port
          racket/format
+         racket/file
+         file/tar
+         file/untgz
+         net/git-checkout
          "path.rkt"
          "print.rkt"
          "config.rkt")
 
 (provide call/input-url+200
          download-file!
+         download-repo!
          url-path/no-slash
          clean-cache)
 
@@ -35,6 +40,25 @@
       rest]
      [_ rp])))
 
+(define (do-cache-file file url checksum use-cache? download-printf download!)
+  (cond
+   [(and use-cache? checksum)
+    (cache-file file
+                #:exists-ok? #t
+                (list (url->string url) checksum)
+                (get-download-cache-dir)
+                download!
+                #:log-error-string (lambda (s) (log-pkg-error s))
+                #:log-debug-string (lambda (s) (log-pkg-debug s))
+                #:notify-cache-use (lambda (s)
+                                     (when download-printf
+                                       (download-printf "Using ~a for ~a\n"
+                                                        s
+                                                        (url->string url))))
+                #:max-cache-files (get-download-cache-max-files)
+                #:max-cache-size (get-download-cache-max-bytes))]
+   [else (download!)]))
+
 (define (download-file! url file checksum
                         #:download-printf [download-printf #f]
                         #:use-cache? [use-cache? #t]
@@ -48,34 +72,21 @@
     (define (download!)
       (when download-printf
         (download-printf "Downloading ~a\n" (url->string url)))
-      (call-with-output-file file
-        (λ (op)
-          (call/input-url+200
-           url
-           (λ (ip) (copy-port ip op))
-           #:failure
-           (lambda (reply-s)
-             (pkg-error (~a "error downloading package\n"
-                            "  URL: ~a\n"
-                            "  server response: ~a")
-                        (url->string url)
-                        (read-line (open-input-string reply-s))))))))
-    (cond
-     [(and checksum use-cache?)
-      (cache-file file
-                  (list (url->string url) checksum)
-                  (get-download-cache-dir)
-                  download!
-                  #:log-error-string (lambda (s) (log-pkg-error s))
-                  #:log-debug-string (lambda (s) (log-pkg-debug s))
-                  #:notify-cache-use (lambda (s)
-                                       (when download-printf
-                                         (download-printf "Using ~a for ~a\n"
-                                                          s
-                                                          (url->string url))))
-                  #:max-cache-files (get-download-cache-max-files)
-                  #:max-cache-size (get-download-cache-max-bytes))]
-     [else (download!)])))
+      (call-with-output-file*
+       file
+       #:exists 'truncate/replace
+       (λ (op)
+         (call/input-url+200
+          url
+          (λ (ip) (copy-port ip op))
+          #:failure
+          (lambda (reply-s)
+            (pkg-error (~a "error downloading package\n"
+                           "  URL: ~a\n"
+                           "  server response: ~a")
+                       (url->string url)
+                       (read-line (open-input-string reply-s))))))))
+    (do-cache-file file url checksum use-cache? download-printf download!)))
 
 (define (clean-cache pkg-url checksum)
   (when pkg-url
@@ -85,3 +96,32 @@
                     (get-download-cache-dir)
                     #:log-error-string (lambda (s) (log-pkg-error s))
                     #:log-debug-string (lambda (s) (log-pkg-debug s))))))
+
+
+(define (download-repo! url host repo dest-dir checksum
+                        #:download-printf [download-printf #f]
+                        #:use-cache? [use-cache? #t])
+  (log-pkg-debug "\t\tDownloading ~a to ~a" (url->string url) dest-dir)
+  (define tmp.tgz
+    (make-temporary-file "~a-repo.tgz" #f))
+  (define unpacked? #f)
+  
+  (define (download!)
+    (git-checkout host repo
+                  #:dest-dir dest-dir
+                  #:ref checksum
+                  #:status-printf (or download-printf void)
+                  #:transport (string->symbol (url-scheme url)))
+    (set! unpacked? #t)
+    ;; package directory as ".tgz" so it can be cached:
+    (parameterize ([current-directory dest-dir])
+      (apply tar-gzip tmp.tgz
+             #:exists-ok? #t
+             (directory-list))))
+  
+  (do-cache-file tmp.tgz url checksum use-cache? download-printf download!)
+
+  (unless unpacked?
+    (untgz tmp.tgz #:dest dest-dir))
+  
+  (delete-file tmp.tgz))

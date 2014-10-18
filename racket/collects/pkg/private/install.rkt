@@ -32,9 +32,9 @@
 
 (define (checksum-for-pkg-source pkg-source type pkg-name given-checksum download-printf)
   (case type
-    [(file-url dir-url github)
+    [(file-url dir-url github git)
      (or given-checksum
-	 (remote-package-checksum `(url ,pkg-source) download-printf pkg-name))]
+	 (remote-package-checksum `(url ,pkg-source) download-printf pkg-name #:type type))]
     [(file)
      (define checksum-pth (format "~a.CHECKSUM" pkg-source))
      (or (and (file-exists? checksum-pth)

@@ -59,7 +59,7 @@
    (-> string? (or/c path-string? #f))]
   [pkg-desc 
    (-> string? 
-       (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'github 'name) 
+       (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'github 'name) 
        (or/c string? #f)
        (or/c string? #f)
        boolean?

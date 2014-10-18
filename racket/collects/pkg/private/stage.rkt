@@ -13,6 +13,7 @@
          file/unzip
          openssl/sha1
          json
+         net/git-checkout
          "../name.rkt"
          "../strip.rkt"
          "catalog.rkt"
@@ -33,12 +34,13 @@
 
 (struct install-info (name orig-pkg directory clean? checksum module-paths additional-installs))
 
-(define (remote-package-checksum pkg download-printf pkg-name)
+(define (remote-package-checksum pkg download-printf pkg-name #:type [type #f])
   (match pkg
     [`(catalog ,pkg-name)
      (hash-ref (package-catalog-lookup pkg-name #f download-printf) 'checksum)]
     [`(url ,pkg-url-str)
-     (package-url->checksum pkg-url-str 
+     (package-url->checksum pkg-url-str
+                            #:type type
                             #:download-printf download-printf
                             #:pkg-name pkg-name)]))
 
@@ -90,11 +92,15 @@
                         metadata-ns
                         #:strip strip-mode
                         #:force-strip? force-strip?)]
-   [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
-    (define pkg-url (string->url pkg))
+   [(or (eq? type 'file-url)
+        (eq? type 'dir-url)
+        (eq? type 'github)
+        (eq? type 'git))
+    (define pkg-url-str (normalize-url type pkg (string->url pkg)))
+    (define pkg-url (string->url pkg-url-str))
     (define scheme (url-scheme pkg-url))
 
-    (define orig-pkg `(url ,pkg))
+    (define orig-pkg `(url ,pkg-url-str))
     (define found-checksum
       ;; If a checksum is given, use that. In the case of a non-github
       ;; source, we could try to get the checksum from the source, and
@@ -107,6 +113,55 @@
     (define checksum (or found-checksum given-checksum))
     (define downloaded-info
        (match type
+         ['git
+          (when (equal? checksum "")
+            (pkg-error 
+             (~a "cannot use empty checksum for Git repostory package source\n"
+                 "  source: ~a")
+             pkg))
+          (define-values (host repo branch path) (split-git-url pkg-url))
+          (define tmp-dir
+            (make-temporary-file
+             (string-append
+              "~a-"
+              (regexp-replace* #rx"[:/\\.]" (format "~a.~a" repo branch) "_"))
+             'directory))
+          
+          (define staged? #f)
+          (dynamic-wind
+           void
+           (λ ()
+             (download-repo! pkg-url host repo tmp-dir checksum 
+                             #:use-cache? use-cache?
+                             #:download-printf download-printf)
+             (unless (null? path)
+               (unless (directory-exists? (apply build-path tmp-dir path))
+                 (pkg-error
+                  (~a "specified directory is not in Git respository\n"
+                      "  path: ~a")
+                  (apply build-path path)))
+               (lift-directory-content tmp-dir path))
+
+             (begin0
+              (stage-package/info tmp-dir
+                                  'dir
+                                  pkg-name
+                                  #:given-checksum checksum
+                                  #:cached-url pkg-url
+                                  #:use-cache? use-cache?
+                                  check-sums?
+                                  download-printf
+                                  metadata-ns
+                                  #:strip strip-mode
+                                  #:force-strip? force-strip?
+                                  #:in-place? #t
+                                  #:in-place-clean? #t)
+              (set! staged? #t)))
+           (λ ()
+             (when (and use-cache? (not staged?))
+               (clean-cache pkg-url checksum))
+             (unless staged?
+               (delete-directory/files tmp-dir))))]
          ['github
           (unless checksum
             (pkg-error 
@@ -132,7 +187,6 @@
               "~a-"
               (format "~a.~a.tgz" repo branch))
              #f))
-          (delete-file tmp.tgz)
           (define tmp-dir
             (make-temporary-file
              (string-append
@@ -156,8 +210,8 @@
                           (unless (directory-exists? (apply build-path tmp-dir path))
                             (pkg-error
                              (~a "specified directory is not in GitHub respository archive\n"
-                                 "  path: ~a"
-                                 (apply build-path path))))
+                                 "  path: ~a")
+                             (apply build-path path)))
                           (lift-directory-content tmp-dir path))
 
                         (begin0
@@ -476,12 +530,26 @@
 ;; ----------------------------------------
 
 (define (package-url->checksum pkg-url-str [query empty]
+                               #:type [given-type #f]
                                #:download-printf [download-printf void]
                                #:pkg-name [pkg-name "package"])
   (define pkg-url
     (string->url pkg-url-str))
-  (match (url-scheme pkg-url)
-    [(or "github" "git")
+  (define type (or given-type
+                   (let-values ([(name type) (package-source->name+type pkg-url-str given-type)])
+                     type)))
+  (case type
+    [(git)
+     (define-values (host repo branch path)
+       (split-git-url pkg-url))
+     ;; supplying `#:dest-dir #f` means that we just resolve `branch`
+     ;; to an ID:
+     (git-checkout host repo
+                   #:dest-dir #f
+                   #:ref branch
+                   #:status-printf download-printf
+                   #:transport (string->symbol (url-scheme pkg-url)))]
+    [(github)
      (match-define (list* user repo branch path)
                    (split-github-url pkg-url))
      (or
@@ -525,7 +593,7 @@
       ;; syntax of a commit id, then assume that it refers to a commit
       (and (regexp-match? #rx"[a-f0-9]+" branch)
            branch))]
-    [_
+    [else
      (define u (string-append pkg-url-str ".CHECKSUM"))
      (download-printf "Downloading checksum for ~a\n" pkg-name)
      (log-pkg-debug "Downloading checksum as ~a" u)
@@ -545,6 +613,33 @@
                pkg-src
                given-checksum
                checksum)))
+
+;; ----------------------------------------
+
+;; Disambiguate `str` as needed to ensure that it will be parsed as
+;; `type` in the future.
+(define (normalize-url type str as-url)
+  (case type
+    [(git)
+     (cond
+      [(equal? "git" (url-scheme as-url))
+       str]
+      [else
+       (define p (reverse (url-path as-url)))
+       (define skip (if (equal? "" (path/param-path (car p)))
+                        cdr
+                        values))
+       (define e (path/param-path (car (skip p))))
+       (cond
+        [(not (regexp-match? #rx"[.]git$" e))
+         (url->string (struct-copy url as-url
+                                   [path
+                                    (reverse
+                                     (cons (path/param (string-append e ".git")
+                                                       (path/param-param (car (skip p))))
+                                           (cdr (skip p))))]))]
+        [else str])])]
+    [else str]))
 
 ;; ----------------------------------------
 
@@ -570,9 +665,21 @@
         (list* (car paths)
                (regexp-replace* #rx"[.]git$" (cadr paths) "")
                (or (url-fragment pkg-url) "master")
-               (let ([a (assoc 'path (url-query pkg-url))])
-                 (or (and a (cdr a) (string-split (cdr a) "/"))
-                     null))))))
+               (extract-git-path pkg-url)))))
+
+(define (extract-git-path pkg-url)
+  (let ([a (assoc 'path (url-query pkg-url))])
+    (or (and a (cdr a) (string-split (cdr a) "/"))
+        null)))
+
+;; returns: (values host repo branch path)
+(define (split-git-url pkg-url)
+  (values (url-host pkg-url)
+          (string-join (map (compose ~a path/param-path)
+                            (url-path/no-slash pkg-url))
+                       "/")
+          (or (url-fragment pkg-url) "master")
+          (extract-git-path pkg-url)))
 
 ;; ----------------------------------------
 

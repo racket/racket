@@ -22,9 +22,10 @@
 
 (define rx:package-name #rx"^[-_a-zA-Z0-9]+$")
 (define rx:archive #rx"[.](plt|zip|tar|tgz|tar[.]gz)$")
+(define rx:git #rx"[.]git$")
 
 (define package-source-format?
-  (or/c 'name 'file 'dir 'github 'file-url 'dir-url 'link 'static-link))
+  (or/c 'name 'file 'dir 'git 'github 'file-url 'dir-url 'link 'static-link))
 
 (define (validate-name name complain inferred?)
   (and name
@@ -42,12 +43,11 @@
 
 (define (extract-archive-name name+ext complain)
   (validate-name
-   (path->string
-    (if (regexp-match #rx#"[.]tar[.]gz$" (if (path? name+ext)
-                                             (path->bytes name+ext)
-                                             name+ext))       
-        (path-replace-suffix (path-replace-suffix name+ext #"") #"")
-        (path-replace-suffix name+ext #"")))
+   (and name+ext
+        (path->string
+         (if (regexp-match #rx#"[.]tar[.]gz$" name+ext)
+             (path-replace-suffix (path-replace-suffix name+ext #"") #"")
+             (path-replace-suffix name+ext #""))))
    complain
    #t))
 
@@ -57,6 +57,26 @@
    [else (or (last-non-empty (cdr p))
              (and (not (equal? "" (path/param-path (car p))))
                   (path/param-path (car p))))]))
+
+(define (num-empty p)
+  (let loop ([p (reverse p)])
+    (cond
+     [(null? p) 0]
+     [else (if (equal? "" (path/param-path (car p)))
+               (add1 (loop (cdr p)))
+               0)])))
+
+(define (extract-git-name url p complain-name)
+  (let ([a (assoc 'path (url-query url))])
+    (define sub (and a (cdr a) (string-split (cdr a) "/")))
+    (if (pair? sub)
+        (validate-name (last sub) complain-name #t)
+        (let ([s (last-non-empty p)])
+          (validate-name (regexp-replace #rx"[.]git$" s "") complain-name #t)))))
+
+(define (string-and-regexp-match? rx s)
+  (and (string? s)
+       (regexp-match? rx s)))
 
 (define-syntax-rule (cor v complain)
   (or v (begin complain #f)))
@@ -78,14 +98,16 @@
           (eq? type 'file)
           (and (path-string? s)
                (regexp-match rx:archive s)))
-      (unless (path-string? s)
-        (complain "ill-formed path"))
-      (unless (regexp-match rx:archive s)
-        (complain "path does not end with a recognized archive suffix"))
-      (define-values (base name+ext dir?) (if (path-string? s)
-                                              (split-path s)
-                                              (values #f #f #f)))
-      (define name (and name+ext (extract-archive-name name+ext complain-name)))
+      (define name
+        (and (cor (path-string? s)
+                  (complain "ill-formed path"))
+             (cor (regexp-match rx:archive s)
+                  (complain "path does not end with a recognized archive suffix"))
+             (let ()
+               (define-values (base name+ext dir?) (if (path-string? s)
+                                                       (split-path s)
+                                                       (values #f #f #f)))
+               (extract-archive-name name+ext complain-name))))
       (values name 'file)]
      [(if type
           (or (eq? type 'dir) 
@@ -111,8 +133,7 @@
    [(if type
         (eq? type 'name)
         (regexp-match? rx:package-name s))
-    (validate-name s complain #f)
-    (values (and (regexp-match? rx:package-name s) s) 'name)]
+    (values (validate-name s complain #f) 'name)]
    [(and (eq? type 'github)
          (not (regexp-match? #rx"^git(?:hub)?://" s)))
     (package-source->name+type 
@@ -120,6 +141,7 @@
      'github)]
    [(if type
         (or (eq? type 'github)
+            (eq? type 'git)
             (eq? type 'file-url)
             (eq? type 'dir-url))
         (regexp-match? #rx"^(https?|github|git)://" s))
@@ -136,66 +158,98 @@
               (unless (or (equal? (url-scheme url) "github")
                           (equal? (url-scheme url) "git"))
                 (complain "URL scheme is not 'git' or 'github'"))
+              (define github?
+                (or (eq? type 'github)
+                    (equal? (url-scheme url) "github")
+                    (equal? (url-host url) "github.com")))
               (define name
                 (and (cor (pair? p)
                           (complain "URL path is empty"))
-                     (cor (equal? "github.com" (url-host url))
-                          (complain "URL host is not 'github.com'"))
+                     (or (not github?)
+                         (cor (equal? "github.com" (url-host url))
+                              (complain "URL host is not 'github.com'")))
                      (if (equal? (url-scheme url) "git")
                          ;; git://
-                         (and (cor (or (= (length p) 2)
-                                       (and (= (length p) 3)
-                                            (equal? "" (path/param-path (caddr p)))))
-                                   (complain "URL does not have two path elements (name and repo)"))
-                              (let ([a (assoc 'path (url-query url))])
-                                (define sub (and a (cdr a) (string-split (cdr a) "/")))
-                                (if (pair? sub)
-                                    (validate-name (last sub) complain-name #t)
-                                    (let ([s (path/param-path (cadr p))])
-                                      (validate-name (regexp-replace #rx"[.]git$" s "") complain-name #t)))))
+                         (and (if github?
+                                  (and
+                                   (cor (or (= (length p) 2)
+                                            (and (= (length p) 3)
+                                                 (equal? "" (path/param-path (caddr p)))))
+                                        (complain "URL does not have two path elements (name and repo)"))
+                                   (cor (and (string? (path/param-path (car p)))
+                                             (string? (path/param-path (cadr p))))
+                                        (complain "URL includes a directory indicator as an element")))
+                                  (and
+                                   (cor (last-non-empty p)
+                                        (complain "URL path is empty"))
+                                   (cor (string? (last-non-empty p))
+                                        (complain "URL path ends with a directory indicator"))
+                                   (cor ((num-empty p) . < . 2)
+                                        (complain "URL path ends with two empty elements"))))
+                              (extract-git-name url p complain-name))
                          ;; github://
                          (let ([p (if (equal? "" (path/param-path (last p)))
                                       (reverse (cdr (reverse p)))
                                       p)])
                            (and (cor ((length p) . >= . 3)
                                      (complain "URL does not have at least three path elements"))
+                                (cor (andmap string? (map path/param-path p))
+                                     (complain "URL includes a directory indicator"))
                                 (validate-name
                                  (if (= (length p) 3)
                                      (path/param-path (second (reverse p)))
                                      (last-non-empty p))
                                  complain-name
                                  #t))))))
-              (values name (or type 'github))]
+              (values name (or type
+                               (if github?
+                                   'github
+                                   'git)))]
              [(if type
                   (eq? type 'file-url)
                   (and (pair? p)
                        (path/param? (last p))
-                       (regexp-match? rx:archive (path/param-path (last p)))))
-              (unless (pair? p)
-                (complain "URL path is empty"))
-              (when (pair? p)
-                (unless (path/param? (last p))
-                  (complain "URL's last path element is missing"))
-                (unless (regexp-match? rx:archive (path/param-path (last p)))
-                  (complain "URL does not end with a recognized archive suffix")))
-              (values (and (pair? p)
-                           (extract-archive-name (last-non-empty p) complain-name))
-                      'file-url)]
+                       (string-and-regexp-match? rx:archive (path/param-path (last p)))))
+              (define name
+                (and (cor (pair? p)
+                          (complain "URL path is empty"))
+                     (cor (string-and-regexp-match? rx:archive (path/param-path (last p)))
+                          (complain "URL does not end with a recognized archive suffix"))
+                     (extract-archive-name (last-non-empty p) complain-name)))
+              (values name 'file-url)]
+             [(if type
+                  (eq? type 'git)
+                  (and (last-non-empty p)
+                       (string-and-regexp-match? rx:git (last-non-empty p))
+                       ((num-empty p) . < . 2)))
+              (define name
+                (and (cor (last-non-empty p)
+                          (complain "URL path is empty"))
+                     (cor ((num-empty p) . < . 2)
+                          (complain "URL path ends with two empty elements"))
+                     (cor (string? (last-non-empty p))
+                          (complain "URL path ends with a directory indicator"))
+                     (extract-git-name url p complain-name)))
+              (values name 'git)]
              [else
-              (unless (pair? p)
-                (complain "URL path is empty"))
-              (when (pair? p)
-                (unless (path/param? (last p))
-                  (complain "URL's last path element is missing")))
-              (values (validate-name (last-non-empty p) complain-name #t) 'dir-url)]))
+              (define name
+                (and (cor (pair? p)
+                          (complain "URL path is empty"))
+                     (cor (last-non-empty p)
+                          (complain "URL has no non-empty path"))
+                     (cor (string? (last-non-empty p))
+                          (complain "URL's last path element is a directory indicator"))
+                     (validate-name (last-non-empty p) complain-name #t)))
+              (values name 'dir-url)]))
           (values #f #f)))
-    (values (validate-name name complain-name #f) (or type (and name-type)))]
+    (values (validate-name name complain-name #f)
+            (or type (and name-type)))]
    [(and (not type)
          (regexp-match #rx"^file://(.*)$" s))
     => (lambda (m) (parse-path (cadr m)))]
    [(and (not type)
          (regexp-match? #rx"^[a-zA-Z]*://" s))
-    (complain "unreognized URL scheme")
+    (complain "unrecognized URL scheme")
     (values #f #f)]
    [else
     (parse-path s)]))
