@@ -17,6 +17,7 @@ in a link must be less than 100 bytes.}
 
 @defproc[(tar [tar-file path-string?]
               [path path-string?] ...
+              [#:exists-ok? exists-ok? any/c #f]
               [#:path-prefix path-prefix (or/c #f path-string?) #f]
               [#:get-timestamp get-timestamp
                                (path? . -> . exact-integer?)
@@ -33,13 +34,18 @@ to the current directory).  If a nested path is provided as a
 resulting tar file, up to the current directory (using
 @racket[pathlist-closure]).
 
+If @racket[exists-ok?] is @racket[#f], then an exception is raised if
+@racket[tar-file] exists already. If @racket[exists-ok?] is true, then
+@racket[tar-file] is truncated or replaced if it exists already.
+
 If @racket[path-prefix] is not @racket[#f], then it is prefixed to
 each path in the archive.
 
 The @racket[get-timestamp] function is used to obtain the modification
 date to record in the archive for each file or directory.
 
-@history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}]}
+@history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}
+         #:changed "6.1.1.1" @elem{Added the @racket[#:exists-ok?] argument.}]}
 
 
 @defproc[(tar->output [paths (listof path?)]
@@ -63,6 +69,7 @@ without parent directories.
 
 @defproc[(tar-gzip [tar-file path-string?]
                    [paths path-string?] ...
+                   [#:exists-ok? exists-ok? any/c #f]
                    [#:path-prefix path-prefix (or/c #f path-string?) #f]
                    [#:get-timestamp get-timestamp
                                     (path? . -> . exact-integer?)
@@ -73,4 +80,5 @@ without parent directories.
 
 Like @racket[tar], but compresses the resulting file with @racket[gzip].
 
-@history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}]}
+@history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}
+         #:changed "6.1.1.1" @elem{Added the @racket[#:exists-ok?] argument.}]}
