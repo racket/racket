@@ -6,7 +6,9 @@
          racket/string
          file/gunzip
          openssl/sha1
-         net/url)
+         openssl
+         net/url
+         (only-in net/url-connect current-https-protocol))
 
 ;; Stefan Saasen's "Reimplementing 'git clone' in Haskell from the bottom up"
 ;;  http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/
@@ -28,6 +30,7 @@
                                                        (flush-output))]
                       #:tmp-dir [given-tmp-dir #f]
                       #:clean-tmp-dir? [clean-tmp-dir? (not given-tmp-dir)]
+                      #:verify-server? [verify? #t]
                       #:port [port (case transport
                                      [(git) 9418]
                                      [(http) 80]
@@ -42,7 +45,7 @@
       (log-git-checkout-info msg))
     
     (status "Contacting ~a" host)
-    (define-values (i o) (initial-connect transport host port repo))
+    (define-values (i o) (initial-connect transport host verify? port repo))
     ((let/ec esc
        (dynamic-wind
         void
@@ -92,7 +95,7 @@
 
           ;; Tell the server that we're ready for the objects
           (write-pkt o "done\n")
-          (set!-values (i o) (done-step transport host port repo i o))
+          (set!-values (i o) (done-step transport host verify? port repo i o))
 
           (when depth
             ;; If we wrote `deepen`, then the server replies with `shallow`s.
@@ -168,29 +171,36 @@
 ;; ----------------------------------------
 ;; Transports: git, http, and https
 
-;; initial-connect: transport-sym string natural string
+(define http-request-headers
+  ;; bitbucket.org seems to require a "git" value for "User-Agent",
+  ;; otherwise it returns a "broken link" web page
+  '("User-Agent: git/1.9"))
+
+;; initial-connect: transport-sym string bool natural string
 ;;                  -> (values input-port output-port)
 ;;  Contacts the server and returns an output port for writing
 ;;  the request (ignored if not needed for the the transport)
 ;;  and an input port from reading the available references
-(define (initial-connect transport host port repo)
+(define (initial-connect transport host verify? port repo)
   (case transport
     [(git)
      (tcp-connect host port)]
     [(http https)
-     (define i
-       (get-pure-port
-        (string->url
-         (~a transport "://" host ":" port "/" repo
-             "/info/refs?service=git-upload-pack"))))
+     (define url-str
+       (~a transport "://" host ":" port "/" repo
+           "/info/refs?service=git-upload-pack"))
+     (define i (parameterize ([current-https-protocol (ssl-context verify?)])
+                 (get-pure-port (string->url url-str)
+                                http-request-headers)))
      (define ok? #f)
      (dynamic-wind
       void
       (lambda ()
         (unless (regexp-match-peek #px#"^[0-9a-f]{4}#" i)
-          (error 'git-checkout (~a "response is not consistent with the Git protocol\n"
+          (error 'git-checkout (~a "error reading repository content;\n"
+                                   " response is not consistent with the Git protocol\n"
                                    "  initial portion: ~s")
-                 (read-bytes 64 i)))
+                 (read-bytes 640 i)))
         (define pkt (read-pkt i))
         (define term-pkt (read-pkt i))
         (unless (eof-object? term-pkt)
@@ -215,24 +225,36 @@
      (close-input-port i)
      (values (open-input-bytes #"") (open-output-bytes))]))
 
-;; done-step: transport-sym string natural string input-port output-port
+;; done-step: transport-sym string bool natural string input-port output-port
 ;;            -> (values input-port output-port)
 ;;  Replaces the connection, if appropriate to the transport, after
 ;;  writing the wanted references and before reading the server's
 ;;  response.
-(define (done-step transport host port repo i o)
+(define (done-step transport host verify? port repo i o)
   (case transport
     [(git) (values i o)]
     [(http https)
      (define s (get-output-bytes o))
      (define i
-       (post-pure-port
-        (string->url
-         (~a transport "://" host ":" port "/" repo
-             "/git-upload-pack"))
-        s
-        (list "Content-Type: application/x-git-upload-pack-request")))
+       (parameterize ([current-https-protocol (ssl-context verify?)])
+         (post-pure-port
+          (string->url
+           (~a transport "://" host ":" port "/" repo
+               "/git-upload-pack"))
+          s
+          (append
+           http-request-headers
+           (list "Content-Type: application/x-git-upload-pack-request")))))
      (values i (open-output-nowhere))]))
+
+(define (ssl-context verify?)
+  (cond
+   [(or (not verify?)
+        (getenv "GIT_SSL_NO_VERIFY")
+        (not ssl-available?))
+    (current-https-protocol)]
+   [else
+    (ssl-secure-client-context)]))
 
 ;; ----------------------------------------
 
@@ -250,7 +272,7 @@
   (filter
    values
    (for/list ([pkt (in-list pkts)])
-     (define m (regexp-match #px#"^([0-9a-fA-F]{40}) (.+)[\0\n]" pkt))  
+     (define m (regexp-match #px#"^([0-9a-fA-F]{40}) ([^\0\n]+)[\0\n]" pkt))
      (unless m (error 'git-checkout "count not parse ref pkt\n  pkt: ~a"
                       pkt))
      (define name (caddr m))
