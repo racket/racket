@@ -703,7 +703,7 @@
        (define rmp ((current-module-name-resolver) x #f #f #f))
        (define p (resolved-module-path-name rmp))
        (and (file-exists? p) p))
-     (match (find (string->symbol e))
+     (match (find `(lib ,e))
        [#f
         (error test-exe-name
                (string-append "module not found\n"
