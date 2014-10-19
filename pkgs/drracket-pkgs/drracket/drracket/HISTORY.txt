@@ -1,4 +1,11 @@
 ------------------------------
+       Version 6.1.2
+------------------------------
+
+  . change the teaching languages to use #true, #false, and '()
+    for true, false, and empty
+
+------------------------------
        Version 6.1.1
 ------------------------------
 
