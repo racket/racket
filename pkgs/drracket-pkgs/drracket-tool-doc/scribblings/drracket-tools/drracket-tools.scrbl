@@ -5,7 +5,7 @@
 @(define syncheck-example-eval (make-base-eval))
 @(begin 
    (syncheck-example-eval
-    '(require drracket/check-syntax racket/class)))
+    '(require drracket/check-syntax racket/class setup/collects)))
                
 
 @title{DrRacket Tools}
@@ -40,14 +40,28 @@ it gives a quick feel for the results that can come back from Check Syntax.
 
 See @racket[annotations-mixin] for some example code to use the other parts of this library.
 
+Note that the paths in the example below have been replaced via @racket[make-paths-be-module-paths]
+in order to make the results be platform independent.
+
   @interaction[#:eval
                syncheck-example-eval
+               
+               (define (make-paths-be-module-paths x)
+                 (let loop ([x x])
+                   (cond
+                     [(pair? x) (cons (loop (car x)) (loop (cdr x)))]
+                     [(vector? x) (for/vector ([x (in-vector x)])
+                                    (loop x))]
+                     [(path? x) (path->module-path x)]
+                     [else x])))
+               
                (let ([example-module
                       '(module m racket (λ (x) x))])
-                 (show-content 
-                  (read-syntax
-                   (build-path (current-directory) "dummy-file.rkt")
-                   (open-input-string (format "~s" example-module)))))]
+                 (make-paths-be-module-paths
+                  (show-content 
+                   (read-syntax
+                    (build-path (current-directory) "dummy-file.rkt")
+                    (open-input-string (format "~s" example-module))))))]
 }
 
 @defproc[(make-traversal [namespace namespace?]
