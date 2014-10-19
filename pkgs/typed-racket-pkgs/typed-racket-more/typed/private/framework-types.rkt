@@ -61,11 +61,6 @@
     ->
     (Class #:row-var r #:implements Canvas:Basic<%>)))
 
-(define-type Canvas:Basic%
-  (Class #:implements Canvas:Basic<%>
-         (init [parent Dialog%-Instance]
-               [editor (Instance Text:Basic<%>)])))
-
 (define-type Canvas:Color<%>
   (Class #:implements Canvas:Basic<%>))
 
@@ -74,9 +69,6 @@
     (Class #:row-var r #:implements Canvas:Basic<%>)
     ->
     (Class #:row-var r #:implements Canvas:Color<%>)))
-
-(define-type Canvas:Color%
-  (Class #:implements Canvas:Color<%>))
 
 (define-type Canvas:Delegate<%>
   (Class #:implements Canvas:Basic<%>))
@@ -87,9 +79,6 @@
     ->
     (Class #:row-var r #:implements Canvas:Delegate<%>)))
 
-(define-type Canvas:Delegate%
-  (Class #:implements Canvas:Delegate<%>))
-
 (define-type Canvas:Info<%>
   (Class #:implements Canvas:Basic<%>))
 
@@ -98,9 +87,6 @@
     (Class #:row-var r #:implements Canvas:Basic<%>)
     ->
     (Class #:row-var r #:implements Canvas:Info<%>)))
-
-(define-type Canvas:Info%
-  (Class #:implements Canvas:Info<%>))
 
 (define-type Canvas:Wide-Snip<%>
   (Class #:implements Canvas:Basic<%>
@@ -114,8 +100,37 @@
     ->
     (Class #:row-var r #:implements Canvas:Wide-Snip<%>)))
 
-(define-type Canvas:Wide-Snip%
-  (Class #:implements Canvas:Wide-Snip<%>))
+;; FIXME: see frame cases
+(define-syntax-rule (define-canvas-like-class name parent-type)
+  (define-type name
+    (Class #:implements parent-type
+           (init [parent (Instance Area-Container<%>)]
+                 [editor (U (Instance Pasteboard%) (Instance Text%) #f) #:optional]
+                 [style (Listof (U 'no-border 'control-border 'combo
+                                   'no-hscroll 'no-vscroll
+                                   'hide-hscroll 'hide-vscroll
+                                   'auto-vscoll 'auto-hscroll
+                                   'resize-corner 'no-focus 'deleted
+                                   'transparent))
+                        #:optional]
+                 [scrolls-per-page Positive-Integer #:optional]
+                 [label (Option String) #:optional]
+                 [wheel-step (Option Positive-Integer) #:optional]
+                 [line-count (Option Positive-Integer) #:optional]
+                 [horizontal-inset Natural #:optional]
+                 [vertical-inset Natural #:optional]
+                 [enabled Any #:optional]
+                 [vert-margin Natural #:optional]
+                 [horiz-margin Natural #:optional]
+                 [min-width (Option Natural) #:optional]
+                 [min-height (Option Natural) #:optional]
+                 [stretchable-width Any #:optional]
+                 [stretchable-height Any #:optional]))))
+(define-canvas-like-class Canvas:Basic% Canvas:Basic<%>)
+(define-canvas-like-class Canvas:Color% Canvas:Color<%>)
+(define-canvas-like-class Canvas:Delegate% Canvas:Delegate<%>)
+(define-canvas-like-class Canvas:Info% Canvas:Info<%>)
+(define-canvas-like-class Canvas:Wide-Snip% Canvas:Wide-Snip<%>)
 
 ;; 7 Color
 (provide Color:Text<%>
@@ -180,8 +195,7 @@
     ->
     (Class #:row-var r #:implements Color:Text<%>)))
 
-(define-type Color:Text%
-  (Class #:implements Color:Text<%>))
+;; Color:Text% defined below in the Text% section
 
 (define-type Color:Text-Mode<%> (Class))
 
@@ -227,6 +241,20 @@
 
 (define-type Editor-Snip:Decorated%
   (Class #:implements Editor-Snip:Decorated<%>
+         ;; note, no `editor` init argument
+         (init [with-border? Any #:optional]
+               [left-margin Natural #:optional]
+               [top-margin Natural #:optional]
+               [right-margin Natural #:optional]
+               [bottom-margin Natural #:optional]
+               [left-inset Natural #:optional]
+               [top-inset Natural #:optional]
+               [right-inset Natural #:optional]
+               [bottom-inset Natural #:optional]
+               [min-width Nonnegative-Real #:optional]
+               [max-width Nonnegative-Real #:optional]
+               [min-height Nonnegative-Real #:optional]
+               [max-height Nonnegative-Real #:optional])
          [make-snip (-> (Instance Editor-Snip:Decorated%))]
          [make-editor (-> Editor<%>-Instance)]
          [copy (-> (Instance Editor-Snip:Decorated<%> #|FIXME Editor-Snip:Decorated%|#))]))
@@ -444,8 +472,7 @@
                    [x (Option Integer)]
                    [y (Option Integer)]))))
 
-(define-type Frame:Register-Group<%>
-  (Class #:implements Frame%))
+(define-type Frame:Register-Group<%> Frame:Basic<%>)
 
 (define-type Frame:Register-Group-Mixin
   (All (r #:row)
@@ -864,31 +891,84 @@
     ->
     (Class #:row-var r #:implements Frame:Searchable-Text<%>)))
 
-;; FIXME: not sure about types for these classes
-(define-type Frame:Basic%
-  (Class #:implements Frame:Register-Group<%>))
+;; FIXME: when #:implements/inits clauses are supported, consider
+;;        using that instead of this macro
+(define-syntax-rule (define-frame-like-class name parent-type)
+  (define-type name
+    (Class (init [label String]
+                 [parent (Option (Instance Frame%)) #:optional]
+                 [width (Option Integer) #:optional]
+                 [height (Option Integer) #:optional]
+                 [x (Option Integer) #:optional]
+                 [y (Option Integer) #:optional]
+                 [style (Listof (U 'no-resize-border 'no-caption
+                                   'no-system-menu 'hide-menu-bar
+                                   'toolbar-button 'float 'metal))
+                        #:optional]
+                 [enabled Any #:optional]
+                 [border Natural #:optional]
+                 [spacing Natural #:optional]
+                 [alignment (List (U 'left 'center 'right)
+                                  (U 'top 'center 'bottom))
+                            #:optional]
+                 [min-width (Option Natural) #:optional]
+                 [min-height (Option Natural) #:optional]
+                 [stretchable-width Any #:optional]
+                 [stretchable-height Any #:optional])
+           #:implements parent-type)))
+(define-frame-like-class Frame:Basic% Frame:Register-Group<%>)
 (define-type Frame:Size-Pref%
-  (Class #:implements Frame:Size-Pref<%>))
-(define-type Frame:Info%
-  (Class #:implements Frame:Info<%>))
-(define-type Frame:Text-Info%
-  (Class #:implements Frame:Text-Info<%>))
-(define-type Frame:Pasteboard-Info%
-  (Class #:implements Frame:Pasteboard-Info<%>))
-(define-type Frame:Status-Line%
-  (Class #:implements Frame:Status-Line<%>))
-(define-type Frame:Standard-Menus%
-  (Class #:implements Frame:Standard-Menus<%>))
+  (Class (init [size-preferences-key Symbol]
+               [position-preferences-key (Option Symbol) #:optional]
+               [width (Option Integer) #:optional]
+               [height (Option Integer) #:optional]
+               [x (Option Integer) #:optional]
+               [y (Option Integer) #:optional]
+               [style (Listof (U 'no-resize-border 'no-caption
+                                 'no-system-menu 'hide-menu-bar
+                                 'toolbar-button 'float 'metal))
+                      #:optional]
+               [enabled Any #:optional]
+               [border Natural #:optional]
+               [spacing Natural #:optional]
+               [alignment (List (U 'left 'center 'right)
+                                (U 'top 'center 'bottom))
+                          #:optional]
+               [min-width (Option Natural) #:optional]
+               [min-height (Option Natural) #:optional]
+               [stretchable-width Any #:optional]
+               [stretchable-height Any #:optional])
+         #:implements Frame:Size-Pref<%>))
+(define-frame-like-class Frame:Info% Frame:Info<%>)
+(define-frame-like-class Frame:Text-Info% Frame:Text-Info<%>)
+(define-frame-like-class Frame:Pasteboard-Info% Frame:Pasteboard-Info<%>)
+(define-frame-like-class Frame:Standard-Menus% Frame:Standard-Menus<%>)
+(define-frame-like-class Frame:Status-Line% Frame:Status-Line<%>)
 (define-type Frame:Editor%
-  (Class #:implements Frame:Editor<%>))
+  (Class (init [filename String]
+               ;; FIXME: actually polymorphic in this class, which is
+               ;;        hard to represent without row polymorphic classes
+               [editor% Editor:Basic<%>])
+         #:implements Frame:Editor<%>))
 (define-type Frame:Text%
-  (Class #:implements Frame:Text<%>))
+  (Class (init [filename String]
+               ;; FIXME: see above
+               [editor% Text%])
+         #:implements Frame:Text<%>))
+;; FIXME: the type of editor% here should actually be stricter, but the docs
+;;        for framework do not specify what it should be
 (define-type Frame:Searchable%
-  (Class #:implements Frame:Searchable<%>))
+  (Class (init [filename String]
+               [editor% Text%])
+         #:implements Frame:Searchable<%>))
 (define-type Frame:Delegate%
-  (Class #:implements Frame:Delegate<%>))
+  (Class (init [filename String]
+               [editor% Text%])
+         #:implements Frame:Delegate<%>))
 (define-type Frame:Pasteboard%
-  (Class #:implements Frame:Pasteboard<%>))
+  (Class (init [filename String]
+               [editor% Pasteboard%])
+         #:implements Frame:Pasteboard<%>))
 
 ;; 15 Group
 (provide Group:%)
@@ -958,13 +1038,42 @@
     ->
     (Class #:row-var r #:implements Menu:Can-Restore-Underscore<%>)))
 
-;; FIXME not sure about types for classes
 (define-type Menu:Can-Restore-Menu-Item%
-  (Class #:implements Menu:Can-Restore<%>))
+  (Class (init [label String]
+               [parent (U (Instance Menu%) (Instance Popup-Menu%))]
+               [callback ((Instance Menu-Item%) (Instance Control-Event%)
+                          -> Any)]
+               [shortcut (U Char Symbol #f) #:optional]
+               [help-string (Option String) #:optional]
+               [demand-callback
+                ((Instance Menu-Item%) -> Any)
+                #:optional]
+               [shortcut-prefix (Listof (U 'alt 'cmd 'meta 'ctl
+                                           'shift 'option))
+                                #:optional])
+         #:implements Menu:Can-Restore<%>))
 (define-type Menu:Can-Restore-Checkable-Menu-Item%
-  (Class #:implements Menu:Can-Restore<%>))
+  (Class (init [label String]
+               [parent (U (Instance Menu%) (Instance Popup-Menu%))]
+               [callback ((Instance Checkable-Menu-Item%) (Instance Control-Event%)
+                          -> Any)]
+               [shortcut (U Char Symbol #f) #:optional]
+               [help-string (Option String) #:optional]
+               [demand-callback
+                ((Instance Checkable-Menu-Item%) -> Any)
+                #:optional]
+               [shortcut-prefix (Listof (U 'alt 'cmd 'meta 'ctl
+                                           'shift 'option))
+                                #:optional])
+         #:implements Menu:Can-Restore<%>))
 (define-type Menu:Can-Restore-Underscore-Menu%
-  (Class #:implements Menu:Can-Restore<%>))
+  (Class (init [label String]
+               [parent (U (Instance Menu%) (Instance Popup-Menu%)
+                          (Instance Menu-Bar%))]
+               [help-string (Option String) #:optional]
+               [demand-callback ((Instance Menu%) -> Any)
+                                #:optional])
+         #:implements Menu:Can-Restore<%>))
 
 ;; 21 Mode
 (provide Mode:Surrogate-Text<%>
@@ -1099,11 +1208,44 @@
     ->
     (Class #:row-var r #:implements Panel:Single-Window<%>)))
 
-(define-type Panel:Single%
-  (Class #:implements Panel:Single<%>))
+(define-syntax-rule (define-panel-like-class name parent-type)
+  (define-type name
+    (Class (init [parent (Instance Area-Container<%>)]
+                 [style (Listof (U 'border 'deleted
+                                   'hscroll 'auto-hscroll
+                                   'vscroll 'auto-vscroll))
+                        #:optional]
+                 [enabled Any #:optional]
+                 [vert-margin Natural #:optional]
+                 [horiz-margin Natural #:optional]
+                 [border Natural #:optional]
+                 [spacing Natural #:optional]
+                 [alignment (List (U 'left 'center 'right)
+                                  (U 'top 'center 'bottom))
+                            #:optional]
+                 [min-width (Option Natural) #:optional]
+                 [min-height (Option Natural) #:optional]
+                 [stretchable-width Any #:optional]
+                 [stretchable-height Any #:optional])
+           #:implements parent-type)))
+
+(define-panel-like-class Panel:Single% Panel:Single<%>)
 
 (define-type Panel:Single-Pane%
-  (Class #:implements Panel:Single<%>))
+  (Class (init [parent (U (Instance Frame%) (Instance Dialog%)
+                          (Instance Panel%) (Instance Pane%))]
+               [vert-margin Natural #:optional]
+               [horiz-margin Natural #:optional]
+               [border Natural #:optional]
+               [spacing Natural #:optional]
+               [alignment (List (U 'left 'center 'right)
+                                (U 'top 'center 'bottom))
+                          #:optional]
+               [min-width (Option Natural) #:optional]
+               [min-height (Option Natural) #:optional]
+               [stretchable-width Any #:optional]
+               [stretchable-height Any #:optional])
+         #:implements Panel:Single<%>))
 
 (define-type Panel:Dragable<%>
   (Class #:implements Window<%>
@@ -1118,11 +1260,8 @@
          [get-vertical? (-> Boolean)]
          [set-orientation (Boolean -> Void)]))
 
-(define-type Panel:Vertical-Dragable<%>
-  (Class #:implements Panel:Dragable<%>))
-
-(define-type Panel:Horizontal-Dragable<%>
-  (Class #:implements Panel:Dragable<%>))
+(define-panel-like-class Panel:Vertical-Dragable<%> Panel:Dragable<%>)
+(define-panel-like-class Panel:Horizontal-Dragable<%> Panel:Dragable<%>)
 
 (define-type Panel:Dragable-Mixin
   (All (r #:row)
@@ -1144,11 +1283,8 @@
     ->
     (Class #:row-var r #:implements Panel:Horizontal-Dragable<%>)))
 
-(define-type Panel:Vertical-Dragable%
-  (Class #:implements Panel:Vertical-Dragable<%>))
-
-(define-type Panel:Horizontal-Dragable%
-  (Class #:implements Panel:Horizontal-Dragable<%>))
+(define-panel-like-class Panel:Vertical-Dragable% Panel:Vertical-Dragable<%>)
+(define-panel-like-class Panel:Horizontal-Dragable% Panel:Horizontal-Dragable<%>)
 
 (define-type Panel:Splitter<%>
   (Class [split-vertical ((Instance Canvas<%>)
@@ -1183,11 +1319,8 @@
            #:implements Panel:Discrete-Sizes<%>
            #:implements Panel:Discrete-Child<%>)))
 
-(define-type Panel:Horizontal-Discrete-Sizes%
-  (Class #:implements Panel:Discrete-Sizes<%>))
-
-(define-type Panel:Vertical-Discrete-Sizes%
-  (Class #:implements Panel:Discrete-Sizes<%>))
+(define-panel-like-class Panel:Horizontal-Discrete-Sizes% Panel:Discrete-Sizes<%>)
+(define-panel-like-class Panel:Vertical-Discrete-Sizes%   Panel:Discrete-Sizes<%>)
 
 ;; 24 Pasteboard
 (provide Pasteboard:Basic%
@@ -1300,7 +1433,10 @@
     (Class #:row-var r #:implements Racket:Text-Mode<%>)))
 
 (define-type Racket:Text%
-  (Class #:implements Racket:Text-Mode<%>
+  (Class (init [line-spacing Nonnegative-Real #:optional]
+               [tab-stops (Listof Real) #:optional]
+               [auto-wrap Any #:optional])
+         #:implements Racket:Text-Mode<%>
          #:implements Racket:Text<%>
          #:implements Text:Autocomplete<%>
          #:implements Mode:Host-Text<%>))
@@ -1653,41 +1789,35 @@
     ->
     (Class #:row-var r #:implements Text:Autocomplete<%>)))
 
-;; FIXME: Not sure about these classes' types
-(define-type Text:Basic%
-  (Class #:implements Text:Basic<%>))
-(define-type Text:Line-Spacing%
-  (Class #:implements Text:Line-Spacing<%>))
-(define-type Text:Hide-Caret/Selection%
-  (Class #:implements Text:Hide-Caret/Selection<%>))
-(define-type Text:Nbsp->Space%
-  (Class #:implements Text:Nbsp->Space<%>))
-(define-type Text:Normalize-Paste%
-  (Class #:implements Text:Normalize-Paste<%>))
-(define-type Text:Delegate%
-  (Class #:implements Text:Delegate<%>))
-(define-type Text:Wide-Snip%
-  (Class #:implements Text:Wide-Snip<%>))
-(define-type Text:Standard-Style-List%
-  (Class #:implements Editor:Standard-Style-List<%>))
-(define-type Text:Input-Box%
-  (Class #:implements Text:Input-Box<%>))
-(define-type Text:Keymap%
-  (Class #:implements Editor:Keymap<%>))
+(define-syntax-rule (define-text-like-class name parent-type)
+  (define-type name
+    (Class #:implements parent-type
+           (init [line-spacing Nonnegative-Real #:optional]
+                 [tab-stops (Listof Real) #:optional]
+                 [auto-wrap Any #:optional]))))
+(define-text-like-class Text:Basic% Text:Basic<%>)
+(define-text-like-class Text:Line-Spacing% Text:Line-Spacing<%>)
+(define-text-like-class Text:Hide-Caret/Selection% Text:Hide-Caret/Selection<%>)
+(define-text-like-class Text:Nbsp->Space% Text:Nbsp->Space<%>)
+(define-text-like-class Text:Normalize-Paste% Text:Normalize-Paste<%>)
+(define-text-like-class Text:Delegate% Text:Delegate<%>)
+(define-text-like-class Text:Wide-Snip% Text:Wide-Snip<%>)
+(define-text-like-class Text:Standard-Style-List% Editor:Standard-Style-List<%>)
+(define-text-like-class Text:Input-Box% Text:Input-Box<%>)
+(define-text-like-class Text:Keymap% Editor:Keymap<%>)
+(define-text-like-class Text:Autowrap% Editor:Autowrap<%>)
+(define-text-like-class Text:File% Text:File<%>)
+(define-text-like-class Text:Clever-File-Format% Text:Clever-File-Format<%>)
+(define-text-like-class Text:Backup-Autosave% Editor:Backup-Autosave<%>)
+(define-text-like-class Text:Searching% Text:Searching<%>)
+(define-text-like-class Text:Info% Text:Info<%>)
+(define-text-like-class Color:Text% Color:Text<%>)
 (define-type Text:Return%
-  (Class #:implements Text:Return<%>))
-(define-type Text:Autowrap%
-  (Class #:implements Editor:Autowrap<%>))
-(define-type Text:File%
-  (Class #:implements Text:File<%>))
-(define-type Text:Clever-File-Format%
-  (Class #:implements Text:Clever-File-Format<%>))
-(define-type Text:Backup-Autosave%
-  (Class #:implements Editor:Backup-Autosave<%>))
-(define-type Text:Searching%
-  (Class #:implements Text:Searching<%>))
-(define-type Text:Info%
-  (Class #:implements Text:Info<%>))
+  (Class #:implements Text:Return<%>
+           (init [return (-> Boolean)]
+                 [line-spacing Nonnegative-Real #:optional]
+                 [tab-stops (Listof Real) #:optional]
+                 [auto-wrap Any #:optional])))
 
 (define-type Text:Line-Numbers<%>
   (Class [show-line-numbers! (Boolean -> Void)]
