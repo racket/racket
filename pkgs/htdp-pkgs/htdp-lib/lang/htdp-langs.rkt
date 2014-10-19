@@ -198,13 +198,15 @@
                   (is-a? val cache-image-snip%) ;; htdp/image
                   (is-a? val image-snip%)       ;; literal image constant
                   (is-a? val bitmap%)))         ;; works in other places, so include it here too
-            (parameterize ([pc:booleans-as-true/false #t]
+            (parameterize ([pc:booleans-as-true/false #f]
                            [pc:add-make-prefix-to-constructor #t]
+                           [print-boolean-long-form #t]
                            [pc:abbreviate-cons-as-list (get-abbreviate-cons-as-list)]
                            [pc:current-print-convert-hook
                             (let ([ph (pc:current-print-convert-hook)])
                               (lambda (val basic sub)
                                 (cond
+                                  [(equal? val '()) ''()]
                                   [(equal? val set!-result) '(void)]
                                   [else (ph val basic sub)])))]
                            [pretty-print-show-inexactness #t]

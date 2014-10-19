@@ -452,8 +452,8 @@ the settings above should match r5rs
                      "'|.|"
                      "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "true"
-                     "true")
+                     "#true"
+                     "#true")
     
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
@@ -480,12 +480,12 @@ the settings above should match r5rs
     (test-undefined-fn "(time 1)" "time"))
     
     (test-expression "true" 
-                     "true"
-                     "true")
+                     "#true"
+                     "#true")
     (test-undefined-var "mred^")
     (test-expression "(eq? 'a 'A)" 
-                     "false"
-                     "false")
+                     "#false"
+                     "#false")
     (test-undefined-fn "(set! x 1)" "set!")
     (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     
@@ -494,11 +494,11 @@ the settings above should match r5rs
     (test-expression "(cons 1 2)" 
                      "cons: second argument must be a list, but received 1 and 2")
     (test-expression "(+ (list 1) 2)"
-                     "+: expects a number as 1st argument, given (cons 1 empty)")
+                     "+: expects a number as 1st argument, given (cons 1 '())")
     (test-expression "'(1)"
-                     "quote: expected the name of the symbol after the quote, but found a part")
+                     "quote: expected the name of a symbol or () after the quote, but found a part")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
-                     "(cons (cons 1 empty) (cons (cons 1 empty) empty))"
+                     "(cons (cons 1 '()) (cons (cons 1 '()) '()))"
                      "shrd: this name was defined previously and cannot be re-defined")
   (test-expression 
    "(local ((define x x)) 1)" 
@@ -546,7 +546,7 @@ the settings above should match r5rs
     (test-expression "779625/32258"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
-    (test-expression "(exact? 1.5)" "true")
+    (test-expression "(exact? 1.5)" "#true")
     (test-undefined-fn "(print (floor (sqrt 2)))" "print")
     
   (test-expression
@@ -557,10 +557,10 @@ the settings above should match r5rs
                      "read: illegal use of comma")
     
     (test-expression "(list 1)" 
-                     "(cons 1 empty)"
-                     "(cons 1 empty)")
+                     "(cons 1 '())"
+                     "(cons 1 '())")
     (test-expression "(car (list))" 
-                     "car: expects a pair, given empty")
+                     "car: expects a pair, given '()")
     
     (test-undefined-var "argv")
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
@@ -614,8 +614,8 @@ the settings above should match r5rs
                      "'|.|"
                      "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "true"
-                     "true")
+                     "#true"
+                     "#true")
     
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
@@ -643,12 +643,12 @@ the settings above should match r5rs
     (test-undefined-fn "(time 1)" "time")
     
     (test-expression "true" 
-                     "true"
-                     "true")
+                     "#true"
+                     "#true")
     (test-undefined-var "mred^")
     (test-expression "(eq? 'a 'A)" 
-                     "false"
-                     "false")
+                     "#false"
+                     "#false")
     (test-undefined-fn "(set! x 1)" "set!")
     (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
@@ -706,7 +706,7 @@ the settings above should match r5rs
     (test-expression "779625/32258"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
-    (test-expression "(exact? 1.5)" "true")
+    (test-expression "(exact? 1.5)" "#true")
     (test-undefined-fn "(print (floor (sqrt 2)))" "print")
     
     (test-expression 
@@ -719,7 +719,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair, given empty")
+    (test-expression "(car (list))" "car: expects a pair, given '()")
     
     (test-undefined-var "argv")
     
@@ -773,8 +773,8 @@ the settings above should match r5rs
                      "'|.|"
                      "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "true"
-                     "true")
+                     "#true"
+                     "#true")
     
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
@@ -803,12 +803,12 @@ the settings above should match r5rs
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
     
     (test-expression "true" 
-                     "true"
-                     "true")
+                     "#true"
+                     "#true")
     (test-undefined-var "mred^")
     (test-expression "(eq? 'a 'A)" 
-                     "false"
-                     "false")
+                     "#false"
+                     "#false")
     (test-undefined-fn "(set! x 1)" "set!")
     (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
@@ -860,7 +860,7 @@ the settings above should match r5rs
     (test-expression "779625/32258" 
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
-    (test-expression "(exact? 1.5)" "true")
+    (test-expression "(exact? 1.5)" "#true")
     (test-undefined-fn "(print (floor (sqrt 2)))" "print")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
@@ -872,7 +872,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair, given empty")
+    (test-expression "(car (list))" "car: expects a pair, given '()")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
@@ -928,8 +928,8 @@ the settings above should match r5rs
                      "'|.|"
                      "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "true"
-                     "true")
+                     "#true"
+                     "#true")
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
                      "x: this name was defined previously and cannot be re-defined")
@@ -957,12 +957,12 @@ the settings above should match r5rs
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
     
     (test-expression "true" 
-                     "true"
-                     "true")
+                     "#true"
+                     "#true")
     (test-undefined-var "mred^")
     (test-expression "(eq? 'a 'A)" 
-                     "false"
-                     "false")
+                     "#false"
+                     "#false")
     (test-undefined-fn "(set! x 1)" "set!")
     (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
@@ -1010,7 +1010,7 @@ the settings above should match r5rs
     (test-expression "779625/32258" 
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
-    (test-expression "(exact? 1.5)" "true")
+    (test-expression "(exact? 1.5)" "#true")
     (test-undefined-fn "(print (floor (sqrt 2)))" "print")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
@@ -1022,7 +1022,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair, given empty")
+    (test-expression "(car (list))" "car: expects a pair, given '()")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
@@ -1078,8 +1078,8 @@ the settings above should match r5rs
                      "'|.|"
                      "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "true"
-                     "true")
+                     "#true"
+                     "#true")
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
                      "x: this name was defined previously and cannot be re-defined")
@@ -1108,12 +1108,12 @@ the settings above should match r5rs
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
     
     (test-expression "true" 
-                     "true"
-                     "true")
+                     "#true"
+                     "#true")
     (test-undefined-var "mred^")
     (test-expression "(eq? 'a 'A)" 
-                     "false"
-                     "false")
+                     "#false"
+                     "#false")
     (test-expression "(set! x 1)"
                      "x: this variable is not defined"
                      "set!: cannot set variable before its definition: x")
@@ -1169,7 +1169,7 @@ the settings above should match r5rs
     (test-expression "779625/32258" 
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
-    (test-expression "(exact? 1.5)" "true")
+    (test-expression "(exact? 1.5)" "#true")
     (test-expression "(print (floor (sqrt 2)))" "#i1.0")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
@@ -1181,7 +1181,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair, given empty")
+    (test-expression "(car (list))" "car: expects a pair, given '()")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
@@ -1333,12 +1333,12 @@ the settings above should match r5rs
    (lambda () (fw:test:set-check-box! "Case sensitive" #t))
    "Case sensitive -- #t"
    "(eq? 'g 'G)" 
-   (if false/true? "false" "#f"))
+   (if false/true? "#false" "#f"))
   (test-setting
    (lambda () (fw:test:set-check-box! "Case sensitive" #f))
    "Case sensitive -- #f"
    "(eq? 'g 'G)" 
-   (if false/true? "true" "#t")))
+   (if false/true? "#true" "#t")))
 
 (define (generic-output list? quasi-quote? has-sharing? has-print-printing?)
   (define plain-print-style (if has-print-printing? "print" "write"))
@@ -1392,12 +1392,12 @@ the settings above should match r5rs
   (test "Constructor" 'off #t
         (if list?
             "(list (list 2) (list 2))"
-            "(cons (cons 2 empty) (cons (cons 2 empty) empty))"))
+            "(cons (cons 2 '()) (cons (cons 2 '()) '()))"))
   (when has-sharing?
     (test "Constructor" 'on #t
           (if list?
               "(shared ((-1- (list 2))) (list -1- -1-))"
-              "(shared ((-1- (cons 2 empty))) (cons -1- (cons -1- empty)))")))
+              "(shared ((-1- (cons 2 '()))) (cons -1- (cons -1- '())))")))
   
   ;; setup print / pretty-print difference
   (clear-definitions drs)
