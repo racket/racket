@@ -11,7 +11,8 @@
 
 (define (configure options)
   ;; Set print-convert options:
-  (booleans-as-true/false #t)
+  (booleans-as-true/false #f)
+  (print-boolean-long-form #t)
   (constructor-style-printing #t)
   (add-make-prefix-to-constructor #f)
   (abbreviate-cons-as-list (memq 'abbreviate-cons-as-list options))
@@ -19,9 +20,10 @@
    (let ([ph (current-print-convert-hook)])
      (lambda (val basic sub)
        (cond
-        [(equal? val set!-result) '(void)]
-        [(is-image? val) val]
-        [else (ph val basic sub)]))))
+         [(equal? val '()) ''()]
+         [(equal? val set!-result) '(void)]
+         [(is-image? val) val]
+         [else (ph val basic sub)]))))
   (use-named/undefined-handler
    (lambda (x)
      (and (memq 'use-function-output-syntax options)
