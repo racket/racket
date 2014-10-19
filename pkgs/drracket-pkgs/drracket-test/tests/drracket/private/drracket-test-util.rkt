@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
 (require (prefix-in fw: framework)
          mrlib/hierlist
-         scheme/gui/base
-         scheme/class
-         scheme/contract
+         racket/gui/base
+         racket/class
+         racket/contract
          "gui.rkt")
 
   (provide/contract 
@@ -356,7 +356,7 @@
   ;; set-language-level! : (cons (union regexp string) (listof (union regexp string))) boolean -> void
   ;; set language level in the frontmost DrRacket frame (resets settings to defaults)
   ;; If `close-dialog?' it #t,
-  (define set-language-level! 
+  (define set-language-level!
     (lambda (in-language-spec [close-dialog? #t])
       (unless (and (pair? in-language-spec)
                    (list? in-language-spec)
@@ -371,36 +371,43 @@
         (fw:test:set-radio-box-item! #rx"Other Languages")
         (define language-choices (find-labelled-windows #f hierarchical-list%
                                                         (fw:test:get-active-top-level-window)))
-        (define b1 (box 0))
-        (define b2 (box 0))
         (define (click-on-snip snip)
-          (let* ([editor (send (send snip get-admin) get-editor)]
-                 [between-threshold (send editor get-between-threshold)])
-            (send editor get-snip-location snip b1 b2)
-            (let-values ([(gx gy) (send editor editor-location-to-dc-location
-                                        (unbox b1)
-                                        (unbox b2))])
-              (let ([x (inexact->exact (floor (+ gx between-threshold 1)))]
-                    [y (inexact->exact (floor (+ gy between-threshold 1)))])
-                (fw:test:mouse-click 'left x y)))))
+          (define-values (x y)
+            (queue-callback/res
+             (λ ()        
+               (define b1 (box 0))
+               (define b2 (box 0))
+               (define editor (send (send snip get-admin) get-editor))
+               (define between-threshold (send editor get-between-threshold))
+               (send editor get-snip-location snip b1 b2)
+               (define-values (gx gy) (send editor editor-location-to-dc-location
+                                            (unbox b1)
+                                            (unbox b2)))
+               (define x (inexact->exact (floor (+ gx between-threshold 1))))
+               (define y (inexact->exact (floor (+ gy between-threshold 1))))
+               (values x y))))
+          (fw:test:mouse-click 'left x y))
           
         (define found-language? #f)
-          
+             
         (for ([language-choice (in-list language-choices)])
-          (send language-choice focus)
+          (queue-callback/res (λ () (send language-choice focus)))
           (let loop ([list-item language-choice]
                      [language-spec in-language-spec])
             (let* ([name (car language-spec)]
-                   [which (filter (lambda (child)
-                                    (let* ([text (send (send child get-editor) get-text)]
-                                           [matches
-                                            (or (and (regexp? name)
-                                                     (regexp-match name text))
-                                                (and (string? name)
-                                                     (string=? name text)))])
-                                      (and matches
-                                           child)))
-                                  (send list-item get-items))])
+                   [which 
+                    (queue-callback/res 
+                     (λ ()
+                       (filter (lambda (child)
+                                 (let* ([text (send (send child get-editor) get-text)]
+                                        [matches
+                                         (or (and (regexp? name)
+                                                  (regexp-match name text))
+                                             (and (string? name)
+                                                  (string=? name text)))])
+                                   (and matches
+                                        child)))
+                               (send list-item get-items))))])
               (unless (null? which)
                 (unless (= 1 (length which))
                   (error 'set-language-level! "couldn't find language: ~e, double match ~e"
@@ -419,7 +426,7 @@
                        (error 'set-language-level!
                               "expected more languages after ~e, but got to end, input ~e"
                               name in-language-spec))
-                     (unless (send next-item is-open?)
+                     (unless (queue-callback/res (λ () (send next-item is-open?)))
                        (click-on-snip (send next-item get-arrow-snip)))
                      (loop next-item (cdr language-spec))]))))))
         
@@ -612,7 +619,7 @@
   ;; waits for it to complete. Also propagates
   ;; exceptions.
   (define (run-one/sync f)
-    (not-on-eventspace-handler-thread 'repl-in-edit-sequence?)
+    (not-on-eventspace-handler-thread 'run-one/sync)
     (let ([s (make-semaphore 0)]
           [raised-exn? #f]
           [exn #f]
