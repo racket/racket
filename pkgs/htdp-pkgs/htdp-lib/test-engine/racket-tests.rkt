@@ -203,14 +203,18 @@
   ;; it, but it is possibly weird for students
   (send (send test-engine get-info) add-check)
   (run-and-check
-    (lambda (v p? _what-is-this?) (p? v))
-    (lambda (src format v1 v2 _) (make-satisfied-failed src format v2 property?))
-    test
-    actual
-    #f
-    src
-    test-engine
-    (list 'check-satisfied property?)))
+   ;; check
+   (lambda (p? v _what-is-this?) (p? v))
+   ;; maker
+   (lambda (src format v1 _v2 _) (make-satisfied-failed src format v1 property?))
+   ;; test 
+   test
+   ;; expect 
+   actual
+   #f
+   src
+   test-engine
+   (list 'check-satisfied property?)))
 
 ;; check-values-expected: (-> scheme-val) (-> nat scheme-val) src test-engine -> void
 (define (check-random-values test actual-maker src test-engine)
