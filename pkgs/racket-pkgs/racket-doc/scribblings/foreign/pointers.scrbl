@@ -328,8 +328,9 @@ See also @racket[register-custodian-shutdown].
 The finalizer is invoked in a thread that is in charge of triggering
 will executors for @racket[register-finalizer]. The given
 @racket[finalizer] procedure should generally not rely on the
-environment of the triggering thread, such as its output ports or
-custodians, except that relying on a default logger is reasonable.
+environment of the triggering thread, and it must not use any
+parameters or call any parameter functions, except that relying on a
+default logger and/or calling @racket[current-logger] is allowed.
 
 Finalizers are mostly intended to be used with cpointer objects (for
 freeing unused memory that is not under GC control), but it can be
