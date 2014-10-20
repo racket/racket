@@ -208,7 +208,7 @@
    ;; check
    (lambda (p? v _what-is-this?) (p? v))
    ;; maker
-   (lambda (src format v1 v2 _) (make-satisfied-failed src format v2 property?))
+   (lambda (src format v1 _v2 _) (make-satisfied-failed src format v1 property?))
    ;; test 
    test
    ;; expect 
