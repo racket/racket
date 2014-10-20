@@ -22,6 +22,10 @@
 (ann (add1 (car (stx->list '(1 2 3)))) Positive-Index)
 (ann (stx->list #'(a b . (c d))) (Listof (Syntaxof Symbol)))
 (ann (stx->list (cons #'a #'(b . (c d)))) (Listof (Syntaxof Symbol)))
+;; Make sure case-> type doesn't have intersecting domains with
+;; incompatible result types
+(ann (assert (stx->list (ann #'(a b c) (Syntaxof Any))))
+     (Listof (Syntaxof Any)))
 
 (ann (stx-car #'(a b)) (Syntaxof 'a))
 (ann (stx-cdr #'(a b)) (List (Syntaxof 'b)))

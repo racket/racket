@@ -38,7 +38,8 @@
  [stx-list? (make-pred-ty (-Stx-Listof Univ))]
  [stx->list (-poly (a)
               (cl->* (-> (-Stx-Listof a) (-lst a))
-                     (-> (-Syntax Univ) (-val #f))))]
+                     (-> (-Syntax Univ)
+                         (Un (-val #f) (-lst (-Syntax Univ))))))]
  [stx-car (-poly (a b)
             (cl->*
              (-> (-Stx-Pairof a b) a)
