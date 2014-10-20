@@ -28,12 +28,10 @@
   (define ts 
     (flatten
      (list
-      (for/list ([k (in-list mand-kw-t)])
+      (for/list ([k (in-list kw-t)])
         (match k
-          [(Keyword: _ t _) t]))
-      (for/list ([k (in-list opt-kw-t)])
-        (match k
-          [(Keyword: _ t _) (list (-opt t) -Boolean)]))
+          [(Keyword: _ t #t) t]
+          [(Keyword: _ t #f) (list (-opt t) -Boolean)]))
       plain-t
       (for/list ([t (in-list opt-t)]) (-opt t))
       (for/list ([t (in-list opt-t)]) -Boolean)
