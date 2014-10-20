@@ -472,7 +472,8 @@
                    [x (Option Integer)]
                    [y (Option Integer)]))))
 
-(define-type Frame:Register-Group<%> Frame:Basic<%>)
+(define-type Frame:Register-Group<%>
+  (Class #:implements Frame:Basic<%>))
 
 (define-type Frame:Register-Group-Mixin
   (All (r #:row)
