@@ -1348,7 +1348,12 @@
     (cond [(not init-rest-name) super-init-rest]
           [(dict-ref annotation-table init-rest-name #f)]
           [else (-lst Univ)]))
-  (make-Instance (make-Class super-row init-types field-types
+  (make-Instance (make-Class ;; only inherit parent row if it's a variable
+                             ;; FIXME: fix this when substitution with rows
+                             ;;        is made more sensible
+                             (and (or (F? super-row) (B? super-row))
+                                  super-row)
+                             init-types field-types
                              public-types augment-types init-rest-type)))
 
 ;; function->method : Function Type -> Function

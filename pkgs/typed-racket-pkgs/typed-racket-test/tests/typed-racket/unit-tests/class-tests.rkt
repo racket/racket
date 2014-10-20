@@ -1035,6 +1035,19 @@
                               #:row (make-Row null `([x ,-Integer]) null null #f)
                               #:field ([x -Integer])))
                       -true-filter)]
+   ;; test bad manipulation of rows for inheritance
+   [tc-e (let ()
+           (: c% (Class (init [x String] [y String])))
+           (define c% (class object% (super-new) (init x y)))
+           (: f (All (r #:row) (-> (Class #:row-var r) (Class #:row-var r))))
+           (define (f x) x)
+           ;; should have the same type as c%
+           (define c2% (f c%))
+           (: d% (Class (init [y String])))
+           ;; should be the same as inheriting from c%
+           (define d% (class c2% (super-new [x "foo"])))
+           (void))
+         -Void]
    ;; Check simple use of pubment
    [tc-e (let ()
            (define c%
