@@ -263,7 +263,8 @@
                   (or (equal? #"" s)
                       (ormap (lambda (p) (regexp-match? p s))
                              ignore-stderr-patterns)))
-          (error test-exe-name "non-empty stderr: ~e" (get-output-bytes e))))
+          (parameterize ([error-print-width 16384])
+            (error test-exe-name "non-empty stderr: ~e" (get-output-bytes e)))))
       (unless (zero? result-code)
         (error test-exe-name "non-zero exit: ~e" result-code))
       (cond
