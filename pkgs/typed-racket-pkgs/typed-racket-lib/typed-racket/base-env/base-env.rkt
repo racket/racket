@@ -657,11 +657,11 @@
  (-poly (a b c d)
         (cl-> [((a b . -> . b) b (-lst a)) b]
               [((a b c . -> . c) c (-lst a) (-lst b)) c]
-              [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
+              [((a b c d . -> . d) d (-lst a) (-lst b) (-lst c)) d]))]
 [foldr  (-poly (a b c d)
                (cl-> [((a b . -> . b) b (-lst a)) b]
                      [((a b c . -> . c) c (-lst a) (-lst b)) c]
-                     [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
+                     [((a b c d . -> . d) d (-lst a) (-lst b) (-lst c)) d]))]
 [filter (-poly (a b) (cl->*
                       ((asym-pred a Univ (-FS (-filter b 0) -top))
                        (-lst a)

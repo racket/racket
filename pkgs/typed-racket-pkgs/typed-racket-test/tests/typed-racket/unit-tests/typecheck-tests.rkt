@@ -1155,6 +1155,19 @@
                 (-polydots (a) ((list) (a a) . ->... . -Integer))]
         |#
 
+        [tc-e (foldl (lambda: ([x : Integer] [acc : String]) acc) "" '(1 2 3))
+              -String]
+        [tc-e (foldl (lambda: ([x : Integer] [y : Float] [acc : String]) acc) "" '(1 2 3) '(1.2 3.4 5.6))
+              -String]
+        [tc-e (foldl (lambda: ([x : Integer] [y : Float] [z : Symbol ] [acc : String]) acc) "" '(1 2 3) '(1.2 3.4 5.6) '(a b c))
+              -String]
+        [tc-e (foldr (lambda: ([x : Integer] [acc : String]) acc) "" '(1 2 3))
+              -String]
+        [tc-e (foldr (lambda: ([x : Integer] [y : Float] [acc : String]) acc) "" '(1 2 3) '(1.2 3.4 5.6))
+              -String]
+        [tc-e (foldr (lambda: ([x : Integer] [y : Float] [z : Symbol ] [acc : String]) acc) "" '(1 2 3) '(1.2 3.4 5.6) '(a b c))
+              -String]
+
         ;; First is same as second, but with map explicitly instantiated.
         [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]
                 (lambda: [zs : a ... a]
