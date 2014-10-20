@@ -163,6 +163,7 @@
       (sync (udp-receive!-evt udp2 us1)))
 (test #f sync/timeout 0.05 udp2-r)
 (test #f sync/timeout 0.05 (udp-receive!-evt udp2 us1))
+(test #f sync/timeout 0.05 (udp-receive!-evt udp2 (make-bytes 0)))
 
 ;; break behavior
 (let ([t (parameterize-break #f

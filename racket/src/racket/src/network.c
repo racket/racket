@@ -3682,8 +3682,18 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t s
     }
 
     {
-      x = recvfrom(udp->s, bstr XFORM_OK_PLUS start, end - start, 0,
-		   (struct sockaddr *)src_addr, &asize);
+      if (end == start) {
+        /* recvfrom() doesn't necessarily wait if you pass a buffer size of 0;
+           to be consistent with accepting a message but discarding bytes that
+           don't fit, accept at least one byte and turn a `1` result into `0` */
+        char buf[1];
+        x = recvfrom(udp->s, buf, 1, 0, (struct sockaddr *)src_addr, &asize);
+        if (x == 1)
+          x = 0;
+      } else {
+        x = recvfrom(udp->s, bstr XFORM_OK_PLUS start, end - start, 0,
+                     (struct sockaddr *)src_addr, &asize);
+      }
     }
 
     if (x == -1) {
