@@ -592,3 +592,5 @@ end-string
 (test "#:a|" "xxxx")
 (test "#:a#|" "xxxxx")
 (test "#:a||a|, a\n\"" "xxxxxxxxxxxx")
+
+(test "|\uA0x" "xxx")
