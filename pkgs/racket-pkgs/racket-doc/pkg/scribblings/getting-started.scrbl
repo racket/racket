@@ -215,7 +215,7 @@ name} that was resolved by a @tech{package catalog}, then the
 @tech{checksum} for the package, and the package is updated if the
 @tech{checksum} doesn't match the current installation. If the package
 was installed directly from a Git reference, then the Git repository is
-consulted to get the current commit of a particular branch, and the
+consulted to get the current commit of a particular branch or tag, and the
 package is updated if the commit identifier doesn't match the
 @tech{checksum} of the current installation.
 
@@ -371,8 +371,9 @@ is:
 
 @inset{@exec{https://github.com/@nonterm{user}/@nonterm{package}.git}}
 
-If you want the package to be @nonterm{branch} instead of @exec{master},
-then add @filepath{#@nonterm{branch}} to the end of the package source.
+If you want the package to be @nonterm{branch} or @nonterm{tag}
+instead of @exec{master}, then add @filepath{#@nonterm{branch}} or
+@filepath{#@nonterm{tag}} to the end of the package source.
 
 Whenever you
 
@@ -554,10 +555,10 @@ allow package authors to specify alternative @tech{package source}s to be used
 when installing a given package using a specific version of Racket.
 
 For example, a package that uses on Racket 6.0-specific features could provide
-a @tech{version exception} for Racket 5.3.6 using a different branch in the
+a @tech{version exception} for Racket 5.3.6 using a different branch or tag in the
 package's GitHub repository, or a different zip archive, as package source.
 Users installing the package from Racket 6.0 will use the default source for
-the package, while those using Racket 5.3.5 will use the alternative branch /
-archive.
+the package, while those using Racket 5.3.5 will install from the alternative
+branch, tag, or archive.
 
 For more details, see @secref{catalog-protocol}.
