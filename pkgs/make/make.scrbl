@@ -110,7 +110,7 @@ lines:
   ....)
 
 (define files '("a" "b" "c"))
-(define inputs  (map (lambda (f) (string-append f ".input")) files)
+(define inputs  (map (lambda (f) (string-append f ".input")) files))
 (define outputs (map (lambda (f) (string-append f ".output")) files))
 
 (define (line file)
