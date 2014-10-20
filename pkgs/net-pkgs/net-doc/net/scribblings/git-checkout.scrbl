@@ -24,7 +24,7 @@ for information on command-line arguments and flags.
                        [#:dest-dir dest-dir (or/c path-string? #f)]
                        [#:ref ref string? "master"]
                        [#:transport transport (or/c 'git 'http 'https) 'git]
-                       [#:depth depth (or/c #f positive-exact-integer?) 1]
+                       [#:depth depth (or/c #f exact-positive-integer?) 1]
                        [#:status-printf status-printf (string? any/c ... . -> . void?) (lambda args
                                                                                          (apply printf args)
                                                                                          (flush-output))]
@@ -35,7 +35,7 @@ for information on command-line arguments and flags.
                                                            [(git) 9418]
                                                            [(http) 80]
                                                            [(https) 443])])
-         strung?]{
+         string?]{
 
 Contacts the server at @racket[hostname] and @racket[port]
 to download the repository whose name on the server is
