@@ -61,6 +61,10 @@ If @var{permissive} is non-zero, it is used as the decoding of bytes
  middle of an encoding. Thus, the function
  result can be @cpp{-1} or @cpp{-2} only if @var{permissive} is @cpp{0}.
 
+On Windows, when @var{utf16} is non-zero, decoding supports a natural
+ extension of UTF-8 that can produce unpaired UTF-16 surrogates in the
+ result.
+
 This function does not allocate or trigger garbage collection.}
 
 @function[(int scheme_utf8_decode_offset_prefix
@@ -197,6 +201,11 @@ The array @var{s} is assumed to be long enough to contain the
 The result is the number of bytes produced for the encoding (or that
  would be produced if @var{s} was non-@cpp{NULL}). Encoding never
  fails.
+
+On Windows, when @var{utf16} is non-zero, encoding supports unpaired
+ surrogates the input UTF-16 code-unit sequence, in which case
+ encoding generates a natural extension of UTF-8 that encodes unpaired
+ surrogates.
 
 This function does not allocate or trigger garbage collection.}
 
