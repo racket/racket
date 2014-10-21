@@ -28,7 +28,10 @@
            (provide (rename-out (kw  kw-alt) ...))
            (provide kw ...) 
            (define-syntaxes (kw ...)
-             (values (lambda (x) (raise-syntax-error 'kw "used out of context" x)) ...))
+             (values
+              (lambda (x)
+                (raise-syntax-error (if (equal? 'kw x) 'kw 'kw-alt) "used out of context" x))
+              ...))
            
            ;; a macro for creating functions that instantiate the proper object
            ;; (define-create para ...) :: additional parameters for the new func
@@ -46,3 +49,10 @@
                         (lambda #,(args para*)
                           (lambda ()
                             (new % #,@(body para*)))))))]))))]))
+
+#;
+(define-keywords 
+  new-world
+  '()
+  define-create
+  (on-draw to-draw DEFAULT #'#f values))
