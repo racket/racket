@@ -9,6 +9,7 @@
   racket/sequence
   racket/contract
   (for-template racket/base racket/contract)
+  "combinators/name.rkt"
   "kinds.rkt"
   "parametric-check.rkt"
   "structures.rkt"
@@ -39,13 +40,19 @@
             (contract-restrict-recursive-values (compute-constraints sc kind)))))))
 
 (define (compute-constraints sc max-kind)
+  (define name-defs (get-all-name-defs))
   (define (recur sc)
     (match sc
       [(recursive-sc names values body)
        (close-loop names (map recur values) (recur body))]
       [(? sc?)
        (sc->constraints sc recur)]))
-  (define constraints (recur sc))
+  (define constraints
+    (if (null? name-defs)
+        (recur sc)
+        (close-loop (apply append (dict-keys name-defs))
+                    (map recur (apply append (dict-values name-defs)))
+                    (recur sc))))
   (validate-constraints (add-constraint constraints max-kind))
   constraints)
 
@@ -89,4 +96,13 @@
        #`(letrec (#,@bindings #,@raw-bindings) #,(recur body))]
       [(? sc? sc)
        (sc->contract sc recur)]))
-  (recur sc))
+  (define name-defs (get-all-name-defs))
+  (cond [(null? name-defs) (recur sc)]
+        [else
+         (define bindings
+           (for/list ([name (in-list (apply append (dict-keys name-defs)))]
+                      [sc   (in-list (apply append (dict-values name-defs)))])
+             #`[#,name (recursive-contract #,(recur sc)
+                                           #,(kind->keyword
+                                              (hash-ref recursive-kinds name)))]))
+         #`(letrec (#,@bindings) #,(recur sc))]))
