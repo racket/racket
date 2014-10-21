@@ -1252,6 +1252,22 @@
 
 ;; ----------------------------------------
 
+;; Check internal stack-overflow handling:
+(let ()
+  (define-struct a (x [y #:mutable]))
+  (let* ([a1 (make-a 1 2)]
+         [a2 (impersonate-struct a1 set-a-y!
+                                 (lambda (s v)
+                                   (if (zero? v)
+                                       v
+                                       (let ([v (sub1 v)])
+                                         (set-a-y! s v)
+                                         v))))])
+    (set-a-y! a2 100000)
+    (test 99999 a-y a1)))
+
+;; ----------------------------------------
+
 (as-chaperone-or-impersonator
  ([chaperone-procedure impersonate-procedure])
  (let ()
