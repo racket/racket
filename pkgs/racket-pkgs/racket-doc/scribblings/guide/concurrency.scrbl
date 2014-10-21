@@ -22,7 +22,7 @@ the sense of using multiple hardware processors.  See
 
 @section{Threads}
 
-To execute a procedure concurrrently, use @racket[thread].  The
+To execute a procedure concurrently, use @racket[thread].  The
 following example creates two new threads from the main thread:
 
 @racketblock[
