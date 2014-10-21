@@ -1,8 +1,12 @@
 Stepper
 -------
-Changes for 6.1:
+Changes for 6.1.1:
 
 None.
+
+Changes for 6.1:
+
+Bugfixes.
 
 Changes for 6.0.1:
 
