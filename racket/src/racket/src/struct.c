@@ -2155,9 +2155,52 @@ Scheme_Object *scheme_struct_ref(Scheme_Object *sv, int pos)
 }
 
 static void chaperone_struct_set(const char *who, Scheme_Object *prim,
+                                 Scheme_Object *o, int i, Scheme_Object *v);
+
+static Scheme_Object *chaperone_struct_set_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Object *prim = (Scheme_Object *)p->ku.k.p3;
+  const char *who = (const char *)p->ku.k.p2;
+  Scheme_Object *v = (Scheme_Object *)p->ku.k.p4;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
+
+  chaperone_struct_set(who, prim, o, p->ku.k.i1, v);
+
+  return scheme_false;
+}
+
+static void chaperone_struct_set_overflow(const char *who, Scheme_Object *prim, 
+                                          Scheme_Object *o, int i, Scheme_Object *v)
+{
+  Scheme_Thread *p = scheme_current_thread;
+
+  p->ku.k.p1 = (void *)o;
+  p->ku.k.p2 = (void *)who;
+  p->ku.k.p3 = (void *)prim;
+  p->ku.k.p4 = (void *)v;
+  p->ku.k.i1 = i;
+
+  (void)scheme_handle_stack_overflow(chaperone_struct_set_k);
+}
+
+static void chaperone_struct_set(const char *who, Scheme_Object *prim,
                                  Scheme_Object *o, int i, Scheme_Object *v)
 {
   Scheme_Object *orig_o = o;
+
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    chaperone_struct_set_overflow(who, prim, o, i, v);
+    return;
+  }
+#endif
 
   while (1) {
     if (!SCHEME_CHAPERONEP(o)) {
