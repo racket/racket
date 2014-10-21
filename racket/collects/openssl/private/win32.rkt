@@ -1,10 +1,12 @@
-;; Support for loading root cerficates from Windows certificate store.
-
 #lang racket/base
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
-         "add-cert.rkt")
+         "add-cert.rkt"
+         ffi/winapi)
+
+;; Support for loading root cerficates from Windows certificate store.
+
 (provide load-win32-store)
 
 ;; -- Windows CryptoAPI
@@ -26,7 +28,7 @@
    [certStore _pointer]))
 (define-cpointer-type _CERT_CONTEXT _sCERT_CONTEXT-pointer)
 
-(define-syntax-rule (_wfun . parts) (_fun #:abi 'stdcall . parts))
+(define-syntax-rule (_wfun . parts) (_fun #:abi winapi . parts))
 
 (define-crypt CertCloseStore
   (_wfun _CERTSTORE (_DWORD = 0) -> _int)
