@@ -155,7 +155,7 @@ executors as they become ready in another thread.
              (will-register an-executor a-box-to-track executor-proc)
              (eval:alts (collect-garbage) (void))
              (set! a-box-to-track #f)
-             (eval:alts (collect-garbage) (executor-proc))]
+             (eval:alts (collect-garbage) (executor-proc 'random-junk))]
 
 
 @defproc[(make-will-executor) will-executor?]{
