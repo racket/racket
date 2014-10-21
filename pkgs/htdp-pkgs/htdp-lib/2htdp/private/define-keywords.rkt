@@ -29,8 +29,7 @@
            (provide kw ...) 
            (define-syntaxes (kw ...)
              (values
-              (lambda (x)
-                (raise-syntax-error (if (equal? 'kw x) 'kw 'kw-alt) "used out of context" x))
+              (lambda (x) 'kw (raise-syntax-error #f "used out of context" x))
               ...))
            
            ;; a macro for creating functions that instantiate the proper object
@@ -49,10 +48,3 @@
                         (lambda #,(args para*)
                           (lambda ()
                             (new % #,@(body para*)))))))]))))]))
-
-#;
-(define-keywords 
-  new-world
-  '()
-  define-create
-  (on-draw to-draw DEFAULT #'#f values))
