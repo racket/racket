@@ -17,10 +17,18 @@
          syntax/id-table)
 
 (provide with-new-name-tables
-         get-all-name-defs
-         lookup-name-sc
-         lookup-name-defs
-         register-name-sc)
+         (contract-out
+          [get-all-name-defs
+           (-> (listof (list/c (listof identifier?)
+                               static-contract?
+                               static-contract?
+                               static-contract?)))]
+          [lookup-name-sc (-> identifier? symbol? (or/c #f static-contract?))]
+          [register-name-sc (-> identifier?
+                                (-> static-contract?)
+                                (-> static-contract?)
+                                (-> static-contract?)
+                                any)]))
 
 (define name-sc-table (make-parameter (make-free-id-table)))
 (define name-defs-table (make-parameter (make-free-id-table)))
@@ -44,9 +52,6 @@
          [(both)    (car result)]
          [(typed)   (cadr result)]
          [(untyped) (caddr result)])))
-
-(define (lookup-name-defs name)
-  (free-id-table-ref (name-defs-table) name #f))
 
 (define (register-name-sc name typed-thunk untyped-thunk both-thunk)
   (define-values (typed-name untyped-name both-name)
