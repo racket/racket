@@ -278,8 +278,11 @@ additional provides all other bindings from @racketmodname[racket/class].
   ]
 
   When @racket[type-alias-id] is provided, the resulting class type
-  includes all of the initialization argument, method, and field types
-  from the specified type alias (which must be an alias for a class type).
+  includes all of the method and field types from the specified type alias
+  (which must be an alias for a class type). This is intended to allow a type
+  for a subclass to include parts of its parent class type. The initialization argument
+  types of the parent, however, are @emph{not} included because a subclass does not necessarily
+  share the same initialization arguments as its parent class.
   Multiple @racket[#:implements] clauses may be provided for a single class
   type.
 
