@@ -233,7 +233,7 @@ indicate the operations to redirect, and the corresponding
 
 The protocol for a @racket[redirect-proc] depends on the corresponding
 @racket[orig-proc], where @racket[_self] refers to the value to which
-@racket[redirect-proc] is originally applied:
+@racket[orig-proc] is originally applied:
 
 @itemlist[
 
@@ -595,7 +595,7 @@ order of the supplied arguments' keywords.}
 
 Like @racket[impersonate-struct], but with the following refinements,
 where @racket[_self] refers to the value to which
-a @racket[redirect-proc] is originally applied:
+a @racket[orig-proc] is originally applied:
 
 @itemlist[
 
