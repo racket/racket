@@ -4,6 +4,7 @@
          unstable/list unstable/sequence syntax/id-table racket/dict racket/syntax
          racket/struct-info racket/match syntax/parse
          (only-in (private type-contract) type->contract)
+         (private syntax-properties)
          (types printer)
          (typecheck renamer def-binding)
          (utils tc-utils)
@@ -132,35 +133,17 @@
        new-id
        (list (list #'export-id #'id)))))
 
-  ;; mk-value-triple : identifier? identifier? (or/c syntax? #f) -> triple/c
+  ;; mk-value-triple : identifier? identifier? (or/c Type #f) -> triple/c
   (define (mk-value-triple internal-id new-id ty)
-    (define contract (type->contract ty (λ (#:reason [reason #f]) reason)))
-
     (with-syntax* ([id internal-id]
                    [untyped-id (freshen-id #'id)]
                    [export-id new-id])
+      (define/with-syntax ctc (generate-temporary 'generated-contract))
       (define/with-syntax definitions
-        (if (syntax? contract)
-            (with-syntax* ([module-source pos-blame-id]
-                           [the-contract (generate-temporary 'generated-contract)])
-              #`(define-module-boundary-contract untyped-id 
-                  id #,contract 
-                  #:pos-source module-source
-                  #:srcloc (vector '#,(syntax-source #'id)
-                                   #,(syntax-line #'id)
-                                   #,(syntax-column #'id)
-                                   #,(syntax-position #'id)
-                                   #,(syntax-span #'id))))
-            #`(define-syntax (untyped-id stx)
-                (tc-error/fields #:stx stx
-                                 "could not convert type to a contract"
-                                 #:more #,contract
-                                 "for identifier" #,(symbol->string (syntax-e #'id))
-                                 "type" #,(pretty-format-type ty #:indent 8)))))
+        (contract-def/provide-property #'(define-values (ctc) #f)
+                                       (list ty #'untyped-id #'id pos-blame-id)))
       (values
-        #'(begin
-            definitions
-            (def-export export-id id untyped-id))
+        #`(begin definitions (def-export export-id id untyped-id))
         new-id
         null)))
 

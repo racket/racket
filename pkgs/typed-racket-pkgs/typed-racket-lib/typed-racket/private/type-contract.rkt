@@ -9,12 +9,15 @@
  (utils tc-utils)
  (env type-name-env type-alias-env)
  (rep rep-utils)
- (types resolve union utils kw-types)
+ (types resolve union utils kw-types printer)
  (prefix-in t: (types abbrev numeric-tower))
- (private parse-type syntax-properties)
+ (private parse-type syntax-properties alias-info)
  racket/match racket/syntax racket/list
  racket/format
  racket/dict
+ syntax/flatten-begin
+ syntax/id-table
+ syntax/stx
  unstable/list
  unstable/sequence
  (only-in (types abbrev) -Bottom)
@@ -31,8 +34,11 @@
       (c:parametric->/c (a) ((Type/c (c:-> #:reason (c:or/c #f string?) a))
                              (#:typed-side boolean?) . c:->* . (c:or/c a static-contract?)))]))
 
-(provide type->contract define/fixup-contract? change-contract-fixups
-         type->contract-fail any-wrap/sc)
+(provide type->contract define/fixup-contract?
+         change-contract-fixups
+         change-provide-fixups
+         type->contract-fail any-wrap/sc
+         ignore-for-contract-gen!)
 
 ;; These check if either the define form or the body form has the syntax
 ;; property. Normally the define form will have the property but lifting an
@@ -77,29 +83,194 @@
   (define prop (define/fixup-contract? stx))
   (define maker? (typechecker:contract-def/maker stx))
   (define flat? (typechecker:flat-contract-def stx))
-  (define typ (parse-type prop))
+  (define *typ (parse-type prop))
+  (define typ
+    (if maker?
+        ((map fld-t (Struct-flds (lookup-type-name (Name-id *typ)))) #f . t:->* . *typ)
+        *typ))
   (define kind (if flat? 'flat 'impersonator))
+  (define ctc
+    (type->contract typ
+                    #:typed-side 'untyped
+                    #:kind kind
+                    (type->contract-fail
+                     typ prop
+                     #:ctc-str (if flat? "predicate" "contract"))))
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
-     (let ([typ (if maker?
-                    ((map fld-t (Struct-flds (lookup-type-name (Name-id typ)))) #f . t:->* . typ)
-                    typ)])
-         (with-syntax ([cnt (type->contract
-                             typ
-                             ;; this is for a `require/typed', so the value is not from the typed side
-                             #:typed-side #f
-                             #:kind kind
-                             (type->contract-fail typ prop))])
-           (ignore ; should be ignored by the optimizer
-            (quasisyntax/loc stx (define-values (n) cnt)))))]
+     (ignore ; should be ignored by the optimizer
+       (quasisyntax/loc stx (define-values (n) #,ctc)))]
     [_ (int-err "should never happen - not a define-values: ~a"
                 (syntax->datum stx))]))
 
+(define (generate-contract-def/provide stx)
+  (match-define (list type untyped-id orig-id blame-id)
+                (contract-def/provide-property stx))
+  (define failure-reason #f)
+  (define ctc
+    (type->contract type
+                    #:typed-side 'typed
+                    #:kind 'impersonator
+                    ;; FIXME: get rid of this interface, make it functional
+                    (λ (#:reason [reason #f]) (set! failure-reason reason))))
+  (syntax-parse stx
+    #:literals (define-values)
+    [(define-values ctc-id _)
+     ;; no need for ignore, the optimizer doesn't run on this code
+     (if failure-reason
+         #`(define-syntax (#,untyped-id stx)
+             (tc-error/fields #:stx stx
+                              "could not convert type to a contract"
+                              #:more #,failure-reason
+                              "identifier" #,(symbol->string (syntax-e orig-id))
+                              "type" #,(pretty-format-type type #:indent 8)))
+         #`(begin (define ctc-id #,ctc)
+                  (define-module-boundary-contract #,untyped-id
+                    #,orig-id ctc-id
+                    #:pos-source #,blame-id
+                    #:srcloc (vector (quote #,(syntax-source orig-id))
+                                     #,(syntax-line orig-id)
+                                     #,(syntax-column orig-id)
+                                     #,(syntax-position orig-id)
+                                     #,(syntax-span orig-id)))))]))
+
+;; Syntax -> (Listof Syntax)
+;; Generate contract definitions and contracted provides
+(define (change-provide-fixups forms)
+  (for/list ([form (in-list forms)])
+    (if (contract-def/provide-property form)
+        (generate-contract-def/provide form)
+        form)))
+
+;; Syntax -> (Listof Syntax)
+;; Generate contract definitions for type aliases and requires
 (define (change-contract-fixups forms)
-  (for/list ((e (in-syntax forms)))
-    (if (not (define/fixup-contract? e))
-        e
-        (generate-contract-def e))))
+  (define alias-defs (fixup-type-aliases forms))
+  (define require-typed-defs
+    (for/list ([e (in-syntax forms)]
+               #:unless (alias-contract-def e))
+      (if (not (define/fixup-contract? e))
+          e
+          (generate-contract-def e))))
+  (append alias-defs require-typed-defs))
+
+;; fixup-type-aliases : (Listof Syntax) -> (Listof Syntax)
+;; Generate contracts for mutually recursive type aliases
+(define (fixup-type-aliases *forms)
+  (define forms
+    (for/list ([*form (stx->list *forms)]
+               #:when (alias-contract-def *form)
+               #:unless (in-ignore-table? *form))
+      *form))
+
+  ;; Identify entries that are #f (non-initialized) or are a
+  ;; string (indicating failure with a reason)
+  (define (non-contract-entry? x)
+    (or (string? x) (not x)))
+
+  ;; Loop over each kind of contract to compute the most
+  ;; restrictive kind of contract that can be generated for the alias
+  (for/fold ([contracts (make-list (length forms) #f)])
+            ([kind (in-list '(flat chaperone impersonator))])
+    ;; clear out #f entries after each loop because a failure to generate
+    ;; a flat contract doesn't rule out a chaperone or impersonator one
+    (for ([k (in-list (dict-keys alias-info))])
+      (define v (free-id-table-ref alias-info k #f))
+      (when (string? v) (free-id-table-remove! alias-info k)))
+
+    (define new-contracts
+      ;; run this until fixpoint to ensure that contract failures in mutually
+      ;; recursive type aliases are found and turned into failure syntaxes
+      (let loop ([old contracts])
+        (define current
+          (for/list ([e (in-list forms)]
+                     [ctc (in-list contracts)])
+            ;; use the previous contract if it was successful (i.e., flat
+            ;; instead of chaperone, chaperone instead of impersonator)
+            ;; since we want the most specific
+            (and (non-contract-entry? ctc)
+                 (generate-contract-def/alias e kind))))
+        ;; we reach a fixpoint if the #f/string entries don't change
+        (if (equal? (filter non-contract-entry? current)
+                    (filter non-contract-entry? old))
+            current
+            (loop current))))
+    (map (λ (new old) (or new old))
+         new-contracts
+         contracts)))
+
+;; alias-contract-def : Syntax -> Syntax
+;; Return the alias contract definition property if it's applied on
+;; the definition body, #f otherwise.
+(define (alias-contract-def stx)
+  (syntax-parse stx #:literal-sets (kernel-literals)
+    [(define-values (n) body)
+     (contract-def/alias-property #'body)]
+    [_ #f]))
+
+;; generate-contract-def/alias : Syntax -> (U Syntax #f)
+;; Generate a contract that goes with a type alias
+(define (generate-contract-def/alias stx kind)
+  (define prop (alias-contract-def stx))
+  (define-values (typed-side type-stx)
+    (syntax-case prop ()
+      [(typed-side type-stx) (values (syntax-e #'typed-side) #'type-stx)]))
+  (define typ (parse-type type-stx))
+  (define failed? #f)
+  (define failure-reason #f)
+  (syntax-parse stx #:literals (define-values)
+    [(define-values (n) _)
+     (define/with-syntax cnt
+       (type->contract typ
+                       #:typed-side typed-side
+                       #:kind kind
+                       (λ (#:reason [reason #f])
+                          (set! failed? #t)
+                          (set! failure-reason reason)
+                          (free-id-table-set! alias-info #'n reason))))
+     (cond [(and failed? (not (eq? kind 'impersonator))) #f]
+           [failed?
+            (ignore (quasisyntax/loc stx (void)))]
+           [else
+            (free-id-table-set! alias-info #'n kind)
+            (ignore
+             (quasisyntax/loc stx
+               (begin
+                ;; This expression is needed to communicate the table data to other
+                ;; modules. Ordinary environment serialization via #%type-decl doesn't work
+                ;; because #%type-decl is generated too early in the type-checker.
+                (begin-for-syntax (require typed-racket/private/alias-info)
+                                  (free-id-table-set! alias-info (quote-syntax n) (quote #,kind)))
+                (define-values (n)
+                  ;; the recursive contract is actually needed in this case since these
+                  ;; are all recursive/mutually recursive type aliases
+                  (recursive-contract cnt #,(contract-kind->keyword kind))))))])]
+    [_ (int-err "should never happen - not a define-values: ~a"
+                (syntax->datum stx))]))
+
+;; This table stores a mapping from Identifiers to Booleans
+;; that indicates if an identifier with a contract for fixup (via
+;; change-contract-fixups) should actually be ignored.
+;;
+;; One use for this is to avoid generating contracts for non-recursive
+;; type aliases, even though they have fixup properties.
+(define contract-ignore-table (make-free-id-table))
+
+;; ignore-for-contract-gen! : Identifier -> Void
+;; Set the given identifier as ignored for contract generation
+(define (ignore-for-contract-gen! id)
+  (free-id-table-set! contract-ignore-table id #t))
+
+;; in-ignore-table? : Syntax -> Boolean
+;; Check if the identifier in the given definition syntax should be
+;; ignored for contract generation
+(define (in-ignore-table? stx)
+  (syntax-parse stx
+    #:literal-sets (kernel-literals)
+    [(define-values (name:id) . body)
+     (free-id-table-ref contract-ignore-table #'name #f)]
+    [_ (int-err "should never happen - not a define-values: ~a"
+                (syntax->datum stx))]))
 
 ;; To avoid misspellings
 (define impersonator-sym 'impersonator)
@@ -148,14 +319,14 @@
    [(untyped) 'typed]
    [(both) 'both]))
 
-(define (type->contract ty init-fail #:typed-side [typed-side #t] #:kind [kind 'impersonator])
+(define (type->contract ty init-fail #:typed-side [typed-side 'typed] #:kind [kind 'impersonator])
   (let/ec escape
     (define (fail #:reason [reason #f]) (escape (init-fail #:reason reason)))
     (instantiate
       (optimize
         (type->static-contract ty #:typed-side typed-side fail)
-        #:trusted-positive typed-side
-        #:trusted-negative (not typed-side))
+        #:trusted-positive (not (from-untyped? typed-side))
+        #:trusted-negative (not (from-typed? typed-side)))
       fail
       kind)))
 
@@ -177,10 +348,10 @@
   (triple sc sc sc))
 
 
-(define (type->static-contract type init-fail #:typed-side [typed-side #t])
+(define (type->static-contract type init-fail #:typed-side [typed-side 'typed])
   (let/ec return
     (define (fail #:reason reason) (return (init-fail #:reason reason)))
-    (let loop ([type type] [typed-side (if typed-side 'typed 'untyped)] [recursive-values (hash)])
+    (let loop ([type type] [typed-side typed-side] [recursive-values (hash)])
       (define (t->sc t #:recursive-values (recursive-values recursive-values))
         (loop t typed-side recursive-values))
       (define (t->sc/neg t #:recursive-values (recursive-values recursive-values))
@@ -200,7 +371,7 @@
         ;; We special case this rather than just resorting to standard
         ;; App resolution (see case below) because the resolution process
         ;; will make type->static-contract infinite loop.
-        [(App: (Name: name _ _ #f) rands _)
+        [(App: (Name: name _ _ _ #f) rands _)
          ;; Key with (cons name 'app) instead of just name because the
          ;; application of the Name is not necessarily the same as the
          ;; Name type alone
@@ -216,75 +387,20 @@
                                                 (recursive-sc-use name*))))
                               (recursive-sc-use name*))])]
         ;; Implicit recursive aliases
-        [(Name: name-id dep-ids args #f)
-         ;; FIXME: this may not be correct for different aliases that have
-         ;;        the same name that are somehow used together, if that's
-         ;;        possible
-         (define name (syntax-e name-id))
-         (define deps (map syntax-e dep-ids))
-         (cond [;; recursive references are looked up, see F case
-                (hash-ref recursive-values name #f) =>
-                (λ (rv) (triple-lookup rv typed-side))]
-               [else
-                ;; see Mu case, which uses similar machinery
-                (match-define (and n*s (list untyped-n* typed-n* both-n*))
-                              (generate-temporaries (list name name name)))
-                (define-values (untyped-deps typed-deps both-deps)
-                  (values (generate-temporaries deps)
-                          (generate-temporaries deps)
-                          (generate-temporaries deps)))
-                ;; Set recursive references for the `name` itself
-                (define *rv
-                  (hash-set recursive-values name
-                            (triple (recursive-sc-use untyped-n*)
-                                    (recursive-sc-use typed-n*)
-                                    (recursive-sc-use both-n*))))
-                ;; Add in references for the dependency aliases
-                (define rv
-                  (for/fold ([rv *rv])
-                            ([dep (in-list deps)]
-                             [untyped-dep (in-list untyped-deps)]
-                             [typed-dep (in-list typed-deps)]
-                             [both-dep (in-list both-deps)])
-                    (hash-set rv dep
-                              (triple (recursive-sc-use untyped-dep)
-                                      (recursive-sc-use typed-dep)
-                                      (recursive-sc-use both-dep)))))
-                (define resolved-name (resolve-once type))
-                (define resolved-deps
-                  (for/list ([dep (in-list dep-ids)])
-                    (resolve-once (lookup-type-alias dep values))))
-
-                ;; resolved-deps->scs : (U 'untyped 'typed 'both)
-                ;;                      -> (Listof Static-Contract)
-                (define (resolved-deps->scs typed-side)
-                  (for/list ([resolved-dep (in-list resolved-deps)]
-                             [dep (in-list deps)])
-                    (loop resolved-dep typed-side rv)))
-
-                ;; Now actually generate the static contracts
-                (case typed-side
-                 [(both) (recursive-sc
-                          (append (list both-n*) both-deps)
-                          (cons (loop resolved-name 'both rv)
-                                (resolved-deps->scs 'both))
-                          (recursive-sc-use both-n*))]
-                 [(typed untyped)
-                  (define untyped (loop resolved-name 'untyped rv))
-                  (define typed (loop resolved-name 'typed rv))
-                  (define both (loop resolved-name 'both rv))
-                  (define-values (untyped-dep-scs typed-dep-scs both-dep-scs)
-                    (values
-                     (resolved-deps->scs 'untyped)
-                     (resolved-deps->scs 'typed)
-                     (resolved-deps->scs 'both)))
-                  (recursive-sc
-                   (append n*s untyped-deps typed-deps both-deps)
-                   (append (list untyped typed both)
-                           untyped-dep-scs typed-dep-scs both-dep-scs)
-                   (recursive-sc-use (if (from-typed? typed-side) typed-n* untyped-n*)))])])]
+        [(Name: name-id _ _ (list ctc-t ctc-u ctc-b) #f)
+         (define ctc-id
+           (case typed-side
+             [(typed) ctc-t]
+             [(both) ctc-b]
+             [(untyped) ctc-u]))
+         (define alias-kind (free-id-table-ref alias-info ctc-id #f))
+         (match alias-kind
+           [(? string?)   (fail #:reason alias-kind)]
+           ['impersonator (impersonator/sc ctc-id)]
+           ['chaperone    (chaperone/sc ctc-id)]
+           [_             (flat/sc ctc-id)])]
         ;; Ordinary type applications or struct type names, just resolve
-        [(or (App: _ _ _) (Name: _ _ _ #t)) (t->sc (resolve-once type))]
+        [(or (App: _ _ _) (Name: _ _ _ _ #t)) (t->sc (resolve-once type))]
         [(Univ:) (if (from-typed? typed-side) any-wrap/sc any/sc)]
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          (listof/sc (t->sc elem-ty))]

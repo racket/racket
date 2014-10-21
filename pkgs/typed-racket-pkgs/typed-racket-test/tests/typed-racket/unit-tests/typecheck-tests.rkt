@@ -1877,7 +1877,7 @@
               -Void)
         [tc-e (raise (exn:fail:contract "1" (current-continuation-marks))) (t:Un)]
         [tc-err (exn:fail:contract)
-          #:ret (ret (resolve (make-Name #'exn:fail:contract null #f #t)))]
+          #:ret (ret (resolve (-struct-name #'exn:fail:contract)))]
         [tc-e (#%variable-reference) -Variable-Reference]
         [tc-e (#%variable-reference x) -Variable-Reference]
         [tc-e (#%variable-reference +) -Variable-Reference]

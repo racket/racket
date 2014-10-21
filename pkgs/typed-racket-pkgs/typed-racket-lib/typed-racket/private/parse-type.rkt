@@ -543,7 +543,7 @@
           [args (parse-types #'(arg args ...))])
          (resolve-app-check-error rator args stx)
          (match rator
-           [(Name: _ _ _ _) (make-App rator args stx)]
+           [(? Name?) (make-App rator args stx)]
            [(Poly: _ _) (instantiate-poly rator args)]
            [(Mu: _ _) (loop (unfold rator) args)]
            [(Error:) Err]

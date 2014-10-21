@@ -293,8 +293,7 @@
   (let ((names (map name-of-struct struct-defs))
         (type-vars (map type-vars-of-struct struct-defs)))
     (for ([name names])
-      (register-resolved-type-alias
-       name (make-Name name null #f #t)))
+      (register-resolved-type-alias name (-struct-name name)))
     (for-each register-type-name names)
     (for-each add-constant-variance! names type-vars))
   (do-time "after adding type names")

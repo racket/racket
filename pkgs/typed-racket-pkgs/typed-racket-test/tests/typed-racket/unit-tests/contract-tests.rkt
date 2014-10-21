@@ -100,7 +100,7 @@
            (with-check-info (['type type-val] ['test-value val])
              (define ctc-stx
                (type->contract type-val
-                               #:typed-side typed-side
+                               #:typed-side (quote #,pos)
                                (λ (#:reason [reason #f])
                                  (fail-check (or reason "Type could not be converted to contract")))))
              (define ctced-val

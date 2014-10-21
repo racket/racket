@@ -53,6 +53,8 @@
   (contract-def/maker typechecker:contract-def/maker)
   (contract-def typechecker:contract-def)
   (flat-contract-def typechecker:flat-contract-def)
+  (contract-def/alias typechecker:contract-def/alias)
+  (contract-def/provide typechecker:contract-def/provide)
   (external-check typechecker:external-check)
   (with-type typechecker:with-type #:mark)
   (type-ascription type-ascription)

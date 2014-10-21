@@ -32,6 +32,7 @@
          type-equal?
          remove-dups
          sub-t sub-f sub-o sub-pe
+         Name/simple: Name/struct:
          (rename-out [Class:* Class:]
                      [Class* make-Class]
                      [Row* make-Row]
@@ -123,10 +124,13 @@
 ;; id is the name stored in the environment
 ;; deps are the other aliases this depends on, if any
 ;; args are the type parameters for this type (or #f if none)
+;; ctc-ids is a list of three identifiers for the corresponding contract
+;;   for typed, untyped, and both direction contracts (or #f if none)
 ;; struct? indicates if this maps to a struct type
 (def-type Name ([id identifier?]
                 [deps (listof identifier?)]
                 [args (or/c #f (listof identifier?))]
+                [ctc-ids (or/c #f (list/c identifier? identifier? identifier?))]
                 [struct? boolean?])
   [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
 
@@ -137,7 +141,7 @@
   [#:intern (cons (Rep-seq rator) (map Rep-seq rands))]
   [#:frees (λ (f)
               (match rator 
-                ((Name: n _ _ _)
+                ((Name: n _ _ _ _)
                  (instantiate-frees n (map f rands)))
                 (else (f (resolve-app rator rands stx)))))]
 
@@ -1026,3 +1030,15 @@
                  (list row-pat inits-pat fields-pat
                        methods-pat augments-pat init-rest-pat)))])))
 
+;; alternative to Name: that only matches the name part
+(define-match-expander Name/simple:
+  (λ (stx)
+    (syntax-parse stx
+      [(_ name-pat) #'(Name: name-pat _ _ _ _)])))
+
+;; alternative to Name: that only matches struct names
+(define-match-expander Name/struct:
+  (λ (stx)
+    (syntax-parse stx
+      [(_) #'(Name: _ _ _ _ #t)]
+      [(_ name-pat) #'(Name: name-pat _ _ _ #t)])))
