@@ -1291,9 +1291,129 @@
           (wrapped-class-info-neg-field-projs the-info)
           neg-party)]
         [else
-         (impersonate-struct val object-ref (λ (o c) new-cls)
-                             impersonator-prop:contracted ctc
-                             impersonator-prop:original-object original-obj)]))))
+         (define interposed-val
+           (if (has-impersonator-prop:instanceof/c-original-object? val)
+               (get-impersonator-prop:instanceof/c-original-object val)
+               (impersonate-struct 
+                val object-ref
+                (λ (o c) (car (get-impersonator-prop:instanceof/c-wrapped-classes o))))))
+	
+
+         ;; this code is doing a fairly complicated dance to 
+         ;; accomplish a fairly simple purpose. In particular,
+         ;; instanceof/c contracts keep all of the contracts
+         ;; that they've put on a value in a property on the
+         ;; value and then, when a new contract comes along,
+         ;; try to avoid growing the list of contracts, in the
+         ;; case that there is already checking that subsumes 
+         ;; some of the contracts. It does this by building up
+         ;; the new list of contracts (the old one, plus this one)
+         ;; and then looking for a sublist of that list like this:
+         ;;   c1, ..., ci, ..., cj, ..., ck, ... cn
+         ;; such that ci <: cj and ck <: cj. When that's the case,
+         ;; case then we know that cj is redundant (regardless of
+         ;; the blame it might assign). So this code is looking
+         ;; for such things, but the complication of the code comes
+         ;; from trying to avoid re-creating too many contracts
+         (define all-new-ctcs
+           (cons ctc
+                 (if (has-impersonator-prop:instanceof/c-ctcs? val)
+                     (get-impersonator-prop:instanceof/c-ctcs val)
+                     '())))
+         
+         (define all-new-projs
+           (cons p
+                 (if (has-impersonator-prop:instanceof/c-projs? val)
+                     (get-impersonator-prop:instanceof/c-projs val)
+                     '())))
+         
+         (define old-classes
+           (if (has-impersonator-prop:instanceof/c-wrapped-classes? val)
+               (get-impersonator-prop:instanceof/c-wrapped-classes val)
+               '()))
+         
+         (define-values (reverse-without-redundant-ctcs reverse-without-redundant-projs)
+           (let loop ([prior-ctcs '()]
+                      [prior-projs '()]
+                      [this-ctc (car all-new-ctcs)]
+                      [next-ctcs (cdr all-new-ctcs)]
+                      [this-proj (car all-new-projs)]
+                      [next-projs (cdr all-new-projs)])
+             (cond
+               [(null? next-ctcs) (values (cons this-ctc prior-ctcs)
+                                          (cons this-proj prior-projs))]
+               [else
+                (if (and (ormap (λ (x) (contract-stronger? x this-ctc)) prior-ctcs)
+                         (ormap (λ (x) (contract-stronger? this-ctc x)) next-ctcs))
+                    (loop prior-ctcs prior-projs
+                          (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs))
+                    (loop (cons this-ctc prior-ctcs) (cons this-proj prior-projs)
+                          (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs)))])))
+         
+         (define wrapped-classes 
+           (reverse
+            (let loop ([class (if (has-impersonator-prop:instanceof/c-wrapped-classes? val)
+                                  (car (reverse 
+                                        (get-impersonator-prop:instanceof/c-wrapped-classes val)))
+                                  (object-ref val))]
+                       [ctcs reverse-without-redundant-ctcs]
+                       [projs reverse-without-redundant-projs]
+                       
+                       [old-ctcs (reverse (cdr all-new-ctcs))]
+                       [old-classes (reverse old-classes)])
+              (cond
+                [(null? projs) (list class)]
+                [else
+                 (cons class
+                       (cond
+                         [(and (pair? old-ctcs) (eq? (car old-ctcs) (car ctcs)))
+                          (loop (car old-classes)
+                                (cdr ctcs)
+                                (cdr projs)
+                                (cdr old-ctcs)
+                                (cdr old-classes))]
+                         [else
+                          (loop ((car projs) class) (cdr ctcs) (cdr projs) '() '())]))]))))
+         
+         (impersonate-struct
+          interposed-val object-ref
+          
+          ;FIXME: this should be #f, but right now that triggers 
+          ;; a bug in the impersonator implementation
+          (λ (x y) y) 
+          
+          impersonator-prop:instanceof/c-original-object interposed-val
+          impersonator-prop:instanceof/c-ctcs (reverse reverse-without-redundant-ctcs)
+          impersonator-prop:instanceof/c-projs (reverse reverse-without-redundant-projs)
+          impersonator-prop:instanceof/c-wrapped-classes wrapped-classes
+          impersonator-prop:contracted ctc
+          impersonator-prop:original-object original-obj)]))))
+
+(define-values (impersonator-prop:instanceof/c-ctcs
+                has-impersonator-prop:instanceof/c-ctcs?
+                get-impersonator-prop:instanceof/c-ctcs)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-ctcs))
+
+(define-values (impersonator-prop:instanceof/c-projs
+                has-impersonator-prop:instanceof/c-projs?
+                get-impersonator-prop:instanceof/c-projs)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-projs))
+
+(define-values (impersonator-prop:instanceof/c-wrapped-classes
+                has-impersonator-prop:instanceof/c-wrapped-classes?
+                get-impersonator-prop:instanceof/c-wrapped-classes)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-wrapped-classes))
+
+;; when an object has the original-object property, 
+;; then we also know that value of this property is
+;; an object whose object-ref has been redirected to
+;; use impersonator-prop:instanceof/c-wrapped-classes
+(define-values (impersonator-prop:instanceof/c-original-object
+                has-impersonator-prop:instanceof/c-original-object?
+                get-impersonator-prop:instanceof/c-original-object)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-has-object-ref-interposition))
+
+
 
 (define (instanceof/c-first-order ctc)
   (let ([cls-ctc (base-instanceof/c-class-ctc ctc)])
