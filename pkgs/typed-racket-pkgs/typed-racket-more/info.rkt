@@ -11,7 +11,8 @@
                "snip-lib"
                "typed-racket-lib"
                "gui-lib"
-               "pict-lib"))
+               "pict-lib"
+               "sandbox-lib"))
 
 (define pkg-desc "Types for various libraries")
 

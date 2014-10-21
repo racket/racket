@@ -65,9 +65,24 @@
     ;; FIXME: support other struct options
     (pattern [#:struct name:id ([field:id (~datum :) type:expr] ...)
                        (~optional (~seq #:extra-constructor-name extra:id)
-                                  #:defaults ([extra #f]))]
+                                  #:defaults ([extra #f]))
+                       (~optional (~and (~seq #:no-provide) (~bind [provide? #f]))
+                                  #:defaults ([provide? #t]))]
              #:with form #'(d-s name ([field : type] ...))
-             #:with outer-form #'(provide (struct-out name)))))
+             #:with outer-form (if (attribute provide?)
+                                   #'(provide (struct-out name))
+                                   #'(void)))
+    (pattern [#:struct (name:id par:id)
+                       ([field:id (~datum :) type:expr] ...)
+                       (par-type:expr ...)
+                       (~optional (~seq #:extra-constructor-name extra:id)
+                                  #:defaults ([extra #f]))
+                       (~optional (~and (~seq #:no-provide) (~bind [provide? #f]))
+                                  #:defaults ([provide? #t]))]
+             #:with form #'(d-s (name par) ([field : type] ...) (par-type ...))
+             #:with outer-form (if (attribute provide?)
+                                   #'(provide (struct-out name))
+                                   #'(void)))))
 
 (define-syntax (-#%module-begin stx)
   (syntax-parse stx
