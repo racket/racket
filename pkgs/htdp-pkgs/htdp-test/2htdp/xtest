@@ -18,6 +18,7 @@ run run-movie.rkt
 run bad-draw.rkt
 run error-in-tick.rkt
 run error-in-draw.rkt
+run error-to-draw.rkt
 run -t batch-io.rkt
 run -t batch-io2.rkt
 run -t batch-io3.rkt
