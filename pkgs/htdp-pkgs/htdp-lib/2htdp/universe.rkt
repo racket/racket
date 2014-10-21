@@ -264,7 +264,7 @@
             [dom (syntax->list #'(clause ...))])
        (cond
          [(and (not (contains-clause? #'to-draw dom)) (not (contains-clause? #'on-draw dom)))
-          (raise-syntax-error #f "expects a [to-draw handler] clause, missing" stx)]
+          (raise-syntax-error #f "missing [to-draw renderer] or [on-draw renderer] clause" stx)]
          [else
 	   (syntax-property 
 	     (stepper-syntax-property
