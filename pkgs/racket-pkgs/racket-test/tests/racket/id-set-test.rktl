@@ -211,6 +211,69 @@
          
            (void))
          
+         ;; set symmetric difference
+         (let ()
+           (define EMPTY/MUTABLE (mutable-free-id-set null))
+           (define EMPTY/IMMUTABLE (immutable-free-id-set null))
+           (define ABCDE-LIST (list #'a #'b #'c #'d #'e))
+           (define ABCDE/MUTABLE (mutable-free-id-set ABCDE-LIST))
+           (define ABCDE/IMMUTABLE (immutable-free-id-set ABCDE-LIST))
+           (test 5 free-id-set-count 
+                 (free-id-set-symmetric-difference ABCDE/IMMUTABLE))
+           (test #t free-id-set-empty? 
+                 (free-id-set-symmetric-difference EMPTY/IMMUTABLE))
+           (test 4 free-id-set-count
+                 (free-id-set-symmetric-difference EMPTY/IMMUTABLE ABCD))
+           (test #t free-id-set=?
+                 (free-id-set-symmetric-difference EMPTY/IMMUTABLE ABCD)
+                 ABCD)
+           (test 1 free-id-set-count
+                 (free-id-set-symmetric-difference ABCDE/IMMUTABLE ABCD))
+           (test 5 free-id-set-count
+                 (free-id-set-symmetric-difference ABCDE/IMMUTABLE EMPTY))
+           (define IMMUTABLE/DIFFERENCE/3
+             (free-id-set-symmetric-difference ABCDE/IMMUTABLE
+                                   ABC
+                                   (immutable-free-id-set (list #'a #'b #'e))))
+           (test 3 free-id-set-count IMMUTABLE/DIFFERENCE/3)
+           (test #t free-id-set-member? IMMUTABLE/DIFFERENCE/3 #'a)
+           (test #t free-id-set-member? IMMUTABLE/DIFFERENCE/3 #'b)
+           (test #f free-id-set-member? IMMUTABLE/DIFFERENCE/3 #'c)
+           (test #t free-id-set-member? IMMUTABLE/DIFFERENCE/3 #'d)
+           (test #f free-id-set-member? IMMUTABLE/DIFFERENCE/3 #'e)
+           
+           (free-id-set-symmetric-difference! ABCDE/MUTABLE)
+           (test 5 free-id-set-count ABCDE/MUTABLE)
+           (free-id-set-symmetric-difference! EMPTY/MUTABLE)
+           (test #t free-id-set-empty? EMPTY/MUTABLE)
+           (free-id-set-symmetric-difference! EMPTY/MUTABLE ABCD)
+           (test 4 free-id-set-count EMPTY/MUTABLE)
+           (test #t free-id-set=? EMPTY/MUTABLE ABCD)
+           (free-id-set-symmetric-difference! ABCDE/MUTABLE ABC)
+           (test 2 free-id-set-count ABCDE/MUTABLE)
+           (test #f free-id-set-member? ABCDE/MUTABLE #'a)
+           (test #f free-id-set-member? ABCDE/MUTABLE #'b)
+           (test #f free-id-set-member? ABCDE/MUTABLE #'c)
+           (test #t free-id-set-member? ABCDE/MUTABLE #'d)
+           (test #t free-id-set-member? ABCDE/MUTABLE #'e)
+           (test #t mutable-free-id-set? ABCDE/MUTABLE)
+           (test #t free-id-set-empty? EMPTY)
+           (set! ABCDE/MUTABLE (mutable-free-id-set ABCDE-LIST))
+           (free-id-set-symmetric-difference! ABCDE/MUTABLE EMPTY)
+           (test 5 free-id-set-count ABCDE/MUTABLE)
+           (define MUTABLE/DIFFERENCE/3 (mutable-free-id-set (list #'a #'b #'c #'d #'e)))
+           (free-id-set-symmetric-difference! MUTABLE/DIFFERENCE/3
+                                  ABC
+                                  (mutable-free-id-set (list #'a #'b #'e)))
+           (test 3 free-id-set-count MUTABLE/DIFFERENCE/3)
+           (test #t free-id-set-member? MUTABLE/DIFFERENCE/3 #'a)
+           (test #t free-id-set-member? MUTABLE/DIFFERENCE/3 #'b)
+           (test #f free-id-set-member? MUTABLE/DIFFERENCE/3 #'c)
+           (test #t free-id-set-member? MUTABLE/DIFFERENCE/3 #'d)
+           (test #f free-id-set-member? MUTABLE/DIFFERENCE/3 #'e)
+         
+           (void))
+         
          )]))
 
 
@@ -252,6 +315,7 @@
   (err/rt-test (free-id-set-union! s) exn:fail?)
   (err/rt-test (free-id-set-intersection! s) exn:fail?)
   (err/rt-test (free-id-set-subtract! s) exn:fail?)
+  (err/rt-test (free-id-set-symmetric-difference! s) exn:fail?)
 
   (test #t free-id-set=? 
         s 
@@ -294,6 +358,7 @@
   (err/rt-test (free-id-set-union ms1) exn:fail?)
   (err/rt-test (free-id-set-intersection ms1) exn:fail?)
   (err/rt-test (free-id-set-subtract ms1) exn:fail?)
+  (err/rt-test (free-id-set-symmetric-difference ms1) exn:fail?)
 
   (free-id-set-add! ms2 #'b)
   (free-id-set-add! ms2 #'a)

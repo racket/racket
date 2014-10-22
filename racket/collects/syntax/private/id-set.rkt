@@ -32,6 +32,8 @@
  free-id-set-intersect!
  free-id-set-subtract
  free-id-set-subtract!
+ free-id-set-symmetric-difference
+ free-id-set-symmetric-difference!
  )
 
 ;; TODO
@@ -203,24 +205,27 @@
   ;; bc we will possibly be removing some of them
   (for ([id (dict-keys table0)] #:when (remove? id))
     (free-id-table-remove! table0 id)))
+ 
+(define (free-id-set-symmetric-difference set0 . ss)
+  (unless (immutable-free-id-set? set0)
+    (error 'free-id-set-symmetric-difference 
+           "expected immutable free-id set in: ~a" set0))
+  (define largest-immutable (choose-largest-immutable set0 ss))
+  (immutable-free-id-set
+   (for/fold ([table (free-id-set-table largest-immutable)])
+             ([s (in-list (cons set0 ss))] #:unless (eq? s largest-immutable))
+     (for/fold ([table table]) ([id (in-dict-keys (free-id-set-table s))])
+       (if (free-id-table-ref table id #f)
+           (free-id-table-remove table id)
+           (free-id-table-set table id #t))))))
+(define (free-id-set-symmetric-difference! set0 . ss)
+  (unless (mutable-free-id-set? set0)
+    (error 'free-id-set-symmetric-difference!
+           "expected mutable free-id set in: ~a" set0))
+  (define table (free-id-set-table set0))
+  (for ([s (in-list ss)])
+    (for ([id (in-dict-keys (free-id-set-table s))])
+      (if (free-id-table-ref table id #f)
+          (free-id-table-remove! table id)
+          (free-id-table-set! table id #t)))))
   
-
-;;; bound-id-set constructors
-;(struct mutable-bound-id-set (table))
-;(struct immutable-bound-id-set (table))
-;
-;(define (make-bound-id-set [init-set null] 
-;                           #:phase [phase (syntax-local-phase-level)])
-;  (mutable-bound-id-set 
-;   (make-bound-id-table 
-;    (for/hash ([x (in-set init-set)]) (values x #t))
-;    phase)))
-;
-;(define (make-immutable-bound-id-set [init-set null]
-;                                     #:phase [phase (syntax-local-phase-level)])
-;  (immutable-bound-id-set 
-;   (make-immutable-bound-id-table
-;    (for/hash ([x (in-set init-set)]) (values x #t))
-;    phase)))
-;
-;(define (bound-id-set? s) (or (mutable-bound-id-set? s) (immutable-bound-id-set? s)))
