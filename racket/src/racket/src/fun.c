@@ -5138,9 +5138,9 @@ call_cc (int argc, Scheme_Object *argv[])
 static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int composable,
                                       Scheme_Object *prompt_tag, Scheme_Object *pt,
                                       Scheme_Cont *sub_cont, Scheme_Prompt *prompt,
-                                      Scheme_Meta_Continuation *prompt_cont, 
-                                      Scheme_Prompt *effective_barrier_prompt
-                                      )
+                                      Scheme_Meta_Continuation *prompt_cont,
+                                      Scheme_Prompt *effective_barrier_prompt,
+                                      int cm_only)
 {
   Scheme_Cont *cont;
   Scheme_Cont_Jmp *buf_ptr;
@@ -5148,7 +5148,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   cont = MALLOC_ONE_TAGGED(Scheme_Cont);
   cont->so.type = scheme_cont_type;
 
-  if (!for_prompt && !composable) {
+  if (!for_prompt && !composable && !cm_only) {
     /* Set cont_key mark before capturing marks: */
     scheme_set_cont_mark(cont_key, (Scheme_Object *)cont);
   }
@@ -5160,21 +5160,23 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   SET_REQUIRED_TAG(buf_ptr->type = scheme_rt_cont_jmp);
   cont->buf_ptr = buf_ptr;
 
-  scheme_init_jmpup_buf(&cont->buf_ptr->buf);
-  cont->prompt_tag = prompt_tag;
-  if (for_prompt)
-    cont->dw = NULL;
-  else if (prompt) {
-    Scheme_Dynamic_Wind *dw;
-    if (p->dw) {
-      dw = clone_dyn_wind(p->dw, pt, -1, -1, NULL, 0, composable);
-      cont->dw = dw;
-      cont->next_meta = p->next_meta;
-    } else
+  if (!cm_only) {
+    scheme_init_jmpup_buf(&cont->buf_ptr->buf);
+    cont->prompt_tag = prompt_tag;
+    if (for_prompt)
       cont->dw = NULL;
-  } else {
-    cont->dw = p->dw;
-    cont->next_meta = p->next_meta;
+    else if (prompt) {
+      Scheme_Dynamic_Wind *dw;
+      if (p->dw) {
+        dw = clone_dyn_wind(p->dw, pt, -1, -1, NULL, 0, composable);
+        cont->dw = dw;
+        cont->next_meta = p->next_meta;
+      } else
+        cont->dw = NULL;
+    } else {
+      cont->dw = p->dw;
+      cont->next_meta = p->next_meta;
+    }
   }
   if (!for_prompt)
     ASSERT_SUSPEND_BREAK_ZERO();
@@ -5187,7 +5189,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   cont->meta_tail_pos = (prompt ? prompt->boundary_mark_pos + 2 : 0);
   cont->init_config = p->init_config;
   cont->init_break_cell = p->init_break_cell;
-  if (for_prompt) {
+  if (for_prompt || cm_only) {
     cont->meta_continuation = NULL;
   } else if (prompt) {
     Scheme_Meta_Continuation *mc;
@@ -5207,6 +5209,15 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   } else
     cont->meta_continuation = p->meta_continuation;
 
+  if (!cm_only) {
+    /* A weak link is good enough for detecting continuation sharing, because
+       if the meta continuation goes away, then we're certainly not capturing
+       the same continuation as before. */
+    Scheme_Object *meta_continuation_src;
+    meta_continuation_src = scheme_make_weak_box((Scheme_Object *)p->meta_continuation);
+    cont->meta_continuation_src = meta_continuation_src;
+  }
+
   if (effective_barrier_prompt) {
     cont->barrier_prompt = effective_barrier_prompt;
     scheme_prompt_capture_count++;
@@ -5215,7 +5226,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   if (p->meta_prompt && prompt_cont) /* prompt_cont => meta-prompt is shallower than prompt */
     prompt = p->meta_prompt;
 
-  {
+  if (!cm_only) {
     Scheme_Overflow *overflow;
     /* Mark overflows as captured: */
     for (overflow = p->overflow; overflow; overflow = overflow->prev) {
@@ -5226,10 +5237,10 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
       overflow = clone_overflows(p->overflow, prompt->boundary_overflow_id, NULL);
       cont->save_overflow = overflow;
     }
+    scheme_cont_capture_count++;
   }
-  scheme_cont_capture_count++;
 
-  if (!effective_barrier_prompt || !effective_barrier_prompt->is_barrier) {
+  if ((!effective_barrier_prompt || !effective_barrier_prompt->is_barrier) && !cm_only) {
     /* This continuation can be used by other threads,
        so we need to track ownership of the runstack */
     if (!p->runstack_owner) {
@@ -5256,7 +5267,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   }
 #endif
 
-  {
+  if (!cm_only) {
     Scheme_Saved_Stack *saved;
     saved = copy_out_runstack(p, MZ_RUNSTACK, MZ_RUNSTACK_START, sub_cont, 
                               (for_prompt ? p->meta_prompt : prompt));
@@ -5307,15 +5318,17 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
                                   : 1);
   }
 
-  cont->runstack_owner = p->runstack_owner;
-  cont->cont_mark_stack_owner = p->cont_mark_stack_owner;
+  if (!cm_only) {
+    cont->runstack_owner = p->runstack_owner;
+    cont->cont_mark_stack_owner = p->cont_mark_stack_owner;
 
-  cont->stack_start = p->stack_start;
+    cont->stack_start = p->stack_start;
 
-  cont->savebuf = p->error_buf;
+    cont->savebuf = p->error_buf;
 
-  if (prompt)
-    cont->prompt_buf = prompt->prompt_buf;
+    if (prompt)
+      cont->prompt_buf = prompt->prompt_buf;
+  }
 
   return cont;
 }
@@ -5745,7 +5758,8 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   if (sub_cont && ((sub_cont->save_overflow != p->overflow)
 		   || (sub_cont->prompt_tag != prompt_tag)
 		   || (sub_cont->barrier_prompt != effective_barrier_prompt)
-		   || (sub_cont->meta_continuation != p->meta_continuation))) {
+		   || ((Scheme_Meta_Continuation *)SCHEME_WEAK_BOX_VAL(sub_cont->meta_continuation_src)
+                       != p->meta_continuation))) {
     sub_cont = NULL;
   }
   if (sub_cont && (sub_cont->ss.cont_mark_pos == MZ_CONT_MARK_POS)) {
@@ -5777,35 +5791,18 @@ internal_call_cc (int argc, Scheme_Object *argv[])
       /* Just use this one. */
       cont = sub_cont;
     } else {
-      /* Only continuation marks can be different. Mostly just re-use sub_cont. */
-      intptr_t offset;
-      Scheme_Cont_Mark *msaved;
-      Scheme_Cont_Jmp *buf_ptr;
-
-      cont = MALLOC_ONE_TAGGED(Scheme_Cont);
-      cont->so.type = scheme_cont_type;
-
-      buf_ptr = MALLOC_ONE_RT(Scheme_Cont_Jmp);
-      SET_REQUIRED_TAG(buf_ptr->type = scheme_rt_cont_jmp);
-      cont->buf_ptr = buf_ptr;
-
-      cont->buf_ptr->buf.cont = sub_cont;
-      cont->escape_cont = sub_cont->escape_cont;
-
-      sub_cont = sub_cont->buf_ptr->buf.cont;
-
-      /* This mark stack won't be restored, but it may be
+      /* Only continuation marks can be different. Mostly just re-use sub_cont.
+         The mark stack won't be restored, but it may be
 	 used by `continuation-marks'. */
-      cont->ss.cont_mark_stack = MZ_CONT_MARK_STACK;
-      msaved = copy_out_mark_stack(p, cont->ss.cont_mark_stack, sub_cont, &offset, NULL, 0);
-      cont->cont_mark_stack_copied = msaved;
-      cont->cont_mark_offset = offset;
-      cont->cont_mark_total = cont->ss.cont_mark_stack;
-      offset = find_shareable_marks();
-      cont->cont_mark_nonshare = cont->ss.cont_mark_stack - offset;
+
+      cont = grab_continuation(p, 0, 0, prompt_tag, pt, sub_cont,
+                               prompt, prompt_cont, effective_barrier_prompt, 1);
 #ifdef MZ_USE_JIT
       cont->native_trace = ret;
 #endif
+
+      cont->buf_ptr->buf.cont = sub_cont;
+      cont->escape_cont = sub_cont->escape_cont;
     }
 
     argv2[0] = (Scheme_Object *)cont;
@@ -5813,7 +5810,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   }
 
   cont = grab_continuation(p, 0, composable, prompt_tag, pt, sub_cont, 
-                           prompt, prompt_cont, effective_barrier_prompt);
+                           prompt, prompt_cont, effective_barrier_prompt, 0);
 
   scheme_zero_unneeded_rands(p);
 
@@ -6365,7 +6362,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
 
   /* Grab a continuation so that we capture the current Scheme stack,
      etc.: */
-  saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL);
+  saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, 0);
 
   if (p->meta_prompt)
     saved->prompt_stack_start = p->meta_prompt->stack_boundary;

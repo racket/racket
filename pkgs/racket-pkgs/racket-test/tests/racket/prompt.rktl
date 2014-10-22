@@ -421,5 +421,31 @@
   (test 1 values v))
 
 ;;----------------------------------------
+;; Check continuation sharing
+
+(let ()
+  (define (f x prev)
+    (call/cc
+     (lambda (k)
+       (test (and (even? x)
+                  (x . < . 10))
+             eq?
+             k
+             prev)
+       (cond
+        [(zero? x) 'done]
+        [(even? x) (or (f (sub1 x) k) #t)]
+        [else (f (sub1 x) k)]))))
+
+  (void (f 10 #f))
+  (void
+   (let ([v (call-with-composable-continuation
+             (lambda (k)
+               k))])
+     (if (procedure? v)
+         (v 'ok)
+         (f 10 #f)))))
+
+;;----------------------------------------
 
 (report-errs)

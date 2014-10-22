@@ -363,6 +363,7 @@ cont_proc {
   gcMARK2(c->dw, gc);
   gcMARK2(c->prompt_tag, gc);
   gcMARK2(c->meta_continuation, gc);
+  gcMARK2(c->meta_continuation_src, gc);
   gcMARK2(c->common_dw, gc);
   gcMARK2(c->save_overflow, gc);
   gcMARK2(c->runstack_copied, gc);
