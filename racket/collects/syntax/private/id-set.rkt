@@ -34,6 +34,8 @@
  free-id-set-subtract!
  free-id-set-symmetric-difference
  free-id-set-symmetric-difference!
+ free-id-subset?
+ free-id-proper-subset?
  )
 
 ;; TODO
@@ -229,3 +231,16 @@
           (free-id-table-remove! table id)
           (free-id-table-set! table id #t)))))
   
+(define (free-id-subset? s1 s2)
+  (define table1 (free-id-set-table s1))
+  (define table2 (free-id-set-table s2))
+  (for/and ([id (in-dict-keys table1)])
+    (free-id-table-ref table2 id #f)))
+
+(define (free-id-proper-subset? s1 s2)
+  (define table1 (free-id-set-table s1))
+  (define table2 (free-id-set-table s2))
+  (and (for/and ([id (in-dict-keys table1)])
+         (free-id-table-ref table2 id #f))
+       (for/or ([id (in-dict-keys table2)])
+         (not (free-id-table-ref table1 id #f)))))

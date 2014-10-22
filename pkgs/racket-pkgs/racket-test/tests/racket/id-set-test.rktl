@@ -8,7 +8,7 @@
 ;; ----------------------------------------------------------------------------
 ;; Universal Tests
 
-(define-syntax (mk-test-suite stx)
+(define-syntax (run-test-suite stx)
   (syntax-parse stx
     [(_ #:constructor mk-free-id-set)
      #:with free-id-set-pred? (format-id #'mk-free-id-set "~a?" #'mk-free-id-set)
@@ -274,13 +274,79 @@
          
            (void))
          
-         )]))
+         ;; Test subset:
+         (let ()
+           (test #t free-id-subset? EMPTY EMPTY)
+           (test #t free-id-subset? ABC ABC)
+           (test #t free-id-subset? ABCD ABCD)
+           (test #f free-id-proper-subset? EMPTY EMPTY)
+           (test #f free-id-proper-subset? ABC ABC)
+           (test #f free-id-proper-subset? ABCD ABCD)
+           (test #t free-id-subset? EMPTY ABC)
+           (test #t free-id-subset? EMPTY ABCD)
+           (test #t free-id-subset? ABC ABCD)
+           (test #f free-id-subset? ABCD ABC)
+           (test #f free-id-subset? ABCD EMPTY)
+           (test #f free-id-subset? ABC EMPTY)
+           (test #t free-id-proper-subset? EMPTY ABC)
+           (test #t free-id-proper-subset? EMPTY ABCD)
+           (test #t free-id-proper-subset? ABC ABCD)
+           (test #f free-id-proper-subset? ABCD ABC)
+           (test #f free-id-proper-subset? ABCD EMPTY)
+           (test #f free-id-proper-subset? ABC EMPTY)
+           
+           (define EMPTY/MUTABLE (mutable-free-id-set null))
+           (define EMPTY/IMMUTABLE (immutable-free-id-set null))
+           (define AB-LIST (list #'a #'b))
+           (define ABC-LIST (list #'a #'b #'c))
+           (define ABCDE-LIST (list #'a #'b #'c #'d #'e))
+           (define AB/MUTABLE (mutable-free-id-set AB-LIST))
+           (define AB/IMMUTABLE (immutable-free-id-set AB-LIST))
+           (define ABC/MUTABLE (mutable-free-id-set ABC-LIST))
+           (define ABC/IMMUTABLE (immutable-free-id-set ABC-LIST))
+           (define ABCDE/MUTABLE (mutable-free-id-set ABCDE-LIST))
+           (define ABCDE/IMMUTABLE (immutable-free-id-set ABCDE-LIST))
 
+           (test #t free-id-subset? EMPTY EMPTY/MUTABLE)
+           (test #t free-id-subset? EMPTY EMPTY/IMMUTABLE)
+           (test #f free-id-proper-subset? EMPTY EMPTY/MUTABLE)
+           (test #f free-id-proper-subset? EMPTY EMPTY/IMMUTABLE)
+           
+           (test #t free-id-subset? ABC ABCDE/MUTABLE)
+           (test #t free-id-subset? ABC ABCDE/MUTABLE)
+           (test #t free-id-proper-subset? ABC ABCDE/MUTABLE)
+           (test #t free-id-proper-subset? ABC ABCDE/MUTABLE)
+           (test #t free-id-subset? ABC ABCDE/IMMUTABLE)
+           (test #t free-id-subset? ABC ABCDE/IMMUTABLE)
+           (test #t free-id-proper-subset? ABC ABCDE/IMMUTABLE)
+           (test #t free-id-proper-subset? ABC ABCDE/IMMUTABLE)
+
+           (test #t free-id-subset? ABC ABC/MUTABLE)
+           (test #t free-id-subset? ABC ABC/MUTABLE)
+           (test #f free-id-proper-subset? ABC ABC/MUTABLE)
+           (test #f free-id-proper-subset? ABC ABC/MUTABLE)
+           (test #t free-id-subset? ABC ABC/IMMUTABLE)
+           (test #t free-id-subset? ABC ABC/IMMUTABLE)
+           (test #f free-id-proper-subset? ABC ABC/IMMUTABLE)
+           (test #f free-id-proper-subset? ABC ABC/IMMUTABLE)
+
+           (test #f free-id-subset? ABC AB/MUTABLE)
+           (test #f free-id-subset? ABC AB/MUTABLE)
+           (test #f free-id-proper-subset? ABC AB/MUTABLE)
+           (test #f free-id-proper-subset? ABC AB/MUTABLE)
+           (test #f free-id-subset? ABC AB/IMMUTABLE)
+           (test #f free-id-subset? ABC AB/IMMUTABLE)
+           (test #f free-id-proper-subset? ABC AB/IMMUTABLE)
+           (test #f free-id-proper-subset? ABC AB/IMMUTABLE)
+
+           (void))
+         )]))
 
 ;; ----------------------------------------------------------------------------
 ;; run test suite instances
-(mk-test-suite #:constructor mutable-free-id-set)
-(mk-test-suite #:constructor immutable-free-id-set)
+(run-test-suite #:constructor mutable-free-id-set)
+(run-test-suite #:constructor immutable-free-id-set)
+
 
 ;; ----------------------------------------------------------------------------
 ;; immutable/mutable set tests
