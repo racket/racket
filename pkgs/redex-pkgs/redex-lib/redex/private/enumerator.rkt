@@ -14,15 +14,17 @@
          math/flonum
          (only-in math/number-theory
                   binomial
-                  integer-root)
+                  integer-root
+                  factorize)
 
          "error.rkt")
 
 (provide enum
          enum?
          size
-         encode
-         decode
+         (contract-out
+          (encode (-> enum? any/c exact-nonnegative-integer?))
+          (decode (-> enum? exact-nonnegative-integer? any/c)))
          empty/e
          const/e
          from-list/e
@@ -85,16 +87,14 @@
   (enum-size e))
 
 ;; decode : enum a, Nat -> a
-(define/contract (decode e n)
-  (-> enum? exact-nonnegative-integer? any/c)
+(define (decode e n)
   (if (and (< n (enum-size e))
            (>= n 0))
       ((enum-from e) n)
       (redex-error 'decode "Index into enumerator out of range. Tried to decode ~s in an enum of size ~s" n (size e))))
 
 ;; encode : enum a, a -> Nat
-(define/contract (encode e a)
-  (-> enum? any/c exact-nonnegative-integer?)
+(define (encode e a)
   ((enum-to e) a))
 
 ;; Helper functions
@@ -294,8 +294,7 @@
    )
   #:transparent)
 
-(define/contract (mk-fin-layers es)
-  ((listof enum?) . -> . (listof fin-layer?))
+(define (mk-fin-layers es)
   (define (loop eis prev)
     (define non-emptys (filter (negate (compose empty/e? car)) eis))
     (match non-emptys
@@ -321,13 +320,9 @@
   (loop eis (fin-layer 0 eis)))
 
 ;; layers : Listof Enum -> Listof Upper-Bound
-(define/contract (disj-sum-layers es)
-  ((listof enum?) . -> . (vectorof upper-bound?))
+(define (disj-sum-layers es)
   (define fin-layers (mk-fin-layers es))
-  (define/contract (loop fin-layers prev)
-    (-> (listof fin-layer?)
-        upper-bound?
-        (listof upper-bound?))
+  (define (loop fin-layers prev)
     (match fin-layers
       ['() '()]
       [(cons (fin-layer cur-bound eis) rest-fin-layers)
@@ -358,10 +353,7 @@
     (for/list [(i (in-naturals))
                (e (in-list es))]
       (cons e i)))
-  (define/contract (loop fin-layers prev-layer)
-    (-> (listof fin-layer?)
-        list-layer?
-        (listof list-layer?))
+  (define (loop fin-layers prev-layer)
     (match fin-layers
       ['() '()]
       [(cons (fin-layer cur-bound vec-cur-inexhausteds) rest-fins)
@@ -436,12 +428,7 @@
           cur
           (find-e-index cur e-i)))
 
-(define/contract (find-layer-by-size i get-size zeroth ls)
-  (-> (or/c infinite? exact-nonnegative-integer?)
-      (any/c . -> . (or/c infinite? exact-nonnegative-integer?))
-      any/c
-      (vectorof any/c)
-      (values any/c any/c))
+(define (find-layer-by-size i get-size zeroth ls)
   ;; Find the lowest indexed elt that is still greater than i
   (define (loop lo hi)
     (define mid (quotient (lo . + . hi) 2))
@@ -1072,8 +1059,9 @@
                       (cons (car fins) acc))])])))
   (values decon recon))
 
-;; list/e : listof (enum any) -> enum (listof any)
-(define (list/e . es)
+;; Attempt at mixing finite and infinite pairing in a more principled way
+;; Slower than using inf-fin-cons/e as in list/e
+(define (inf-fin-fair-list/e . es)
   (define nat/es
     (for/list ([e (in-list es)])
       (take/e nat/e (size e))))
@@ -1167,10 +1155,7 @@
                   dec
                   enc)])]))
 
-(define/contract (inf-slots infs fins)
-  (-> (listof number?)
-      (listof number?)
-      any/c)
+(define (inf-slots infs fins)
   (define sorted-infs (sort infs <))
   (define sorted-fins (sort fins <))
   (reverse
@@ -1193,6 +1178,113 @@
                            rest-fis
                            (cons #f acc))])]))))
 
+(define (inf-fin-cons/e e1 e2)
+  (define s1 (size e1))
+  (define s2 (size e2))
+  (define fst-finite? (not (infinite? s1)))
+  (define fin-size
+    (cond [fst-finite? s1]
+          [else s2]))
+  (define (dec n)
+    (define-values (q r)
+      (quotient/remainder n fin-size))
+    (define x1 (decode e1 (if fst-finite? r q)))
+    (define x2 (decode e2 (if fst-finite? q r)))
+    (cons x1 x2))
+  (define/match (enc p)
+    [((cons x1 x2))
+     (define n1 (encode e1 x1))
+     (define n2 (encode e2 x2))
+     (define q (if fst-finite? n2 n1))
+     (define r (if fst-finite? n1 n2))
+     (+ (* fin-size q)
+        r)])
+  (enum (* s1 s2) dec enc))
+
+(define (list/e . es)
+  (define l (length es))
+  (cond
+   [(= l 0) (const/e '())]
+   [(= l 1) (map/e list car (car es))]
+   [(all-infinite? es) (apply box-list/e es)]
+   [(all-finite? es) (apply nested-cons-list/e es)]
+   [else
+    (define tagged-es
+      (for/list ([i (in-naturals)]
+                 [e (in-list es)])
+        (cons e i)))
+    (define-values (inf-eis fin-eis)
+      (partition (compose infinite?
+                          size
+                          car)
+                 tagged-es))
+    (define inf-es (map car inf-eis))
+    (define inf-is (map cdr inf-eis))
+    (define fin-es (map car fin-eis))
+    (define fin-is (map cdr fin-eis))
+    (define inf-slots
+      (reverse
+       (let loop ([inf-is inf-is]
+                  [fin-is fin-is]
+                  [acc '()])
+         (match* (inf-is fin-is)
+                 [('() '()) acc]
+                 [((cons _ _) '())
+                  (append (for/list ([_ (in-list inf-is)]) #t) acc)]
+                 [('() (cons _ _))
+                  (append (for/list ([_ (in-list fin-is)]) #f) acc)]
+                 [((cons ii rest-iis) (cons fi rest-fis))
+                  (cond [(ii . < . fi)
+                         (loop rest-iis
+                               fin-is
+                               (cons #t acc))]
+                        [else
+                         (loop inf-is
+                               rest-fis
+                               (cons #f acc))])]))))
+    (define/match (reconstruct infs-fins)
+      [((cons infs fins))
+       (let loop ([infs infs]
+                  [fins fins]
+                  [inf?s inf-slots]
+                  [acc '()])
+         (match inf?s
+           ['() (reverse acc)]
+           [(cons inf? rest)
+            (cond [inf?
+                   (loop (cdr infs)
+                         fins
+                         rest
+                         (cons (car infs) acc))]
+                  [else
+                   (loop infs
+                         (cdr fins)
+                         rest
+                         (cons (car fins) acc))])]))])
+    (define (deconstruct xs)
+      (let loop ([xs xs]
+                 [inf-acc '()]
+                 [fin-acc '()]
+                 [inf?s inf-slots])
+        (match* (xs inf?s)
+                [('() '()) (cons (reverse inf-acc)
+                                 (reverse fin-acc))]
+                [((cons x rest-xs) (cons inf? rest-inf?s))
+                 (cond [inf?
+                        (loop rest-xs
+                              (cons x inf-acc)
+                              fin-acc
+                              rest-inf?s)]
+                       [else
+                        (loop rest-xs
+                              inf-acc
+                              (cons x fin-acc)
+                              rest-inf?s)])])))
+    (map/e reconstruct
+           deconstruct
+           (inf-fin-cons/e (apply list/e inf-es)
+                   (apply list/e fin-es)))]))
+
 (define (nested-cons-list/e . es)
   (define l (length es))
   (define split-point (quotient l 2))
@@ -1203,7 +1295,6 @@
       (define-values (left right) (split-at lst split-point))
       (cons left right))
    (fin-cons/e (apply list/e left) (apply list/e right))))
-
 
 (define (all-infinite? es)
   (all-sizes-something? infinite? es))
@@ -1234,18 +1325,62 @@
             (λ (xs) (map encode es xs))))
          (enum +inf.0 dec enc)]))
 
+(define (prime-factorize k)
+  (apply append
+         (for/list ([d-e (in-list (factorize k))])
+           (define divisor (first d-e))
+           (define exponent (second d-e))
+           (for/list ([_ (in-range exponent)])
+             divisor))))
+(module+ test
+  (check-equal? (prime-factorize 14) '(2 7))
+  (check-equal? (prime-factorize 24) '(2 2 2 3)))
+(define (chunks-of l k)
+  (let loop ([l l]
+             [acc '()])
+    (cond [(empty? l) (reverse acc)]
+          [else
+           (define-values (chunk rest) (split-at l k))
+           (loop rest (cons chunk acc))])))
+(module+ test
+  (define 1-6 '(1 2 3 4 5 6))
+  (check-equal? (chunks-of 1-6 1) '((1) (2) (3) (4) (5) (6)))
+  (check-equal? (chunks-of 1-6 2) '((1 2) (3 4) (5 6)))
+  (check-equal? (chunks-of 1-6 3) '((1 2 3) (4 5 6)))
+  (check-equal? (chunks-of 1-6 6) '((1 2 3 4 5 6))))
+
 ;; Fair tupling via generalized
 ;; ordering is monotonic in the max of the elements of the list
 (define (box-list/e . es)
   (define all-inf? (all-infinite? es))
+  (define k (length es))
   (cond [(empty? es) (const/e '())]
+        [(= k 1) (map/e list car (car es))]
         [(not all-inf?) (apply list/e es)]
         [else
-         (define k (length es))
-         (map/e
-          (curry map decode es)
-          (curry map encode es)
-          (box-tuples/e k))]))
+         (define factors (prime-factorize k))
+         (let loop ([factors factors]
+                    [es es]
+                    [k k])
+           (match factors
+             [(cons factor '())
+              (prime-length-box-list/e es)]
+             [(cons factor factors)
+              (define chunk-size (/ k factor))
+              (define chunk/es
+                (for/list ([es (in-list (chunks-of es chunk-size))])
+                  (loop factors es chunk-size)))
+              (map/e
+               (λ (chunks)
+                  (apply append chunks))
+               (λ (xs)
+                  (chunks-of xs chunk-size))
+               (prime-length-box-list/e chunk/es))]))]))
+
+(define (prime-length-box-list/e es)
+  (map/e (curry map decode es)
+         (curry map encode es)
+         (box-tuples/e (length es))))
 
 (define (box-tuples/e k)
   (enum +inf.0 (box-untuple k) (box-tuple k)))

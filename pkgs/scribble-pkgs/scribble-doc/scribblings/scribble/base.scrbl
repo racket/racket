@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual "utils.rkt"
           (for-syntax racket/base)
-          (for-label setup/main-collects))
+          (for-label setup/main-collects
+          racket/runtime-path))
 
 @(define-syntax def-section-like
    (syntax-rules ()
@@ -479,8 +480,10 @@ See also @racket[verbatim].}
  the image cannot be displayed.
 
  If @racket[path] is a relative path, it is relative to the current
- directory, which is set by @exec{raco setup} and @exec{scribble} to
- the directory of the main document file. Instead of a path or string,
+ directory, which is set by @exec{raco setup} to
+ the directory of the main document file. (In general, however, it's
+ more reliable to express relative paths using
+ @racket[define-runtime-path].) Instead of a path or string,
  the @racket[path] argument can be a result of
  @racket[path->main-collects-relative].
 

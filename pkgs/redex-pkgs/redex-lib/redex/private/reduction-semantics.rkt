@@ -1192,7 +1192,9 @@
             (raise-syntax-error 
              syn-error-name 
              "expected a previously defined metafunction" orig-stx prev-metafunction))))
-       (let*-values ([(contract-name dom-ctcs pre-condition codom-contracts post-condition pats)
+       (let*-values ([(contract-name dom-ctcs pre-condition 
+                                     codom-contracts codomain-separators post-condition
+                                     pats)
                       (split-out-contract orig-stx syn-error-name #'rest #f)]
                      [(name _) (defined-name (list contract-name) pats orig-stx)])
          (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
@@ -1217,6 +1219,7 @@
                                                                     (list pre-condition)
                                                                     #f)
                                                               #,codom-contracts
+                                                              '#,codomain-separators
                                                               #,(if post-condition
                                                                     (list post-condition)
                                                                     #f)
@@ -1253,19 +1256,43 @@
                                    (list the-clause-name #'id)))
              (set! the-clause-name #'id)
              stuffs)]
-          [_ (cons stuff+name stuffs)])))
+          [_ 
+           (cons stuff+name stuffs)])))
     (cons (cond
             [(not the-clause-name) #f]
             [(identifier? the-clause-name) (symbol->string (syntax-e the-clause-name))]
             [else the-clause-name])
           (reverse stuff-without-clause-name))))
 
+(define-for-syntax (eliminate-metafunction-ors stx)
+  (define (is-not-or? x)
+    (syntax-case x (or)
+      [or #f]
+      [else #t]))
+  (apply 
+   append
+   (for/list ([clause (in-list (syntax->list stx))])
+     (syntax-case clause ()
+       [(lhs . rhs+stuff)
+        (let ()
+          (define split 
+            (let loop ([lst (syntax->list #'rhs+stuff)])
+              (define batch (takef lst is-not-or?))
+              (cond
+                [(null? batch) '()]
+                [else 
+                 (define next (dropf lst is-not-or?))
+                 (if (pair? next)
+                     (cons batch (loop (cdr next)))
+                     (list batch))])))
+          (map (λ (x) (cons #'lhs x)) split))]))))
+
 (define-syntax (generate-metafunction stx)
   (syntax-case stx ()
     [(_ orig-stx lang prev-metafunction-stx
         name name-predicate
         dom-ctcs-stx pre-condition-stx
-        codom-contracts-stx post-condition-stx
+        codom-contracts-stx codomain-separators-stx post-condition-stx
         pats-stx syn-error-name)
      (let ()
        (define (condition-or-false s)
@@ -1279,16 +1306,23 @@
        (define dom-ctcs (syntax-e #'dom-ctcs-stx))
        (define pre-condition (condition-or-false #'pre-condition-stx))
        (define codom-contracts (syntax-e #'codom-contracts-stx))
+       (define codomain-separators (syntax-e #'codomain-separators-stx))
        (define post-condition (condition-or-false #'post-condition-stx))
        (define pats (syntax-e #'pats-stx))
        (define syn-error-name (syntax-e #'syn-error-name))
        (define lang-nts
          (definition-nts #'lang #'orig-stx syn-error-name))
-       (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
-                     [(lhs-for-lw ...) (lhs-lws pats)])
+       (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...)
+                      (eliminate-metafunction-ors #'pats-stx)]
+                     [(lhs-for-lw ...) (lhs-lws pats)]
+                     [(((_1 lhs-with-ors-intact ...)
+                        rhs-with-ors-intact
+                        stuff-with-ors-intact ...) ...)
+                      pats])
          (with-syntax ([((rhs stuff+names ...) ...) #'((raw-rhses ...) ...)]
                        [(lhs ...) #'((lhs-clauses ...) ...)])
-           (with-syntax ([((clause-name stuff ...) ...) (extract-clause-names #'((stuff+names ...) ...))])
+           (with-syntax ([((clause-name stuff ...) ...) 
+                          (extract-clause-names #'((stuff+names ...) ...))])
              (parse-extras #'((stuff ...) ...))
              (with-syntax ([((syncheck-expr side-conditions-rewritten lhs-names lhs-namess/ellipses) ...) 
                             (map (λ (x) (rewrite-side-conditions/check-errs
@@ -1341,7 +1375,7 @@
                                                     (path->relative-string/library (syntax-source lhs)))
                                                (syntax-line lhs)
                                                (syntax-column lhs)))
-                                     pats)]
+                                     (syntax->list #'(original-names ...)))]
                                [(dom-syncheck-expr dom-side-conditions-rewritten 
                                                    (dom-names ...)
                                                    dom-names/ellipses)
@@ -1417,15 +1451,16 @@
                                          #,(with-syntax ([(dom-ctc ...) dom-ctcs])
                                              #`(list (to-lw dom-ctc) ...))
                                          #,(with-syntax ([(codom-ctc ...) codom-contracts])
-                                             #`(list (to-lw codom-ctc) ...)))
+                                             #`(list (to-lw codom-ctc) ...))
+                                         #,codomain-separators)
                                       #'#f)
                                 
                                 ;; body of mf
                                 (generate-lws #f
-                                              (lhs ...)
+                                              ((lhs-with-ors-intact ...) ...)
                                               (lhs-for-lw ...)
-                                              ((stuff ...) ...)
-                                              (rhs ...)
+                                              ((stuff-with-ors-intact ...) ...)
+                                              (rhs-with-ors-intact ...)
                                               #t))
                                lang
                                #t ;; multi-args?

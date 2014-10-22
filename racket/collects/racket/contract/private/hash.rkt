@@ -86,9 +86,10 @@
   (when (and (not flat?)
              (not (flat-contract? dom-ctc))
              (not (hash-equal? val)))
-    (raise-blame-error blame val 
-                       '(expected "equal?-based hash table due to higher-order domain contract" given: "~e")
-                       val))
+    (raise-blame-error
+     blame val
+     '(expected "equal?-based hash table due to higher-order domain contract" given: "~e")
+     val))
   (case immutable
     [(#t) 
      (unless (immutable? val) 
@@ -136,6 +137,29 @@
 
 (define-struct base-hash/c (dom rng immutable))
 
+(define (hash/c-stronger this that)
+  (define this-dom (base-hash/c-dom this))
+  (define this-rng (base-hash/c-rng this))
+  (define this-immutable (base-hash/c-immutable this))
+  (cond
+    [(base-hash/c? that)
+     (define that-dom (base-hash/c-dom that))
+     (define that-rng (base-hash/c-rng that))
+     (define that-immutable (base-hash/c-immutable that))
+     (cond
+       [(and (equal? this-immutable #t)
+             (equal? that-immutable #t))
+        (and (contract-stronger? this-dom that-dom)
+             (contract-stronger? this-rng that-rng))]
+       [(or (equal? that-immutable 'dont-care)
+            (equal? this-immutable that-immutable))
+        (and (contract-stronger? this-dom that-dom)
+             (contract-stronger? that-dom this-dom)
+             (contract-stronger? this-rng that-rng)
+             (contract-stronger? that-rng this-rng))]
+       [else #f])]
+    [else #f]))
+
 (define-struct (flat-hash/c base-hash/c) ()
   #:omit-define-syntaxes
   #:property prop:custom-write custom-write-property-proc
@@ -143,6 +167,7 @@
   (build-flat-contract-property
    #:name hash/c-name
    #:first-order hash/c-first-order
+   #:stronger hash/c-stronger
    #:projection
    (λ (ctc)
      (λ (blame)
@@ -202,6 +227,7 @@
   (build-chaperone-contract-property
    #:name hash/c-name
    #:first-order hash/c-first-order
+   #:stronger hash/c-stronger
    #:projection (ho-projection chaperone-hash)))
 
 (define-struct (impersonator-hash/c base-hash/c) ()
@@ -211,4 +237,5 @@
   (build-contract-property
    #:name hash/c-name
    #:first-order hash/c-first-order
+   #:stronger hash/c-stronger
    #:projection (ho-projection impersonate-hash)))

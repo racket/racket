@@ -38,7 +38,8 @@
      (Mark t) (List t))
   (B Num Bool Unit)
 
-  (x variable-not-otherwise-mentioned)
+  ;(x variable-not-otherwise-mentioned)
+  (x (variable-prefix var:))
 
   (b n s bool unit)
   (n number)
@@ -188,8 +189,11 @@
    (--> (monitor (-> ctc_a ctc_r) (name v (λ (x : t) e)) k l j)
         (λ (x_1 : t)
            ((λ (x_2 : t) (monitor ctc_r (v x_2) k l j))
-            (monitor ctc_a x_1 l k j))))
-
+            (monitor ctc_a x_1 l k j)))
+        ;;added this (10/7/14):
+        (where/hidden (x_1 x_2) 
+                      ,(variables-not-in (term (ctc_a ctc_r v))
+                                         '(var: var:))))
    ;; prompt-tag/c
    (--> (monitor (prompt-tag/c ctc_1 ctc_2 t_1 t_2) v_p k l j)
         (PG ctc_1 ctc_2 v_p k l j))
@@ -551,9 +555,9 @@
 (define-metafunction abort-lang
   [(call/cc (name v (λ (x_1 : (→ t_1 t_2)) e_1)) e)
    (call/comp
-    (λ (kont : (→ t_1 t_2))
-      (v (λ (x : t_1)
-           (abort t_2 e (λ (y : Unit) (kont x))))))
+    (λ (var:kont : (→ t_1 t_2))
+      (v (λ (var:x : t_1)
+           (abort t_2 e (λ (var:y : Unit) (var:kont var:x))))))
     e)])
 
 (define-metafunction abort-lang
@@ -822,15 +826,17 @@
 
 
 
+
 (define (random-exp depth)
   (match
       (generate-term
        abort+Γ-lang
        #:satisfying
-       (tc · · e t)
+       (tc · Σ e t)
        depth)
     [#f #f]
-    [`(tc · · ,e ,t) e]))
+    [`(tc · ,Σ ,e ,t) 
+     (list Σ e)]))
 
 (define (eval-random-exps n [depth 4])
   (for ([_ n])
@@ -877,19 +883,19 @@
   (or (redex-match abort-lang (in-hole E (seq (update mk e_1) e_2)) exp)
       (redex-match abort-lang (in-hole E (check e v l_1 l_2)) exp)))
 
-(define (soundness-holds? e)
-  (define t (judgment-holds (tc · · ,e t) t))
+(define (soundness-holds? e [inp-Σ '·])
+  (define t (judgment-holds (tc · ,inp-Σ ,e t) t))
   (define exceeded-max-steps #f)
   (define steps 0)
   (or (not t)
       (match (apply-reduction-relation* 
-              abort-red `(<> ,e ·)
+              abort-red `(<> ,e ,inp-Σ)
               #:stop-when
               (λ (_)
                 (set! steps (add1 steps))
-                ;; treat 20 steps as non-terminating
+                ;; treat 40 steps as non-terminating
                 ;; larger examples tend to be useless...
-                (and (steps . > . 20)
+                (and (steps . > . 40)
                      (set! exceeded-max-steps #t))))
         ['() #t] ;; looping reduction graph
         [`((<> ,e* ,st*))
@@ -901,16 +907,22 @@
                       (equal? (judgment-holds (tc · ,st* ,e* t) t)
                               t))))]
         [_
-         (error 'soundness "multiple reductions found for ~s" e)])))
+         (if exceeded-max-steps
+             #t
+             (error 'soundness "multiple reductions found for ~s" e))])))
 
-(define (check-random-exps n [depth 4])
-  (for ([_ n])
+(define (check-random-exps n [depth 4] #:verbose [verbose? #f])
+  (for/and ([_ n])
     (define e (random-exp depth))
-    (when e
-      (pretty-write e)
-      (unless (soundness-holds? e)
-        (error 'check "soundness failed for: ~s" e)))))
+    (or (not e)
+        (match-let* ([(list s e) e]
+                     [ok? (soundness-holds? e s)])
+          (when verbose?
+            (pretty-write e))
+          (unless ok?
+            (error 'check "soundness failed for: ~s\n~s" s e))
+          ok?))))
 
-(define (type-check e)
-  (judgment-holds (tc · · ,e t)))
+(define (type-check e Σ)
+  (judgment-holds (tc · ,Σ ,e t)))
 

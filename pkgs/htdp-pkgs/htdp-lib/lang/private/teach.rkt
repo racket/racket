@@ -1586,14 +1586,15 @@
   (define (beginner-quote/expr/proc stx)
     (syntax-case stx ()
       [(_ expr)
-       (let ([sym (syntax expr)])
-         (unless (identifier? sym)
+       (let ([id-or-null (syntax expr)])
+         (unless (or (identifier? id-or-null)
+                     (null? (syntax-e id-or-null)))
            (teach-syntax-error
             'quote
             stx
             #f
-            "expected the name of the symbol after the quote, but found ~a"
-            (something-else sym)))
+            "expected the name of a symbol or () after the quote, but found ~a"
+            (something-else id-or-null)))
          (syntax/loc stx (quote expr)))]
       [_else (bad-use-error 'quote stx)]))
   

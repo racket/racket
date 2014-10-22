@@ -42,7 +42,7 @@
          (#x4b . divide)
          (71 . separator)
          (65 . decimal)
-         (76 . #\u3) ; numpad enter
+         (76 . numpad-enter) ; was #\u3 in earlier versions
          (82 . numpad0)
          (83 . numpad1)
          (84 . numpad2)

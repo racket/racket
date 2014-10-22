@@ -18,7 +18,7 @@
       (cons (subbytes b offset (+ offset len))
             (split-bytes b len (+ offset len)))))
 
-(define (write-gifs bms delay filename one-at-a-time? last-frame-delay loop?)
+(define (write-gifs bms delay filename one-at-a-time? last-frame-delay loop? disposal)
   (let* ([init (force-bm (car bms))]
          [w (send init get-width)]
          [h (send init get-height)])
@@ -46,10 +46,10 @@
                              (let-values ([(pixels colormap transparent)
                                            (quantize (argb-thunk))])
                                (when (or transparent delay)
-                                 (gif-add-control gif 'any #f (or delay 0) transparent))
+                                 (gif-add-control gif disposal #f (or delay 0) transparent))
                                (gif-add-image gif 0 0 w h #f colormap pixels)
                                (when (and last-frame-delay (eq? argb-thunk last-argb-thunk))
-                                 (gif-add-control gif 'any #f last-frame-delay transparent)
+                                 (gif-add-control gif disposal #f last-frame-delay transparent)
                                  (gif-add-image gif 0 0 w h #f colormap pixels))))
                            argb-thunks))
                (gif-end gif))))
@@ -69,7 +69,7 @@
                                  (gif-add-control gif 'any #f (or delay 0) transparent))
                                (gif-add-image gif 0 0 w h #f #f pixels)
                                (when (and last-frame-delay (eq? pixels last-pixels))
-                                 (gif-add-control gif 'any #f last-frame-delay transparent)
+                                 (gif-add-control gif disposal #f last-frame-delay transparent)
                                  (gif-add-image gif 0 0 w h #f colormap pixels)))
                              pixelss))
                  (gif-end gif)))))))))
@@ -84,12 +84,13 @@
         (filename (or/c path? string?)))
        (#:one-at-a-time? (one-at-a-time? any/c)
         #:last-frame-delay (last-frame-delay (or/c (integer-in 0 4294967295) false/c))
-        #:loop? (Loop? (delay) (lambda (x) (and delay #t))))
+        #:loop? (Loop? (delay) (lambda (x) (and delay #t)))
+        #:disposal (disposal (or/c 'any 'keep 'restore-bg 'restore-prev)))
        any)])
 
 (define (write-animated-gif bms delay filename
                             #:one-at-a-time? [one-at-a-time? #f]
                             #:last-frame-delay [last-frame-delay #f]
-                            #:loop? [loop? (and delay #t)])
-  (write-gifs bms delay filename one-at-a-time? last-frame-delay loop?))
-
+                            #:loop? [loop? (and delay #t)]
+                            #:disposal [disposal 'any])
+  (write-gifs bms delay filename one-at-a-time? last-frame-delay loop? disposal))

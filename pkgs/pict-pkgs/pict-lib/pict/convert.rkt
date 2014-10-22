@@ -1,7 +1,7 @@
 #lang racket/base
 (require "main.rkt"
-         racket/contract
-         texpict/private/convertible)
+         racket/contract/base
+         "private/convertible.rkt")
 
 (provide pict-convert pict-convertible?)
 (provide/contract

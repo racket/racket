@@ -5,9 +5,10 @@
          racket/match (prefix-in - (contract-req))
          "signatures.rkt"
          "check-below.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
-         (types utils abbrev union subtype type-table classes filter-ops remove-intersect)
+         (types utils abbrev union subtype type-table classes filter-ops remove-intersect resolve generalize)
          (private-in parse-type type-annotation syntax-properties)
          (rep type-rep filter-rep object-rep rep-utils)
+         (only-in (infer infer) restrict)
          (utils tc-utils)
          (env lexical-env tvar-env index-env scoped-tvar-env)
          racket/format racket/list
@@ -16,6 +17,8 @@
          unstable/syntax
          (only-in racket/list split-at)
          (typecheck internal-forms tc-envops)
+         unstable/sequence
+         racket/extflonum
          ;; Needed for current implementation of typechecking letrec-syntax+values
          (for-template (only-in racket/base letrec-values)
                        ;; see tc-app-contracts.rkt
@@ -111,7 +114,12 @@
          [_
           (ret (tc-literal #'val) -true-filter)])]
       ;; syntax
-      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) -true-filter)]
+      [(quote-syntax datum)
+       (define expected-type
+         (match expected
+           [(tc-result1: t) t]
+           [_ #f]))
+       (ret (find-stx-type #'datum expected-type) -true-filter)]
       ;; mutation!
       [(set! id val)
        (match-let* ([(tc-result1: id-t) (single-value #'id)]
@@ -277,3 +285,53 @@
            (tc-expr/check e-final expected)
            (check-body-form (first es) (continue (rest es)))))
      ((continue es))]))
+
+;; find-stx-type : Any [(or/c Type/c #f)] -> Type/c
+;; recursively find the type of either a syntax object or the result of syntax-e
+(define (find-stx-type datum-stx [expected #f])
+  (match datum-stx
+    [(? syntax? (app syntax-e stx-e))
+     (match (and expected (resolve (restrict expected (-Syntax Univ) 'orig)))
+       [(Syntax: t) (-Syntax (find-stx-type stx-e t))]
+       [_ (-Syntax (find-stx-type stx-e))])]
+    [(or (? symbol?) (? null?) (? number?) (? extflonum?) (? boolean?) (? string?) (? char?)
+         (? bytes?) (? regexp?) (? byte-regexp?) (? keyword?))
+     (tc-literal #`#,datum-stx expected)]
+    [(cons car cdr)
+     (match (and expected (resolve (restrict expected (-pair Univ Univ) 'orig)))
+       [(Pair: car-t cdr-t) (-pair (find-stx-type car car-t) (find-stx-type cdr cdr-t))]
+       [_ (-pair (find-stx-type car) (find-stx-type cdr))])]
+    [(vector xs ...)
+     (match (and expected (resolve (restrict expected -VectorTop 'orig)))
+       [(Vector: t)
+        (make-Vector
+         (check-below
+          (apply Un
+                 (for/list ([x (in-list xs)])
+                   (find-stx-type x t)))
+          t))]
+       [(HeterogeneousVector: ts)
+        (make-HeterogeneousVector
+         (for/list ([x (in-list xs)]
+                    [t (in-sequence-forever (in-list ts) #f)])
+           (cond-check-below (find-stx-type x t) t)))]
+       [_ (make-HeterogeneousVector (for/list ([x (in-list xs)])
+                                      (generalize (find-stx-type x #f))))])]
+    [(box x)
+     (match (and expected (resolve (restrict expected -BoxTop 'orig)))
+       [(Box: t) (-box (check-below (find-stx-type x t) t))]
+       [_ (-box (generalize (find-stx-type x)))])]
+    [(? hash? h)
+     (match (and expected (resolve (restrict expected -HashTop 'orig)))
+       [(Hashtable: kt vt)
+        (define kts (hash-map h (lambda (x y) (find-stx-type x kt))))
+        (define vts (hash-map h (lambda (x y) (find-stx-type y vt))))
+        (make-Hashtable
+         (check-below (apply Un kts) kt)
+         (check-below (apply Un vts) vt))]
+       [_ (make-Hashtable (generalize (apply Un (map find-stx-type (hash-keys h))))
+                          (generalize (apply Un (map find-stx-type (hash-values h)))))])]
+    [(? prefab-struct-key)
+     ;; FIXME is there a type for prefab structs?
+     Univ]
+    [_ Univ]))

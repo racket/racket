@@ -134,11 +134,17 @@
       (unless (or (= w -1) (= h -1))
         (if vertical?
             (let ([dx (quotient (- w THICKNESS value-w) 2)])
-              (MoveWindow slider-hwnd dx 0 THICKNESS h #T)
-              (MoveWindow value-hwnd (+ dx THICKNESS) (quotient (- h value-h) 2) value-w value-h #t))
+              (MoveWindow slider-hwnd (->screen dx) 0
+			  (->screen THICKNESS) (->screen h) #t)
+              (MoveWindow value-hwnd (->screen (+ dx THICKNESS)) (->screen (quotient (- h value-h) 2))
+			  (->screen value-w) (->screen value-h) #t))
             (let ([dy (quotient (- h THICKNESS value-h) 2)])
-              (MoveWindow slider-hwnd 0 dy w THICKNESS #t)
-              (MoveWindow value-hwnd (quotient (- w value-w) 2) (+ dy THICKNESS) value-w value-h #t))))))
+              (MoveWindow slider-hwnd 0 (->screen dy)
+			  (->screen w) (->screen THICKNESS) #t)
+              (MoveWindow value-hwnd (->screen (quotient (- w value-w) 2)) (->screen (+ dy THICKNESS))
+			  (->screen value-w) (->screen value-h) #t))))))
+
+  (define/override (size->screen v) (->screen* v))
 
   (define/override (control-scrolled)
     (when value-hwnd

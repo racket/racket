@@ -1237,7 +1237,8 @@
     #:exists 'truncate
     (lambda (o)
       (write-bytes bstr o)))
-  (parameterize ([current-namespace (make-base-namespace)]
+  (define first-namespace (make-base-namespace))
+  (parameterize ([current-namespace first-namespace]
                  [current-module-declare-name (make-resolved-module-path tmx)]
                  [current-load-relative-directory dir])
     (eval (parameterize ([read-accept-compiled #t])

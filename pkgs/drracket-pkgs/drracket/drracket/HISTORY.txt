@@ -1,9 +1,26 @@
 ------------------------------
+       Version 6.1.2
+------------------------------
+
+  . change the teaching languages to use #true, #false, and '()
+    for true, false, and empty
+
+------------------------------
        Version 6.1.1
 ------------------------------
 
   . added support for hiding the content of ellipsis-labelled sections
     in error messages
+
+  . remove 'print' mode from the Pretty Big language
+
+  . improve support for tooltips in Check Syntax
+
+  . DrRacket: drop numpad Enter treatment as force-evaluation
+    (see commit a41cc0c3c0 for details)
+
+  . macro expansion that exhausts memory no longer breaks DrRacket's
+    online expansion & check syntax
 
 ------------------------------
        Version 6.1

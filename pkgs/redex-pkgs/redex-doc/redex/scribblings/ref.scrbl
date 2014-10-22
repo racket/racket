@@ -1122,7 +1122,8 @@ reduce it further).
                                    (where/hidden pat @#,tttterm)
                                    (judgment-holds 
                                     (judgment-form-id pat/term ...))
-                                   (clause-name name)])]{
+                                   (clause-name name)
+                                   (code:line or @#,tttterm)])]{
 
 The @racket[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
@@ -1219,8 +1220,19 @@ ensures that there is a unique match for that case. Without
 it, @racket[(term (- (x x) x))] would lead to an ambiguous
 match.
 
-@history[#:changed "1.4" @list{Added @racket[#:post] conditions.}]
+The @racket[or] clause is used to define a form of conditional
+right-hand side of a metafunction. In particular, if any of the
+@racket[where] or @racket[side-condition] clauses fail, then
+evaluation continues after an @racket[or] clause, treating the
+term that follows as the result (subject to any subsequent
+@racket[where] clauses or @racket[side-condition]s. This construction
+is equivalent to simply duplicating the left-hand side of the
+clause, once for each @racket[or] expression, but signals to
+the typesetting library to use a large left curly brace to group
+the conditions in the @racket[or].
 
+@history[#:changed "1.4" @list{Added @racket[#:post] conditions.}]
+         #:changed "1.5" @list{Added @racket[or] clauses.}]
 }
 
 @defform[(define-metafunction/extension f language 
@@ -2198,6 +2210,22 @@ with @racket[#:satisfying].}
                     #:satisfying
                     (sum nat_1 nat_2 nat_3)
                     (equal? (term nat_1) (term nat_2)))]
+
+@defparam[depth-dependent-order? depth-dependent (or/c boolean? 'random)
+                                 #:value 'random]{
+
+Toggles whether or not Redex will dynamically adjust the
+chance that more recursive clauses of judgment forms or metafunctions 
+are chosen earlier when attempting to generate terms 
+with forms that use @racket[#:satisfying]. If it is @racket[#t],
+Redex favors more recursive clauses at
+lower depths and less recursive clauses at depths closer to the
+limit, in an attempt to generate larger terms. 
+When it is @racket[#f], all clause orderings have equal probability
+above the bound.
+By default, it is @racket['random], which causes Redex to
+choose between the two above alternatives with equal probability.
+}
 
 @defform/subs[(redex-generator language-id satisfying size-expr)
               ([satisfying (judgment-form-id @#,ttpattern ...)
@@ -3187,6 +3215,40 @@ This parameter controls the typesetting of metafunction definitions
 and applications. When it is non-@racket[#f] (the default), commas
 precede ellipses that represent argument sequences; when it is 
 @racket[#f] no commas appear in those positions.
+}
+
+@defparam[white-square-bracket make-white-square-bracket (-> boolean? pict?)]{
+This parameter controls the typesetting of the brackets in metafunction
+definitions and applications. It is called to supply the two white bracket
+picts. If @racket[#t] is supplied, the function should return the open 
+white bracket (to be used at the left-hand side of an application) and if
+@racket[#f] is supplied, the function should return the close white bracket.
+
+It's default value is @racket[default-white-square-bracket]. See also
+@racket[homemade-white-square-bracket].
+
+@history[#:added "1.1"]
+}
+
+@defproc[(homemade-white-square-bracket [open? boolean?]) pict?]{
+ This function implements the default way that older versions
+ of Redex typeset whitebrackets. It uses two overlapping
+ @litchar{[} and  @litchar{]} chars with a little whitespace between them.
+
+ @history[#:added "1.1"]
+}
+
+@defproc[(default-white-square-bracket [open? boolean?]) pict?]{
+ This function returns picts built using
+ @litchar{〚} and  @litchar{〛}
+ in the style @racket[default-style], using
+ @racket[current-text] and @racket[default-font-size].
+
+ If these result in picts that are more than 1/2 whitespace,
+ then 1/3 of the whitespace is trimmed from sides (trimmed
+ only from the left of the open and the right of the close).
+ 
+ @history[#:added "1.1"]
 }
 
 @defparam[linebreaks breaks (or/c #f (listof boolean?))]{

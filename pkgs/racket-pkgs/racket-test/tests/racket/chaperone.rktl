@@ -471,12 +471,20 @@
      (let* ([a1 (make-a 1 2)]
             [get #f]
             [set #f]
-            [a2 (chaperone-struct a1 a-y (lambda (an-a v) (set! get v) v)
-                                  set-a-x! (lambda (an-a v) (set! set v) v))]
+            [a2-chap #f]
+            [a2 (chaperone-struct a1 a-y (lambda (an-a v)
+                                           (test #t eq? an-a a2-chap)
+                                           (set! get v) 
+                                           v)
+                                  set-a-x! (lambda (an-a v)
+                                             (test #t eq? an-a a2-chap)
+                                             (set! set v)
+                                             v))]
             [p1 (make-p 100)]
             [p-get #f]
             [p2 (chaperone-struct p1 green-ref (lambda (p v) (set! p-get v) v))]
             [a3 (chaperone-struct a1 a-x (lambda (a y) y) prop:blue 8)])
+       (set! a2-chap a2)
        (test 2 a-y a1)
        (test #f values get)
        (test #f values set)
@@ -576,7 +584,42 @@
              (err/rt-test (a-x a3)))
            (begin
              (test 'bad a-x a2)
-             (test 'bad a-x a3)))))))
+             (test 'bad a-x a3)))))
+      (let* ([a1 (make-a 0 1)]
+             [a2 (chaperone-struct a1
+                                   a-x #f
+                                   set-a-x! #f
+                                   prop:blue 'blue)]
+             [a3 (chaperone-struct a1
+                                   set-a-x! #f
+                                   prop:blue 'cyan)])
+        (test #f eq? a1 a2)
+        (test #f eq? a1 a3)
+        (test #t eq? a1 (chaperone-struct a1
+                                          a-x #f
+                                          set-a-x! #f))
+        (test #t eq? a1 (chaperone-struct a1
+                                          set-a-x! #f))
+        (test 0 a-x a2)
+        (test (void) set-a-x! a2 1)
+        (test 1 a-x a2)
+        (test 'blue blue-ref a2)
+        (test 'cyan blue-ref a3))
+      (when is-chaperone
+        (let* ([p1 (make-p 0)]
+               [p2 (chaperone-struct p1
+                                     p-u #f
+                                     green-ref #f
+                                     prop:blue 'blue)])
+          (test #t eq? p1 (chaperone-struct p1
+                                            p-u #f
+                                            green-ref #f))
+          (test #t eq? p1 (chaperone-struct p1
+                                            p-u #f))
+          (test #t eq? p1 (chaperone-struct p1
+                                            p-u #f))
+          (test 0 p-u p2)
+          (test 'green green-ref p2)))))
 
 ;; test to see if the guard is actually called even when impersonated
 (let ()
@@ -1244,6 +1287,22 @@
 
 ;; ----------------------------------------
 
+;; Check internal stack-overflow handling:
+(let ()
+  (define-struct a (x [y #:mutable]))
+  (let* ([a1 (make-a 1 2)]
+         [a2 (impersonate-struct a1 set-a-y!
+                                 (lambda (s v)
+                                   (if (zero? v)
+                                       v
+                                       (let ([v (sub1 v)])
+                                         (set-a-y! s v)
+                                         v))))])
+    (set-a-y! a2 100000)
+    (test 99999 a-y a1)))
+
+;; ----------------------------------------
+
 (as-chaperone-or-impersonator
  ([chaperone-procedure impersonate-procedure])
  (let ()
@@ -1449,6 +1508,8 @@
 ;; ----------------------------------------
 
 (let ()
+  (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
+  (define-values (prop:green green? green-ref) (make-struct-type-property 'green 'can-impersonate))
   (define (a-impersonator-of v) (a-x v))
   (define a-equal+hash (list
                         (lambda (v1 v2 equal?)
@@ -1459,7 +1520,8 @@
                           (hash (aa-y v2)))))
   (define (aa-y v) (if (a? v) (a-y v) (pre-a-y v)))
   (define-struct pre-a (x y)
-    #:property prop:equal+hash a-equal+hash)
+    #:property prop:equal+hash a-equal+hash
+    #:property prop:green 'color)
   (define-struct a (x y)
     #:property prop:impersonator-of a-impersonator-of
     #:property prop:equal+hash a-equal+hash)
@@ -1492,6 +1554,27 @@
     (err/rt-test (impersonator-of? (make-a-new-impersonator a1 1) a1))
     (err/rt-test (impersonator-of? (make-a-new-equal a1 1) a1))
     (err/rt-test (equal? (make-a-new-equal a1 1) a1))
+
+    (define a-pre-a (chaperone-struct (make-pre-a 17 1) pre-a-y (lambda (a v) v)))
+    (test 1 pre-a-y a-pre-a)
+    (test #t chaperone-of? a-pre-a a-pre-a)
+    (test #t chaperone-of? (make-pre-a 17 1) (chaperone-struct (make-pre-a 17 1) pre-a-y #f prop:blue 'color))
+    (test #f chaperone-of? (make-pre-a 17 1) (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color))
+    (test #t chaperone-of? a-pre-a (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color))
+    (test #t chaperone-of? (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color) a-pre-a)
+    (test #f chaperone-of? a-pre-a (chaperone-struct a-pre-a pre-a-y (lambda (a v) v) prop:blue 'color))
+    (test #f chaperone-of? a-pre-a (chaperone-struct a-pre-a green-ref (lambda (a v) v)))
+
+    (define (exn:second-time? e) (and (exn? e) (regexp-match? #rx"same value as" (exn-message e))))
+    (err/rt-test (chaperone-struct (make-pre-a 1 2) pre-a-y #f pre-a-y #f) exn:second-time?)
+    (err/rt-test (chaperone-struct (make-pre-a 1 2) pre-a-y (lambda (a v) v) pre-a-y #f) exn:second-time?)
+    (err/rt-test (chaperone-struct (make-pre-a 1 2) pre-a-y #f pre-a-y (lambda (a v) v)) exn:second-time?)
+
+    (eq? a-pre-a (chaperone-struct a-pre-a pre-a-y #f))
+    (eq? a-pre-a (chaperone-struct a-pre-a green-ref #f))
+
+    (test #t impersonator-of? (make-pre-a 17 1) (chaperone-struct (make-pre-a 17 1) pre-a-y #f prop:blue 'color))
+    (test #f impersonator-of? (make-pre-a 17 1) (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color))
     (void)))
 
 ;; ----------------------------------------
@@ -1505,6 +1588,7 @@
      (λ (kwds kwd-args . args)
         (apply values kwd-args args))
      (λ args (apply values args))))
+  (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
   
   (define g1 (chaperone-procedure f1 wrapper))
   (define g2 (chaperone-procedure f2 wrapper))
@@ -1517,6 +1601,21 @@
   (test #t chaperone-of? g2 f2)
   (test #t chaperone-of? g3 f2)
   (test #f chaperone-of? g3 g2)
+
+  (test #t chaperone-of? g1 (chaperone-procedure g1 #f prop:blue 'color))
+  (test #t chaperone-of? g2 (chaperone-procedure g2 #f prop:blue 'color))
+  (test #t chaperone-of? g3 (chaperone-procedure g3 #f prop:blue 'color))
+  (test #t chaperone-of? f3 (chaperone-procedure f3 #f prop:blue 'color))
+  (test #f chaperone-of? f3 (chaperone-procedure g3 #f prop:blue 'color))
+
+  (test #t eq? f1 (chaperone-procedure f1 #f))
+  (test #t eq? f3 (chaperone-procedure f3 #f))
+  (test #f eq? f3 (chaperone-procedure f3 #f prop:blue 'color))
+  (test #f eq? f1 (chaperone-procedure f1 #f impersonator-prop:application-mark 'x))
+  (test #f eq? f1 (chaperone-procedure f1 #f impersonator-prop:application-mark (cons 1 2)))
+  (test 8 (chaperone-procedure f2 #f prop:blue 'color) #:key 8)
+  (test 88 (chaperone-procedure f3 #f prop:blue 'color) #:key 88)
+  (test 'color blue-ref (chaperone-procedure f3 #f prop:blue 'color))
 
   (test #t equal? g1 f1)
   (test #t equal? g2 f2)

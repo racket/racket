@@ -1,7 +1,7 @@
 (module face mzscheme
   (require racket/draw
-           texpict/mrpict
-           texpict/utils
+           pict/private/pict
+           pict/private/utils
            mzlib/class
            mzlib/math
            mzlib/etc

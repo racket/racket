@@ -27,7 +27,8 @@ transparent pixels in the generated GIF image.}
                              [filename path-string?]
                              [#:loop? loop? any/c (and delay-csec #t)]
                              [#:one-at-a-time? one-at-a-time? any/c #f]
-                             [#:last-frame-delay last-frame-delay (or/c (integer-in 0 #xFFFFFFFF) #f) #f])
+                             [#:last-frame-delay last-frame-delay (or/c (integer-in 0 #xFFFFFFFF) #f) #f]
+                             [#:disposal disposal (or/c 'any 'keep 'restore-bg 'restore-prev) 'any])
          void?]{
 
 Writes the bitmaps in @racket[bitmaps] to @racket[filename] as an
@@ -54,4 +55,9 @@ the resulting file large.
 
 If @racket[last-frame-delay] is not false, a delay of
 @racket[last-frame-delay] (in 1/100s of a second) is added to the last
-frame. This extra delay is useful when @racket[loop?] is true.}
+frame. This extra delay is useful when @racket[loop?] is true.
+
+The @racket[disposal] argument specifies the frame disposal method, which determines
+how the previous frame is treated when writing a transparent frame. The same
+disposal method is applied to every frame. See @racket[gif-add-control] for the
+meaning of the various disposal options.}

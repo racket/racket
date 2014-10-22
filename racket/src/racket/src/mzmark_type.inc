@@ -938,6 +938,7 @@ static int cont_proc_MARK(void *p, struct NewGC *gc) {
   gcMARK2(c->dw, gc);
   gcMARK2(c->prompt_tag, gc);
   gcMARK2(c->meta_continuation, gc);
+  gcMARK2(c->meta_continuation_src, gc);
   gcMARK2(c->common_dw, gc);
   gcMARK2(c->save_overflow, gc);
   gcMARK2(c->runstack_copied, gc);
@@ -980,6 +981,7 @@ static int cont_proc_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(c->dw, gc);
   gcFIXUP2(c->prompt_tag, gc);
   gcFIXUP2(c->meta_continuation, gc);
+  gcFIXUP2(c->meta_continuation_src, gc);
   gcFIXUP2(c->common_dw, gc);
   gcFIXUP2(c->save_overflow, gc);
   gcFIXUP2(c->runstack_copied, gc);

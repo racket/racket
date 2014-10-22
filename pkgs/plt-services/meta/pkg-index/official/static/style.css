@@ -6,6 +6,7 @@ a img {
     border: 0;
 }
 
+/*
 body {
     color: black;
     background-color: white;
@@ -13,28 +14,46 @@ body {
     margin: 0px;
     padding: 0px;
 }
+*/
 
 .breadcrumb {
     padding-left: 1em;
     padding-right: 1em;
-    background: #FFCC66;
+    background: black; /* #FFCC66; */
     font-size: 120%;
     font-weight: bold;
 }
 
 .breadcrumb a,span.not-this {
-    color: black;
-    text-decoration: none;
+    color: white;
+    /* text-decoration: none; */
     font-weight: normal;
 }
 
 .breadcrumb a:hover {
-    color: blue;
+    color: white;
     text-decoration: underline;
+}
+
+#packages_loading {
+    text-align: center;
+    font-size: 400%;
+    font-family: Sans-Serif;
+    margin: 1em;
+}
+
+#server_notice {
+    text-align: center;
+    background: #ffffcc;
+    padding-bottom: 0.25em;
+    color: black;
+    font-size: 75%;
+    font-weight: bold;
 }
 
 #logout {
     float: right;
+    color: white;
 }
 
 .content {
@@ -48,23 +67,38 @@ table.packages {
 }
 
 table.packages thead tr {
-    background: #FFCC66;
+    color: white;
+    background: black; /* #FFCC66; */
 }
 
+/*
 table.packages tbody tr.even {
     background: #F5F5DC;
 }
+*/
 
 .recent td:nth-child(1):before {
     content: "*";
     color: red;
 }
 
-#menu {
+#search_help {
     text-align: center;
-    width: 100%;
-    margin-top: 1em;
-    margin-bottom: 1em;
+    font-size: 80%;
+    margin-bottom: 0em;
+}
+#search_menu {
+    text-align: left;
+    width: 95%;
+    margin-left: 1em;
+    margin-right: 1em;
+    margin-top: 0em;
+    margin-bottom: 0.5em;
+}
+a.resetlink {
+    font-weight: bold;
+    font-size: 80%;
+    color: black;
 }
 
 .menu_option {
@@ -114,10 +148,15 @@ div.delete {
 }
 
 #footer {
-    width: 90%;
+    width: 100%;
     text-align: right;
-    background: #FFCC66;
+    color: white;
+    background: black; /* #FFCC66; */
     padding-right: 3em;
+}
+#footer a {
+    color: white;
+    font-weight: bold;
 }
 
 div.install {
@@ -151,11 +190,49 @@ a.possible {
     color: red;
 }
 
+#pi_edit_help {
+    text-align: center;
+    font-size: small;
+}
+
 tr#pi_delete_row td {
     text-align: center;
 }
 
+.packages thead th:nth-child(1) {
+    font-size: xx-small;
+}
+.packages tr td:nth-child(1) {
+    min-width: 1em;
+}
+.packages .authors a {
+    font-size: small;
+    display: block;
+    color: black;
+}
+.packages .doctags {
+    font-weight: bold;
+    display: block;
+}
+.packages .doctags a {
+    font-weight: normal;
+}
+.packages tr td:nth-child(4) {
+    width: 19em;
+}
+.packages tr td:nth-child(4) a {
+    text-decoration: none;
+}
+
+.build_green { background-color: #ccffcc; }
+.build_yellow { background-color: #ffffcc; }
+.build_red { background-color: #ffcccc; }
+
 /* racket nav */
+.navbar {
+    margin-bottom: 0px;
+}
+
 .racketnav {
   background-color: #000000;
   color: #ffffff;

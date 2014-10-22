@@ -410,10 +410,22 @@ static intptr_t find_same(char *p, char *low, intptr_t max_size)
     cnt++;
   }
 #else
-  while (max_size--) {
-    if (p[max_size] != low[max_size])
-      break;
-    cnt++;
+  if (!((intptr_t)p & (sizeof(intptr_t)-1))
+      && !((intptr_t)low & (sizeof(intptr_t)-1))) {
+    /* common case of aligned addresses: compare `intptr_t`s at a time */
+    max_size /= sizeof(intptr_t);
+    while (max_size--) {
+      if (((intptr_t *)p)[max_size] != ((intptr_t *)low)[max_size])
+        break;
+      cnt += sizeof(intptr_t);
+    }
+  } else {
+    /* general case: compare bytes */
+    while (max_size--) {
+      if (p[max_size] != low[max_size])
+        break;
+      cnt++;
+    }
   }
 #endif
 

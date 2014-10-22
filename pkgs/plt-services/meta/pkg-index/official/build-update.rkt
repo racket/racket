@@ -5,12 +5,11 @@
          racket/port
          net/http-client
          (prefix-in pkg: pkg/lib)
-         "common.rkt")
+         "common.rkt"
+         "notify.rkt")
 
 (define SUMMARY-HOST "pkg-build.racket-lang.org")
-(define SUMMARY-NAME "summary.rktd")
 (define SUMMARY-URL (string-append "/" SUMMARY-NAME))
-(define SUMMARY-PATH (build-path cache-path SUMMARY-NAME))
 (define SUMMARY-ETAG-PATH (build-path cache-path (format "~a.etag" SUMMARY-NAME)))
 
 (define (extract-tag hs)
@@ -68,9 +67,22 @@
 
     (rename-file-or-directory new-file SUMMARY-PATH #t)))
 
+(define (do-build-update! l)
+  (notify! "package build status being checked for updates")
+  (build-update!)
+  (notify! ""))
+(define (run-build-update!)
+  (run! do-build-update! empty))
+(define (signal-build-update!)
+  (thread (λ () (run-build-update!))))
+
+(provide do-build-update!
+         run-build-update!
+         signal-build-update!)
+
 (module+ main
   (require racket/cmdline)
   (command-line
    #:program "build-update"
    #:args ()
-   (build-update!)))
+   (do-build-update! empty)))

@@ -32,7 +32,7 @@
                  pretty-format-type)))
 (provide-printer)
 
-(provide special-dots-printing? print-complex-filters?
+(provide print-complex-filters? type-output-sexpr-tweaker
          current-print-type-fuel current-print-unexpanded)
 
 
@@ -42,7 +42,7 @@
 ;; do we use simple type aliases in printing
 (define print-aliases #t)
 
-(define special-dots-printing? (make-parameter #f))
+(define type-output-sexpr-tweaker (make-parameter values))
 (define print-complex-filters? (make-parameter #f))
 
 ;; this parameter controls how far down the type to expand type names
@@ -58,16 +58,12 @@
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Listof<Symbol>]
 (define (has-name? t)
-  (cond 
-   [print-aliases
-    (define candidates 
-      (for/list ([(n t*) (in-pairs (in-list (force (current-type-names))))]
-		 #:when (and (Type? t*) (type-equal? t t*)))
-	 n))
-    (if (null? candidates)
-        #f
-        (sort candidates string>? #:key symbol->string))]
-   [else #f]))
+  (define candidates
+    (for/list ([(n t*) (in-pairs (in-list (force (current-type-names))))]
+               #:when (and print-aliases (Type? t*) (type-equal? t t*)))
+      n))
+  (and (pair? candidates)
+       (sort candidates string>? #:key symbol->string #:cache-keys? #t)))
 
 ;; print-<thing> : <thing> Output-Port Boolean -> Void
 ;; print-type also takes an optional (Listof Symbol)
@@ -98,7 +94,8 @@
   (port-count-lines! out)
   (write-string (make-string indent #\space) out)
   (parameterize ([pretty-print-current-style-table type-style-table])
-    (pretty-display (type->sexp type '()) out))
+    (pretty-display ((type-output-sexpr-tweaker) (type->sexp type '()))
+                    out))
   (string-trim #:left? #f (substring (get-output-string out) indent)))
 
 ;; filter->sexp : Filter -> S-expression
@@ -204,12 +201,6 @@
 (define (arr->sexp arr)
   (match arr
     [(arr: dom rng rest drest kws)
-     (define out (open-output-string))
-     (define (fp . args) (apply fprintf out args))
-     (define (fp/filter fmt ret . rest)
-       (if (print-complex-filters?)
-           (apply fp fmt ret rest)
-           (fp "-> ~a" ret)))
      (append
       (list '->)
       (map type->sexp dom)
@@ -223,17 +214,8 @@
            (if req?
                (format "~a ~a" k (type->sexp t))
                (format "[~a ~a]" k (type->sexp t)))]))
-      (if rest
-          (list (type->sexp rest) (if (special-dots-printing?) '...* '*))
-          null)
-      (if drest
-          (if (special-dots-printing?)
-              (list (type->sexp (car drest))
-                    (string->symbol (format "...~a" (cdr drest))))
-              (list (type->sexp (car drest))
-                    '...
-                    (cdr drest)))
-          null)
+      (if rest  `(,(type->sexp rest) *)                       null)
+      (if drest `(,(type->sexp (car drest)) ... ,(cdr drest)) null)
       (match rng
         [(AnyValues: (Top:)) '(AnyValues)]
         [(AnyValues: f) `(AnyValues : ,(filter->sexp f))]
@@ -273,8 +255,6 @@
 ;; format->* : (Listof arr) -> S-Expression
 ;; Format arrs that correspond to a ->* type
 (define (format->* arrs)
-  (define out (open-output-string))
-  (define (fp . args) (apply fprintf out args))
   ;; see type-contract.rkt, which does something similar and this code
   ;; was stolen from/inspired by/etc.
   (match* ((first arrs) (last arrs))
@@ -474,12 +454,7 @@
      (define-values (covered remaining) (cover-union type ignored-names))
      (cons 'U (append covered (map t->s remaining)))]
     [(Pair: l r) `(Pairof ,(t->s l) ,(t->s r))]
-    [(ListDots: dty dbound)
-     (define dbound*
-       (if (special-dots-printing?)
-           (list (string->symbol (format "...~a" dbound)))
-           (list '... dbound)))
-     `(List ,(t->s dty) ,@dbound*)]
+    [(ListDots: dty dbound) `(List ,(t->s dty) ... ,dbound)]
     [(F: nm) nm]
     ;; FIXME (Values are not types and shouldn't need to be considered here
     [(AnyValues: (Top:)) 'AnyValues]

@@ -22,6 +22,19 @@
   #:variables (rest)
   #:exactly-once)
 
+(define-rewrite bug1-typed
+  ((:lookup-Γ Γ v_0 τ_0) 
+   (:lookup-Γ Γ v_1 τ_1)
+   . rest)
+  ==> 
+  ((:lookup-Γ Γ v_0 τ_0) 
+   (:lookup-Γ Γ v_0 τ_1)
+   . rest)
+  #:context (define-judgment-form)
+  #:variables (rest)
+  #:exactly-once)
+
+
 (define-rewrite return-stopped-rw
   (let ([closure (apply-reduction-relation* 
                          red
@@ -62,9 +75,18 @@
 
 (include/rewrite (lib "redex/examples/list-machine/list-machine-typing.rkt") list-machine-typing bug1)
 
-(include/rewrite "generators.rkt" generators bug-mod-rw return-stopped-rw)
+(include/rewrite (lib "redex/benchmark/models/list-machine/ls-typed-gen.rkt") ls-typed-gen bug1-typed)
+
+(define-rewrite bug-mod3
+  redex/benchmark/list-machine/ls-typed-gen
+  ==>
+  (submod ".." ls-typed-gen)
+  #:context (require))
+
+(include/rewrite "generators.rkt" generators bug-mod-rw return-stopped-rw bug-mod3)
 
 (define small-counter-example
-  (term (l0 : (begin (cons v0 Z v0) halt) end)))
+  (term ((l0 : (begin (cons v0 Z v0) halt) end)
+         (l0 : (v0 : nil empty) empty))))
 
 (test small-counter-example)

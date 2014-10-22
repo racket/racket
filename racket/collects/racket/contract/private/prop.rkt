@@ -42,7 +42,16 @@
          
          prop:orc-contract
          prop:orc-contract?
-         prop:orc-contract-get-subcontracts)
+         prop:orc-contract-get-subcontracts
+         
+         prop:recursive-contract
+         prop:recursive-contract?
+         prop:recursive-contract-unroll
+         
+         prop:arrow-contract 
+         prop:arrow-contract?
+         prop:arrow-contract-get-info
+         (struct-out arrow-contract-info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -97,17 +106,44 @@
   (and get-projection 
        (get-projection c)))
 
+(define trail (make-parameter #f))
 (define (contract-struct-stronger? a b)
   (define prop (contract-struct-property a))
   (define stronger? (contract-property-stronger prop))
-  (let loop ([b b])
-    (cond
-      [(stronger? a b) #t]
-      [(prop:orc-contract? b)
-       (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
-       (for/or ([sub-contract (in-list sub-contracts)])
-         (loop sub-contract))]
-      [else #f])))
+  (cond
+    [(let ([th (trail)])
+       (and th
+            (for/or ([(a2 bs-h) (in-hash th)])
+              (and (eq? a a2)
+                   (for/or ([(b2 _) (in-hash bs-h)])
+                     (eq? b b2))))))
+     #t]
+    [(or (prop:recursive-contract? a) (prop:recursive-contract? b))
+     (parameterize ([trail (or (trail) (make-hasheq))])
+       (define trail-h (trail))
+       (let ([a-h (hash-ref trail-h a #f)])
+         (cond
+           [a-h
+            (hash-set! a-h b #t)]
+           [else
+            (define a-h (make-hasheq))
+            (hash-set! trail-h a a-h)
+            (hash-set! a-h b #t)]))
+       (contract-struct-stronger? (if (prop:recursive-contract? a)
+                                      ((prop:recursive-contract-unroll a) a)
+                                      a)
+                                  (if (prop:recursive-contract? b)
+                                      ((prop:recursive-contract-unroll b) b)
+                                      b)))]
+    [else
+     (let loop ([b b])
+       (cond
+         [(stronger? a b) #t]
+         [(prop:orc-contract? b)
+          (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
+          (for/or ([sub-contract (in-list sub-contracts)])
+            (loop sub-contract))]
+         [else #f]))]))
 
 (define (contract-struct-generate c)
   (define prop (contract-struct-property c))
@@ -446,3 +482,22 @@
 ;; returns a list of contracts that were the original arguments to the or/c
 (define-values (prop:orc-contract prop:orc-contract? prop:orc-contract-get-subcontracts)
   (make-struct-type-property 'prop:orc-contract))
+
+;; property should be bound to a function that accepts the contract
+;; and returns a new contract, after unrolling one time
+(define-values (prop:recursive-contract
+                prop:recursive-contract?
+                prop:recursive-contract-unroll)
+  (make-struct-type-property 'prop:recursive-contract))
+
+;; get-info : (-> ctc arrow-contract-info?)
+(define-values (prop:arrow-contract prop:arrow-contract? prop:arrow-contract-get-info)
+  (make-struct-type-property 'prop:arrow-contract))
+
+;; chaperone-procedure : 
+;;   (-> any/c[val] blame? procedure[suitable for second argument to chaperone-procedure])
+;; check-first-order : any/c[val] blame? -> void? 
+;;     raises a blame error if val doesn't satisfy the first-order checks for the function
+;; accepts-arglist : (-> (listof keyword?)[sorted by keyword<?] exact-nonnegative-integer? boolean?)
+(struct arrow-contract-info (chaperone-procedure check-first-order accepts-arglist)
+  #:transparent)

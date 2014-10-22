@@ -1034,6 +1034,8 @@ static void *allocate_big(const size_t request_size_bytes, int type)
      aligned for Sparcs. */
   allocate_size = COMPUTE_ALLOC_SIZE_FOR_BIG_PAGE_SIZE(request_size_bytes);
 
+  gc_if_needed_account_alloc_size(gc, allocate_size);
+
   /* We not only need APAGE_SIZE alignment, we
      need everything consisently mapped within an APAGE_SIZE
      segment. So round up. */
@@ -5116,14 +5118,25 @@ static void free_child_gc(void)
   gen0_free_big_pages(gc);
   gen0_free_entire_nursery(gc);
 
+  /* First, unprotect all pages. It's important to "queue" up all this work
+     as a batch to minimize commuincation with the OS and avoid fragmenting
+     the OS's table (in the case of Linux) that tracks page permissions. */
+  for(i = 0; i < PAGE_TYPES; i++) {
+    if(i != PAGE_ATOMIC) {
+      for (work = gc->gen1_pages[i]; work; work = next) {
+        next = work->next;
+        if (work->mprotected) {
+          work->mprotected = 0;
+          mmu_queue_write_unprotect_range(gc->mmu, work->addr, real_page_size(work), page_mmu_type(work), &work->mmu_src_block);
+        }
+      }
+    }
+  }
+  mmu_flush_write_unprotect_ranges(gc->mmu);
+
   for(i = 0; i < PAGE_TYPES; i++) {
     for (work = gc->gen1_pages[i]; work; work = next) {
       next = work->next;
-
-      if (work->mprotected)
-      {
-        mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
-      }
       GCVERBOSEPAGE(gc, "Cleaning up GC DYING", work);
       gen1_free_mpage(pagemap, work);
     }

@@ -463,10 +463,10 @@ Certain encoding combinations are always available:
    include UTF-16 code units that are unpaired surrogates, and the
    corresponding output includes an encoding of each surrogate in a
    natural extension of UTF-8. On @|AllUnix|, surrogates are
-   assumed to be paired: a pair of bytes with the bits @racket[#xD800]
-   starts a surrogate pair, and the @racket[#x03FF] bits are used from
+   assumed to be paired: a pair of bytes with the bits @code{#xD800}
+   starts a surrogate pair, and the @code{#x03FF} bits are used from
    the pair and following pair (independent of the value of the
-   @racket[#xDC00] bits). On all platforms, performance may be poor
+   @code{#xDC00} bits). On all platforms, performance may be poor
    when decoding from an odd offset within an input byte string.}
 
  ]

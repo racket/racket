@@ -101,12 +101,20 @@
                  . cells)
   (let* ([rows (length cells)]
          [cols (apply =! (map length cells))]
-         [picts (map elem->pict (append* cells))]
-         [haligns (for/list ([i (in-range 0 cols)]) halign)]
-         [valigns (for/list ([i (in-range 0 rows)]) valign)]
-         [hseps (for/list ([i (in-range 1 cols)]) hgap)]
-         [vseps (for/list ([i (in-range 1 rows)]) vgap)])
-    (table cols picts haligns valigns hseps vseps)))
+         [picts (map elem->pict (append* cells))])
+    (table cols picts halign valign hgap vgap)))
+
+(module+ test
+  (void (tabular
+         (list (colorize (frame (filled-rectangle 8 8)
+                                #:color "black" #:line-width 1)
+                         "white")
+               (text "Before" '() 7))
+         (list (colorize (frame (filled-rectangle 8 8)
+                                #:color "black" #:line-width 1)
+                         "Dark Gray")
+               (text "After" '() 7))
+         #:gap 5 #:valign cc-superimpose)))
 
 (define (matrixof c)
   (and/c (listof (listof c))

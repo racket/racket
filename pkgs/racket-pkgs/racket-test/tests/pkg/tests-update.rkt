@@ -9,7 +9,6 @@
          racket/path
          racket/list
          racket/format
-         pkg/util
          "shelly.rkt"
          "util.rkt")
 

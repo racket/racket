@@ -6,7 +6,10 @@
 When a Racket procedure takes a filesystem path as an argument, the
 path can be provided either as a string or as an instance of the
 @deftech{path} datatype. If a string is provided, it is converted to a
-path using @racket[string->path]. A Racket procedure that generates a
+path using @racket[string->path]. Beware that some paths may not
+be representable as strings; see @secref["unixpathrep"] and
+@secref["windowspathrep"] for more information.
+A Racket procedure that generates a
 filesystem path always generates a @tech{path} value.
 
 By default, paths are created and manipulated for the current
@@ -33,8 +36,8 @@ path before using it. Procedures that build paths or merely check the
 form of a path do not cleanse paths, with the exceptions of
 @racket[cleanse-path], @racket[expand-user-path], and
 @racket[simplify-path].  For more information about path cleansing and
-other platform-specific details, see @secref["unixpaths"] for
-@|AllUnix| paths and @secref["windowspaths"] for Windows paths.
+other platform-specific details, see @secref["unixpaths"] and
+@secref["windowspaths"].
 
 @;------------------------------------------------------------------------
 @section{Manipulating Paths}
@@ -56,35 +59,49 @@ current platform or a non-empty string without nul characters,
 Returns @racket[#t] if @racket[v] is a path value for some platform
 (not a string), @racket[#f] otherwise.}
 
+
 @defproc[(string->path [str string?]) path?]{
 
-Produces a path whose byte-string name is
-@racket[(string->bytes/locale string (char->integer #\?))].
+Produces a path whose byte-string encoding is
+@racket[(string->bytes/locale str (char->integer #\?))] on @|AllUnix|
+or @racket[(string->bytes/utf-8 str)] on Windows.
 
 Beware that the current locale might not encode every string, in which
 case @racket[string->path] can produce the same path for different
 @racket[str]s. See also @racket[string->path-element], which should be
 used instead of @racket[string->path] when a string represents a
-single @tech{path element}.
+single @tech{path element}. For information on how strings and byte
+strings encode paths, see @secref["unixpathrep"] and
+@secref["windowspathrep"].
 
-See also @racket[string->some-system-path].}
+See also @racket[string->some-system-path], and see
+@secref["unixpathrep"] and @secref["windowspathrep"] for information
+on how strings encode paths.
+
+@history[#:changed "6.1.1.1" @elem{Changed Windows conversion to always use UTF-8.}]}
+
 
 @defproc[(bytes->path [bstr bytes?]
                       [type (or/c 'unix 'windows) (system-path-convention-type)])
          path?]{
 
-Produces a path (for some platform) whose byte-string name is
+Produces a path (for some platform) whose byte-string encoding is
 @racket[bstr]. The optional @racket[type] specifies the convention to
 use for the path.
 
 For converting relative @tech{path elements} from literals, use instead
 @racket[bytes->path-element], which applies a suitable encoding for
-individual elements.}
+individual elements.
+
+For information on how byte strings encode paths, see
+@secref["unixpathrep"] and @secref["windowspathrep"].}
+
 
 @defproc[(path->string [path path?]) string?]{
 
 Produces a string that represents @racket[path] by decoding
-@racket[path]'s byte-string name using the current locale's encoding;
+@racket[path]'s byte-string encoding using the current locale
+on @|AllUnix| and by using UTF-8 on Windows. In the former case,
 @litchar{?} is used in the result string where encoding fails, and if
 the encoding result is the empty string, then the result is
 @racket["?"].
@@ -101,11 +118,14 @@ instead, to avoid special encodings use to represent some relative
 paths. See @secref["windowspaths"] for specific information about
 the conversion of Windows paths.
 
-See also @racket[some-system-path->string].}
+See also @racket[some-system-path->string].
+
+@history[#:changed "6.1.1.1" @elem{Changed Windows conversion to always use UTF-8.}]}
+
 
 @defproc[(path->bytes [path path-for-some-system?]) bytes?]{
 
-Produces @racket[path]'s byte string representation. No information is
+Produces @racket[path]'s byte-string representation. No information is
 lost in this translation, so that @racket[(bytes->path (path->bytes
 path) (path-convention-type path))] always produces a path that is
 @racket[equal?] to @racket[path]. The @racket[path] argument can be a
@@ -116,23 +136,26 @@ unmarshaling paths, but manipulating the byte form of a path is
 generally a mistake. In particular, the byte string may start with a
 @litchar{\\?\REL} encoding for Windows paths. Instead of
 @racket[path->bytes], use @racket[split-path] and
-@racket[path-element->bytes] to manipulate individual @tech{path elements}.}
+@racket[path-element->bytes] to manipulate individual @tech{path elements}.
+
+For information on how byte strings encode paths, see
+@secref["unixpathrep"] and @secref["windowspathrep"].}
+
 
 @defproc[(string->path-element [str string?]) path?]{
 
 Like @racket[string->path], except that @racket[str] corresponds to a
 single relative element in a path, and it is encoded as necessary to
-convert it to a path. See @secref["unixpaths"] for more information
-on the conversion for @|AllUnix| paths, and see
-@secref["windowspaths"] for more information on the conversion for
-Windows paths.
+convert it to a path. See @secref["unixpaths"] and
+@secref["windowspaths"] for more information on the conversion of
+paths.
 
 If @racket[str] does not correspond to any @tech{path element}
 (e.g., it is an absolute path, or it can be split), or if it
 corresponds to an up-directory or same-directory indicator on
 @|AllUnix|, then @exnraise[exn:fail:contract].
 
-As for @racket[path->string], information can be lost from
+Like @racket[path->string], information can be lost from
 @racket[str] in the locale-specific conversion to a path.}
 
 
@@ -157,7 +180,7 @@ other path is deconstructed with @racket[split-path] and
 Like @racket[path->string], except that trailing path separators are
 removed (as by @racket[split-path]). On Windows, any
 @litchar{\\?\REL} encoding prefix is also removed; see
-@secref["windowspaths"] for more information on Windows paths.
+@secref["windowspaths"] for more information.
 
 The @racket[path] argument must be such that @racket[split-path]
 applied to @racket[path] would return @racket['relative] as its first
@@ -245,9 +268,8 @@ is empty or contains a nul character), the
 The @racket[build-path] procedure builds a path @italic{without}
 checking the validity of the path or accessing the filesystem.
 
-See @secref["unixpaths"] for more information on the construction
-of @|AllUnix| paths, and see @secref["windowspaths"] for more
-information on the construction of Windows paths.
+See @secref["unixpaths"] and @secref["windowspaths"] for more
+information on the construction of paths.
 
 The following examples assume that the current directory is
 @filepath{/home/joeuser} for Unix examples and @filepath{C:\Joe's Files} for
@@ -420,9 +442,8 @@ true, but the source or simplified path might be a non-existent path. If
 still involve a cycle of links if the cycle did not inhibit the
 simplification).
 
-See @secref["unixpaths"] for more information on simplifying
-@|AllUnix| paths, and see @secref["windowspaths"] for more
-information on simplifying Windows paths.}
+See @secref["unixpaths"] and @secref["windowspaths"] for more
+information on simplifying paths.}
  
 
 @defproc[(normal-case-path [path (or/c path-string? path-for-some-system?)])
@@ -489,9 +510,8 @@ platform, and resulting paths for the same platform.
 
 This procedure does not access the filesystem.
 
-See @secref["unixpaths"] for more information on splitting
-@|AllUnix| paths, and see @secref["windowspaths"] for more
-information on splitting Windows paths.}
+See @secref["unixpaths"] and @secref["windowspaths"] for more
+information on splitting paths.}
 
 
 @defproc[(explode-path [path (or/c path-string? path-for-some-system?)])

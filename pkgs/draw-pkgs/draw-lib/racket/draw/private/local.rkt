@@ -47,6 +47,7 @@
   reset-cr
   flush-cr
   init-cr-matrix
+  init-effective-matrix
   get-font-metrics-key
   install-color
   dc-adjust-smoothing

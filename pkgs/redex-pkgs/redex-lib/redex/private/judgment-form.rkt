@@ -145,7 +145,9 @@
 ;; ct-lang is an identifier  guaranteed to be bound by define-language
 ;;   that can be used to call rewrite-side-conditions/check-errs, but
 ;;   some extension of that language may end up being bound to rt-lang
-(define-for-syntax (bind-withs orig-name main rt-lang lang-nts ct-lang stx where-mode body names w/ellipses side-condition-unquoted? jf-results-id)
+(define-for-syntax (bind-withs orig-name main rt-lang lang-nts ct-lang stx
+                               where-mode body names w/ellipses
+                               side-condition-unquoted? jf-results-id)
   (with-disappeared-uses
    (let loop ([stx stx]
               [to-not-be-in main]
@@ -180,7 +182,8 @@
                      [(predicate)
                       #'combine-where-results/predicate]
                      [else (error 'unknown-where-mode "~s" where-mode)])
-                 (match-pattern (compile-pattern #,rt-lang `side-conditions-rewritten #t) (term e #:lang #,ct-lang))
+                 (match-pattern (compile-pattern #,rt-lang `side-conditions-rewritten #t)
+                                (term e #:lang #,ct-lang))
                  (λ (bindings)
                    (let ([x (lookup-binding bindings 'names)] ...)
                      (and binding-constraints ...
@@ -195,7 +198,7 @@
             #`(and (term s) ... #,(loop #'(y ...) to-not-be-in env)))]
        [((fresh x) y ...)
         (identifier? #'x)
-        #`(term-let ([x (variable-not-in #,to-not-be-in 'x)]) 
+        #`(term-let ([x (variable-not-in #,to-not-be-in 'x)])
                     #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) env))]
        [((fresh x name) y ...)
         (identifier? #'x)
@@ -205,7 +208,7 @@
                     #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) env))]
        [((fresh (y) (x ...)) z ...)
         #`(term-let ([(y #,'...)
-                      (variables-not-in #,to-not-be-in 
+                      (variables-not-in #,to-not-be-in
                                         (map (λ (_ignore_) 'y)
                                              (term (x ...))))])
                     #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) env))]
@@ -220,40 +223,44 @@
         (loop (cons #'j #'after) to-not-be-in env)]
        [((form-name pats ...) . after)
         (judgment-form-id? #'form-name)
-        (let*-values ([(premise) (syntax-case stx () [(p . _) #'p])]
-                      [(rest-clauses under-ellipsis?)
-                       (syntax-case #'after ()
-                         [(maybe-ellipsis . more)
-                          (ellipsis? #'maybe-ellipsis)
-                          (values #'more #t)]
-                         [_ (values #'after #f)])]
-                      [(judgment-form) (lookup-judgment-form-id #'form-name)]
-                      [(mode) (judgment-form-mode judgment-form)]
-                      [(judgment-proc) (judgment-form-proc judgment-form)]
-                      [(input-template output-pre-pattern) 
-                       (let-values ([(in out) (split-by-mode (syntax->list #'(pats ...)) mode)])
-                         (if under-ellipsis?
-                             (let ([ellipsis (syntax/loc premise (... ...))])
-                               (values #`(#,in #,ellipsis) #`(#,out #,ellipsis)))
-                             (values in out)))]
-                      [(syncheck-exp output-pattern output-names output-names/ellipses)
-                       (with-syntax ([(syncheck-exp output names names/ellipses)
-                                      (rewrite-side-conditions/check-errs ct-lang orig-name #t output-pre-pattern)])
-                         (values #'syncheck-exp
-                                 #'output
-                                 (syntax->list #'names)
-                                 (syntax->list #'names/ellipses)))]
-                      [(binding-constraints temporaries env+)
-                       (generate-binding-constraints output-names output-names/ellipses env orig-name)]
-                      [(rest-body) (loop rest-clauses #`(list judgment-output #,to-not-be-in) env+)]
-                      [(call)
-                       (let ([input (quasisyntax/loc premise (term #,input-template #:lang #,ct-lang))])
-                         (define (make-traced input)
-                           (quasisyntax/loc premise
-                             (call-judgment-form 'form-name #,judgment-proc '#,mode #,input #,(if jf-results-id #''() #f))))
-                         (if under-ellipsis?
-                             #`(repeated-premise-outputs #,input (λ (x) #,(make-traced #'x)))
-                             (make-traced input)))])
+        (let ()
+          (define premise (syntax-case stx () [(p . _) #'p]))
+          (define-values (rest-clauses under-ellipsis?)
+            (syntax-case #'after ()
+              [(maybe-ellipsis . more)
+               (ellipsis? #'maybe-ellipsis)
+               (values #'more #t)]
+              [_ (values #'after #f)]))
+          (define judgment-form (lookup-judgment-form-id #'form-name))
+          (define mode (judgment-form-mode judgment-form))
+          (define judgment-proc (judgment-form-proc judgment-form))
+          (define-values (input-template output-pre-pattern)
+            (let-values ([(in out) (split-by-mode (syntax->list #'(pats ...)) mode)])
+              (if under-ellipsis?
+                  (let ([ellipsis (syntax/loc premise (... ...))])
+                    (values #`(#,in #,ellipsis) #`(#,out #,ellipsis)))
+                  (values in out))))
+          (define-values (syncheck-exp output-pattern output-names output-names/ellipses)
+            (with-syntax ([(syncheck-exp output names names/ellipses)
+                           (rewrite-side-conditions/check-errs ct-lang orig-name #t
+                                                               output-pre-pattern)])
+              (values #'syncheck-exp
+                      #'output
+                      (syntax->list #'names)
+                      (syntax->list #'names/ellipses))))
+          (define-values (binding-constraints temporaries env+)
+            (generate-binding-constraints output-names output-names/ellipses env orig-name))
+          (define rest-body
+            (loop rest-clauses #`(list judgment-output #,to-not-be-in) env+))
+          (define call
+            (let ([input (quasisyntax/loc premise (term #,input-template #:lang #,ct-lang))])
+              (define (make-traced input)
+                (quasisyntax/loc premise
+                  (call-judgment-form 'form-name #,judgment-proc '#,mode #,input
+                                      #,(if jf-results-id #''() #f))))
+              (if under-ellipsis?
+                  #`(repeated-premise-outputs #,input (λ (x) #,(make-traced #'x)))
+                  (make-traced input))))
           (record-disappeared-uses (list #'form-name))
           (with-syntax ([(output-name ...) output-names]
                         [(output-name/ellipsis ...) output-names/ellipses]
@@ -444,7 +451,9 @@
      (begin
        (unless (identifier? #'lang)
          (raise-syntax-error #f "expected an identifier in the language position" stx #'lang))
-       (define-values (contract-name dom-ctcs pre-condition codom-contracts post-condition pats)
+       (define-values (contract-name dom-ctcs pre-condition 
+                                     codom-contracts codom-seps post-condition
+                                     pats)
          (split-out-contract stx (syntax-e #'def-form-id) #'body #t))
        (with-syntax* ([((name trms ...) rest ...) (car pats)]
                       [(mode-stx ...) #`(#:mode (name I))]
@@ -462,7 +471,8 @@
   ;; initial test determines if a contract is specified or not
   (cond
     [(pair? (syntax-e (car (syntax->list rest))))
-     (values #f #f #f (list #'any) #f (check-clauses stx syn-error-name (syntax->list rest) relation?))]
+     (values #f #f #f (list #'any) '() #f 
+             (check-clauses stx syn-error-name (syntax->list rest) relation?))]
     [else
      (syntax-case rest ()
        [(id separator more ...)
@@ -475,7 +485,8 @@
                (raise-syntax-error syn-error-name 
                                    "expected clause definitions to follow domain contract"
                                    stx))
-             (values #'id contract #f (list #'any) #f (check-clauses stx syn-error-name clauses #t)))]
+             (values #'id contract #f (list #'any) '() #f
+                     (check-clauses stx syn-error-name clauses #t)))]
           [else
            (unless (eq? ': (syntax-e #'separator))
              (raise-syntax-error syn-error-name "expected a colon to follow the meta-function's name" stx #'separator))
@@ -485,10 +496,12 @@
                [(null? more)
                 (raise-syntax-error syn-error-name "expected an ->" stx)]
                [(eq? (syntax-e (car more)) '->)
-                (define-values (raw-clauses rev-codomains pre-condition post-condition)
+                (define-values (raw-clauses rev-codomains rev-codomain-separators
+                                            pre-condition post-condition)
                   (let loop ([prev (car more)]
                              [more (cdr more)]
-                             [codomains '()])
+                             [codomains '()]
+                             [codomain-separators '()])
                     (cond
                       [(null? more)
                        (raise-syntax-error syn-error-name
@@ -497,14 +510,15 @@
                        (define after-this-one (cdr more))
                        (cond
                          [(null? after-this-one)
-                          (values null (cons (car more) codomains) #t #t)]
+                          (values null (cons (car more) codomains) codomain-separators #t #t)]
                          [else
                           (define kwd (cadr more))
                           (cond
                             [(member (syntax-e kwd) '(or ∨ ∪))
                              (loop kwd 
                                    (cddr more)
-                                   (cons (car more) codomains))]
+                                   (cons (car more) codomains)
+                                   (cons (syntax-e kwd) codomain-separators))]
                             [(and (not relation?) 
                                   (or (equal? (syntax-e kwd) '#:pre)
                                       (equal? (syntax-e kwd) '#:post)))
@@ -534,11 +548,13 @@
                                 (set! post (caddr more))])
                              (values remainder
                                      (cons (car more) codomains)
+                                     codomain-separators
                                      pre 
                                      post)]
                             [else
                              (values (cdr more)
                                      (cons (car more) codomains)
+                                     codomain-separators
                                      #t
                                      #t)])])])))
                 (let ([doms (reverse dom-pats)]
@@ -547,6 +563,7 @@
                           doms
                           (if relation? #f pre-condition)
                           (reverse rev-codomains)
+                          (reverse rev-codomain-separators)
                           (if relation? #f post-condition)
                           clauses))]
                [else
@@ -1099,7 +1116,8 @@
 
 (define-syntax (generate-lws stx)
   (syntax-case stx ()
-    [(_ relation? seq-of-lhs seq-of-lhs-for-lw seq-of-tl-side-cond/binds seq-of-rhs side-condition-unquoted?)
+    [(_ relation? seq-of-lhs seq-of-lhs-for-lw seq-of-tl-side-cond/binds seq-of-rhs 
+        side-condition-unquoted?)
      (with-syntax
          ([(rhs/lw ...) 
            (syntax-case #'relation? ()
@@ -1111,55 +1129,61 @@
            (map name-pattern-lws (syntax->list #'seq-of-lhs))]
           [((where/sc/lw ...) ...)
            ;; Also for pict, extract where bindings
-           (map (λ (hm)
-                  (map
-                   (λ (lst)
-                     (syntax-case lst (unquote side-condition where)
-                       [(form-name . _)
-                        (judgment-form-id? #'form-name)
-                        #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
-                       [(form-name . _)
-                        (judgment-form-id? #'form-name)
-                        #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
-                       [(where pat (unquote (f _ _)))
-                        (and (or (identifier? #'pat)
-                                 (let ([l (syntax->list #'pat)])
-                                   (and l (andmap identifier? (syntax->list #'pat)))))
-                             (or (free-identifier=? #'f #'variable-not-in)
-                                 (free-identifier=? #'f #'variables-not-in)))
-                        (with-syntax ([(ids ...)
-                                       (map to-lw/proc
-                                            (if (identifier? #'pat)
-                                                (list #'pat)
-                                                (syntax->list #'pat)))])
-                          #`(make-metafunc-extra-fresh
-                             (list ids ...)))]
-                       [(where pat exp)
-                        #`(make-metafunc-extra-where
-                           #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
-                       [(side-condition x)
-                        #`(make-metafunc-extra-side-cond
-                           #,(if (syntax-e #'side-condition-unquoted?)
-                                 (to-lw/uq/proc #'x)
-                                 (to-lw/proc #'x)))]
-                       [maybe-ellipsis
-                        (ellipsis? #'maybe-ellipsis)
-                        (to-lw/proc #'maybe-ellipsis)]))
-                   (visible-extras hm)))
-                (syntax->list #'seq-of-tl-side-cond/binds))]
+           (for/list ([hm (in-list (syntax->list #'seq-of-tl-side-cond/binds))])
+             (define the-extras (visible-extras hm))
+             (for/list ([lst (in-list the-extras)]
+                        [next (if (null? the-extras)
+                                  '()
+                                  (append (cdr the-extras) (list #f)))])
+               (syntax-case next (or)
+                 [or (to-lw/proc lst)]
+                 [else
+                  (syntax-case lst (unquote side-condition where or)
+                    [(form-name . _)
+                     (judgment-form-id? #'form-name)
+                     #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
+                    [(form-name . _)
+                     (judgment-form-id? #'form-name)
+                     #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
+                    [(where pat (unquote (f _ _)))
+                     (and (or (identifier? #'pat)
+                              (let ([l (syntax->list #'pat)])
+                                (and l (andmap identifier? (syntax->list #'pat)))))
+                          (or (free-identifier=? #'f #'variable-not-in)
+                              (free-identifier=? #'f #'variables-not-in)))
+                     (with-syntax ([(ids ...)
+                                    (map to-lw/proc
+                                         (if (identifier? #'pat)
+                                             (list #'pat)
+                                             (syntax->list #'pat)))])
+                       #`(make-metafunc-extra-fresh
+                          (list ids ...)))]
+                    [(where pat exp)
+                     #`(make-metafunc-extra-where
+                        #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
+                    [(side-condition x)
+                     #`(make-metafunc-extra-side-cond
+                        #,(if (syntax-e #'side-condition-unquoted?)
+                              (to-lw/uq/proc #'x)
+                              (to-lw/proc #'x)))]
+                    [or ''or]
+                    [(clause-name name)
+                     #''(clause-name name)]
+                    [maybe-ellipsis
+                     (ellipsis? #'maybe-ellipsis)
+                     (to-lw/proc #'maybe-ellipsis)])])))]
           [(((where-bind-id/lw . where-bind-pat/lw) ...) ...)
-           (map (λ (clauses)
-                  (for/fold ([binds '()]) ([clause (visible-extras clauses)])
-                    (syntax-case clause (where)
-                      [(form-name . pieces)
-                       (judgment-form-id? #'form-name)
-                       (let*-values ([(mode) (judgment-form-mode (lookup-judgment-form-id #'form-name))]
-                                     [(_ outs) (split-by-mode (syntax->list #'pieces) mode)])
-                         (for/fold ([binds binds]) ([out outs])
-                           (append (name-pattern-lws out) binds)))]
-                      [(where lhs rhs) (append (name-pattern-lws #'lhs) binds)]
-                      [_ binds])))
-                (syntax->list #'seq-of-tl-side-cond/binds))]
+           (for/list ([clauses (in-list (syntax->list #'seq-of-tl-side-cond/binds))])
+             (for/fold ([binds '()]) ([clause (visible-extras clauses)])
+               (syntax-case clause (where)
+                 [(form-name . pieces)
+                  (judgment-form-id? #'form-name)
+                  (let*-values ([(mode) (judgment-form-mode (lookup-judgment-form-id #'form-name))]
+                                [(_ outs) (split-by-mode (syntax->list #'pieces) mode)])
+                    (for/fold ([binds binds]) ([out outs])
+                      (append (name-pattern-lws out) binds)))]
+                 [(where lhs rhs) (append (name-pattern-lws #'lhs) binds)]
+                 [_ binds])))]
           [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
            ;; Also for pict, extract pattern bindings
            (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/uq/proc (cdr x))))

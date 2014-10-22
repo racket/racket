@@ -3,7 +3,7 @@
          "blame.rkt"
          "misc.rkt"
          "guts.rkt"
-         (for-syntax racket/base))
+         (for-syntax "arr-i-parse.rkt" racket/base))
 (provide parametric->/c)
 
 (define-syntax (parametric->/c stx)
@@ -16,22 +16,42 @@
                                "expected an identifier"
                                stx
                                x)))
-       #'(make-polymorphic-contract opaque/c
+       #`(make-polymorphic-contract opaque/c
                                     '(x ...)
-                                    (lambda (x ...) c)))]))
+                                    (lambda (x ...) c)
+                                    '#,(compute-quoted-src-expression #'c)))]))
 
 
-(define-struct polymorphic-contract [barrier vars body]
+
+(define-struct polymorphic-contract [barrier vars body body-src-exp]
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:name
    (lambda (c)
-     `(parametric->/c ,(polymorphic-contract-vars c) ...))
+     `(parametric->/c ,(polymorphic-contract-vars c) ,(polymorphic-contract-body-src-exp c)))
+   #:stronger
+   (λ (this that)
+     (cond
+       [(polymorphic-contract? that)
+        (define this-vars (polymorphic-contract-vars this))
+        (define that-vars (polymorphic-contract-vars that))
+        (define this-barrier/c (polymorphic-contract-barrier this))
+        (define that-barrier/c (polymorphic-contract-barrier that))
+        (cond
+          [(and (eq? this-barrier/c that-barrier/c)
+                (= (length this-vars) (length that-vars)))
+           (define instances
+             (for/list ([var (in-list this-vars)])
+               (this-barrier/c #t var)))
+           (contract-stronger? (apply (polymorphic-contract-body this) instances)
+                               (apply (polymorphic-contract-body that) instances))]
+          [else #f])]
+       [else #f]))
    #:projection
    (lambda (c)
-     (lambda (blame)
-
+     (lambda (orig-blame)
+       (define blame (blame-add-context orig-blame #f))
        (define (wrap p)
          ;; values in polymorphic types come in from negative position,
          ;; relative to the poly/c contract
@@ -64,7 +84,7 @@
 (define (opaque/c positive? name)
   (define-values [ type make pred getter setter ]
     (make-struct-type name #f 1 0))
-  (define (get x) (getter x 0))
+  (define get (make-struct-field-accessor getter 0))
   (make-barrier-contract name positive? make pred get))
 
 (define-struct barrier-contract [name positive? make pred get]
@@ -73,6 +93,7 @@
   (build-contract-property
    #:name (lambda (c) (barrier-contract-name c))
    #:first-order (λ (c) (barrier-contract-pred c))
+   #:stronger (λ (this that) (eq? this that))
    #:projection
    (lambda (c)
      (define mk (barrier-contract-make c))

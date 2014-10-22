@@ -1955,7 +1955,7 @@ all of the names in the tools library, for use defining keybindings
     @racket[print] (or @racket[pretty-print]); the default second
     result is @racket[#t].
 
-    The default implementation of this method depends on the 
+    The result of this function depends on the 
     @racket[simple-settings-printing-style] field of @racket[settings].
     If it is @racket['print], the
     result is @racket[(values value #f)]. If it is @racket['write] or @racket['trad-write],

@@ -446,10 +446,11 @@
                (hash-wrapper chaperone-hash)))]
         [else
          (let* ([s-info (invariant-info-structid ctc)]
+                [base-val ((proj blame) val)]
                 [a-wrap (λ (v f) (run-invariant 'struct blame) f)]
                 [m-wrap (λ (m)
                           (λ (v f) 
-                            (m v f) (run-invariant 'struct (blame-swap blame)) f))]
+                            (m base-val f) (run-invariant 'struct (blame-swap blame)) f))]
                 [wrapped-accessors (foldr (λ (first rest) 
                                             (if (procedure? first)
                                                 (list* first a-wrap rest)
@@ -466,7 +467,7 @@
                  (λ (wrapper) 
                    (apply
                     wrapper
-                    ((proj blame) val)
+                    base-val
                     (append wrapped-accessors wrapped-mutators (list impersonator-prop:contracted ctc))))])
            (if impersonate? 
                (struct-wrapper impersonate-struct) 

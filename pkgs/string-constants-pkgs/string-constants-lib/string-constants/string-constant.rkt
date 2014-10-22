@@ -103,6 +103,7 @@
     (dynamic-string-constant/who sc key 'dynamic-string-constants)))
 
 (define (dynamic-string-constant/who an-sc key who)
+  (show-warning-message)
   (hash-ref (sc-constants an-sc) key
             (λ ()
               (hash-ref (sc-constants first-string-constant-set)
@@ -118,76 +119,67 @@
 
 (define already-warned? #f)
 (define (show-warning-message)
-  (unless already-warned?
-    (set! already-warned? #t)
-    (define the-warning-message
-      (let* (;; type no-warning-cache-key = (cons symbol symbol)
-             ;; warning-table : (listof (list no-warning-cache-key (listof (list sym string))))
-             [warning-table null]
-             [extract-ht
-              (lambda (sc)
-                (unless (sc-ht sc)
-                  (let ([ht (make-hash)])
-                    (for-each (lambda (ent) (hash-set! ht (car ent) #t))
-                              (sc-constants sc))
-                    (set-sc-ht! sc ht)))
-                (sc-ht sc))]
-             [check-one-way
-              (lambda (sc1 sc2)
-                (let ([assoc1 (sc-constants sc1)]
-                      [assoc2 (sc-constants sc2)]
-                      [ht2 (extract-ht sc2)])
-                  (for-each
-                   (lambda (pair1)
-                     (let* ([constant1 (car pair1)]
-                            [value1 (cadr pair1)]
-                            [pair2 (hash-ref ht2 constant1 (lambda () #f))])
-                       (unless pair2
-                         (let ([no-warning-cache-key (cons (sc-language-name sc1)
-                                                           (sc-language-name sc2))])
-                           (when (or (env-var-set? (sc-language-name sc1))
-                                     (env-var-set? (sc-language-name sc2)))
-                             (cond
-                               [(memf (lambda (ent) (equal? (mcar ent) no-warning-cache-key)) 
-                                      warning-table)
-                                =>
-                                (lambda (x)
-                                  (let ([ent (car x)])
-                                    (set-mcdr! ent (cons (list constant1 value1) (mcdr ent)))))]
-                               [else
-                                (set! warning-table (cons (mcons no-warning-cache-key
-                                                                 (list (list constant1 value1)))
-                                                          warning-table))]))))))
-                   assoc1)))])
-        
-        (for-each (lambda (x)
-                    (check-one-way x first-string-constant-set)
-                    (check-one-way first-string-constant-set x))
-                  (cdr available-string-constant-sets))
-        
-        (let ([sp (open-output-string)])
-          (for-each
-           (lambda (bad)
-             (let* ([lang-pair (mcar bad)]
-                    [constants (mcdr bad)]
-                    [lang1-name (car lang-pair)]
-                    [lang2-name (cdr lang-pair)])
-               (fprintf sp "WARNING: language ~a had but ~a does not:\n"
-                        lang1-name
-                        lang2-name)
-               (for-each (lambda (x) (fprintf sp "   ~s\n" x))
-                         (sort constants string<=? 
-                               #:key (lambda (p)
-                                       (symbol->string (car p)))
-                               #:cache-keys? #t))
-               (newline sp)))
-           warning-table)
-          (get-output-string sp))))
-          
-    (with-handlers ([exn:fail? (lambda (x) (void))])
-      ;; the output port may no longer be there, in which case
-      ;; we just give up on printing
-      (eprintf "~a" the-warning-message))))
+  (when env-var-set
+    (unless already-warned?
+      (set! already-warned? #t)
+      ;; type no-warning-cache-key = (cons symbol symbol)
+      ;; warning-table : (listof (list no-warning-cache-key (listof (list sym string))))
+      (define warning-table null)
+      (define (extract-ht sc)
+        (unless (sc-ht sc)
+          (define ht (make-hash))
+          (for ([(ent val) (in-hash (sc-constants sc))])
+            (hash-set! ht ent #t))
+          (set-sc-ht! sc ht))
+        (sc-ht sc))
+      (define (check-one-way sc1 sc2)
+        (define assoc1 (sc-constants sc1))
+        (define assoc2 (sc-constants sc2))
+        (define ht2 (extract-ht sc2))
+        (for ([(constant1 value1) (in-hash assoc1)])
+          (define pair2 (hash-ref ht2 constant1 #f))
+          (unless pair2
+            (define no-warning-cache-key (cons (sc-language-name sc1)
+                                               (sc-language-name sc2)))
+            (when (or (env-var-set? (sc-language-name sc1))
+                      (env-var-set? (sc-language-name sc2)))
+              (cond
+                [(memf (lambda (ent) (equal? (mcar ent) no-warning-cache-key)) 
+                       warning-table)
+                 =>
+                 (lambda (x)
+                   (let ([ent (car x)])
+                     (set-mcdr! ent (cons (list constant1 value1) (mcdr ent)))))]
+                [else
+                 (set! warning-table (cons (mcons no-warning-cache-key
+                                                  (list (list constant1 value1)))
+                                           warning-table))])))))
+      
+      (for ([x (in-list (cdr available-string-constant-sets))])
+        (check-one-way x first-string-constant-set)
+        (check-one-way first-string-constant-set x))
+      
+      (define sp (open-output-string))
+      (for ([bad (in-list warning-table)])
+        (define lang-pair (mcar bad))
+        (define constants (mcdr bad))
+        (define lang1-name (car lang-pair))
+        (define lang2-name (cdr lang-pair))
+        (fprintf sp "WARNING: language ~a has but ~a does not:\n"
+                 lang1-name
+                 lang2-name)
+        (define sorted-constants
+          (sort constants string<?
+                #:key (λ (p) (symbol->string (car p)))
+                #:cache-keys? #t))
+        (for ([x (in-list sorted-constants)])
+          (fprintf sp "   ~s\n" x))
+        (newline sp))
+      
+      (with-handlers ([exn:fail? (lambda (x) (void))])
+        ;; the output port may no longer be there, in which case
+        ;; we just give up on printing
+        (eprintf "~a" (get-output-string sp))))))
 
 ;; env-var-set? : symbol -> boolean
 ;; returns #t if the user has requested this langage info.
@@ -198,8 +190,8 @@
 ;; (again, according to read) you get those languages.
 ;; if it is set to anything else, you get all languages.
 (define (env-var-set? lang)
-  (cond [(symbol? specific) (eq? lang specific)]
-        [(list? specific) (memq lang specific)]
+  (cond [(symbol? specific) (equal? lang specific)]
+        [(list? specific) (member lang specific)]
         [else #t]))
 
 (define env-var-set

@@ -33,32 +33,47 @@
          (define-values (txt type paren start end) (lexer in))
          (values txt type paren start end 0 #f))]
       [else lexer]))
-  (for ([x (in-range 10)])
-    (define size (random 100))
-    (define (quash-backslash-r c)
-      ;; it isn't clear the spec is right in
-      ;; the case of \r\n combinations, so we
-      ;; punt for now
-      (if (equal? c #\return) #\newline c))
-    (define s (build-string
-               size
-               (λ (c) 
-                 (quash-backslash-r
-                  (case (random 3)
-                    [(0)
-                     (define s " ()@{}\"λΣ\0")
-                     (string-ref s (random (string-length s)))]
-                    [(1 2)
-                     (integer->char (random 255))])))))
-    (define in (open-input-string s))
-    (port-count-lines! in)
-    (let loop ([mode #f][offset 0])
-      (define-values (txt type paren start end backup new-mode)
-        (3ary-lexer in offset mode))
-      (cond
-        [(equal? type 'eof) #t]
-        [(< end size) (loop new-mode end)]
-        [else #f]))))
+  (define initial-state (pseudo-random-generator->vector
+                         (current-pseudo-random-generator)))
+  (with-handlers ([exn:fail?
+                   (lambda (exn)
+                     (raise
+                      (make-exn
+                       (format (string-append "try-some-random-streams:"
+                                              " random testing of lexer failed\n"
+                                              "  lexer: ~e\n"
+                                              "  pseudo-random state: ~s\n"
+                                              "  error message: ~s")
+                               lexer
+                               initial-state
+                               (exn-message exn))
+                       (exn-continuation-marks exn))))])
+    (for ([x (in-range 10)])
+      (define size (random 100))
+      (define (quash-backslash-r c)
+        ;; it isn't clear the spec is right in
+        ;; the case of \r\n combinations, so we
+        ;; punt for now
+        (if (equal? c #\return) #\newline c))
+      (define s (build-string
+                 size
+                 (λ (c) 
+                   (quash-backslash-r
+                    (case (random 3)
+                      [(0)
+                       (define s " ()@{}\"λΣ\0")
+                       (string-ref s (random (string-length s)))]
+                      [(1 2)
+                       (integer->char (random 255))])))))
+      (define in (open-input-string s))
+      (port-count-lines! in)
+      (let loop ([mode #f][offset 0])
+        (define-values (txt type paren start end backup new-mode)
+          (3ary-lexer in offset mode))
+        (cond
+         [(equal? type 'eof) #t]
+         [(< end size) (loop new-mode end)]
+         [else #f])))))
 
 (define (end/c start type)
   (cond

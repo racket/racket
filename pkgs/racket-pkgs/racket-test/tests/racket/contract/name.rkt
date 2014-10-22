@@ -217,17 +217,15 @@
 
   (test-name '(listof boolean?) (listof boolean?))
   (test-name '(listof any/c) (listof any/c))
-  (test-name '(listof boolean?) (listof boolean?))
-  (test-name '(listof any/c) (listof any/c))
-  (test-name '(listof boolean?) (listof boolean?))
   (test-name '(listof (-> boolean? boolean?)) (listof (-> boolean? boolean?)))
 
   (test-name '(non-empty-listof boolean?) (non-empty-listof boolean?))
   (test-name '(non-empty-listof any/c) (non-empty-listof any/c))
-  (test-name '(non-empty-listof boolean?) (non-empty-listof boolean?))
-  (test-name '(non-empty-listof any/c) (non-empty-listof any/c))
-  (test-name '(non-empty-listof boolean?) (non-empty-listof boolean?))
   (test-name '(non-empty-listof (-> boolean? boolean?)) (non-empty-listof (-> boolean? boolean?)))
+  
+  (test-name '(list*of boolean?) (list*of boolean?))
+  (test-name '(list*of any/c) (list*of any/c))
+  (test-name '(list*of (-> boolean? boolean?)) (list*of (-> boolean? boolean?)))
 
 
   (test-name '(vectorof boolean?) (vectorof boolean?))

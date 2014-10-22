@@ -3,7 +3,8 @@
 (require (lib "redex/examples/stlc+lists.rkt")
          (only-in redex/private/generate-term pick-an-index)
          redex/reduction-semantics
-         racket/bool)
+         racket/bool
+         racket/match)
 
 (provide (all-defined-out))
 
@@ -31,6 +32,15 @@
   (define type 'ordered)
   (define (generate [index 0])
     (generate-term stlc M #:i-th index)))
+
+(module+ typed-mod
+  (provide generate get-generator type)
+  (define type 'search)
+  (define (get-generator) generate)
+  (define (generate)
+    ((match-lambda [`(typeof • ,M ,τ) M]
+                   [#f #f])
+     (generate-term stlc #:satisfying (typeof • M τ) 5))))
 
 (module+ check-mod
   (provide check)

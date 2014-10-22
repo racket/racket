@@ -84,8 +84,10 @@
                                              123)))
                  o))))
      (add-whale! "345")
-     $ (~a "raco pkg catalog-show --catalog file://" (path->string dir2) " whale") =stdout> #rx"Checksum: 345"
-     $ (~a "raco pkg catalog-show --version 5.3.6 --catalog file://" (path->string dir2) " whale") =stdout> #rx"Checksum: 123"
+     $ (~a "raco pkg catalog-show --catalog file://" (path->string dir2) " whale")
+     =stdout> #rx"Checksum: 345"
+     $ (~a "raco pkg catalog-show --version 5.3.6 --catalog file://" (path->string dir2) " whale")
+     =stdout> #rx"Checksum: 123"
      $ "raco pkg catalog-show whale" =exit> 1
      
      $ (~a "raco pkg catalog-copy --merge " (path->string dir2) " " (path->string dest))
@@ -155,4 +157,30 @@
   $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip") =exit> 1
   $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip.CHECKSUM") =exit> 1
   
+  ;; archive
+
+  (delete-directory/files archive-d)
+
+  $ (~a "raco pkg install pkg-test1")
+  $ (~a "raco pkg archive " archive-d " pkg-test1")
+  =stdout> #rx"== Archiving pkg-test1 =="
+  $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip.CHECKSUM")
+
+
+  $ "raco pkg install pkg-test2"
+  $ (~a "raco pkg archive " archive-d " pkg-test2")
+  =stdout> #rx"Removing .* pkg-test1"
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip.CHECKSUM")
+
+  (delete-directory/files archive-d)
+
+  $ (~a "raco pkg archive --include-deps " archive-d " pkg-test2")
+  =stdout> #rx"Archiving pkg-test1" ;; checking dependencies
+  $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip.CHECKSUM")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip.CHECKSUM")
+
   (delete-directory/files d)))

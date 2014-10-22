@@ -17,9 +17,7 @@
 
 ;; see typecheck-tests.rkt for rationale on imports
 (require rackunit
-         (except-in racket/class
-                    class define/public define/override
-                    define/pubment define/augment define/private)
+         typed/racket/class
          (except-in typed-racket/utils/utils private)
          (except-in (base-env extra-procs prims class-prims
                               base-types base-types-extra)
@@ -735,6 +733,12 @@
            (define x (new c%))
            (void))
          -Void]
+   ;; failing instance subtyping
+   [tc-err (let ()
+             (define x (new (class object% (super-new) (define/public (m) "m"))))
+             (ann x (Object [n (-> String)]))
+             (error "foo"))
+           #:msg #rx"expected: .*n.*given:.*m.*"]
    ;; test use of `this` in field default
    [tc-e (let ()
            (class object%
@@ -1031,6 +1035,19 @@
                               #:row (make-Row null `([x ,-Integer]) null null #f)
                               #:field ([x -Integer])))
                       -true-filter)]
+   ;; test bad manipulation of rows for inheritance
+   [tc-e (let ()
+           (: c% (Class (init [x String] [y String])))
+           (define c% (class object% (super-new) (init x y)))
+           (: f (All (r #:row) (-> (Class #:row-var r) (Class #:row-var r))))
+           (define (f x) x)
+           ;; should have the same type as c%
+           (define c2% (f c%))
+           (: d% (Class (init [y String])))
+           ;; should be the same as inheriting from c%
+           (define d% (class c2% (super-new [x "foo"])))
+           (void))
+         -Void]
    ;; Check simple use of pubment
    [tc-e (let ()
            (define c%
@@ -1319,8 +1336,8 @@
              (super-new)
              (: x String)
              (field [x : Symbol 0]))
-           #:ret (ret (-class #:field ([x -Symbol])))
-           #:msg #rx"duplicate type annotation.*new type: String"]
+           #:ret (ret (-class #:field ([x -String])))
+           #:msg #rx"duplicate type annotation.*new type: Symbol"]
    ;; fails, expected type and annotation don't match
    [tc-err (let ()
              (: c% (Class (field [x String])))
@@ -1493,4 +1510,26 @@
    [tc-err (make-object (ann object% ClassTop))
            #:msg #rx"cannot instantiate.*ClassTop"]
    [tc-err (make-object 3)
-           #:msg #rx"value of a non-class type"]))
+           #:msg #rx"value of a non-class type"]
+   ;; PR 14726
+   ;; test opt-arg but non-keyword method
+   [tc-e (let ()
+           (define-type-alias A%
+             (Class [foo (->* [Integer] Void)]))
+           (: a% A%)
+           (define a%
+             (class object%
+               (super-new)
+               (define/public (foo [i #f]) (void))))
+           (new a%))
+         (-object #:method ([foo (t:-> -Integer -Void)]))]
+   [tc-e (let ()
+           (define-type-alias A%
+             (Class [foo (->* [] [Integer] Void)]))
+           (: a% A%)
+           (define a%
+             (class object%
+               (super-new)
+               (define/public (foo [i #f]) (void))))
+           (new a%))
+         (-object #:method ([foo (cl->* (t:-> -Void) (t:-> -Integer -Void))]))]))

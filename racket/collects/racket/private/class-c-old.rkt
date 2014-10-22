@@ -819,16 +819,129 @@
      (list (cons 'absent meths))]
     [else
      (list `(absent ,@meths (field ,@fields)))]))
-             
+
+(define (class/c-stronger this that)
+  (define this-internal (class/c-internal this))
+  (cond
+    [(class/c? that)
+     (define that-internal (class/c-internal that))
+     (and 
+      ;; methods
+      (check-one-stronger class/c-methods class/c-method-contracts this that)
+      
+      ;; inits
+      (check-one-stronger class/c-inits class/c-init-contracts this that)
+      
+      ;; check both ways for fields (since mutable)
+      (check-one-stronger class/c-fields class/c-field-contracts this that) 
+      (check-one-stronger class/c-fields class/c-field-contracts that this)
+      
+
+      ;; inherits
+      (check-one-stronger internal-class/c-inherits internal-class/c-inherit-contracts
+                          this-internal that-internal)
+      ;; inherit fields, both ways
+      (check-one-stronger internal-class/c-inherit-fields internal-class/c-inherit-field-contracts
+                          this-internal that-internal)
+      (check-one-stronger internal-class/c-inherit-fields internal-class/c-inherit-field-contracts
+                          that-internal this-internal)
+      ;; supers
+      (check-one-stronger internal-class/c-supers internal-class/c-super-contracts
+                          this-internal that-internal)
+      ;; inners
+      (check-one-stronger internal-class/c-inners internal-class/c-inner-contracts
+                          this-internal that-internal)
+      ;; overrides
+      (check-one-stronger internal-class/c-overrides internal-class/c-override-contracts
+                          this-internal that-internal)
+      ;; augments
+      (check-one-stronger internal-class/c-augments internal-class/c-augment-contracts
+                          this-internal that-internal)
+      ;; augrides
+      (check-one-stronger internal-class/c-augrides internal-class/c-augride-contracts
+                          this-internal that-internal)
+      
+      (if (class/c-opaque? this) (class/c-opaque? that) #t)
+      (all-included? (class/c-absent-fields that) (class/c-absent-fields this))
+      (all-included? (class/c-absents that) (class/c-absents this)))]
+    [else #f]))
+
+(define (all-included? this-items that-items)
+  (for/and ([this-item (in-list this-items)])
+    (for/or ([that-item (in-list that-items)])
+      (equal? this-item that-item))))
+
+(define (check-one-stronger names-sel ctcs-sel this that)
+  ;; this is an O(n^2) loop that could be made asymptotically
+  ;; better with sorting, but since there are generally not a
+  ;; ton of methods, the naive loop appears to be faster.
+  ;; in the current racket, and assuming the code below is
+  ;; representative of the two approaches, the tradeoff point
+  ;; appears to be somewhere around 60 or 70 methods.
+#|
+    #lang racket
+    
+    (define (n2-way l1 l2)
+      (for/and ([x (in-list l1)])
+        (or (for/or ([y (in-list l2)])
+              #f)
+            #t)))
+    
+    (define (nlgn-way l1 l2)
+      (define sl1 (sort l1 <))
+      (define sl2 (sort l2 <))
+      (let loop ([l1 l1][l2 l2])
+        (cond
+          [(null? l1) #t]
+          [(null? l2) #t]
+          [(< (car l1) (car l2)) (loop (cdr l1) l2)]
+          [(< (car l2) (car l1)) (loop l1 (cdr l2))]
+          [else (loop (cdr l1) (cdr l2))])))
+    
+    
+    (define (try n c)
+      (define l1 (build-list n (λ (_) (random))))
+      (define l2 (build-list n (λ (_) (random))))
+      (time (for ([x (in-range c)])
+              (n2-way l1 l2) (n2-way l1 l2) (n2-way l1 l2)
+              (n2-way l1 l2) (n2-way l1 l2) (n2-way l1 l2)
+              (n2-way l1 l2) (n2-way l1 l2) (n2-way l1 l2)
+              (n2-way l1 l2) (n2-way l1 l2) (n2-way l1 l2)))
+      (time (for ([x (in-range c)])
+              (nlgn-way l1 l2) (nlgn-way l1 l2) (nlgn-way l1 l2)
+              (nlgn-way l1 l2) (nlgn-way l1 l2) (nlgn-way l1 l2)
+              (nlgn-way l1 l2) (nlgn-way l1 l2) (nlgn-way l1 l2)
+              (nlgn-way l1 l2) (nlgn-way l1 l2) (nlgn-way l1 l2))))
+    
+    
+    50
+    (try 50 10000)
+    60
+    (try 60 10000)
+    70
+    (try 70 10000)
+    80
+    (try 80 10000)
+ |#
+  
+  (for/and ([this-name (in-list (names-sel this))]
+            [this-ctc (in-list (ctcs-sel this))])
+    (for/or ([that-name (in-list (names-sel that))]
+             [that-ctc (in-list (ctcs-sel that))])
+      (and (equal? this-name that-name)
+           (contract-stronger? this-ctc that-ctc)))))
+
 (define-struct class/c 
   (methods method-contracts fields field-contracts inits init-contracts
    absents absent-fields 
    internal opaque? name)
   #:omit-define-syntaxes
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection class/c-proj
    #:name build-class/c-name
+   #:stronger class/c-stronger
    #:first-order
    (λ (ctc)
      (λ (cls)
@@ -1118,6 +1231,7 @@
                              (λ args (ret #f))))))
 
 (define-struct base-object/c (methods method-contracts fields field-contracts)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property 
    #:projection object/c-proj
@@ -1177,9 +1291,129 @@
           (wrapped-class-info-neg-field-projs the-info)
           neg-party)]
         [else
-         (impersonate-struct val object-ref (λ (o c) new-cls)
-                             impersonator-prop:contracted ctc
-                             impersonator-prop:original-object original-obj)]))))
+         (define interposed-val
+           (if (has-impersonator-prop:instanceof/c-original-object? val)
+               (get-impersonator-prop:instanceof/c-original-object val)
+               (impersonate-struct 
+                val object-ref
+                (λ (o c) (car (get-impersonator-prop:instanceof/c-wrapped-classes o))))))
+	
+
+         ;; this code is doing a fairly complicated dance to 
+         ;; accomplish a fairly simple purpose. In particular,
+         ;; instanceof/c contracts keep all of the contracts
+         ;; that they've put on a value in a property on the
+         ;; value and then, when a new contract comes along,
+         ;; try to avoid growing the list of contracts, in the
+         ;; case that there is already checking that subsumes 
+         ;; some of the contracts. It does this by building up
+         ;; the new list of contracts (the old one, plus this one)
+         ;; and then looking for a sublist of that list like this:
+         ;;   c1, ..., ci, ..., cj, ..., ck, ... cn
+         ;; such that ci <: cj and ck <: cj. When that's the case,
+         ;; case then we know that cj is redundant (regardless of
+         ;; the blame it might assign). So this code is looking
+         ;; for such things, but the complication of the code comes
+         ;; from trying to avoid re-creating too many contracts
+         (define all-new-ctcs
+           (cons ctc
+                 (if (has-impersonator-prop:instanceof/c-ctcs? val)
+                     (get-impersonator-prop:instanceof/c-ctcs val)
+                     '())))
+         
+         (define all-new-projs
+           (cons p
+                 (if (has-impersonator-prop:instanceof/c-projs? val)
+                     (get-impersonator-prop:instanceof/c-projs val)
+                     '())))
+         
+         (define old-classes
+           (if (has-impersonator-prop:instanceof/c-wrapped-classes? val)
+               (get-impersonator-prop:instanceof/c-wrapped-classes val)
+               '()))
+         
+         (define-values (reverse-without-redundant-ctcs reverse-without-redundant-projs)
+           (let loop ([prior-ctcs '()]
+                      [prior-projs '()]
+                      [this-ctc (car all-new-ctcs)]
+                      [next-ctcs (cdr all-new-ctcs)]
+                      [this-proj (car all-new-projs)]
+                      [next-projs (cdr all-new-projs)])
+             (cond
+               [(null? next-ctcs) (values (cons this-ctc prior-ctcs)
+                                          (cons this-proj prior-projs))]
+               [else
+                (if (and (ormap (λ (x) (contract-stronger? x this-ctc)) prior-ctcs)
+                         (ormap (λ (x) (contract-stronger? this-ctc x)) next-ctcs))
+                    (loop prior-ctcs prior-projs
+                          (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs))
+                    (loop (cons this-ctc prior-ctcs) (cons this-proj prior-projs)
+                          (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs)))])))
+         
+         (define wrapped-classes 
+           (reverse
+            (let loop ([class (if (has-impersonator-prop:instanceof/c-wrapped-classes? val)
+                                  (car (reverse 
+                                        (get-impersonator-prop:instanceof/c-wrapped-classes val)))
+                                  (object-ref val))]
+                       [ctcs reverse-without-redundant-ctcs]
+                       [projs reverse-without-redundant-projs]
+                       
+                       [old-ctcs (reverse (cdr all-new-ctcs))]
+                       [old-classes (reverse old-classes)])
+              (cond
+                [(null? projs) (list class)]
+                [else
+                 (cons class
+                       (cond
+                         [(and (pair? old-ctcs) (eq? (car old-ctcs) (car ctcs)))
+                          (loop (car old-classes)
+                                (cdr ctcs)
+                                (cdr projs)
+                                (cdr old-ctcs)
+                                (cdr old-classes))]
+                         [else
+                          (loop ((car projs) class) (cdr ctcs) (cdr projs) '() '())]))]))))
+         
+         (impersonate-struct
+          interposed-val object-ref
+          
+          ;FIXME: this should be #f, but right now that triggers 
+          ;; a bug in the impersonator implementation
+          (λ (x y) y) 
+          
+          impersonator-prop:instanceof/c-original-object interposed-val
+          impersonator-prop:instanceof/c-ctcs (reverse reverse-without-redundant-ctcs)
+          impersonator-prop:instanceof/c-projs (reverse reverse-without-redundant-projs)
+          impersonator-prop:instanceof/c-wrapped-classes wrapped-classes
+          impersonator-prop:contracted ctc
+          impersonator-prop:original-object original-obj)]))))
+
+(define-values (impersonator-prop:instanceof/c-ctcs
+                has-impersonator-prop:instanceof/c-ctcs?
+                get-impersonator-prop:instanceof/c-ctcs)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-ctcs))
+
+(define-values (impersonator-prop:instanceof/c-projs
+                has-impersonator-prop:instanceof/c-projs?
+                get-impersonator-prop:instanceof/c-projs)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-projs))
+
+(define-values (impersonator-prop:instanceof/c-wrapped-classes
+                has-impersonator-prop:instanceof/c-wrapped-classes?
+                get-impersonator-prop:instanceof/c-wrapped-classes)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-wrapped-classes))
+
+;; when an object has the original-object property, 
+;; then we also know that value of this property is
+;; an object whose object-ref has been redirected to
+;; use impersonator-prop:instanceof/c-wrapped-classes
+(define-values (impersonator-prop:instanceof/c-original-object
+                has-impersonator-prop:instanceof/c-original-object?
+                get-impersonator-prop:instanceof/c-original-object)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-has-object-ref-interposition))
+
+
 
 (define (instanceof/c-first-order ctc)
   (let ([cls-ctc (base-instanceof/c-class-ctc ctc)])
@@ -1187,14 +1421,22 @@
       (and (object? val)
            (contract-first-order-passes? cls-ctc (object-ref val))))))
 
+ 
+(define (instanceof/c-stronger this that)
+  (and (base-instanceof/c? that)
+       (contract-stronger? (base-instanceof/c-class-ctc this)
+                           (base-instanceof/c-class-ctc that))))
+
 (define-struct base-instanceof/c (class-ctc)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property 
    #:projection instanceof/c-proj
    #:name
    (λ (ctc)
      (build-compound-type-name 'instanceof/c (base-instanceof/c-class-ctc ctc)))
-   #:first-order instanceof/c-first-order))
+   #:first-order instanceof/c-first-order
+   #:stronger instanceof/c-stronger))
 
 (define (instanceof/c cctc)
   (let ([ctc (coerce-contract 'instanceof/c cctc)])

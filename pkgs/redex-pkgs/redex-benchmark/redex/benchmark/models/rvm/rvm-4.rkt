@@ -16,11 +16,25 @@
   #:variables (rest)
   #:exactly-once)
 
+(define-rewrite bug4-jdg
+  [(V (boxenv n_p e) s n_l b γ η f s_2 γ_2 η_2)
+    (where imm (sref n_p s))
+    (V e (supdt n_p box s) n_l b γ η f s_2 γ_2 η_2)
+    (n< n_p n_l)]
+  ==> 
+  [(V (boxenv n_p e) s n_l b γ η f s_2 γ_2 η_2)
+    (where imm (sref n_p s))
+    (V e (supdt n_p box s) n_l b γ η f s_2 γ_2 η_2)]
+  #:context (define-judgment-form)
+  #:exactly-once)
+
 (include/rewrite (lib "redex/examples/racket-machine/grammar.rkt") grammar)
 
 (include/rewrite (lib "redex/examples/racket-machine/verification.rkt") verification bug3)
 
 (include/rewrite (lib "redex/examples/racket-machine/randomized-tests.rkt") randomized-tests rt-rw)
+
+(include/rewrite (lib "redex/benchmark/models/rvm/verif-jdg.rkt") verif-jdg bug4-jdg)
 
 (include/rewrite "generators.rkt" generators bug-mod-rw)
 

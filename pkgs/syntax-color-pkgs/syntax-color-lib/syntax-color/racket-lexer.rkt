@@ -402,14 +402,16 @@
   (define racket-nobar-lexer/status (lexer/status nobar-identifier nobar-keyword nobar-bad-id))
   
   (define (extend-error lexeme start end in)
-    (if (memq (peek-char-or-special in)
-              `(special #\newline #\return #\tab #\space #\vtab
-                 #\" #\, #\' #\` #\( #\) #\[ #\] #\{ #\} #\;
-                 ,eof))
+    (define next (peek-char-or-special in))
+    (if (or (char-whitespace? next)
+            (memq next
+                  `(special
+                    #\" #\, #\' #\` #\( #\) #\[ #\] #\{ #\} #\;
+                    ,eof)))
         (ret lexeme 'error #f start end 'bad)
         (let-values (((rest end-pos) (get-chunk in)))
           (ret (string-append lexeme rest) 'error #f start end-pos 'bad))))
   
   (define get-chunk
     (lexer
-     ((:+ (:~ identifier-delims)) (values lexeme end-pos))))
+     [(:+ (:~ identifier-delims)) (values lexeme end-pos)]))

@@ -76,10 +76,15 @@
     ;; been called before any call to flush.
     flush-cr
 
-    ;; method init-cr-matrix : -> void
+    ;; method init-cr-matrix : cr -> void
     ;;
     ;; Initializes/resets the transformation matrix
     init-cr-matrix
+
+    ;; method init-effective-matrix : matrix -> void
+    ;;
+    ;; Like init-cr-matrix, but given a matrix
+    init-effective-matrix
 
     ;; method reset-clip : cr -> void
     ;;
@@ -170,6 +175,7 @@
     (define/public (flush-cr) (void))
 
     (define/public (init-cr-matrix cr) (void))
+    (define/public (init-effective-matrix mx) (void))
 
     (define/public (reset-clip cr)
       (cairo_reset_clip cr))
@@ -234,13 +240,26 @@
 ;; at least for the Quartz and Win32 back-ends.
 ;; (But we create the font maps on demand.)
 ;; We fold hinting in, too, as an extra factor of 2.
+;; In the case of aligned hinting on Windows, the font map
+;; might further depend on the transformation, so for that
+;; platform and ramge each element of `font-maps` is
+;;  (vector font-map xform (hash xform -> font-map))
+;; where the first two elements of the vector act as
+;; a cache for the hash-table lookup.
 (define font-maps (make-vector 8 #f))
+
+(define UNALIGNED-INDEX 4)
+(define multi-font-map-boundary
+  (case (system-type)
+    [(windows) UNALIGNED-INDEX]
+    [else 0]))
 
 (define (dc-mixin backend%)
   (defclass* dc% backend% (dc<%>)
     (super-new)
 
-    (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
+    (inherit flush-cr get-cr release-cr end-cr init-cr-matrix init-effective-matrix
+	     get-pango
              install-color dc-adjust-smoothing get-hairline-width dc-adjust-cap-shape
              reset-clip
              collapse-bitmap-b&w?
@@ -360,7 +379,9 @@
       (set-effective-scale-font-cached?!)
       (set! effective-origin-x 0.0)
       (set! effective-origin-y 0.0)
-      (set! current-xform (vector 1.0 0.0 0.0 1.0 0.0 0.0))
+      (let* ([mx (make-cairo_matrix_t 1 0 0 1 0 0)])
+        (init-effective-matrix mx)
+	(set! current-xform (matrix->vector mx)))
       (set! pen (send the-pen-list find-or-create-pen "black" 1 'solid))
       (set! brush (send the-brush-list find-or-create-brush "white" 'solid))
       (set! font (send the-font-list find-or-create-font 12 'default))
@@ -380,6 +401,7 @@
 
     (define/private (reset-effective!)
       (let* ([mx (make-cairo_matrix_t 1 0 0 1 0 0)])
+        (init-effective-matrix mx)
         (cairo_matrix_multiply mx mx matrix)
         (cairo_matrix_translate mx origin-x origin-y)
         (cairo_matrix_scale mx scale-x scale-y)
@@ -394,14 +416,17 @@
         (set-effective-scale-font-cached?!)
         (set! effective-origin-x (cairo_matrix_t-x0 mx))
         (set! effective-origin-y (cairo_matrix_t-y0 mx))
-        (let ([v (vector (cairo_matrix_t-xx mx)
-                         (cairo_matrix_t-yx mx)
-                         (cairo_matrix_t-xy mx)
-                         (cairo_matrix_t-yy mx)
-                         (cairo_matrix_t-x0 mx)
-                         (cairo_matrix_t-y0 mx))])
+        (let ([v (matrix->vector mx)])
           (unless (equal? v current-xform)
             (set! current-xform v)))))
+
+    (define/private (matrix->vector mx)
+      (vector (cairo_matrix_t-xx mx)
+	      (cairo_matrix_t-yx mx)
+	      (cairo_matrix_t-xy mx)
+	      (cairo_matrix_t-yy mx)
+	      (cairo_matrix_t-x0 mx)
+	      (cairo_matrix_t-y0 mx)))
 
     (define/override (set-auto-scroll dx dy)
       (unless (and (= scroll-dx (- dx))
@@ -1291,7 +1316,7 @@
            [(smoothed) 3])
          (case (send font get-hinting)
            [(aligned) 0]
-           [(unaligned) 4])))
+           [(unaligned) UNALIGNED-INDEX])))
 
     (define/private (get-context cr smoothing-index font xform)
       (or (let ([c (vector-ref contexts smoothing-index)])
@@ -1302,17 +1327,45 @@
                      (vector-set! c 1 xform)))
                  (vector-ref c 0)))
 	  (let ([c (pango_font_map_create_context
-		    (let ([fm (vector-ref font-maps smoothing-index)])
-		      (or fm
-			  (let ([fm (pango_cairo_font_map_new)])
-			    (vector-set! font-maps smoothing-index fm)
-			    fm))))])
+		    (get-font-map smoothing-index xform))])
 	    (pango_cairo_update_context cr c)
 	    (vector-set! contexts smoothing-index (vector c xform))
 	    (set-font-antialias c 
                                 (dc-adjust-smoothing (send font get-smoothing)) 
                                 (send font get-hinting))
 	    c)))
+
+    (define/private (get-font-map smoothing-index xform)
+      (cond
+       [(smoothing-index . < . multi-font-map-boundary)
+	(define old-fmv (vector-ref font-maps smoothing-index))
+	(define fmv (or old-fmv (vector #f #f #hash())))
+	(unless old-fmv
+	  (vector-set! font-maps smoothing-index fmv))
+	(or (and (equal? xform (vector-ref fmv 1))
+		 (vector-ref fmv 0))
+	    (let* ([fm (hash-ref (vector-ref fmv 2) xform #f)]
+		   [new-fm (or fm
+			       (pango_cairo_font_map_new))])
+	      (vector-set! fmv 0 new-fm)
+	      (vector-set! fmv 1 xform)
+	      (unless fm
+		(define ht (vector-ref fmv 2))
+		(define new-ht
+		  ;; Limit the number of font maps that we cache:
+		  (if ((hash-count ht) . < . 8)
+		      ht
+		      #hash()))
+		(vector-set! fmv 2 (hash-set new-ht xform new-fm)))
+	      new-fm))]
+       [else
+	(define fm (vector-ref font-maps smoothing-index))
+	(cond
+	 [fm fm]
+	 [else
+	  (define fm (pango_cairo_font_map_new))
+	  (vector-set! font-maps smoothing-index fm)
+	  fm])]))
 
     (define/private (do-text cr draw-mode s x y font combine? offset angle)
       (let* ([s (if (zero? offset) 
@@ -1943,7 +1996,7 @@
 	     [attrs (send font get-pango-attrs)]
 	     [index (get-smoothing-index font)]
 	     [context (get-context cr index font current-xform)]
-	     [fontmap (vector-ref font-maps index)]
+	     [fontmap (get-font-map index current-xform)]
 	     [font (pango_font_map_load_font fontmap context desc)])
           (and font ;; else font match failed
                (let ([metrics (pango_font_get_metrics font (pango_language_get_default))])

@@ -48,6 +48,8 @@ AC_ARG_ENABLE(pkgscope,[  --enable-pkgscope=<s>   set `raco pkg' default: instal
 
 AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled by default)], , enable_docs=yes)
 AC_ARG_ENABLE(usersetup, [  --enable-usersetup      setup user-specific files on install])
+AC_ARG_ENABLE(natipkg, [  --enable-natipkg        add "-natipkg" to library subpath])
+
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled], LIBTOOLPROG="$enableval", enable_lt=default)
@@ -276,6 +278,7 @@ show_explicitly_enabled "${enable_cgcdefault}" "CGC as default" "Note that this 
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
+show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
 
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
@@ -1461,6 +1464,12 @@ fi
 
 if test "${enable_docs}" = "no" ; then  
   INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} --no-docs"
+fi
+
+############## natipkg ################
+
+if test "${enable_natipkg}" = "yes" ; then
+  AC_DEFINE(SPLS_SUFFIX,"-natipkg",[Library subpath suffix])
 fi
 
 ############## Racket for Racket ################

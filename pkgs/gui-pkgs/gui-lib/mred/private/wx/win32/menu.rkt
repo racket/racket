@@ -67,7 +67,7 @@
                                 TPM_RIGHTBUTTON
                                 TPM_NONOTIFY
                                 TPM_RETURNCMD)
-                               gx gy
+                               (->screen gx) (->screen gy)
                                0 hwnd #f)])
       (let* ([e (new popup-event% [event-type 'menu-popdown])])
         (unless (zero? cmd)

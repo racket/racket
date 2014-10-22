@@ -14,7 +14,8 @@
                      "htdp-lib"
                      "pict-lib"
                      "redex-gui-lib"
-                     "redex-benchmark"))
+                     "redex-benchmark"
+                     "rackunit-lib"))
 
 (define pkg-desc "documentation part of \"redex\"")
 

@@ -1,6 +1,6 @@
 (module balloon racket/base
-  (require "mrpict.rkt"
-           "utils.rkt"
+  (require pict/private/pict
+           pict/private/utils
            racket/draw
            mzlib/class
            mzlib/math)

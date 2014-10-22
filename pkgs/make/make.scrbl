@@ -42,13 +42,13 @@ file, and then you combine the input files into a single file using
 
 @verbatim[#:indent 2]{
 a.output: a.input
-	make-output a.input a.output
+        make-output a.input a.output
 b.output: b.input
-	make-output b.input b.output
+        make-output b.input b.output
 c.output: c.input
-	make-output c.input c.output
+        make-output c.input c.output
 total: a.output b.output c.output
-	combine-files a.output b.output c.output
+        combine-files a.output b.output c.output
 }
 
 Once you've put this description in a file called @filepath{Makefile}
@@ -110,8 +110,8 @@ lines:
   ....)
 
 (define files '("a" "b" "c"))
-(define inputs  (map (lambda (f) (string-append f ".input"))))
-(define outputs (map (lambda (f) (string-append f ".output"))))
+(define inputs  (map (lambda (f) (string-append f ".input")) files))
+(define outputs (map (lambda (f) (string-append f ".output")) files))
 
 (define (line file)
   (let ([i (string-append file ".input")]
@@ -131,9 +131,9 @@ lines:
 
 @defmodule[make]
 
-@defform[(make ((target-expr (depend-expr ...) 
-                  command-expr ...) 
-                ...) 
+@defform[(make ((target-expr (depend-expr ...)
+                  command-expr ...)
+                ...)
                argv-expr)]{
 
 Expands to
@@ -267,7 +267,7 @@ installer used to pick whether to link to @filepath{libcurses} or
 options (see @racketmodname[dynext/compile] and
 @racketmodname[dynext/link]) before the C code is compiled or linked.
 
-@defproc[(pre-install 
+@defproc[(pre-install
                [plthome-dir path-string?]
                [collection-dir path-string?]
                [c-file path-string?]
@@ -277,7 +277,7 @@ options (see @racketmodname[dynext/compile] and
                [find-windows-libs (listof string?)]
                [unix-libs (listof string?)]
                [windows-libs (listof string?)]
-	       [extra-depends (listof path-string?)]
+               [extra-depends (listof path-string?)]
                [last-chance-k ((-> any) . -> . any)]
                [3m-too? any/c #f])
           void?]{

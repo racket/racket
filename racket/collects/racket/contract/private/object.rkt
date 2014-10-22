@@ -71,10 +71,13 @@
      (with-syntax ([(((method-id method-ctc) ...)
                      ((field-id field-ctc) ...))
                     (parse-object-contract stx #'(spec ...))])
-       (with-syntax ([(method-name ...) (map (λ (x) (string->symbol (format "~a method" (syntax-e x)))) 
-                                             (syntax->list #'(method-id ...)))])
+       (with-syntax ([(method-name ...)
+                      (map (λ (x) (string->symbol (format "~a method" (syntax-e x))))
+                           (syntax->list #'(method-id ...)))])
          #'(build-object-contract '(method-id ...)
-                                  (syntax-parameterize ((making-a-method #t)) (list (let ([method-name method-ctc]) method-name) ...))
+                                  (syntax-parameterize
+                                   ((making-a-method #t))
+                                   (list (let ([method-name method-ctc]) method-name) ...))
                                   '(field-id ...)
                                   (list field-ctc ...))))]))
 
@@ -90,25 +93,39 @@
                    (apply and/c (map sub/impl?/c %/<%>s)))])
        [res (c%) (subclass?/c c%)]))
 
+(struct subclass/c (%)
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:first-order (λ (ctc) (define % (subclass/c-% ctc)) (λ (x) (subclass? x %)))
+   #:stronger (λ (this that)
+                (cond
+                  [(subclass/c? that)
+                   (subclass? (subclass/c-% this) (subclass/c-% that))]
+                  [else #f]))
+   #:name (λ (ctc) `(subclass?/c ,(or (object-name (subclass/c-% ctc)) 'unknown%)))))
 (define (subclass?/c %)
   (unless (class? %)
-    (raise-argument-error 'subclass?/c
-                          "class?"
-                          %))
-  (define name (object-name %))
-  (flat-named-contract
-   `(subclass?/c ,(or name 'unknown%))
-   (lambda (x) (subclass? x %))))
+    (raise-argument-error 'subclass?/c "class?" %))
+  (subclass/c %))
 
+(struct implementation/c (<%>)
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:first-order (λ (ctc) (define <%> (implementation/c-<%> ctc)) (λ (x) (implementation? x <%>)))
+   #:stronger (λ (this that)
+                (cond
+                  [(implementation/c? that)
+                   (interface-extension? (implementation/c-<%> this)
+                                         (implementation/c-<%> that))]
+                  [else #f]))
+   #:name (λ (ctc) `(implementation?/c ,(or (object-name (implementation/c-<%> ctc)) 'unknown<%>)))))
+            
 (define (implementation?/c <%>)
   (unless (interface? <%>)
-    (raise-argument-error 'implementation?/c
-                          "interface?"
-                          <%>))
-  (define name (object-name <%>))
-  (flat-named-contract
-   `(implementation?/c ,(or name 'unknown<%>))
-   (lambda (x) (implementation? x <%>))))
+    (raise-argument-error 'implementation?/c "interface?" <%>))
+  (implementation/c <%>))
 
 (define (sub/impl?/c %/<%>)
   (cond
@@ -120,20 +137,44 @@
       (format "~s" '(or/c interface? class?))
       %/<%>)]))
 
+(struct is-a?-ctc (<%>)
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:first-order
+   (λ (ctc)
+     (define <%> (is-a?-ctc-<%> ctc))
+     (λ (x) (is-a? x <%>)))
+   #:stronger
+   (λ (this that)
+     (define this-<%> (is-a?-ctc-<%> this))
+     (cond
+       [(is-a?-ctc? that)
+        (define that-<%> (is-a?-ctc-<%> that))
+        (cond
+          [(and (class? this-<%>) (class? that-<%>))
+           (subclass? this-<%> that-<%>)]
+          [(and (class? this-<%>) (interface? that-<%>))
+           (implementation? this-<%> that-<%>)]
+          [(and (interface? this-<%>) (interface? that-<%>))
+           (interface-extension? this-<%> that-<%>)]
+          [else #f])]
+       [else #f]))
+   #:name
+   (λ (ctc)
+     (define <%> (is-a?-ctc-<%> ctc))
+     (define name (object-name <%>))
+     (cond
+       [name `(is-a?/c ,name)]
+       [(class? <%>) `(is-a?/c unknown%)]
+       [else `(is-a?/c unknown<%>)]))))
+
+
 (define (is-a?/c <%>)
   (check-is-a?/c <%>)
-  (define name (object-name <%>))
-  (flat-named-contract
-   (cond
-     [name
-      `(is-a?/c ,name)]
-     [(class? <%>)
-      `(is-a?/c unknown%)]
-     [else `(is-a?/c unknown<%>)])
-   (lambda (x) (is-a? x <%>))))
-
+  (is-a?-ctc <%>))
+  
 (define mixin-contract (->i ([c% class?]) [res (c%) (subclass?/c c%)]))
-
 
 (define/opter (is-a?/c opt/i opt/info stx)
   (syntax-case stx ()

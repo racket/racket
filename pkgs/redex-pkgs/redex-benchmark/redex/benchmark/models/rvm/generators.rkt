@@ -7,6 +7,7 @@
          redex/examples/racket-machine/grammar
          redex/examples/racket-machine/verification
          redex/examples/racket-machine/randomized-tests
+         (prefix-in jdg: redex/benchmark/models/rvm/verif-jdg)
          (only-in redex/private/generate-term pick-an-index))
 
 (provide (all-defined-out))
@@ -35,6 +36,20 @@
   (define type 'ordered)
   (define (generate [index 0])
     (fix (generate-term bytecode e #:i-th index))))
+
+(module+ typed-mod
+  (provide generate get-generator type)
+  (define (get-generator) generate)
+  (define type 'search)
+  (define (generate)
+    (match (generate-term
+            jdg:vl
+            #:satisfying
+            (jdg:V e • O #f • • ∅ s_1 γ_1 η_1)
+            4)
+      [#f #f]
+      [`(jdg:V ,e • O #f • • ∅ ,s_1 ,γ_1 ,η_1)
+       (fix (term (jdg:trans-e ,e)))])))
 
 (module+ check-mod
   (provide check)

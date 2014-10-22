@@ -12,7 +12,6 @@
          file/zip
          file/unzip
          net/url
-         pkg/util
          setup/dirs
          "shelly.rkt"
          "util.rkt")

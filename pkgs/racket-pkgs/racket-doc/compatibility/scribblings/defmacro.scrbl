@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribblings/reference/mz
-          (for-label compatibility/defmacro))
+          (for-label compatibility/defmacro
+                     syntax/parse syntax/parse/define))
 
 @title[#:tag "defmacro"]{Legacy macro support}
 
@@ -72,6 +73,6 @@ executed in the syntax-expansion phase.  Translating code that
 involves @racket[define-macro] or @racket[defmacro] from an
 implementation without this restriction usually implies separating
 macro related functionality into a @racket[begin-for-syntax] or a
-module (that will be imported with @racket[require-for-syntax]) and
+module (that will be imported with @racket[for-syntax]) and
 properly distinguishing syntactic information from run-time
 information.}

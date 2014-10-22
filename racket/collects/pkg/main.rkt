@@ -485,7 +485,25 @@
                                       src-catalog
                                       #:from-config? from-config
                                       #:state-catalog state
-                                      #:relative-sources? relative))]))]))
+                                      #:relative-sources? relative))]
+            ;; ----------------------------------------
+            [archive
+             "Create catalog from installed packages"
+             (define exclude-list (make-parameter null))
+             #:once-each
+             [#:bool include-deps () "Include dependencies of specified packages"]
+             #:multi
+             [(#:str pkg #f) exclude () "Exclude <pkg> from new catalog"
+              (exclude-list (cons pkg (exclude-list)))]
+             #:once-each
+             [#:bool relative () "Make source paths relative when possible"]
+             #:args (dest-dir pkg . pkgs)
+             (parameterize ([current-pkg-error (pkg-error 'pkgs-archive)])
+               (pkg-archive-pkgs dest-dir
+                                 (cons pkg pkgs)
+                                 #:include-deps? include-deps
+                                 #:exclude (exclude-list)
+                                 #:relative-sources? relative))]))]))
   (make-commands
    #:scope-flags
    ([(#:sym scope [installation user] #f) scope ()
@@ -502,9 +520,9 @@
    #:catalog-flags
    ([(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"])
    #:install-type-flags
-   ([(#:sym type [file dir file-url dir-url github name] #f) type ("-t") 
+   ([(#:sym type [file dir file-url dir-url git github name] #f) type ("-t") 
      ("Type of <pkg-source>;"
-      "valid <types>s are: file, dir, file-url, dir-url, github, or name;"
+      "valid <types>s are: file, dir, file-url, dir-url, git, github, or name;"
       "if not specified, the type is inferred syntactically")]
     [(#:str name #f) name ("-n") ("Name of package, instead of inferred"
                                   "(makes sense only when a single <pkg-source> is given)")]

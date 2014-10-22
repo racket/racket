@@ -169,7 +169,6 @@
         (define deletions (list-ref marshed 1))
         (append additions (remove* deletions defaults))]))))
   
-
 (set-square-bracket-nonum-pref 'framework:square-bracket:local
                                '("local"))
 
@@ -177,7 +176,7 @@
   (let ()
     (define base-fors
       '(for for/list for/hash for/hasheq for/hasheqv for/and for/or 
-         for/lists for/first for/last for/fold for/vector for/flvector
+         for/lists for/first for/last for/vector for/flvector
          for/sum for/product for/set))
     (define untyped-fors
       (append base-fors
@@ -189,8 +188,10 @@
                    untyped-fors)))
     all-fors))
 
+(define for/folds '("for/fold" "for/fold:" "for*/fold" "for*/fold:"))
 (set-square-bracket-nonum-pref 'framework:square-bracket:letrec
                                (append (map symbol->string all-fors)
+                                       for/folds
                                        '("let" 
                                          "let*" "let-values" "let*-values"
                                          "let-syntax" "let-struct" "let-syntaxes"
@@ -199,6 +200,8 @@
                                          "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
                                          "parameterize" "parameterize*"
                                          "with-syntax" "with-handlers")))
+
+(set-square-bracket-nonum-pref 'framework:square-bracket:for/fold for/folds)
 
 (preferences:set-default 'framework:white-on-black? #f boolean?)
 
@@ -363,6 +366,8 @@
 (preferences:set-default 'framework:fixup-open-parens #f boolean?)
 (preferences:set-default 'framework:paren-match #t boolean?)
 (let ([defaults-ht (make-hasheq)])
+  (for-each (λ (x) (hash-set! defaults-ht x 'for/fold))
+            '(for/fold for/fold: for*/fold for*/fold:))
   (for-each (λ (x) (hash-set! defaults-ht x 'define))
             '(struct
               local
@@ -441,21 +446,25 @@
                type-case))
   (preferences:set-default 
    'framework:tabify
-   (list defaults-ht #rx"^begin" #rx"^def" #f)
-   (list/c hash? (or/c #f regexp?) (or/c #f regexp?) (or/c #f regexp?)))
+   (list defaults-ht #rx"^begin" #rx"^def" #f #f)
+   (list/c (hash/c symbol? (or/c 'for/fold 'define 'begin 'lambda) #:flat? #t)
+           (or/c #f regexp?) (or/c #f regexp?) (or/c #f regexp?) (or/c #f regexp?)))
+  
   (define old-style-pred? (listof (list/c symbol? symbol?)))
+  (define new-style-pred?
+    (list/c (listof (list/c symbol? symbol?))   ;; additions to defaults
+            (listof (list/c symbol? symbol?)))) ;; deletions
+  
   (define pref-pred?
-    (list/c (or/c 
-             ;; old-style prefs
-             old-style-pred?
-             
-             ;; new-style prefs
-             (list/c (listof (list/c symbol? symbol?))   ;; additions to defaults
-                     (listof (list/c symbol? symbol?)))) ;; deletions
-            
-            (or/c regexp? #f)
-            (or/c regexp? #f)
-            (or/c regexp? #f)))
+    (or/c (list/c new-style-pred? 
+                  (or/c regexp? #f)
+                  (or/c regexp? #f)
+                  (or/c regexp? #f)
+                  (or/c regexp? #f))
+          (list/c (or/c old-style-pred? new-style-pred?)                  
+                  (or/c regexp? #f)
+                  (or/c regexp? #f)
+                  (or/c regexp? #f))))
   
   (define (ht->addition/deletion-lists ht)
     (define additions '())
@@ -483,6 +492,11 @@
       (hash-set! ht k v))
     ht)
   
+  (define (pad-to len lst)
+    (cond
+      [(null? lst) (build-list len (λ (x) #f))]
+      [else (cons (car lst) (pad-to (- len 1) (cdr lst)))]))
+  
   (preferences:set-un/marshall
    'framework:tabify 
    (λ (t) (cons (ht->addition/deletion-lists (list-ref t 0))
@@ -503,7 +517,7 @@
                    (cdr l))]
             [else 
              (cons (addition/deletion-lists->ht (list-ref l 0))
-                   (cdr l))])))))
+                   (pad-to 4 (cdr l)))])))))
 
 
 (preferences:set-default 'framework:autosave-delay 30 number?)

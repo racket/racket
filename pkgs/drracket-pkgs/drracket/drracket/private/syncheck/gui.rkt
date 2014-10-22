@@ -40,14 +40,15 @@ If the namespace does not, they are colored the unbound color.
          (for-syntax racket/base)
          (only-in ffi/unsafe register-finalizer)
          "../../syncheck-drracket-button.rkt"
-         "../../private/eval-helpers.rkt"
+         "../../private/eval-helpers-and-pref-init.rkt"
          "intf.rkt"
          "local-member-names.rkt"
-         "colors.rkt"
-         "traversals.rkt"
-         "annotate.rkt"
          "../tooltip.rkt"
          "blueboxes-gui.rkt"
+         drracket/private/syncheck/syncheck-intf
+         drracket/private/syncheck/colors
+         drracket/private/syncheck/traversals
+         drracket/private/syncheck/annotate
          framework/private/logging-timer)
 (provide tool@)
 
@@ -1297,7 +1298,8 @@ If the namespace does not, they are colored the unbound color.
               (match cursor-tooltip
                 [(tooltip-spec strings x y w h)
                  ;; hiding keeps it from flashing the new tooltip in the old location
-                 (send tooltip-frame show #f)
+                 ;; but this hiding does strange things under linux, so don't do it there
+                 (unless (equal? (system-type) 'unix) (send tooltip-frame show #f))
                  (send tooltip-frame set-tooltip strings)
                  (send tooltip-frame show-over x y w h)]
                 ;; #f or 'out-of-sync
@@ -1463,6 +1465,9 @@ If the namespace does not, they are colored the unbound color.
               (send text position-location eol-pos xlb ylb #t #t)
               (define-values (x-off y-off)
                 (send text editor-location-to-dc-location (+ (unbox xlb) 4) (unbox ylb)))
+              (define (c n) (inexact->exact (round n)))
+              (define x-off-round (c x-off))
+              (define y-off-round (c y-off))
               (define window
                 (let loop ([ed text])
                   (cond
@@ -1473,9 +1478,8 @@ If the namespace does not, they are colored the unbound color.
                          (loop (send (send admin get-snip) get-editor))
                          #f)])))
               (cond
-                [(and window (position-integer? x-off) (position-integer? y-off))
-                 (define (c n) (inexact->exact (round n)))
-                 (define-values (gx gy) (send window client->screen (c x-off) (c y-off)))
+                [(and window (position-integer? x-off-round) (position-integer? y-off-round))
+                 (define-values (gx gy) (send window client->screen x-off-round y-off-round))
                  (values gx gy gx gy)]
                 [else
                  (values #f #f #f #f)]))

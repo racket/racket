@@ -1065,7 +1065,8 @@ XFORM_NONGCING static Scheme_Object *do_prop_accessor(Scheme_Object *prop, Schem
   return NULL;
 }
 
-static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object *prop, Scheme_Object *arg);
+static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object *prop, 
+                                                 Scheme_Object *orig_arg, Scheme_Object *arg);
 
 static Scheme_Object *chaperone_prop_acc_k(void)
 {
@@ -1073,26 +1074,31 @@ static Scheme_Object *chaperone_prop_acc_k(void)
   Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
   Scheme_Object *arg = (Scheme_Object *)p->ku.k.p2;
   const char *who = (const char *)p->ku.k.p3;
+  Scheme_Object *orig_arg = (Scheme_Object *)p->ku.k.p4;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
 
-  return do_chaperone_prop_accessor(who, o, arg);
+  return do_chaperone_prop_accessor(who, o, orig_arg, arg);
 }
 
-static Scheme_Object *chaperone_prop_acc_overflow(const char *who, Scheme_Object *o, Scheme_Object *arg)
+static Scheme_Object *chaperone_prop_acc_overflow(const char *who, Scheme_Object *o,
+                                                  Scheme_Object *orig_arg, Scheme_Object *arg)
 {
   Scheme_Thread *p = scheme_current_thread;
 
   p->ku.k.p1 = (void *)o;
   p->ku.k.p2 = (void *)arg;
   p->ku.k.p3 = (void *)who;
+  p->ku.k.p4 = (void *)orig_arg;
 
   return scheme_handle_stack_overflow(chaperone_prop_acc_k);
 }
 
-static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object *prop, Scheme_Object *arg)
+static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object *prop,
+                                                 Scheme_Object *orig_arg,  Scheme_Object *arg)
 {
   while (1) {
     if (SCHEME_CHAPERONEP(arg)) {
@@ -1123,7 +1129,7 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
 #ifdef DO_STACK_CHECK
           {
 # include "mzstkchk.h"
-            return chaperone_prop_acc_overflow(who, prop, arg);
+            return chaperone_prop_acc_overflow(who, prop, orig_arg, arg);
           }
 #endif
           
@@ -1136,12 +1142,12 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
             orig = _scheme_apply(SCHEME_CAR(red), 1, a);
             red = SCHEME_CDR(red);
           } else {
-            orig = do_chaperone_prop_accessor(who, prop, arg);
+            orig = do_chaperone_prop_accessor(who, prop, orig_arg, arg);
           }
 
           if (!orig) return NULL;
           
-          a[0] = arg;
+          a[0] = orig_arg;
           a[1] = orig;
           v = _scheme_apply(red, 2, a);
     
@@ -1164,7 +1170,8 @@ static Scheme_Object *prop_accessor(int argc, Scheme_Object **args, Scheme_Objec
 
   v = args[0];
   if (SCHEME_CHAPERONEP(v))
-    v = do_chaperone_prop_accessor(((Scheme_Primitive_Proc *)prim)->name, SCHEME_PRIM_CLOSURE_ELS(prim)[0], v);
+    v = do_chaperone_prop_accessor(((Scheme_Primitive_Proc *)prim)->name, SCHEME_PRIM_CLOSURE_ELS(prim)[0],
+                                   v, v);
   else
     v = do_prop_accessor(SCHEME_PRIM_CLOSURE_ELS(prim)[0], v);
 
@@ -1316,7 +1323,7 @@ Scheme_Object *scheme_make_struct_type_property(Scheme_Object *name)
 Scheme_Object *scheme_chaperone_struct_type_property_ref(Scheme_Object *prop, Scheme_Object *s)
 {
   if (SCHEME_CHAPERONEP(s))
-    return do_chaperone_prop_accessor("impersonator-property-ref", prop, s);
+    return do_chaperone_prop_accessor("impersonator-property-ref", prop, s, s);
   else
     return do_prop_accessor(prop, s);
 }
@@ -2002,7 +2009,7 @@ int scheme_is_struct_instance(Scheme_Object *type, Scheme_Object *v)
 }
 
 static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim,
-                                           Scheme_Object *o, int i);
+                                           Scheme_Object *orig_o, Scheme_Object *o, int i);
 
 static Scheme_Object *chaperone_struct_ref_k(void)
 {
@@ -2010,22 +2017,25 @@ static Scheme_Object *chaperone_struct_ref_k(void)
   Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
   Scheme_Object *prim = (Scheme_Object *)p->ku.k.p3;
   const char *who = (const char *)p->ku.k.p2;
+  Scheme_Object *orig_o = (Scheme_Object *)p->ku.k.p4;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
 
-  return chaperone_struct_ref(who, prim, o, p->ku.k.i1);
+  return chaperone_struct_ref(who, prim, orig_o, o, p->ku.k.i1);
 }
 
 static Scheme_Object *chaperone_struct_ref_overflow(const char *who, Scheme_Object *prim, 
-                                                    Scheme_Object *o, int i)
+                                                    Scheme_Object *orig_o, Scheme_Object *o, int i)
 {
   Scheme_Thread *p = scheme_current_thread;
 
   p->ku.k.p1 = (void *)o;
   p->ku.k.p2 = (void *)who;
   p->ku.k.p3 = (void *)prim;
+  p->ku.k.p4 = (void *)orig_o;
   p->ku.k.i1 = i;
 
   return scheme_handle_stack_overflow(chaperone_struct_ref_k);
@@ -2061,7 +2071,7 @@ static void raise_undefined_error(const char *who, Scheme_Object *prim, Scheme_O
 }
 
 static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim, 
-                                           Scheme_Object *o, int i)
+                                           Scheme_Object *orig_o, Scheme_Object *o, int i)
 {
   while (1) {
     if (!SCHEME_CHAPERONEP(o)) {
@@ -2079,7 +2089,7 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim,
         if (!SCHEME_CHAPERONEP(o))
           orig = ((Scheme_Structure *)o)->slots[i];
         else
-          orig = chaperone_struct_ref(who, prim, o, i);
+          orig = chaperone_struct_ref(who, prim, orig_o, o, i);
 
         if (SAME_OBJ(orig, scheme_undefined)) {
           raise_undefined_error(who, prim, px->val, "undefined", "use", i);
@@ -2094,7 +2104,7 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim,
 #ifdef DO_STACK_CHECK
         {
 # include "mzstkchk.h"
-          return chaperone_struct_ref_overflow(who, prim, o, i);
+          return chaperone_struct_ref_overflow(who, prim, orig_o, o, i);
         }
 #endif
 
@@ -2107,9 +2117,9 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim,
           orig = _scheme_apply(SCHEME_CAR(red), 1, a);
           red = SCHEME_CDR(red);
         } else
-          orig = chaperone_struct_ref(who, prim, px->prev, i);
+          orig = chaperone_struct_ref(who, prim, orig_o, px->prev, i);
 
-        a[0] = px->prev;
+        a[0] = orig_o;
         a[1] = orig;
         if (SAME_TYPE(SCHEME_TYPE(red), scheme_native_closure_type)) {
           o = _scheme_apply_native(red, 2, a);
@@ -2136,7 +2146,7 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim,
 Scheme_Object *scheme_struct_ref(Scheme_Object *sv, int pos)
 {
   if (SCHEME_CHAPERONEP(sv)) {
-    return chaperone_struct_ref("struct-ref", NULL, sv, pos);
+    return chaperone_struct_ref("struct-ref", NULL, sv, sv, pos);
   } else {
     Scheme_Structure *s = (Scheme_Structure *)sv;
     
@@ -2145,8 +2155,53 @@ Scheme_Object *scheme_struct_ref(Scheme_Object *sv, int pos)
 }
 
 static void chaperone_struct_set(const char *who, Scheme_Object *prim,
+                                 Scheme_Object *o, int i, Scheme_Object *v);
+
+static Scheme_Object *chaperone_struct_set_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Object *prim = (Scheme_Object *)p->ku.k.p3;
+  const char *who = (const char *)p->ku.k.p2;
+  Scheme_Object *v = (Scheme_Object *)p->ku.k.p4;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
+
+  chaperone_struct_set(who, prim, o, p->ku.k.i1, v);
+
+  return scheme_false;
+}
+
+static void chaperone_struct_set_overflow(const char *who, Scheme_Object *prim, 
+                                          Scheme_Object *o, int i, Scheme_Object *v)
+{
+  Scheme_Thread *p = scheme_current_thread;
+
+  p->ku.k.p1 = (void *)o;
+  p->ku.k.p2 = (void *)who;
+  p->ku.k.p3 = (void *)prim;
+  p->ku.k.p4 = (void *)v;
+  p->ku.k.i1 = i;
+
+  (void)scheme_handle_stack_overflow(chaperone_struct_set_k);
+}
+
+static void chaperone_struct_set(const char *who, Scheme_Object *prim,
                                  Scheme_Object *o, int i, Scheme_Object *v)
 {
+  Scheme_Object *orig_o = o;
+
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    chaperone_struct_set_overflow(who, prim, o, i, v);
+    return;
+  }
+#endif
+
   while (1) {
     if (!SCHEME_CHAPERONEP(o)) {
       ((Scheme_Structure *)o)->slots[i] = v;
@@ -2165,7 +2220,7 @@ static void chaperone_struct_set(const char *who, Scheme_Object *prim,
         if (SCHEME_TRUEP(red)) {
           Scheme_Object *finish_setter = NULL;
 
-          a[0] = o;
+          a[0] = orig_o;
           a[1] = v;
 
           if (SCHEME_PAIRP(red)) {
@@ -2197,9 +2252,9 @@ static void chaperone_struct_set(const char *who, Scheme_Object *prim,
             return;
           }
         } 
-      } if (SCHEME_VECTORP(px->redirects)
-            && !(SCHEME_VEC_SIZE(px->redirects) & 1)
-            && SAME_OBJ(SCHEME_VEC_ELS(px->redirects)[1], scheme_undefined)) {
+      } else if (SCHEME_VECTORP(px->redirects)
+                 && !(SCHEME_VEC_SIZE(px->redirects) & 1)
+                 && SAME_OBJ(SCHEME_VEC_ELS(px->redirects)[1], scheme_undefined)) {
         /* chaperone on every field: check that current value is not undefined
            --- unless check is disabled by a mark (bit it's faster to check
            for `undefined` before checking the mark) */
@@ -2224,6 +2279,35 @@ void scheme_struct_set(Scheme_Object *sv, int pos, Scheme_Object *v)
     
     s->slots[pos] = v;
   }
+}
+
+int scheme_is_noninterposing_chaperone(Scheme_Object *o)
+/* Checks whether the immediate impersonator layer for `o` is known to
+   interpose on no operations (i.e., it's for impersonator properties,
+   only) */
+{
+  Scheme_Chaperone *px = (Scheme_Chaperone *)o;  
+  int i;
+
+  if (!SCHEME_VECTORP(px->redirects))
+    return 0;
+
+  if (SCHEME_VEC_SIZE(px->redirects) & 1) {
+    /* procedure chaperone */
+    if (SCHEME_TRUEP(SCHEME_VEC_ELS(px->redirects)[0]))
+      return 0;
+    return 1;
+  }
+
+  if (SCHEME_TRUEP(SCHEME_VEC_ELS(px->redirects)[0]))
+    return 0;
+
+  for (i = SCHEME_VEC_SIZE(px->redirects); i-- > PRE_REDIRECTS; ) {
+    if (!SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[i]))
+      return 0;
+  }
+
+  return 1;
 }
 
 static Scheme_Object **apply_guards(Scheme_Struct_Type *stype, int argc, Scheme_Object **args,
@@ -2568,7 +2652,7 @@ Scheme_Object *scheme_struct_getter(int argc, Scheme_Object **args, Scheme_Objec
   if (SAME_OBJ((Scheme_Object *)inst, args[0]))
     return inst->slots[pos];
   else
-    return chaperone_struct_ref("struct-ref", prim, args[0], pos);
+    return chaperone_struct_ref("struct-ref", prim, args[0], args[0], pos);
 }
 
 Scheme_Object *scheme_struct_setter(int argc, Scheme_Object **args, Scheme_Object *prim)
@@ -5402,7 +5486,7 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
   if (SCHEME_INTP(a)) {
     *is_method = 0;
     if (!SAME_OBJ(plain_obj, obj)) {
-      proc = chaperone_struct_ref("struct-ref", NULL, obj, SCHEME_INT_VAL(a));
+      proc = chaperone_struct_ref("struct-ref", NULL, obj, obj, SCHEME_INT_VAL(a));
     } else {
       proc = ((Scheme_Structure *)obj)->slots[SCHEME_INT_VAL(a)];
     }
@@ -5714,8 +5798,9 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
   Scheme_Object *a[1], *inspector, *getter_positions = scheme_null;
   int i, offset, arity, non_applicable_op, repeat_op;
   const char *kind;
-  Scheme_Hash_Tree *props = NULL, *red_props = NULL, *setter_positions = NULL;
+  Scheme_Hash_Tree *props = NULL, *red_props = NULL, *empty_red_props = NULL, *setter_positions = NULL;
   intptr_t field_pos;
+  int empty_si_chaperone = 0, *empty_redirects = NULL, has_redirect = 0;
 
   if (argc == 1) return argv[0];
 
@@ -5778,7 +5863,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     repeat_op = 0;
 
     if (offset == -2) {
-      if (SCHEME_TRUEP(si_chaperone))
+      if (SCHEME_TRUEP(si_chaperone) || empty_si_chaperone)
         scheme_contract_error(name,
                               "struct-info procedure supplied a second time",
                               "procedure", 1, a[0],
@@ -5804,10 +5889,9 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
         non_applicable_op = 1;
         arity = 0;
       } else {
-        if (!red_props)
-          red_props = scheme_make_hash_tree(0);
-        
-        if (scheme_hash_tree_get(red_props, prop))
+        if (red_props && scheme_hash_tree_get(red_props, prop))
+          repeat_op = 1;
+        if (empty_red_props && scheme_hash_tree_get(empty_red_props, prop))
           repeat_op = 1;
 
         arity = 2;
@@ -5820,6 +5904,8 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       if (!SCHEME_STRUCTP(val) || !scheme_is_struct_instance((Scheme_Object *)st, val))
         non_applicable_op = 1;
       else if (SCHEME_TRUEP(SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + field_pos]))
+        repeat_op = 1;
+      else if (empty_redirects && empty_redirects[offset + field_pos])
         repeat_op = 1;
       else {
         if (is_impersonator) {
@@ -5881,9 +5967,10 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
                             NULL);
 
     proc = argv[i];
-    if (!scheme_check_proc_arity(NULL, arity, i, argc, argv)) {
-      char buf[32];
-      sprintf(buf, "(procedure-arity-includes/c %d)", arity);
+    if (SCHEME_TRUEP(proc)
+        && !scheme_check_proc_arity(NULL, arity, i, argc, argv)) {
+      char buf[64];
+      sprintf(buf, "(or/c (procedure-arity-includes/c %d) #f)", arity);
       scheme_contract_error(name,
                             "operation's redirection procedure does not match the expected arity",
                             "given", 1, proc,
@@ -5894,8 +5981,8 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     }
 
     /* If the operation to chaperone was itself a chaperone, we need to
-       preserve and use he chaperoned variant of the operation. */
-    if (SCHEME_CHAPERONEP(a[0])) {
+       preserve and use the chaperoned variant of the operation. */
+    if (SCHEME_CHAPERONEP(a[0]) && SCHEME_TRUEP(proc)) {
       Scheme_Chaperone *ppx = (Scheme_Chaperone *)a[0];
       if (!is_impersonator
           && (SCHEME_CHAPERONE_FLAGS(ppx) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
@@ -5907,12 +5994,35 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       proc = scheme_make_pair(a[0], proc);
     }
 
-    if (prop)
-      red_props = scheme_hash_tree_set(red_props, prop, proc);
-    else if (st)
-      SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + field_pos] = proc;
-    else
-      si_chaperone = proc;
+    if (prop) {
+      if (SCHEME_TRUEP(proc)) {
+        if (!red_props)
+          red_props = scheme_make_hash_tree(0);
+        red_props = scheme_hash_tree_set(red_props, prop, proc);
+        has_redirect = 1;
+      } else {
+        if (!empty_red_props)
+          empty_red_props = scheme_make_hash_tree(0);
+        empty_red_props = scheme_hash_tree_set(empty_red_props, prop, proc);
+      }
+    } else if (st) {
+      if (SCHEME_TRUEP(proc)) {
+        SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + field_pos] = proc;
+        has_redirect = 1;
+      } else {
+        if (!empty_redirects) {
+          empty_redirects = MALLOC_N_ATOMIC(int, 2 * stype->num_slots);
+          memset(empty_redirects, 0, sizeof(int) * 2 * stype->num_slots);
+        }
+        empty_redirects[offset + field_pos] = 1;
+      }
+    } else {
+      if (SCHEME_TRUEP(proc)) {
+        si_chaperone = proc;
+        has_redirect = 1;
+      } else
+        empty_si_chaperone = 1;
+    }
   }
 
   if (is_impersonator) {
@@ -5933,6 +6043,9 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       getter_positions = SCHEME_CDR(getter_positions);
     }
   }
+
+  if (!has_redirect && !props)
+    return argv[0];
   
   if (!redirects) {
     /* a non-structure chaperone */

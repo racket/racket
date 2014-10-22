@@ -64,7 +64,7 @@
     (import [prefix drracket:unit: drracket:unit^]
             [prefix drracket:rep: drracket:rep^]
             [prefix drracket:init: drracket:init^]
-            [prefix drracket:language: drracket:language^]
+            [prefix drracket:language: drracket:language/int^]
             [prefix drracket:app: drracket:app^]
             [prefix drracket:tools: drracket:tools^]
             [prefix drracket:help-desk: drracket:help-desk^]
@@ -1968,22 +1968,22 @@
                        (and (vector-ref printable 6) #t))))))
 
         (define/override (config-panel parent)
-          (let ([p (new vertical-panel% [parent parent])])
-            (let ([base-config (super config-panel p)]
-                  [assume-cb (new check-box%
-                                  [parent 
-                                   (new group-box-panel%
-                                        [parent p]
-                                        [label (string-constant enforce-primitives-group-box-label)]
-                                        [stretchable-height #f]
-                                        [stretchable-width #f])]
-                                  [label (string-constant enforce-primitives-check-box-label)])])
-              (case-lambda
-               [() (extend-simple-settings (base-config)
-                                           (send assume-cb get-value))]
-               [(c)
-                (base-config c)
-                (send assume-cb set-value (simple-settings+assume-no-redef? c))]))))
+          (define p (new vertical-panel% [parent parent]))
+          (define base-config (super config-panel p))
+          (define assume-cb (new check-box%
+                                 [parent
+                                  (new group-box-panel%
+                                       [parent p]
+                                       [label (string-constant enforce-primitives-group-box-label)]
+                                       [stretchable-height #f]
+                                       [stretchable-width #f])]
+                                 [label (string-constant enforce-primitives-check-box-label)]))
+          (case-lambda
+            [() (extend-simple-settings (base-config)
+                                        (send assume-cb get-value))]
+            [(c)
+             (base-config c)
+             (send assume-cb set-value (simple-settings+assume-no-redef? c))]))
 
         (define/override (default-settings? x)
           (equal? (simple-settings+assume->vector x)
@@ -2035,13 +2035,13 @@
       (class %
         ;; since check syntax no longer shares the gui libraries, 
         ;; we always share it explicitly here
-        (define/override (on-execute setting run-in-user-thread)
+        (define/override (on-execute settings run-in-user-thread)
           (let ([mred-name ((current-module-name-resolver) 'mred/mred #f #f #t)])
             (run-in-user-thread
              (λ ()
                (namespace-attach-module drracket:init:system-namespace mred-name))))
-          (super on-execute setting run-in-user-thread))
-        (define/override (default-settings) 
+          (super on-execute settings run-in-user-thread))
+        (define/override (default-settings)
           (let ([s (super default-settings)])
             (make-simple-settings+assume (drracket:language:simple-settings-case-sensitive s)
                                          'trad-write
@@ -2050,6 +2050,14 @@
                                          (drracket:language:simple-settings-insert-newlines s)
                                          (drracket:language:simple-settings-annotations s)
                                          (simple-settings+assume-no-redef? s))))
+        (super-new)))
+    
+    (define (pretty-big-config-panel-mixin %)
+      (class %
+        (define/override (config-panel parent)
+          (drracket:language:simple-module-based-language-config-panel
+           parent
+           #:include-print-mode? #f))
         (super-new)))
     
     (define get-all-scheme-manual-keywords
@@ -2113,7 +2121,9 @@
                       (string-constant pretty-big-scheme-one-line-summary)
                       (λ (%) (pretty-big-mixin
                               (macro-stepper-mixin
-                               (assume-mixin (add-errortrace-key-mixin %)))))))
+                               (assume-mixin
+                                (pretty-big-config-panel-mixin
+                                 (add-errortrace-key-mixin %))))))))
         (add-language
          (make-simple '(lib "r5rs/lang.rkt")
                       "plt:r5rs"

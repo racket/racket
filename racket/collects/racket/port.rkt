@@ -1035,7 +1035,11 @@
                 (if (eq? n 0)
                     (if (and progress-evt (sync/timeout 0 progress-evt))
                         #f
-                        (wrap-evt port (lambda (x) 0)))
+                        (wrap-evt (if (zero? skip)
+                                      port
+                                      (choice-evt (or progress-evt never-evt)
+                                                  (peek-bytes-evt 1 skip progress-evt port)))
+                                  (lambda (x) 0)))
                     n)))))
       (define (try-again)
         (wrap-evt

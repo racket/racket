@@ -26,6 +26,7 @@ don't depend on any other portion of the system
          reset-errors!
          report-first-error
          report-all-errors
+         error-at-stx-loc?
          tc-error/fields
          tc-error/delayed
          tc-error
@@ -117,12 +118,14 @@ don't depend on any other portion of the system
     ;; if there's only one, we don't need multiple-error handling
     [(list (struct err (msg stx)))
      (reset-errors!)
+     (log-type-error msg stx)
      (raise-typecheck-error msg stx)]
     [l
      (let ([stxs
             (for/list ([e (in-list l)])
               (with-handlers ([exn:fail:syntax?
                                (λ (e) ((error-display-handler) (exn-message e) e))])
+                (log-type-error (err-msg e) (err-stx e))
                 (raise-typecheck-error (err-msg e) (err-stx e)))
               (err-stx e))])
        (reset-errors!)
@@ -130,6 +133,50 @@ don't depend on any other portion of the system
          (raise-typecheck-error (format "Summary: ~a errors encountered"
                                         (length stxs))
                                 (apply append stxs))))]))
+
+;; Returns #t if there's a type error recorded at the same position as
+;; the given syntax object. Does not return a useful result if the
+;; source, position, or span are #f.
+(define (error-at-stx-loc? stx)
+  (for/or ([an-err (in-list delayed-errors)])
+    (match-define (struct err (_ stxes)) an-err)
+    (define stx* (and (not (null? stxes)) (car stxes)))
+    (and stx*
+         (equal? (syntax-source stx*) (syntax-source stx))
+         (= (syntax-position stx*) (syntax-position stx))
+         (= (syntax-span stx*) (syntax-span stx)))))
+
+;; send type errors to DrRacket's tooltip system
+(define-logger online-check-syntax)
+(define (log-type-error msg stxes)
+  (define stx (and (not (null? stxes)) (car stxes)))
+  (when (and stx
+             (syntax-position stx)
+             (syntax-span stx))
+    (define tooltip-info
+      ;; see type-table.rkt for why we do this
+      (if (or (not (pair? (syntax-e stx)))
+              (let ([fst (car (syntax-e stx))])
+                (and (identifier? fst)
+                     (free-identifier=? fst #'quote))))
+          (list (vector stx
+                        (sub1 (syntax-position stx))
+                        (+ (sub1 (syntax-position stx)) (syntax-span stx))
+                        msg))
+          (list (vector stx
+                        (sub1 (syntax-position stx))
+                        (syntax-position stx)
+                        msg)
+                (vector stx
+                        (sub1 (+ (sub1 (syntax-position stx))
+                                 (syntax-span stx)))
+                        (+ (sub1 (syntax-position stx))
+                           (syntax-span stx))
+                        msg))))
+    (log-message online-check-syntax-logger
+                 'info
+                 "TR's type error tooltip syntaxes; this message is ignored"
+                 (list (syntax-property #'(void) 'mouse-over-tooltips tooltip-info)))))
 
 (define delay-errors? (make-parameter #f))
 

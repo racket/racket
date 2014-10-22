@@ -4,6 +4,7 @@
          pict)
 
 (module test racket/base) ; run by run-tests
+(white-square-bracket homemade-white-square-bracket)
 
 ;; tests: 
 ;;  - language,
@@ -148,6 +149,7 @@
          "metafunction-judgment-holds.png"))
 
 (define-metafunction lang
+  T : any any -> 1 ∪ (2 2) ∨ 1234
   [(T x y)
    1
    (side-condition (not (eq? (term x) (term y))))
@@ -180,7 +182,15 @@
   [(TL 2) (a
            ,(term-let ((x (term 1)))
                       (term x)) beside
-                      below)])
+                      below)]
+  [(TL any)
+   3333333333
+   (where 3 any)
+   or
+   2
+   (where 2 any)
+   or
+   0])
 
 ;; this tests that term-let is sucked away properly
 ;; when the metafunction is rendered

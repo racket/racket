@@ -205,19 +205,44 @@
 
 ;; coerce-contract/f : any -> (or/c #f contract?)
 ;; returns #f if the argument could not be coerced to a contract
-(define (coerce-contract/f x)
+(define-values (name-default name-default?)
+  (let ()
+    (struct name-default ())
+    (values (name-default) name-default?)))
+(define (coerce-contract/f x [name name-default])
+  (define (coerce-simple-value x)
+    (cond
+      [(contract-struct? x) #f] ;; this has to come first, since some of these are procedure?.
+      [(and (procedure? x) (procedure-arity-includes? x 1))
+       (make-predicate-contract (if (name-default? name)
+                                    (or (object-name x) '???)
+                                    name)
+                                x
+                                #f
+                                (memq x the-known-good-contracts))]
+      [(or (symbol? x) (boolean? x) (char? x) (null? x) (keyword? x))
+       (make-eq-contract x
+                         (if (name-default? name)
+                             (if (or (null? x)
+                                     (symbol? x))
+                                 `',x
+                                 x)
+                             name))]
+      [(or (bytes? x) (string? x))
+       (make-equal-contract x (if (name-default? name) x name))]
+      [(number? x)
+       (make-=-contract x (if (name-default? name) x name))]
+      [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x (if (name-default? name) x name))]
+      [else #f]))
   (cond
-    [(contract-struct? x) x]
-    [(and (procedure? x) (procedure-arity-includes? x 1)) 
-     (make-predicate-contract (or (object-name x) '???) 
-                              x 
-                              #f 
-                              (memq x the-known-good-contracts))]
-    [(null? x) (make-eq-contract x)]
-    [(or (symbol? x) (boolean? x) (char? x) (null? x) (keyword? x)) (make-eq-contract x)]
-    [(or (bytes? x) (string? x)) (make-equal-contract x)]
-    [(number? x) (make-=-contract x)]
-    [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x)]
+    [(coerce-simple-value x) => values]
+    [(name-default? name) (and (contract-struct? x) x)]
+    [(predicate-contract? x)
+     (struct-copy predicate-contract x [name name])]
+    [(eq-contract? x) (make-eq-contract (eq-contract-val x) name)]
+    [(equal-contract? x) (make-eq-contract (equal-contract-val x) name)]
+    [(=-contract? x) (make-=-contract (=-contract-val x) name)]
+    [(regexp/c? x) (make-regexp/c (regexp/c-reg x) name)]
     [else #f]))
 
 (define the-known-good-contracts
@@ -341,17 +366,12 @@
 ;
 ;
 
-(define-struct eq-contract (val)
+(define-struct eq-contract (val name)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (eq? (eq-contract-val ctc) x)))
-   #:name
-   (λ (ctc) 
-      (if (or (null? (eq-contract-val ctc))
-              (symbol? (eq-contract-val ctc)))
-        `',(eq-contract-val ctc)
-        (eq-contract-val ctc)))
+   #:name (λ (ctc) (eq-contract-name ctc))
    #:generate
    (λ (ctc) 
      (define v (eq-contract-val ctc))
@@ -366,12 +386,12 @@
               ((predicate-contract-pred that) this-val))))
    #:list-contract? (λ (c) (null? (eq-contract-val c)))))
 
-(define-struct equal-contract (val)
+(define-struct equal-contract (val name)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (equal? (equal-contract-val ctc) x)))
-   #:name (λ (ctc) (equal-contract-val ctc))
+   #:name (λ (ctc) (equal-contract-name ctc))
    #:stronger
    (λ (this that)
      (define this-val (equal-contract-val this))
@@ -385,12 +405,12 @@
      (define v (equal-contract-val ctc))
      (λ (fuel) (λ () v)))))
 
-(define-struct =-contract (val)
+(define-struct =-contract (val name)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (and (number? x) (= (=-contract-val ctc) x))))
-   #:name (λ (ctc) (=-contract-val ctc))
+   #:name (λ (ctc) (=-contract-name ctc))
    #:stronger
    (λ (this that)
      (define this-val (=-contract-val this))
@@ -404,7 +424,7 @@
      (define v (=-contract-val ctc))
      (λ (fuel) (λ () v)))))
 
-(define-struct regexp/c (reg)
+(define-struct regexp/c (reg name)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
@@ -417,7 +437,7 @@
    #:name (λ (ctc) (regexp/c-reg ctc))
    #:stronger
    (λ (this that)
-      (and (regexp/c? that) (eq? (regexp/c-reg this) (regexp/c-reg that))))))
+      (and (regexp/c? that) (equal? (regexp/c-reg this) (regexp/c-reg that))))))
 
 
 ;; sane? : boolean -- indicates if we know that the predicate is well behaved

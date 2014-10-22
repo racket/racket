@@ -1,7 +1,6 @@
 #lang racket/base
 (require rackunit
          racket/system
-         pkg/util
          "shelly.rkt"
          "util.rkt")
 

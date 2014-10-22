@@ -31,23 +31,28 @@
 
 (define hwnd-param (make-parameter #f))
 
+(define need-clip-text-workaround? #t)
+(define need-clip-refresh-workaround? #f) ; patched Cairo
+
 (define win32-bitmap%
   (class win32-no-hwnd-bitmap%
     (init w h hwnd [gl-config #f])
     (inherit get-cairo-surface)
     (parameterize ([hwnd-param hwnd])
-      (super-new [w w] [h h] [backing-scale 1.0]))
+      (super-new [w w] [h h] [backing-scale (->screen 1.0)]))
     
-    (define/override (build-cairo-surface w h) 
+    (define/override (build-cairo-surface w h backing-scale)
       (define hwnd (hwnd-param))
       (if hwnd
           (atomically
            (let ([hdc (GetDC hwnd)])
              (begin0
-               (cairo_win32_surface_create_with_ddb hdc
-                                                    CAIRO_FORMAT_RGB24 w h)
+	      (let ([sw (inexact->exact (floor (* backing-scale w)))]
+		    [sh (inexact->exact (floor (* backing-scale h)))])
+		(cairo_win32_surface_create_with_ddb hdc
+						     CAIRO_FORMAT_RGB24 sw sh))
                (ReleaseDC hwnd hdc))))
-          (super build-cairo-surface w h)))
+          (super build-cairo-surface w h backing-scale)))
     
     (define gl (and gl-config
                     (let ([hdc (cairo_win32_surface_get_dc (get-cairo-surface))])
@@ -72,9 +77,8 @@
       ;; Work around a Cairo(?) bug. When a clipping
       ;; region is set, we draw text, and then the clipping
       ;; region is changed, the change doesn't take
-      ;; until we draw more text --- but only under Win64,
-      ;; and only with DDB surfaces.
-      (when win64?
+      ;; until we draw more text --- but only with DDB surfaces.
+      (when need-clip-text-workaround?
 	(let ([bm (internal-get-bitmap)])
 	  (when (bm . is-a? . win32-bitmap%)
 	    (SelectClipRgn (cairo_win32_surface_get_dc
@@ -89,12 +93,11 @@
                                       #f)])
 	    (when v (set! gl v))
 	    v)))
-      
 
     (define/override (make-backing-bitmap w h)
       (if (send canvas get-canvas-background)
           (make-object win32-bitmap% w h (send canvas get-hwnd))
-          (super make-backing-bitmap w h)))
+	  (make-object bitmap% w h #f #t (->screen 1.0))))
 
     (define/override (get-backing-size xb yb)
       (send canvas get-client-size xb yb))
@@ -125,18 +128,20 @@
           (let ([w (box 0)]
                 [h (box 0)])
             (send canvas get-client-size w h)
-	    (define r (make-RECT 0 0 (unbox w) (unbox h)))
+	    (define sw (->screen (unbox w)))
+	    (define sh (->screen (unbox h)))
+	    (define r (make-RECT 0 0 sw sh))
 	    (define clip-type
-	      (if win64?
+	      (if need-clip-refresh-workaround?
 		  (GetClipBox hdc r)
 		  SIMPLEREGION))
 	    (cond
-	     [(and win64?
+	     [(and need-clip-refresh-workaround?
 		   (not (and (= clip-type SIMPLEREGION)
 			     (= (RECT-left r) 0)
 			     (= (RECT-top r) 0)
-			     (= (RECT-right r) (unbox w))
-			     (= (RECT-bottom r) (unbox h)))))
+			     (= (RECT-right r) sw)
+			     (= (RECT-bottom r) sh))))
 	      ;; Another workaround: a clipping region installed by BeginPaint()
 	      ;; seems to interfere with Cairo drawing. So, draw to a
 	      ;; fresh context and copy back and forth using Win32.
@@ -149,7 +154,10 @@
 		     [cr (cairo_create surface)]
 		     [hdc2 (cairo_win32_surface_get_dc surface)])
 		(BitBlt hdc2 0 0 cw ch hdc (RECT-left r) (RECT-top r) SRCCOPY)
-		(backing-draw-bm bm cr (unbox w) (unbox h) (- (RECT-left r)) (- (RECT-top r)))
+		(cairo_scale cr (->screen 1.0) (->screen 1.0))
+		(backing-draw-bm bm cr (->normal sw) (->normal sh)
+				 (->normal (- (RECT-left r))) (->normal (- (RECT-top r)))
+				 (->screen 1.0))
 		(cairo_surface_flush surface)
 		(BitBlt hdc (RECT-left r) (RECT-top r) cw ch hdc2 0 0 SRCCOPY)
 		(cairo_surface_destroy surface)
@@ -158,7 +166,10 @@
 	      (let* ([surface (cairo_win32_surface_create hdc)]
 		     [cr (cairo_create surface)])
 		(cairo_surface_destroy surface)
-		(backing-draw-bm bm cr (unbox w) (unbox h))
+		(cairo_scale cr (->screen 1.0) (->screen 1.0))
+		(backing-draw-bm bm cr (->normal sw) (->normal sh)
+				 0 0
+				 (->screen 1.0))
 		(cairo_destroy cr))])))))
 
 (define (request-flush-delay canvas)

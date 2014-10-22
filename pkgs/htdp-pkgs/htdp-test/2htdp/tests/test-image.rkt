@@ -310,6 +310,17 @@
       =>
       #f)
 
+;; make sure equality doesn't compare baselines;
+;; these two images have different baselines but
+;; draw the same way (they draw nothing because their
+;; widths are 0)
+(test (equal?
+       (crop 0 0 0 1 
+             (rectangle 0 0 'solid "red"))
+       (crop 0 0 0 1
+             (rectangle 20 20 'solid "red")))
+      => #t)
+
 ;; make sure 'white and black match up with color structs
 (test (rectangle 10 10 'solid (make-color 255 255 255))
       =>
@@ -1039,6 +1050,19 @@
 (test (text "ab" 18 (make-color 0 0 255))
       =>
       (text "ab" 18 "blue"))
+
+(test (beside/align "bottom"
+                    empty-image
+                    (text "please?" 12 "green"))
+      =>
+      (text "please?" 12 "green"))
+(test (beside/align "bottom"
+                    (text "feed me " 18 "red")
+                    (text "please?" 12 "green") empty-image)
+      =>
+      (beside/align "bottom"
+                    (text "feed me " 18 "red")
+                    (text "please?" 12 "green")))
 
 ;; make sure this doesn't crash (there was a bug that would be triggered by drawing these guys)
 (test (equal? (scale 0.1 (text "Howdy!" 12 'black))

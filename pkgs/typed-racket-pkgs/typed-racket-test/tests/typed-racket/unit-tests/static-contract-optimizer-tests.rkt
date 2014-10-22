@@ -279,9 +279,9 @@
       #:neg (object/sc (list (member-spec 'field 'x list?/sc))))
 
     (check-optimize
-      (class/sc (list (member-spec 'field 'x (listof/sc any/sc))) #f empty empty)
-      #:pos (class/sc (list (member-spec 'field 'x list?/sc)) #f empty empty)
-      #:neg (class/sc (list (member-spec 'field 'x list?/sc)) #f empty empty))
+      (class/sc (list (member-spec 'field 'x (listof/sc any/sc))) #f)
+      #:pos (class/sc (list (member-spec 'field 'x list?/sc)) #f)
+      #:neg (class/sc (list (member-spec 'field 'x list?/sc)) #f))
 
     (check-optimize
       (recursive-sc (list foo-id bar-id)

@@ -10,7 +10,6 @@
          racket/list
          racket/format
          setup/dirs
-         pkg/util
          "shelly.rkt")
 
 (define-runtime-path test-directory ".")

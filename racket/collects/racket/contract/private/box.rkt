@@ -85,12 +85,32 @@
 (define (add-box-context blame)
   (blame-add-context blame "the content of"))
 
+(define (box/c-stronger this that)
+  (define this-content (base-box/c-content this))
+  (define this-immutable (base-box/c-immutable this))
+  (cond
+    [(base-box/c? that)
+     (define that-content (base-box/c-content that))
+     (define that-immutable (base-box/c-immutable that))
+     (cond
+       [(and (equal? this-immutable #t)
+             (equal? that-immutable #t))
+        (contract-stronger? this-content that-content)]
+       [(or (equal? that-immutable 'dont-care)
+            (equal? this-immutable that-immutable))
+        (and (contract-stronger? this-content that-content)
+             (contract-stronger? that-content this-content))]
+       [else #f])]
+    [else #f]))
+
+
 (define-struct (flat-box/c base-box/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name box/c-name
    #:first-order box/c-first-order
+   #:stronger box/c-stronger
    #:val-first-projection
    (λ (ctc)
      (define content-ctc (get/build-val-first-projection (base-box/c-content ctc)))
@@ -155,6 +175,7 @@
   (build-chaperone-contract-property
    #:name box/c-name
    #:first-order box/c-first-order
+   #:stronger box/c-stronger
    #:val-first-projection (ho-val-first-projection chaperone-box)
    #:projection (ho-projection chaperone-box)))
 
@@ -164,6 +185,7 @@
   (build-contract-property
    #:name box/c-name
    #:first-order box/c-first-order
+   #:stronger box/c-stronger
    #:val-first-projection (ho-val-first-projection impersonate-box)
    #:projection (ho-projection impersonate-box)))
 

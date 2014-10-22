@@ -328,8 +328,9 @@ See also @racket[register-custodian-shutdown].
 The finalizer is invoked in a thread that is in charge of triggering
 will executors for @racket[register-finalizer]. The given
 @racket[finalizer] procedure should generally not rely on the
-environment of the triggering thread, such as its output ports or
-custodians, except that relying on a default logger is reasonable.
+environment of the triggering thread, and it must not use any
+parameters or call any parameter functions, except that relying on a
+default logger and/or calling @racket[current-logger] is allowed.
 
 Finalizers are mostly intended to be used with cpointer objects (for
 freeing unused memory that is not under GC control), but it can be
@@ -388,6 +389,12 @@ procedure would then not close over @racket[b].)}
 Returns a byte string made of the given pointer and the given length.
 No copying is done.  This can be used as an alternative to make
 pointer values accessible in Racket when the size is known.
+
+Beware that the representation of a Racket byte string normally
+requires a nul terminator at the end of the byte string (after
+@racket[length] bytes), but some function work with a byte-string
+representation that has no such terminator---notably
+@racket[bytes-copy].
 
 If @racket[cptr] is an offset pointer created by @racket[ptr-add], the
 offset is immediately added to the pointer. Thus, this function cannot

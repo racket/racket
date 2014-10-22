@@ -2907,6 +2907,7 @@ static void thread_is_dead(Scheme_Thread *r)
   
   r->list_stack = NULL;
 
+  r->t_set_parent = NULL;
   r->dw = NULL;
   r->init_config = NULL;
   r->cell_values = NULL;
@@ -4881,6 +4882,17 @@ static void find_next_thread(Scheme_Thread **return_arg) {
   next        = NULL;
 }
 
+static Scheme_Object *do_thread_block()
+{
+  Scheme_Thread *p = scheme_current_thread;
+  float sleep_time = p->sleep_end;
+  p->sleep_end = 0.0;
+
+  scheme_thread_block(sleep_time);
+
+  return scheme_false;
+}
+
 void scheme_thread_block(float sleep_time)
      /* If we're blocked, `sleep_time' is a max sleep time,
 	not a min sleep time. Otherwise, it's a min & max sleep time.
@@ -4920,6 +4932,17 @@ void scheme_thread_block(float sleep_time)
 #endif
 
   shrink_cust_box_array();
+
+  /* Scheduling queries might involve callbacks through the FFI that put
+     the runtime system into `scheme_no_stack_overflow` mode. Immitate
+     the foriegn-call entry point with an extra check that we have enough
+     stack to survive in foreign functions. */
+  if (!scheme_no_stack_overflow && scheme_is_stack_too_shallow()) {
+    p->sleep_end = sleep_time; /* an abuse of the `sleep_end` field to
+                                  pass `sleep_end` along */
+    (void)scheme_handle_stack_overflow(do_thread_block);
+    return;
+  }
 
   if (scheme_active_but_sleeping)
     scheme_wake_up();
@@ -5177,14 +5200,14 @@ int scheme_block_until(Scheme_Ready_Fun _f, Scheme_Needs_Wakeup_Fun fdf,
   init_schedule_info(&sinfo, NULL, 1, sleep_end);
 
   while (!(result = f((Scheme_Object *)data, &sinfo))) {
-    sleep_end = sinfo.sleep_end;
+    double now_sleep_end = sinfo.sleep_end;
     if (sinfo.spin) {
       init_schedule_info(&sinfo, NULL, 1, 0.0);
       scheme_thread_block(0.0);
       scheme_current_thread->ran_some = 1;
     } else {
-      if (sleep_end) {
-	delay = (float)(sleep_end - scheme_get_inexact_milliseconds());
+      if (now_sleep_end) {
+	delay = (float)(now_sleep_end - scheme_get_inexact_milliseconds());
 	delay /= 1000.0;
 	if (delay <= 0)
 	  delay = (float)0.00001;
@@ -5203,6 +5226,7 @@ int scheme_block_until(Scheme_Ready_Fun _f, Scheme_Needs_Wakeup_Fun fdf,
       p->block_check = NULL;
       p->block_needs_wakeup = NULL;
     }
+    sinfo.sleep_end = sleep_end;
   }
   p->ran_some = 1;
 
@@ -6647,11 +6671,10 @@ int scheme_syncing_ready(Syncing *syncing, Scheme_Schedule_Info *sinfo, int can_
 
  set_sleep_end_and_return:
 
-  syncing->sleep_end = sleep_end;
-  if (syncing->sleep_end
+  if (sleep_end
       && (!sinfo->sleep_end
-	  || (sinfo->sleep_end > syncing->sleep_end)))
-    sinfo->sleep_end = syncing->sleep_end;
+	  || (sinfo->sleep_end > sleep_end)))
+    sinfo->sleep_end = sleep_end;
 
   return result;
 }

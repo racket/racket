@@ -220,7 +220,8 @@
                           (car rst)
                           (if (< dx 0) 0 dx)
                           (if (< dy 0) 0 dy)
-                          first-pinhole?)
+                          first-pinhole?
+                          #f)
                (cdr rst)))])))
 
 (define (find-x-spot x-place image)
@@ -250,7 +251,8 @@
              image2
              (if (< dx 0) 0 dx)
              (if (< dy 0) 0 dy)
-             #t))
+             #t
+             #f))
 
 (define/chk (underlay/xy image dx dy image2)
   (overlay/δ image2
@@ -259,17 +261,27 @@
              image
              (if (< dx 0) (- dx) 0)
              (if (< dy 0) (- dy) 0)
+             #f
              #f))
 
-(define (overlay/δ image1 dx1 dy1 image2 dx2 dy2 first-pinhole?)
+(define (overlay/δ image1 dx1 dy1 image2 dx2 dy2 first-pinhole? beside-baseline?)
     (make-image (make-overlay (make-translate dx1 dy1 (image-shape image1))
                               (make-translate dx2 dy2 (image-shape image2)))
                 (make-bb (max (+ (get-right image1) dx1)
                               (+ (get-right image2) dx2))
                          (max (+ (get-bottom image1) dy1)
                               (+ (get-bottom image2) dy2))
-                         (max (+ (get-baseline image1) dy1)
-                              (+ (get-baseline image2) dy2)))
+                         (if beside-baseline?
+                             (let ([δ1 (- (get-bottom image1) (get-baseline image1))]
+                                   [δ2 (- (get-bottom image2) (get-baseline image2))]
+                                   [b1 (+ (get-baseline image1) dy1)]
+                                   [b2 (+ (get-baseline image2) dy2)])
+                               (cond
+                                 [(= δ1 δ2) (max b1 b2)]
+                                 [(< δ1 δ2) b2]
+                                 [else b1]))
+                             (max (+ (get-baseline image1) dy1)
+                                  (+ (get-baseline image2) dy2))))
                 #f
                 (if first-pinhole?
                     (let ([ph (send image1 get-pinhole)])
@@ -316,6 +328,7 @@
                           (car rst)
                           (get-right fst)
                           (if (< dy 0) 0 dy)
+                          #t
                           #t)
                (cdr rst)))])))
 
@@ -354,7 +367,8 @@
                           (car rst)
                           (if (< dx 0) 0 dx)
                           (get-bottom fst)
-                          #t)
+                          #t
+                          #f)
                (cdr rst)))])))
 
 (define/chk (overlay/offset image1 dx dy image2)
@@ -382,7 +396,8 @@
                snd
                (if (< dx 0) 0 dx)
                (if (< dy 0) 0 dy)
-               #t)))
+               #t
+               #f)))
 
 
 ;                                                                                                  
@@ -473,6 +488,7 @@
                 scene
                 (if (< dx 0) (- dx) 0)
                 (if (< dy 0) (- dy) 0)
+                #f
                 #f))))
 
 (define/chk (scene+line image x1 y1 x2 y2 color)
@@ -1340,23 +1356,23 @@
                      (eq? (car arg) 'planet))
                 (raise-syntax-error 'bitmap "planet paths not yet supported" stx)]
                [(symbol? arg)
-                (let ([pieces (regexp-split #rx"/" (symbol->string arg))])
-                  (cond
-                    [(null? pieces)
-                     (raise-syntax-error 'bitmap "expected a path with a / in it" stx)]
-                    [else
-                     (define fn (last pieces))
-                     (define colls (reverse (cdr (reverse pieces))))
-                     (define candidate
-                       (apply collection-file-path fn colls
-                              #:fail
-                              (λ (msg) (raise-syntax-error 'bitmap msg stx))))
-                     (unless (file-exists? candidate)
-                       (raise-syntax-error 'bitmap 
-                                           (format "could not find ~s, expected it to be in ~a"
-                                                   arg candidate)
-                                           stx))
-                     (cons fn colls)]))]
+                (define pieces (regexp-split #rx"/" (symbol->string arg)))
+                (cond
+                  [(or (null? pieces) (null? (cdr pieces)))
+                   (raise-syntax-error 'bitmap "expected a path with a / in it" stx)]
+                  [else
+                   (define fn (last pieces))
+                   (define colls (reverse (cdr (reverse pieces))))
+                   (define candidate
+                     (apply collection-file-path fn colls
+                            #:fail
+                            (λ (msg) (raise-syntax-error 'bitmap msg stx))))
+                   (unless (file-exists? candidate)
+                     (raise-syntax-error 'bitmap 
+                                         (format "could not find ~s, expected it to be in ~a"
+                                                 arg candidate)
+                                         stx))
+                   (cons fn colls)])]
                [(string? arg)
                 (path->complete-path 
                  arg

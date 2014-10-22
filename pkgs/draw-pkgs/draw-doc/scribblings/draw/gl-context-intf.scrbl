@@ -39,7 +39,6 @@ Only one OpenGL context can be active at a time across all threads and
  @method[gl-context<%> call-as-current] uses a lock to serialize
  context selection across all threads in Racket.
 
-
 @defmethod[(call-as-current [thunk (-> any)]
                             [alternate evt? never-evt]
                             [enable-breaks? any/c #f])
@@ -85,12 +84,12 @@ pointer represents depends on the platform:
 @itemize[
 @item{Windows: @tt{HGLRC}}
 @item{Mac OS X: @tt{NSOpenGLContext}}
-@item{Unix: @tt{GdkGLContext}}
+@item{Unix: @tt{GLXContext}}
 ]
 
 Note that these values are not necessary the most ``low-level'' context objects,
-but are instead the ones useful to Racket. A @tt{NSOpenGLContext} wraps a
-@tt{CGLContextObj}, and a @tt{GdkGLContext} contains a @tt{GLXcontext}.
+but are instead the ones useful to Racket. For example, a @tt{NSOpenGLContext}
+wraps a @tt{CGLContextObj}.
 }
 
 @defmethod[(ok?)
@@ -120,3 +119,12 @@ This method implicitly uses @method[gl-context<%> call-as-current] to
  a @method[gl-context<%> call-as-current] thunk.
 
 }}
+
+@defproc[(get-current-gl-context) gl-context<%>]{
+If within the dynamic extent of a @method[gl-context<%> call-as-current]
+method call, returns the current context; otherwise returns @racket[#f].
+This is possibly most useful for caching context-dependent state or data,
+such as extension strings. Create such caches using @racket[make-weak-hasheq].
+
+@history[#:added "1.3"]
+}

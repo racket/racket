@@ -511,7 +511,7 @@
     (define/private (generate-name)
       (let ([n name-counter])
         (set! name-counter (add1 name-counter))
-        (format "λmz_~a_~a" process-id n)))
+        (format "rkt_~a_~a" process-id n)))
 
     (define/public (get-base) this)
 

@@ -86,8 +86,11 @@
          (printf "echo '\tcp longdouble.dll ../dest/bin' >> Makefile\n")))
      (file-or-directory-permissions "longdouble-1/configure" #o777)]
     [else
-     (define archive (parameterize ([current-directory archives-dir])
-                       (build-path archives-dir (find-package package-name #f))))
+     (define archive (or (for/or ([archives-dir (in-list archives-dirs)])
+                           (parameterize ([current-directory archives-dir])
+                             (define p (find-package package-name #f #t))
+                             (and p (build-path archives-dir p))))
+                         (find-package package-name #f)))
      (define dir (find-package package-name #t #t))
      (when dir
        (printf "Removing ~a" dir)
@@ -119,6 +122,9 @@
 ;; Enable "symbol" fonts, and fix off-by-one:
 (define-runtime-path win32text-patch "patches/win32text.patch")
 
+;; Fix a problem with a surface connected to a clipped drawing context
+(define-runtime-path win32cairofallback-patch "patches/win32cairofallback.patch")
+
 ;; Needed when building with old GCC, such as 4.0:
 (define-runtime-path gmp-weak-patch "patches/gmp-weak.patch")
 
@@ -138,6 +144,10 @@
 ;; MinGW's -static-libstdc++ works:
 (define-runtime-path libtool-link-patch "patches/libtool-link.patch")
 (define-runtime-path libtool64-link-patch "patches/libtool64-link.patch")
+
+;; Add FcSetFallbackDirs to set fallback directories dynamically:
+(define-runtime-path fcdirs-patch "patches/fcdirs.patch")
+(define-runtime-path fonts-conf "patches/fonts.conf")
 
 ;; --------------------------------------------------
 ;; General environment and flag configuration:
@@ -168,16 +178,26 @@
         ;; We'd prefer to add "-static-libgcc" to CFLAGS, but
         ;; libtool doesn't pass `static-libgcc` through.
         (list "CC" (~a win-prefix "-gcc -static-libgcc")))])]
-   [m32?
-    (define sdk-flags (sdk 5))
-    (list
-     (list "CPPFLAGS" (~a "-m32" sdk-flags))
-     (list "LDFLAGS" (~a "-m32" sdk-flags)))]
+   [mac?
+    (cond
+     [m32?
+      (define sdk-flags (sdk 5))
+      (list
+       (list "CPPFLAGS" (~a "-m32" sdk-flags))
+       (list "LDFLAGS" (~a "-m32" sdk-flags)))]
+     [else
+      (define sdk-flags (sdk 6))
+      (list
+       (list "CPPFLAGS" (~a "-m64" sdk-flags))
+       (list "LDFLAGS" (~a "-m64" sdk-flags)))])]
    [else
-    (define sdk-flags (sdk 6))
-    (list
-     (list "CPPFLAGS" (~a "-m64" sdk-flags))
-     (list "LDFLAGS" (~a "-m64" sdk-flags)))]))
+    (cond
+     [m32?
+      (list
+       (list "CPPFLAGS" "-m32")
+       (list "LDFLAGS" "-m32"))]
+     [else
+      null])]))
 
 (define cxx-env
   (if win?
@@ -235,6 +255,7 @@
                 #:configure-exe [exe #f]
                 #:configure [args null]
                 #:make [make "make"]
+                #:make-install [make-install (~a make " install")]
                 #:setup [setup null]
                 #:patches [patches null]
                 #:post-patches [post-patches null]
@@ -248,32 +269,54 @@
                             deps))])
     (unless (file-exists? (build-path dest "stamps" d))
       (error 'build "prerequisite needed: ~a" d)))
-  (values env exe args make setup patches post-patches fixup))
+  (values env exe args make make-install setup patches post-patches fixup))
 
 (define path-flags
   (list (list "CPPFLAGS" (~a "-I" dest "/include"))
         (list "LDFLAGS" (~a "-L" dest "/lib"))))
 
-(define (windows-only)
-  (unless win?
-    (error (format "build ~a only for Windows" package-name))))
+(define ld-library-path-flags
+  (list (list "LD_LIBRARY_PATH"
+	      (path->string (build-path dest "lib")))))
 
-(define-values (extra-env configure-exe extra-args make-command setup patches post-patches fixup)
+(define (nonmac-only)
+  (unless (or win? linux?)
+    (error (format "build ~a only for Windows or Linux" package-name))))
+
+(define (linux-only)
+  (unless linux?
+    (error (format "build ~a only for Linux" package-name))))
+  
+(define-values (extra-env configure-exe extra-args make-command make-install-command 
+                          setup patches post-patches fixup)
   (case package-name
     [("pkg-config") (config #:configure (list "--with-internal-glib"))]
     [("sed") (config)]
     [("longdouble") (config)]
     [("libiconv")
-     (windows-only)
+     (nonmac-only)
      (config)]
+    [("sqlite")
+     (nonmac-only)
+     (config #:fixup (and win?
+                          (~a "cd " (build-path dest "bin")
+                              " && mv libsqlite3-0.dll sqlite3.dll")))]
     [("openssl")
-     (windows-only)
+     (nonmac-only)
      (config #:configure-exe (find-executable-path "sh")
-             #:configure (list "./Configure"
-                               (~a "--cross-compile-prefix=" win-prefix "-")
-                               #f ; other flags here
-                               (~a "mingw" (if m32? "" "64"))
-                               "shared"))]
+             #:configure (if win?
+			     (list "./Configure"
+				   (~a "--cross-compile-prefix=" win-prefix "-")
+				   #f ; other flags here
+				   (~a "mingw" (if m32? "" "64"))
+				   "shared")
+			     (list "./Configure"
+				   #f
+				   "shared"
+				   "linux-x86_64"))
+	     #:make (if linux?
+			(~a "make SHARED_LDFLAGS=" "-Wl,-rpath," dest "/lib")
+			"make"))]
     [("expat") (config)]
     [("gettext") (config #:depends (if win? '("libiconv") '())
                          #:configure '("--enable-languages=c")
@@ -282,20 +325,62 @@
                                     ;; only that avoids other problems.
                                     "cd gettext-runtime/intl && make"
                                     "make"))]
+    [("inputproto"
+      "xproto"
+      "xtrans"
+      "kbproto"
+      "xextproto"
+      "renderproto"
+      "libpthread-stubs"
+      "libXau"
+      "xcb-proto"
+      "libxcb"
+      "libX11"
+      "libXext"
+      "libXrender")
+     (linux-only)
+     (config #:env path-flags)]
+    [("gdk-pixbuf")
+     (linux-only)
+     (config #:depends '("libX11")
+	     #:configure '("--without-libtiff")
+	     #:env (append path-flags
+			   ld-library-path-flags))]
+    [("atk")
+     (linux-only)
+     (config #:depends '("libX11")
+	     #:env (append path-flags
+			   ld-library-path-flags))]
+    [("gtk+")
+     (linux-only)
+     (config #:depends '("gdk-pixbuf" "atk" "libXrender")
+	     #:env (append path-flags
+			   ld-library-path-flags))]
+    [("freefont")
+     (config #:configure-exe (find-executable-path "echo")
+             #:make (~a "cp " fonts-conf " .")
+             #:make-install (~a "rm -rf " dest "/lib/fonts"
+                                " && mkdir -p " dest "/lib/fonts"
+                                " && cp fonts.conf"
+                                " FreeMono.ttf" 
+                                " FreeSans.ttf" 
+                                " FreeSerif.ttf" 
+                                " " dest "/lib/fonts"))]
     [("libffi") (config)]
     [("zlib")
-     (windows-only)
-     (config #:make (~a "make -f win32/Makefile.gcc"
-                        " PREFIX=" win-prefix "-"
-                        " INCLUDE_PATH=" dest "/include"
-                        " LIBRARY_PATH=" dest "/lib"
-                        " BINARY_PATH=" dest "/bin"
-                        " LDFLAGS=-static-libgcc")
-             #:fixup (~a "cp zlib1.dll " dest "/bin && cp libz.dll.a " dest "/lib"))]
+     (nonmac-only)
+     (config #:make (if win?
+			(~a "make -f win32/Makefile.gcc"
+			    " PREFIX=" win-prefix "-"
+			    " INCLUDE_PATH=" dest "/include"
+			    " LIBRARY_PATH=" dest "/lib"
+			    " BINARY_PATH=" dest "/bin"
+			    " LDFLAGS=-static-libgcc")
+			"make")
+             #:fixup (and win?
+			  (~a "cp zlib1.dll " dest "/bin && cp libz.dll.a " dest "/lib")))]
     [("glib") (config #:depends (append '("libffi" "gettext")
-                                        (if win?
-                                            '("libiconv")
-                                            '()))
+                                        (if win? '("libiconv") '()))
                       #:env (append path-flags
                                     ;; Disable Valgrind support, which particularly
                                     ;; goes wrong for 64-bit Windows builds.
@@ -303,19 +388,32 @@
                       #:patches (if (and win? m32?)
                                     (list rand-patch)
                                     null))]
-    [("libpng") (config #:depends (if win? '("zlib") '())
-                        #:env (if win? path-flags null))]
+    [("libpng") (config #:depends (if (or win? linux?) '("zlib") '())
+                        #:env (if (or linux? win?)
+				  (append
+				   path-flags
+				   (if linux?
+				       (list (list "LDFLAGS" (~a "-Wl,-rpath," dest "/lib")))
+				       null))
+				  null))]
     [("freetype") (config #:depends '("libpng"))]
     [("fontconfig") (config #:depends '("expat" "freetype")
-                            #:configure '("--disable-docs"))]
+                            #:configure '("--disable-docs")
+                            #:patches (list fcdirs-patch))]
     [("pixman") (config #:patches (if (and win? (not m32?))
                                       (list noforceinline-patch)
                                       null))]
-    [("cairo") (config #:depends '("pixman" "fontconfig" "freetype" "libpng")
+    [("cairo") (config #:depends (append '("pixman" "fontconfig" "freetype" "libpng")
+					 (if linux?
+					     '("libX11" "libXrender")
+					     null))
                        #:env path-flags
-                       #:configure '("--enable-xlib=no")
+                       #:configure (if (not linux?)
+				       '("--enable-xlib=no")
+				       null)
                        #:patches (list cairo-coretext-patch
-                                       courier-new-patch))]
+                                       courier-new-patch
+                                       win32cairofallback-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
                           #:configure '("--without-icu")
                           #:patches (if win?
@@ -324,9 +422,12 @@
                           #:env cxx-env)]
     [("pango") (config #:depends '("cairo" "harfbuzz")
                        #:env (if win? path-flags null)
-                       #:configure '("--without-x"
-                                     "--with-included-modules=yes"
-                                     "--with-dynamic-modules=no")
+                       #:configure (append
+				    (if (not linux?)
+					'("--without-x")
+					null)
+				    '("--with-included-modules=yes"
+				      "--with-dynamic-modules=no"))
                        #:patches (list coretext-patch
                                        win32text-patch))]
     [("gmp") (config #:patches (if gcc-4.0? (list gmp-weak-patch) null)
@@ -348,8 +449,8 @@
                                                       libtool64-link-patch))
                                             null)
                          #:configure '("--enable-zlib"
-                                       "--disable-splash-output"
-                                       "--disable-poppler-cpp"))]
+				       "--disable-splash-output"
+				       "--disable-poppler-cpp"))]
     [else (error 'build "unrecognized package: ~a" package-name)]))
 
 ;; --------------------------------------------------
@@ -393,7 +494,7 @@
     (for ([p (in-list post-patches)])
       (system/show (~a "patch -p2 < " p))))
   (system/show make-command)
-  (system/show (~a make-command " install"))
+  (system/show make-install-command)
   (when fixup
     (system/show fixup))
   (stamp package-name)

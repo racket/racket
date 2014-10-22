@@ -26,6 +26,7 @@
 @include-section["ssl-tcp-unit.scrbl"]
 @include-section["cgi.scrbl"]
 @include-section["cookie.scrbl"]
+@include-section["git-checkout.scrbl"]
 
 @(bibliography
 

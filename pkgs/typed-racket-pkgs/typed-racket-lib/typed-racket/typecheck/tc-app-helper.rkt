@@ -72,10 +72,10 @@
 
 (define (make-printable t)
   (match t
-    [(tc-result1: t) t]
-    [(tc-results: ts) (-values ts)]
+    [(tc-result1: t) (cleanup-type t)]
+    [(tc-results: ts) (-values (map cleanup-type ts))]
     [(tc-any-results: f) (-AnyValues -top)]
-    [_ t]))
+    [_ (cleanup-type t)]))
 
 (define (stringify-domain dom rst drst [rng #f])
   (let ([doms-string (if (null? dom) "" (string-append (stringify (map make-printable dom)) " "))]
@@ -205,7 +205,16 @@
 ;;     and an expected type of Integer for the result of the application,
 ;;     we can disregard the Fixnum domain since it imposes a restriction that
 ;;     is not necessary to get the expected type
-(define (possible-domains doms rests drests rngs expected)
+;; This function can be used in permissive or restrictive mode.
+;; in permissive mode, domains that are not consistent with the expected type
+;; may still be considered possible. This is useful for error messages, where
+;; we want to collapse domains always, regardless of expected type. In
+;; restrictive mode, only domains that are consistent with the expected type can
+;; be considered possible. This is useful when computing the possibly empty set
+;; of domains that would *satisfy* the expected type, e.g. for the :query-type
+;; forms.
+;; TODO separating pruning and collapsing into separate functions may be nicer
+(define (possible-domains doms rests drests rngs expected [permissive? #t])
 
   ;; is fun-ty subsumed by a function type in others?
   (define (is-subsumed-in? fun-ty others)
@@ -251,7 +260,7 @@
   ;; iterate in lock step over the function types we analyze and the parts
   ;; that we will need to print the error message, to make sure we throw
   ;; away cases consistently
-  (define-values (candidates parts-acc)
+  (define-values (candidates* parts-acc*)
     (for/fold ([candidates '()] ; from cases
                [parts-acc '()]) ; from orig
         ([c (in-list cases)]
@@ -261,7 +270,15 @@
           (values (cons c candidates) ; we keep this one
                   (cons p parts-acc))
           ;; we discard this one
-          (values candidates parts-acc)))) 
+          (values candidates parts-acc))))
+
+  ;; if none of the cases return a subtype of the expected type, still do some
+  ;; merging, but do it on the entire type
+  ;; only do this if we're in permissive mode
+  (define-values (candidates parts-acc)
+    (if (and permissive? (null? candidates*))
+        (values cases orig)
+        (values candidates* parts-acc*)))
 
   ;; among the domains that fit with the expected type, we only need to
   ;; keep the most liberal
@@ -303,12 +320,15 @@
 
 ;; Wrapper over possible-domains that works on types.
 (provide/cond-contract
-  [cleanup-type ((Type/c) ((or/c #f Type/c)) . ->* . Type/c)])
-(define (cleanup-type t [expected #f])
+  [cleanup-type ((Type/c) ((or/c #f Type/c) any/c) . ->* . Type/c)])
+(define (cleanup-type t [expected #f] [permissive? #t])
   (match t
     ;; function type, prune if possible.
     [(Function/arrs: doms rngs rests drests kws)
-     (match-let ([(list pdoms rngs rests drests) (possible-domains doms rests drests rngs (and expected (ret expected)))])
+     (match-let ([(list pdoms rngs rests drests)
+                  (possible-domains doms rests drests rngs
+                                    (and expected (ret expected))
+                                    permissive?)])
        (if (= (length pdoms) (length doms))
            ;; pruning didn't improve things, return the original
            ;; (Note: pruning may have reordered clauses, so may not be `equal?' to

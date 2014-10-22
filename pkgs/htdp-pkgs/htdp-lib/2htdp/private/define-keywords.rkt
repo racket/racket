@@ -28,7 +28,9 @@
            (provide (rename-out (kw  kw-alt) ...))
            (provide kw ...) 
            (define-syntaxes (kw ...)
-             (values (lambda (x) (raise-syntax-error 'kw "used out of context" x)) ...))
+             (values
+              (lambda (x) 'kw (raise-syntax-error #f "used out of context" x))
+              ...))
            
            ;; a macro for creating functions that instantiate the proper object
            ;; (define-create para ...) :: additional parameters for the new func

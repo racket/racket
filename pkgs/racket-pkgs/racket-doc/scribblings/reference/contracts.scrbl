@@ -116,21 +116,18 @@ implement contracts~@cite{Strickland12}.
 @section[#:tag "data-structure-contracts"]{Data-structure Contracts}
 @declare-exporting-ctc[racket/contract/base]
 
-@defproc[(flat-named-contract [type-name any/c]
-                              [predicate flat-contract?]
+@defproc[(flat-named-contract [name any/c]
+                              [flat-contract flat-contract?]
                               [generator (or/c #f (-> contract (-> int? any))) #f])
          flat-contract?]{
+Produces a contract like @racket[flat-contract], but with the name @racket[name].
 
-On predicates, behaves like @racket[flat-contract], but the first argument must be the
-(quoted) name of a contract used for error reporting.
 For example,
-@racketblock[(flat-named-contract
-              'odd-integer
-              (lambda (x) (and (integer? x) (odd? x))))]
-turns the predicate into a contract with the name @tt{odd-integer}.
-
-On flat contracts, the new flat contract is the same as the old except for
-the name.
+@racketblock[(define/contract i
+               (flat-named-contract
+                'odd-integer
+                (lambda (x) (and (integer? x) (odd? x))))
+               2)]
 
 The generator argument adds a generator for the flat-named-contract. See
 @racket[contract-generate] for more information.
@@ -376,14 +373,56 @@ reasons of backwards compatibility.}
 
 Returns a contract that recognizes a list whose every element matches
 the contract @racket[c]. Beware that when this contract is applied to
-a value, the result is not necessarily @racket[eq?] to the input.}
+a value, the result is not necessarily @racket[eq?] to the input.
+
+@examples[#:eval (contract-eval)
+                 (define/contract some-numbers
+                   (listof number?)
+                   (list 1 2 3))
+                 (define/contract just-one-number
+                   (listof number?)
+                   11)]
+
+}
 
 
 @defproc[(non-empty-listof [c contract?]) list-contract?]{
 
 Returns a contract that recognizes non-empty lists whose elements match
 the contract @racket[c]. Beware that when this contract is applied to
-a value, the result is not necessarily @racket[eq?] to the input.}
+a value, the result is not necessarily @racket[eq?] to the input.
+
+@examples[#:eval (contract-eval)
+                 (define/contract some-numbers
+                   (non-empty-listof number?)
+                   (list 1 2 3))
+                                
+                 (define/contract not-enough-numbers
+                   (non-empty-listof number?)
+                   (list))]
+}
+
+@defproc[(list*of [c contract?]) contract?]{
+
+Returns a contract that recognizes improper lists whose elements match
+the contract @racket[c]. If an improper list is created with @racket[cons],
+then its @racket[car] position is expected to match @racket[c] and
+its @racket[cdr] position is expected to be @racket[(list*of c)]. Otherwise,
+it is expected to match @racket[c]. Beware that when this contract is applied to
+a value, the result is not necessarily @racket[eq?] to the input.
+
+@examples[#:eval (contract-eval)
+                 (define/contract improper-numbers
+                   (list*of number?)
+                   (cons 1 (cons 2 3)))
+                                
+                 (define/contract not-improper-numbers
+                   (list*of number?)
+                   (list 1 2 3))]
+
+@history[#:added "6.1.1.1"]
+}
+
 
 @defproc[(cons/c [car-c contract?] [cdr-c contract?]) contract?]{
 

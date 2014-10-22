@@ -27,11 +27,15 @@
 (define cache-path (build-path root "cache"))
 (make-directory* cache-path)
 
+(define SUMMARY-NAME "summary.rktd")
+(define SUMMARY-PATH (build-path cache-path SUMMARY-NAME))
+
 (define pkgs-path (build-path root "pkgs"))
 (make-directory* pkgs-path)
 
 (define static.src-path (build-path src "static"))
 (define static-path (build-path src "static-gen"))
+(define notice-path (format "~a/notice.json" static-path))
 
 (define (package-list)
   (sort (map path->string (directory-list pkgs-path))
@@ -89,40 +93,16 @@
 (define valid-tag?
   valid-name?)
 
-(define-runtime-path update.rkt "update.rkt")
-(define-runtime-path build-update.rkt "build-update.rkt")
-(define-runtime-path static.rkt "static.rkt")
-(define-runtime-path s3.rkt "s3.rkt")
-
 (define run-sema (make-semaphore 1))
-(define (run! file args)
-  (call-with-semaphore
-   run-sema
-   (λ ()
-     (parameterize ([date-display-format 'iso-8601])
-       (printf "~a: ~a ~v\n" (date->string (current-date) #t) file args))
-     (apply system* (find-executable-path (find-system-path 'exec-file))
-            "-t" file
-            "--"
-            args)
-     (printf "~a: done\n" (date->string (current-date) #t)))))
+(define (run! f args)
+  (parameterize ([date-display-format 'iso-8601])
+    (printf "~a: ~a ~v\n" (date->string (current-date) #t) f args)
+    (f args)
+    (printf "~a: done\n" (date->string (current-date) #t))))
 
-(define (run-update! pkgs)
-  (run! update.rkt pkgs))
-(define (run-build-update!)
-  (run! build-update.rkt empty))
-(define (run-static! pkgs)
-  (run! static.rkt pkgs))
-(define (run-s3! pkgs)
-  (run! s3.rkt pkgs))
+(define s3-config (build-path (find-system-path 'home-dir) ".s3cfg-plt"))
+(define s3-bucket "pkgs.racket-lang.org")
 
-(define (signal-update! pkgs)
-  (thread (λ () (run-update! pkgs))))
-(define (signal-build-update!)
-  (thread (λ () (run-build-update!))))
-(define (signal-static! pkgs)
-  (thread (λ () (run-static! pkgs))))
-(define (signal-s3! pkgs)
-  (thread (λ () (run-s3! pkgs))))
+(define s3cmd-path (find-executable-path "s3cmd"))
 
 (provide (all-defined-out))

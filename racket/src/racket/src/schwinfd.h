@@ -8,8 +8,11 @@ typedef struct {
 
   Scheme_Object *added; /* fixnum */
   Scheme_Object *alloc; /* fixnum */
+  Scheme_Object *last_alloc; /* fixnum */
 
   Scheme_Object *num_handles; /* fixnum */
+  Scheme_Object *alloc_handles; /* fixnum */
+  Scheme_Object *last_alloc_handles; /* fixnum */
   OS_SEMAPHORE_TYPE *handles;
 
   int *repost_sema;

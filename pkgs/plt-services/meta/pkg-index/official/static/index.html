@@ -7,7 +7,6 @@
     <script src="//code.jquery.com/jquery-1.10.1.min.js"></script>
     <script src="//code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
     <script src="/index.js"></script>
-    <link rel="stylesheet" href="/style.css">
 
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta charset="utf-8" />
@@ -15,21 +14,36 @@
     <link rel="icon" type="image/ico" />
     <link rel="shortcut icon" type="image/x-icon" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <link rel="stylesheet" href="http://racket-lang.org/gumby-slice.css" />
+    <link rel="stylesheet" href="/gumby.css"></link>
+    <link rel="stylesheet" href="/style.css"></link>
   </head>
   <body>
-    <div class="navbar gumby-content" gumby-fixed="top" id="nav1"><div class="row">
-        <a class="five columns logo" href="http://racket-lang.org/"><img class="logo" src="http://racket-lang.org/logo-and-text.png" width="198" height="60" alt="Racket" /></a>
-        <ul class="five columns"><li></li>
-          <li></li>
-          <li></li>
-          <li></li></ul></div></div>
 
+    <div class="navbar gumby-content" style="position: fixed;" gumby-fixed="top" id="nav1"><div class="row"><a class="toggle" gumby-trigger="#nav1 > .row > ul" href="#"><i class="icon-menu"></i></a>
+        <a class="four columns logo" href="http://www.racket-lang.org/"><img class="logo" src="/logo-and-text.png" width="198" height="60" alt="Racket"></a>
+        <span class="one colums"></span> <ul class="five columns"><li><a href="http://pkgs.racket-lang.org/">Packages</a></li>
+          <li><a href="http://docs.racket-lang.org/">Documentation</a></li>
+          <li><a href="http://blog.racket-lang.org/">Blog</a></li>
+          <li><div class="medium metro info btn icon-left entypo
+                          icon-install"><a href="http://download.racket-lang.org/">Download</a></div></li></ul></div></div>
+    <div style="height: 60px;"></div>
+
+    <div class="bodycontent">
     <div class="breadcrumb">
-      <span><a href="/">Packages</a></span>
+      <span><a href="/">&nbsp;</a></span>
       <span id="logout"></span>
     </div>
-    <p id="search_menu"></p>
+    <div id="server_notice">
+    </div>
+    <div>
+      <p id="search_help">Search filters are
+      below. <span style="font-weight: bold;">Bold</span> filters are
+      used to select packages and <span style="font-weight: bold;
+      text-decoration: line-through;">strike-through</span> tags are
+      used to omit packages. Clicking a filter will toggle its
+      status.</p>
+      <p id="search_menu"></p>
+    </div>
 
     <div id="login" class="package">
       <table>
@@ -57,12 +71,16 @@
     </div>
 
     <div id="package_info" class="package">
+      <p id="pi_edit_help">Unfocusing an edit field or pressing enter
+      submits a change update asynchronously.</p>
       <table>
         <tr><td>Package Name:</td><td><span id="pi_name"></span></td></tr>
         <tr><td>Ring:</td><td><span id="pi_ring"></span></td></tr>
         <tr><td>Authors:</td><td><span id="pi_authors"></span></td></tr>
         <tr id="pi_add_author_row"><td></td><td><input type="text" id="pi_add_author_text" class="text ui-widget-content ui-corner-all" /><button id="pi_add_author_button">Add Author</button></td></tr>
+        <tr><td>Documentation:</td><td><span id="pi_docs"></span></td></tr>
         <tr><td>Source:</td><td><span id="pi_source"></span></td></tr>
+        <tr><td>Build Status</td><td><span id="pi_build"></span></td></tr>
         <tr><td>Checksum:</td><td><span id="pi_checksum"></span></td></tr>
         <tr><td>Last Updated:</td><td><span id="pi_last_updated"></span></td></tr>
         <tr><td>Last Checked:</td><td><span id="pi_last_checked"></span></td></tr>
@@ -82,24 +100,25 @@
       <div id="pi_install" class="install">Install this package with:<br><br><tt>raco pkg install <span id="pi_name_inst"></span></tt><br><br>or, with the 'File|Install Package...' menu option in DrRacket.</div>
     </div>
 
+    <p id="packages_loading">Loading...</td></tr>
     <table class="packages sortable">
       <thead>
-        <tr>
-          <th></th>
+        <tr id="packages_headers">
+          <th>Updated Recently</th>
           <th>Package</th>
-          <th>Authors</th>
           <th>Description</th>
-          <th>Tags</th>
+          <th>Build</th>
         </tr>
       </thead>
-      <tbody id="packages_table">
+      <tbody id="packages_table">        
       </tbody>
     </table>
     <div id="footer">
       Powered by <a href="http://racket-lang.org">Racket</a> and a
       mess of ugly JS. Written
-      by <a href="http://faculty.cs.byu.edu/~jay">Jay McCarthy</a>.
+      by <a href="http://jeapostrophe.github.io">Jay McCarthy</a>.
       <a href="/atom.xml">Atom</a> feed available.
+    </div>
     </div>
   </body>
 </html>

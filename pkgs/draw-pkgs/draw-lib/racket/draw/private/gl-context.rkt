@@ -6,7 +6,9 @@
          gl-context<%>
          
          do-call-as-current
-         do-swap-buffers)
+         do-swap-buffers
+         
+         get-current-gl-context)
 
 (define-local-member-name
   do-call-as-current
@@ -44,6 +46,9 @@
     [swap-buffers (->m any)]
     [get-handle (->m any)]))
 
+(define current-gl-context (make-thread-cell #f))
+(define (get-current-gl-context) (thread-cell-ref current-gl-context))
+
 ;; Implemented by subclasses:
 (define gl-context%
   (class* object% (gl-context<%>)
@@ -58,9 +63,11 @@
              (handle-evt (channel-put-evt lock-ch (vector (current-thread) this ch))
                          (lambda (val)
                            (dynamic-wind
-                               void
+                               (lambda ()
+                                 (thread-cell-set! current-gl-context this))
                                t
                                (lambda ()
+                                 (thread-cell-set! current-gl-context #f)
                                  (channel-put ch #t))))))
            alternate-evt)))
 

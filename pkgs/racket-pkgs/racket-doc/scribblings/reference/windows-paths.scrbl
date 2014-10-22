@@ -3,7 +3,7 @@
 
 @(define MzAdd (italic "Racket-specific:"))
 
-@title[#:tag "windowspaths"]{Windows Path Conventions}
+@title[#:tag "windowspaths"]{Windows Paths}
 
 In general, a Windows pathname consists of an optional drive specifier
 and a drive-specific path. A Windows path can be @defterm{absolute}
@@ -101,7 +101,8 @@ include @litchar{\}.
        @litchar{\\}@nonterm{machine}@litchar{\}@nonterm{volume}
        counts as the drive specifier.}
 
-  @item{Normally, a path element cannot contain any of the following
+  @item{Normally, a path element cannot contain a character in the
+        range @racket[#\x00] to @racket[#\x1F] nor any of the following
         characters:
 
         @centerline{@litchar{<} @litchar{>} @litchar{:} @litchar{"} @litchar{/} @litchar{\} @litchar{|}}
@@ -314,3 +315,25 @@ produces @litchar{\\?\C:\x~\} and @litchar{\\?\REL\\aux};
 the @litchar{\\?\} is needed in these cases to preserve a
 trailing space after @litchar{x} and to avoid referring to the AUX
 device instead of an @filepath{aux} file.
+
+@section[#:tag "windowspathrep"]{Windows Path Representation}
+
+A path on Windows is natively a sequence of UTF-16 code units, where
+the sequence can include unpaired surrogates. This sequence is encoded
+as a byte string through an extension of UTF-8, where unpaired
+surrogates in the UTF-16 code-unit sequence are converted as if they
+were non-surrogate values. The extended encodings are implemented on
+Windows as the @racket["platform-UTF-16"] and
+@racket["platform-UTF-8"] encodings for @racket[bytes-open-converter].
+
+Racket's internal representation of a Windows path is a byte string,
+so that @racket[path->bytes] and @racket[bytes->path] are always
+inverses. When converting a path to a native UTF-16 code-unit
+sequence, @racket[#\tab] is used in place of platform-UTF-8 decoding
+errors (on the grounds that tab is normally disallowed as a character
+in a Windows path, unlike @code{#\uFFFD}).
+
+A Windows path is converted to a string by treating the platform-UTF-8
+encoding as a UTF-8 encoding with @code{#\uFFFD} in place of
+decoding errors. Similarly, a string is converted to a path by UTF-8
+encoding (in which case no errors are possible).

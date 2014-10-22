@@ -24,12 +24,13 @@
 (define danprager @name["https://www.youpatch.com/"]{Daniel Prager})
 (define davidv @name["https://github.com/david-vanderson/"]{David Vanderson})
 
+;; TODO better design would be to have a struct for talks
 (define (speaker->title s)
   (define talks
     `((,fogus . "Extracting a Goose from a Klein Bottle")
       (,mbutterick . "Like a Blind Squirrel in a Ferrari")
       (,stchang . "A Boost-Inspired Graph Library for Racket")
-      (,jbc . "Stumbling around in the dark: failure partially averted")
+      (,jbc . "Sound: why is it so darn imperative?")
       (,mflatt . "Carry on Making that Racket")
       (,tonyg . "Minimart: Organizing Squabbling Actors")
       (,gregh . "Emacs à la mode DrRacket")
@@ -39,11 +40,50 @@
       (,ntoronto . "Purely Functional 3D in Typed Racket")
       (,davidv . "Racket for a networked multiplayer game")))
   (dict-ref talks s))
+(define (speaker->slides s)
+  (define slides
+    `((,stchang . "stchang.pdf")
+      (,mflatt . "mflatt.pdf")
+      (,tonyg . "tonyg.pdf")
+      (,jay . "jay.pdf")
+      (,brianm . "mastenbrook.pdf")
+      (,danprager . "prager.pdf")
+      (,davidv . "vanderson.pdf")
+      (,ntoronto . "toronto.pdf")
+      (,fogus . "fogus.pdf")
+      (,jbc . "clements.pdf")))
+  (dict-ref slides s #f))
+(define (speaker->code s)
+  (define code
+    `((,mbutterick . "http://pollenpub.com/")
+      (,gregh . "https://github.com/greghendershott/racket-mode")
+      (,jay . "https://github.com/get-bonus/get-bonus")
+      (,davidv . "https://github.com/david-vanderson/warp")
+      (,ntoronto . "https://github.com/ntoronto/pict3d")
+      (,tonyg . "https://github.com/tonyg/minimart")
+      (,jbc . "https://github.com/jbclements/RSound")))
+  (dict-ref code s #f))
+(define (speaker->video s)
+  (define video
+    `((,fogus . "https://www.youtube.com/watch?v=2ZrM0aYaqJM&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=1")
+      (,mflatt . "https://www.youtube.com/watch?v=Uw8m4QF4k1E&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=2")
+      (,danprager . "https://www.youtube.com/watch?v=8psnTEjYIEA&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=3")
+      (,davidv . "https://www.youtube.com/watch?v=Fuz0BtltU1g&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=4")
+      (,jay . "https://www.youtube.com/watch?v=_x0Ob2HY8C4&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=5")
+      (,ntoronto . "https://www.youtube.com/watch?v=t3xdv4UP9-U&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=6")
+      (,brianm . "https://www.youtube.com/watch?v=GAmZIgs72wA&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=7")
+      (,tonyg . "https://www.youtube.com/watch?v=LIJHb8E4Mhk&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=8")
+      (,jbc . "https://www.youtube.com/watch?v=DkIVzHNjNEA&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=9")
+      (,mbutterick . "https://www.youtube.com/watch?v=IMz09jYOgoc&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=10")
+      (,gregh . "https://www.youtube.com/watch?v=QWiteH8PARQ&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=11")
+      (,stchang . "https://www.youtube.com/watch?v=SvYJF5HC19w&list=PLXr4KViVC0qI9t3lizitiFJ1cFIeN2Gdh&index=12")))
+  (dict-ref video s))
 (define (title->anchor t)
   (string-replace t " " "-"))
 (define (speaker-slot s)
   (define title (speaker->title s))
-  @slot[#f s]{@a[href: (string-append "#" (title->anchor title))]{@title}})
+  @slot[#f s #:slides (speaker->slides s) #:code (speaker->code s) #:video (speaker->video s)]{
+    @a[href: (string-append "#" (title->anchor title))]{@title}})
 (define (session time title chair)
   @slot[time #f]{@p{@title} Chair: @chair})
 
@@ -89,13 +129,11 @@
          since.})
     (list
      jbc
-     @p*{Cal Poly includes a 10-week team-based domain-specific course for
-         incoming freshmen. I teach this course using Racket, in the domain of
-         Music. The challenge is to allow students with no programming
-         background to create full-featured music applications using only the
-         first few sections of HtDP. I report on the successes and failures of
-         these teams, illustrating the bizarre but creative code patterns that
-         the students exhibit.}
+     @p*{HtDP and big-bang provide an explicit-state, fully-testable framework
+         for simple student apps and games. Adapting this framework to handle
+         dynamically generated music is surprisingly difficult. I describe the
+         specific challenges of shoehorning music into a stateless and testable
+         milieu, and propose a solution, using a hybrid dataflow approach.}
      @p*{John Clements is an Associate Professor at Cal Poly State University in
          San Luis Obispo. He is the author of DrRacket’s Stepper, and the RSound
          library, and this paragraph.})
@@ -223,20 +261,18 @@
      @h2{RacketCon: 20 September 2014}
 
      @columns[6 #:center? #f #:row? #f]{
-       @p{@b{(fourth RacketCon)} will be held in St. Louis on
-          the day after @a[href: "https://thestrangeloop.com/"]{Strange Loop}.
-          Stay turned for more information!}
-       @p{@b{@a[href: "https://www.eventbrite.com/e/racketcon-2014-tickets-11408046775"]{Registration}}
-          is open. Tickets are $30.}
-       @p{@b{@a[href: "http://www.fogus.me/"]{Michael Fogus}} will be giving the keynote.}
+       @p{@b{(fourth RacketCon)} was held in St. Louis on
+          the day after @a[href: "https://thestrangeloop.com/"]{Strange Loop}.}
 
-       @p{RacketCon will be held at the @|hotel| (which is one of the Strange Loop venues).
-          A @a[href: group-rate-url]{group rate} is available for RacketCon attendees.}
+       @p{@b{@a[href: "http://www.fogus.me/"]{Michael Fogus}} gave the keynote.}
+
+       @p{Videos of the talks are available, and linked to from the schedule.}
 
        @p{@nbsp}
 
        @p{@b{Schedule:}}
        @session-sched[
+         @slot["9:00-9:30" #f]{Registration}
          @slot["9:30" #f]{Welcome}
          @slot["9:30-10:30" #f]{Keynote}
          @(speaker-slot fogus)
@@ -273,8 +309,20 @@
                     style: "padding-top: 60px; margin-top: -60px"]{
                    @li{@p*{@name — @(or (speaker->title name) "TBA")}
                           @(or abstract "")
-                          @(or bio "")
-                          @hr{}}}))}
+                          @(or bio "")}
+                       @p*{@(let ([slides (speaker->slides name)])
+                              (if slides
+                                  @a[href: slides]{[slides]}
+                                  ""))
+                           @(let ([code (speaker->code name)])
+                              (if code
+                                  @a[href: code]{[code]}
+                                  ""))
+                           @(let ([video (speaker->video name)])
+                              (if video
+                                  @a[href: video]{[video]}
+                                  ""))
+                           @hr{}}}))}
 
     @columns[1 #:center? #f #:row? #f]{ }
 

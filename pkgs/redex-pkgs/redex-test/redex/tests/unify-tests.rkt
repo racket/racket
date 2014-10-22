@@ -1193,6 +1193,33 @@
   (env (hash (lvar 'a) 'any (lvar 'b) 'any)
        (list (dq '() `((list (name b ,(bound))) (list 2)))))))
 
+;; unfold non-terminals correctly
+(let ()
+  (define-language lnt
+    (a (a a) 
+       b)
+    (b (n n))
+    (c (n n n))
+    (d (b b b))
+    (n number))
+  
+  (check-equal?
+   (unify '(list 1 2 3) '(nt a) empty-env lnt)
+   (unif-fail))
+  (check-equal?
+   (unify '(nt c) '(nt a) empty-env lnt)
+   (unif-fail))
+  (check-equal?
+   (unify '(nt d) '(nt a) empty-env lnt)
+   (unif-fail))
+  (check-not-equal?
+   (unify '(list 1 2 3) '(nt c) empty-env lnt)
+   (unif-fail))
+  (check-not-equal?
+   (unify '(list 1 2) '(nt a) empty-env lnt)
+   (unif-fail))
+  )
+
 
 
 (let ([untested

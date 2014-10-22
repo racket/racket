@@ -1265,8 +1265,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
         #`(define formals.erased body ... last-body*)
         #'-lambda
         #t #t))
-     (define type-ann
-       (and (attribute return.type)))
      ;; insert in type variables if necessary
      (define rhs*
        (syntax-parse rhs

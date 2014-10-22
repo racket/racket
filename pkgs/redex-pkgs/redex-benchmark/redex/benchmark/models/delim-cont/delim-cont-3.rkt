@@ -19,11 +19,12 @@
 (include/rewrite "generators.rkt" generators bug-mod-rw)
 
 (define small-counter-example
-  (term ((λ (tg : (Prompt Num Bool))
-           (% (call/comp (λ (x : Bool) (if x #f #t))
-                         tg)
-              tg
-              (λ (x : Num) #t)))
-         (make-prompt-tag Num Bool))))
+  (term (<> ((λ (var:tg : (Prompt Num Bool))
+               (% (call/comp (λ (var:x : Bool) (if var:x #f #t))
+                             var:tg)
+                  var:tg
+                  (λ (var:x : Num) #t)))
+             (make-prompt-tag Num Bool))
+            (call/comp : (→ Num Bool) (call/comp : Num ·)))))
 
 (test small-counter-example)

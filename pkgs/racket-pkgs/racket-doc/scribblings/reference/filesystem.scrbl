@@ -243,6 +243,7 @@ On Windows, @racket[file-exists?]  reports @racket[#t] for all
 variations of the special filenames (e.g., @racket["LPT1"],
 @racket["x:/baddir/LPT1"]).}
 
+
 @defproc[(link-exists? [path path-string?]) boolean?]{
 
 Returns @racket[#t] if a link @racket[path] exists,
@@ -257,6 +258,9 @@ path).
 This procedure never raises the @racket[exn:fail:filesystem]
 exception.
 
+On Windows, @racket[link-exists?] reports @racket[#t] for both
+symbolic links and junctions.
+
 @history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
 
@@ -264,7 +268,11 @@ exception.
 
 Deletes the file with path @racket[path] if it exists, otherwise the
 @exnraise[exn:fail:filesystem]. If @racket[path] is a link, the link
-is deleted rather than the destination of the link.}
+is deleted rather than the destination of the link.
+
+On Windows, @racket[delete-file] can delete a symbolic link, but not
+a junction. Use @racket[delete-directory] to delete a junction.}
+
 
 @defproc[(rename-file-or-directory [old path-string?]
                                    [new path-string?]
@@ -406,6 +414,8 @@ On Windows XP and earlier, the @exnraise[exn:fail:unsupported]. On
 later versions of Windows, the creation of links tends to be
 disallowed by security policies. Furthermore, a relative-path link is
 parsed specially; see @secref["windowspaths"] for more information.
+When @racket[make-file-or-directory-link] succeeds, it creates a symbolic
+link as opposed to a junction.
 
 @history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
@@ -899,7 +909,7 @@ is a directory, the copy applies recursively to the directory's
 content. If a source is a link, the target of the link is copied
 rather than the link itself.
 
-If @racket[keep-modify-seconds?] is @racket[#f]false, then file copies
+If @racket[keep-modify-seconds?] is @racket[#f], then file copies
 keep only the properties kept by @racket[copy-file], If
 @racket[keep-modify-seconds?] is true, then each file copy also keeps
 the modification date of the original.}
@@ -1091,7 +1101,7 @@ see @racket[open-output-file]) and to delete it when it is no longer
 needed.}
 
 @defproc[(call-with-atomic-output-file [file path-string?] 
-                                       [proc ([port input-port?] [tmp-path path?]  . -> . any)]
+                                       [proc ([port output-port?] [tmp-path path?]  . -> . any)]
                                        [#:security-guard security-guard (or/c #f security-guard?) #f])
          any]{
 

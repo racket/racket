@@ -224,6 +224,23 @@ additional provides all other bindings from @racketmodname[racket/class].
   @define/foo-content[d/pr-element]
 }
 
+@deftogether[(@defform[(init init-decl ...)]
+              @defform[(init-field init-decl ...)]
+              @defform[(field field-decl ...)]
+              @defform[(inherit-field field-decl ...)]
+              @defform[(init-rest id/type)]
+              @defform[(public maybe-renamed/type ...)]
+              @defform[(pubment maybe-renamed/type ...)]
+              @defform[(override maybe-renamed/type ...)]
+              @defform[(augment maybe-renamed/type ...)]
+              @defform[(private id/type ...)]
+              @defform[(inherit maybe-renamed/type ...)])]{
+  These forms are mostly equivalent to the forms of the same names from
+  the @racketmodname[racket/class] library and will expand to them. However,
+  they also allow the initialization argument, field, or method names to be
+  annotated with types as described above for the @racket[class] form.
+}
+
 @section{Types}
 
 @defform[#:literals (init init-field init-rest field augment)
@@ -278,8 +295,11 @@ additional provides all other bindings from @racketmodname[racket/class].
   ]
 
   When @racket[type-alias-id] is provided, the resulting class type
-  includes all of the initialization argument, method, and field types
-  from the specified type alias (which must be an alias for a class type).
+  includes all of the method and field types from the specified type alias
+  (which must be an alias for a class type). This is intended to allow a type
+  for a subclass to include parts of its parent class type. The initialization argument
+  types of the parent, however, are @emph{not} included because a subclass does not necessarily
+  share the same initialization arguments as its parent class.
   Multiple @racket[#:implements] clauses may be provided for a single class
   type.
 

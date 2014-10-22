@@ -341,7 +341,8 @@
 
      (define for-gl? (memq 'gl style))
      (when for-gl?
-       (prepare-widget-gl-context client-gtk gl-config))
+       (prepare-widget-gl-context client-gtk gl-config)
+       (gtk_widget_set_double_buffered client-gtk #f))
 
      (define dc #f)
 

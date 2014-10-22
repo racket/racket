@@ -4,63 +4,14 @@
          racket/match
          racket/contract
          (for-syntax racket/base)
-         "../../private/eval-helpers.rkt"
-         "traversals.rkt"
-         "local-member-names.rkt"
+         drracket/private/syncheck/traversals
+         drracket/private/syncheck/syncheck-intf
+         drracket/private/syncheck/xref
+         "../../private/eval-helpers-and-pref-init.rkt"
          "intf.rkt"
-         "xref.rkt")
+         "local-member-names.rkt")
 
 (provide go monitor)
-
-(define obj%
-  (class (annotations-mixin object%)
-    (init-field src orig-cust)
-    (define trace '())
-    
-    (define-values (remote-chan local-chan) (place-channel))
-    (define table (make-hash))
-
-    (create-rename-answerer-thread orig-cust local-chan table)
-    
-    (define/override (syncheck:find-source-object stx)
-      (and (equal? src (syntax-source stx))
-           src))
-    
-    ;; send over the non _ variables in the message to the main drracket place
-    (define-syntax (log stx)
-      (syntax-case stx ()
-        [(_ name args ...)
-         (with-syntax ([(wanted-args ...)
-                        (filter (λ (x) (not (regexp-match #rx"^_" (symbol->string (syntax-e x)))))
-                                (syntax->list #'(args ...)))])
-           #'(define/override (name args ...)
-               (add-to-trace (vector 'name wanted-args ...))))]))
-
-    (define/override (syncheck:add-arrow/name-dup _start-text start-pos-left start-pos-right
-                                                  _end-text end-pos-left end-pos-right
-                                                  actual? level require-arrow? name-dup?)
-      (define id (hash-count table))
-      (hash-set! table id name-dup?)
-      (add-to-trace (vector 'syncheck:add-arrow/name-dup
-                            start-pos-left start-pos-right
-                            end-pos-left end-pos-right
-                            actual? level require-arrow? remote-chan id)))
-    (log syncheck:add-tail-arrow _from-text from-pos _to-text to-pos)
-    (log syncheck:add-mouse-over-status _text pos-left pos-right str)
-    (log syncheck:add-background-color _text color start fin)
-    (log syncheck:add-jump-to-definition _text start end id filename submods)
-    (log syncheck:add-definition-target _text start-pos end-pos id mods)
-    (log syncheck:add-require-open-menu _text start-pos end-pos file)
-    (log syncheck:add-docs-menu _text start-pos end-pos key the-label path definition-tag tag)
-    (define/override (syncheck:add-id-set to-be-renamed/poss dup-name?)
-      (define id (hash-count table))
-      (hash-set! table id dup-name?)
-      (add-to-trace (vector 'syncheck:add-id-set (map cdr to-be-renamed/poss) remote-chan id)))
-    
-    (define/public (get-trace) (reverse trace))
-    (define/private (add-to-trace thing) 
-      (set! trace (cons thing trace)))
-    (super-new)))
 
 (define (create-rename-answerer-thread orig-cust local-chan table)
   ;; the hope is that changing the custodian like this
@@ -102,7 +53,7 @@
                                    (printf "  ~s\n" x))
                                  (printf "===\n")
                                  (raise x))))
-      (define obj (new obj%
+      (define obj (new build-place-chan-trace%
                        [src the-source]
                        [orig-cust orig-cust]))
       (define-values (expanded-expression expansion-completed) 
@@ -113,6 +64,30 @@
           (expanded-expression stx))
         (expansion-completed))
       (send obj get-trace))))
+
+(define build-place-chan-trace%
+  (class build-trace%
+    (inherit add-to-trace)
+    (init-field  orig-cust)
+    (define-values (remote-chan local-chan) (place-channel))
+    (define table (make-hash))
+    (create-rename-answerer-thread orig-cust local-chan table)
+    (define/override (syncheck:add-arrow/name-dup _start-text start-pos-left start-pos-right
+                                                  _end-text end-pos-left end-pos-right
+                                                  actual? level require-arrow? name-dup?)
+      (define id (hash-count table))
+      (hash-set! table id name-dup?)
+      (add-to-trace (vector 'syncheck:add-arrow/name-dup
+                            start-pos-left start-pos-right
+                            end-pos-left end-pos-right
+                            actual? level require-arrow? remote-chan id)))
+    
+    (define/override (syncheck:add-id-set to-be-renamed/poss dup-name?)
+      (define id (hash-count table))
+      (hash-set! table id dup-name?)
+      (add-to-trace (vector 'syncheck:add-id-set (map cdr to-be-renamed/poss) remote-chan id)))
+    (super-new)))
+    
 
 (define (monitor send-back path the-source orig-cust)
   (define lr (make-log-receiver (current-logger)

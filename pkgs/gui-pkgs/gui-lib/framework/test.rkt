@@ -225,9 +225,10 @@
   (let ([frame  (test:get-active-top-level-window)])
     (let loop ([window  window])
       (cond [(not window) #f]
+            [(not frame) #f]
             [(null? window) #f]  ;; is this test needed?
             [(object=? window frame) #t]
-            [else  (loop (send window get-parent))]))))
+            [else (loop (send window get-parent))]))))
 
 ;;
 ;; Verify modifier list.

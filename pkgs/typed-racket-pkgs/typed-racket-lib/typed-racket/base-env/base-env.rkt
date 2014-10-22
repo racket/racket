@@ -657,11 +657,11 @@
  (-poly (a b c d)
         (cl-> [((a b . -> . b) b (-lst a)) b]
               [((a b c . -> . c) c (-lst a) (-lst b)) c]
-              [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
+              [((a b c d . -> . d) d (-lst a) (-lst b) (-lst c)) d]))]
 [foldr  (-poly (a b c d)
                (cl-> [((a b . -> . b) b (-lst a)) b]
                      [((a b c . -> . c) c (-lst a) (-lst b)) c]
-                     [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
+                     [((a b c d . -> . d) d (-lst a) (-lst b) (-lst c)) d]))]
 [filter (-poly (a b) (cl->*
                       ((asym-pred a Univ (-FS (-filter b 0) -top))
                        (-lst a)
@@ -915,10 +915,10 @@
                                [(-HashTop) (-lst (-pair Univ Univ))]))]
 
 [hash-copy (-poly (a b) (-> (-HT a b) (-HT a b)))]
-[eq-hash-code (-poly (a) (-> a -Integer))]
-[eqv-hash-code (-poly (a) (-> a -Integer))]
-[equal-hash-code (-poly (a) (-> a -Integer))]
-[equal-secondary-hash-code (-poly (a) (-> a -Integer))]
+[eq-hash-code (-> Univ -Fixnum)]
+[eqv-hash-code (-> Univ -Fixnum)]
+[equal-hash-code (-> Univ -Fixnum)]
+[equal-secondary-hash-code (-> Univ -Fixnum)]
 [hash-iterate-first (-poly (a b)
                            ((-HT a b) . -> . (Un (-val #f) -Integer)))]
 [hash-iterate-next (-poly (a b)
@@ -1455,7 +1455,7 @@
 [syntax-original? (-poly (a) (-> (-Syntax a) B))]
 [syntax-source-module (->opt (-Syntax Univ) [Univ] (Un (-val #f) -Path Sym -Module-Path-Index))]
 [syntax-e (-poly (a) (->acc (list (-Syntax a)) a (list -syntax-e)))]
-[syntax->list (-poly (a) (-> (-Syntax (-lst a)) (-lst (-Syntax a))))]
+[syntax->list (-poly (a) (-> (-Syntax (-lst a)) (-lst a)))]
 [syntax->datum (cl->* (-> Any-Syntax -Sexp)
                       (-> (-Syntax Univ) Univ))]
 

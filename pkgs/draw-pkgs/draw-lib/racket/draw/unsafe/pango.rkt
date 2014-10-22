@@ -147,25 +147,9 @@
 (define-glib g_queue_new (_pfun -> _GQueue))
 (define-gobj raw_g_object_unref _fpointer #:c-id g_object_unref)
 
-(define (unref-font-map v)
-  (when (eq? (system-type) 'windows)
-    ;; For version 1.28 of Pango, reported as Bug 649293:
-    ;; Under Windows, PangoWin32FontMap holds a queue of freed
-    ;; fonts, and the fonts hold a weak link back to the map.
-    ;; Unreffing the font map drops the weak links and *then*
-    ;; tries to release the freed fonts, which leads to failures
-    ;; releasing the fonts. Work around the bug by manually
-    ;; flushing the queue of freed fonts before the font map is
-    ;; unreffed.
-    (let ([fm (cast v _pointer _PangoWin32FontMap-pointer)])
-      (g_queue_foreach (PangoWin32FontMap-freed_fonts fm) raw_g_object_unref #f)
-      (g_queue_free (PangoWin32FontMap-freed_fonts fm))
-      (set-PangoWin32FontMap-freed_fonts! fm (g_queue_new))))
-  (g_object_unref v))
-
 (define-pangocairo pango_cairo_font_map_get_default (_pfun -> PangoFontMap)) ;; not an allocator
 (define-pangocairo pango_cairo_font_map_new (_pfun -> PangoFontMap)
-  #:wrap (allocator unref-font-map))
+  #:wrap (allocator g_object_unref))
 
 (define-pango pango_context_new (_pfun -> PangoContext)
   #:wrap (allocator g_object_unref))
