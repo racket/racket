@@ -301,6 +301,14 @@ specific command-line flags for @command-ref{remove}.
 The package lock must be held; see @racket[with-pkg-lock].}
 
 
+@defproc[(pkg-new [name path-string?])
+         (void?)]{
+Implements @racket[pkg-new-command].
+
+The @racket[name] parameter is the name of the new package.
+}
+
+
 @defproc[(pkg-show [indent string?]
                    [#:directory show-dir? boolean? #f])
          void?]{

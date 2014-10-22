@@ -285,6 +285,12 @@
                                #:force? force)))
                 (setup "removed" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
+            [new
+             "Populate a new directory with the stubs of a package"
+             #:args (pkg)
+             (parameterize ([current-pkg-error (pkg-error 'new)])
+               (pkg-new pkg))]
+            ;; ----------------------------------------
             [show
              "Show information about installed packages"
              #:once-each

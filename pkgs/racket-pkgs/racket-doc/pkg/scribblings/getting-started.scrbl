@@ -266,7 +266,17 @@ A package normally starts life as a directory containing module files
 and grows up to become a Git repository that is registered with a
 @tech{package catalog}.
 
-So, to create a package, first make a directory and select its name,
+@subsection[#:tag "automatic-creation"]{Automatic Creation}
+
+As a convenience, @command-ref{new} can automatically create single
+collection packages.
+To create @nonterm{pkg-name}:
+
+@commandline{raco pkg new @nonterm{pkg-name}}
+
+@subsection[#:tag "manual-creation"]{Manual Creation}
+
+To create a package manually, first make a directory and select its name,
 @nonterm{pkg-name}:
 
 @commandline{mkdir @nonterm{pkg-name}}
@@ -296,6 +306,8 @@ You can start with a @tech{single-collection package} and later change
 it to a @tech{multi-collection package} by restructuring the package
 directory, so you don't have to worry much about the choice when you
 get started.
+
+@subsection[#:tag "working-new-pkgs"]{Working with New Packages}
 
 Whether creating a @tech{single-collection package} or a
 @tech{multi-collection package}, the next step is to link your
