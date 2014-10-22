@@ -72,10 +72,10 @@
 
 (define (make-printable t)
   (match t
-    [(tc-result1: t) t]
-    [(tc-results: ts) (-values ts)]
+    [(tc-result1: t) (cleanup-type t)]
+    [(tc-results: ts) (-values (map cleanup-type ts))]
     [(tc-any-results: f) (-AnyValues -top)]
-    [_ t]))
+    [_ (cleanup-type t)]))
 
 (define (stringify-domain dom rst drst [rng #f])
   (let ([doms-string (if (null? dom) "" (string-append (stringify (map make-printable dom)) " "))]
