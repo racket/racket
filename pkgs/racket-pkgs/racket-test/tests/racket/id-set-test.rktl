@@ -148,14 +148,66 @@
            (test #t free-id-set-empty? EMPTY)
            (free-id-set-intersect! ABC/MUTABLE EMPTY)
            (test 0 free-id-set-count ABC/MUTABLE)
-           (define MUTABLE/UNION/3 (mutable-free-id-set (list #'a #'b #'c)))
-           (free-id-set-intersect! MUTABLE/UNION/3
+           (define MUTABLE/INTERSECT/3 (mutable-free-id-set (list #'a #'b #'c)))
+           (free-id-set-intersect! MUTABLE/INTERSECT/3
                                    ABCD
                                    (mutable-free-id-set (list #'a #'b)))
-           (test 2 free-id-set-count MUTABLE/UNION/3)
-           (test #t free-id-set-member? MUTABLE/UNION/3 #'a)
-           (test #t free-id-set-member? MUTABLE/UNION/3 #'b)
-           (test #f free-id-set-member? MUTABLE/UNION/3 #'c)
+           (test 2 free-id-set-count MUTABLE/INTERSECT/3)
+           (test #t free-id-set-member? MUTABLE/INTERSECT/3 #'a)
+           (test #t free-id-set-member? MUTABLE/INTERSECT/3 #'b)
+           (test #f free-id-set-member? MUTABLE/INTERSECT/3 #'c)
+         
+           (void))
+         
+         ;; set subtract
+         (let ()
+           (define EMPTY/MUTABLE (mutable-free-id-set null))
+           (define EMPTY/IMMUTABLE (immutable-free-id-set null))
+           (define ABCDE-LIST (list #'a #'b #'c #'d #'e))
+           (define ABCDE/MUTABLE (mutable-free-id-set ABCDE-LIST))
+           (define ABCDE/IMMUTABLE (immutable-free-id-set ABCDE-LIST))
+           (test 5 free-id-set-count (free-id-set-subtract ABCDE/IMMUTABLE))
+           (test #t free-id-set-empty? (free-id-set-subtract EMPTY/IMMUTABLE))
+           (test 0 free-id-set-count (free-id-set-subtract EMPTY/IMMUTABLE ABCD))
+           (test 1 free-id-set-count (free-id-set-subtract ABCDE/IMMUTABLE ABCD))
+           (test 5 free-id-set-count (free-id-set-subtract ABCDE/IMMUTABLE EMPTY))
+           (define IMMUTABLE/SUBTRACT/3
+             (free-id-set-subtract ABCDE/IMMUTABLE
+                                   ABC
+                                   (immutable-free-id-set (list #'a #'b #'e))))
+           (test 1 free-id-set-count IMMUTABLE/SUBTRACT/3)
+           (test #f free-id-set-member? IMMUTABLE/SUBTRACT/3 #'a)
+           (test #f free-id-set-member? IMMUTABLE/SUBTRACT/3 #'b)
+           (test #t free-id-set-member? IMMUTABLE/SUBTRACT/3 #'d)
+           (test #f free-id-set-member? IMMUTABLE/SUBTRACT/3 #'e)
+           
+           (free-id-set-subtract! ABCDE/MUTABLE)
+           (test 5 free-id-set-count ABCDE/MUTABLE)
+           (free-id-set-subtract! EMPTY/MUTABLE)
+           (test #t free-id-set-empty? EMPTY/MUTABLE)
+           (free-id-set-subtract! EMPTY/MUTABLE ABCD)
+           (test 0 free-id-set-count EMPTY/MUTABLE)
+           (free-id-set-subtract! ABCDE/MUTABLE ABC)
+           (test 2 free-id-set-count ABCDE/MUTABLE)
+           (test #f free-id-set-member? ABCDE/MUTABLE #'a)
+           (test #f free-id-set-member? ABCDE/MUTABLE #'b)
+           (test #f free-id-set-member? ABCDE/MUTABLE #'c)
+           (test #t free-id-set-member? ABCDE/MUTABLE #'d)
+           (test #t free-id-set-member? ABCDE/MUTABLE #'e)
+           (test #t mutable-free-id-set? ABCDE/MUTABLE)
+           (test #t free-id-set-empty? EMPTY)
+           (set! ABCDE/MUTABLE (mutable-free-id-set ABCDE-LIST))
+           (free-id-set-subtract! ABCDE/MUTABLE EMPTY)
+           (test 5 free-id-set-count ABCDE/MUTABLE)
+           (define MUTABLE/SUBTRACT/3 (mutable-free-id-set (list #'a #'b #'c #'d #'e)))
+           (free-id-set-subtract! MUTABLE/SUBTRACT/3
+                                  ABC
+                                  (mutable-free-id-set (list #'a #'b #'e)))
+           (test 1 free-id-set-count MUTABLE/SUBTRACT/3)
+           (test #f free-id-set-member? MUTABLE/SUBTRACT/3 #'a)
+           (test #f free-id-set-member? MUTABLE/SUBTRACT/3 #'b)
+           (test #t free-id-set-member? MUTABLE/SUBTRACT/3 #'d)
+           (test #f free-id-set-member? MUTABLE/SUBTRACT/3 #'e)
          
            (void))
          
@@ -169,15 +221,6 @@
 
 ;; ----------------------------------------------------------------------------
 ;; immutable/mutable set tests
-;  (test s set-intersect s)
-;  (test (set 3) set-intersect s (set 5 4 3 6))
-;  (test (set 3) set-intersect (set 5 4 3 6) s)
-;  (test (seteq 3) set-intersect (seteq 5 4 3 6) (seteq 1 2 3))
-;  (test (seteqv 3) set-intersect (seteqv 5 4 3 6) (seteqv 1 2 3))
-;  (test (set 3 2) set-intersect s (set 5 2 3))
-;  (test (seteq 3 2) set-intersect (seteq 1 2 3) (seteq 5 2 3))
-;  (test (set 2) set-intersect s (set 5 2 3) (set 2 20 200))
-;  (test (seteq 2) set-intersect (seteq 1 2 3) (seteq 5 2 3) (seteq 2 20 200))
 (define EMPTY/MUTABLE/FREE (mutable-free-id-set))
 (define NONEMPTY/MUTABLE/FREE (mutable-free-id-set (list #'a #'b #'c)))
 (define EMPTY/IMMUTABLE/FREE (immutable-free-id-set))
@@ -208,6 +251,7 @@
   (err/rt-test (free-id-set-clear! s) exn:fail?)
   (err/rt-test (free-id-set-union! s) exn:fail?)
   (err/rt-test (free-id-set-intersection! s) exn:fail?)
+  (err/rt-test (free-id-set-subtract! s) exn:fail?)
 
   (test #t free-id-set=? 
         s 
@@ -249,6 +293,7 @@
   (err/rt-test (free-id-set-clear ms1) exn:fail?)
   (err/rt-test (free-id-set-union ms1) exn:fail?)
   (err/rt-test (free-id-set-intersection ms1) exn:fail?)
+  (err/rt-test (free-id-set-subtract ms1) exn:fail?)
 
   (free-id-set-add! ms2 #'b)
   (free-id-set-add! ms2 #'a)

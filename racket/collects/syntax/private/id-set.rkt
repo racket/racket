@@ -30,6 +30,8 @@
  free-id-set-union!
  free-id-set-intersect
  free-id-set-intersect!
+ free-id-set-subtract
+ free-id-set-subtract!
  )
 
 ;; TODO
@@ -177,8 +179,31 @@
   (for ([id (dict-keys table0)] #:unless (keep? id))
     (free-id-table-remove! table0 id)))
 
-;(define (free-id-set-subtract s . ss) s)
-;(define (free-id-set-subtract! s . ss) (void))
+(define (free-id-set-subtract set0 . ss)
+  (unless (immutable-free-id-set? set0)
+    (error 'free-id-set-subtract "expected immutable free-id set in: ~a" set0))
+  (define tables-seq (in-list (map free-id-set-table ss)))
+  (define (remove? id)
+    (for/or ([table tables-seq])
+      (free-id-table-ref table id #f)))
+  (define table0 (free-id-set-table set0))
+  (immutable-free-id-set
+   (for/fold ([table table0])
+             ([id (in-dict-keys table0)] #:when (remove? id))
+     (free-id-table-remove table id))))
+(define (free-id-set-subtract! set0 . ss)
+  (unless (mutable-free-id-set? set0)
+    (error 'free-id-set-subtract! "expected mutable free-id set in: ~a" set0))
+  (define tables-seq (in-list (map free-id-set-table ss)))
+  (define (remove? id)
+    (for/or ([table tables-seq])
+      (free-id-table-ref table id #f)))
+  (define table0 (free-id-set-table set0))
+  ;; use dict-keys (instead of in-dict-keys) to grab all keys ahead of time
+  ;; bc we will possibly be removing some of them
+  (for ([id (dict-keys table0)] #:when (remove? id))
+    (free-id-table-remove! table0 id)))
+  
 
 ;;; bound-id-set constructors
 ;(struct mutable-bound-id-set (table))
