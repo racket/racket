@@ -1651,6 +1651,7 @@ typedef struct Scheme_Cont {
   Scheme_Object so;
   char composable, has_prompt_dw, need_meta_prompt, skip_dws;
   struct Scheme_Meta_Continuation *meta_continuation;
+  Scheme_Object *meta_continuation_src; /* a weak reference to the mc cloned, for use in detecting sharing */
   Scheme_Cont_Jmp *buf_ptr; /* indirection allows sharing */
   Scheme_Dynamic_Wind *dw;
   int next_meta;
