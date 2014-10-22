@@ -34,6 +34,7 @@ to the @exec{raco pkg} sub-subcommands.
 @defthing[pkg-install-command procedure?]{Implements @command-ref{install}.}
 @defthing[pkg-update-command procedure?]{Implements @command-ref{update}.}
 @defthing[pkg-remove-command procedure?]{Implements @command-ref{remove}.}
+@defthing[pkg-new-command procedure?]{Implements @command-ref{new}.}
 @defthing[pkg-show-command procedure?]{Implements @command-ref{show}.}
 @defthing[pkg-migrate-command procedure?]{Implements @command-ref{migrate}.}
 @defthing[pkg-config-command procedure?]{Implements @command-ref{config}.}

@@ -13,6 +13,7 @@
          "private/catalog.rkt"
          "private/remove.rkt"
          "private/install.rkt"
+         "private/new.rkt"
          "private/stage.rkt"
          "private/show.rkt"
          "private/config.rkt"
@@ -68,6 +69,8 @@
    (->* (boolean? (listof string?))
         (#:from-command-line? boolean?)
         void?)]
+  [pkg-new
+   (-> path-string? void?)]
   [pkg-create
    (->* ((or/c 'zip 'tgz 'plt 'MANIFEST)
          path-string?)

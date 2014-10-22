@@ -581,6 +581,13 @@ the given @nonterm{pkg}s.
  ]
 }
 
+@subcommand{@command/toc{new} @nonterm{package} ---
+Populates a directory with the stubs for a new racket package, where
+@nonterm{package} is the name of the new package.
+If @nonterm{package} already exists as a folder in the current directory, no new
+package is created.
+}
+
 @subcommand{@command/toc{show} @nonterm{option} ... --- Print information about currently installed packages. 
  By default, packages are shown for all @tech{package scopes}, but only for packages
  not marked as auto-installed to fulfill dependencies.
