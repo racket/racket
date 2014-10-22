@@ -8,7 +8,7 @@
 
 (define legal "big-bang: ~a clauses are not allowed within big-bang")
 (define double "big-bang: the on-tick keyword seems to have been used as a variable")
-(define atleast "big-bang: expects a [to-draw handler] clause, missing")
+(define atleast "big-bang: missing [to-draw renderer] or [on-draw renderer] clause")
 
 ;; is the mandatort to-draw clause specified 
 (with-handlers ((exn:fail:syntax? 
