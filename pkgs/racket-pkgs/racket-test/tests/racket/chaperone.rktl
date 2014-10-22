@@ -584,7 +584,42 @@
              (err/rt-test (a-x a3)))
            (begin
              (test 'bad a-x a2)
-             (test 'bad a-x a3)))))))
+             (test 'bad a-x a3)))))
+      (let* ([a1 (make-a 0 1)]
+             [a2 (chaperone-struct a1
+                                   a-x #f
+                                   set-a-x! #f
+                                   prop:blue 'blue)]
+             [a3 (chaperone-struct a1
+                                   set-a-x! #f
+                                   prop:blue 'cyan)])
+        (test #f eq? a1 a2)
+        (test #f eq? a1 a3)
+        (test #t eq? a1 (chaperone-struct a1
+                                          a-x #f
+                                          set-a-x! #f))
+        (test #t eq? a1 (chaperone-struct a1
+                                          set-a-x! #f))
+        (test 0 a-x a2)
+        (test (void) set-a-x! a2 1)
+        (test 1 a-x a2)
+        (test 'blue blue-ref a2)
+        (test 'cyan blue-ref a3))
+      (when is-chaperone
+        (let* ([p1 (make-p 0)]
+               [p2 (chaperone-struct p1
+                                     p-u #f
+                                     green-ref #f
+                                     prop:blue 'blue)])
+          (test #t eq? p1 (chaperone-struct p1
+                                            p-u #f
+                                            green-ref #f))
+          (test #t eq? p1 (chaperone-struct p1
+                                            p-u #f))
+          (test #t eq? p1 (chaperone-struct p1
+                                            p-u #f))
+          (test 0 p-u p2)
+          (test 'green green-ref p2)))))
 
 ;; test to see if the guard is actually called even when impersonated
 (let ()

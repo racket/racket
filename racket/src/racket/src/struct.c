@@ -5800,7 +5800,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
   const char *kind;
   Scheme_Hash_Tree *props = NULL, *red_props = NULL, *empty_red_props = NULL, *setter_positions = NULL;
   intptr_t field_pos;
-  int empty_si_chaperone = 0, *empty_redirects = NULL;
+  int empty_si_chaperone = 0, *empty_redirects = NULL, has_redirect = 0;
 
   if (argc == 1) return argv[0];
 
@@ -5995,27 +5995,32 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     }
 
     if (prop) {
-      if (SCHEME_TRUEP(prop)) {
+      if (SCHEME_TRUEP(proc)) {
         if (!red_props)
           red_props = scheme_make_hash_tree(0);
         red_props = scheme_hash_tree_set(red_props, prop, proc);
+        has_redirect = 1;
       } else {
         if (!empty_red_props)
           empty_red_props = scheme_make_hash_tree(0);
         empty_red_props = scheme_hash_tree_set(empty_red_props, prop, proc);
       }
     } else if (st) {
-      if (SCHEME_TRUEP(proc))
+      if (SCHEME_TRUEP(proc)) {
         SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + field_pos] = proc;
-      else {
-        if (!empty_redirects)
+        has_redirect = 1;
+      } else {
+        if (!empty_redirects) {
           empty_redirects = MALLOC_N_ATOMIC(int, 2 * stype->num_slots);
+          memset(empty_redirects, 0, sizeof(int) * 2 * stype->num_slots);
+        }
         empty_redirects[offset + field_pos] = 1;
       }
     } else {
-      if (SCHEME_TRUEP(proc))
+      if (SCHEME_TRUEP(proc)) {
         si_chaperone = proc;
-      else
+        has_redirect = 1;
+      } else
         empty_si_chaperone = 1;
     }
   }
@@ -6038,6 +6043,9 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       getter_positions = SCHEME_CDR(getter_positions);
     }
   }
+
+  if (!has_redirect && !props)
+    return argv[0];
   
   if (!redirects) {
     /* a non-structure chaperone */
