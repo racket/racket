@@ -75,6 +75,6 @@
   (tr:class:local-table tr:class:local-table)
   (tr:class:name-table tr:class:name-table)
   (tr:class:clause-ids tr:class:clause-ids)
-  (tr:class:method tr:class:method)
+  (tr:class:def tr:class:def)
   )
 
