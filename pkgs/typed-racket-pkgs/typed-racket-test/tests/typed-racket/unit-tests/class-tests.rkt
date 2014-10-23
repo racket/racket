@@ -517,6 +517,24 @@
    [tc-e (class object% (super-new)
            (define x "foo") (string-append x "bar"))
          (-class)]
+   ;; private field with function
+   [tc-e (class object%
+           (super-new)
+           (: f (-> String))
+           (define (f) "foo"))
+         (-class)]
+   [tc-err (let ()
+             (class object%
+               (super-new)
+               (: f (-> String))
+               (define (f) 'bad))
+             (error "foo"))
+           #:msg #rx"type mismatch.*expected: \\(-> String\\)"]
+   ;; multiple names in define-values private fields
+   [tc-e (class object%
+           (super-new)
+           (define-values (x y z) (values 'x 'y 'z)))
+         (-class)]
    ;; test private method
    [tc-e (let ()
            (class object% (super-new)
