@@ -1116,6 +1116,10 @@
                                                (cadr t)))])
                             (if (and src taglet)
                                 `([x-source-module ,(format "~s" src)]
+                                  ,@(let ([prefixes (current-tag-prefixes)])
+                                      (if (null? prefixes)
+                                          null
+                                          `([x-part-prefixes ,(format "~s" prefixes)])))
                                   [x-part-tag ,(format "~s" taglet)])
                                 '()))
                          ,@(format-number number '((tt nbsp)))
