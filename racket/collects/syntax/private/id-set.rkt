@@ -36,6 +36,8 @@
  free-id-set-symmetric-difference!
  free-id-subset?
  free-id-proper-subset?
+ free-id-set-map
+ free-id-set-for-each
  )
 
 ;; TODO
@@ -244,3 +246,10 @@
          (free-id-table-ref table2 id #f))
        (for/or ([id (in-dict-keys table2)])
          (not (free-id-table-ref table1 id #f)))))
+
+(define (free-id-set-map s f)
+  (for/fold ([ids null]) ([id (in-dict-keys (free-id-set-table s))])
+    (cons (f id) ids)))
+
+(define (free-id-set-for-each s f)
+  (for ([id (in-dict-keys (free-id-set-table s))]) (f id)))

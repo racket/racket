@@ -8,7 +8,7 @@
 ;; ----------------------------------------------------------------------------
 ;; Universal Tests
 
-(define-syntax (run-test-suite stx)
+(define-syntax (define-id-set-tests stx)
   (syntax-parse stx
     [(_ #:constructor mk-free-id-set)
      #:with free-id-set-pred? (format-id #'mk-free-id-set "~a?" #'mk-free-id-set)
@@ -340,12 +340,30 @@
            (test #f free-id-proper-subset? ABC AB/IMMUTABLE)
 
            (void))
+         
+         ;; free-id-set and free-id-set-for-each
+         (test #t null? (free-id-set-map EMPTY (λ (x) x)))
+         (test #t free-id-set=? ABC (mk-free-id-set (free-id-set-map ABC (λ (x) x))))
+         (test #t free-id-set=? ABCD (mk-free-id-set (free-id-set-map ABCD (λ (x) x))))
+         (test #t free-id-set=? 
+               ABC 
+               (mk-free-id-set 
+                ;; drop #'d
+                (free-id-set-map ABCD (λ (id) (if (free-identifier=? #'d id) #'a id)))))
+         (let ([new-set (mutable-free-id-set null)])
+           (free-id-set-for-each ABC (λ (id) (free-id-set-add! new-set id)))
+           (test #t free-id-set=? ABC new-set))
+         (let ([new-set (immutable-free-id-set null)])
+           (free-id-set-for-each 
+            ABCD
+            (λ (id) (set! new-set (free-id-set-add new-set id))))
+           (test #t free-id-set=? ABCD new-set))
          )]))
 
 ;; ----------------------------------------------------------------------------
 ;; run test suite instances
-(run-test-suite #:constructor mutable-free-id-set)
-(run-test-suite #:constructor immutable-free-id-set)
+(define-id-set-tests #:constructor mutable-free-id-set)
+(define-id-set-tests #:constructor immutable-free-id-set)
 
 
 ;; ----------------------------------------------------------------------------
