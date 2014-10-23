@@ -14,9 +14,12 @@
          empty-reduction-relation
          make-rewrite-proc rewrite-proc? rewrite-proc-name 
          rewrite-proc-lhs rewrite-proc-lhs-src rewrite-proc-id
-         (struct-out rule-pict))
+         (struct-out rule-pict-info))
 
-(define-struct rule-pict (arrow lhs rhs label computed-label side-conditions/pattern-binds fresh-vars))
+(define-struct rule-pict-info (arrow
+                               lhs rhs
+                               label computed-label
+                               side-conditions/pattern-binds fresh-vars))
 
 ;; type proc = (exp exp (any -> any) (listof any) -> (listof any)))
 ;;   a proc is a `cached' version of a make-proc, specialized to a particular language

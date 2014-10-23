@@ -3,6 +3,7 @@
 (require racket/contract
          "private/pict.rkt"
          "private/core-layout.rkt"
+         redex/private/struct
          redex/private/loc-wrapper
          redex/reduction-semantics
          texpict/mrpict)
@@ -13,7 +14,8 @@
         'vertical-overlapping-side-conditions
         'horizontal
         'horizontal-left-align
-        'horizontal-side-conditions-same-line))
+        'horizontal-side-conditions-same-line
+        (-> (listof rule-pict-info?) pict?)))
 
 (provide reduction-rule-style/c render-term term->pict
          term->pict/pretty-write
@@ -32,7 +34,8 @@
  [reduction-relation->pict (->* (reduction-relation?)
                                 (#:style reduction-rule-style/c)
                                 pict?)]
- [render-reduction-relation-rules (parameter/c (or/c false/c (listof (or/c symbol? string? exact-nonnegative-integer?))))]
+ [render-reduction-relation-rules 
+  (parameter/c (or/c #f (listof (or/c symbol? string? exact-nonnegative-integer?))))]
  
  [language->pict (->* (compiled-lang?)
                       (#:nts (or/c false/c (listof (or/c string? symbol?))))
@@ -45,7 +48,15 @@
        [result (file)
                (if (path-string? file)
                    void?
-                   pict?)])])
+                   pict?)])]
+ 
+ [rule-pict-info-arrow (-> rule-pict-info? symbol?)]
+ [rule-pict-info-lhs (-> rule-pict-info? pict?)]
+ [rule-pict-info-rhs (-> rule-pict-info? pict?)]
+ [rule-pict-info-label (-> rule-pict-info? (or/c symbol? #f))]
+ [rule-pict-info-computed-label (-> rule-pict-info? (or/c pict? #f))]
+ [rule-pict-info->side-condition-pict (->* (rule-pict-info?) ((and/c positive? real?)) pict?)]
+ [rule-pict-info? (-> any/c boolean?)])
 
 ; syntax
 (provide relation->pict
