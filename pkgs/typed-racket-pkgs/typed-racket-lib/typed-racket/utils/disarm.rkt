@@ -1,6 +1,6 @@
 #lang racket/base
 
-(provide disarm*)
+(provide (protect-out disarm*))
 
 ;; Typed Racket runs after macro expansion, and it must be priviledged,
 ;; so it can just disarm all taints (and arm everything afterward).
