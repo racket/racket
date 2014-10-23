@@ -84,7 +84,9 @@
          set-arrow-pict!
          arrow->pict
          horizontal-bar-spacing
-         relation-clauses-combine)
+         relation-clauses-combine
+         
+         rule-pict-info->side-condition-pict)
 
 (provide/contract
  [linebreaks (parameter/c (or/c #f (listof boolean?)))])
@@ -130,7 +132,7 @@
                 (for ([rp (in-list (reduction-relation-lws rr))]
                       [i (in-naturals)])
                   (hash-set! ht i rp)
-                  (hash-set! ht (rule-pict-label rp) rp))
+                  (hash-set! ht (rule-pict-info-label rp) rp))
                 (map (lambda (label)
                        (hash-ref ht (if (string? label)
                                         (string->symbol label)
@@ -159,25 +161,25 @@
 
 (define ((rr-lws->trees nts) rp)
   (let ([tp (λ (x) (lw->pict nts x))])
-    (make-rule-pict (rule-pict-arrow rp)
-                    (tp (rule-pict-lhs rp))
-                    (tp (rule-pict-rhs rp))
-                    (rule-pict-label rp)
-                    (and (rule-pict-computed-label rp)
-                         (let ([rewritten (apply-rewrites (rule-pict-computed-label rp))])
-                           (and (not (and (rule-pict-label rp)
-                                          (let has-unq? ([x rewritten])
-                                            (and (lw? x)
-                                                 (or (lw-unq? x)
-                                                     (and (list? (lw-e x))
-                                                          (ormap has-unq? (lw-e x))))))))
-                                (tp rewritten))))
-                    (map (lambda (v) 
-                           (if (pair? v)
-                               (where-pict (tp (car v)) (tp (cdr v)))
-                               (tp v)))
-                         (rule-pict-side-conditions/pattern-binds rp))
-                    (map tp (rule-pict-fresh-vars rp)))))
+    (make-rule-pict-info (rule-pict-info-arrow rp)
+                         (tp (rule-pict-info-lhs rp))
+                         (tp (rule-pict-info-rhs rp))
+                         (rule-pict-info-label rp)
+                         (and (rule-pict-info-computed-label rp)
+                              (let ([rewritten (apply-rewrites (rule-pict-info-computed-label rp))])
+                                (and (not (and (rule-pict-info-label rp)
+                                               (let has-unq? ([x rewritten])
+                                                 (and (lw? x)
+                                                      (or (lw-unq? x)
+                                                          (and (list? (lw-e x))
+                                                               (ormap has-unq? (lw-e x))))))))
+                                     (tp rewritten))))
+                         (map (lambda (v) 
+                                (if (pair? v)
+                                    (where-pict (tp (car v)) (tp (cdr v)))
+                                    (tp v)))
+                              (rule-pict-info-side-conditions/pattern-binds rp))
+                         (map tp (rule-pict-info-fresh-vars rp)))))
 
 (define current-label-extra-space (make-parameter 0))
 (define reduction-relation-rule-separation (make-parameter 4))
@@ -187,14 +189,14 @@
          [max-rhs (apply max
                          0
                          (map pict-width
-                              (map rule-pict-rhs rps)))]
+                              (map rule-pict-info-rhs rps)))]
          [max-w (apply max
                        0
                        (map (lambda (rp)
                               (+ sep sep
-                                 (pict-width (rule-pict-lhs rp))
-                                 (pict-width (arrow->pict (rule-pict-arrow rp)))
-                                 (pict-width (rule-pict-rhs rp))))
+                                 (pict-width (rule-pict-info-lhs rp))
+                                 (pict-width (arrow->pict (rule-pict-info-arrow rp)))
+                                 (pict-width (rule-pict-info-rhs rp))))
                             rps))])
     (table 4
            (apply
@@ -203,23 +205,24 @@
               (for/list ([rp (in-list rps)]
                          [i (in-naturals 1)])
                 (let ([arrow (hbl-append (blank (arrow-space) 0)
-                                         (arrow->pict (rule-pict-arrow rp))
+                                         (arrow->pict (rule-pict-info-arrow rp))
                                          (blank (arrow-space) 0))]
-                      [lhs (rule-pict-lhs rp)]
-                      [rhs (rule-pict-rhs rp)]
+                      [lhs (rule-pict-info-lhs rp)]
+                      [rhs (rule-pict-info-rhs rp)]
                       [spc (basic-text " " (default-style))]
                       [label (hbl-append (blank (label-space) 0) (rp->pict-label rp))]
                       [sep (blank 4)])
                   (append 
                    (if side-conditions-same-line?
                        (list lhs arrow 
-                             (hbl-append rhs
-                                         (let ([sc (rp->side-condition-pict rp max-w)])
-                                           (inset sc (min 0 (- max-rhs (pict-width sc))) 0 0 0)))
+                             (hbl-append
+                              rhs
+                              (let ([sc (rule-pict-info->side-condition-pict rp max-w)])
+                                (inset sc (min 0 (- max-rhs (pict-width sc))) 0 0 0)))
                              label)
                        (list lhs arrow rhs label
                              (blank) (blank)
-                             (let ([sc (rp->side-condition-pict rp max-w)])
+                             (let ([sc (rule-pict-info->side-condition-pict rp max-w)])
                                (inset sc (min 0 (- max-rhs (pict-width sc))) 0 0 0))
                              (blank)))
                    (if (= len i)
@@ -235,16 +238,16 @@
 (define ((make-vertical-style side-condition-combiner) rps)
   (let* ([mk-top-line-spacer
           (λ (rp)
-            (hbl-append (rule-pict-lhs rp)
+            (hbl-append (rule-pict-info-lhs rp)
                         (basic-text " " (default-style))
-                        (arrow->pict (rule-pict-arrow rp))
+                        (arrow->pict (rule-pict-info-arrow rp))
                         (basic-text " " (default-style))
                         (rp->pict-label rp)))]
          [mk-bot-line-spacer
           (λ (rp)
             (rt-superimpose
-             (rule-pict-rhs rp)
-             (rp->side-condition-pict rp +inf.0)))]
+             (rule-pict-info-rhs rp)
+             (rule-pict-info->side-condition-pict rp +inf.0)))]
          [multi-line-spacer
           (if (null? rps)
               (blank)
@@ -267,14 +270,14 @@
                  (side-condition-combiner
                   (vl-append
                    (ltl-superimpose 
-                    (htl-append (rule-pict-lhs rp)
+                    (htl-append (rule-pict-info-lhs rp)
                                 (basic-text " " (default-style))
-                                (arrow->pict (rule-pict-arrow rp)))
+                                (arrow->pict (rule-pict-info-arrow rp)))
                     (rtl-superimpose 
                      spacer
                      (rp->pict-label rp)))
-                   (rule-pict-rhs rp))
-                  (rp->side-condition-pict rp +inf.0)))
+                   (rule-pict-info-rhs rp))
+                  (rule-pict-info->side-condition-pict rp +inf.0)))
                rps)
           (blank 0 (reduction-relation-rule-separation)))))))
 
@@ -291,10 +294,10 @@
                        (compact-vertical-min-width)
                        (map pict-width
                             (append
-                             (map rule-pict-lhs rps)
-                             (map rule-pict-rhs rps))))]
+                             (map rule-pict-info-lhs rps)
+                             (map rule-pict-info-rhs rps))))]
          [scs (map (lambda (rp)
-                     (rp->side-condition-pict rp max-w))
+                     (rule-pict-info->side-condition-pict rp max-w))
                    rps)]
          [labels (map (lambda (rp)
                         (hbl-append (blank (label-space) 0) (rp->pict-label rp)))
@@ -308,9 +311,10 @@
          [one-line
           (lambda (sep?)
             (lambda (rp sc label)
-              (let ([arrow (hbl-append (arrow->pict (rule-pict-arrow rp)) (blank (arrow-space) 0))]
-                    [lhs (rule-pict-lhs rp)]
-                    [rhs (rule-pict-rhs rp)]
+              (let ([arrow (hbl-append (arrow->pict (rule-pict-info-arrow rp))
+                                       (blank (arrow-space) 0))]
+                    [lhs (rule-pict-info-lhs rp)]
+                    [rhs (rule-pict-info-rhs rp)]
                     [spc (basic-text " " (default-style))]
                     [sep (blank (compact-vertical-min-width)
                                 (reduction-relation-rule-separation))]
@@ -392,16 +396,16 @@
   (make-parameter (lambda (lhs rhs)
                     (htl-append lhs (make-=) rhs))))
 
-(define (rp->side-condition-pict rp max-w)
-  (side-condition-pict (rule-pict-fresh-vars rp)
-                       (rule-pict-side-conditions/pattern-binds rp)
+(define (rule-pict-info->side-condition-pict rp [max-w +inf.0])
+  (side-condition-pict (rule-pict-info-fresh-vars rp)
+                       (rule-pict-info-side-conditions/pattern-binds rp)
                        max-w))
 
 (define (rp->pict-label rp)
-  (cond [(rule-pict-computed-label rp) => bracket]
-        [(rule-pict-label rp)
+  (cond [(rule-pict-info-computed-label rp) => bracket]
+        [(rule-pict-info-label rp)
          (string->bracketed-label 
-          (format "~a" (rule-pict-label rp)))]
+          (format "~a" (rule-pict-info-label rp)))]
         [else (blank)]))
 
 (define (string->bracketed-label str)
@@ -422,18 +426,23 @@
 (define (make-horiz-space picts) (blank (pict-width (apply cc-superimpose picts)) 0))
 
 (define rule-pict-style (make-parameter 'vertical))
+(define rule-pict-style-table 
+  (make-hash
+   (list (cons 'vertical rule-picts->pict/vertical)
+         (cons 'compact-vertical rule-picts->pict/compact-vertical)
+         (cons 'vertical-overlapping-side-conditions
+               rule-picts->pict/vertical-overlapping-side-conditions)
+         (cons 'horizontal-left-align
+               (rule-picts->pict/horizontal ltl-superimpose #f))
+         (cons 'horizontal-side-conditions-same-line
+               (rule-picts->pict/horizontal rtl-superimpose #t))
+         (cons 'horizontal
+               (rule-picts->pict/horizontal rtl-superimpose #f)))))
+   
 (define (rule-pict-style->proc style)
-  (case style
-    [(vertical) rule-picts->pict/vertical]
-    [(compact-vertical) rule-picts->pict/compact-vertical]
-    [(vertical-overlapping-side-conditions)
-     rule-picts->pict/vertical-overlapping-side-conditions]
-    [(horizontal-left-align)
-     (rule-picts->pict/horizontal ltl-superimpose #f)]
-    [(horizontal-side-conditions-same-line)
-     (rule-picts->pict/horizontal rtl-superimpose #t)]
-    [else ;; horizontal
-     (rule-picts->pict/horizontal rtl-superimpose #f)]))
+  (cond
+    [(symbol? style) (hash-ref rule-pict-style-table style)]
+    [else style]))
 
 (define (mk-arrow-pict sz style)
   (let ([cache (make-hash)])

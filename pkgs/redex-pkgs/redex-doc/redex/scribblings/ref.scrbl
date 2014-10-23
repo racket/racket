@@ -3156,7 +3156,7 @@ are on the same lines as the rule, instead of on their own line below.
 
 }
 
-@defthing[reduction-rule-style/c flat-contract?]{
+@defthing[reduction-rule-style/c contract?]{
 
 A contract equivalent to
 
@@ -3165,8 +3165,44 @@ A contract equivalent to
                    'vertical-overlapping-side-conditions
                    'horizontal
                    'horizontal-left-align
-                   'horizontal-side-conditions-same-line)
-]}
+                   'horizontal-side-conditions-same-line
+                   (-> (listof rule-pict-info?) pict?))]
+
+The symbols indicate various pre-defined styles. The procedure
+implements new styles; it is give the @racket[rule-pict-info?]
+values, one for each clause in the reduction relation,
+and is expected to combine them into a single @racket[pict?]
+}
+
+@defproc[(rule-pict-info? [x any/c]) boolean?]{
+  A predicate that recognizes information about a rule for use 
+  in rendering the rule as a @racket[pict?].
+}
+@defproc[(rule-pict-info-arrow [rule-pict-info rule-pict-info?]) symbol?]{
+  Extracts the arrow used for this rule. See also @racket[arrow->pict].
+}
+@defproc[(rule-pict-info-lhs [rule-pict-info rule-pict-info?]) pict?]{
+  Extracts a pict for the left-hand side of this rule.
+}
+@defproc[(rule-pict-info-rhs [rule-pict-info rule-pict-info?]) pict?]{
+ Extracts a pict for the right-hand side of this rule.
+}
+@defproc[(rule-pict-info-label [rule-pict-info rule-pict-info?]) (or/c symbol? #f)]{
+ Returns the label used for this rule, unless there is no label
+ for the rule or @racket[_computed-label] was used,
+ in which case this returns @racket[#f].
+}
+@defproc[(rule-pict-info-computed-label [rule-pict-info rule-pict-info?]) (or/c pict? #f)]{
+  Returns a pict for the typeset version of the label of this rule, when
+  @racket[_computed-label] was used. Otherwise, returns @racket[#f].
+}
+@defproc[(rule-pict-info->side-condition-pict [rule-pict-info rule-pict-info?] 
+                                              [max-width real? +inf.0])
+         pict?]{
+  Builds a pict for the @racket[_side-condition]s and @racket[_where] clauses
+  for @racket[rule-pict-info], attempting to keep the width under @racket[max-width].
+}
+
 
 @defparam[arrow-space space natural-number/c]{
 

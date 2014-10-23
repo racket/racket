@@ -513,24 +513,24 @@
                         (extract-pattern-binds #'lhs)]
                        [((tl-id . tl-pat) ...)
                        (extract-term-let-binds #'rhs)])
-           #`(make-rule-pict 'arrow
-                             #,(to-lw/proc #'lhs)
-                             #,(to-lw/proc #'rhs)
-                             #,label
-                             #,(and computed-label 
-                                    (to-lw/proc #`,#,computed-label))
-                             (list scs/withs ...
-                                   #,@(map (λ (bind-id bind-pat)
-                                             #`(cons #,(to-lw/proc bind-id)
-                                                     #,(to-lw/proc bind-pat)))
-                                           (syntax->list #'(bind-id ...))
-                                           (syntax->list #'(bind-pat ...)))
-                                   #,@(map (λ (tl-id tl-pat)
-                                             #`(cons #,(to-lw/proc tl-id)
-                                                     #,(to-lw/uq/proc tl-pat)))
-                                           (syntax->list #'(tl-id ...))
-                                           (syntax->list #'(tl-pat ...))))
-                             (list fvars ...))))]
+           #`(make-rule-pict-info 'arrow
+                                  #,(to-lw/proc #'lhs)
+                                  #,(to-lw/proc #'rhs)
+                                  #,label
+                                  #,(and computed-label 
+                                         (to-lw/proc #`,#,computed-label))
+                                  (list scs/withs ...
+                                        #,@(map (λ (bind-id bind-pat)
+                                                  #`(cons #,(to-lw/proc bind-id)
+                                                          #,(to-lw/proc bind-pat)))
+                                                (syntax->list #'(bind-id ...))
+                                                (syntax->list #'(bind-pat ...)))
+                                        #,@(map (λ (tl-id tl-pat)
+                                                  #`(cons #,(to-lw/proc tl-id)
+                                                          #,(to-lw/uq/proc tl-pat)))
+                                                (syntax->list #'(tl-id ...))
+                                                (syntax->list #'(tl-pat ...))))
+                                  (list fvars ...))))]
       ;; just skip over junk here, since syntax error checks elsewhere will catch this
       [_ #f]))
   
