@@ -18,6 +18,20 @@
             'neg))
 
 (test/pos-blame
+ 'object/c-first-order-opaque-object-1
+ '(contract (object/c #:opaque)
+            3
+            'pos
+            'neg))
+
+(test/spec-passed
+ 'object/c-first-order-opaque-object-2
+ '(contract (object/c)
+            (new object%)
+            'pos
+            'neg))
+
+(test/pos-blame
  'object/c-first-order-method-1
  '(contract (object/c [m (-> any/c number? number?)])
             (new object%)
@@ -27,6 +41,13 @@
 (test/spec-passed
  'object/c-first-order-method-2
  '(contract (object/c [m (-> any/c number? number?)])
+            (new (class object% (super-new) (define/public (m x) (add1 x))))
+            'pos
+            'neg))
+
+(test/spec-passed
+ 'object/c-first-order-opaque-method-1
+ '(contract (object/c #:opaque [m (-> any/c number? number?)])
             (new (class object% (super-new) (define/public (m x) (add1 x))))
             'pos
             'neg))
@@ -59,6 +80,20 @@
 (test/spec-passed
  'object/c-first-order-field-2
  '(contract (object/c (field [n number?]))
+            (new (class object% (super-new) (field [n 3])))
+            'pos
+            'neg))
+
+(test/pos-blame
+ 'object/c-first-order-opaque-field-1
+ '(contract (object/c #:opaque (field [n number?]))
+            (new object%)
+            'pos
+            'neg))
+
+(test/spec-passed
+ 'object/c-first-order-field-2
+ '(contract (object/c #:opaque (field [n number?]))
             (new (class object% (super-new) (field [n 3])))
             'pos
             'neg))
@@ -158,4 +193,41 @@
                       'pos
                       'neg)])
     (set-field! n pre-o #t)
-    (get-field n o))))
+    (get-field n o)))
+
+(let ([missing-method?
+       (λ (exn) (regexp-match? #rx"no such method"
+                               (exn-message exn)))]
+      [missing-field?
+       (λ (exn) (regexp-match? #rx"does not have the requested field"
+                               (exn-message exn)))])
+  (contract-error-test
+   'opaque-hiding-1
+   '(send (contract (object/c #:opaque [m (->m string?)])
+                    (new (class object%
+                           (super-new)
+                           (define/public (m) "foo")
+                           (define/public (n) "bar")))
+                    'pos 'neg)
+     n)
+   missing-method?)
+  (contract-error-test
+   'opaque-hiding-2
+   '(get-field f
+     (contract (object/c #:opaque [m (->m string?)])
+               (new (class object%
+                      (super-new)
+                      (define/public (m) "foo")
+                      (field [f "bar"])))
+               'pos 'neg))
+   missing-field?)
+  (test/spec-passed/result
+   'opaque-hiding-3
+   '(get-field f
+     (contract (object/c #:opaque (field [f string?]))
+               (new (class object%
+                      (super-new)
+                      (define/public (m) "foo")
+                      (field [f "bar"])))
+               'pos 'neg))
+   "bar")))

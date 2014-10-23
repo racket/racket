@@ -26,7 +26,7 @@
               'pos
               'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-class-2
    '(contract (class/c #:opaque)
               (class object% (super-new) (define/public (m x) (add1 x)))
@@ -116,14 +116,14 @@
               'pos
               'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-method-2
    '(contract (class/c #:opaque [m (-> any/c number? number?)])
               (class object% (super-new) (define/public (m x) 3) (define/public (n) 4))
               'pos
               'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-method-3
    '(let ()
       (define-local-member-name n)
@@ -132,7 +132,7 @@
                 'pos
                 'neg)))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-method-4
    '(contract
      (class/c #:opaque [m (-> any/c number? number?)])
@@ -158,6 +158,15 @@
       (define-local-member-name n)
       (contract (class/c #:opaque [m (-> any/c number? number?)] [n (-> any/c number?)])
                 (class object% (super-new) (define/public (m x) 3) (define/public (n) 4))
+                'pos
+                'neg)))
+
+  (test/pos-blame
+   'class/c-first-order-opaque-method-7
+   '(let ()
+      (define-local-member-name n)
+      (contract (class/c #:opaque [m (-> any/c number? number?)] [n (-> any/c number?)])
+                (class object% (super-new) (define/public (n) 4))
                 'pos
                 'neg)))
   
@@ -223,19 +232,35 @@
               'pos
               'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-field-2
    '(contract (class/c #:opaque (field n))
               (class object% (super-new) (field [m 5] [n 3]))
               'pos
               'neg))
   
-  (test/pos-blame
-   'class/c-first-order-opaque-field-2
+  (test/spec-passed
+   'class/c-first-order-opaque-field-3
    '(contract (class/c #:opaque (field [m number?]))
               (let ()
                 (define-local-member-name n)
                 (class object% (super-new) (field [m 5] [n 3])))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-opaque-field-4
+   '(contract (class/c #:opaque (field [m number?]))
+              (class object% (super-new) (field [n 5]))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-opaque-field-5
+   '(contract (class/c #:opaque (field [m number?]))
+              (let ()
+                (define-local-member-name m)
+                (class object% (super-new) (field [n 5])))
               'pos
               'neg))
   
@@ -489,7 +514,7 @@
               'pos
               'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-super-3
    '(contract (class/c #:opaque)
               (class (let ()
@@ -1034,7 +1059,7 @@
    'class/c-first-order-opaque-absent-1
    '(contract (class/c #:opaque (absent (field f))) object% 'pos 'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-absent-2
    '(contract (class/c #:opaque (absent (field f)))
               (class object% (super-new) (field [g 0]))
@@ -2508,4 +2533,84 @@
        (class object%
          (super-new)
          (define/public (callback f) (f 1))))
-     promised-produced?)))
+     promised-produced?))
+
+  (let ([missing-method?
+         (λ (exn) (regexp-match? #rx"no such method"
+                                 (exn-message exn)))]
+        [missing-field?
+         (λ (exn) (regexp-match? #rx"does not have the requested field"
+                                 (exn-message exn)))])
+    (contract-error-test
+     'opaque-hiding-1
+     '(send (new (contract (class/c #:opaque [m (->m string?)])
+                           (class object%
+                             (super-new)
+                             (define/public (m) "foo")
+                             (define/public (n) "bar"))
+                           'pos
+                           'neg))
+       n)
+     missing-method?)
+    (contract-error-test
+     'opaque-hiding-2
+     '(get-field f
+       (new (contract (class/c #:opaque [m (->m string?)])
+                      (class object%
+                        (super-new)
+                        (define/public (m) "foo")
+                        (field [f "bar"]))
+                      'pos
+                      'neg)))
+     missing-field?)
+    (contract-error-test
+     'opaque-instanceof-1
+     '(send
+       (contract (instanceof/c (class/c #:opaque [m (->m string?)]))
+                 (new (class object%
+                        (super-new)
+                        (define/public (m) "foo")
+                        (define/public (n) "bar")))
+                 'pos
+                 'neg)
+       n)
+     missing-method?)
+    (contract-error-test
+     'opaque-instanceof-2
+     '(get-field f
+       (contract (instanceof/c (class/c #:opaque [m (->m string?)]))
+                 (new (class object%
+                        (super-new)
+                        (define/public (m) "foo")
+                        (field [f "bar"])))
+                 'pos
+                 'neg))
+     missing-field?)
+    ;; ok to inherit and add opaque-hidden field/method
+    (test/spec-passed
+     'opaque-inheritance-1
+     '(send
+       (new
+        (class (contract (class/c #:opaque [m (->m string?)])
+                         (class object%
+                           (super-new)
+                           (define/public (m) "foo")
+                           (define/public (n) "bar"))
+                         'pos
+                         'neg)
+          (super-new)
+          (define/public (n) 42)))
+       n))
+    (test/spec-passed
+     'opaque-inheritance-2
+     '(get-field f
+       (new
+        (class (contract (class/c #:opaque [m (->m string?)])
+                         (class object%
+                           (super-new)
+                           (define/public (m) "foo")
+                           (field [f "f"]))
+                         'pos
+                         'neg)
+          (super-new)
+          (field [f 42])))))))

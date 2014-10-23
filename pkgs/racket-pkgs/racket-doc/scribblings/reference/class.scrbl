@@ -1780,10 +1780,10 @@ for writing method contracts.
 Methods and fields listed in an @racket[absent] clause must @emph{not} be present in the class.
 
 A class contract can be specified to be @emph{opaque} with the @racket[#:opaque]
-keyword. An opaque class contract will only accept a class that defines
-exactly the external methods and fields specified by the contract. A contract error
-is raised if the contracted class contains any methods or fields that are
-not specified.
+keyword. An opaque class contract will disallow access to any fields or methods
+that are not specified by the contract. In other words, these fields or methods
+will appear as if they were never defined after the opaque class contract is
+applied.
 
 The external contracts are as follows:
 
@@ -2047,9 +2047,13 @@ of @racket[this] need to be checked.}
 @defform/subs[
 #:literals (field)
 
-(object/c member-spec ...)
+(object/c maybe-opaque member-spec ...)
 
-([member-spec
+([maybe-opaque
+  (code:line)
+  (code:line #:opaque)]
+
+ [member-spec
   method-spec
   (field field-spec ...)]
  
@@ -2067,6 +2071,12 @@ Also, method contracts for @racket[object/c] follow those for
 @racket[class/c].  An object wrapped with @racket[object/c]
 behaves as if its class had been wrapped with the equivalent
 @racket[class/c] contract.
+
+An object contract is @emph{opaque} if the @racket[#:opaque]
+keyword is provided. An opaque object contract will disallow access
+to any fields or methods that are not specified by the contract.
+In other words, these fields or methods will appear as if they were
+never defined.
 }
 
 @defproc[(instanceof/c [class-contract contract?]) contract?]{
