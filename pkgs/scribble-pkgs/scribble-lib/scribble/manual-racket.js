@@ -19,6 +19,9 @@ function AddPartTitleOnClick(elem) {
     var mod_path = elem.getAttribute("x-source-module");
     var tag = elem.getAttribute("x-part-tag");
     if (mod_path && tag) {
+        // Might not be present:
+        var prefixes = elem.getAttribute("x-part-prefixes");
+
         var info = document.createElement("div");
         info.className = "RPartExplain";
 
@@ -30,9 +33,13 @@ function AddPartTitleOnClick(elem) {
 
         /* Break `secref` into two lines if the module path and tag
            are long enough: */
-        var is_long = (is_top ? false : (mod_path.length + tag.length > 60));
+        var is_long = (is_top ? false : ((mod_path.length
+                                          + tag.length
+                                          + (prefixes ? (16 + prefixes.length) : 0))
+                                         > 60));
 
         var line1 = document.createElement("div");
+        var line1x = ((is_long && prefixes) ? document.createElement("div") : line1);
         var line2 = (is_long ? document.createElement("div") : line1);
 
         function add(dest, str, cn) {
@@ -49,8 +56,15 @@ function AddPartTitleOnClick(elem) {
         if (!is_top)
             add(line1, tag, "RktVal");
         if (is_long) {
-            /* indent second line: */
+            /* indent additional lines: */
+            if (prefixes)
+                add(line1x, "\xA0\xA0\xA0\xA0\xA0\xA0\xA0\xA0", "RktPn");
             add(line2, "\xA0\xA0\xA0\xA0\xA0\xA0\xA0\xA0", "RktPn");
+        }
+        if (prefixes) {
+            add(line1x, " #:tag-prefixes ", "RktPn");
+            add(line1x, "'", "RktVal");
+            add(line1x, prefixes, "RktVal");
         }
         if (!is_top)
             add(line2, " #:doc ", "RktPn");
@@ -59,6 +73,8 @@ function AddPartTitleOnClick(elem) {
         add(line2, "]", "RktPn");
 
         info.appendChild(line1);
+        if (is_long)
+            info.appendChild(line1x);
         if (is_long)
             info.appendChild(line2);
 
