@@ -8,7 +8,9 @@
 (define-signature tc-expr^
   ([cond-contracted tc-expr (syntax? . -> . full-tc-results/c)]
    [cond-contracted tc-expr/check (syntax? (or/c tc-results/c #f) . -> . full-tc-results/c)]
+   [cond-contracted tc-expr/check? (syntax? (or/c tc-results/c #f) . -> . any/c)]
    [cond-contracted tc-expr/check/t (syntax? tc-results/c . -> . Type/c)]
+   [cond-contracted tc-expr/check/t? (syntax? (or/c tc-results/c #f) . -> . any/c)]
    [cond-contracted tc-body/check (syntax? (or/c tc-results/c #f) . -> . full-tc-results/c)]
    [cond-contracted tc-expr/t (syntax? . -> . Type/c)]
    [cond-contracted single-value ((syntax?) ((or/c tc-results/c #f)) . ->* . full-tc-results/c)]))
