@@ -19,6 +19,7 @@
           syntax/stx
           "annotate-classes.rkt"
           "../private/syntax-properties.rkt"
+          "../utils/disarm.rkt"
           "../utils/tc-utils.rkt"))
 
 (provide ;; Typed class macro that coordinates with TR
@@ -146,7 +147,7 @@
     [(_ class-info:id class-exp)
      (define info (syntax-local-value #'class-info))
      (define expanded (local-expand #'class-exp (syntax-local-context) stop-forms))
-     (syntax-parse expanded
+     (syntax-parse (disarm* expanded) ; to avoid macro tainting issues
        #:literal-sets (kernel-literals)
        #:literals (: untyped:super-new untyped:super-make-object
                      untyped:super-instantiate)
@@ -156,18 +157,9 @@
        [cls:class-clause
         (define clause-data (attribute cls.data))
         (match-define (struct clause (stx kind ids types)) clause-data)
-        ;; to avoid macro taint issues
-        (define prop-val (tr:class:clause-ids-property #'cls))
-        (define clause-data*
-          (cond [(and prop-val (init-clause? clause-data))
-                 (init-clause stx kind prop-val types
-                              (init-clause-optional? clause-data))]
-                [prop-val
-                 (clause stx kind prop-val types)]
-                [else clause-data]))
         (set-tr-class-info-clauses!
          info
-         (cons clause-data* (tr-class-info-clauses info)))
+         (cons clause-data (tr-class-info-clauses info)))
         (check-unsupported-feature kind #'class-exp)
         #'class-exp]
        ;; if it's a method definition for a declared method, then

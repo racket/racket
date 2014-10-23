@@ -200,9 +200,7 @@
                             ;; set a property here to avoid taint-related issues because
                             ;; we can't transplant the identifiers in the expansion (into the
                             ;; class local table) in certain cases
-                            #,(tr:class:clause-ids-property
-                               #`(?orig-name #,@(attribute ??decl.form))
-                               (attribute ??decl.ids)))]))
+                            (?orig-name #,@(attribute ??decl.form)))]))
               ...)]))
 
 (define-decl-forms ([init          untyped:init          init-decl]
