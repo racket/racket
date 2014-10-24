@@ -959,8 +959,8 @@
 (define-type Choice%
   (Class #:implements List-Control<%>
          (init [label String]
-               [parent (Instance Area-Container<%>)] ; FIXME
                [choices (Listof String)]
+               [parent (Instance Area-Container<%>)] ; FIXME
                [callback ((Instance Choice%)
                           (Instance Control-Event%) -> Any)
                          #:optional]
