@@ -330,7 +330,7 @@
        (set! reader-deps (cons (path->bytes p) reader-deps)))))
 
   ;; Set up a logger to receive and filter accomplice events:
-  (define accomplice-logger (make-logger))
+  (define accomplice-logger (make-logger 'cm-accomplice (current-logger)))
   (define log-th
     (let ([orig-log (current-logger)]
           [receiver (make-log-receiver accomplice-logger 'debug)])
@@ -378,8 +378,7 @@
                                            p)])
                                (when (path? p) (reader-dep! p))))
                            d))
-                       rg))]
-                   [current-logger accomplice-logger])
+                       rg))])
       (get-module-code path mode compile
                        (lambda (a b) #f) ; extension handler
                        #:source-reader read-src-syntax)))
