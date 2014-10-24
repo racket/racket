@@ -125,6 +125,15 @@
   (when vbox
     (stop-vbox-vm vbox)))
 
+(define (try-until-ready c host port user server-port kind cmd)
+  (when (get-opt c '#:vbox)
+    ;; A VM may take a little while to get networking set up and
+    ;; respond, so give a dummy `cmd` a few tries
+    (let loop ([tries 3])
+      (unless (ssh-script host port user server-port kind cmd)
+        (sleep 1)
+        (loop (sub1 tries))))))
+
 ;; ----------------------------------------
 
 (define scp (find-executable-path "scp"))
@@ -280,6 +289,7 @@
   (define (sh . args)
     (list "/bin/sh" "-c" (apply ~a args)))
   (define j (or (get-opt c '#:j) 1))
+  (try-until-ready c host port user server-port 'unix (sh "echo hello"))
   (ssh-script
    host port user
    server-port
@@ -308,6 +318,7 @@
   (define j (or (get-opt c '#:j) 1))
   (define (cmd . args) 
     (list "cmd" "/c" (shell-protect (apply ~a args) platform)))
+  (try-until-ready c host port user server-port 'windows (cmd "echo hello"))
   (ssh-script
    host port user
    server-port
