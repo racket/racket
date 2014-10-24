@@ -22,9 +22,9 @@
 
 (define (gen-install-script install-dest)
   (~a "#!/bin/sh\n"
-      "echo \"" (regexp-replace* #rx"\""
+      "echo \"" (regexp-replace* #rx"[\"$]"
                                  install-dest 
-                                 "\"'\"'\"")
+                                 "\"'\\0'\"")
       "\"/bin > /etc/paths.d/racket\n"))
 
 (define (make-pkg human-name src-dir pkg-name readme sign-identity)
@@ -106,6 +106,29 @@
                                                           (attribute #f #f 'alignment "topleft")
                                                           (attribute #f #f 'scaling "none"))
                                                     null)
+                                           (element #f #f
+                                                    'installation-check
+                                                    (list (attribute #f #f 'script "check_exists_already()"))
+                                                    null)
+                                           (element #f #f
+                                                    'script
+                                                    null
+                                                    (list
+                                                     (cdata #f #f
+                                                            @~a{
+                                                              function check_exists_already () {
+                                                                if (system.files.fileExistsAtPath(@|(~s install-dest)|)) {
+                                                                   my.result.type = "Fatal";
+                                                                   my.result.title = "Folder Exists Already";
+                                                                   my.result.message = ("Cannot install because a "
+                                                                                        + @|(~s (~s human-name))|
+                                                                                        + " folder"
+                                                                                        + " already exists in the Applications folder."
+                                                                                        + " Please remove it and try again.");
+                                                                   return false;
+                                                                  }
+                                                                return true;
+                                                              }})))
                                            (element-content e))]))]))
   (call-with-output-file*
    pkg-xml
