@@ -45,10 +45,9 @@
 ;;   - depend on packages that build successfully on their own
 ;;   - refer only to other packages in the snapshot and catalog
 ;;     (and, in particular, must not use PLaneT packages)
-;;   - build without special system libraries (i.e., beyond the ones
-;;     needed by `racket/draw`)
+;;   - build without special system libraries
 ;;
-;; A successful build not not require that its declaraed dependencies
+;; A successful build does not require that its declared dependencies
 ;; are complete if the needed packages end up installed, anyway, but
 ;; the declaraed dependencies are checked.
 ;;
@@ -61,11 +60,9 @@
 
 (struct vm (host user dir name init-snapshot installed-snapshot))
 
-;; Each VM must provide at least an ssh server and `tar`, it must have
-;; any system libraries installed that are needed for building
-;; (typically the libraries needed by `racket/draw`), and the intent
-;; is that it is otherwise isolated (e.g., no network connection
-;; except to the host)
+;; Each VM must provide at least an ssh server and `tar`, and the
+;; intent is that it is otherwise isolated (e.g., no network
+;; connection except to the host)
 (define (vbox-vm
          ;; VirtualBox VM name:
          #:name name
@@ -124,7 +121,7 @@
          #:work-dir [given-work-dir (current-directory)]
          ;; Directory content:
          ;;
-         ;;   "installer" --- directly holding installer downloaded
+         ;;   "installer/" --- holds installer downloaded
          ;;     from the snapshot site
          ;;
          ;;   "install-list.rktd" --- list of packages found in
@@ -145,18 +142,18 @@
          ;;        => up-to-date and successful,
          ;;           "docs/P-adds.rktd" listing of docs, exes, etc., and
          ;;           "success/P.txt" records success;
-         ;;           "install/P.txt" records installation
-         ;;           "deps/P.txt" record dependency-checking failure;
+         ;;           "install/P.txt" records installation;
+         ;;           "deps/P.txt" records dependency-checking failure
          ;;      * pkgs/P.orig-CHECKSUM matching archived catalog
          ;;         + fail/P.txt
          ;;        => up-to-date and failed;
          ;;           "install/P.txt" may record installation success
          ;;
-         ;;   "dumpster" --- saved builds of failed packages if the
+         ;;   "dumpster/" --- saved builds of failed packages if the
          ;;     package at least installs; maybe the attempt built
          ;;     some documentation
          ;;
-         ;;   "doc" --- unpacked docs with non-conflicting
+         ;;   "doc/" --- unpacked docs with non-conflicting
          ;;     packages installed
          ;;   "all-doc.tgz" --- "doc", still packed
          ;;
@@ -535,11 +532,11 @@
           null
           (let ([pkg (car l)])
             (cond
-             [(member pkg cycle-stack)
+             [(member (find! cycles pkg) cycle-stack)
               ;; Hit a package while processing its dependencies;
               ;; everything up to that package on the stack is
               ;; mutually dependent:
-              (for ([s (in-list (member pkg (reverse cycle-stack)))])
+              (for ([s (in-list (member (find! cycles pkg) (reverse cycle-stack)))])
                 (union! cycles pkg s))
               (loop (cdr l) seen cycle-stack)]
              [(set-member? seen pkg)
