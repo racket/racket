@@ -1,8 +1,15 @@
 #lang racket/base
-(require (for-syntax racket/base)
-         racket/set racket/dict
+(require (for-syntax racket/base syntax/parse)
+         racket/set racket/dict racket/sequence racket/stream
          syntax/id-table)
   
+;; TODO
+;; - generalize and impl bound-id sets
+;; - add contracts
+;; - support generic set interface
+;; - support generic sequence interface(?)
+;; - better error msgs?
+
 (provide 
  (rename-out [make-mutable-free-id-set mutable-free-id-set]
              [make-immutable-free-id-set immutable-free-id-set])
@@ -39,31 +46,6 @@
  free-id-set-map
  free-id-set-for-each
  )
-
-;; TODO
-;; - add contracts
-;; - support generic set interface
-;; - support generic sequence interface(?)
-;; - better error msgs?
-
-(struct free-id-set (table))
-;; table: the internal free-id table
-(struct mutable-free-id-set free-id-set ())
-(struct immutable-free-id-set free-id-set ())
-
-(define (make-mutable-free-id-set [init-set null] 
-                                  #:phase [phase (syntax-local-phase-level)])
-  (mutable-free-id-set 
-   (make-free-id-table
-    (for/hash ([x (in-set init-set)]) (values x #t))
-    #:phase phase)))
-
-(define (make-immutable-free-id-set [init-set null]
-                                    #:phase [phase (syntax-local-phase-level)])
-  (immutable-free-id-set 
-   (make-immutable-free-id-table 
-    (for/hash ([x (in-set init-set)]) (values x #t))
-    #:phase phase)))
 
 (define (free-id-set-member? s x) 
   (free-id-table-ref (free-id-set-table s) x #f))
@@ -126,7 +108,11 @@
   (define table (free-id-set-table s))
   (dict-clear! table)
   (mutable-free-id-set table))
-  
+
+
+;; ----------------------------------------------------------------------------
+;; set operations
+
 (define (choose-immutable cmp set0 other-sets-lst)
   (for/fold ([largest set0]) ([s (in-list other-sets-lst)])
     (if (and (immutable-free-id-set? s)
@@ -253,3 +239,89 @@
 
 (define (free-id-set-for-each s f)
   (for ([id (in-dict-keys (free-id-set-table s))]) (f id)))
+
+;; ----------------------------------------------------------------------------
+;; struct defs
+
+(define free-id-set-hash-constant
+  (equal-hash-code "hash code for free id sets"))
+(define free-id-set-hash-constant2
+  (equal-hash-code "another hash code for free id sets"))
+(struct free-id-set (table)
+  #:property prop:sequence in-free-id-set
+  #:methods gen:equal+hash
+  [(define (equal-proc s1 s2 rec)
+     (rec (free-id-set-table s1)
+          (free-id-set-table s2)))
+   (define (hash-proc s rec)
+     (+ (rec (free-id-set-table s))
+        free-id-set-hash-constant))
+   (define (hash2-proc s rec)
+     (+ (rec (free-id-set-table s))
+        free-id-set-hash-constant2))])
+;; table: the internal free-id table
+(struct mutable-free-id-set free-id-set ()
+  #:methods gen:set
+  [(define set-empty? free-id-set-empty?)
+   (define set-member? free-id-set-member?)
+   (define set-count free-id-set-count)
+   (define set=? free-id-set=?)
+   (define subset? free-id-subset?)
+   (define proper-subset? free-id-proper-subset?)
+   (define set-map free-id-set-map)
+   (define set-for-each free-id-set-for-each)
+   (define set-copy free-id-set-copy)
+   (define set-copy-clear free-id-set-copy-clear)
+   (define set->list free-id-set->list)
+   (define set->stream free-id-set->stream)
+   (define in-set in-free-id-set)
+   (define set-first free-id-set-first)
+   (define set-add! free-id-set-add!)
+   (define set-remove! free-id-set-remove!)
+   (define set-clear! free-id-set-clear!)
+   (define set-union! free-id-set-union!)
+   (define set-intersect! free-id-set-intersect!)
+   (define set-subtract! free-id-set-subtract!)
+   (define set-symmetric-difference! free-id-set-symmetric-difference!)])
+(struct immutable-free-id-set free-id-set ()
+  #:methods gen:stream
+  [(define stream-empty? free-id-set-empty?)
+   (define stream-first free-id-set-first)
+   (define stream-rest free-id-set-rest)]
+  #:methods gen:set
+  [(define set-empty? free-id-set-empty?)
+   (define set-member? free-id-set-member?)
+   (define set-count free-id-set-count)
+   (define set=? free-id-set=?)
+   (define subset? free-id-subset?)
+   (define proper-subset? free-id-proper-subset?)
+   (define set-map free-id-set-map)
+   (define set-for-each free-id-set-for-each)
+   (define set-copy free-id-set-copy)
+   (define set-copy-clear free-id-set-copy-clear)
+   (define set->list free-id-set->list)
+   (define set->stream free-id-set->stream)
+   (define in-set in-free-id-set)
+   (define set-first free-id-set-first)
+   (define set-rest free-id-set-rest)
+   (define set-add free-id-set-add)
+   (define set-remove free-id-set-remove)
+   (define set-clear free-id-set-clear)
+   (define set-union free-id-set-union)
+   (define set-intersect free-id-set-intersect)
+   (define set-subtract free-id-set-subtract)
+   (define set-symmetric-difference free-id-set-symmetric-difference)])
+
+(define (make-mutable-free-id-set [init-set null] 
+                                  #:phase [phase (syntax-local-phase-level)])
+  (mutable-free-id-set 
+   (make-free-id-table
+    (for/hash ([x (in-set init-set)]) (values x #t))
+    #:phase phase)))
+
+(define (make-immutable-free-id-set [init-set null]
+                                    #:phase [phase (syntax-local-phase-level)])
+  (immutable-free-id-set 
+   (make-immutable-free-id-table 
+    (for/hash ([x (in-set init-set)]) (values x #t))
+    #:phase phase)))
