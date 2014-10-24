@@ -536,7 +536,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @s
 @defproc[(set-symmetric-difference [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Produces a set of the same type as @racket[st0] that includes all of the
-elements contained an even number of times in @racket[st0] and the
+elements contained an odd number of times in @racket[st0] and the
 @racket[st]s.
 
 If @racket[st0] is a list, each @racket[st] must also be a list.  This
@@ -560,7 +560,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove] or both
 @defproc[(set-symmetric-difference! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Adds and removes elements of @racket[st0] so that it includes all of the
-elements contained an even number of times in the @racket[st]s and the
+elements contained an odd number of times in the @racket[st]s and the
 original contents of @racket[st0].
 
 If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
