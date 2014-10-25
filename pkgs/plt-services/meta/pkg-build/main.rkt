@@ -149,7 +149,7 @@
          ;;           "success/P.txt" records success;
          ;;           "install/P.txt" records installation;
          ;;           "deps/P.txt" records dependency-checking failure;
-         ;;           "test/P.txt" records `raco test` failure;
+         ;;           "test-{success,fail}/P.txt" records `raco test` result;
          ;;           "min-fail/P.txt" records failure on minimal-host attempt;
          ;;      * pkgs/P.orig-CHECKSUM matching archived catalog
          ;;         + fail/P.txt
@@ -170,6 +170,7 @@
          ;;       'success-log --- #f or relative path
          ;;       'failure-log --- #f or relative path
          ;;       'dep-failure-log --- #f or relative path
+         ;;       'test-success-log --- #f or relative path
          ;;       'test-failure-log --- #f or relative path
          ;;       'min-failure-log --- #f or relative path
          ;;       'docs --- list of one of
@@ -259,7 +260,8 @@
   (define success-dir (build-path built-dir "success"))
   (define install-success-dir (build-path built-dir "install"))
   (define deps-fail-dir (build-path built-dir "deps"))
-  (define test-fail-dir (build-path built-dir "test"))
+  (define test-success-dir (build-path built-dir "test-success"))
+  (define test-fail-dir (build-path built-dir "test-fail"))
 
   (define dumpster-dir (build-path work-dir "dumpster"))
   (define dumpster-pkgs-dir (build-path dumpster-dir "pkgs/"))
@@ -472,6 +474,7 @@
   (define (pkg-zip-checksum-file pkg) (build-path built-pkgs-dir (~a pkg ".zip.CHECKSUM")))
   (define (pkg-failure-dest pkg #:minimal? [min? #f])
     (build-path (if min? min-fail-dir fail-dir) (txt pkg)))
+  (define (pkg-test-success-dest pkg) (build-path test-success-dir (txt pkg)))
   (define (pkg-test-failure-dest pkg) (build-path test-fail-dir (txt pkg)))
 
   (define failed-pkgs
@@ -654,6 +657,7 @@
   (make-directory* success-dir)
   (make-directory* install-success-dir)
   (make-directory* deps-fail-dir)
+  (make-directory* test-success-dir)
   (make-directory* test-fail-dir)
 
   (make-directory* dumpster-pkgs-dir)
@@ -806,6 +810,8 @@
              (delete-file (pkg-deps-failure-dest pkg)))
            (when (file-exists? (pkg-test-failure-dest pkg))
              (delete-file (pkg-test-failure-dest pkg)))
+           (when (file-exists? (pkg-test-success-dest pkg))
+             (delete-file (pkg-test-success-dest pkg)))
            (scp rt (at-vm vm (~a there-dir "/built/" pkg ".zip"))
                 built-pkgs-dir)
            (scp rt (at-vm vm (~a there-dir "/built/" pkg ".zip.CHECKSUM"))
@@ -851,12 +857,11 @@
   ;; Test one package or a group of packages:
   (define (test-pkgs vm pkgs)
     ;; If we get interrupted or something goes wrong here, we may
-    ;; leave a package in a built-but-not-tested state. That will
-    ;; look like the tests succeeded, so at least we don't
-    ;; improperly blame a package.
+    ;; leave a package in a built-but-not-tested state.
     (define-values (flat-pkgs one-pkg pkgs-str)
       (status-pkgs pkgs "Testing"))
 
+    (define test-success-dest (pkg-test-success-dest (car flat-pkgs)))
     (define test-failure-dest (pkg-test-failure-dest (car flat-pkgs)))
 
     (restore-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))
@@ -870,21 +875,30 @@
               " && bin/raco pkg install -u --auto " pkgs-str
               " && bin/raco test --drdr --package " pkgs-str
               #:mode 'result
+              #:success-log test-success-dest
               #:failure-log test-failure-dest))
        
+       (define remove-dest (if test-ok?
+                               pkg-test-failure-dest
+                               pkg-test-success-dest))
+       (define copy-dest  (if test-ok?
+                               pkg-test-success-dest
+                               pkg-test-failure-dest))
+       (for ([pkg (in-list flat-pkgs)])
+         (when (file-exists? (remove-dest pkg))
+           (delete-file (remove-dest pkg))))
+       (when one-pkg
+         ;; Copy test-failure log for other packages in the group:
+         (for ([pkg (in-list (cdr flat-pkgs))])
+           (copy-file (if test-ok?
+                          test-success-dest
+                          test-failure-dest)
+                      (copy-dest pkg)
+                      #t)))
+
        (cond
-        [test-ok?
-         (for ([pkg (in-list flat-pkgs)])
-           (when (file-exists? (pkg-test-failure-dest pkg))
-             (delete-file (pkg-test-failure-dest pkg))))]
-        [else
-         (when one-pkg
-           ;; Copy test-failure log for other packages in the group:
-           (for ([pkg (in-list (cdr flat-pkgs))])
-             (copy-file test-failure-dest
-                        (pkg-test-failure-dest pkg)
-                        #t)))
-         (substatus "*** test failed ***\n")])
+        [test-ok? (void)]
+        [else (substatus "*** test failed ***\n")])
        test-ok?)
      (lambda ()
        (stop-vbox-vm (vm-name vm) #:save-state? #f))))
@@ -1252,14 +1266,17 @@
            [(and succeeded? (not failed?)) 'success]
            [(and succeeded? failed?) 'confusion]
            [else 'unknown]))
-        (define (more-status dir)
+        (define (more-status dir [success-dir #f])
           (if (eq? status 'success)
               (if (file-exists? (build-path dir (txt pkg)))
                   'failure
-                  'success)
+                  (if (or (not success-dir)
+                          (file-exists? (build-path success-dir (txt pkg))))
+                      'success
+                      'unknown))
               'unknown))
         (define dep-status (more-status deps-fail-dir))
-        (define test-status (more-status test-fail-dir))
+        (define test-status (more-status test-fail-dir test-success-dir))
         (define min-status (more-status min-fail-dir))
         (define adds (let ([adds-file (if (eq? status 'success)
                                           (pkg-adds-file pkg)
@@ -1284,6 +1301,8 @@
                                  (path->relative (pkg-failure-dest pkg)))
                'dep-failure-log (and (eq? dep-status 'failure)
                                      (path->relative (build-path deps-fail-dir (txt pkg))))
+               'test-success-log (and (eq? test-status 'success)
+                                      (path->relative (build-path test-success-dir (txt pkg))))
                'test-failure-log (and (eq? test-status 'failure)
                                       (path->relative (build-path test-fail-dir (txt pkg))))
                'min-failure-log (and (eq? min-status 'failure)

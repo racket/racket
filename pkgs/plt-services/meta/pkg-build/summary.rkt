@@ -38,14 +38,17 @@
          [(and succeeded? (not failed?)) 'success]
          [(and succeeded? failed?) 'confusion]
          [else 'unknown]))
-      (define (more-status key)
+      (define (more-status key [success-key #f])
         (if (eq? status 'success)
             (if (hash-ref ht key)
                 'failure
-                'success)
+                (if (or (not success-key)
+                        (hash-ref ht success-key))
+                    'success
+                    'unknown))
             'unknown))
       (define dep-status (more-status 'dep-failure-log))
-      (define test-status (more-status 'test-failure-log))
+      (define test-status (more-status 'test-failure-log 'test-success-log))
       (define min-status (more-status 'min-failure-log))
       (define docs (hash-ref ht 'docs))
       (define author (hash-ref ht 'author))
@@ -108,6 +111,10 @@
                        (list
                         (a href: (hash-ref ht 'test-failure-log)
                            "test failures"))]
+                      [(success)
+                       (list
+                        (a href: (hash-ref ht 'test-success-log)
+                           "no test failures"))]
                       [else null])
                     (case min-status
                       [(failure)
