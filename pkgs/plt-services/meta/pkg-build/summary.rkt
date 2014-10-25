@@ -2,7 +2,8 @@
 (require racket/format
          racket/file
          scribble/html
-         (only-in plt-web site page call-with-registered-roots))
+         (only-in plt-web site page call-with-registered-roots)
+         "about.rkt")
 
 (provide summary-page
          (struct-out doc/main)
@@ -23,7 +24,10 @@
                           #:url "http://pkg-build.racket-lang.org/"
                           #:share-from (site "www"
                                              #:url "http://racket-lang.org/"
-                                             #:generate? #f)))
+                                             #:generate? #f)
+                          #:navigation (list
+                                        (lambda () (force about-page)))))
+  (define about-page (delay (make-about page-site)))
 
   (define page-title "Package Build Results")
 
