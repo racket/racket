@@ -58,7 +58,7 @@
 ;;  - tier-based selection of packages on conflict
 ;;  - support for running tests
 
-(struct vm (host user dir name init-snapshot installed-snapshot))
+(struct vm (host user dir name init-snapshot installed-snapshot minimal-variant))
 
 ;; Each VM must provide at least an ssh server and `tar`, and the
 ;; intent is that it is otherwise isolated (e.g., no network
@@ -76,10 +76,13 @@
          #:init-shapshot [init-snapshot "init"]
          ;; An "installed" snapshot is created after installing Racket
          ;; and before building any package:
-         #:installed-shapshot [installed-snapshot "installed"])
+         #:installed-shapshot [installed-snapshot "installed"]
+         ;; If not #f, a `vm` that is more constrained and will be
+         ;; tried as an installation target before this one:
+         #:minimal-variant [minimal-variant #f])
   (unless (complete-path? dir)
     (error 'vbox-vm "need a complete path for #:dir"))
-  (vm host user dir name init-snapshot installed-snapshot))
+  (vm host user dir name init-snapshot installed-snapshot minimal-variant))
 
 ;; The build steps:
 (define all-steps-in-order
@@ -143,7 +146,8 @@
          ;;           "docs/P-adds.rktd" listing of docs, exes, etc., and
          ;;           "success/P.txt" records success;
          ;;           "install/P.txt" records installation;
-         ;;           "deps/P.txt" records dependency-checking failure
+         ;;           "deps/P.txt" records dependency-checking failure;
+         ;;           "min-fail/P.txt" records failure on minimal-host attempt
          ;;      * pkgs/P.orig-CHECKSUM matching archived catalog
          ;;         + fail/P.txt
          ;;        => up-to-date and failed;
@@ -163,6 +167,7 @@
          ;;       'success-log --- #f or relative path
          ;;       'failure-log --- #f or relative path
          ;;       'dep-failure-log --- #f or relative path
+         ;;       'min-failure-log --- #f or relative path
          ;;       'docs --- list of one of
          ;;                  * (docs/none name)
          ;;                  * (docs/main name path)
@@ -243,6 +248,7 @@
   (define built-pkgs-dir (build-path built-dir "pkgs/"))
   (define built-catalog-dir (build-path built-dir "catalog"))
   (define fail-dir (build-path built-dir "fail"))
+  (define min-fail-dir (build-path built-dir "min-fail"))
   (define success-dir (build-path built-dir "success"))
   (define install-success-dir (build-path built-dir "install"))
   (define deps-fail-dir (build-path built-dir "deps"))
@@ -424,8 +430,11 @@
     (take-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm)))
 
   (unless skip-install?
-    (install (car vms) #:one-time? #t)
-    (map install (cdr vms)))
+    (for ([vm (in-list vms)]
+          [i (in-naturals)])
+      (install vm #:one-time? (zero? i))
+      (when (vm-minimal-variant vm)
+        (install (vm-minimal-variant vm)))))
   
   ;; ----------------------------------------
   (status "Resetting ready content of ~a\n" built-pkgs-dir)
@@ -449,7 +458,8 @@
   (define (pkg-checksum-file pkg) (build-path built-pkgs-dir (~a pkg ".orig-CHECKSUM")))
   (define (pkg-zip-file pkg) (build-path built-pkgs-dir (~a pkg ".zip")))
   (define (pkg-zip-checksum-file pkg) (build-path built-pkgs-dir (~a pkg ".zip.CHECKSUM")))
-  (define (pkg-failure-dest pkg) (build-path fail-dir (txt pkg)))
+  (define (pkg-failure-dest pkg #:minimal? [min? #f])
+    (build-path (if min? min-fail-dir fail-dir) (txt pkg)))
 
   (define failed-pkgs
     (for/set ([pkg (in-list all-pkg-names)]
@@ -511,9 +521,11 @@
     (define zip-file (pkg-zip-file pkg))
     (define zip-checksum-file (pkg-zip-checksum-file pkg))
     (define failure-dest (pkg-failure-dest pkg))
+    (define min-failure-dest (pkg-failure-dest pkg #:minimal? #t))
     (when (file-exists? zip-file) (delete-file zip-file))
     (when (file-exists? zip-checksum-file) (delete-file zip-checksum-file))
     (when (file-exists? failure-dest) (delete-file failure-dest))
+    (when (file-exists? min-failure-dest) (delete-file min-failure-dest))
     (call-with-output-file*
      checksum-file
      #:exists 'truncate/replace
@@ -625,6 +637,7 @@
   ;; ----------------------------------------
   (make-directory* (build-path built-dir "adds"))
   (make-directory* fail-dir)
+  (make-directory* min-fail-dir)
   (make-directory* success-dir)
   (make-directory* install-success-dir)
   (make-directory* deps-fail-dir)
@@ -645,7 +658,7 @@
     #f)
 
   ;; Build one package or a group of packages:
-  (define (build-pkgs vm pkgs)
+  (define (build-pkgs vm pkgs #:minimal? [minimal? #f])
     (define flat-pkgs (flatten pkgs))
     ;; one-pkg can be a list in the case of mutual dependencies:
     (define one-pkg (and (= 1 (length pkgs)) (car pkgs)))
@@ -663,7 +676,7 @@
           (show-list pkgs)))
 
     (define failure-dest (and one-pkg
-                              (pkg-failure-dest (car flat-pkgs))))
+                              (pkg-failure-dest (car flat-pkgs) #:minimal? minimal?)))
     (define install-success-dest (build-path install-success-dir
                                              (txt (car flat-pkgs))))
 
@@ -743,6 +756,7 @@
                       #t)))
        (define doc-ok?
          (and
+          (or ok? (not minimal?))
           ;; If we're building a single package (or set of mutually
           ;; dependent packages), then try to save generated documentation
           ;; even on failure. We'll put it in the "dumpster".
@@ -764,6 +778,9 @@
          (for ([pkg (in-list flat-pkgs)])
            (when (file-exists? (pkg-failure-dest pkg))
              (delete-file (pkg-failure-dest pkg)))
+           (when (and minimal?
+                      (file-exists? (pkg-failure-dest pkg #:minimal? #t)))
+             (delete-file (pkg-failure-dest pkg  #:minimal? #t)))
            (when (and deps-ok? (file-exists? (pkg-deps-failure-dest pkg)))
              (delete-file (pkg-deps-failure-dest pkg)))
            (scp rt (at-vm vm (~a there-dir "/built/" pkg ".zip"))
@@ -788,7 +805,9 @@
            (for ([pkg (in-list flat-pkgs)])
              (when (list? one-pkg)
                (unless (equal? pkg (car one-pkg))
-                 (copy-file failure-dest (pkg-failure-dest (car one-pkg)) #t)))
+                 (copy-file failure-dest
+                            (pkg-failure-dest (car one-pkg) #:minimal? minimal?)
+                            #t)))
              (save-checksum pkg))
            ;; Keep any docs that might have been built:
            (for ([pkg (in-list flat-pkgs)])
@@ -810,8 +829,19 @@
   ;; if the big group fails:
   (define (build-pkg-set vm pkgs)
     (define len (length pkgs))
+    (define has-minimal? (and (vm-minimal-variant vm) #t))
     (define ok? (and (len . <= . max-build-together)
-                     (build-pkgs vm pkgs)))
+                     (or
+                      ;; Here's the main build attempt:
+                      (build-pkgs (if has-minimal?
+                                      (vm-minimal-variant vm)
+                                      vm)
+                                  pkgs
+                                  #:minimal? has-minimal?)
+                      ;; ... but if that was minimal, try again
+                      ;; with the non-minimal variant:
+                      (and has-minimal?
+                           (build-pkgs vm pkgs #:minimal? #f)))))
     (flush-chunk-output)
     (unless (or ok? (= 1 len))
       (define part (min (quotient len 2)
@@ -1157,6 +1187,12 @@
                   'failure
                   'success)
               'unknown))
+        (define min-status
+          (if (eq? status 'success)
+              (if (file-exists? (build-path min-fail-dir (txt pkg)))
+                  'failure
+                  'success)
+              'unknown))
         (define adds (let ([adds-file (if (eq? status 'success)
                                           (pkg-adds-file pkg)
                                           (build-path dumpster-adds-dir (format "~a-adds.rktd" pkg)))])
@@ -1180,6 +1216,8 @@
                                  (path->relative (pkg-failure-dest pkg)))
                'dep-failure-log (and (eq? dep-status 'failure)
                                      (path->relative (build-path deps-fail-dir (txt pkg))))
+               'min-failure-log (and (eq? min-status 'failure)
+                                     (path->relative (build-path min-fail-dir (txt pkg))))
                'docs (for/list ([doc (in-list docs)])
                        (define path (~a "doc/" (~a doc "@" pkg) "/index.html"))
                        (if (or (not (eq? status 'success))
