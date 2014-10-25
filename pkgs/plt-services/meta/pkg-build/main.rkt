@@ -296,6 +296,12 @@
             #:timeout timeout
             #:remote-tunnels (list (cons server-port server-port))))
 
+  (define (make-sure-vm-is-ready vm rt)
+    (make-sure-remote-is-ready rt)
+    (status "Fixing time at ~a\n" (vm-name vm))
+    (ssh rt "sudo date --set=" (q (parameterize ([date-display-format 'rfc2822])
+                                    (date->string (seconds->date (current-seconds)) #t)))))
+
   ;; ----------------------------------------
   (define installer-table-path (build-path work-dir "table.rktd"))
   (unless skip-download?
@@ -374,11 +380,7 @@
      (lambda () (start-vbox-vm (vm-name vm)))
      (lambda ()
        (define rt (vm-remote vm))
-       (make-sure-remote-is-ready rt)
-       ;; ----------------------------------------
-       (status "Fixing time at ~a\n" (vm-name vm))
-       (ssh rt "sudo date --set=" (q (parameterize ([date-display-format 'rfc2822])
-                                       (date->string (seconds->date (current-seconds)) #t))))
+       (make-sure-vm-is-ready vm rt)
 
        ;; ----------------------------------------
        (define there-dir (vm-dir vm))
@@ -721,7 +723,7 @@
      (lambda () (start-vbox-vm (vm-name vm) #:max-vms (length vms)))
      (lambda ()
        (define rt (vm-remote vm))
-       (make-sure-remote-is-ready rt)
+       (make-sure-vm-is-ready vm rt)
        (define ok?
          (and
           ;; Try to install:
@@ -862,7 +864,7 @@
      (lambda () (start-vbox-vm (vm-name vm) #:max-vms (length vms)))
      (lambda ()
        (define rt (vm-remote vm))
-       (make-sure-remote-is-ready rt)
+       (make-sure-vm-is-ready vm rt)
        (define test-ok?
          (ssh rt (cd-racket vm)
               " && bin/raco pkg install -u --auto " pkgs-str
@@ -1151,7 +1153,7 @@
      (lambda () (start-vbox-vm (vm-name vm)))
      (lambda ()
        (define rt (vm-remote vm))
-       (make-sure-remote-is-ready rt)
+       (make-sure-vm-is-ready vm rt)
        (ssh #:show-time? #t
             rt (cd-racket vm)
             " && bin/raco pkg install -i --auto"
@@ -1161,7 +1163,7 @@
        (scp rt (at-vm vm (~a (vm-dir vm) "/all-doc.tgz"))
             (build-path work-dir "all-doc.tgz")))
      (lambda ()
-       (stop-vbox-vm (vm-name vm) #:save-state? #f)))
+       (stop-vbox-vm (vm-name vm) #:save-state? #t)))
     (untgz "all-doc.tgz")
 
     ;; Clear links:
