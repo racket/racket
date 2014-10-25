@@ -38,18 +38,15 @@
          [(and succeeded? (not failed?)) 'success]
          [(and succeeded? failed?) 'confusion]
          [else 'unknown]))
-      (define dep-status
+      (define (more-status key)
         (if (eq? status 'success)
-            (if (hash-ref ht 'dep-failure-log)
+            (if (hash-ref ht key)
                 'failure
                 'success)
             'unknown))
-      (define min-status
-        (if (eq? status 'success)
-            (if (hash-ref ht 'min-failure-log)
-                'failure
-                'success)
-            'unknown))
+      (define dep-status (more-status 'dep-failure-log))
+      (define test-status (more-status 'test-failure-log))
+      (define min-status (more-status 'min-failure-log))
       (define docs (hash-ref ht 'docs))
       (define author (hash-ref ht 'author))
       (define conflicts-log (hash-ref ht 'conflicts-log))
@@ -81,35 +78,50 @@
           (td class: (case status
                        [(failure confusion) "stop"]
                        [(success)
-                        (case dep-status
-                          [(failure) "yield"]
-                          [else
-                           (case min-status
-                             [(failure) "ok"]
-                             [else "go"])])]
+                        (cond
+                         [(eq? dep-status 'failure)
+                          "brake"]
+                         [(eq? test-status 'failure)
+                          "yield"]
+                         [(eq? min-status 'failure)
+                          "ok"]
+                         [else "go"])]
                        [else "unknown"])
               (case status
                 [(failure)
                  (a href: (hash-ref ht 'failure-log)
                     "install fails")]
                 [(success)
-                 (list
-                  (a href: (hash-ref ht 'success-log)
-                     "install succeeds")
-                  (case dep-status
-                    [(failure)
-                     (list
-                      " with "
-                      (a href: (hash-ref ht 'dep-failure-log)
-                         "dependency problems"))])
-                  (case min-status
-                    [(failure)
-                     (list
-                      (if (eq? dep-status 'failure)
-                          " and with "
-                          " with ")
-                      (a href: (hash-ref ht 'min-failure-log)
-                         "extra system dependencies"))]))]
+                 (define results
+                   (append
+                    (list
+                     (a href: (hash-ref ht 'success-log)
+                        "install succeeds"))
+                    (case dep-status
+                      [(failure)
+                       (list
+                        (a href: (hash-ref ht 'dep-failure-log)
+                           "dependency problems"))]
+                      [else null])
+                    (case test-status
+                      [(failure)
+                       (list
+                        (a href: (hash-ref ht 'test-failure-log)
+                           "test failures"))]
+                      [else null])
+                    (case min-status
+                      [(failure)
+                       (list
+                        (a href: (hash-ref ht 'min-failure-log)
+                           "extra system dependencies"))]
+                      [else null])))
+                 (if (= 1 (length results))
+                     results
+                     (list* (car results)
+                            " with "
+                            (add-between
+                             (cdr results)
+                             " and with ")))]
                 [(confusion)
                  (list
                   "install both "
@@ -132,8 +144,9 @@
     (style/inline @~a|{
                     .go { background-color: #ccffcc }
                     .ok { background-color: #ccffff }
-                    .stop { background-color: #ffcccc }
                     .yield { background-color: #ffffcc }
+                    .brake { background-color: #ffeecc }
+                    .stop { background-color: #ffcccc }
                     .author { font-size: small; font-weight: normal; }
                     .annotation { font-size: small }
                   }|))
