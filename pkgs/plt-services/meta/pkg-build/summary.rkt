@@ -44,6 +44,12 @@
                 'failure
                 'success)
             'unknown))
+      (define min-status
+        (if (eq? status 'success)
+            (if (hash-ref ht 'min-failure-log)
+                'failure
+                'success)
+            'unknown))
       (define docs (hash-ref ht 'docs))
       (define author (hash-ref ht 'author))
       (define conflicts-log (hash-ref ht 'conflicts-log))
@@ -77,7 +83,10 @@
                        [(success)
                         (case dep-status
                           [(failure) "yield"]
-                          [else "go"])]
+                          [else
+                           (case min-status
+                             [(failure) "ok"]
+                             [else "go"])])]
                        [else "unknown"])
               (case status
                 [(failure)
@@ -92,7 +101,15 @@
                      (list
                       " with "
                       (a href: (hash-ref ht 'dep-failure-log)
-                         "dependency problems"))]))]
+                         "dependency problems"))])
+                  (case min-status
+                    [(failure)
+                     (list
+                      (if (eq? dep-status 'failure)
+                          " and with "
+                          " with ")
+                      (a href: (hash-ref ht 'min-failure-log)
+                         "extra system dependencies"))]))]
                 [(confusion)
                  (list
                   "install both "
@@ -114,6 +131,7 @@
   (define page-headers
     (style/inline @~a|{
                     .go { background-color: #ccffcc }
+                    .ok { background-color: #ccffff }
                     .stop { background-color: #ffcccc }
                     .yield { background-color: #ffffcc }
                     .author { font-size: small; font-weight: normal; }
