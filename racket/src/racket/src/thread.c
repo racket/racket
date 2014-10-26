@@ -3739,8 +3739,12 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 
 # ifdef HAVE_KQUEUE_SYSCALL
   if (!is_socket) {
-    if (!scheme_fd_regular_file(fd, 2))
-      return NULL; /* kqueue() might not work on devices, such as ttys */
+    /* kqueue() might not work on devices, such as ttys; also, while
+       Mac OS X kqueue() claims to work on FIFOs, there are problems:
+       watching for reads on a FIFO sometimes disables watching for
+       writes on the same FIFO with a different file descriptor */
+    if (!scheme_fd_regular_file(fd, 1))
+      return NULL;
   }
   if (scheme_semaphore_fd_kqueue < 0) {
     scheme_semaphore_fd_kqueue = kqueue();
