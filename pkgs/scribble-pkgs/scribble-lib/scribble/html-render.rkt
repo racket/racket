@@ -1237,6 +1237,19 @@
                 [svg? (regexp-match? #rx#"[.]svg$" (if (path? src) (path->bytes src) src))]
                 [sz (cond
                      [svg?
+                      (define (to-scaled-num-from-str s)
+                        (define parts
+                          (regexp-match
+                           #rx"^([+-]?[0-9]*\\.?([0-9]+)?)(em|ex|px|in|cm|mm|pt|pc|%|)$"
+                           s))
+                        (cond
+                          [parts
+                           (string-append
+                            (number->string
+                             (* scale
+                                (string->number (list-ref parts 1))))
+                            (list-ref parts 3))]
+                          [else s]))
                       (call-with-input-file*
                        src
                        (lambda (in)
@@ -1257,7 +1270,8 @@
                                   [w (ormap (check-name 'width) attribs)]
                                   [h (ormap (check-name 'height) attribs)])
                              (if (and w h)
-                                 `([width ,w][height ,h])
+                                 `([width ,(to-scaled-num-from-str w)]
+                                   [height ,(to-scaled-num-from-str h)])
                                  null)))))]
                      [else
                       ;; Try to extract file size:
