@@ -668,7 +668,28 @@ If @racket[case-sensitive?] is @racket[#f], then an uppercase and lowercase
 
 }
 
-
+@defmethod[(find-string-embedded [str string?]
+                                 [direction (or/c 'forward 'backward) 'forward]
+                                 [start (or/c exact-nonnegative-integer? 'start) 'start]
+                                 [end (or/c exact-nonnegative-integer? 'eof) 'eof]
+                                 [get-start? any/c #t]
+                                 [case-sensitive? any/c #t])
+           (or/c exact-nonnegative-integer? 
+                 #f
+                 (cons/c
+                  (is-a?/c editor<%>)
+                  (flat-rec-contract
+                   nested-editor-search-result
+                   (or/c (cons/c (is-a?/c editor<%>)
+                                 nested-editor-search-result)
+                         exact-nonnegative-integer?))))]{
+  Like @method[text% find-string], but also searches in embedded editors,
+       returning a series of cons pairs whose @racket[car] positions
+       are the editors on the path to the editor where the search
+       string occurred and whose final @racket[cdr] position is the 
+       search result position.
+}
+                                                
 @defmethod[(find-string-all [str string?]
                             [direction (or/c 'forward 'backward) 'forward]
                             [start (or/c exact-nonnegative-integer? 'start) 'start]
@@ -683,6 +704,24 @@ Finds all occurrences of a string using @method[text% find-string]. If
 
 }
 
+@defmethod[(find-string-embedded-all [str string?]
+                                     [direction (or/c 'forward 'backward) 'forward]
+                                     [start (or/c exact-nonnegative-integer? 'start) 'start]
+                                     [end (or/c exact-nonnegative-integer? 'eof) 'eof]
+                                     [get-start? any/c #t]
+                                     [case-sensitive any/c #t])
+           (listof (or/c exact-nonnegative-integer? 
+                         (cons/c
+                          (is-a?/c editor<%>)
+                          (flat-rec-contract
+                           nested-editor-search-result
+                           (or/c (cons/c (is-a?/c editor<%>)
+                                         nested-editor-search-result)
+                                 (listof exact-nonnegative-integer?))))))]{
+Like @method[text% find-string-embedded], but also searches in embedded
+editors, returning search  results a list of the editors that contain
+the matches.
+}
 
 @defmethod[(find-wordbreak [start (or/c (box/c exact-nonnegative-integer?) #f)]
                            [end (or/c (box/c exact-nonnegative-integer?) #f)]
