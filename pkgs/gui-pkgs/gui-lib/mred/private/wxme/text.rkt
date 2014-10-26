@@ -19,13 +19,17 @@
          "keymap.rkt"
          (only-in "cycle.rkt"
                   printer-dc%
-                  set-text%!)
+                  set-text%!
+                  editor-snip%)
          "wordbreak.rkt"
          "stream.rkt"
          "wx.rkt")
 
 (provide text%
-         add-text-keymap-functions)
+         add-text-keymap-functions
+         
+         ;; for the test suite
+         do-find-string-all)
 
 ;; ----------------------------------------
 
@@ -67,6 +71,8 @@
 (define-struct clickback (start end f call-on-down? delta hilited? unhilite) #:mutable)
 
 (define in-delayed-refresh (make-parameter #f))
+
+(define-local-member-name do-find-string-all do-find-string)
 
 (defclass text% editor%
   (inherit-field s-admin
@@ -3491,9 +3497,9 @@
                            [(make-alts exact-nonnegative-integer? (symbol-in eof)) [end 'eof]]
                            [any? [bos? #t]]
                            [any? [case-sens? #t]])
-    (if (not (check-recalc #f #f))
-        #f
-        (do-find-string-all str direction start end #t bos? case-sens?)))
+    (if (check-recalc #f #f)
+        (do-find-string-all str direction start end #t bos? case-sens? #f)
+        #f))
 
   (def/public (find-string-all [string? str]
                                [(symbol-in forward backward) [direction 'forward]]
@@ -3501,9 +3507,29 @@
                                [(make-alts exact-nonnegative-integer? (symbol-in eof)) [end 'eof]]
                                [any? [bos? #t]]
                                [any? [case-sens? #t]])
-    (if (not (check-recalc #f #f))
-        null
-        (reverse (do-find-string-all str direction start end #f bos? case-sens?))))
+    (if (check-recalc #f #f)
+        (do-find-string-all str direction start end #f bos? case-sens? #f)
+        null))
+  
+  (def/public (find-string-embedded [string? str]
+                                    [(symbol-in forward backward) [direction 'forward]]
+                                    [(make-alts exact-nonnegative-integer? (symbol-in start)) [start 'start]]
+                                    [(make-alts exact-nonnegative-integer? (symbol-in eof)) [end 'eof]]
+                                    [any? [bos? #t]]
+                                    [any? [case-sens? #t]])
+    (if (check-recalc #f #f)
+        (do-find-string-all str direction start end #t bos? case-sens? #t)
+        #f))
+
+  (def/public (find-string-embedded-all [string? str]
+                                        [(symbol-in forward backward) [direction 'forward]]
+                                        [(make-alts exact-nonnegative-integer? (symbol-in start)) [start 'start]]
+                                        [(make-alts exact-nonnegative-integer? (symbol-in eof)) [end 'eof]]
+                                        [any? [bos? #t]]
+                                        [any? [case-sens? #t]])
+    (if (check-recalc #f #f)
+        (do-find-string-all str direction start end #f bos? case-sens? #t)
+        null))
 
   (def/public (find-newline [(symbol-in forward backward) [direction 'forward]]
                             [(make-alts exact-nonnegative-integer? (symbol-in start)) [start 'start]]
@@ -3526,160 +3552,206 @@
               #f
               pos))))
 
-  (define/private (do-find-string-all str direction
-                                      start end
-                                      just-one?
-                                      bos?
-                                      case-sens?)
-
-    (let ([start (min (if (symbol? start)
-                          startpos
-                          start)
-                      len)]
-          [end (min (if (symbol? end)
-                        (if (eq? direction 'forward)
-                            len
-                            0)
-                        end)
-                    len)])
-      (let ([total-count
-             (if (eq? direction 'backward)
-                 (- start end)
-                 (- end start))])
-        (if (or (negative? total-count)
-                (string=? str ""))
-            (if just-one? #f null)
-            
-            (let ([slen (string-length str)]
-                  [str (if case-sens?
-                           str
-                           (string-foldcase str))])
-              (let-values ([(snip s-pos) (find-snip/pos start (if (eq? direction 'forward) 'after 'before))])
-                
-                (if (not snip)
-                    (if just-one? #f null)
-
-                    ;; Knuth-Bendix
-
-                    (let-values ([(offset shorten sbase beyond sgoal direction)
-                                  (if (eq? direction 'forward)
-                                      (values (- start s-pos) 0 0 -1 slen 1)
-                                      (values 0 (- (+ s-pos (snip->count snip)) start) (- slen 1) slen -1 -1))]
-                                 [(smap) (make-vector slen 0)])
-
-                      ;; initialize smap:
-                      (vector-set! smap sbase beyond)
-                      (let loop ([s beyond]
-                                 [i (+ sbase direction)])
-                        (unless (= i sgoal)
-                          (let iloop ([s s])
-                            (if (and (not (= beyond s))
-                                     (not (char=? (string-ref str (+ s direction)) (string-ref str i))))
-                                (iloop (vector-ref smap s))
-                                (let ([s (if (char=? (string-ref str (+ s direction))
-                                                     (string-ref str i))
-                                             (+ s direction)
-                                             s)])
-                                  (vector-set! smap i s)
-                                  (loop s (+ i direction)))))))
-                      (define text "")
-                      (let a-loop ([s beyond]
-                                   [s-pos s-pos]
-                                   [snip snip]
-                                   [total-count total-count]
-                                   [offset offset]
-                                   [shorten shorten]
-                                   [results null])
-                        (if (and snip (positive? total-count))
-                            (let*-values ([(need) (- (snip->count snip) shorten offset)]
-                                          [(need offset)
-                                           (if (need . > . total-count)
-                                               (if (direction . < . 0)
-                                                   (values total-count (+ offset (- need total-count)))
-                                                   (values total-count offset))
-                                               (values need offset))]
-                                          [(total-count) (- total-count need)])
-                              
-                              (let b-loop ([checked 0]
-                                           [need need]
-                                           [results results])
-                                (let* ([thistime (min need 255)]
-                                       [need (- need thistime)]
-                                       [thisoffset (+ offset (if (direction . < . 0) need checked))]
-                                       [wl? write-locked?]
-                                       [fl? flow-locked?])
-                                  (when (< (string-length text) (send snip get-count))
-                                    (set! text (make-string (send snip get-count))))
-                                  (set! write-locked? #t)
-                                  (set! flow-locked? #t)
-                                  (send snip get-text! text thisoffset thistime 0)
-                                    (set! write-locked? wl?)
-                                    (set! flow-locked? fl?)
-                                    
-                                    (let c-loop ([i (if (direction . > . 0) 0 (- thistime 1))]
-                                                 [n thistime]
-                                                 [s s]
-                                                 [results results])
-                                      (if (zero? n)
-                                          (if (positive? need)
-                                              
-                                              (b-loop (add1 checked)
-                                                      need
-                                                      results)
-
-                                              (let* ([s-pos (if (direction . > . 0)
-                                                                (+ s-pos (snip->count snip))
-                                                                s-pos)]
-                                                     [snip (if (direction . > . 0)
-                                                               (snip->next snip)
-                                                               (snip->prev snip))]
-                                                     [s-pos (if (and snip (direction . < . 0))
-                                                                (- s-pos (snip->count snip))
-                                                                s-pos)])
-                                                (a-loop s
-                                                        s-pos
-                                                        snip
-                                                        total-count
-                                                        0
-                                                        0
-                                                        results)))
-
-                                          (let* ([n (sub1 n)]
-                                                 [c (string-ref text i)]
-                                                 [c (if case-sens? c (char-foldcase c))]
-                                                 [s (let loop ([s s])
-                                                      (if (and (not (= beyond s))
-                                                               (not (char=? (string-ref str (+ s direction)) c)))
-                                                          (loop (vector-ref smap s))
-                                                          s))])
-                                            (if (char=? (string-ref str (+ s direction)) c)
-                                                (let ([s (+ s direction)])
-                                                  (if (= (+ s direction) sgoal)
-                                                      (let* ([p (+ s-pos i thisoffset)]
-                                                             [p (if bos?
-                                                                    (if (direction . < . 0)
-                                                                        (+ p slen)
-                                                                        (- p (- slen 1)))
-                                                                    (if (direction . > . 0)
-                                                                        (add1 p)
-                                                                        p))])
-                                                        (if just-one?
-                                                            p ;; <------ single result returned here
-                                                            (c-loop (+ i direction)
-                                                                    n
-                                                                    beyond
-                                                                    (cons p results))))
-                                                      (c-loop (+ i direction)
-                                                              n
-                                                              s
-                                                              results)))
-                                                (c-loop (+ i direction)
-                                                        n
-                                                        s
-                                                        results))))))))
-                            (if just-one?
-                                #f
-                                results)))))))))))
+  ;; this is only public for the test suite
+  ; (do-find-string-all is bound by define-local-member-name)
+  (define/public (do-find-string-all _word direction
+                                     _start _end
+                                     just-one? beginning-of-match? case-sens? recur-inside?)
+    (define end 
+      (cond
+        [(equal? _end 'eof) (last-position)]
+        [else _end]))
+    (define start
+      (cond
+        [(equal? _start 'start)
+         (get-start-position)]
+        [else _start]))
+    (define forward? (equal? direction 'forward))
+    (define word
+      (cond
+        [forward? _word]
+        [else
+         (define l (string-length _word))
+         (define s (make-string l))
+         (for ([i (in-range (string-length _word))])
+           (string-set! s i (string-ref _word (- l i 1))))
+         s]))
+    
+    (do-find-string word start end
+                    just-one? case-sens? forward? recur-inside? beginning-of-match?))
+  
+  (define/private (convert-result m word forward? beginning-of-match?)
+    (cond
+      [forward?
+       (if beginning-of-match?
+           m
+           (+ m (string-length word)))]
+      [else
+       (define len (last-position))
+       (if beginning-of-match?
+           (- len m)
+           (- len m (string-length word)))]))
+  
+  ;; this uses the Knuth-Morris-Pratt string search algorithm, according to
+  ;; wikipedia: http://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm
+  ;; this is a define-local-member-name to support the recur-inside? functionality
+  (define/public (do-find-string _word _start _end
+                                 just-one? case-sens? forward? recur-inside? beginning-of-match?)
+    (define word (if case-sens?
+                     _word
+                     (string-downcase _word)))
+    (define latest-snip-str #f)
+    (define latest-snip-len #f)
+    (define latest-snip-position #f)
+    (define latest-snip #f)
+    (define last-pos (last-position))
+    
+    (define start (if forward? _start (- last-pos _start)))
+    (define end (if forward? _end (- last-pos _end)))
+    
+    ;; the algorithm may consider the same position
+    ;; multiple times, so we track which positions that
+    ;; have embedded editors that are already considered.
+    (define embedded-editors-considered (make-hash))
+    
+    (define (get-char _i)
+      (define i (if forward? _i (- last-pos _i 1)))
+      (cond
+        [(and latest-snip-str
+              (< -1
+                 (- i latest-snip-position)
+                 latest-snip-len)) 
+         (string-ref latest-snip-str (- i latest-snip-position))]
+        [else
+         (define-values (guess-snip guess-snip-position guess-snip-len)
+           (cond
+             [(not latest-snip)
+              (define fst (find-first-snip))
+              (values fst (and fst 0) (and fst (send fst get-count)))]
+             [forward?
+              (define next (send latest-snip next))
+              (values next
+                      (and next (+ latest-snip-position latest-snip-len))
+                      (and next (send next get-count)))]
+             [else
+              (define prev (send latest-snip previous))
+              (define pc (and prev (send prev get-count)))
+              (values prev
+                      (and prev (- latest-snip-position pc))
+                      pc)]))
+         (cond
+           [(and guess-snip
+                 (<= guess-snip-position i)
+                 (< i (+ guess-snip-position guess-snip-len)))
+            (set! latest-snip guess-snip)
+            (set! latest-snip-position guess-snip-position)
+            (set! latest-snip-len guess-snip-len)]
+           [else
+            (define b (box #f))
+            (set! latest-snip (find-snip i 'after-or-none b))
+            (when latest-snip
+              (set! latest-snip-position (unbox b))
+              (set! latest-snip-len (send latest-snip get-count)))])
+         
+         (when (or (not latest-snip-str)
+                   (< (string-length latest-snip-str)
+                      latest-snip-len))
+           (set! latest-snip-str (make-string latest-snip-len)))
+         (send latest-snip get-text! latest-snip-str 0 latest-snip-len 0)
+         (unless case-sens?
+           (for ([c (in-range latest-snip-len)])
+             (string-set! latest-snip-str c (char-downcase (string-ref latest-snip-str c)))))
+         (cond
+           [(and recur-inside?
+                 (is-a? latest-snip editor-snip%))
+            (cond
+              [(hash-ref embedded-editors-considered i #f) #f]
+              [else
+               (hash-set! embedded-editors-considered i #t)
+               (let loop ([snip latest-snip])
+                 (define ed (send snip get-editor))
+                 (cond
+                   [(is-a? ed text%)
+                    (define lp (send ed last-position))
+                    (define result
+                      (send ed do-find-string _word 
+                            (if forward? 0 lp) (if forward? lp 0)
+                            just-one? case-sens? forward? recur-inside? beginning-of-match?))
+                    (and result (not (null? result)) (cons ed result))]
+                   [(not ed) #f]
+                   [else 
+                    (define inner-result
+                      (let inner-loop ([inner-snip (send ed find-first-snip)])
+                            (cond
+                              [(is-a? inner-snip editor-snip%)
+                               (define this-one (loop inner-snip))
+                               (if just-one?
+                                   (or this-one
+                                       (inner-loop (send inner-snip next)))
+                                   (if this-one
+                                       (cons this-one
+                                             (inner-loop (send inner-snip next)))
+                                       (inner-loop (send inner-snip next))))]
+                              [(not inner-snip) (if just-one? #f '())]
+                              [else (inner-loop (send inner-snip next))])))
+                    (and inner-result 
+                         (pair? inner-result) 
+                         (cons ed inner-result))]))])]
+           [else
+            (string-ref latest-snip-str (- i latest-snip-position))])]))
+    
+    (define t (build-table word))
+    (define word-len-minus-one (- (string-length word) 1))
+    
+    (let loop ([m start]
+               [i 0])
+      (define m-plus-i (+ m i))
+      (cond
+        [(< m-plus-i end)
+         (define the-char (get-char m-plus-i))
+         (cond
+           [(pair? the-char)
+            ;; found an embedded editor with a search result; transmit it
+            (if just-one?
+                the-char
+                (cons the-char (loop (+ m 1) 0)))]
+           [(and (char? the-char) (char=? (string-ref word i) the-char))
+            (cond
+              [(= i word-len-minus-one)
+               (if just-one?
+                   (convert-result m word forward? beginning-of-match?)
+                   (cons (convert-result m word forward? beginning-of-match?)
+                         (loop (+ m 1) 0)))]
+              [else
+               (loop m (+ i 1))])]
+           [else
+            (define t-i (vector-ref t i))
+            (cond
+              [t-i
+               (loop (- m-plus-i t-i) t-i)]
+              [else
+               (loop (+ m 1) 0)])])]
+        [else
+         (if just-one? #f '())])))
+  
+  (define/private (build-table word)
+    (define t (make-vector (string-length word) #f))
+    (when ((string-length word) . > . 1)
+      (vector-set! t 1 0)
+      (let loop ([pos 2]
+                 [cnd 0])
+        (when (< pos (string-length word))
+          (cond
+            [(char=? (string-ref word (- pos 1))
+                     (string-ref word cnd))
+             (vector-set! t pos (+ cnd 1))
+             (loop (+ pos 1) (+ cnd 1))]
+            [(> cnd 0)
+             (loop pos (vector-ref t cnd))]
+            [else
+             (vector-set! t pos 0)
+             (loop (+ pos 1) cnd)]))))
+    t)
 
   ;; ----------------------------------------
   
