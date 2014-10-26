@@ -8122,13 +8122,23 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
       }
 #else
       int flags;
+      intptr_t amt;
 
       flags = fcntl(fop->fd, F_GETFL, 0);
       fcntl(fop->fd, F_SETFL, flags | MZ_NONBLOCKING);
 
+      amt = buflen - offset;
+
       do {
-	len = write(fop->fd, bufstr + offset, buflen - offset);
-      } while ((len == -1) && (errno == EINTR));
+        do {
+          len = write(fop->fd, bufstr + offset, amt);
+        } while ((len == -1) && (errno == EINTR));
+
+        /* If there was no room to write `amt` bytes, then it's
+          possible that writing fewer bytes will succeed. That seems
+          to be the case with FIFOs on Mac OS X, for example. */
+        amt = amt >> 1;
+      } while ((len == -1) && (errno == EAGAIN) && (amt > 0));
 
       errsaved = errno;
       fcntl(fop->fd, F_SETFL, flags);
