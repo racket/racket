@@ -871,7 +871,8 @@
        (define rt (vm-remote vm))
        (make-sure-vm-is-ready vm rt)
        (define test-ok?
-         (ssh rt (cd-racket vm)
+         (ssh #:show-time? #t
+              rt (cd-racket vm)
               " && bin/raco pkg install -u --auto " pkgs-str
               " && bin/raco test --drdr --package " pkgs-str
               #:mode 'result
