@@ -6,10 +6,6 @@
 
 (provide (all-defined-out))
 
-(define (make-parent-directory* p)
-  (define parent (path-only p))
-  (make-directory* parent))
-
 (define (path->bytes* pkg)
   (cond
     [(path? pkg)

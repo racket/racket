@@ -1058,7 +1058,27 @@ paths disappear during the scan, then an exception is raised.}
 
 Creates directory specified by @racket[path], creating intermediate
 directories as necessary, and never failing if @racket[path] exists
-already.}
+already.
+
+If @racket[path] is a relative path and the current directory does not
+exist, then @racket[make-directory*] will not create the current
+directory, because it considers only explicit elements of
+@racket[path].}
+
+
+@defproc[(make-parent-directory* [path path-string?]) void?]{
+
+Creates the parent directory of the path specified by @racket[path],
+creating intermediate directories as necessary, and never failing if
+an ancestor of @racket[path] exists already.
+
+If @racket[path] is a filesystem root or a relative path with a single
+path element, then no directory is created. Like
+@racket[make-directory*], if @racket[path] is a relative path and the
+current directory does not exist, then @racket[make-parent-directory*]
+will not create it.
+
+@history[#:added "6.1.1.3"]}
 
 
 @defproc[(make-temporary-file [template string? "rkttmp~a"]

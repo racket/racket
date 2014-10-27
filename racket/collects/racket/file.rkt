@@ -7,6 +7,7 @@
 (provide delete-directory/files
          copy-directory/files
          make-directory*
+         make-parent-directory*
          make-temporary-file
 
          get-preference
@@ -94,6 +95,8 @@
           [else (raise-not-a-file-or-directory 'copy-directory/files src)])))
 
 (define (make-directory* dir)
+  (unless (path-string? dir)
+    (raise-argument-error 'make-directory* "path-string?" dir))
   (let-values ([(base name dir?) (split-path dir)])
     (when (and (path? base)
                (not (directory-exists? base)))
@@ -101,6 +104,16 @@
     (unless (directory-exists? dir)
       (with-handlers ([exn:fail:filesystem:exists? void])
         (make-directory dir)))))
+
+(define (make-parent-directory* p)
+  (unless (path-string? p)
+    (raise-argument-error 'make-parent-directory* "path-string?" p))
+  (define-values (base name dir?) (split-path p))
+  (cond
+   [(path? base) (make-directory* base)]
+   [else
+    ;; Do nothing with an immediately relative path or a root directory
+    (void)]))
 
 (define-syntax (make-temporary-file stx)
   (with-syntax ([app (datum->syntax stx #'#%app stx)])
