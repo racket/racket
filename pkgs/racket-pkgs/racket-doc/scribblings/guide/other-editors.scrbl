@@ -25,6 +25,13 @@ popular among Racketeers as well.
 
 @itemlist[
 
+ @item{@hyperlink["https://github.com/greghendershott/racket-mode"]{Racket mode}
+       provides thorough syntax highlighting and DrRacket-style REPL
+       and buffer execution support for Emacs.
+
+       Racket mode can be installed via @hyperlink["http://melpa.milkbox.net"]{MELPA}
+       or manually from the Github repository.}
+
  @item{@hyperlink["http://www.neilvandyke.org/quack/"]{Quack} is an
        extension of Emacs's @tt{scheme-mode} that provides enhanced
        support for Racket, including highlighting and indentation of
@@ -46,13 +53,6 @@ popular among Racketeers as well.
 
        Debian and Ubuntu packages for Geiser are available under the
        name @tt{geiser}.}
-
- @item{@hyperlink["https://github.com/greghendershott/racket-mode"]{Racket mode}
-       provides thorough syntax highlighting and DrRacket-style REPL
-       and buffer execution support for Emacs.
-
-       Racket mode can be installed via @hyperlink["http://melpa.milkbox.net"]{MELPA}
-       or manually from the Github repository.}
 
  @item{Emacs ships with a major mode for Scheme, @tt{scheme-mode},
        that while not as featureful as the above options, but works
