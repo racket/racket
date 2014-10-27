@@ -1711,6 +1711,42 @@
   (delete-directory/files tmp-dir))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test `make[-parent]-directory`
+
+(let ()
+  (define tmp (find-system-path 'temp-dir))
+  (define (check build-z-dir-path pick-directory)
+    (define made (make-temporary-file "check-make-~a" 'directory))
+    (define z-dir (build-z-dir-path made "x" "y"))
+    (define z (build-path z-dir "z"))
+    (parameterize ([current-directory (pick-directory made)])
+      (test #f directory-exists? z-dir)
+      (test #f file-exists? z)
+      (make-parent-directory* z)
+      (test #t directory-exists? z-dir)
+      (make-parent-directory* z)
+      (delete-directory/files z-dir)
+      (test #f directory-exists? z-dir)
+      (make-directory* z)
+      (test #t directory-exists? z-dir)
+      (test #t directory-exists? z)
+      (make-directory* z)
+      (make-parent-directory* z))
+    (delete-directory/files made))
+  (check build-path (lambda (made) (current-directory)))
+  (check (lambda args (apply build-path (cdr args))) values)
+  (check (lambda args (apply build-path 'same (cdr args))) values))
+
+;; Check on a current directory that does not exist:
+(let ()  
+  (define made (make-temporary-file "check-make-~a" 'directory))
+  (parameterize ([current-directory (build-path made "nonesuch")])
+    (make-parent-directory* "z")
+    (test #f directory-exists? (current-directory))
+    (err/rt-test (make-directory* "z") exn:fail:filesystem?))
+  (delete-directory/files made))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that `in-directory' fails properly on filesystem errors
 
 (unless (eq? 'windows (system-type))
