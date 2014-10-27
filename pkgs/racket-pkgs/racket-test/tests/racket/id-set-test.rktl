@@ -31,9 +31,9 @@
     [(_ #:type type #:interface intfc)
      #:with mk-immutable-id-set (format-id #'type "immutable-~a-id-set" #'type)
      #:with mk-mutable-id-set (format-id #'type "mutable-~a-id-set" #'type)
-     #:with generic-id-set-pred? (format-id #'type "~a-id-set?" #'type)
-     #:with immutable-id-set-pred? (format-id #'type "immutable-~a" #'generic-id-set-pred?)
-     #:with mutable-id-set-pred? (format-id #'type "mutable-~a" #'generic-id-set-pred?)
+     #:with generic-id-set? (format-id #'type "~a-id-set?" #'type)
+     #:with immutable-id-set? (format-id #'type "immutable-~a" #'generic-id-set?)
+     #:with mutable-id-set? (format-id #'type "mutable-~a" #'generic-id-set?)
      #:with identifier=? (format-id #'type "~a-identifier=?" #'type)
      #:with id-set=? (format-id #'type "~a-id-set=?" #'type)
      #:with id-set-empty? (format-id #'type "~a-id-set-empty?" #'type)
@@ -64,18 +64,18 @@
          (define-syntax (define-id-set-combo-tests stx)
            (syntax-parse stx
              [(_ #:constructor mk-id-set)
-              #:with id-set-pred? (format-id #'mk-id-set "~a?" #'mk-id-set)
+              #:with id-set? (format-id #'mk-id-set "~a?" #'mk-id-set)
               #'(begin
                   (define EMPTY (mk-id-set))
                   (define ABC (mk-id-set (list #'a #'b #'c)))
                   (define ABCD (mk-id-set (list #'a #'b #'c #'d)))
                   
-                  (test #t generic-id-set-pred? EMPTY)
-                  (test #t generic-id-set-pred? ABC)
-                  (test #t generic-id-set-pred? ABCD)
-                  (test #t id-set-pred? EMPTY)
-                  (test #t id-set-pred? ABC)
-                  (test #t id-set-pred? ABCD)
+                  (test #t generic-id-set? EMPTY)
+                  (test #t generic-id-set? ABC)
+                  (test #t generic-id-set? ABCD)
+                  (test #t id-set? EMPTY)
+                  (test #t id-set? ABC)
+                  (test #t id-set? ABCD)
 
                   (test #t SET-EMPTY? EMPTY)
                   (test #f SET-EMPTY? ABC)
@@ -134,8 +134,8 @@
                   (test #f eq? ABCD (SET-COPY ABCD))
                   (test #t id-set-empty? (SET-COPY-CLEAR ABCD))
                   (test #f eq? EMPTY (SET-COPY-CLEAR ABCD))
-                  (test #t id-set-pred? (SET-COPY ABCD))
-                  (test #t id-set-pred? (SET-COPY-CLEAR ABCD))
+                  (test #t id-set? (SET-COPY ABCD))
+                  (test #t id-set? (SET-COPY-CLEAR ABCD))
          
                   ;; test gen:equal+hash
                   (test #t equal? 
@@ -245,7 +245,7 @@
                     (test #t SET-MEMBER? ABC/MUTABLE #'b)
                     (test #t SET-MEMBER? ABC/MUTABLE #'c)
                     (test #f SET-MEMBER? ABC/MUTABLE #'d)
-                    (test #t mutable-id-set-pred? ABC/MUTABLE)
+                    (test #t mutable-id-set? ABC/MUTABLE)
                     (test #t SET-EMPTY? EMPTY)
                     (SET-INTERSECT! ABC/MUTABLE EMPTY)
                     (test 0 SET-COUNT ABC/MUTABLE)
@@ -295,7 +295,7 @@
                     (test #f SET-MEMBER? ABCDE/MUTABLE #'c)
                     (test #t SET-MEMBER? ABCDE/MUTABLE #'d)
                     (test #t SET-MEMBER? ABCDE/MUTABLE #'e)
-                    (test #t mutable-id-set-pred? ABCDE/MUTABLE)
+                    (test #t mutable-id-set? ABCDE/MUTABLE)
                     (test #t SET-EMPTY? EMPTY)
                     (set! ABCDE/MUTABLE (mk-mutable-id-set ABCDE-LIST))
                     (SET-SUBTRACT! ABCDE/MUTABLE EMPTY)
@@ -353,7 +353,7 @@
                     (test #f SET-MEMBER? ABCDE/MUTABLE #'c)
                     (test #t SET-MEMBER? ABCDE/MUTABLE #'d)
                     (test #t SET-MEMBER? ABCDE/MUTABLE #'e)
-                    (test #t mutable-id-set-pred? ABCDE/MUTABLE)
+                    (test #t mutable-id-set? ABCDE/MUTABLE)
                     (test #t SET-EMPTY? EMPTY)
                     (set! ABCDE/MUTABLE (mk-mutable-id-set ABCDE-LIST))
                     (SET-SYMMETRIC-DIFFERENCE! ABCDE/MUTABLE EMPTY)
@@ -456,9 +456,141 @@
                      (λ (id) (set! new-set (SET-ADD new-set id))))
                     (test #t SET=? ABCD new-set)))]))
          
-         ;; invoke macro to define tests
+         ;; invoke macro to define immutable-mutable combo tests
          (define-id-set-combo-tests #:constructor mk-immutable-id-set)
          (define-id-set-combo-tests #:constructor mk-mutable-id-set)
+         
+         ;; ----------------------------------------------------------------------------
+         ;; immutable-only/mutable-only id set tests
+         (define EMPTY/MUTABLE (mk-mutable-id-set))
+         (define NONEMPTY/MUTABLE (mk-mutable-id-set (list #'a #'b #'c)))
+         (define EMPTY/IMMUTABLE (mk-immutable-id-set))
+         (define NONEMPTY/IMMUTABLE (mk-immutable-id-set (list #'a #'b #'c)))
+
+         (test #t mutable-id-set? EMPTY/MUTABLE)
+         (test #f mutable-id-set? EMPTY/IMMUTABLE)
+         (test #t mutable-id-set? NONEMPTY/MUTABLE)
+         (test #f mutable-id-set? NONEMPTY/IMMUTABLE)
+         (test #f immutable-id-set? EMPTY/MUTABLE)
+         (test #t immutable-id-set? EMPTY/IMMUTABLE)
+         (test #f immutable-id-set? NONEMPTY/MUTABLE)
+         (test #t immutable-id-set? NONEMPTY/IMMUTABLE)
+         
+         (test #t SET=? EMPTY/MUTABLE EMPTY/IMMUTABLE)
+         (test #t SET=? NONEMPTY/MUTABLE NONEMPTY/IMMUTABLE)
+         (test #f SET=? EMPTY/MUTABLE NONEMPTY/MUTABLE)
+         (test #f SET=? EMPTY/IMMUTABLE NONEMPTY/IMMUTABLE)
+         (test #f SET=? EMPTY/MUTABLE NONEMPTY/IMMUTABLE)
+
+         ;; -------------------------------------------------------------------
+         ;; immutable-only id set tests
+
+         (let ([s (mk-immutable-id-set (list #'a #'b #'c))])
+           ;; fns not implemented for immutable id sets
+           (err/rt-test (SET-ADD! s #'z) exn:fail?)
+           (err/rt-test (SET-REMOVE! s #'z) exn:fail?)
+           (err/rt-test (SET-CLEAR! s) exn:fail?)
+           (err/rt-test (SET-UNION! s) exn:fail?)
+           (err/rt-test (SET-INTERSECTION! s) exn:fail?)
+           (err/rt-test (SET-SUBTRACT! s) exn:fail?)
+           (err/rt-test (SET-SYMMETRIC-DIFFERENCE! s) exn:fail?)
+
+           (test #t SET=? 
+                 s 
+                 (SET-ADD 
+                  (SET-ADD 
+                   (SET-ADD (mk-immutable-id-set) #'b) #'a) #'c))
+           (test #f SET=?
+                 s
+                 (let ([a 1])
+                   (SET-ADD 
+                    (SET-ADD 
+                     (SET-ADD (mk-immutable-id-set) #'b) #'a) #'c)))
+
+           (test #t SET-MEMBER? (SET-ADD s #'d) #'c)
+           (test #t SET-MEMBER? (SET-ADD s #'d) #'d)
+           (test #f SET-MEMBER? (SET-ADD s #'d) #'e)
+           (test #f SET-MEMBER? (SET-ADD s (let ([d 1]) #'d)) #'d)
+           (test #f SET-MEMBER? (SET-ADD s #'d) (let ([d 1]) #'d))
+           
+           (test #t SET-MEMBER? (SET-REMOVE s #'a) #'b)
+           (test #f SET-MEMBER? (SET-REMOVE s #'b) #'b)
+           (test #t SET-MEMBER? (SET-REMOVE s (let ([c 1]) #'c)) #'c)
+           
+           (test #t identifier=? (SET-FIRST s) (SET-FIRST s))
+           (test #t SET=? (SET-REMOVE s (SET-FIRST s)) 
+                 (SET-REST s))
+           
+           ;; tests for gen:stream interface
+           (test #t stream? s)
+           (test #t free-identifier=? (stream-first s) (stream-first s))
+           (test #t SET=? (SET-REMOVE s (stream-first s)) 
+                 (stream-rest s))
+           (test #t stream-empty? EMPTY/IMMUTABLE)
+           (test #f stream-empty? NONEMPTY/IMMUTABLE)
+  
+           (void))
+
+         ;; -------------------------------------------------------------------
+         ;; mutable-only id set tests
+
+         (let ([ms1 (mk-mutable-id-set (list #'a #'b #'c))]
+               [ms2 (mk-mutable-id-set)])
+           ;; fns not implemented for mutable id sets
+           (err/rt-test (SET-ADD ms1 #'z) exn:fail?)
+           (err/rt-test (SET-REMOVE ms1 #'z) exn:fail?)
+           (err/rt-test (SET-REST ms1) exn:fail?)
+           (err/rt-test (SET-CLEAR ms1) exn:fail?)
+           (err/rt-test (SET-UNION ms1) exn:fail?)
+           (err/rt-test (SET-INTERSECTION ms1) exn:fail?)
+           (err/rt-test (SET-SUBTRACT ms1) exn:fail?)
+           (err/rt-test (SET-SYMMETRIC-DIFFERENCE ms1) exn:fail?)
+           
+           ;; mutable sets are not streams
+           (test #f stream? ms1)
+           (err/rt-test (stream-empty? ms1) exn:fail?)
+           (err/rt-test (stream-first ms1) exn:fail?)
+           (err/rt-test (stream-rest ms1) exn:fail?)
+
+           (SET-ADD! ms2 #'b)
+           (SET-ADD! ms2 #'a)
+           (SET-ADD! ms2 #'c)
+           (test #t SET=? ms1 ms2)
+           (define ms3 (mk-mutable-id-set))
+           (let ([a 1])
+             (SET-ADD! ms3 #'b)
+             (SET-ADD! ms3 #'a)
+             (SET-ADD! ms3 #'c))
+           (test #f SET=? ms1 ms3)
+
+           (define ms4 (mk-mutable-id-set (list #'a #'b #'c)))
+           (test #t SET-MEMBER? ms4 #'c)
+           (SET-ADD! ms4 #'d)
+           (test #t SET-MEMBER? ms4 #'c)
+           (test #t SET-MEMBER? ms4 #'d)
+           (SET-ADD! ms4 #'d)
+           (test #t SET-MEMBER? ms4 #'d)
+           (test #f SET-MEMBER? ms4 #'e)
+           (SET-ADD! ms4 (let ([e 1]) #'e))
+           (test #f SET-MEMBER? ms4 #'e)
+           (test #f SET-MEMBER? ms4 (let ([d 1]) #'d))
+  
+           (SET-REMOVE! ms4 #'a)
+           (test #t SET-MEMBER? ms4 #'b)
+           (SET-REMOVE! ms4 #'b)
+           (test #f SET-MEMBER? ms4 #'b)
+           (SET-REMOVE! ms4 (let ([c 1]) #'c))
+           (test #t SET-MEMBER? ms4 #'c)
+           
+           (test #t free-identifier=? (SET-FIRST ms1) (SET-FIRST ms1))
+           (SET-REMOVE! ms1 #'a)
+           (test #t SET=? ms1 (mk-mutable-id-set (list #'b #'c)))
+           
+           (SET-CLEAR! ms1)
+           (test #t SET-EMPTY? ms1)
+  
+           (void))
+
          )]))
 
 ;; ----------------------------------------------------------------------------
@@ -466,136 +598,6 @@
 (define-id-set-tests #:type free #:interface gen:set)
 (define-id-set-tests #:type free #:interface free-id)
 
-;; ----------------------------------------------------------------------------
-;; immutable/mutable set tests
-(define EMPTY/MUTABLE/FREE (mutable-free-id-set))
-(define NONEMPTY/MUTABLE/FREE (mutable-free-id-set (list #'a #'b #'c)))
-(define EMPTY/IMMUTABLE/FREE (immutable-free-id-set))
-(define NONEMPTY/IMMUTABLE/FREE (immutable-free-id-set (list #'a #'b #'c)))
-
-(test #t mutable-free-id-set? EMPTY/MUTABLE/FREE)
-(test #f mutable-free-id-set? EMPTY/IMMUTABLE/FREE)
-(test #t mutable-free-id-set? NONEMPTY/MUTABLE/FREE)
-(test #f mutable-free-id-set? NONEMPTY/IMMUTABLE/FREE)
-(test #f immutable-free-id-set? EMPTY/MUTABLE/FREE)
-(test #t immutable-free-id-set? EMPTY/IMMUTABLE/FREE)
-(test #f immutable-free-id-set? NONEMPTY/MUTABLE/FREE)
-(test #t immutable-free-id-set? NONEMPTY/IMMUTABLE/FREE)
-
-(test #t free-id-set=? EMPTY/MUTABLE/FREE EMPTY/IMMUTABLE/FREE)
-(test #t free-id-set=? NONEMPTY/MUTABLE/FREE NONEMPTY/IMMUTABLE/FREE)
-(test #f free-id-set=? EMPTY/MUTABLE/FREE NONEMPTY/MUTABLE/FREE)
-(test #f free-id-set=? EMPTY/IMMUTABLE/FREE NONEMPTY/IMMUTABLE/FREE)
-(test #f free-id-set=? EMPTY/MUTABLE/FREE NONEMPTY/IMMUTABLE/FREE)
-
-;; ----------------------------------------------------------------------------
-;; immutable set tests
-
-(let ([s (immutable-free-id-set (list #'a #'b #'c))])
-  ;; fns not implemented for immutable id sets
-  (err/rt-test (free-id-set-add! s #'z) exn:fail?)
-  (err/rt-test (free-id-set-remove! s #'z) exn:fail?)
-  (err/rt-test (free-id-set-clear! s) exn:fail?)
-  (err/rt-test (free-id-set-union! s) exn:fail?)
-  (err/rt-test (free-id-set-intersection! s) exn:fail?)
-  (err/rt-test (free-id-set-subtract! s) exn:fail?)
-  (err/rt-test (free-id-set-symmetric-difference! s) exn:fail?)
-
-  (test #t free-id-set=? 
-        s 
-        (free-id-set-add 
-         (free-id-set-add 
-          (free-id-set-add (immutable-free-id-set) #'b) #'a) #'c))
-  (test #f free-id-set=?
-        s
-        (let ([a 1])
-          (free-id-set-add 
-           (free-id-set-add 
-            (free-id-set-add (immutable-free-id-set) #'b) #'a) #'c)))
-
-  (test #t free-id-set-member? (free-id-set-add s #'d) #'c)
-  (test #t free-id-set-member? (free-id-set-add s #'d) #'d)
-  (test #f free-id-set-member? (free-id-set-add s #'d) #'e)
-  (test #f free-id-set-member? (free-id-set-add s (let ([d 1]) #'d)) #'d)
-  (test #f free-id-set-member? (free-id-set-add s #'d) (let ([d 1]) #'d))
-  
-  (test #t free-id-set-member? (free-id-set-remove s #'a) #'b)
-  (test #f free-id-set-member? (free-id-set-remove s #'b) #'b)
-  (test #t free-id-set-member? (free-id-set-remove s (let ([c 1]) #'c)) #'c)
-  
-  (test #t free-identifier=? (free-id-set-first s) (free-id-set-first s))
-  (test #t free-id-set=? (free-id-set-remove s (free-id-set-first s)) 
-                         (free-id-set-rest s))
-
-  ;; tests for gen:stream interface
-  (test #t stream? s)
-  (test #t free-identifier=? (stream-first s) (stream-first s))
-  (test #t free-id-set=? (free-id-set-remove s (stream-first s)) 
-                         (stream-rest s))
-  (test #t stream-empty? EMPTY/IMMUTABLE/FREE)
-  (test #f stream-empty? NONEMPTY/IMMUTABLE/FREE)
-  
-  (void))
-
-;; ----------------------------------------------------------------------------
-;; mutable set tests
-
-(let ([ms1 (mutable-free-id-set (list #'a #'b #'c))]
-      [ms2 (mutable-free-id-set)])
-  ;; fns not implemented for mutable id sets
-  (err/rt-test (free-id-set-add ms1 #'z) exn:fail?)
-  (err/rt-test (free-id-set-remove ms1 #'z) exn:fail?)
-  (err/rt-test (free-id-set-rest ms1) exn:fail?)
-  (err/rt-test (free-id-set-clear ms1) exn:fail?)
-  (err/rt-test (free-id-set-union ms1) exn:fail?)
-  (err/rt-test (free-id-set-intersection ms1) exn:fail?)
-  (err/rt-test (free-id-set-subtract ms1) exn:fail?)
-  (err/rt-test (free-id-set-symmetric-difference ms1) exn:fail?)
-
-  ;; mutable sets are not streams
-  (test #f stream? ms1)
-  (err/rt-test (stream-empty? ms1) exn:fail?)
-  (err/rt-test (stream-first ms1) exn:fail?)
-  (err/rt-test (stream-rest ms1) exn:fail?)
-
-  (free-id-set-add! ms2 #'b)
-  (free-id-set-add! ms2 #'a)
-  (free-id-set-add! ms2 #'c)
-  (test #t free-id-set=? ms1 ms2)
-  (define ms3 (mutable-free-id-set))
-  (let ([a 1])
-    (free-id-set-add! ms3 #'b)
-    (free-id-set-add! ms3 #'a)
-    (free-id-set-add! ms3 #'c))
-  (test #f free-id-set=? ms1 ms3)
-
-  (define ms4 (mutable-free-id-set (list #'a #'b #'c)))
-  (test #t free-id-set-member? ms4 #'c)
-  (free-id-set-add! ms4 #'d)
-  (test #t free-id-set-member? ms4 #'c)
-  (test #t free-id-set-member? ms4 #'d)
-  (free-id-set-add! ms4 #'d)
-  (test #t free-id-set-member? ms4 #'d)
-  (test #f free-id-set-member? ms4 #'e)
-  (free-id-set-add! ms4 (let ([e 1]) #'e))
-  (test #f free-id-set-member? ms4 #'e)
-  (test #f free-id-set-member? ms4 (let ([d 1]) #'d))
-  
-  (free-id-set-remove! ms4 #'a)
-  (test #t free-id-set-member? ms4 #'b)
-  (free-id-set-remove! ms4 #'b)
-  (test #f free-id-set-member? ms4 #'b)
-  (free-id-set-remove! ms4 (let ([c 1]) #'c))
-  (test #t free-id-set-member? ms4 #'c)
-  
-  (test #t free-identifier=? (free-id-set-first ms1) (free-id-set-first ms1))
-  (free-id-set-remove! ms1 #'a)
-  (test #t free-id-set=? ms1 (mutable-free-id-set (list #'b #'c)))
-  
-  (free-id-set-clear! ms1)
-  (test #t free-id-set-empty? ms1)
-  
-  (void))
 
 ;(test #t generic-set? (set))
 ;(test #t set-empty? (set))
