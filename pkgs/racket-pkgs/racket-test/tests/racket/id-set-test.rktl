@@ -597,6 +597,8 @@
 ;; run test suite instances
 (define-id-set-tests #:type free #:interface gen:set)
 (define-id-set-tests #:type free #:interface free-id)
+(define-id-set-tests #:type bound #:interface gen:set)
+(define-id-set-tests #:type bound #:interface bound-id)
 
 
 ;(test #t generic-set? (set))
