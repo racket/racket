@@ -3293,6 +3293,26 @@
        ;; don't produce an internal error
        [tc-err (let () (define x (values 1 2)) (error "dummy"))
                #:msg #rx"Expression should produce 1 values"]
+
+       ;; PR 14758
+       [tc-e (ann (list 'change-size 30)
+                  (U (List 'change-family Symbol)
+                     (List 'change-size Byte)))
+             (t:Un (-lst* (-val 'change-family) -Symbol)
+                   (-lst* (-val 'change-size) -Byte))]
+
+       ;; PR 14747
+       [tc-e (let ()
+               (define-type-alias XExpr
+                 (U String Symbol Char
+                    (Pairof Symbol (Pairof (Listof (List Symbol String)) (Listof XExpr)))
+                    (Pairof Symbol (Listof XExpr))))
+               (: bug XExpr)
+               (define bug
+                 (let: ([elem : XExpr "some xexpr"])
+                   `(li ,elem)))
+               (void))
+             -Void]
         )
 
   (test-suite

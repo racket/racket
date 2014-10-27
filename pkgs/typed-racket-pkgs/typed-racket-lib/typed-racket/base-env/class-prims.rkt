@@ -19,6 +19,7 @@
           syntax/stx
           "annotate-classes.rkt"
           "../private/syntax-properties.rkt"
+          "../utils/disarm.rkt"
           "../utils/tc-utils.rkt"))
 
 (provide ;; Typed class macro that coordinates with TR
@@ -63,12 +64,14 @@
  ;; TRClassInfo stores information in the class macro that lets the
  ;; TR class helper macros coordinate amongst each other.
  ;;
- ;; It is a (tr-class-info List<Clause> List<Identifier>)
+ ;; It is a (tr-class-info List<Clause> List<Identifier> List<Identifier>)
  ;;
  ;; clauses        - stores in reverse order all class clauses that appeared
  ;;                  in the class expression
  ;; private-fields - a list of private field names
- (struct tr-class-info (clauses private-fields) #:mutable)
+ ;; maybe-private  - a list of field names that are not known to be method
+ ;;                  definitions or a private field at the time of discovery
+ (struct tr-class-info (clauses private-fields maybe-private) #:mutable)
 
  ;; forms that are not allowed by Typed Racket yet
  (define unsupported-forms
@@ -128,8 +131,9 @@
       (tr:class
        (quasisyntax/loc stx
          (untyped:class #,(tr:class:super-property #'super #t)
-                        (define-syntax class-info (tr-class-info null null))
+                        (define-syntax class-info (tr-class-info null null null))
                         (add-annotations class-info e) ...
+                        (determine-private-fields class-info)
                         (make-locals-table class-info)
                         (make-class-name-table
                          class-info
@@ -141,8 +145,9 @@
   (syntax-parse stx
     #:literal-sets (kernel-literals)
     [(_ class-info:id class-exp)
+     (define info (syntax-local-value #'class-info))
      (define expanded (local-expand #'class-exp (syntax-local-context) stop-forms))
-     (syntax-parse expanded
+     (syntax-parse (disarm* expanded) ; to avoid macro tainting issues
        #:literal-sets (kernel-literals)
        #:literals (: untyped:super-new untyped:super-make-object
                      untyped:super-instantiate)
@@ -150,38 +155,28 @@
         (quasisyntax/loc #'class-exp
           (begin (add-annotations class-info e) ...))]
        [cls:class-clause
-        (define info (syntax-local-value #'class-info))
         (define clause-data (attribute cls.data))
         (match-define (struct clause (stx kind ids types)) clause-data)
-        ;; to avoid macro taint issues
-        (define prop-val (tr:class:clause-ids-property #'cls))
-        (define clause-data*
-          (cond [(and prop-val (init-clause? clause-data))
-                 (init-clause stx kind prop-val types
-                              (init-clause-optional? clause-data))]
-                [prop-val
-                 (clause stx kind prop-val types)]
-                [else clause-data]))
         (set-tr-class-info-clauses!
          info
-         (cons clause-data* (tr-class-info-clauses info)))
+         (cons clause-data (tr-class-info-clauses info)))
         (check-unsupported-feature kind #'class-exp)
         #'class-exp]
        ;; if it's a method definition for a declared method, then
        ;; mark it as something to type-check
        [(define-values (id) body)
         #:when (method-procedure? #'body)
-        (tr:class:method-property #'class-exp (syntax-e #'id))]
+        (set-tr-class-info-maybe-private!
+         info
+         (cons #'id (tr-class-info-maybe-private info)))
+        (tr:class:def-property #'class-exp #'id)]
        ;; private field definition
        [(define-values (id ...) . rst)
-        (define info (syntax-local-value #'class-info))
         (set-tr-class-info-private-fields!
          info
          (append (syntax->list #'(id ...))
                  (tr-class-info-private-fields info)))
-        ;; set this property so that the initialization expression for
-        ;; this field is counted as a top-level class expression
-        (tr:class:top-level-property #'class-exp #t)]
+        (tr:class:def-property #'class-exp #'(id ...))]
        ;; special : annotation for augment interface
        [(: name:id type:expr #:augment augment-type:expr)
         (quasisyntax/loc #'class-exp
@@ -208,12 +203,37 @@
          #t)]
        [_ (tr:class:top-level-property #'class-exp #t)])]))
 
+;; Some definitions in the class are not known to be private fields or
+;; public method definitions until the whole class is processed. This
+;; macro makes the decision at the end of the class.
+(define-syntax (determine-private-fields stx)
+  (syntax-parse stx
+    [(_ class-info:id)
+     (match-define (and info (tr-class-info clauses private-fields maybe-ids))
+                   (syntax-local-value #'class-info))
+     (define actual-private-fields
+       (for/fold ([actual-private-fields private-fields])
+                 ([cur-id (in-list maybe-ids)])
+         (define private-field?
+           (or ;; multiple define-values names are only legal for fields
+               (stx-pair? cur-id)
+               (for/and ([clause (in-list clauses)])
+                 (define ids
+                   (for/list ([id (in-list (clause-ids clause))])
+                     (if (stx-pair? id) (stx-car id) id)))
+                 (not (member cur-id ids free-identifier=?)))))
+         (if private-field?
+             (cons cur-id actual-private-fields)
+             actual-private-fields)))
+     (set-tr-class-info-private-fields! info actual-private-fields)
+     #'(void)]))
+
 ;; Construct a table in the expansion that lets TR know about the generated
 ;; identifiers that are used for methods, fields, and such
 (define-syntax (make-locals-table stx)
   (syntax-parse stx
     [(_ class-info:id)
-     (match-define (tr-class-info clauses private-fields)
+     (match-define (tr-class-info clauses private-fields _)
                    (syntax-local-value #'class-info))
      (do-make-locals-table (reverse clauses) private-fields)]))
 
@@ -222,7 +242,7 @@
 (define-syntax (make-class-name-table stx)
   (syntax-parse stx
     [(_ class-info:id (type-variable:id ...))
-     (match-define (tr-class-info clauses private-fields)
+     (match-define (tr-class-info clauses private-fields _)
                    (syntax-local-value #'class-info))
      (do-make-class-name-table #'(type-variable ...)
                                (reverse clauses)

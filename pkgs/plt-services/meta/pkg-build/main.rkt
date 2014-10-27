@@ -45,10 +45,9 @@
 ;;   - depend on packages that build successfully on their own
 ;;   - refer only to other packages in the snapshot and catalog
 ;;     (and, in particular, must not use PLaneT packages)
-;;   - build without special system libraries (i.e., beyond the ones
-;;     needed by `racket/draw`)
+;;   - build without special system libraries
 ;;
-;; A successful build not not require that its declaraed dependencies
+;; A successful build does not require that its declared dependencies
 ;; are complete if the needed packages end up installed, anyway, but
 ;; the declaraed dependencies are checked.
 ;;
@@ -59,13 +58,11 @@
 ;;  - tier-based selection of packages on conflict
 ;;  - support for running tests
 
-(struct vm (host user dir name init-snapshot installed-snapshot))
+(struct vm (name host user dir env init-snapshot installed-snapshot minimal-variant))
 
-;; Each VM must provide at least an ssh server and `tar`, it must have
-;; any system libraries installed that are needed for building
-;; (typically the libraries needed by `racket/draw`), and the intent
-;; is that it is otherwise isolated (e.g., no network connection
-;; except to the host)
+;; Each VM must provide at least an ssh server and `tar`, and the
+;; intent is that it is otherwise isolated (e.g., no network
+;; connection except to the host)
 (define (vbox-vm
          ;; VirtualBox VM name:
          #:name name
@@ -75,14 +72,19 @@
          #:user [user "racket"]
          ;; Working directory on VM:
          #:dir [dir "/home/racket/build-pkgs"]
+         ;; Enviornment variables as (list (cons <str> <str>) ...)
+         #:env [env null]
          ;; Name of a clean starting snapshot in the VM:
          #:init-shapshot [init-snapshot "init"]
          ;; An "installed" snapshot is created after installing Racket
          ;; and before building any package:
-         #:installed-shapshot [installed-snapshot "installed"])
+         #:installed-shapshot [installed-snapshot "installed"]
+         ;; If not #f, a `vm` that is more constrained and will be
+         ;; tried as an installation target before this one:
+         #:minimal-variant [minimal-variant #f])
   (unless (complete-path? dir)
     (error 'vbox-vm "need a complete path for #:dir"))
-  (vm host user dir name init-snapshot installed-snapshot))
+  (vm name host user dir env init-snapshot installed-snapshot minimal-variant))
 
 ;; The build steps:
 (define all-steps-in-order
@@ -124,7 +126,7 @@
          #:work-dir [given-work-dir (current-directory)]
          ;; Directory content:
          ;;
-         ;;   "installer" --- directly holding installer downloaded
+         ;;   "installer/" --- holds installer downloaded
          ;;     from the snapshot site
          ;;
          ;;   "install-list.rktd" --- list of packages found in
@@ -145,18 +147,20 @@
          ;;        => up-to-date and successful,
          ;;           "docs/P-adds.rktd" listing of docs, exes, etc., and
          ;;           "success/P.txt" records success;
-         ;;           "install/P.txt" records installation
-         ;;           "deps/P.txt" record dependency-checking failure;
+         ;;           "install/P.txt" records installation;
+         ;;           "deps/P.txt" records dependency-checking failure;
+         ;;           "test-{success,fail}/P.txt" records `raco test` result;
+         ;;           "min-fail/P.txt" records failure on minimal-host attempt;
          ;;      * pkgs/P.orig-CHECKSUM matching archived catalog
          ;;         + fail/P.txt
          ;;        => up-to-date and failed;
          ;;           "install/P.txt" may record installation success
          ;;
-         ;;   "dumpster" --- saved builds of failed packages if the
+         ;;   "dumpster/" --- saved builds of failed packages if the
          ;;     package at least installs; maybe the attempt built
          ;;     some documentation
          ;;
-         ;;   "doc" --- unpacked docs with non-conflicting
+         ;;   "doc/" --- unpacked docs with non-conflicting
          ;;     packages installed
          ;;   "all-doc.tgz" --- "doc", still packed
          ;;
@@ -166,6 +170,9 @@
          ;;       'success-log --- #f or relative path
          ;;       'failure-log --- #f or relative path
          ;;       'dep-failure-log --- #f or relative path
+         ;;       'test-success-log --- #f or relative path
+         ;;       'test-failure-log --- #f or relative path
+         ;;       'min-failure-log --- #f or relative path
          ;;       'docs --- list of one of
          ;;                  * (docs/none name)
          ;;                  * (docs/main name path)
@@ -203,6 +210,9 @@
          ;; at the beginning if you know they're already done, and
          ;; you can skip tests at the end if you don't want them:
          #:steps [steps (steps-in 'download 'summary)]
+         
+         ;; Run tests?
+         #:run-tests? [run-tests? #t]
 
          ;; Omit specified packages from the summary:
          #:summary-omit-pkgs [summary-omit-pkgs null]
@@ -246,9 +256,12 @@
   (define built-pkgs-dir (build-path built-dir "pkgs/"))
   (define built-catalog-dir (build-path built-dir "catalog"))
   (define fail-dir (build-path built-dir "fail"))
+  (define min-fail-dir (build-path built-dir "min-fail"))
   (define success-dir (build-path built-dir "success"))
   (define install-success-dir (build-path built-dir "install"))
   (define deps-fail-dir (build-path built-dir "deps"))
+  (define test-success-dir (build-path built-dir "test-success"))
+  (define test-fail-dir (build-path built-dir "test-fail"))
 
   (define dumpster-dir (build-path work-dir "dumpster"))
   (define dumpster-pkgs-dir (build-path dumpster-dir "pkgs/"))
@@ -278,10 +291,18 @@
   (define (vm-remote vm)
     (remote #:host (vm-host vm)
             #:user (vm-user vm)
-            #:env (list (cons "PLTUSERHOME"
-                              (~a (vm-dir vm) "/user")))
+            #:env (append
+                   (vm-env vm)
+                   (list (cons "PLTUSERHOME"
+                               (~a (vm-dir vm) "/user"))))
             #:timeout timeout
             #:remote-tunnels (list (cons server-port server-port))))
+
+  (define (make-sure-vm-is-ready vm rt)
+    (make-sure-remote-is-ready rt)
+    (status "Fixing time at ~a\n" (vm-name vm))
+    (ssh rt "sudo date --set=" (q (parameterize ([date-display-format 'rfc2822])
+                                    (date->string (seconds->date (current-seconds)) #t)))))
 
   ;; ----------------------------------------
   (define installer-table-path (build-path work-dir "table.rktd"))
@@ -361,11 +382,7 @@
      (lambda () (start-vbox-vm (vm-name vm)))
      (lambda ()
        (define rt (vm-remote vm))
-       (make-sure-remote-is-ready rt)
-       ;; ----------------------------------------
-       (status "Fixing time at ~a\n" (vm-name vm))
-       (ssh rt "sudo date --set=" (q (parameterize ([date-display-format 'rfc2822])
-                                       (date->string (seconds->date (current-seconds)) #t))))
+       (make-sure-vm-is-ready vm rt)
 
        ;; ----------------------------------------
        (define there-dir (vm-dir vm))
@@ -427,8 +444,11 @@
     (take-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm)))
 
   (unless skip-install?
-    (install (car vms) #:one-time? #t)
-    (map install (cdr vms)))
+    (for ([vm (in-list vms)]
+          [i (in-naturals)])
+      (install vm #:one-time? (zero? i))
+      (when (vm-minimal-variant vm)
+        (install (vm-minimal-variant vm)))))
   
   ;; ----------------------------------------
   (status "Resetting ready content of ~a\n" built-pkgs-dir)
@@ -452,7 +472,10 @@
   (define (pkg-checksum-file pkg) (build-path built-pkgs-dir (~a pkg ".orig-CHECKSUM")))
   (define (pkg-zip-file pkg) (build-path built-pkgs-dir (~a pkg ".zip")))
   (define (pkg-zip-checksum-file pkg) (build-path built-pkgs-dir (~a pkg ".zip.CHECKSUM")))
-  (define (pkg-failure-dest pkg) (build-path fail-dir (txt pkg)))
+  (define (pkg-failure-dest pkg #:minimal? [min? #f])
+    (build-path (if min? min-fail-dir fail-dir) (txt pkg)))
+  (define (pkg-test-success-dest pkg) (build-path test-success-dir (txt pkg)))
+  (define (pkg-test-failure-dest pkg) (build-path test-fail-dir (txt pkg)))
 
   (define failed-pkgs
     (for/set ([pkg (in-list all-pkg-names)]
@@ -514,9 +537,11 @@
     (define zip-file (pkg-zip-file pkg))
     (define zip-checksum-file (pkg-zip-checksum-file pkg))
     (define failure-dest (pkg-failure-dest pkg))
+    (define min-failure-dest (pkg-failure-dest pkg #:minimal? #t))
     (when (file-exists? zip-file) (delete-file zip-file))
     (when (file-exists? zip-checksum-file) (delete-file zip-checksum-file))
     (when (file-exists? failure-dest) (delete-file failure-dest))
+    (when (file-exists? min-failure-dest) (delete-file min-failure-dest))
     (call-with-output-file*
      checksum-file
      #:exists 'truncate/replace
@@ -535,11 +560,11 @@
           null
           (let ([pkg (car l)])
             (cond
-             [(member pkg cycle-stack)
+             [(member (find! cycles pkg) cycle-stack)
               ;; Hit a package while processing its dependencies;
               ;; everything up to that package on the stack is
               ;; mutually dependent:
-              (for ([s (in-list (member pkg (reverse cycle-stack)))])
+              (for ([s (in-list (member (find! cycles pkg) (reverse cycle-stack)))])
                 (union! cycles pkg s))
               (loop (cdr l) seen cycle-stack)]
              [(set-member? seen pkg)
@@ -628,9 +653,12 @@
   ;; ----------------------------------------
   (make-directory* (build-path built-dir "adds"))
   (make-directory* fail-dir)
+  (make-directory* min-fail-dir)
   (make-directory* success-dir)
   (make-directory* install-success-dir)
   (make-directory* deps-fail-dir)
+  (make-directory* test-success-dir)
+  (make-directory* test-fail-dir)
 
   (make-directory* dumpster-pkgs-dir)
   (make-directory* dumpster-adds-dir)
@@ -646,9 +674,9 @@
        (lambda (o) (apply fprintf o fmt args))))
     (apply eprintf fmt args)
     #f)
-
-  ;; Build one package or a group of packages:
-  (define (build-pkgs vm pkgs)
+  
+  ;; Print status and munge a list-of-list-of-packages:
+  (define (status-pkgs pkgs action)
     (define flat-pkgs (flatten pkgs))
     ;; one-pkg can be a list in the case of mutual dependencies:
     (define one-pkg (and (= 1 (length pkgs)) (car pkgs)))
@@ -658,15 +686,22 @@
     (if one-pkg
         (if (pair? one-pkg)
             (begin
-              (status "Building mutually dependent packages:\n")
+              (status "~a mutually dependent packages:\n" action)
               (show-list one-pkg))
-            (status "Building ~a\n" one-pkg))
+            (status "~a ~a\n" action one-pkg))
         (begin
-          (status "Building packages together:\n")
+          (status "~a packages together:\n" action)
           (show-list pkgs)))
+    
+    (values flat-pkgs one-pkg pkgs-str))
+
+  ;; Build one package or a group of packages:
+  (define (build-pkgs vm pkgs #:minimal? [minimal? #f])
+    (define-values (flat-pkgs one-pkg pkgs-str)
+      (status-pkgs pkgs "Building"))
 
     (define failure-dest (and one-pkg
-                              (pkg-failure-dest (car flat-pkgs))))
+                              (pkg-failure-dest (car flat-pkgs) #:minimal? minimal?)))
     (define install-success-dest (build-path install-success-dir
                                              (txt (car flat-pkgs))))
 
@@ -692,7 +727,7 @@
      (lambda () (start-vbox-vm (vm-name vm) #:max-vms (length vms)))
      (lambda ()
        (define rt (vm-remote vm))
-       (make-sure-remote-is-ready rt)
+       (make-sure-vm-is-ready vm rt)
        (define ok?
          (and
           ;; Try to install:
@@ -741,11 +776,12 @@
        (when (and ok? one-pkg (not deps-ok?))
          ;; Copy dependency-failure log for other packages in the group:
          (for ([pkg (in-list (cdr flat-pkgs))])
-           (copy-file install-success-dest
+           (copy-file deps-failure-dest
                       (pkg-deps-failure-dest pkg)
                       #t)))
        (define doc-ok?
          (and
+          (or ok? (not minimal?))
           ;; If we're building a single package (or set of mutually
           ;; dependent packages), then try to save generated documentation
           ;; even on failure. We'll put it in the "dumpster".
@@ -767,8 +803,15 @@
          (for ([pkg (in-list flat-pkgs)])
            (when (file-exists? (pkg-failure-dest pkg))
              (delete-file (pkg-failure-dest pkg)))
+           (when (and minimal?
+                      (file-exists? (pkg-failure-dest pkg #:minimal? #t)))
+             (delete-file (pkg-failure-dest pkg  #:minimal? #t)))
            (when (and deps-ok? (file-exists? (pkg-deps-failure-dest pkg)))
              (delete-file (pkg-deps-failure-dest pkg)))
+           (when (file-exists? (pkg-test-failure-dest pkg))
+             (delete-file (pkg-test-failure-dest pkg)))
+           (when (file-exists? (pkg-test-success-dest pkg))
+             (delete-file (pkg-test-success-dest pkg)))
            (scp rt (at-vm vm (~a there-dir "/built/" pkg ".zip"))
                 built-pkgs-dir)
            (scp rt (at-vm vm (~a there-dir "/built/" pkg ".zip.CHECKSUM"))
@@ -791,7 +834,9 @@
            (for ([pkg (in-list flat-pkgs)])
              (when (list? one-pkg)
                (unless (equal? pkg (car one-pkg))
-                 (copy-file failure-dest (pkg-failure-dest (car one-pkg)) #t)))
+                 (copy-file failure-dest
+                            (pkg-failure-dest (car one-pkg) #:minimal? minimal?)
+                            #t)))
              (save-checksum pkg))
            ;; Keep any docs that might have been built:
            (for ([pkg (in-list flat-pkgs)])
@@ -808,13 +853,77 @@
        ok?)
      (lambda ()
        (stop-vbox-vm (vm-name vm) #:save-state? #f))))
+  
+  ;; Test one package or a group of packages:
+  (define (test-pkgs vm pkgs)
+    ;; If we get interrupted or something goes wrong here, we may
+    ;; leave a package in a built-but-not-tested state.
+    (define-values (flat-pkgs one-pkg pkgs-str)
+      (status-pkgs pkgs "Testing"))
 
-  ;; Build a group of packages, recurring on smaller groups
+    (define test-success-dest (pkg-test-success-dest (car flat-pkgs)))
+    (define test-failure-dest (pkg-test-failure-dest (car flat-pkgs)))
+
+    (restore-vbox-snapshot (vm-name vm) (vm-installed-snapshot vm))
+    (dynamic-wind
+     (lambda () (start-vbox-vm (vm-name vm) #:max-vms (length vms)))
+     (lambda ()
+       (define rt (vm-remote vm))
+       (make-sure-vm-is-ready vm rt)
+       (define test-ok?
+         (ssh #:show-time? #t
+              rt (cd-racket vm)
+              " && bin/raco pkg install -u --auto " pkgs-str
+              " && bin/raco test --drdr --package " pkgs-str
+              #:mode 'result
+              #:success-log test-success-dest
+              #:failure-log test-failure-dest))
+       
+       (define remove-dest (if test-ok?
+                               pkg-test-failure-dest
+                               pkg-test-success-dest))
+       (define copy-dest  (if test-ok?
+                               pkg-test-success-dest
+                               pkg-test-failure-dest))
+       (for ([pkg (in-list flat-pkgs)])
+         (when (file-exists? (remove-dest pkg))
+           (delete-file (remove-dest pkg))))
+       (when one-pkg
+         ;; Copy test-failure log for other packages in the group:
+         (for ([pkg (in-list (cdr flat-pkgs))])
+           (copy-file (if test-ok?
+                          test-success-dest
+                          test-failure-dest)
+                      (copy-dest pkg)
+                      #t)))
+
+       (cond
+        [test-ok? (void)]
+        [else (substatus "*** test failed ***\n")])
+       test-ok?)
+     (lambda ()
+       (stop-vbox-vm (vm-name vm) #:save-state? #f))))
+
+  ;; Build and test a group of packages, recurring on smaller groups
   ;; if the big group fails:
   (define (build-pkg-set vm pkgs)
     (define len (length pkgs))
+    (define has-minimal? (and (vm-minimal-variant vm) #t))
     (define ok? (and (len . <= . max-build-together)
-                     (build-pkgs vm pkgs)))
+                     (or
+                      ;; Here's the main build attempt:
+                      (build-pkgs (if has-minimal?
+                                      (vm-minimal-variant vm)
+                                      vm)
+                                  pkgs
+                                  #:minimal? has-minimal?)
+                      ;; ... but if that was minimal, try again
+                      ;; with the non-minimal variant:
+                      (and has-minimal?
+                           (build-pkgs vm pkgs #:minimal? #f)))))
+    (when (and ok? run-tests?)
+      ;; Testing always uses the non-minimal variant:
+      (test-pkgs vm pkgs))
     (flush-chunk-output)
     (unless (or ok? (= 1 len))
       (define part (min (quotient len 2)
@@ -860,7 +969,11 @@
     (define t (thread/chunk-output
                (lambda ()
                  (break-enabled #t)
-                 (status "Sending to ~a:\n" (vm-name vm))
+                 (status "Sending to ~a~a:\n"
+                         (vm-name vm)
+                         (if (vm-minimal-variant vm)
+                             (~a " / " (vm-name (vm-minimal-variant vm)))
+                             ""))
                  (show-list pkgs)
                  (flush-chunk-output)
                  (build-pkg-set vm pkgs)
@@ -1055,7 +1168,7 @@
      (lambda () (start-vbox-vm (vm-name vm)))
      (lambda ()
        (define rt (vm-remote vm))
-       (make-sure-remote-is-ready rt)
+       (make-sure-vm-is-ready vm rt)
        (ssh #:show-time? #t
             rt (cd-racket vm)
             " && bin/raco pkg install -i --auto"
@@ -1065,7 +1178,7 @@
        (scp rt (at-vm vm (~a (vm-dir vm) "/all-doc.tgz"))
             (build-path work-dir "all-doc.tgz")))
      (lambda ()
-       (stop-vbox-vm (vm-name vm) #:save-state? #f)))
+       (stop-vbox-vm (vm-name vm) #:save-state? #t)))
     (untgz "all-doc.tgz")
 
     ;; Clear links:
@@ -1154,12 +1267,18 @@
            [(and succeeded? (not failed?)) 'success]
            [(and succeeded? failed?) 'confusion]
            [else 'unknown]))
-        (define dep-status
+        (define (more-status dir [success-dir #f])
           (if (eq? status 'success)
-              (if (file-exists? (build-path deps-fail-dir (txt pkg)))
+              (if (file-exists? (build-path dir (txt pkg)))
                   'failure
-                  'success)
+                  (if (or (not success-dir)
+                          (file-exists? (build-path success-dir (txt pkg))))
+                      'success
+                      'unknown))
               'unknown))
+        (define dep-status (more-status deps-fail-dir))
+        (define test-status (more-status test-fail-dir test-success-dir))
+        (define min-status (more-status min-fail-dir))
         (define adds (let ([adds-file (if (eq? status 'success)
                                           (pkg-adds-file pkg)
                                           (build-path dumpster-adds-dir (format "~a-adds.rktd" pkg)))])
@@ -1183,6 +1302,12 @@
                                  (path->relative (pkg-failure-dest pkg)))
                'dep-failure-log (and (eq? dep-status 'failure)
                                      (path->relative (build-path deps-fail-dir (txt pkg))))
+               'test-success-log (and (eq? test-status 'success)
+                                      (path->relative (build-path test-success-dir (txt pkg))))
+               'test-failure-log (and (eq? test-status 'failure)
+                                      (path->relative (build-path test-fail-dir (txt pkg))))
+               'min-failure-log (and (eq? min-status 'failure)
+                                     (path->relative (build-path min-fail-dir (txt pkg))))
                'docs (for/list ([doc (in-list docs)])
                        (define path (~a "doc/" (~a doc "@" pkg) "/index.html"))
                        (if (or (not (eq? status 'success))

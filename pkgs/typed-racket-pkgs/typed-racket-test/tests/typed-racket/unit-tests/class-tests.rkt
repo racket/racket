@@ -517,6 +517,24 @@
    [tc-e (class object% (super-new)
            (define x "foo") (string-append x "bar"))
          (-class)]
+   ;; private field with function
+   [tc-e (class object%
+           (super-new)
+           (: f (-> String))
+           (define (f) "foo"))
+         (-class)]
+   [tc-err (let ()
+             (class object%
+               (super-new)
+               (: f (-> String))
+               (define (f) 'bad))
+             (error "foo"))
+           #:msg #rx"type mismatch.*expected: \\(-> String\\)"]
+   ;; multiple names in define-values private fields
+   [tc-e (class object%
+           (super-new)
+           (define-values (x y z) (values 'x 'y 'z)))
+         (-class)]
    ;; test private method
    [tc-e (let ()
            (class object% (super-new)
@@ -1418,7 +1436,7 @@
                           (init-rest [rst : (List Symbol)])))
              (make-object c% "wrong"))
            #:ret (ret (make-Instance (make-Class #f null null null null (-Tuple (list -Symbol)))))
-           #:msg #rx"expected: Symbol.*given: String"]
+           #:msg #rx"expected: \\(List Symbol.*given: \\(List String"]
    ;; PR 14408, test init-field order
    [tc-e (let ()
            (define c%

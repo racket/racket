@@ -241,7 +241,7 @@ The only mandatory clause of a @racket[big-bang] description is
                [height-expr natural-number/c])]{
 @note-scene
  tells DrRacket to use a @racket[width-expr] by @racket[height-expr]
- canvas instead of one determine by the first generated image.
+ canvas instead of one determined by the first generated image.
 }
 
 For compatibility reasons, the teachpack also supports the keyword

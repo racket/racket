@@ -97,4 +97,25 @@
     (render-judgment-form deep-empty)))
  0)
 
-(printf "pict-test.rkt passed\n")
+;; check the contracts for the various rule-pict functions
+(void
+ (parameterize ([rule-pict-style
+                 (λ (rule-pict-infos)
+                   (for ([r (in-list rule-pict-infos)])
+                     (rule-pict-info-arrow r)
+                     (rule-pict-info-lhs r)
+                     (rule-pict-info-rhs r)
+                     (rule-pict-info-label r)
+                     (rule-pict-info-computed-label r)
+                     (rule-pict-info->side-condition-pict r))
+                   (blank))])
+   (render-reduction-relation
+    (reduction-relation
+     empty-language
+     (--> (a any) 1 "a")
+     (--> (b any) 2 b)
+     (--> (c any) 3 (computed-name (format "c: ~a" (term any))))
+     (--> (d any) 4)
+     (--> (e any) 5 (where (1) any))))))
+
+(printf "pict-test.rkt done\n")

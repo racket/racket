@@ -6554,11 +6554,13 @@ static int try_get_fd_char(int fd, int *ready)
   unsigned char buf[1];
 
   old_flags = fcntl(fd, F_GETFL, 0);
-  fcntl(fd, F_SETFL, old_flags | MZ_NONBLOCKING);
+  if (!(old_flags & MZ_NONBLOCKING))
+    fcntl(fd, F_SETFL, old_flags | MZ_NONBLOCKING);
   do {
     c = read(fd, buf, 1);
   } while ((c == -1) && errno == EINTR);
-  fcntl(fd, F_SETFL, old_flags);
+  if (!(old_flags & MZ_NONBLOCKING))
+    fcntl(fd, F_SETFL, old_flags);
 
   if (c < 0) {
     *ready = 0;
@@ -6857,11 +6859,13 @@ static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
       int old_flags;
 
       old_flags = fcntl(fip->fd, F_GETFL, 0);
-      fcntl(fip->fd, F_SETFL, old_flags | MZ_NONBLOCKING);
+      if (!(old_flags & MZ_NONBLOCKING))
+        fcntl(fip->fd, F_SETFL, old_flags | MZ_NONBLOCKING);
       do {
         bc = read(fip->fd, target + target_offset, target_size);
       } while ((bc == -1) && errno == EINTR);
-      fcntl(fip->fd, F_SETFL, old_flags);
+      if (!(old_flags & MZ_NONBLOCKING))
+        fcntl(fip->fd, F_SETFL, old_flags);
 
       if ((bc == -1) && (errno == EAGAIN)) {
         none_avail = 1;
@@ -8122,16 +8126,28 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
       }
 #else
       int flags;
+      intptr_t amt;
 
       flags = fcntl(fop->fd, F_GETFL, 0);
-      fcntl(fop->fd, F_SETFL, flags | MZ_NONBLOCKING);
+      if (!(flags & MZ_NONBLOCKING))
+        fcntl(fop->fd, F_SETFL, flags | MZ_NONBLOCKING);
+
+      amt = buflen - offset;
 
       do {
-	len = write(fop->fd, bufstr + offset, buflen - offset);
-      } while ((len == -1) && (errno == EINTR));
+        do {
+          len = write(fop->fd, bufstr + offset, amt);
+        } while ((len == -1) && (errno == EINTR));
+
+        /* If there was no room to write `amt` bytes, then it's
+          possible that writing fewer bytes will succeed. That seems
+          to be the case with FIFOs on Mac OS X, for example. */
+        amt = amt >> 1;
+      } while ((len == -1) && (errno == EAGAIN) && (amt > 0));
 
       errsaved = errno;
-      fcntl(fop->fd, F_SETFL, flags);
+      if (!(flags & MZ_NONBLOCKING))
+        fcntl(fop->fd, F_SETFL, flags);
 
       full_write_buffer = (errsaved == EAGAIN);
 #endif

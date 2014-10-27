@@ -347,8 +347,7 @@
   ;; the only kind of type annotation that is allowed to be duplicate
   ;; (i.e., m can have type Integer -> Integer and an augment type of
   ;;          String -> String in the separate tables)
-  (define-values (super-new initializers
-                  annotation-table augment-annotation-table
+  (define-values (super-new annotation-table augment-annotation-table
                   other-top-level-exprs)
     (handle-top-levels top-level-exprs))
 
@@ -402,6 +401,24 @@
                   local-augment-table local-inner-table)
     (construct-local-mapping-tables (car locals)))
 
+  ;; trawl the body and find methods and private field definitions
+  (define def-stxs
+    (trawl-for-property make-methods-stx tr:class:def-property))
+  ;; FIXME: private field names should be stored as identifiers since
+  ;;        it's possible to have the same symbolic name for them
+  (define private-field-names (hash-ref parse-info 'private-fields))
+  (define-values (private-field-stxs method-stxs)
+    (for/fold ([private-field-stxs null]
+               [method-stxs null])
+              ([def-stx (in-list def-stxs)])
+      (define name/names (tr:class:def-property def-stx))
+      (if (stx-pair? name/names)
+          (values (cons def-stx private-field-stxs) method-stxs)
+          (if ;; FIXME: see above on syntax-e
+              (memq (syntax-e name/names) private-field-names)
+              (values (cons def-stx private-field-stxs) method-stxs)
+              (values private-field-stxs (cons def-stx method-stxs))))))
+
   ;; types for private elements
   (define private-method-types
     (for/hash ([(name type) (in-dict annotation-table)]
@@ -412,7 +429,7 @@
         #:when (set-member? (hash-ref parse-info 'private-fields) name))
     (hash-set! private-field-types name (list type)))
 
-  (synthesize-private-field-types initializers
+  (synthesize-private-field-types private-field-stxs
                                   local-private-field-table
                                   private-field-types)
 
@@ -447,24 +464,21 @@
                        local-field-table
                        inits))
   (do-timestamp "checked field initializers")
-  ;; trawl the body and find methods and type-check them
-  (define meth-stxs
-    (trawl-for-property make-methods-stx tr:class:method-property))
   (define checked-method-types
     (with-lexical-env/extend lexical-names lexical-types
       (check-methods (append (hash-ref parse-info 'pubment-names)
                              (hash-ref parse-info 'overridable-names))
-                     internal-external-mapping meth-stxs
+                     internal-external-mapping method-stxs
                      methods self-type)))
   (do-timestamp "checked methods")
   (define checked-augment-types
     (with-lexical-env/extend lexical-names lexical-types
       (check-methods (hash-ref parse-info 'augment-names)
-                     internal-external-mapping meth-stxs
+                     internal-external-mapping method-stxs
                      augments self-type)))
   (do-timestamp "checked augments")
   (with-lexical-env/extend lexical-names lexical-types
-    (check-private-methods meth-stxs (hash-ref parse-info 'private-names)
+    (check-private-methods method-stxs (hash-ref parse-info 'private-names)
                            private-method-types self-type))
   (do-timestamp "checked privates")
   (do-timestamp "finished methods")
@@ -489,12 +503,11 @@
                  final-class-type)))
 
 ;; handle-top-levels : (Listof Syntax) ->
-;;                     super-init-stxs Dict Dict Hash (Listof Syntax)
+;;                     super-init-stxs Dict Hash (Listof Syntax)
 ;; Divide top level expressions into several categories, and put them
 ;; in appropriate data structures.
 (define (handle-top-levels exprs)
   (define super-new #f)
-  (define initializers (make-free-id-table))
   (define annotations (make-hash))
   (define augment-annotations (make-hash))
   (define other-exprs
@@ -503,19 +516,6 @@
       (syntax-parse expr
         #:literal-sets (kernel-literals)
         #:literals (:-augment)
-        [(begin
-           (quote ((~datum declare-field-initialization) _))
-           (let-values ([(obj:id) self])
-             (let-values ([(field:id) initial-value])
-               (with-continuation-mark _ _
-                 (#%plain-app setter:id obj2:id field2:id)))))
-         ;; There should only be one initialization expression per field
-         ;; since they are distinguished by a declaration.
-         (cond [(not (dict-has-key? initializers #'setter))
-                (free-id-table-set! initializers #'setter #'initial-value)]
-               [else
-                (int-err "more than one field initialization expression")])
-         other-exprs]
         ;; The second part of this pattern ensures that we find the actual
         ;; initialization call, rather than the '(declare-super-new) in
         ;; the expansion.
@@ -546,7 +546,6 @@
                      #:more "must call `super-new' at the top-level of the class")
     (set! super-new (super-init-stxs null null)))
   (values super-new
-          initializers
           annotations
           augment-annotations
           other-exprs))
@@ -849,7 +848,7 @@
                        meths methods self-type)
   (for/fold ([checked '()])
             ([meth meths])
-    (define method-name (tr:class:method-property meth))
+    (define method-name (syntax-e (tr:class:def-property meth)))
     (define external-name (dict-ref internal-external-mapping method-name #f))
     (define maybe-expected (and external-name (dict-ref methods external-name #f)))
     (cond [(and maybe-expected
@@ -887,7 +886,7 @@
 ;; Type-check private methods
 (define (check-private-methods stxs names types self-type)
   (for ([stx stxs])
-    (define method-name (tr:class:method-property stx))
+    (define method-name (syntax-e (tr:class:def-property stx)))
     (define private? (set-member? names method-name))
     (define annotation (dict-ref types method-name #f))
     (cond [(and private? annotation)
@@ -985,20 +984,46 @@
           [else
            (tc-expr/check init-val (ret init-type))])))
 
-;; synthesize-private-field-types : IdTable Dict Hash -> Void
+;; synthesize-private-field-types : Listof<Syntax> Dict Hash -> Void
 ;; Given top-level expressions in the class, synthesize types from
 ;; the initialization expressions for private fields.
-(define (synthesize-private-field-types initializers locals types)
-  (for ([(name getter+setter) (in-dict locals)]
-        #:unless (hash-has-key? types name))
-    (match-define (list _ setter) getter+setter)
-    (define init-expr-stx (free-id-table-ref initializers setter #f))
-    (when init-expr-stx
-      (define type (tc-expr/t init-expr-stx))
-      ;; FIXME: this always generalizes the private field
-      ;;        type, but it's better to only generalize if
-      ;;        the field is actually mutated.
-      (hash-set! types name (list (generalize type))))))
+(define (synthesize-private-field-types stxs locals types)
+  (for ([stx (in-list stxs)])
+    (syntax-parse stx
+      #:literal-sets (kernel-literals)
+      [(begin
+         (quote ((~datum declare-field-initialization) _))
+         (let-values ([(obj:id) self])
+           (let-values ([(field:id) initial-value])
+             (with-continuation-mark
+              _ _ (#%plain-app setter:id obj2:id field2:id)))))
+       (define name-stx (tr:class:def-property stx))
+       (define name (if (stx-pair? name-stx)
+                        (syntax-e (stx-car name-stx))
+                        (syntax-e name-stx)))
+       ;; don't synthesize if there's already a type annotation
+       (unless (hash-has-key? types name)
+         ;; FIXME: this always generalizes the private field
+         ;;        type, but it's better to only generalize if
+         ;;        the field is actually mutated.
+         (hash-set! types name
+                    (list (generalize (tc-expr/t #'initial-value)))))]
+      [(let-values ([(initial-value-name:id ...)
+                     (#%plain-app _ initial-value ...)])
+         (begin
+           (quote ((~datum declare-field-initialization) _))
+           (let-values ([(obj:id) self])
+             (let-values ([(field:id) initial-value-name-2:id])
+               (with-continuation-mark
+                _ _ (#%plain-app setter:id obj2:id field2:id)))))
+         ...
+         (#%plain-app _))
+       (define names (map syntax-e (syntax-e (tr:class:def-property stx))))
+       (for ([name (in-list names)]
+             [initial-value-stx (in-list (syntax->list #'(initial-value ...)))])
+         (unless (hash-has-key? types name)
+           (hash-set! types name
+                      (list (generalize (tc-expr/t initial-value-stx))))))])))
 
 ;; Syntax -> Dict<Symbol, Id> Dict<Symbol, Id>
 ;;           Dict<Symbol, (List Symbol Symbol)> Dict<Symbol, Id>

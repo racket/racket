@@ -39,11 +39,9 @@
               ;; add in syntax property on useless expression to draw check-syntax arrows
               [check-syntax-help (syntax-property
                                   (syntax-property
-                                   (syntax-property
-                                    #'(void)
-                                    'disappeared-binding (disappeared-bindings-todo))
-                                   'disappeared-use (disappeared-use-todo))
-                                  'mouse-over-tooltips (type-table->tooltips))])
+                                   #'(void)
+                                   'disappeared-binding (disappeared-bindings-todo))
+                                  'disappeared-use (disappeared-use-todo))])
              ;; reconstruct the module with the extra code
              ;; use the regular %#module-begin from `racket/base' for top-level printing
              (arm #`(#%module-begin #,before-code optimized-body ... #,after-code check-syntax-help)))))))]))

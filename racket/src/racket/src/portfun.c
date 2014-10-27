@@ -3261,6 +3261,8 @@ do_read_line (int as_bytes, const char *who, int argc, Scheme_Object *argv[])
     }
     buf[i++] = ch;
     if (ch > 127) ascii = 0;
+
+    SCHEME_USE_FUEL(1);
   }
 
   if (as_bytes) {

@@ -2,7 +2,8 @@
 (require racket/format
          racket/file
          scribble/html
-         (only-in plt-web site page call-with-registered-roots))
+         (only-in plt-web site page call-with-registered-roots)
+         "about.rkt")
 
 (provide summary-page
          (struct-out doc/main)
@@ -23,7 +24,10 @@
                           #:url "http://pkg-build.racket-lang.org/"
                           #:share-from (site "www"
                                              #:url "http://racket-lang.org/"
-                                             #:generate? #f)))
+                                             #:generate? #f)
+                          #:navigation (list
+                                        (lambda () (force about-page)))))
+  (define about-page (delay (make-about page-site)))
 
   (define page-title "Package Build Results")
 
@@ -38,12 +42,18 @@
          [(and succeeded? (not failed?)) 'success]
          [(and succeeded? failed?) 'confusion]
          [else 'unknown]))
-      (define dep-status
+      (define (more-status key [success-key #f])
         (if (eq? status 'success)
-            (if (hash-ref ht 'dep-failure-log)
+            (if (hash-ref ht key)
                 'failure
-                'success)
+                (if (or (not success-key)
+                        (hash-ref ht success-key))
+                    'success
+                    'unknown))
             'unknown))
+      (define dep-status (more-status 'dep-failure-log))
+      (define test-status (more-status 'test-failure-log 'test-success-log))
+      (define min-status (more-status 'min-failure-log))
       (define docs (hash-ref ht 'docs))
       (define author (hash-ref ht 'author))
       (define conflicts-log (hash-ref ht 'conflicts-log))
@@ -75,24 +85,54 @@
           (td class: (case status
                        [(failure confusion) "stop"]
                        [(success)
-                        (case dep-status
-                          [(failure) "yield"]
-                          [else "go"])]
+                        (cond
+                         [(eq? dep-status 'failure)
+                          "brake"]
+                         [(eq? test-status 'failure)
+                          "yield"]
+                         [(eq? min-status 'failure)
+                          "ok"]
+                         [else "go"])]
                        [else "unknown"])
               (case status
                 [(failure)
                  (a href: (hash-ref ht 'failure-log)
                     "install fails")]
                 [(success)
-                 (list
-                  (a href: (hash-ref ht 'success-log)
-                     "install succeeds")
-                  (case dep-status
-                    [(failure)
-                     (list
-                      " with "
-                      (a href: (hash-ref ht 'dep-failure-log)
-                         "dependency problems"))]))]
+                 (define results
+                   (append
+                    (list
+                     (a href: (hash-ref ht 'success-log)
+                        "install succeeds"))
+                    (case dep-status
+                      [(failure)
+                       (list
+                        (a href: (hash-ref ht 'dep-failure-log)
+                           "dependency problems"))]
+                      [else null])
+                    (case test-status
+                      [(failure)
+                       (list
+                        (a href: (hash-ref ht 'test-failure-log)
+                           "test failures"))]
+                      [(success)
+                       (list
+                        (a href: (hash-ref ht 'test-success-log)
+                           "no test failures"))]
+                      [else null])
+                    (case min-status
+                      [(failure)
+                       (list
+                        (a href: (hash-ref ht 'min-failure-log)
+                           "extra system dependencies"))]
+                      [else null])))
+                 (if (= 1 (length results))
+                     results
+                     (list* (car results)
+                            " with "
+                            (add-between
+                             (cdr results)
+                             " and with ")))]
                 [(confusion)
                  (list
                   "install both "
@@ -114,8 +154,10 @@
   (define page-headers
     (style/inline @~a|{
                     .go { background-color: #ccffcc }
-                    .stop { background-color: #ffcccc }
+                    .ok { background-color: #ccffff }
                     .yield { background-color: #ffffcc }
+                    .brake { background-color: #ffeecc }
+                    .stop { background-color: #ffcccc }
                     .author { font-size: small; font-weight: normal; }
                     .annotation { font-size: small }
                   }|))

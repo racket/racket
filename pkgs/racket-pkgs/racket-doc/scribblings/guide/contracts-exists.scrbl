@@ -14,7 +14,7 @@ for your data structures.
 @margin-note{
   You can type @racket[#:exists] instead of @racket[#:∃] if you 
 cannot easily type unicode characters; in DrRacket, typing
-@tt{\exists} followed by either alt-\ or control-\ (depending
+@litchar{\exists} followed by either alt-\ or control-\ (depending
 on your platform) will produce @racket[∃].}
 The @racket[contract-out] form allows you to write
 @racketblock[#:∃ _name-of-a-new-contract] as one of its clauses. This declaration
@@ -50,7 +50,7 @@ To ensure that the queue representation is abstract, we can use @racket[#:∃] i
                [empty queue]
                [enq (-> integer? queue queue)]
                [next (-> queue integer?)]
-               [deq (-> queue (listof integer?))]
+               [deq (-> queue queue)]
                [empty? (-> queue boolean?)]))]
 
 Now, if clients of the data structure try to use @racket[car] and @racket[cdr], they

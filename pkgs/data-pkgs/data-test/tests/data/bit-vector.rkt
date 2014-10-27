@@ -87,6 +87,36 @@
                (eq-hash-code (bit-vector #t #f #t #f #t)))
             #f))
 
+(test-case "bit-vector, equal-proc (via equal?)"
+           ;; Zero length bit-vectors are equal...
+           (equal? (make-bit-vector 0 #t)
+                   (make-bit-vector 0 #t))
+           ;; ...even if fill value differed, because it's N/A
+           (equal? (make-bit-vector 0 #t)
+                   (make-bit-vector 0 #f))
+           ;; Check a range of bit lengths spanning a few 8-bit bytes:
+           (for ([len (in-range 1 24)])
+             (check-equal?
+              (equal? (make-bit-vector len #t)
+                      (make-bit-vector len #t))
+              #t)
+             (check-equal?
+              (equal? (make-bit-vector len #t)
+                      (make-bit-vector len #f))
+              #f))
+           ;; Attempt to flush out potential bugs wrt to unused bits
+           ;; that might be set by a "fill" value (implementation
+           ;; detail we don't know for sure here), but should
+           ;; definitely be ignored by equal?.
+           (let ([x (make-bit-vector 1 #t)]  ;#t fill value
+                 [y (make-bit-vector 1 #f)]) ;#f fill value
+             ;; Set the only bit to #t in both
+             (bit-vector-set! x 0 #t)
+             (bit-vector-set! y 0 #t)
+             ;; Should be equal, regardless of different fill values
+             ;; in make-bit-vector:
+             (check-equal? (equal? x y) #t)))
+
 (test-case "for/bit-vector"
            (check-equal? (for/bit-vector ([i 5]) (odd? i))
                          (bit-vector #f #t #f #t #f))

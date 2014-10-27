@@ -25,6 +25,13 @@ popular among Racketeers as well.
 
 @itemlist[
 
+ @item{@hyperlink["https://github.com/greghendershott/racket-mode"]{Racket mode}
+       provides thorough syntax highlighting and DrRacket-style REPL
+       and buffer execution support for Emacs.
+
+       Racket mode can be installed via @hyperlink["http://melpa.milkbox.net"]{MELPA}
+       or manually from the Github repository.}
+
  @item{@hyperlink["http://www.neilvandyke.org/quack/"]{Quack} is an
        extension of Emacs's @tt{scheme-mode} that provides enhanced
        support for Racket, including highlighting and indentation of
@@ -46,13 +53,6 @@ popular among Racketeers as well.
 
        Debian and Ubuntu packages for Geiser are available under the
        name @tt{geiser}.}
-
- @item{@hyperlink["https://github.com/greghendershott/racket-mode"]{Racket mode}
-       provides thorough syntax highlighting and DrRacket-style REPL
-       and buffer execution support for Emacs.
-
-       Racket mode can be installed via @hyperlink["http://melpa.milkbox.net"]{MELPA}
-       or manually from the Github repository.}
 
  @item{Emacs ships with a major mode for Scheme, @tt{scheme-mode},
        that while not as featureful as the above options, but works
@@ -213,3 +213,10 @@ recommend using a plugin that will make loading other plugins easier.
 @hyperlink["http://www.vim.org/scripts/script.php?script_id=2332"]{Pathogen} is
 one plugin that does this; using it, you can install new plugins by extracting
 them to subdirectories in the @filepath{bundle} folder of your Vim installation.
+
+@; ------------------------------------------------------------
+
+@section{Sublime Text}
+
+The @hyperlink["https://sublime.wbond.net/packages/Racket"]{Racket package}
+provides support for syntax highlighting and building for Sublime Text.

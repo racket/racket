@@ -260,6 +260,14 @@
 (err/rt-test (read-line (current-input-port) 8))
 (err/rt-test (read-line (current-input-port) 'anyx))
 
+(when (file-exists? "/dev/zero")
+  ;; Make sure read-line is interruptable on a primitive port that
+  ;; has no line ending:
+  (define t (thread (lambda () (call-with-input-file* "/dev/zero" read-line))))
+  (sleep 0.1)
+  (kill-thread t)
+  (test #t thread-dead? t))
+
 (arity-test open-input-file 1 1)
 (err/rt-test (open-input-file 8))
 (err/rt-test (open-input-file "x" 8))
@@ -1701,6 +1709,42 @@
             (for/hash ([f (mk)])
               (values f #t)))))
   (delete-directory/files tmp-dir))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test `make[-parent]-directory`
+
+(let ()
+  (define tmp (find-system-path 'temp-dir))
+  (define (check build-z-dir-path pick-directory)
+    (define made (make-temporary-file "check-make-~a" 'directory))
+    (define z-dir (build-z-dir-path made "x" "y"))
+    (define z (build-path z-dir "z"))
+    (parameterize ([current-directory (pick-directory made)])
+      (test #f directory-exists? z-dir)
+      (test #f file-exists? z)
+      (make-parent-directory* z)
+      (test #t directory-exists? z-dir)
+      (make-parent-directory* z)
+      (delete-directory/files z-dir)
+      (test #f directory-exists? z-dir)
+      (make-directory* z)
+      (test #t directory-exists? z-dir)
+      (test #t directory-exists? z)
+      (make-directory* z)
+      (make-parent-directory* z))
+    (delete-directory/files made))
+  (check build-path (lambda (made) (current-directory)))
+  (check (lambda args (apply build-path (cdr args))) values)
+  (check (lambda args (apply build-path 'same (cdr args))) values))
+
+;; Check on a current directory that does not exist:
+(let ()  
+  (define made (make-temporary-file "check-make-~a" 'directory))
+  (parameterize ([current-directory (build-path made "nonesuch")])
+    (make-parent-directory* "z")
+    (test #f directory-exists? (current-directory))
+    (err/rt-test (make-directory* "z") exn:fail:filesystem?))
+  (delete-directory/files made))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that `in-directory' fails properly on filesystem errors

@@ -1,34 +1,10 @@
-The "libffi" directory holds a copy of libffi (just after version 3.0.13).
-Similarly, The "libffi_msvc" directory holds a copy of the libffi
-version from the CTypes project.
-
+The "libffi" directory holds a copy of libffi version 3.1.
 The libffi code is distributed under an LGPL-compatible license.
-CTypes is under the MIT License.
 
-========== libffi directory =============================================
-
-Our copy of libffi for Racket has been changed in a few small
-ways at git commit c3c40e0290377d7cf948b072eedd8317c4bf215e from
-
- http://github.com/atgreen/libffi
-
-Local changes:
+Our copy of libffi for Racket has been changed in a few small:
 
  * Test ftruncate() result in "closures.c" to avoid a compiler
    warning.
 
  * In "x86/darwin.S", added ".long 0" after ".LFE3:" to avoid
    linker problems compiling with gcc-4.0 on Mac OS X 10.7.
-
- * In "x86/ffi.c" for Win32, don't try to align stack for
-   stdcall, fastcall, or thiscall.
-
- * In "x86/freebsd.S", align the stack pointer to 16 bytes.
-
-========== libffi_msvc directory =====================================
-
-This directory is synced from the CTypes repository
-
-  http://svn.python.org/projects/ctypes/trunk/ctypes
-
-revision 60274.
