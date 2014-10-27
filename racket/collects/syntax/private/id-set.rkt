@@ -1,118 +1,87 @@
 #lang racket/base
 (require (for-syntax racket/base syntax/parse syntax/stx racket/syntax)
-         racket/set racket/dict racket/sequence racket/stream racket/syntax
+         racket/set racket/dict racket/sequence racket/stream
          syntax/id-table)
   
-;; TODO
-;; - generalize and impl bound-id sets
-;; - add contracts
-;; - support generic set interface
-;; - support generic sequence interface(?)
-;; - better error msgs?
-
-;; fns with standard free-id-set- or bound-id-set- prefix
-(define-for-syntax ID-SET-PREFIXED-FNS
-  #'(empty? count member? first rest >stream >list copy copy-clear map for-each))
-;; fns with both mutable and immutable versions
-(define-for-syntax ID-SET-IMMUT/MUT-FNS
-  #'(add remove clear union intersect subtract symmetric-difference))
-;; other functions that have a different prefix (eg free-id-)
-(define-for-syntax ID-SET-ALT-PREFIXED-FNS #'(set? set=? subset? proper-subset?))
-
-;; fns with standard free-id-table- or bound-id-table- prefix
-(define-for-syntax ID-TABLE-FNS
-  #'(ref set set! remove remove! map for-each count first next iterate-key iterate-first))
-        
-(define-for-syntax ID-SET-FNS #'(empty?))
-
-(define-for-syntax (mk-pred id) (format-id id "~a?" id))
-
-(define-syntax (define-and-provide-id-set-fns stx)
+;; id formatting helper fns ---------------------------------------------------
+;; mk-pred-name : identifier -> identifier
+(define-for-syntax (fmt-pred-name id) (format-id id "~a?" id))
+;; fmt-set-id-fn-name : identifier string -> identifier
+;; (fmt-set-id-fn-name #'free "empty?") => #'free-id-set-empty?
+(define-for-syntax (fmt-set-id-fn-name set-id-type set-fn-name)
+  (format-id set-id-type (string-append "~a-id-set-" set-fn-name) set-id-type))
+;; fmt-table-id-fn-name : identifier string -> identifier
+;; (fmt-table-id-fn-name #'free "ref") => #'free-id-table-ref
+(define-for-syntax (fmt-tbl-id-fn-name tbl-id-type tbl-fn-name)
+  (format-id tbl-id-type (string-append "~a-id-table-" tbl-fn-name) tbl-id-type))
+;; fmt-id : string identifier -> identifier
+;; format id where id is used as both the ctx and the single str escape
+(define-for-syntax (fmt-id str-pat id) (format-id id str-pat id))
+                    
+;; defines and provides functions for an identifier set,
+;; where type = free or bound
+(define-syntax (define-and-provide-id-set stx)
   (syntax-parse stx
     [(_ #:type type)
-     #:with id-set (format-id #'type "~a-id-set" #'type)
-     #:with mutable-id-set (format-id #'id-set "mutable-~a" #'id-set)
-     #:with mk-mutable-id-set (format-id #'mutable-id-set "make-~a" #'mutable-id-set)
-     #:with immutable-id-set (format-id #'id-set "immutable-~a" #'id-set)
-     #:with mk-immutable-id-set (format-id #'immutable-id-set "make-~a" #'immutable-id-set)
-     #:with id-set? (mk-pred #'id-set)
-     #:with mutable-id-set? (mk-pred #'mutable-id-set)
-     #:with immutable-id-set? (mk-pred #'immutable-id-set)
-;     #:with in-id-set-fn-name (format-id #'type "in-id-set") 
-;     #:with in-id-set-fn (format-id #'type "in-~a-id-set" #'type) ; in-set
-     #:with id-set-table (format-id #'type "~a-id-set-table" #'type)
-     #:with id-set-empty? (format-id #'type "~a-id-set-empty?" #'type)
-     #:with id-set-count (format-id #'type "~a-id-set-count" #'type)
-     #:with id-set-member? (format-id #'type "~a-id-set-member?" #'type)
-     #:with id-set=? (format-id #'type "~a-id-set=?" #'type)
-     #:with id-set-add (format-id #'type "~a-id-set-add" #'type)
-     #:with id-set-add! (format-id #'type "~a-id-set-add!" #'type)
-     #:with id-set-remove (format-id #'type "~a-id-set-remove" #'type)
-     #:with id-set-remove! (format-id #'type "~a-id-set-remove!" #'type)
-     #:with id-set-first (format-id #'type "~a-id-set-first" #'type)
-     #:with id-set-rest (format-id #'type "~a-id-set-rest" #'type)
-     #:with in-id-set (format-id #'type "in-~a-id-set" #'type)
-     #:with id-set->stream (format-id #'type "~a-id-set->stream" #'type)
-     #:with id-set->list (format-id #'type "~a-id-set->list" #'type)
-     #:with id-set-copy (format-id #'type "~a-id-set-copy" #'type)
-     #:with id-set-copy-clear (format-id #'type "~a-id-set-copy-clear" #'type)
-     #:with id-set-clear (format-id #'type "~a-id-set-clear" #'type)
-     #:with id-set-clear! (format-id #'type "~a-id-set-clear!" #'type)
-     #:with id-set-union (format-id #'type "~a-id-set-union" #'type)
-     #:with id-set-union! (format-id #'type "~a-id-set-union!" #'type)
-     #:with id-set-intersect (format-id #'type "~a-id-set-intersect" #'type)
-     #:with id-set-intersect! (format-id #'type "~a-id-set-intersect!" #'type)
-     #:with id-set-subtract (format-id #'type "~a-id-set-subtract" #'type)
-     #:with id-set-subtract! (format-id #'type "~a-id-set-subtract!" #'type)
-     #:with id-set-symmetric-difference (format-id #'type "~a-id-set-symmetric-difference" #'type)
-     #:with id-set-symmetric-difference! (format-id #'type "~a-id-set-symmetric-difference!" #'type)
-     #:with id-subset? (format-id #'type "~a-id-subset?" #'type)
-     #:with id-proper-subset? (format-id #'type "~a-id-proper-subset?" #'type)
-     #:with id-set-map (format-id #'type "~a-id-set-map" #'type)
-     #:with id-set-for-each (format-id #'type "~a-id-set-for-each" #'type)
-;     #:with (id-set-fn-name ...)
-;            (append 
-;             (stx-map (λ (f) (format-id #'type "id-set-~a" f)) ID-SET-FNS)
-;             #;(stx-map (λ (f) (format-id #'type "id-set-~a" f)) ID-SET-PREFIXED-FNS)
-;             #;(stx-map (λ (f) (format-id #'type "id-set-~a" f)) ID-SET-IMMUT/MUT-FNS)
-;             #;(stx-map (λ (f) (format-id #'type "id-set-~a!" f)) ID-SET-IMMUT/MUT-FNS)
-;             #;(stx-map (λ (f) (format-id #'type "id-~a" f)) ID-SET-ALT-PREFIXED-FNS))
-;     #:with (id-set-fn ...) 
-;            (stx-map 
-;             (λ (f) (format-id #'type "~a-~a" #'type f)) 
-;             #'(id-set-fn-name ...))
-     #:with make-mutable-id-table (format-id #'type "make-~a-id-table" #'type)
-     #:with make-immutable-id-table (format-id #'type "make-immutable-~a-id-table" #'type)
-     #:with id-table-ref (format-id #'type "~a-id-table-ref" #'type)
-     #:with id-table-set (format-id #'type "~a-id-table-set" #'type)
-     #:with id-table-set! (format-id #'type "~a-id-table-set!" #'type)
-     #:with id-table-remove (format-id #'type "~a-id-table-remove" #'type)
-     #:with id-table-remove! (format-id #'type "~a-id-table-remove!" #'type)
-     #:with id-table-map (format-id #'type "~a-id-table-map" #'type)
-     #:with id-table-for-each (format-id #'type "~a-id-table-for-each" #'type)
-     #:with id-table-count (format-id #'type "~a-id-table-count" #'type)
-     #:with id-table-first (format-id #'type "~a-id-table-first" #'type)
-     #:with id-table-next (format-id #'type "~a-id-table-next" #'type)
-     #:with id-table-iterate-key  (format-id #'type "~a-id-table-iterate-key" #'type)
-     #:with id-table-iterate-first (format-id #'type "~a-id-table-iterate-first" #'type)
-;     #:with (id-table-fn-name ...)
-;            (append 
-;              (stx-map (λ (f) (format-id #'type "id-table-~a" f)) ID-TABLE-FNS))
-;     #:with (id-table-fn ...) 
-;            (stx-map 
-;             (λ (f) (format-id f "~a-~a" #'type f)) 
-;             #'(id-table-fn-name ...))
-;     #:with (in-id-set-fn-name id-set-fn-name ...) (in-id-set-fn id-set-fn ...)
-;     #:when (stx-map (λ (f) (printf "~a\n" f)) #'(id-table-fn-name ...))
-;     #:when (stx-map (λ (f) (printf "~a\n" f)) #'(id-table-fn ...))
+     ;; names for id-set fns --------------------------------------------------
+     #:with id-set (fmt-id "~a-id-set" #'type)
+     #:with mutable-id-set (fmt-id "mutable-~a" #'id-set)
+     #:with mk-mutable-id-set (fmt-id"make-~a" #'mutable-id-set)
+     #:with immutable-id-set (fmt-id "immutable-~a" #'id-set)
+     #:with mk-immutable-id-set (fmt-id "make-~a" #'immutable-id-set)
+     #:with id-set? (fmt-pred-name #'id-set)
+     #:with mutable-id-set? (fmt-pred-name #'mutable-id-set)
+     #:with immutable-id-set? (fmt-pred-name #'immutable-id-set)
+     #:with id-set-get-table (fmt-set-id-fn-name #'type "table") ; internal table accessor
+     #:with id-set-empty? (fmt-set-id-fn-name #'type "empty?")
+     #:with id-set-count (fmt-set-id-fn-name #'type "count")
+     #:with id-set-member? (fmt-set-id-fn-name #'type "member?")
+     #:with id-set-add (fmt-set-id-fn-name #'type "add")
+     #:with id-set-add! (fmt-set-id-fn-name #'type "add!")
+     #:with id-set-remove (fmt-set-id-fn-name #'type "remove")
+     #:with id-set-remove! (fmt-set-id-fn-name #'type "remove!")
+     #:with id-set-first (fmt-set-id-fn-name #'type "first")
+     #:with id-set-rest (fmt-set-id-fn-name #'type "rest")
+     #:with id-set->stream (fmt-set-id-fn-name #'type ">stream")
+     #:with id-set->list (fmt-set-id-fn-name #'type ">list")
+     #:with id-set-copy (fmt-set-id-fn-name #'type "copy")
+     #:with id-set-copy-clear (fmt-set-id-fn-name #'type "copy-clear")
+     #:with id-set-clear (fmt-set-id-fn-name #'type "clear")
+     #:with id-set-clear! (fmt-set-id-fn-name #'type "clear!")
+     #:with id-set-union (fmt-set-id-fn-name #'type "union")
+     #:with id-set-union! (fmt-set-id-fn-name #'type "union!")
+     #:with id-set-intersect (fmt-set-id-fn-name #'type "intersect")
+     #:with id-set-intersect! (fmt-set-id-fn-name #'type "intersect!")
+     #:with id-set-subtract (fmt-set-id-fn-name #'type "subtract")
+     #:with id-set-subtract! (fmt-set-id-fn-name #'type "subtract!")
+     #:with id-set-symmetric-difference (fmt-set-id-fn-name #'type "symmetric-difference")
+     #:with id-set-symmetric-difference! (fmt-set-id-fn-name #'type "symmetric-difference!")
+     #:with id-set-map (fmt-set-id-fn-name #'type "map")
+     #:with id-set-for-each (fmt-set-id-fn-name #'type "for-each")
+     ;; these fns don't have the conventional (eg "free-id-set-") prefix
+     #:with id-subset? (fmt-id "~a-id-subset?" #'type)
+     #:with id-proper-subset? (fmt-id "~a-id-proper-subset?" #'type)
+     #:with in-id-set (fmt-id "in-~a-id-set" #'type)
+     #:with id-set=? (fmt-id "~a-id-set=?" #'type)
+     ;; names for id-table fns ------------------------------------------------
+     #:with make-mutable-id-table (fmt-id "make-~a-id-table" #'type)
+     #:with make-immutable-id-table (fmt-id "make-immutable-~a-id-table" #'type)
+     #:with id-table-ref (fmt-tbl-id-fn-name #'type "ref")
+     #:with id-table-set (fmt-tbl-id-fn-name #'type "set")
+     #:with id-table-set! (fmt-tbl-id-fn-name #'type "set!")
+     #:with id-table-remove (fmt-tbl-id-fn-name #'type "remove")
+     #:with id-table-remove! (fmt-tbl-id-fn-name #'type "remove!")
+     #:with id-table-map (fmt-tbl-id-fn-name #'type "map")
+     #:with id-table-for-each (fmt-tbl-id-fn-name #'type "for-each")
+     #:with id-table-count (fmt-tbl-id-fn-name #'type "count")
+     #:with id-table-first (fmt-tbl-id-fn-name #'type "first")
+     #:with id-table-next (fmt-tbl-id-fn-name #'type "next")
+     #:with id-table-iterate-key  (fmt-tbl-id-fn-name #'type "iterate-key")
+     #:with id-table-iterate-first (fmt-tbl-id-fn-name #'type "iterate-first")
      #'(begin
-;         (define/with-syntax (id-set-fn-name ...) #'(id-set-fn ...))
-;        (define-syntaxes (id-set-fn-name ...)
-;          (values (make-rename-transformer (syntax id-set-fn)) ...))
          (provide 
           (rename-out [mk-mutable-id-set mutable-id-set]
                       [mk-immutable-id-set immutable-id-set])
-;          in-id-set-fn id-set-fn ...)
           id-set?
           mutable-id-set?
           immutable-id-set?
@@ -146,32 +115,34 @@
           id-set-map
           id-set-for-each)
 
+         ;; implementations here are copied from racket/private/set-types.rkt
+         
          ;; set predicates
          (define (id-set-member? s x) 
-           (id-table-ref (id-set-table s) x #f))
+           (id-table-ref (id-set-get-table s) x #f))
 
          (define (id-set=? s1 s2)
-           (define table1 (id-set-table s1))
-           (define table2 (id-set-table s2))
+           (define table1 (id-set-get-table s1))
+           (define table2 (id-set-get-table s2))
            (and (for/and ([id (in-dict-keys table1)]) (id-table-ref table2 id #f))
                 (for/and ([id (in-dict-keys table2)]) (id-table-ref table1 id #f))))
 
-         ;; add/remove
-         (define (id-set-add s x)
-           (immutable-id-set (id-table-set (id-set-table s) x #t)))
-         (define (id-set-add! s x)
-           (id-table-set! (id-set-table s) x #t))
-         
-         (define (id-set-remove s x)
-           (immutable-id-set (id-table-remove (id-set-table s) x)))
-         (define (id-set-remove! s x)
-           (id-table-remove! (id-set-table s) x))
-
          (define (id-set-count s)
-           (id-table-count (id-set-table s)))
+           (id-table-count (id-set-get-table s)))
          
          (define (id-set-empty? s)
            (zero? (id-set-count s))) 
+
+         ;; add/remove/copy
+         (define (id-set-add s x)
+           (immutable-id-set (id-table-set (id-set-get-table s) x #t)))
+         (define (id-set-add! s x)
+           (id-table-set! (id-set-get-table s) x #t))
+         
+         (define (id-set-remove s x)
+           (immutable-id-set (id-table-remove (id-set-get-table s) x)))
+         (define (id-set-remove! s x)
+           (id-table-remove! (id-set-get-table s) x))
 
          ;; Can't just copy id-table because there's no copy function or dict-copy
          (define (id-set-copy s)
@@ -185,30 +156,30 @@
                (mk-immutable-id-set null)))
          
          (define (id-set-clear s)
-           (immutable-id-set (dict-clear (id-set-table s))))
+           (immutable-id-set (dict-clear (id-set-get-table s))))
          (define (id-set-clear! s)
-           (define table (id-set-table s))
+           (define table (id-set-get-table s))
            (dict-clear! table)
            (mutable-id-set table))
         
          ;; set traversals
          (define (id-set-first s)
-           (define table (id-set-table s))
+           (define table (id-set-get-table s))
            (id-table-iterate-key table (id-table-iterate-first table)))
          
          ;; id-set-rest is undefined for mutable sets
          ;; and thus always returns a mutable set
          (define (id-set-rest s)
-           (define table (id-set-table s))
+           (define table (id-set-get-table s))
            (define i (id-table-iterate-first table))
            (immutable-id-set (id-table-remove table (id-table-iterate-key table i))))
          
          (define (in-id-set s)
-           (in-dict-keys (id-set-table s)))
+           (in-dict-keys (id-set-get-table s)))
          (define (id-set->stream s)
            (sequence->stream (in-id-set s)))
          (define (id-set->list s)
-           (for/fold ([ids '()]) ([id (in-dict-keys (id-set-table s))])
+           (for/fold ([ids '()]) ([id (in-dict-keys (id-set-get-table s))])
              (cons id ids)))
          
          ;; -------------------------------------------------------------------
@@ -232,25 +203,25 @@
            (define largest-immutable (choose-largest-immutable set0 ss))
            (immutable-id-set
             (for/fold
-                ([table (id-set-table largest-immutable)])
+                ([table (id-set-get-table largest-immutable)])
               ([s (in-list (cons set0 ss))]
                #:unless (eq? s largest-immutable))
-              (for/fold ([table table]) ([id (in-dict-keys (id-set-table s))])
+              (for/fold ([table table]) ([id (in-dict-keys (id-set-get-table s))])
                 (id-table-set table id #t)))))
          (define (id-set-union! set0 . ss)
            (unless (mutable-id-set? set0)
              (error 'id-set-union! "expected mutable id set in: ~a" set0))
-           (define table (id-set-table set0))
+           (define table (id-set-get-table set0))
            (for ([s (in-list ss)])
-             (for ([id (in-dict-keys (id-set-table s))])
+             (for ([id (in-dict-keys (id-set-get-table s))])
                (id-table-set! table id #t))))
          
          (define (id-set-intersect set0 . ss)
            (unless (immutable-id-set? set0)
              (error 'id-set-intersect "expected immutable id set in: ~a" set0))
            (define smallest-immutable (choose-smallest-immutable set0 ss))
-           (define smallest-table (id-set-table smallest-immutable))
-           (define all-tables-seq (in-list (map id-set-table (cons set0 ss))))
+           (define smallest-table (id-set-get-table smallest-immutable))
+           (define all-tables-seq (in-list (map id-set-get-table (cons set0 ss))))
            (define (keep? id)
              (for/and ([table all-tables-seq] #:unless (eq? table smallest-table))
                (id-table-ref table id #f)))
@@ -261,12 +232,12 @@
          (define (id-set-intersect! set0 . ss)
            (unless (mutable-id-set? set0)
              (error 'id-set-intersect! "expected mutable id set in: ~a" set0))
-           (define tables-seq (in-list (map id-set-table ss)))
+           (define tables-seq (in-list (map id-set-get-table ss)))
            (define (keep? id)
              (for/and ([table tables-seq])
                (printf "keep? ~a = ~a\n" id (id-table-ref table id #f))
                (id-table-ref table id #f)))
-           (define table0 (id-set-table set0))
+           (define table0 (id-set-get-table set0))
            ;; use dict-keys (instead of in-dict-keys) to grab all keys ahead of time
            ;; bc we will possibly be removing some of them
            (for ([id (dict-keys table0)] #:unless (keep? id))
@@ -275,11 +246,11 @@
          (define (id-set-subtract set0 . ss)
            (unless (immutable-id-set? set0)
              (error 'id-set-subtract "expected immutable id set in: ~a" set0))
-           (define tables-seq (in-list (map id-set-table ss)))
+           (define tables-seq (in-list (map id-set-get-table ss)))
            (define (remove? id)
              (for/or ([table tables-seq])
                (id-table-ref table id #f)))
-           (define table0 (id-set-table set0))
+           (define table0 (id-set-get-table set0))
            (immutable-id-set
             (for/fold ([table table0])
               ([id (in-dict-keys table0)] #:when (remove? id))
@@ -287,11 +258,11 @@
          (define (id-set-subtract! set0 . ss)
            (unless (mutable-id-set? set0)
              (error 'id-set-subtract! "expected mutable id set in: ~a" set0))
-           (define tables-seq (in-list (map id-set-table ss)))
+           (define tables-seq (in-list (map id-set-get-table ss)))
            (define (remove? id)
              (for/or ([table tables-seq])
                (id-table-ref table id #f)))
-           (define table0 (id-set-table set0))
+           (define table0 (id-set-get-table set0))
            ;; use dict-keys (instead of in-dict-keys) to grab all keys ahead of time
            ;; bc we will possibly be removing some of them
            (for ([id (dict-keys table0)] #:when (remove? id))
@@ -303,9 +274,9 @@
                     "expected immutable id set in: ~a" set0))
            (define largest-immutable (choose-largest-immutable set0 ss))
            (immutable-id-set
-            (for/fold ([table (id-set-table largest-immutable)])
+            (for/fold ([table (id-set-get-table largest-immutable)])
               ([s (in-list (cons set0 ss))] #:unless (eq? s largest-immutable))
-              (for/fold ([table table]) ([id (in-dict-keys (id-set-table s))])
+              (for/fold ([table table]) ([id (in-dict-keys (id-set-get-table s))])
                 (if (id-table-ref table id #f)
                     (id-table-remove table id)
                     (id-table-set table id #t))))))
@@ -313,33 +284,33 @@
            (unless (mutable-id-set? set0)
              (error 'id-set-symmetric-difference!
                     "expected mutable id set in: ~a" set0))
-           (define table (id-set-table set0))
+           (define table (id-set-get-table set0))
            (for ([s (in-list ss)])
-             (for ([id (in-dict-keys (id-set-table s))])
+             (for ([id (in-dict-keys (id-set-get-table s))])
                (if (id-table-ref table id #f)
                    (id-table-remove! table id)
                    (id-table-set! table id #t)))))
          
          (define (id-subset? s1 s2)
-           (define table1 (id-set-table s1))
-           (define table2 (id-set-table s2))
+           (define table1 (id-set-get-table s1))
+           (define table2 (id-set-get-table s2))
            (for/and ([id (in-dict-keys table1)])
              (id-table-ref table2 id #f)))
          
          (define (id-proper-subset? s1 s2)
-           (define table1 (id-set-table s1))
-           (define table2 (id-set-table s2))
+           (define table1 (id-set-get-table s1))
+           (define table2 (id-set-get-table s2))
            (and (for/and ([id (in-dict-keys table1)])
                   (id-table-ref table2 id #f))
                 (for/or ([id (in-dict-keys table2)])
                   (not (id-table-ref table1 id #f)))))
          
          (define (id-set-map s f)
-           (for/fold ([ids null]) ([id (in-dict-keys (id-set-table s))])
+           (for/fold ([ids null]) ([id (in-dict-keys (id-set-get-table s))])
              (cons (f id) ids)))
          
          (define (id-set-for-each s f)
-           (for ([id (in-dict-keys (id-set-table s))]) (f id)))
+           (for ([id (in-dict-keys (id-set-get-table s))]) (f id)))
          
          ;; -------------------------------------------------------------------
          ;; struct defs
@@ -353,13 +324,13 @@
            #:property prop:sequence in-id-set
            #:methods gen:equal+hash
            [(define (equal-proc s1 s2 rec)
-              (rec (id-set-table s1)
-                (id-set-table s2)))
+              (rec (id-set-get-table s1)
+                (id-set-get-table s2)))
             (define (hash-proc s rec)
-              (+ (rec (id-set-table s))
+              (+ (rec (id-set-get-table s))
                  id-set-hash-constant))
             (define (hash2-proc s rec)
-              (+ (rec (id-set-table s))
+              (+ (rec (id-set-get-table s))
                  id-set-hash-constant2))])
          (struct mutable-id-set id-set ()
            #:methods gen:set
@@ -427,9 +398,7 @@
            (immutable-id-set 
             (make-immutable-id-table 
              (for/hash ([x (in-set init-set)]) (values x #t))
-             #:phase phase)))
-         
-         )]))
+             #:phase phase))))]))
 
-(define-and-provide-id-set-fns #:type free)
-(define-and-provide-id-set-fns #:type bound)
+(define-and-provide-id-set #:type free)
+(define-and-provide-id-set #:type bound)
