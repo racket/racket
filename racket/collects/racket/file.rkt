@@ -45,14 +45,6 @@
 
 (require "private/portlines.rkt")
 
-;; utility: sorted dirlist so functions are deterministic
-(define (sorted-dirlist [dir (current-directory)])
-  (let* ([ps (directory-list dir)]
-         [ps (map (lambda (p) (cons (path->string p) p)) ps)]
-         [ps (sort ps (lambda (p1 p2) (string<? (car p1) (car p2))))]
-         [ps (map cdr ps)])
-    ps))
-
 (define (delete-directory/files path
                                 #:must-exist? [must-exist? #t])
   (unless (path-string? path)
@@ -63,7 +55,7 @@
       (delete-file path)]
      [(directory-exists? path)
       (for-each (lambda (e) (loop (build-path path e)))
-                (sorted-dirlist path))
+                (directory-list path))
       (delete-directory path)]
      [else
       (when must-exist?
@@ -91,7 +83,7 @@
            (for-each (lambda (e)
                        (loop (build-path src e)
                              (build-path dest e)))
-                     (sorted-dirlist src))]
+                     (directory-list src))]
           [else (raise-not-a-file-or-directory 'copy-directory/files src)])))
 
 (define (make-directory* dir)
@@ -625,7 +617,7 @@
                (lambda (acc [descend? #t])
                  (if descend?
                    (do-paths (map (lambda (p) (build-path path p))
-                                  (sorted-dirlist path))
+                                  (directory-list path))
                              acc)
                    acc)))]
           [(file-exists? path) (keep-fst (f path 'file acc))]
@@ -635,7 +627,7 @@
     (cond [(null? paths) acc]
           [else (do-paths (cdr paths) (do-path (car paths) acc))]))
   (define (to-path s) (if (path? s) s (string->path s)))
-  (if path (do-path (to-path path) init) (do-paths (sorted-dirlist) init)))
+  (if path (do-path (to-path path) init) (do-paths (directory-list) init)))
 
 (define (find-files f [path #f] #:follow-links? [follow-links? #t])
   (reverse
