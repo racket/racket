@@ -28,7 +28,7 @@ starts with the current release, periodically checks for package
 updates, and attempts to build each package that has changed or has a
 dependency that has changed.}
 
-                    @p{If a package installation succeeds, any
+                    @p{When a package installation succeeds,
 tests in the package are run with}
 
                     @pre{  raco test --drdr}
@@ -37,7 +37,7 @@ tests in the package are run with}
 
                     @p{Packages are built on a 64-bit Linux virtual
 machine (VM) that is isolated from the network. Each package build
-starts with a fresh instance of the virtual machine, and built
+starts with a fresh instance of the virtual machine, and
 packages are re-packaged in built form for use by other
 packages. Testing of a package starts with a fresh instance of the
 virtual machine and a fresh installation of the package from its built
@@ -56,7 +56,7 @@ depends on one of those, then the package installation fails, because
 package builds are performed on a VM without network
 connectivity.}
 
-                    @hx{The Package-Build Machine is Minimal}
+                    @hx{Few System Libraries are Installed}
 
                     @p{Each package is installed on a minimal VM that
 omits as many system libraries and tools as is practical. If building
@@ -71,15 +71,8 @@ package generally shouldn@|rsquo|t rely on tools that a Racket user
 may not have installed@|mdash|and so it@|rsquo|s worth reporting
 those problems from the package-build service. At the same time, a
 package might be intended to work only in a typical Unix setup, and
-disallowing access a C compiler would be especially uncooperative of
+witholding a C compiler, for example, would be especially uncooperative of
 the package-build service.}
-
-                    @hx{Foreign Libraries Need Special Handling}
-
-                    @p{Even on the extend VM, the available system
-libraries are limited. See @a[href: "#foreign"]{Working with Foreign
-Libraries} below for information on implementing packages that rely on
-foreign libraries.}
 
                     @hx{Test Capabilities May Be Limited}
 
@@ -87,6 +80,13 @@ foreign libraries.}
 connectivity, or other constraints may prevent the package-build
 service from straighforwardly running a package@|rsquo|s tests. See
 @a[href: "#test"]{Dealing with Test Failures}.}
+
+                    @hx{Native Libraries Need Special Handling}
+
+                    @p{Even on the extended VM, the available system
+libraries are limited. See @a[href: "#foreign"]{Working with Native
+Libraries} below for information on implementing packages that rely on
+additional native libraries.}
 
                     @; ----------------------------------------
                     @h3[name: "test"]{Dealing Test Failures}
@@ -105,7 +105,7 @@ causes the test to time out.}
                     @p{}
 
                     @p{to make @tt{raco test} ignore the enclosing
-module. You can control @tt{raco test} in various other ways with
+module. You can control @tt{raco test} in various other ways through
 submodules and @tt{"info.rkt"} files@";" see
 @a[href: "http://docs.racket-lang.org/raco/test.html"]{the
 documentation}.}
@@ -114,12 +114,12 @@ documentation}.}
 overall timeout for testing a package is 10 minutes. You can adjust the
 former, but the latter is a hard limit for now.}
 
-                    @p{Tests are always run on the extended VM, but
+                    @p{Tests are always run on the extended VM, but even so,
 sometimes the package-build service cannot run a package@|rsquo|s tests. For
 example, if a package needs network access for testing, the
 package-build service can@|rsquo|t help, because it runs on an isolated
-VM. There@|rsquo|s no way to @|ldquo|opt out@|rdquo| of packaging
-testing, but a package author can adjust a test suite to skip tests
+VM. There@|rsquo|s no way for a package to opt out of
+testing, but a package author can implement a test suite that skip tests
 under adverse conditions. In case there@|rsquo|s no other way for a test
 suite to determine that it can@|rsquo|t run, the package-build service sets
 the @tt{PLT_PKG_BUILD_SERVICE} environment variable when running
@@ -128,11 +128,11 @@ variable and skip tests that can@|rsquo|t work.}
 
 
                     @; ----------------------------------------
-                    @h3[name: "foreign"]{Handling Foreign Libraries}
+                    @h3[name: "foreign"]{Working with Native Libraries}
 
                     @p{The @|ldquo|minimal@|rdquo| versus
 @|ldquo|extended@|rdquo| VM distinction begs the question of how the
-package-build service can support a package that relies on a foreign
+package-build service can support a package that relies on a native
 library@|mdash|one that is not installed even on the extended VM.}
 
                     @p{It would be nice to have a bridge between the
@@ -145,11 +145,11 @@ seem complex enough that we haven@|rsquo|t embarked on that direction.}
                     @p{For now, the package-build installation
 identifies itself as running on the @tt{"x86_64-linux-natipkg"}
 platform, as opposed to plain @tt{"x86_64-linux"}. On the plain
-@tt{"x86_64-linux"} platform, foreign libraries as needed by Racket
-packages are expected to be installed by a user through the OS@|rsquo|s
-package manager. On the @tt{"x86_64-linux-natipkg"} platform, however,
-foreign libraries are handled as on Windows and Mac OS X: provided by
-platform-specific packages.}
+@tt{"x86_64-linux"} platform, native libraries as needed by Racket
+packages are expected to be installed by a user through the
+OS@|rsquo|s package manager. On the @tt{"x86_64-linux-natipkg"}
+platform, however, native libraries are handled as on Windows and Mac
+OS X: they are expected to be provided by platform-specific packages.}
 
                     @p{For example, on the @tt{"x86_64-linux-natipkg"}
 platform, the @tt{"math-lib"} package depends on the
@@ -161,31 +161,31 @@ builds of GMP and MPFR. You can see that dependency declaration in the
 
                     @p{}
 
-                    @p{If your package depends on a foreign
+                    @p{If your package depends on a native
 library, then you currently have two main options:}
 
                     @hx{Accomodate Unavailable Libraries}
 
-                    @p{One option is to make the package behave when the foreign library is unavailable.}
+                    @p{One option is to make the package behave when the native library is unavailable.}
 
-                    @p{Typically, a foreign library isn@|rsquo|t needed just to build a package
+                    @p{Typically, a native library that is accessed via @tt{ffi/unsafe}
+                       isn@|rsquo|t needed to merely build a package
                        (including its documentation). If possible, delay any use of the
-                       foreign library to run time, and that solves the build problem.}
+                       native library to run time so that the package can build without it.}
 
                     @p{For tests, you can either just let them fail, or you can adjust the
-                       test suite to avoid failure reports when the foreign library is
+                       test suite to avoid failure reports when the native library is
                        unavailable or (if you must) when @tt{PLT_PKG_BUILD_SERVICE} is defined.}
 
                     @hx{Distribute Native Libraries}
 
                     @p{Another option is to build a 64-bit Linux
-version of the foreign library, distribute it as a package, and make
+version of the library, distribute it as a package, and make
 the package a platform-specific dependency of your package for the
 @tt{"x86_64-linux-natipkg"} platform.}
 
-                    @p{This option is in many ways the best one, for
-now@|mdash|especially if Windows and Mac OS X libraries packages
-also provided@|mdash|but it@|rsquo|s more work for a package
-implementer.}
+                    @p{This option is in many ways the best one for
+users and for testing@|mdash|especially if Windows and Mac OS X
+native-library packages are also provided@|mdash|but it@|rsquo|s more work.}
 
                     })))
