@@ -62,7 +62,8 @@ Defines the following names, plus any specified by keyword options.
 
 The @racket[#:defaults] option may be provided at most once.
 When it is provided, each generic function
-uses @racket[default-pred?]s to dispatch to the given default implementations,
+uses @racket[default-pred?]s to dispatch to the given
+@deftech{default method} implementations,
 @racket[default-impl]s, if dispatching to the generic method table fails.
 The syntax of the @racket[default-impl]s is the same as the methods
 provided for the @racket[#:methods] keyword for @racket[struct].
@@ -75,7 +76,8 @@ lists and vectors, that do not overlap with structures implementing
 @racketidfont{gen:}@racket[id].
 
 The @racket[#:fallbacks] option may be provided at most once.
-When it is provided, the @racket[fallback-impl]s define method implementations
+When it is provided, the @racket[fallback-impl]s define
+@deftech{fallback method} implementations
 that are used for any instance of the generic interface that does not supply a
 specific implementation.  The syntax of the @racket[fallback-impl]s is the same
 as the methods provided for the @racket[#:methods] keyword for @racket[struct].
