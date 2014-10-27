@@ -21,23 +21,28 @@
 (define-for-syntax OTHER-SET-OPS
   (mk-set-ops-stx #:prefix "" #:names set=? subset? proper-subset?))
 
-;; ----------------------------------------------------------------------------
-;; Universal Tests
-
-;; usage: (define-id-set-tests #:constructor constr #:interface intfc)
+;; usage: (define-id-set-tests #:type type
+;;                             #:interface intfc)
 ;; where: 
-;;   constr: the name of the constructor, eg immmutable-free-id-set
-;;   intfc: prefix to attach to set functions (eg set for gen:set or free-id-set)
+;;   type: the type of id-set, eg free or bound
+;;   intfc: prefix to attach to set functions (eg gen:set or free-id or bound-id)
 (define-syntax (define-id-set-tests stx)
   (syntax-parse stx
-    [(_ #:constructor mk-free-id-set #:interface intfc)
-     #:with free-id-set-pred? (format-id #'mk-free-id-set "~a?" #'mk-free-id-set)
+    [(_ #:type type #:interface intfc)
+     #:with mk-immutable-id-set (format-id #'type "immutable-~a-id-set" #'type)
+     #:with mk-mutable-id-set (format-id #'type "mutable-~a-id-set" #'type)
+     #:with generic-id-set-pred? (format-id #'type "~a-id-set?" #'type)
+     #:with immutable-id-set-pred? (format-id #'type "immutable-~a" #'generic-id-set-pred?)
+     #:with mutable-id-set-pred? (format-id #'type "mutable-~a" #'generic-id-set-pred?)
+     #:with identifier=? (format-id #'type "~a-identifier=?" #'type)
+     #:with id-set=? (format-id #'type "~a-id-set=?" #'type)
+     #:with id-set-empty? (format-id #'type "~a-id-set-empty?" #'type)
      ;; handle in-set specially
      #:with IN-SET (if (free-identifier=? #'gen:set #'intfc)
                        #'gen:set-in-set
                        (format-id #'intfc "in-~a-set" #'intfc))
-     ;; ops that are parameterized in the tests use upcase convention
      #:with set-ops (append PREFIXED-SET-OPS OTHER-SET-OPS)
+     ;; ops that are parameterized in the tests use upcase convention
      #:with set-op-names (stx-map
                           (compose
                            (λ (symb) (datum->syntax #'here symb))
@@ -48,400 +53,418 @@
                           #'set-ops)
      #:with (set-op-fn-name ...) 
             (stx-map (λ (f) (format-id f "~a-~a" #'intfc f)) #'set-ops)
-     ;; set interface names
-     #'(let-values ([set-op-names (values set-op-fn-name ...)])
-         (define EMPTY (mk-free-id-set))
-         (define ABC (mk-free-id-set (list #'a #'b #'c)))
-         (define ABCD (mk-free-id-set (list #'a #'b #'c #'d)))
+     #'(let-values ([set-op-names (values set-op-fn-name ...)]) ;; define set fn names
+         ;; -------------------------------------------------------------------
+         ;; mutable/immutable combination Tests
 
-         (test #t free-id-set? EMPTY)
-         (test #t free-id-set? ABC)
-         (test #t free-id-set? ABCD)
-         (test #t free-id-set-pred? EMPTY)
-         (test #t free-id-set-pred? ABC)
-         (test #t free-id-set-pred? ABCD)
-
-         (test #t SET-EMPTY? EMPTY)
-         (test #f SET-EMPTY? ABC)
-         (test #f SET-EMPTY? ABCD)
-
-         (test 0 SET-COUNT EMPTY)
-         (test 3 SET-COUNT ABC)
-         (test 4 SET-COUNT ABCD)
-
-         (test #t SET-MEMBER? ABC #'a)
-         (test #t SET-MEMBER? ABC #'b)
-         (test #t SET-MEMBER? ABC #'c)
-         (test #f SET-MEMBER? ABC #'d)
-         (test #t SET-MEMBER? ABCD #'a)
-         (test #t SET-MEMBER? ABCD #'b)
-         (test #t SET-MEMBER? ABCD #'c)
-         (test #t SET-MEMBER? ABCD #'d)
-         (test #t SET-MEMBER? (mk-free-id-set (list #'x)) #'x)
-         (test #f SET-MEMBER? (let ([x 1]) (mk-free-id-set (list #'x))) #'x)
-         (test #f SET-MEMBER? (let ([x 1]) (mk-free-id-set (list #'x))) 
-               (let ([x 1]) #'x))
-         
-         ;; explicit in-free-id-set
-         (test #t SET=? (mk-free-id-set (SET->LIST ABC))
-                        (mk-free-id-set (for/list ([v (IN-SET ABC)]) v)))
-         (test #t SET=? (mk-free-id-set (SET->LIST ABCD))
-                        (let ([seq (IN-SET ABCD)])
-                          (mk-free-id-set (for/list ([v seq]) v))))
-         (test #t sequence? (IN-SET ABCD))
-         (test #f stream? (IN-SET ABCD))
-         (test #t stream? (SET->STREAM ABCD))
-         (test #t sequence? (SET->STREAM ABCD)) 
-         (test #t SET=? (mk-free-id-set (SET->LIST ABCD))
-                        (let ([seq (SET->STREAM ABCD)])
-                          (mk-free-id-set (for/list ([v seq]) v))))
-         (test #t values (let ([noset #t])
-                           (for ([v (IN-SET (mk-free-id-set))]) (set! noset #f))
-                           noset))
-
-         ;; used as implicit sequence
-         (test #t free-id-set=? (mk-free-id-set (SET->LIST ABC))
-                                (mk-free-id-set (for/list ([v ABC]) v)))
-         (test #t free-id-set=? (mk-free-id-set (SET->LIST ABCD))
-                                (let ([seq ABCD]) (mk-free-id-set (for/list ([v seq]) v))))
-         (test #t sequence? ABCD)
-         (test #t values (let ([noset #t])
-                           (for ([v (mk-free-id-set)]) (set! noset #f))
-                           noset))
-
-         (test #t SET=? ABCD (SET-COPY ABCD))
-         (test #t eq? ABCD ABCD)
-         (test #f eq? ABCD (SET-COPY ABCD))
-         (test #t free-id-set-empty? (SET-COPY-CLEAR ABCD))
-         (test #f eq? EMPTY (SET-COPY-CLEAR ABCD))
-         (test #t free-id-set-pred? (SET-COPY ABCD))
-         (test #t free-id-set-pred? (SET-COPY-CLEAR ABCD))
-         
-         ;; test gen:equal+hash
-         (test #t equal? (mk-free-id-set (SET->LIST ABC))
-                         (mk-free-id-set (for/list ([v ABC]) v)))
-         (test #t equal? (mk-free-id-set (SET->LIST ABCD))
-                         (let ([seq ABCD]) (mk-free-id-set (for/list ([v seq]) v))))
-         (test #t equal? ABCD (SET-COPY ABCD))
-         (test #t equal? (equal-hash-code ABC) (equal-hash-code ABC))
-         (test #t equal? (equal-secondary-hash-code ABC)
-                         (equal-secondary-hash-code ABC))
-         (test #t equal? (equal-hash-code (mk-free-id-set (SET->LIST ABC)))
-                         (equal-hash-code (mk-free-id-set (for/list ([v ABC]) v))))
-         (test #t equal? (equal-hash-code (mk-free-id-set (SET->LIST ABCD)))
-                         (equal-hash-code 
-                          (let ([seq ABCD]) (mk-free-id-set (for/list ([v seq]) v)))))
-         (test #t equal? (equal-hash-code ABCD)
-                         (equal-hash-code (SET-COPY ABCD)))
-         (test #t equal? (equal-secondary-hash-code
-                          (mk-free-id-set (SET->LIST ABC)))
-                         (equal-secondary-hash-code
-                          (mk-free-id-set (for/list ([v ABC]) v))))
-         (test #t equal? (equal-secondary-hash-code
-                          (mk-free-id-set (SET->LIST ABCD)))
-                         (equal-secondary-hash-code
-                          (let ([seq ABCD]) (mk-free-id-set (for/list ([v seq]) v)))))
-         (test #t equal? (equal-secondary-hash-code ABCD)
-                         (equal-secondary-hash-code (SET-COPY ABCD)))
+         ;; defines tests for different combinations of compatible set types
+         ;; (eg mutable and immutable id sets), using #:constructor as the 
+         ;; "base" set type (ie the first argument to the set fns)
+         ;; - this macro must be locally defined to capture appropriate set fn names
+         (define-syntax (define-id-set-combo-tests stx)
+           (syntax-parse stx
+             [(_ #:constructor mk-id-set)
+              #:with id-set-pred? (format-id #'mk-id-set "~a?" #'mk-id-set)
+              #'(begin
+                  (define EMPTY (mk-id-set))
+                  (define ABC (mk-id-set (list #'a #'b #'c)))
+                  (define ABCD (mk-id-set (list #'a #'b #'c #'d)))
                   
-         ;; set union
-         (let ()
-           (define EMPTY/MUTABLE (mutable-free-id-set null))
-           (define EMPTY/IMMUTABLE (immutable-free-id-set null))
-           (define ABC-LIST (list #'a #'b #'c))
-           (define ABC/MUTABLE (mutable-free-id-set ABC-LIST))
-           (define ABC/IMMUTABLE (immutable-free-id-set ABC-LIST))
-           (test 3 SET-COUNT (SET-UNION ABC/IMMUTABLE))
-           (test #t SET-EMPTY? (SET-UNION EMPTY/IMMUTABLE))
-           (test 4 SET-COUNT (SET-UNION EMPTY/IMMUTABLE ABCD))
-           (test 4 SET-COUNT (SET-UNION ABC/IMMUTABLE ABCD))
-           (test 3 SET-COUNT (SET-UNION ABC/IMMUTABLE EMPTY))
-           (define IMMUTABLE/UNION/3 
-             (SET-UNION ABC/IMMUTABLE
-                        ABCD
-                        (immutable-free-id-set (list #'d #'e #'f))))
-           (test 6 SET-COUNT IMMUTABLE/UNION/3)
-           (test #t SET-MEMBER? IMMUTABLE/UNION/3 #'d)
-           (test #t SET-MEMBER? IMMUTABLE/UNION/3 #'e)
-           (test #t SET-MEMBER? IMMUTABLE/UNION/3 #'f)
-           
-           (SET-UNION! ABC/MUTABLE)
-           (test 3 SET-COUNT ABC/MUTABLE)
-           (SET-UNION! EMPTY/MUTABLE)
-           (test #t SET-EMPTY? EMPTY/MUTABLE)
-           (SET-UNION! EMPTY/MUTABLE ABCD)
-           (test 4 SET-COUNT EMPTY/MUTABLE)
-           (SET-UNION! ABC/MUTABLE ABCD)
-           (test 4 SET-COUNT ABC/MUTABLE)
-           (SET-UNION! ABC/MUTABLE EMPTY)
-           (test 4 SET-COUNT ABC/MUTABLE)
-           (define MUTABLE/UNION/3 (mutable-free-id-set (list #'a #'b #'c)))
-           (SET-UNION! MUTABLE/UNION/3
-                       ABCD
-                       (mutable-free-id-set (list #'d #'e #'f)))
-           (test 6 SET-COUNT MUTABLE/UNION/3)
-           (test #t SET-MEMBER? MUTABLE/UNION/3 #'d)
-           (test #t SET-MEMBER? MUTABLE/UNION/3 #'e)
-           (test #t SET-MEMBER? MUTABLE/UNION/3 #'f)
-           (void))
+                  (test #t generic-id-set-pred? EMPTY)
+                  (test #t generic-id-set-pred? ABC)
+                  (test #t generic-id-set-pred? ABCD)
+                  (test #t id-set-pred? EMPTY)
+                  (test #t id-set-pred? ABC)
+                  (test #t id-set-pred? ABCD)
+
+                  (test #t SET-EMPTY? EMPTY)
+                  (test #f SET-EMPTY? ABC)
+                  (test #f SET-EMPTY? ABCD)
+                  
+                  (test 0 SET-COUNT EMPTY)
+                  (test 3 SET-COUNT ABC)
+                  (test 4 SET-COUNT ABCD)
+                  
+                  (test #t SET-MEMBER? ABC #'a)
+                  (test #t SET-MEMBER? ABC #'b)
+                  (test #t SET-MEMBER? ABC #'c)
+                  (test #f SET-MEMBER? ABC #'d)
+                  (test #t SET-MEMBER? ABCD #'a)
+                  (test #t SET-MEMBER? ABCD #'b)
+                  (test #t SET-MEMBER? ABCD #'c)
+                  (test #t SET-MEMBER? ABCD #'d)
+                  (test #t SET-MEMBER? (mk-id-set (list #'x)) #'x)
+                  (test #f SET-MEMBER? (let ([x 1]) (mk-id-set (list #'x))) #'x)
+                  (test #f SET-MEMBER? (let ([x 1]) (mk-id-set (list #'x))) 
+                           (let ([x 1]) #'x))
          
-         ;; set intersect
-         (let ()
-           (define EMPTY/MUTABLE (mutable-free-id-set null))
-           (define EMPTY/IMMUTABLE (immutable-free-id-set null))
-           (define ABC-LIST (list #'a #'b #'c))
-           (define ABC/MUTABLE (mutable-free-id-set ABC-LIST))
-           (define ABC/IMMUTABLE (immutable-free-id-set ABC-LIST))
-           (test 3 SET-COUNT (SET-INTERSECT ABC/IMMUTABLE))
-           (test #t SET-EMPTY? (SET-INTERSECT EMPTY/IMMUTABLE))
-           (test 0 SET-COUNT (SET-INTERSECT EMPTY/IMMUTABLE ABCD))
-           (test 3 SET-COUNT (SET-INTERSECT ABC/IMMUTABLE ABCD))
-           (test 0 SET-COUNT (SET-INTERSECT ABC/IMMUTABLE EMPTY))
-           (define IMMUTABLE/INTERSECT/3 
-             (SET-INTERSECT ABC/IMMUTABLE
-                            ABCD
-                            (immutable-free-id-set (list #'b #'c))))
-           (test 2 SET-COUNT IMMUTABLE/INTERSECT/3)
-           (test #f SET-MEMBER? IMMUTABLE/INTERSECT/3 #'a)
-           (test #t SET-MEMBER? IMMUTABLE/INTERSECT/3 #'b)
-           (test #t SET-MEMBER? IMMUTABLE/INTERSECT/3 #'c)
-           
-           (SET-INTERSECT! ABC/MUTABLE)
-           (test 3 SET-COUNT ABC/MUTABLE)
-           (SET-INTERSECT! EMPTY/MUTABLE)
-           (test #t SET-EMPTY? EMPTY/MUTABLE)
-           (SET-INTERSECT! EMPTY/MUTABLE ABCD)
-           (test 0 SET-COUNT EMPTY/MUTABLE)
-           (SET-INTERSECT! ABC/MUTABLE ABCD)
-           (test 3 SET-COUNT ABC/MUTABLE)
-           (test #t SET-MEMBER? ABC/MUTABLE #'a)
-           (test #t SET-MEMBER? ABC/MUTABLE #'b)
-           (test #t SET-MEMBER? ABC/MUTABLE #'c)
-           (test #f SET-MEMBER? ABC/MUTABLE #'d)
-           (test #t mutable-free-id-set? ABC/MUTABLE)
-           (test #t SET-EMPTY? EMPTY)
-           (SET-INTERSECT! ABC/MUTABLE EMPTY)
-           (test 0 SET-COUNT ABC/MUTABLE)
-           (define MUTABLE/INTERSECT/3 (mutable-free-id-set (list #'a #'b #'c)))
-           (SET-INTERSECT! MUTABLE/INTERSECT/3
-                           ABCD
-                           (mutable-free-id-set (list #'a #'b)))
-           (test 2 SET-COUNT MUTABLE/INTERSECT/3)
-           (test #t SET-MEMBER? MUTABLE/INTERSECT/3 #'a)
-           (test #t SET-MEMBER? MUTABLE/INTERSECT/3 #'b)
-           (test #f SET-MEMBER? MUTABLE/INTERSECT/3 #'c)
+                  ;; explicit in-*-id-set sequence iterator
+                  (test #t SET=? (mk-id-set (SET->LIST ABC))
+                                 (mk-id-set (for/list ([v (IN-SET ABC)]) v)))
+                  (test #t SET=? (mk-id-set (SET->LIST ABCD))
+                        (let ([seq (IN-SET ABCD)])
+                          (mk-id-set (for/list ([v seq]) v))))
+                  (test #t sequence? (IN-SET ABCD))
+                  (test #f stream? (IN-SET ABCD))
+                  (test #t stream? (SET->STREAM ABCD))
+                  (test #t sequence? (SET->STREAM ABCD)) 
+                  (test #t SET=? 
+                        (mk-id-set (SET->LIST ABCD))
+                        (let ([seq (SET->STREAM ABCD)])
+                          (mk-id-set (for/list ([v seq]) v))))
+                  (test #t values 
+                          (let ([noset #t])
+                            (for ([v (IN-SET (mk-id-set))]) (set! noset #f))
+                            noset))
+
+                  ;; id-set used as implicit sequence
+                  (test #t SET=? 
+                        (mk-id-set (SET->LIST ABC))
+                        (mk-id-set (for/list ([v ABC]) v)))
+                  (test #t SET=?
+                        (mk-id-set (SET->LIST ABCD))
+                        (let ([seq ABCD]) (mk-id-set (for/list ([v seq]) v))))
+                  (test #t sequence? ABCD)
+                  (test #t values (let ([noset #t])
+                                    (for ([v (mk-id-set)]) (set! noset #f))
+                                    noset))
+
+                  (test #t SET=? ABCD (SET-COPY ABCD))
+                  (test #t eq? ABCD ABCD)
+                  (test #f eq? ABCD (SET-COPY ABCD))
+                  (test #t id-set-empty? (SET-COPY-CLEAR ABCD))
+                  (test #f eq? EMPTY (SET-COPY-CLEAR ABCD))
+                  (test #t id-set-pred? (SET-COPY ABCD))
+                  (test #t id-set-pred? (SET-COPY-CLEAR ABCD))
          
-           (void))
+                  ;; test gen:equal+hash
+                  (test #t equal? 
+                        (mk-id-set (SET->LIST ABC))
+                        (mk-id-set (for/list ([v ABC]) v)))
+                  (test #t equal? 
+                        (mk-id-set (SET->LIST ABCD))
+                        (let ([seq ABCD]) (mk-id-set (for/list ([v seq]) v))))
+                  (test #t equal? ABCD (SET-COPY ABCD))
+                  (test #t equal? (equal-hash-code ABC) (equal-hash-code ABC))
+                  (test #t equal?
+                        (equal-secondary-hash-code ABC)
+                        (equal-secondary-hash-code ABC))
+                  (test #t equal? 
+                        (equal-hash-code (mk-id-set (SET->LIST ABC)))
+                        (equal-hash-code (mk-id-set (for/list ([v ABC]) v))))
+                  (test #t equal? 
+                        (equal-hash-code (mk-id-set (SET->LIST ABCD)))
+                        (equal-hash-code 
+                         (let ([seq ABCD]) (mk-id-set (for/list ([v seq]) v)))))
+                  (test #t equal? 
+                        (equal-hash-code ABCD)
+                        (equal-hash-code (SET-COPY ABCD)))
+                  (test #t equal? 
+                        (equal-secondary-hash-code (mk-id-set (SET->LIST ABC)))
+                        (equal-secondary-hash-code
+                         (mk-id-set (for/list ([v ABC]) v))))
+                  (test #t equal? 
+                        (equal-secondary-hash-code(mk-id-set (SET->LIST ABCD)))
+                        (equal-secondary-hash-code
+                         (let ([seq ABCD]) (mk-id-set (for/list ([v seq]) v)))))
+                  (test #t equal? 
+                        (equal-secondary-hash-code ABCD)
+                        (equal-secondary-hash-code (SET-COPY ABCD)))
+                  
+                  ;; set union
+                  (let ()
+                    (define EMPTY/MUTABLE (mk-mutable-id-set null))
+                    (define EMPTY/IMMUTABLE (mk-immutable-id-set null))
+                    (define ABC-LIST (list #'a #'b #'c))
+                    (define ABC/MUTABLE (mk-mutable-id-set ABC-LIST))
+                    (define ABC/IMMUTABLE (mk-immutable-id-set ABC-LIST))
+                    (test 3 SET-COUNT (SET-UNION ABC/IMMUTABLE))
+                    (test #t SET-EMPTY? (SET-UNION EMPTY/IMMUTABLE))
+                    (test 4 SET-COUNT (SET-UNION EMPTY/IMMUTABLE ABCD))
+                    (test 4 SET-COUNT (SET-UNION ABC/IMMUTABLE ABCD))
+                    (test 3 SET-COUNT (SET-UNION ABC/IMMUTABLE EMPTY))
+                    (define IMMUTABLE/UNION/3 
+                      (SET-UNION ABC/IMMUTABLE
+                                 ABCD
+                                 (mk-id-set (list #'d #'e #'f))))
+                    (test 6 SET-COUNT IMMUTABLE/UNION/3)
+                    (test #t SET-MEMBER? IMMUTABLE/UNION/3 #'d)
+                    (test #t SET-MEMBER? IMMUTABLE/UNION/3 #'e)
+                    (test #t SET-MEMBER? IMMUTABLE/UNION/3 #'f)
+                    
+                    (SET-UNION! ABC/MUTABLE)
+                    (test 3 SET-COUNT ABC/MUTABLE)
+                    (SET-UNION! EMPTY/MUTABLE)
+                    (test #t SET-EMPTY? EMPTY/MUTABLE)
+                    (SET-UNION! EMPTY/MUTABLE ABCD)
+                    (test 4 SET-COUNT EMPTY/MUTABLE)
+                    (SET-UNION! ABC/MUTABLE ABCD)
+                    (test 4 SET-COUNT ABC/MUTABLE)
+                    (SET-UNION! ABC/MUTABLE EMPTY)
+                    (test 4 SET-COUNT ABC/MUTABLE)
+                    (define MUTABLE/UNION/3 (mk-mutable-id-set (list #'a #'b #'c)))
+                    (SET-UNION! MUTABLE/UNION/3
+                                ABCD
+                                (mk-id-set (list #'d #'e #'f)))
+                    (test 6 SET-COUNT MUTABLE/UNION/3)
+                    (test #t SET-MEMBER? MUTABLE/UNION/3 #'d)
+                    (test #t SET-MEMBER? MUTABLE/UNION/3 #'e)
+                    (test #t SET-MEMBER? MUTABLE/UNION/3 #'f)
+                    (void))
          
-         ;; set subtract
-         (let ()
-           (define EMPTY/MUTABLE (mutable-free-id-set null))
-           (define EMPTY/IMMUTABLE (immutable-free-id-set null))
-           (define ABCDE-LIST (list #'a #'b #'c #'d #'e))
-           (define ABCDE/MUTABLE (mutable-free-id-set ABCDE-LIST))
-           (define ABCDE/IMMUTABLE (immutable-free-id-set ABCDE-LIST))
-           (test 5 SET-COUNT (SET-SUBTRACT ABCDE/IMMUTABLE))
-           (test #t SET-EMPTY? (SET-SUBTRACT EMPTY/IMMUTABLE))
-           (test 0 SET-COUNT (SET-SUBTRACT EMPTY/IMMUTABLE ABCD))
-           (test 1 SET-COUNT (SET-SUBTRACT ABCDE/IMMUTABLE ABCD))
-           (test 5 SET-COUNT (SET-SUBTRACT ABCDE/IMMUTABLE EMPTY))
-           (define IMMUTABLE/SUBTRACT/3
-             (SET-SUBTRACT ABCDE/IMMUTABLE
+                  ;; set intersect
+                  (let ()
+                    (define EMPTY/MUTABLE (mk-mutable-id-set null))
+                    (define EMPTY/IMMUTABLE (mk-immutable-id-set null))
+                    (define ABC-LIST (list #'a #'b #'c))
+                    (define ABC/MUTABLE (mk-mutable-id-set ABC-LIST))
+                    (define ABC/IMMUTABLE (mk-immutable-id-set ABC-LIST))
+                    (test 3 SET-COUNT (SET-INTERSECT ABC/IMMUTABLE))
+                    (test #t SET-EMPTY? (SET-INTERSECT EMPTY/IMMUTABLE))
+                    (test 0 SET-COUNT (SET-INTERSECT EMPTY/IMMUTABLE ABCD))
+                    (test 3 SET-COUNT (SET-INTERSECT ABC/IMMUTABLE ABCD))
+                    (test 0 SET-COUNT (SET-INTERSECT ABC/IMMUTABLE EMPTY))
+                    (define IMMUTABLE/INTERSECT/3 
+                      (SET-INTERSECT ABC/IMMUTABLE
+                                     ABCD
+                                     (mk-id-set (list #'b #'c))))
+                    (test 2 SET-COUNT IMMUTABLE/INTERSECT/3)
+                    (test #f SET-MEMBER? IMMUTABLE/INTERSECT/3 #'a)
+                    (test #t SET-MEMBER? IMMUTABLE/INTERSECT/3 #'b)
+                    (test #t SET-MEMBER? IMMUTABLE/INTERSECT/3 #'c)
+                    
+                    (SET-INTERSECT! ABC/MUTABLE)
+                    (test 3 SET-COUNT ABC/MUTABLE)
+                    (SET-INTERSECT! EMPTY/MUTABLE)
+                    (test #t SET-EMPTY? EMPTY/MUTABLE)
+                    (SET-INTERSECT! EMPTY/MUTABLE ABCD)
+                    (test 0 SET-COUNT EMPTY/MUTABLE)
+                    (SET-INTERSECT! ABC/MUTABLE ABCD)
+                    (test 3 SET-COUNT ABC/MUTABLE)
+                    (test #t SET-MEMBER? ABC/MUTABLE #'a)
+                    (test #t SET-MEMBER? ABC/MUTABLE #'b)
+                    (test #t SET-MEMBER? ABC/MUTABLE #'c)
+                    (test #f SET-MEMBER? ABC/MUTABLE #'d)
+                    (test #t mutable-id-set-pred? ABC/MUTABLE)
+                    (test #t SET-EMPTY? EMPTY)
+                    (SET-INTERSECT! ABC/MUTABLE EMPTY)
+                    (test 0 SET-COUNT ABC/MUTABLE)
+                    (define MUTABLE/INTERSECT/3 (mk-mutable-id-set (list #'a #'b #'c)))
+                    (SET-INTERSECT! MUTABLE/INTERSECT/3
+                                    ABCD
+                                    (mk-id-set (list #'a #'b)))
+                    (test 2 SET-COUNT MUTABLE/INTERSECT/3)
+                    (test #t SET-MEMBER? MUTABLE/INTERSECT/3 #'a)
+                    (test #t SET-MEMBER? MUTABLE/INTERSECT/3 #'b)
+                    (test #f SET-MEMBER? MUTABLE/INTERSECT/3 #'c)
+                    
+                    (void))
+         
+                  ;; set subtract
+                  (let ()
+                    (define EMPTY/MUTABLE (mk-mutable-id-set null))
+                    (define EMPTY/IMMUTABLE (mk-immutable-id-set null))
+                    (define ABCDE-LIST (list #'a #'b #'c #'d #'e))
+                    (define ABCDE/MUTABLE (mk-mutable-id-set ABCDE-LIST))
+                    (define ABCDE/IMMUTABLE (mk-immutable-id-set ABCDE-LIST))
+                    (test 5 SET-COUNT (SET-SUBTRACT ABCDE/IMMUTABLE))
+                    (test #t SET-EMPTY? (SET-SUBTRACT EMPTY/IMMUTABLE))
+                    (test 0 SET-COUNT (SET-SUBTRACT EMPTY/IMMUTABLE ABCD))
+                    (test 1 SET-COUNT (SET-SUBTRACT ABCDE/IMMUTABLE ABCD))
+                    (test 5 SET-COUNT (SET-SUBTRACT ABCDE/IMMUTABLE EMPTY))
+                    (define IMMUTABLE/SUBTRACT/3
+                      (SET-SUBTRACT ABCDE/IMMUTABLE
+                                    ABC
+                                    (mk-id-set (list #'a #'b #'e))))
+                    (test 1 SET-COUNT IMMUTABLE/SUBTRACT/3)
+                    (test #f SET-MEMBER? IMMUTABLE/SUBTRACT/3 #'a)
+                    (test #f SET-MEMBER? IMMUTABLE/SUBTRACT/3 #'b)
+                    (test #t SET-MEMBER? IMMUTABLE/SUBTRACT/3 #'d)
+                    (test #f SET-MEMBER? IMMUTABLE/SUBTRACT/3 #'e)
+                    
+                    (SET-SUBTRACT! ABCDE/MUTABLE)
+                    (test 5 SET-COUNT ABCDE/MUTABLE)
+                    (SET-SUBTRACT! EMPTY/MUTABLE)
+                    (test #t SET-EMPTY? EMPTY/MUTABLE)
+                    (SET-SUBTRACT! EMPTY/MUTABLE ABCD)
+                    (test 0 SET-COUNT EMPTY/MUTABLE)
+                    (SET-SUBTRACT! ABCDE/MUTABLE ABC)
+                    (test 2 SET-COUNT ABCDE/MUTABLE)
+                    (test #f SET-MEMBER? ABCDE/MUTABLE #'a)
+                    (test #f SET-MEMBER? ABCDE/MUTABLE #'b)
+                    (test #f SET-MEMBER? ABCDE/MUTABLE #'c)
+                    (test #t SET-MEMBER? ABCDE/MUTABLE #'d)
+                    (test #t SET-MEMBER? ABCDE/MUTABLE #'e)
+                    (test #t mutable-id-set-pred? ABCDE/MUTABLE)
+                    (test #t SET-EMPTY? EMPTY)
+                    (set! ABCDE/MUTABLE (mk-mutable-id-set ABCDE-LIST))
+                    (SET-SUBTRACT! ABCDE/MUTABLE EMPTY)
+                    (test 5 SET-COUNT ABCDE/MUTABLE)
+                    (define MUTABLE/SUBTRACT/3
+                      (mk-mutable-id-set (list #'a #'b #'c #'d #'e)))
+                    (SET-SUBTRACT! MUTABLE/SUBTRACT/3
                                    ABC
-                                   (immutable-free-id-set (list #'a #'b #'e))))
-           (test 1 SET-COUNT IMMUTABLE/SUBTRACT/3)
-           (test #f SET-MEMBER? IMMUTABLE/SUBTRACT/3 #'a)
-           (test #f SET-MEMBER? IMMUTABLE/SUBTRACT/3 #'b)
-           (test #t SET-MEMBER? IMMUTABLE/SUBTRACT/3 #'d)
-           (test #f SET-MEMBER? IMMUTABLE/SUBTRACT/3 #'e)
-           
-           (SET-SUBTRACT! ABCDE/MUTABLE)
-           (test 5 SET-COUNT ABCDE/MUTABLE)
-           (SET-SUBTRACT! EMPTY/MUTABLE)
-           (test #t SET-EMPTY? EMPTY/MUTABLE)
-           (SET-SUBTRACT! EMPTY/MUTABLE ABCD)
-           (test 0 SET-COUNT EMPTY/MUTABLE)
-           (SET-SUBTRACT! ABCDE/MUTABLE ABC)
-           (test 2 SET-COUNT ABCDE/MUTABLE)
-           (test #f SET-MEMBER? ABCDE/MUTABLE #'a)
-           (test #f SET-MEMBER? ABCDE/MUTABLE #'b)
-           (test #f SET-MEMBER? ABCDE/MUTABLE #'c)
-           (test #t SET-MEMBER? ABCDE/MUTABLE #'d)
-           (test #t SET-MEMBER? ABCDE/MUTABLE #'e)
-           (test #t mutable-free-id-set? ABCDE/MUTABLE)
-           (test #t SET-EMPTY? EMPTY)
-           (set! ABCDE/MUTABLE (mutable-free-id-set ABCDE-LIST))
-           (SET-SUBTRACT! ABCDE/MUTABLE EMPTY)
-           (test 5 SET-COUNT ABCDE/MUTABLE)
-           (define MUTABLE/SUBTRACT/3 (mutable-free-id-set (list #'a #'b #'c #'d #'e)))
-           (SET-SUBTRACT! MUTABLE/SUBTRACT/3
-                                  ABC
-                                  (mutable-free-id-set (list #'a #'b #'e)))
-           (test 1 SET-COUNT MUTABLE/SUBTRACT/3)
-           (test #f SET-MEMBER? MUTABLE/SUBTRACT/3 #'a)
-           (test #f SET-MEMBER? MUTABLE/SUBTRACT/3 #'b)
-           (test #t SET-MEMBER? MUTABLE/SUBTRACT/3 #'d)
-           (test #f SET-MEMBER? MUTABLE/SUBTRACT/3 #'e)
+                                   (mk-id-set (list #'a #'b #'e)))
+                    (test 1 SET-COUNT MUTABLE/SUBTRACT/3)
+                    (test #f SET-MEMBER? MUTABLE/SUBTRACT/3 #'a)
+                    (test #f SET-MEMBER? MUTABLE/SUBTRACT/3 #'b)
+                    (test #t SET-MEMBER? MUTABLE/SUBTRACT/3 #'d)
+                    (test #f SET-MEMBER? MUTABLE/SUBTRACT/3 #'e)
+                    
+                    (void))
          
-           (void))
+                  ;; set symmetric difference
+                  (let ()
+                    (define EMPTY/MUTABLE (mk-mutable-id-set null))
+                    (define EMPTY/IMMUTABLE (mk-immutable-id-set null))
+                    (define ABCDE-LIST (list #'a #'b #'c #'d #'e))
+                    (define ABCDE/MUTABLE (mk-mutable-id-set ABCDE-LIST))
+                    (define ABCDE/IMMUTABLE (mk-immutable-id-set ABCDE-LIST))
+                    
+                    (test 5 SET-COUNT (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE))
+                    (test #t SET-EMPTY? (SET-SYMMETRIC-DIFFERENCE EMPTY/IMMUTABLE))
+                    (test 4 SET-COUNT (SET-SYMMETRIC-DIFFERENCE EMPTY/IMMUTABLE ABCD))
+                    (test #t SET=? 
+                          (SET-SYMMETRIC-DIFFERENCE EMPTY/IMMUTABLE ABCD) ABCD)
+                    (test 1 SET-COUNT (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE ABCD))
+                    (test 5 SET-COUNT (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE EMPTY))
+                    (define IMMUTABLE/DIFFERENCE/3
+                      (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE
+                                                ABC
+                                                (mk-id-set (list #'a #'b #'e))))
+                    (test 3 SET-COUNT IMMUTABLE/DIFFERENCE/3)
+                    (test #t SET-MEMBER? IMMUTABLE/DIFFERENCE/3 #'a)
+                    (test #t SET-MEMBER? IMMUTABLE/DIFFERENCE/3 #'b)
+                    (test #f SET-MEMBER? IMMUTABLE/DIFFERENCE/3 #'c)
+                    (test #t SET-MEMBER? IMMUTABLE/DIFFERENCE/3 #'d)
+                    (test #f SET-MEMBER? IMMUTABLE/DIFFERENCE/3 #'e)
+                    
+                    (SET-SYMMETRIC-DIFFERENCE! ABCDE/MUTABLE)
+                    (test 5 SET-COUNT ABCDE/MUTABLE)
+                    (SET-SYMMETRIC-DIFFERENCE! EMPTY/MUTABLE)
+                    (test #t SET-EMPTY? EMPTY/MUTABLE)
+                    (SET-SYMMETRIC-DIFFERENCE! EMPTY/MUTABLE ABCD)
+                    (test 4 SET-COUNT EMPTY/MUTABLE)
+                    (test #t SET=? EMPTY/MUTABLE ABCD)
+                    (SET-SYMMETRIC-DIFFERENCE! ABCDE/MUTABLE ABC)
+                    (test 2 SET-COUNT ABCDE/MUTABLE)
+                    (test #f SET-MEMBER? ABCDE/MUTABLE #'a)
+                    (test #f SET-MEMBER? ABCDE/MUTABLE #'b)
+                    (test #f SET-MEMBER? ABCDE/MUTABLE #'c)
+                    (test #t SET-MEMBER? ABCDE/MUTABLE #'d)
+                    (test #t SET-MEMBER? ABCDE/MUTABLE #'e)
+                    (test #t mutable-id-set-pred? ABCDE/MUTABLE)
+                    (test #t SET-EMPTY? EMPTY)
+                    (set! ABCDE/MUTABLE (mk-mutable-id-set ABCDE-LIST))
+                    (SET-SYMMETRIC-DIFFERENCE! ABCDE/MUTABLE EMPTY)
+                    (test 5 SET-COUNT ABCDE/MUTABLE)
+                    (define MUTABLE/DIFFERENCE/3 (mk-mutable-id-set (list #'a #'b #'c #'d #'e)))
+                    (SET-SYMMETRIC-DIFFERENCE! MUTABLE/DIFFERENCE/3
+                                               ABC
+                                               (mk-id-set (list #'a #'b #'e)))
+                    (test 3 SET-COUNT MUTABLE/DIFFERENCE/3)
+                    (test #t SET-MEMBER? MUTABLE/DIFFERENCE/3 #'a)
+                    (test #t SET-MEMBER? MUTABLE/DIFFERENCE/3 #'b)
+                    (test #f SET-MEMBER? MUTABLE/DIFFERENCE/3 #'c)
+                    (test #t SET-MEMBER? MUTABLE/DIFFERENCE/3 #'d)
+                    (test #f SET-MEMBER? MUTABLE/DIFFERENCE/3 #'e)
+                    
+                    (void))
          
-         ;; set symmetric difference
-         (let ()
-           (define EMPTY/MUTABLE (mutable-free-id-set null))
-           (define EMPTY/IMMUTABLE (immutable-free-id-set null))
-           (define ABCDE-LIST (list #'a #'b #'c #'d #'e))
-           (define ABCDE/MUTABLE (mutable-free-id-set ABCDE-LIST))
-           (define ABCDE/IMMUTABLE (immutable-free-id-set ABCDE-LIST))
-           (test 5 SET-COUNT 
-                 (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE))
-           (test #t SET-EMPTY? 
-                 (SET-SYMMETRIC-DIFFERENCE EMPTY/IMMUTABLE))
-           (test 4 SET-COUNT
-                 (SET-SYMMETRIC-DIFFERENCE EMPTY/IMMUTABLE ABCD))
-           (test #t free-id-set=?
-                 (SET-SYMMETRIC-DIFFERENCE EMPTY/IMMUTABLE ABCD)
-                 ABCD)
-           (test 1 SET-COUNT
-                 (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE ABCD))
-           (test 5 SET-COUNT
-                 (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE EMPTY))
-           (define IMMUTABLE/DIFFERENCE/3
-             (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE
-                                   ABC
-                                   (immutable-free-id-set (list #'a #'b #'e))))
-           (test 3 SET-COUNT IMMUTABLE/DIFFERENCE/3)
-           (test #t SET-MEMBER? IMMUTABLE/DIFFERENCE/3 #'a)
-           (test #t SET-MEMBER? IMMUTABLE/DIFFERENCE/3 #'b)
-           (test #f SET-MEMBER? IMMUTABLE/DIFFERENCE/3 #'c)
-           (test #t SET-MEMBER? IMMUTABLE/DIFFERENCE/3 #'d)
-           (test #f SET-MEMBER? IMMUTABLE/DIFFERENCE/3 #'e)
-           
-           (SET-SYMMETRIC-DIFFERENCE! ABCDE/MUTABLE)
-           (test 5 SET-COUNT ABCDE/MUTABLE)
-           (SET-SYMMETRIC-DIFFERENCE! EMPTY/MUTABLE)
-           (test #t SET-EMPTY? EMPTY/MUTABLE)
-           (SET-SYMMETRIC-DIFFERENCE! EMPTY/MUTABLE ABCD)
-           (test 4 SET-COUNT EMPTY/MUTABLE)
-           (test #t SET=? EMPTY/MUTABLE ABCD)
-           (SET-SYMMETRIC-DIFFERENCE! ABCDE/MUTABLE ABC)
-           (test 2 SET-COUNT ABCDE/MUTABLE)
-           (test #f SET-MEMBER? ABCDE/MUTABLE #'a)
-           (test #f SET-MEMBER? ABCDE/MUTABLE #'b)
-           (test #f SET-MEMBER? ABCDE/MUTABLE #'c)
-           (test #t SET-MEMBER? ABCDE/MUTABLE #'d)
-           (test #t SET-MEMBER? ABCDE/MUTABLE #'e)
-           (test #t mutable-free-id-set? ABCDE/MUTABLE)
-           (test #t SET-EMPTY? EMPTY)
-           (set! ABCDE/MUTABLE (mutable-free-id-set ABCDE-LIST))
-           (SET-SYMMETRIC-DIFFERENCE! ABCDE/MUTABLE EMPTY)
-           (test 5 SET-COUNT ABCDE/MUTABLE)
-           (define MUTABLE/DIFFERENCE/3 (mutable-free-id-set (list #'a #'b #'c #'d #'e)))
-           (SET-SYMMETRIC-DIFFERENCE! MUTABLE/DIFFERENCE/3
-                                  ABC
-                                  (mutable-free-id-set (list #'a #'b #'e)))
-           (test 3 SET-COUNT MUTABLE/DIFFERENCE/3)
-           (test #t SET-MEMBER? MUTABLE/DIFFERENCE/3 #'a)
-           (test #t SET-MEMBER? MUTABLE/DIFFERENCE/3 #'b)
-           (test #f SET-MEMBER? MUTABLE/DIFFERENCE/3 #'c)
-           (test #t SET-MEMBER? MUTABLE/DIFFERENCE/3 #'d)
-           (test #f SET-MEMBER? MUTABLE/DIFFERENCE/3 #'e)
-         
-           (void))
-         
-         ;; Test subset:
-         (let ()
-           (test #t SUBSET? EMPTY EMPTY)
-           (test #t SUBSET? ABC ABC)
-           (test #t SUBSET? ABCD ABCD)
-           (test #f PROPER-SUBSET? EMPTY EMPTY)
-           (test #f PROPER-SUBSET? ABC ABC)
-           (test #f PROPER-SUBSET? ABCD ABCD)
-           (test #t SUBSET? EMPTY ABC)
-           (test #t SUBSET? EMPTY ABCD)
-           (test #t SUBSET? ABC ABCD)
-           (test #f SUBSET? ABCD ABC)
-           (test #f SUBSET? ABCD EMPTY)
-           (test #f SUBSET? ABC EMPTY)
-           (test #t PROPER-SUBSET? EMPTY ABC)
-           (test #t PROPER-SUBSET? EMPTY ABCD)
-           (test #t PROPER-SUBSET? ABC ABCD)
-           (test #f PROPER-SUBSET? ABCD ABC)
-           (test #f PROPER-SUBSET? ABCD EMPTY)
-           (test #f PROPER-SUBSET? ABC EMPTY)
-           
-           (define EMPTY/MUTABLE (mutable-free-id-set null))
-           (define EMPTY/IMMUTABLE (immutable-free-id-set null))
-           (define AB-LIST (list #'a #'b))
-           (define ABC-LIST (list #'a #'b #'c))
-           (define ABCDE-LIST (list #'a #'b #'c #'d #'e))
-           (define AB/MUTABLE (mutable-free-id-set AB-LIST))
-           (define AB/IMMUTABLE (immutable-free-id-set AB-LIST))
-           (define ABC/MUTABLE (mutable-free-id-set ABC-LIST))
-           (define ABC/IMMUTABLE (immutable-free-id-set ABC-LIST))
-           (define ABCDE/MUTABLE (mutable-free-id-set ABCDE-LIST))
-           (define ABCDE/IMMUTABLE (immutable-free-id-set ABCDE-LIST))
+                  ;; Test subset:
+                  (let ()
+                    (test #t SUBSET? EMPTY EMPTY)
+                    (test #t SUBSET? ABC ABC)
+                    (test #t SUBSET? ABCD ABCD)
+                    (test #f PROPER-SUBSET? EMPTY EMPTY)
+                    (test #f PROPER-SUBSET? ABC ABC)
+                    (test #f PROPER-SUBSET? ABCD ABCD)
+                    (test #t SUBSET? EMPTY ABC)
+                    (test #t SUBSET? EMPTY ABCD)
+                    (test #t SUBSET? ABC ABCD)
+                    (test #f SUBSET? ABCD ABC)
+                    (test #f SUBSET? ABCD EMPTY)
+                    (test #f SUBSET? ABC EMPTY)
+                    (test #t PROPER-SUBSET? EMPTY ABC)
+                    (test #t PROPER-SUBSET? EMPTY ABCD)
+                    (test #t PROPER-SUBSET? ABC ABCD)
+                    (test #f PROPER-SUBSET? ABCD ABC)
+                    (test #f PROPER-SUBSET? ABCD EMPTY)
+                    (test #f PROPER-SUBSET? ABC EMPTY)
+                    
+                    (define EMPTY/MUTABLE (mk-mutable-id-set null))
+                    (define EMPTY/IMMUTABLE (mk-immutable-id-set null))
+                    (define AB-LIST (list #'a #'b))
+                    (define ABC-LIST (list #'a #'b #'c))
+                    (define ABCDE-LIST (list #'a #'b #'c #'d #'e))
+                    (define AB/MUTABLE (mk-mutable-id-set AB-LIST))
+                    (define AB/IMMUTABLE (mk-immutable-id-set AB-LIST))
+                    (define ABC/MUTABLE (mk-mutable-id-set ABC-LIST))
+                    (define ABC/IMMUTABLE (mk-immutable-id-set ABC-LIST))
+                    (define ABCDE/MUTABLE (mk-mutable-id-set ABCDE-LIST))
+                    (define ABCDE/IMMUTABLE (mk-immutable-id-set ABCDE-LIST))
 
-           (test #t SUBSET? EMPTY EMPTY/MUTABLE)
-           (test #t SUBSET? EMPTY EMPTY/IMMUTABLE)
-           (test #f PROPER-SUBSET? EMPTY EMPTY/MUTABLE)
-           (test #f PROPER-SUBSET? EMPTY EMPTY/IMMUTABLE)
-           
-           (test #t SUBSET? ABC ABCDE/MUTABLE)
-           (test #t SUBSET? ABC ABCDE/MUTABLE)
-           (test #t PROPER-SUBSET? ABC ABCDE/MUTABLE)
-           (test #t PROPER-SUBSET? ABC ABCDE/MUTABLE)
-           (test #t SUBSET? ABC ABCDE/IMMUTABLE)
-           (test #t SUBSET? ABC ABCDE/IMMUTABLE)
-           (test #t PROPER-SUBSET? ABC ABCDE/IMMUTABLE)
-           (test #t PROPER-SUBSET? ABC ABCDE/IMMUTABLE)
+                    (test #t SUBSET? EMPTY EMPTY/MUTABLE)
+                    (test #t SUBSET? EMPTY EMPTY/IMMUTABLE)
+                    (test #f PROPER-SUBSET? EMPTY EMPTY/MUTABLE)
+                    (test #f PROPER-SUBSET? EMPTY EMPTY/IMMUTABLE)
+                    
+                    (test #t SUBSET? ABC ABCDE/MUTABLE)
+                    (test #t SUBSET? ABC ABCDE/MUTABLE)
+                    (test #t PROPER-SUBSET? ABC ABCDE/MUTABLE)
+                    (test #t PROPER-SUBSET? ABC ABCDE/MUTABLE)
+                    (test #t SUBSET? ABC ABCDE/IMMUTABLE)
+                    (test #t SUBSET? ABC ABCDE/IMMUTABLE)
+                    (test #t PROPER-SUBSET? ABC ABCDE/IMMUTABLE)
+                    (test #t PROPER-SUBSET? ABC ABCDE/IMMUTABLE)
+                    
+                    (test #t SUBSET? ABC ABC/MUTABLE)
+                    (test #t SUBSET? ABC ABC/MUTABLE)
+                    (test #f PROPER-SUBSET? ABC ABC/MUTABLE)
+                    (test #f PROPER-SUBSET? ABC ABC/MUTABLE)
+                    (test #t SUBSET? ABC ABC/IMMUTABLE)
+                    (test #t SUBSET? ABC ABC/IMMUTABLE)
+                    (test #f PROPER-SUBSET? ABC ABC/IMMUTABLE)
+                    (test #f PROPER-SUBSET? ABC ABC/IMMUTABLE)
 
-           (test #t SUBSET? ABC ABC/MUTABLE)
-           (test #t SUBSET? ABC ABC/MUTABLE)
-           (test #f PROPER-SUBSET? ABC ABC/MUTABLE)
-           (test #f PROPER-SUBSET? ABC ABC/MUTABLE)
-           (test #t SUBSET? ABC ABC/IMMUTABLE)
-           (test #t SUBSET? ABC ABC/IMMUTABLE)
-           (test #f PROPER-SUBSET? ABC ABC/IMMUTABLE)
-           (test #f PROPER-SUBSET? ABC ABC/IMMUTABLE)
-
-           (test #f SUBSET? ABC AB/MUTABLE)
-           (test #f SUBSET? ABC AB/MUTABLE)
-           (test #f PROPER-SUBSET? ABC AB/MUTABLE)
-           (test #f PROPER-SUBSET? ABC AB/MUTABLE)
-           (test #f SUBSET? ABC AB/IMMUTABLE)
-           (test #f SUBSET? ABC AB/IMMUTABLE)
-           (test #f PROPER-SUBSET? ABC AB/IMMUTABLE)
-           (test #f PROPER-SUBSET? ABC AB/IMMUTABLE)
-
-           (void))
+                    (test #f SUBSET? ABC AB/MUTABLE)
+                    (test #f SUBSET? ABC AB/MUTABLE)
+                    (test #f PROPER-SUBSET? ABC AB/MUTABLE)
+                    (test #f PROPER-SUBSET? ABC AB/MUTABLE)
+                    (test #f SUBSET? ABC AB/IMMUTABLE)
+                    (test #f SUBSET? ABC AB/IMMUTABLE)
+                    (test #f PROPER-SUBSET? ABC AB/IMMUTABLE)
+                    (test #f PROPER-SUBSET? ABC AB/IMMUTABLE)
+                    
+                    (void))
          
-         ;; free-id-set and free-id-set-for-each
-         (test #t null? (SET-MAP EMPTY (λ (x) x)))
-         (test #t SET=? ABC (mk-free-id-set (SET-MAP ABC (λ (x) x))))
-         (test #t SET=? ABCD (mk-free-id-set (SET-MAP ABCD (λ (x) x))))
-         (test #t SET=? 
-               ABC 
-               (mk-free-id-set 
-                ;; drop #'d
-                (SET-MAP ABCD (λ (id) (if (free-identifier=? #'d id) #'a id)))))
-         (let ([new-set (mutable-free-id-set null)])
-           (SET-FOR-EACH ABC (λ (id) (SET-ADD! new-set id)))
-           (test #t SET=? ABC new-set))
-         (let ([new-set (immutable-free-id-set null)])
-           (SET-FOR-EACH 
-            ABCD
-            (λ (id) (set! new-set (SET-ADD new-set id))))
-           (test #t SET=? ABCD new-set))
+                  ;; id-set and id-set-for-each
+                  (test #t null? (SET-MAP EMPTY (λ (x) x)))
+                  (test #t SET=? ABC (mk-id-set (SET-MAP ABC (λ (x) x))))
+                  (test #t SET=? ABCD (mk-id-set (SET-MAP ABCD (λ (x) x))))
+                  (test #t SET=? 
+                        ABC 
+                        (mk-id-set 
+                         ;; drop #'d
+                         (SET-MAP ABCD (λ (id) (if (identifier=? #'d id) #'a id)))))
+                  (let ([new-set (mk-mutable-id-set null)])
+                    (SET-FOR-EACH ABC (λ (id) (SET-ADD! new-set id)))
+                    (test #t SET=? ABC new-set))
+                  (let ([new-set (mk-immutable-id-set null)])
+                    (SET-FOR-EACH 
+                     ABCD
+                     (λ (id) (set! new-set (SET-ADD new-set id))))
+                    (test #t SET=? ABCD new-set)))]))
          
+         ;; invoke macro to define tests
+         (define-id-set-combo-tests #:constructor mk-immutable-id-set)
+         (define-id-set-combo-tests #:constructor mk-mutable-id-set)
          )]))
 
 ;; ----------------------------------------------------------------------------
 ;; run test suite instances
-(define-id-set-tests #:constructor mutable-free-id-set #:interface gen:set)
-(define-id-set-tests #:constructor mutable-free-id-set #:interface free-id)
-(define-id-set-tests #:constructor immutable-free-id-set #:interface gen:set)
-(define-id-set-tests #:constructor immutable-free-id-set #:interface free-id)
-
+(define-id-set-tests #:type free #:interface gen:set)
+(define-id-set-tests #:type free #:interface free-id)
 
 ;; ----------------------------------------------------------------------------
 ;; immutable/mutable set tests
