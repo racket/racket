@@ -3559,7 +3559,7 @@
                                      just-one? beginning-of-match? case-sens? recur-inside?)
     (define end 
       (cond
-        [(equal? _end 'eof) (last-position)]
+        [(equal? _end 'eof) (if (equal? direction 'forward) (last-position) 0)]
         [else _end]))
     (define start
       (cond
