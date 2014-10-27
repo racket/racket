@@ -260,6 +260,14 @@
 (err/rt-test (read-line (current-input-port) 8))
 (err/rt-test (read-line (current-input-port) 'anyx))
 
+(when (file-exists? "/dev/zero")
+  ;; Make sure read-line is interruptable on a primitive port that
+  ;; has no line ending:
+  (define t (thread (lambda () (call-with-input-file* "/dev/zero" read-line))))
+  (sleep 0.1)
+  (kill-thread t)
+  (test #t thread-dead? t))
+
 (arity-test open-input-file 1 1)
 (err/rt-test (open-input-file 8))
 (err/rt-test (open-input-file "x" 8))
