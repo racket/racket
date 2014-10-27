@@ -213,3 +213,10 @@ recommend using a plugin that will make loading other plugins easier.
 @hyperlink["http://www.vim.org/scripts/script.php?script_id=2332"]{Pathogen} is
 one plugin that does this; using it, you can install new plugins by extracting
 them to subdirectories in the @filepath{bundle} folder of your Vim installation.
+
+@; ------------------------------------------------------------
+
+@section{Sublime Text}
+
+The @hyperlink["https://sublime.wbond.net/packages/Racket"]{Racket package}
+provides support for syntax highlighting and building for Sublime Text.
