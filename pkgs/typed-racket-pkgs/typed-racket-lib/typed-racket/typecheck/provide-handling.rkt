@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt"
          unstable/list unstable/sequence syntax/id-table racket/dict racket/syntax
          racket/struct-info racket/match syntax/parse
-         (only-in (private type-contract) type->contract)
+         (only-in (private type-contract) type->contract include-extra-requires?)
          (types printer)
          (typecheck renamer def-binding)
          (utils tc-utils)
@@ -171,5 +171,6 @@
     (define provide-forms
       (for/list ([external-id (in-list external-ids)])
         #`(rename-out [#,id #,external-id])))
+    (when (pair? external-ids) (set-box! include-extra-requires? #t))
     (values #`(begin #,defs (provide #,@provide-forms))
             alias)))

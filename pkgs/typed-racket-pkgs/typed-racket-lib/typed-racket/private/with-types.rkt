@@ -117,14 +117,17 @@
     (arm
       (if expr?
           (quasisyntax/loc stx
-            (begin check-syntax-help
-                   (c:with-contract typed-region
-                                    #:results (region-cnt ...)
-                                    #:freevars ([fv.id cnt] ...)
-                                    #,fixed-up-definitions
-                                    body)))
+            (let ()
+              check-syntax-help
+              (local-require #,@(cdr (syntax-e extra-requires)))
+              (c:with-contract typed-region
+                               #:results (region-cnt ...)
+                               #:freevars ([fv.id cnt] ...)
+                               #,fixed-up-definitions
+                               body)))
           (quasisyntax/loc stx
             (begin
+              (local-require #,@(cdr (syntax-e extra-requires)))
               (define-values () (begin check-syntax-help (values)))
               (c:with-contract typed-region
                                ([ex-id ex-cnt] ...)
