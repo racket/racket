@@ -1132,6 +1132,7 @@ USCORE_SYMBOL(ffi_closure_STDCALL):
 2:	jmp	*%edx
 .ffi_closure_STDCALL_end:
 .LFE5:
+        .long 0
 
 #if defined(X86_DARWIN)
 .section __IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5
@@ -1140,7 +1141,7 @@ L_ffi_closure_SYSV_inner$stub:
 	hlt ; hlt ; hlt ; hlt ; hlt
 #endif
 
-#if defined(X86_WIN32) && !defined(__OS2__)
+#if (defined(X86_WIN32) || defined(X86_DARWIN)) && !defined(__OS2__)
 	.section	.eh_frame,"w"
 #endif
 .Lframe1:
@@ -1301,6 +1302,7 @@ L_ffi_closure_SYSV_inner$stub:
 	/* End of DW_CFA_xxx CFI instructions.  */
 	.align 4
 .LEFDE5:
+        .long 0
 
 #endif /* !_MSC_VER */
 
