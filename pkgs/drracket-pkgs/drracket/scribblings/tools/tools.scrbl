@@ -753,12 +753,18 @@ After putting this code in the DrRacket window, mouse over the words ``big'' and
 The value of the @racket['mouse-over-tooltips] property is expected to be 
 to be a tree of @racket[cons] pairs (in any configuration) whose leaves
 are either ignored or are vectors of the shape
-@racketblock[(vector/c syntax? exact-nonnegative-integer? exact-nonnegative-integer? string?)]
+@racketblock[(vector/c syntax?
+                       exact-nonnegative-integer?
+                       exact-nonnegative-integer?
+                       (or/c string? (-> string?)))]
 Each vector's content indicates where to show a tooltip. The first three components are
 a syntax object whose @racket[syntax-source] field indicates which file the tooltip goes in,
 the start and end position in the editor where mouseovers will show the tooltip, 
-and the content of the tooltip. For example, here's a macro that shows the span of itself 
-in a tooltip on mouseover:
+and the content of the tooltip. If the tooltip content is a procedure, this procedure
+is called by Check Syntax to compute the string used for the tooltip, as Check Syntax
+traverses the syntax objects looking for properties.
+
+For example, here's a macro that shows the span of itself in a tooltip on mouseover:
 @codeblock{
 #lang racket
 (define-syntax (char-span stx)
@@ -777,7 +783,7 @@ in a tooltip on mouseover:
 
 (char-span (+ 1 2))}
 
-Finally, Check Syntax only draws arrows between identifiers that are @racket[syntax-original?]
+Finally, Check Syntax draws arrows only between identifiers that are @racket[syntax-original?]
 or that have the @racket[syntax-property] @racket['original-for-check-syntax]
 set to @racket[#t].
 
