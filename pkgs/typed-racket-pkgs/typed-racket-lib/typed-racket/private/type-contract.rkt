@@ -363,7 +363,8 @@
          (object/sc (append (map (λ (n sc) (member-spec 'method n sc))
                                  public-names (map t->sc/method public-types))
                             (map (λ (n sc) (member-spec 'field n sc))
-                                 field-names (map t->sc/both field-types))))]
+                                 field-names (map t->sc/both field-types)))
+                    (from-typed? typed-side))]
         [(Class: _ inits fields publics augments _)
          (match-define (list (list init-names init-types _) ...) inits)
          (match-define (list (list field-names field-types) ...) fields)
@@ -390,7 +391,7 @@
                           init-names (map t->sc/neg init-types))
                      (map (λ (n sc) (member-spec 'field n sc))
                           field-names (map t->sc/both field-types)))
-                   #f)]
+                   #t)]
         [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred?)
          (cond
            [(dict-ref recursive-values nm #f)]
