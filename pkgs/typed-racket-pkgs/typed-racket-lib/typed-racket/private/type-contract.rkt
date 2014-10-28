@@ -32,7 +32,7 @@
                              (#:typed-side boolean?) . c:->* . (c:or/c a static-contract?)))]))
 
 (provide type->contract define/fixup-contract? change-contract-fixups
-         type->contract-fail any-wrap/sc)
+         type->contract-fail any-wrap/sc extra-requires include-extra-requires?)
 
 ;; These check if either the define form or the body form has the syntax
 ;; property. Normally the define form will have the property but lifting an
@@ -95,11 +95,26 @@
     [_ (int-err "should never happen - not a define-values: ~a"
                 (syntax->datum stx))]))
 
+(define extra-requires
+  #'(require
+      ;; the below requires are needed since they provide identifiers
+      ;; that may appear in the residual program
+      (submod typed-racket/private/type-contract predicates)
+      typed-racket/utils/utils
+      (for-syntax typed-racket/utils/utils)
+      typed-racket/utils/any-wrap typed-racket/utils/struct-type-c
+      typed-racket/utils/evt-contract
+      unstable/contract racket/contract/parametric))
+
+;; should the above requires be included in the output?
+(define include-extra-requires? (box #f))
+
 (define (change-contract-fixups forms)
   (for/list ((e (in-syntax forms)))
     (if (not (define/fixup-contract? e))
         e
-        (generate-contract-def e))))
+        (begin (set-box! include-extra-requires? #t)
+               (generate-contract-def e)))))
 
 ;; To avoid misspellings
 (define impersonator-sym 'impersonator)
