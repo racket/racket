@@ -807,6 +807,12 @@ Returns @racket[#t] if the selection is currently auto-extending. See
 
 }
 
+@defmethod[(get-autowrap-bitmap-width) (and/c real? (not/c negative?))]{
+  Returns the width of the bitmap last passed to @method[text% set-autowrap-bitmap]
+  or @racket[zero?] if no bitmap has been passed to @method[text% set-autowrap-bitmap] or
+  if @racket[#f] was most recently passed.
+}
+
 @defmethod[(get-between-threshold)
            (and/c real? (not/c negative?))]{
 

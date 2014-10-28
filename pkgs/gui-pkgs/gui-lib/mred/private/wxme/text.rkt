@@ -4953,6 +4953,8 @@
 
           old)))
 
+  (def/public (get-autowrap-bitmap-width) wrap-bitmap-width)
+
   ;; ----------------------------------------
 
   ;; notifies the administrator that we need to be redrawn
