@@ -1513,8 +1513,9 @@ back to a path relative to @racket[(find-collects-dir)].}
   is an absolute one that is inside the @filepath{collects} tree, the
   result is a string that begins with @racket["<collects>/"].
   Similarly, a path in the user-specific collects results in a prefix of
-  @racket["<user-collects>/"], and a @PLaneT path results in
-  @racket["<planet>/"].
+  @racket["<user-collects>/"], a @PLaneT path results in
+  @racket["<planet>/"], and a path into documentation results in
+  @racket["<doc>/"] or @racket["<user-doc>/"].
 
   If @racket[cache] is not @racket[#f], it is used as a cache argument
   for @racket[pkg->path] to speed up detection and conversion of
