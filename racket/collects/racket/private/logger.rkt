@@ -6,25 +6,26 @@
   (#%provide log-fatal log-error log-warning log-info log-debug
              define-logger)
 
-  (define-for-syntax (make-define-log mode X-logger-stx)
+  (define-for-syntax (make-define-log mode X-logger-stx name)
     (lambda (stx)
       (with-syntax ([X-logger X-logger-stx]
-                    [mode mode])
+                    [mode mode]
+                    [name name])
         (syntax-case stx ()
           [(_ str-expr) 
            #'(let ([l X-logger])
-               (when (log-level? l 'mode)
+               (when (log-level? l 'mode name)
                  (log-message l 'mode str-expr (current-continuation-marks))))]
           [(_ str-expr arg ...)
            #'(let ([l X-logger])
-               (when (log-level? l 'mode)
+               (when (log-level? l 'mode name)
                  (log-message l 'mode (format str-expr arg ...) (current-continuation-marks))))]))))
 
-  (define-syntax log-fatal (make-define-log 'fatal #'(current-logger)))
-  (define-syntax log-error (make-define-log 'error #'(current-logger)))
-  (define-syntax log-warning (make-define-log 'warning #'(current-logger)))
-  (define-syntax log-info (make-define-log 'info #'(current-logger)))
-  (define-syntax log-debug (make-define-log 'debug #'(current-logger)))
+  (define-syntax log-fatal (make-define-log 'fatal #'(current-logger) #'(logger-name l)))
+  (define-syntax log-error (make-define-log 'error #'(current-logger) #'(logger-name l)))
+  (define-syntax log-warning (make-define-log 'warning #'(current-logger) #'(logger-name l)))
+  (define-syntax log-info (make-define-log 'info #'(current-logger) #'(logger-name l)))
+  (define-syntax log-debug (make-define-log 'debug #'(current-logger) #'(logger-name l)))
 
   (define (check-logger who)
     (lambda (v)
@@ -50,8 +51,8 @@
                        [X X])
            #'(begin
                (define X-logger (make-logger 'X (current-logger)))
-               (define-syntax log-X-fatal (make-define-log 'fatal #'X-logger))
-               (define-syntax log-X-error (make-define-log 'error #'X-logger))
-               (define-syntax log-X-warning (make-define-log 'warning #'X-logger))
-               (define-syntax log-X-info (make-define-log 'info #'X-logger))
-               (define-syntax log-X-debug (make-define-log 'debug #'X-logger)))))])))
+               (define-syntax log-X-fatal (make-define-log 'fatal #'X-logger #''X))
+               (define-syntax log-X-error (make-define-log 'error #'X-logger #''X))
+               (define-syntax log-X-warning (make-define-log 'warning #'X-logger #''X))
+               (define-syntax log-X-info (make-define-log 'info #'X-logger #''X))
+               (define-syntax log-X-debug (make-define-log 'debug #'X-logger #''X)))))])))

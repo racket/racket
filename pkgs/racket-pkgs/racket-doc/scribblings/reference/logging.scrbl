@@ -141,12 +141,20 @@ by @racket[": "] before it is sent to receivers.
 
 
 @defproc[(log-level? [logger logger?]
-                     [level (or/c 'fatal 'error 'warning 'info 'debug)])
+                     [level (or/c 'fatal 'error 'warning 'info 'debug)]
+                     [name (or/c symbol? #f) #f])
          boolean?]{
 
 Reports whether any @tech{log receiver} attached to @racket[logger] or
 one of its ancestors is interested in @racket[level] events (or
-potentially lower). Use this function to avoid work generating an
+potentially lower) or @racket[name]. If @racket[name] is @racket[#f],
+the result indicates whether any @tech{log receiver} is interested in
+events at @racket[level] for any name. A true result for
+@racket[(log-level?  logger level name)] implies a true result for
+@racket[(log-level? logger level #f)], but not vice versa if
+@racket[name] is a symbol.
+
+Use this function to avoid work generating an
 event for @racket[log-message] if no receiver is interested in the
 information; this shortcut is built into @racket[log-fatal],
 @racket[log-error], @racket[log-warning], @racket[log-info],
@@ -155,16 +163,21 @@ however, so it should not be used with those forms.
 
 The result of this function can change if a garbage collection
 determines that a log receiver is no longer accessible (and therefore
-that any event information it receives will never become accessible).}
+that any event information it receives will never become accessible).
+
+@history[#:changed "6.1.1.3" @elem{Added the @racket[name] argument.}]}
 
 
-@defproc[(log-max-level [logger logger?])
+@defproc[(log-max-level [logger logger?]
+                        [name (or/c symbol? #f) #f])
          (or/c #f 'fatal 'error 'warning 'info 'debug)]{
 
 Similar to @racket[log-level?], but reports the maximum level of logging for
-which @racket[log-level?] on @racket[logger] returns @racket[#t]. The
+which @racket[log-level?] on @racket[logger] and @racket[name] returns @racket[#t]. The
 result is @racket[#f] if @racket[log-level?] with @racket[logger]
-currently returns @racket[#f] for all levels.}
+currently returns @racket[#f] for all levels.
+
+@history[#:changed "6.1.1.3" @elem{Added the @racket[name] argument.}]}
 
 
 @deftogether[(
