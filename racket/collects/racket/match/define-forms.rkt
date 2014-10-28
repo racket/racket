@@ -10,7 +10,7 @@
 
 (begin-for-syntax
  (lazy-require [racket/match/patterns (bound-vars)]
-               [racket/match/gen-match (go parse-id go/one)]))
+               [racket/match/gen-match (go go/one)]))
 
 (provide define-forms)
 
