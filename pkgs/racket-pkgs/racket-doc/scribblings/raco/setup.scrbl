@@ -1475,6 +1475,28 @@ The inverse of @racket[path->main-collects-relative]: if @racket[rel]
 is a pair that starts with @racket['collects], then it is converted
 back to a path relative to @racket[(find-collects-dir)].}
 
+@subsection{Representing Paths Relative to the Documentation}
+
+@defmodule[setup/main-doc]
+
+@defproc[(path->main-doc-relative [path (or/c bytes? path-string?)])
+         (or/c path? (cons/c 'doc (non-empty-listof bytes?)))]{
+ Like @racket[path->main-collects-relative], except that it checks
+ for a prefix relative to @racket[(find-doc-dir)] and returns a list
+ starting with @racket['doc] if so.
+}
+
+@defproc[(main-doc-relative->path
+          [rel (or/c bytes?
+                     path-string?
+                     (cons/c 'doc (non-empty-listof bytes?)))])
+         path>]{
+
+ Like @racket[path->main-collects-relative], except it is the inverse
+ of @racket[path->main-doc-relative].
+}
+
+
 @subsection{Displaying Paths Relative to a Common Root}
 
 @defmodule[setup/path-to-relative]
