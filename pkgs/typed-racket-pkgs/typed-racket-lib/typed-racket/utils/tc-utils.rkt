@@ -118,14 +118,12 @@ don't depend on any other portion of the system
     ;; if there's only one, we don't need multiple-error handling
     [(list (struct err (msg stx)))
      (reset-errors!)
-     (log-type-error msg stx)
      (raise-typecheck-error msg stx)]
     [l
      (let ([stxs
             (for/list ([e (in-list l)])
               (with-handlers ([exn:fail:syntax?
                                (λ (e) ((error-display-handler) (exn-message e) e))])
-                (log-type-error (err-msg e) (err-stx e))
                 (raise-typecheck-error (err-msg e) (err-stx e)))
               (err-stx e))])
        (reset-errors!)
