@@ -11,7 +11,8 @@
          racket/function
          racket/pretty
          racket/path
-         racket/set)
+         racket/set
+         racket/extflonum)
 
 (provide/contract
  [zo-marshal (compilation-top? . -> . bytes?)]
@@ -965,7 +966,8 @@
        [(or (? path?) ; XXX Why not use CPT_PATH?
             (? regexp?)
             (? byte-regexp?)
-            (? number?))
+            (? number?)
+            (? extflonum?))
         (out-byte CPT_QUOTE out)
         (define s (open-output-bytes))
         (parameterize 
