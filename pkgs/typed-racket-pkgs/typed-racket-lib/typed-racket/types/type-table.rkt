@@ -66,34 +66,43 @@
                                         (syntax-line e)
                                         (syntax-column e))))))
 
+;; This macro is used to create a thunk that closes over the type
+;; names that should be used to print the type. This is needed to ensure that
+;; DrRacket can show the tooltips with the right abbreviations.
+(define-syntax-rule (printer-thunk tbl e)
+  (λ () (parameterize ([current-type-names tbl]) e)))
+
 ;; Convert the contents of the type table to a format that check-syntax
 ;; can understand in order to draw type tooltips
 (define (type-table->tooltips)
+  (define type-names (current-type-names))
   (for/fold ([tooltips '()])
             ([(stx results) (in-hash table)]
              #:when (and (syntax-position stx)
                          (syntax-span stx))
              #:unless (error-at-stx-loc? stx))
-    ;; `printed-types` is #f if we should skip the type because it's
+    ;; `printed-type-thunks` is #f if we should skip the type because it's
     ;; something not worth printing like Bottom or Error.
-    (define printed-types
+    (define printed-type-thunks
       (match results
         [(tc-result1: type)
          (and (not (or (Error? type) (Bottom? type)))
               ;; cleanup-type is essential here so that this doesn't slow
               ;; down compilation excessively (e.g., serializing the 4k type
               ;; of the + function)
-              (pretty-format-type (cleanup-type type)))]
+              (printer-thunk type-names
+                (pretty-format-type (cleanup-type type))))]
         [(or (tc-results: types)
              (tc-results: types _ _ _ _)) ; FIXME, account for dty/dbound
          (apply string-append
                 (for/list ([(type index) (in-indexed (in-list types))])
                   (format "Value ~a:~n  ~a~n"
                           (add1 index)
-                          (pretty-format-type (cleanup-type type)
-                                              #:indent 2))))]
+                          (printer-thunk type-names
+                            (pretty-format-type (cleanup-type type)
+                                                #:indent 2)))))]
         [(tc-any-results: _) "AnyValues"]))
-    (cond [(not printed-types) tooltips]
+    (cond [(not printed-type-thunks) tooltips]
           ;; Put the tooltip only on the parens for compound expressions
           ;; but put them on the whole expression for literals. This avoids
           ;; overlapping tooltips.
@@ -107,19 +116,19 @@
            (cons (vector stx
                          (sub1 (syntax-position stx))
                          (+ (sub1 (syntax-position stx)) (syntax-span stx))
-                         printed-types)
+                         printed-type-thunks)
                  tooltips)]
           [else
            (list* (vector stx
                           (sub1 (syntax-position stx))
                           (syntax-position stx)
-                          printed-types)
+                          printed-type-thunks)
                   (vector stx
                           (sub1 (+ (sub1 (syntax-position stx))
                                    (syntax-span stx)))
                           (+ (sub1 (syntax-position stx))
                              (syntax-span stx))
-                          printed-types)
+                          printed-type-thunks)
                    tooltips)])))
 
 ;; For expressions in test position keep track of if it evaluates to true/false
