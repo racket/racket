@@ -3697,6 +3697,7 @@ struct Scheme_Logger {
   intptr_t *timestamp, local_timestamp; /* determines when want_level is up-to-date */
   Scheme_Object *syslog_level; /* (list* <level-int> <name-sym> ... <level-int>) */
   Scheme_Object *stderr_level;
+  Scheme_Object *propagate_level; /* can be NULL */
   Scheme_Object *readers; /* list of (cons (make-weak-box <reader>) <sema>) */
 };
 
