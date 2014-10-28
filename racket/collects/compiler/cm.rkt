@@ -317,12 +317,9 @@
   (define deps-sema (make-semaphore 1))
   (define done-key (gensym))
   (define (external-dep! p module?)
-    (call-with-semaphore
-     deps-sema
-     (lambda ()
-       (if module?
-           (set! external-module-deps (cons (path->bytes p) external-module-deps))
-           (set! external-deps (cons (path->bytes p) external-deps))))))
+    (if module?
+        (set! external-module-deps (cons (path->bytes p) external-module-deps))
+        (set! external-deps (cons (path->bytes p) external-deps))))
   (define (reader-dep! p)
     (call-with-semaphore
      deps-sema
@@ -330,26 +327,15 @@
        (set! reader-deps (cons (path->bytes p) reader-deps)))))
 
   ;; Set up a logger to receive and filter accomplice events:
-  (define accomplice-logger (make-logger))
-  (define log-th
-    (let ([orig-log (current-logger)]
-          [receiver (make-log-receiver accomplice-logger 'debug)])
-      (thread (lambda ()
-                (let loop ()
-                  (let ([l (sync receiver)])
-                    (unless (eq? (vector-ref l 2) done-key)
-                      (if (and (eq? (vector-ref l 0) 'info)
-                               (file-dependency? (vector-ref l 2))
-                               (path? (file-dependency-path (vector-ref l 2))))
-                        (external-dep! (file-dependency-path (vector-ref l 2))
-                                       (file-dependency-module? (vector-ref l 2)))
-                        (log-message orig-log
-                                     (vector-ref l 0) (vector-ref l 3)
-                                     (vector-ref l 1)
-                                     (vector-ref l 2)
-                                     #f))
-                      (loop))))))))
-
+  (define accomplice-logger (make-logger #f (current-logger)
+                                         ;; Don't propoagate 'cm-accomplice events, so that
+                                         ;; enclosing compilations don't see events intended
+                                         ;; for this one:
+                                         'none 'cm-accomplice
+                                         ;; Propagate everything else:
+                                         'debug))
+  (define receiver (make-log-receiver accomplice-logger 'info 'cm-accomplice))
+  
   ;; Compile the code:
   (define code
     (parameterize ([current-reader-guard
@@ -386,9 +372,16 @@
   (define dest-roots (list (car roots)))
   (define code-dir (get-compilation-dir path #:modes (list mode) #:roots dest-roots))
 
-  ;; Wait for accomplice logging to finish:
-  (log-message accomplice-logger 'info "stop" done-key)
-  (sync log-th)
+  ;; Get all accomplice data:
+  (let loop ()
+    (let ([l (sync/timeout 0 receiver)])
+      (when l
+        (when (and (eq? (vector-ref l 0) 'info)
+                   (file-dependency? (vector-ref l 2))
+                   (path? (file-dependency-path (vector-ref l 2))))
+          (external-dep! (file-dependency-path (vector-ref l 2))
+                         (file-dependency-module? (vector-ref l 2))))
+        (loop))))
 
   ;; Write the code and dependencies:
   (when code
