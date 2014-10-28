@@ -2246,7 +2246,9 @@
              scroll-to-position
              position-location
              get-styles-fixed
-             set-styles-fixed)
+             set-styles-fixed
+             auto-wrap
+             get-autowrap-bitmap-width)
     
     ;; private field
     (define eventspace (current-eventspace))
@@ -2453,16 +2455,17 @@
     
     (define/private (adjust-box-input-width)
       (when box-input
-        (let ([w (box 0)]
-              [x (box 0)]
-              [bw (send (icon:get-eof-bitmap) get-width)])
-          (get-view-size w #f)
-          (let ([pos (- (last-position) 2)])
-            (position-location pos x #f #t
-                               (not (= pos (paragraph-start-position (position-paragraph pos))))))
-          (let ([size (- (unbox w) (unbox x) bw 24)])
-            (when (positive? size)
-              (send box-input set-min-width size))))))
+        (define w (box 0))
+        (define x (box 0))
+        (define bw (send (icon:get-eof-bitmap) get-width))
+        (get-view-size w #f)
+        (define pos (- (last-position) 2))
+        (position-location pos x #f #t
+                           (not (= pos (paragraph-start-position (position-paragraph pos)))))
+        (define auto-wrap-icon-size (get-autowrap-bitmap-width))
+        (define size (- (unbox w) (unbox x) bw 24 auto-wrap-icon-size))
+        (when (positive? size)
+          (send box-input set-min-width size))))
     
     (define/augment (on-display-size)
       (adjust-box-input-width)
