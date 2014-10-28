@@ -545,7 +545,10 @@
             prop)])))
 
 (define mouse-over-tooltip-prop?
-  (vector/c #:flat? #t syntax? exact-nonnegative-integer? exact-nonnegative-integer? string?))
+  (vector/c #:flat? #t syntax? exact-nonnegative-integer? exact-nonnegative-integer?
+            (or/c string?
+                  ;; don't check the range here, since we want a predicate, not really a contract
+                  (-> any))))
 (define (add-mouse-over-tooltips stx)
   (let loop ([prop (syntax-property stx 'mouse-over-tooltips)])
     (cond
