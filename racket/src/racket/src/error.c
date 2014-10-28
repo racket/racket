@@ -727,7 +727,7 @@ void scheme_init_error(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("exit",              scheme_do_exit,  0, 1, env);
   GLOBAL_NONCM_PRIM("log-level?",        log_level_p,     2, 2, env);
   GLOBAL_NONCM_PRIM("log-max-level",     log_max_level,   1, 1, env);
-  GLOBAL_NONCM_PRIM("make-logger",       make_logger,     0, 3, env);
+  GLOBAL_NONCM_PRIM("make-logger",       make_logger,     0, 2, env);
   GLOBAL_NONCM_PRIM("make-log-receiver", make_log_reader, 2, -1, env);
 
   GLOBAL_PRIM_W_ARITY("log-message",    log_message,   4, 6, env);
@@ -3589,18 +3589,6 @@ void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object
   if (!name)
     name = logger->name;
 
-  /* run notification callbacks: */
-  for (lo = logger; lo; lo = lo->parent) {
-    if (lo->callback) {
-      Scheme_Object *a[1];
-      if (!msg)
-        msg = make_log_message(level, name, prefix_msg, buffer, len, data);
-
-      a[0] = msg;
-      scheme_apply_multi(lo->callback, 1, a);
-    }
-  }
-
   if (SCHEME_FALSEP(name))
     name = NULL;
 
@@ -3946,9 +3934,6 @@ make_logger(int argc, Scheme_Object *argv[])
           scheme_wrong_contract("make-logger", "(or/c logger? #f)", 1, argc, argv);
         parent = (Scheme_Logger *)argv[1];
       }
-
-      if (argc > 2)
-        (void)scheme_check_proc_arity2("make-logger", 1, 2, argc, argv, 1);
     } else
       parent = NULL;
   } else
@@ -3958,9 +3943,6 @@ make_logger(int argc, Scheme_Object *argv[])
                               (argc 
                                ? (SCHEME_FALSEP(argv[0]) ? NULL : argv[0])
                                : NULL));
-
-  if ((argc > 2) && SCHEME_TRUEP(argv[2]))
-    logger->callback = argv[2];
   
   return (Scheme_Object *)logger;
 }

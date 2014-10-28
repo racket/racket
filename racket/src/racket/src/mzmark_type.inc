@@ -3004,7 +3004,6 @@ static int mark_logger_MARK(void *p, struct NewGC *gc) {
   Scheme_Logger *l = (Scheme_Logger *)p;
   gcMARK2(l->name, gc);
   gcMARK2(l->parent, gc);
-  gcMARK2(l->callback, gc);
   gcMARK2(l->timestamp, gc);
   gcMARK2(l->syslog_level, gc);
   gcMARK2(l->stderr_level, gc);
@@ -3017,7 +3016,6 @@ static int mark_logger_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Logger *l = (Scheme_Logger *)p;
   gcFIXUP2(l->name, gc);
   gcFIXUP2(l->parent, gc);
-  gcFIXUP2(l->callback, gc);
   gcFIXUP2(l->timestamp, gc);
   gcFIXUP2(l->syslog_level, gc);
   gcFIXUP2(l->stderr_level, gc);
