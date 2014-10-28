@@ -1211,6 +1211,7 @@ mark_logger {
   gcMARK2(l->timestamp, gc);
   gcMARK2(l->syslog_level, gc);
   gcMARK2(l->stderr_level, gc);
+  gcMARK2(l->propagate_level, gc);
   gcMARK2(l->readers, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));

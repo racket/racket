@@ -3008,6 +3008,7 @@ static int mark_logger_MARK(void *p, struct NewGC *gc) {
   gcMARK2(l->timestamp, gc);
   gcMARK2(l->syslog_level, gc);
   gcMARK2(l->stderr_level, gc);
+  gcMARK2(l->propagate_level, gc);
   gcMARK2(l->readers, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
@@ -3021,6 +3022,7 @@ static int mark_logger_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(l->timestamp, gc);
   gcFIXUP2(l->syslog_level, gc);
   gcFIXUP2(l->stderr_level, gc);
+  gcFIXUP2(l->propagate_level, gc);
   gcFIXUP2(l->readers, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));

@@ -13,7 +13,7 @@
 
 (test #f logger-name (make-logger))
 
-(arity-test make-logger 0 2)
+(arity-test make-logger 0 -1)
 
 ; --------------------
 
@@ -100,23 +100,28 @@
 
 (let ()
   (define-logger test)
-  (define r (make-log-receiver (current-logger) 'info 'test 'warning))
+  (define r (make-log-receiver (current-logger) 'info 'test2 'warning))
   (test #t log-level? test-logger 'warning)
   (test #t log-level? test-logger 'info)
-  (test #t log-level? test-logger 'info 'test)
+  (test #t log-level? test-logger 'info 'test2)
   (test #f log-level? test-logger 'info 'not-test)
-  (test #f log-level? test-logger 'debug 'test)
+  (test #f log-level? test-logger 'debug 'test2)
   (test 'info log-max-level test-logger)
-  (test 'info log-max-level test-logger 'test)
+  (test 'info log-max-level test-logger 'test2)
   (test 'warning log-max-level test-logger 'not-test)
-  (define r2 (make-log-receiver (current-logger) 'warning 'test 'info))
-  (test #t log-level? test-logger 'info 'test)
+  ;; Retain receiver to avoid GC influence on tests
+  (test #f sync/timeout 0 r))
+
+(let ()
+  (define-logger test)
+  (define r2 (make-log-receiver (current-logger) 'warning 'test3 'info))
+  (test #f log-level? test-logger 'info 'test3)
   (test #t log-level? test-logger 'info 'not-test)
-  (test #f log-level? test-logger 'debug 'test)
+  (test #f log-level? test-logger 'debug 'test3)
   (test 'info log-max-level test-logger)
-  (test 'info log-max-level test-logger 'test)
+  (test 'warning log-max-level test-logger 'test3)
   (test 'info log-max-level test-logger 'not-test)
-  (test #f sync/timeout 0 r)
+  ;; Retain receiver to avoid GC influence on tests
   (test #f sync/timeout 0 r2))
 
 ; ----------------------------------------
@@ -169,6 +174,57 @@
   (define r (make-log-receiver l 'info 'sub))
   (log-message l 'info 'sub "hey" #f)
   (test '#(info "sub: hey" #f sub) sync/timeout 0 r))
+
+;; --------------------
+;; Check logger propagate constraints
+
+(let ()
+  (define l (make-logger))
+  (define l2 (make-logger #f l 'error))
+  (define l3 (make-logger #f l2 'warning 'test 'info))
+  (define l32 (make-logger #f l2 'info 'test 'warning))
+  
+  (define r (make-log-receiver l 'debug))
+  (test #f sync/timeout 0 r)
+  
+  (log-message l 'debug "debug message" #f)
+  (test #t vector? (sync/timeout 0 r))
+  
+  (define r2 (make-log-receiver l2 'info))
+  (test (void) log-message l2 'warning "warning message not propagated" #f)
+  (test #f sync/timeout 0 r)
+  (test #t vector? (sync/timeout 0 r2))
+
+  (test (void) log-message l3 'error "error message propagated" #f)
+  (test #t vector? (sync/timeout 0 r))
+  (test #t vector? (sync/timeout 0 r2))
+
+  (test (void) log-message l3 'info "info message partially propagated" #f)
+  (test #f sync/timeout 0 r)
+  (test #t vector? (sync/timeout 0 r2))
+  
+  (test (void) log-message l3 'info 'test "info message not propagated" #f)
+  (test #f sync/timeout 0 r)
+  (test #f sync/timeout 0 r2)
+  
+  (test 'debug log-max-level l)
+  (test 'info log-max-level l2)
+  (test 'info log-max-level l3)
+  
+  (define r22 (make-log-receiver l2 'debug))
+  (test 'debug log-max-level l)
+  (test 'debug log-max-level l2)
+  (test 'info log-max-level l3)
+  (test 'warning log-max-level l3 'test)
+  (test 'info log-max-level l3 'not-test)
+  (test 'info log-max-level l32)
+  (test 'warning log-max-level l32 'not-test)
+  (test 'info log-max-level l32 'test)
+  
+  ;; Retain receivers to avoid GC influence on tests
+  (test #f sync/timeout 0 r)
+  (test #f sync/timeout 0 r2)
+  (test #f sync/timeout 0 r22))
 
 ; --------------------
 

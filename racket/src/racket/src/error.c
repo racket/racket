@@ -727,7 +727,7 @@ void scheme_init_error(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("exit",              scheme_do_exit,  0, 1, env);
   GLOBAL_NONCM_PRIM("log-level?",        log_level_p,     2, 3, env);
   GLOBAL_NONCM_PRIM("log-max-level",     log_max_level,   1, 2, env);
-  GLOBAL_NONCM_PRIM("make-logger",       make_logger,     0, 2, env);
+  GLOBAL_NONCM_PRIM("make-logger",       make_logger,     0, -1, env);
   GLOBAL_NONCM_PRIM("make-log-receiver", make_log_reader, 2, -1, env);
 
   GLOBAL_PRIM_W_ARITY("log-message",    log_message,   4, 6, env);
@@ -3458,19 +3458,12 @@ static int extract_max_spec_level(Scheme_Object *level_spec, Scheme_Object *name
 void update_want_level(Scheme_Logger *logger, Scheme_Object *name)
 {
   Scheme_Log_Reader *lr;
-  Scheme_Object *stack = NULL, *queue, *b, *prev;
-  Scheme_Logger *parent = logger, *orig_logger = logger;
-  int want_level, level;
-
-  while (parent) {
-    stack = scheme_make_raw_pair((Scheme_Object *)parent, stack);
-    parent = parent->parent;
-  }
+  Scheme_Object *queue, *b, *prev;
+  Scheme_Logger *parent = logger;
+  int want_level, level, ceiling_level = SCHEME_LOG_DEBUG;
 
   want_level = 0;
-  while (stack) {
-    parent = (Scheme_Logger *)SCHEME_CAR(stack);
-    
+  while (parent) {
     queue = parent->readers;
     prev = NULL;
     while (queue) {
@@ -3479,8 +3472,12 @@ void update_want_level(Scheme_Logger *logger, Scheme_Object *name)
       lr = (Scheme_Log_Reader *)SCHEME_BOX_VAL(b);
       if (lr) {
         level = extract_max_spec_level(lr->level, name);
+        if (level > ceiling_level)
+          level = ceiling_level;
         if (level > want_level)
           want_level = level;
+        if (want_level >= ceiling_level)
+          break;
         prev = queue;
       } else {
         if (prev)
@@ -3498,7 +3495,17 @@ void update_want_level(Scheme_Logger *logger, Scheme_Object *name)
     if (level > want_level)
       want_level = level;    
 
-    stack = SCHEME_CDR(stack);
+    if (parent->propagate_level)
+      level = extract_max_spec_level(parent->propagate_level, name);
+    else
+      level = SCHEME_LOG_DEBUG;
+    if (level <= ceiling_level)
+      ceiling_level = level;
+
+    if (want_level >= ceiling_level)
+      break;
+
+    parent = parent->parent;
   }
 
   if (!name) {
@@ -3507,8 +3514,6 @@ void update_want_level(Scheme_Logger *logger, Scheme_Object *name)
   } else {
 #   define WANT_NAME_LEVEL_CACHE_SIZE 8
     int i;
-
-    logger = orig_logger;
 
     b = logger->want_name_level_cache;
     if (!b) {
@@ -3783,6 +3788,11 @@ void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object
       queue = SCHEME_CDR(queue);
     }
 
+    if (logger->parent && logger->propagate_level) {
+      if (extract_spec_level(logger->propagate_level, name) < level)
+        break;
+    }
+
     logger = logger->parent;
   }
 }
@@ -3991,10 +4001,42 @@ log_max_level(int argc, Scheme_Object *argv[])
   }
 }
 
+static Scheme_Object *get_levels_and_names(const char *who, int i, int argc, Scheme_Object **argv,
+                                           int default_lvl)
+{
+  int lvl;
+  Scheme_Object *level = scheme_null, *last = NULL;
+
+  for (; i < argc; i += 2) {
+    lvl = extract_level(who, 1, i, argc, argv);
+    if ((i+1) < argc) {
+      if (SCHEME_FALSEP(argv[i+1]))
+        default_lvl = lvl;
+      else {
+        if (!SCHEME_SYMBOLP(argv[i+1]))
+          scheme_wrong_contract(who, "(or/c symbol? #f)", i+1, argc, argv);
+        level = scheme_make_pair(argv[i+1], level);
+        if (!last) last = level;
+        level = scheme_make_pair(scheme_make_integer(lvl), level);
+      }
+    } else {
+      default_lvl = lvl;
+    }
+  }
+
+  if (last)
+    SCHEME_CDR(last) = scheme_make_integer(default_lvl);
+  else
+    level = scheme_make_integer(default_lvl);
+
+  return level;
+}
+
 static Scheme_Object *
 make_logger(int argc, Scheme_Object *argv[])
 {
   Scheme_Logger *parent, *logger;
+  Scheme_Object *propagate_level;
 
   if (argc) {
     if (!SCHEME_FALSEP(argv[0]) && !SCHEME_SYMBOLP(argv[0]))
@@ -4013,11 +4055,17 @@ make_logger(int argc, Scheme_Object *argv[])
   } else
     parent = NULL;
 
+  propagate_level = get_levels_and_names("make-logger", 2, argc, argv,
+                                         SCHEME_LOG_DEBUG);
+
   logger = scheme_make_logger(parent, 
                               (argc 
                                ? (SCHEME_FALSEP(argv[0]) ? NULL : argv[0])
                                : NULL));
-  
+
+  if (parent)
+    logger->propagate_level = propagate_level;
+
   return (Scheme_Object *)logger;
 }
 
@@ -4076,34 +4124,13 @@ make_log_reader(int argc, Scheme_Object *argv[])
   Scheme_Logger *logger;
   Scheme_Log_Reader *lr;
   Scheme_Object *sema, *q;
-  int default_lvl = 0, lvl, i;
-  Scheme_Object *level = scheme_null, *last = NULL;
+  Scheme_Object *level;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
     scheme_wrong_contract("make-log-receiver", "logger?", 0, argc, argv);
   logger = (Scheme_Logger *)argv[0];
 
-  for (i = 1; i < argc; i += 2) {
-    lvl = extract_level("make-log-receiver", 1, i, argc, argv);
-    if ((i+1) < argc) {
-      if (SCHEME_FALSEP(argv[i+1]))
-        default_lvl = lvl;
-      else {
-        if (!SCHEME_SYMBOLP(argv[i+1]))
-          scheme_wrong_contract("make-log-receiver", "(or/c symbol? #f)", i+1, argc, argv);
-        level = scheme_make_pair(argv[i+1], level);
-        if (!last) last = level;
-        level = scheme_make_pair(scheme_make_integer(lvl), level);
-      }
-    } else {
-      default_lvl = lvl;
-    }
-  }
-
-  if (last)
-    SCHEME_CDR(last) = scheme_make_integer(default_lvl);
-  else
-    level = scheme_make_integer(default_lvl);
+  level = get_levels_and_names("make-log-receiver", 1, argc, argv, 0);
 
   lr = MALLOC_ONE_TAGGED(Scheme_Log_Reader);
   lr->so.type = scheme_log_reader_type;
