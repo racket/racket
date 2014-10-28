@@ -84,18 +84,13 @@ otherwise.}
 
 
 @defproc[(make-logger [name (or/c symbol? #f) #f]
-                      [parent (or/c logger? #f) #f]
-                      [notify-callback (vector? . -> . any/c) #f])
+                      [parent (or/c logger? #f) #f])
          logger?]{
 
 Creates a new @tech{logger} with an optional name and parent.
 
-If @racket[notify-callback] is provided, then it is called (under a
-@tech{continuation barrier}) whenever an event is logged to the result
-@tech{logger} or one of its descendants, but only if some @tech{log
-receiver} is interested in the event in the same sense as
-@racket[log-level?]. The event is not propagated to any @tech{log
-receivers} until @racket[notify-callback] returns.}
+@history[#:changed "6.1.1.3" @elem{Removed an optional argument to
+                                   specify a notification callback.}]}
 
 
 @defproc[(logger-name [logger logger?]) (or/c symbol? #f)]{
