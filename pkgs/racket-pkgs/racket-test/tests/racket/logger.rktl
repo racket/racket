@@ -98,6 +98,27 @@
   (log-test-warning "warning")
   (test "test: warning" (lambda (v) (vector-ref v 1)) (sync r)))
 
+(let ()
+  (define-logger test)
+  (define r (make-log-receiver (current-logger) 'info 'test 'warning))
+  (test #t log-level? test-logger 'warning)
+  (test #t log-level? test-logger 'info)
+  (test #t log-level? test-logger 'info 'test)
+  (test #f log-level? test-logger 'info 'not-test)
+  (test #f log-level? test-logger 'debug 'test)
+  (test 'info log-max-level test-logger)
+  (test 'info log-max-level test-logger 'test)
+  (test 'warning log-max-level test-logger 'not-test)
+  (define r2 (make-log-receiver (current-logger) 'warning 'test 'info))
+  (test #t log-level? test-logger 'info 'test)
+  (test #t log-level? test-logger 'info 'not-test)
+  (test #f log-level? test-logger 'debug 'test)
+  (test 'info log-max-level test-logger)
+  (test 'info log-max-level test-logger 'test)
+  (test 'info log-max-level test-logger 'not-test)
+  (test #f sync/timeout 0 r)
+  (test #f sync/timeout 0 r2))
+
 ; ----------------------------------------
 
 (let ()
