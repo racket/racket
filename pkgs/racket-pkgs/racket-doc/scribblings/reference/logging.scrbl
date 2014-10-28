@@ -84,13 +84,26 @@ otherwise.}
 
 
 @defproc[(make-logger [name (or/c symbol? #f) #f]
-                      [parent (or/c logger? #f) #f])
+                      [parent (or/c logger? #f) #f]
+                      [propagate-level (or/c 'none 'fatal 'error 'warning 'info 'debug) 'debug]
+                      [propagate-name (or/c #f symbol?) #f]
+                      ... ...)
          logger?]{
 
 Creates a new @tech{logger} with an optional name and parent.
 
+The optional @racket[propagate-level] and @racket[propagate-name]
+arguments constrain the events that are propagated from the new logger
+to @racket[parent] (when @racket[parent] is not @racket[#f]) in the
+same way that events are described for a log receiver in
+@racket[make-log-receiver]. By default, all events are propagated to
+@racket[parent].
+
 @history[#:changed "6.1.1.3" @elem{Removed an optional argument to
-                                   specify a notification callback.}]}
+                                   specify a notification callback,
+                                   and added @racket[propagate-level] and
+                                   @racket[propagate-name] constraints for
+                                   events to propagate.}]}
 
 
 @defproc[(logger-name [logger logger?]) (or/c symbol? #f)]{
@@ -148,11 +161,8 @@ by @racket[": "] before it is sent to receivers.
 Reports whether any @tech{log receiver} attached to @racket[logger] or
 one of its ancestors is interested in @racket[level] events (or
 potentially lower) or @racket[name]. If @racket[name] is @racket[#f],
-the result indicates whether any @tech{log receiver} is interested in
-events at @racket[level] for any name. A true result for
-@racket[(log-level?  logger level name)] implies a true result for
-@racket[(log-level? logger level #f)], but not vice versa if
-@racket[name] is a symbol.
+the result indicates whether a @tech{log receiver} is interested in
+events at @racket[level] for any name.
 
 Use this function to avoid work generating an
 event for @racket[log-message] if no receiver is interested in the
