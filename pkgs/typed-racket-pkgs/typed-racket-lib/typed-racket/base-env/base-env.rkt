@@ -2284,16 +2284,21 @@
           (-> mod (-val #f) (-> a) (Un -Void a))
           (->opt mod Sym [(-> Univ)] ManyUniv))))]
 
+[module-declared?
+ (->opt (Un -Module-Path -Resolved-Module-Path -Module-Path-Index)
+        [Univ]
+        -Boolean)]
+
 [module->language-info
  (->opt (Un -Module-Path -Path -Resolved-Module-Path)
         [Univ]
         (-opt (make-HeterogeneousVector (list -Module-Path -Symbol Univ))))]
 
-[module->imports (-> -Compiled-Module-Expression
-                             (-lst (-pair (-opt -Integer)
-                                          (-lst -Module-Path-Index))))]
+[module->imports (-> (Un -Module-Path -Resolved-Module-Path -Module-Path-Index)
+                     (-lst (-pair (-opt -Integer)
+                                  (-lst -Module-Path-Index))))]
 [module->exports
- (-> -Compiled-Module-Expression
+ (-> (Un -Module-Path -Resolved-Module-Path)
      (-values
       (list
        (-lst (-pair (-opt -Integer)
@@ -2312,6 +2317,10 @@
                                              (-opt -Integer)
                                              -Symbol
                                              (-opt -Integer)))))))))))]
+
+[module-predefined?
+ (-> (Un -Module-Path -Resolved-Module-Path -Module-Path-Index)
+     -Boolean)]
 
 ;; Section 14.5 (Impersonators and Chaperones)
 [impersonator? (Univ . -> . B)]
