@@ -1870,7 +1870,7 @@
                            (syntax-case nt-def ()
                              [(x . whatever) #'x]))]
                         [bindings
-                         (record-nts-disappeared-bindings (syntax->list #'(nt-ids ...)))])
+                         (record-nts-disappeared-bindings #'lang-name (syntax->list #'(nt-ids ...)))])
            (quasisyntax/loc stx
              (begin
                bindings
@@ -1886,26 +1886,34 @@
                         (identifier? #'x)
                         #'define-language-name]))
                    '(all-names ...)
-                   (to-table #'(nt-ids ...)))))
+                   (to-table #'lang-name #'(nt-ids ...)))))
                (define define-language-name
                  #,(syntax/loc stx (language form-name lang-name (all-names ...) (names prods ...) ...))))))))]))
 
-(define-for-syntax (record-nts-disappeared-bindings nt-ids)
+(define-for-syntax (record-nts-disappeared-bindings lang nt-ids [prop `disappeared-binding])
   (let loop ([nt-ids nt-ids]
              [stx #'(void)])
     (cond
      [(null? nt-ids) stx]
      [else 
-      (define old (syntax-property stx 'disappeared-binding))
-      (define new (syntax-local-introduce (car nt-ids)))
+      (define old (syntax-property stx prop))
+      (define new (syntax-local-introduce (lang-nt-id lang (car nt-ids))))
       (loop (cdr nt-ids)
             (syntax-property stx
-                             'disappeared-binding
+                             prop
                              (if old (cons new old) new)))])))
 
-(define-for-syntax (to-table x)
+(define-for-syntax (lang-nt-id lang-stx nt-stx)
+  (format-id nt-stx "~a:~a" 
+             (syntax->datum lang-stx) 
+             (syntax->datum nt-stx)
+             #:source nt-stx
+             #:props nt-stx))
+             
+
+(define-for-syntax (to-table lang x)
   (for/hash ([id (in-list (syntax->list x))])
-    (values (syntax-e id) id)))
+    (values (syntax-e id) (lang-nt-id lang id))))
 
 (define-struct binds (source binds))
   
@@ -2005,10 +2013,13 @@
                          (for/list ([nt-def (in-list (syntax->list #'nt-defs))])
                            (syntax-case nt-def ()
                              [(x . whatever) #'x]))]
+                        [uses
+                         (record-nts-disappeared-bindings #'orig-lang (syntax->list #'(nt-ids ...)) 'disappeared-use)]
                         [bindings
-                         (record-nts-disappeared-bindings (syntax->list #'(nt-ids ...)))])
+                         (record-nts-disappeared-bindings #'name (syntax->list #'(nt-ids ...)))])
            (quasisyntax/loc stx
              (begin
+               uses
                bindings
                (define define-language-name 
                  #,(syntax/loc stx
@@ -2024,7 +2035,8 @@
                         (identifier? #'x)
                         #'define-language-name]))
                    '(all-names ...)
-                   (to-table #'(nt-ids ...))))))))))]))
+                   (to-table #'name #'(nt-ids ...))))))))))]))
+
 
 (define-syntax (extend-language stx)
   (syntax-case stx ()
