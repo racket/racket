@@ -58,7 +58,7 @@
 ;;  - tier-based selection of packages on conflict
 ;;  - support for running tests
 
-(struct vm (name host user dir env init-snapshot installed-snapshot minimal-variant))
+(struct vm (name host user dir env init-snapshot installed-snapshot minimal-variant ssh-key))
 
 ;; Each VM must provide at least an ssh server and `tar`, and the
 ;; intent is that it is otherwise isolated (e.g., no network
@@ -81,10 +81,13 @@
          #:installed-shapshot [installed-snapshot "installed"]
          ;; If not #f, a `vm` that is more constrained and will be
          ;; tried as an installation target before this one:
-         #:minimal-variant [minimal-variant #f])
+         #:minimal-variant [minimal-variant #f]
+         ;; Path to ssh key to use to connect to this VM:
+         ;; #f indicates that ssh's defaults are used
+         #:ssh-key [ssh-key #f])
   (unless (complete-path? dir)
     (error 'vbox-vm "need a complete path for #:dir"))
-  (vm name host user dir env init-snapshot installed-snapshot minimal-variant))
+  (vm name host user dir env init-snapshot installed-snapshot minimal-variant ssh-key))
 
 ;; The build steps:
 (define all-steps-in-order
@@ -295,6 +298,7 @@
                    (vm-env vm)
                    (list (cons "PLTUSERHOME"
                                (~a (vm-dir vm) "/user"))))
+            #:key (vm-ssh-key vm)
             #:timeout timeout
             #:remote-tunnels (list (cons server-port server-port))))
 

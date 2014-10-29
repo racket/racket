@@ -10,6 +10,7 @@
           (rename create-remote remote
                   ((#:host string?)
                    (#:user string?
+                           #:key (or/c #f path-string?)
                            #:env (listof (cons/c string? string?))
                            #:timeout real?
                            #:remote-tunnels (listof (cons/c (integer-in 1 65535)
@@ -32,17 +33,18 @@
                                       void?)]
           [at-remote (remote? path-string? . -> . string?)]))
 
-(struct remote (host user timeout remote-tunnels env)
+(struct remote (host user timeout remote-tunnels env key)
   #:constructor-name make-remote)
 
 (define create-remote
   (let ()
     (define (remote #:host host
                     #:user [user ""]
+                    #:key [key #f]
                     #:timeout [timeout 600]
                     #:remote-tunnels [remote-tunnels null]
                     #:env [env null])
-      (make-remote host user timeout remote-tunnels env))
+      (make-remote host user timeout remote-tunnels env key))
     remote))
 
 (define scp-exe (find-executable-path "scp"))
@@ -97,6 +99,7 @@
   (define timeout? #f)
   (define orig-thread (current-thread))
   (define timeout (remote-timeout remote))
+  (define key (remote-key remote))
   (define timeout-thread
     (thread (lambda ()
               (sleep timeout)
@@ -131,6 +134,7 @@
                       (for/list ([tunnel (in-list (remote-remote-tunnels remote))])
                         (list "-R" (~a (car tunnel) ":localhost:" (cdr tunnel)))))
                      (list (remote-user+host remote))
+                     (if key (list "-i" key) null)
                      ;; ssh needs an extra level of quoting
                      ;;  relative to sh:
                      (for/list ([arg (in-list cmd)])
@@ -155,7 +159,8 @@
        (error 'ssh "failed"))]))
 
 (define (scp remote src dest #:mode [mode 'error])
-  (define ok? (system*/show scp-exe src dest))
+  (define key (remote-key remote))
+  (define ok? (apply system*/show scp-exe (append (if key (list "-i" key) null) (list src dest))))
   (case mode
     [(result) ok?]
     [else 

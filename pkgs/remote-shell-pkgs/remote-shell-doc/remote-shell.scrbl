@@ -29,6 +29,7 @@ produced by @racket[remote], @racket[#f] otherwise.}
                  [#:remote-tunnels remote-tunnels (listof (cons/c (integer-in 1 65535)
                                                                   (integer-in 1 65535)))
                                    null]
+                 [#:key key (or/c #f path-string?)]
                  [#:timeout timeout-secs real? 600])
          remote?]{
 
@@ -43,6 +44,9 @@ The @racket[remote-tunnels] argument specifies ports to tunnel from
 the remote host back to the local host. The first port number in each
 pair is the port number on the remote host, and the second port number
 is the port that it tunnels to on the local host.
+
+If @racket[key] is not @racket[#f], then it is used as the path to an identity
+file used for public-key authentication.
 
 The @racket[timeout] argument specifies a timeout after which a remote
 command will be considered failed.}
