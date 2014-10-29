@@ -326,7 +326,11 @@ Returns the current ``time'' in milliseconds, just like
 @function[(intptr_t scheme_get_process_milliseconds)]{
 
 Returns the current process ``time'' in milliseconds, just like
-@racket[current-process-milliseconds].}
+@racket[(current-process-milliseconds)].}
+
+@function[(intptr_t scheme_get_process_children_milliseconds)]{
+Returns the current process group ``time'' in milliseconds just like
+@racket[(current-process-milliseconds 'subprocesses)].}
 
 @function[(char* scheme_banner)]{
 

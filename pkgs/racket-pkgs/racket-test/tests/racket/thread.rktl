@@ -1545,6 +1545,12 @@
   (kill-thread t)
   (test #t positive? s))
 
+(test #t integer? (current-process-milliseconds))
+(test #t integer? (current-process-milliseconds #f))
+(test #t integer? (current-process-milliseconds (thread void)))
+(test #t integer? (current-process-milliseconds 'subprocesses))
+(err/rt-test (current-process-milliseconds 'other))
+
 ; --------------------
 
 (report-errs)

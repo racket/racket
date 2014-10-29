@@ -1191,6 +1191,7 @@ MZ_EXTERN intptr_t scheme_get_seconds(void);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN double scheme_get_inexact_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_process_milliseconds(void);
+XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_process_children_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_thread_milliseconds(Scheme_Object *thrd);
 
 MZ_EXTERN char *scheme_banner(void);

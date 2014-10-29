@@ -702,6 +702,7 @@
   scheme_extension_table->scheme_get_milliseconds = scheme_get_milliseconds;
   scheme_extension_table->scheme_get_inexact_milliseconds = scheme_get_inexact_milliseconds;
   scheme_extension_table->scheme_get_process_milliseconds = scheme_get_process_milliseconds;
+  scheme_extension_table->scheme_get_process_children_milliseconds = scheme_get_process_children_milliseconds;
   scheme_extension_table->scheme_get_thread_milliseconds = scheme_get_thread_milliseconds;
   scheme_extension_table->scheme_banner = scheme_banner;
   scheme_extension_table->scheme_version = scheme_version;
