@@ -17,7 +17,9 @@
 ;; fmt-id : string identifier -> identifier
 ;; format id where id is used as both the ctx and the single str escape
 (define-for-syntax (fmt-id str-pat id) (format-id id str-pat id))
-                    
+                
+(provide (for-syntax fmt-id fmt-set-id-fn-name fmt-pred-name))
+
 ;; defines and provides functions for an identifier set,
 ;; where type = free or bound
 (define-syntax (define-and-provide-id-set stx)
@@ -174,13 +176,9 @@
            (define i (id-table-iterate-first table))
            (immutable-id-set (id-table-remove table (id-table-iterate-key table i))))
          
-         (define (in-id-set s)
-           (in-dict-keys (id-set-get-table s)))
-         (define (id-set->stream s)
-           (sequence->stream (in-id-set s)))
-         (define (id-set->list s)
-           (for/fold ([ids '()]) ([id (in-dict-keys (id-set-get-table s))])
-             (cons id ids)))
+         (define (in-id-set s) (in-dict-keys (id-set-get-table s)))
+         (define (id-set->stream s) (sequence->stream (in-id-set s)))
+         (define (id-set->list s) (dict-keys (id-set-get-table s)))
          
          ;; -------------------------------------------------------------------
          ;; set operations
@@ -203,10 +201,11 @@
            (define largest-immutable (choose-largest-immutable set0 ss))
            (immutable-id-set
             (for/fold
-                ([table (id-set-get-table largest-immutable)])
-              ([s (in-list (cons set0 ss))]
-               #:unless (eq? s largest-immutable))
-              (for/fold ([table table]) ([id (in-dict-keys (id-set-get-table s))])
+             ([table (id-set-get-table largest-immutable)])
+             ([s (in-list (cons set0 ss))]
+              #:unless (eq? s largest-immutable))
+              (for/fold ([table table])
+                        ([id (in-dict-keys (id-set-get-table s))])
                 (id-table-set table id #t)))))
          (define (id-set-union! set0 . ss)
            (unless (mutable-id-set? set0)
@@ -227,16 +226,14 @@
                (id-table-ref table id #f)))
            (immutable-id-set
             (for/fold ([table smallest-table])
-              ([id (in-dict-keys smallest-table)] #:unless (keep? id))
-              (id-table-remove table id))))     
+                      ([id (in-dict-keys smallest-table)] #:unless (keep? id))
+              (id-table-remove table id))))
          (define (id-set-intersect! set0 . ss)
            (unless (mutable-id-set? set0)
              (error 'id-set-intersect! "expected mutable id set in: ~a" set0))
            (define tables-seq (in-list (map id-set-get-table ss)))
            (define (keep? id)
-             (for/and ([table tables-seq])
-               (printf "keep? ~a = ~a\n" id (id-table-ref table id #f))
-               (id-table-ref table id #f)))
+             (for/and ([table tables-seq]) (id-table-ref table id #f)))
            (define table0 (id-set-get-table set0))
            ;; use dict-keys (instead of in-dict-keys) to grab all keys ahead of time
            ;; bc we will possibly be removing some of them
@@ -253,7 +250,7 @@
            (define table0 (id-set-get-table set0))
            (immutable-id-set
             (for/fold ([table table0])
-              ([id (in-dict-keys table0)] #:when (remove? id))
+                      ([id (in-dict-keys table0)] #:when (remove? id))
               (id-table-remove table id))))
          (define (id-set-subtract! set0 . ss)
            (unless (mutable-id-set? set0)
@@ -274,9 +271,11 @@
                     "expected immutable id set in: ~a" set0))
            (define largest-immutable (choose-largest-immutable set0 ss))
            (immutable-id-set
-            (for/fold ([table (id-set-get-table largest-immutable)])
-              ([s (in-list (cons set0 ss))] #:unless (eq? s largest-immutable))
-              (for/fold ([table table]) ([id (in-dict-keys (id-set-get-table s))])
+            (for/fold 
+             ([table (id-set-get-table largest-immutable)])
+             ([s (in-list (cons set0 ss))] #:unless (eq? s largest-immutable))
+              (for/fold ([table table]) 
+                        ([id (in-dict-keys (id-set-get-table s))])
                 (if (id-table-ref table id #f)
                     (id-table-remove table id)
                     (id-table-set table id #t))))))
@@ -389,7 +388,11 @@
                   #:phase [phase (syntax-local-phase-level)])
            (mutable-id-set 
             (make-mutable-id-table
-             (for/hash ([x (in-set init-set)]) (values x #t))
+             (for/hash ([x (in-set init-set)]) 
+               (unless (identifier? x)
+                 (raise-type-error (object-name mutable-id-set)
+                                   "set with identifier keys" init-set))
+               (values x #t))
              #:phase phase)))
          
          (define (mk-immutable-id-set
@@ -397,7 +400,11 @@
                   #:phase [phase (syntax-local-phase-level)])
            (immutable-id-set 
             (make-immutable-id-table 
-             (for/hash ([x (in-set init-set)]) (values x #t))
+             (for/hash ([x (in-set init-set)]) 
+               (unless (identifier? x)
+                 (raise-type-error (object-name immutable-id-set)
+                                   "set with identifier keys" init-set))
+               (values x #t))
              #:phase phase))))]))
 
 (define-and-provide-id-set #:type free)
