@@ -1865,12 +1865,8 @@
          (define non-terms (parse-non-terminals #'nt-defs stx))
          (with-syntax* ([((names prods ...) ...) non-terms]
                         [(all-names ...) (apply append (map car non-terms))]
-                        [(nt-ids ...) 
-                         (for/list ([nt-def (in-list (syntax->list #'nt-defs))])
-                           (syntax-case nt-def ()
-                             [(x . whatever) #'x]))]
                         [bindings
-                         (record-nts-disappeared-bindings #'lang-name (syntax->list #'(nt-ids ...)))])
+                         (record-nts-disappeared-bindings #'lang-name (syntax->list #'(all-names ...)))])
            (quasisyntax/loc stx
              (begin
                bindings
@@ -1886,7 +1882,7 @@
                         (identifier? #'x)
                         #'define-language-name]))
                    '(all-names ...)
-                   (to-table #'lang-name #'(nt-ids ...)))))
+                   (to-table #'lang-name #'(all-names ...)))))
                (define define-language-name
                  #,(syntax/loc stx (language form-name lang-name (all-names ...) (names prods ...) ...))))))))]))
 
@@ -2009,10 +2005,7 @@
                                   [n2 (if (syntax? n2) (syntax-e n2) n2)])
                               (eq? n1 n2))))]
                         [(define-language-name) (generate-temporaries #'(name))]
-                        [(nt-ids ...) 
-                         (for/list ([nt-def (in-list (syntax->list #'nt-defs))])
-                           (syntax-case nt-def ()
-                             [(x . whatever) #'x]))]
+                        [(nt-ids ...) (apply append (map car non-terms))]
                         [uses
                          (record-nts-disappeared-bindings #'orig-lang (syntax->list #'(nt-ids ...)) 'disappeared-use)]
                         [bindings
@@ -2196,7 +2189,7 @@
                       (identifier? #'x)
                       #'define-language-name]))
                  '(all-names ...)
-                 (to-table #'())))))))]))
+                 (to-table #'name #'())))))))]))
 
 (define (union-language old-langs/prefixes)
   

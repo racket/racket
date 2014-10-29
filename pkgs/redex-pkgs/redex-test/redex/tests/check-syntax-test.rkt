@@ -167,32 +167,38 @@
   (define base-lang-def (identifier L1))
   (define base-lang-use1 (identifier L1))
   (define base-lang-use2 (identifier L1))
+  (define base-lang-use3 (identifier L1))
   (define extended-lang-def (identifier L2))
   (define extended-lang-use (identifier L2))
   (define base-nt-name (identifier e))
   (define base-nt-use (identifier e))
+  (define base-nt-alias (identifier f))
+  (define alias-use (identifier f))
   (define extended-nt-name (identifier e))
   (define extended-nt-use (identifier e))
   
   (define base-lang-bindings
-    (list base-lang-def base-lang-use1 base-lang-use2))
+    (list base-lang-def base-lang-use1 base-lang-use2 base-lang-use3))
   (define extended-lang-bindings
     (list extended-lang-def extended-lang-use))
   (define base-nt-bindings
     (list base-nt-name extended-nt-name base-nt-use))
   (define extended-nt-bindings
     (list extended-nt-name extended-nt-use))
+  (define alias-bindings
+    (list base-nt-alias alias-use))
   
   (parameterize ([current-annotations annotations]
                  [current-namespace module-namespace])
     (add-syntax
      (expand #`(let ()
                  (define-language #,base-lang-def
-                   (#,base-nt-name number))
+                   ((#,base-nt-name #,base-nt-alias) number))
                  (define-extended-language #,extended-lang-def #,base-lang-use1
                    (#,extended-nt-name .... variable))
                  (redex-match #,base-lang-use2 #,base-nt-use 1)
-                 (redex-match #,extended-lang-use #,extended-nt-use 'x))))
+                 (redex-match #,extended-lang-use #,extended-nt-use 'x)
+                 (redex-match #,base-lang-use3 #,alias-use 2))))
     (done))
   
   (test (send annotations collected-arrows)
@@ -200,7 +206,8 @@
          (list base-lang-bindings
                extended-lang-bindings
                base-nt-bindings
-               extended-nt-bindings))))
+               extended-nt-bindings
+               alias-bindings))))
   
     
 
