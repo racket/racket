@@ -328,6 +328,10 @@ Returns the current ``time'' in milliseconds, just like
 Returns the current process ``time'' in milliseconds, just like
 @racket[current-process-milliseconds].}
 
+@function[(intptr_t scheme_get_process_group_milliseconds)]{
+Returns the current process group ``time'' in milliseconds just like
+@racket[current-process-group-milliseconds].}
+
 @function[(char* scheme_banner)]{
 
 Returns the string that is used as the Racket startup banner.}
