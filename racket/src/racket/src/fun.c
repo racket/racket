@@ -45,6 +45,7 @@
 #    include <freebsd/time.h>
 #   endif
 #   include <time.h>
+#   include <sys/times.h>
 #   ifdef USE_FTIME
 #    include <sys/timeb.h>
 #   else
@@ -9390,6 +9391,20 @@ intptr_t scheme_get_process_milliseconds(void)
 
 #  endif
 # endif
+#endif
+}
+
+intptr_t scheme_get_process_group_milliseconds(void)
+  XFORM_SKIP_PROC
+{
+#ifdef WINDOWS_GET_PROCESS_TIMES
+  /* Does this already time the whole process tree */
+  return scheme_get_process_group_milliseconds();
+#else
+  struct tms t;
+  times(&t);
+  return (t.tms_utime + t.tms_stime + t.tms_cutime + t.tms_cstime)
+    * 1000 / CLOCKS_PER_SEC;
 #endif
 }
 
