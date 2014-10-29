@@ -25,11 +25,11 @@ etc) can be used on free-identifier sets.
 
 @deftogether[[
 @defproc[(mutable-free-id-set
-           [init-set set? null]
+           [init-set generic-set? null]
            [#:phase phase (or/c exact-integer? #f) (syntax-local-phase-level)])
          mutable-free-id-set?]
 @defproc[(immutable-free-id-set
-           [init-set set? null]
+           [init-set generic-set? null]
            [#:phase phase (or/c exact-integer? #f) (syntax-local-phase-level)])
          immutable-free-id-set?]]]{
 
@@ -162,22 +162,36 @@ Returns @racket[#t] if @racket[v] was produced by
 @defproc[(free-id-proper-subset? [s1 free-id-set?] [s2 free-id-set?]) boolean?]{
   Like @racket[proper-subset?].}
 
-@defproc[(free-id-set-map [s free-id-set?]) list?]{
+@defproc[(free-id-set-map [s free-id-set?] [f (-> identifier? any/c)]) list?]{
   Like @racket[set-map].}
 
-@defproc[(free-id-set-for-each [s free-id-set?]) void?]{
+@defproc[(free-id-set-for-each [s free-id-set?] [f (-> identifier? any/c)]) void?]{
   Like @racket[set-for-each].}
 
 
-@defproc[(free-id-table/c [key-ctc flat-contract?]
-                          [val-ctc chaperone-contract?]
-                          [#:immutable immutable? (or/c #t #f 'dont-care) 'dont-care])
-         contract?]{
 
-Like @racket[hash/c], but for free-identifier tables. If
-@racket[immutable?] is @racket[#t], the contract accepts only
-immutable identifier tables; if @racket[immutable?] is @racket[#f],
-the contract accepts only mutable identifier tables.
+@defproc[(id-set/c 
+          [elem-ctc flat-contract?]
+          [#:setidtype idsettype
+                       (or/c 'dont-care 'free 'bound) 'dont-care]
+          [#:mutability mutability 
+                        (or/c 'dont-care 'mutable 'immutable) 'dont-care])
+         contract?]{
+Creates a contract for identifier sets. If
+@racket[mutability] is @racket['immutable], the contract accepts only
+immutable identifier sets; if @racket[mutability] is @racket['mutable],
+the contract accepts only mutable identifier sets.
+}
+
+@defproc[(free-id-set/c 
+          [elem-ctc flat-contract?]
+          [#:mutability mutability 
+                        (or/c 'dont-care 'mutable 'immutable) 'dont-care])
+         contract?]{
+Creates a contract for free-identifier sets. If
+@racket[mutability] is @racket['immutable], the contract accepts only
+immutable identifier sets; if @racket[mutability] is @racket['mutable],
+the contract accepts only mutable identifier sets.
 }
 
 @;{----------}
@@ -244,7 +258,12 @@ etc) can be used on bound-identifier sets.
 @defproc[(bound-id-proper-subset? [s1 bound-id-set?] [s2 bound-id-set?]) 
          boolean?]
 @defproc[(bound-id-set-map [s bound-id-set?]) list?]
-@defproc[(bound-id-set-for-each [s bound-id-set?]) void?]]]{
+@defproc[(bound-id-set-for-each [s bound-id-set?]) void?]
+@defproc[(bound-id-set/c 
+          [elem-ctc flat-contract?]
+          [#:mutability mutability 
+                        (or/c 'dont-care 'mutable 'immutable) 'dont-care])
+         contract?]]]{
   Like the procedures for free-identifier sets
   (@racket[immutable-free-id-set], @racket[free-id-set-add], etc), but
   for bound-identifier sets, which use @racket[bound-identifier=?] to

@@ -593,6 +593,72 @@
 
          )]))
 
+;; contract tests -------------------------------------------------------------
+(test #t contract? (id-set/c identifier?))
+(test #t contract? (id-set/c identifier? #:idsettype 'free))
+(test #t contract? (id-set/c identifier? #:idsettype 'bound 
+                                         #:mutability 'mutable))
+(test #t contract? (free-id-set/c (λ (id) (free-identifier=? #'a id))))
+(test #t contract? (free-id-set/c (λ (id) (free-identifier=? #'a id)) 
+                                  #:mutability 'immutable))
+(test #t contract? (bound-id-set/c (λ (id) (bound-identifier=? #'b id))))
+(test #t contract? (bound-id-set/c (λ (id) (bound-identifier=? #'b id)) 
+                                  #:mutability 'mutable))
+
+(test #t chaperone-contract? (id-set/c identifier?))
+(test #f impersonator-contract? (id-set/c identifier?))
+(test #t flat-contract? (id-set/c identifier?))
+(test #t flat-contract? (free-id-set/c identifier? #:mutability 'mutable))
+(test #t flat-contract? (bound-id-set/c identifier? #:mutability 'immutable))
+
+(let ()
+  
+  (define (app-ctc ctc value)
+    (contract ctc value 'positive 'negative))
+  
+  (define (positive-error? exn)
+    (and exn:fail:contract?
+         (regexp-match? "blaming: positive" (exn-message exn))))
+  (define (negative-error? exn)
+    (and exn:fail:contract?
+         (regexp-match? "blaming: negative" (exn-message exn))))
+  
+  (define-syntax-rule (test/blame-pos e)
+    (thunk-error-test (lambda () e) #'e positive-error?))
+  (define-syntax-rule (test/blame-neg e)
+    (thunk-error-test (lambda () e) #'e negative-error?))
+  
+  (define EMPTY/FREE/MUTABLE (mutable-free-id-set null))
+  (define EMPTY/BOUND/IMMUTABLE (immutable-bound-id-set null))
+  (test/blame-pos (app-ctc (id-set/c identifier? #:idsettype 'bound)
+                           EMPTY/FREE/MUTABLE))
+  (test/blame-pos (app-ctc (id-set/c any/c #:mutability 'immutable)
+                           EMPTY/FREE/MUTABLE))
+  (test/blame-pos (app-ctc (free-id-set/c any/c #:mutability 'immutable)
+                           EMPTY/FREE/MUTABLE))
+  (test/blame-pos (app-ctc (bound-id-set/c any/c) EMPTY/FREE/MUTABLE))
+  (test/blame-pos (app-ctc (id-set/c identifier? #:idsettype 'free)
+                           EMPTY/BOUND/IMMUTABLE))
+  (test/blame-pos (app-ctc (id-set/c any/c #:mutability 'mutable)
+                           EMPTY/BOUND/IMMUTABLE))
+  (test/blame-pos (app-ctc (bound-id-set/c any/c #:mutability 'mutable)
+                           EMPTY/BOUND/IMMUTABLE))
+  (test/blame-pos (app-ctc (free-id-set/c any/c) EMPTY/BOUND/IMMUTABLE))
+  
+  (define (not-free-a? id) (not (free-identifier=? id #'a)))
+  (define (not-bound-b? id) (not (bound-identifier=? id #'b)))
+  (define ABC/FREE (immutable-free-id-set (list #'a #'b #'c)))
+  (define ABC/BOUND (immutable-bound-id-set (list #'a #'b #'c)))
+  (test/blame-pos (app-ctc (free-id-set/c not-free-a?) ABC/FREE))
+  (test/blame-pos (app-ctc (bound-id-set/c not-bound-b?) ABC/BOUND))
+  ;; TODO: support higher order contracts
+  #;(test/blame-neg (bound-id-set-add
+                   (app-ctc (bound-id-set/c not-bound-b?) EMPTY/BOUND/IMMUTABLE)
+                   #'b))
+  )
+
+
+
 ;; ----------------------------------------------------------------------------
 ;; run test suite instances
 (define-id-set-tests #:type free #:interface gen:set)
