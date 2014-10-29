@@ -586,15 +586,14 @@
 
 ;; check dont-care defaults
 (test #t set? (app-ctc (set/c any/c) (set)))
-(test #t set-mutable? (app-ctc (set/c any/c) (mutable-set)))
 (test #t set? (app-ctc (set/c any/c) (seteq)))
-(test #t set-mutable? (app-ctc (set/c any/c) (mutable-seteqv)))
 
+(test/blame-pos (app-ctc (set/c any/c) (mutable-set))) ; check immutable default
 (test/blame-pos (app-ctc (set/c any/c #:cmp 'eq) (set)))
 (test/blame-pos (app-ctc (set/c any/c #:kind 'mutable) (set)))
 (test/blame-pos (app-ctc (set/c string? #:kind 'immutable) (set 1)))
-(test #t set? (app-ctc (set/c string?) (set 1))) ; ok bc we get a ho contract
+(test/blame-pos (app-ctc (set/c string?) (set 1)))
 (test/blame-pos (set-first (app-ctc (set/c string?) (set 1))))
-(test/blame-neg (set-add! (app-ctc (set/c string?) (mutable-set)) 1))
+(test/blame-neg (set-add! (app-ctc (set/c string? #:kind 'mutable) (mutable-set)) 1))
 
 (report-errs)

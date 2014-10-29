@@ -203,7 +203,7 @@ named by the @racket[sym]s.
                  'dont-care]
                 [#:kind kind 
                  (or/c 'dont-care 'immutable 'mutable 'weak 'mutable-or-weak)
-                 'dont-care])
+                 'immutable])
          contract?]{
 
   Constructs a contract that recognizes sets whose elements match

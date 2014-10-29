@@ -12,7 +12,7 @@
 
 (define (set/c elem/c
                #:cmp [cmp 'dont-care]
-               #:kind [kind 'dont-care])
+               #:kind [kind 'immutable])
   (define cmp/c
     (case cmp
       [(dont-care) any/c]
