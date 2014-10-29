@@ -36,10 +36,10 @@
 (define (resolve-module-path-index* mpi relto)
   (let ([v (resolve-module-path-index mpi relto)])
     (match v
-      [(? path?) (make-resolved-module-path v)]
+      [(? path?) (make-resolved-module-path (simplify-path v))]
       [(? symbol?) (make-resolved-module-path v)]
       [(list* 'submod (? path? base) syms)
-       (make-resolved-module-path (cons base syms))]
+       (make-resolved-module-path (cons (simplify-path base) syms))]
       [(list* 'submod (? symbol? base) syms)
        (error 'resolve-module-path-index*
               "failed to resolve submodule path base in: ~e" v)])))
