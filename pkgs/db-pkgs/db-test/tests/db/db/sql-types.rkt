@@ -303,6 +303,7 @@
     (type-test-case '(text)
       (call-with-connection
        (lambda (c)
+         (check-roundtrip c "")
          (check-roundtrip c "abcde")
          (check-roundtrip c (make-string #e1e6 #\a))
          (check-roundtrip c (make-string #e1e7 #\b))
