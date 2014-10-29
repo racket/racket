@@ -645,6 +645,9 @@ void scheme_block_child_signals(int block);
 void scheme_check_child_done(void);
 int scheme_extract_child_status(int status);
 #endif
+#ifdef WINDOWS_GET_PROCESS_TIMES
+extern volatile uintptr_t scheme_process_children_msecs;
+#endif
 
 void scheme_prepare_this_thread_for_GC(Scheme_Thread *t);
 

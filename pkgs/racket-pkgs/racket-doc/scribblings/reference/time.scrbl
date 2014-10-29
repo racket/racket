@@ -99,18 +99,34 @@ Like @racket[current-inexact-milliseconds], but coerced to a
 reasonably long) time on a 32-bit platform.}
 
 
-@defproc[(current-process-milliseconds [thread (or/c thread? #f)]) 
+@defproc[(current-process-milliseconds [scope (or/c #f thread? 'subprocesses) #f]) 
          exact-integer?]{
 
-Returns an amount of processor time in @tech{fixnum} milliseconds
-that has been consumed by the Racket process on the underlying
-operating system. (On @|AllUnix|, this includes both user and
-system time.)  If @racket[thread] is @racket[#f], the reported time
-is for all Racket threads, otherwise the result is specific to the
-time while @racket[thread] ran.
+Returns an amount of processor time in @tech{fixnum} milliseconds that
+has been consumed by on the underlying operating system, including
+both user and system time.
+
+@itemlist[
+
+ @item{If @racket[scope] is @racket[#f], the reported time is for all
+       Racket threads and @tech{places}.}
+
+ @item{If @racket[scope] is a thread, the result is specific to the
+       time while the thread ran, but it may include time for other
+       @tech{places}.}
+
+ @item{If @racket[scope] is @racket['subprocesses], the result is the
+       sum of process times for known-completed subprocesses (see
+       @secref["subprocess"])---and known-completed children of the
+       subprocesses, etc., on @|AllUnix|---across all @tech{places}.}
+
+]
+
 The precision of the result is platform-specific, and
 since the result is a @tech{fixnum}, the value increases only over a
-limited (though reasonably long) time on a 32-bit platform.}
+limited (though reasonably long) time on a 32-bit platform.
+
+@history[#:changed "6.1.1.4" @elem{Added @racket['subprocesses] mode.}]}
 
 
 @defproc[(current-gc-milliseconds) exact-integer?]{

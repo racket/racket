@@ -199,6 +199,9 @@ typedef struct Scheme_Subprocess {
   short done;
   int status;
 #endif
+#ifdef WINDOWS_GET_PROCESS_TIMES
+  int got_time;
+#endif
   Scheme_Custodian_Reference *mref;
 } Scheme_Subprocess;
 
@@ -9128,6 +9131,35 @@ static Scheme_Object *redirect_get_or_peek_bytes_k(void)
 
 #if defined(UNIX_PROCESSES) || defined(WINDOWS_PROCESSES)
 
+#if defined(WINDOWS_PROCESSES)
+static void collect_process_time(DWORD w, Scheme_Subprocess *sp)
+{
+  if ((w != STILL_ACTIVE) && !sp->got_time) {
+    FILETIME cr, ex, kr, us;
+    if (GetProcessTimes(sp->handle, &cr, &ex, &kr, &us)) {
+      mzlonglong v;
+      uintptr_t msecs;
+      v = ((((mzlonglong)kr.dwHighDateTime << 32) + kr.dwLowDateTime)
+	   + (((mzlonglong)us.dwHighDateTime << 32) + us.dwLowDateTime));
+      msecs = (uintptr_t)(v / 10000);
+
+#if defined(MZ_USE_PLACES)
+      {
+        int set = 0;
+        while (!set) {
+          uintptr_t old_val = scheme_process_children_msecs;
+          set = mzrt_cas(&scheme_process_children_msecs, old_val, old_val + msecs);
+        }
+      }
+#else
+      scheme_process_children_msecs += msecs;
+#endif
+    }
+    sp->got_time = 1;
+  }
+}
+#endif
+
 static void child_mref_done(Scheme_Subprocess *sp)
 {
   if (sp->mref) {
@@ -9176,9 +9208,10 @@ static int subp_done(Scheme_Object *so)
     HANDLE sci = (HANDLE) ((Scheme_Subprocess *)sp)->handle;
     DWORD w;
     if (sci) {
-      if (GetExitCodeProcess(sci, &w))
-        return w != STILL_ACTIVE;
-      else
+      if (GetExitCodeProcess(sci, &w)) {
+        collect_process_time(w, (Scheme_Subprocess *)sp);
+        return (w != STILL_ACTIVE);
+      } else
         return 1;
     } else
       return 1;
@@ -9236,6 +9269,7 @@ static Scheme_Object *subprocess_status(int argc, Scheme_Object **argv)
     DWORD w;
     if (sp->handle) {
       if (GetExitCodeProcess((HANDLE)sp->handle, &w)) {
+        collect_process_time(w, sp);
 	if (w == STILL_ACTIVE)
 	  going = 1;
 	else
@@ -9362,6 +9396,7 @@ static Scheme_Object *do_subprocess_kill(Scheme_Object *_sp, Scheme_Object *kill
       if (GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, sp->pid))
         return scheme_void;
     } else if (GetExitCodeProcess((HANDLE)sp->handle, &w)) {
+      collect_process_time(w, sp);
       if (w != STILL_ACTIVE)
         return scheme_void;
       if (TerminateProcess((HANDLE)sp->handle, 1))

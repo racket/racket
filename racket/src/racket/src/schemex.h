@@ -975,6 +975,7 @@ intptr_t (*scheme_get_seconds)(void);
 intptr_t (*scheme_get_milliseconds)(void);
 double (*scheme_get_inexact_milliseconds)(void);
 intptr_t (*scheme_get_process_milliseconds)(void);
+intptr_t (*scheme_get_process_children_milliseconds)(void);
 intptr_t (*scheme_get_thread_milliseconds)(Scheme_Object *thrd);
 char *(*scheme_banner)(void);
 char *(*scheme_version)(void);
