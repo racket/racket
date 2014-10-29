@@ -561,11 +561,40 @@
                        (add1 i)))
 
 ;; ----------------------------------------
+;; set/c tests
 
 (err/rt-test (set/c '(not a contract)))
 (err/rt-test (set/c any/c #:cmp 'not-a-comparison))
 (err/rt-test (set/c any/c #:kind 'not-a-kind-of-set))
 (err/rt-test (set/c (-> integer? string?) #:cmp 'eq))
 (err/rt-test (set/c (-> integer? string?) #:cmp 'eqv))
+
+(define (app-ctc ctc value)
+  (contract ctc value 'positive 'negative))
+
+(define (positive-error? exn)
+  (and exn:fail:contract?
+       (regexp-match? "blaming: positive" (exn-message exn))))
+(define (negative-error? exn)
+  (and exn:fail:contract?
+       (regexp-match? "blaming: negative" (exn-message exn))))
+
+(define-syntax-rule (test/blame-pos e)
+  (thunk-error-test (lambda () e) #'e positive-error?))
+(define-syntax-rule (test/blame-neg e)
+  (thunk-error-test (lambda () e) #'e negative-error?))
+
+;; check dont-care defaults
+(test #t set? (app-ctc (set/c any/c) (set)))
+(test #t set-mutable? (app-ctc (set/c any/c) (mutable-set)))
+(test #t set? (app-ctc (set/c any/c) (seteq)))
+(test #t set-mutable? (app-ctc (set/c any/c) (mutable-seteqv)))
+
+(test/blame-pos (app-ctc (set/c any/c #:cmp 'eq) (set)))
+(test/blame-pos (app-ctc (set/c any/c #:kind 'mutable) (set)))
+(test/blame-pos (app-ctc (set/c string? #:kind 'immutable) (set 1)))
+(test #t set? (app-ctc (set/c string?) (set 1))) ; ok bc we get a ho contract
+(test/blame-pos (set-first (app-ctc (set/c string?) (set 1))))
+(test/blame-neg (set-add! (app-ctc (set/c string?) (mutable-set)) 1))
 
 (report-errs)
