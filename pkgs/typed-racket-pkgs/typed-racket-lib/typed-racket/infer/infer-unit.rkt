@@ -638,6 +638,8 @@
           ;; boxes are invariant - generate constraints *both* ways
           [((Box: e) (Box: e*))
            (cg/inv e e*)]
+          [((Weak-Box: e) (Weak-Box: e*))
+           (cg/inv e e*)]
           [((MPair: s t) (MPair: s* t*))
            (% cset-meet (cg/inv s s*) (cg/inv t t*))]
           [((Channel: e) (Channel: e*))

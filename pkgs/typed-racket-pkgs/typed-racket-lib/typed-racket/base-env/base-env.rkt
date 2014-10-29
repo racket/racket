@@ -2855,6 +2855,15 @@
                       (-lst -String)
                       . -> . b))))]
 
+;; Section 16.1 (Weak Boxes)
+[make-weak-box (-poly (a) (-> a (-weak-box a)))]
+[weak-box-value
+ (-poly (a b)
+   (cl->* (-> (-weak-box a) (-opt a))
+          (-> (-weak-box a) b (Un b a))
+          (->opt -Weak-BoxTop [Univ] Univ)))]
+[weak-box? (make-pred-ty -Weak-BoxTop)]
+
 ;; Section 16.2 (Ephemerons)
 [make-ephemeron (-poly (k v) (-> k v (make-Ephemeron v)))]
 [ephemeron? (make-pred-ty (make-Ephemeron Univ))]

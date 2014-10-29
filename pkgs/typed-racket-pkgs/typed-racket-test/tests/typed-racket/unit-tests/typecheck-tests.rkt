@@ -1832,6 +1832,20 @@
                (struct-type-property? prop))
               #:ret (ret -Boolean -true-filter))
 
+        ;; Weak boxes
+        [tc-e (make-weak-box "foo") (-weak-box -String)]
+        [tc-e (weak-box-value (make-weak-box "foo")) (-opt -String)]
+        [tc-e (weak-box-value (ann (make-weak-box "foo") Weak-BoxTop))
+              Univ]
+        [tc-e (weak-box-value (make-weak-box "foo") 'bar)
+              (t:Un (-val 'bar) -String)]
+        [tc-err (let ()
+                  (define b1 (make-weak-box "foo"))
+                  (: b2 (Weak-Boxof (U Symbol String)))
+                  (define b2 b1)
+                  (error "foo"))
+                #:msg #rx"expected: \\(Weak-Boxof \\(U Symbol String\\)\\)"]
+
         ;Wills
         (tc-e (make-will-executor) -Will-Executor)
         ;; FIXME: Broken because ManyUniv doesn't have a corresponding tc-result
