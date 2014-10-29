@@ -168,6 +168,7 @@ static Scheme_Object *time_apply(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_inexact_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **argv);
+static Scheme_Object *current_process_group_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_seconds(int argc, Scheme_Object **argv);
 static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv);
@@ -523,6 +524,11 @@ scheme_init_fun (Scheme_Env *env)
 			     scheme_make_immed_prim(current_process_milliseconds,
                                                     "current-process-milliseconds",
                                                     0, 1),
+			     env);
+  scheme_add_global_constant("current-process-group-milliseconds",
+			     scheme_make_immed_prim(current_process_group_milliseconds,
+                                                    "current-process-group-milliseconds",
+                                                    0, 0),
 			     env);
   scheme_add_global_constant("current-gc-milliseconds",
 			     scheme_make_immed_prim(current_gc_milliseconds,
@@ -9866,6 +9872,12 @@ static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **arg
     scheme_wrong_contract("current-process-milliseconds", "thread?", 0, argc, argv);
     return NULL;
   }
+}
+
+static Scheme_Object *current_process_group_milliseconds(int argc,
+                                                         Scheme_Object **argv)
+{
+  return scheme_make_integer(scheme_get_process_group_milliseconds());
 }
 
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv)
