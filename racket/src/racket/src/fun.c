@@ -9403,14 +9403,33 @@ intptr_t scheme_get_process_milliseconds(void)
 intptr_t scheme_get_process_group_milliseconds(void)
   XFORM_SKIP_PROC
 {
-#ifdef WINDOWS_GET_PROCESS_TIMES
+#ifdef USER_TIME_IS_CLOCK
+  return scheme_get_milliseconds();
+#else
+# ifdef USE_GETRUSAGE
+  struct rusage use;
+  intptr_t s, u;
+
+  do {
+    if (!getrusage(RUSAGE_CHILDREN, &use))
+      break;
+  } while (errno == EINTR);
+
+  s = use.ru_utime.tv_sec + use.ru_stime.tv_sec;
+  u = use.ru_utime.tv_usec + use.ru_stime.tv_usec;
+
+  return (s * 1000 + u / 1000) + scheme_get_process_milliseconds();
+# else
+#  ifdef WINDOWS_GET_PROCESS_TIMES
   /* Does this already time the whole process tree */
   return scheme_get_process_group_milliseconds();
-#else
-  struct tms t;
+#  else
+  clock_t t;
   times(&t);
   return (t.tms_utime + t.tms_stime + t.tms_cutime + t.tms_cstime)
-    * 1000 / CLOCKS_PER_SEC;
+    * 1000 / CLK_TCK;
+#  endif
+# endif
 #endif
 }
 
