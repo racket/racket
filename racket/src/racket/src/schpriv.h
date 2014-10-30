@@ -1044,11 +1044,12 @@ typedef struct Scheme_Stx {
   Scheme_Inclhash_Object iso; /* 0x1 and 0x2 of keyex used */
   Scheme_Object *val;
   Scheme_Stx_Srcloc *srcloc;
-  Scheme_Object *wraps;
+  Scheme_Hash_Tree *marks; /* mark set */
   union {
-    intptr_t lazy_prefix; /* # of initial items in wraps to propagate; -1 => taint to propagate */
-    Scheme_Object *modinfo_cache;
+    Scheme_Hash_Tree *to_propagate;
+    Scheme_Object **cached_binding;
   } u;
+  Scheme_Object *shifts; /* <all-shifts> or (vector <all-shifts> <shifts-to-propagate> <base-shifts>); each starts with phase, if any */
   Scheme_Object *taints; /* taint or taint-arming */
   Scheme_Object *props;
 } Scheme_Stx;
@@ -1090,7 +1091,7 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 
 int scheme_stx_has_empty_wraps(Scheme_Object *);
 
-Scheme_Object *scheme_new_mark(void);
+Scheme_Object *scheme_new_mark(int canceling);
 Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m);
 
 Scheme_Object *scheme_make_rename(Scheme_Object *newname, int c);

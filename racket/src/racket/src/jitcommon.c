@@ -1803,8 +1803,8 @@ static int common4(mz_jit_state *jitter, void *_data)
     (void)mz_bnei_t(reffail, JIT_R0, scheme_stx_type, JIT_R2);
     
     /* It's a syntax object... needs to propagate? */
-    jit_ldxi_l(JIT_R2, JIT_R0, &((Scheme_Stx *)0x0)->u.lazy_prefix);
-    ref = jit_beqi_l(jit_forward(), JIT_R2, 0x0);
+    jit_ldxi_l(JIT_R2, JIT_R0, &((Scheme_Stx *)0x0)->u.to_propagate);
+    ref = jit_beqi_p(jit_forward(), JIT_R2, 0x0);
     CHECK_LIMIT();
 
     /* Maybe needs to propagate; check STX_SUBSTX_FLAG flag */

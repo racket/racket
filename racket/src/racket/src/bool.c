@@ -318,6 +318,11 @@ XFORM_NONGCING static int is_eqv(Scheme_Object *obj1, Scheme_Object *obj2)
       }
     case scheme_char_type:
       return SCHEME_CHAR_VAL(obj1) == SCHEME_CHAR_VAL(obj2);
+    case scheme_symbol_type:
+    case scheme_keyword_type:
+    case scheme_mark_type:
+      /* `eqv?` requires `eq?` */
+      return 0;
     default:
       return -1;
     }

@@ -222,15 +222,8 @@ typedef struct Thread_Local_Variables {
   void *stack_copy_cache_[STACK_COPY_CACHE_SIZE];
   intptr_t stack_copy_size_cache_[STACK_COPY_CACHE_SIZE];
   int scc_pos_;
-  struct Scheme_Object *nominal_ipair_cache_;
-  struct Scheme_Object *mark_id_;
-  struct Scheme_Object *current_rib_timestamp_;
-  struct Scheme_Hash_Table *quick_hash_table_;
-  struct Scheme_Object *last_phase_shift_;
-  struct Scheme_Object *unsealed_dependencies_;
-  struct Scheme_Hash_Table *id_marks_ht_;
-  struct Scheme_Hash_Table *than_id_marks_ht_;
-  struct Scheme_Bucket_Table *interned_skip_ribs_;
+  mzlonglong mark_counter_;
+  struct Scheme_Bucket_Table *taint_intern_table_;
   struct Scheme_Thread *scheme_current_thread_;
   struct Scheme_Thread *scheme_main_thread_;
   struct Scheme_Thread *scheme_first_thread_;
@@ -352,7 +345,6 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Hash_Table *loaded_extensions_;
   struct Scheme_Hash_Table *fullpath_loaded_extensions_;
   Scheme_Sleep_Proc scheme_place_sleep_;
-  struct Scheme_Bucket_Table *taint_intern_table_;
   struct GHBN_Thread_Data *ghbn_thread_data_;
   Scheme_On_Atomic_Timeout_Proc on_atomic_timeout_;
   int atomic_timeout_auto_suspend_;
@@ -607,15 +599,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define stack_copy_cache XOA (scheme_get_thread_local_variables()->stack_copy_cache_)
 #define stack_copy_size_cache XOA (scheme_get_thread_local_variables()->stack_copy_size_cache_)
 #define scc_pos XOA (scheme_get_thread_local_variables()->scc_pos_)
-#define nominal_ipair_cache XOA (scheme_get_thread_local_variables()->nominal_ipair_cache_)
-#define mark_id XOA (scheme_get_thread_local_variables()->mark_id_)
-#define current_rib_timestamp XOA (scheme_get_thread_local_variables()->current_rib_timestamp_)
-#define quick_hash_table XOA (scheme_get_thread_local_variables()->quick_hash_table_)
-#define last_phase_shift XOA (scheme_get_thread_local_variables()->last_phase_shift_)
-#define unsealed_dependencies XOA (scheme_get_thread_local_variables()->unsealed_dependencies_)
-#define id_marks_ht XOA (scheme_get_thread_local_variables()->id_marks_ht_)
-#define than_id_marks_ht XOA (scheme_get_thread_local_variables()->than_id_marks_ht_)
-#define interned_skip_ribs XOA (scheme_get_thread_local_variables()->interned_skip_ribs_)
+#define mark_counter XOA (scheme_get_thread_local_variables()->mark_counter_)
+#define taint_intern_table XOA (scheme_get_thread_local_variables()->taint_intern_table_)
 #define scheme_current_thread XOA (scheme_get_thread_local_variables()->scheme_current_thread_)
 #define scheme_main_thread XOA (scheme_get_thread_local_variables()->scheme_main_thread_)
 #define scheme_first_thread XOA (scheme_get_thread_local_variables()->scheme_first_thread_)
@@ -737,7 +722,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define loaded_extensions XOA (scheme_get_thread_local_variables()->loaded_extensions_)
 #define fullpath_loaded_extensions XOA (scheme_get_thread_local_variables()->fullpath_loaded_extensions_)
 #define scheme_place_sleep XOA (scheme_get_thread_local_variables()->scheme_place_sleep_)
-#define taint_intern_table XOA (scheme_get_thread_local_variables()->taint_intern_table_)
 #define ghbn_thread_data XOA (scheme_get_thread_local_variables()->ghbn_thread_data_)
 #define on_atomic_timeout XOA (scheme_get_thread_local_variables()->on_atomic_timeout_)
 #define atomic_timeout_auto_suspend XOA (scheme_get_thread_local_variables()->atomic_timeout_auto_suspend_)
