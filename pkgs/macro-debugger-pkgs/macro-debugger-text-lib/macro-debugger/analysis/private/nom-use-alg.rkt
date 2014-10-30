@@ -140,7 +140,13 @@
 ;; FIXME: cache tables
 (define (mod->bypass-table mod)
   (define table (make-hash))
-  (let ([prov (get-module-all-exports mod)])
+  (let/ec escape
+    (define prov
+      ;; FIXME: hack around mis-resolution of mpis in case of submodules
+      ;; by just bailing out; should just result in missed bypass opportunities
+      (with-handlers ([(lambda (e) #t)
+                       (lambda (e) (escape (void)))])
+        (get-module-all-exports mod)))
     (for* ([phase+exps (in-list prov)]
            #:when (car phase+exps) ;; Skip for-label provides
            [name+srcs (in-list (cdr phase+exps))]
