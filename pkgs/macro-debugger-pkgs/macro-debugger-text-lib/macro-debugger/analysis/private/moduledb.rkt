@@ -90,4 +90,7 @@
       [(list 'file part)
        (ok? part)]
       [(list 'planet part ...)
-       #t])))
+       #t]
+      [(list* 'submod base _)
+       ;; Never bypass to submodules
+       #f])))
