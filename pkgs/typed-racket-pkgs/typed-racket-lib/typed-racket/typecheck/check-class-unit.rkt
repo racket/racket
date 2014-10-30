@@ -738,8 +738,8 @@
     (make-method-types (hash-ref parse-info 'augment-internals) augments))
   (define inner-types
     (make-method-types
-     (set-union (hash-ref parse-info 'pubment-internals)
-                (hash-ref parse-info 'augment-internals))
+     (append (hash-ref parse-info 'pubment-internals)
+             (hash-ref parse-info 'augment-internals))
      augments #:inner? #t))
 
   ;; construct field accessor types
