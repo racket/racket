@@ -12009,50 +12009,6 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
   Scheme_Env *env;
   int share_all;
 
-  idx = SCHEME_CAR(info);
-  orig_idx = idx;
-  info = SCHEME_CDR(info);
-  pt_phase = SCHEME_CAR(info);
-  info = SCHEME_CDR(info);
-
-  if (SCHEME_PAIRP(info) && (SCHEME_PAIRP(SCHEME_CAR(info))
-                             || SCHEME_VECTORP(SCHEME_CAR(info)))) {
-    marks = SCHEME_CAR(info);
-    info = SCHEME_CDR(info);
-  } else
-    marks = scheme_null;
-
-  if (SCHEME_VECTORP(marks)) {
-    bdg = SCHEME_VEC_ELS(marks)[1];
-    marks = SCHEME_VEC_ELS(marks)[0];
-  } else
-    bdg = scheme_false;
-
-  if (SCHEME_INTP(info)
-      || SCHEME_FALSEP(info)) {
-    share_all = 1;
-    src_phase_index = info;
-    
-    exns = NULL;
-    prefix = NULL;
-  } else {
-    share_all = 0;
-    src_phase_index = SCHEME_CAR(info);
-    info = SCHEME_CDR(info);
-    exns = SCHEME_CAR(info);
-    prefix = SCHEME_CDR(info);
-
-    if (SCHEME_FALSEP(prefix))
-      prefix = NULL;
-    if (SCHEME_NULLP(exns))
-      exns = NULL;
-  }
-    
-  if (modidx_shift_from)
-    idx = scheme_modidx_shift(idx,
-			      modidx_shift_from,
-			      modidx_shift_to);
-
   name = scheme_module_resolve(idx, 0);
 
   {
@@ -12097,18 +12053,6 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
         pt->src_modidx = me->src_modidx;
       scheme_extend_module_rename_with_shared(rn, orig_idx, pt, pt->phase_index, src_phase_index, marks, bdg, 0);
     }
-  } else {
-    if (!SCHEME_NULLP(marks) || SCHEME_TRUEP(bdg))
-      scheme_signal_error("internal error: unexpected marks/bdg");
-
-    add_single_require(me, pt_phase, src_phase_index, orig_idx, NULL,
-                       NULL, NULL, rn,
-                       exns, NULL, prefix, NULL, NULL,
-                       NULL,
-                       0, 0, 1, 0,
-                       NULL/* _all_simple */,
-                       NULL /* ck */, NULL /* data */, 
-                       NULL, NULL, NULL);
   }
 }
 
