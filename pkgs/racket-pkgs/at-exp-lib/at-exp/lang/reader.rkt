@@ -26,7 +26,12 @@
                ;; fall back to /lang/reader:
                (string->symbol (string-append str "/lang/reader"))))))
      wrap-reader
-     wrap-reader
+     (lambda (orig-read-syntax)
+       (define read-syntax (wrap-reader orig-read-syntax))
+       (lambda args
+         (syntax-property (apply read-syntax args)
+                          'module-language
+                          '#(at-exp/lang/language-info get-language-info #f))))
      (lambda (proc)
        (lambda (key defval)
          (define (fallback) (if proc (proc key defval) defval))
