@@ -63,8 +63,8 @@ using the functions described in @secref["cert-procs"].
                       [port-no (integer-in 1 65535)]
                       [client-protocol
                        (or/c ssl-client-context?
-                             'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-                       'sslv2-or-v3])
+                             'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+                       'auto])
          (values input-port? output-port?)]{
 
 Connect to the host given by @racket[hostname], on the port given by
@@ -75,11 +75,9 @@ output port.
 The optional @racket[client-protocol] argument determines which
 encryption protocol is used, whether the server's certificate is
 checked, etc. The argument can be either a client context created by
-@racket[ssl-make-client-context], or one of the following symbols:
-@racket['sslv2-or-v3] (the default), @racket['sslv2], @racket['sslv3],
-@racket['tls], @racket['tls11], or @racket['tls12]; see
-@racket[ssl-make-client-context] for further details (including the
-meanings of the protocol symbols).
+@racket[ssl-make-client-context] a symbol specifying the protocol to
+use; see @racket[ssl-make-client-context] for further details,
+including the meanings of the protocol symbols.
 
 Closing the resulting output port does not send a shutdown message to
 the server. See also @racket[ports->ssl-ports].
@@ -110,8 +108,8 @@ whether the other end is supposed to be sending or reading data.
 	  [port-no (integer-in 1 65535)]
 	  [client-protocol
 	   (or/c ssl-client-context?
-                 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-           'sslv2-or-v3])
+                 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+           'auto])
          (values input-port? output-port?)]{
 
 Like @racket[ssl-connect], but breaking is enabled while trying to
@@ -121,14 +119,13 @@ connect.}
 @defproc[(ssl-secure-client-context)
          ssl-client-context?]{
 
-Returns a client context (using the @racket['tls] protocol) that
-verifies certificates using the default verification sources from
-@racket[(ssl-default-verify-sources)], verifies hostnames, and avoids
-using weak ciphers. The result is essentially equivalent to the
-following:
+Returns a client context that verifies certificates using the default
+verification sources from @racket[(ssl-default-verify-sources)],
+verifies hostnames, and avoids using weak ciphers. The result is
+essentially equivalent to the following:
 
 @racketblock[
-(let ([ctx (ssl-make-client-context 'tls)])
+(let ([ctx (ssl-make-client-context 'auto)])
   (code:comment "Load default verification sources (root certificates)")
   (ssl-load-default-verify-sources! ctx)
   (code:comment "Require certificate verification")
@@ -149,38 +146,57 @@ The context is cached, so different calls to
 
 
 @defproc[(ssl-make-client-context
-          [protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12) 'sslv2-or-v3])
+          [protocol (or/c 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12) 'auto])
          ssl-client-context?]{
 
 Creates a context to be supplied to @racket[ssl-connect]. The context
-identifies a communication protocol (as selected by
+is @bold{insecure} unless additional steps are taken; see
+@racket[ssl-secure-client-context] for details.
+
+The client context identifies a communication protocol (as selected by
 @racket[protocol]), and also holds certificate information (i.e., the
 client's identity, its trusted certificate authorities, etc.). See the
 section @secref["cert-procs"] below for more information on
 certificates.
 
-The @racket[protocol] must be one of the following:
+The @racket[protocol] should be one of the following:
 @itemize[
-  @item{@racket['sslv2-or-v3] : SSL protocol versions 2 or 3, as
-  appropriate (this is the default)}
-  @item{@racket['sslv2] : SSL protocol version 2}
-  @item{@racket['sslv3] : SSL protocol version 3}
-  @item{@racket['tls] : the TLS protocol version 1}
-  @item{@racket['tls11] : the TLS protocol version 1.1}
-  @item{@racket['tls12] : the TLS protocol version 1.2}
+@item{@racket['auto] : Automatically negotiates the protocol version
+from those that this library considers sufficiently secure---currently
+TLS versions 1.0 and higher, but subject to change.}
+@item{@racket['tls] : Only TLS protocol version 1.0.}
+@item{@racket['tls11] : Only TLS protocol version 1.1.}
+@item{@racket['tls12] : Only TLS protocol version 1.2.}
+]
+The following @racket[protocol] symbols are deprecated but still supported:
+@itemlist[
+@item{@racket['sslv2-or-v3] : Alias for @racket['auto]. Note that
+despite the name, neither SSL 2.0 nor 3.0 are considered sufficiently
+secure, so this @racket[protocol] no longer allows either of them.}
+@item{@racket['sslv2] : SSL protocol version 2.0. @bold{Insecure.}
+Note that SSL 2.0 support has been removed from many platforms.}
+@item{@racket['sslv3] : SSL protocol version 3.0. @bold{Insecure.}}
 ]
 
-Note that SSL protocol version 2 is deprecated on some platforms and may not be
-present in your system libraries. The use of SSLv2 may also compromise security; 
-thus, using SSLv3 is recommended. TLS 1.1 and 1.2 are relatively new and not
-always available. See also @racket[supported-client-protocols] and
+Not all protocol versions are supported by all servers. The
+@racket['auto] option offers broad compatibility at a reasonable level
+of security. Note that the security of connections depends on more
+than the protocol version; see @racket[ssl-secure-client-context] for
+details.
+
+Not all protocol versions are available on all platforms. See also
+@racket[supported-client-protocols] and
 @racket[supported-server-protocols].
 
-@history[#:changed "6.1" @elem{Added @racket['tls11] and @racket['tls12].}]}
+@history[
+#:changed "6.1" @elem{Added @racket['tls11] and @racket['tls12].}
+#:changed "6.1.1.3" @elem{Default to new @racket['auto] and disabled SSL
+2.0 and 3.0 by default.}
+]}
 
 
 @defproc[(supported-client-protocols)
-         (listof (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
+         (listof (or/c 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
 
 Returns a list of symbols representing protocols that are supported
 for clients on the current platform.}
@@ -193,6 +209,13 @@ Returns @racket[#t] if @racket[v] is a value produced by
 
 @history[#:added "6.0.1.3"]}
 
+@defproc[(ssl-max-client-protocol) (or/c 'sslv2 sslv3 'tls 'tls11 'tls12 #f)]{
+
+Returns the most recent SSL/TLS protocol version supported by the
+current platform for client connections.
+
+@history[#:added "6.1.1.3"]
+}
 
 @; ----------------------------------------------------------------------
 
@@ -205,8 +228,8 @@ Returns @racket[#t] if @racket[v] is a value produced by
 	  [hostname-or-#f (or/c string? #f) #f]
 	  [server-protocol
 	   (or/c ssl-server-context? 
-                 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-           'sslv2-or-v3])
+                 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+           'auto])
 	 ssl-listener?]{
 
 Like @racket[tcp-listen], but the result is an SSL listener. The extra optional
@@ -271,7 +294,9 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
 @racket[ports->ssl-ports].}
 
 
-@defproc[(ssl-make-server-context [protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)])
+@defproc[(ssl-make-server-context
+          [protocol (or/c 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+                    'auto])
          ssl-server-context?]{
 
 Like @racket[ssl-make-client-context], but creates a server context.}
@@ -283,12 +308,20 @@ Returns @racket[#t] if @racket[v] is a value produced by
 @racket[ssl-make-server-context], @racket[#f] otherwise.}
 
 @defproc[(supported-server-protocols)
-         (listof (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
+         (listof (or/c 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
 
 Returns a list of symbols representing protocols that are supported
 for servers on the current platform.
 
 @history[#:added "6.0.1.3"]}
+
+@defproc[(ssl-max-server-protocol) (or/c 'sslv2 sslv3 'tls 'tls11 'tls12 #f)]{
+
+Returns the most recent SSL/TLS protocol version supported by the
+current platform for server connections.
+
+@history[#:added "6.1.1.3"]
+}
 
 @; ----------------------------------------------------------------------
 
@@ -304,7 +337,8 @@ for servers on the current platform.
                            ssl-make-server-context 
                            ssl-make-client-context)
                        protocol)]
-	   [#:encrypt protocol (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12) 'sslv2-or-v3]
+	   [#:encrypt protocol (or/c 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+                      'auto]
 	   [#:close-original? close-original? boolean? #f]
 	   [#:shutdown-on-close? shutdown-on-close? boolean? #f]
 	   [#:error/ssl error procedure? error]
@@ -331,7 +365,7 @@ mode. If it is not supplied, a context is created using the protocol
 specified by a @racket[protocol] argument.
 
 If the @racket[protocol] argument is not supplied, it defaults to
-@racket['sslv2-or-v3]. See @racket[ssl-make-client-context] for
+@racket['auto]. See @racket[ssl-make-client-context] for
 further details (including all options and the meanings of the
 protocol symbols).  This argument is ignored if a @racket[context]
 argument is supplied.
