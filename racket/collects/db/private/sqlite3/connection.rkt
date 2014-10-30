@@ -17,7 +17,8 @@
 (define connection%
   (class* statement-cache% (connection<%>)
     (init db)
-    (init-private busy-retry-limit
+    (init-private db-spec ;; #f or (list path mode)
+                  busy-retry-limit
                   busy-retry-delay)
 
     (define -db db)
@@ -365,7 +366,7 @@
       (when (memv (simplify-status full-s) maybe-rollback-status-list)
         (when (and saved-tx-status -db (not (read-tx-status))) ;; was in trans, now not
           (set-tx-status! who 'invalid)))
-      (handle-status* who full-s -db))
+      (handle-status* who full-s -db db-spec))
 
     ;; ----
 
@@ -381,11 +382,13 @@
 
 ;; ----------------------------------------
 
-;; handle-status : symbol integer -> integer
+;; handle-status* : symbol integer [...] -> integer
 ;; Returns the status code if no error occurred, otherwise
 ;; raises an exception with an appropriate message.
-(define (handle-status* who full-s db)
+(define (handle-status* who full-s db [db-spec #f])
   (define s (simplify-status full-s))
+  (define db-file (and db-spec (car db-spec)))
+  (define db-mode (and db-spec (cadr db-spec)))
   (cond [(or (= s SQLITE_OK)
              (= s SQLITE_ROW)
              (= s SQLITE_DONE))
@@ -400,12 +403,24 @@
                  (cond [(and (= s SQLITE_ERROR) db)
                         (sqlite3_errmsg db)]
                        [else (caddr info)])])
-           (raise (make-exn:fail:sql (format "~a: ~a" who message)
+           (define extra
+             (cond [(memv s include-db-file-status-list)
+                    (string-append
+                     (format "\n  database: ~e" (or db-file 'unknown))
+                     (format "\n  mode: ~e" (or db-mode 'unknown))
+                     (if (path-string? db-file)
+                         (format "\n  file permissions: ~s"
+                                 (file-or-directory-permissions db-file))
+                         ""))]
+                   [else ""]))
+           (raise (make-exn:fail:sql (format "~a: ~a~a" who message extra)
                                      (current-continuation-marks)
                                      sym
                                      `((code . ,sym)
                                        (message . ,message)
-                                       (errcode . ,s)))))]))
+                                       (errcode . ,s)
+                                       (db-file . ,db-file)
+                                       (db-mode . ,db-mode)))))]))
 
 (define (simplify-status s)
   (cond
@@ -450,3 +465,9 @@
 (define maybe-rollback-status-list
   (list SQLITE_FULL SQLITE_IOERR SQLITE_BUSY SQLITE_NOMEM SQLITE_INTERRUPT
         SQLITE_IOERR_BLOCKED SQLITE_IOERR_LOCK))
+
+(define include-db-file-status-list
+  (list SQLITE_READONLY SQLITE_PERM SQLITE_ABORT SQLITE_BUSY SQLITE_LOCKED
+        SQLITE_IOERR SQLITE_IOERR_BLOCKED SQLITE_IOERR_LOCK SQLITE_CORRUPT
+        SQLITE_NOTFOUND SQLITE_FULL SQLITE_CANTOPEN SQLITE_PROTOCOL SQLITE_EMPTY
+        SQLITE_FORMAT SQLITE_NOTADB))
