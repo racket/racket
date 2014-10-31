@@ -49,7 +49,7 @@ extern "C" {
 #endif
 
 /* Set up MZ_EXTERN for DLL build */
-#if (defined(__WIN32__) || defined(WIN32) || defined(_WIN32)) \
+#if (defined(__WIN32__) || defined(WIN32) || defined(_WIN32) || defined(__CYGWIN32__)) \
     && !defined(LINK_EXTENSIONS_BY_TABLE) \
     && !defined(SCHEME_EMBEDDED_NO_DLL)
 # define MZ_DLLIMPORT __declspec(dllimport)
@@ -59,10 +59,16 @@ extern "C" {
 # else
 #  define MZ_DLLSPEC __declspec(dllimport)
 # endif
+# if (defined(__CYGWIN32__) && !defined(MZ_USES_SHARED_LIB)) || defined(MZ_PRECISE_GC)
+#  define MZGC_DLLIMPORT
+# else
+#  define MZGC_DLLIMPORT MZ_DLLIMPORT
+# endif
 #else
 # define MZ_DLLSPEC
 # define MZ_DLLIMPORT
 # define MZ_DLLEXPORT
+# define MZGC_DLLIMPORT
 #endif
 
 #define MZ_EXTERN extern MZ_DLLSPEC

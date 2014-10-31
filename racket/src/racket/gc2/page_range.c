@@ -7,7 +7,7 @@
     os_protect_pages
 */
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN32__)
 
 /* VirtualProtect can be used only on pages allocated at the same
    time, so we can't collapse ranges. */

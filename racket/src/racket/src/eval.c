@@ -543,6 +543,7 @@ static uintptr_t adjust_stack_base(uintptr_t bnd) {
 #ifdef WINDOWS_FIND_STACK_BOUNDS
 intptr_t find_exe_stack_size()
 {
+# define WINDOWS_DEFAULT_STACK_SIZE 1048576
   intptr_t sz = WINDOWS_DEFAULT_STACK_SIZE;
   wchar_t *fn;
   DWORD len = 1024;
@@ -580,7 +581,6 @@ intptr_t find_exe_stack_size()
 		/* Skip to PE32[+] header's stack reservation value: */
 		if (SetFilePointer(fd, pos + 20 + 4 + 72, NULL, FILE_BEGIN)
 		    != INVALID_SET_FILE_POINTER) {
-		  mzlonglong lsz;
 		  if (kind == 0x10b) {
 		    /* PE32: 32-bit stack size: */
 		    int ssz;

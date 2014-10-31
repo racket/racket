@@ -1212,7 +1212,7 @@ void scheme_fdzero(void *fd)
   scheme_init_fdset_array(fd, 1);
 # else
 #  if defined(FILES_HAVE_FDS) || defined(USE_TCP)
-  FD_ZERO((fd_set *)fd);
+  XFORM_HIDE_EXPR(FD_ZERO((fd_set *)fd));
 #  endif
 # endif
 }

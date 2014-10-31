@@ -235,6 +235,7 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
         handle = LoadLibraryW(WIDE_PATH(name));
     }{
       @@IFDEF{__ANDROID__}{if (!name) handle = RTLD_DEFAULT; else}
+      @@IFDEF{__CYGWIN32__}{if (!name) { handle = RTLD_DEFAULT; null_ok = 1; } else}
       handle = dlopen(name, RTLD_NOW | (as_global ? RTLD_GLOBAL : RTLD_LOCAL));
     }
     if (handle == NULL && !null_ok) {

@@ -65,7 +65,7 @@
       (call-with-output-file fn
         (lambda (out)
           (fprintf out "#define ~a ~a\n" (cadr m) (caddr m)))
-        'truncate/replace)
+        #:exists 'truncate/replace)
       (set! cpp (string-append cpp (format " -include ~a" fn)))]
      [else
       (set! cpp (string-append cpp " -D"

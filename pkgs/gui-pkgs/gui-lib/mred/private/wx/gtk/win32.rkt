@@ -1,6 +1,7 @@
 #lang racket/base
 (require ffi/unsafe
          ffi/unsafe/define
+         ffi/winapi
          "utils.rkt")
 
 (provide gdk_win32_drawable_get_handle
@@ -20,7 +21,7 @@
 (define-gdk gdk_win32_drawable_get_handle (_fun _GdkDrawable -> _pointer)
   #:make-fail make-not-available)
 
-(define-user32 GetDC (_fun #:abi 'stdcall _pointer -> _pointer)
+(define-user32 GetDC (_fun #:abi winapi _pointer -> _pointer)
   #:make-fail make-not-available)
-(define-user32 ReleaseDC (_fun #:abi 'stdcall _pointer -> _void)
+(define-user32 ReleaseDC (_fun #:abi winapi _pointer -> _void)
   #:make-fail make-not-available)

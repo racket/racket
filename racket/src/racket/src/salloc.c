@@ -91,8 +91,8 @@ void **GC_variable_stack;
 #endif
 
 #ifndef MZ_PRECISE_GC
-extern MZ_DLLIMPORT void GC_register_late_disappearing_link(void **link, void *obj);
-extern MZ_DLLIMPORT void GC_register_indirect_disappearing_link(void **link, void *obj);
+extern MZGC_DLLIMPORT void GC_register_late_disappearing_link(void **link, void *obj);
+extern MZGC_DLLIMPORT void GC_register_indirect_disappearing_link(void **link, void *obj);
 #endif
 
 SHARED_OK static int use_registered_statics;
@@ -102,7 +102,7 @@ SHARED_OK static int use_registered_statics;
 /************************************************************************/
 
 #if !defined(MZ_PRECISE_GC) && !defined(USE_SENORA_GC)
-extern MZ_DLLIMPORT void GC_init();
+extern MZGC_DLLIMPORT void GC_init();
 #endif
 
 void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
@@ -1688,7 +1688,7 @@ void scheme_unused_intptr(intptr_t i) { }
 extern "C" 
 {
 # endif
-  extern MZ_DLLIMPORT void GC_dump(void);
+  extern MZGC_DLLIMPORT void GC_dump(void);
 # ifdef __cplusplus
 };
 # endif

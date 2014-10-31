@@ -718,7 +718,6 @@ case "$host_os" in
     esac
     ;;    
   cygwin*)
-    enable_cgcdefault="yes"
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"

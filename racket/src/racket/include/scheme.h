@@ -2128,8 +2128,8 @@ extern Scheme_Extension_Table *scheme_extension_table;
 # define MZ_FD_CLR(n, p) scheme_fdclr(p, n)
 # define MZ_FD_ISSET(n, p) scheme_fdisset(p, n)
 #else
-# define MZ_GET_FDSET(p, n) ((void *)(((fd_set *)p) + n))
-# define MZ_FD_ZERO(p) FD_ZERO((fd_set *)(p))
+# define MZ_GET_FDSET(p, n) ((void *)(((fd_set *)p) XFORM_OK_PLUS n))
+# define MZ_FD_ZERO(p) XFORM_HIDE_EXPR(FD_ZERO((fd_set *)(p)))
 # define MZ_FD_SET(n, p) FD_SET(n, (fd_set *)(p))
 # define MZ_FD_CLR(n, p) FD_CLR(n, (fd_set *)(p))
 # define MZ_FD_ISSET(n, p) FD_ISSET(n, (fd_set *)(p))
