@@ -190,6 +190,47 @@ currently returns @racket[#f] for all levels.
 @history[#:changed "6.1.1.3" @elem{Added the @racket[name] argument.}]}
 
 
+@defproc[(log-all-levels [logger logger?])
+         (list/c (or/c #f 'fatal 'error 'warning 'info 'debug)
+                 (or/c #f symbol?)
+                 ... ...)]{
+
+Summarizes the possible results of @racket[log-max-level] on all
+possible @tech{interned} symbols. The result list contains a sequence
+of symbols and @racket[#f], where the first, third, etc., list element
+corresponds to a level, and the second, fourth, etc., list element
+indicates a corresponding name. The level is the result that
+@racket[log-max-level] would produce for the name, where the level for
+the @racket[#f] name (which is always present in the result list)
+indicates the result for any @tech{interned}-symbol name that does not
+appear in the list.
+
+The result is suitable as a sequence of arguments to
+@racket[make-log-receiver] (after a @tech{logger} argument). Combining
+the arguments with @racket[logger] creates a new receiver for only
+events that already have other receivers.
+
+@history[#:added "6.1.1.4"]}
+
+
+@defproc[(log-level-evt [logger logger?]) evt?]{
+
+Creates a @tech{synchronizable event} that is @tech{ready for
+synchronization} when the result of @racket[log-level?],
+@racket[log-max-level], or @racket[log-all-levels] can be different
+than before @racket[log-level-evt] was called. The event's
+@tech{synchronization result} is the event itself.
+
+The condition reported by the event is a conservative approximation:
+the event can become @tech{ready for synchronization} even if the
+results of @racket[log-level?], @racket[log-max-level], and
+@racket[log-all-levels] are unchanged. Nevertheless, the expectation
+is that events become ready infrequently, because they are triggered
+byt the creation of a log receiver.
+
+@history[#:added "6.1.1.4"]}
+
+
 @deftogether[(
 @defform*[[(log-fatal string-expr)
            (log-fatal format-string-expr v ...)]]

@@ -3005,7 +3005,7 @@ static int mark_logger_MARK(void *p, struct NewGC *gc) {
   gcMARK2(l->name, gc);
   gcMARK2(l->parent, gc);
   gcMARK2(l->want_name_level_cache, gc);
-  gcMARK2(l->timestamp, gc);
+  gcMARK2(l->root_timestamp, gc);
   gcMARK2(l->syslog_level, gc);
   gcMARK2(l->stderr_level, gc);
   gcMARK2(l->propagate_level, gc);
@@ -3019,7 +3019,7 @@ static int mark_logger_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(l->name, gc);
   gcFIXUP2(l->parent, gc);
   gcFIXUP2(l->want_name_level_cache, gc);
-  gcFIXUP2(l->timestamp, gc);
+  gcFIXUP2(l->root_timestamp, gc);
   gcFIXUP2(l->syslog_level, gc);
   gcFIXUP2(l->stderr_level, gc);
   gcFIXUP2(l->propagate_level, gc);
