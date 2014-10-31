@@ -20,7 +20,7 @@
                        #:ssl-context [ssl-context
                                       (case ssl
                                         ((no) #f)
-                                        (else (ssl-make-client-context 'tls)))]
+                                        (else (ssl-make-client-context)))]
                        #:notice-handler [notice-handler void]
                        #:debug? [debug? #f])
   (let ([connection-options

@@ -21,7 +21,7 @@
                             #:ssl-context [ssl-context
                                            (case ssl
                                              ((no) #f)
-                                             (else (ssl-make-client-context 'sslv3)))]
+                                             (else (ssl-make-client-context)))]
                             #:notice-handler [notice-handler void]
                             #:notification-handler [notification-handler void]
                             #:debug? [debug? #f])
