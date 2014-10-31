@@ -12,7 +12,7 @@
          )
 
 (define-type SSL-Protocol
-  (U 'sslv2-or-v3 'sslv2 'sslv3 'tls))
+  (U 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))
 
 (require/opaque-type SSL-Client-Context ssl-client-context? openssl)
 
