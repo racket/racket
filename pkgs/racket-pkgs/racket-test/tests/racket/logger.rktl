@@ -88,7 +88,7 @@
 
 ; --------------------
 
-(let ()
+(parameterize ([current-logger (make-logger)])
   (define-logger test)
   (test #t logger? test-logger)
   (define r (make-log-receiver (current-logger) 'warning 'test))
@@ -96,9 +96,10 @@
   (log-test-debug "debug")
   (test #f sync/timeout 0 r)
   (log-test-warning "warning")
+  (test '(#f #f warning test) log-all-levels test-logger)
   (test "test: warning" (lambda (v) (vector-ref v 1)) (sync r)))
 
-(let ()
+(parameterize ([current-logger (make-logger)])
   (define-logger test)
   (define r (make-log-receiver (current-logger) 'info 'test2 'warning))
   (test #t log-level? test-logger 'warning)
@@ -109,10 +110,11 @@
   (test 'info log-max-level test-logger)
   (test 'info log-max-level test-logger 'test2)
   (test 'warning log-max-level test-logger 'not-test)
+  (test '(warning #f info test2) log-all-levels test-logger)
   ;; Retain receiver to avoid GC influence on tests
   (test #f sync/timeout 0 r))
 
-(let ()
+(parameterize ([current-logger (make-logger)])
   (define-logger test)
   (define r2 (make-log-receiver (current-logger) 'warning 'test3 'info))
   (test #f log-level? test-logger 'info 'test3)
@@ -184,8 +186,12 @@
   (define l3 (make-logger #f l2 'warning 'test 'info))
   (define l32 (make-logger #f l2 'info 'test 'warning))
   
+  (define evt (log-level-evt l32))
+  (test #f sync/timeout 0 evt)
+  
   (define r (make-log-receiver l 'debug))
   (test #f sync/timeout 0 r)
+  (test evt sync/timeout 0 evt)
   
   (log-message l 'debug "debug message" #f)
   (test #t vector? (sync/timeout 0 r))
@@ -210,7 +216,10 @@
   (test 'debug log-max-level l)
   (test 'info log-max-level l2)
   (test 'info log-max-level l3)
-  
+
+  (test '(debug #f) log-all-levels l)
+  (test '(info #f) log-all-levels l2)
+
   (define r22 (make-log-receiver l2 'debug))
   (test 'debug log-max-level l)
   (test 'debug log-max-level l2)
@@ -220,7 +229,10 @@
   (test 'info log-max-level l32)
   (test 'warning log-max-level l32 'not-test)
   (test 'info log-max-level l32 'test)
-  
+
+  (test '(debug #f) log-all-levels l)
+  (test '(debug #f) log-all-levels l2)
+
   ;; Retain receivers to avoid GC influence on tests
   (test #f sync/timeout 0 r)
   (test #f sync/timeout 0 r2)
