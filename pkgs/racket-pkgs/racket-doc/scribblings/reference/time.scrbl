@@ -112,7 +112,7 @@ The precision of the result is platform-specific, and
 since the result is a @tech{fixnum}, the value increases only over a
 limited (though reasonably long) time on a 32-bit platform.}
 
-@defproc[(current-process-group-milliseconds) exact-integer?]{
+@defproc[(current-process+children-milliseconds) exact-integer?]{
 
 Like @racket[current-process-milliseconds], but returns the amount of
 processor time in @tech{fixnum} milliseconds that has been consumed by the

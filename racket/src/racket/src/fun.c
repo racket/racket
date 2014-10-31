@@ -168,7 +168,7 @@ static Scheme_Object *time_apply(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_inexact_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **argv);
-static Scheme_Object *current_process_group_milliseconds(int argc, Scheme_Object **argv);
+static Scheme_Object *current_process_children_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_seconds(int argc, Scheme_Object **argv);
 static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv);
@@ -525,9 +525,9 @@ scheme_init_fun (Scheme_Env *env)
                                                     "current-process-milliseconds",
                                                     0, 1),
 			     env);
-  scheme_add_global_constant("current-process-group-milliseconds",
-			     scheme_make_immed_prim(current_process_group_milliseconds,
-                                                    "current-process-group-milliseconds",
+  scheme_add_global_constant("current-process+children-milliseconds",
+			     scheme_make_immed_prim(current_process_children_milliseconds,
+                                                    "current-process+children-milliseconds",
                                                     0, 0),
 			     env);
   scheme_add_global_constant("current-gc-milliseconds",
@@ -9400,7 +9400,7 @@ intptr_t scheme_get_process_milliseconds(void)
 #endif
 }
 
-intptr_t scheme_get_process_group_milliseconds(void)
+intptr_t scheme_get_process_children_milliseconds(void)
   XFORM_SKIP_PROC
 {
 #ifdef USER_TIME_IS_CLOCK
@@ -9422,7 +9422,7 @@ intptr_t scheme_get_process_group_milliseconds(void)
 # else
 #  ifdef WINDOWS_GET_PROCESS_TIMES
   /* Does this already time the whole process tree */
-  return scheme_get_process_group_milliseconds();
+  return scheme_get_process_milliseconds();
 #  else
   clock_t t;
   times(&t);
@@ -9893,10 +9893,10 @@ static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **arg
   }
 }
 
-static Scheme_Object *current_process_group_milliseconds(int argc,
-                                                         Scheme_Object **argv)
+static Scheme_Object *current_process_children_milliseconds(int argc,
+                                                            Scheme_Object **argv)
 {
-  return scheme_make_integer(scheme_get_process_group_milliseconds());
+  return scheme_make_integer(scheme_get_process_children_milliseconds());
 }
 
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv)
