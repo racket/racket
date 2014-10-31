@@ -600,6 +600,7 @@
          [get-x (-> Integer)]
          [get-y (-> Integer)]
          [has-focus? (-> Boolean)]
+         [is-enabled? (-> Boolean)]
          [is-shown? (-> Boolean)]
          [on-drop-file (Path -> Void)]
          [on-focus (Any -> Void)]
