@@ -45,6 +45,7 @@
 #    include <freebsd/time.h>
 #   endif
 #   include <time.h>
+#   include <sys/times.h>
 #   ifdef USE_FTIME
 #    include <sys/timeb.h>
 #   else
@@ -167,6 +168,7 @@ static Scheme_Object *time_apply(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_inexact_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **argv);
+static Scheme_Object *current_process_children_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_seconds(int argc, Scheme_Object **argv);
 static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv);
@@ -522,6 +524,11 @@ scheme_init_fun (Scheme_Env *env)
 			     scheme_make_immed_prim(current_process_milliseconds,
                                                     "current-process-milliseconds",
                                                     0, 1),
+			     env);
+  scheme_add_global_constant("current-process+children-milliseconds",
+			     scheme_make_immed_prim(current_process_children_milliseconds,
+                                                    "current-process+children-milliseconds",
+                                                    0, 0),
 			     env);
   scheme_add_global_constant("current-gc-milliseconds",
 			     scheme_make_immed_prim(current_gc_milliseconds,
@@ -9393,6 +9400,39 @@ intptr_t scheme_get_process_milliseconds(void)
 #endif
 }
 
+intptr_t scheme_get_process_children_milliseconds(void)
+  XFORM_SKIP_PROC
+{
+#ifdef USER_TIME_IS_CLOCK
+  return scheme_get_milliseconds();
+#else
+# ifdef USE_GETRUSAGE
+  struct rusage use;
+  intptr_t s, u;
+
+  do {
+    if (!getrusage(RUSAGE_CHILDREN, &use))
+      break;
+  } while (errno == EINTR);
+
+  s = use.ru_utime.tv_sec + use.ru_stime.tv_sec;
+  u = use.ru_utime.tv_usec + use.ru_stime.tv_usec;
+
+  return (s * 1000 + u / 1000) + scheme_get_process_milliseconds();
+# else
+#  ifdef WINDOWS_GET_PROCESS_TIMES
+  /* Does this already time the whole process tree */
+  return scheme_get_process_milliseconds();
+#  else
+  clock_t t;
+  times(&t);
+  return (t.tms_utime + t.tms_stime + t.tms_cutime + t.tms_cstime)
+    * 1000 / CLK_TCK;
+#  endif
+# endif
+#endif
+}
+
 intptr_t scheme_get_thread_milliseconds(Scheme_Object *thrd)
   XFORM_SKIP_PROC
 {
@@ -9851,6 +9891,12 @@ static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **arg
     scheme_wrong_contract("current-process-milliseconds", "thread?", 0, argc, argv);
     return NULL;
   }
+}
+
+static Scheme_Object *current_process_children_milliseconds(int argc,
+                                                            Scheme_Object **argv)
+{
+  return scheme_make_integer(scheme_get_process_children_milliseconds());
 }
 
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv)
