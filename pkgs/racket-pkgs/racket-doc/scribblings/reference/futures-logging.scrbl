@@ -12,7 +12,7 @@ code via @racket[trace-futures]), it is much
 easier to use the graphical profiler tool provided by 
 @racketmodname[future-visualizer].  
 
-Future events are reported to a logger named @racket['future].
+Future events are logged with the topic @racket['future].
 In addition to its string message, each event logged for a future has
 a data value that is an instance of a @racket[future-event]
 @tech{prefab} structure:
