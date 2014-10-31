@@ -9,14 +9,14 @@
 
 #include <oskit/c/malloc.h>
 
-inline static void *os_malloc_pages(MMU *mmu, size_t len, size_t alignment, int dirty_ok)
+inline static void *os_alloc_aligned_pages(size_t len, size_t alignment, int dirty_ok)
 {
   void *p;
 
   p = smemalign(alignment, len);
   
   if (!dirty_ok)
-  memset(p, 0, len);
+    memset(p, 0, len);
 
   return p;
 }

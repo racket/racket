@@ -31,11 +31,10 @@ The result is a Windows-style build, but without MzCOM. If you are using
 a variant of MinGW without "libdelayimp.a", get the implementation of
 "delayimp.c" from MinGW-w64 and compile it to "libdelayimp.a".
 
-To compile with Cygwin tools, follow the Unix instructions below, and be
-sure to configure with `--enable-shared'.  The result is a Unix-style
-build, not a Windows-style build (e.g., Racket's `system-type' procedure
-returns 'unix, not 'windows, and `racket/gui' uses Gtk instead of
-Win32).
+To compile with Cygwin tools, follow the Unix instructions below.  The
+result is a Unix-style build, not a Windows-style build (e.g.,
+Racket's `system-type' procedure returns 'unix, not 'windows, and
+`racket/gui' uses Gtk instead of Win32).
 
 Beware that MinGW/Cygwin builds different from the MSVC build when
 SSE-based floating-point math is enabled in the C compiler. In that

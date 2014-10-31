@@ -4584,7 +4584,6 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     esac
     ;;
   cygwin*)
-    enable_cgcdefault="yes"
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"

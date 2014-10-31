@@ -589,9 +589,6 @@
 
 # define DO_STACK_CHECK
 # define WINDOWS_FIND_STACK_BOUNDS
-/* Default stack size is 1MB, but we try to read
-   the actual size from the executable on startup: */
-# define WINDOWS_DEFAULT_STACK_SIZE 1048576
 
 # if !defined(_WIN64) || (_MSC_VER >= 1600)
 #  define USE_MZ_SETJMP
@@ -730,10 +727,6 @@
 # define WINDOWS_FIND_STACK_BOUNDS
 
 # define REGISTER_POOR_MACHINE
-
-# ifndef AS_MSVC_EXTENSION
-#  define LINK_EXTENSIONS_BY_TABLE
-# endif
 
 # define MZ_USE_JIT_I386
 

@@ -162,7 +162,10 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
 #endif
 
 /* ========== Windows signal handler ========== */
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__CYGWIN32__)
+# if defined(__CYGWIN32__)
+#  include <windows.h>
+# endif
 LONG WINAPI fault_handler(LPEXCEPTION_POINTERS e) 
 {
   if ((e->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
