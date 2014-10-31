@@ -10,7 +10,7 @@
 
 (define current-connect-scheme (make-parameter "http"))
 
-(define current-https-protocol (make-parameter 'sslv2-or-v3))
+(define current-https-protocol (make-parameter 'auto))
 
 ;; Define `tcp-connect' and `tcp-abandon-port' to fit with
 ;; `current-connect-scheme'

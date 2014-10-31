@@ -55,7 +55,7 @@
 (define (http-conn-open! hc host-bs #:ssl? [ssl? #f] #:port [port (if ssl? 443 80)])
   (http-conn-close! hc)
   (define host (->string host-bs))
-  (define ssl-version (if (boolean? ssl?) 'sslv2-or-v3 ssl?))
+  (define ssl-version (if (boolean? ssl?) 'auto ssl?))
 
   (define-values (from to)
     (cond [ssl?
