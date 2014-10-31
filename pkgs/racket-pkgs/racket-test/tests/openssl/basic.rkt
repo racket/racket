@@ -42,7 +42,7 @@
                   (close-output-port w)))))
     (define t2
       (thread (lambda ()
-		(define ctx (ssl-make-server-context 'sslv2-or-v3))
+		(define ctx (ssl-make-server-context))
 		(ssl-load-certificate-chain! ctx pem)
 		(ssl-load-private-key! ctx pem)
 		(let-values ([(r w) (ports->ssl-ports

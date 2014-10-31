@@ -20,7 +20,7 @@
             #:early [early-mode (and (not later-mode) 'try)]
             #:accept-fail? [accept-fail? #f]
             #:verify-fail? [verify-fail? #f])
-  (define ssl-server-context (ssl-make-server-context 'sslv3))
+  (define ssl-server-context (ssl-make-server-context))
 
   (ssl-load-private-key! ssl-server-context server-key)
   (ssl-load-certificate-chain! ssl-server-context server-crt)
@@ -72,7 +72,7 @@
            (close-output-port out))))))
 
 
-  (define ssl-client-context (ssl-make-client-context 'sslv3))
+  (define ssl-client-context (ssl-make-client-context))
 
   (ssl-load-private-key! ssl-client-context client-key)
 
