@@ -87,7 +87,7 @@
                   (and (null? info) (sqlite3_total_changes db))]
                  [result
                   (or cursor?
-                      (step* fsym db stmt #f +inf.0))])
+                      (step* fsym db stmt #f +inf.0 pst))])
             (unless (eq? (get-tx-status) 'invalid)
               (set-tx-status! fsym (read-tx-status)))
             (unless cursor?
@@ -119,7 +119,7 @@
             (cond [(unbox end-box) #f]
                   [else
                    (let ([stmt (send pst get-handle)])
-                     (begin0 (step* fsym (get-db fsym) stmt end-box fetch-size)
+                     (begin0 (step* fsym (get-db fsym) stmt end-box fetch-size pst)
                        (when (unbox end-box)
                          (send pst after-exec #f))))])))))
 
@@ -150,7 +150,7 @@
              [else
               (error/internal* fsym "bad parameter value" '("value" value) param)])))
 
-    (define/private (step* fsym db stmt end-box fetch-limit)
+    (define/private (step* fsym db stmt end-box fetch-limit pst)
       (with-handlers ([exn:fail?
                        (lambda (e)
                          (void (sqlite3_reset stmt))
@@ -159,7 +159,7 @@
         (let loop ([fetch-limit fetch-limit])
           (if (zero? fetch-limit)
               null
-              (let ([c (step fsym db stmt)])
+              (let ([c (step fsym db stmt pst)])
                 (cond [c
                        (cons c (loop (sub1 fetch-limit)))]
                       [else
@@ -168,8 +168,8 @@
                        (when end-box (set-box! end-box #t))
                        null]))))))
 
-    (define/private (step fsym db stmt)
-      (let ([s (HANDLE fsym (sqlite3_step stmt))])
+    (define/private (step fsym db stmt pst)
+      (let ([s (HANDLE fsym (sqlite3_step stmt) pst)])
         (cond [(= s SQLITE_DONE) #f]
               [(= s SQLITE_ROW)
                (let* ([column-count (sqlite3_column_count stmt)]
@@ -340,10 +340,14 @@
 
     ;; ----
 
-    (define-syntax-rule (HANDLE who expr)
-      (handle* who (lambda () expr) 0))
+    (define-syntax HANDLE
+      (syntax-rules ()
+        [(HANDLE who expr)
+         (HANDLE who expr #f)]
+        [(HANDLE who expr pst)
+         (handle* who (lambda () expr) 0 pst)]))
 
-    (define/private (handle* who thunk iteration)
+    (define/private (handle* who thunk iteration pst)
       (call-with-values thunk
         (lambda (full-s . rest)
           (define s (simplify-status full-s))
@@ -356,17 +360,17 @@
                                  who
                                  (if (= s SQLITE_BUSY) "SQLITE_BUSY" s)
                                  iteration))
-                 (apply values (handle-status who full-s) rest)]))))
+                 (apply values (handle-status who full-s pst) rest)]))))
 
     ;; Some errors can cause whole transaction to rollback;
     ;; (see http://www.sqlite.org/lang_transaction.html)
     ;; So when those errors occur, compare current tx-status w/ saved.
     ;; Can't figure out how to test...
-    (define/private (handle-status who full-s)
+    (define/private (handle-status who full-s pst)
       (when (memv (simplify-status full-s) maybe-rollback-status-list)
         (when (and saved-tx-status -db (not (read-tx-status))) ;; was in trans, now not
           (set-tx-status! who 'invalid)))
-      (handle-status* who full-s -db db-spec))
+      (handle-status* who full-s -db db-spec pst))
 
     ;; ----
 
@@ -385,10 +389,11 @@
 ;; handle-status* : symbol integer [...] -> integer
 ;; Returns the status code if no error occurred, otherwise
 ;; raises an exception with an appropriate message.
-(define (handle-status* who full-s db [db-spec #f])
+(define (handle-status* who full-s db db-spec pst)
   (define s (simplify-status full-s))
   (define db-file (and db-spec (car db-spec)))
   (define db-mode (and db-spec (cadr db-spec)))
+  (define sql (and pst (send pst get-stmt)))
   (cond [(or (= s SQLITE_OK)
              (= s SQLITE_ROW)
              (= s SQLITE_DONE))
@@ -404,21 +409,27 @@
                         (sqlite3_errmsg db)]
                        [else (caddr info)])])
            (define extra
-             (cond [(memv s include-db-file-status-list)
-                    (string-append
-                     (format "\n  database: ~e" (or db-file 'unknown))
-                     (format "\n  mode: ~e" (or db-mode 'unknown))
-                     (if (path-string? db-file)
-                         (format "\n  file permissions: ~s"
-                                 (file-or-directory-permissions db-file))
-                         ""))]
-                   [else ""]))
+             (string-append
+              ;; query, if available
+              (cond [sql (format "\n  SQL: ~e" sql)]
+                    [else ""])
+              ;; db file and mode, if relevant and available
+              (cond [(memv s include-db-file-status-list)
+                     (string-append
+                      (format "\n  database: ~e" (or db-file 'unknown))
+                      (format "\n  mode: ~e" (or db-mode 'unknown))
+                      (if (path-string? db-file)
+                          (format "\n  file permissions: ~s"
+                                  (file-or-directory-permissions db-file))
+                          ""))]
+                    [else ""])))
            (raise (make-exn:fail:sql (format "~a: ~a~a" who message extra)
                                      (current-continuation-marks)
                                      sym
                                      `((code . ,sym)
                                        (message . ,message)
                                        (errcode . ,s)
+                                       (sql . ,sql)
                                        (db-file . ,db-file)
                                        (db-mode . ,db-mode)))))]))
 

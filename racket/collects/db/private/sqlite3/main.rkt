@@ -35,7 +35,7 @@
                                      ((read/write) SQLITE_OPEN_READWRITE)
                                      ((create)
                                       (+ SQLITE_OPEN_READWRITE SQLITE_OPEN_CREATE))))])
-      (handle-status* 'sqlite3-connect open-status db (list path mode))
+      (handle-status* 'sqlite3-connect open-status db (list path mode) #f)
       (let ([c
              (new connection%
                   (db db)
