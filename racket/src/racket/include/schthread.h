@@ -54,7 +54,8 @@ extern "C" {
     && !defined(SCHEME_EMBEDDED_NO_DLL)
 # define MZ_DLLIMPORT __declspec(dllimport)
 # define MZ_DLLEXPORT __declspec(dllexport)
-# if defined(__mzscheme_private__) || defined(__MINGW32_DELAY_LOAD__)
+# if (defined(__mzscheme_private__) || defined(__MINGW32_DELAY_LOAD__) \
+      || (defined(__CYGWIN32__) && !defined(MZ_USES_SHARED_LIB)))
 #  define MZ_DLLSPEC __declspec(dllexport)
 # else
 #  define MZ_DLLSPEC __declspec(dllimport)
