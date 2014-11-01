@@ -2221,6 +2221,7 @@ typedef struct mz_REPARSE_DATA_BUFFER {
 } mz_REPARSE_DATA_BUFFER;
 
 #define mzFILE_FLAG_OPEN_REPARSE_POINT 0x200000
+#define mzFSCTL_GET_REPARSE_POINT 0x900A8
 
 static char *UNC_readlink(const char *fn)
 {
@@ -2247,7 +2248,7 @@ static char *UNC_readlink(const char *fn)
 
   while (1) {
     buffer = (char *)scheme_malloc_atomic(size);
-    if (DeviceIoControlProc(h, FSCTL_GET_REPARSE_POINT, NULL, 0, buffer, size,
+    if (DeviceIoControlProc(h, mzFSCTL_GET_REPARSE_POINT, NULL, 0, buffer, size,
 			    &got, NULL))
       break;
     else if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {

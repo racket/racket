@@ -699,7 +699,7 @@ case "$host_os" in
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
-    CONFIG_PATH="lib"
+    CONFIG_PATH="etc"
     skip_iconv_check=yes
     check_for_mprotect=no
     AC_DEFINE(HAVE_STDINT_H,1,[Have stdint.h])
