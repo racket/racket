@@ -20,7 +20,7 @@ enum {
 /* No block cache or alloc cache */
 #elif defined(OSKIT)
 # define OS_ALLOCATOR_NEEDS_ALIGNMENT
-#elif defined(MZ_USE_PLACES) && defined(PREFER_MMAP_LARGE_BLOCKS)
+#elif defined(MZ_USE_PLACES) || defined(PREFER_MMAP_LARGE_BLOCKS)
 # define USE_BLOCK_CACHE
 #else
 # define USE_ALLOC_CACHE
@@ -133,18 +133,21 @@ static void *mmu_alloc_page(MMU* mmu, size_t len, size_t alignment, int dirty, i
   mmu_assert_os_page_aligned(mmu, len);
 #ifdef USE_BLOCK_CACHE
   return block_cache_alloc_page(mmu->block_cache, len, alignment, dirty, type, expect_mprotect, src_block, &mmu->memory_allocated);
-#elif defined(USE_ALLOC_CACHE)
+#else
+  *src_block = NULL;
+# if defined(USE_ALLOC_CACHE)
   /* len = mmu_round_up_to_os_page_size(mmu, len); */
   {
     AllocCacheBlock *alloc_cache = mmu->alloc_caches[!!expect_mprotect];
     return alloc_cache_alloc_page(alloc_cache, len, alignment, dirty, &mmu->memory_allocated);
   }
-#else
+# else
   mmu->memory_allocated += len;
-# ifdef OS_ALLOCATOR_NEEDS_ALIGNMENT
+#  ifdef OS_ALLOCATOR_NEEDS_ALIGNMENT
   return os_alloc_aligned_pages(len, alignment, dirty);
-#else
+#  else
   return os_alloc_pages(len);
+#  endif
 # endif
 #endif
 }
