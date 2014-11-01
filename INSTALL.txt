@@ -52,14 +52,18 @@ Quick Instructions: In-place Build
 On Unix, `make' (or `make in-place') creates a build in the "racket"
 directory.
 
-On Mac OS X, see the notes below on git submodules, and then `make'
+On Mac OS X, see the notes below on Git submodules, and then `make'
 (or `make in-place') creates a build in the "racket" directory.
 
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
-and 2013/12.0), see the notes below on git submodules, and then `nmake
+and 2013/12.0), see the notes below on Git submodules, and then `nmake
 win32-in-place' creates a build in the "racket" directory.  For
 information on configuring your command-line environment for Visual
 Studio, see "racket/src/worksp/README".
+
+On Windows with MinGW, see the notes below on Git submodules, and then
+`make PLAIN_RACkET=racket/racket', since MinGW uses Unix-style tools
+but generates a Windows-layout Racket build.
 
 In all cases, an in-place build includes (via links) packages that are
 in the "pkgs" directory.
@@ -74,7 +78,7 @@ On Unix, `make unix-style PREFIX=<dir>' builds and installs into <dir>
 with binaries in "<dir>/bin", packages in "<dir>/share/racket/pkgs",
 documentation in "<dir>/share/racket/doc", etc.
 
-On Mac OS X, see the notes below on git submodules, and then `make
+On Mac OS X, see the notes below on Git submodules, and then `make
 unix-style PREFIX=<dir>' builds and installs into "<dir>" with
 binaries in "<dir>/bin", packges in "<dir>/share/pkgs", documentation
 in "<dir>/doc", etc.
@@ -91,7 +95,7 @@ assembles the installation in "<dest-dir>". Then, copy the content of
 See "More Instructions: Building Racket" below for more information.
 
 
-git Submodules (Mac OS X and Windows)
+Git Submodules (Mac OS X and Windows)
 =====================================
 
 On Mac OS X and Windows, you'll need native-library packages in the
@@ -100,7 +104,7 @@ install. The "native-pkgs" directory is treated in the same way as
 "pkgs"; for example, in-place build uses links into the "native-pkgs"
 directory.
 
-The "native-pkgs" directory is a git submodule, so you'll need
+The "native-pkgs" directory is a Git submodule, so you'll need
 
    git submodule init
    git submodule update
@@ -132,7 +136,7 @@ Racket distribution, plus some additional packages (such as tests).  A
 copies packages out of "pkgs" to install them.
 
 Either way, if you're building on Mac OS X or Windows, be sure to
-start with "git Submodules", above.
+start with "Git Submodules", above.
 
 To install a subset of the packages in "pkgs", supply `PKGS' value to
 `make'. For example,
@@ -238,7 +242,7 @@ scope. Packages are linked with the `--no-setup' flag (effectively),
 which means that a `raco setup' is needed after installing links.
 
 Native-library packages provide (on Mac OS X and Windows) pre-built
-native libraries, such as Cairo. They are available through a git
+native libraries, such as Cairo. They are available through a Git
 submodule "native-pkgs", so use `git submodule init' and `git
 submodule update' as needed.
 
@@ -371,7 +375,7 @@ For snapshot management, the destination of the files generated for
 snapshots. The configuration file can use `(current-stamp)' to get a
 string that represents the current build, and then use the string both
 for `#:dist-base-url' and `#:site-dest'. Normally, the stamp string is
-a combination of the date and git commit hash.
+a combination of the date and Git commit hash.
 
 Snapshot management includes creating an "index.html" file in the
 snapshots directory (essentially a copy of the snapshot's own
