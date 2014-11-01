@@ -267,6 +267,20 @@ referenced by not-yet-loaded modules. References to already-loaded
 modules may produce compiled files with inconsistent timestamps and/or
 @filepath{.dep} files with incorrect information.}
 
+The handler logs messages to the topic @racket['compiler/cm] at the level
+@racket['info]. These messages are instances of a @racket[compile-event] prefab
+structure:
+
+@racketblock[
+  (struct compile-event (timestamp path type) #:prefab)
+]
+
+The @racket[timestamp] field is the time at which the event occured in
+milliseconds since the epoch.  The @racket[path] field is the path of a file
+being compiled for which the event is about. The @racket[type] field is a symbol
+which describes the action the event corresponds to. The currently logged values
+are @racket['locking], @racket['start-compile], @racket['finish-compile], and
+@racket['already-done].
 
 @defproc[(managed-compile-zo [file path-string?]
                              [read-src-syntax (any/c input-port? . -> . syntax?) read-syntax]
@@ -292,7 +306,6 @@ the security guard in the @racket[current-security-guard] when
 the files are created is used (not the security guard at the point 
 @racket[managed-compile-zo] is called).
 }
-
 
 @defboolparam[trust-existing-zos trust?]{
 
@@ -467,7 +480,7 @@ functionality of @exec{raco setup} and @exec{raco make}.}
                                             void])
          (or/c void? #f)]{
 
-The @racket[parallel-compile] utility function is used by @exec{raco make} to
+The @racket[parallel-compile-files] utility function is used by @exec{raco make} to
 compile a list of paths in parallel.  The optional
 @racket[#:worker-count] argument specifies the number of compile workers to spawn during
 parallel compilation.  The callback, @racket[handler], is called with the symbol
@@ -516,6 +529,19 @@ compilation results.  The @racket[collects-tree] argument is a compound
 datastructure containing an in-memory tree representation of the collects
 directory.
 }
+
+Both @racket[parallel-compile-files] and @racket[parallel-compile] log messages
+to the topic @racket['setup/parallel-build] at the level @racket['info]. These
+messages are instances of a @racket[parallel-compile-event] prefab structure:
+
+
+@racketblock[
+  (struct parallel-compile-event (worker event) #:prefab)
+].
+
+The worker field is the index of the worker that the created the event. The event
+field is a @racket[compile-event] as document in
+@racket[make-compilation-manager-load/use-compiled-handler].
 
 @; ----------------------------------------------------------------------
 

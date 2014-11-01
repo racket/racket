@@ -34,6 +34,12 @@
   (when (log-level? cm-logger 'debug)
     (log-message cm-logger 'debug str (current-inexact-milliseconds))))
 
+(struct compile-event (timestamp path action) #:prefab)
+(define (log-compile-event path action)
+  (when (log-level? cm-logger 'info 'compiler/cm)
+    (log-message cm-logger 'info (format "~a: ~a" action path)
+                 (compile-event (current-inexact-milliseconds) path action))))
+
 (define manager-compile-notify-handler (make-parameter void))
 (define manager-trace-handler (make-parameter default-manager-trace-handler))
 (define indent (make-parameter ""))
@@ -505,12 +511,14 @@
                    ((if sha1-only? values (lambda (build) (build) #f))
                     (lambda ()
                       (let* ([lc (parallel-lock-client)]
+                             [_ (when lc (log-compile-event path 'locking))]
                              [locked? (and lc (lc 'lock zo-name))]
                              [ok-to-compile? (or (not lc) locked?)])
                         (dynamic-wind
                           (lambda () (void))
                           (lambda ()
                             (when ok-to-compile?
+                              (log-compile-event path 'start-compile)
                               (when zo-exists? (try-delete-file zo-name #f))
                               (log-info (format "cm: ~acompiling ~a" 
                                                 (build-string 
@@ -532,6 +540,8 @@
                                                  (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
                                                 actual-path))))
                           (lambda ()
+                            (when lc
+                              (log-compile-event path (if locked? 'finish-compile 'already-done)))
                             (when locked?
                               (lc 'unlock zo-name))))))))))))
      (unless sha1-only?

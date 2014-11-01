@@ -20,6 +20,7 @@
          send/error
          send/report
          send/msg
+         send/log
          recv/req
          worker/die
          work-queue<%>
@@ -351,6 +352,7 @@
 (define-syntax-parameter-error send/success)
 (define-syntax-parameter-error send/error)
 (define-syntax-parameter-error send/report)
+(define-syntax-parameter-error send/log)
 (define-syntax-parameter-error recv/req)
 (define-syntax-parameter-error worker/die)
 
@@ -373,10 +375,11 @@
                                      [recv/req (make-rename-transformer #'recv/reqp)]
                                      [worker/die (make-rename-transformer #'die-k)])
                  ;; message handler:
-                 (lambda (msg send/successp send/errorp send/reportp)
+                 (lambda (msg send/successp send/errorp send/reportp send/logp)
                    (syntax-parameterize ([send/success (make-rename-transformer #'send/successp)]
                                          [send/error (make-rename-transformer #'send/errorp)]
-                                         [send/report (make-rename-transformer #'send/reportp)])
+                                         [send/report (make-rename-transformer #'send/reportp)]
+                                         [send/log (make-rename-transformer #'send/logp)])
                      (match msg
                        [work work-body ...]
                        ...))))))])))))
@@ -429,6 +432,8 @@
                           (send/resp (list 'ERROR message)))
                         (define (send/reportp message)
                           (send/resp (list 'REPORT message)))
+                        (define (send/logp level message data)
+                          (send/resp (list 'LOG level message data)))
                         ((with-handlers* ([exn:fail? (lambda (x) 
                                                        (define sp (open-output-string))
                                                        (parameterize ([current-error-port sp])
@@ -440,7 +445,7 @@
                              (let ([msg (pdo-recv)])
                                (match msg
                                  [(list 'DIE) void]
-                                 [_ (msg-proc msg send/successp send/errorp send/reportp)
+                                 [_ (msg-proc msg send/successp send/errorp send/reportp send/logp)
                                     (lambda () (loop (add1 i)))]))))))))))))
 
 (define-syntax (lambda-worker stx)
