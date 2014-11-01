@@ -24,6 +24,10 @@
 ;  (begin a ...)
 )
 
+;; Logger that joins the events of the compiler/cm logger of the different places.
+;; The attached values are (cons <worker-id> <original-data>).
+(define pb-logger (make-logger 'setup/parallel-build (current-logger)))
+
 (define lock-manager% 
   (class object%
     (field (locks (make-hash)))
@@ -80,6 +84,7 @@
     (inspect #f)
 
     (define/public (work-done work wrkr msg)
+      (define id (send wrkr get-id))
       (match (list work msg)
         [(list (list cc file last) (list result-type out err))
           (begin0
@@ -89,6 +94,10 @@
                 #t]
               [(list 'LOCK fn) (lm/lock lock-mgr fn wrkr) #f]
               [(list 'UNLOCK fn) (lm/unlock lock-mgr fn) #f]
+              [(list 'LOG level msg data)
+               (when (log-level? pb-logger level)
+                 (log-message pb-logger level msg (cons id data)))
+               #f]
               ['DONE
                 (define (string-!empty? s) (not (zero? (string-length s))))
                 (when (ormap string-!empty? (list out err))
@@ -215,6 +224,10 @@
             [(list 'ERROR msg) (handler id 'error work msg out err) 
                                (set! results #f)
                                #t]
+            [(list 'LOG level msg data)
+             (when (log-level? pb-logger level)
+               (log-message pb-logger level msg (cons id data)))
+             #f]
             ['DONE
               (define (string-!empty? s) (not (zero? (string-length s))))
               (if (ormap string-!empty? (list out err))
@@ -307,11 +320,14 @@
                          )
 
              ;; Watch for module-prefetch events, and queue jobs in response
-             (define t (start-prefetch-thread send/add))
+             (define prefetch-thread (start-prefetch-thread send/add))
+             ;; Watch for logging events, and send log messages to parent
+             (define stop-logging-thread (start-logging-thread send/log))
 
              (cmc (build-path dir file))
 
-             (kill-thread t))
+             (kill-thread prefetch-thread)
+             (stop-logging-thread))
            (send/resp 'DONE))]
         [x (send/error (format "DIDNT MATCH A ~v\n" x))]
         [else (send/error (format "DIDNT MATCH A\n"))]))))
@@ -362,3 +378,27 @@
                    (send/add path)))
                p])))
          (loop))))))
+
+;; This thread is run in the worker's place. For every compiler event in the worker, this sends a
+;; message back to the original place, which will be turned into a log event in `pb-logger`.
+(define (start-logging-thread send/log)
+  (define log-rec (make-log-receiver (current-logger) 'info 'compiler/cm))
+  (define sema (make-semaphore))
+  (define t
+    (thread
+      (lambda ()
+        (define (handle-msg v)
+          (send/log (vector-ref v 0) (vector-ref v 1) (vector-ref v 2)))
+        (define (drain)
+          (sync/timeout 0 (handle-evt log-rec (λ (v) (handle-msg v) (drain)))))
+
+        (let loop ()
+          (sync
+            (handle-evt log-rec
+              (λ (v) (handle-msg v) (loop)))
+            (handle-evt sema
+              (λ (_) (drain))))))))
+  (lambda ()
+    (semaphore-post sema)
+    (sync t)))
+
