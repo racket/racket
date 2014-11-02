@@ -2807,7 +2807,7 @@
 
 [log-message (cl->* (-> -Logger -Log-Level -String Univ -Void)
                     (-> -Logger -Log-Level (Un (-val #f) -Symbol) -String Univ -Void))]
-[log-level? (-> -Logger -Log-Level  B)]
+[log-level? (->opt -Logger -Log-Level [(-opt -Symbol)] B)]
 
 [log-receiver? (make-pred-ty -Log-Receiver)]
 [make-log-receiver (-> -Logger -Log-Level -Log-Receiver)]
