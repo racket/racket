@@ -191,14 +191,14 @@ racket@CGC@@OSX@: $(MZFW) main.@LTO@
 
 lib/libmzgcxxxxxxx.dll: libmzgc.@LIBSFX@
 	mkdir -p lib
-	@MZLINKER@ -shared -o lib/libmzgcxxxxxxx.dll -Wl,--output-def -Wl,libmzgc.def -Wl,--whole-archive libmzgc.@LIBSFX@ -Wl,--no-whole-archive 
+	@MZLINKER@ -shared -o lib/libmzgcxxxxxxx.dll -Wl,--output-def -Wl,libmzgc.def -Wl,--whole-archive libmzgc.@LIBSFX@ -Wl,--no-whole-archive -static-libgcc
 
 mzsj86g.o: $(srcdir)/src/mzsj86g.S
 	$(CC) -c -o mzsj86g.o $(srcdir)/src/mzsj86g.S
 
 lib/libracketxxxxxxx.dll: lib/libmzgcxxxxxxx.dll libracket.@LIBSFX@ mzsj86g.o
 	mkdir -p lib
-	@MZLINKER@ -shared -o lib/libracketxxxxxxx.dll mzsj86g.o -Wl,--output-def -Wl,libracket.def -Wl,--whole-archive libracket.@LIBSFX@ -Wl,--no-whole-archive -lshell32 -luser32 -lws2_32 lib/libmzgcxxxxxxx.dll
+	@MZLINKER@ -shared -o lib/libracketxxxxxxx.dll mzsj86g.o -Wl,--output-def -Wl,libracket.def -Wl,--whole-archive libracket.@LIBSFX@ -Wl,--no-whole-archive -lshell32 -luser32 -lws2_32 lib/libmzgcxxxxxxx.dll -static-libgcc
 
 libracket.dll.a: lib/libracketxxxxxxx.dll
 	@DLLTOOL@ --def libracket.def -D libracketxxxxxxx.dll --output-delaylib libracket.dll.a
@@ -210,7 +210,7 @@ rres.o : $(srcdir)/../worksp/racket/racket.rc
 	@WINDRES@ -i $(srcdir)/../worksp/racket/racket.rc -o rres.o
 
 racket@CGC@@MINGW@: libracket.dll.a libmzgc.dll.a main.@LTO@ $(SPECIALIZINGOBJECTS) rres.o
-	@MZLINKER@ -o racket@CGC@ main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) libracket.dll.a libmzgc.dll.a @LDFLAGS@ @LIBS@ -ldelayimp
+	@MZLINKER@ -o racket@CGC@ main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) libracket.dll.a libmzgc.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
 
 mingw-other@MINGW@: mzsj86g.o rres.o
 	$(NOOP)

@@ -514,13 +514,13 @@ $(MZFWMMM): ../libracket3m.@LIBSFX@
 
 ../lib/libracket3mxxxxxxx.dll: ../libracket3m.@LIBSFX@ ../mzsj86g.o
 	mkdir -p ../lib
-	@MZLINKER@ -shared -o ../lib/libracket3mxxxxxxx.dll ../mzsj86g.o -Wl,--output-def -Wl,libracket3m.def -Wl,--whole-archive ../libracket3m.@LIBSFX@ -Wl,--no-whole-archive -lshell32 -luser32 -lws2_32
+	@MZLINKER@ -shared -o ../lib/libracket3mxxxxxxx.dll ../mzsj86g.o -Wl,--output-def -Wl,libracket3m.def -Wl,--whole-archive ../libracket3m.@LIBSFX@ -Wl,--no-whole-archive -lshell32 -luser32 -lws2_32 -static-libgcc
 
 libracket3m.dll.a: ../lib/libracket3mxxxxxxx.dll
 	@DLLTOOL@ --def libracket3m.def -D libracket3mxxxxxxx.dll --output-delaylib libracket3m.dll.a
 
 ../racket@MMM@@MINGW@: libracket3m.dll.a main.@LTO@ ../rres.o $(SPECIALIZINGOBJECTS)
-	cd ..; @MZLINKER@ -o racket@MMM@ gc2/main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp
+	cd ..; @MZLINKER@ -o racket@MMM@ gc2/main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
 
 
 clean:

@@ -59,7 +59,7 @@ ARLIBFLAGS = $(LDFLAGS) $(LDLIBS)
 GRACKETLINKER = @MZLINKER@
 
 GRACKETLDLIBS@NOT_MINGW@ = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@ $(LDLIBS)
-GRACKETLDLIBS@MINGW@ = ../racket/libracket.dll.a ../racket/libmzgc.dll.a $(LDLIBS) -ldelayimp
+GRACKETLDLIBS@MINGW@ = ../racket/libracket.dll.a ../racket/libmzgc.dll.a $(LDLIBS) -ldelayimp -static-libgcc
 GRACKETLDFLAGS = $(LDFLAGS) -L../racket
 
 GRACKETRES@NOT_MINGW@ =
