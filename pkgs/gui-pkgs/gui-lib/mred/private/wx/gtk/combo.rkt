@@ -67,11 +67,13 @@
           (or v
               (begin
                 (g_signal_handler_unblock gtk other-id)
+		(set! unblocked? #t)
                 (let ([r (g_signal_emit gtk
                                         button-press-id
                                         0
                                         event)])
                   (g_signal_handler_block gtk other-id)
+		  (set! unblocked? #f)
                   r)))))))
 
 ;; Dependence on the implemenation of GtkComboBox:
