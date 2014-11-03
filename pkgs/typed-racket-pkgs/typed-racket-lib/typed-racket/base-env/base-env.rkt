@@ -2819,7 +2819,8 @@
 [current-milliseconds (-> -Fixnum)]
 [current-inexact-milliseconds (-> -Real)]
 [current-gc-milliseconds (-> -Fixnum)]
-[current-process-milliseconds (-> -Fixnum)]
+[current-process-milliseconds
+ (->opt [(Un (-val #f) (-val 'subprocesses) -Thread)] -Fixnum)]
 
 ;; Section 15.7
 [getenv (-> -String (Un -String (-val #f)))]
