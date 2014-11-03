@@ -1754,7 +1754,6 @@
            '(lambda (z)
              (list (list (z 2)) (list z))))
 
-#;
 (test-comp '(lambda (z)
              ;; It's ok to reorder unsafe operations relative
              ;; to each other:
