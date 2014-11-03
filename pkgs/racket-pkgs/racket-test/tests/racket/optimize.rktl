@@ -2357,6 +2357,14 @@
               (- (expt 2 31) 2))
            #f)
 
+;; Propagate type impliciations from RHS:
+(test-comp '(lambda (x)
+              (let ([y (car x)])
+                (list (cdr x) y (car x) y)))
+           '(lambda (x)
+             (let ([y (car x)])
+               (list (unsafe-cdr x) y (unsafe-car x) y))))
+
 ;; don't duplicate an operation by moving it into a lambda':
 (test-comp '(lambda (x)
               (let ([y (unsafe-flvector-length x)])
