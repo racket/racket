@@ -29,7 +29,7 @@ produced by @racket[remote], @racket[#f] otherwise.}
                  [#:remote-tunnels remote-tunnels (listof (cons/c (integer-in 1 65535)
                                                                   (integer-in 1 65535)))
                                    null]
-                 [#:key key (or/c #f path-string?)]
+                 [#:key key (or/c #f path-string?) #f]
                  [#:timeout timeout-secs real? 600])
          remote?]{
 
