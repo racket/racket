@@ -83,6 +83,7 @@ struct Optimize_Info
   Scheme_Object *context; /* for logging */
   Scheme_Logger *logger;
   Scheme_Hash_Tree *types; /* maps position (from this frame) to predicate */
+  int no_types;
 };
 
 typedef struct Optimize_Info_Sequence {
@@ -2159,7 +2160,7 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
 static int is_nonmutating_primitive(Scheme_Object *rator, int n)
 {
   if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
+      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE))
       && (n >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (n <= ((Scheme_Primitive_Proc *)rator)->mu.maxa))
     return 1;
@@ -6844,10 +6845,22 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
                                     0, 5)) {
             val = optimize_clone(1, o->expr, info, o->delta, 0);
             if (val) {
+              int save_fuel = info->inline_fuel, save_no_types = info->no_types;
+              int save_vclock, save_kclock;
               info->size -= 1;
               o->used = 1;
               info->inline_fuel = 0; /* no more inlining; o->expr was already optimized */
-              return scheme_optimize_expr(val, info, context);
+              info->no_types = 1; /* cannot used inferred types, in case `val' inferred them */
+              save_vclock = info->vclock; /* allowed to move => no change to clocks */
+              save_kclock = info->kclock;
+
+              val = scheme_optimize_expr(val, info, context);
+
+              info->inline_fuel = save_fuel;
+              info->no_types = save_no_types;
+              info->vclock = save_vclock;
+              info->kclock = save_kclock;
+              return val;
             }
           }
           /* Can't move expression, so lookup again to mark as used
@@ -7976,6 +7989,8 @@ Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info)
 {
   Scheme_Object *pred;
 
+  if (info->no_types) return NULL;
+
   while (info) {
     if (info->types) {
       pred = scheme_hash_tree_get(info->types, scheme_make_integer(pos));
@@ -8011,6 +8026,7 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->init_kclock = info->kclock;
   naya->use_psize = info->use_psize;
   naya->logger = info->logger;
+  naya->no_types = info->no_types;
 
   return naya;
 }
