@@ -2119,8 +2119,6 @@
                -> Void)]
          [on-save-file (Path Load/Save-Format -> Void)]
          [on-snip-modified ((Instance Snip%) Any -> Void)]
-         [on-goodbye-event ((Instance DC<%>) Real Real Real Real
-                            (Instance Mouse-Event%) -> Void)]
          [own-caret (Any -> Void)]
          [paste (case-> (-> Void) (Integer -> Void))]
          [paste-x-selection (case-> (-> Void) (Integer -> Void))]
@@ -2736,6 +2734,8 @@
          [on-event
           ((Instance DC<%>) Real Real Real Real
            (Instance Mouse-Event%) -> Void)]
+         [on-goodbye-event ((Instance DC<%>) Real Real Real Real
+                            (Instance Mouse-Event%) -> Void)]
          [own-caret (Any -> Void)]
          [partial-offset ((Instance DC<%>) Real Real Natural -> Real)]
          [previous (-> (Option (Instance Snip%)))]
