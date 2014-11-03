@@ -115,6 +115,7 @@ static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos,
 static void optimize_info_used_top(Optimize_Info *info);
 static Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info);
 static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred);
+static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta);
 
 static void optimize_mutated(Optimize_Info *info, int pos);
 static void optimize_produces_local_type(Optimize_Info *info, int pos, int ct);
@@ -3725,6 +3726,23 @@ static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred)
   info->types = new_types;
 }
 
+static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta)
+{
+  Scheme_Hash_Tree *types = src_info->types;
+  Scheme_Object *pos, *pred;
+  intptr_t i;
+
+  if (!types)
+    return;
+  
+  i = scheme_hash_tree_next(types, -1);
+  while (i != -1) {
+    scheme_hash_tree_index(types, i, &pos, &pred);
+    add_type(info, SCHEME_INT_VAL(pos)+delta, pred);
+    i = scheme_hash_tree_next(types, i);
+  }
+}
+
 static int relevant_predicate(Scheme_Object *pred)
 {
   /* Relevant predicates need to be disjoint for check_known2_pred()
@@ -5682,9 +5700,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
   optimize_info_seq_done(rhs_info, &info_seq);
 
-  if (post_bind)
+  if (post_bind) {
     optimize_info_done(rhs_info, body_info);
-  else if (split_shift)
+    merge_types(rhs_info, body_info, head->count);
+  } else if (split_shift)
     optimize_info_done(rhs_info, body_info);
 
   body = scheme_optimize_expr(body, body_info, scheme_optimize_tail_context(context));
