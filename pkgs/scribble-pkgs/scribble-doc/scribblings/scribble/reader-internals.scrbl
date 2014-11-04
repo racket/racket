@@ -145,7 +145,8 @@ is an example of this.
 @section[#:tag "at-exp-lang"]{Adding @"@"-expressions to a Language}
 
 @defmodulelang[at-exp]{The @racketmodname[at-exp] language installs
-@seclink["reader"]{@"@"-reader} support in the readtable, and then chains to the reader of
+@seclink["reader"]{@"@"-reader} support in the readtable used to read 
+a module, and then chains to the reader of
 another language that is specified immediately after
 @racketmodname[at-exp].}
 
@@ -159,6 +160,15 @@ at-exp racket/base
 (greet "friend")]
 
 reports @racket["Hello, friend."].
+
+In addition to configuring the reader for a module body,
+@racketmodname[at-exp] attaches a run-time configuration annotation to
+the module, so that it if it used as the main module, the
+@racket[current-read-interaction] parameter is adjusted to use the
+@seclink["reader"]{@"@"-reader} readtable extension.
+
+@history[#:changed "1.2" @elem{Added @racket[current-read-interaction]
+                               run-time configuration.}]
 
 @;--------------------------------------------------------------------
 @section{Interface}

@@ -44,7 +44,11 @@
                                   'disappeared-use (disappeared-use-todo))])
              ;; reconstruct the module with the extra code
              ;; use the regular %#module-begin from `racket/base' for top-level printing
-             (arm #`(#%module-begin #,before-code optimized-body ... #,after-code check-syntax-help)))))))]))
+             (arm #`(#%module-begin 
+                     #,(if (unbox include-extra-requires?)
+                           extra-requires
+                           #'(begin))
+                     #,before-code optimized-body ... #,after-code check-syntax-help)))))))]))
 
 (define did-I-suggest-:print-type-already? #f)
 (define :print-type-message " ... [Use (:print-type <expr>) to see more.]")
@@ -112,5 +116,8 @@
                                [x (int-err "bad type result: ~a" x)])])
                  (if ty-str
                      #`(begin (display '#,ty-str)
+                              #,(if (unbox include-extra-requires?)
+                                    extra-requires
+                                    #'(begin))
                               #,(arm #'optimized-body))
                      (arm #'optimized-body)))]))))]))

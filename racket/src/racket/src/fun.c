@@ -64,6 +64,9 @@
 #   ifdef WINDOWS_GET_PROCESS_TIMES
 #    include <Windows.h>
 #   endif
+#   if !defined(USE_GETRUSAGE) && !defined(WINDOWS_GET_PROCESS_TIMES) && !defined(USER_TIME_IS_CLOCK)
+#    include <sys/times.h>
+#   endif
 #  endif /* USE_PALMTIME */
 # endif /* USE_MACTIME */
 #endif /* TIME_SYNTAX */
@@ -102,6 +105,7 @@ ROSYM static Scheme_Object *transparent_symbol;
 ROSYM static Scheme_Object *transparent_binding_symbol;
 ROSYM static Scheme_Object *opaque_symbol;
 ROSYM static Scheme_Object *none_symbol;
+ROSYM static Scheme_Object *subprocesses_symbol;
 ROSYM static Scheme_Object *is_method_symbol;
 ROSYM static Scheme_Object *cont_key; /* uninterned */
 ROSYM static Scheme_Object *barrier_prompt_key; /* uninterned */
@@ -123,6 +127,10 @@ THREAD_LOCAL_DECL(static Scheme_Overflow *offstack_overflow);
 
 THREAD_LOCAL_DECL(int scheme_cont_capture_count);
 THREAD_LOCAL_DECL(static int scheme_prompt_capture_count);
+
+#ifdef WINDOWS_GET_PROCESS_TIMES
+SHARED_OK volatile uintptr_t scheme_process_children_msecs;
+#endif
 
 /* locals */
 static Scheme_Object *procedure_p (int argc, Scheme_Object *argv[]);
@@ -651,6 +659,9 @@ scheme_init_fun (Scheme_Env *env)
   transparent_binding_symbol = scheme_intern_symbol("transparent-binding");
   opaque_symbol              = scheme_intern_symbol("opaque");
   none_symbol                = scheme_intern_symbol("none");
+
+  REGISTER_SO(subprocesses_symbol);
+  subprocesses_symbol = scheme_intern_symbol("subprocesses");
 
   REGISTER_SO(is_method_symbol);
   REGISTER_SO(cont_key);
@@ -9393,6 +9404,37 @@ intptr_t scheme_get_process_milliseconds(void)
 #endif
 }
 
+intptr_t scheme_get_process_children_milliseconds(void)
+  XFORM_SKIP_PROC
+{
+#ifdef USER_TIME_IS_CLOCK
+  return 0;
+#else
+# ifdef USE_GETRUSAGE
+  struct rusage use;
+  intptr_t s, u;
+  
+  do {
+    if (!getrusage(RUSAGE_CHILDREN, &use))
+      break;
+  } while (errno == EINTR);
+
+  s = use.ru_utime.tv_sec + use.ru_stime.tv_sec;
+  u = use.ru_utime.tv_usec + use.ru_stime.tv_usec;
+
+  return (s * 1000 + u / 1000);
+# else
+#  ifdef WINDOWS_GET_PROCESS_TIMES
+  return (intptr_t)scheme_process_children_msecs;
+#  else
+  clock_t t;
+  times(&t);
+  return (t.tms_cutime + t.tms_cstime) * 1000 / CLK_TCK;
+#  endif
+# endif
+#endif
+}
+
 intptr_t scheme_get_thread_milliseconds(Scheme_Object *thrd)
   XFORM_SKIP_PROC
 {
@@ -9845,10 +9887,12 @@ static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **arg
 {
   if (!argc || SCHEME_FALSEP(argv[0]))
     return scheme_make_integer(scheme_get_process_milliseconds());
+  else if (SAME_OBJ(argv[0], subprocesses_symbol))
+    return scheme_make_integer(scheme_get_process_children_milliseconds());
   else {
     if (SCHEME_THREADP(argv[0]))
       return scheme_make_integer(scheme_get_thread_milliseconds(argv[0]));
-    scheme_wrong_contract("current-process-milliseconds", "thread?", 0, argc, argv);
+    scheme_wrong_contract("current-process-milliseconds", "(or/c #f thread? 'subprocesses)", 0, argc, argv);
     return NULL;
   }
 }

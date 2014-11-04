@@ -205,6 +205,10 @@
   [#:key 'ephemeron])
 
 ;; elem is a Type
+(def-type Weak-Box ([elem Type/c])
+  [#:key 'weak-box])
+
+;; elem is a Type
 (def-type CustodianBox ([elem Type/c])
   [#:key 'custodian-box])
 
@@ -405,6 +409,7 @@
 
 ;; the supertype of all of these values
 (def-type BoxTop () [#:fold-rhs #:base] [#:key 'box])
+(def-type Weak-BoxTop () [#:fold-rhs #:base] [#:key 'weak-box])
 (def-type ChannelTop () [#:fold-rhs #:base] [#:key 'channel])
 (def-type Async-ChannelTop () [#:fold-rhs #:base] [#:key 'async-channel])
 (def-type VectorTop () [#:fold-rhs #:base] [#:key 'vector])

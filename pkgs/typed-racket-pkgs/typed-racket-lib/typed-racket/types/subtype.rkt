@@ -514,6 +514,8 @@
          ;; Invariant types
          [((Box: s) (Box: t)) (type-equiv? A0 s t)]
          [((Box: _) (BoxTop:)) A0]
+         [((Weak-Box: s) (Weak-Box: t)) (type-equiv? A0 s t)]
+         [((Weak-Box: _) (Weak-BoxTop:)) A0]
          [((ThreadCell: s) (ThreadCell: t)) (type-equiv? A0 s t)]
          [((ThreadCell: _) (ThreadCellTop:)) A0]
          [((Channel: s) (Channel: t)) (type-equiv? A0 s t)]

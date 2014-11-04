@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/cmdline
          racket/match
+         racket/pretty
          raco/command-name
          syntax/modresolve
          "private/util.rkt")
@@ -36,10 +37,10 @@
 (define (resolve-module-path-index* mpi relto)
   (let ([v (resolve-module-path-index mpi relto)])
     (match v
-      [(? path?) (make-resolved-module-path v)]
+      [(? path?) (make-resolved-module-path (simplify-path v))]
       [(? symbol?) (make-resolved-module-path v)]
       [(list* 'submod (? path? base) syms)
-       (make-resolved-module-path (cons base syms))]
+       (make-resolved-module-path (cons (simplify-path base) syms))]
       [(list* 'submod (? symbol? base) syms)
        (error 'resolve-module-path-index*
               "failed to resolve submodule path base in: ~e" v)])))
@@ -58,7 +59,7 @@
 
 (define (module-path<? A B)
   (cond [(and (symbol? A) (symbol? B))
-         (string<? (symbol->string A) (symbol->string B))]
+         (symbol<? A B)]
         [(symbol? A) #t]
         [(symbol? B) #f]
         [(and (string? A) (string? B))
@@ -93,6 +94,7 @@
 (define (show-dependencies #:exclude [exclude null]
                            #:exclude-deps [exclude-deps null]
                            #:show-context? [context? #f]
+                           #:multi-line-context? [multi-line-context? #f]
                            . module-paths)
   (for ([dep (in-list (apply get-dependencies
                              #:exclude exclude
@@ -100,9 +102,22 @@
                              module-paths))])
     (let ([mod (car dep)]
           [direct-requirers (cadr dep)])
-      (printf "~s" mod)
+      (parameterize ([pretty-print-columns 'infinity]) (pretty-write mod))
       (when context?
-        (printf " <- ~s" direct-requirers))
+        (printf " <- ")
+        (cond
+          [multi-line-context?
+           (for ([direct-requirer (in-list direct-requirers)]
+                 [i (in-naturals)])
+             (if (zero? i)
+                 (printf "\n (")
+                 (printf "\n  "))
+             (parameterize ([pretty-print-columns 'infinity])
+               (pretty-write direct-requirer)))
+           (printf ")")]
+          [else
+           (parameterize ([pretty-print-columns 'infinity])
+             (pretty-write direct-requirers))]))
       (newline))))
 
 ;; ====
@@ -110,6 +125,7 @@
 (define (main . argv)
   (define mode 'auto)
   (define context? #f)
+  (define multi-line-context? #f)
   (define excludes null)
   (define exclude-deps null)
   (command-line
@@ -118,6 +134,9 @@
    #:once-each
    [("-c" "--context") "Show who directly requires each module"
     (set! context? #t)]
+   [("-l" "--multi-line-context") "Like --context, but use multiple lines"
+    (set! context? #t)
+    (set! multi-line-context? #t)]
    [("-f" "--file") "Interpret arguments as file-paths"
     (set! mode 'file)]
    [("-m" "--module-path") "Interpret arguments as module-paths"
@@ -145,6 +164,7 @@
             #:exclude (map ->modpath excludes)
             #:exclude-deps (map ->modpath exclude-deps)
             #:show-context? context?
+            #:multi-line-context? multi-line-context?
             (map ->modpath module-path)))))
 
 (module* main #f
@@ -154,12 +174,12 @@
 
 For example,
 
-  racket -lm macro-debugger/analysis/show-dependencies -- -bc mzscheme
+  raco show-dependencies -bc mzscheme
 
 shows the additional modules used to implement mzscheme beyond those
 already needed for the implementation of racket/base. And
 
-  racket -lm macro-debugger/analysis/show-dependencies -- -bc syntax/parse/pre
+  raco show-dependencies -bl syntax/parse/pre
 
 shows that syntax/parse/pre has no dependencies on the contract
 library. Actually, it shows that it has no *residual* dependencies;

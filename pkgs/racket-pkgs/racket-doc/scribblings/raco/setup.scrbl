@@ -1161,6 +1161,26 @@ function for installing a single @filepath{.plt} file.
   Returns a path to a user-specific @filepath{lib} directory; the directory
   indicated by the returned path may or may not exist.}
 
+@defproc[(get-lib-search-dirs) (listof path?)]{
+  Returns a list of paths to search for foreign libraries. Unless it is
+  configured otherwise, the result includes any non-@racket[#f] result of
+  @racket[(find-lib-dir)] and
+  and @racket[(find-user-lib-dir)]---but the latter is included only if the
+  value of the @racket[use-user-specific-search-paths] parameter
+  is @racket[#t].
+
+  @history[#:changed "6.1.1.4" @elem{Dropped @racket[(find-dll-dir)]
+                                     from the set of paths to
+                                     explicitly include in the
+                                     default.}]}
+
+@defproc[(find-dll-dir) (or/c path? #f)]{
+  Returns a path to the directory that contains DLLs for use with the
+  current executable (e.g., @filepath{libracket.dll} on Windows).
+  The result is @racket[#f] if no such directory is available, or if no
+  specific directory is available (i.e., other than the platform's normal
+  search path).}
+
 @defproc[(find-share-dir) (or/c path? #f)]{ Returns a path to the
   installation's @filepath{share} directory, which contains installed
   packages and other platform-independent files. The result is
@@ -1169,21 +1189,6 @@ function for installing a single @filepath{.plt} file.
 @defproc[(find-user-share-dir) path?]{
   Returns a path to a user-specific @filepath{share} directory; the directory
   indicated by the returned path may or may not exist.}
-
-@defproc[(find-dll-dir) (or/c path? #f)]{
-  Returns a path to the directory that contains DLLs for use with the
-  current executable (e.g., @filepath{libmzsch.dll} on Windows).
-  The result is @racket[#f] if no such directory is available, or if no
-  specific directory is available (i.e., other than the platform's normal
-  search path).}
-
-@defproc[(get-lib-search-dirs) (listof path?)]{
-  Returns a list of paths to search for foreign libraries. Unless it is
-  configured otherwise, the result includes any non-@racket[#f] result of
-  @racket[(find-lib-dir)], @racket[(find-dll-dir)],
-  and @racket[(find-user-lib-dir)]---but the last is included only if the
-  value of the @racket[use-user-specific-search-paths] parameter
-  is @racket[#t].}
 
 @defproc[(find-include-dir) (or/c path? #f)]{
   Returns a path to the installation's @filepath{include} directory, which
@@ -1475,6 +1480,28 @@ The inverse of @racket[path->main-collects-relative]: if @racket[rel]
 is a pair that starts with @racket['collects], then it is converted
 back to a path relative to @racket[(find-collects-dir)].}
 
+@subsection{Representing Paths Relative to the Documentation}
+
+@defmodule[setup/main-doc]
+
+@defproc[(path->main-doc-relative [path (or/c bytes? path-string?)])
+         (or/c path? (cons/c 'doc (non-empty-listof bytes?)))]{
+ Like @racket[path->main-collects-relative], except that it checks
+ for a prefix relative to @racket[(find-doc-dir)] and returns a list
+ starting with @racket['doc] if so.
+}
+
+@defproc[(main-doc-relative->path
+          [rel (or/c bytes?
+                     path-string?
+                     (cons/c 'doc (non-empty-listof bytes?)))])
+         path>]{
+
+ Like @racket[path->main-collects-relative], except it is the inverse
+ of @racket[path->main-doc-relative].
+}
+
+
 @subsection{Displaying Paths Relative to a Common Root}
 
 @defmodule[setup/path-to-relative]
@@ -1491,8 +1518,9 @@ back to a path relative to @racket[(find-collects-dir)].}
   is an absolute one that is inside the @filepath{collects} tree, the
   result is a string that begins with @racket["<collects>/"].
   Similarly, a path in the user-specific collects results in a prefix of
-  @racket["<user-collects>/"], and a @PLaneT path results in
-  @racket["<planet>/"].
+  @racket["<user-collects>/"], a @PLaneT path results in
+  @racket["<planet>/"], and a path into documentation results in
+  @racket["<doc>/"] or @racket["<user-doc>/"].
 
   If @racket[cache] is not @racket[#f], it is used as a cache argument
   for @racket[pkg->path] to speed up detection and conversion of

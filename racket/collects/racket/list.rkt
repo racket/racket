@@ -445,8 +445,14 @@
       (reverse result)
       (loop (cdr l) (if (f (car l)) result (cons (car l) result))))))
 
+;; Fisher-Yates Shuffle
 (define (shuffle l)
-  (sort l < #:key (λ(_) (random)) #:cache-keys? #t))
+  (define a (make-vector (length l)))
+  (for ([x (in-list l)] [i (in-naturals)])
+    (define j (random (add1 i)))
+    (unless (= j i) (vector-set! a i (vector-ref a j)))
+    (vector-set! a j x))
+  (vector->list a))
 
 ;; This implements an algorithm known as "Ord-Smith".  (It is described in a
 ;; paper called "Permutation Generation Methods" by Robert Sedgewlck, listed as

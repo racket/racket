@@ -3,16 +3,7 @@
 (require
  (for-syntax racket/base racket/lazy-require
              "standard-inits.rkt")
- (for-syntax "utils/timing.rkt") ;; only for timing/debugging
- ;; the below requires are needed since they provide identifiers
- ;; that may appear in the residual program
- ;; TODO: figure out why this are needed here and not somewhere else
- (submod "private/type-contract.rkt" predicates)
- "utils/utils.rkt"
- (for-syntax "utils/utils.rkt")
- "utils/any-wrap.rkt" "utils/struct-type-c.rkt"
- "utils/evt-contract.rkt"
- unstable/contract racket/contract/parametric)
+ (for-syntax "utils/timing.rkt")) ;; only for timing/debugging
 
 (provide (rename-out [module-begin #%module-begin]
                      [top-interaction #%top-interaction])

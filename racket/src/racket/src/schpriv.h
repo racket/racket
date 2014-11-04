@@ -645,6 +645,9 @@ void scheme_block_child_signals(int block);
 void scheme_check_child_done(void);
 int scheme_extract_child_status(int status);
 #endif
+#ifdef WINDOWS_GET_PROCESS_TIMES
+extern volatile uintptr_t scheme_process_children_msecs;
+#endif
 
 void scheme_prepare_this_thread_for_GC(Scheme_Thread *t);
 
@@ -3693,10 +3696,12 @@ struct Scheme_Logger {
   Scheme_Object *name;
   Scheme_Logger *parent;
   int want_level;
-  Scheme_Object *callback;
-  intptr_t *timestamp, local_timestamp; /* determines when want_level is up-to-date */
+  Scheme_Object *want_name_level_cache; /* vector */
+  Scheme_Object **root_timestamp;
+  intptr_t local_timestamp; /* determines when want_level is up-to-date */
   Scheme_Object *syslog_level; /* (list* <level-int> <name-sym> ... <level-int>) */
   Scheme_Object *stderr_level;
+  Scheme_Object *propagate_level; /* can be NULL */
   Scheme_Object *readers; /* list of (cons (make-weak-box <reader>) <sema>) */
 };
 

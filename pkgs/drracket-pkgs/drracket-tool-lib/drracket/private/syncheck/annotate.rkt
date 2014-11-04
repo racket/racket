@@ -25,10 +25,10 @@
   (when defs
     (send defs syncheck:color-range source start finish style-name)))
 
-;; add-mouse-over : syntax[original] string -> void
+;; add-mouse-over : syntax[original] (or/c string (-> string?)) -> void
 ;; registers the range in the editor so that a mouse over
 ;; this area shows up in the status line.
-(define (add-mouse-over stx str)
+(define (add-mouse-over stx str/proc)
   (define source (find-source-editor stx))
   (define defs-text (current-annotations))
   (when (and defs-text 
@@ -37,12 +37,19 @@
              (syntax-span stx))
     (define pos-left (- (syntax-position stx) 1))
     (define pos-right (+ pos-left (syntax-span stx)))
-    (send defs-text syncheck:add-mouse-over-status
-          source pos-left pos-right str)))
+    (add-mouse-over/loc/proc defs-text source pos-left pos-right str/proc)))
 
-(define (add-mouse-over/loc source pos-left pos-right str)
+(define (add-mouse-over/loc source pos-left pos-right str/proc)
   (define defs-text (current-annotations))
   (when defs-text
+    (add-mouse-over/loc/proc defs-text source pos-left pos-right str/proc)))
+
+(define (add-mouse-over/loc/proc defs-text source pos-left pos-right str/proc)
+  (define str
+    (cond
+      [(procedure? str/proc) (str/proc)]
+      [else str/proc]))
+  (when (string? str)
     (send defs-text syncheck:add-mouse-over-status
           source pos-left pos-right str)))
 

@@ -13,7 +13,7 @@
 
 (test #f logger-name (make-logger))
 
-(arity-test make-logger 0 3)
+(arity-test make-logger 0 -1)
 
 ; --------------------
 
@@ -88,7 +88,7 @@
 
 ; --------------------
 
-(let ()
+(parameterize ([current-logger (make-logger)])
   (define-logger test)
   (test #t logger? test-logger)
   (define r (make-log-receiver (current-logger) 'warning 'test))
@@ -96,13 +96,41 @@
   (log-test-debug "debug")
   (test #f sync/timeout 0 r)
   (log-test-warning "warning")
+  (test '(#f #f warning test) log-all-levels test-logger)
   (test "test: warning" (lambda (v) (vector-ref v 1)) (sync r)))
+
+(parameterize ([current-logger (make-logger)])
+  (define-logger test)
+  (define r (make-log-receiver (current-logger) 'info 'test2 'warning))
+  (test #t log-level? test-logger 'warning)
+  (test #t log-level? test-logger 'info)
+  (test #t log-level? test-logger 'info 'test2)
+  (test #f log-level? test-logger 'info 'not-test)
+  (test #f log-level? test-logger 'debug 'test2)
+  (test 'info log-max-level test-logger)
+  (test 'info log-max-level test-logger 'test2)
+  (test 'warning log-max-level test-logger 'not-test)
+  (test '(warning #f info test2) log-all-levels test-logger)
+  ;; Retain receiver to avoid GC influence on tests
+  (test #f sync/timeout 0 r))
+
+(parameterize ([current-logger (make-logger)])
+  (define-logger test)
+  (define r2 (make-log-receiver (current-logger) 'warning 'test3 'info))
+  (test #f log-level? test-logger 'info 'test3)
+  (test #t log-level? test-logger 'info 'not-test)
+  (test #f log-level? test-logger 'debug 'test3)
+  (test 'info log-max-level test-logger)
+  (test 'warning log-max-level test-logger 'test3)
+  (test 'info log-max-level test-logger 'not-test)
+  ;; Retain receiver to avoid GC influence on tests
+  (test #f sync/timeout 0 r2))
 
 ; ----------------------------------------
 
 (let ()
   (define root (make-logger))
-  (define sub1 (make-logger 'sub1 root #f))
+  (define sub1 (make-logger 'sub1 root))
   (define sub2 (make-logger 'sub2 root))
   (define sub3 (make-logger 'sub3 root))
   (define sub4 (make-logger 'sub4 root))
@@ -142,49 +170,73 @@
   (test #f get))
 
 ; --------------------
-;; notification callback:
-
-(let ()
-  (define rt #f)
-  (define s1 #f)
-  (define root (make-logger #f #f (lambda (m) (set! rt m))))
-  (define sub1 (make-logger #f root (lambda (m) (set! s1 m))))
-  ;; no receivers:
-  (log-message sub1 'debug "message" 'data)
-  (test #f values rt)
-  (test #f values s1)
-  (define r (make-log-receiver root 'error))
-  ;; still no receivers for 'debug:
-  (log-message root 'debug "message" 'data)
-  (test #f values rt)
-  (test #f values s1)
-  ;; receivers for 'error:
-  (log-message sub1 'error "message" 'data)
-  (test rt vector 'error "message" 'data #f)
-  (test s1 vector 'error "message" 'data #f)
-  (set! rt #f)
-  (set! s1 #f)
-  (log-message root 'fatal 'name "message2" 'data2)
-  (test rt vector 'fatal "name: message2" 'data2 'name)
-  (test #f values s1)
-  (define sub2 (make-logger 'sub2 root (lambda (m) (abort-current-continuation 
-                                                    (default-continuation-prompt-tag) 
-                                                    void))))
-  (test 'aborted
-        call-with-continuation-prompt
-        (lambda () (log-message sub2 'fatal 'name "message2" 'data2))
-        (default-continuation-prompt-tag) 
-        (lambda (v) 'aborted))
-  
-  (void))
-
-; --------------------
 
 (let ()
   (define l (make-logger))
   (define r (make-log-receiver l 'info 'sub))
   (log-message l 'info 'sub "hey" #f)
   (test '#(info "sub: hey" #f sub) sync/timeout 0 r))
+
+;; --------------------
+;; Check logger propagate constraints
+
+(let ()
+  (define l (make-logger))
+  (define l2 (make-logger #f l 'error))
+  (define l3 (make-logger #f l2 'warning 'test 'info))
+  (define l32 (make-logger #f l2 'info 'test 'warning))
+  
+  (define evt (log-level-evt l32))
+  (test #f sync/timeout 0 evt)
+  
+  (define r (make-log-receiver l 'debug))
+  (test #f sync/timeout 0 r)
+  (test evt sync/timeout 0 evt)
+  
+  (log-message l 'debug "debug message" #f)
+  (test #t vector? (sync/timeout 0 r))
+  
+  (define r2 (make-log-receiver l2 'info))
+  (test (void) log-message l2 'warning "warning message not propagated" #f)
+  (test #f sync/timeout 0 r)
+  (test #t vector? (sync/timeout 0 r2))
+
+  (test (void) log-message l3 'error "error message propagated" #f)
+  (test #t vector? (sync/timeout 0 r))
+  (test #t vector? (sync/timeout 0 r2))
+
+  (test (void) log-message l3 'info "info message partially propagated" #f)
+  (test #f sync/timeout 0 r)
+  (test #t vector? (sync/timeout 0 r2))
+  
+  (test (void) log-message l3 'info 'test "info message not propagated" #f)
+  (test #f sync/timeout 0 r)
+  (test #f sync/timeout 0 r2)
+  
+  (test 'debug log-max-level l)
+  (test 'info log-max-level l2)
+  (test 'info log-max-level l3)
+
+  (test '(debug #f) log-all-levels l)
+  (test '(info #f) log-all-levels l2)
+
+  (define r22 (make-log-receiver l2 'debug))
+  (test 'debug log-max-level l)
+  (test 'debug log-max-level l2)
+  (test 'info log-max-level l3)
+  (test 'warning log-max-level l3 'test)
+  (test 'info log-max-level l3 'not-test)
+  (test 'info log-max-level l32)
+  (test 'warning log-max-level l32 'not-test)
+  (test 'info log-max-level l32 'test)
+
+  (test '(debug #f) log-all-levels l)
+  (test '(debug #f) log-all-levels l2)
+
+  ;; Retain receivers to avoid GC influence on tests
+  (test #f sync/timeout 0 r)
+  (test #f sync/timeout 0 r2)
+  (test #f sync/timeout 0 r22))
 
 ; --------------------
 

@@ -61,6 +61,7 @@
 (define -vec make-Vector)
 (define -future make-Future)
 (define -evt make-Evt)
+(define -weak-box make-Weak-Box)
 
 (define (-seq . args) (make-Sequence args))
 
@@ -176,6 +177,7 @@
 (define Ident (-Syntax -Symbol))
 (define -HT make-Hashtable)
 (define/decl -BoxTop (make-BoxTop))
+(define/decl -Weak-BoxTop (make-Weak-BoxTop))
 (define/decl -ChannelTop (make-ChannelTop))
 (define/decl -Async-ChannelTop (make-Async-ChannelTop))
 (define/decl -HashTop (make-HashtableTop))

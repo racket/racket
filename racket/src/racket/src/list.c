@@ -3494,13 +3494,13 @@ extern void *GC_base(void *d);
 # define GC_did_mark_stack_overflow() 0
 # define GC_mark_overflow_recover(ptr) /**/
 #else
-extern MZ_DLLIMPORT void *GC_base(void *);
-extern MZ_DLLIMPORT int GC_is_marked(void *);
-extern MZ_DLLIMPORT int GC_did_mark_stack_overflow(void);
-extern MZ_DLLIMPORT void GC_mark_overflow_recover(void *p);
+extern MZGC_DLLIMPORT void *GC_base(void *);
+extern MZGC_DLLIMPORT int GC_is_marked(void *);
+extern MZGC_DLLIMPORT int GC_did_mark_stack_overflow(void);
+extern MZGC_DLLIMPORT void GC_mark_overflow_recover(void *p);
 #endif
-extern MZ_DLLIMPORT void GC_push_all_stack(void *, void *);
-extern MZ_DLLIMPORT void GC_flush_mark_stack(void);
+extern MZGC_DLLIMPORT void GC_push_all_stack(void *, void *);
+extern MZGC_DLLIMPORT void GC_flush_mark_stack(void);
 
 #endif
 
@@ -3674,7 +3674,7 @@ void scheme_clear_ephemerons()
   done_ephemerons = NULL;
 }
 
-extern MZ_DLLIMPORT void (*GC_custom_finalize)();
+extern MZGC_DLLIMPORT void (*GC_custom_finalize)();
 
 void scheme_init_ephemerons(void)
 {

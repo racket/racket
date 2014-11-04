@@ -584,7 +584,7 @@ The following macros can be used (with care!) to navigate
     Example:
 
   @verbatim[#:indent 2]{
-    int foo(int c, ...) XFORM_END_SKIP {
+    int foo(int c, ...) XFORM_SKIP_PROC {
     }
   }}
 

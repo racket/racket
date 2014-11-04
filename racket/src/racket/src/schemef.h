@@ -201,12 +201,8 @@ MZ_EXTERN void scheme_set_can_break(int on);
 MZ_EXTERN void scheme_push_break_enable(Scheme_Cont_Frame_Data *cframe, int on, int pre_check);
 MZ_EXTERN void scheme_pop_break_enable(Scheme_Cont_Frame_Data *cframe, int post_check);
 
-MZ_EXTERN int scheme_with_stack_freeze(Scheme_Frozen_Stack_Proc wha_f, void *wha_data);
-MZ_EXTERN int scheme_frozen_run_some(Scheme_Frozen_Stack_Proc do_f, void *do_data, int run_msecs);
-MZ_EXTERN int scheme_is_in_frozen_stack();
-
-MZ_EXTERN Scheme_Object *scheme_abort_continuation_no_dws (Scheme_Object *pt, Scheme_Object *v);
-MZ_EXTERN Scheme_Object *scheme_call_with_composable_no_dws (Scheme_Object *proc, Scheme_Object *pt);
+MZ_EXTERN Scheme_Object *scheme_abort_continuation_no_dws(Scheme_Object *pt, Scheme_Object *v);
+MZ_EXTERN Scheme_Object *scheme_call_with_composable_no_dws(Scheme_Object *proc, Scheme_Object *pt);
 
 MZ_EXTERN Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Timeout_Proc p);
 
@@ -1195,6 +1191,7 @@ MZ_EXTERN intptr_t scheme_get_seconds(void);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN double scheme_get_inexact_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_process_milliseconds(void);
+XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_process_children_milliseconds(void);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_thread_milliseconds(Scheme_Object *thrd);
 
 MZ_EXTERN char *scheme_banner(void);
@@ -1229,5 +1226,5 @@ MZ_EXTERN void *scheme_register_process_global(const char *key, void *val);
 MZ_EXTERN Scheme_Object *scheme_malloc_key(void);
 MZ_EXTERN void scheme_free_key(Scheme_Object *k);
 
-MZ_EXTERN void* scheme_jit_find_code_end(void *p);
+MZ_EXTERN void *scheme_jit_find_code_end(void *p);
 MZ_EXTERN void scheme_jit_now(Scheme_Object *f);

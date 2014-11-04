@@ -53,7 +53,9 @@
       (make-path->relative-string
        (list (cons find-collects-dir      "<collects>/")
              (cons find-user-collects-dir "<user>/")
-             (cons find-planet-dir        "<planet>/"))))
+             (cons find-planet-dir        "<planet>/")
+             (cons find-doc-dir           "<doc>/")
+             (cons find-user-doc-dir      "<user-doc>/"))))
     (define (make-default cache default)
       (lambda (x)        
         (define-values (pkg sub) (if (complete-path? x)

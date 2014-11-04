@@ -1550,4 +1550,26 @@
                (super-new)
                (define/public (foo [i #f]) (void))))
            (new a%))
-         (-object #:method ([foo (cl->* (t:-> -Void) (t:-> -Integer -Void))]))]))
+         (-object #:method ([foo (cl->* (t:-> -Void) (t:-> -Integer -Void))]))]
+   ;; PR 14810 - make sure inner type mapping has the right order
+   [tc-e (let ()
+           (define-type-alias Foo%
+             (Class [m (-> Any Symbol)]
+                    [o (-> Any Any Symbol)]
+                    (augment [m (-> Any Symbol)]
+                             [o (-> Any Any Symbol)])))
+           (define-type-alias Bar% (Class #:implements Foo%))
+           (: foo% Foo%)
+           (define foo%
+             (class object%
+               (super-new)
+               (define/pubment (m x) 'foo-m)
+               (define/pubment (o x y) 'foo-o)))
+           (: bar% Bar%)
+           (define bar%
+             (class foo%
+               (super-new)
+               (define/augment (m x) (inner 'bar-m m x))
+               (define/augment (o x y) (inner 'bar-o o x y))))
+           (void))
+         -Void]))

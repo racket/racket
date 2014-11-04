@@ -454,6 +454,20 @@ type @racket[_t] on each iteration.}
 @ex[(lambda: ([x : Any]) (if (thread-cell? x) x (error "not a thread cell!")))]
 }
 
+@defform[(Weak-Boxof t)]{
+  The type for a @rtech{weak box} whose value is of type @racket[t].
+
+  @ex[(make-weak-box 5)
+      (weak-box-value (make-weak-box 5))]
+}
+
+@defidform[Weak-BoxTop]{is the type of a @rtech{weak box} with an unknown element
+  type and is the supertype of all weak box types. This type
+  typically appears in programs via the combination of occurrence
+  typing and @racket[weak-box?].
+@ex[(lambda: ([x : Any]) (if (weak-box? x) x (error "not a box!")))]
+}
+
 @defform[(Ephemeronof t)]{An @rtech{ephemeron} whose value is of type @racket[t].}
 
 @defform[(Evtof t)]{A @rtech{synchronizable event} whose @rtech{synchronization result}

@@ -1741,18 +1741,44 @@
     (test 2 values v)))
 
 (test-comp '(lambda (z)
-              ;; ok to reorder `(list z)` and `(list (z 2))`,
-              ;; which then allows more simplication:
-              (let-values ([(a b) (values (list z) (list (z 2)))])
-                (list a b)))
+             ;; Moving `(list z)` before `(list (z 2))`
+             ;; would reorder, which is not allowed, so check
+             ;; that the optimizer can keep track:
+             (let-values ([(a b) (values (list z) (list (z 2)))])
+               (list a b)))
            '(lambda (z)
               (list (list z) (list (z 2)))))
 (test-comp '(lambda (z)
               (let-values ([(a b) (values (list (z 2)) (list z))])
                 (list a b)))
            '(lambda (z)
-              (let ([p (list z)])
-                (list (list (z 2)) p))))
+             (list (list (z 2)) (list z))))
+
+(test-comp '(lambda (z)
+             ;; It's ok to reorder unsafe operations relative
+             ;; to each other:
+             (let ([x (unsafe-fx+ z z)]
+                   [y (unsafe-fx- z z)])
+               (- y x)))
+           '(lambda (z)
+             (- (unsafe-fx- z z) (unsafe-fx+ z z))))
+
+(test-comp '(lambda (z)
+             ;; It's not ok to move a safe operation past an
+             ;; unsafe one:
+             (let ([x (car z)])
+               (+ (unsafe-car z) x)))
+           '(lambda (z)
+             (+ (unsafe-car z) (car z)))
+           #f)
+
+(test-comp '(lambda (z)
+             ;; It's ok to move an unsafe operation past a
+             ;; safe one:
+             (let ([x (unsafe-car void)])
+               (+ (car z) x)))
+           '(lambda (z)
+             (+ (car z) (unsafe-car void))))
 
 (test-comp '(lambda (z)
               (let-values ([(x y)
@@ -2330,6 +2356,14 @@
               (require racket/fixnum)
               (- (expt 2 31) 2))
            #f)
+
+;; Propagate type impliciations from RHS:
+(test-comp '(lambda (x)
+              (let ([y (car x)])
+                (list (cdr x) y (car x) y)))
+           '(lambda (x)
+             (let ([y (car x)])
+               (list (unsafe-cdr x) y (unsafe-car x) y))))
 
 ;; don't duplicate an operation by moving it into a lambda':
 (test-comp '(lambda (x)
@@ -4197,6 +4231,18 @@
 
 (test 1 dynamic-require ''module-with-cross-module-inlining 'n)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that moving `(car x)` doesn't assume
+;; the pairness invariant established by `(car x)`.
+
+(define (f x)
+  (define (g x)
+    (let* ([z (random)]
+           [y (car x)])
+      (+ (random y) z)))
+  (g x))
+
+(err/rt-test (f 10))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

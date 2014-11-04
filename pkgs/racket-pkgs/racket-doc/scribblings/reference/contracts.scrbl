@@ -1756,9 +1756,9 @@ use in the contract system:
         x
         (raise-blame-error
          blame
-         val
+         x
          '(expected: "<integer>" given: "~e")
-         val))))
+         x))))
 ]
 The new argument specifies who is to be blamed for
 positive and negative contract violations.
@@ -1786,9 +1786,9 @@ Compare that to the projection for our function contract:
         (λ (x) (rng (f (dom x))))
         (raise-blame-error
          blame
-         val
+         f
          '(expected "a procedure of one argument" given: "~e")
-         val))))
+         f))))
 ]
 
 In this case, the only explicit blame covers the situation
@@ -1812,7 +1812,7 @@ however. The reversal of the positive and the negative is a
 natural consequence of the way functions behave. That is,
 imagine the flow of values in a program between two
 modules. First, one module defines a function, and then that
-module is required by another. So, far the function itself
+module is required by another. So far, the function itself
 has to go from the original, providing module to the
 requiring module. Now, imagine that the providing module
 invokes the function, supplying it an argument. At this
@@ -1846,9 +1846,9 @@ when a contract violation is detected.
           (λ (x) (rng (f (dom x))))
           (raise-blame-error
            blame
-           val
+           f
            '(expected "a procedure of one argument" given: "~e")
-           val)))))
+           f)))))
 ]
 
 While these projections are supported by the contract library
@@ -1867,12 +1867,12 @@ to use this API looks like this:
                                        #:swap? #t))
   (define rng-blame (blame-add-context blame "the range of"))
   (define (check-int v to-blame neg-party)
-    (unless (integer? x)
+    (unless (integer? v)
       (raise-blame-error
        to-blame #:missing-party neg-party
-       val
+       v
        '(expected "an integer" given: "~e")
-       val)))
+       v)))
   (λ (f)
     (if (and (procedure? f)
              (procedure-arity-includes? f 1))
@@ -1885,9 +1885,9 @@ to use this API looks like this:
         (λ (neg-party)
           (raise-blame-error
            blame #:missing-party neg-party
-           val
+           f
            '(expected "a procedure of one argument" given: "~e")
-           val)))))]
+           f)))))]
 The advantage of this style of contract is that the @racket[_blame]
 and @racket[_v] arguments can be supplied on the server side of the
 contract boundary and the result can be used for every different

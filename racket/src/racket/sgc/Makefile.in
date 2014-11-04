@@ -7,6 +7,10 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
 
+# for version.mak:
+mainsrcdir = @srcdir@/../..
+@INCLUDEDEP@ @srcdir@/../version.mak
+
 CC = @CC@
 CXX = @CXX@
 RANLIB = @RANLIB@
@@ -32,7 +36,7 @@ test: $(OBJS) test.@LTO@
 gcobjects: $(OBJS)
 
 sgc.@LTO@: $(srcdir)/sgc.c $(srcdir)/autostat.inc $(srcdir)/collect.inc $(srcdir)/../utils/splay.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ -I.. -c $(srcdir)/sgc.c -o sgc.@LTO@
+	$(CC) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ -DSGC_EXPORTS -I.. -c $(srcdir)/sgc.c -o sgc.@LTO@
 
 test.@LTO@: $(srcdir)/test.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ -c $(srcdir)/test.c -o test.@LTO@

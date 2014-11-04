@@ -5,7 +5,8 @@
 @(define syncheck-example-eval (make-base-eval))
 @(begin 
    (syncheck-example-eval
-    '(require drracket/check-syntax racket/class setup/collects)))
+    '(require drracket/check-syntax racket/class
+              setup/path-to-relative)))
                
 
 @title{DrRacket Tools}
@@ -52,7 +53,7 @@ in order to make the results be platform independent.
                      [(pair? x) (cons (loop (car x)) (loop (cdr x)))]
                      [(vector? x) (for/vector ([x (in-vector x)])
                                     (loop x))]
-                     [(path? x) (path->module-path x)]
+                     [(path? x) (path->relative-string/library x)]
                      [else x])))
                
                (let ([example-module

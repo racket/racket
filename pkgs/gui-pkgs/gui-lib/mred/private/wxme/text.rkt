@@ -4945,13 +4945,15 @@
 
           (set! auto-wrap-bitmap bm)
           (if auto-wrap-bitmap
-              (set! wrap-bitmap-width (send auto-wrap-bitmap get-width))
-              (set! wrap-bitmap-width 0))
+              (set! wrap-bitmap-width (exact->inexact (send auto-wrap-bitmap get-width)))
+              (set! wrap-bitmap-width 0.0))
 
           (when (max-width . > . 0)
             (set-max-width (+ max-width old-width)))
 
           old)))
+
+  (def/public (get-autowrap-bitmap-width) wrap-bitmap-width)
 
   ;; ----------------------------------------
 

@@ -6,4 +6,7 @@
   (and (eq? 'windows (system-type))
        (equal? "win32\\x86_64" (path->string (system-library-subpath #f)))))
 
-(define winapi (if win64? 'default 'stdcall))
+(define winapi (if (or win64?
+                       (not (eq? 'windows (system-type))))
+                   'default
+                   'stdcall))

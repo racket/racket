@@ -234,7 +234,7 @@
   find-lib-dir
   find-user-lib-dir
   config:lib-search-dirs
-  get-lib-search-dirs find-dll-dir
+  get-lib-search-dirs
   "lib")
 
 ;; ----------------------------------------

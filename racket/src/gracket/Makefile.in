@@ -59,7 +59,7 @@ ARLIBFLAGS = $(LDFLAGS) $(LDLIBS)
 GRACKETLINKER = @MZLINKER@
 
 GRACKETLDLIBS@NOT_MINGW@ = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@ $(LDLIBS)
-GRACKETLDLIBS@MINGW@ = ../racket/libracket.dll.a ../racket/libmzgc.dll.a $(LDLIBS) -ldelayimp
+GRACKETLDLIBS@MINGW@ = ../racket/libracket.dll.a ../racket/libmzgc.dll.a $(LDLIBS) -ldelayimp -static-libgcc
 GRACKETLDFLAGS = $(LDFLAGS) -L../racket
 
 GRACKETRES@NOT_MINGW@ =
@@ -205,7 +205,7 @@ install-lib-cgc-wx_xt:
 install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
 	cd ..; $(ICP) gracket/gracket@CGC@ "$(DESTDIR)$(libpltdir)/gracket@CGC_INSTALLED@"
-	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/gracket@CGC_INSTALLED@"
+	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/gracket@CGC_INSTALLED@@EXE_SUFFIX@"
 	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/gracket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@ @CONFIG_PATH@
 
 install-wx_xt-cgc-final:
@@ -220,7 +220,7 @@ install-lib-3m-wx_xt:
 install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
 	cd ..; $(ICP) gracket/gracket@MMM@ "$(DESTDIR)$(libpltdir)/gracket@MMM_INSTALLED@"
-	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/gracket@MMM_INSTALLED@"
+	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/gracket@MMM_INSTALLED@@EXE_SUFFIX@"
 	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/gracket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@ @CONFIG_PATH@
 
 install-wx_xt-3m-final:

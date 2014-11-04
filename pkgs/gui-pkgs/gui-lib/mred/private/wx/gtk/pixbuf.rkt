@@ -37,8 +37,8 @@
   #:wrap (allocator release-pixbuf))
 
 (define-gdk gdk_cairo_set_source_pixbuf (_fun _cairo_t _GdkPixbuf _double* _double* -> _void))
-(define-gdk gdk_pixbuf_get_width (_fun _GdkPixbuf -> _int))
-(define-gdk gdk_pixbuf_get_height (_fun _GdkPixbuf -> _int))
+(define-gdk_pixbuf gdk_pixbuf_get_width (_fun _GdkPixbuf -> _int))
+(define-gdk_pixbuf gdk_pixbuf_get_height (_fun _GdkPixbuf -> _int))
 
 (define free-it (ffi-callback free
                               (list _pointer)

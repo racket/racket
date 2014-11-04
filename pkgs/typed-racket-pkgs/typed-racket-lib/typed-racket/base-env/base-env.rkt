@@ -2284,16 +2284,21 @@
           (-> mod (-val #f) (-> a) (Un -Void a))
           (->opt mod Sym [(-> Univ)] ManyUniv))))]
 
+[module-declared?
+ (->opt (Un -Module-Path -Resolved-Module-Path -Module-Path-Index)
+        [Univ]
+        -Boolean)]
+
 [module->language-info
  (->opt (Un -Module-Path -Path -Resolved-Module-Path)
         [Univ]
         (-opt (make-HeterogeneousVector (list -Module-Path -Symbol Univ))))]
 
-[module->imports (-> -Compiled-Module-Expression
-                             (-lst (-pair (-opt -Integer)
-                                          (-lst -Module-Path-Index))))]
+[module->imports (-> (Un -Module-Path -Resolved-Module-Path -Module-Path-Index)
+                     (-lst (-pair (-opt -Integer)
+                                  (-lst -Module-Path-Index))))]
 [module->exports
- (-> -Compiled-Module-Expression
+ (-> (Un -Module-Path -Resolved-Module-Path)
      (-values
       (list
        (-lst (-pair (-opt -Integer)
@@ -2312,6 +2317,10 @@
                                              (-opt -Integer)
                                              -Symbol
                                              (-opt -Integer)))))))))))]
+
+[module-predefined?
+ (-> (Un -Module-Path -Resolved-Module-Path -Module-Path-Index)
+     -Boolean)]
 
 ;; Section 14.5 (Impersonators and Chaperones)
 [impersonator? (Univ . -> . B)]
@@ -2798,7 +2807,7 @@
 
 [log-message (cl->* (-> -Logger -Log-Level -String Univ -Void)
                     (-> -Logger -Log-Level (Un (-val #f) -Symbol) -String Univ -Void))]
-[log-level? (-> -Logger -Log-Level  B)]
+[log-level? (->opt -Logger -Log-Level [(-opt -Symbol)] B)]
 
 [log-receiver? (make-pred-ty -Log-Receiver)]
 [make-log-receiver (-> -Logger -Log-Level -Log-Receiver)]
@@ -2810,7 +2819,8 @@
 [current-milliseconds (-> -Fixnum)]
 [current-inexact-milliseconds (-> -Real)]
 [current-gc-milliseconds (-> -Fixnum)]
-[current-process-milliseconds (-> -Fixnum)]
+[current-process-milliseconds
+ (->opt [(Un (-val #f) (-val 'subprocesses) -Thread)] -Fixnum)]
 
 ;; Section 15.7
 [getenv (-> -String (Un -String (-val #f)))]
@@ -2845,6 +2855,15 @@
                       ((list Univ) [a a] . ->... . b)
                       (-lst -String)
                       . -> . b))))]
+
+;; Section 16.1 (Weak Boxes)
+[make-weak-box (-poly (a) (-> a (-weak-box a)))]
+[weak-box-value
+ (-poly (a b)
+   (cl->* (-> (-weak-box a) (-opt a))
+          (-> (-weak-box a) b (Un b a))
+          (->opt -Weak-BoxTop [Univ] Univ)))]
+[weak-box? (make-pred-ty -Weak-BoxTop)]
 
 ;; Section 16.2 (Ephemerons)
 [make-ephemeron (-poly (k v) (-> k v (make-Ephemeron v)))]
