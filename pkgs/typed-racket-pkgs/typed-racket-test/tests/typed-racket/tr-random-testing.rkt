@@ -141,6 +141,7 @@
      (sinh E*)
      (cosh E*)
      (tanh E*)
+     (expt E* E*)
      ])
 ;; generated from: (map car (file->list "base-env-parts"))
 

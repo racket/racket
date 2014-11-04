@@ -1880,7 +1880,7 @@
              (-PosRat -Int . -> . -PosRat)
              (-NonNegRat -Int . -> . -NonNegRat)
              (-Rat -Int . -> . -Rat)
-             (-PosFlonum -Real . -> . -PosFlonum)
+             (-PosFlonum (Un -PosReal -NegReal) . -> . -PosFlonum)
              (-PosReal -Flonum . -> . -PosFlonum)
              (-NonNegFlonum -Real . -> . -NonNegFlonum)
              (-NonNegReal -Flonum . -> . -NonNegFlonum)
