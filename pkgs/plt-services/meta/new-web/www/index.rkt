@@ -369,10 +369,11 @@ applications from @a[class: "introlink" href: (docs-path "web-server/")]{web ser
 
 @columns[2 style: "text-color: black"]{
   @h2[style: "font-size: 144%; margin-bottom: 6pt;"]{News}
-  @p[style: "font-size: 80%;"]{Racket @a[href: "http://blog.racket-lang.org/2014/08/racket-v61.html"]{version 6.1} is out!}
+  @p[style: "font-size: 80%;"]{Racket @a[href: "http://blog.racket-lang.org/2014/11/racket-v611.html"]{version 6.1.1} is out!}
 
-  @p[style: "font-size: 80%;"]{@rcon[2014]{RacketCon 2014} was held
-  in St.@|nbsp|Louis on September 20. Videos will be up soon.}}}
+  @p[style: "font-size: 80%;"]{RacketCon 2015 will be held in St.@|nbsp|Louis on September 27.}
+                                       
+  @p[style: "font-size: 80%;"]{@rcon[2014]{RacketCon 2014} videos are available.}}}
 
 
 @columns[12 #:row? #t #:center? #t style: "text-align:justify;font-size: 120%; margin-top: 20pt; "]{
