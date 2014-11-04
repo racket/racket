@@ -9,7 +9,7 @@
  (utils tc-utils)
  (env type-name-env type-alias-env)
  (rep rep-utils)
- (types resolve union utils kw-types)
+ (types resolve union utils kw-types printer)
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
  racket/match racket/syntax racket/list
@@ -31,8 +31,14 @@
       (c:parametric->/c (a) ((Type/c (c:-> #:reason (c:or/c #f string?) a))
                              (#:typed-side boolean?) . c:->* . (c:or/c a static-contract?)))]))
 
-(provide type->contract define/fixup-contract? change-contract-fixups
-         type->contract-fail any-wrap/sc extra-requires include-extra-requires?)
+(provide type->contract
+         define/fixup-contract?
+         change-contract-fixups
+         change-provide-fixups
+         type->contract-fail
+         any-wrap/sc
+         extra-requires
+         include-extra-requires?)
 
 ;; These check if either the define form or the body form has the syntax
 ;; property. Normally the define form will have the property but lifting an
@@ -95,6 +101,38 @@
     [_ (int-err "should never happen - not a define-values: ~a"
                 (syntax->datum stx))]))
 
+;; Generate a contract for a TR provide form
+(define (generate-contract-def/provide stx)
+  (match-define (list type untyped-id orig-id blame-id)
+                (contract-def/provide-property stx))
+  (define failure-reason #f)
+  (define ctc
+    (type->contract type
+                    #:typed-side #t
+                    #:kind 'impersonator
+                    ;; FIXME: get rid of this interface, make it functional
+                    (λ (#:reason [reason #f]) (set! failure-reason reason))))
+  (syntax-parse stx
+    #:literal-sets (kernel-literals)
+    [(define-values ctc-id _)
+     ;; no need for ignore, the optimizer doesn't run on this code
+     (if failure-reason
+         #`(define-syntax (#,untyped-id stx)
+             (tc-error/fields #:stx stx
+                              "could not convert type to a contract"
+                              #:more #,failure-reason
+                              "identifier" #,(symbol->string (syntax-e orig-id))
+                              "type" #,(pretty-format-type type #:indent 8)))
+         #`(begin (define ctc-id #,ctc)
+                  (define-module-boundary-contract #,untyped-id
+                    #,orig-id ctc-id
+                    #:pos-source #,blame-id
+                    #:srcloc (vector (quote #,(syntax-source orig-id))
+                                     #,(syntax-line orig-id)
+                                     #,(syntax-column orig-id)
+                                     #,(syntax-position orig-id)
+                                     #,(syntax-span orig-id)))))]))
+
 (define extra-requires
   #'(require
       ;; the below requires are needed since they provide identifiers
@@ -115,6 +153,13 @@
         e
         (begin (set-box! include-extra-requires? #t)
                (generate-contract-def e)))))
+
+(define (change-provide-fixups forms)
+  (for/list ([form (in-list forms)])
+    (cond [(contract-def/provide-property form)
+           (set-box! include-extra-requires? #t)
+           (generate-contract-def/provide form)]
+          [else form])))
 
 ;; To avoid misspellings
 (define impersonator-sym 'impersonator)
