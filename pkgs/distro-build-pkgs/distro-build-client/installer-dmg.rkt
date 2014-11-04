@@ -86,7 +86,7 @@
                        (path-replace-suffix name #"")))
         (define exe (build-path f "Contents" "MacOS" name))
         (when (file-exists? exe)
-          (system*/show codesign "-s" sign-identity exe)))))
+          (system*/show codesign "-s" sign-identity f)))))
   (check-bins (build-path dest-dir "bin"))
   (check-bins (build-path dest-dir "lib"))
   (check-apps dest-dir)
