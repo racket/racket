@@ -50,12 +50,8 @@
   (ignore typechecker:ignore #:mark)
   (ignore-some typechecker:ignore-some #:mark)
   (ignore-some-expr typechecker:ignore-some)
-  (contract-def/maker typechecker:contract-def/maker)
   (contract-def typechecker:contract-def)
-  ;; for exporting from a with-type expression
-  (contract-def/with-type typechecker:contract-def/with-type)
   (contract-def/provide typechecker:contract-def/provide)
-  (flat-contract-def typechecker:flat-contract-def)
   (external-check typechecker:external-check)
   (with-type typechecker:with-type #:mark)
   (type-ascription type-ascription)

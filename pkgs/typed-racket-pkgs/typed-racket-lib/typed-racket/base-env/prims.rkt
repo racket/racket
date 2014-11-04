@@ -212,13 +212,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (define/with-syntax sm (if (attribute parent)
                                   #'(#:struct-maker parent)
                                   #'()))
-       (define property
-         (if (attribute parent)
-             contract-def/maker-property
-             contract-def-property))
        ;; define `cnt*` to be fixed up later by the module type-checking
        (define cnt*
-         (syntax-local-lift-expression (property #'#f #'ty)))
+         (syntax-local-lift-expression
+          (make-contract-def-rhs #'ty #f (attribute parent))))
        (quasisyntax/loc stx
          (begin
            #,(internal #'(require/typed-internal hidden ty . sm))
@@ -268,6 +265,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
 ;;  make-predicate
 ;;  cast
 
+;; Helper to construct syntax for contract definitions
+(define-for-syntax (make-contract-def-rhs type flat? maker?)
+  (contract-def-property #'#f `#s(contract-def ,type ,flat? ,maker? untyped)))
+
 (define-syntax (define-predicate stx)
   (syntax-parse stx
     [(_ name:id ty:expr)
@@ -285,7 +286,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ ty:expr)
      (define name (syntax-local-lift-expression
-                   (flat-contract-def-property #'#f #'ty)))
+                   (make-contract-def-rhs #'ty #t #f)))
      (define (check-valid-type _)
        (define type (parse-type #'ty))
        (define vars (fv type))
@@ -320,7 +321,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
             #'v]
            [else
             (define ctc (syntax-local-lift-expression
-                         (contract-def-property #'#f #'ty)))
+                         (make-contract-def-rhs #'ty #f #f)))
             (define (check-valid-type _)
               (define type (parse-type #'ty))
               (define vars (fv type))

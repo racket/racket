@@ -9,6 +9,7 @@
          (types abbrev numeric-tower union)
          (static-contracts combinators optimize)
          (submod typed-racket/private/type-contract numeric-contracts)
+         (submod typed-racket/private/type-contract test-exports)
          (only-in racket/contract contract)
          rackunit)
 (provide tests)

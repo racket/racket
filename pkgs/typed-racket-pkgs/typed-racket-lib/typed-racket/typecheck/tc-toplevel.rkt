@@ -275,15 +275,14 @@
 (define (type-check forms0)
   (define forms (syntax->list forms0))
   (do-time "before form splitting")
-  (define-values (type-aliases struct-defs stx-defs0 val-defs0 provs reqs)
+  (define-values (type-aliases struct-defs stx-defs0 val-defs0 provs)
     (filter-multiple
      forms
      type-alias? 
      (lambda (e) (or (typed-struct? e) (typed-struct/exec? e)))
      parse-syntax-def
      parse-def
-     provide?
-     define/fixup-contract?))
+     provide?))
   (do-time "Form splitting done")
 
   (define-values (type-alias-names type-alias-map)

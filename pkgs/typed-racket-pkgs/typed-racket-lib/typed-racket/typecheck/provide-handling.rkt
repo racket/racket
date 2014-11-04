@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt"
          unstable/list unstable/sequence syntax/id-table racket/dict racket/syntax
          racket/struct-info racket/match syntax/parse
-         (only-in (private type-contract) type->contract include-extra-requires?)
+         (only-in (private type-contract) include-extra-requires?)
          (private syntax-properties)
          (types printer)
          (typecheck renamer def-binding)
@@ -135,8 +135,6 @@
 
   ;; mk-value-triple : identifier? identifier? (or/c Type #f) -> triple/c
   (define (mk-value-triple internal-id new-id ty)
-    (define contract (type->contract ty (λ (#:reason [reason #f]) reason)))
-
     (with-syntax* ([id internal-id]
                    [untyped-id (freshen-id #'id)]
                    [export-id new-id])

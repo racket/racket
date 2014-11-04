@@ -31,39 +31,24 @@
       (c:parametric->/c (a) ((Type/c (c:-> #:reason (c:or/c #f string?) a))
                              (#:typed-side boolean?) . c:->* . (c:or/c a static-contract?)))]))
 
-(provide type->contract
-         define/fixup-contract?
-         change-contract-fixups
+(provide change-contract-fixups
          change-provide-fixups
-         type->contract-fail
          any-wrap/sc
          extra-requires
          include-extra-requires?)
 
-;; These check if either the define form or the body form has the syntax
-;; property. Normally the define form will have the property but lifting an
-;; expression to the module level will put the property on the body.
-(define-syntax (contract-finders stx)
-  (define-syntax-class clause
-    (pattern name:id
-      #:with external-name (format-id #'name "typechecker:~a" #'name)
-      #:with syntax-class-name (format-id #'name "~a^" #'name)))
-  (syntax-parse stx
-    [(_ #:union union-name:id :clause ... )
-     #'(begin
-         (define external-name
-           (syntax-parser
-              #:literal-sets (kernel-literals)
-              [(~or (~var v syntax-class-name)
-                    (define-values (_) (~var v syntax-class-name)))
-               (attribute v.value)]
-              [_ #f])) ...
-         (define (union-name stx)
-           (or (external-name stx) ...)))]))
+;; submod for testing
+(module* test-exports #f (provide type->contract))
 
-(contract-finders
-  #:union define/fixup-contract?
-  contract-def flat-contract-def contract-def/maker contract-def/with-type)
+(struct contract-def (type flat? maker? typed-side) #:prefab)
+
+;; Checks if the given syntax needs to be fixed up for contract generation
+;; and if yes it returns the information stored in the property
+(define (get-contract-def-property stx)
+  (syntax-parse stx
+    #:literal-sets (kernel-literals)
+    [(define-values (_) e) (contract-def-property #'e)]
+    [_ #f]))
 
 ;; type->contract-fail : Syntax Type #:ctc-str String
 ;;                       -> #:reason (Option String) -> Void
@@ -80,11 +65,9 @@
    to-check))
 
 (define (generate-contract-def stx)
-  (define prop (define/fixup-contract? stx))
-  (define maker? (typechecker:contract-def/maker stx))
-  (define flat? (typechecker:flat-contract-def stx))
-  (define typed? (and (typechecker:contract-def/with-type stx) #t))
-  (define typ (parse-type prop))
+  (define prop (get-contract-def-property stx))
+  (match-define (contract-def type-stx flat? maker? typed-side) prop)
+  (define typ (parse-type type-stx))
   (define kind (if flat? 'flat 'impersonator))
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
@@ -95,10 +78,10 @@
                              typ
                              ;; this value is from the typed side (require/typed, make-predicate, etc)
                              ;; unless it's used for with-type
-                             #:typed-side typed?
+                             #:typed-side (from-typed? typed-side)
                              #:kind kind
                              (type->contract-fail
-                              typ prop
+                              typ type-stx
                               #:ctc-str (if flat? "predicate" "contract")))])
            (ignore ; should be ignored by the optimizer
             (quasisyntax/loc stx (define-values (n) cnt)))))]
@@ -153,7 +136,7 @@
 
 (define (change-contract-fixups forms)
   (for/list ((e (in-list forms)))
-    (if (not (define/fixup-contract? e))
+    (if (not (get-contract-def-property e))
         e
         (begin (set-box! include-extra-requires? #t)
                (generate-contract-def e)))))

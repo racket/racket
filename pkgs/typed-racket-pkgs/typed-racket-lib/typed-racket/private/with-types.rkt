@@ -43,8 +43,6 @@
   (define old-context (unbox typed-context?))
   (unless (not old-context)
     (tc-error/stx stx "with-type cannot be used in a typed module."))
-  (define (no-contract t [stx stx])
-    (type->contract-fail t stx))
   (set-box! typed-context? #t)
   (do-standard-inits)
   (define fv-types (for/list ([t (in-syntax fvtys)])
@@ -52,13 +50,12 @@
   (define ex-types (for/list ([t (in-syntax extys)])
                      (parse-type t)))
   (define-values (fv-ctc-ids fv-ctc-defs)
-    (type-stxs->ids+defs (syntax->list fvtys) contract-def-property))
+    (type-stxs->ids+defs (syntax->list fvtys) 'untyped))
   (define-values (ex-ctc-ids ex-ctc-defs)
-    (type-stxs->ids+defs (syntax->list extys) contract-def/with-type-property))
+    (type-stxs->ids+defs (syntax->list extys) 'typed))
   (define-values (region-ctc-ids region-ctc-defs)
     (if expr?
-        (type-stxs->ids+defs (values-stx->type-stxs resty)
-                             contract-def/with-type-property)
+        (type-stxs->ids+defs (values-stx->type-stxs resty) 'typed)
         (values null null)))
   (define region-tc-result
     (and expr? (parse-tc-results resty)))
@@ -153,12 +150,15 @@
      (syntax->list #'(t ...))]
     [t (list #'t)]))
 
-;; type-stxs->ids+defs : (Listof Syntax) Procedure -> (Listof Id Syntax)
+;; type-stxs->ids+defs : (Listof Syntax) Symbol -> (Listof Id Syntax)
 ;; Create identifiers and definition syntaxes for contract generation
-(define (type-stxs->ids+defs type-stxs property)
+(define (type-stxs->ids+defs type-stxs typed-side)
   (for/lists (_1 _2) ([t (in-list type-stxs)])
     (define ctc-id (generate-temporary))
-    (values ctc-id #`(define-values (#,ctc-id) #,(property #'#f t)))))
+    (values ctc-id
+            #`(define-values (#,ctc-id)
+                #,(contract-def-property
+                   #'#f `#s(contract-def ,t #f #f ,typed-side))))))
 
 (define (wt-core stx)
   (define-syntax-class typed-id
