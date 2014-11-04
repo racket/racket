@@ -34,10 +34,11 @@
   (when (log-level? cm-logger 'debug)
     (log-message cm-logger 'debug str (current-inexact-milliseconds))))
 
+(struct compile-event (timestamp path action) #:prefab)
 (define (log-compile-event path action)
-  (when (log-level? cm-logger 'info)
+  (when (log-level? cm-logger 'info 'compiler/cm)
     (log-message cm-logger 'info (format "~a: ~a" action path)
-                 (list (current-inexact-milliseconds) path action))))
+                 (compile-event (current-inexact-milliseconds) path action))))
 
 (define manager-compile-notify-handler (make-parameter void))
 (define manager-trace-handler (make-parameter default-manager-trace-handler))
