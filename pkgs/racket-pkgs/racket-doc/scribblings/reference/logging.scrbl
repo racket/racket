@@ -17,7 +17,7 @@ levels, in increasing order of detail, are @racket['fatal],
 To help organize logged events, a @tech{logger} can have a default topic and/or
 a parent logger. Every event reported to a logger is also propagated to
 its parent (if any), while the event message is prefixed with the logger's topic (if
-any) if the message does already have a topic. Furthermore, events that are propagated
+any) if the message doesn't already have a topic. Furthermore, events that are propagated
 from a logger to its parent can be filtered by level and topic.
 
 On start-up, Racket creates an initial logger that is used to
