@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base syntax/parse syntax/stx racket/syntax)
-         racket/set racket/dict racket/sequence racket/stream
+         racket/set racket/dict racket/sequence racket/stream racket/contract
          syntax/id-table)
   
 ;; id formatting helper fns ---------------------------------------------------
@@ -34,6 +34,8 @@
      #:with id-set? (fmt-pred-name #'id-set)
      #:with mutable-id-set? (fmt-pred-name #'mutable-id-set)
      #:with immutable-id-set? (fmt-pred-name #'immutable-id-set)
+     #:with chaperone-mutable-id-set (fmt-id "chaperone-~a" #'mutable-id-set)
+     #:with chaperone-immutable-id-set (fmt-id "chaperone-~a" #'immutable-id-set)
      #:with id-set-get-table (fmt-set-id-fn-name #'type "table") ; internal table accessor
      #:with id-set-empty? (fmt-set-id-fn-name #'type "empty?")
      #:with id-set-count (fmt-set-id-fn-name #'type "count")
@@ -84,6 +86,8 @@
          (provide 
           (rename-out [mk-mutable-id-set mutable-id-set]
                       [mk-immutable-id-set immutable-id-set])
+          chaperone-mutable-id-set
+          chaperone-immutable-id-set
           id-set?
           mutable-id-set?
           immutable-id-set?
@@ -383,6 +387,14 @@
             (define set-subtract id-set-subtract)
             (define set-symmetric-difference id-set-symmetric-difference)])
          
+         ;; consumes a contract for the internal table
+         (define (chaperone-immutable-id-set s table/c)
+           (define/contract table/ctc table/c (id-set-get-table s))
+           (immutable-id-set table/ctc))
+         (define (chaperone-mutable-id-set s table/c)
+           (define/contract table/ctc table/c (id-set-get-table s))
+           (mutable-id-set table/ctc))
+            
          (define (mk-mutable-id-set 
                   [init-set null] 
                   #:phase [phase (syntax-local-phase-level)])

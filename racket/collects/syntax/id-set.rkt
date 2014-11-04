@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base syntax/parse)
          racket/contract/base racket/contract/combinator
-         racket/set racket/generic racket/stream
+         racket/set racket/generic racket/stream syntax/id-table
          "private/id-set.rkt")
 
 (provide id-set/c free-id-set/c bound-id-set/c)
@@ -16,17 +16,16 @@
    (or (immutable-free-id-set? s)
        (immutable-bound-id-set? s)))
 
-;; TODO: support higher-order contracts
-
 ;; elem/c must be flat contract
-(define (free-id-set/c elem/c #:mutability [mutability 'dont-care])
+;; use 'immutable default, to default to flat contract
+(define (free-id-set/c elem/c #:mutability [mutability 'immutable])
   (id-set/c elem/c #:idsettype 'free #:mutability mutability))
-(define (bound-id-set/c elem/c #:mutability [mutability 'dont-care])
+(define (bound-id-set/c elem/c #:mutability [mutability 'immutable])
   (id-set/c elem/c #:idsettype 'bound #:mutability mutability))
 
 (define (id-set/c elem/c
                   #:idsettype [idsettype 'dont-care]
-                  #:mutability [mutability 'dont-care])
+                  #:mutability [mutability 'immutable])
   (define idsettype/c
     (case idsettype
       [(dont-care) any/c]
@@ -48,7 +47,9 @@
         'id-set/c
         "element contract must be a flat contract"
         "element contract" (contract-name elem/c)))
-  (flat-id-set-contract elem/c idsettype mutability))
+  (case mutability
+    [(immutable) (flat-id-set-contract elem/c idsettype mutability)]
+    [else (chaperone-id-set-contract elem/c idsettype mutability)]))
 
 (struct id-set-contract [elem/c idsettype mutability])
 
@@ -98,19 +99,6 @@
      (unless (immutable-id-set? s)
        (raise-blame-error b s "expected an immutable id set"))]))
 
-(define (id-set-contract-projection ctc)
-  (define elem/c (id-set-contract-elem/c ctc))
-  (define idsettype (id-set-contract-idsettype ctc))
-  (define mutability (id-set-contract-mutability ctc))
-  (lambda (b)
-    (define proj
-      ((contract-projection elem/c)
-       (blame-add-context b "an element of")))
-    (lambda (s)
-      (id-set-contract-check idsettype mutability b s)
-      (for ([id (in-set s)]) (proj id))
-      s)))
-
 (define (flat-id-set-contract-first-order ctc)
   (define set-passes? (id-set-contract-first-order ctc))
   (define elem-passes? (contract-first-order (id-set-contract-elem/c ctc)))
@@ -124,12 +112,35 @@
   (define mutability (id-set-contract-mutability ctc))
   (lambda (b)
     (define proj
-      ((contract-projection elem/c)
-       (blame-add-context b "an element of")))
+      ((contract-projection elem/c) (blame-add-context b "an element of")))
     (lambda (s)
       (id-set-contract-check idsettype mutability b s)
       (for ([e (in-set s)]) (proj e))
       s)))
+
+(define (id-set-contract-projection ctc)
+  (define elem/c (id-set-contract-elem/c ctc))
+  (define idsettype (id-set-contract-idsettype ctc))
+  (define mutability (id-set-contract-mutability ctc))
+  (lambda (b)
+    (define neg-proj
+      ((contract-projection elem/c) (blame-add-context b "an element of" #:swap? #t)))
+    (lambda (s)
+      (id-set-contract-check idsettype mutability b s)
+      (cond
+        [(immutable-free-id-set? s)
+         (chaperone-immutable-free-id-set 
+          s (free-id-table/c neg-proj any/c #:immutable #t))]
+        [(mutable-free-id-set? s)
+         (chaperone-mutable-free-id-set 
+          s (free-id-table/c neg-proj any/c #:immutable #f))]
+        [(immutable-bound-id-set? s)
+         (chaperone-immutable-bound-id-set 
+          s (bound-id-table/c neg-proj any/c #:immutable #t))]
+        [(mutable-bound-id-set? s)
+         (chaperone-mutable-bound-id-set 
+          s (bound-id-table/c neg-proj any/c #:immutable #f))]))))
+          
 
 (struct flat-id-set-contract id-set-contract []
   #:property prop:flat-contract
@@ -137,6 +148,13 @@
     #:name id-set-contract-name
     #:first-order flat-id-set-contract-first-order
     #:projection flat-id-set-contract-projection))
+
+(struct chaperone-id-set-contract id-set-contract []
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+    #:name id-set-contract-name
+    #:first-order id-set-contract-first-order
+    #:projection id-set-contract-projection))
 
 (define-syntax (provide-contracted-id-set-fns stx)
   (syntax-parse stx

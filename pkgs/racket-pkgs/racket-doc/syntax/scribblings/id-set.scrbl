@@ -175,7 +175,7 @@ Returns @racket[#t] if @racket[v] was produced by
           [#:setidtype idsettype
                        (or/c 'dont-care 'free 'bound) 'dont-care]
           [#:mutability mutability 
-                        (or/c 'dont-care 'mutable 'immutable) 'dont-care])
+                        (or/c 'dont-care 'mutable 'immutable) 'immutable])
          contract?]{
 Creates a contract for identifier sets. If
 @racket[mutability] is @racket['immutable], the contract accepts only
@@ -186,7 +186,7 @@ the contract accepts only mutable identifier sets.
 @defproc[(free-id-set/c 
           [elem-ctc flat-contract?]
           [#:mutability mutability 
-                        (or/c 'dont-care 'mutable 'immutable) 'dont-care])
+                        (or/c 'dont-care 'mutable 'immutable) 'immutable])
          contract?]{
 Creates a contract for free-identifier sets. If
 @racket[mutability] is @racket['immutable], the contract accepts only
@@ -262,7 +262,7 @@ etc) can be used on bound-identifier sets.
 @defproc[(bound-id-set/c 
           [elem-ctc flat-contract?]
           [#:mutability mutability 
-                        (or/c 'dont-care 'mutable 'immutable) 'dont-care])
+                        (or/c 'dont-care 'mutable 'immutable) 'immutable])
          contract?]]]{
   Like the procedures for free-identifier sets
   (@racket[immutable-free-id-set], @racket[free-id-set-add], etc), but

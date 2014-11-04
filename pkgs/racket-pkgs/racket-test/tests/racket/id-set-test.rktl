@@ -608,11 +608,13 @@
 (test #t chaperone-contract? (id-set/c identifier?))
 (test #f impersonator-contract? (id-set/c identifier?))
 (test #t flat-contract? (id-set/c identifier?))
-(test #t flat-contract? (free-id-set/c identifier? #:mutability 'mutable))
+(test #f flat-contract? (free-id-set/c identifier? #:mutability 'mutable))
 (test #t flat-contract? (bound-id-set/c identifier? #:mutability 'immutable))
 
 (let ()
   
+  ;; - these contract testing util fns are copied from id-table-test
+  ;; TODO: move them into a separate file
   (define (app-ctc ctc value)
     (contract ctc value 'positive 'negative))
   
@@ -629,14 +631,21 @@
     (thunk-error-test (lambda () e) #'e negative-error?))
   
   (define EMPTY/FREE/MUTABLE (mutable-free-id-set null))
+  (define EMPTY/BOUND/MUTABLE (mutable-bound-id-set null))
   (define EMPTY/BOUND/IMMUTABLE (immutable-bound-id-set null))
-  (test/blame-pos (app-ctc (id-set/c identifier? #:idsettype 'bound)
-                           EMPTY/FREE/MUTABLE))
+  (test/blame-pos 
+   (app-ctc (id-set/c identifier? #:idsettype 'bound #:mutability 'mutable)
+            EMPTY/FREE/MUTABLE))
+  (test/blame-pos (app-ctc (id-set/c identifier? #:idsettype 'free)
+                           EMPTY/FREE/MUTABLE)) ; default is immutable
   (test/blame-pos (app-ctc (id-set/c any/c #:mutability 'immutable)
                            EMPTY/FREE/MUTABLE))
   (test/blame-pos (app-ctc (free-id-set/c any/c #:mutability 'immutable)
                            EMPTY/FREE/MUTABLE))
-  (test/blame-pos (app-ctc (bound-id-set/c any/c) EMPTY/FREE/MUTABLE))
+  (test/blame-pos (app-ctc (bound-id-set/c any/c #:mutability 'mutable)
+                           EMPTY/FREE/MUTABLE))
+  (test/blame-pos (app-ctc (bound-id-set/c any/c)
+                           EMPTY/BOUND/MUTABLE)) ; default is immutable
   (test/blame-pos (app-ctc (id-set/c identifier? #:idsettype 'free)
                            EMPTY/BOUND/IMMUTABLE))
   (test/blame-pos (app-ctc (id-set/c any/c #:mutability 'mutable)
@@ -651,10 +660,28 @@
   (define ABC/BOUND (immutable-bound-id-set (list #'a #'b #'c)))
   (test/blame-pos (app-ctc (free-id-set/c not-free-a?) ABC/FREE))
   (test/blame-pos (app-ctc (bound-id-set/c not-bound-b?) ABC/BOUND))
-  ;; TODO: support higher order contracts
-  #;(test/blame-neg (bound-id-set-add
-                   (app-ctc (bound-id-set/c not-bound-b?) EMPTY/BOUND/IMMUTABLE)
-                   #'b))
+  (define EMPTY/BOUND/CTC 
+    (app-ctc (bound-id-set/c not-bound-b? #:mutability 'mutable) 
+             (mutable-bound-id-set null)))
+  (define EMPTY/FREE/CTC 
+    (app-ctc (free-id-set/c not-free-a? #:mutability 'mutable) 
+             (mutable-free-id-set null)))
+  (bound-id-set-add! EMPTY/BOUND/CTC #'a)
+  (free-id-set-add! EMPTY/FREE/CTC #'b)
+  (test/blame-neg (bound-id-set-add! EMPTY/BOUND/CTC #'b))
+  (test/blame-neg (free-id-set-add! EMPTY/FREE/CTC #'a))
+  (test/blame-neg (bound-id-set-union! EMPTY/BOUND/CTC (mutable-bound-id-set (list #'b))))
+  (test/blame-neg (bound-id-set-union! EMPTY/BOUND/CTC (immutable-bound-id-set (list #'b))))
+  (test/blame-neg (free-id-set-union! EMPTY/FREE/CTC (mutable-free-id-set (list #'a))))
+  (test/blame-neg (free-id-set-union! EMPTY/FREE/CTC (immutable-free-id-set (list #'a))))
+  (test/blame-neg (bound-id-set-symmetric-difference!
+                   EMPTY/BOUND/CTC (mutable-bound-id-set (list #'b))))
+  (test/blame-neg (bound-id-set-symmetric-difference!
+                   EMPTY/BOUND/CTC (immutable-bound-id-set (list #'b))))
+  (test/blame-neg (free-id-set-symmetric-difference!
+                   EMPTY/FREE/CTC (mutable-free-id-set (list #'a))))
+  (test/blame-neg (free-id-set-symmetric-difference!
+                   EMPTY/FREE/CTC (immutable-free-id-set (list #'a))))
   )
 
 
