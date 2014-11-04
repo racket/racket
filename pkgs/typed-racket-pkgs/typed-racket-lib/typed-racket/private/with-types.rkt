@@ -5,13 +5,15 @@
          (except-in (base-env prims) with-handlers λ lambda define)
          (env type-name-env type-alias-env type-env-structs
               global-env tvar-env)
-         (private parse-type type-contract)
+         (private parse-type type-contract syntax-properties)
          (typecheck tc-toplevel typechecker)
          (types utils)
-         (utils lift tc-utils disarm arm)
+         (utils lift tc-utils disarm arm literal-syntax-class)
          racket/match
          racket/promise
          racket/require
+         racket/syntax
+         syntax/flatten-begin
          syntax/parse
          unstable/sequence
          "../tc-setup.rkt"
@@ -28,7 +30,12 @@
                      for*/or for*/sum for*/product for*/first for*/last
                      for*/fold)
           (base-env prims)
-          (prefix-in c: (combine-in racket/contract/region racket/contract/base))))
+          (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
+         (for-label racket/base
+                    (base-env base-types-extra)))
+
+(define-literal-syntax-class #:for-label Values)
+(define-literal-syntax-class #:for-label values)
 
 (provide wt-core)
 
@@ -42,27 +49,19 @@
   (do-standard-inits)
   (define fv-types (for/list ([t (in-syntax fvtys)])
                      (parse-type t)))
-  (define fv-cnts (for/list ([t (in-list fv-types)]
-                             [stx (in-syntax fvtys)])
-                    (type->contract t #:typed-side #f (no-contract t))))
   (define ex-types (for/list ([t (in-syntax extys)])
                      (parse-type t)))
-  (define ex-cnts (for/list ([t (in-list ex-types)]
-                             [stx (in-syntax extys)])
-                    (type->contract t #:typed-side #t (no-contract t))))
+  (define-values (fv-ctc-ids fv-ctc-defs)
+    (type-stxs->ids+defs (syntax->list fvtys) contract-def-property))
+  (define-values (ex-ctc-ids ex-ctc-defs)
+    (type-stxs->ids+defs (syntax->list extys) contract-def/with-type-property))
+  (define-values (region-ctc-ids region-ctc-defs)
+    (if expr?
+        (type-stxs->ids+defs (values-stx->type-stxs resty)
+                             contract-def/with-type-property)
+        (values null null)))
   (define region-tc-result
     (and expr? (parse-tc-results resty)))
-  (define region-cnts
-    (if region-tc-result
-        (match region-tc-result
-          [(tc-result1: t)
-           (list (type->contract t #:typed-side #t (no-contract t #'region-ty-stx)))]
-          [(tc-results: ts)
-           (for/list ([t (in-list ts)])
-             (type->contract
-              t #:typed-side #t
-              (no-contract t #'region-ty-stx)))])
-        null))
   (for ([i (in-syntax fvids)]
         [ty (in-list fv-types)])
     (register-type i ty))
@@ -102,10 +101,10 @@
   (for ([i (in-syntax fvids)])
     (unregister-type i))
   (with-syntax ([(fv.id ...) fvids]
-                [(cnt ...) fv-cnts]
+                [(cnt ...) fv-ctc-ids]
                 [(ex-id ...) exids]
-                [(ex-cnt ...) ex-cnts]
-                [(region-cnt ...) region-cnts]
+                [(ex-cnt ...) ex-ctc-ids]
+                [(region-cnt ...) region-ctc-ids]
                 [(body) (maybe-optimize #`(#,expanded-body))]
                 [check-syntax-help (syntax-property
                                     (syntax-property
@@ -113,25 +112,29 @@
                                      'disappeared-binding (disappeared-bindings-todo))
                                     'disappeared-use (disappeared-use-todo))])
     (define fixed-up-definitions
-      (change-contract-fixups lifted-definitions))
+      (change-contract-fixups
+       (flatten-all-begins
+        #`(begin #,lifted-definitions
+                 #,@(if expr? (append region-ctc-defs fv-ctc-defs) null)
+                 #,@(if (not expr?) ex-ctc-defs null)))))
     (arm
       (if expr?
           (quasisyntax/loc stx
             (let ()
               check-syntax-help
               (local-require #,@(cdr (syntax-e extra-requires)))
+              #,@fixed-up-definitions
               (c:with-contract typed-region
                                #:results (region-cnt ...)
                                #:freevars ([fv.id cnt] ...)
-                               #,fixed-up-definitions
                                body)))
           (quasisyntax/loc stx
             (begin
               (local-require #,@(cdr (syntax-e extra-requires)))
               (define-values () (begin check-syntax-help (values)))
+              #,@fixed-up-definitions
               (c:with-contract typed-region
                                ([ex-id ex-cnt] ...)
-                               #,fixed-up-definitions
                                (define-values (ex-id ...) body))))))))
 
 ;; Syntax (U Symbol List) -> (values Syntax Syntax)
@@ -142,6 +145,20 @@
     [(begin (define-values (x ...) e ...) ... (let-values () . body))
      (values (disarm* #'(begin (define-values (x ...) e ...) ...))
              (disarm* (local-expand/capture* #'(let-values () . body) ctx null)))]))
+
+;; Deconstruct values type stx that the user wrote
+(define (values-stx->type-stxs values-stx)
+  (syntax-parse values-stx
+    [((~or :Values^ :values^) t ...)
+     (syntax->list #'(t ...))]
+    [t (list #'t)]))
+
+;; type-stxs->ids+defs : (Listof Syntax) Procedure -> (Listof Id Syntax)
+;; Create identifiers and definition syntaxes for contract generation
+(define (type-stxs->ids+defs type-stxs property)
+  (for/lists (_1 _2) ([t (in-list type-stxs)])
+    (define ctc-id (generate-temporary))
+    (values ctc-id #`(define-values (#,ctc-id) #,(property #'#f t)))))
 
 (define (wt-core stx)
   (define-syntax-class typed-id

@@ -63,7 +63,7 @@
 
 (contract-finders
   #:union define/fixup-contract?
-  contract-def flat-contract-def contract-def/maker)
+  contract-def flat-contract-def contract-def/maker contract-def/with-type)
 
 ;; type->contract-fail : Syntax Type #:ctc-str String
 ;;                       -> #:reason (Option String) -> Void
@@ -83,6 +83,7 @@
   (define prop (define/fixup-contract? stx))
   (define maker? (typechecker:contract-def/maker stx))
   (define flat? (typechecker:flat-contract-def stx))
+  (define typed? (and (typechecker:contract-def/with-type stx) #t))
   (define typ (parse-type prop))
   (define kind (if flat? 'flat 'impersonator))
   (syntax-parse stx #:literals (define-values)
@@ -92,8 +93,9 @@
                     typ)])
          (with-syntax ([cnt (type->contract
                              typ
-                             ;; this is for a `require/typed', so the value is not from the typed side
-                             #:typed-side #f
+                             ;; this value is from the typed side (require/typed, make-predicate, etc)
+                             ;; unless it's used for with-type
+                             #:typed-side typed?
                              #:kind kind
                              (type->contract-fail
                               typ prop
