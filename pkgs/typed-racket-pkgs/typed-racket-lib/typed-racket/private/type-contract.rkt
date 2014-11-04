@@ -95,7 +95,9 @@
                              ;; this is for a `require/typed', so the value is not from the typed side
                              #:typed-side #f
                              #:kind kind
-                             (type->contract-fail typ prop))])
+                             (type->contract-fail
+                              typ prop
+                              #:ctc-str (if flat? "predicate" "contract")))])
            (ignore ; should be ignored by the optimizer
             (quasisyntax/loc stx (define-values (n) cnt)))))]
     [_ (int-err "should never happen - not a define-values: ~a"

@@ -71,7 +71,9 @@
      (tc-toplevel/full stx #'form
        (λ (body2 type)
          (with-syntax*
-          ([(optimized-body . _) (maybe-optimize #`(#,body2))])
+          ([(transformed-body ...)
+            (change-contract-fixups (flatten-all-begins body2))]
+           [(optimized-body ...) (maybe-optimize #'(transformed-body ...))])
           (syntax-parse body2
             [_ (let ([ty-str (match type
                                ;; 'no-type means the form is not an expression and
@@ -122,5 +124,5 @@
                               #,(if (unbox include-extra-requires?)
                                     extra-requires
                                     #'(begin))
-                              #,(arm #'optimized-body))
-                     (arm #'optimized-body)))]))))]))
+                              #,(arm #'(begin optimized-body ...)))
+                     (arm #'(begin optimized-body ...))))]))))]))
