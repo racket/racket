@@ -44,7 +44,7 @@
   ;; the current mode for lists
   (define list=block? #t)
   ;; the low-level string output function (can change with `with-writer')
-  (define write write-string)
+  (define write (if (string? x) write-string write-bytes))
   ;; to get the output column
   (define (getcol) (let-values ([(line col pos) (port-next-location p)]) col))
   ;; total size of the two prefixes
@@ -87,7 +87,7 @@
     (define pfx (mcar pfxs))
     (if (not pfx) ; prefix disabled?
       (write x p)
-      (let ([len (string-length x)]
+      (let ([len ((if (string? x) string-length bytes-length) x)]
             [nls (regexp-match-positions* #rx"\n" x)])
         (let loop ([start 0] [nls nls] [lpfx (mcdr pfxs)] [col (getcol)])
           (cond [(pair? nls)
@@ -223,7 +223,7 @@
       [else
        (output-string
         (cond [(string?  x) x]
-              [(bytes?   x) (bytes->string/utf-8 x)]
+              [(bytes?   x) x]
               [(symbol?  x) (symbol->string      x)]
               [(path?    x) (path->string        x)]
               [(keyword? x) (keyword->string     x)]
