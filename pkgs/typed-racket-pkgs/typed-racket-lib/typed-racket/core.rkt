@@ -34,7 +34,9 @@
               ;; perform the provide transformation from [Culpepper 07]
               [transformed-body (begin0 (remove-provides #'body2) (do-time "Removed provides"))]
               ;; add the real definitions of contracts on requires
-              [transformed-body (begin0 (change-contract-fixups #'transformed-body) (do-time "Fixed contract ids"))]
+              [transformed-body
+               (begin0 (change-contract-fixups (syntax->list #'transformed-body))
+                       (do-time "Fixed contract ids"))]
               ;; add the real definitions of contracts on the after-code
               [(after-code ...) (change-provide-fixups (flatten-all-begins pre-after-code))]
               ;; potentially optimize the code based on the type information

@@ -150,7 +150,7 @@
 (define include-extra-requires? (box #f))
 
 (define (change-contract-fixups forms)
-  (for/list ((e (in-syntax forms)))
+  (for/list ((e (in-list forms)))
     (if (not (define/fixup-contract? e))
         e
         (begin (set-box! include-extra-requires? #t)
