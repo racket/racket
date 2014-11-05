@@ -3618,6 +3618,13 @@ scheme_expt(int argc, Scheme_Object *argv[])
           return SELECT_EXPT_PRECISION(scheme_nzerof, scheme_nzerod);
       }
     }
+
+    if ((d < 0.0) && SCHEME_RATIONALP(e)) {
+      /* The inexact approximation of a rational number might be an integer.
+         Make sure we stay on the complex track: */
+      return scheme_complex_power(scheme_real_to_complex(n),
+                                  scheme_real_to_complex(e));
+    }
   }
 
   r = bin_expt(argv[0], e);

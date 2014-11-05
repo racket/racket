@@ -566,6 +566,10 @@
 (test 0.0f0 expt -0.9999f0 (expt 2 5000))
 (test -0.0f0 expt -0.9999f0 (add1 (expt 2 5000)))
 
+(test +inf.0+inf.0i expt -0.1 -1000000000000001/3) ; inexact approx is non-integer
+(test -inf.0-inf.0i expt -0.1 -100000000000000000001/3) ; inexact approx is integer
+
+
 (err/rt-test (max 0 'a))
 (err/rt-test (min 0 'a))
 (err/rt-test (max 'a 0))
