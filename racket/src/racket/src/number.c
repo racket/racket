@@ -3557,10 +3557,8 @@ scheme_expt(int argc, Scheme_Object *argv[])
     if ((d == 0.0)
 #ifdef NAN_EQUALS_ANYTHING
 	&& !MZ_IS_NAN(d)
-#else
-        && 1
 #endif
-	) {
+	&& 1) {
       if (SCHEME_REALP(e)) {
 	int norm = 0;
 
@@ -3577,7 +3575,10 @@ scheme_expt(int argc, Scheme_Object *argv[])
 	if (!norm) {
 	  int isnonneg, iseven, negz;
 #ifdef MZ_USE_SINGLE_FLOATS
-	  int sgl = !SCHEME_DBLP(n) && !SCHEME_DBLP(e);
+          int sgl = !SCHEME_DBLP(n) && !SCHEME_DBLP(e);
+# define SELECT_EXPT_PRECISION(f, d) (sgl ? f : d)
+#else
+# define SELECT_EXPT_PRECISION(f, d) d
 #endif
 
 	  if (scheme_is_integer(e)) {
@@ -3589,35 +3590,19 @@ scheme_expt(int argc, Scheme_Object *argv[])
 	  isnonneg = !scheme_is_negative(e);
 	  negz = scheme_minus_zero_p(d);
 
-	  if (isnonneg) {
-	    if (iseven || !negz) {
-#ifdef MZ_USE_SINGLE_FLOATS
-	      if (sgl)
-		return scheme_zerof;
-#endif
-	      return scheme_zerod;
-	    } else {
-#ifdef MZ_USE_SINGLE_FLOATS
-	      if (sgl)
-		return scheme_nzerof;
-#endif
-	      return scheme_nzerod;
-	    }
-	  } else {
-	    if (iseven || !negz) {
-#ifdef MZ_USE_SINGLE_FLOATS
-	      if (sgl)
-		return scheme_single_inf_object;
-#endif
-	      return scheme_inf_object;
-	    } else {
-#ifdef MZ_USE_SINGLE_FLOATS
-	      if (sgl)
-		return scheme_single_minus_inf_object;
-#endif
-	      return scheme_minus_inf_object;
-	    }
-	  }
+          if (isnonneg) {
+            if (iseven || !negz)
+              return SELECT_EXPT_PRECISION(scheme_zerof, scheme_zerod);
+            else
+              return SELECT_EXPT_PRECISION(scheme_nzerof, scheme_nzerod);
+          } else {
+            if (iseven || !negz)
+              return SELECT_EXPT_PRECISION(scheme_single_inf_object,
+                                           scheme_inf_object);
+            else
+              return SELECT_EXPT_PRECISION(scheme_single_minus_inf_object,
+                                           scheme_minus_inf_object);
+          }
 	}
       }
     }
