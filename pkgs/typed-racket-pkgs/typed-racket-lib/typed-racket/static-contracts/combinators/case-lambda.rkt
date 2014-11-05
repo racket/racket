@@ -18,7 +18,8 @@
                 (maybe/c (listof static-contract?))
                 static-contract?)])
   case->/sc:
-  arr/sc:)
+  arr/sc:
+  (rename-out [arr-combinator? arr/sc?]))
 
 
 (define (case->/sc arrs)

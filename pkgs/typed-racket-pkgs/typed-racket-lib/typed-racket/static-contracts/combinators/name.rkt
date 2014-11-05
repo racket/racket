@@ -13,10 +13,16 @@
          "../constraints.rkt"
          racket/contract
          racket/dict
+         racket/match
          racket/syntax
-         syntax/id-table)
+         syntax/id-table
+         (for-syntax racket/base
+                     syntax/parse))
 
 (provide with-new-name-tables
+         name/sc:
+         lookup-name-defined
+         set-name-defined
          (contract-out
           [get-all-name-defs
            (-> (listof (list/c (listof identifier?)
@@ -33,9 +39,22 @@
 (define name-sc-table (make-parameter (make-free-id-table)))
 (define name-defs-table (make-parameter (make-free-id-table)))
 
+;; Use this table to track whether a contract has already been
+;; generated for this name type yet. Stores booleans.
+(define name-defined-table (make-parameter (make-free-id-table)))
+
+;; Lookup whether a contract has been defined for this name
+(define (lookup-name-defined name)
+  (free-id-table-ref (name-defined-table) name #f))
+
+;; Use when a contract has been defined for this name
+(define (set-name-defined name)
+  (free-id-table-set! (name-defined-table) name #t))
+
 (define-syntax-rule (with-new-name-tables e)
   (parameterize ([name-sc-table (make-free-id-table)]
-                 [name-defs-table (make-free-id-table)])
+                 [name-defs-table (make-free-id-table)]
+                 [name-defined-table (make-free-id-table)])
     e))
 
 (define (get-all-name-defs)
@@ -81,3 +100,7 @@
      (name-combinator-gen-name v))
    (define (sc->constraints v f)
      (variable-contract-restrict (name-combinator-gen-name v)))])
+
+(define-match-expander name/sc:
+  (syntax-parser
+    [(_ var) #'(name-combinator _ var)]))

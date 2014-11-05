@@ -11,6 +11,7 @@
          (submod typed-racket/private/type-contract numeric-contracts)
          (submod typed-racket/private/type-contract test-exports)
          (only-in racket/contract contract)
+         racket/match
          rackunit)
 (provide tests)
 (gen-test-main)
@@ -99,16 +100,20 @@
      #`(test-case (format "~a for ~a in ~a" 'type-expr 'val-expr 'fun-expr)
          (let ([type-val type-expr] [fun-val fun-expr] [val val-expr])
            (with-check-info (['type type-val] ['test-value val])
-             (define ctc-stx
+             (define ctc-result
                (type->contract type-val
                                #:typed-side typed-side
                                (λ (#:reason [reason #f])
                                  (fail-check (or reason "Type could not be converted to contract")))))
+             (match-define (list extra-stxs ctc-stx) ctc-result)
              (define ctced-val
-               (eval #`(contract #,(syntax-shift-phase-level ctc-stx 1)
-                                 #,val
-                                 #,(quote (quote #,pos))
-                                 #,(quote (quote #,neg)))
+               (eval #`(let ()
+                         #,@(map (λ (stx) (syntax-shift-phase-level stx 1))
+                                 extra-stxs)
+                         (contract #,(syntax-shift-phase-level ctc-stx 1)
+                                   #,val
+                                   #,(quote (quote #,pos))
+                                   #,(quote (quote #,neg))))
                      (ctc-namespace)))
              (check (λ () (fun-val ctced-val))))))]))
 

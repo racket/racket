@@ -28,8 +28,9 @@
              (if sc
                  #`(with-check-info (['static '#,sc])
                      (phase1-phase0-eval
-                       (define ctc (instantiate '#,sc
-                                     (lambda (#:reason _) (error "static-contract could not be converted to a contract"))))
+                       (define ctc (cadr
+                                     (instantiate '#,sc
+                                       (lambda (#:reason _) (error "static-contract could not be converted to a contract")))))
                        #,#'#`(with-check-info (['contract '#,ctc])
                           (define runtime-contract #,ctc)
                           (check-pred contract? runtime-contract))))

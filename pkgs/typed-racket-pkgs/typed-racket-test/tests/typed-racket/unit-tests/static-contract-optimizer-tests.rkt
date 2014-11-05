@@ -48,10 +48,11 @@
                  (make-check-expected expected))
            (λ ()
              (let ([ctc (syntax->datum
+                         (cadr
                           (instantiate
                             (optimize argument #:trusted-positive #t)
                             (λ (#:reason [reason #f]) (error 'nyi))
-                            'impersonator))])
+                            'impersonator)))])
                (with-check-info* (list (make-check-actual ctc))
                  (λ ()
                    (unless (equal? ctc expected)

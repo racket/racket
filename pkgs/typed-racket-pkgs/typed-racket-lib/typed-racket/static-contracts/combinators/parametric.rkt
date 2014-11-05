@@ -18,7 +18,8 @@
     [parametric-var/sc (identifier? . -> . static-contract?)])
   parametric->/sc:
   (rename-out
-    [parametric-var/sc parametric-var/sc:]))
+    [parametric-var/sc parametric-var/sc:]
+    [parametric-combinator? parametric->/sc?]))
 
 
 (struct parametric-combinator combinator (vars)

@@ -29,8 +29,14 @@
   (define (get-rec-var id)
     (dict-ref! rec-vars id (lambda () (add-variable! eqs 0))))
 
+  (define seen (make-hash))
+
   (define (recur sc variance)
+    (define seen? #f)
     (match sc
+      ;; skip already seen sc
+      [(? (λ (sc) (hash-ref seen (list sc variance) #f)))
+       (set! seen? #t)]
       [(or (or/sc: elems ...) (and/sc: elems ...))
        (add-equation! eqs (get-var sc)
                       (lambda () (for/sum ((e elems))
@@ -45,7 +51,9 @@
        (add-equation! eqs (get-var sc) (lambda () (variable-ref (get-rec-var id))))]
       [else
        (get-var sc)])
-    (sc-traverse sc recur))
+    (unless seen?
+      (hash-set! seen (list sc variance) #t)
+      (sc-traverse sc recur)))
 
   (recur sc 'covariant)
 
