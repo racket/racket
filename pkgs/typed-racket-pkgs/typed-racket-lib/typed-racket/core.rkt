@@ -79,55 +79,53 @@
            ;; for looking up types in the optimizer.
            [(transformed-body ...)
             (change-contract-fixups (flatten-all-begins #'(begin optimized-body ...)))])
-          (syntax-parse body2
-            [_ (let ([ty-str (match type
-                               ;; 'no-type means the form is not an expression and
-                               ;; has no meaningful type to print
-                               ['no-type #f]
-                               ;; don't print results of type void
-                               [(tc-result1: (== -Void type-equal?))
-                                #f]
-                               ;; don't print results of unknown type
-                               [(tc-any-results: f)
-                                #f]
-                               [(tc-result1: t f o)
-                                ;; Don't display the whole types at the REPL. Some case-lambda types
-                                ;; are just too large to print.
-                                ;; Also, to avoid showing too precise types, we generalize types
-                                ;; before printing them.
-                                (define tc (cleanup-type t))
-                                (define tg (generalize tc))
-                                (format "- : ~a~a~a\n"
-                                        (pretty-format-type tg #:indent 4)
-                                        (cond [(equal? tc tg) ""]
-                                              [else (format " [more precisely: ~a]" tc)])
-                                        (cond [(equal? tc t) ""]
-                                              [did-I-suggest-:print-type-already? " ..."]
-                                              [else (set! did-I-suggest-:print-type-already? #t)
-                                                    :print-type-message]))]
-                               [(tc-results: t)
-                                (define tcs (map cleanup-type t))
-                                (define tgs (map generalize tcs))
-                                (define tgs-val (make-Values (map -result tgs)))
-                                (define formatted (pretty-format-type tgs-val #:indent 4))
-                                (define indented? (regexp-match? #rx"\n" formatted))
-                                (format "- : ~a~a~a\n"
-                                        formatted
-                                        (cond [(andmap equal? tgs tcs) ""]
-                                              [indented?
-                                               (format "\n[more precisely: ~a]"
-                                                       (pretty-format-type (make-Values tcs) #:indent 17))]
-                                              [else (format " [more precisely: ~a]" (cons 'Values tcs))])
-                                        ;; did any get pruned?
-                                        (cond [(andmap equal? t tcs) ""]
-                                              [did-I-suggest-:print-type-already? " ..."]
-                                              [else (set! did-I-suggest-:print-type-already? #t)
-                                                    :print-type-message]))]
-                               [x (int-err "bad type result: ~a" x)])])
-                 (if ty-str
-                     #`(begin (display '#,ty-str)
-                              #,(if (unbox include-extra-requires?)
-                                    extra-requires
-                                    #'(begin))
-                              #,(arm #'(begin transformed-body ...)))
-                     (arm #'(begin transformed-body ...))))]))))]))
+          (define ty-str
+            (match type
+              ;; 'no-type means the form is not an expression and
+              ;; has no meaningful type to print
+              ['no-type #f]
+              ;; don't print results of type void
+              [(tc-result1: (== -Void type-equal?)) #f]
+              ;; don't print results of unknown type
+              [(tc-any-results: f) #f]
+              [(tc-result1: t f o)
+               ;; Don't display the whole types at the REPL. Some case-lambda types
+               ;; are just too large to print.
+               ;; Also, to avoid showing too precise types, we generalize types
+               ;; before printing them.
+               (define tc (cleanup-type t))
+               (define tg (generalize tc))
+               (format "- : ~a~a~a\n"
+                       (pretty-format-type tg #:indent 4)
+                       (cond [(equal? tc tg) ""]
+                             [else (format " [more precisely: ~a]" tc)])
+                       (cond [(equal? tc t) ""]
+                             [did-I-suggest-:print-type-already? " ..."]
+                             [else (set! did-I-suggest-:print-type-already? #t)
+                                   :print-type-message]))]
+              [(tc-results: t)
+               (define tcs (map cleanup-type t))
+               (define tgs (map generalize tcs))
+               (define tgs-val (make-Values (map -result tgs)))
+               (define formatted (pretty-format-type tgs-val #:indent 4))
+               (define indented? (regexp-match? #rx"\n" formatted))
+               (format "- : ~a~a~a\n"
+                       formatted
+                       (cond [(andmap equal? tgs tcs) ""]
+                             [indented?
+                              (format "\n[more precisely: ~a]"
+                                      (pretty-format-type (make-Values tcs) #:indent 17))]
+                             [else (format " [more precisely: ~a]" (cons 'Values tcs))])
+                       ;; did any get pruned?
+                       (cond [(andmap equal? t tcs) ""]
+                             [did-I-suggest-:print-type-already? " ..."]
+                             [else (set! did-I-suggest-:print-type-already? #t)
+                                   :print-type-message]))]
+              [x (int-err "bad type result: ~a" x)]))
+          (if ty-str
+              #`(begin (display '#,ty-str)
+                       #,(if (unbox include-extra-requires?)
+                             extra-requires
+                             #'(begin))
+                       #,(arm #'(begin transformed-body ...)))
+              (arm #'(begin transformed-body ...))))))]))
