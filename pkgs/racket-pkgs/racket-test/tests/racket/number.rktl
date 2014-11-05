@@ -555,6 +555,17 @@
 (test 0.0 expt -10.0 -10000000000000.0)
 (test -0.0 expt -10.0 -10000000000001.0)
 
+(test 0.0 expt 0.9999 (expt 2 5000))
+(test 0.0 expt 0.9999 (add1 (expt 2 5000)))
+(test 0.0 expt 0.9999 (/ (expt 2 5000) 3))
+(test 0.0 expt -0.9999 (expt 2 5000))
+(test -0.0 expt -0.9999 (add1 (expt 2 5000)))
+(test 0.0f0 expt 0.9999f0 (expt 2 5000))
+(test 0.0f0 expt 0.9999f0 (add1 (expt 2 5000)))
+(test 0.0f0 expt 0.9999f0 (/ (expt 2 5000) 3))
+(test 0.0f0 expt -0.9999f0 (expt 2 5000))
+(test -0.0f0 expt -0.9999f0 (add1 (expt 2 5000)))
+
 (err/rt-test (max 0 'a))
 (err/rt-test (min 0 'a))
 (err/rt-test (max 'a 0))

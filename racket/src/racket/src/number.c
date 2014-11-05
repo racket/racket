@@ -3605,6 +3605,18 @@ scheme_expt(int argc, Scheme_Object *argv[])
           }
 	}
       }
+    } else if ((d < 0.0) && (d > -1.0)) {
+      /* If `e` is a positive bignum, then the result should be zero,
+         but we won't get that result if conversion produces infinity */
+      if (SCHEME_BIGNUMP(e) && SCHEME_BIGPOS(e)) {
+#ifdef MZ_USE_SINGLE_FLOATS
+        int sgl = !SCHEME_DBLP(n);
+#endif
+        if (SCHEME_FALSEP(scheme_odd_p(1, &e)))
+          return SELECT_EXPT_PRECISION(scheme_zerof, scheme_zerod);
+        else
+          return SELECT_EXPT_PRECISION(scheme_nzerof, scheme_nzerod);
+      }
     }
   }
 
