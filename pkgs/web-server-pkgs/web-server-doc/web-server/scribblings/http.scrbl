@@ -241,8 +241,7 @@ Examples:
                           [#:message message bytes? #"Okay"]
                           [#:seconds seconds number? (current-seconds)]
                           [#:mime-type mime-type (or/c bytes? #f) TEXT/HTML-MIME-TYPE]
-                          [#:headers headers (listof header?) '()]
-                          [#:cookies cookies (listof cookie?) '()])
+                          [#:headers headers (listof header?) '()])
          response?]{
 Equivalent to
 @racketblock[(response code message seconds mime-type headers output)]
