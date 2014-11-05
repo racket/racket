@@ -10,6 +10,7 @@
 (define opt? (make-parameter #f))
 (define missed-opt? (make-parameter #f))
 (define bench? (make-parameter #f))
+(define math? (make-parameter #f))
 (define single (make-parameter #f))
 (current-namespace (make-base-namespace))
 (command-line
@@ -20,9 +21,10 @@
  ["--opt" "run the optimization tests" (opt? #t)]
  ["--missed-opt" "run the missed optimization tests" (missed-opt? #t)]
  ["--benchmarks" "compile the typed benchmarks" (bench? #t)]
+ ["--math" "compile the math library" (math? #t)]
  ["--just" path "run only this test" (single (just-one path))]
  ["--nightly" "for the nightly builds" (begin (nightly? #t) (unit? #t) (opt? #t) (missed-opt? #t) (places 1))]
- ["--all" "run all tests" (begin (unit? #t) (int? #t) (opt? #t) (missed-opt? #t) (bench? #t))]
+ ["--all" "run all tests" (begin (unit? #t) (int? #t) (opt? #t) (missed-opt? #t) (bench? #t) (math? #t))]
  ["-j" num "number of places to use" 
        (let ([n (string->number num)])
          (places (and (integer? n) (> n 1) n)))]
@@ -39,11 +41,12 @@
                         [else
                          (make-test-suite
                           "Typed Racket Tests"
-                          (append (if (unit?)       (list unit-tests)                    '())
-                                  (if (int?)        (list (int-tests))                     '())
-                                  (if (opt?)        (list (optimization-tests))            '())
-                                  (if (missed-opt?) (list (missed-optimization-tests))     '())
-                                  (if (bench?)      (list (compile-benchmarks))          '())))])])
+                          (append (if (unit?)       (list unit-tests)                  '())
+                                  (if (int?)        (list (int-tests))                 '())
+                                  (if (opt?)        (list (optimization-tests))        '())
+                                  (if (missed-opt?) (list (missed-optimization-tests)) '())
+                                  (if (bench?)      (list (compile-benchmarks))        '())
+                                  (if (math?)       (list (compile-math))              '())))])])
       (unless (= 0 ((exec) to-run))
         (eprintf "Typed Racket Tests did not pass.\n")
         (exit 1))))

@@ -2,7 +2,7 @@
 
 (require rackunit rackunit/text-ui racket/file
          mzlib/etc racket/port
-         compiler/compiler racket/promise
+         compiler/compiler setup/setup racket/promise
          racket/match syntax/modcode
          racket/promise
          "unit-tests/all-tests.rkt"
@@ -112,6 +112,12 @@
               (mk shootout)
               (mk common)))
 
+(define (compile-math)
+  (test-suite "Compiling Math library"
+              (check-true
+               (parameterize ([current-output-port (open-output-nowhere)])
+                 (setup #:collections '(("math")))))))
+
 
 (define (just-one p*)
   (define-values (path p b) (split-path p*))
@@ -156,5 +162,5 @@
 
 (provide go go/text just-one places start-workers
          verbose?
-         int-tests unit-tests compile-benchmarks
+         int-tests unit-tests compile-benchmarks compile-math
          optimization-tests missed-optimization-tests)
