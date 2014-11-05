@@ -919,7 +919,6 @@ namespace_val {
   gcMARK2(e->access_insp, gc);
 
   gcMARK2(e->rename_set, gc);
-  gcMARK2(e->temp_marked_names, gc);
   gcMARK2(e->post_ex_rename_set, gc);
 
   gcMARK2(e->syntax, gc);
@@ -949,6 +948,8 @@ namespace_val {
   gcMARK2(e->modvars, gc);
 
   gcMARK2(e->weak_self_link, gc);
+
+  gcMARK2(e->binding_names, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -1250,8 +1251,7 @@ mark_comp_env {
   gcMARK2(e->base.next, gc);
   gcMARK2(e->base.values, gc);
   gcMARK2(e->base.renames, gc);
-  gcMARK2(e->base.uid, gc);
-  gcMARK2(e->base.uids, gc);
+  gcMARK2(e->base.marks, gc);
   gcMARK2(e->base.dup_check, gc);
   gcMARK2(e->base.intdef_name, gc);
   gcMARK2(e->base.in_modidx, gc);
@@ -1259,7 +1259,6 @@ mark_comp_env {
   
   gcMARK2(e->data.const_names, gc);
   gcMARK2(e->data.const_vals, gc);
-  gcMARK2(e->data.const_uids, gc);
   gcMARK2(e->data.sealed, gc);
   gcMARK2(e->data.use, gc);
   gcMARK2(e->data.lifts, gc);

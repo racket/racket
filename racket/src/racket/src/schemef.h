@@ -523,6 +523,7 @@ XFORM_NONGCING MZ_EXTERN int scheme_hash_tree_index(Scheme_Hash_Tree *tree, mzlo
 MZ_EXTERN int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
 MZ_EXTERN int scheme_is_hash_tree_equal(Scheme_Object *o);
 MZ_EXTERN int scheme_is_hash_tree_eqv(Scheme_Object *o);
+MZ_EXTERN int scheme_hash_tree_subset(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b);
 
 /*========================================================================*/
 /*                   basic Scheme value constructors                      */

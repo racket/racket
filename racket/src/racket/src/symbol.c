@@ -955,6 +955,13 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
   return r;
 }
 
+Scheme_Object *scheme_gensym(Scheme_Obejct *base)
+{
+  Scheme_Object *a[1];
+  a[0] = base;
+  return gensym(1, a);
+}
+
 Scheme_Object *scheme_symbol_append(Scheme_Object *s1, Scheme_Object *s2)
 {
   char *s;

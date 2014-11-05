@@ -47,17 +47,20 @@ ROSYM static Scheme_Object *nominal_id_symbol;
 
 READ_ONLY Scheme_Object *scheme_syntax_p_proc;
 
+READ_ONLY Scheme_Hash_Tree *scheme_empty_hash_tree;
+
 READ_ONLY static Scheme_Stx_Srcloc *empty_srcloc;
 
 typedef struct Scheme_Mark {
   Scheme_Object so;
   mzlonglong id;
-  Scheme_Hash_Table *bindings;
+  Scheme_Object *bindings;
   long binding_version;
 } Scheme_Mark;
 
 THREAD_LOCAL_DECL(static mzlonglong mark_counter);
 THREAD_LOCAL_DECL(static Scheme_Object *last_phase_shift);
+THREAD_LOCAL_DECL(static Scheme_Object *nominal_ipair_cache);
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *taint_intern_table);
 
 static Scheme_Object *syntax_p(int argc, Scheme_Object **argv);
@@ -109,7 +112,9 @@ static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp
 static void register_traversers(void);
 #endif
 
-static void preemptive_chunk(Scheme_Stx *stx);
+static int is_armed(Scheme_Object *v);
+static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone);
+static void unmarshal_rename(Scheme_Stx *stx, Scheme_Object *vec);
 
 #define CONS scheme_make_pair
 #define ICONS scheme_make_pair
@@ -138,16 +143,6 @@ XFORM_NONGCING static int prefab_p(Scheme_Object *o)
     - <insp> => clean, but inspector needs to be proagated to children
     - (list <insp/#f> <insp> ...+) [interned] => armed; first inspector is to propagate */
 
-XFORM_NONGCING static int is_member(Scheme_Object *a, Scheme_Object *l)
-{
-  while (SCHEME_PAIRP(l)) {
-    if (SAME_OBJ(a, SCHEME_CAR(l)))
-      return 1;
-    l = SCHEME_CDR(l);
-  }
-  return 0;
-}
-
 #define IS_CANCELING_MARK(x) (((Scheme_Mark *)x)->id < 0)
 #define SCHEME_MARKP(x) (SAME_TYPE(SCHEME_TYPE(x), scheme_mark_type))
 
@@ -162,6 +157,9 @@ void scheme_init_stx(Scheme_Env *env)
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
+
+  REGISTER_SO(scheme_empty_hash_tree);
+  scheme_empty_hash_tree = scheme_make_hash_tree(0);
 
   REGISTER_SO(scheme_syntax_p_proc);
   o = scheme_make_folding_prim(syntax_p, "syntax?", 1, 1, 1);
@@ -227,10 +225,7 @@ void scheme_init_stx(Scheme_Env *env)
   nominal_id_symbol = scheme_intern_symbol("nominal-id");
 
   REGISTER_SO(last_phase_shift);
-  REGISTER_SO(mark_id);
-  REGISTER_SO(neg_mark_id);
-  mark_id = scheme_make_integer(0);
-  neg_mark_id = scheme_make_integer(0);
+  REGISTER_SO(nominal_ipair_cache);
 
   REGISTER_SO(empty_srcloc);
   empty_srcloc = MALLOC_ONE_RT(Scheme_Stx_Srcloc);
@@ -249,10 +244,7 @@ void scheme_init_stx(Scheme_Env *env)
 void scheme_init_stx_places(int initial_main_os_thread) {
   if (!initial_main_os_thread) {
     REGISTER_SO(last_phase_shift);
-    REGISTER_SO(mark_id);
-    REGISTER_SO(neg_mark_id);
-    mark_id = scheme_make_integer(0);
-    neg_mark_id = scheme_make_integer(0);
+    REGISTER_SO(nominal_ipair_cache);
   }
 
   REGISTER_SO(taint_intern_table);
@@ -274,7 +266,7 @@ Scheme_Object *scheme_make_stx(Scheme_Object *val,
   STX_KEY(stx) = HAS_SUBSTX(val) ? STX_SUBSTX_FLAG : 0;
   stx->val = val;
   stx->srcloc = srcloc;
-  stx->wraps = scheme_empty_hash_tree;
+  stx->marks = scheme_empty_hash_tree;
   stx->u.to_propagate = NULL;
   stx->shifts = scheme_null;
   stx->props = props;
@@ -285,27 +277,24 @@ Scheme_Object *scheme_make_stx(Scheme_Object *val,
 Scheme_Object *clone_stx(Scheme_Object *to)
 {
   Scheme_Stx *stx = (Scheme_Stx *)to;
-  Scheme_Object *wraps, *modinfo_cache;
-  Scheme_Object *taints;
+  Scheme_Object *taints, *shifts;
   Scheme_Hash_Tree *marks;
-  Scheme_Object *to_propagate;
-  intptr_t lazy_prefix;
-  int dp;
+  Scheme_Hash_Tree *to_propagate;
 
-  wraps = stx->wraps;
   taints = stx->taints;
   marks = stx->marks;
+  shifts = stx->shifts;
   to_propagate = stx->u.to_propagate;
 
   stx = (Scheme_Stx *)scheme_make_stx(stx->val, 
                                       stx->srcloc,
                                       stx->props);
 
-  stx->wraps = wraps;
   stx->marks = marks;
   if (STX_KEY(stx) & STX_SUBSTX_FLAG)
     stx->u.to_propagate = to_propagate;
   stx->taints = taints;
+  stx->shifts = shifts;
 
   return (Scheme_Object *)stx;
 }
@@ -489,7 +478,7 @@ Scheme_Object *scheme_new_mark(int canceling)
   mzlonglong id;
 
   m = (Scheme_Mark *)scheme_malloc_small_tagged(sizeof(Scheme_Mark));
-  m->type = scheme_mark_type;
+  m->so.type = scheme_mark_type;
   id = ++mark_counter;
   if (canceling)
     id = -id;
@@ -506,14 +495,15 @@ static Scheme_Hash_Tree *add_remove_mark(Scheme_Hash_Tree *marks, Scheme_Object 
     else
       return marks;
   } else
-    return scheme_hash_tree_set(phase_marks, m, scheme_true);
+    return scheme_hash_tree_set(marks, m, scheme_true);
 }
 
 Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Hash_Tree *marks;
-  Scheme_Object *taints, *to_propagate;
+  Scheme_Object *taints, *shifts;
+  Scheme_Hash_Tree *to_propagate;
 
   marks = add_remove_mark(stx->marks, m);
   if ((stx->marks == marks)
@@ -522,30 +512,37 @@ Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
   }
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
-    to_propagate = (stx->to_propagate ? stx->to_propagate : scheme_empty_hash_tree);
-    to_propagate = add_remove_mark(stx->to_propagate, m);
-    if ((stx->to_propagate == to_propagate)
+    to_propagate = (stx->u.to_propagate ? stx->u.to_propagate : scheme_empty_hash_tree);
+    to_propagate = add_remove_mark(to_propagate, m);
+    if ((stx->u.to_propagate == to_propagate)
         && (stx->marks == marks))
       return (Scheme_Object *)stx;
     
-    if (!stx->to_propagate || (stx->to_propagate == scheme_empty_hash_tree)) {
+    if (!stx->u.to_propagate || (stx->u.to_propagate == scheme_empty_hash_tree)) {
       /* record base info as a shortcut for propagation */
       Scheme_Object *vec;
       vec = scheme_make_vector(2, NULL);
       SCHEME_VEC_ELS(vec)[0] = (Scheme_Object *)stx->marks;
-      SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)(stx->to_propagate ? scheme_empty_hash_tree : stx->to_propagate);
+      SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)(stx->u.to_propagate ? stx->u.to_propagate : scheme_empty_hash_tree);
       to_propagate = scheme_hash_tree_set(to_propagate, scheme_true, vec);
     }
   } else
     to_propagate = NULL; /* => cleared binding cache */
 
   taints = stx->taints;
+  shifts = stx->shifts;
   stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
   stx->marks = marks;
   stx->u.to_propagate = to_propagate;
   stx->taints = taints;
+  stx->shifts = shifts;
 
   return (Scheme_Object *)stx;
+}
+
+int scheme_stx_has_empty_wraps(Scheme_Object *stx)
+{
+  return (((Scheme_Stx *)stx)->marks->count == 0);
 }
 
 /******************** shifts ********************/
@@ -556,7 +553,7 @@ static Scheme_Object *extract_phase_shift(Scheme_Stx *stx)
 
   if (!SCHEME_NULLP(stx->shifts)) {
     a = stx->shifts;
-    if (SCHEME_VECTOR(a))
+    if (SCHEME_VECTORP(a))
       a = SCHEME_VEC_ELS(a)[0];
     if (SCHEME_PAIRP(a)) {
       a = SCHEME_CAR(a);
@@ -605,7 +602,7 @@ Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift)
       shifts = stx->shifts;
     }
     shifts = add_shift(shift, shifts);
-    SCHEME_VEC_SHIFTS(vec)[0] = shifts;
+    SCHEME_VEC_ELS(vec)[0] = shifts;
   } else {
     /* No need to propagate, so it's a simple addition. */
     shifts = add_shift(shift, stx->shifts);
@@ -617,9 +614,9 @@ Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift)
   return (Scheme_Object *)shifts;
 }
 
-static Scheme_Object *scheme_make_phase_shift(Scheme_Object *old_midx, Scheme_Object *new_midx,
-                                              Scheme_Hash_Table *export_registry, Scheme_Object *insp,
-                                              Scheme_Object *ignore_old_identity)
+Scheme_Object *scheme_make_shift(Scheme_Object *old_midx, Scheme_Object *new_midx,
+                                 Scheme_Hash_Table *export_registry, Scheme_Object *insp,
+                                 Scheme_Object *ignore_old_identity)
 {
   if (new_midx || export_registry || insp) {
     Scheme_Object *vec;
@@ -653,21 +650,19 @@ void scheme_clear_shift_cache(void)
   last_phase_shift = NULL;
 }
 
-Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, Scheme_Object *shift,
-				      Scheme_Object *old_midx, Scheme_Object *new_midx,
-				      Scheme_Hash_Table *export_registry,
-                                      Scheme_Object *insp,
-                                      Scheme_Object *ignore_old_identity)
-/* Shifts the phase on a syntax object in a module. A 0 shift might be
-   used just to re-direct relative module paths. new_midx might be
-   NULL to shift without redirection. And so on. */
+Scheme_Object *scheme_stx_shift(Scheme_Object *stx, Scheme_Object *shift,
+                                Scheme_Object *old_midx, Scheme_Object *new_midx,
+                                Scheme_Hash_Table *export_registry,
+                                Scheme_Object *insp,
+                                Scheme_Object *ignore_old_identity)
+/* Shifts the modidx on a syntax object in a module. */
 {
   Scheme_Object *s;
 
   if (!SAME_OBJ(shift, scheme_make_integer(0)))
     stx = scheme_stx_add_shift(stx, shift);
 
-  s = scheme_stx_phase_shift_as_rename(old_midx, new_midx, export_registry, insp, ignore_old_identity);
+  s = scheme_make_shift(old_midx, new_midx, export_registry, insp, ignore_old_identity);
   if (s)
     stx = scheme_stx_add_shift(stx, s);
 
@@ -717,7 +712,7 @@ static Scheme_Object *syntax_shift_phase(int argc, Scheme_Object **argv)
   if (SCHEME_INTP(argv[1]) && !SCHEME_INT_VAL(argv[1]))
     return argv[0];
 
-  return scheme_stx_shift(argv[0], argv[1]);
+  return scheme_stx_add_shift(argv[0], argv[1]);
 }
 
 /******************** lazy propagation ********************/
@@ -726,13 +721,13 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Hash_Tree *to_pro
                                       Scheme_Hash_Tree *parent_marks)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
-  Scheme_Object *to_propagate, *key, *val;
+  Scheme_Object *key, *val;
   intptr_t i;
 
   if (!to_propagate || (to_propagate == scheme_empty_hash_tree))
     return o;
 
-  val = scheme_hash_get(to_propagate, scheme_true);
+  val = scheme_hash_tree_get(to_propagate, scheme_true);
   if (val 
       && SAME_OBJ(SCHEME_VEC_ELS(val)[0], (Scheme_Object *)stx->marks)
       && (!(STX_KEY(stx) & STX_SUBSTX_FLAG)
@@ -757,7 +752,7 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Hash_Tree *to_pro
   return o;
 }
 
-static Scheme_Object *propaagte_shifts(Scheme_Object *result, Scheme_Object *shifts)
+static Scheme_Object *propagate_shifts(Scheme_Object *result, Scheme_Object *shifts)
 {
   Scheme_Stx *stx = (Scheme_Stx *)result;
   Scheme_Object *l;
@@ -771,18 +766,19 @@ static Scheme_Object *propaagte_shifts(Scheme_Object *result, Scheme_Object *shi
   }
 
   for (l = scheme_reverse(SCHEME_VEC_ELS(shifts)[1]); !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    result = scheme_stx_shift(result, SCHEME_CAR(l));
+    result = scheme_stx_add_shift(result, SCHEME_CAR(l));
   }
 
   return result;
 }
 
-static Scheme_Object *propagate(Scheme_Object *result, Scheme_Object *to_propagate,
-                                Scheme_Object *parent_marks,
+static Scheme_Object *propagate(Scheme_Object *result,
+                                Scheme_Hash_Tree *to_propagate,
+                                Scheme_Hash_Tree *parent_marks,
                                 Scheme_Object *shifts,
                                 int add_taint, Scheme_Object *false_insp)
 {
-  result = propagate_marks(result, to_propagate, stx->marks);
+  result = propagate_marks(result, to_propagate, parent_marks);
 
   if (shifts)
     result = propagate_shifts(result, shifts);
@@ -803,8 +799,9 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
   /* The fast-path tests are duplicated in jit.c. */
 
   if ((STX_KEY(stx) & STX_SUBSTX_FLAG) && stx->u.to_propagate) {
-    Scheme_Object *v = stx->val, *to_propagate, *result;
-    Scheme_Object *here_wraps, *false_insp, *shifts;
+    Scheme_Object *v = stx->val, *result;
+    Scheme_Hash_Tree *to_propagate;
+    Scheme_Object *false_insp, *shifts;
     int add_taint;
     
     to_propagate = stx->u.to_propagate;
@@ -908,9 +905,6 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
 
       v = (Scheme_Object *)s;
     }
-
-    if (!keep) 
-      return v;
 
     stx->u.to_propagate = NULL;
     stx->val = v;
@@ -1237,7 +1231,7 @@ Scheme_Mark *extract_max_mark_and_increment_bindings(Scheme_Hash_Tree *marks)
   if (mark_id_val < 0) mark_id_val = -mark_id_val;
   mark->binding_version++;
 
-  i = scheme_hash_tree_next(to_propagate, i);
+  i = scheme_hash_tree_next(marks, i);
   while (i != -1) {
     scheme_hash_tree_index(marks, i, &key, &val);
 
@@ -1251,7 +1245,7 @@ Scheme_Mark *extract_max_mark_and_increment_bindings(Scheme_Hash_Tree *marks)
       mark_id_val = id_val;
     }
     
-    i = scheme_hash_tree_next(to_propagate, i);
+    i = scheme_hash_tree_next(marks, i);
   }
 
   return mark;
@@ -1267,9 +1261,10 @@ void scheme_add_binding(Scheme_Object *sym_or_pes, Scheme_Object *phase, Scheme_
   Scheme_Object *l, *p, *vec;
   
   if (marks->count) {
-    mark = extract_max_mark_and_increment-bindings(marks);
+    mark = extract_max_mark_and_increment_bindings(marks);
   } else {
     scheme_signal_error("cannot bind identifier with an empty context");
+    return;
   }
 
   /* We add the binding the the maximum-valued mark, because it's
@@ -1278,7 +1273,7 @@ void scheme_add_binding(Scheme_Object *sym_or_pes, Scheme_Object *phase, Scheme_
   l = mark->bindings;
   if (!l) {
     bt = scheme_make_bucket_table(10, SCHEME_hash_weak_ptr);
-    l = scheme_make_raw_pair(bt, NULL);
+    l = scheme_make_raw_pair((Scheme_Object *)bt, NULL);
     mark->bindings = l;
   } else {
     bt = (Scheme_Bucket_Table *)SCHEME_CAR(l);
@@ -1286,7 +1281,7 @@ void scheme_add_binding(Scheme_Object *sym_or_pes, Scheme_Object *phase, Scheme_
 
   vec = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(vec)[0] = phase;
-  SCHEME_VEC_ELS(vec)[1] = marks;
+  SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)marks;
 
   if (SCHEME_SYMBOLP(sym_or_pes)) {
     b = scheme_bucket_from_table(bt, (const char *)sym_or_pes);
@@ -1305,7 +1300,8 @@ void scheme_add_binding(Scheme_Object *sym_or_pes, Scheme_Object *phase, Scheme_
 void scheme_add_binding_from_id(Scheme_Object *o, Scheme_Object *phase,
                                 Scheme_Object *val)
 {
-  Scheme_Stx *stx = (Scheem_Stx *)o;
+  Scheme_Stx *stx = (Scheme_Stx *)o;
+  Scheme_Object *phase_shift;
 
   phase_shift = extract_phase_shift(stx);
   if (SCHEME_FALSEP(phase_shift)) {
@@ -1315,14 +1311,27 @@ void scheme_add_binding_from_id(Scheme_Object *o, Scheme_Object *phase,
   } else if (!SCHEME_FALSEP(phase))
     phase = scheme_bin_minus(phase, phase_shift);
  
-  scheme_add_binding(stx->val, phase, marks, val);
+  scheme_add_binding(stx->val, phase, (Scheme_Object *)stx->marks, val);
 }
 
-static void *do_scheme_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase, Scheme_Hash_Tree *check_subset)
+static int marks_subset(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b)
+{
+  return scheme_hash_tree_subset(a, b);
+}
+
+XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
+{
+  return ((SAME_OBJ(a, b) || scheme_eqv(a, b))
+          ? 1
+          : 0);
+}
+
+static void *do_scheme_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase, 
+                                  Scheme_Hash_Tree *check_subset, int *_exact_match)
 {
   int j;
   intptr_t i;
-  Scheme_Object *key, *val, *result_best_so_far, **cached_result, *binding_phase;
+  Scheme_Object *key, *val, *result_best_so_far, **cached_result, *binding_phase, *l;
   Scheme_Mark *mark, *mark_best_so_far;
   Scheme_Hash_Tree *binding_marks, *best_so_far;
   Scheme_Module_Phase_Exports *pt;
@@ -1339,14 +1348,15 @@ static void *do_scheme_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase, Scheme_
     if (mark->bindings) {
       for (j = 0; j < 2; j++) {
         if (!j)
-          l = scheme_lookup_in_table(SCHEME_CAR(mark->bindings), stx->val);
+          l = scheme_lookup_in_table((Scheme_Bucket_Table *)SCHEME_CAR(mark->bindings),
+                                     (const char *)stx->val);
         else
           l = SCHEME_CDR(mark->bindings);
 
         while (l && !SCHEME_NULLP(l)) {
-          binding_phase = (Scheme_Hash_Tree *)(SCHEME_VEC_ELS(SCHEME_CAR(l))[0]);
+          binding_phase = SCHEME_VEC_ELS(SCHEME_CAR(l))[0];
           if (same_phase(phase, binding_phase)) {
-            bindings_marks = (Scheme_Hash_Tree *)(SCHEME_VEC_ELS(SCHEME_CAR(l))[1]);
+            binding_marks = (Scheme_Hash_Tree *)(SCHEME_VEC_ELS(SCHEME_CAR(l))[1]);
 
             if (j) {
               if (SCHEME_VEC_SIZE(SCHEME_CAR(l)) == 3) {
@@ -1359,7 +1369,7 @@ static void *do_scheme_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase, Scheme_
                     break;
                   }
                 }
-                bindings_marks = NULL;
+                binding_marks = NULL;
               } else {
                 /* Check for id in pes */
                 pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(SCHEME_CAR(l))[1];
@@ -1377,12 +1387,13 @@ static void *do_scheme_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase, Scheme_
               if (check_subset && !marks_subset(binding_marks, check_subset))
                 return NULL; /* ambiguous */
               if (!best_so_far
-                  || ((bindings_marks->count > best_so_far->count)
+                  || ((binding_marks->count > best_so_far->count)
                       && (!check_subset
-                          || (bindings_marks->count == check_subset->count)))) {
-                best_so_far = bindings_marks;
+                          || (binding_marks->count == check_subset->count)))) {
+                best_so_far = binding_marks;
                 mark_best_so_far = mark;
                 result_best_so_far = SCHEME_VEC_ELS(SCHEME_CAR(l))[2];
+                if (_exact_match) *_exact_match = (binding_marks->count == stx->marks->count);
               }
             }
           }
@@ -1391,7 +1402,7 @@ static void *do_scheme_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase, Scheme_
       }
     }
     
-    i = scheme_hash_tree_next(to_propagate, i);
+    i = scheme_hash_tree_next(stx->marks, i);
   }
 
   if (!best_so_far)
@@ -1409,11 +1420,15 @@ static void *do_scheme_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase, Scheme_
 }
 
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
+                                           int *_exact_match,
                                            Scheme_Object **insp,              /* access-granting inspector */
                                            Scheme_Object **nominal_modidx,    /* how it was imported */
                                            Scheme_Object **nominal_name,      /* imported as name */
                                            Scheme_Object **src_phase,         /* phase level of import from nominal modidx */ 
                                            Scheme_Object **nominal_src_phase) /* phase level of export from nominal modidx */
+/* Result is either a representation of a local binding (probably a symbol),
+   a vector of the form (vector <modidx> <symbol> <defn-phase>), or
+   NULL */
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Hash_Tree *best_set;
@@ -1434,16 +1449,16 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
     } else if (SCHEME_FALSEP(phase))
       phase_shift = scheme_false;
     else
-      phase_shift = scheme_bin_add(phase, phase_shift);
+      phase_shift = scheme_bin_plus(phase, phase_shift);
   } else
     phase_shift = phase;
 
-  best_set = (Scheme_Hash_Tree *)do_scheme_stx_lookup(stx, phase_shift, NULL);
+  best_set = (Scheme_Hash_Tree *)do_scheme_stx_lookup(stx, phase_shift, NULL, NULL);
   if (!best_set)
     return NULL;
 
   /* Find again, this time checking to ensure no ambiguity: */
-  cached_result = (Scheme_Object **)do_scheme_stx_lookup(stx, phase_shift, best_set);
+  cached_result = (Scheme_Object **)do_scheme_stx_lookup(stx, phase_shift, best_set, exact_match);
   if (!cached_result)
     return NULL;
 
@@ -1458,7 +1473,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
   if (!SCHEME_SYMBOLP(result)) {
     /* Generate a result vector: (vector <modidx> <sym> <phase>) */
     Scheme_Object *l = result;
-    result = scheme_make_vector(3);
+    result = scheme_make_vector(3, NULL);
     SCHEME_VEC_ELS(result)[1] = stx->val;
     SCHEME_VEC_ELS(result)[2] = scheme_make_integer(0);
 
@@ -1473,14 +1488,14 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
         if (insp) *insp = SCHEME_CAR(l);
         l = SCHEME_CDR(l);
       } else {
-        if (inspe) *insp = scheme_false;
+        if (insp) *insp = scheme_false;
       }
       SCHEME_VEC_ELS(result)[0] = SCHEME_CAR(l);
       l = SCHEME_CDR(l);
       if (SCHEME_SYMBOLP(l)) {
         /* l is exportname */
         SCHEME_VEC_ELS(result)[1] = l;
-      } else if (SCHEME_MODIDXP(l)) {
+      } else if (SAME_TYPE(SCHEME_TYPE(l), scheme_module_index_type)) {
         /* l is nominal_modidx */
         if (nominal_modidx) *nominal_modidx = l;
       } else {
@@ -1511,11 +1526,14 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
     } else {
       /* A vector for a pes */
       Scheme_Module_Phase_Exports *pt;
+      Scheme_Object *pos;
       
       pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(l)[1];
+
+      pos = scheme_hash_get(pt->ht, stx->val);
       
       SCHEME_VEC_ELS(result)[0] = SCHEME_VEC_ELS(l)[0];
-      SCHEME_VEC_ELS(result)[1] = pt->provide_src_names[i];
+      SCHEME_VEC_ELS(result)[1] = pt->provide_src_names[SCHEME_INT_VAL(pos)];
       if (src_phase) *src_phase = pt->phase_index;
       if (nominal_src_phase) *nominal_src_phase = SCHEME_VEC_ELS(l)[2];
     }
@@ -1560,7 +1578,7 @@ Scheme_Object *scheme_make_module_rename_set(Scheme_Object *insp)
 
   mark = scheme_new_mark(0);
 
-  vec = scheme_make_vector(2);
+  vec = scheme_make_vector(2, NULL);
   SCHEME_VEC_ELS(vec)[0] = mark;
   SCHEME_VEC_ELS(vec)[1] = insp;
 
@@ -1574,7 +1592,7 @@ Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, Scheme_Object *in
   if (!set_identity)
     set_identity = scheme_new_mark(0);
 
-  vec = scheme_make_vector(3);
+  vec = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(vec)[0] = set_identity;
   SCHEME_VEC_ELS(vec)[1] = phase;
   SCHEME_VEC_ELS(vec)[2] = insp;
@@ -1604,8 +1622,10 @@ void scheme_extend_module_rename(Scheme_Object *mrn,         /* (vector <mark> <
 {
   Scheme_Object *elem;
   Scheme_Object *phase;
+  Scheme_Object *inspector;
 
   phase = SCHEME_VEC_ELS(mrn)[1];
+  inspector = SCHEME_VEC_ELS(mrn)[2];
 
  /*
    binding ::= mod_binding
@@ -1681,7 +1701,7 @@ void scheme_extend_module_rename_with_shared(Scheme_Object *rn, /* (vector <mark
 {
   Scheme_Stx *stx = (Scheme_Stx *)context;
   Scheme_Object *phase, *phase_shift, *pes;
-  Scheme_hash_Tree *marks;
+  Scheme_Hash_Tree *marks;
 
   phase = SCHEME_VEC_ELS(rn)[1];
 
@@ -1694,7 +1714,7 @@ void scheme_extend_module_rename_with_shared(Scheme_Object *rn, /* (vector <mark
     } else if (!SCHEME_FALSEP(phase))
       phase = scheme_bin_minus(phase, phase_shift);
 
-    marks = context->marks;
+    marks = ((Scheme_Stx *)context)->marks;
   } else
     marks = add_remove_mark(scheme_empty_hash_tree, SCHEME_VEC_ELS(rn)[0]);
 
@@ -1702,18 +1722,39 @@ void scheme_extend_module_rename_with_shared(Scheme_Object *rn, /* (vector <mark
     unmarshal_info = scheme_make_pair(scheme_make_pair(rn, context),
                                       unmarshal_info);
 
-  pes = scheme_make_vector(4);
+  pes = scheme_make_vector(4, NULL);
   SCHEME_VEC_ELS(pes)[0] = modidx;
   SCHEME_VEC_ELS(pes)[1] = (Scheme_Object *)pt;
   SCHEME_VEC_ELS(pes)[2] = src_phase;
   SCHEME_VEC_ELS(pes)[3] = (unmarshal_info ? unmarshal_info : scheme_false);
  
-  scheme_add_binding((Scheme_Object *)pt, phase, marks, pes);
+  scheme_add_binding((Scheme_Object *)pt, phase, (Scheme_Object *)marks, pes);
+}
+
+static Scheme_Hash_Table *extract_export_registry(Scheme_Object *shifts)
+{
+  Scheme_Object *l, *a;
+
+  l = shifts;
+  if (SCHEME_VECTORP(l))
+    l = SCHEME_VEC_ELS(l)[0];
+  while (!SCHEME_NULLP(l)) {
+    a = SCHEME_CAR(l);
+    if (SCHEME_VECTORP(a)) {
+      a = SCHEME_VEC_ELS(a)[2];
+      if (!SCHEME_FALSEP(a))
+        return (Scheme_Hash_Table *)a;
+    }
+    l = SCHEME_CDR(l);
+  }
+
+  return NULL;
 }
 
 static void unmarshal_rename(Scheme_Stx *stx, Scheme_Object *vec)
 {
-  Scheme_Object *modidx, *export_registry, *unmarshal_info, *rn, *context;
+  Scheme_Object *modidx, *unmarshal_info, *rn, *context, *src_phase;
+  Scheme_Hash_Table *export_registry;
 
   modidx = SCHEME_VEC_ELS(vec)[0];
 
@@ -1754,14 +1795,14 @@ void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, intptr_t i)
   } 
 }
 
-Scheme_Object *scheme_delayed_rename(Scheme_Object **o, intptr_t i)
+Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
 {
-  Scheme_Object *rename, *v;
+  Scheme_Object *shift, *v;
   Resolve_Prefix *rp;
 
-  rename = o[0];
+  shift = o[0];
 
-  if (!rename) return scheme_false; /* happens only with corrupted .zo! */
+  if (!shift) return scheme_false; /* happens only with corrupted .zo! */
 
   rp = (Resolve_Prefix *)o[1];
 
@@ -1772,14 +1813,13 @@ Scheme_Object *scheme_delayed_rename(Scheme_Object **o, intptr_t i)
     v = rp->stxes[i];
   }
 
-  v = scheme_add_rename(v, rename);
+  v = scheme_stx_add_shift(v, shift);
   
   /* Phase shift... */
-  rename = SCHEME_BOX_VAL(rename);
-  rename = SCHEME_VEC_ELS(rename)[4];
-  if (!SCHEME_FALSEP(rename)) {
+  shift = SCHEME_VEC_ELS(rename)[3];
+  if (!SCHEME_FALSEP(shift)) {
     /* need to propagate the inspector for dye packs, too */
-    (void)set_false_insp((Scheme_Object *)v, rename, 0);
+    (void)set_false_insp((Scheme_Object *)v, shift, 0);
   }
 
   return v;
@@ -1820,7 +1860,7 @@ int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *pha
 
 int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase)
 {
-  return scheme_stx_module_eq3(a, b, scheme_make_integer(phase), scheme_make_integer(phase))
+  return scheme_stx_module_eq3(a, b, scheme_make_integer(phase), scheme_make_integer(phase));
 }
 
 int scheme_stx_module_eq_x(Scheme_Object *a, Scheme_Object *b, intptr_t b_phase)
@@ -1859,22 +1899,22 @@ int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase
 
 Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source)
 {
-  /* Inspect the wraps to look for a self-modidx shift: */
-  WRAP_POS w;
-  Scheme_Object *srcmod = scheme_false, *chain_from = NULL, *er;
+  /* Look for a self-modidx shift: */
+  Scheme_Object *l = ((Scheme_Stx *)stx)->shifts, *a;
+  Scheme_Object *srcmod = scheme_false, *chain_from = NULL;
   Scheme_Hash_Table *export_registry = NULL;
 
-  WRAP_POS_INIT(w, ((Scheme_Stx *)stx)->wraps);
-
-  while (!WRAP_POS_END_P(w)) {
-    if (SCHEME_BOXP(WRAP_POS_FIRST(w))) {
+  if (SCHEME_VECTORP(l))
+    l = SCHEME_VEC_ELS(l)[0];
+  
+  while (!SCHEME_NULLP(l)) {
+    a = SCHEME_CAR(l);
+    if (SCHEME_VECTORP(a)) {
       /* Phase shift:  */
-      Scheme_Object *vec, *dest, *src;
+      Scheme_Object *dest, *src, *er;
 
-      vec = SCHEME_PTR_VAL(WRAP_POS_FIRST(w));
-      
-      src = SCHEME_VEC_ELS(vec)[1];
-      dest = SCHEME_VEC_ELS(vec)[2];
+      src = SCHEME_VEC_ELS(a)[0];
+      dest = SCHEME_VEC_ELS(a)[1];
 
       /* If src is #f, shift is just for phase; no redirection */
       if (!SCHEME_FALSEP(src)) {
@@ -1890,23 +1930,23 @@ Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int sou
         chain_from = src;
 
         if (!export_registry) {
-          er = SCHEME_VEC_ELS(vec)[3];
+          er = SCHEME_VEC_ELS(a)[2];
           if (SCHEME_TRUEP(er))
             export_registry = (Scheme_Hash_Table *)er;
         }
       }
     }
 
-    WRAP_POS_INC(w);
+    l = SCHEME_CDR(l);
   }
 
   if (SCHEME_TRUEP(srcmod)) {
     if (resolve) {
       srcmod = scheme_module_resolve(srcmod, 0);
       if (export_registry && source) {
-        er = scheme_hash_get(export_registry, srcmod);
-        if (er)
-          srcmod = ((Scheme_Module_Exports *)er)->modsrc;
+        a = scheme_hash_get(export_registry, srcmod);
+        if (a)
+          srcmod = ((Scheme_Module_Exports *)a)->modsrc;
       }
       srcmod = SCHEME_PTR_VAL(srcmod);
     }
@@ -2085,1312 +2125,6 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist)
 }
 
 /*========================================================================*/
-/*                            wraps->datum                                */
-/*========================================================================*/
-
-/* Used for marshaling syntax objects. Note that we build a reverse
-   list for wraps. (Unmarshaler will reverse it back.) 
-
-   The wraps->datum tools are also used to simplify syntax object (to
-   minimize the occupied space among a set of objects). */
-
-#define EXPLAIN_SIMP 0
-#if EXPLAIN_SIMP
-#define EXPLAIN_S(x) if (explain_simp) x
-static int explain_simp = 1;
-static void print_skips(Scheme_Object *skips)
-{
-  while (skips) {
-    if (SCHEME_PAIRP(skips)) {
-      fprintf(stderr, "  skip %s\n", scheme_write_to_string(SCHEME_CAR(skips), NULL));
-      skips = SCHEME_CDR(skips);
-    } else {
-      fprintf(stderr, "  skip val %s\n", scheme_write_to_string(skips, NULL));
-      skips = NULL;
-    }
-  }
-}
-#else
-#define EXPLAIN_S(x) /* empty */
-#endif
-
-static Scheme_Object *extract_free_id_info(Scheme_Object *id)
-{
-  Scheme_Object *bind;
-  Scheme_Object *nominal_modidx;
-  Scheme_Object *nominal_name, *nom2;
-  Scheme_Object *mod_phase;
-  Scheme_Object *src_phase_index;
-  Scheme_Object *nominal_src_phase;
-  Scheme_Object *lex_env = NULL;
-  Scheme_Object *vec, *phase, *insp;
-  Scheme_Hash_Table *free_id_recur;
-
-  phase = SCHEME_CDR(id);
-  id = SCHEME_CAR(id);
-
-  nom2 = scheme_stx_property(id, nominal_id_symbol, NULL);
-
-  free_id_recur = make_recur_table();
-  bind = scheme_stx_module_name(free_id_recur, 
-                                &id, phase, &nominal_modidx, &nominal_name,
-                                &mod_phase, &src_phase_index, &nominal_src_phase,
-                                &lex_env, NULL, &insp, NULL);
-  release_recur_table(free_id_recur);
-
-  if (SCHEME_SYMBOLP(nom2))
-    nominal_name = nom2;
-  if (!nominal_name)
-    nominal_name = SCHEME_STX_VAL(id);
-
-  if (!bind)
-    return CONS(nominal_name, scheme_false);
-  else if (SAME_OBJ(bind, scheme_undefined))
-    return CONS(nominal_name, lex_env);
-  else {
-    vec = scheme_make_vector(8, NULL);
-    vec->type = scheme_free_id_info_type;
-    SCHEME_VEC_ELS(vec)[0] = bind;
-    SCHEME_VEC_ELS(vec)[1] = id;
-    SCHEME_VEC_ELS(vec)[2] = nominal_modidx;
-    SCHEME_VEC_ELS(vec)[3] = nominal_name;
-    SCHEME_VEC_ELS(vec)[4] = mod_phase;
-    SCHEME_VEC_ELS(vec)[5] = src_phase_index;
-    SCHEME_VEC_ELS(vec)[6] = nominal_src_phase;
-    SCHEME_VEC_ELS(vec)[7] = (insp ? insp : scheme_false);
-    return vec;
-  }
-}
-
-static int not_in_rename(Scheme_Object *constrain_to_syms, Scheme_Object *rename)
-{
-  int istart, iend, ri;
-  Scheme_Object *renamed, *s;
-
-  while (SCHEME_PAIRP(constrain_to_syms)) {
-  
-    s = SCHEME_CAR(constrain_to_syms);
-    extract_lex_range(rename, s, &istart, &iend);
-    
-    for (ri = istart; ri < iend; ri++) {
-      renamed = SCHEME_VEC_ELS(rename)[2+ri];
-      if (SAME_OBJ(renamed, s))
-        return 0;
-    }
-
-    constrain_to_syms = SCHEME_CDR(constrain_to_syms);
-  }
-  
-  return 1;
-}
-
-static int not_in_rib(Scheme_Object *constrain_to_syms, Scheme_Lexical_Rib *rib)
-{
-  for (rib = rib->next; rib; rib = rib->next) {
-    if (!not_in_rename(constrain_to_syms, rib->rename))
-      return 0;
-  }
-  return 1;
-}
-
-#define EXPLAIN_R(x) /* empty */
-
-static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_cache, 
-                                           Scheme_Object *stx_datum)
-{
-  WRAP_POS w, prev, w2;
-  Scheme_Object *stack = scheme_null, *key, *old_key, *prec_ribs, *prev_prec_ribs;
-  Scheme_Object *ribs_stack = scheme_null, *rib_delim = scheme_false, *constrain_to_syms = NULL;
-  Scheme_Object *v, *v2, *v2l, *v2rdl, *stx, *name, *svl, *end_mutable = NULL, **v2_rib_delims = NULL, *svrdl;
-  Scheme_Lexical_Rib *did_rib = NULL;
-  Scheme_Hash_Table *skip_ribs_ht = NULL, *prev_skip_ribs_ht;
-  int copy_on_write, no_rib_mutation = 1, rib_count = 0;
-  intptr_t size, vsize, psize, i, j, pos;
-
-  /* Although it makes no sense to simplify the rename table itself,
-     we can simplify it in the context of a particular wrap suffix.
-     (But don't mutate the wrap list, because that will stomp on
-     tables that might be needed by a propagation.)
-
-     A lex_cache maps wrap starts within `w' to lists of simplified
-     tables. This helps avoid re-simplifying when the result is
-     clearly going to be the same. A lex_cache is read and modified by
-     this function, only.
-
-     In addition to depending on the rest of the wraps, a resolved
-     binding can depend on preceding wraps due to rib skipping. For
-     now, simplifications that depend on preceding wraps are not
-     cached (though individual computed renamings are cached to save
-     space).
-
-     The simplification stragegy mostly works inside out: since later
-     renames depend on earlier renames, we simplify the earlier ones
-     first, and then collapse to a flattened rename while working
-     outward. This also lets us track shared tails in some common
-     cases.
-     
-     A catch with the inside-out approach has to do with ribs (again).
-     Preceding ribs determine the recur_skip_ribs set, so we can
-     simply track that as we recur into the wraps initially to build
-     our worklist. However, whether we process a rib at all (on the
-     way out in the second pass) for a given id depends on whether any
-     preceding instance of the same rib (i.e., further out) matches
-     the symbol and marks. So, we have to compute that summary as we
-     go in. */
-
-  if (SCHEME_SYMBOLP(stx_datum)) {
-    /* Search for prunings */
-    WRAP_POS_INIT(w, wraps);
-    old_key = NULL;
-    prec_ribs = NULL;
-    while (!WRAP_POS_END_P(w)) {
-      if (SCHEME_VECTORP(WRAP_POS_FIRST(w))
-          || SCHEME_RIBP(WRAP_POS_FIRST(w))) {
-        /* Lexical rename --- maybe an already-simplified point  */
-        key = WRAP_POS_KEY(w);
-        if (!SAME_OBJ(key, old_key)) {
-          v = scheme_hash_get(lex_cache, key);
-          if (v && SCHEME_HASHTP(v)) {
-            v = scheme_hash_get((Scheme_Hash_Table *)v, prec_ribs ? prec_ribs : scheme_false);
-          } else if (prec_ribs)
-            v = NULL;
-        } else
-          v = NULL;
-        old_key = key;
-
-        if (v) {
-          /* Tables here are already simplified. */
-          break;
-        }
-
-        if (SCHEME_RIBP(WRAP_POS_FIRST(w))) {
-          Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)WRAP_POS_FIRST(w);
-          if (!nonempty_rib(rib))
-            prec_ribs = add_skip_set(rib->timestamp, prec_ribs);
-        }
-      } else if (SCHEME_PRUNEP(WRAP_POS_FIRST(w))) {
-        v = SCHEME_BOX_VAL(WRAP_POS_FIRST(w));
-        if (is_member(stx_datum, v)) {
-          if (!constrain_to_syms)
-            constrain_to_syms = v;
-          else {
-            v2 = scheme_null;
-            while (SCHEME_PAIRP(v)) {
-              if (is_member(SCHEME_CAR(v), constrain_to_syms))
-                v2 = scheme_make_pair(SCHEME_CAR(v), v2);
-              v = SCHEME_CDR(v);
-            }
-            constrain_to_syms = v2;
-          }
-        } else
-          constrain_to_syms = scheme_null;
-      }
-      WRAP_POS_INC(w);
-    }
-  }
-
-  WRAP_POS_INIT(w, wraps);
-  WRAP_POS_INIT_END(prev);
-
-  old_key = NULL;
-  prec_ribs = NULL;
-
-  v2l = scheme_null;
-  v2rdl = NULL;
-
-  EXPLAIN_S(fprintf(stderr, "[in simplify %s]\n", scheme_write_to_string(stx_datum, NULL)));
-
-  EXPLAIN_R(printf("Simplifying %p %s\n", lex_cache, scheme_write_to_string(stx_datum, NULL)));
-
-  while (!WRAP_POS_END_P(w)) {
-    if (SCHEME_VECTORP(WRAP_POS_FIRST(w))
-	|| SCHEME_RIBP(WRAP_POS_FIRST(w))) {
-      /* Lexical rename */
-      key = WRAP_POS_KEY(w);
-      EXPLAIN_R(printf(" key %p\n", key));
-      if (!SAME_OBJ(key, old_key)) {
-        v = scheme_hash_get(lex_cache, key);
-        if (v && SCHEME_HASHTP(v)) {
-          v = scheme_hash_get((Scheme_Hash_Table *)v, prec_ribs ? prec_ribs : scheme_false);
-        } else if (prec_ribs)
-          v = NULL;
-      } else
-	v = NULL;
-      old_key = key;
-      prev_prec_ribs = prec_ribs;
-      prev_skip_ribs_ht = skip_ribs_ht;
-
-      if (v) {
-	/* Tables here are already simplified. */
-        v2l = v; /* build on simplify chain extracted from cache */
-        end_mutable = v2l;
-	/* No non-simplified table can follow a simplified one */
-	break;
-      } else {
-	int add = 0, skip_this = 0;
-
-	v = WRAP_POS_FIRST(w);
-	if (SCHEME_RIBP(v)) {
-	  /* A rib certainly isn't simplified yet. */
-          Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)v;
-          no_rib_mutation = 0;
-          add = 1;
-          if (!*rib->sealed) {
-            scheme_signal_error("compile: unsealed local-definition context found in fully expanded form");
-            return NULL;
-          }
-          if (SAME_OBJ(did_rib, rib)
-              || !nonempty_rib(rib)
-              || (constrain_to_syms && !not_in_rib(constrain_to_syms, rib))) {
-            skip_this = 1;
-            if (!nonempty_rib(rib))
-              prec_ribs = add_skip_set(rib->timestamp, prec_ribs);
-            EXPLAIN_S(fprintf(stderr, " to skip %p=%s\n", rib, 
-                              scheme_write_to_string(rib->timestamp, NULL)));
-          } else {
-            rib_count++;
-            did_rib = rib;
-            prec_ribs = add_skip_set(rib->timestamp, prec_ribs);
-
-            EXPLAIN_S(fprintf(stderr, " down rib %p=%s\n", rib, 
-                              scheme_write_to_string(rib->timestamp, NULL)));
-            EXPLAIN_S(print_skips(prec_ribs));
-          
-            copy_on_write = 1;
-
-            EXPLAIN_R(printf(" rib %p\n", rib->timestamp));
-
-            /* Compute, per id, whether to skip later instances of rib: */
-            for (rib = rib->next; rib; rib = rib->next) {
-              vsize = SCHEME_RENAME_LEN(rib->rename);
-              for (i = 0; i < vsize; i++) {
-                stx = SCHEME_VEC_ELS(rib->rename)[2+i];
-
-                EXPLAIN_S(fprintf(stderr, "   skip? %s %p=%s %s\n", 
-                                  scheme_write_to_string(SCHEME_STX_VAL(stx), NULL), 
-                                  rib,
-                                  scheme_write_to_string(rib->timestamp, NULL),
-                                  scheme_write_to_string(SCHEME_VEC_ELS(rib->rename)[0], NULL)));
-
-                /* already skipped? */
-                if ((!constrain_to_syms || is_member(SCHEME_STX_VAL(stx), constrain_to_syms))
-                    && (!skip_ribs_ht
-                        || !scheme_hash_get(skip_ribs_ht, scheme_make_pair(SCHEME_STX_VAL(stx), rib->timestamp)))) {
-                  /* No. Should we skip? */
-                  Scheme_Object *other_env;
-                  other_env = SCHEME_VEC_ELS(rib->rename)[2+vsize+i];
-                  other_env = filter_cached_env(other_env, prec_ribs);
-                  if (SCHEME_VOIDP(other_env)) {
-                    int rib_dep;
-                    other_env = resolve_env(stx, 0, 0, NULL, prec_ribs, NULL, &rib_dep, 0, NULL);
-                    if (rib_dep) {
-                      scheme_signal_error("compile: unsealed local-definition context found in fully expanded form");
-                      return NULL;
-                    }
-                    {
-                      Scheme_Object *e;
-                      e = extend_cached_env(SCHEME_VEC_ELS(rib->rename)[2+vsize+i], other_env, prec_ribs, 0);
-                      SCHEME_VEC_ELS(rib->rename)[2+vsize+i] = e;
-                    }
-                  }
-                  WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
-                  if (same_marks(&w2, &w, other_env)) {
-                    /* yes, skip */
-                    EXPLAIN_S(fprintf(stderr, "   skip! %s\n", 
-                                      scheme_write_to_string(SCHEME_STX_VAL(stx), NULL)));
-                    if (!skip_ribs_ht)
-                      skip_ribs_ht = scheme_make_hash_table_equal();
-                    else if (copy_on_write)
-                      skip_ribs_ht = scheme_clone_hash_table(skip_ribs_ht);
-                    copy_on_write = 0;
-                    scheme_hash_set(skip_ribs_ht, 
-                                    scheme_make_pair(SCHEME_STX_VAL(stx), rib->timestamp), 
-                                    scheme_true);
-                  }
-                } else {
-                  EXPLAIN_S(fprintf(stderr, "   already skipped %s\n", 
-                                    scheme_write_to_string(SCHEME_STX_VAL(stx), NULL)));
-                }
-              }
-            }
-          }
-	} else {
-	  /* Need to simplify this vector? */
-	  if (SCHEME_VEC_SIZE(v) == 1)
-	    v = SCHEME_VEC_ELS(v)[0];
-	  if ((SCHEME_VEC_SIZE(v) > 2) /* a simplified vec can be empty */
-	      && !SCHEME_SYMBOLP(SCHEME_VEC_ELS(v)[2])) {
-	    add = 1;
-
-            if (constrain_to_syms) {
-              /* Maybe pruned so that we don't need to resolve: */
-              if (not_in_rename(constrain_to_syms, v))
-                skip_this = 1;
-            }
-          }
-          EXPLAIN_R(printf(" lex reset\n"));
-          did_rib = NULL;
-	}
-
-	if (add) {
-          if (skip_this) {
-            ribs_stack = scheme_make_pair(scheme_false, ribs_stack);
-          } else {
-            ribs_stack = scheme_make_pair(scheme_make_pair(prec_ribs, 
-                                                           scheme_make_pair((Scheme_Object *)prev_skip_ribs_ht,
-                                                                            rib_delim)),
-                                          ribs_stack);
-          }
-          
-	  /* Need to simplify, but do deepest first: */
-	  if (SCHEME_NULLP(stack) || !SAME_OBJ(SCHEME_VEC_ELS(SCHEME_CAR(stack))[0], key)) {
-            v = scheme_make_vector(2, NULL);
-            SCHEME_VEC_ELS(v)[0] = key;
-            SCHEME_VEC_ELS(v)[1] = prev_prec_ribs;
-	    stack = CONS(v, stack);
-	  }
-	} else {
-	  /* This is already simplified. Remember it and stop, because
-	     no non-simplified table can follow a simplified one. */
-          WRAP_POS_COPY(prev, w);
-	  break;
-	}
-      }
-    } else if (SCHEME_RIB_DELIMP(WRAP_POS_FIRST(w))) {
-      rib_delim = WRAP_POS_FIRST(w);
-      if (SCHEME_NULLP(SCHEME_BOX_VAL(rib_delim)))
-        rib_delim = scheme_false;
-      if (rib_count > 1) {
-        EXPLAIN_R(if (did_rib) printf("       reset delim %d\n", rib_count));
-        did_rib = NULL;
-      }
-      rib_count = 0;
-    } else if (SCHEME_NUMBERP(WRAP_POS_FIRST(w))) {
-      v = WRAP_POS_FIRST(w);
-      WRAP_POS_COPY(w2, w);
-      WRAP_POS_INC(w2);
-      if (!WRAP_POS_END_P(w2) && SAME_OBJ(v, WRAP_POS_FIRST(w2))) {
-        WRAP_POS_INC(w);
-      } else {
-        EXPLAIN_R(printf("         reset by mark\n"));
-        did_rib = NULL;
-      }
-    } else {
-      EXPLAIN_R(if (did_rib) printf("       reset %d\n", SCHEME_TYPE(WRAP_POS_FIRST(w))));
-      did_rib = NULL;
-    }
-
-    WRAP_POS_INC(w);
-  }
-
-  EXPLAIN_R(printf(" ... phase2\n"));
-
-  while (!SCHEME_NULLP(stack)) {
-    key = SCHEME_CAR(stack);
-    prev_prec_ribs = SCHEME_VEC_ELS(key)[1];
-    key = SCHEME_VEC_ELS(key)[0];
-
-    WRAP_POS_REVINIT(w, key);
-
-    while (!WRAP_POS_REVEND_P(w)) {
-      v = WRAP_POS_FIRST(w);
-
-      if (SCHEME_RIBP(v)
-	  || (SCHEME_VECTORP(v)
-	      && (SCHEME_VEC_SIZE(v) > 2) /* a simplified vec can be empty */
-	      && !SCHEME_SYMBOLP(SCHEME_VEC_ELS(v)[2]))) {
-	/* This is the place to simplify: */
-	Scheme_Lexical_Rib *rib = NULL, *init_rib = NULL;
-        Scheme_Object *local_ribs;
-	int ii, vvsize, done_rib_pos = 0;
-
-        rib_delim = scheme_false;
-
-        if (SCHEME_FALSEP(SCHEME_CAR(ribs_stack))) {
-          EXPLAIN_S(fprintf(stderr, " skip rib %p=%s\n", v, 
-                            scheme_write_to_string(((Scheme_Lexical_Rib *)v)->timestamp, NULL)));
-          ribs_stack = SCHEME_CDR(ribs_stack);
-          vsize = 0;
-          local_ribs = NULL;
-        } else {
-          rib_delim = SCHEME_CAR(ribs_stack);
-          prec_ribs = SCHEME_CAR(rib_delim);
-          rib_delim = SCHEME_CDR(rib_delim);
-          skip_ribs_ht = (Scheme_Hash_Table *)SCHEME_CAR(rib_delim);
-          rib_delim = SCHEME_CDR(rib_delim);
-          ribs_stack = SCHEME_CDR(ribs_stack);
-
-          if (SCHEME_RIBP(v)) {
-            init_rib = (Scheme_Lexical_Rib *)v;
-            EXPLAIN_S(fprintf(stderr, " up rib %p=%s\n", init_rib, 
-                              scheme_write_to_string(init_rib->timestamp, NULL)));
-            EXPLAIN_S(print_skips(prec_ribs));
-            rib = init_rib->next;
-            vsize = 0;
-            local_ribs = NULL;
-            while (rib) {
-              /* We need to process the renamings in reverse order: */
-              local_ribs = scheme_make_raw_pair((Scheme_Object *)rib, local_ribs);
-              
-              vsize += SCHEME_RENAME_LEN(rib->rename);
-              rib = rib->next;
-            }
-            if (local_ribs) {
-              rib = (Scheme_Lexical_Rib *)SCHEME_CAR(local_ribs);
-              local_ribs = SCHEME_CDR(local_ribs);
-            }
-          } else {
-            vsize = SCHEME_RENAME_LEN(v);
-            local_ribs = NULL;
-          }
-        }
-
-        /* Initial size; may shrink: */
-	size = vsize;
-
-	v2 = scheme_make_vector(2 + (2 * size), NULL);
-        v2_rib_delims = MALLOC_N(Scheme_Object *, size);
-
-	pos = 0; /* counter for used slots */
-
-	/* Local vector (different from i when we have a rib) */
-	ii = 0;
-	vvsize = vsize;
-
-	for (i = 0; i < vsize; i++) {
-	  if (rib) {
-	    v = rib->rename;
-	    vvsize = SCHEME_RENAME_LEN(v);
-	    while (ii >= vvsize) {
-	      ii = 0;
-              done_rib_pos = pos;
-              rib = (Scheme_Lexical_Rib *)SCHEME_CAR(local_ribs);
-              local_ribs = SCHEME_CDR(local_ribs);
-	      v = rib->rename;
-	      vvsize = SCHEME_RENAME_LEN(v);
-	    }
-	  }
-	  stx = SCHEME_VEC_ELS(v)[2+ii];
-	  name = SCHEME_STX_VAL(stx);
-	  SCHEME_VEC_ELS(v2)[2+pos] = name;
-
-          if ((!constrain_to_syms || is_member(name, constrain_to_syms))
-              && (!rib
-                  || !skip_ribs_ht 
-                  || !scheme_hash_get(skip_ribs_ht, scheme_make_pair(name, rib->timestamp)))) {
-	    /* Either this name is in prev, in which case the answer
-	       must match this rename's target, or this rename's
-	       answer applies. */
-	    Scheme_Object *ok = NULL, *ok_replace = NULL, **ok_replace_rd = NULL;
-            int ok_replace_index = 0, ok_replace_rd_index = 0;
-            Scheme_Object *other_env, *free_id_rename, *prev_env, *orig_prev_env;
-
-            if (rib) {
-              EXPLAIN_S(fprintf(stderr, "   resolve %s %s (%d)\n", 
-                                scheme_write_to_string(name, NULL),
-                                scheme_write_to_string(rib->timestamp, NULL),
-                                done_rib_pos));
-            }
-
-            other_env = SCHEME_VEC_ELS(v)[2+vvsize+ii];
-            if (SCHEME_PAIRP(other_env))
-              free_id_rename = extract_free_id_info(SCHEME_CDR(other_env));
-            else
-              free_id_rename = NULL;
-            other_env = filter_cached_env(other_env, prec_ribs);
-            if (SCHEME_VOIDP(other_env)) {
-              int rib_dep;
-              other_env = resolve_env(stx, 0, 0, NULL, prec_ribs, NULL, &rib_dep, 0, NULL);
-              if (rib_dep) {
-                scheme_signal_error("compile: unsealed local-definition context found in fully expanded form");
-                return NULL;
-              }
-              if (!prec_ribs) {
-                if (free_id_rename)
-                  ok = CONS(other_env, free_id_rename);
-                else
-                  ok = other_env;
-                SCHEME_VEC_ELS(v)[2+vvsize+ii] = ok;
-                ok = NULL;
-              } else {
-                ok = extend_cached_env(SCHEME_VEC_ELS(v)[2+vvsize+ii], other_env, prec_ribs, 0);
-                SCHEME_VEC_ELS(v)[2+vvsize+ii] = ok;
-                ok = NULL;
-              }
-            }
-
-	    if (!WRAP_POS_END_P(prev)
-                || SCHEME_PAIRP(v2l)) {
-	      WRAP_POS w3;
-	      Scheme_Object *vp, **vrdp;
-
-	      /* Check marks (now that we have the correct barriers). */
-	      WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
-	      if (!same_marks(&w2, &w, other_env)) {
-		other_env = NULL;
-	      }
-
-              if (other_env) {
-                /* A simplified table needs to have the final answer, so
-                   fold conversions from the rest of the wraps. In the case
-                   of ribs, the "rest" can include earlier rib renamings.
-                   Otherwise, check simplications accumulated in v2l (possibly from a
-                   previously simplified tail in the same cache). Finally, 
-                   try prev (from a previously simplified tail in an earlier
-                   round of simplifying). */
-                int rib_found = 0;
-                if (done_rib_pos) {
-                  for (j = 0; j < done_rib_pos; j++) {
-                    if (SAME_OBJ(SCHEME_VEC_ELS(v2)[2+j], name)) {
-                      rib_found = 1;
-                      prev_env = SCHEME_VEC_ELS(v2)[2+size+j];
-                      orig_prev_env = prev_env;
-                      if (SCHEME_PAIRP(prev_env)) prev_env = SCHEME_CAR(prev_env);
-                      if (SAME_OBJ(prev_env, other_env)) {
-                        if (SCHEME_FALSEP(rib_delim) 
-                            || SAME_OBJ(v2_rib_delims[j], rib_delim) 
-                            || !is_in_rib_delim(prev_env, rib_delim)) {
-                          ok = SCHEME_VEC_ELS(v)[0];
-                          ok_replace = v2;
-                          ok_replace_index = 2 + size + j;
-                          ok_replace_rd = v2_rib_delims;
-                          if (!free_id_rename && SCHEME_PAIRP(orig_prev_env))
-                            free_id_rename = SCHEME_CDR(orig_prev_env);
-                        }
-                      } else {
-                        EXPLAIN_S(fprintf(stderr, "    not matching prev rib\n"));
-                        ok = NULL;
-                      }
-                      break;
-                    }
-                  }
-                }
-                if (!rib_found) {
-                  int passed_mutable = 0;
-                  WRAP_POS_COPY(w3, prev);
-                  svl = v2l;
-                  svrdl = v2rdl;
-                  for (; SCHEME_PAIRP(svl) || !WRAP_POS_END_P(w3); ) {
-                    if (SAME_OBJ(svl, end_mutable)) passed_mutable = 1;
-                    if (SCHEME_PAIRP(svl)) {
-                      vp = SCHEME_CAR(svl);
-                      if (svrdl)
-                        vrdp = (Scheme_Object **)SCHEME_CAR(svrdl);
-                      else
-                        vrdp = NULL;
-                    } else {
-                      vp = WRAP_POS_FIRST(w3);
-                      vrdp = NULL;
-                    }
-                    if (SCHEME_VECTORP(vp)) {
-                      psize = SCHEME_RENAME_LEN(vp);
-                      for (j = 0; j < psize; j++) {
-                        if (SAME_OBJ(SCHEME_VEC_ELS(vp)[2+j], name)) {
-                          prev_env = SCHEME_VEC_ELS(vp)[2+psize+j];
-                          orig_prev_env = prev_env;
-                          if (SCHEME_PAIRP(prev_env)) prev_env = SCHEME_CAR(prev_env);
-                          if (SAME_OBJ(prev_env, other_env)
-                              && (SCHEME_FALSEP(rib_delim) 
-                                  || (vrdp && (SAME_OBJ(vrdp[j], rib_delim)))
-                                  || !is_in_rib_delim(prev_env, rib_delim))) {
-                            ok = SCHEME_VEC_ELS(v)[0];
-                            if (!free_id_rename && SCHEME_PAIRP(orig_prev_env))
-                              free_id_rename = SCHEME_CDR(orig_prev_env);
-                          } else {
-                            EXPLAIN_S(fprintf(stderr,
-                                              "    not matching deeper %s\n",
-                                              scheme_write_to_string(other_env, NULL)));
-                            ok = NULL; 
-                            /* Alternate time/space tradeoff: could be
-                                 SCHEME_VEC_ELS(vp)[2+psize+j],
-                                 which is the value from prev */
-                          }
-                          if (ok && SCHEME_PAIRP(svl) && !passed_mutable
-                              && (SCHEME_FALSEP(rib_delim) || vrdp)) {
-                            /* Can overwrite old map, instead
-                               of adding a new one. */
-                            ok_replace = vp;
-                            ok_replace_index = 2 + psize + j;
-                            ok_replace_rd = vrdp;
-                            ok_replace_rd_index = j;
-                          }
-                          break;
-                        }
-                      }
-                      if (j < psize)
-                        break;
-                    }
-                    if (SCHEME_PAIRP(svl)) {
-                      svl = SCHEME_CDR(svl);
-                      if (svrdl) svrdl = SCHEME_CDR(svrdl);
-                    } else {
-                      WRAP_POS_INC(w3);
-                    }
-                  }
-                  if (WRAP_POS_END_P(w3) && SCHEME_NULLP(svl) && SCHEME_FALSEP(other_env))
-                    ok = SCHEME_VEC_ELS(v)[0];
-                }
-              } else
-                ok = NULL;
-	    } else {
-              if (!SCHEME_FALSEP(other_env)) {
-                EXPLAIN_S(fprintf(stderr, "    not based on #f\n"));
-                ok = NULL;
-              } else {
-                WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
-                if (same_marks(&w2, &w, scheme_false))
-                  ok = SCHEME_VEC_ELS(v)[0];
-                else {
-                  EXPLAIN_S(fprintf(stderr, "    not matching marks\n"));
-                  ok = NULL;
-                }
-              }
-	    }
-
-	    if (ok) {
-              if (free_id_rename)
-                ok = CONS(ok, free_id_rename);
-              if (ok_replace) {
-                EXPLAIN_S(fprintf(stderr, "   replace mapping %s\n", 
-                                  scheme_write_to_string(ok, NULL)));
-                SCHEME_VEC_ELS(ok_replace)[ok_replace_index] = ok;
-                ok_replace_rd[ok_replace_rd_index] = rib_delim;
-              } else {
-                EXPLAIN_S(fprintf(stderr, "   add mapping %s\n", 
-                                  scheme_write_to_string(ok, NULL)));
-                SCHEME_VEC_ELS(v2)[2+size+pos] = ok;
-                v2_rib_delims[pos] = rib_delim;
-                pos++;
-              }
-	    } else {
-              EXPLAIN_S(fprintf(stderr, "   no mapping %s\n", 
-                                scheme_write_to_string(name, NULL)));
-            }
-	  } else {
-            EXPLAIN_S(fprintf(stderr, "   skip %s %s %p\n", 
-                              scheme_write_to_string(name, NULL),
-                              scheme_write_to_string(rib->timestamp, NULL),
-                              rib));
-          }
-	  ii++;
-	}
-
-        if (!pos)
-          v2 = empty_simplified;
-        else {
-          if (pos != size) {
-            /* Shrink simplified vector */
-            v = v2;
-            v2 = scheme_make_vector(2 + (2 * pos), NULL);
-            for (i = 0; i < pos; i++) {
-              SCHEME_VEC_ELS(v2)[2+i] = SCHEME_VEC_ELS(v)[2+i];
-              SCHEME_VEC_ELS(v2)[2+pos+i] = SCHEME_VEC_ELS(v)[2+size+i];
-            }
-          }
-
-          SCHEME_VEC_ELS(v2)[0] = scheme_false;
-          for (i = 0; i < pos; i++) {
-            if (!SCHEME_SYMBOLP(SCHEME_VEC_ELS(v2)[2+pos+i]))
-              SCHEME_VEC_ELS(v2)[0] = scheme_true;
-          }
-
-          SCHEME_VEC_ELS(v2)[1] = scheme_false;
-          maybe_install_rename_hash_table(v2);
-
-          if (no_rib_mutation) {
-            /* Sometimes we generate the same simplified lex table, so
-               look for an equivalent one in the cache. */
-            v = scheme_hash_get(lex_cache, scheme_true);
-            if (!v) {
-              v = (Scheme_Object *)scheme_make_hash_table_equal();
-              scheme_hash_set(lex_cache, scheme_true, v);
-            }
-            svl = scheme_hash_get((Scheme_Hash_Table *)v, v2);
-            if (svl)
-              v2 = svl;
-            else
-              scheme_hash_set((Scheme_Hash_Table *)v, v2, v2);
-          }
-        }
-
-        EXPLAIN_S({
-            int k;
-            for (k = 2; k < SCHEME_VEC_SIZE(v2); k++) {
-              fprintf(stderr, " %p[%d]: %s\n", v2, k, scheme_write_to_string(SCHEME_VEC_ELS(v2)[k], NULL));
-            }
-          });
-
-	v2l = CONS(v2, v2l);
-	v2rdl = scheme_make_raw_pair((Scheme_Object *)v2_rib_delims, v2rdl);
-      }
-
-      WRAP_POS_DEC(w);
-    }
-
-    if (!constrain_to_syms) {
-      v = scheme_hash_get(lex_cache, key);
-      if (!v && !prev_prec_ribs) {
-        /* no dependency on ribs, so we can simply cache this result: */
-        scheme_hash_set(lex_cache, key, v2l);
-      } else {
-        Scheme_Hash_Table *ht;
-        if (v && SCHEME_HASHTP(v))
-          ht = (Scheme_Hash_Table *)v;
-        else {
-          ht = scheme_make_hash_table(SCHEME_hash_ptr);
-        }
-        if (v && !SCHEME_HASHTP(v))
-          scheme_hash_set(ht, scheme_false, v);
-        scheme_hash_set(ht, prev_prec_ribs ? prev_prec_ribs : scheme_false, v2l);
-        scheme_hash_set(lex_cache, key, (Scheme_Object *)ht);
-      }
-      end_mutable = v2l;
-    }
-
-    stack = SCHEME_CDR(stack);
-  }
-
-  EXPLAIN_R(printf(" ... done\n"));
-
-  return v2l;
-}
-
-static Scheme_Object *add_rename_to_stack(Module_Renames* mrn, Scheme_Object *stack,
-                                          Scheme_Marshal_Tables *mt,
-                                          Scheme_Object *a)
-{
-  Scheme_Object *local_key;
-	  
-  local_key = scheme_marshal_lookup(mt, (Scheme_Object *)mrn);
-  if (!local_key) {
-    /* Convert hash table to vector, etc.: */
-    int i, j, count = 0;
-    Scheme_Hash_Table *ht;
-    Scheme_Object *l, *fil;
-	    
-    ht = mrn->ht;
-    count = ht->count;
-    l = scheme_make_vector(count * 2, NULL);                  
-    for (i = ht->size, j = 0; i--; ) {
-      if (ht->vals[i]) {
-        SCHEME_VEC_ELS(l)[j++] = ht->keys[i];
-        fil = ht->vals[i];
-        SCHEME_VEC_ELS(l)[j++] = fil;
-      }
-    }
-
-    ht = mrn->free_id_renames;
-    if (ht && ht->count) {
-      count = ht->count;
-      fil = scheme_make_vector(count * 2, NULL);                  
-      for (i = ht->size, j = 0; i--; ) {
-        if (ht->vals[i]) {
-          SCHEME_VEC_ELS(fil)[j++] = ht->keys[i];
-          SCHEME_VEC_ELS(fil)[j++] = ht->vals[i];
-        }
-      }
-    } else
-      fil = NULL;
-
-    if (mrn->marked_names && mrn->marked_names->count) {
-      Scheme_Object *d = scheme_null, *p;
-
-      for (i = mrn->marked_names->size; i--; ) {
-        if (mrn->marked_names->vals[i]
-            /* #f mapping used to store reverse-map cache: */
-            && !SCHEME_FALSEP(mrn->marked_names->keys[i])) {
-          p = CONS(mrn->marked_names->keys[i],
-                   mrn->marked_names->vals[i]);
-          d = CONS(p, d);
-        }
-      }
-
-      if (fil)
-        fil = CONS(fil, d);
-      else
-        fil = d;
-    } else if (fil)
-      fil = CONS(fil, scheme_null);
-    else
-      fil = scheme_null;
-                    
-    l = CONS(l, fil);
-                  
-    if (SCHEME_PAIRP(mrn->unmarshal_info))
-      l = CONS(mrn->unmarshal_info, l); 
-	      
-    l = CONS(mrn->set_identity, l);
-    l = CONS((mrn->kind == mzMOD_RENAME_MARKED) ? scheme_true : scheme_false, l);
-    l = CONS(mrn->phase, l);
-	    
-    local_key = scheme_marshal_lookup(mt, a);
-    if (local_key)
-      scheme_marshal_using_key(mt, a);
-    else {
-      local_key = scheme_marshal_wrap_set(mt, a, l);
-    }
-  } else {
-    scheme_marshal_using_key(mt, (Scheme_Object *)mrn);
-  }
-  return CONS(local_key, stack);
-}
-
-static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
-                                     Scheme_Object *w_in, 
-				     Scheme_Marshal_Tables *mt,
-                                     Scheme_Hash_Table *rns,
-				     int just_simplify)
-{
-  Scheme_Object *stack, *a, *old_key, *simplifies = scheme_null, *prec_ribs = scheme_null;
-  WRAP_POS w;
-  Scheme_Hash_Table *lex_cache, *reverse_map;
-  int stack_size = 0, specific_to_datum = 0;
-
-  if (!rns)
-    rns = mt->rns;
-
-  if (just_simplify) {
-    a = scheme_hash_get(rns, w_in);
-  } else {
-    if (mt->same_map) {
-      a = scheme_hash_get(mt->same_map, w_in);
-      if (a)
-        w_in = a;
-    }
-    a = scheme_marshal_lookup(mt, w_in);
-  }
-  if (a) {
-    if (just_simplify)
-      return a;
-    else {
-      scheme_marshal_using_key(mt, w_in);
-      return a;
-    }
-  }
-
-  WRAP_POS_INIT(w, w_in);
-
-  stack = scheme_null;
-
-  lex_cache = (Scheme_Hash_Table *)scheme_hash_get(rns, scheme_void);
-  if (!lex_cache) {
-    lex_cache = scheme_make_hash_table(SCHEME_hash_ptr);
-    scheme_hash_set(rns, scheme_void, (Scheme_Object *)lex_cache);
-  }
-
-  if (!just_simplify)
-    stx_datum = scheme_false;
-
-  /* Ensures that all lexical tables in w have been simplified */
-  simplifies = simplify_lex_renames(w_in, lex_cache, stx_datum);
-
-  if (mt)
-    scheme_marshal_push_refs(mt);
-
-  while (!WRAP_POS_END_P(w)) {
-    a = WRAP_POS_FIRST(w);
-    old_key = WRAP_POS_KEY(w);
-    WRAP_POS_INC(w);
-    if (SCHEME_NUMBERP(a)) {
-      /* Mark numbers get parenthesized */
-      if (!WRAP_POS_END_P(w) && SAME_OBJ(a, WRAP_POS_FIRST(w)))
-	WRAP_POS_INC(w); /* delete cancelled mark */
-      else {
-	if (just_simplify)
-	  stack = CONS(a, stack);
-	else
-	  stack = CONS(CONS(a, scheme_null), stack);
-	stack_size++;
-      }
-    } else if (SCHEME_VECTORP(a)
-	       || SCHEME_RIBP(a)) {
-      if (SCHEME_RIBP(a) || (SCHEME_VEC_SIZE(a) > 2)) {
-
-	if (SCHEME_RIBP(a) || !SCHEME_SYMBOLP(SCHEME_VEC_ELS(a)[2])) {
-	  /* a is not a simplified table; need to look it up; if
-	     simplifies is non-null, then we already have found a list
-	     of simplified tables for the current wrap segment. */
-          if (SCHEME_RIBP(a)) {
-            if (nonempty_rib((Scheme_Lexical_Rib *)a))
-              prec_ribs = scheme_make_pair(((Scheme_Lexical_Rib *)a)->timestamp, prec_ribs);
-          }
-	  a = SCHEME_CAR(simplifies);
-	  /* used up one simplification: */
-	  simplifies = SCHEME_CDR(simplifies);
-	}
-	  
-	/* Simplification may have left us with the null table: */
-	if (SCHEME_VEC_SIZE(a) > 2) {
-	  if (just_simplify) {
-	    stack = CONS(a, stack);
-	  } else {
-	    Scheme_Object *local_key;
-	    
-	    local_key = scheme_marshal_lookup(mt, a);
-	    if (local_key) {
-              scheme_marshal_using_key(mt, a);
-              a = local_key;
-            } else {
-              a = scheme_marshal_wrap_set(mt, a, a);
-            }
-            stack = CONS(a, stack);
-	  }
-	  stack_size++;
-	}
-      }
-      /* else empty simplified vector, which we drop */
-    } else if (SCHEME_RIB_DELIMP(a)) {
-      /* simpliciation eliminates the need for rib delimiters */
-    } else if (SCHEME_RENAMESP(a)
-               || SCHEME_RENAMES_SETP(a)) {
-      int which = 0, all_redundant = 1;
-
-      while (1) {
-        Module_Renames *mrn;
-        int redundant = 0;
-      
-        if (SCHEME_RENAMESP(a)) {
-          if (!which) {
-            mrn = (Module_Renames *)a;
-            which++;
-          } else
-            break;
-        } else {
-          /* flatten sets */
-          Module_Renames_Set *s = (Module_Renames_Set *)a;
-          mrn = NULL;
-          while (!mrn 
-                 && (which - 2 < (s->other_phases
-                                  ? s->other_phases->size
-                                  : 0))) {
-            if (!which)
-              mrn = s->rt;
-            else if (which == 1)
-              mrn = s->et;
-            else
-              mrn = (Module_Renames *)s->other_phases->vals[which - 2];
-            which++;
-          }
-          if (!mrn
-              && (which - 2 >= (s->other_phases
-                                ? s->other_phases->size
-                                : 0)))
-            break;
-        }
-      
-        if (mrn) {
-          if (mrn->kind == mzMOD_RENAME_MARKED) {
-            /* Not useful if there's no marked names. */
-            redundant = ((mrn->sealed >= STX_SEAL_ALL)
-                         && (!mrn->marked_names || !mrn->marked_names->count)
-                         && (!mrn->free_id_renames || !mrn->free_id_renames->count)
-                         && SCHEME_NULLP(mrn->shared_pes));
-            if (!redundant) {
-              /* Otherwise, watch out for multiple instances of the same rename: */
-              WRAP_POS l;
-              Scheme_Object *la;
-	
-              WRAP_POS_COPY(l,w);
-	  
-              for (; !WRAP_POS_END_P(l); WRAP_POS_INC(l)) {
-                la = WRAP_POS_FIRST(l);
-                if (SAME_OBJ(a, la)) {
-                  redundant = 1;
-                  break;
-                }
-              }
-            }
-          } else {
-            /* Check for later [non]module rename at the same phase: */
-            Scheme_Object *phase;
-            WRAP_POS l;
-            Scheme_Object *la;
-	
-            WRAP_POS_COPY(l,w);
-
-            phase = mrn->phase;
-
-            for (; !WRAP_POS_END_P(l); WRAP_POS_INC(l)) {
-              la = WRAP_POS_FIRST(l);
-              if (SCHEME_RENAMESP(la)) {
-                Module_Renames *lrn = (Module_Renames *)WRAP_POS_FIRST(l);
-                if ((lrn->kind == mrn->kind)
-                    && (same_phase(lrn->phase, phase))) {
-                  /* mrn is redundant */
-                  redundant = 1;
-                  break;
-                }
-              } else if (SCHEME_RENAMES_SETP(la)) {
-                Module_Renames_Set *s = (Module_Renames_Set *)WRAP_POS_FIRST(l);
-                if ((s->kind == mrn->kind)
-                    && extract_renames(s, phase)) {
-                  redundant = 1;
-                  break;
-                }
-              } else if (SCHEME_BOXP(la))
-                phase = reverse_phase_shift(phase, SCHEME_VEC_ELS(SCHEME_BOX_VAL(la))[0]);
-            }
-          }
-
-          if (!redundant) {
-            all_redundant = 0;
-            if (just_simplify) {
-              stack = CONS((Scheme_Object *)mrn, stack);
-            } else {
-              if (mrn->free_id_renames) {
-                /* resolve all renamings */
-                int i;
-                Scheme_Object *b;
-                for (i = mrn->free_id_renames->size; i--; ) {
-                  if (mrn->free_id_renames->vals[i]) {
-                    if (SCHEME_STXP(mrn->free_id_renames->vals[i])) {
-                      int sealed;
-                      Scheme_Hash_Table *free_id_recur;
-                      
-                      free_id_recur = make_recur_table();
-                      b = extract_module_free_id_binding((Scheme_Object *)mrn,
-                                                         mrn->free_id_renames->keys[i],
-                                                         mrn->free_id_renames->vals[i],
-                                                         &sealed,
-                                                         free_id_recur);
-                      release_recur_table(free_id_recur);
-                      if (!sealed) {
-                        free_id_recur = make_recur_table();
-                        extract_module_free_id_binding((Scheme_Object *)mrn,
-                                                       mrn->free_id_renames->keys[i],
-                                                       mrn->free_id_renames->vals[i],
-                                                       &sealed,
-                                                       free_id_recur);
-                        scheme_signal_error("write: unsealed local-definition or module context"
-                                            " found in syntax object");
-                      }
-                      scheme_hash_set(mrn->free_id_renames, mrn->free_id_renames->keys[i], b);
-                    }
-                  }
-                }
-              }
-            
-              if (mrn->kind == mzMOD_RENAME_TOPLEVEL) {
-                if (same_phase(mrn->phase, scheme_make_integer(0)))
-                  stack = CONS(scheme_true, stack);
-                else
-                  stack = CONS(scheme_false, stack);
-              } else {
-                stack = add_rename_to_stack(mrn, stack, mt, a);
-              }
-            }
-            stack_size++;
-          }
-        }
-      }
-
-      if (all_redundant) {
-        /* The rename isn't actually redundant if we need to keep the
-           rename-set identity --- but we can simplify to just the
-           identity. */
-        WRAP_POS l;
-        Scheme_Object *la, *this_set_identity, *set_identity;
-        int kind;
-
-        if (SCHEME_RENAMESP(a)) {
-          this_set_identity = ((Module_Renames *)a)->set_identity;
-          kind = ((Module_Renames *)a)->kind;
-        } else {
-          this_set_identity = ((Module_Renames_Set *)a)->set_identity;
-          kind = ((Module_Renames_Set *)a)->kind;
-        }
-        
-        if (kind != mzMOD_RENAME_TOPLEVEL) {
-          WRAP_POS_COPY(l,w);
-        
-          for (; !WRAP_POS_END_P(l); WRAP_POS_INC(l)) {
-            la = WRAP_POS_FIRST(l);
-            if (SCHEME_RENAMESP(la))
-              set_identity = ((Module_Renames *)la)->set_identity;
-            else if (SCHEME_RENAMES_SETP(la))
-              set_identity = ((Module_Renames_Set *)la)->set_identity;
-            else if (SCHEME_BOXP(la)) {
-              set_identity = SCHEME_VEC_ELS(SCHEME_BOX_VAL(la))[5];
-              if (SAME_OBJ(set_identity, this_set_identity))
-                set_identity = scheme_false;
-              else
-                set_identity = NULL;
-            } else
-              set_identity = NULL;
-
-            if (set_identity) {
-              if (SAME_OBJ(set_identity, this_set_identity)) {
-                all_redundant = 0;
-                break;
-              } else
-                break;
-            }
-          }
-
-          if (all_redundant) {
-            Scheme_Hash_Table *identity_map;
-            Scheme_Object *key;
-
-            identity_map = (Scheme_Hash_Table *)scheme_hash_get(rns, scheme_eof);
-            if (!identity_map) {
-              identity_map = scheme_make_hash_table_equal();
-              scheme_hash_set(rns, scheme_eof, (Scheme_Object *)identity_map);
-            }
-
-            key = scheme_make_pair(scheme_make_integer(kind), this_set_identity);
-            
-            la = scheme_hash_get(identity_map, key);
-            if (!la) {
-              la = scheme_make_module_rename(scheme_make_integer(0), kind, NULL, NULL, this_set_identity);
-              ((Module_Renames *)la)->sealed = STX_SEAL_ALL;
-              scheme_hash_set(identity_map, key, la);
-            }
-
-            if (just_simplify) 
-              stack = CONS(la, stack);
-            else
-              stack = add_rename_to_stack((Module_Renames *)la, stack, mt, a);
-            stack_size++;
-          }
-        }
-      }
-    } else if (SCHEME_SYMBOLP(a)) {
-      /* mark barrier */
-      stack = CONS(a, stack);
-      stack_size++;
-    } else if (SCHEME_HASHTP(a)) {
-      /* chain-specific cache; drop it */
-    } else if (SCHEME_PRUNEP(a)) {
-      if (SCHEME_SYMBOLP(stx_datum)) {
-        /* Assuming that there are lex renames later, then this chain is
-           specific to this wrap. */
-        specific_to_datum = 1;
-      }
-      if (!just_simplify)
-        a = scheme_box(SCHEME_BOX_VAL(a));
-      stack = CONS(a, stack);
-      stack_size++;
-    } else {
-      /* box, a phase shift */
-      /* We used to drop a phase shift if there are no following
-         rename tables. However, the phase shift also identifies
-         the source module, which can be relevant. So, keep the
-         phase shift. */
-      /* Need the phase shift, but drop the export table, if any: */
-      Scheme_Object *local_key;
-      Scheme_Object *aa;
-      
-      aa = SCHEME_BOX_VAL(a);
-      if (SCHEME_TRUEP(SCHEME_VEC_ELS(aa)[3])
-          || (!just_simplify && SCHEME_TRUEP(SCHEME_VEC_ELS(aa)[4]))) {
-        if (mt)
-          a = scheme_hash_get(mt->shift_map, aa);
-        else
-          a = scheme_hash_get(rns, aa);
-        if (!a) {
-          a = scheme_make_vector(6, NULL);
-          SCHEME_VEC_ELS(a)[0] = SCHEME_VEC_ELS(aa)[0];
-          SCHEME_VEC_ELS(a)[1] = SCHEME_VEC_ELS(aa)[1];
-          SCHEME_VEC_ELS(a)[2] = SCHEME_VEC_ELS(aa)[2];
-          SCHEME_VEC_ELS(a)[3] = scheme_false;
-          if (just_simplify)
-            SCHEME_VEC_ELS(a)[4] = SCHEME_VEC_ELS(aa)[4];
-          else
-            SCHEME_VEC_ELS(a)[4] = scheme_false;
-          SCHEME_VEC_ELS(a)[5] = SCHEME_VEC_ELS(aa)[5];
-          a = scheme_box(a);
-          scheme_hash_set(rns, aa, a);
-        }
-      }
-      
-      if (!just_simplify) {
-        local_key = scheme_marshal_lookup(mt, a);
-        if (local_key) {
-          scheme_marshal_using_key(mt, a);
-          a = local_key;
-        } else {
-          a = scheme_marshal_wrap_set(mt, a, a);
-        }
-      }
-      
-      stack = CONS(a, stack);
-      stack_size++;
-    }
-  }
-
-  /* Double-check for equivalent list in table (after simplification): */
-  if (mt && mt->pass) {
-    /* No need to check for later passes, since mt->same_map
-       covers the equivalence. */
-  } else {
-    if (mt) {
-      reverse_map = mt->reverse_map;
-    } else {
-      reverse_map = (Scheme_Hash_Table *)scheme_hash_get(rns, scheme_undefined);
-    }
-    if (!reverse_map) {
-      reverse_map = scheme_make_hash_table_equal();
-      if (mt)
-        mt->reverse_map = reverse_map;
-      else
-        scheme_hash_set(rns, scheme_undefined, (Scheme_Object *)reverse_map);
-    }
-    old_key = scheme_hash_get(reverse_map, stack);
-    if (old_key) {
-      if (just_simplify) {
-        return scheme_hash_get(rns, old_key);
-      } else {
-        a = scheme_marshal_lookup(mt, old_key);
-        if (!mt->same_map) {
-          Scheme_Hash_Table *same_map;
-          same_map = scheme_make_hash_table(SCHEME_hash_ptr);
-          mt->same_map = same_map;
-        }
-        scheme_hash_set(mt->same_map, w_in, old_key);
-        /* nevermind references that we saw when creating `stack': */
-        scheme_marshal_pop_refs(mt, 0);
-        scheme_marshal_using_key(mt, old_key);
-        return a;
-      }
-    }
-
-    if (!specific_to_datum)
-      scheme_hash_set(reverse_map, stack, w_in);
-  }
-
-  /* Convert to a chunk if just simplifying.
-     (Note that we do this after looking for equivalent stacks.) */
-  if (just_simplify) {
-    if (stack_size) {
-      Wrap_Chunk *wc;
-      int i;
-      wc = MALLOC_WRAP_CHUNK(stack_size);
-      wc->type = scheme_wrap_chunk_type;
-      wc->len = stack_size;
-      for (i = stack_size; i--; stack = SCHEME_CDR(stack)) {
-        wc->a[i] = SCHEME_CAR(stack);
-      }
-      stack = CONS((Scheme_Object *)wc, scheme_null);
-    } else
-      stack= scheme_null;
-  }
-  
-  if (mt) {
-    /* preserve references that we saw when creating `stack': */
-    scheme_marshal_pop_refs(mt, 1);
-  }
-
-  /* Remember this wrap set: */
-  if (just_simplify) {
-    if (!specific_to_datum)
-      scheme_hash_set(rns, w_in, stack);
-    return stack;
-  } else {
-    return scheme_marshal_wrap_set(mt, w_in, stack);
-  }
-}
-
-/*========================================================================*/
 /*                           syntax->datum                                */
 /*========================================================================*/
 
@@ -3409,6 +2143,12 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
       <simple converted other> = (cons <s-exp> <wrap>)
                                  ; where <s-exp> is not a pair, vector, or box
 */
+
+static Scheme_Object *wraps_to_datum(Scheme_Stx *stx,
+				     Scheme_Marshal_Tables *mt)
+{
+  return CONS((Scheme_Object *)stx->marks, stx->shifts);
+}
 
 static Scheme_Object *extract_for_common_wrap(Scheme_Object *a, int get_mark, int pair_ok)
 {
@@ -3550,7 +2290,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       if (with_marks) {
         v = extract_for_common_wrap(v, 1, 0);
         if (v && SAME_OBJ(common_wraps, v)) {
-          converted_wraps = wraps_to_datum(scheme_false, stx->wraps, mt, NULL, 0);
+          converted_wraps = wraps_to_datum(stx, mt);
           if (SAME_OBJ(common_wraps, converted_wraps))
             lift_common_wraps(first, common_wraps, cnt, 1);
           else
@@ -3568,7 +2308,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 	first = scheme_make_pair(scheme_make_integer(cnt), first);
       }
     } else if (with_marks && SCHEME_TRUEP(common_wraps)) {
-      converted_wraps = wraps_to_datum(scheme_false, stx->wraps, mt, NULL, 0);
+      converted_wraps = wraps_to_datum(stx, mt);
       if (SAME_OBJ(common_wraps, converted_wraps))
         lift_common_wraps(first, common_wraps, cnt, 0);
       else
@@ -3630,7 +2370,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 
   if ((with_marks > 1) || (with_marks < -1)) {
     if (!converted_wraps)
-      converted_wraps = wraps_to_datum(stx->val, stx->wraps, mt, NULL, 0);
+      converted_wraps = wraps_to_datum(stx, mt);
     result = CONS(result, converted_wraps);
     if (add_taint == 1)
       result = scheme_make_vector(1, result); /* vector of size 1 => tainted */
@@ -3684,606 +2424,16 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
 }
 
 /*========================================================================*/
-/*                            datum->wraps                                */
+/*                           datum->syntax                                */
 /*========================================================================*/
 
-static Scheme_Object *unmarshal_mark(Scheme_Object *_a, Scheme_Unmarshal_Tables *ut)
-{
-  Scheme_Object *n, *a = _a;
-
-  if (SCHEME_INTP(a) && IS_POSMARK(a))
-    a = scheme_make_integer(-SCHEME_INT_VAL(a));
-  else if (!SCHEME_NUMBERP(a))
-    return NULL;
-  else
-    a = scheme_intern_symbol(scheme_number_to_string(10, a));
-  
-  /* Picked a mapping yet? */
-  n = scheme_hash_get(ut->rns, a);
-  if (!n) {
-    /* Map marshaled mark to a new mark. */
-    n = scheme_new_mark();
-    scheme_hash_set(ut->rns, a, n);
-  }
-  
-  /* Really a mark? */
-  if (!SCHEME_NUMBERP(n))
-    return NULL;
-
-  return n;
-}
-
-#if 0 
-# define return_NULL return (printf("%d\n", __LINE__), NULL)
-#else
-# define return_NULL return NULL
-#endif
-
-static int ok_phase(Scheme_Object *o) {
-  return (SCHEME_INTP(o) || SCHEME_BIGNUMP(o) || SCHEME_FALSEP(o));
-}
-static int ok_phase_index(Scheme_Object *o) {
-  return ok_phase(o);
-}
-
-static Scheme_Object *datum_to_module_renames(Scheme_Object *a, Scheme_Hash_Table *ht, int lex_ok,
-                                              Scheme_Unmarshal_Tables *ut)
-{
-  int count, i;
-  Scheme_Object *key, *p0, *p;
-
-  if (!SCHEME_VECTORP(a)) return_NULL;
-  count = SCHEME_VEC_SIZE(a);
-  if (count & 0x1) return_NULL;
-
-  for (i = 0; i < count; i+= 2) {
-    key = SCHEME_VEC_ELS(a)[i];
-    p0 = SCHEME_VEC_ELS(a)[i+1];
-	
-    if (!SCHEME_SYMBOLP(key)) return_NULL;
-
-    p = p0;
-
-    if (SAME_TYPE(SCHEME_TYPE(p), scheme_module_index_type)) {
-      /* Ok */
-    } else if (SCHEME_PAIRP(p)) {
-      Scheme_Object *midx;
-
-      midx = SCHEME_CAR(p);
-      if (!SAME_TYPE(SCHEME_TYPE(midx), scheme_module_index_type))
-        return_NULL;
-
-      if (SCHEME_SYMBOLP(SCHEME_CDR(p))) {
-        /* Ok */
-      } else if (SAME_TYPE(SCHEME_TYPE(SCHEME_CDR(p)), scheme_module_index_type)) {
-        /* Ok */
-      } else {
-        Scheme_Object *ap, *bp;
-
-        ap = SCHEME_CDR(p);
-        if (!SCHEME_PAIRP(ap))
-          return_NULL;
-
-        /* mod-phase, maybe */
-        if (SCHEME_INTP(SCHEME_CAR(ap))) {
-          bp = SCHEME_CDR(ap);
-        } else
-          bp = ap;
-            
-        /* exportname */
-        if (!SCHEME_PAIRP(bp))
-          return_NULL;
-        ap = SCHEME_CAR(bp);
-        if (!SCHEME_SYMBOLP(ap))
-          return_NULL;
-            
-        /* nominal_modidx_plus_phase */
-        bp = SCHEME_CDR(bp);
-        if (!SCHEME_PAIRP(bp))
-          return_NULL;
-        ap = SCHEME_CAR(bp);
-        if (SAME_TYPE(SCHEME_TYPE(ap), scheme_module_index_type)) {
-          /* Ok */
-        } else if (SCHEME_PAIRP(ap)) {
-          if (!SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(ap)), scheme_module_index_type))
-            return_NULL;
-          ap = SCHEME_CDR(ap);
-          /* import_phase_plus_nominal_phase */
-          if (SCHEME_PAIRP(ap)) {
-            if (!ok_phase_index(SCHEME_CAR(ap))) return_NULL;
-            if (!ok_phase_index(SCHEME_CDR(ap))) return_NULL;
-          } else if (!ok_phase_index(ap))
-            return_NULL;
-        } else
-          return_NULL;
-
-        /* nominal_exportname */
-        ap = SCHEME_CDR(bp);
-        if (!SCHEME_SYMBOLP(ap))
-          return_NULL;
-      }
-    } else if (lex_ok) {
-      Scheme_Object *ap;
-      if (!SCHEME_BOXP(p))
-        return_NULL;
-      ap = SCHEME_BOX_VAL(p);
-      if (!SCHEME_PAIRP(ap))
-        return_NULL;
-      if (!SCHEME_SYMBOLP(SCHEME_CAR(ap)))
-        return_NULL;
-      ap = SCHEME_CDR(ap);
-      if (!SCHEME_SYMBOLP(ap) && !SCHEME_FALSEP(ap))
-        return_NULL;
-    } else
-      return_NULL;
-	
-    scheme_hash_set(ht, key, p0);
-  }
-
-  return scheme_true;
-}
+#define return_NULL return NULL
 
 static Scheme_Object *datum_to_wraps(Scheme_Object *w,
                                      Scheme_Unmarshal_Tables *ut)
 {
-  Scheme_Object *a, *wraps_key, *local_key;
-  int stack_size, decoded;
-  Wrap_Chunk *wc;
-
-  /* ut->rns maps numbers (table indices) to renaming tables, and negative
-     numbers (negated fixnum marks) and symbols (interned marks) to marks.*/
-
-  /* This function has to be defensive, since `w' can originate in
-     untrusted .zo bytecodes. Return NULL for bad wraps. */
-
-  if (SCHEME_INTP(w)) {
-    wraps_key = w;
-    w = scheme_unmarshal_wrap_get(ut, wraps_key, &decoded);
-    if (decoded && (!w || !SCHEME_LISTP(w))) /* list => a wrap, as opposed to a mark, etc. */
-      return_NULL;
-    if (decoded)
-      return w;
-  } else {
-    /* not shared */
-    wraps_key = NULL;
-  }
-
-  stack_size = scheme_proper_list_length(w);
-  if (stack_size < 1) {
-    scheme_unmarshal_wrap_set(ut, wraps_key, scheme_null);
-    return scheme_null;
-  } else if (stack_size < 2) {
-    wc = NULL;
-  } else {
-    wc = MALLOC_WRAP_CHUNK(stack_size);
-    wc->type = scheme_wrap_chunk_type;
-    wc->len = stack_size;
-  }
-
-  a = NULL;
-
-  while (!SCHEME_NULLP(w)) {
-    a = SCHEME_CAR(w);
-    if (SCHEME_NUMBERP(a)) {
-      /* Re-use rename table or env rename */
-      local_key = a;
-      a = scheme_unmarshal_wrap_get(ut, local_key, &decoded);
-      if (decoded && (!a || SCHEME_LISTP(a))) /* list => a whole wrap, no good as an element */
-	return_NULL;
-    } else  {
-      /* Not shared */
-      local_key = NULL;
-      decoded = 0;
-    }
-
-    if (decoded) {
-      /* done */
-    } else if (SCHEME_PAIRP(a) 
-	       && SCHEME_NULLP(SCHEME_CDR(a))
-	       && SCHEME_NUMBERP(SCHEME_CAR(a))) {
-      /* Mark */
-      a = unmarshal_mark(SCHEME_CAR(a), ut);
-      if (!a) return_NULL;
-    } else if (SCHEME_VECTORP(a)) {
-      /* A (simplified) rename table. */
-      int sz = SCHEME_VEC_SIZE(a), cnt, i, any_free_id_renames = 0;
-      Scheme_Object *v;
-
-      /* Make sure that it's a well-formed rename table. */
-      if (sz < 2)
-	return_NULL;
-      cnt = (sz - 2) >> 1;
-      for (i = 0; i < cnt; i++) {
-	if (!SCHEME_SYMBOLP(SCHEME_VEC_ELS(a)[i + 2]))
-	  return_NULL;
-        v = SCHEME_VEC_ELS(a)[i + cnt + 2];
-        if (SCHEME_SYMBOLP(v)) {
-          /* simple target-environment symbol */
-        } else if (SCHEME_PAIRP(v)) {
-          /* target-environment symbol paired with free-id=? rename info */
-          any_free_id_renames = 1;
-          if (!SCHEME_SYMBOLP(SCHEME_CAR(v)))
-            return_NULL;
-          v = SCHEME_CDR(v);
-          if (SCHEME_PAIRP(v)) {
-            if (!SCHEME_SYMBOLP(SCHEME_CAR(v)))
-              return_NULL;
-            v = SCHEME_CDR(v);
-            if (!SCHEME_SYMBOLP(v) && !SCHEME_FALSEP(v))
-              return_NULL;
-          } else if (SAME_TYPE(SCHEME_TYPE(v), scheme_free_id_info_type)) {
-            if (!SCHEME_MODIDXP(SCHEME_VEC_ELS(v)[0])
-                || !SCHEME_SYMBOLP(SCHEME_VEC_ELS(v)[1])
-                || !SCHEME_MODIDXP(SCHEME_VEC_ELS(v)[2])
-                || !SCHEME_SYMBOLP(SCHEME_VEC_ELS(v)[3])
-                || !ok_phase(SCHEME_VEC_ELS(v)[4])
-                || !ok_phase(SCHEME_VEC_ELS(v)[5])
-                || !ok_phase(SCHEME_VEC_ELS(v)[6]))
-              return_NULL;
-          } else
-            return_NULL;
-        } else
-          return_NULL;
-      }
-
-      SCHEME_VEC_ELS(a)[0] = (any_free_id_renames ? scheme_true : scheme_false);
-      
-      if (!SCHEME_FALSEP(SCHEME_VEC_ELS(a)[1])) {
-        SCHEME_VEC_ELS(a)[1] = scheme_false;
-        maybe_install_rename_hash_table(a);
-      }
-
-      /* It's ok: */
-      scheme_unmarshal_wrap_set(ut, local_key, a);
-    } else if (SCHEME_PAIRP(a)) {
-      /* A rename table:
-           - ([#t] <phase-num> <kind-num> <set-identity> [unmarshal] #(<table-elem> ...)
-	       . ((<sym> (<marked-list-or-mark> . <target-gensym>) ...) ...)) ; <- marked_names
-	where a <table-elem> is actually two values, one of:
-           - <exname> <modname>
-           - <exname> (<modname> . <defname>)
-      */
-      Scheme_Object *mns;
-      Module_Renames *mrn;
-      Scheme_Object *p, *key;
-      int kind;
-      Scheme_Object *phase, *set_identity;
-      
-      if (!SCHEME_PAIRP(a)) return_NULL;
-      
-      /* Convert list to rename table: */
-      
-      if (SAME_OBJ(SCHEME_CAR(a), scheme_true)) {
-        scheme_signal_error("leftover plus-kernel");
-      }
-
-      if (!SCHEME_PAIRP(a)) return_NULL;
-      phase = SCHEME_CAR(a);
-      if (!ok_phase(phase)) return_NULL;
-      a = SCHEME_CDR(a);
-
-      if (!SCHEME_PAIRP(a)) return_NULL;
-      if (SCHEME_TRUEP(SCHEME_CAR(a)))
-	kind = mzMOD_RENAME_MARKED;
-      else
-	kind = mzMOD_RENAME_NORMAL;
-      a = SCHEME_CDR(a);
-
-      if (!SCHEME_PAIRP(a)) return_NULL;
-      set_identity = unmarshal_mark(SCHEME_CAR(a), ut); 
-      if (!set_identity) return_NULL;
-      a = SCHEME_CDR(a);
-      
-      mrn = (Module_Renames *)scheme_make_module_rename(phase, kind, 
-                                                        NULL, NULL, 
-                                                        set_identity);
-
-      if (!SCHEME_PAIRP(a)) return_NULL;
-      mns = SCHEME_CDR(a);
-      a = SCHEME_CAR(a);
-
-      if (!SCHEME_VECTORP(a)) {
-	/* Unmarshall info: */
-	Scheme_Object *ml = a, *mli, *first = scheme_null, *last = NULL, *ai;
-	while (SCHEME_PAIRP(ml)) {
-          ai = SCHEME_CAR(ml);
-	  mli = ai;
-	  if (!SCHEME_PAIRP(mli)) return_NULL;
-
-	  /* A module path index: */
-	  p = SCHEME_CAR(mli);
-	  if (!(SCHEME_SYMBOLP(p)
-		|| SAME_TYPE(SCHEME_TYPE(p), scheme_module_index_type)))
-	    return_NULL;
-	  mli = SCHEME_CDR(mli);
-
-          if (!SCHEME_PAIRP(mli)) return_NULL;
-
-          /* A phase/dimension index k */
-          p = SCHEME_CAR(mli);
-          if (!ok_phase_index(p))
-            return_NULL;
-          
-          p = SCHEME_CDR(mli);
-          if (SCHEME_PAIRP(p) && (SCHEME_PAIRP(SCHEME_CAR(p))
-                                  || SCHEME_VECTORP(SCHEME_CAR(p)))) {
-            /* list of marks or a vector of marks and bdg: */
-            Scheme_Object *m_first = scheme_null, *m_last = NULL, *mp, *after_marks, *bdg;
-
-            after_marks = SCHEME_CDR(p);
-            mli = SCHEME_CAR(p);
-
-            if (SCHEME_VECTORP(mli)) {
-              if (SCHEME_VEC_SIZE(mli) != 2) return_NULL;
-              bdg = SCHEME_VEC_ELS(mli)[1];
-              mli = SCHEME_VEC_ELS(mli)[0];
-            } else
-              bdg = NULL;
-
-            while (SCHEME_PAIRP(mli)) {
-              p = SCHEME_CAR(mli);
-              p = unmarshal_mark(p, ut); 
-              if (!p) return_NULL;
-
-              mp = scheme_make_pair(p, scheme_null);
-              if (m_last)
-                SCHEME_CDR(m_last) = mp;
-              else
-                m_first = mp;
-              m_last = mp;
-
-              mli = SCHEME_CDR(mli);
-            }
-            if (!SCHEME_NULLP(mli)) return_NULL;
-
-            mli = m_first;
-
-            if (bdg) {
-              if (!SCHEME_SYMBOLP(bdg) && !SCHEME_FALSEP(bdg)) {
-                if (SCHEME_MARKP(bdg))
-                  bdg = unmarshal_mark(bdg, ut);
-                else {
-                  m_first = scheme_null;
-                  m_last = NULL;
-                  while (SCHEME_PAIRP(bdg)) {
-                    p = SCHEME_CAR(bdg);
-                    if (!SCHEME_MARKP(p)) return_NULL;
-                    p = unmarshal_mark(p, ut);
-                    mp = scheme_make_pair(p, scheme_null);
-                    if (m_last)
-                      SCHEME_CDR(m_last) = mp;
-                    else
-                      m_first = mp;
-                    m_last = mp;
-                    bdg = SCHEME_CDR(bdg);
-                  }
-                  if (!SCHEME_NULLP(bdg)
-                      || !SCHEME_PAIRP(m_first)
-                      || !SCHEME_PAIRP(SCHEME_CDR(m_first)))
-                    return_NULL;
-                  bdg = m_first;
-                }
-              }
-              mli = scheme_make_vector(2, mli);
-              SCHEME_VEC_ELS(mli)[1] = bdg;
-            }
-
-            /* Rebuild for unmarshaled marks: */
-            ai = scheme_make_pair(SCHEME_CAR(ai),
-                                  scheme_make_pair(SCHEME_CADR(ai),
-                                                   scheme_make_pair(mli, after_marks)));
-
-            p = after_marks;
-          }
-
-          if (ok_phase_index(p)) {
-            /* For a shared table: src-phase-index */
-          } else {
-            /* For a non-shared table: (list* src-phase-index exceptions prefix), after k */
-            mli = p;
-            if (!SCHEME_PAIRP(mli)) return_NULL;
-
-            p = SCHEME_CAR(mli);
-            if (!ok_phase_index(p))
-              return_NULL;
-            mli = SCHEME_CDR(mli);
-
-            if (!SCHEME_PAIRP(mli)) return_NULL;
-
-            /* A list of symbols: */
-            p = SCHEME_CAR(mli);
-            while (SCHEME_PAIRP(p)) {
-              if (!SCHEME_SYMBOLP(SCHEME_CAR(p))) return_NULL;
-              p = SCHEME_CDR(p);
-            }
-            if (!SCHEME_NULLP(p)) return_NULL;
-
-            /* #f or a symbol: */
-            p = SCHEME_CDR(mli);
-            if (!SCHEME_SYMBOLP(p) && !SCHEME_FALSEP(p)) return_NULL;
-          }
-
-	  ml = SCHEME_CDR(ml);
-
-          /* rebuild, in case we converted marks */
-          p = scheme_make_pair(ai, scheme_null);
-          if (last)
-            SCHEME_CDR(last) = p;
-          else
-            first = p;
-          last = p;
-	}
-	if (!SCHEME_NULLP(ml)) return_NULL;
-
-	mrn->unmarshal_info = first;
-	if (SCHEME_PAIRP(first))
-	  mrn->needs_unmarshal = 1;
-
-	if (!SCHEME_PAIRP(mns)) return_NULL;
-	a = SCHEME_CAR(mns);
-	mns = SCHEME_CDR(mns);
-      }
-
-      if (!datum_to_module_renames(a, mrn->ht, 0, ut))
-        return_NULL;
-
-      /* Extract free-id=? renames, if any */
-      if (SCHEME_PAIRP(mns) && SCHEME_VECTORP(SCHEME_CAR(mns))) {
-        Scheme_Hash_Table *ht;
-        ht = scheme_make_hash_table(SCHEME_hash_ptr);
-        mrn->free_id_renames = ht;
-        if (!datum_to_module_renames(SCHEME_CAR(mns), mrn->free_id_renames, 1, ut))
-          return_NULL;
-        mns = SCHEME_CDR(mns);
-      }
-
-      /* Extract the mark-rename table, if any: */
-      if (SCHEME_PAIRP(mns)) {
-	Scheme_Hash_Table *ht;
-	Scheme_Object *ll, *kkey, *kfirst, *klast, *kp;
-
-	ht = scheme_make_hash_table(SCHEME_hash_ptr);
-	for (; SCHEME_PAIRP(mns); mns = SCHEME_CDR(mns)) {
-	  p = SCHEME_CAR(mns);
-	  if (!SCHEME_PAIRP(p)) return_NULL;
-	  key = SCHEME_CAR(p);
-	  p = SCHEME_CDR(p);
-	  if (!SCHEME_SYMBOLP(key)) return_NULL;
-	  
-	  ll = scheme_null;
-
-	  /* Convert marks */
-	  for (; SCHEME_PAIRP(p); p = SCHEME_CDR(p)) {
-	    a = SCHEME_CAR(p);
-	    if (!SCHEME_PAIRP(a))  return_NULL;
-	    kkey = SCHEME_CDR(a);
-	    if (!SCHEME_SYMBOLP(kkey)) return_NULL;
-
-	    kfirst = scheme_null;
-	    klast = NULL;
-	    a = SCHEME_CAR(a);
-	    if (SCHEME_MARKP(a)) {
-	      kfirst = unmarshal_mark(a, ut);
-	    } else {
-              Scheme_Object *bdg = NULL;
-
-              if (SCHEME_VECTORP(a)) {
-                if (SCHEME_VEC_SIZE(a) != 2) return_NULL;
-                bdg = SCHEME_VEC_ELS(a)[1];
-                if (SCHEME_SYMBOLP(bdg)) {
-                  /* ok */
-                } else if (SCHEME_MARKP(bdg)) {
-                  bdg = unmarshal_mark(bdg, ut);
-                } else {
-                  Scheme_Object *bl = scheme_null;
-                  while (SCHEME_PAIRP(bdg)) {
-                    if (SCHEME_MARKP(SCHEME_CAR(bdg)))
-                      bl = scheme_make_pair(unmarshal_mark(SCHEME_CAR(bdg), ut),
-                                            bl);
-                    else
-                      break;
-                    bdg = SCHEME_CDR(bdg);
-                  }
-                  if (!SCHEME_NULLP(bdg))
-                    return_NULL;
-                  bdg = scheme_reverse(bl);
-                }
-                a = SCHEME_VEC_ELS(a)[0];
-              }
-
-	      for (; SCHEME_PAIRP(a); a = SCHEME_CDR(a)) {
-		kp = CONS(unmarshal_mark(SCHEME_CAR(a), ut), scheme_null);
-		if (!klast)
-		  kfirst = kp;
-		else
-		  SCHEME_CDR(klast) = kp;
-		klast = kp;
-	      }
-	      if (!SCHEME_NULLP(a)) {
-                if (bdg && SCHEME_MARKP(a) && SCHEME_NULLP(kfirst))
-                  kfirst = unmarshal_mark(a, ut);
-                else
-                  return_NULL;
-              }
-
-              if (bdg) {
-                a = scheme_make_vector(2, NULL);
-                SCHEME_VEC_ELS(a)[0] = kfirst;
-                SCHEME_VEC_ELS(a)[1] = bdg;
-                kfirst = a;
-              }
-	    }
-
-	    ll = CONS(CONS(kfirst, kkey), ll);
-	  }
-	  
-	  scheme_hash_set(ht, key, ll);
-
-	  if (!SCHEME_NULLP(p)) return_NULL;
-	}
-	if (!SCHEME_NULLP(mns)) return_NULL;
-
-	mrn->marked_names = ht;
-      }
-
-      scheme_unmarshal_wrap_set(ut, local_key, (Scheme_Object *)mrn);
-
-      scheme_seal_module_rename((Scheme_Object *)mrn, STX_SEAL_ALL);
-
-      a = (Scheme_Object *)mrn;
-    } else if (SAME_OBJ(a, scheme_true)
-               || SCHEME_FALSEP(a)) {
-      /* current env rename */
-      Scheme_Env *env;
-
-      env = scheme_get_env(NULL);
-      scheme_prepare_env_renames(env, mzMOD_RENAME_TOPLEVEL);
-      a = scheme_get_module_rename_from_set(env->rename_set, 
-                                            (SCHEME_FALSEP(a) 
-                                             ? scheme_make_integer(1) 
-                                             : scheme_make_integer(0)), 
-                                            1);
-    } else if (SCHEME_SYMBOLP(a)) {
-      /* mark barrier */
-    } else if (SCHEME_BOXP(a)) {
-      if (SCHEME_PAIRP(SCHEME_BOX_VAL(a))) {
-        /* prune context */
-        a = make_prune_context(SCHEME_BOX_VAL(a));
-      } else {
-        /* must be a phase shift */
-        Scheme_Object *vec, *cancel_id;
-        vec = SCHEME_BOX_VAL(a);
-        if (!SCHEME_VECTORP(vec)) return_NULL;
-        if (SCHEME_VEC_SIZE(vec) != 6) return_NULL;
-
-        cancel_id = SCHEME_VEC_ELS(vec)[5];
-        if (SCHEME_TRUEP(cancel_id)) {
-          cancel_id = unmarshal_mark(cancel_id, ut);
-          SCHEME_VEC_ELS(vec)[5] = cancel_id;
-        }
-      }
-    } else {
-      return_NULL;
-    }
-
-    if (wc)
-      wc->a[--stack_size] = a;
-
-    w = SCHEME_CDR(w);
-  }
-
-  if (wc)
-    a = (Scheme_Object *)wc;
-  a = CONS(a, scheme_null);
-
-  scheme_unmarshal_wrap_set(ut, wraps_key, a);
-
-  return a;
+  return w;
 }
-
-/*========================================================================*/
-/*                           datum->syntax                                */
-/*========================================================================*/
 
 
 #ifdef DO_STACK_CHECK
@@ -4547,12 +2697,16 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       if (!wraps)
         return_NULL;
     }
-    ((Scheme_Stx *)result)->wraps = wraps;
+    ((Scheme_Stx *)result)->marks = (Scheme_Hash_Tree *)SCHEME_CAR(wraps);
+    ((Scheme_Stx *)result)->shifts = SCHEME_CDR(wraps);
   } else if (SCHEME_FALSEP((Scheme_Object *)stx_wraps)) {
     /* wraps already nulled */
   } else {
     /* Note: no propagation will be needed for SUBSTX */
-    ((Scheme_Stx *)result)->wraps = stx_wraps->wraps;
+    ((Scheme_Stx *)result)->marks = stx_wraps->marks;
+    ((Scheme_Stx *)result)->shifts = stx_wraps->shifts;
+    if (SCHEME_VECTORP(((Scheme_Stx *)result)->shifts))
+      ((Scheme_Stx *)result)->shifts = SCHEME_VEC_ELS(((Scheme_Stx *)result)->shifts)[0];
   }
 
   if (hashed) {
@@ -4916,8 +3070,6 @@ static Scheme_Object *syntax_tainted_p(int argc, Scheme_Object **argv)
 static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
 {
   Scheme_Stx *stx;
-  WRAP_POS awl;
-  WRAP_POS ewl;
 
   if (!SCHEME_STXP(argv[0]))
     scheme_wrong_contract("syntax-original?", "syntax?", 0, argc, argv);
@@ -4942,10 +3094,7 @@ static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
   } else
     return scheme_false;
 
-  WRAP_POS_INIT(awl, stx->wraps);
-  WRAP_POS_INIT_END(ewl);
-
-  if (same_marks(&awl, &ewl, scheme_false))
+  if (!stx->marks->count)
     return scheme_true;
   else
     return scheme_false;
@@ -5137,9 +3286,10 @@ static Scheme_Object *extract_phase(const char *who, int pos, int argc, Scheme_O
 
 Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *orig_m1, *m1, *m2, *delta, *a[2];
-  int l1, l2;
+  Scheme_Object *a[2], *key, *val;
   Scheme_Object *phase;
+  Scheme_Hash_Tree *delta, *m2;
+  intptr_t i;
 
   if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
     scheme_wrong_contract("make-syntax-delta-introducer", "identifier?", 0, argc, argv);
@@ -5148,68 +3298,23 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 
   phase = extract_phase("make-syntax-delta-introducer", 2, argc, argv, scheme_make_integer(0), 1);
 
-  m1 = scheme_stx_extract_marks(argv[0]);
-  orig_m1 = m1;
-  l1 = scheme_list_length(m1);
-  delta = scheme_null;
-  if (SCHEME_FALSEP(argv[1])) {
-    m2 = scheme_false;
-  } else {
-    m2 = scheme_stx_extract_marks(argv[1]);
-
-    l2 = scheme_list_length(m2);
-
-    while (l1 > l2) {
-      delta = CONS(SCHEME_CAR(m1), delta);
-      m1 = SCHEME_CDR(m1);
-      l1--;
-    }
-  }
-
-  if (!scheme_equal(m1, m2)) {
-    /* tails don't match, so keep all marks --- except 
-       those that determine a module binding */
-    int skipped = -1;
-    Scheme_Object *mod;
-
-    mod = resolve_env(argv[0], phase, 1, NULL, NULL, &skipped, NULL, 0, 
-                      scheme_make_hash_table(SCHEME_hash_ptr));
-
-    if ((skipped == -1) && SCHEME_FALSEP(mod)) {
-      /* For top-level bindings, need to check the current environment's table,
-         because the identifier might not have the top level in its renamings. */
-      Scheme_Env *env;
-
-      if (scheme_current_thread->current_local_env)
-        env = scheme_current_thread->current_local_env->genv;
+  delta = ((Scheme_Stx *)argv[0])->marks;
+  if (!SCHEME_FALSEP(argv[1])) {
+    m2 = ((Scheme_Stx *)argv[1])->marks;
+    
+    i = scheme_hash_tree_next(m2, -1);
+    while (i != -1) {
+      scheme_hash_tree_index(m2, i, &key, &val);
+      if (scheme_hash_tree_get(delta, key))
+        scheme_hash_tree_set(delta, key, NULL);
       else
-        env = NULL;
-      if (!env) env = scheme_get_env(NULL);
-      if (env) {
-        scheme_tl_id_sym(env, argv[0], NULL, 0, NULL, &skipped);
-      }
-    }
+        scheme_hash_tree_set(delta, key, val);
 
-    if (skipped > -1) {
-      /* Just keep the first `skipped' marks. */
-      delta = scheme_null;
-      m1 = orig_m1;
-      while (skipped) {
-        delta = CONS(SCHEME_CAR(m1), delta);
-        m1 = SCHEME_CDR(m1);
-        skipped--;
-      }
-    } else {
-      /* Keep them all */
-      while (l1) {
-        delta = CONS(SCHEME_CAR(m1), delta);
-        m1 = SCHEME_CDR(m1);
-        l1--;
-      }
+      i = scheme_hash_tree_next(m2, i);
     }
   }
 
-  a[0] = delta;
+  a[0] = (Scheme_Object *)delta;
   if (scheme_stx_is_clean(argv[0]))
     a[1] = scheme_false;
   else
@@ -5229,7 +3334,7 @@ static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)
 
   phase = extract_phase("bound-identifier=?", 2, argc, argv, scheme_make_integer(0), 0);
 
-  return (scheme_stx_env_bound_eq2(argv[0], argv[1], NULL, phase, phase)
+  return (scheme_stx_env_bound_eq2(argv[0], argv[1], phase, phase)
 	  ? scheme_true
 	  : scheme_false);
 }
@@ -5253,7 +3358,7 @@ static Scheme_Object *do_module_eq(const char *who, int delta, int argc, Scheme_
   else
     phase2 = phase;
 
-  return (scheme_stx_module_eq3(argv[0], argv[1], phase, phase2, NULL)
+  return (scheme_stx_module_eq3(argv[0], argv[1], phase, phase2)
 	  ? scheme_true
 	  : scheme_false);
 }
@@ -5308,37 +3413,28 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
       phase = scheme_bin_plus(dphase, phase);
   }
 
-  m = scheme_stx_module_name(scheme_make_hash_table(SCHEME_hash_ptr),
-                             &a, 
-                             phase,
-			     &nom_mod, &nom_a,
-			     &mod_phase,
-                             &src_phase_index,
-                             &nominal_src_phase,
-                             NULL,
-                             NULL,
-                             NULL,
-                             NULL);
-
-  if (get_symbol) {
-    if ((!m || SAME_OBJ(m, scheme_undefined)) && nom_a) 
-      a = nom_a;
-    if (SCHEME_STXP(a))
-      a = SCHEME_STX_VAL(a);
-    return a;
-  }
+  m = scheme_stx_lookup_w_nominal(a, phase,
+                                  NULL,
+                                  &nom_mod, &nom_a,
+                                  &src_phase_index,
+                                  &nominal_src_phase);
 
   if (!m)
     return scheme_false;
-  else if (SAME_OBJ(m, scheme_undefined)) {
+  else if (SCHEME_SYMBOLP(m))
     return lexical_symbol;
-  } else
+  else {
+    a = SCHEME_VEC_ELS(m)[1];
+    mod_phase = SCHEME_VEC_ELS(m)[2];
+    m = SCHEME_VEC_ELS(m)[0];
+
     return CONS(m, CONS(a, CONS(nom_mod, 
                                 CONS(nom_a, 
                                      CONS(mod_phase,
                                           CONS(src_phase_index, 
                                                CONS(nominal_src_phase,
                                                     scheme_null)))))));
+  }
 }
 
 static Scheme_Object *module_binding(int argc, Scheme_Object **argv)
@@ -5368,7 +3464,7 @@ static Scheme_Object *module_binding_symbol(int argc, Scheme_Object **argv)
 
 static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *a = argv[0], *p, *l;
+  Scheme_Object *a = argv[0], *l;
 
   if (!SCHEME_STXP(a) || !SCHEME_STX_SYMBOLP(a))
     scheme_wrong_contract("identifier-prune-lexical-context", "identifier?", 0, argc, argv);
@@ -5387,45 +3483,22 @@ static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv)
     l = scheme_make_pair(SCHEME_STX_VAL(a), scheme_null);
   }
 
-  p = make_prune_context(l);
+  /* FIXME: implement pruning */
 
-  return scheme_add_rename(a, p);
+  return a;
 }
 
 static Scheme_Object *identifier_prune_to_module(int argc, Scheme_Object **argv)
 {
-  WRAP_POS w;
   Scheme_Stx *stx = (Scheme_Stx *)argv[0];
-  Scheme_Object *l = scheme_null;
+  Scheme_Object *shifts;
 
   if (!SCHEME_STXP(argv[0]) || !SCHEME_STX_SYMBOLP(argv[0]))
     scheme_wrong_contract("identifier-prune-to-source-module", "identifier?", 0, argc, argv);
 
-  /* Keep only redirecting phase shifts */
-
-  WRAP_POS_INIT(w, ((Scheme_Stx *)stx)->wraps);
-  while (!WRAP_POS_END_P(w)) {
-    if (SCHEME_BOXP(WRAP_POS_FIRST(w))) {
-      /* Phase shift: */
-      Scheme_Object *vec, *src;
-
-      vec = SCHEME_BOX_VAL(WRAP_POS_FIRST(w));
-      
-      src = SCHEME_VEC_ELS(vec)[1];
-
-      /* If src is #f, shift is just for phase; no redirection */
-      if (!SCHEME_FALSEP(src)) {
-        l = scheme_make_pair(WRAP_POS_FIRST(w), l);
-      }
-    }
-
-    WRAP_POS_INC(w);
-  }
-
-  l = scheme_reverse(l);
-
+  shifts = stx->shifts;
   stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
-  stx->wraps = l;
+  stx->shifts = shifts;
 
   return (Scheme_Object *)stx;
 }
@@ -5506,72 +3579,6 @@ static Scheme_Object *syntax_taint(int argc, Scheme_Object **argv)
 /*                             Debugging                              */
 /**********************************************************************/
 
-static Scheme_Object *explode_wraps(Scheme_Object *wraps, Scheme_Hash_Table *ht)
-{
-  Scheme_Object *key, *prev_key = NULL, *pr, *first = scheme_null, *last = NULL, *v;
-  WRAP_POS awl;
-
-  WRAP_POS_INIT(awl, wraps);
-
-  while (!WRAP_POS_END_P(awl)) {
-    key = WRAP_POS_KEY(awl);
-    if (key != prev_key) {
-      pr = scheme_hash_get(ht, key);
-      if (pr) {
-        if (last)
-          SCHEME_CDR(last) = pr;
-        else
-          first = pr;
-        break;
-      } else {
-        pr = scheme_make_pair(scheme_void, scheme_null);
-        if (last)
-          SCHEME_CDR(last) = pr;
-        else
-          first = pr;
-        last = pr;
-        pr = scheme_make_pair(scheme_false, scheme_null);
-        scheme_hash_set(ht, key, pr);
-      }
-      prev_key = key;
-    } else {
-      pr = scheme_make_pair(scheme_false, scheme_null);
-    }
-    if (last)
-      SCHEME_CDR(last) = pr;
-    else
-      first = pr;
-    last = pr;
-
-    v = WRAP_POS_FIRST(awl);
-
-    if (SCHEME_RENAMESP(v)) {
-      Module_Renames *mrn = (Module_Renames *)v;
-      Scheme_Object *o;
-
-      v = scheme_hash_get(ht, (Scheme_Object *)mrn);
-      if (!v) {
-        v = scheme_make_vector(7, NULL);
-        o = scheme_intern_symbol("rename:");
-        SCHEME_VEC_ELS(v)[0] = o;
-        SCHEME_VEC_ELS(v)[1] = mrn->phase;
-        SCHEME_VEC_ELS(v)[2] = (Scheme_Object *)mrn->ht;
-        SCHEME_VEC_ELS(v)[3] = (mrn->nomarshal_ht ? (Scheme_Object *)mrn->nomarshal_ht : scheme_false);
-        SCHEME_VEC_ELS(v)[4] = scheme_true; /* mrn->shared_pes; */
-        SCHEME_VEC_ELS(v)[5] = (mrn->marked_names ? (Scheme_Object *)mrn->marked_names : scheme_false);
-        SCHEME_VEC_ELS(v)[6] = (Scheme_Object *)mrn->unmarshal_info;
-        scheme_hash_set(ht, (Scheme_Object *)mrn, v);
-      }
-    }
-
-    SCHEME_CAR(pr) = v;
-    
-    WRAP_POS_INC(awl);
-  }
-
-  return first;
-}
-
 Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht)
 {
   Scheme_Object *vec, *v;
@@ -5599,9 +3606,8 @@ Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht)
 
   v = ((Scheme_Stx *)stx)->taints;
   SCHEME_VEC_ELS(vec)[1] = (v ? v : scheme_null);
-  v = explode_wraps(((Scheme_Stx *)stx)->wraps, ht);
-  SCHEME_VEC_ELS(vec)[2] = v;
-
+  SCHEME_VEC_ELS(vec)[2] = (Scheme_Object *)((Scheme_Stx *)stx)->marks;
+  
   return vec;
 }
 

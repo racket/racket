@@ -2838,6 +2838,23 @@ int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2)
   return scheme_equal((Scheme_Object *)t1, (Scheme_Object *)t2);
 }
 
+int scheme_hash_tree_subset(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b)
+{
+  intptr_t i;
+  Scheme_Object *key, *val;
+
+  i = scheme_hash_tree_next(a, -1);
+  while (i != -1) {
+    scheme_hash_tree_index(a, i, &key, &val);
+    if (!scheme_hash_tree_get(b, key))
+      return 0;
+
+    i = scheme_hash_tree_next(a, i);
+  }
+
+  return 1;
+
+}
 
 /*========================================================================*/
 /*                         precise GC traversers                          */

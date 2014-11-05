@@ -535,6 +535,8 @@ extern Scheme_Object *scheme_chaperone_undefined_property;
 
 extern Scheme_Object *scheme_reduced_procedure_struct;
 
+extern Scheme_Hash_Tree *scheme_empty_hash_tree;
+
 /* recycle some constants that can't appear in code: */
 #define scheme_constant_key scheme_stack_dump_key
 #define scheme_fixed_key    scheme_default_prompt_tag
@@ -1073,9 +1075,6 @@ Scheme_Object *scheme_make_stx_w_offset(Scheme_Object *val,
 Scheme_Object *scheme_make_renamed_stx(Scheme_Object *sym,
 				       Scheme_Object *rn);
 
-Scheme_Object *scheme_new_stx_simplify_cache(void);
-void scheme_simplify_stx(Scheme_Object *stx, Scheme_Object *simplify_cache);
-
 Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o, Scheme_Object *stx_src,
 				      Scheme_Object *stx_wraps,
 				      int cangraph, int copyprops);
@@ -1094,20 +1093,15 @@ int scheme_stx_has_empty_wraps(Scheme_Object *);
 Scheme_Object *scheme_new_mark(int canceling);
 Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m);
 
-Scheme_Object *scheme_make_rename(Scheme_Object *newname, int c);
-void scheme_set_rename(Scheme_Object *rnm, int pos, Scheme_Object *oldname);
-
-#define SCHEME_RIBP(v) SAME_TYPE(scheme_lexical_rib_type, SCHEME_TYPE(v))
-Scheme_Object *scheme_make_rename_rib(void);
-void scheme_add_rib_rename(Scheme_Object *ro, Scheme_Object *rename);
-void scheme_drop_first_rib_rename(Scheme_Object *ro);
-Scheme_Object *scheme_stx_id_remove_rib(Scheme_Object *stx, Scheme_Object *ro);
-void scheme_stx_seal_rib(Scheme_Object *rib);
-int *scheme_stx_get_rib_sealed(Scheme_Object *rib);
-
-Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename);
-Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib);
-Scheme_Object *scheme_add_rib_delimiter(Scheme_Object *o, Scheme_Object *ribs);
+Scheme_Object *scheme_make_shift(Scheme_Object *old_midx, Scheme_Object *new_midx,
+                                 Scheme_Hash_Table *export_registry, Scheme_Object *insp,
+                                 Scheme_Object *ignore_old_identity);
+Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift);
+Scheme_Object *scheme_stx_shift(Scheme_Object *stx, Scheme_Object *shift,
+                                Scheme_Object *old_midx, Scheme_Object *new_midx,
+                                Scheme_Hash_Table *export_registry,
+                                Scheme_Object *insp,
+                                Scheme_Object *ignore_old_identity);
 
 Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *relative_to,
                                              Scheme_Object *uid);
@@ -1119,58 +1113,39 @@ void scheme_install_free_id_rename(Scheme_Object *id,
                                    Scheme_Object *rename_rib,
                                    Scheme_Object *phase);
 
-#define mzMOD_RENAME_TOPLEVEL 0
-#define mzMOD_RENAME_NORMAL   1
-#define mzMOD_RENAME_MARKED   2
-
 struct Scheme_Module_Phase_Exports; /* forward declaration */
 
-Scheme_Object *scheme_make_module_rename_set(int kind, Scheme_Object *share_marked_names, Scheme_Object *insp);
+Scheme_Object *scheme_make_module_rename_set(Scheme_Object *insp);
 void scheme_add_module_rename_to_set(Scheme_Object *set, Scheme_Object *rn);
-Scheme_Object *scheme_get_module_rename_from_set(Scheme_Object *set, Scheme_Object *phase, int create);
-
-Scheme_Hash_Table *scheme_get_module_rename_marked_names(Scheme_Object *set, Scheme_Object *phase, int create);
+Scheme_Object *scheme_get_module_rename_from_set(Scheme_Object *set, Scheme_Object *phase);
 
 void scheme_append_rename_set_to_env(Scheme_Object *rns, Scheme_Env *env);
 void scheme_install_prior_contexts_to_env(Scheme_Object *prior, Scheme_Env *env);
 Scheme_Object *scheme_accum_prior_contexts(Scheme_Object *rns, Scheme_Object *prior);
 
-void scheme_seal_module_rename(Scheme_Object *rn, int level);
-void scheme_seal_module_rename_set(Scheme_Object *rns, int level);
-#define STX_SEAL_BOUND 1
-#define STX_SEAL_ALL   2
-
-Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_Hash_Table *mns, 
-                                         Scheme_Object *insp, Scheme_Object *set_identity);
-Scheme_Object* scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *modname,
-                                           Scheme_Object *locname, Scheme_Object *exname,
-                                           Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
-                                           intptr_t mod_phase, Scheme_Object *src_phase_index, 
-                                           Scheme_Object *nom_export_phase,
-                                           int mode);
+Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, Scheme_Object *insp,
+                                         Scheme_Object *set_identity);
+void scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *modname,
+                                 Scheme_Object *locname, Scheme_Object *exname,
+                                 Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
+                                 intptr_t mod_phase, Scheme_Object *src_phase_index, 
+                                 Scheme_Object *nom_export_phase);
 void scheme_extend_module_rename_with_shared(Scheme_Object *rn, Scheme_Object *modidx, 
                                              struct Scheme_Module_Phase_Exports *pt, 
                                              Scheme_Object *unmarshal_phase_index,
                                              Scheme_Object *src_phase_index, 
-                                             Scheme_Object *marks, Scheme_Object *bdg,
+                                             Scheme_Object *context,
                                              int save_unmarshal);
 void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info);
-void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
-				       Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to,
-				       Scheme_Hash_Table *export_registry);
+void scheme_do_module_rename_unmarshal(Scheme_Object *modidx, Scheme_Object *rn, 
+                                       Scheme_Object *context, Scheme_Object *src_phase,
+                                       Scheme_Object *info, Scheme_Hash_Table *export_registry);
 Scheme_Object *scheme_get_kernel_modidx(void);
 void scheme_remove_module_rename(Scheme_Object *mrn,
 				 Scheme_Object *localname);
 void scheme_append_module_rename(Scheme_Object *src, Scheme_Object *dest, int with_unmarshal);
 void scheme_list_module_rename(Scheme_Object *src, Scheme_Hash_Table *ht, Scheme_Hash_Table *export_registry);
 
-Scheme_Object *scheme_rename_to_stx(Scheme_Object *rn);
-Scheme_Object *scheme_stx_to_rename(Scheme_Object *stx);
-Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn, Scheme_Object *old_midx, Scheme_Object *new_midx,
-                                       Scheme_Object *new_insp);
-Scheme_Object *scheme_stx_shift_rename_set(Scheme_Object *mrns, Scheme_Object *old_midx, Scheme_Object *new_midx,
-                                           Scheme_Object *new_insp);
-Scheme_Hash_Table *scheme_module_rename_marked_names(Scheme_Object *rn);
 Scheme_Object *scheme_rename_set_identity(Scheme_Object *rn_set);
 
 Scheme_Object *scheme_stx_content(Scheme_Object *o);
@@ -1178,30 +1153,28 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist);
 
 int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase);
 int scheme_stx_module_eq_x(Scheme_Object *a, Scheme_Object *b, intptr_t b_phase);
-int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase, Scheme_Object *asym);
+int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
 int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b, 
-                          Scheme_Object *a_phase, Scheme_Object *b_phase,
-                          Scheme_Object *asym);
+                          Scheme_Object *a_phase, Scheme_Object *b_phase);
 Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase);
-Scheme_Object *scheme_stx_module_name(Scheme_Hash_Table *recur,
-                                      Scheme_Object **name, Scheme_Object *phase,
-				      Scheme_Object **nominal_modidx,
-				      Scheme_Object **nominal_name,
-				      Scheme_Object **mod_phase, 
-                                      Scheme_Object **src_phase_index, 
-                                      Scheme_Object **nominal_src_phase,
-                                      Scheme_Object **lex_env,
-                                      int *_sealed,
-                                      Scheme_Object **rename_insp,
-                                      int *_binding_marks_skipped);
-Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a);
-int scheme_stx_parallel_is_used(Scheme_Object *sym, Scheme_Object *stx);
 
-int scheme_stx_ribs_matter(Scheme_Object *a, Scheme_Object *skip_ribs);
+void scheme_add_binding(Scheme_Object *sym_or_pes, Scheme_Object *phase, Scheme_Object *_marks,
+                        Scheme_Object *val);
+void scheme_add_binding_from_id(Scheme_Object *o, Scheme_Object *phase,
+                                Scheme_Object *val);
+
+Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase);
+Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
+                                           int *_exact_match,
+                                           Scheme_Object **insp,              /* access-granting inspector */
+                                           Scheme_Object **nominal_modidx,    /* how it was imported */
+                                           Scheme_Object **nominal_name,      /* imported as name */
+                                           Scheme_Object **src_phase,         /* phase level of import from nominal modidx */ 
+                                           Scheme_Object **nominal_src_phase); /* phase level of export from nominal modidx */
 
 int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
-int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, Scheme_Object *phase);
-int scheme_stx_env_bound_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, 
+int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
+int scheme_stx_env_bound_eq2(Scheme_Object *a, Scheme_Object *b,
                              Scheme_Object *a_phase, Scheme_Object *b_phase);
 
 Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source);
@@ -1210,23 +1183,10 @@ Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
 				   Scheme_Object *key,
 				   Scheme_Object *val);
 
-Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, Scheme_Object *shift,
-				      Scheme_Object *old_midx, Scheme_Object *new_midx,
-				      Scheme_Hash_Table *export_registry,
-                                      Scheme_Object *insp,
-                                      Scheme_Object *ignore_old_identity);
-Scheme_Object *scheme_stx_phase_shift_as_rename(Scheme_Object *shift,
-						Scheme_Object *old_midx, Scheme_Object *new_midx,
-						Scheme_Hash_Table *export_registry,
-                                                Scheme_Object *insp,
-                                                Scheme_Object *ignore_old_identity);
-
 int scheme_stx_list_length(Scheme_Object *list);
 int scheme_stx_proper_list_length(Scheme_Object *list);
 
 Scheme_Object *scheme_resolve_placeholders(Scheme_Object *obj);
-
-Scheme_Object *scheme_stx_strip_module_context(Scheme_Object *stx);
 
 #define SCHEME_STX_VAL(s) ((Scheme_Stx *)s)->val
 
@@ -1255,12 +1215,10 @@ Scheme_Object *scheme_syntax_taint_arm(Scheme_Object *stx, Scheme_Object *insp, 
 Scheme_Object *scheme_syntax_taint_rearm(Scheme_Object *o, Scheme_Object *arm_from);
 Scheme_Object *scheme_syntax_taint_disarm(Scheme_Object *o, Scheme_Object *insp);
 
-Scheme_Object *scheme_delayed_rename(Scheme_Object **o, intptr_t i);
+Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i);
 
 struct Resolve_Prefix;
 void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, intptr_t i);
-
-XFORM_NONGCING Scheme_Object *scheme_phase_index_symbol(int src_phase_index);
 
 Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht);
 void scheme_populate_pt_ht(struct Scheme_Module_Phase_Exports * pt);
@@ -2472,10 +2430,7 @@ typedef struct Scheme_Comp_Env
   Scheme_Object *insp;  /* code inspector for checking protected */
   Comp_Prefix *prefix;  /* stack base info: globals and stxes */
 
-  struct Scheme_Object **values; /* names bound in this frame */
-
-  Scheme_Object *uid;            /* renaming symbol for syntax, if all the same */
-  struct Scheme_Object **uids;   /* renaming symbol for syntax when multiple are needed */
+  struct Scheme_Object **values; /* bindings (symbols) in this frame */
 
   struct Scheme_Object *renames; /* an stx lexical rename or a list of them */
 
@@ -2489,6 +2444,8 @@ typedef struct Scheme_Comp_Env
 
   Scheme_Hash_Table *skip_table; /* for jumping ahead in the chain */
   int skip_depth;                /* depth in simple frames, used to trigger skip_table creation */
+
+  Scheme_Object *marks; /* a list: accumulated marks for this context */
 
   struct Scheme_Comp_Env *next;
 } Scheme_Comp_Env;
@@ -2724,8 +2681,7 @@ Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, in
 
 Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *genv, 
                                              Scheme_Object **_id, int *_use_map);
-Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Object *sym_marks, 
-                                          Scheme_Comp_Env *env, Scheme_Object **_free_id);
+Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Comp_Env *env);
 Scheme_Object *scheme_do_local_lift_expr(const char *who, int stx_pos, 
                                          int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_local_lift_context(Scheme_Comp_Env *env);
@@ -2746,9 +2702,7 @@ void scheme_check_identifier(const char *formname, Scheme_Object *id,
 Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 					    Scheme_Comp_Env *env,
 					    Scheme_Compile_Expand_Info *erec, int drec,
-					    int int_def_pos,
 					    Scheme_Object **current_val,
-					    Scheme_Comp_Env **_xenv,
 					    Scheme_Object *ctx,
                                             int keep_name);
 
@@ -2759,17 +2713,17 @@ Scheme_Object *scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
                                   int for_set);
 
 Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, 
+                                              Scheme_Object *mark,
 					      Scheme_Comp_Env *env);
 void scheme_add_compilation_binding(int index, Scheme_Object *val,
 				    Scheme_Comp_Env *frame);
-Scheme_Comp_Env *scheme_add_compilation_frame(Scheme_Object *vals,
+Scheme_Comp_Env *scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark,
 					      Scheme_Comp_Env *env, int flags);
 Scheme_Comp_Env *scheme_require_renames(Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_lookup_binding(Scheme_Object *symbol, Scheme_Comp_Env *env, int flags, 
 				     Scheme_Object *in_modidx, 
 				     Scheme_Env **_menv, int *_protected,
-                                     Scheme_Object **_lexical_binding_id,
                                      Scheme_Object **_inline_variant);
 int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env);
 
@@ -2778,11 +2732,6 @@ Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o);
 Scheme_Object *scheme_extract_extfl(Scheme_Object *o);
 Scheme_Object *scheme_extract_futures(Scheme_Object *o);
 Scheme_Object *scheme_extract_foreign(Scheme_Object *o);
-
-Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
-				      Scheme_Comp_Env *upto);
-
-Scheme_Object *scheme_env_frame_uid(Scheme_Comp_Env *env);
 
 typedef Scheme_Object *(*Scheme_Lift_Capture_Proc)(Scheme_Object *, Scheme_Object **, Scheme_Object *, Scheme_Comp_Env *);
 void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc cp, Scheme_Object *data, 
@@ -3103,7 +3052,7 @@ Scheme_Env *scheme_make_empty_env(void);
 void scheme_prepare_exp_env(Scheme_Env *env);
 void scheme_prepare_template_env(Scheme_Env *env);
 void scheme_prepare_label_env(Scheme_Env *env);
-void scheme_prepare_env_renames(Scheme_Env *env, int kind);
+void scheme_prepare_env_renames(Scheme_Env *env);
 
 int scheme_used_app_only(Scheme_Comp_Env *env, int which);
 int scheme_used_ever(Scheme_Comp_Env *env, int which);
@@ -3293,7 +3242,6 @@ struct Scheme_Env {
   Scheme_Object *access_insp; /* for graining protected access */
 
   Scheme_Object *rename_set;
-  Scheme_Hash_Table *temp_marked_names; /* used to correlate imports with re-exports */
   Scheme_Object *post_ex_rename_set; /* during module expansion */
 
   Scheme_Bucket_Table *syntax;
@@ -3326,6 +3274,9 @@ struct Scheme_Env {
   Scheme_Hash_Table *modvars; /* for scheme_module_variable_type hashing */
 
   Scheme_Object *weak_self_link; /* for Scheme_Bucket_With_Home */
+
+  Scheme_Hash_Tree *original_marks; /* mark set for original identifiers */
+  Scheme_Hash_Table *binding_names; /* symbols that are already mapped in this namespace */
 
   int id_counter;
 };
@@ -3492,9 +3443,7 @@ void scheme_add_global_constant_symbol(Scheme_Object *name, Scheme_Object *v, Sc
 } while(0)
 
 
-Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int mode, 
-                                Scheme_Object *phase, int *_skipped);
-int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym);
+Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env);
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env);
 Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase);
@@ -4057,6 +4006,7 @@ void scheme_clear_rx_buffers(void);
 
 int scheme_regexp_match_p(Scheme_Object *regexp, Scheme_Object *target);
 
+Scheme_Object *scheme_gensym(Scheme_Object *base);
 Scheme_Object *scheme_symbol_to_string(Scheme_Object *sym);
 
 #ifdef SCHEME_BIG_ENDIAN
