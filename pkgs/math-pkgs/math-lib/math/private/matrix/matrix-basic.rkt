@@ -238,8 +238,8 @@
       ;; Compute this divided by the maximum to avoid underflow and overflow
       (define mx (array-all-max M))
       (cond [(and (rational? mx) (positive? mx))
-             (* mx (expt (array-all-sum (inline-array-map (λ (x) (expt (abs (/ x mx)) p)) M))
-                         (/ p)))]
+             (fl (* mx (expt (array-all-sum (inline-array-map (λ (x) (expt (abs (/ x mx)) p)) M))
+                             (/ p))))]
             [else  mx]))))
 
 (: matrix-norm (case-> ((Matrix Flonum)      -> Nonnegative-Flonum)
