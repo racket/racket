@@ -100,6 +100,10 @@
     (test-form #rx"^$"
       (struct foo ()))
 
+    ;; Make sure that optimized expressions work
+    (test-form #rx"Flonum"
+      (+ 1.0 2.0))
+
     ;; PR 14487
     (test-form-not-exn
       (require/typed racket/base
