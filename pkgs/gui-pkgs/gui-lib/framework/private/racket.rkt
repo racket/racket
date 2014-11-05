@@ -1485,12 +1485,19 @@
              (send text set-position start end)))))
 
   (let ([add/map-non-clever
-         (λ (name keystroke char)
+         (λ (name keystroke char [closer #f])
            (add-edit-function 
             name
-            (λ (e) (send e insert char (send e get-start-position) (send e get-end-position))))
+            (λ (e)
+              (send e begin-edit-sequence)
+              (define start (send e get-start-position))
+              (define stop (send e get-end-position))
+              (send e insert char start stop)
+              (when (and closer (preferences:get 'framework:automatic-parens))
+                (send e insert closer (+ start 1) (+ start 1)))
+              (send e end-edit-sequence)))
            (send keymap map-function keystroke name))])
-    (add/map-non-clever "non-clever-open-square-bracket" "c:[" #\[)
+    (add/map-non-clever "non-clever-open-square-bracket" "c:[" #\[ #\])
     (add/map-non-clever "non-clever-close-square-bracket" "c:]" #\])
     (add/map-non-clever "non-clever-close-curley-bracket" "c:}" #\})
     (add/map-non-clever "non-clever-close-round-paren" "c:)" #\)))

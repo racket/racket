@@ -3,6 +3,88 @@
 (require "test-suite-utils.rkt"
          (for-syntax racket/base))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; testing inserting parens and the automatic-parens prefs
+;;
+
+(define (test-type-string/proc line to-type expected-result [control-down #f])
+  (test
+   (string->symbol (format "test-type-string line ~a" line))
+   (λ (x) (equal? x expected-result))
+   (λ ()
+     (queue-sexp-to-mred
+      `(let ()
+         (define f (new frame:basic% [label ""]))
+         (define t (new racket:text%))
+         (define ec (new canvas:basic%
+                         [parent (send f get-area-container)]
+                         [editor t]))
+         (send t on-char (new key-event% [key-code ,to-type] [control-down ,control-down]))
+         (send t get-text))))))
+
+(define-syntax (test-type-string stx)
+  (syntax-case stx ()
+    [(_ . rst)
+     (with-syntax ([line (syntax-line stx)])
+       #'(test-type-string/proc line . rst))]))
+
+(begin
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-parens #f))
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #f))
+  
+  (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #f))
+  (test-type-string #\( "(")
+  (test-type-string #\[ "[")
+  (test-type-string #\" "\"")
+  (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #t))
+  (test-type-string #\( "()")
+  (test-type-string #\[ "[]")
+  (test-type-string #\" "\"\""))
+
+
+(begin
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-parens #f))
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #t))
+  
+  (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #f))
+  (test-type-string #\( "(")
+  (test-type-string #\[ "(")
+  (test-type-string #\[ "[" #t)
+  (test-type-string #\" "\"")
+  (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #t))
+  (test-type-string #\( "()")
+  (test-type-string #\[ "()")
+  (test-type-string #\[ "[]" #t)
+  (test-type-string #\" "\"\""))
+
+(begin
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-parens #t))
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #f))
+  
+  (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #f))
+  (test-type-string #\( "(")
+  (test-type-string #\[ "[")
+  (test-type-string #\" "\"")
+  (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #t))
+  (test-type-string #\( "()")
+  (test-type-string #\[ "[]")
+  (test-type-string #\" "\"\""))
+
+(begin
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-parens #t))
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #t))
+  
+  (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #f))
+  (test-type-string #\( "(")
+  (test-type-string #\[ "(")
+  (test-type-string #\" "\"")
+  (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #t))
+  (test-type-string #\( "()")
+  (test-type-string #\[ "()")
+  (test-type-string #\" "\"\""))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; testing highlight-range method
