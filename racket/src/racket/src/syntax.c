@@ -498,7 +498,7 @@ static Scheme_Hash_Tree *add_remove_mark(Scheme_Hash_Tree *marks, Scheme_Object 
     return scheme_hash_tree_set(marks, m, scheme_true);
 }
 
-Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
+Scheme_Object *scheme_stx_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Hash_Tree *marks;
@@ -537,6 +537,45 @@ Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
   stx->taints = taints;
   stx->shifts = shifts;
 
+  return (Scheme_Object *)stx;
+}
+
+Scheme_Object *scheme_stx_add_remove_marks(Scheme_Object *o, Scheme_Hash_Tree *marks)
+{
+  Scheme_Object *key, *val;
+  intptr_t i;
+
+  i = scheme_hash_tree_next(marks, -1);
+  while (i != -1) {
+    scheme_hash_tree_index(marks, i, &key, &val);
+
+    o = scheme_stx_add_remove_mark(o, key);
+    
+    i = scheme_hash_tree_next(marks, i);
+  }
+
+  return o;
+}
+
+Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m)
+{
+  Scheme_Stx *stx = (Scheme_Stx *)o;
+
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG)
+    scheme_signal_error("internal error: remove mark works only on leaves");
+
+  if (scheme_hash_tree_get(stx->marks, m)) {
+    Scheme_Object *taints = stx->taints;
+    Scheme_Object *shifts = stx->shifts;
+    Scheme_Hash_Tree *marks;
+    marks = scheme_hash_tree_set(stx->marks, m, NULL);
+    stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
+    stx->marks = marks;
+    stx->u.to_propagate = NULL;
+    stx->taints = taints;
+    stx->shifts = shifts;
+  }
+ 
   return (Scheme_Object *)stx;
 }
 
@@ -612,6 +651,15 @@ Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift)
   stx->shifts = shifts;
 
   return (Scheme_Object *)shifts;
+}
+
+Scheme_Object *scheme_stx_add_shifts(Scheme_Object *o, Scheme_Object *l)
+{
+  for (l = scheme_reverse(l); !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    o = scheme_stx_add_shift(o, SCHEME_CAR(l));
+  }
+
+  return o;
 }
 
 Scheme_Object *scheme_make_shift(Scheme_Object *old_midx, Scheme_Object *new_midx,
@@ -744,7 +792,7 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Hash_Tree *to_pro
   while (i != -1) {
     scheme_hash_tree_index(to_propagate, i, &key, &val);
 
-    o = scheme_add_remove_mark(o, key);
+    o = scheme_stx_add_remove_mark(o, key);
     
     i = scheme_hash_tree_next(to_propagate, i);
   }
@@ -1428,7 +1476,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
                                            Scheme_Object **nominal_src_phase) /* phase level of export from nominal modidx */
 /* Result is either a representation of a local binding (probably a symbol),
    a vector of the form (vector <modidx> <symbol> <defn-phase>), or
-   NULL */
+   #f */
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Hash_Tree *best_set;
@@ -1445,7 +1493,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
   if (!SAME_OBJ(phase_shift, scheme_make_integer(0))) {
     if (SCHEME_FALSEP(phase_shift)) {
       if (!SCHEME_FALSEP(phase))
-        return NULL;
+        return scheme_false;
     } else if (SCHEME_FALSEP(phase))
       phase_shift = scheme_false;
     else
@@ -1455,12 +1503,12 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
 
   best_set = (Scheme_Hash_Tree *)do_scheme_stx_lookup(stx, phase_shift, NULL, NULL);
   if (!best_set)
-    return NULL;
+    return scheme_false;
 
   /* Find again, this time checking to ensure no ambiguity: */
-  cached_result = (Scheme_Object **)do_scheme_stx_lookup(stx, phase_shift, best_set, exact_match);
+  cached_result = (Scheme_Object **)do_scheme_stx_lookup(stx, phase_shift, best_set, _exact_match);
   if (!cached_result)
-    return NULL;
+    return scheme_false;
 
   result = cached_result[0];
 
@@ -1567,7 +1615,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase)
 {
-  return scheme_stx_lookup_w_nominal(o, phase, NULL, NULL, NULL, NULL, NULL);
+  return scheme_stx_lookup_w_nominal(o, phase, NULL, NULL, NULL, NULL, NULL, NULL);
 }
 
 /******************** module-import bindings ********************/
@@ -3245,7 +3293,7 @@ static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], S
   taint_p = SCHEME_PRIM_CLOSURE_ELS(p)[1];
 
   for(; !SCHEME_NULLP(delta); delta = SCHEME_CDR(delta)) {
-    r = scheme_add_remove_mark(r, SCHEME_CAR(delta));
+    r = scheme_stx_add_remove_mark(r, SCHEME_CAR(delta));
   }
 
   if (SCHEME_TRUEP(taint_p))
@@ -3417,7 +3465,8 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
                                   NULL,
                                   &nom_mod, &nom_a,
                                   &src_phase_index,
-                                  &nominal_src_phase);
+                                  &nominal_src_phase,
+                                  NULL);
 
   if (!m)
     return scheme_false;

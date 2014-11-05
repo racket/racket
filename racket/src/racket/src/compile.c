@@ -592,7 +592,7 @@ make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
     scheme_wrong_syntax(NULL, NULL, code, "empty body not allowed");
 
   forms = scheme_datum_to_syntax(forms, code, code, 0, 0);
-  forms = scheme_add_remove_mark(forms, mark);
+  forms = scheme_stx_add_remove_mark(forms, mark);
 
   name = scheme_build_closure_name(code, rec, drec);
   data->name = name;
@@ -661,9 +661,9 @@ lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
   body = SCHEME_STX_CDR(body);
   body = scheme_datum_to_syntax(body, form, form, 0, 0);
 
-  body = scheme_add_remove_mark(body, mark);
+  body = scheme_stx_add_remove_mark(body, mark);
 
-  args = scheme_add_remove_mark(args, mark); /* for re-expansion */
+  args = scheme_stx_add_remove_mark(args, mark); /* for re-expansion */
   SCHEME_EXPAND_OBSERVE_LAMBDA_RENAMES(erec[drec].observer, args, body);
 
   fn = SCHEME_STX_CAR(form);
@@ -1197,7 +1197,7 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 				   ? SCHEME_RESOLVE_MODIDS
 				   : 0),
 				env->in_modidx, 
-				&menv, NULL, NULL);
+				&menv, NULL, NULL, NULL);
     
     if (SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)) {
       /* Redirect to a macro? */
@@ -1273,7 +1273,7 @@ set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *e
     /* Make sure it's mutable, and check for redirects: */
     var = scheme_lookup_binding(find_name, env, SCHEME_SETTING, 
 				env->in_modidx, 
-				&menv, NULL, NULL);
+				&menv, NULL, NULL, NULL);
 
     SCHEME_EXPAND_OBSERVE_RESOLVE(erec[drec].observer, find_name);
 
@@ -1404,7 +1404,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
                                      ? SCHEME_RESOLVE_MODIDS
                                      : 0),
                                   env->in_modidx, 
-                                  &menv, NULL, NULL);
+                                  &menv, NULL, NULL, NULL);
 
       if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
           || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
@@ -1672,8 +1672,8 @@ case_lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand
 
     newenv = scheme_add_compilation_frame(args, mark, env, 0);
     
-    body = scheme_add_remove_mark(body, mark);
-    args = scheme_add_remove_mark(args, mark);
+    body = scheme_stx_add_remove_mark(body, mark);
+    args = scheme_stx_add_remove_mark(args, mark);
     SCHEME_EXPAND_OBSERVE_CASE_LAMBDA_RENAMES(erec[drec].observer, args, body);
 
     {
@@ -2299,7 +2299,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       rhs = SCHEME_STX_CDR(binding);
       rhs = SCHEME_STX_CAR(rhs);
       if (mark)
-        rhs = scheme_add_remove_mark(rhs, mark);
+        rhs = scheme_stx_add_remove_mark(rhs, mark);
       ce = scheme_compile_expr(rhs, rhs_env, recs, i);
       lv->value = ce;
     } else {
@@ -2341,7 +2341,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       Scheme_Object *ce, *rhs;
       rhs = lv->value;
       if (mark)
-        rhs = scheme_add_remove_mark(rhs, mark);
+        rhs = scheme_stx_add_remove_mark(rhs, mark);
       ce = scheme_compile_expr(rhs, env, recs, i);
       lv->value = ce;
       
@@ -2401,7 +2401,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   recs[num_clauses].value_name = defname ? SCHEME_STX_SYM(defname) : NULL;
   {
     Scheme_Object *cs;
-    if (mark) forms = scheme_add_remove_mark(forms, mark);
+    if (mark) forms = scheme_stx_add_remove_mark(forms, mark);
     cs = scheme_compile_sequence(forms, env, recs, num_clauses);
     last->body = cs;
   }
@@ -2615,14 +2615,14 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
 
     /* Make sure names gets their own renames: */
     name = SCHEME_STX_CAR(v);
-    if (mark) name = scheme_add_remove_mark(name, mark);
+    if (mark) name = scheme_stx_add_remove_mark(name, mark);
 
     if (rec_env_already == 2)
       forward_ref_boundary += scheme_stx_proper_list_length(name);
 
     rhs = SCHEME_STX_CDR(v);
     rhs = SCHEME_STX_CAR(rhs);
-    if (mark) rhs = scheme_add_remove_mark(rhs, mark);
+    if (mark) rhs = scheme_stx_add_remove_mark(rhs, mark);
     
     v = scheme_datum_to_syntax(cons(name, cons(rhs, scheme_null)), v, v, 0, 1);
     v = cons(v, scheme_null);
@@ -2641,7 +2641,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
   vars = first;
 
   body = scheme_datum_to_syntax(body, form, form, 0, 0);
-  if (mark) body = scheme_add_remove_mark(body, mark);
+  if (mark) body = scheme_stx_add_remove_mark(body, mark);
   SCHEME_EXPAND_OBSERVE_LET_RENAMES(erec[drec].observer, vars, body);
 
   /* Pass 2: Expand */
@@ -3660,9 +3660,10 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
     scheme_set_local_syntax(i++, name, macro, stx_env);
 
     if (scheme_is_binding_rename_transformer(SCHEME_PTR_VAL(macro))) {
-      /* Install a free-id=? rename */
-      scheme_install_free_id_rename(name, scheme_rename_transformer_id(SCHEME_PTR_VAL(macro)), rename_rib,
-                                    scheme_make_integer(rhs_env->genv->phase));
+      /* Rebind to the target identifier's binding */
+      scheme_add_binding_from_id(name, scheme_make_integer(rhs_env->genv->phase),
+                                 scheme_stx_lookup(scheme_rename_transformer_id(SCHEME_PTR_VAL(macro)),
+                                                   scheme_make_integer(rhs_env->genv->phase)));
     }
   }
   *_pos = i;
@@ -3845,9 +3846,9 @@ do_letrec_syntaxes(const char *where,
   }
   
   if (mark) {
-    bindings = scheme_add_remove_mark(bindings, mark);
-    var_bindings = scheme_add_remove_mark(var_bindings, mark);
-    body = scheme_add_remove_mark(body, mark);
+    bindings = scheme_stx_add_remove_mark(bindings, mark);
+    var_bindings = scheme_stx_add_remove_mark(var_bindings, mark);
+    body = scheme_stx_add_remove_mark(body, mark);
   }
 
   SCHEME_EXPAND_OBSERVE_LETREC_SYNTAXES_RENAMES(rec[drec].observer, bindings, var_bindings, body);
@@ -3901,7 +3902,7 @@ do_letrec_syntaxes(const char *where,
 
     for (l = names_to_disappear; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
       a = SCHEME_CAR(l);
-      if (mark) a = scheme_add_remove_mark(a, mark);
+      if (mark) a = scheme_stx_add_remove_mark(a, mark);
       SCHEME_CAR(l) = a;
     }
 
@@ -4326,7 +4327,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
                                      ? SCHEME_RESOLVE_MODIDS
                                      : 0),
                                   env->in_modidx,
-                                  &menv, NULL, NULL);
+                                  &menv, NULL, NULL, NULL);
     
       if (SCHEME_STX_PAIRP(first))
         *current_val = val;
@@ -4514,7 +4515,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                                        ? (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)
                                        : 0),
 				    env->in_modidx, 
-				    &menv, &protected, &inline_variant);
+				    &menv, &protected, NULL, &inline_variant);
 
         SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer,find_name);
 
@@ -4632,7 +4633,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                                        ? (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)
                                        : 0),
 				    env->in_modidx, 
-				    &menv, NULL, NULL);
+				    &menv, NULL, NULL, NULL);
 
         SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
 	if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
@@ -4724,7 +4725,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                                      ? (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)
                                      : 0),
 				  env->in_modidx, 
-				  &menv, NULL, NULL);
+				  &menv, NULL, NULL, NULL);
 
       SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
 
@@ -5180,20 +5181,16 @@ datum_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info 
 
 int scheme_check_top_identifier_bound(Scheme_Object *c, Scheme_Env *genv, int disallow_unbound)
 {
-  Scheme_Object *symbol = c;
-  Scheme_Object *modidx, *tl_id;
+  Scheme_Object *symbol, *binding;
+  Scheme_Object *modidx;
   int bad;
   
-  tl_id = scheme_tl_id_sym(genv, symbol, NULL, 0, NULL, NULL);
-  if (NOT_SAME_OBJ(tl_id, SCHEME_STX_SYM(symbol))) {
-    /* Since the module has a rename for this id, count it as
-       defined. This covers the unusual case that a marked identifier
-       is bound in a module, but the identifier doesn't have the
-       module's post_ex_rename_set in its lexical information. */
-    bad = 0;
-  } else {
-    modidx = scheme_stx_module_name(NULL, &symbol, scheme_make_integer(genv->phase), NULL, NULL, NULL, 
-                                    NULL, NULL, NULL, NULL, NULL, NULL);
+  binding = scheme_stx_lookup(c, scheme_make_integer(genv->phase));
+
+  if (SCHEME_VECTORP(binding)) {
+    modidx = SCHEME_VEC_ELS(binding)[0];
+    if (SCHEME_FALSEP(modidx)) modidx = NULL;
+    symbol = SCHEME_VEC_ELS(binding)[1];
     if (modidx) {
       /* If it's an access path, resolve it: */
       if (genv->module
@@ -5203,27 +5200,28 @@ int scheme_check_top_identifier_bound(Scheme_Object *c, Scheme_Env *genv, int di
         bad = 1;
     } else
       bad = 1;
+  } else
+    bad = 1;
 
-    if (disallow_unbound) {
-      if (bad || !scheme_lookup_in_table(genv->toplevel, (const char *)SCHEME_STX_SYM(c))) {
-        GC_CAN_IGNORE const char *reason;
-        if (genv->phase == 1) {
-          reason = "unbound identifier in module (in phase 1, transformer environment)";
-          /* Check in the run-time environment */
-          if (scheme_lookup_in_table(genv->template_env->toplevel, (const char *)SCHEME_STX_SYM(c))) {
-            reason = ("unbound identifier in module (in the transformer environment, which does"
-                      " not include the run-time definition)");
-          } else if (genv->template_env->syntax
-                     && scheme_lookup_in_table(genv->template_env->syntax, (const char *)SCHEME_STX_SYM(c))) {
-            reason = ("unbound identifier in module (in the transformer environment, which does"
-                      " not include the macro definition that is visible to run-time expressions)");
-          }
-        } else if (genv->phase == 0)
-          reason = "unbound identifier in module";
-        else
-          reason = "unbound identifier in module (in phase %d)";
-        scheme_unbound_syntax(scheme_expand_stx_string, NULL, c, reason, genv->phase);
-      }
+  if (disallow_unbound) {
+    if (bad || !scheme_lookup_in_table(genv->toplevel, (const char *)SCHEME_STX_SYM(c))) {
+      GC_CAN_IGNORE const char *reason;
+      if (genv->phase == 1) {
+        reason = "unbound identifier in module (in phase 1, transformer environment)";
+        /* Check in the run-time environment */
+        if (scheme_lookup_in_table(genv->template_env->toplevel, (const char *)SCHEME_STX_SYM(c))) {
+          reason = ("unbound identifier in module (in the transformer environment, which does"
+                    " not include the run-time definition)");
+        } else if (genv->template_env->syntax
+                   && scheme_lookup_in_table(genv->template_env->syntax, (const char *)SCHEME_STX_SYM(c))) {
+          reason = ("unbound identifier in module (in the transformer environment, which does"
+                    " not include the macro definition that is visible to run-time expressions)");
+        }
+      } else if (genv->phase == 0)
+        reason = "unbound identifier in module";
+      else
+        reason = "unbound identifier in module (in phase %d)";
+      scheme_unbound_syntax(scheme_expand_stx_string, NULL, c, reason, genv->phase);
     }
   }
 
@@ -5260,7 +5258,7 @@ static Scheme_Object *check_top(Scheme_Object *orig_form,
 static Scheme_Object *
 top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
-  Scheme_Object *c;
+  Scheme_Object *c, *b;
   int need_bound_check = 0;
 
   c = check_top(form, env, rec, drec, &need_bound_check);
@@ -5268,7 +5266,11 @@ top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
   if (need_bound_check)
     scheme_register_unbound_toplevel(env, c);
 
-  c = scheme_tl_id_sym(env->genv, c, NULL, 0, NULL, NULL);
+  b = scheme_stx_lookup(c, scheme_make_integer(env->genv->phase));
+  if (SCHEME_VECTORP(b))
+    c = SCHEME_VEC_ELS(b)[1];
+  else
+    c = SCHEME_STX_VAL(c);
 
   if (env->genv->module && !rec[drec].resolve_module_ids) {
     /* Self-reference in a module; need to remember the modidx.  Don't
@@ -5315,16 +5317,18 @@ Scheme_Object *scheme_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 Scheme_Object *scheme_pair_lifted(Scheme_Object *_ip, Scheme_Object **_ids, Scheme_Object *expr, Scheme_Comp_Env *env)
 {
   Scheme_Comp_Env **ip = (Scheme_Comp_Env **)_ip, *naya;
-  Scheme_Object *ids, *id;
+  Scheme_Object *ids, *id, *mark;
   int pos;
 
   pos = scheme_list_length(*_ids);
-  naya = scheme_new_compilation_frame(pos, SCHEME_CAPTURE_LIFTED, (*ip)->next);
+  mark = scheme_new_mark(0);
+  naya = scheme_new_compilation_frame(pos, SCHEME_CAPTURE_LIFTED, mark, (*ip)->next);
   (*ip)->next = naya;
   *ip = naya;
 
   for (ids = *_ids; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
+    id = scheme_stx_add_remove_mark(id, mark);
     scheme_add_compilation_binding(--pos, id, naya);
   }
 
@@ -5425,7 +5429,7 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 #endif
 
-  inserted = scheme_new_compilation_frame(0, 0, env);
+  inserted = scheme_new_compilation_frame(0, 0, NULL, env);
 
   ip = MALLOC_N(Scheme_Comp_Env *, 1);
   *ip = inserted;
@@ -5513,7 +5517,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
    It is espcailly ugly because we have to expand macros
    before deciding what we have. */
 {
-  Scheme_Object *first, *rib, *ctx, *ectx, *orig = forms, *pre_exprs = scheme_null, *mark;
+  Scheme_Object *first, *rib, *ctx, *ectx, *orig = forms, *pre_exprs = scheme_null;
   void **d;
   Scheme_Compile_Info recs[2];
   DupCheckRecord r;
@@ -5536,8 +5540,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     }
   }
 
-
-  rib = scheme_make_rename_rib();
+  rib = scheme_new_mark(0);
   ctx = scheme_alloc_object();
   ctx->type = scheme_intdef_context_type;
   d = MALLOC_N(void*, 3);
@@ -5549,12 +5552,8 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
   scheme_begin_dup_symbol_check(&r, env);
 
-  mark = scheme_new_mark(0);
-  env = scheme_new_compilation_frame(0, SCHEME_INTDEF_FRAME, mark, env);
+  env = scheme_new_compilation_frame(0, SCHEME_INTDEF_FRAME, rib, env);
   env->intdef_name = ctx;
-
-  forms = scheme_datum_to_syntax(forms, NULL, NULL, 0, 0);
-  forms = scheme_add_remove_mark(forms, mark);
 
  try_again:
 
@@ -5572,7 +5571,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     Scheme_Object *old_first;
 
     old_first = first;
-    first = scheme_add_rename_rib(first, rib);
+    first = scheme_stx_add_remove_mark(first, rib);
     
     SCHEME_EXPAND_OBSERVE_BLOCK_RENAMES(rec[drec].observer,old_first,first);
   }
@@ -5646,18 +5645,18 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
           pre_exprs = scheme_reverse(pre_exprs);
 
-          exp_mark = scheme_new_mark();
+          exp_mark = scheme_new_mark(1);
 
           begin_stx = scheme_datum_to_syntax(begin_symbol, 
                                              scheme_false, 
                                              scheme_sys_wraps(env), 
                                              0, 0);
-          begin_stx = scheme_add_remove_mark(begin_stx, exp_mark);
+          begin_stx = scheme_stx_add_remove_mark(begin_stx, exp_mark);
           values_app_stx = scheme_datum_to_syntax(scheme_make_pair(values_symbol, scheme_null),
                                                   scheme_false, 
                                                   scheme_sys_wraps(env), 
                                                   0, 0);
-          values_app_stx = scheme_add_remove_mark(values_app_stx, exp_mark);
+          values_app_stx = scheme_stx_add_remove_mark(values_app_stx, exp_mark);
 
           while (SCHEME_PAIRP(pre_exprs)) {
             v = scheme_make_pair(scheme_null,
@@ -5743,7 +5742,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  Scheme_Object *names, *expr, *l, *a;
 	  int pos;
 
-	  new_env = scheme_new_compilation_frame(0, SCHEME_FOR_INTDEF, env);
+	  new_env = scheme_new_compilation_frame(0, SCHEME_FOR_INTDEF, NULL, env);
 
 	  names = SCHEME_STX_CAR(v);
 	  expr = SCHEME_STX_CDR(v);
@@ -5771,23 +5770,13 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	    scheme_set_local_syntax(cnt++, a, scheme_false, new_env);
 	  }
 
-	  /* Extend shared rib with renamings */
-	  scheme_add_env_renames(rib, new_env, env);
-
-          /* Check for duplicates after extending the rib with renamings,
-             since the renamings properly track marks. */
-          for (l = names; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
-	    a = SCHEME_STX_CAR(l);
-            scheme_dup_symbol_check(&r, "internal definition", a, "binding", first);
-          }
-
 	  if (!is_val) {
 	    /* Evaluate and bind syntaxes */
             SCHEME_EXPAND_OBSERVE_PREPARE_ENV(rec[drec].observer);
 	    scheme_prepare_exp_env(new_env->genv);
             scheme_prepare_compile_env(new_env->genv->exp_env);
 	    pos = 0;
-	    expr = scheme_add_rename_rib(expr, rib);
+	    expr = scheme_stx_add_remove_mark(expr, rib);
 	    scheme_bind_syntaxes("local syntax definition", 
 				 names, expr,
 				 new_env->genv->exp_env, new_env->insp, rec, drec,
@@ -5807,7 +5796,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
           {
             Scheme_Object *old_first;
             old_first = first;
-            first = scheme_add_rename_rib(first, rib);
+            first = scheme_stx_add_remove_mark(first, rib);
             SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
             SCHEME_EXPAND_OBSERVE_BLOCK_RENAMES(rec[drec].observer,old_first,first);
           }
@@ -5861,7 +5850,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  result = scheme_make_pair(letrec_values_symbol, scheme_make_pair(start, result));
 	}
 	result = scheme_datum_to_syntax(result, forms, scheme_sys_wraps(env), 0, 2);
-	result = scheme_add_rename_rib(result, rib);
+	result = scheme_stx_add_remove_mark(result, rib);
 
 	more = 0;
       } else {
@@ -5886,7 +5875,6 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
     if (!more) {
       /* We've converted to a letrec or letrec-values+syntaxes */
-      scheme_stx_seal_rib(rib);
       rec[drec].env_already = (mixed ? 2 : 1);
 
       if (rec[drec].comp) {
@@ -5909,8 +5897,6 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
       }
     }
   }
-
-  scheme_stx_seal_rib(rib);
 
   if (SCHEME_PAIRP(pre_exprs))
     pre_exprs = scheme_reverse(pre_exprs);

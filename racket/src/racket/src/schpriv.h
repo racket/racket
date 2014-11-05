@@ -1091,12 +1091,16 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 int scheme_stx_has_empty_wraps(Scheme_Object *);
 
 Scheme_Object *scheme_new_mark(int canceling);
-Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m);
+Scheme_Object *scheme_stx_add_remove_mark(Scheme_Object *o, Scheme_Object *m);
+Scheme_Object *scheme_stx_add_remove_marks(Scheme_Object *o, Scheme_Hash_Tree *marks);
+
+Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m);
 
 Scheme_Object *scheme_make_shift(Scheme_Object *old_midx, Scheme_Object *new_midx,
                                  Scheme_Hash_Table *export_registry, Scheme_Object *insp,
                                  Scheme_Object *ignore_old_identity);
 Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift);
+Scheme_Object *scheme_stx_add_shifts(Scheme_Object *o, Scheme_Object *shift);
 Scheme_Object *scheme_stx_shift(Scheme_Object *stx, Scheme_Object *shift,
                                 Scheme_Object *old_midx, Scheme_Object *new_midx,
                                 Scheme_Hash_Table *export_registry,
@@ -1107,11 +1111,6 @@ Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *re
                                              Scheme_Object *uid);
 
 Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv);
-
-void scheme_install_free_id_rename(Scheme_Object *id, 
-                                   Scheme_Object *orig_id,
-                                   Scheme_Object *rename_rib,
-                                   Scheme_Object *phase);
 
 struct Scheme_Module_Phase_Exports; /* forward declaration */
 
@@ -2430,7 +2429,10 @@ typedef struct Scheme_Comp_Env
   Scheme_Object *insp;  /* code inspector for checking protected */
   Comp_Prefix *prefix;  /* stack base info: globals and stxes */
 
-  struct Scheme_Object **values; /* bindings (symbols) in this frame */
+  Scheme_Object *mark; /* can be NULL */
+
+  struct Scheme_Object **binders; /* identifiers */
+  struct Scheme_Object **bindings; /* symbols */
 
   struct Scheme_Object *renames; /* an stx lexical rename or a list of them */
 
@@ -2444,8 +2446,6 @@ typedef struct Scheme_Comp_Env
 
   Scheme_Hash_Table *skip_table; /* for jumping ahead in the chain */
   int skip_depth;                /* depth in simple frames, used to trigger skip_table creation */
-
-  Scheme_Object *marks; /* a list: accumulated marks for this context */
 
   struct Scheme_Comp_Env *next;
 } Scheme_Comp_Env;
@@ -2681,7 +2681,7 @@ Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, in
 
 Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *genv, 
                                              Scheme_Object **_id, int *_use_map);
-Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Comp_Env *env);
+Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env, Scheme_Comp_Env **_at_env);
 Scheme_Object *scheme_do_local_lift_expr(const char *who, int stx_pos, 
                                          int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_local_lift_context(Scheme_Comp_Env *env);
@@ -2724,6 +2724,7 @@ Scheme_Comp_Env *scheme_require_renames(Scheme_Comp_Env *env);
 Scheme_Object *scheme_lookup_binding(Scheme_Object *symbol, Scheme_Comp_Env *env, int flags, 
 				     Scheme_Object *in_modidx, 
 				     Scheme_Env **_menv, int *_protected,
+                                     Scheme_Object **_local_binder,
                                      Scheme_Object **_inline_variant);
 int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env);
 
@@ -3277,6 +3278,7 @@ struct Scheme_Env {
 
   Scheme_Hash_Tree *original_marks; /* mark set for original identifiers */
   Scheme_Hash_Table *binding_names; /* symbols that are already mapped in this namespace */
+  Scheme_Object *original_shifts; /* module-index shifts */
 
   int id_counter;
 };

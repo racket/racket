@@ -50,7 +50,8 @@ THREAD_LOCAL_DECL(static int env_uid_counter);
 
 typedef struct Compile_Data {
   int num_const;
-  Scheme_Object **const_names;
+  Scheme_Object **const_binders;
+  Scheme_Object **const_bindings;
   Scheme_Object **const_vals;
   int *sealed; /* NULL => already sealed */
   int *use;
@@ -295,10 +296,14 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Schem
   frame->type = scheme_rt_comp_env;
 #endif
 
+  frame->mark = mark;
+
   {
     Scheme_Object **vals;
     vals = MALLOC_N(Scheme_Object *, count);
-    frame->values = vals;
+    frame->binders = vals;
+    vals = MALLOC_N(Scheme_Object *, count);
+    frame->bindings = vals;
   }
 
   frame->num_bindings = num_bindings;
@@ -308,12 +313,6 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Schem
   frame->insp = base->insp;
   frame->prefix = base->prefix;
   frame->in_modidx = base->in_modidx;
-
-  if (mark)
-    mark = scheme_make_pair(mark, base->marks);
-  else
-    mark = base->marks;
-  frame->marks = mark;
 
   if (flags & SCHEME_NON_SIMPLE_FRAME)
     frame->skip_depth = 0;
@@ -352,8 +351,6 @@ Scheme_Comp_Env *scheme_new_comp_env(Scheme_Env *genv, Scheme_Object *insp, int 
 #endif
 
   e->prefix = cp;
-
-  e->marks = scheme_null;
 
   return e;
 }
@@ -401,11 +398,18 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
   if ((index >= frame->num_bindings) || (index < 0))
     scheme_signal_error("internal error: scheme_add_binding: "
 			"index out of range: %d", index);
+
+  if (frame->mark) {
+    /* expected to be redundant, but just in case: */
+    val = scheme_stx_add_remove_mark(val, frame->mark);
+  }
   
+  frame->binders[index] = val;
+
   binding = scheme_gensym(SCHEME_STX_VAL(val));
   scheme_add_binding_from_id(val, scheme_make_integer(frame->genv->phase), binding);
 
-  frame->values[index] = binding;
+  frame->bindings[index] = binding;
   frame->skip_table = NULL;
 }
 
@@ -482,14 +486,16 @@ Scheme_Object *scheme_frame_get_provide_lifts(Scheme_Comp_Env *env)
 
 void scheme_add_local_syntax(int cnt, Scheme_Comp_Env *env)
 {
-  Scheme_Object **ns, **vs;
+  Scheme_Object **ns, **bs, **vs;
   
   if (cnt) {
     ns = MALLOC_N(Scheme_Object *, cnt);
+    bs = MALLOC_N(Scheme_Object *, cnt);
     vs = MALLOC_N(Scheme_Object *, cnt);
 
     COMPILE_DATA(env)->num_const = cnt;
-    COMPILE_DATA(env)->const_names = ns;
+    COMPILE_DATA(env)->const_binders = ns;
+    COMPILE_DATA(env)->const_bindings = bs;
     COMPILE_DATA(env)->const_vals = vs;
 
   }
@@ -501,10 +507,14 @@ void scheme_set_local_syntax(int pos,
 {
   Scheme_Object *binding;
 
+  if (env->mark)
+    name = scheme_stx_add_remove_mark(name, env->mark);
+
   binding = scheme_gensym(SCHEME_STX_VAL(name));
   scheme_add_binding_from_id(name, scheme_make_integer(env->genv->phase), binding);
 
-  COMPILE_DATA(env)->const_names[pos] = binding;
+  COMPILE_DATA(env)->const_binders[pos] = name;
+  COMPILE_DATA(env)->const_bindings[pos] = binding;
   COMPILE_DATA(env)->const_vals[pos] = val;
   env->skip_table = NULL;
 }
@@ -523,13 +533,13 @@ scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark, Scheme_Co
   for (i = 0; i < len ; i++) {
     if (SCHEME_STX_SYMBOLP(vals)) {
       if (mark)
-        vals = scheme_add_remove_mark(vals, mark);
+        vals = scheme_stx_add_remove_mark(vals, mark);
       scheme_add_compilation_binding(i, vals, frame);
     } else {
       Scheme_Object *a;
       a = SCHEME_STX_CAR(vals);
       if (mark)
-        a = scheme_add_remove_mark(a, mark);
+        a = scheme_stx_add_remove_mark(a, mark);
       scheme_add_compilation_binding(i, a, frame);
       vals = SCHEME_STX_CDR(vals);
     }
@@ -1019,12 +1029,12 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
       dj++;
     dp += frame->num_bindings;
     for (i = frame->num_bindings; i--; ) {
-      if (frame->values[i]) {
-	scheme_hash_set(table, frame->values[i], scheme_true);
+      if (frame->bindings[i]) {
+	scheme_hash_set(table, frame->bindings[i], scheme_true);
       }
     }
     for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-      scheme_hash_set(table, COMPILE_DATA(frame)->const_names[i], scheme_true);
+      scheme_hash_set(table, COMPILE_DATA(frame)->const_bindings[i], scheme_true);
     }
   }
 
@@ -1074,6 +1084,7 @@ Scheme_Object *
 scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 		      Scheme_Object *in_modidx,
 		      Scheme_Env **_menv, int *_protected,
+                      Scheme_Object **_local_binder,
                       Scheme_Object **_inline_variant)
 {
   Scheme_Comp_Env *frame;
@@ -1082,6 +1093,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   Scheme_Object *binding, *val, *modidx, *modname, *src_find_id, *find_global_id, *mod_defn_phase;
   Scheme_Object *rename_insp = NULL, *mod_constant = NULL, *shape;
   Scheme_Env *genv;
+
+  if (_local_binder) *_local_binder = NULL;
 
   binding = scheme_stx_lookup_w_nominal(find_id, scheme_make_integer(env->genv->phase),
                                         NULL,
@@ -1119,8 +1132,9 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
           skip_stops = 1;
         
         for (i = frame->num_bindings; i--; ) {
-          if (frame->values[i] && SAME_OBJ(binding, frame->values[i])) {
+          if (frame->bindings[i] && SAME_OBJ(binding, frame->bindings[i])) {
             /* Found a lambda-, let-, etc. bound variable: */
+            if (_local_binder) *_local_binder = frame->binders[i];
             check_taint(find_id);
             if (flags & SCHEME_DONT_MARK_USE)
               return scheme_make_local(scheme_local_type, p+i, 0);
@@ -1130,7 +1144,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
         }
         
         for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-          if (SAME_OBJ(binding, COMPILE_DATA(frame)->const_names[i])) {
+          if (SAME_OBJ(binding, COMPILE_DATA(frame)->const_bindings[i])) {
+            if (_local_binder) *_local_binder = COMPILE_DATA(frame)->const_binders[i];
             check_taint(find_id);
             
             val = COMPILE_DATA(frame)->const_vals[i];
@@ -1621,7 +1636,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
                           NULL);
 
   if (local_mark)
-    expr = scheme_add_remove_mark(expr, local_mark);
+    expr = scheme_stx_add_remove_mark(expr, local_mark);
 
   /* We don't really need a new symbol each time, since the mark
      will generate new bindings. But lots of things work better or faster
@@ -1633,7 +1648,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
     id_sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
     id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
-    id = scheme_add_remove_mark(id, scheme_new_mark(1));
+    id = scheme_stx_add_remove_mark(id, scheme_new_mark(1));
 
     rev_ids = scheme_make_pair(id, rev_ids);
   }
@@ -1656,7 +1671,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
   for (; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
     if (local_mark)
-      id = scheme_add_remove_mark(id, local_mark);
+      id = scheme_stx_add_remove_mark(id, local_mark);
     rev_ids = scheme_make_pair(id, rev_ids);
   }
   ids = scheme_reverse(rev_ids);
@@ -1704,7 +1719,7 @@ scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, 
                           NULL);
   
   if (local_mark)
-    expr = scheme_add_remove_mark(expr, local_mark);
+    expr = scheme_stx_add_remove_mark(expr, local_mark);
   orig_expr = expr;
 
   pr = scheme_make_pair(expr, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3]);
@@ -1759,10 +1774,10 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
 
   form = orig_form;
   if (local_mark)
-    form = scheme_add_remove_mark(form, local_mark);
-  form = scheme_add_remove_mark(form, mark);
+    form = scheme_stx_add_remove_mark(form, local_mark);
+  form = scheme_stx_add_remove_mark(form, mark);
   if (local_mark)
-    form = scheme_add_remove_mark(form, local_mark);
+    form = scheme_stx_add_remove_mark(form, local_mark);
 
   SCHEME_EXPAND_OBSERVE_LIFT_REQUIRE(scheme_get_expand_observe(), req_form, orig_form, form);
 
@@ -1792,7 +1807,7 @@ Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *loc
                           NULL);
   
   if (local_mark)
-    form = scheme_add_remove_mark(form, local_mark);
+    form = scheme_stx_add_remove_mark(form, local_mark);
   form = scheme_datum_to_syntax(scheme_make_pair(scheme_datum_to_syntax(scheme_intern_symbol("#%provide"), 
                                                                         scheme_false, scheme_sys_wraps(env), 
                                                                         0, 0),
@@ -1826,7 +1841,7 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
   inlined_e.base.prefix = NULL;
 
   v = scheme_lookup_binding(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, 
-                            NULL, NULL, NULL, NULL);
+                            NULL, NULL, NULL, NULL, NULL);
   if (v) {
     if (!SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type)) {
       *_use_map = -1;
@@ -1839,17 +1854,48 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
   return v;
 }
 
-Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Comp_Env *env)
+Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env, Scheme_Comp_Env **_at_env)
 {
-  Scheme_Object *l;
+  Scheme_Comp_Env *frame;
+  Scheme_Object *id, *prop;
 
-  for (l = env->marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    sym = scheme_add_remove_mark(sym, SCHEME_CAR(l));
+  for (frame = env; frame->next != NULL; frame = frame->next) {
+    int i;
+
+    for (i = frame->num_bindings; i--; ) {
+      id = frame->binders[i];
+      if (id) {
+	if (SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(id))) {
+          if (scheme_hash_tree_subset(((Scheme_Stx *)sym)->marks,
+                                      ((Scheme_Stx *)id)->marks)) {
+            prop = scheme_stx_property(id, unshadowable_symbol, NULL);
+            if (SCHEME_FALSEP(prop)) {
+              if (_at_env) *_at_env = frame;
+              return id;
+            }
+          }
+	}
+      }
+    }
+
+    for (i = COMPILE_DATA(frame)->num_const; i--; ) {
+      id = frame->binders[i];
+      if (SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(id))) {
+        if (scheme_hash_tree_subset(((Scheme_Stx *)sym)->marks,
+                                    ((Scheme_Stx *)id)->marks)) {
+          prop = scheme_stx_property(id, unshadowable_symbol, NULL);
+          if (SCHEME_FALSEP(prop)) {
+            if (_at_env) *_at_env = frame;
+            return id;
+          }
+        }
+      }
+    }
   }
 
-  /* FIXME: handle rename transformers */
+  if (_at_env) *_at_env = NULL;
 
-  return sym;
+  return NULL;
 }
 
 /*========================================================================*/

@@ -99,7 +99,6 @@ static Scheme_Object *intdef_context_seal(int argc, Scheme_Object *argv[]);
 static Scheme_Object *intdef_context_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *id_intdef_remove(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_introduce(int argc, Scheme_Object *argv[]);
-static Scheme_Object *local_module_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_get_shadower(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_exports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_definitions(int argc, Scheme_Object *argv[]);
@@ -856,7 +855,7 @@ static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client 
 /*                        namespace constructors                          */
 /*========================================================================*/
 
-void scheme_prepare_env_renames(Scheme_Env *env, int kind)
+void scheme_prepare_env_renames(Scheme_Env *env)
 {
   if (!env->rename_set) {
     Scheme_Object *rns, *insp;
@@ -865,7 +864,7 @@ void scheme_prepare_env_renames(Scheme_Env *env, int kind)
     if (!insp)
       insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
-    rns = scheme_make_module_rename_set(kind, NULL, insp);
+    rns = scheme_make_module_rename_set(insp);
     env->rename_set = rns;
   }
 }
@@ -1031,7 +1030,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
     eenv->label_env = env->label_env;
     eenv->instance_env = env->instance_env;
 
-    scheme_prepare_env_renames(env, mzMOD_RENAME_TOPLEVEL);
+    scheme_prepare_env_renames(env);
     eenv->rename_set = env->rename_set;
 
     if (env->disallow_unbound)
@@ -1069,7 +1068,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
     }
     eenv->modchain = modchain;
 
-    scheme_prepare_env_renames(env, mzMOD_RENAME_TOPLEVEL);
+    scheme_prepare_env_renames(env);
     eenv->rename_set = env->rename_set;
 
     env->template_env = eenv;
@@ -1419,8 +1418,7 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
 
   if (env->rename_set) {
     rn = scheme_get_module_rename_from_set(env->rename_set,
-                                           scheme_make_integer(env->phase),
-                                           0);
+                                           scheme_make_integer(env->phase));
     if (rn) {
       scheme_remove_module_rename(rn, n);
       if (env->module) {
@@ -1431,8 +1429,7 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
                                     n,
                                     env->mod_phase,
                                     NULL,
-                                    NULL,
-                                    0);
+                                    NULL);
       }
     }
   } else
@@ -1460,10 +1457,9 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
       if (v) {
         v = SCHEME_PTR_VAL(v);
         if (scheme_is_binding_rename_transformer(v)) {
-          scheme_install_free_id_rename(n, 
-                                        scheme_rename_transformer_id(v), 
-                                        rn, 
-                                        scheme_make_integer(env->phase));
+          scheme_add_binding_from_id(n, scheme_make_integer(env->phase),
+                                     scheme_stx_lookup(scheme_rename_transformer_id(v),
+                                                       scheme_make_integer(env->phase)));
         }
       }
     }
@@ -1652,8 +1648,10 @@ namespace_identifier(int argc, Scheme_Object *argv[])
   obj = scheme_datum_to_syntax(obj, scheme_false, scheme_false, 1, 0);
 
   /* Renamings: */
-  if (genv->rename_set)
-    obj = scheme_add_rename(obj, genv->rename_set);
+  if (genv->original_marks)
+    obj = scheme_stx_add_remove_marks(obj, genv->original_marks);
+  if (genv->original_shifts)
+    obj = scheme_stx_add_shifts(obj, genv->original_shifts);
 
   return obj;
 }
@@ -2081,7 +2079,7 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
   }
 
   if (scheme_current_thread->current_local_mark)
-    sym = scheme_add_remove_mark(sym, scheme_current_thread->current_local_mark);
+    sym = scheme_stx_add_remove_mark(sym, scheme_current_thread->current_local_mark);
 
   menv = NULL;
 
@@ -2251,7 +2249,7 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   }
   d[0] = env;
 
-  rib = scheme_make_rename_rib();
+  rib = scheme_new_mark(0);
 
   c = scheme_alloc_object();
   c->type = scheme_intdef_context_type;
@@ -2275,7 +2273,6 @@ static Scheme_Object *intdef_context_seal(int argc, Scheme_Object *argv[])
     scheme_wrong_contract("internal-definition-context-seal", 
                           "internal-definition-context?", 0, argc, argv);
   
-  scheme_stx_seal_rib(SCHEME_PTR2_VAL(argv[0]));
   return scheme_void;
 }
 
@@ -2309,16 +2306,9 @@ id_intdef_remove(int argc, Scheme_Object *argv[])
   skips = scheme_null;
 
   while (SCHEME_PAIRP(l)) {
-    res = scheme_stx_id_remove_rib(res, SCHEME_PTR2_VAL(SCHEME_CAR(l)));
+    res = scheme_stx_remove_mark(res, SCHEME_PTR2_VAL(SCHEME_CAR(l)));
     skips = scheme_make_pair(SCHEME_PTR2_VAL(SCHEME_CAR(l)), skips);
     l = SCHEME_CDR(l);
-  }
-
-  if (scheme_stx_ribs_matter(res, skips)) {
-    /* Removing ribs leaves the binding for this identifier in limbo, because
-       the rib that binds it depends on the removed ribs. Invent in inaccessible
-       identifier. */
-    res = scheme_add_remove_mark(res, scheme_new_mark());
   }
   
   return res;
@@ -2339,42 +2329,7 @@ local_introduce(int argc, Scheme_Object *argv[])
     scheme_wrong_contract("syntax-local-introduce", "syntax?", 0, argc, argv);
 
   if (scheme_current_thread->current_local_mark)
-    s = scheme_add_remove_mark(s, scheme_current_thread->current_local_mark);
-
-  return s;
-}
-
-static Scheme_Object *
-local_module_introduce(int argc, Scheme_Object *argv[])
-{
-  Scheme_Comp_Env *env;
-  Scheme_Object *s, *v;
-
-  env = scheme_current_thread->current_local_env;
-  if (!env)
-    not_currently_transforming("syntax-local-module-introduce");
-
-  s = argv[0];
-  if (!SCHEME_STXP(s))
-    scheme_wrong_contract("syntax-local-module-introduce", "syntax?", 0, argc, argv);
-
-  v = scheme_stx_source_module(s, 0, 0);
-  if (SCHEME_FALSEP(v)) {
-    if (env->genv->module
-        && env->genv->module->rn_stx
-        && SCHEME_VECTORP(env->genv->module->rn_stx)) {
-      /* This is a submodule, and `rn_stx' has renames for the enclosing modules */
-      int i;
-      for (i = SCHEME_VEC_SIZE(env->genv->module->rn_stx); i-- > 1; ) {
-        v = SCHEME_VEC_ELS(env->genv->module->rn_stx)[i];
-        s = scheme_add_rename(s, scheme_stx_to_rename(v));
-      }
-    }
-    if (env->genv->rename_set)
-      s = scheme_add_rename(s, env->genv->rename_set);
-    if (env->genv->post_ex_rename_set)
-      s = scheme_add_rename(s, env->genv->post_ex_rename_set);
-  }
+    s = scheme_stx_add_remove_mark(s, scheme_current_thread->current_local_mark);
 
   return s;
 }
@@ -2382,60 +2337,34 @@ local_module_introduce(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 local_get_shadower(int argc, Scheme_Object *argv[])
 {
-  Scheme_Comp_Env *env;
-  Scheme_Object *sym, *sym_marks = NULL, *orig_sym, *uid = NULL, *free_id = NULL;
+  Scheme_Comp_Env *env, *bind_env;
+  Scheme_Object *sym, *binder;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
     not_currently_transforming("syntax-local-get-shadower");
 
   sym = argv[0];
-  orig_sym = sym;
 
   if (!(SCHEME_STXP(sym) && SCHEME_SYMBOLP(SCHEME_STX_VAL(sym))))
     scheme_wrong_contract("syntax-local-get-shadower", "identifier?", 0, argc, argv);
 
-  sym_marks = scheme_stx_extract_marks(sym);
+  binder = scheme_find_local_binder(sym, env, &bind_env);
 
-  uid = scheme_find_local_shadower(sym, sym_marks, env, &free_id);
-
-  if (!uid) {
-    uid = scheme_tl_id_sym(env->genv, sym, NULL, 0, 
-                           scheme_make_integer(env->genv->phase), NULL);
-    if (!SAME_OBJ(uid, SCHEME_STX_VAL(sym))) {
-      /* has a toplevel biding via marks or context; keep it */
-    } else {
-      /* No lexical shadower, but strip module context, if any */
-      sym = scheme_stx_strip_module_context(sym);
-      /* Add current module context, if any */
-      sym = local_module_introduce(1, &sym);
-
-      if (!scheme_stx_is_clean(orig_sym))
-        sym = scheme_stx_taint(sym);
-    }
-
-    return sym;
+  if (!binder) {
+    if (env->genv->original_marks)
+      sym = scheme_stx_add_remove_marks(sym, env->genv->original_marks);
+    if (env->genv->original_shifts)
+      sym = scheme_stx_add_shifts(sym, env->genv->original_shifts);
   }
 
-  {
-    Scheme_Object *rn, *result;
-
-    result = scheme_datum_to_syntax(SCHEME_STX_VAL(sym), orig_sym, sym, 0, 0);
-    ((Scheme_Stx *)result)->props = ((Scheme_Stx *)orig_sym)->props;
-
-    rn = scheme_make_rename(uid, 1);
-    scheme_set_rename(rn, 0, result);
-
-    result = scheme_add_rename(result, rn);
-
-    if (free_id)
-      scheme_install_free_id_rename(result, free_id, NULL, scheme_make_integer(0));
-
-    if (!scheme_stx_is_clean(orig_sym))
-      result = scheme_stx_taint(result);
-
-    return result;
+  while (env != bind_env) {
+    if (env->mark)
+      sym = scheme_stx_add_remove_mark(sym, env->mark);
+    env = env->next;
   }
+
+  return sym;
 }
 
 static Scheme_Object *
@@ -2447,7 +2376,7 @@ introducer_proc(void *mark, int argc, Scheme_Object *argv[])
   if (!SCHEME_STXP(s))
     scheme_wrong_contract("syntax-introducer", "syntax?", 0, argc, argv);
 
-  return scheme_add_remove_mark(s, (Scheme_Object *)mark);
+  return scheme_stx_add_remove_mark(s, (Scheme_Object *)mark);
 }
 
 static Scheme_Object *
@@ -2455,7 +2384,7 @@ make_introducer(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *mark;
 
-  mark = scheme_new_mark();
+  mark = scheme_new_mark(1);
 
   return scheme_make_closed_prim_w_arity(introducer_proc, mark,
 					 "syntax-introducer", 1, 1);
