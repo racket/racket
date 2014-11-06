@@ -955,7 +955,7 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
   return r;
 }
 
-Scheme_Object *scheme_gensym(Scheme_Obejct *base)
+Scheme_Object *scheme_gensym(Scheme_Object *base)
 {
   Scheme_Object *a[1];
   a[0] = base;

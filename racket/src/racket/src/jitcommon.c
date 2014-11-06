@@ -295,13 +295,13 @@ static int common0(mz_jit_state *jitter, void *_data)
   jit_subi_p(JIT_R1, JIT_R1, WORDS_TO_BYTES(1));
   jit_rshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
   CHECK_LIMIT();
-  /* Call scheme_delayed_rename: */
+  /* Call scheme_delayed_shift: */
   JIT_UPDATE_THREAD_RSPTR();
   CHECK_LIMIT();
   mz_prepare(2);
   jit_pusharg_l(JIT_R1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish_lwe(ts_scheme_delayed_rename, ref2);
+  (void)mz_finish_lwe(ts_scheme_delayed_shift, ref2);
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   /* Restore global array into JIT_R1, and put computed element at i+p+1: */

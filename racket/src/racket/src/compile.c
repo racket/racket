@@ -4700,11 +4700,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     stx = scheme_datum_to_syntax(stx, form, form, 0, 1);
     stx = scheme_stx_taint_rearm(stx, form);
   } else if (quick_stx && rec[drec].comp) {
-    ((Scheme_Stx *)quick_stx)->val = stx;
-    ((Scheme_Stx *)quick_stx)->marks = ((Scheme_Stx *)form)->marks;
-    ((Scheme_Stx *)quick_stx)->shifts = ((Scheme_Stx *)form)->shifts;
-    ((Scheme_Stx *)quick_stx)->u.to_propagate = NULL;
-    ((Scheme_Stx *)quick_stx)->taints = NULL;
+    scheme_stx_set(quick_stx, stx, form);
     stx = quick_stx;
     quick_stx = NULL;
   } else
@@ -4766,11 +4762,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       f = (Scheme_Syntax *)SCHEME_SYNTAX(var);
       if (can_recycle_stx && !quick_stx) {
         quick_stx = can_recycle_stx;
-        ((Scheme_Stx *)quick_stx)->val = NULL;
-        ((Scheme_Stx *)quick_stx)->marks = NULL;
-        ((Scheme_Stx *)quick_stx)->shifts = NULL;
-        ((Scheme_Stx *)quick_stx)->u.to_propagate = NULL;
-        ((Scheme_Stx *)quick_stx)->taints = NULL;
+        scheme_stx_set(quick_stx, NULL, NULL);
       }
       return f(form, env, rec, drec);
     } else {

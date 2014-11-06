@@ -287,8 +287,6 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Env *initial_modules_env_;
   int num_initial_modules_;
   struct Scheme_Object **initial_modules_;
-  struct Scheme_Object *initial_renames_;
-  struct Scheme_Bucket_Table *initial_toplevel_;
   int generate_lifts_count_;
   int special_is_ok_;
   int scheme_force_port_closed_;
@@ -666,8 +664,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define initial_modules_env XOA (scheme_get_thread_local_variables()->initial_modules_env_)
 #define num_initial_modules XOA (scheme_get_thread_local_variables()->num_initial_modules_)
 #define initial_modules XOA (scheme_get_thread_local_variables()->initial_modules_)
-#define initial_renames XOA (scheme_get_thread_local_variables()->initial_renames_)
-#define initial_toplevel XOA (scheme_get_thread_local_variables()->initial_toplevel_)
 #define generate_lifts_count XOA (scheme_get_thread_local_variables()->generate_lifts_count_)
 #define special_is_ok XOA (scheme_get_thread_local_variables()->special_is_ok_)
 #define scheme_force_port_closed XOA (scheme_get_thread_local_variables()->scheme_force_port_closed_)

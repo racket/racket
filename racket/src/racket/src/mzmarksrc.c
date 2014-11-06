@@ -918,8 +918,7 @@ namespace_val {
   gcMARK2(e->guard_insp, gc);
   gcMARK2(e->access_insp, gc);
 
-  gcMARK2(e->rename_set, gc);
-  gcMARK2(e->post_ex_rename_set, gc);
+  gcMARK2(e->stx_context, gc);
 
   gcMARK2(e->syntax, gc);
   gcMARK2(e->exp_env, gc);
@@ -949,9 +948,7 @@ namespace_val {
 
   gcMARK2(e->weak_self_link, gc);
 
-  gcMARK2(e->original_marks, gc);
   gcMARK2(e->binding_names, gc);
-  gcMARK2(e->original_shifts, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -2397,64 +2394,12 @@ END string;
 
 START syntax;
 
-mark_rename_table {
- mark:
-  Module_Renames *rn = (Module_Renames *)p;
-  gcMARK2(rn->phase, gc);
-  gcMARK2(rn->ht, gc);
-  gcMARK2(rn->nomarshal_ht, gc);
-  gcMARK2(rn->unmarshal_info, gc);
-  gcMARK2(rn->shared_pes, gc);
-  gcMARK2(rn->set_identity, gc);
-  gcMARK2(rn->marked_names, gc);
-  gcMARK2(rn->free_id_renames, gc);
-  gcMARK2(rn->insp, gc);
- size:
-  gcBYTES_TO_WORDS(sizeof(Module_Renames));
-}
-
-mark_rename_table_set {
- mark:
-  Module_Renames_Set *rns = (Module_Renames_Set *)p;
-  gcMARK2(rns->et, gc);
-  gcMARK2(rns->rt, gc);
-  gcMARK2(rns->other_phases, gc);
-  gcMARK2(rns->share_marked_names, gc);
-  gcMARK2(rns->set_identity, gc);
-  gcMARK2(rns->insp, gc);
- size:
-  gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
-}
-
 mark_srcloc {
  mark:
   Scheme_Stx_Srcloc *s = (Scheme_Stx_Srcloc *)p;
   gcMARK2(s->src, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Srcloc));
-}
-
-mark_wrapchunk {
-  Wrap_Chunk *wc = (Wrap_Chunk *)p;
- mark:
-  int i;
-  for (i = wc->len; i--; ) {
-    gcMARK2(wc->a[i], gc);
-  }
- size:
-  gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
-}
-
-lex_rib {
- mark:
-  Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)p;
-  gcMARK2(rib->rename, gc);
-  gcMARK2(rib->timestamp, gc);
-  gcMARK2(rib->sealed, gc);
-  gcMARK2(rib->mapped_names, gc);
-  gcMARK2(rib->next, gc);
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
 }
 
 END syntax;

@@ -407,7 +407,7 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
   frame->binders[index] = val;
 
   binding = scheme_gensym(SCHEME_STX_VAL(val));
-  scheme_add_binding_from_id(val, scheme_make_integer(frame->genv->phase), binding);
+  scheme_add_binding_from_id(val, scheme_env_phase(frame->genv), binding);
 
   frame->bindings[index] = binding;
   frame->skip_table = NULL;
@@ -507,11 +507,15 @@ void scheme_set_local_syntax(int pos,
 {
   Scheme_Object *binding;
 
-  if (env->mark)
-    name = scheme_stx_add_remove_mark(name, env->mark);
-
-  binding = scheme_gensym(SCHEME_STX_VAL(name));
-  scheme_add_binding_from_id(name, scheme_make_integer(env->genv->phase), binding);
+  if (env->flags & SCHEME_CAPTURE_WITHOUT_RENAME) {
+    binding = scheme_stx_lookup(name, scheme_env_phase(env->genv));
+  } else {
+    if (env->mark)
+      name = scheme_stx_add_remove_mark(name, env->mark);
+    
+    binding = scheme_gensym(SCHEME_STX_VAL(name));
+    scheme_add_binding_from_id(name, scheme_env_phase(env->genv), binding);
+  }
 
   COMPILE_DATA(env)->const_binders[pos] = name;
   COMPILE_DATA(env)->const_bindings[pos] = binding;
@@ -1096,10 +1100,16 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   if (_local_binder) *_local_binder = NULL;
 
-  binding = scheme_stx_lookup_w_nominal(find_id, scheme_make_integer(env->genv->phase),
+  binding = scheme_stx_lookup_w_nominal(find_id, scheme_env_phase(env->genv),
                                         NULL,
                                         &rename_insp,
                                         NULL, NULL, NULL, NULL);
+
+  /* If binding is a symbol, then it must be in the environment, or else
+     the identifier is out of context.
+     If binding is a vector, then it most likely refers to a module-level
+     binding, but we may have a "fluid" binding for in the environment
+     to implement stops. */
 
   if (SCHEME_SYMBOLP(binding)) {
     /* Walk through the compilation frames */
@@ -1177,23 +1187,40 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
           }
         }
       }
-      
+
       p += frame->num_bindings;
     }
-
+    
     if (!(flags & SCHEME_OUT_OF_CONTEXT_OK))
       scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
                           "identifier used out of context");
-
+    
     if (flags & SCHEME_OUT_OF_CONTEXT_LOCAL)
       return scheme_make_local(scheme_local_type, 0, 0);
-
+    
     return NULL;
   } else if (SCHEME_FALSEP(binding)) {
     src_find_id = find_id;
     modidx = NULL;
     mod_defn_phase = NULL;
   } else {
+    /* First, check for a "stop" */
+    for (frame = env; frame->next != NULL; frame = frame->next) {
+      if (frame->flags & SCHEME_FOR_STOPS) {
+        int i;
+        for (i = COMPILE_DATA(frame)->num_const; i--; ) {
+          if (SCHEME_VECTORP(COMPILE_DATA(frame)->const_bindings[i])
+              && scheme_equal(COMPILE_DATA(frame)->const_bindings[i], binding)) {
+            check_taint(find_id);
+            
+            return COMPILE_DATA(frame)->const_vals[i];
+          }
+        }
+        /* ignore any further stop frames: */
+        break;
+      }
+    }
+
     src_find_id = find_id;
     modidx = SCHEME_VEC_ELS(binding)[0];
     if (SCHEME_FALSEP(modidx)) modidx = NULL;
@@ -1402,7 +1429,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   return (Scheme_Object *)b;
 }
 
-Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
+Scheme_Object *scheme_global_binding_at_phase(Scheme_Object *id, Scheme_Env *env, Scheme_Object *phase)
 {
   Scheme_Object *sym, *vec, *binding;
   Scheme_Hash_Table *binding_names;
@@ -1411,10 +1438,10 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
   intptr_t len;
 
   /* use interned symbol when `id` has no extra or different marks */
-  if (scheme_hash_tree_equal(((Scheme_Stx *)id)->marks, env->original_marks))
+  if (scheme_stx_in_plain_module_context(id, env->stx_context))
     return SCHEME_STX_VAL(id);
 
-  binding = scheme_stx_lookup_w_nominal(id, scheme_make_integer(env->phase),
+  binding = scheme_stx_lookup_w_nominal(id, phase,
                                         &exact_match,
                                         NULL,
                                         NULL, NULL, NULL, NULL);
@@ -1422,12 +1449,14 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
   if (binding) {
     if (exact_match) {
       if (SCHEME_VECTORP(binding)
-          && (SCHEME_INT_VAL(SCHEME_VEC_ELS(binding)[2]) == env->phase))
+          && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase))
         return SCHEME_VEC_ELS(binding)[1];
       scheme_signal_error("binding identifier out of context");
       return NULL;
     }
   }
+
+  env = scheme_find_env_at_phase(env, phase);
 
   binding_names = env->binding_names;
   if (!binding_names) {
@@ -1456,15 +1485,20 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
       vec = scheme_make_vector(3, NULL);
       SCHEME_VEC_ELS(vec)[0]  = (env->module ? env->module->self_modidx : scheme_false);
       SCHEME_VEC_ELS(vec)[1]  = sym;
-      SCHEME_VEC_ELS(vec)[2]  = scheme_make_integer(env->phase);
+      SCHEME_VEC_ELS(vec)[2]  = scheme_env_phase(env);
 
-      scheme_add_binding_from_id(id, scheme_make_integer(env->phase), vec);
+      scheme_add_binding_from_id(id, scheme_env_phase(env), vec);
       return sym;
     }
 
     /* Otherwise, increment counter and try again... */
     i++;
   }
+}
+
+Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
+{
+  return scheme_global_binding_at_phase(id, env, scheme_env_phase(env));
 }
 
 int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env)
@@ -1828,10 +1862,11 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
   Scheme_Object *id = NULL, *v;
   Scheme_Full_Comp_Env inlined_e;
 
-  scheme_prepare_env_renames(genv);
+  scheme_prepare_env_stx_context(genv);
   scheme_prepare_compile_env(genv);
 
-  id = scheme_make_renamed_stx(sym, genv->rename_set);
+  id = scheme_datum_to_syntax(sym, scheme_false, scheme_false, 0, 0);
+  id = scheme_stx_add_module_context(id, genv->stx_context);
 
   inlined_e.base.num_bindings = 0;
   inlined_e.base.next = NULL;

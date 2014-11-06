@@ -2489,7 +2489,7 @@ Scheme_Object *scheme_resolve_list(Scheme_Object *expr, Resolve_Info *info)
 Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
 {
   Resolve_Prefix *rp;
-  Scheme_Object **tls, **stxes, *simplify_cache, *m;
+  Scheme_Object **tls, **stxes, *m;
   Scheme_Hash_Table *ht;
   int i;
 
@@ -2527,16 +2527,10 @@ Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
     }
   }
 
-  if (simplify)
-    simplify_cache = scheme_new_stx_simplify_cache();
-  else
-    simplify_cache = NULL;  
-
   ht = cp->stxes;
   if (ht) {
     for (i = 0; i < ht->size; i++) {
       if (ht->vals[i]) {
-	scheme_simplify_stx(ht->keys[i], simplify_cache);
 	stxes[SCHEME_LOCAL_POS(ht->vals[i])] = ht->keys[i];
       }
     }
