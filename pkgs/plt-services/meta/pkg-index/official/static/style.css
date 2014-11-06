@@ -195,6 +195,15 @@ a.possible {
     font-size: small;
 }
 
+#pi_source_help {
+    text-align: center;
+    font-size: small;
+}
+
+#pi_source_help a {
+    text-decoration: underline;
+}
+
 tr#pi_delete_row td {
     text-align: center;
 }

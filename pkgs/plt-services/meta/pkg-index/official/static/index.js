@@ -98,6 +98,10 @@ $( document ).ready(function() {
         $( "#pi_source" ).html( $('<a>', { text: pkgi['versions']['default']['source'],
                                            href: pkgi['versions']['default']['source_url']  } ));
         make_editbutton ( "pi_source", pkgi['versions']['default']['source'], submit_mod_source );
+        if ( mypkg_p ) {
+            $( "#pi_source_help" ).show(); }
+        else {
+            $( "#pi_source_help" ).hide(); }
 
         $( "#pi_checksum" ).html("").text( pkgi['versions']['default']['checksum'] );
         if ( pkgi['checksum-error'] ) {
@@ -635,7 +639,7 @@ $( document ).ready(function() {
                          value['search-terms'][("author:" + me())] = true;
                          value['versions'] = {};
                          value['versions']['default'] = {};
-                         value['versions']['default']['source'] = "";
+                         value['versions']['default']['source'] = "git://github.com/‹user›/‹repo›";
                          value['versions']['default']['source_url'] = "";
                          value['versions']['default']['checksum'] = "";
                          value['build'] = {};
