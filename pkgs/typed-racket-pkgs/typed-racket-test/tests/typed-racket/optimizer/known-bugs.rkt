@@ -74,6 +74,7 @@
     ;; Division of complex 0 should only make part of the result nan
     (good-opt (/ 0.0+0.0i))
     (bad-opt (/ 1 0.0+0.0i))
+    (bad-opt (/ 1.5 -3.0+9.8e-324i))
 
     ;; Division of complex infinity should only make part of the result nan
     (good-opt (/ (make-rectangular 1.0 +inf.0)))
