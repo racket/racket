@@ -469,8 +469,8 @@ result will not call @racket[proc] with @racket['unlock].)
 The @racketmodname[setup/parallel-build] library provides the parallel-compilation
 functionality of @exec{raco setup} and @exec{raco make}.}
 
-@defproc[(parallel-compile-files [list-of-files (listof path?)] 
-                                 [#:worker-count worker-count non-negative-integer? (processor-count)] 
+@defproc[(parallel-compile-files [list-of-files (listof path-string?)]
+                                 [#:worker-count worker-count exact-positive-integer? (processor-count)]
                                  [#:handler handler (->i ([handler-type symbol?]
                                                           [path path-string?]
                                                           [msg string?] 
