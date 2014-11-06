@@ -2026,7 +2026,8 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
   a_bind = scheme_stx_lookup(a, a_phase);
   b_bind = scheme_stx_lookup(b, b_phase);
 
-  if (SCHEME_SYMBOLP(a_bind) || SCHEME_SYMBOLP(b_bind))
+  if (SCHEME_SYMBOLP(a_bind) || SCHEME_SYMBOLP(b_bind)
+      || SCHEME_FALSEP(a_bind) || SCHEME_FALSEP(b_bind))
     return SAME_OBJ(a_bind, b_bind);
 
   /* Comparison of names & definition phases is fast, so try that next: */
