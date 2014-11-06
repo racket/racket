@@ -1497,10 +1497,10 @@
                 (send e insert closer (+ start 1) (+ start 1)))
               (send e end-edit-sequence)))
            (send keymap map-function keystroke name))])
-    (add/map-non-clever "non-clever-open-square-bracket" "c:[" #\[ #\])
-    (add/map-non-clever "non-clever-close-square-bracket" "c:]" #\])
-    (add/map-non-clever "non-clever-close-curley-bracket" "c:}" #\})
-    (add/map-non-clever "non-clever-close-round-paren" "c:)" #\)))
+    (add/map-non-clever "non-clever-open-square-bracket" "~g:c:[" #\[ #\])
+    (add/map-non-clever "non-clever-close-square-bracket" "~g:c:]" #\])
+    (add/map-non-clever "non-clever-close-curley-bracket" "~g:c:}" #\})
+    (add/map-non-clever "non-clever-close-round-paren" "~g:c:)" #\)))
   
   (send keymap add-function "balance-parens"
         (λ (edit event)
