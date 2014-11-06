@@ -268,12 +268,19 @@ modules may produce compiled files with inconsistent timestamps and/or
 @filepath{.dep} files with incorrect information.}
 
 The handler logs messages to the topic @racket['compiler/cm] at the level
-@racket['info]. These messages are instances of the
-prefab struct @racket[(struct compile-event (timestamp path type))]. The @racket[timestamp] field is the time
-at which the event occured in milliseconds since the epoch. The @racket[path] field is the path of a
-file being compiled for which the event is about. The @racket[type] field is a symbol which describes
-the action the event corresponds to. The currently logged values are @racket['locking],
-@racket['start-compile], @racket['finish-compile], and @racket['already-done].
+@racket['info]. These messages are instances of a @racket[compile-event] prefab
+structure:
+
+@racketblock[
+  (struct compile-event (timestamp path type) #:prefab)
+]
+
+The @racket[timestamp] field is the time at which the event occured in
+milliseconds since the epoch.  The @racket[path] field is the path of a file
+being compiled for which the event is about. The @racket[type] field is a symbol
+which describes the action the event corresponds to. The currently logged values
+are @racket['locking], @racket['start-compile], @racket['finish-compile], and
+@racket['already-done].
 
 @defproc[(managed-compile-zo [file path-string?]
                              [read-src-syntax (any/c input-port? . -> . syntax?) read-syntax]
@@ -525,8 +532,13 @@ directory.
 
 Both @racket[parallel-compile-files] and @racket[parallel-compile] log messages
 to the topic @racket['setup/parallel-build] at the level @racket['info]. These
-messages are instances of the prefab struct
-@racket[(struct parallel-compile-event (worker event))].
+messages are instances of a @racket[parallel-compile-event] prefab structure:
+
+
+@racketblock[
+  (struct parallel-compile-event (worker event) #:prefab)
+].
+
 The worker field is the index of the worker that the created the event. The event
 field is a @racket[compile-event] as document in
 @racket[make-compilation-manager-load/use-compiled-handler].
