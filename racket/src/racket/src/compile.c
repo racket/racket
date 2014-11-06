@@ -88,8 +88,6 @@ static Scheme_Object *case_lambda_syntax(Scheme_Object *form, Scheme_Comp_Env *e
 static Scheme_Object *case_lambda_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *let_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *let_values_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
-static Scheme_Object *let_star_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
-static Scheme_Object *let_star_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *letrec_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *letrec_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *begin_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
@@ -175,7 +173,6 @@ void scheme_init_compile (Scheme_Env *env)
   lambda_symbol = scheme_intern_symbol("lambda");
 
   letrec_values_symbol = scheme_intern_symbol("letrec-values");
-  let_star_values_symbol = scheme_intern_symbol("let*-values");
   let_values_symbol = scheme_intern_symbol("let-values");
 
   begin_symbol = scheme_intern_symbol("begin");
@@ -240,10 +237,6 @@ void scheme_init_compile (Scheme_Env *env)
   scheme_add_global_keyword("let-values", 
 			    scheme_make_compiled_syntax(let_values_syntax, 
 							let_values_expand), 
-			    env);
-  scheme_add_global_keyword("let*-values", 
-			    scheme_make_compiled_syntax(let_star_values_syntax, 
-							let_star_values_expand), 
 			    env);
   scheme_add_global_keyword("letrec-values", 
 			    scheme_make_compiled_syntax(letrec_values_syntax, 
@@ -2074,7 +2067,7 @@ static Scheme_Object *detect_traditional_letrec(Scheme_Object *form, Scheme_Comp
 
 static Scheme_Object *
 gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
-		int star, int recursive, int multi, Scheme_Compile_Info *rec, int drec,
+		int recursive, int multi, Scheme_Compile_Info *rec, int drec,
 		Scheme_Comp_Env *frame_already)
 {
   Scheme_Object *bindings, *l, *binding, *name, **names, **clv_names, *forms, *defname, *mark;
@@ -2109,12 +2102,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   if (num_clauses < 0)
     scheme_wrong_syntax(NULL, bindings, form, NULL);
 
-  if (num_clauses < 2) star = 0;
-
-  if (star)
-    scheme_signal_error("let*-values isn't supported as core anymore");
-
-  post_bind = !recursive && !star;
+  post_bind = !recursive;
   rev_bind_order = recursive;
 
   /* forms ends up being the let body */
@@ -2198,7 +2186,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
 
   defname = scheme_check_name_property(form, defname);
   
-  if (!star && !frame_already) {
+  if (!frame_already) {
     scheme_begin_dup_symbol_check(&r, env);
   }
 
@@ -2263,7 +2251,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       names[k++] = name;
     }
     
-    if (!star && !frame_already) {
+    if (!frame_already) {
       for (m = pre_k; m < k; m++) {
 	scheme_dup_symbol_check(&r, NULL, names[m], "binding", form);
       }
@@ -2309,7 +2297,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       lv->value = rhs;
     }
     
-    if (star || recursive) {
+    if (recursive) {
       for (m = pre_k; m < k; m++) {
 	scheme_add_compilation_binding(m, names[m], frame);
       }
@@ -2321,15 +2309,14 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       k = pre_k;
   }
   
-  if (!star && !recursive) {
+  if (!recursive) {
     for (i = 0; i < num_bindings; i++) {
       scheme_add_compilation_binding(i, names[i], frame);
     }
   }
 
   head = make_header(first, num_bindings, num_clauses,
-                     ((recursive ? SCHEME_LET_RECURSIVE : 0)
-                      | (star ? SCHEME_LET_STAR : 0)));
+                     (recursive ? SCHEME_LET_RECURSIVE : 0));
 
   if (recursive) {
     Scheme_Let_Header *current_head = head;
@@ -2455,7 +2442,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
 
 static Scheme_Object *
 do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_Info *erec, int drec,
-	      const char *formname, int letrec, int multi, int letstar,
+	      const char *formname, int letrec, int multi,
 	      Scheme_Comp_Env *env_already)
 {
   Scheme_Object *vars, *body, *first, *last, *name, *v, *vs, *vlist, *boundname, *form, *pre_set, *mark;
@@ -2492,56 +2479,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
 
   boundname = scheme_check_name_property(form, erec[drec].value_name);
   erec[drec].value_name = boundname;
-
-  if (letstar) {
-    if (!SCHEME_STX_NULLP(vars)) {
-      Scheme_Object *a, *vr;
-
-      if (!SCHEME_STX_PAIRP(vars))
-	scheme_wrong_syntax(NULL, vars, form, NULL);
-
-      a = SCHEME_STX_CAR(vars);
-      vr = SCHEME_STX_CDR(vars);
-      
-      first = let_values_symbol;
-      first = scheme_datum_to_syntax(first, form, scheme_sys_wraps(origenv), 0, 0);
-      
-      if (SCHEME_STX_NULLP(vr)) {
-	/* Don't create redundant empty let form */
-      } else {
-	last = let_star_values_symbol;
-	last = scheme_datum_to_syntax(last, form, scheme_sys_wraps(origenv), 0, 0);
-	body = cons(cons(last, cons(vr, body)),
-		     scheme_null);
-      }
-      
-      body = cons(first,
-		   cons(cons(a, scheme_null),
-			 body));
-    } else {
-      first = scheme_datum_to_syntax(let_values_symbol, form, scheme_sys_wraps(origenv), 0, 0);
-      body = cons(first, cons(scheme_null, body));
-    }
-    
-    body = scheme_datum_to_syntax(body, form, form, 0, -1);
-
-    first = SCHEME_STX_CAR(form);
-    body = scheme_stx_track(body, form, first);
-    
-    if (erec[drec].depth > 0)
-      --erec[drec].depth;
-    
-    body = scheme_stx_taint_rearm(body, orig_form);
-
-    if (!erec[drec].depth)
-      return body;
-    else {
-      env = scheme_no_defines(origenv);
-      return scheme_expand_expr(body, env, erec, drec);
-    }
-  }
   
-  /* Note: no more letstar handling needed after this point */
   if (!env_already && !rec_env_already)
     scheme_begin_dup_symbol_check(&r, origenv);
 
@@ -2745,21 +2683,14 @@ static Scheme_Object *
 let_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
   SCHEME_EXPAND_OBSERVE_PRIM_LET_VALUES(erec[drec].observer);
-  return do_let_expand(form, env, erec, drec, "let-values", 0, 1, 0, NULL);
-}
-
-static Scheme_Object *
-let_star_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
-{
-  SCHEME_EXPAND_OBSERVE_PRIM_LETSTAR_VALUES(erec[drec].observer);
-  return do_let_expand(form, env, erec, drec, "let*-values", 0, 1, 1, NULL);
+  return do_let_expand(form, env, erec, drec, "let-values", 0, 1, NULL);
 }
 
 static Scheme_Object *
 letrec_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
   SCHEME_EXPAND_OBSERVE_PRIM_LETREC_VALUES(erec[drec].observer);
-  return do_let_expand(form, env, erec, drec, "letrec-values", 1, 1, 0, NULL);
+  return do_let_expand(form, env, erec, drec, "letrec-values", 1, 1, NULL);
 }
 
 
@@ -2767,20 +2698,13 @@ static Scheme_Object *
 let_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, 
 		   Scheme_Compile_Info *rec, int drec)
 {
-  return gen_let_syntax(form, env, "let-values", 0, 0, 1, rec, drec, NULL);
-}
-
-static Scheme_Object *
-let_star_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, 
-		 Scheme_Compile_Info *rec, int drec)
-{
-  return gen_let_syntax(form, env, "let*-values", 1, 0, 1, rec, drec, NULL);
+  return gen_let_syntax(form, env, "let-values", 0, 1, rec, drec, NULL);
 }
 
 static Scheme_Object *
 letrec_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
-  return gen_let_syntax(form, env, "letrec-values", 0, 1, 1, rec, drec, NULL);
+  return gen_let_syntax(form, env, "letrec-values", 1, 1, rec, drec, NULL);
 }
 
 /**********************************************************************/
@@ -3951,7 +3875,7 @@ do_letrec_syntaxes(const char *where,
     }
     
     if (rec[drec].comp) {
-      v = gen_let_syntax(v, stx_env, "letrec-values", 0, 1, 1, rec, drec, var_env);
+      v = gen_let_syntax(v, stx_env, "letrec-values", 1, 1, rec, drec, var_env);
     } else {
       int restore = ((depth >= 0) || (depth == -2));
 
@@ -3961,7 +3885,7 @@ do_letrec_syntaxes(const char *where,
       }
 
       SCHEME_EXPAND_OBSERVE_PRIM_LETREC_VALUES(rec[drec].observer);
-      v = do_let_expand(v, stx_env, rec, drec, "letrec-values", 1, 1, 0, var_env);
+      v = do_let_expand(v, stx_env, rec, drec, "letrec-values", 1, 1, var_env);
       
       if (restore) {
 	/* Add back out the pieces we want: */

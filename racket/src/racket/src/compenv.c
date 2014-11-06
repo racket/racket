@@ -1092,7 +1092,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
                       Scheme_Object **_inline_variant)
 {
   Scheme_Comp_Env *frame;
-  int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0, is_constant;
+  int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0, is_constant, ambiguous;
   Scheme_Bucket *b;
   Scheme_Object *binding, *val, *modidx, *modname, *src_find_id, *find_global_id, *mod_defn_phase;
   Scheme_Object *rename_insp = NULL, *mod_constant = NULL, *shape;
@@ -1101,9 +1101,13 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   if (_local_binder) *_local_binder = NULL;
 
   binding = scheme_stx_lookup_w_nominal(find_id, scheme_env_phase(env->genv),
-                                        NULL,
+                                        NULL, &ambiguous,
                                         &rename_insp,
                                         NULL, NULL, NULL, NULL);
+
+  if (ambiguous)
+    scheme_wrong_syntax(NULL, NULL, find_id,
+                        "identifier's binding is ambiguous");
 
   /* If binding is a symbol, then it must be in the environment, or else
      the identifier is out of context.
@@ -1115,10 +1119,10 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     /* Walk through the compilation frames */
     for (frame = env; frame->next != NULL; frame = frame->next) {
       int i;
-      
+
       while (1) {
         if (frame->skip_table) {
-          if (!scheme_hash_get(frame->skip_table, SCHEME_STX_VAL(find_id))) {
+          if (!scheme_hash_get(frame->skip_table, binding)) {
             /* Skip ahead. 0 maps to frame, 1 maps to j delta, and 2 maps to p delta */
             val = scheme_hash_get(frame->skip_table, scheme_make_integer(1));
             j += (int)SCHEME_INT_VAL(val);
@@ -1140,7 +1144,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       if (!skip_stops || !(frame->flags & SCHEME_FOR_STOPS)) {
         if (frame->flags & SCHEME_FOR_STOPS)
           skip_stops = 1;
-        
+
         for (i = frame->num_bindings; i--; ) {
           if (frame->bindings[i] && SAME_OBJ(binding, frame->bindings[i])) {
             /* Found a lambda-, let-, etc. bound variable: */
@@ -1225,7 +1229,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     modidx = SCHEME_VEC_ELS(binding)[0];
     if (SCHEME_FALSEP(modidx)) modidx = NULL;
     find_id = SCHEME_VEC_ELS(binding)[1];
-    mod_defn_phase = SCHEME_VEC_ELS(binding)[3];
+    mod_defn_phase = SCHEME_VEC_ELS(binding)[2];
   }
 
   if (modidx) {
@@ -1442,7 +1446,7 @@ Scheme_Object *scheme_global_binding_at_phase(Scheme_Object *id, Scheme_Env *env
     return SCHEME_STX_VAL(id);
 
   binding = scheme_stx_lookup_w_nominal(id, phase,
-                                        &exact_match,
+                                        &exact_match, NULL,
                                         NULL,
                                         NULL, NULL, NULL, NULL);
 

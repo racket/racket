@@ -7873,12 +7873,17 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
   }
 }
 
-Scheme_Object *reverse_and_add_module_context(Scheme_Object *fm, Scheme_Object *rn)
+Scheme_Object *introduce_to_module_context(Scheme_Object *a, Scheme_Object *rn)
+{
+  return a;
+}
+
+Scheme_Object *reverse_and_introduce_module_context(Scheme_Object *fm, Scheme_Object *rn)
 {
   Scheme_Object *l2 = scheme_null;
 
   while (!SCHEME_NULLP(fm)) {
-    l2 = scheme_make_pair(scheme_stx_add_module_context(SCHEME_CAR(fm), rn),
+    l2 = scheme_make_pair(introduce_to_module_context(SCHEME_CAR(fm), rn),
                           l2);
     fm = SCHEME_CDR(fm);
   }
@@ -7888,11 +7893,6 @@ Scheme_Object *reverse_and_add_module_context(Scheme_Object *fm, Scheme_Object *
 static Scheme_Object *stx_sym(Scheme_Object *name, Scheme_Object *_genv)
 {
   return scheme_global_binding(name, (Scheme_Env *)_genv);
-}
-
-static Scheme_Object *add_a_module_context(Scheme_Object *fm, Scheme_Object *rn)
-{
-  return scheme_stx_add_module_context(fm, rn);
 }
 
 static Scheme_Object *add_req(Scheme_Object *imods, Scheme_Object *requires)
@@ -7939,7 +7939,7 @@ static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_ids,
     /* Add a renaming: */
     scheme_extend_module_context(rn, self_modidx, name, name, self_modidx, name, 0, NULL, NULL, 0);
 
-    id = scheme_stx_add_module_context(id, rn);
+    id = introduce_to_module_context(id, rn);
     new_ids = cons(id, new_ids);
   }
 
@@ -8082,7 +8082,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 
   /* It's possible that #%module-begin expansion introduces
      marked identifiers for definitions. */
-  form = scheme_stx_add_module_context(form, rn_set);
+  form = introduce_to_module_context(form, rn_set);
 
   observer = rec[drec].observer;
   SCHEME_EXPAND_OBSERVE_RENAME_ONE(observer, form);
@@ -8713,8 +8713,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	   the front and try again. */
         *bxs->all_simple_renames = 0;
 	fm = SCHEME_STX_CDR(fm);
-        e = scheme_stx_add_module_context(e, rn_set);
-        fm = scheme_named_map_1(NULL, add_a_module_context, fm, rn_set);
+        e = introduce_to_module_context(e, rn_set);
+        fm = scheme_named_map_1(NULL, introduce_to_module_context, fm, rn_set);
         fm = scheme_make_pair(e, fm);
         SCHEME_EXPAND_OBSERVE_RENAME_LIST(observer, fm);
 	fm = scheme_append(fst, fm);
@@ -8728,7 +8728,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	
 	if (fst && SCHEME_STX_SYMBOLP(fst) && scheme_stx_module_eq_x(scheme_begin_stx, fst, phase)) {
 	  fm = SCHEME_STX_CDR(fm);
-	  e = scheme_stx_add_module_context(e, rn_set);
+	  e = introduce_to_module_context(e, rn_set);
           SCHEME_EXPAND_OBSERVE_RENAME_ONE(observer, e);
 	  fm = scheme_flatten_begin(e, fm);
 	  SCHEME_EXPAND_OBSERVE_SPLICE(observer, fm);
@@ -8737,7 +8737,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             e = scheme_reverse(e);
             if (expand_ends) {
               fm = scheme_frame_get_end_statement_lifts(xenv);
-              fm = reverse_and_add_module_context(fm, rn_set);
+              fm = reverse_and_introduce_module_context(fm, rn_set);
               if (!SCHEME_NULLP(e))
                 fm = scheme_append(fm, e);
               maybe_has_lifts = 0;
@@ -8757,7 +8757,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     }
     if (!e) break; /* (begin) expansion at end */
 
-    e = scheme_stx_add_module_context(e, rn_set);
+    e = introduce_to_module_context(e, rn_set);
 
     SCHEME_EXPAND_OBSERVE_RENAME_ONE(observer, e);
     
@@ -8765,6 +8765,11 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       Scheme_Object *fst;
 
       fst = SCHEME_STX_CAR(e);
+
+      if (!scheme_stx_module_eq_x(scheme_define_values_stx, fst, phase)
+          && !strcmp(SCHEME_SYM_VAL(SCHEME_STX_VAL(fst)), "define-values")) {
+        scheme_stx_lookup(fst, scheme_make_integer(phase));
+      }
 
       if (SCHEME_STX_SYMBOLP(fst)) {
 	if (scheme_stx_module_eq_x(scheme_define_values_stx, fst, phase)) {
@@ -9182,7 +9187,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       e = scheme_reverse(e);
       if (expand_ends) {
         fm = scheme_frame_get_end_statement_lifts(xenv);
-        fm = reverse_and_add_module_context(fm, rn);
+        fm = reverse_and_introduce_module_context(fm, rn);
         if (!SCHEME_NULLP(e))
           fm = scheme_append(fm, e);
         maybe_has_lifts = 0;
@@ -10359,7 +10364,7 @@ static Scheme_Object *extract_free_id_name(Scheme_Object *name,
 
         if (_implicit_mod_phase) mod_phase = *_implicit_mod_phase;
         mod = scheme_stx_lookup_w_nominal(id, phase,
-                                          NULL,
+                                          NULL, NULL,
                                           &rename_insp,
                                           _implicit_nominal_mod, _implicit_nominal_name,
                                           NULL, NULL);

@@ -2937,6 +2937,25 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	cannot_print(pp, notdisplay, obj, ht, compact);
       }
     }
+  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_mark_type))
+    {
+      if (compact || !pp->print_unreadable) {
+	cannot_print(pp, notdisplay, obj, ht, compact);
+      } else {
+	print_utf8_string(pp, "#<mark:", 0, 7);
+        {
+          intptr_t slen;
+          char *str;
+          int rel;
+          str = print_to_string(scheme_mark_printed_form(obj),
+                                &slen, 1, NULL, 32, NULL, &rel);
+          print_utf8_string(pp, str, 0, slen);
+          if (rel && !quick_print_buffer)
+            quick_print_buffer = str;
+        }
+	print_utf8_string(pp, ">", 0, 1);
+      }
+    }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_module_index_type)) 
     {
       Scheme_Object *idx;

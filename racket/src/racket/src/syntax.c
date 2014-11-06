@@ -515,6 +515,11 @@ Scheme_Object *scheme_new_mark(int canceling)
   return (Scheme_Object *)m;
 }
 
+Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
+{
+  return scheme_make_integer_value_from_long_long(((Scheme_Mark *)m)->id);
+}
+
 static Scheme_Hash_Tree *add_remove_mark(Scheme_Hash_Tree *marks, Scheme_Object *m)
 {
   STX_ASSERT(SAME_TYPE(SCHEME_TYPE(m), scheme_mark_type));
@@ -709,9 +714,10 @@ Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
 
   if (new_midx || export_registry || insp) {
     Scheme_Object *vec;
+
+    vec = last_phase_shift;
     
-    if (last_phase_shift
-	&& ((vec = SCHEME_BOX_VAL(last_phase_shift)))
+    if (vec
 	&& (SCHEME_VEC_ELS(vec)[0] == (new_midx ? old_midx : scheme_false))
 	&& (SCHEME_VEC_ELS(vec)[1] == (new_midx ? new_midx : scheme_false))
 	&& (SCHEME_VEC_ELS(vec)[2] == (export_registry ? (Scheme_Object *)export_registry : scheme_false))
@@ -726,7 +732,7 @@ Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
       SCHEME_VEC_ELS(vec)[3] = (insp ? insp : scheme_false);
       SCHEME_VEC_ELS(vec)[4] = phase_delta;
       
-      last_phase_shift = scheme_box(vec);
+      last_phase_shift = vec;
     }
 
     return last_phase_shift;
@@ -1140,6 +1146,7 @@ static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp
   stx = (Scheme_Stx *)o;
   if (stx->taints)
     false_insp = taint_intern(scheme_make_pair(false_insp, SCHEME_CDR(stx->taints)));
+
   stx->taints = false_insp;
 
   /* Set lazy_prefix to indicate inspector to propagate: */
@@ -1417,8 +1424,9 @@ XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
           : 0);
 }
 
-static void *do_scheme_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase, 
-                                  Scheme_Hash_Tree *check_subset, int *_exact_match)
+static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase, 
+                           Scheme_Hash_Tree *check_subset,
+                           int *_exact_match, int *_ambiguous)
 {
   int j;
   intptr_t i;
@@ -1478,8 +1486,10 @@ static void *do_scheme_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase,
               
 
             if (binding_marks && marks_subset(binding_marks, stx->marks)) {
-              if (check_subset && !marks_subset(binding_marks, check_subset))
+              if (check_subset && !marks_subset(binding_marks, check_subset)) {
+                if (_ambiguous) *_ambiguous = 1;
                 return NULL; /* ambiguous */
+              }
               if (!best_so_far
                   || ((binding_marks->count > best_so_far->count)
                       && (!check_subset
@@ -1514,7 +1524,7 @@ static void *do_scheme_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase,
 }
 
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
-                                           int *_exact_match,
+                                           int *_exact_match, int *_ambiguous,
                                            Scheme_Object **insp,              /* access-granting inspector */
                                            Scheme_Object **nominal_modidx,    /* how it was imported */
                                            Scheme_Object **nominal_name,      /* imported as name */
@@ -1527,6 +1537,8 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Hash_Tree *best_set;
   Scheme_Object **cached_result, *phase_shift, *result;
+
+  if (_ambiguous) *_ambiguous = 0;
 
   if (stx->u.cached_binding) {
     if (SAME_OBJ(stx->u.cached_binding[3], phase)
@@ -1547,12 +1559,13 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
   } else
     phase_shift = phase;
 
-  best_set = (Scheme_Hash_Tree *)do_scheme_stx_lookup(stx, phase_shift, NULL, NULL);
+  best_set = (Scheme_Hash_Tree *)do_stx_lookup(stx, phase_shift, NULL, NULL, NULL);
   if (!best_set)
     return scheme_false;
 
   /* Find again, this time checking to ensure no ambiguity: */
-  cached_result = (Scheme_Object **)do_scheme_stx_lookup(stx, phase_shift, best_set, _exact_match);
+  cached_result = (Scheme_Object **)do_stx_lookup(stx, phase_shift, best_set,
+                                                  _exact_match, _ambiguous);
   if (!cached_result)
     return scheme_false;
 
@@ -1670,7 +1683,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase)
 {
-  return scheme_stx_lookup_w_nominal(o, phase, NULL, NULL, NULL, NULL, NULL, NULL);
+  return scheme_stx_lookup_w_nominal(o, phase, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 }
 
 void scheme_populate_pt_ht(Scheme_Module_Phase_Exports * pt) {
@@ -3590,7 +3603,7 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
   }
 
   m = scheme_stx_lookup_w_nominal(a, phase,
-                                  NULL,
+                                  NULL, NULL,
                                   &nom_mod, &nom_a,
                                   &src_phase_index,
                                   &nominal_src_phase,

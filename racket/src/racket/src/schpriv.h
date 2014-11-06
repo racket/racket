@@ -1089,6 +1089,7 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 int scheme_stx_has_empty_wraps(Scheme_Object *);
 
 Scheme_Object *scheme_new_mark(int canceling);
+Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
 Scheme_Object *scheme_stx_add_remove_mark(Scheme_Object *o, Scheme_Object *m);
 Scheme_Object *scheme_stx_add_remove_marks(Scheme_Object *o, Scheme_Hash_Tree *marks);
 
@@ -1160,7 +1161,7 @@ void scheme_add_binding_from_id(Scheme_Object *o, Scheme_Object *phase,
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
-                                           int *_exact_match,
+                                           int *_exact_match, int *_ambiguous,
                                            Scheme_Object **insp,              /* access-granting inspector */
                                            Scheme_Object **nominal_modidx,    /* how it was imported */
                                            Scheme_Object **nominal_name,      /* imported as name */
