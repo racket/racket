@@ -401,7 +401,7 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
 
   if (frame->mark) {
     /* expected to be redundant, but just in case: */
-    val = scheme_stx_add_remove_mark(val, frame->mark);
+    val = scheme_stx_add_mark(val, frame->mark);
   }
   
   frame->binders[index] = val;
@@ -511,7 +511,7 @@ void scheme_set_local_syntax(int pos,
     binding = scheme_stx_lookup(name, scheme_env_phase(env->genv));
   } else {
     if (env->mark)
-      name = scheme_stx_add_remove_mark(name, env->mark);
+      name = scheme_stx_flip_mark(name, env->mark);
     
     binding = scheme_gensym(SCHEME_STX_VAL(name));
     scheme_add_binding_from_id(name, scheme_env_phase(env->genv), binding);
@@ -537,13 +537,13 @@ scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark, Scheme_Co
   for (i = 0; i < len ; i++) {
     if (SCHEME_STX_SYMBOLP(vals)) {
       if (mark)
-        vals = scheme_stx_add_remove_mark(vals, mark);
+        vals = scheme_stx_add_mark(vals, mark);
       scheme_add_compilation_binding(i, vals, frame);
     } else {
       Scheme_Object *a;
       a = SCHEME_STX_CAR(vals);
       if (mark)
-        a = scheme_stx_add_remove_mark(a, mark);
+        a = scheme_stx_add_mark(a, mark);
       scheme_add_compilation_binding(i, a, frame);
       vals = SCHEME_STX_CDR(vals);
     }
@@ -1450,12 +1450,13 @@ Scheme_Object *scheme_global_binding_at_phase(Scheme_Object *id, Scheme_Env *env
                                         NULL,
                                         NULL, NULL, NULL, NULL);
 
-  if (binding) {
+  if (!SCHEME_FALSEP(binding)) {
     if (exact_match) {
       if (SCHEME_VECTORP(binding)
           && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase))
         return SCHEME_VEC_ELS(binding)[1];
-      scheme_signal_error("binding identifier out of context");
+      scheme_wrong_syntax(NULL, NULL, id,
+                          "binding identifier out of context");
       return NULL;
     }
   }
@@ -1674,7 +1675,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
                           NULL);
 
   if (local_mark)
-    expr = scheme_stx_add_remove_mark(expr, local_mark);
+    expr = scheme_stx_flip_mark(expr, local_mark);
 
   /* We don't really need a new symbol each time, since the mark
      will generate new bindings. But lots of things work better or faster
@@ -1686,7 +1687,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
     id_sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
     id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
-    id = scheme_stx_add_remove_mark(id, scheme_new_mark(1));
+    id = scheme_stx_add_mark(id, scheme_new_mark());
 
     rev_ids = scheme_make_pair(id, rev_ids);
   }
@@ -1709,7 +1710,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
   for (; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
     if (local_mark)
-      id = scheme_stx_add_remove_mark(id, local_mark);
+      id = scheme_stx_flip_mark(id, local_mark);
     rev_ids = scheme_make_pair(id, rev_ids);
   }
   ids = scheme_reverse(rev_ids);
@@ -1757,7 +1758,7 @@ scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, 
                           NULL);
   
   if (local_mark)
-    expr = scheme_stx_add_remove_mark(expr, local_mark);
+    expr = scheme_stx_flip_mark(expr, local_mark);
   orig_expr = expr;
 
   pr = scheme_make_pair(expr, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3]);
@@ -1811,11 +1812,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
   req_form = form;
 
   form = orig_form;
-  if (local_mark)
-    form = scheme_stx_add_remove_mark(form, local_mark);
-  form = scheme_stx_add_remove_mark(form, mark);
-  if (local_mark)
-    form = scheme_stx_add_remove_mark(form, local_mark);
+  form = scheme_stx_flip_mark(form, mark);
 
   SCHEME_EXPAND_OBSERVE_LIFT_REQUIRE(scheme_get_expand_observe(), req_form, orig_form, form);
 
@@ -1845,7 +1842,7 @@ Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *loc
                           NULL);
   
   if (local_mark)
-    form = scheme_stx_add_remove_mark(form, local_mark);
+    form = scheme_stx_flip_mark(form, local_mark);
   form = scheme_datum_to_syntax(scheme_make_pair(scheme_datum_to_syntax(scheme_intern_symbol("#%provide"), 
                                                                         scheme_false, scheme_sys_wraps(env), 
                                                                         0, 0),

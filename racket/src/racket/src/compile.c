@@ -585,7 +585,7 @@ make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
     scheme_wrong_syntax(NULL, NULL, code, "empty body not allowed");
 
   forms = scheme_datum_to_syntax(forms, code, code, 0, 0);
-  forms = scheme_stx_add_remove_mark(forms, mark);
+  forms = scheme_stx_add_mark(forms, mark);
 
   name = scheme_build_closure_name(code, rec, drec);
   data->name = name;
@@ -654,9 +654,9 @@ lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
   body = SCHEME_STX_CDR(body);
   body = scheme_datum_to_syntax(body, form, form, 0, 0);
 
-  body = scheme_stx_add_remove_mark(body, mark);
+  body = scheme_stx_add_mark(body, mark);
 
-  args = scheme_stx_add_remove_mark(args, mark); /* for re-expansion */
+  args = scheme_stx_add_mark(args, mark); /* for re-expansion */
   SCHEME_EXPAND_OBSERVE_LAMBDA_RENAMES(erec[drec].observer, args, body);
 
   fn = SCHEME_STX_CAR(form);
@@ -1665,8 +1665,8 @@ case_lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand
 
     newenv = scheme_add_compilation_frame(args, mark, env, 0);
     
-    body = scheme_stx_add_remove_mark(body, mark);
-    args = scheme_stx_add_remove_mark(args, mark);
+    body = scheme_stx_add_mark(body, mark);
+    args = scheme_stx_add_mark(args, mark);
     SCHEME_EXPAND_OBSERVE_CASE_LAMBDA_RENAMES(erec[drec].observer, args, body);
 
     {
@@ -2287,7 +2287,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       rhs = SCHEME_STX_CDR(binding);
       rhs = SCHEME_STX_CAR(rhs);
       if (mark)
-        rhs = scheme_stx_add_remove_mark(rhs, mark);
+        rhs = scheme_stx_add_mark(rhs, mark);
       ce = scheme_compile_expr(rhs, rhs_env, recs, i);
       lv->value = ce;
     } else {
@@ -2328,7 +2328,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       Scheme_Object *ce, *rhs;
       rhs = lv->value;
       if (mark)
-        rhs = scheme_stx_add_remove_mark(rhs, mark);
+        rhs = scheme_stx_add_mark(rhs, mark);
       ce = scheme_compile_expr(rhs, env, recs, i);
       lv->value = ce;
       
@@ -2388,7 +2388,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   recs[num_clauses].value_name = defname ? SCHEME_STX_SYM(defname) : NULL;
   {
     Scheme_Object *cs;
-    if (mark) forms = scheme_stx_add_remove_mark(forms, mark);
+    if (mark) forms = scheme_stx_add_mark(forms, mark);
     cs = scheme_compile_sequence(forms, env, recs, num_clauses);
     last->body = cs;
   }
@@ -2553,14 +2553,14 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
 
     /* Make sure names gets their own renames: */
     name = SCHEME_STX_CAR(v);
-    if (mark) name = scheme_stx_add_remove_mark(name, mark);
+    if (mark) name = scheme_stx_add_mark(name, mark);
 
     if (rec_env_already == 2)
       forward_ref_boundary += scheme_stx_proper_list_length(name);
 
     rhs = SCHEME_STX_CDR(v);
     rhs = SCHEME_STX_CAR(rhs);
-    if (mark) rhs = scheme_stx_add_remove_mark(rhs, mark);
+    if (mark) rhs = scheme_stx_add_mark(rhs, mark);
     
     v = scheme_datum_to_syntax(cons(name, cons(rhs, scheme_null)), v, v, 0, 1);
     v = cons(v, scheme_null);
@@ -2579,7 +2579,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
   vars = first;
 
   body = scheme_datum_to_syntax(body, form, form, 0, 0);
-  if (mark) body = scheme_stx_add_remove_mark(body, mark);
+  if (mark) body = scheme_stx_add_mark(body, mark);
   SCHEME_EXPAND_OBSERVE_LET_RENAMES(erec[drec].observer, vars, body);
 
   /* Pass 2: Expand */
@@ -3770,9 +3770,9 @@ do_letrec_syntaxes(const char *where,
   }
   
   if (mark) {
-    bindings = scheme_stx_add_remove_mark(bindings, mark);
-    var_bindings = scheme_stx_add_remove_mark(var_bindings, mark);
-    body = scheme_stx_add_remove_mark(body, mark);
+    bindings = scheme_stx_add_mark(bindings, mark);
+    var_bindings = scheme_stx_add_mark(var_bindings, mark);
+    body = scheme_stx_add_mark(body, mark);
   }
 
   SCHEME_EXPAND_OBSERVE_LETREC_SYNTAXES_RENAMES(rec[drec].observer, bindings, var_bindings, body);
@@ -3826,7 +3826,7 @@ do_letrec_syntaxes(const char *where,
 
     for (l = names_to_disappear; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
       a = SCHEME_CAR(l);
-      if (mark) a = scheme_stx_add_remove_mark(a, mark);
+      if (mark) a = scheme_stx_add_mark(a, mark);
       SCHEME_CAR(l) = a;
     }
 
@@ -5244,7 +5244,7 @@ Scheme_Object *scheme_pair_lifted(Scheme_Object *_ip, Scheme_Object **_ids, Sche
 
   for (ids = *_ids; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
-    id = scheme_stx_add_remove_mark(id, mark);
+    id = scheme_stx_add_mark(id, mark);
     scheme_add_compilation_binding(--pos, id, naya);
   }
 
@@ -5487,7 +5487,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     Scheme_Object *old_first;
 
     old_first = first;
-    first = scheme_stx_add_remove_mark(first, rib);
+    first = scheme_stx_add_mark(first, rib);
     
     SCHEME_EXPAND_OBSERVE_BLOCK_RENAMES(rec[drec].observer,old_first,first);
   }
@@ -5567,12 +5567,12 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
                                              scheme_false, 
                                              scheme_sys_wraps(env), 
                                              0, 0);
-          begin_stx = scheme_stx_add_remove_mark(begin_stx, exp_mark);
+          begin_stx = scheme_stx_add_mark(begin_stx, exp_mark);
           values_app_stx = scheme_datum_to_syntax(scheme_make_pair(values_symbol, scheme_null),
                                                   scheme_false, 
                                                   scheme_sys_wraps(env), 
                                                   0, 0);
-          values_app_stx = scheme_stx_add_remove_mark(values_app_stx, exp_mark);
+          values_app_stx = scheme_stx_add_mark(values_app_stx, exp_mark);
 
           while (SCHEME_PAIRP(pre_exprs)) {
             v = scheme_make_pair(scheme_null,
@@ -5692,7 +5692,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	    scheme_prepare_exp_env(new_env->genv);
             scheme_prepare_compile_env(new_env->genv->exp_env);
 	    pos = 0;
-	    expr = scheme_stx_add_remove_mark(expr, rib);
+	    expr = scheme_stx_add_mark(expr, rib);
 	    scheme_bind_syntaxes("local syntax definition", 
 				 names, expr,
 				 new_env->genv->exp_env, new_env->insp, rec, drec,
@@ -5712,7 +5712,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
           {
             Scheme_Object *old_first;
             old_first = first;
-            first = scheme_stx_add_remove_mark(first, rib);
+            first = scheme_stx_add_mark(first, rib);
             SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
             SCHEME_EXPAND_OBSERVE_BLOCK_RENAMES(rec[drec].observer,old_first,first);
           }
@@ -5766,7 +5766,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  result = scheme_make_pair(letrec_values_symbol, scheme_make_pair(start, result));
 	}
 	result = scheme_datum_to_syntax(result, forms, scheme_sys_wraps(env), 0, 2);
-	result = scheme_stx_add_remove_mark(result, rib);
+	result = scheme_stx_add_mark(result, rib);
 
 	more = 0;
       } else {

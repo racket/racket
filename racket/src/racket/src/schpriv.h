@@ -1046,10 +1046,10 @@ typedef struct Scheme_Stx {
   Scheme_Inclhash_Object iso; /* 0x1 and 0x2 of keyex used */
   Scheme_Object *val;
   Scheme_Stx_Srcloc *srcloc;
-  Scheme_Hash_Tree *marks; /* mark set */
+  Scheme_Hash_Tree *marks; /* mark set: (hash <mark> #t ...) */
   union {
-    Scheme_Hash_Tree *to_propagate;
-    Scheme_Object **cached_binding;
+    Scheme_Hash_Tree *to_propagate; /* (hash  <mark> <mode> ...  #t (vector <prev-marks> <prev-propagate>)) */
+    Scheme_Object **cached_binding; /* array: binding, phase, counter */
   } u;
   Scheme_Object *shifts; /* <all-shifts> or (vector <all-shifts> <shifts-to-propagate> <base-shifts>); each starts with phase, if any */
   Scheme_Object *taints; /* taint or taint-arming */
@@ -1088,12 +1088,18 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 
 int scheme_stx_has_empty_wraps(Scheme_Object *);
 
-Scheme_Object *scheme_new_mark(int canceling);
+Scheme_Object *scheme_new_mark();
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
-Scheme_Object *scheme_stx_add_remove_mark(Scheme_Object *o, Scheme_Object *m);
-Scheme_Object *scheme_stx_add_remove_marks(Scheme_Object *o, Scheme_Hash_Tree *marks);
+Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 
+#define SCHEME_STX_ADD    0
+#define SCHEME_STX_REMOVE 1
+#define SCHEME_STX_FLIP   2
+Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, int mode);
+Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Hash_Tree *marks, int mode);
+Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m);
 Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m);
+Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m);
 
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,

@@ -4792,11 +4792,11 @@ static Scheme_Object *add_intdef_renamings(Scheme_Object *l, Scheme_Object *rena
 
   if (SCHEME_PAIRP(renaming)) {
     while (!SCHEME_NULLP(rl)) {
-      l = scheme_stx_add_remove_mark(l, SCHEME_CAR(rl));
+      l = scheme_stx_add_mark(l, SCHEME_CAR(rl));
       rl = SCHEME_CDR(rl);
     }
   } else {
-    l = scheme_stx_add_remove_mark(l, renaming);
+    l = scheme_stx_add_mark(l, renaming);
   }
 
   return l;
@@ -5033,7 +5033,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   if (local_mark) {
     /* Since we have an expression from local context,
        we need to remove the temporary mark... */
-    l = scheme_stx_add_remove_mark(l, local_mark);
+    l = scheme_stx_flip_mark(l, local_mark);
   }
 
   if (renaming)
@@ -5111,12 +5111,12 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     SCHEME_PTR2_VAL(exp_expr) = orig_env;
     exp_expr = scheme_datum_to_syntax(exp_expr, l, scheme_false, 0, 0);
     if (local_mark)
-      exp_expr = scheme_stx_add_remove_mark(exp_expr, local_mark);
+      exp_expr = scheme_stx_flip_mark(exp_expr, local_mark);
   }
 
   if (local_mark) {
     /* Put the temporary mark back: */
-    l = scheme_stx_add_remove_mark(l, local_mark);
+    l = scheme_stx_flip_mark(l, local_mark);
   }
 
   if (for_expr) {
@@ -5525,7 +5525,7 @@ local_eval(int argc, Scheme_Object **argv)
 
   /* Mark names */
   if (scheme_current_thread->current_local_mark)
-    names = scheme_named_map_1(NULL, scheme_stx_add_remove_mark, names,
+    names = scheme_named_map_1(NULL, scheme_stx_flip_mark, names,
                                scheme_current_thread->current_local_mark);
 
   SCHEME_EXPAND_OBSERVE_RENAME_LIST(observer,names);
@@ -5549,13 +5549,13 @@ local_eval(int argc, Scheme_Object **argv)
     
     /* Evaluate and bind syntaxes */
     if (scheme_current_thread->current_local_mark)
-      expr = scheme_stx_add_remove_mark(expr, scheme_current_thread->current_local_mark);
+      expr = scheme_stx_flip_mark(expr, scheme_current_thread->current_local_mark);
 
     scheme_prepare_exp_env(stx_env->genv);
     scheme_prepare_compile_env(stx_env->genv->exp_env);
     pos = 0;
-    expr = scheme_stx_add_remove_mark(expr, rib);
-    rn_names = scheme_named_map_1(NULL, scheme_stx_add_remove_mark, names, rib);
+    expr = scheme_stx_add_mark(expr, rib);
+    rn_names = scheme_named_map_1(NULL, scheme_stx_add_mark, names, rib);
     scheme_bind_syntaxes("local syntax definition", rn_names, expr,
 			 stx_env->genv->exp_env, stx_env->insp, &rec, 0,
 			 stx_env, stx_env,

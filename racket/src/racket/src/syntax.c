@@ -145,7 +145,6 @@ XFORM_NONGCING static int prefab_p(Scheme_Object *o)
     - <insp> => clean, but inspector needs to be proagated to children
     - (list <insp/#f> <insp> ...+) [interned] => armed; first inspector is to propagate */
 
-#define IS_CANCELING_MARK(x) (((Scheme_Mark *)x)->id < 0)
 #define SCHEME_MARKP(x) (SAME_TYPE(SCHEME_TYPE(x), scheme_mark_type))
 
 #ifdef OS_X
@@ -500,7 +499,7 @@ void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *con
 
 /******************** marks ********************/
 
-Scheme_Object *scheme_new_mark(int canceling)
+Scheme_Object *scheme_new_mark()
 {
   Scheme_Mark *m;
   mzlonglong id;
@@ -508,8 +507,6 @@ Scheme_Object *scheme_new_mark(int canceling)
   m = (Scheme_Mark *)scheme_malloc_small_tagged(sizeof(Scheme_Mark));
   m->so.type = scheme_mark_type;
   id = ++mark_counter;
-  if (canceling)
-    id = -id;
   m->id = id;
 
   return (Scheme_Object *)m;
@@ -520,27 +517,54 @@ Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
   return scheme_make_integer_value_from_long_long(((Scheme_Mark *)m)->id);
 }
 
-static Scheme_Hash_Tree *add_remove_mark(Scheme_Hash_Tree *marks, Scheme_Object *m)
+static Scheme_Hash_Tree *adjust_mark(Scheme_Hash_Tree *marks, Scheme_Object *m, int mode)
 {
   STX_ASSERT(SAME_TYPE(SCHEME_TYPE(m), scheme_mark_type));
 
   if (scheme_hash_tree_get(marks, m)) {
-    if (IS_CANCELING_MARK(m))
+    if ((mode == SCHEME_STX_FLIP) || (mode == SCHEME_STX_REMOVE))
       return scheme_hash_tree_set(marks, m, NULL);
     else
       return marks;
-  } else
-    return scheme_hash_tree_set(marks, m, scheme_true);
+  } else {
+    if (mode == SCHEME_STX_REMOVE)
+      return marks;
+    else
+      return scheme_hash_tree_set(marks, m, scheme_true);
+  }
 }
 
-Scheme_Object *scheme_stx_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
+static Scheme_Hash_Tree *combine_mark(Scheme_Hash_Tree *marks, Scheme_Object *m, int mode)
+{
+  Scheme_Object *old_mode;
+
+  STX_ASSERT(SAME_TYPE(SCHEME_TYPE(m), scheme_mark_type));
+
+  old_mode = scheme_hash_tree_get(marks, m);
+
+  if (old_mode) {
+    if (SCHEME_INT_VAL(old_mode) == mode) {
+      if (mode == SCHEME_STX_FLIP)
+        return scheme_hash_tree_set(marks, m, NULL);
+      else
+        return marks;
+    } else if (mode == SCHEME_STX_FLIP) {
+      mode = ((mode == SCHEME_STX_REMOVE) ? SCHEME_STX_ADD : SCHEME_STX_REMOVE);
+      return scheme_hash_tree_set(marks, m, scheme_make_integer(mode));
+    } else
+      return scheme_hash_tree_set(marks, m, scheme_make_integer(mode));
+  } else
+    return scheme_hash_tree_set(marks, m, scheme_make_integer(mode));
+}
+
+Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, int mode)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Hash_Tree *marks;
   Scheme_Object *taints, *shifts;
   Scheme_Hash_Tree *to_propagate;
 
-  marks = add_remove_mark(stx->marks, m);
+  marks = adjust_mark(stx->marks, m, mode);
   if ((stx->marks == marks)
       && !(STX_KEY(stx) & STX_SUBSTX_FLAG)) {
     return (Scheme_Object *)stx;
@@ -548,7 +572,7 @@ Scheme_Object *scheme_stx_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
     to_propagate = (stx->u.to_propagate ? stx->u.to_propagate : scheme_empty_hash_tree);
-    to_propagate = add_remove_mark(to_propagate, m);
+    to_propagate = combine_mark(to_propagate, m, mode);
     if ((stx->u.to_propagate == to_propagate)
         && (stx->marks == marks))
       return (Scheme_Object *)stx;
@@ -575,7 +599,22 @@ Scheme_Object *scheme_stx_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
   return (Scheme_Object *)stx;
 }
 
-Scheme_Object *scheme_stx_add_remove_marks(Scheme_Object *o, Scheme_Hash_Tree *marks)
+Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m)
+{
+  return scheme_stx_adjust_mark(o, m, SCHEME_STX_ADD);
+}
+
+Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m)
+{
+  return scheme_stx_adjust_mark(o, m, SCHEME_STX_REMOVE);
+}
+
+Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m)
+{
+  return scheme_stx_adjust_mark(o, m, SCHEME_STX_FLIP);
+}
+
+ Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Hash_Tree *marks, int mode)
 {
   Scheme_Object *key, *val;
   intptr_t i;
@@ -584,34 +623,12 @@ Scheme_Object *scheme_stx_add_remove_marks(Scheme_Object *o, Scheme_Hash_Tree *m
   while (i != -1) {
     scheme_hash_tree_index(marks, i, &key, &val);
 
-    o = scheme_stx_add_remove_mark(o, key);
+    o = scheme_stx_adjust_mark(o, key, mode);
     
     i = scheme_hash_tree_next(marks, i);
   }
 
   return o;
-}
-
-Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m)
-{
-  Scheme_Stx *stx = (Scheme_Stx *)o;
-
-  if (STX_KEY(stx) & STX_SUBSTX_FLAG)
-    scheme_signal_error("internal error: remove mark works only on leaves");
-
-  if (scheme_hash_tree_get(stx->marks, m)) {
-    Scheme_Object *taints = stx->taints;
-    Scheme_Object *shifts = stx->shifts;
-    Scheme_Hash_Tree *marks;
-    marks = scheme_hash_tree_set(stx->marks, m, NULL);
-    stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
-    stx->marks = marks;
-    stx->u.to_propagate = NULL;
-    stx->taints = taints;
-    stx->shifts = shifts;
-  }
- 
-  return (Scheme_Object *)stx;
 }
 
 int scheme_stx_has_empty_wraps(Scheme_Object *stx)
@@ -839,7 +856,7 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Hash_Tree *to_pro
     scheme_hash_tree_index(to_propagate, i, &key, &val);
 
     if (!SAME_OBJ(key, scheme_true))
-      o = scheme_stx_add_remove_mark(o, key);
+      o = scheme_stx_adjust_mark(o, key, SCHEME_INT_VAL(val));
     
     i = scheme_hash_tree_next(to_propagate, i);
   }
@@ -1712,7 +1729,7 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
     marks = (Scheme_Hash_Tree *)SCHEME_VEC_ELS(within)[0];
   else {
     marks = scheme_empty_hash_tree;
-    marks = scheme_hash_tree_set(marks, scheme_new_mark(0), scheme_true);
+    marks = scheme_hash_tree_set(marks, scheme_new_mark(), scheme_true);
   }
 
   if (!shift_or_shifts)
@@ -1744,7 +1761,7 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
 
 Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc)
 {
-  stx = scheme_stx_add_remove_marks(stx, (Scheme_Hash_Tree *)SCHEME_VEC_ELS(mc)[0]);
+  stx = scheme_stx_adjust_marks(stx, (Scheme_Hash_Tree *)SCHEME_VEC_ELS(mc)[0], SCHEME_STX_ADD);
   stx = scheme_stx_add_shifts(stx, SCHEME_VEC_ELS(mc)[3]);
   return stx;
 }
@@ -1958,7 +1975,6 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
 int scheme_stx_in_plain_module_context(Scheme_Object *stx, Scheme_Object *mc)
 {
   Scheme_Hash_Tree *marks;
-  
 
   marks = (Scheme_Hash_Tree *)SCHEME_VEC_ELS(mc)[0];
 
@@ -3435,7 +3451,7 @@ static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], S
   taint_p = SCHEME_PRIM_CLOSURE_ELS(p)[1];
 
   for(; !SCHEME_NULLP(delta); delta = SCHEME_CDR(delta)) {
-    r = scheme_stx_add_remove_mark(r, SCHEME_CAR(delta));
+    r = scheme_stx_add_mark(r, SCHEME_CAR(delta));
   }
 
   if (SCHEME_TRUEP(taint_p))

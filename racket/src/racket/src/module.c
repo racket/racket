@@ -7962,7 +7962,7 @@ static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t pha
   e = scheme_make_pair(require_stx, scheme_make_pair(e, scheme_null));
   e = scheme_datum_to_syntax(e, scheme_false, scheme_false, 0, 0);
 
-  e = scheme_stx_add_remove_mark(e, mark);
+  e = scheme_stx_add_mark(e, mark);
 
   return e;
 }

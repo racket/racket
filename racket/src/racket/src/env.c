@@ -2104,7 +2104,7 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
   }
 
   if (scheme_current_thread->current_local_mark)
-    sym = scheme_stx_add_remove_mark(sym, scheme_current_thread->current_local_mark);
+    sym = scheme_stx_flip_mark(sym, scheme_current_thread->current_local_mark);
 
   menv = NULL;
 
@@ -2354,7 +2354,7 @@ local_introduce(int argc, Scheme_Object *argv[])
     scheme_wrong_contract("syntax-local-introduce", "syntax?", 0, argc, argv);
 
   if (scheme_current_thread->current_local_mark)
-    s = scheme_stx_add_remove_mark(s, scheme_current_thread->current_local_mark);
+    s = scheme_stx_flip_mark(s, scheme_current_thread->current_local_mark);
 
   return s;
 }
@@ -2383,7 +2383,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 
   while (env != bind_env) {
     if (env->mark)
-      sym = scheme_stx_add_remove_mark(sym, env->mark);
+      sym = scheme_stx_add_mark(sym, env->mark);
     env = env->next;
   }
 
@@ -2399,7 +2399,7 @@ introducer_proc(void *mark, int argc, Scheme_Object *argv[])
   if (!SCHEME_STXP(s))
     scheme_wrong_contract("syntax-introducer", "syntax?", 0, argc, argv);
 
-  return scheme_stx_add_remove_mark(s, (Scheme_Object *)mark);
+  return scheme_stx_flip_mark(s, (Scheme_Object *)mark);
 }
 
 static Scheme_Object *
