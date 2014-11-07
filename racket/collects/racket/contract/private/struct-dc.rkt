@@ -313,13 +313,14 @@
                     [dep-args '()])
            (cond
              [(null? subcontracts)
-              (apply chaperone-struct
-                     (apply impersonate-struct
-                            v
-                            impersonate-args)
-                     (if invariant
-                         (add-invariant-checks blame invariant chaperone-args)
-                         chaperone-args))]
+              (define (app* f v l) (if (null? l) v (apply f v l)))
+              (app* chaperone-struct
+                    (app* impersonate-struct
+                          v
+                          impersonate-args)
+                    (if invariant
+                        (add-invariant-checks blame invariant chaperone-args)
+                        chaperone-args))]
              [else
               (define subcontract (car subcontracts)) ;; (or/c subcontract? invariant?)
               (define proj (car projs))
