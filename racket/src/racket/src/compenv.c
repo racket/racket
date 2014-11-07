@@ -1137,9 +1137,9 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 #if 0
   // REMOVEME
-  if (SCHEME_FALSEP(binding) && !strcmp("-ref", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
-    printf("%s\n", scheme_write_to_string(find_id, NULL));
-    scheme_stx_debug_print(find_id);
+  if (!strcmp("sort7", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+    printf("%s %s\n", scheme_write_to_string(find_id, NULL), scheme_write_to_string(binding, NULL));
+    scheme_stx_debug_print(find_id, 1);
   }
 #endif
 
@@ -1477,7 +1477,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 Scheme_Object *scheme_global_binding_at_phase(Scheme_Object *id, Scheme_Env *env, Scheme_Object *phase)
 {
-  Scheme_Object *sym, *vec, *binding;
+  Scheme_Object *sym, *binding;
   Scheme_Hash_Table *binding_names;
   int exact_match, i;
   char onstack[50], *buf;
@@ -1528,11 +1528,6 @@ Scheme_Object *scheme_global_binding_at_phase(Scheme_Object *id, Scheme_Env *env
     sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
     if (!scheme_hash_get(binding_names, sym)) {
       scheme_hash_set(binding_names, sym, scheme_true);
-
-      vec = scheme_make_vector(3, NULL);
-      SCHEME_VEC_ELS(vec)[0]  = (env->module ? env->module->self_modidx : scheme_false);
-      SCHEME_VEC_ELS(vec)[1]  = sym;
-      SCHEME_VEC_ELS(vec)[2]  = scheme_env_phase(env);
 
       scheme_add_module_binding(id, scheme_env_phase(env),
                                 (env->module ? env->module->self_modidx : scheme_false),
@@ -1961,7 +1956,7 @@ Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
 
     for (i = COMPILE_DATA(frame)->num_const; i--; ) {
       id = frame->binders[i];
-      if (SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(id))) {
+      if (id && SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(id))) {
         if (scheme_hash_tree_subset(((Scheme_Stx *)sym)->marks,
                                     ((Scheme_Stx *)id)->marks)) {
           prop = scheme_stx_property(id, unshadowable_symbol, NULL);

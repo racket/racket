@@ -4422,6 +4422,7 @@ static Scheme_Object *to_defined_symbol_at_phase(Scheme_Object *symbol, Scheme_E
 
   binding = scheme_stx_lookup(symbol, phase);
   if (SCHEME_VECTORP(binding)
+      && SAME_OBJ(env->module->self_modidx, SCHEME_VEC_ELS(binding)[0])
       && SAME_OBJ(phase, SCHEME_VEC_ELS(binding)[2]))
     return SCHEME_VEC_ELS(binding)[1];
 
@@ -6322,12 +6323,6 @@ static void eval_exptime(Scheme_Object *names, int count,
       macro = scheme_alloc_small_object();
       macro->type = scheme_macro_type;
       SCHEME_PTR_VAL(macro) = vals;
-      
-      if (SCHEME_TRUEP(free_id_rename_rn)
-          && scheme_is_binding_rename_transformer(vals))
-        scheme_add_binding_copy(name,
-                                scheme_rename_transformer_id(vals),
-                                scheme_make_integer(0));
       
       scheme_add_to_table(syntax, (const char *)name, macro, 0);
       

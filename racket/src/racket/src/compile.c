@@ -2308,24 +2308,8 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   }
   
   if (!recursive) {
-    for (i = 0; i < num_bindings; i++)
+    for (i = 0; i < num_bindings; i++) {
       scheme_add_compilation_binding(i, names[i], frame);
-
-    if ((num_bindings == 5)
-        && !strcmp("-ref", SCHEME_SYM_VAL(SCHEME_STX_VAL(names[3])))) {
-      Scheme_Object *explore;
-      explore = SCHEME_STX_CAR(forms);
-      if (SCHEME_PAIRP(SCHEME_STX_VAL(explore))) {
-        explore = SCHEME_STX_CDR(explore);
-        explore = SCHEME_STX_CDR(explore);
-        explore = SCHEME_STX_CDR(explore);
-        explore = SCHEME_STX_CDR(explore);
-        explore = SCHEME_STX_CAR(explore);
-        explore = SCHEME_STX_CDR(explore);
-        explore = SCHEME_STX_CAR(explore);
-        scheme_stx_debug_print(names[3], 0);
-        scheme_stx_debug_print(explore, 0);
-      }
     }
   }
 
@@ -3172,6 +3156,7 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
 {
   int len;
   Scheme_Object *stx, *form;
+  Scheme_Comp_Env *frame;
 
   if (rec[drec].comp)
     env->prefix->non_phaseless = 1;
@@ -3188,6 +3173,13 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
   if (rec[drec].comp) {
     stx = SCHEME_STX_CDR(form);
     stx = SCHEME_STX_CAR(stx);
+
+    /* Remove marks for all enclosing local binding contexts. */
+    for (frame = env; frame; frame = frame->next) {
+      if (frame->mark)
+        stx = scheme_stx_remove_mark(stx, frame->mark);
+    }
+
     return scheme_register_stx_in_prefix(stx, env, rec, drec);
   } else
     return orig_form;

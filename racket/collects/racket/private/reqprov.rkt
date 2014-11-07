@@ -325,9 +325,10 @@
                                  #`(just-meta
                                     #,(import-orig-mode import)
                                     #,(mode-wrap (phase+ base-mode (import-req-mode import))
-                                                 #`(rename #,(import-src-mod-path import)
+                                                 (quasisyntax/loc (import-src-mod-path import)
+                                                   (rename #,(import-src-mod-path import)
                                                            #,(import-local-id import)
-                                                           #,(import-src-sym import)))))
+                                                           #,(import-src-sym import))))))
                                imports)
                           (map (lambda (src)
                                  (mode-wrap (phase+ base-mode (import-source-mode src))

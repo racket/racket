@@ -687,6 +687,14 @@ Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift)
       && (SCHEME_VEC_ELS(shift)[4] != scheme_make_integer(0))) {
     /* Handle phase shift by itself, first: */
     stx = (Scheme_Stx *)scheme_stx_add_shift((Scheme_Object *)stx, SCHEME_VEC_ELS(shift)[4]);
+    /* strip away phase shift: */
+    vec = scheme_make_vector(5, NULL);
+    SCHEME_VEC_ELS(vec)[0] = SCHEME_VEC_ELS(shift)[0];
+    SCHEME_VEC_ELS(vec)[1] = SCHEME_VEC_ELS(shift)[1];
+    SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(shift)[2];
+    SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(shift)[3];
+    SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(0);
+    shift = vec;
   }
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
@@ -1460,12 +1468,14 @@ void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase,
 {
   Scheme_Object *mc;
 
+  STX_ASSERT(SCHEME_SYMBOLP(((Scheme_Stx *)o)->val));
+
   mc = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(mc)[0] = (Scheme_Object *)((Scheme_Stx *)o)->marks;
   SCHEME_VEC_ELS(mc)[1] = phase;
   SCHEME_VEC_ELS(mc)[2] = scheme_false;
 
-  scheme_extend_module_context(mc, modidx, sym, sym, modidx, sym, SCHEME_INT_VAL(defn_phase), NULL, NULL, 0);
+  scheme_extend_module_context(mc, modidx, ((Scheme_Stx *)o)->val, sym, modidx, sym, SCHEME_INT_VAL(defn_phase), NULL, NULL, 0);
 }
 
 static int marks_subset(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b)
@@ -2040,7 +2050,7 @@ void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-s
     elem = CONS(modidx, elem);
   }
 
-  if (SCHEME_FALSEP(inspector))
+  if (!SCHEME_FALSEP(inspector))
     elem = CONS(inspector, elem);
 
   add_binding(localname, phase, (Scheme_Hash_Tree *)SCHEME_VEC_ELS(mc)[0], elem);
@@ -2241,9 +2251,15 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
   a_bind = scheme_stx_lookup(a, a_phase);
   b_bind = scheme_stx_lookup(b, b_phase);
 
-  if (SCHEME_SYMBOLP(a_bind) || SCHEME_SYMBOLP(b_bind)
-      || SCHEME_FALSEP(a_bind) || SCHEME_FALSEP(b_bind))
+  if (SCHEME_SYMBOLP(a_bind) || SCHEME_SYMBOLP(b_bind))
     return SAME_OBJ(a_bind, b_bind);
+
+  if (SCHEME_FALSEP(a_bind) || SCHEME_FALSEP(b_bind)) {
+    if (SCHEME_FALSEP(a_bind) && SCHEME_FALSEP(b_bind)) {
+      return SAME_OBJ(SCHEME_STX_VAL(a), SCHEME_STX_VAL(b));
+    } else
+      return 0;
+  }
 
   /* Comparison of names & definition phases is fast, so try that next: */
   if (!SAME_OBJ(SCHEME_VEC_ELS(a_bind)[1], SCHEME_VEC_ELS(b_bind)[1])
