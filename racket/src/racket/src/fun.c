@@ -1876,7 +1876,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
     /* rator is now an identifier */
 
     /* and it's introduced by this expression: */
-    mark = scheme_new_mark();
+    mark = scheme_new_mark(15);
     rator = scheme_stx_flip_mark(rator, mark);
 
     if (for_set) {
@@ -1920,7 +1920,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
     }
     track_code = code;  /* after mode properties are removed */
 
-    mark = scheme_new_mark();
+    mark = scheme_new_mark(16);
     code = scheme_stx_flip_mark(code, mark);
 
     code = scheme_stx_taint_disarm(code, NULL);

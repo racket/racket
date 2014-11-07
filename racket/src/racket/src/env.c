@@ -870,7 +870,7 @@ void scheme_prepare_env_stx_context(Scheme_Env *env)
                               insp);
 
     if (env->module)
-      intro_mark = scheme_new_mark();
+      intro_mark = scheme_new_mark(12);
     else
       intro_mark = NULL;
 
@@ -1490,11 +1490,8 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
       v = scheme_lookup_in_table(env->syntax, (const char *)n);
       if (v) {
         v = SCHEME_PTR_VAL(v);
-        if (scheme_is_binding_rename_transformer(v)) {
-          scheme_add_binding_from_id(n, scheme_env_phase(env),
-                                     scheme_stx_lookup(scheme_rename_transformer_id(v),
-                                                       scheme_env_phase(env)));
-        }
+        if (scheme_is_binding_rename_transformer(v))
+          scheme_add_binding_copy(n, scheme_rename_transformer_id(v), scheme_env_phase(env));
       }
     }
   }
@@ -2279,7 +2276,7 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   }
   d[0] = env;
 
-  rib = scheme_new_mark(0);
+  rib = scheme_new_mark(13);
 
   c = scheme_alloc_object();
   c->type = scheme_intdef_context_type;
@@ -2412,7 +2409,7 @@ make_introducer(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *mark;
 
-  mark = scheme_new_mark(1);
+  mark = scheme_new_mark(14);
 
   return scheme_make_closed_prim_w_arity(introducer_proc, mark,
 					 "syntax-introducer", 1, 1);

@@ -1088,7 +1088,7 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 
 int scheme_stx_has_empty_wraps(Scheme_Object *);
 
-Scheme_Object *scheme_new_mark();
+Scheme_Object *scheme_new_mark(int site);
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
 Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 
@@ -1131,7 +1131,7 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
 XFORM_NONGCING void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *context);
 
-void scheme_extend_module_context(Scheme_Object *mc, Scheme_Object *modname,
+void scheme_extend_module_context(Scheme_Object *mc, Scheme_Object *modidx,
                                   Scheme_Object *locname, Scheme_Object *exname,
                                   Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
                                   intptr_t mod_phase, Scheme_Object *src_phase_index, 
@@ -1161,10 +1161,10 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
                           Scheme_Object *a_phase, Scheme_Object *b_phase);
 Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase);
 
-void scheme_add_binding(Scheme_Object *sym_or_pes, Scheme_Object *phase, Scheme_Object *_marks,
-                        Scheme_Object *val);
-void scheme_add_binding_from_id(Scheme_Object *o, Scheme_Object *phase,
-                                Scheme_Object *val);
+void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Object *binding_sym);
+void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase, 
+                               Scheme_Object *modidx, Scheme_Object *sym, Scheme_Object *defn_phase);
+void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
@@ -1232,8 +1232,7 @@ int scheme_is_predefined_module_p(Scheme_Object *name);
 
 Scheme_Object *scheme_get_kernel_modidx(void);
 
-
-void scheme_append_module_context_to_env(Scheme_Object *mc, Scheme_Env *env);
+void scheme_stx_debug_print(Scheme_Object *stx, int level);
 
 /*========================================================================*/
 /*                   syntax run-time structures                           */

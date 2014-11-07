@@ -567,7 +567,7 @@ make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
   forms = SCHEME_STX_CDR(code);
   forms = SCHEME_STX_CDR(forms);
 
-  mark = scheme_new_mark(0);
+  mark = scheme_new_mark(3);
 
   frame = scheme_new_compilation_frame(data->num_params, SCHEME_LAMBDA_FRAME, mark, env);
   params = allparams;
@@ -646,7 +646,7 @@ lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
 
   lambda_check_args(args, form, env);
 
-  mark = scheme_new_mark(0);
+  mark = scheme_new_mark(4);
 
   newenv = scheme_add_compilation_frame(args, mark, env, 0);
 
@@ -1661,7 +1661,7 @@ case_lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand
 
     body = scheme_datum_to_syntax(body, line_form, line_form, 0, 0);
     
-    mark = scheme_new_mark(0);
+    mark = scheme_new_mark(5);
 
     newenv = scheme_add_compilation_frame(args, mark, env, 0);
     
@@ -2159,7 +2159,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   if (rec_env_already)
     mark = NULL;
   else
-    mark = scheme_new_mark(0);
+    mark = scheme_new_mark(6);
 
   names = MALLOC_N(Scheme_Object *, num_bindings);
   if (frame_already)
@@ -2286,8 +2286,6 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       Scheme_Object *ce, *rhs;
       rhs = SCHEME_STX_CDR(binding);
       rhs = SCHEME_STX_CAR(rhs);
-      if (mark)
-        rhs = scheme_stx_add_mark(rhs, mark);
       ce = scheme_compile_expr(rhs, rhs_env, recs, i);
       lv->value = ce;
     } else {
@@ -2310,8 +2308,24 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   }
   
   if (!recursive) {
-    for (i = 0; i < num_bindings; i++) {
+    for (i = 0; i < num_bindings; i++)
       scheme_add_compilation_binding(i, names[i], frame);
+
+    if ((num_bindings == 5)
+        && !strcmp("-ref", SCHEME_SYM_VAL(SCHEME_STX_VAL(names[3])))) {
+      Scheme_Object *explore;
+      explore = SCHEME_STX_CAR(forms);
+      if (SCHEME_PAIRP(SCHEME_STX_VAL(explore))) {
+        explore = SCHEME_STX_CDR(explore);
+        explore = SCHEME_STX_CDR(explore);
+        explore = SCHEME_STX_CDR(explore);
+        explore = SCHEME_STX_CDR(explore);
+        explore = SCHEME_STX_CAR(explore);
+        explore = SCHEME_STX_CDR(explore);
+        explore = SCHEME_STX_CAR(explore);
+        scheme_stx_debug_print(names[3], 0);
+        scheme_stx_debug_print(explore, 0);
+      }
     }
   }
 
@@ -2529,7 +2543,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
     env = env_already;
     mark = NULL;
   } else {
-    mark = scheme_new_mark(0);
+    mark = scheme_new_mark(7);
     env = scheme_add_compilation_frame(vlist, 
                                        mark,
                                        origenv,
@@ -3586,9 +3600,9 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
 
     if (scheme_is_binding_rename_transformer(SCHEME_PTR_VAL(macro))) {
       /* Rebind to the target identifier's binding */
-      scheme_add_binding_from_id(name, scheme_make_integer(rhs_env->genv->phase),
-                                 scheme_stx_lookup(scheme_rename_transformer_id(SCHEME_PTR_VAL(macro)),
-                                                   scheme_make_integer(rhs_env->genv->phase)));
+      scheme_add_binding_copy(name, 
+                              scheme_rename_transformer_id(SCHEME_PTR_VAL(macro)),
+                              scheme_make_integer(rhs_env->genv->phase));
     }
   }
   *_pos = i;
@@ -3630,7 +3644,7 @@ do_letrec_syntaxes(const char *where,
     stx_env = origenv;
     mark = NULL;
   } else {
-    mark = scheme_new_mark(0);
+    mark = scheme_new_mark(8);
     stx_env = scheme_new_compilation_frame(0, 0, mark, origenv);
   }
 
@@ -5239,7 +5253,7 @@ Scheme_Object *scheme_pair_lifted(Scheme_Object *_ip, Scheme_Object **_ids, Sche
   int pos;
 
   pos = scheme_list_length(*_ids);
-  mark = scheme_new_mark(0);
+  mark = scheme_new_mark(9);
   naya = scheme_new_compilation_frame(pos, SCHEME_CAPTURE_LIFTED, mark, (*ip)->next);
   (*ip)->next = naya;
   *ip = naya;
@@ -5458,7 +5472,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     }
   }
 
-  rib = scheme_new_mark(0);
+  rib = scheme_new_mark(10);
   ctx = scheme_alloc_object();
   ctx->type = scheme_intdef_context_type;
   d = MALLOC_N(void*, 3);
@@ -5563,7 +5577,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
           pre_exprs = scheme_reverse(pre_exprs);
 
-          exp_mark = scheme_new_mark(1);
+          exp_mark = scheme_new_mark(11);
 
           begin_stx = scheme_datum_to_syntax(begin_symbol, 
                                              scheme_false, 
@@ -5704,7 +5718,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
 	  /* Remember extended environment */
 	  ((void **)SCHEME_PTR1_VAL(ctx))[0] = new_env;
-	  env = new_env;
+          env = scheme_new_compilation_frame(0, SCHEME_INTDEF_FRAME, rib, new_env);
 	}
 
       define_try_again:

@@ -407,7 +407,7 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
   frame->binders[index] = val;
 
   binding = scheme_gensym(SCHEME_STX_VAL(val));
-  scheme_add_binding_from_id(val, scheme_env_phase(frame->genv), binding);
+  scheme_add_local_binding(val, scheme_env_phase(frame->genv), binding);
 
   frame->bindings[index] = binding;
   frame->skip_table = NULL;
@@ -517,7 +517,7 @@ void scheme_set_local_syntax(int pos,
       
       binding = scheme_gensym(SCHEME_STX_VAL(name));
       
-      scheme_add_binding_from_id(name, scheme_env_phase(env->genv), binding);
+      scheme_add_local_binding(name, scheme_env_phase(env->genv), binding);
     }
     
     COMPILE_DATA(env)->const_binders[pos] = name;
@@ -1066,6 +1066,30 @@ static Scheme_Object *intern_struct_proc_shape(int shape) {
   return scheme_intern_symbol(buf);
 }
 
+void scheme_dump_env(Scheme_Comp_Env *env)
+{
+  Scheme_Comp_Env *frame;
+
+  printf("Environment:\n");
+
+  for (frame = env; frame->next != NULL; frame = frame->next) {
+    int i;
+    for (i = frame->num_bindings; i--; ) {
+      printf("  %s -> %s\n  %s\n",
+             scheme_write_to_string(frame->binders[i], NULL),
+             scheme_write_to_string(frame->bindings[i], NULL),
+             scheme_write_to_string((Scheme_Object *)((Scheme_Stx *)frame->binders[i])->marks, NULL));
+    }
+    
+    for (i = COMPILE_DATA(frame)->num_const; i--; ) {
+      printf("  %s -> %s [c]\n  %s\n",
+             scheme_write_to_string(COMPILE_DATA(frame)->const_binders[i], NULL),
+             scheme_write_to_string(COMPILE_DATA(frame)->const_bindings[i], NULL),
+             scheme_write_to_string((Scheme_Object *)((Scheme_Stx *)COMPILE_DATA(frame)->const_binders[i])->marks, NULL));
+    }
+  }
+}
+
 /*********************************************************************/
 /* 
 
@@ -1099,15 +1123,25 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0, is_constant, ambiguous;
   Scheme_Bucket *b;
   Scheme_Object *binding, *val, *modidx, *modname, *src_find_id, *find_global_id, *mod_defn_phase;
-  Scheme_Object *rename_insp = NULL, *mod_constant = NULL, *shape;
+  Scheme_Object *rename_insp = NULL, *mod_constant = NULL, *shape, **pre_cache;
   Scheme_Env *genv;
 
   if (_local_binder) *_local_binder = NULL;
+
+  pre_cache = ((Scheme_Stx *)find_id)->u.cached_binding;
 
   binding = scheme_stx_lookup_w_nominal(find_id, scheme_env_phase(env->genv),
                                         NULL, &ambiguous,
                                         &rename_insp,
                                         NULL, NULL, NULL, NULL);
+
+#if 0
+  // REMOVEME
+  if (SCHEME_FALSEP(binding) && !strcmp("-ref", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+    printf("%s\n", scheme_write_to_string(find_id, NULL));
+    scheme_stx_debug_print(find_id);
+  }
+#endif
 
   if (ambiguous)
     scheme_wrong_syntax(NULL, NULL, find_id,
@@ -1500,7 +1534,10 @@ Scheme_Object *scheme_global_binding_at_phase(Scheme_Object *id, Scheme_Env *env
       SCHEME_VEC_ELS(vec)[1]  = sym;
       SCHEME_VEC_ELS(vec)[2]  = scheme_env_phase(env);
 
-      scheme_add_binding_from_id(id, scheme_env_phase(env), vec);
+      scheme_add_module_binding(id, scheme_env_phase(env),
+                                (env->module ? env->module->self_modidx : scheme_false),
+                                sym,
+                                scheme_env_phase(env));
       return sym;
     }
 
@@ -1695,7 +1732,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
     id_sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
     id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
-    id = scheme_stx_add_mark(id, scheme_new_mark());
+    id = scheme_stx_add_mark(id, scheme_new_mark(1));
 
     rev_ids = scheme_make_pair(id, rev_ids);
   }
@@ -1805,7 +1842,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
                           NULL);
 
   
-  mark = scheme_new_mark(1);
+  mark = scheme_new_mark(2);
 
   if (SCHEME_RPAIRP(data))
     form = scheme_parse_lifted_require(form, phase, mark, SCHEME_CAR(data));

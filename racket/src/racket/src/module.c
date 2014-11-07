@@ -6306,9 +6306,9 @@ static void eval_exptime(Scheme_Object *names, int count,
           
           if (SCHEME_TRUEP(free_id_rename_rn)
               && scheme_is_binding_rename_transformer(values[i])) {
-            scheme_add_binding_from_id(name, scheme_make_integer(0),
-                                       scheme_stx_lookup(scheme_rename_transformer_id(values[i]),
-                                                         scheme_make_integer(0)));
+            scheme_add_binding_copy(name,
+                                    scheme_rename_transformer_id(values[i]),
+                                    scheme_make_integer(0));
           }
 	
           scheme_add_to_table(syntax, (const char *)name, macro, 0);
@@ -6325,9 +6325,9 @@ static void eval_exptime(Scheme_Object *names, int count,
       
       if (SCHEME_TRUEP(free_id_rename_rn)
           && scheme_is_binding_rename_transformer(vals))
-        scheme_add_binding_from_id(name, scheme_make_integer(0),
-                                   scheme_stx_lookup(scheme_rename_transformer_id(vals),
-                                                     scheme_make_integer(0)));
+        scheme_add_binding_copy(name,
+                                scheme_rename_transformer_id(vals),
+                                scheme_make_integer(0));
       
       scheme_add_to_table(syntax, (const char *)name, macro, 0);
       
@@ -8756,16 +8756,11 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     e = introduce_to_module_context(e, rn_set);
 
     SCHEME_EXPAND_OBSERVE_RENAME_ONE(observer, e);
-    
+
     if (SCHEME_STX_PAIRP(e)) {
       Scheme_Object *fst;
 
       fst = SCHEME_STX_CAR(e);
-
-      if (!scheme_stx_module_eq_x(scheme_define_values_stx, fst, phase)
-          && !strcmp(SCHEME_SYM_VAL(SCHEME_STX_VAL(fst)), "define-values")) {
-        scheme_stx_lookup(fst, scheme_make_integer(phase));
-      }
 
       if (SCHEME_STX_SYMBOLP(fst)) {
 	if (scheme_stx_module_eq_x(scheme_define_values_stx, fst, phase)) {
