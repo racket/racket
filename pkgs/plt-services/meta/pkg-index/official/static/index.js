@@ -11,6 +11,9 @@ function me () {
 $( document ).ready(function() {
     var logged_in = false;
 
+    function spanText ( text ) {
+        return $('<span>', { text: text }); }
+    
     function jslink ( texts, clickf) {
         return $('<a>', { href: "javascript:void(0)",
                           click: clickf } ).html(texts); }
@@ -86,10 +89,10 @@ $( document ).ready(function() {
             .append( $.map( pkgi['authors'],
                             function ( author, i ) {
                                 if ( mypkg_p && author != me() ) {
-                                    return [ author, jslink( "[x]", function () { submit_remove_author(author); }),
+                                    return [ spanText(author), jslink( "[x]", function () { submit_remove_author(author); }),
                                              " "]; }
                                 else {
-                                    return [author, " "]; }} ) );
+                                    return [ spanText(author), " "]; }} ) );
         if ( mypkg_p ) {
             $( "#pi_add_author_row" ).show(); }
         else {
