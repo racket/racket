@@ -14,7 +14,7 @@
 (provide
   (contract-out
     [struct member-spec ([modifier symbol?] [id symbol?] [sc static-contract?])]
-    [object/sc ((listof object-member-spec?) . -> . static-contract?)]
+    [object/sc ((listof object-member-spec?) boolean? . -> . static-contract?)]
     [class/sc ((listof member-spec?) boolean? . -> . static-contract?)]
     [instanceof/sc (static-contract? . -> . static-contract?)]))
 
@@ -25,12 +25,13 @@
 (define field-modifiers '(field init init-field inherit-field))
 (define method-modifiers '(method inherit super inner override augment augride))
 
-(struct object-combinator combinator ()
+(struct object-combinator combinator (opaque)
   #:transparent
   #:property prop:combinator-name "object/sc"
   #:methods gen:sc
     [(define (sc-map v f)
-       (object-combinator (member-seq-sc-map f (combinator-args v))))
+       (object-combinator (member-seq-sc-map f (combinator-args v))
+                          (object-combinator-opaque v)))
      (define (sc-traverse v f)
        (member-seq-sc-map f (combinator-args v))
        (void))
@@ -99,8 +100,8 @@
 ;; TODO make this the correct subset
 (define object-member-spec? member-spec?)
 
-(define (object/sc specs)
-  (object-combinator (member-seq specs)))
+(define (object/sc specs opaque)
+  (object-combinator (member-seq specs) opaque))
 (define (class/sc specs opaque)
   (class-combinator (member-seq specs) opaque))
 (define (instanceof/sc class)
@@ -128,8 +129,9 @@
 
 (define (object/sc->contract v f) 
   (match v
-   [(object-combinator (member-seq vals))
-    #`(object/c #,@(map (member-spec->form f) vals))]))
+   [(object-combinator (member-seq vals) opaque)
+    #`(object/c #,@(if opaque (list '#:opaque) (list))
+                #,@(map (member-spec->form f) vals))]))
 (define (class/sc->contract v f) 
   (match v
    [(class-combinator (member-seq vals) opaque)

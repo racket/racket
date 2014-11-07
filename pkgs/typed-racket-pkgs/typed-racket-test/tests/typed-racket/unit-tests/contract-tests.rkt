@@ -11,6 +11,7 @@
          (submod typed-racket/private/type-contract numeric-contracts)
          (submod typed-racket/private/type-contract test-exports)
          (only-in racket/contract contract)
+         (except-in racket/class private)
          rackunit)
 (provide tests)
 (gen-test-main)
@@ -56,13 +57,15 @@
            (fail-check "Reason didn't match expected.")))))))
 
 ;; construct a namespace for use in typed-untyped interaction tests
+(define-namespace-anchor anchor)
 (define (ctc-namespace)
-  (parameterize ([current-namespace (make-base-namespace)])
+  (parameterize ([current-namespace (namespace-anchor->namespace anchor)])
     (namespace-require 'racket/contract)
     (namespace-require 'unstable/contract)
     (namespace-require 'typed-racket/utils/any-wrap)
     (namespace-require 'typed-racket/utils/evt-contract)
     (namespace-require '(submod typed-racket/private/type-contract predicates))
+    (namespace-require 'racket/class)
     (current-namespace)))
 
 ;; (t-int type (-> any any) any)
@@ -190,20 +193,20 @@
               (t-sc (Un (-lst Univ) -Number) (or/sc number/sc (listof/sc any-wrap/sc)))
 
               ;; classes
-              (t-sc (-class) (class/sc null #f))
+              (t-sc (-class) (class/sc null #t))
               (t-sc (-class #:init ([x -Number #f] [y -Number #f]))
                     (class/sc (list (member-spec 'init 'x number/sc)
                                     (member-spec 'init 'y number/sc))
-                              #f))
+                              #t))
               (t-sc (-class #:init ([x -Number #f] [y -Number #t]))
                     (class/sc (list (member-spec 'init 'x number/sc)
                                     (member-spec 'init 'y number/sc))
-                              #f))
+                              #t))
               (t-sc (-class #:init ([x -Number #f]) #:init-field ([y -Integer #f]))
                     (class/sc (list (member-spec 'init 'x number/sc)
                                     (member-spec 'init 'y integer/sc)
                                     (member-spec 'field 'y integer/sc))
-                              #f))
+                              #t))
 
               ;; typed/untyped interaction tests
               (t-int (-poly (a) (-> a a))
@@ -247,4 +250,25 @@
                           (make-channel)
                           #:untyped
                           #:msg #rx"cannot put on a channel")
+              ;; typed/untyped interaction with class/object contracts
+              (t-int/fail (-object #:field ([f -String]))
+                          (λ (o) (get-field g o))
+                          (new (class object% (super-new)
+                                 (field [f "f"] [g "g"])))
+                          #:typed
+                          #:msg #rx"does not have the requested field")
+              (t-int/fail (-object #:method ([m (-> -String)]))
+                          (λ (o) (send o n))
+                          (new (class object% (super-new)
+                                 (define/public (m) "m")
+                                 (define/public (n) "n")))
+                          #:typed
+                          #:msg #rx"no such method")
+              (t-int (-class #:method ([m (-> -String)]))
+                     (λ (s%) (class s% (super-new)
+                               (define/public (n) "ok")))
+                     (class object% (super-new)
+                       (define/public (m) "m")
+                       (define/public (n) "n"))
+                     #:untyped)
               ))

@@ -54,31 +54,17 @@
             [else m/l])))
       (unless (contract-first-order-passes? c meth-proc)
         (fail "public method ~a doesn't match contract" m))))
-  (unless (class/c-opaque? ctc)
-    (for ([m (class/c-absents ctc)])
-      (when (hash-ref method-ht m #f)
-        (fail "class already contains public method ~a" m))))
-  (when (class/c-opaque? ctc)
-    (for ([m (in-hash-keys method-ht)])
-      (unless (memq m (class/c-methods ctc))
-        (if (symbol-interned? m)
-            (fail "method ~a not specified in contract" m)
-            (fail "some local member not specified in contract")))))
+  (for ([m (class/c-absents ctc)])
+    (when (hash-ref method-ht m #f)
+      (fail "class already contains public method ~a" m)))
   
   (define field-ht (class-field-ht cls))
   (for ([f (class/c-fields ctc)])
     (unless (hash-ref field-ht f #f)
       (fail "no public field ~a" f)))
-  (unless (class/c-opaque? ctc)
-    (for ([f (class/c-absent-fields ctc)])
-      (when (hash-ref field-ht f #f)
-        (fail "class already contains public field ~a" f))))
-  (when (class/c-opaque? ctc)
-    (for ([f (in-hash-keys field-ht)])
-      (unless (memq f (class/c-fields ctc))
-        (if (symbol-interned? f)
-            (fail "field ~a not specified in contract" f)
-            (fail "some local member field not specified in contract")))))
+  (for ([f (class/c-absent-fields ctc)])
+    (when (hash-ref field-ht f #f)
+      (fail "class already contains public field ~a" f)))
   #t)
 
 (define (internal-class/c-check-first-order internal-ctc cls fail)
@@ -193,7 +179,9 @@
                       (add1 (class-pos cls))
                       (class-pos cls))]
              [method-width (class-method-width cls)]
-             [method-ht (class-method-ht cls)]
+             [method-ht (if (class/c-opaque? ctc)
+                            (hash-copy (class-method-ht cls))
+                            (class-method-ht cls))]
              [method-ictcs (class-method-ictcs cls)]
              [methods (if (null? ctc-methods)
                           (class-methods cls)
@@ -201,7 +189,7 @@
              [field-pub-width (class-field-pub-width cls)]
              [no-field-ctcs? (null? (class/c-fields ctc))]
              
-             [field-ht (if no-field-ctcs?
+             [field-ht (if (and no-field-ctcs? (not (class/c-opaque? ctc)))
                            (class-field-ht cls)
                            (hash-copy (class-field-ht cls)))]
              [init (class-init cls)]
@@ -314,6 +302,19 @@
               (define p-neg (cdr p-pr))
               (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))
         
+        ;; For an opaque contract, remove all methods/fields not mentioned in the
+        ;; contract.
+        ;; FIXME: inits can't be removed because we don't know what inits we even
+        ;;        have, but they should be removed too.
+        (when (class/c-opaque? ctc)
+          (for ([key (in-list (hash-keys method-ht))])
+            (unless (memq key ctc-methods)
+              (hash-remove! method-ht key)))
+          (define ctc-fields (class/c-fields ctc))
+          (for ([key (in-list (hash-keys field-ht))])
+            (unless (memq key ctc-fields)
+              (hash-remove! field-ht key))))
+
         ;; Unlike the others, we always want to do this, even if there are no init contracts,
         ;; since we still need to handle either calling the previous class/c's init or
         ;; calling continue-make-super appropriately.
@@ -1124,13 +1125,13 @@
     (parse-spec form))
   (values (reverse bindings) parsed-forms))
 
-;; check keyword and pass off to -class/c
-(define-syntax (class/c stx)
-
+(begin-for-syntax
   (define-splicing-syntax-class opaque-keyword
     (pattern (~seq #:opaque) #:with opaque? #'#t)
-    (pattern (~seq) #:with opaque? #'#f))
+    (pattern (~seq) #:with opaque? #'#f)))
 
+;; check keyword and pass off to -class/c
+(define-syntax (class/c stx)
   (syntax-parse stx
     [(_ kwd:opaque-keyword form ...)
      (syntax/loc stx (-class/c kwd.opaque? form ...))]))
@@ -1218,7 +1219,8 @@
 (define (object/c-proj ctc)
   (λ (blame)
     (λ (obj)
-      (make-wrapper-object ctc obj blame 
+      (make-wrapper-object ctc obj blame
+                           (base-object/c-opaque? ctc)
                            (base-object/c-methods ctc) (base-object/c-method-contracts ctc)
                            (base-object/c-fields ctc) (base-object/c-field-contracts ctc)))))
 
@@ -1230,7 +1232,7 @@
                              (base-object/c-fields ctc)
                              (λ args (ret #f))))))
 
-(define-struct base-object/c (methods method-contracts fields field-contracts)
+(define-struct base-object/c (opaque? methods method-contracts fields field-contracts)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property 
@@ -1257,8 +1259,13 @@
    #:first-order object/c-first-order))
 
 (define-syntax (object/c stx)
+  (syntax-parse stx
+    [(_ kwd:opaque-keyword . rest)
+     (syntax/loc stx (-object/c kwd.opaque? . rest))]))
+
+(define-syntax (-object/c stx)
   (syntax-case stx ()
-    [(_ form ...)
+    [(_ opaque? form ...)
      (let ()
        (define-values (bindings pfs)
          (parse-class/c-specs (syntax->list #'(form ...)) #t))
@@ -1269,7 +1276,8 @@
                      [bindings bindings])
          (syntax/loc stx
            (let bindings
-             (make-base-object/c methods method-ctcs fields field-ctcs)))))]))
+             (make-base-object/c (syntax-e #'opaque?)
+                                 methods method-ctcs fields field-ctcs)))))]))
 
 (define (instanceof/c-proj ctc)
   (define proj (contract-projection (base-instanceof/c-class-ctc ctc)))
@@ -1442,29 +1450,32 @@
   (let ([ctc (coerce-contract 'instanceof/c cctc)])
     (make-base-instanceof/c ctc)))
 
-;; make-wrapper-object: contract object blame 
+;; make-wrapper-object: contract object blame boolean
 ;;                      (listof symbol) (listof contract?) (listof symbol) (listof contract?)
 ;;                   -> wrapped object
-(define (make-wrapper-object ctc obj blame methods method-contracts fields field-contracts)
+(define (make-wrapper-object ctc obj blame opaque? methods method-contracts fields field-contracts)
   (check-object-contract obj methods fields (λ args (apply raise-blame-error blame obj args)))
   (let ([original-obj (if (has-original-object? obj) (original-object obj) obj)]
         [new-cls (make-wrapper-class (object-ref obj)  ;; TODO: object-ref audit
                                      blame
+                                     opaque?
                                      methods method-contracts fields field-contracts)])
     (impersonate-struct obj object-ref (λ (o c) new-cls) ;; TODO: object-ref audit
                         impersonator-prop:contracted ctc
                         impersonator-prop:original-object original-obj)))
 
 
-(define (make-wrapper-class cls blame methods method-contracts fields field-contracts)
+(define (make-wrapper-class cls blame opaque? methods method-contracts fields field-contracts)
   (let* ([name (class-name cls)]
          [method-width (class-method-width cls)]
-         [method-ht (class-method-ht cls)]
+         [method-ht (if opaque?
+                        (hash-copy (class-method-ht cls))
+                        (class-method-ht cls))]
          [meths (if (null? methods)
                     (class-methods cls)
                     (make-vector method-width))]
          [field-pub-width (class-field-pub-width cls)]
-         [field-ht (if (null? fields)
+         [field-ht (if (and (null? fields) (not opaque?))
                        (class-field-ht cls)
                        (hash-copy (class-field-ht cls)))]
          [class-make (if name
@@ -1563,5 +1574,14 @@
           (define p-pos ((contract-projection c) (blame-add-field-context blame f #:swap? #f)))
           (define p-neg ((contract-projection c) (blame-add-field-context blame f #:swap? #t)))
           (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))
-    
+
+    ;; Handle opacity, see above
+    (when opaque?
+      (for ([key (in-list (hash-keys method-ht))])
+        (unless (memq key methods)
+          (hash-remove! method-ht key)))
+      (for ([key (in-list (hash-keys field-ht))])
+        (unless (memq key fields)
+          (hash-remove! field-ht key))))
+
     c))
