@@ -614,7 +614,7 @@ void scheme_finish_kernel(Scheme_Env *env)
     env->running = running;
     env->attached = 1;
     
-    rn = scheme_make_module_context(NULL, NULL, NULL);
+    rn = scheme_make_module_context(NULL, NULL, NULL, NULL);
     for (i = kernel->me->rt->num_provides; i--; ) {
       scheme_extend_module_context(rn, kernel_modidx, exs[i], exs[i], kernel_modidx, exs[i], 
                                    0, scheme_make_integer(0), NULL, 0);
@@ -844,7 +844,7 @@ static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p)
 {
   Scheme_Object *rn, *w;
 
-  rn = scheme_make_module_context(NULL, NULL, NULL);
+  rn = scheme_make_module_context(NULL, NULL, NULL, NULL);
   rn = scheme_module_context_at_phase(rn, scheme_make_integer(p));
 
   /* Add a module mapping for all kernel provides: */
@@ -4425,7 +4425,7 @@ static Scheme_Object *to_defined_symbol_at_phase(Scheme_Object *symbol, Scheme_E
       && SAME_OBJ(phase, SCHEME_VEC_ELS(binding)[2]))
     return SCHEME_VEC_ELS(binding)[1];
 
-  return symbol;
+  return SCHEME_STX_VAL(symbol);
 }
 
 static Scheme_Object *to_defined_symbol(Scheme_Object *symbol, Scheme_Env *env)
@@ -7874,8 +7874,8 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
 }
 
 Scheme_Object *introduce_to_module_context(Scheme_Object *a, Scheme_Object *rn)
-{
-  return a;
+{  
+  return scheme_stx_introduce_to_module_context(a, rn);
 }
 
 Scheme_Object *reverse_and_introduce_module_context(Scheme_Object *fm, Scheme_Object *rn)
@@ -9705,63 +9705,63 @@ static void install_stops(Scheme_Comp_Env *xenv, int phase, Scheme_Object **_beg
   scheme_add_local_syntax(22, xenv);
 
   if (phase == 0) {
-    scheme_set_local_syntax(0, scheme_begin_stx, stop, xenv);
-    scheme_set_local_syntax(1, scheme_define_values_stx, stop, xenv);
-    scheme_set_local_syntax(2, scheme_define_syntaxes_stx, stop, xenv);
-    scheme_set_local_syntax(3, scheme_begin_for_syntax_stx, stop, xenv);
+    scheme_set_local_syntax(0, scheme_begin_stx, stop, xenv, 0);
+    scheme_set_local_syntax(1, scheme_define_values_stx, stop, xenv, 0);
+    scheme_set_local_syntax(2, scheme_define_syntaxes_stx, stop, xenv, 0);
+    scheme_set_local_syntax(3, scheme_begin_for_syntax_stx, stop, xenv, 0);
     *_begin_for_syntax_stx = scheme_begin_for_syntax_stx;
-    scheme_set_local_syntax(4, require_stx, stop, xenv);
-    scheme_set_local_syntax(5, provide_stx, stop, xenv);
-    scheme_set_local_syntax(6, set_stx, stop, xenv);
-    scheme_set_local_syntax(7, app_stx, stop, xenv);
-    scheme_set_local_syntax(8, scheme_top_stx, stop, xenv);
-    scheme_set_local_syntax(9, lambda_stx, stop, xenv);
-    scheme_set_local_syntax(10, case_lambda_stx, stop, xenv);
-    scheme_set_local_syntax(11, let_values_stx, stop, xenv);
-    scheme_set_local_syntax(12, letrec_values_stx, stop, xenv);
-    scheme_set_local_syntax(13, if_stx, stop, xenv);
-    scheme_set_local_syntax(14, begin0_stx, stop, xenv);
-    scheme_set_local_syntax(15, with_continuation_mark_stx, stop, xenv);
-    scheme_set_local_syntax(16, letrec_syntaxes_stx, stop, xenv);
-    scheme_set_local_syntax(17, var_ref_stx, stop, xenv);
-    scheme_set_local_syntax(18, expression_stx, stop, xenv);
-    scheme_set_local_syntax(19, scheme_modulestar_stx, stop, xenv);
-    scheme_set_local_syntax(20, scheme_module_stx, stop, xenv);
-    scheme_set_local_syntax(21, declare_stx, stop, xenv);
+    scheme_set_local_syntax(4, require_stx, stop, xenv, 0);
+    scheme_set_local_syntax(5, provide_stx, stop, xenv, 0);
+    scheme_set_local_syntax(6, set_stx, stop, xenv, 0);
+    scheme_set_local_syntax(7, app_stx, stop, xenv, 0);
+    scheme_set_local_syntax(8, scheme_top_stx, stop, xenv, 0);
+    scheme_set_local_syntax(9, lambda_stx, stop, xenv, 0);
+    scheme_set_local_syntax(10, case_lambda_stx, stop, xenv, 0);
+    scheme_set_local_syntax(11, let_values_stx, stop, xenv, 0);
+    scheme_set_local_syntax(12, letrec_values_stx, stop, xenv, 0);
+    scheme_set_local_syntax(13, if_stx, stop, xenv, 0);
+    scheme_set_local_syntax(14, begin0_stx, stop, xenv, 0);
+    scheme_set_local_syntax(15, with_continuation_mark_stx, stop, xenv, 0);
+    scheme_set_local_syntax(16, letrec_syntaxes_stx, stop, xenv, 0);
+    scheme_set_local_syntax(17, var_ref_stx, stop, xenv, 0);
+    scheme_set_local_syntax(18, expression_stx, stop, xenv, 0);
+    scheme_set_local_syntax(19, scheme_modulestar_stx, stop, xenv, 0);
+    scheme_set_local_syntax(20, scheme_module_stx, stop, xenv, 0);
+    scheme_set_local_syntax(21, declare_stx, stop, xenv, 0);
   } else {
     w = scheme_sys_wraps_phase_worker(phase);
     s = scheme_datum_to_syntax(scheme_intern_symbol("begin"), scheme_false, w, 0, 0);
-    scheme_set_local_syntax(0, s, stop, xenv);
+    scheme_set_local_syntax(0, s, stop, xenv, 0);
     s = scheme_datum_to_syntax(scheme_intern_symbol("define-values"), scheme_false, w, 0, 0);
-    scheme_set_local_syntax(1, s, stop, xenv);
+    scheme_set_local_syntax(1, s, stop, xenv, 0);
     s = scheme_datum_to_syntax(scheme_intern_symbol("define-syntaxes"), scheme_false, w, 0, 0);
-    scheme_set_local_syntax(2, s, stop, xenv);
+    scheme_set_local_syntax(2, s, stop, xenv, 0);
     s = scheme_datum_to_syntax(scheme_intern_symbol("begin-for-syntax"), scheme_false, w, 0, 0);
-    scheme_set_local_syntax(3, s, stop, xenv);
+    scheme_set_local_syntax(3, s, stop, xenv, 0);
     *_begin_for_syntax_stx = s;
     s = scheme_datum_to_syntax(scheme_intern_symbol("#%require"), scheme_false, w, 0, 0);
-    scheme_set_local_syntax(4, s, stop, xenv);
+    scheme_set_local_syntax(4, s, stop, xenv, 0);
     s = scheme_datum_to_syntax(scheme_intern_symbol("#%provide"), scheme_false, w, 0, 0);
-    scheme_set_local_syntax(5, s, stop, xenv);
-    scheme_set_local_syntax(6, scheme_datum_to_syntax(scheme_intern_symbol("set!"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(7, scheme_datum_to_syntax(scheme_intern_symbol("#%app"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(8, scheme_datum_to_syntax(scheme_intern_symbol("#%top"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(9, scheme_datum_to_syntax(scheme_intern_symbol("lambda"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(10, scheme_datum_to_syntax(scheme_intern_symbol("case-lambda"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(11, scheme_datum_to_syntax(scheme_intern_symbol("let-values"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(12, scheme_datum_to_syntax(scheme_intern_symbol("letrec-values"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(13, scheme_datum_to_syntax(scheme_intern_symbol("if"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(14, scheme_datum_to_syntax(scheme_intern_symbol("begin0"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(15, scheme_datum_to_syntax(scheme_intern_symbol("with-continuation-mark"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(16, scheme_datum_to_syntax(scheme_intern_symbol("letrec-syntaxes+values"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(17, scheme_datum_to_syntax(scheme_intern_symbol("#%variable-reference"), scheme_false, w, 0, 0), stop, xenv);
-    scheme_set_local_syntax(18, scheme_datum_to_syntax(scheme_intern_symbol("#%expression"), scheme_false, w, 0, 0), stop, xenv);
+    scheme_set_local_syntax(5, s, stop, xenv, 0);
+    scheme_set_local_syntax(6, scheme_datum_to_syntax(scheme_intern_symbol("set!"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(7, scheme_datum_to_syntax(scheme_intern_symbol("#%app"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(8, scheme_datum_to_syntax(scheme_intern_symbol("#%top"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(9, scheme_datum_to_syntax(scheme_intern_symbol("lambda"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(10, scheme_datum_to_syntax(scheme_intern_symbol("case-lambda"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(11, scheme_datum_to_syntax(scheme_intern_symbol("let-values"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(12, scheme_datum_to_syntax(scheme_intern_symbol("letrec-values"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(13, scheme_datum_to_syntax(scheme_intern_symbol("if"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(14, scheme_datum_to_syntax(scheme_intern_symbol("begin0"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(15, scheme_datum_to_syntax(scheme_intern_symbol("with-continuation-mark"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(16, scheme_datum_to_syntax(scheme_intern_symbol("letrec-syntaxes+values"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(17, scheme_datum_to_syntax(scheme_intern_symbol("#%variable-reference"), scheme_false, w, 0, 0), stop, xenv, 0);
+    scheme_set_local_syntax(18, scheme_datum_to_syntax(scheme_intern_symbol("#%expression"), scheme_false, w, 0, 0), stop, xenv, 0);
     s = scheme_datum_to_syntax(scheme_intern_symbol("module*"), scheme_false, w, 0, 0);
-    scheme_set_local_syntax(19, s, stop, xenv);
+    scheme_set_local_syntax(19, s, stop, xenv, 0);
     s = scheme_datum_to_syntax(scheme_intern_symbol("module"), scheme_false, w, 0, 0);
-    scheme_set_local_syntax(20, s, stop, xenv);
+    scheme_set_local_syntax(20, s, stop, xenv, 0);
     s = scheme_datum_to_syntax(scheme_intern_symbol("#%declare"), scheme_false, w, 0, 0);
-    scheme_set_local_syntax(21, s, stop, xenv);
+    scheme_set_local_syntax(21, s, stop, xenv, 0);
   }
 }
 
@@ -10801,13 +10801,13 @@ static Scheme_Object *expand_provide(Scheme_Object *e, int at_phase,
   stop = scheme_get_stop_expander();
   scheme_add_local_syntax(1, xenv);
   if (!at_phase)
-    scheme_set_local_syntax(0, scheme_begin_stx, stop, xenv);
+    scheme_set_local_syntax(0, scheme_begin_stx, stop, xenv, 0);
   else
     scheme_set_local_syntax(0, scheme_datum_to_syntax(scheme_intern_symbol("begin"), 
                                                       scheme_false, 
                                                       scheme_sys_wraps_phase_worker(at_phase), 
                                                       0, 0), 
-                            stop, xenv);
+                            stop, xenv, 0);
 
   scheme_init_expand_recs(rec, drec, &erec1, 1);
   erec1.value_name = scheme_false;
@@ -11807,7 +11807,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
         prnt_iname = iname;
         if (has_context) {
           /* The `require' expression has a set of marks in its
-             context, which means that we need to generate a name. */
+             context different from the enclosing module's base context,
+             which means that we need to generate a name. */
           iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
           iname = scheme_global_binding_at_phase(iname, name_env, to_phase);
           if (all_simple)
@@ -12565,7 +12566,7 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
 
   insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
-  rn_set = scheme_make_module_context(insp, NULL, NULL);
+  rn_set = scheme_make_module_context(insp, NULL, NULL, NULL);
 
   genv = env->genv;
   scheme_prepare_exp_env(genv);

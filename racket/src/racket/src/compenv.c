@@ -503,22 +503,26 @@ void scheme_add_local_syntax(int cnt, Scheme_Comp_Env *env)
 
 void scheme_set_local_syntax(int pos,
 			     Scheme_Object *name, Scheme_Object *val,
-			     Scheme_Comp_Env *env)
+			     Scheme_Comp_Env *env,
+                             int replace_value)
 {
   Scheme_Object *binding;
 
-  if (env->flags & SCHEME_CAPTURE_WITHOUT_RENAME) {
-    binding = scheme_stx_lookup(name, scheme_env_phase(env->genv));
-  } else {
-    if (env->mark)
-      name = scheme_stx_flip_mark(name, env->mark);
+  if (!replace_value) {
+    if (env->flags & SCHEME_CAPTURE_WITHOUT_RENAME) {
+      binding = scheme_stx_lookup(name, scheme_env_phase(env->genv));
+    } else {
+      if (env->mark)
+        name = scheme_stx_flip_mark(name, env->mark);
+      
+      binding = scheme_gensym(SCHEME_STX_VAL(name));
+      
+      scheme_add_binding_from_id(name, scheme_env_phase(env->genv), binding);
+    }
     
-    binding = scheme_gensym(SCHEME_STX_VAL(name));
-    scheme_add_binding_from_id(name, scheme_env_phase(env->genv), binding);
+    COMPILE_DATA(env)->const_binders[pos] = name;
+    COMPILE_DATA(env)->const_bindings[pos] = binding;
   }
-
-  COMPILE_DATA(env)->const_binders[pos] = name;
-  COMPILE_DATA(env)->const_bindings[pos] = binding;
   COMPILE_DATA(env)->const_vals[pos] = val;
   env->skip_table = NULL;
 }

@@ -123,8 +123,8 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
 #define HAS_CHAPERONE_SUBSTX(obj) (HAS_SUBSTX(obj) || (SCHEME_NP_CHAPERONEP(obj) && HAS_SUBSTX(SCHEME_CHAPERONE_VAL(obj))))
 
 #define SCHEME_INSPECTORP(obj) SAME_TYPE(scheme_inspector_type, SCHEME_TYPE(obj))
-
 #define SCHEME_MODIDXP(l) SAME_TYPE(SCHEME_TYPE(l), scheme_module_index_type)
+#define SCHEME_PHASE_SHIFTP(a) (SCHEME_INTP(a) || SCHEME_BIGNUMP(a) || SCHEME_FALSEP(a))
 
 XFORM_NONGCING static int prefab_p(Scheme_Object *o)
 {
@@ -648,7 +648,7 @@ static Scheme_Object *extract_phase_shift(Scheme_Stx *stx)
       a = SCHEME_VEC_ELS(a)[0];
     if (SCHEME_PAIRP(a)) {
       a = SCHEME_CAR(a);
-      if (SCHEME_INTP(a) || SCHEME_BIGNUMP(a) || SCHEME_FALSEP(a))
+      if (SCHEME_PHASE_SHIFTP(a))
         return a;
     }
   }
@@ -660,12 +660,16 @@ static Scheme_Object *add_shift(Scheme_Object *shift, Scheme_Object *shifts)
 {
   /* Collapse phase shifts and keep them at the front. */
   
-  if (SCHEME_PAIRP(shifts) && (SCHEME_INTP(SCHEME_CAR(shifts))
-                               || SCHEME_BIGNUMP(SCHEME_CAR(shifts)))) {
-    if (SCHEME_INTP(shift) || SCHEME_BIGNUMP(shift))
-      return scheme_make_pair(scheme_bin_plus(shift, SCHEME_CAR(shifts)),
-                              SCHEME_CDR(shifts));
-    else
+  if (SCHEME_PAIRP(shifts) && SCHEME_PHASE_SHIFTP(SCHEME_CAR(shifts))) {
+    if (SCHEME_PHASE_SHIFTP(shift)) {
+      if (SCHEME_FALSEP(SCHEME_CAR(shifts)))
+        return shifts;
+      else if (SCHEME_FALSEP(shift))
+        return scheme_make_pair(scheme_false, SCHEME_CDR(shifts));
+      else 
+        return scheme_make_pair(scheme_bin_plus(shift, SCHEME_CAR(shifts)),
+                                SCHEME_CDR(shifts));
+    } else
       return scheme_make_pair(SCHEME_CAR(shifts),
                               scheme_make_pair(shift,
                                                SCHEME_CDR(shifts)));
@@ -782,6 +786,9 @@ static Scheme_Object *apply_modidx_shifts(Scheme_Object *shifts, Scheme_Object *
 {
   Scheme_Object *vec, *dest, *src, *insp;
   Scheme_Object *modidx_shift_to = NULL, *modidx_shift_from = NULL;
+
+  if (!SCHEME_NULLP(shifts) && SCHEME_PHASE_SHIFTP(SCHEME_CAR(shifts)))
+    shifts = SCHEME_CDR(shifts);
 
   while (!SCHEME_NULLP(shifts)) {
     vec = SCHEME_CAR(shifts);
@@ -1572,7 +1579,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
     } else if (SCHEME_FALSEP(phase))
       phase_shift = scheme_false;
     else
-      phase_shift = scheme_bin_plus(phase, phase_shift);
+      phase_shift = scheme_bin_minus(phase, phase_shift);
   } else
     phase_shift = phase;
 
@@ -1658,15 +1665,24 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
     } else {
       /* A vector for a pes */
       Scheme_Module_Phase_Exports *pt;
-      Scheme_Object *pos;
+      Scheme_Object *pos, *mod;
 
       STX_ASSERT(SCHEME_VECTORP(l));
       
       pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(l)[1];
 
       pos = scheme_hash_get(pt->ht, stx->val);
-      
-      SCHEME_VEC_ELS(result)[0] = SCHEME_VEC_ELS(l)[0];
+
+      if (pt->provide_srcs)
+        mod = pt->provide_srcs[SCHEME_INT_VAL(pos)];
+      else
+        mod = scheme_false;
+
+
+      SCHEME_VEC_ELS(result)[0] = (SCHEME_FALSEP(mod)
+                                   ? SCHEME_VEC_ELS(l)[0]
+                                   : mod);
+
       SCHEME_VEC_ELS(result)[1] = pt->provide_src_names[SCHEME_INT_VAL(pos)];
       if (src_phase) *src_phase = pt->phase_index;
       if (nominal_src_phase) *nominal_src_phase = SCHEME_VEC_ELS(l)[2];
@@ -1720,6 +1736,7 @@ void scheme_populate_pt_ht(Scheme_Module_Phase_Exports * pt) {
 
 Scheme_Object *scheme_make_module_context(Scheme_Object *insp, 
                                           Scheme_Object *shift_or_shifts,
+                                          Scheme_Object *intro_mark,
                                           Scheme_Object *within)
 {
   Scheme_Object *vec;
@@ -1731,17 +1748,22 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
     marks = scheme_empty_hash_tree;
     marks = scheme_hash_tree_set(marks, scheme_new_mark(), scheme_true);
   }
+  if (intro_mark)
+    marks = scheme_hash_tree_set(marks, intro_mark, scheme_true);
+  else
+    intro_mark = scheme_false;
 
   if (!shift_or_shifts)
     shift_or_shifts = scheme_null;
   else if (!SCHEME_PAIRP(shift_or_shifts) && !SCHEME_NULLP(shift_or_shifts))
     shift_or_shifts = scheme_make_pair(shift_or_shifts, scheme_null);
 
-  vec = scheme_make_vector(4, NULL);
+  vec = scheme_make_vector(5, NULL);
   SCHEME_VEC_ELS(vec)[0] = (Scheme_Object *)marks;
   SCHEME_VEC_ELS(vec)[1] = scheme_make_integer(0);
   SCHEME_VEC_ELS(vec)[2] = insp;
   SCHEME_VEC_ELS(vec)[3] = shift_or_shifts;
+  SCHEME_VEC_ELS(vec)[4] = intro_mark;
 
   return vec;
 }
@@ -1750,11 +1772,12 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
 {
   Scheme_Object *vec;
 
-  vec = scheme_make_vector(4, NULL);
+  vec = scheme_make_vector(5, NULL);
   SCHEME_VEC_ELS(vec)[0] = SCHEME_VEC_ELS(mc)[0];
   SCHEME_VEC_ELS(vec)[1] = phase;
   SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(mc)[2];
   SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(mc)[3];
+  SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(mc)[4];
 
   return vec;
 }
@@ -1764,6 +1787,17 @@ Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *
   stx = scheme_stx_adjust_marks(stx, (Scheme_Hash_Tree *)SCHEME_VEC_ELS(mc)[0], SCHEME_STX_ADD);
   stx = scheme_stx_add_shifts(stx, SCHEME_VEC_ELS(mc)[3]);
   return stx;
+}
+
+Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc)
+{
+  Scheme_Object *mark;
+
+  mark = SCHEME_VEC_ELS(mc)[4];
+  if (SCHEME_FALSEP(mark))
+    scheme_signal_error("internal error: cannot introduce to a module context with a introduction mark");
+
+  return scheme_stx_add_mark(stx, mark);
 }
 
 void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark> <phase> <inspector>) */
@@ -1956,11 +1990,11 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
   if (SCHEME_VECTORP(shifts))
     shifts = SCHEME_VEC_ELS(shifts)[0];
   
-  vec = scheme_make_vector(3, NULL);
+  vec = scheme_make_vector(5, NULL);
   SCHEME_VEC_ELS(vec)[0] = (Scheme_Object *)stx->marks;
   if (SCHEME_PAIRP(shifts)) {
     a = SCHEME_CAR(shifts);
-    if (SCHEME_INTP(a) || SCHEME_BIGNUMP(a) || SCHEME_FALSEP(a)) {
+    if (SCHEME_PHASE_SHIFTP(a)) {
       SCHEME_VEC_ELS(vec)[1] = a;
       shifts = SCHEME_CDR(shifts);
     } else
@@ -1968,6 +2002,7 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
   }
   SCHEME_VEC_ELS(vec)[2] = scheme_false; /* not sure this is right */
   SCHEME_VEC_ELS(vec)[3] = shifts;
+  SCHEME_VEC_ELS(vec)[4] = scheme_false;
 
   return vec;
 }
@@ -2038,7 +2073,7 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
                           Scheme_Object *a_phase, Scheme_Object *b_phase)
 {
   Scheme_Object *a_bind, *b_bind;
-
+  
   a_bind = scheme_stx_lookup(a, a_phase);
   b_bind = scheme_stx_lookup(b, b_phase);
 

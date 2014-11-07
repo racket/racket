@@ -1120,10 +1120,11 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 struct Scheme_Module_Phase_Exports; /* forward declaration */
 
 Scheme_Object *scheme_make_module_context(Scheme_Object *insp, Scheme_Object *shift_or_shifts,
-                                          Scheme_Object *within);
+                                          Scheme_Object *intro_mark, Scheme_Object *within);
 Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc);
+Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc);
 
 Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
@@ -2765,7 +2766,7 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
 
 void scheme_add_local_syntax(int cnt, Scheme_Comp_Env *env);
 void scheme_set_local_syntax(int pos, Scheme_Object *name, Scheme_Object *val,
-			     Scheme_Comp_Env *env);
+			     Scheme_Comp_Env *env, int replace_value);
 
 Scheme_Object *scheme_clone_vector(Scheme_Object *data, int skip, int set_type);
 
@@ -2804,7 +2805,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
                           Scheme_Env *exp_env, Scheme_Object *insp, 
                           Scheme_Compile_Expand_Info *rec, int drec,
                           Scheme_Comp_Env *stx_env, Scheme_Comp_Env *rhs_env,
-                          int *_pos, Scheme_Object *rename_rib);
+                          int *_pos, Scheme_Object *rename_rib, int replace_value);
 int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 
 typedef struct SFS_Info {

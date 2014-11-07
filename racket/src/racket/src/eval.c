@@ -4975,7 +4975,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
       }
     
       if (cnt > 0)
-        scheme_set_local_syntax(pos++, i, scheme_get_stop_expander(), env);
+        scheme_set_local_syntax(pos++, i, scheme_get_stop_expander(), env, 0);
     }
     if (!SCHEME_NULLP(l)) {
       scheme_wrong_contract(name, "(or/c #f (listof identifier?))", 2, argc, argv);
@@ -5533,7 +5533,7 @@ local_eval(int argc, Scheme_Object **argv)
   /* Initialize environment slots to #f, which means "not syntax". */
   cnt = 0;
   for (l = names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-    scheme_set_local_syntax(cnt++, SCHEME_CAR(l), scheme_false, stx_env);
+    scheme_set_local_syntax(cnt++, SCHEME_CAR(l), scheme_false, stx_env, 0);
   }
 	  
   stx_env->in_modidx = scheme_current_thread->current_local_modidx;
@@ -5559,7 +5559,7 @@ local_eval(int argc, Scheme_Object **argv)
     scheme_bind_syntaxes("local syntax definition", rn_names, expr,
 			 stx_env->genv->exp_env, stx_env->insp, &rec, 0,
 			 stx_env, stx_env,
-			 &pos, rib);
+			 &pos, rib, 1);
   }
 
   /* Remember extended environment */

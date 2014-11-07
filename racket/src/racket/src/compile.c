@@ -3472,7 +3472,8 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
                           Scheme_Env *exp_env, Scheme_Object *insp, 
                           Scheme_Compile_Expand_Info *rec, int drec,
                           Scheme_Comp_Env *stx_env, Scheme_Comp_Env *rhs_env,
-                          int *_pos, Scheme_Object *rename_rib)
+                          int *_pos, Scheme_Object *rename_rib,
+                          int replace_value)
 {
   Scheme_Object **results, *l, *a_expr;
   Scheme_Comp_Env *eenv;
@@ -3580,8 +3581,8 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
       SCHEME_PTR_VAL(macro) = a;
     else 
       SCHEME_PTR_VAL(macro) = results[j];
-    
-    scheme_set_local_syntax(i++, name, macro, stx_env);
+
+    scheme_set_local_syntax(i++, name, macro, stx_env, replace_value);
 
     if (scheme_is_binding_rename_transformer(SCHEME_PTR_VAL(macro))) {
       /* Rebind to the target identifier's binding */
@@ -3746,7 +3747,7 @@ do_letrec_syntaxes(const char *where,
                But that's ok. We need it now for env_renames. */
             scheme_add_compilation_binding(j++, a, var_env);
           } else
-            scheme_set_local_syntax(j++, a, NULL, stx_env);
+            scheme_set_local_syntax(j++, a, NULL, stx_env, 0);
         }
 
         if (i) j = pre_j;
@@ -3799,7 +3800,7 @@ do_letrec_syntaxes(const char *where,
                            stx_env->insp,
                            rec, drec,
                            stx_env, rhs_env, 
-                           &i, NULL);
+                           &i, NULL, 1);
     }
   }
 
@@ -4732,6 +4733,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       sprintf(buf, " at phase %" PRIdPTR, env->genv->phase);
     }
     if (has_orig_unbound) {
+      scheme_stx_lookup(stx, scheme_make_integer(env->genv->phase));
       scheme_wrong_syntax(scheme_compile_stx_string, 
                           orig_unbound_name, form, 
                           "unbound identifier%s;\n"
@@ -5683,7 +5685,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  cnt = 0;
 	  for (l = names; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
 	    a = SCHEME_STX_CAR(l);
-	    scheme_set_local_syntax(cnt++, a, scheme_false, new_env);
+	    scheme_set_local_syntax(cnt++, a, scheme_false, new_env, 0);
 	  }
 
 	  if (!is_val) {
@@ -5697,7 +5699,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 				 names, expr,
 				 new_env->genv->exp_env, new_env->insp, rec, drec,
 				 new_env, new_env,
-				 &pos, rib);
+				 &pos, rib, 1);
 	  }
 
 	  /* Remember extended environment */
@@ -5993,7 +5995,7 @@ void scheme_add_core_stop_form(int pos, Scheme_Object *sym, Scheme_Comp_Env *env
 {
   Scheme_Object *stx;
   stx = scheme_datum_to_syntax(sym, scheme_false, scheme_sys_wraps(env), 0, 0);
-  scheme_set_local_syntax(pos, stx, stop_expander, env);
+  scheme_set_local_syntax(pos, stx, stop_expander, env, 0);
 }
 
 /**********************************************************************/
