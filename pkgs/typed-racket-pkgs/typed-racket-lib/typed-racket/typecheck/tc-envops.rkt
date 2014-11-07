@@ -82,6 +82,7 @@
 ;; run code in an extended env and with replaced props. Requires the body to return a tc-results.
 ;; TODO make this only add the new prop instead of the entire environment once tc-id is fixed to
 ;; include the interesting props in its filter.
+;; WARNING: this may bail out when code is unreachable
 (define-syntax (with-lexical-env/extend-props stx)
   (define-splicing-syntax-class unreachable?
     (pattern (~seq #:unreachable form:expr))
@@ -92,6 +93,7 @@
          (if new-env
              (with-lexical-env new-env
                (add-unconditional-prop (let () . b) (apply -and (append atoms (env-props new-env)))))
+             ;; unreachable, bail out
              (let ()
                u.form
                (ret -Bottom))))]))
