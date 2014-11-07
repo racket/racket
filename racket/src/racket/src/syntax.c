@@ -105,7 +105,6 @@ static Scheme_Object *syntax_taint(int argc, Scheme_Object **argv);
 static Scheme_Object *write_free_id_info_prefix(Scheme_Object *obj);
 static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj);
 
-static Scheme_Object *raw_stx_content(Scheme_Object *o);
 static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp, int need_clone);
 
 #ifdef MZ_PRECISE_GC
@@ -701,11 +700,12 @@ Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift)
     } else {
       shifts = add_shift(shift, scheme_null);
       SCHEME_VEC_ELS(vec)[1] = shifts;
-      SCHEME_VEC_ELS(vec)[2] = scheme_null;
+      SCHEME_VEC_ELS(vec)[2] = stx->shifts;
       shifts = stx->shifts;
     }
     shifts = add_shift(shift, shifts);
     SCHEME_VEC_ELS(vec)[0] = shifts;
+    shifts = vec;
   } else {
     /* No need to propagate, so it's a simple addition. */
     shifts = add_shift(shift, stx->shifts);
@@ -713,6 +713,9 @@ Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift)
 
   stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx);
   stx->shifts = shifts;
+  
+  if ((STX_KEY(stx) & STX_SUBSTX_FLAG) && !stx->u.to_propagate)
+    stx->u.to_propagate = scheme_empty_hash_tree;
 
   return (Scheme_Object *)stx;
 }
@@ -787,6 +790,11 @@ static Scheme_Object *apply_modidx_shifts(Scheme_Object *shifts, Scheme_Object *
   Scheme_Object *vec, *dest, *src, *insp;
   Scheme_Object *modidx_shift_to = NULL, *modidx_shift_from = NULL;
 
+  /* Strip away propagation layer, if any: */
+  if (SCHEME_VECTORP(shifts))
+    shifts = SCHEME_VEC_ELS(shifts)[0];
+
+  /* Skip phase shift, if any: */
   if (!SCHEME_NULLP(shifts) && SCHEME_PHASE_SHIFTP(SCHEME_CAR(shifts)))
     shifts = SCHEME_CDR(shifts);
 
@@ -797,15 +805,17 @@ static Scheme_Object *apply_modidx_shifts(Scheme_Object *shifts, Scheme_Object *
     dest = SCHEME_VEC_ELS(vec)[1];
     insp = SCHEME_VEC_ELS(vec)[3];
 
-    if (!modidx_shift_to) {
-      modidx_shift_to = dest;
-    } else if (!SAME_OBJ(modidx_shift_from, dest)) {
-      modidx_shift_to = scheme_modidx_shift(dest,
-                                            modidx_shift_from,
-                                            modidx_shift_to);
+    if (!SCHEME_FALSEP(src)) {
+      if (!modidx_shift_to) {
+        modidx_shift_to = dest;
+      } else if (!SAME_OBJ(modidx_shift_from, dest)) {
+        modidx_shift_to = scheme_modidx_shift(dest,
+                                              modidx_shift_from,
+                                              modidx_shift_to);
+      }
+      modidx_shift_from = src;
     }
-    modidx_shift_from = src;
-      
+
     if (_insp && SCHEME_TRUEP(insp))
       *_insp = insp;
 
@@ -1381,7 +1391,7 @@ void scheme_add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Object 
   Scheme_Hash_Tree *marks = (Scheme_Hash_Tree *)_marks;
   Scheme_Mark *mark;
   Scheme_Object *l, *p, *vec;
-  
+
   if (marks->count) {
     mark = extract_max_mark_and_increment_bindings(marks);
   } else {
@@ -2054,7 +2064,7 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
   }
 
   v = scheme_stx_add_shift(v, shift);
-  
+
   /* Phase shift... */
   shift = SCHEME_VEC_ELS(shift)[3];
   if (!SCHEME_FALSEP(shift)) {

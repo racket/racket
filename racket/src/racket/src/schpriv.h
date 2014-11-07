@@ -3474,10 +3474,9 @@ int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Schem
 
 Scheme_Module_Exports *scheme_make_module_exports();
 
-Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object *prot_insp, Scheme_Object *in_modidx,
+Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object *in_modidx,
 						 Scheme_Object *symbol, Scheme_Object *stx, 
-						 Scheme_Object *certs, Scheme_Object *unexp_insp, 
-                                                 Scheme_Object *rename_insp,
+						 Scheme_Object *current_insp, Scheme_Object *binding_insp,
 						 int position, int want_pos,
 						 int *_protected, int *_unexported, 
                                                  Scheme_Env *from_env, int *_would_complain,

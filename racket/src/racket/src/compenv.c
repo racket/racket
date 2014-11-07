@@ -1297,8 +1297,9 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   if (modname) {
     val = scheme_module_syntax(modname, env->genv, find_id, SCHEME_INT_VAL(mod_defn_phase));
     if (val && !(flags & SCHEME_NO_CERT_CHECKS))
-      scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
-					find_id, src_find_id, NULL, NULL, rename_insp,
+      scheme_check_accessible_in_module(genv, in_modidx, 
+					find_id, src_find_id,
+                                        env->insp, rename_insp,
                                         -2, 0, 
 					NULL, NULL,
                                         env->genv, NULL, NULL);
@@ -1322,9 +1323,12 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     if (flags & SCHEME_NO_CERT_CHECKS) 
       pos = 0;
     else
-      pos = scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
-					      find_id, src_find_id, NULL, env->insp, rename_insp, -1, 1,
-					      _protected, NULL, env->genv, NULL, &mod_constant);
+      pos = scheme_check_accessible_in_module(genv, in_modidx, 
+					      find_id, src_find_id, 
+                                              env->insp, rename_insp,
+                                              -1, 1,
+					      _protected, NULL, 
+                                              env->genv, NULL, &mod_constant);
     modpos = (int)SCHEME_INT_VAL(pos);
   } else
     modpos = -1;

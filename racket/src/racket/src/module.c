@@ -4386,17 +4386,17 @@ Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, intptr_t 
 }
 
 static void check_certified(Scheme_Object *stx,
-			    Scheme_Object *prot_insp, Scheme_Object *insp, 
-                            Scheme_Object *rename_insp, Scheme_Object *in_modidx,
+                            Scheme_Object *current_insp, Scheme_Object *binding_insp,
+                            Scheme_Object *in_modidx,
 			    Scheme_Env *env, Scheme_Object *symbol,
 			    int var, int prot, int *_would_complain)
 {
   int need_cert = 1;
     
-  if (need_cert && insp)
-    need_cert = scheme_module_protected_wrt(env->guard_insp, insp);
-  if (need_cert && rename_insp)
-    need_cert = scheme_module_protected_wrt(env->guard_insp, rename_insp);
+  if (need_cert && current_insp)
+    need_cert = scheme_module_protected_wrt(env->guard_insp, current_insp);
+  if (need_cert && binding_insp)
+    need_cert = scheme_module_protected_wrt(env->guard_insp, binding_insp);
 
   if (need_cert) {
     if (_would_complain) {
@@ -4433,10 +4433,10 @@ static Scheme_Object *to_defined_symbol(Scheme_Object *symbol, Scheme_Env *env)
   return to_defined_symbol_at_phase(symbol, env, scheme_make_integer(env->phase));
 }
 
-Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object *prot_insp, Scheme_Object *in_modidx,
+Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object *in_modidx,
 						 Scheme_Object *symbol, Scheme_Object *stx,
-						 Scheme_Object *certs, Scheme_Object *unexp_insp, 
-                                                 Scheme_Object *rename_insp,
+						 Scheme_Object *current_insp, 
+                                                 Scheme_Object *binding_insp,
 						 int position, int want_pos, 
                                                  int *_protected, int *_unexported,
                                                  Scheme_Env *from_env, int *_would_complain,
@@ -4446,14 +4446,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 	If position < -1, then merely checks for protected syntax.
 
 	Access for protected and unexported names depends on
-	certifictions in stx+certs, access implied by
-	{prot_,unexp_}insp, or access implied by in_modidx. For
-	unexported access, either stx+certs or unexp_insp must be
-	supplied (not both), and prot_insp should be supplied 
-        (for protected re-exports of unexported).
-        For unprotected access, both prot_insp and stx+certs 
-        should be supplied. In either case, rename_insp
-        is optionally allowed. */
+        `current_insp` (dynamic context) and `binding_insp` (static context). */
 {
   Scheme_Module_Phase_Exports *pt;
 
@@ -4522,7 +4515,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
                 && !memcmp(SCHEME_SYM_VAL(isym), SCHEME_SYM_VAL(symbol), SCHEME_SYM_LEN(isym)))) {
 	
           if ((position < pt->num_var_provides)
-              && scheme_module_protected_wrt(env->guard_insp, prot_insp)) {
+              && scheme_module_protected_wrt(env->guard_insp, current_insp)) {
             char *provide_protects;
 
             if ((env->mod_phase >= 0) && (env->mod_phase < env->module->num_phases))
@@ -4534,12 +4527,12 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
                 && provide_protects[position]) {
               if (_protected)
                 *_protected = 1;
-              check_certified(stx, prot_insp, prot_insp, rename_insp, in_modidx, env, symbol, 1, 1, _would_complain);
+              check_certified(stx, current_insp, binding_insp, in_modidx, env, symbol, 1, 1, _would_complain);
             }
           }
 
           if (need_cert)
-            check_certified(stx, prot_insp, unexp_insp, rename_insp, in_modidx, env, symbol, 1, 0, _would_complain);
+            check_certified(stx, current_insp, binding_insp, in_modidx, env, symbol, 1, 0, _would_complain);
 	
           if (want_pos)
             return scheme_make_integer(position);
@@ -4602,7 +4595,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
             && provide_protects[SCHEME_INT_VAL(pos)]) {
           if (_protected)
             *_protected = 1;
-          check_certified(stx, prot_insp, prot_insp, rename_insp, in_modidx, env, symbol, 1, 1, _would_complain);
+          check_certified(stx, current_insp, binding_insp, in_modidx, env, symbol, 1, 1, _would_complain);
         }
 
         if ((position >= -1) 
@@ -4612,7 +4605,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
             *_protected = 1;
           if (_unexported)
             *_unexported = 1;
-          check_certified(stx, prot_insp, unexp_insp, rename_insp, in_modidx, env, symbol, 1, 0, _would_complain);
+          check_certified(stx, current_insp, binding_insp, in_modidx, env, symbol, 1, 0, _would_complain);
         }
 
         if (want_pos)
@@ -4625,7 +4618,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
         /* unexported syntax -- need cert */
         if (_unexported)
           *_unexported = 1;
-        check_certified(stx, prot_insp, unexp_insp, rename_insp, in_modidx, env, symbol, 0, 0, _would_complain);
+        check_certified(stx, current_insp, binding_insp, in_modidx, env, symbol, 0, 0, _would_complain);
         return NULL;
       }
     }
@@ -7173,6 +7166,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   nm = SCHEME_STX_CAR(fm);
   if (!SCHEME_STX_SYMBOLP(nm))
     scheme_wrong_syntax(NULL, nm, form, "module name is not an identifier");
+  // REMOVEME printf("%s\n", scheme_write_to_string(nm, 0));
   fm = SCHEME_STX_CDR(fm);
   if (!SCHEME_STX_PAIRP(fm))
     scheme_wrong_syntax(NULL, NULL, form, NULL);
@@ -7563,6 +7557,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     else
       ((Scheme_Modidx *)self_modidx)->resolved = ((Scheme_Modidx *)this_empty_self_modidx)->resolved;
   }
+
+  // REMOVEME printf("DONE %s\n", scheme_write_to_string(nm, 0));
 
   if (rec[drec].comp || (rec[drec].depth != -2)) {
     /* rename tables no longer needed; NULL them out */

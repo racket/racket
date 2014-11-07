@@ -867,9 +867,11 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     }
 
     if (check_access && !SAME_OBJ(menv, env)) {
-      varname = scheme_check_accessible_in_module(menv, insp, NULL, varname, NULL, NULL, 
-                                                  insp, NULL, pos, 0, NULL, NULL, env, NULL,
-                                                  NULL);
+      varname = scheme_check_accessible_in_module(menv, NULL, varname, NULL, 
+                                                  NULL, insp, 
+                                                  pos, 0, 
+                                                  NULL, NULL, 
+                                                  env, NULL, NULL);
     }
   }
 
