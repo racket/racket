@@ -275,33 +275,37 @@
           "expected single value, got multiple (or zero) values")]))
 
 
-;; check-body-form: (All (A) (syntax? (-> A) -> A))
-;; Checks an expression and then calls the function in a context with an extended lexical environment.
-;; The environment is extended with the propositions that are true if the expression returns
-;; (e.g. instead of raising an error).
-(define (check-body-form e k)
-  (define results (tc-expr/check e (tc-any-results -no-filter)))
-  (define props
-    (match results
-      [(tc-any-results: f) (list f)]
-      [(tc-results: _ (list (FilterSet: f+ f-) ...) _)
-       (map -or f+ f-)]
-      [(tc-results: _ (list (FilterSet: f+ f-) ...) _ _ _)
-       (map -or f+ f-)]))
-  (with-lexical-env/extend-props props
-    (k)))
-
 ;; tc-body/check: syntax? tc-results? -> tc-results?
 ;; Body must be a non empty sequence of expressions to typecheck.
 ;; The final one will be checked against expected.
 (define (tc-body/check body expected)
   (match (syntax->list body)
     [(list es ... e-final)
-     (define ((continue es))
-       (if (empty? es)
-           (tc-expr/check e-final expected)
-           (check-body-form (first es) (continue (rest es)))))
-     ((continue es))]))
+     ;; First, typecheck all the forms whose results are discarded.
+     ;; If any one those causes the rest to be unreachable (e.g. `exit' or `error`,
+     ;; then mark the rest as ignored.
+     (let loop ([es es])
+       (cond [(empty? es) ; Done, typecheck the return form.
+              (tc-expr/check e-final expected)]
+             [else
+              ;; Typecheck the first form.
+              (define e (first es))
+              (define results (tc-expr/check e (tc-any-results -no-filter)))
+              (define props
+                (match results
+                  [(tc-any-results: f) (list f)]
+                  [(tc-results: _ (list (FilterSet: f+ f-) ...) _)
+                   (map -or f+ f-)]
+                  [(tc-results: _ (list (FilterSet: f+ f-) ...) _ _ _)
+                   (map -or f+ f-)]))
+              (with-lexical-env/extend-props
+               props
+               ;; If `e` bails out, mark the rest as ignored.
+               #:unreachable (for ([x (in-list (cons e-final (rest es)))])
+                               (register-ignored! x))
+               ;; Keep going with an environment extended with the propositions that are
+               ;; true if execution reaches this point.
+               (loop (rest es)))]))]))
 
 ;; find-stx-type : Any [(or/c Type/c #f)] -> Type/c
 ;; recursively find the type of either a syntax object or the result of syntax-e
