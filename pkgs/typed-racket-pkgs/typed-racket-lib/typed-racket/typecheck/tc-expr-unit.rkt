@@ -102,7 +102,7 @@
                           t))]
          [else (tc-error/expr #:stx stx (syntax-e msg))]))
 
-;; tc-expr/check : syntax maybe[tc-results] -> tc-results
+;; tc-expr/check/internal : syntax maybe[tc-results] -> tc-results
 (define/cond-contract (tc-expr/check/internal form expected)
   (--> syntax? (-or/c tc-results/c #f) full-tc-results/c)
   (parameterize ([current-orig-stx form])
