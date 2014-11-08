@@ -115,6 +115,9 @@ static int is_armed(Scheme_Object *v);
 static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone);
 static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec);
 
+static int marks_equal(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b);
+static int propagates_equal(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b);
+
 #define CONS scheme_make_pair
 #define ICONS scheme_make_pair
 
@@ -562,11 +565,23 @@ Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, int mo
   Scheme_Hash_Tree *marks;
   Scheme_Object *taints, *shifts;
   Scheme_Hash_Tree *to_propagate;
+  int mutate;
 
-  marks = adjust_mark(stx->marks, m, mode);
-  if ((stx->marks == marks)
-      && !(STX_KEY(stx) & STX_SUBSTX_FLAG)) {
-    return (Scheme_Object *)stx;
+  if (mode & SCHEME_STX_MUTATE) {
+    mode -= SCHEME_STX_MUTATE;
+    mutate = 1;
+  } else
+    mutate = 0;
+
+  if (mode & SCHEME_STX_PROPONLY) {
+    marks = stx->marks;
+    mode -= SCHEME_STX_PROPONLY;
+  } else {
+    marks = adjust_mark(stx->marks, m, mode);
+    if ((stx->marks == marks)
+        && !(STX_KEY(stx) & STX_SUBSTX_FLAG)) {
+      return (Scheme_Object *)stx;
+    }
   }
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
@@ -587,13 +602,18 @@ Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, int mo
   } else
     to_propagate = NULL; /* => cleared binding cache */
 
-  taints = stx->taints;
-  shifts = stx->shifts;
-  stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
-  stx->marks = marks;
-  stx->u.to_propagate = to_propagate;
-  stx->taints = taints;
-  stx->shifts = shifts;
+  if (mutate) {
+    stx->marks = marks;
+    stx->u.to_propagate = to_propagate;
+  } else {
+    taints = stx->taints;
+    shifts = stx->shifts;
+    stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
+    stx->marks = marks;
+    stx->u.to_propagate = to_propagate;
+    stx->taints = taints;
+    stx->shifts = shifts;
+  }
 
   return (Scheme_Object *)stx;
 }
@@ -617,12 +637,16 @@ Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m)
 {
   Scheme_Object *key, *val;
   intptr_t i;
+  int flag = 0;
 
   i = scheme_hash_tree_next(marks, -1);
   while (i != -1) {
     scheme_hash_tree_index(marks, i, &key, &val);
 
-    o = scheme_stx_adjust_mark(o, key, mode);
+    val = scheme_stx_adjust_mark(o, key, mode | flag);
+    if (!SAME_OBJ(val, o))
+      flag = SCHEME_STX_MUTATE;
+    o = val;
     
     i = scheme_hash_tree_next(marks, i);
   }
@@ -854,12 +878,15 @@ static Scheme_Object *syntax_shift_phase(int argc, Scheme_Object **argv)
 
 /******************** lazy propagation ********************/
 
+int stx_shorts, stx_meds, stx_longs, stx_shoulda, stx_really_shoulda, stx_inverts;
+
 static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Hash_Tree *to_propagate,
                                       Scheme_Hash_Tree *parent_marks)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *key, *val;
   intptr_t i;
+  int flag;
 
   if (!to_propagate || (to_propagate == scheme_empty_hash_tree))
     return o;
@@ -868,23 +895,55 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Hash_Tree *to_pro
   if (val
       && SAME_OBJ(SCHEME_VEC_ELS(val)[0], (Scheme_Object *)stx->marks)
       && (!(STX_KEY(stx) & STX_SUBSTX_FLAG)
-          || SAME_OBJ(SCHEME_VEC_ELS(val)[1], (Scheme_Object *)stx->u.to_propagate))) {
+          || SAME_OBJ(SCHEME_VEC_ELS(val)[1], (stx->u.to_propagate
+                                               ? (Scheme_Object *)stx->u.to_propagate
+                                               : scheme_false)))) {
     /* shortcut: child marks match parent */
     stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx);
     stx->marks = parent_marks;
     if (STX_KEY(stx) & STX_SUBSTX_FLAG)
       stx->u.to_propagate = to_propagate;
+    stx_shorts++;
     return (Scheme_Object *)stx;
   }
+
+  flag = 0;
   
+  if (val
+      && SAME_OBJ(SCHEME_VEC_ELS(val)[0], (Scheme_Object *)stx->marks)) {
+    /* partial shortcut: new marks will match, construct new propagates */
+    flag |= SCHEME_STX_PROPONLY;
+    stx_meds++;
+  } else
+    stx_longs++;
+
   i = scheme_hash_tree_next(to_propagate, -1);
   while (i != -1) {
     scheme_hash_tree_index(to_propagate, i, &key, &val);
 
-    if (!SAME_OBJ(key, scheme_true))
-      o = scheme_stx_adjust_mark(o, key, SCHEME_INT_VAL(val));
+    if (!SAME_OBJ(key, scheme_true)) {
+      val = scheme_stx_adjust_mark(o, key, SCHEME_INT_VAL(val) | flag);
+      if (!SAME_OBJ(o, val))
+        flag |= SCHEME_STX_MUTATE;
+      o = val;
+    }
     
     i = scheme_hash_tree_next(to_propagate, i);
+  }
+
+  stx = (Scheme_Stx *)o;
+
+  if (flag & SCHEME_STX_MUTATE) {
+    if ((flag & SCHEME_STX_PROPONLY) || marks_equal(stx->marks, parent_marks)) {
+      stx_shoulda++;
+      stx->marks = parent_marks;
+      if ((STX_KEY(stx) & STX_SUBSTX_FLAG)
+          && stx->u.to_propagate
+          && propagates_equal(stx->u.to_propagate, to_propagate)) {
+        stx->u.to_propagate = to_propagate;
+        stx_really_shoulda++;
+      }
+    }
   }
 
   return o;
@@ -1395,8 +1454,7 @@ Scheme_Mark *extract_max_mark_and_increment_bindings(Scheme_Hash_Tree *marks)
 static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Hash_Tree *marks,
                         Scheme_Object *val)
 {
-  Scheme_Bucket_Table *bt;
-  Scheme_Bucket *b;
+  Scheme_Hash_Table *ht;
   Scheme_Mark *mark;
   Scheme_Object *l, *p, *vec;
 
@@ -1412,32 +1470,40 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Hash_Tr
 
   l = mark->bindings;
   if (!l) {
-    bt = scheme_make_bucket_table(10, SCHEME_hash_weak_ptr);
-    l = scheme_make_raw_pair((Scheme_Object *)bt, NULL);
+    ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    l = scheme_make_raw_pair((Scheme_Object *)ht, NULL);
     mark->bindings = l;
   } else {
-    bt = (Scheme_Bucket_Table *)SCHEME_CAR(l);
+    ht = (Scheme_Hash_Table *)SCHEME_CAR(l);
   }
 
   vec = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(vec)[0] = phase;
   SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)marks;
+  SCHEME_VEC_ELS(vec)[2] = val;
 
   if (sym) {
-    b = scheme_bucket_from_table(bt, (const char *)sym);
-    if (!b->val)
-      b->val = scheme_null;
-    SCHEME_VEC_ELS(vec)[2] = val;
-    l = scheme_make_pair(vec, b->val);
-    b->val = l;
+    l = scheme_hash_get(ht, sym);
+    if (!l) l = scheme_null;
+    for (p = l; !SCHEME_NULLP(p); p = SCHEME_CDR(p)) {
+      if (SAME_OBJ(SCHEME_VEC_ELS(SCHEME_CAR(p))[0], phase)
+          && marks_equal((Scheme_Hash_Tree *)SCHEME_VEC_ELS(SCHEME_CAR(p))[1],
+                         marks)) {
+        SCHEME_CAR(p) = vec;
+        break;
+      }
+    }
+    if (SCHEME_NULLP(p)) {
+      l = scheme_make_pair(vec, l);
+      scheme_hash_set(ht, sym, l);
+    }
   } else {
-    SCHEME_VEC_ELS(vec)[2] = val;
     p = scheme_make_raw_pair(vec, SCHEME_CDR(l));
     SCHEME_CDR(l) = p;
   }
 }
 
-static Scheme_Object *adjust_local_binding_phase(Scheme_Stx *stx, Scheme_Object *phase)
+static Scheme_Object *adjust_new_binding_phase(Scheme_Stx *stx, Scheme_Object *phase)
 {
   Scheme_Object *phase_shift;
 
@@ -1458,7 +1524,10 @@ void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Obj
 
   STX_ASSERT(SCHEME_SYMBOLP(binding_sym));
 
-  phase = adjust_local_binding_phase(stx, phase);
+  if (!strcmp("equal-proc", SCHEME_SYM_VAL(SCHEME_STX_VAL(o))))
+    printf("here\n");
+
+  phase = adjust_new_binding_phase(stx, phase);
 
   add_binding(stx->val, phase, stx->marks, binding_sym);
 }
@@ -1469,6 +1538,8 @@ void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase,
   Scheme_Object *mc;
 
   STX_ASSERT(SCHEME_SYMBOLP(((Scheme_Stx *)o)->val));
+
+  phase = adjust_new_binding_phase((Scheme_Stx *)o, phase);
 
   mc = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(mc)[0] = (Scheme_Object *)((Scheme_Stx *)o)->marks;
@@ -1483,6 +1554,34 @@ static int marks_subset(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b)
   return scheme_hash_tree_subset(a, b);
 }
 
+static int marks_equal(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b)
+{
+  return (a->count == b->count) && scheme_hash_tree_subset(a, b);
+}
+
+static int propagates_equal(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b)
+{
+  intptr_t i;
+  Scheme_Object *key, *val, *val2;
+
+  if (a->count != b->count) return 0;
+
+  i = scheme_hash_tree_next(a, -1);
+  while (i != -1) {
+    scheme_hash_tree_index(a, i, &key, &val);
+
+    if (!SAME_OBJ(key, scheme_true)) {
+      val2 = scheme_hash_tree_get(b, key);
+      if (!SAME_OBJ(val, val2))
+        return 0;
+    }
+
+    i = scheme_hash_tree_next(a, i);
+  }
+
+  return 1;
+}
+
 XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
 {
   return ((SAME_OBJ(a, b) || scheme_eqv(a, b))
@@ -1490,7 +1589,7 @@ XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
           : 0);
 }
 
-static void print_marks(Scheme_Hash_Tree *marks)
+static void print_marks(Scheme_Hash_Tree *marks, Scheme_Hash_Tree *check_against_marks)
 {
   intptr_t i;
   Scheme_Object *key, *val;
@@ -1506,6 +1605,9 @@ static void print_marks(Scheme_Hash_Tree *marks)
     i = scheme_hash_tree_next(marks, i);
   }
 
+  if (check_against_marks && marks_subset(marks, check_against_marks))
+    printf(" [match]");
+
   printf("\n");
 }
 
@@ -1514,8 +1616,6 @@ void scheme_stx_debug_print(Scheme_Object *_stx, int level)
   int full_imports = 0;
   Scheme_Stx *stx = (Scheme_Stx *)_stx;
   Scheme_Object *phase;
-  Scheme_Bucket *bucket;
-  Scheme_Bucket_Table *bt;
   Scheme_Hash_Table *ht;
   Scheme_Object *key, *val, *l, *pes;
   intptr_t i, j;
@@ -1525,7 +1625,7 @@ void scheme_stx_debug_print(Scheme_Object *_stx, int level)
   phase = extract_phase_shift(stx);
 
   printf("%s:\n", scheme_write_to_string(stx->val, NULL));
-  print_marks(stx->marks);
+  print_marks(stx->marks, NULL);
   printf("  phase shift: %s\n", scheme_write_to_string(phase, NULL));
 
   if (!level)
@@ -1537,20 +1637,17 @@ void scheme_stx_debug_print(Scheme_Object *_stx, int level)
 
     mark = (Scheme_Mark *)key;
     if (mark->bindings) {
-      bt = (Scheme_Bucket_Table *)SCHEME_CAR(mark->bindings);
-      for (j = bt->size; j--; ) {
-        bucket = bt->buckets[j];
-	if (bucket) {
-          key = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
-          if (key) {
-            printf("  %s =\n", scheme_write_to_string(key, NULL));
-            l = (Scheme_Object *)bucket->val;
-            while (l && !SCHEME_NULLP(l)) {
-              phase = SCHEME_VEC_ELS(SCHEME_CAR(l))[0];
-              printf("  @%s:\n", scheme_write_to_string(phase, 0));
-              print_marks((Scheme_Hash_Tree *)SCHEME_VEC_ELS(SCHEME_CAR(l))[1]);
-              l = SCHEME_CDR(l);
-            }
+      ht = (Scheme_Hash_Table *)SCHEME_CAR(mark->bindings);
+      for (j = ht->size; j--; ) {
+	if (ht->vals[j]) {
+          printf("  %s =\n", scheme_write_to_string(ht->keys[j], NULL));
+          l = ht->vals[j];
+          while (l && !SCHEME_NULLP(l)) {
+            phase = SCHEME_VEC_ELS(SCHEME_CAR(l))[0];
+            printf("  @%s:%s\n", scheme_write_to_string(phase, 0),
+                   (SCHEME_SYMBOLP(SCHEME_VEC_ELS(SCHEME_CAR(l))[2]) ? " local" : ""));
+            print_marks((Scheme_Hash_Tree *)SCHEME_VEC_ELS(SCHEME_CAR(l))[1], stx->marks);
+            l = SCHEME_CDR(l);
           }
         }
       }
@@ -1559,7 +1656,7 @@ void scheme_stx_debug_print(Scheme_Object *_stx, int level)
       while (l && !SCHEME_NULLP(l)) {
         phase = SCHEME_VEC_ELS(SCHEME_CAR(l))[0];
         printf("  @%s...:\n", scheme_write_to_string(phase, 0));
-        print_marks((Scheme_Hash_Tree *)SCHEME_VEC_ELS(SCHEME_CAR(l))[1]);
+        print_marks((Scheme_Hash_Tree *)SCHEME_VEC_ELS(SCHEME_CAR(l))[1], stx->marks);
         
         pes = SCHEME_VEC_ELS(SCHEME_CAR(l))[2];
         if (SCHEME_VEC_SIZE(pes) == 3) {
@@ -1575,7 +1672,7 @@ void scheme_stx_debug_print(Scheme_Object *_stx, int level)
           
           if (full_imports) {
             for (j = ht->size; j--; ) {
-              if (ht->keys[j]) {
+              if (ht->vals[j]) {
                 printf("    %s\n", scheme_write_to_string(ht->keys[j], NULL));
               }
             }
@@ -1615,8 +1712,8 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase,
     if (mark->bindings) {
       for (j = 0; j < 2; j++) {
         if (!j)
-          l = scheme_lookup_in_table((Scheme_Bucket_Table *)SCHEME_CAR(mark->bindings),
-                                     (const char *)stx->val);
+          l = scheme_hash_get((Scheme_Hash_Table *)SCHEME_CAR(mark->bindings),
+                              stx->val);
         else
           l = SCHEME_CDR(mark->bindings);
 
@@ -1901,7 +1998,7 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
   else
     result = scheme_false;
 
-  phase = adjust_local_binding_phase(stx, phase);
+  phase = adjust_new_binding_phase(stx, phase);
 
   add_binding(stx->val, phase, stx->marks, result);
 }
@@ -2187,7 +2284,7 @@ int scheme_stx_in_plain_module_context(Scheme_Object *stx, Scheme_Object *mc)
 
   marks = (Scheme_Hash_Tree *)SCHEME_VEC_ELS(mc)[0];
 
-  return scheme_hash_tree_equal(((Scheme_Stx *)stx)->marks, marks);
+  return marks_equal(((Scheme_Stx *)stx)->marks, marks);
 }
 
 /***********************************************************************/
@@ -2310,7 +2407,7 @@ int scheme_stx_env_bound_eq2(Scheme_Object *_a, Scheme_Object *_b,
   if (!SAME_OBJ(a->val, b->val))
     return 0;
 
-  return scheme_hash_tree_equal(a->marks, b->marks);
+  return marks_equal(a->marks, b->marks);
 }
 
 int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase)
@@ -3665,9 +3762,7 @@ static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], S
   delta = SCHEME_PRIM_CLOSURE_ELS(p)[0];
   taint_p = SCHEME_PRIM_CLOSURE_ELS(p)[1];
 
-  for(; !SCHEME_NULLP(delta); delta = SCHEME_CDR(delta)) {
-    r = scheme_stx_add_mark(r, SCHEME_CAR(delta));
-  }
+  r = scheme_stx_adjust_marks(r, (Scheme_Hash_Tree *)delta, SCHEME_STX_ADD);
 
   if (SCHEME_TRUEP(taint_p))
     r = scheme_stx_taint(r);

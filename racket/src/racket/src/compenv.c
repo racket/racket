@@ -1143,9 +1143,12 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   }
 #endif
 
-  if (ambiguous)
+  if (ambiguous) {
+    // REMOVEME
+    scheme_stx_debug_print(find_id, 1);
     scheme_wrong_syntax(NULL, NULL, find_id,
                         "identifier's binding is ambiguous");
+  }
 
   /* If binding is a symbol, then it must be in the environment, or else
      the identifier is out of context.
@@ -1528,8 +1531,8 @@ Scheme_Object *scheme_global_binding_at_phase(Scheme_Object *id, Scheme_Env *env
     sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
     if (!scheme_hash_get(binding_names, sym)) {
       scheme_hash_set(binding_names, sym, scheme_true);
-
-      scheme_add_module_binding(id, scheme_env_phase(env),
+      
+      scheme_add_module_binding(id, phase,
                                 (env->module ? env->module->self_modidx : scheme_false),
                                 sym,
                                 scheme_env_phase(env));

@@ -1092,9 +1092,11 @@ Scheme_Object *scheme_new_mark(int site);
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
 Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 
-#define SCHEME_STX_ADD    0
-#define SCHEME_STX_REMOVE 1
-#define SCHEME_STX_FLIP   2
+#define SCHEME_STX_ADD      0
+#define SCHEME_STX_REMOVE   1
+#define SCHEME_STX_FLIP     2
+#define SCHEME_STX_MUTATE   8  /* or'ed */
+#define SCHEME_STX_PROPONLY 16 /* or'ed, internal */
 Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Hash_Tree *marks, int mode);
 Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m);
