@@ -605,14 +605,7 @@
                path)
         #f]
        [(not path-time)
-        (trace-printf "~a does not exist" orig-path)
-        (or (hash-ref up-to-date orig-path #f)
-            (let ([stamp (cons (or path-zo-time +inf.0)
-                               (delay (get-compiled-sha1 mode roots path)))])
-              (hash-set! up-to-date main-path stamp)
-              (unless (eq? main-path alt-path)
-                (hash-set! up-to-date alt-path stamp))
-              stamp))]
+        (error 'compile-zo "~a does not exist" orig-path)]
        [else
         (let ([deps (read-deps path)]
               [new-seen (hash-set seen path #t)])
