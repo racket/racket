@@ -1071,7 +1071,7 @@
               (map (lambda (e)
                      (make-export
                       (export-local-id e)
-                      (string->symbol (format "~s~s"
+                      (string->symbol (format "~a~a"
                                               (syntax-e #'pfx)
                                               (export-out-sym e)))
                       (export-mode e)
