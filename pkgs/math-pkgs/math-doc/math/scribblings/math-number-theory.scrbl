@@ -517,9 +517,9 @@ square, otherwise @racket[#f].
 }
 
 @; ----------------------------------------
-@section[#:tag "multiplicative"]{Multiplicative Functions}
+@section[#:tag "multiplicative"]{Multiplicative and Arithmetic Functions}
 
-The functions in this section are @deftech{multiplicative}.
+The functions in this section are @deftech{multiplicative} (with exception of the Von Mangoldt function).
 In number theory, a multiplicative function is a function @racket[f] such that
 @racket[(f (* a b)) = (* (f a) (f b))] for all coprime natural numbers @racket[a] and @racket[b].
 
@@ -572,6 +572,8 @@ Counting multiplicities the number of prime factors of @racket[n] is returned.
 The von Mangoldt function. 
 If @racket[n=p^k] for a prime @racket[p] and an integer @racket[k>=1] then @racket[(log n)] is returned.                                             
 Otherwise 0 is returned.
+
+Note: The Von Mangoldt function is not multiplicative.
 
 @interaction[#:eval untyped-eval         
                     (mangoldt-lambda (* 3 3))
