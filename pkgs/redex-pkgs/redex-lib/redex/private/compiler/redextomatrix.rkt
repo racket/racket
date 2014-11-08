@@ -303,7 +303,7 @@
             `(set! results (cons (cons ,(build-right-hand-side-helper x) '()) results))
             `(set! results (cons (cons ,(build-right-hand-side-helper x) (term ,hole-var)) results))
             )
-        `(for ((,hole-var (in-list (,(string->symbol (format "~s~s" nt-func '-list)) (term ,hole-var)))))
+        `(for ((,hole-var (in-list (,(string->symbol (format "~a~a" nt-func '-list)) (term ,hole-var)))))
               (set! results (cons (cons ,(build-right-hand-side-helper x) (cdr ,hole-var)) results))
               )
         )
@@ -419,12 +419,12 @@
          (hash-set! nt-table
                     key
                     (make-nt-struct
-                     (term (define ,(string->symbol (format "~s~s" key '-bool))
+                     (term (define ,(string->symbol (format "~a~a" key '-bool))
                              (λ (a)
                                (let ((results (list)))
                                  ,compiled-bool
                                  (and (andmap values results) (positive? (length results)))))))
-                     (term (define ,(string->symbol (format "~s~s" key '-list))
+                     (term (define ,(string->symbol (format "~a~a" key '-list))
                              (λ (a)
                                (let ((results (list)))
                                  ,compiled-set
