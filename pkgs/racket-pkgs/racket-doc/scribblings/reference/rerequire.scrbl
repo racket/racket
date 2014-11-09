@@ -28,6 +28,6 @@ list is empty, no modules were changed or loaded.
 
 When @racket[enter!] loads or re-loads a module from a file, it can
 print a message to @racket[(current-error-port)], depending on
-@racket[verbosity]: @racket['verbose] prints a message for all loads and
+@racket[verbosity]: @racket['all] prints a message for all loads and
 re-loads, @racket['reload] prints a message only for
 re-loaded modules, and @racket['none] disables printouts.}
