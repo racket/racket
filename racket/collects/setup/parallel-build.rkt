@@ -345,8 +345,8 @@
     (raise-argument-error 'parallel-compile-files "exact-positive-integer?" worker-count))
   (unless (and (list? list-of-files) (andmap path-string? list-of-files))
     (raise-argument-error 'parallel-compile-files "(listof path-string?)" list-of-files))
-  (unless (and (procedure? handler) (procedure-arity-includes? handler 5))
-    (raise-argument-error 'parallel-compile-files "(procedure-arity-includes/c 5)" handler))
+  (unless (and (procedure? handler) (procedure-arity-includes? handler 6))
+    (raise-argument-error 'parallel-compile-files "(procedure-arity-includes/c 6)" handler))
   (parallel-build (make-object file-list-queue% list-of-files handler options) worker-count))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)

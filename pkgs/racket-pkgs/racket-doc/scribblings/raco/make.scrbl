@@ -471,7 +471,8 @@ functionality of @exec{raco setup} and @exec{raco make}.}
 
 @defproc[(parallel-compile-files [list-of-files (listof path-string?)]
                                  [#:worker-count worker-count exact-positive-integer? (processor-count)]
-                                 [#:handler handler (->i ([handler-type symbol?]
+                                 [#:handler handler (->i ([worker-id exact-integer?]
+                                                          [handler-type symbol?]
                                                           [path path-string?]
                                                           [msg string?] 
                                                           [out string?] 
