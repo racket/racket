@@ -664,7 +664,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    parent of the Racket installation's @filepath{collects} directory; the
    second argument, if accepted, is a path to the collection's own
    directory; the third argument, if accepted, is a boolean indicating
-   whether the collection is installed as user-specific (@racket[#f])
+   whether the collection is installed as user-specific (@racket[#t])
    or installation-wide (@racket[#f]). The procedure should perform collection-specific
    installation work, and it should avoid unnecessary work in the case
    that it is called multiple times for the same installation.}
