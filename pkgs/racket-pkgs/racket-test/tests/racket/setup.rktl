@@ -39,22 +39,6 @@
 (test (find-system-path 'temp-dir) path->module-path (find-system-path 'temp-dir))
 
 ;; ----------------------------------------
-
-(require compiler/find-exe)
-
-(let ()
-  (define tmpdir (make-temporary-file "tmp~a" 'directory (current-directory)))
-  (define tmppath (build-path tmpdir "tmp.rkt"))
-  (with-output-to-file (build-path tmpdir "tmp.rkt")  #:exists 'replace
-                       (lambda () 
-                         (printf "#lang racket\n")))
-  (define exec-path (find-exe))
-  (define relpath (find-relative-path (current-directory) tmppath))
-
-  (test #t system* exec-path "-l" "raco" "make" "-j" "2" (path->string relpath))
-  (delete-directory/files tmpdir))
-
-;; ----------------------------------------
 ;; Make sure that setting the reader doesn't break reading a configuration file:
 
 (parameterize ([current-namespace (make-base-namespace)]
