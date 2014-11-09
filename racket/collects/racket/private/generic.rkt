@@ -65,6 +65,11 @@
        (define defaults-by-type (map generate-methods default-preds))
        (define defaults-by-method (transpose-methods defaults-by-type))
 
+       (define/with-syntax ((req req-kw opt opt-kw rest) ...)
+         (stx-map
+           (λ (sg) (call-with-values (lambda () (parse-method-signature sg)) list))
+           #'(method-signature ...)))
+       
        (define/with-syntax size n)
        (define/with-syntax [method-index ...] method-indices)
        (define/with-syntax contract-str
@@ -191,7 +196,8 @@
                    ...
                    [else (raise-argument-error 'method-name
                                                'contract-str
-                                               self-name)])
+                                               0
+                                               . req)])
                  fallback)
              original)
            ...
