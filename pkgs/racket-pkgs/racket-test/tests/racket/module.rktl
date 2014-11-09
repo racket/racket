@@ -143,6 +143,44 @@
 (test 5 dynamic-require ''_shadow_ 'car)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(let ()
+  (define (do-try export import ref val)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval `(module a racket/base
+              (define x 'x)
+              (define y 'y)
+              (provide ,export)))
+      (eval `(module b racket/base
+              (require ,import)
+              (define result ,ref)
+              (provide result)))
+      (test val dynamic-require ''b 'result)))
+  (define-syntax try
+    (syntax-rules (=>)
+      [(_ export import ref => val)
+       (do-try 'export 'import 'ref val)]))
+
+  (try x 'a x => 'x)
+  (try y 'a y => 'y)
+  (try (combine-out x y) 'a x => 'x)
+  (try (combine-out x y) 'a y => 'y)
+
+  (try (combine-out x y) (only-in 'a x) x => 'x)
+  (try (combine-out x y) (only-in 'a [x y]) y => 'x)
+
+  (try (rename-out [x y]) 'a y => 'x)
+
+  (try x (prefix-in a: 'a) a:x => 'x)
+  (try x (prefix-in |a :| 'a) |a :x| => 'x)
+  (try x (prefix-in z. (prefix-in |a :| 'a)) |z.a :x| => 'x)
+  (try (prefix-out o: x) 'a o:x => 'x)
+  (try (prefix-out |o :| x) 'a |o :x| => 'x)
+
+  (try (prefix-out o: x) (prefix-in i. 'a) i.o:x => 'x)
+  (try (prefix-out |o :| x) (rename-in 'a [|o :x| ex]) ex => 'x))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check namespace-attach-module:
 
 (let* ([n (make-empty-namespace)]
