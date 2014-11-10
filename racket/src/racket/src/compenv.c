@@ -284,7 +284,7 @@ static void init_compile_data(Scheme_Comp_Env *env)
   data->min_use = c;
 }
 
-Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Scheme_Object *mark, Scheme_Comp_Env *base)
+Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Scheme_Object *marks, Scheme_Comp_Env *base)
 {
   Scheme_Comp_Env *frame;
   int count;
@@ -296,7 +296,7 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Schem
   frame->type = scheme_rt_comp_env;
 #endif
 
-  frame->mark = mark;
+  frame->marks = marks;
 
   {
     Scheme_Object **vals;
@@ -326,7 +326,7 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Schem
   return frame;
 }
 
-Scheme_Comp_Env *scheme_new_comp_env(Scheme_Env *genv, Scheme_Object *insp, int flags)
+Scheme_Comp_Env *scheme_new_comp_env(Scheme_Env *genv, Scheme_Object *insp, Scheme_Object *marks, int flags)
 {
   Scheme_Comp_Env *e;
   Comp_Prefix *cp;
@@ -352,14 +352,16 @@ Scheme_Comp_Env *scheme_new_comp_env(Scheme_Env *genv, Scheme_Object *insp, int 
 
   e->prefix = cp;
 
+  e->marks = marks;
+
   return e;
 }
 
-Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, int flags)
+Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, Scheme_Object *marks, int flags)
 {
   Scheme_Comp_Env *e;
 
-  e = scheme_new_comp_env(genv, insp, flags);
+  e = scheme_new_comp_env(genv, insp, marks, flags);
   e->prefix = NULL;
 
   return e;
@@ -399,9 +401,9 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
     scheme_signal_error("internal error: scheme_add_binding: "
 			"index out of range: %d", index);
 
-  if (frame->mark) {
+  if (frame->marks) {
     /* expected to be redundant, but just in case: */
-    val = scheme_stx_add_mark(val, frame->mark);
+    val = scheme_stx_adjust_mark_or_marks(val, frame->marks, SCHEME_STX_ADD);
   }
   
   frame->binders[index] = val;
@@ -512,8 +514,8 @@ void scheme_set_local_syntax(int pos,
     if (env->flags & SCHEME_CAPTURE_WITHOUT_RENAME) {
       binding = scheme_stx_lookup(name, scheme_env_phase(env->genv));
     } else {
-      if (env->mark)
-        name = scheme_stx_flip_mark(name, env->mark);
+      if (env->marks)
+        name = scheme_stx_adjust_mark_or_marks(name, env->marks, SCHEME_STX_ADD);
       
       binding = scheme_gensym(SCHEME_STX_VAL(name));
       
@@ -1131,13 +1133,13 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   pre_cache = ((Scheme_Stx *)find_id)->u.cached_binding;
 
   binding = scheme_stx_lookup_w_nominal(find_id, scheme_env_phase(env->genv),
-                                        NULL, &ambiguous,
+                                        NULL, &ambiguous, NULL,
                                         &rename_insp,
                                         NULL, NULL, NULL, NULL);
 
 #if 0
   // REMOVEME
-  if (!strcmp("sort7", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+  if (!strcmp("index-binary-search", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%s %s\n", scheme_write_to_string(find_id, NULL), scheme_write_to_string(binding, NULL));
     scheme_stx_debug_print(find_id, 1);
   }
@@ -1325,9 +1327,11 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   if (_menv && genv->module)
     *_menv = genv;
   
-  if (SCHEME_STXP(find_id))
-    find_global_id = SCHEME_STX_VAL(find_id);
-  else
+  if (SCHEME_STXP(find_id)) {
+    if (flags & SCHEME_NULL_FOR_UNBOUND)
+      return NULL;
+    find_global_id = scheme_future_global_binding(find_id, env->genv);
+  } else
     find_global_id = find_id;
 
   /* Try syntax table: */
@@ -1478,35 +1482,14 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   return (Scheme_Object *)b;
 }
 
-Scheme_Object *scheme_global_binding_at_phase(Scheme_Object *id, Scheme_Env *env, Scheme_Object *phase)
+
+
+static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
 {
-  Scheme_Object *sym, *binding;
-  Scheme_Hash_Table *binding_names;
-  int exact_match, i;
+  int i;
   char onstack[50], *buf;
   intptr_t len;
-
-  /* use interned symbol when `id` has no extra or different marks */
-  if (scheme_stx_in_plain_module_context(id, env->stx_context))
-    return SCHEME_STX_VAL(id);
-
-  binding = scheme_stx_lookup_w_nominal(id, phase,
-                                        &exact_match, NULL,
-                                        NULL,
-                                        NULL, NULL, NULL, NULL);
-
-  if (!SCHEME_FALSEP(binding)) {
-    if (exact_match) {
-      if (SCHEME_VECTORP(binding)
-          && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase))
-        return SCHEME_VEC_ELS(binding)[1];
-      scheme_wrong_syntax(NULL, NULL, id,
-                          "binding identifier out of context");
-      return NULL;
-    }
-  }
-
-  env = scheme_find_env_at_phase(env, phase);
+  Scheme_Hash_Table *binding_names;
 
   binding_names = env->binding_names;
   if (!binding_names) {
@@ -1514,39 +1497,83 @@ Scheme_Object *scheme_global_binding_at_phase(Scheme_Object *id, Scheme_Env *env
     env->binding_names = binding_names;
   }
 
+  if (!scheme_hash_get(binding_names, sym)) {
+    /* First declaration gets a plain symbol: */
+    scheme_hash_set(binding_names, sym, scheme_true);
+    return sym;
+  }
 
+  len = SCHEME_SYM_LEN(sym);
+  if (len <= 35)
+    buf = onstack;
+  else
+    buf = scheme_malloc_atomic(len + 15);
+  memcpy(buf, SCHEME_SYM_VAL(sym), len);
+  
   i = 0;
   while (1) {
-    sym = SCHEME_STX_VAL(id);
-
-    len = SCHEME_SYM_LEN(sym);
-    if (len <= 35)
-      buf = onstack;
-    else
-      buf = scheme_malloc_atomic(len + 15);
-    memcpy(buf, SCHEME_SYM_VAL(sym), len);
-	
     sprintf(buf XFORM_OK_PLUS len, ".%d", i);
-	
     sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
+
+    printf("next %s\n", buf);
+
     if (!scheme_hash_get(binding_names, sym)) {
       scheme_hash_set(binding_names, sym, scheme_true);
-      
-      scheme_add_module_binding(id, phase,
-                                (env->module ? env->module->self_modidx : scheme_false),
-                                sym,
-                                scheme_env_phase(env));
       return sym;
     }
 
-    /* Otherwise, increment counter and try again... */
     i++;
   }
 }
 
 Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
 {
-  return scheme_global_binding_at_phase(id, env, scheme_env_phase(env));
+  Scheme_Object *sym, *binding, *phase;
+  int exact_match;
+
+  /* use interned symbol when `id` has no extra or different marks */
+  if (0 && scheme_stx_in_plain_module_context(id, env->stx_context)) // REMOVEME
+    return SCHEME_STX_VAL(id);
+
+  phase = scheme_env_phase(env);
+
+  binding = scheme_stx_lookup_w_nominal(id, phase,
+                                        &exact_match, NULL, NULL,
+                                        NULL,
+                                        NULL, NULL, NULL, NULL);
+
+  if (!SCHEME_FALSEP(binding)) {
+    if (exact_match) {
+      if (SCHEME_VECTORP(binding)
+          && SAME_OBJ(SCHEME_VEC_ELS(binding)[0], 
+                      (env->module
+                       ? env->module->self_modidx
+                       : scheme_false))
+          && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase))
+        return SCHEME_VEC_ELS(binding)[1];
+      /* Since the binding didn't match, we'll "shadow" the binding
+         by replacing it below. */
+    }
+  }
+
+  env = scheme_find_env_at_phase(env, phase);
+
+  sym = select_binding_name(SCHEME_STX_VAL(id), env);
+  scheme_add_module_binding(id, phase,
+                            (env->module ? env->module->self_modidx : scheme_false),
+                            sym,
+                            phase);
+
+  return sym;
+}
+
+Scheme_Object *scheme_future_global_binding(Scheme_Object *id, Scheme_Env *env)
+/* The identifier id is being referenced before it has a binding. We
+   want to allow it, anyway, perhaps because it's outside of a module
+   context or because it's phase-1 code. So, we assume that it's going to
+   get the base symbol name. */
+{
+  return SCHEME_STX_VAL(id);
 }
 
 int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env)

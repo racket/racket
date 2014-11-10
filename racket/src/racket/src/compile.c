@@ -3176,8 +3176,8 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
 
     /* Remove marks for all enclosing local binding contexts. */
     for (frame = env; frame; frame = frame->next) {
-      if (frame->mark)
-        stx = scheme_stx_remove_mark(stx, frame->mark);
+      if (frame->marks && !(frame->flags & SCHEME_MODULE_FRAME))
+        stx = scheme_stx_adjust_mark_or_marks(stx, frame->marks, SCHEME_STX_REMOVE);
     }
 
     return scheme_register_stx_in_prefix(stx, env, rec, drec);
@@ -3236,7 +3236,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
 
   names = scheme_named_map_1(NULL, stx_val, names, (Scheme_Object *)env->genv);
 
-  exp_env = scheme_new_comp_env(env->genv->exp_env, env->insp, 0);
+  exp_env = scheme_new_comp_env(env->genv->exp_env, env->insp, NULL, 0);
 
   dummy = scheme_make_environment_dummy(env);
 
@@ -3280,7 +3280,7 @@ define_syntaxes_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Ex
   scheme_prepare_exp_env(env->genv);
   scheme_prepare_compile_env(env->genv->exp_env);
   
-  env = scheme_new_expand_env(env->genv->exp_env, env->insp, 0);
+  env = scheme_new_expand_env(env->genv->exp_env, env->insp, NULL, 0);
 
   erec[drec].value_name = names;
   fpart = scheme_expand_expr_lift_to_let(code, env, erec, drec);
@@ -3316,9 +3316,9 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
   scheme_prepare_compile_env(in_env->genv->exp_env);
 
   if (rec[drec].comp)
-    env = scheme_new_comp_env(in_env->genv->exp_env, in_env->insp, 0);
+    env = scheme_new_comp_env(in_env->genv->exp_env, in_env->insp, NULL, 0);
   else
-    env = scheme_new_expand_env(in_env->genv->exp_env, in_env->insp, 0);
+    env = scheme_new_expand_env(in_env->genv->exp_env, in_env->insp, NULL, 0);
 
   if (rec[drec].comp)
     dummy = scheme_make_environment_dummy(in_env);
@@ -3489,7 +3489,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   int vc, nc, j, i;
   Scheme_Compile_Expand_Info mrec;
 
-  eenv = scheme_new_comp_env(exp_env, insp, 0);
+  eenv = scheme_new_comp_env(exp_env, insp, NULL, 0);
 
   /* First expand for expansion-observation */
   if (!rec[drec].comp) {
@@ -5128,7 +5128,7 @@ int scheme_check_top_identifier_bound(Scheme_Object *c, Scheme_Env *genv, int di
     bad = 1;
 
   if (disallow_unbound) {
-    if (bad || !scheme_lookup_in_table(genv->toplevel, (const char *)SCHEME_STX_SYM(c))) {
+    if (bad || !scheme_lookup_in_table(genv->toplevel, (const char *)symbol)) {
       GC_CAN_IGNORE const char *reason;
       if (genv->phase == 1) {
         reason = "unbound identifier in module (in phase 1, transformer environment)";
@@ -5194,7 +5194,7 @@ top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
   if (SCHEME_VECTORP(b))
     c = SCHEME_VEC_ELS(b)[1];
   else
-    c = SCHEME_STX_VAL(c);
+    c = scheme_future_global_binding(c, env->genv);
 
   if (env->genv->module && !rec[drec].resolve_module_ids) {
     /* Self-reference in a module; need to remember the modidx.  Don't

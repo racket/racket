@@ -1098,10 +1098,11 @@ Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 #define SCHEME_STX_MUTATE   8  /* or'ed */
 #define SCHEME_STX_PROPONLY 16 /* or'ed, internal */
 Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, int mode);
-Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Hash_Tree *marks, int mode);
 Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m);
 Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m);
 Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m);
+Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Hash_Tree *marks, int mode);
+Scheme_Object *scheme_stx_adjust_mark_or_marks(Scheme_Object *o, Scheme_Object *mark, int mode);
 
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
@@ -1130,6 +1131,9 @@ Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme
 
 Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
+
+Scheme_Object *scheme_module_context_marks(Scheme_Object *mc);
+Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc);
 
 XFORM_NONGCING void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *context);
 
@@ -1166,11 +1170,20 @@ Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *pha
 void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Object *binding_sym);
 void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase, 
                                Scheme_Object *modidx, Scheme_Object *sym, Scheme_Object *defn_phase);
+void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
+                                         Scheme_Object *modidx, Scheme_Object *defn_name, Scheme_Object *defn_phase,
+                                         Scheme_Object *inspector,
+                                         Scheme_Object *nominal_mod, Scheme_Object *nominal_name,
+                                         Scheme_Object *nominal_import_phase, 
+                                         Scheme_Object *nominal_export_phase,
+                                         int skip_marshal);
 void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase);
+Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                            int *_exact_match, int *_ambiguous,
+                                           Scheme_Hash_Tree **_binding_marks,
                                            Scheme_Object **insp,              /* access-granting inspector */
                                            Scheme_Object **nominal_modidx,    /* how it was imported */
                                            Scheme_Object **nominal_name,      /* imported as name */
@@ -2439,7 +2452,7 @@ typedef struct Scheme_Comp_Env
   Scheme_Object *insp;  /* code inspector for checking protected */
   Comp_Prefix *prefix;  /* stack base info: globals and stxes */
 
-  Scheme_Object *mark; /* can be NULL */
+  Scheme_Object *marks; /* can be NULL */
 
   struct Scheme_Object **binders; /* identifiers */
   struct Scheme_Object **bindings; /* symbols */
@@ -2686,8 +2699,8 @@ Scheme_Object *scheme_make_toplevel(mzshort depth, int position, int resolved, i
 
 #define ASSERT_IS_VARIABLE_BUCKET(b) /* if (((Scheme_Object *)b)->type != scheme_variable_type) abort() */
 
-Scheme_Comp_Env *scheme_new_comp_env(Scheme_Env *genv, Scheme_Object *insp, int flags);
-Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, int flags);
+Scheme_Comp_Env *scheme_new_comp_env(Scheme_Env *genv, Scheme_Object *insp, Scheme_Object *marks, int flags);
+Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, Scheme_Object *marks, int flags);
 
 Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *genv, 
                                              Scheme_Object **_id, int *_use_map);
@@ -3289,6 +3302,7 @@ struct Scheme_Env {
   Scheme_Object *weak_self_link; /* for Scheme_Bucket_With_Home */
 
   Scheme_Hash_Table *binding_names; /* symbols that are already mapped in this namespace */
+  Scheme_Hash_Table *interned_names; /* maps marks+sym -> symbol; result is in `binding_names` */
 
   int id_counter;
 };
@@ -3456,7 +3470,7 @@ void scheme_add_global_constant_symbol(Scheme_Object *name, Scheme_Object *v, Sc
 
 
 Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env);
-Scheme_Object *scheme_global_binding_at_phase(Scheme_Object *id, Scheme_Env *env, Scheme_Object *phase);
+Scheme_Object *scheme_future_global_binding(Scheme_Object *id, Scheme_Env *env);
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env);
 Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase);

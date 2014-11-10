@@ -654,6 +654,14 @@ Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m)
   return o;
 }
 
+Scheme_Object *scheme_stx_adjust_mark_or_marks(Scheme_Object *o, Scheme_Object *mark, int mode)
+{
+  if (SCHEME_MARKP(mark))
+    return scheme_stx_adjust_mark(o, mark, mode);
+  else
+    return scheme_stx_adjust_marks(o, (Scheme_Hash_Tree *)mark, mode);
+}
+
 int scheme_stx_has_empty_wraps(Scheme_Object *stx)
 {
   return (((Scheme_Stx *)stx)->marks->count == 0);
@@ -931,18 +939,22 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Hash_Tree *to_pro
     i = scheme_hash_tree_next(to_propagate, i);
   }
 
+  if ((flag & SCHEME_STX_PROPONLY) && !(flag & SCHEME_STX_MUTATE)) {
+    /* Must clone so that we can set marks to parent marks */
+    o = clone_stx(o);
+    flag |= SCHEME_STX_MUTATE;
+  }
+
   stx = (Scheme_Stx *)o;
 
-  if (flag & SCHEME_STX_MUTATE) {
-    if ((flag & SCHEME_STX_PROPONLY) || marks_equal(stx->marks, parent_marks)) {
-      stx_shoulda++;
-      stx->marks = parent_marks;
-      if ((STX_KEY(stx) & STX_SUBSTX_FLAG)
-          && stx->u.to_propagate
-          && propagates_equal(stx->u.to_propagate, to_propagate)) {
-        stx->u.to_propagate = to_propagate;
-        stx_really_shoulda++;
-      }
+  if ((flag & SCHEME_STX_PROPONLY) || marks_equal(stx->marks, parent_marks)) {
+    stx_shoulda++;
+    stx->marks = parent_marks;
+    if ((STX_KEY(stx) & STX_SUBSTX_FLAG)
+        && stx->u.to_propagate
+        && propagates_equal(stx->u.to_propagate, to_propagate)) {
+      stx->u.to_propagate = to_propagate;
+      stx_really_shoulda++;
     }
   }
 
@@ -1524,9 +1536,6 @@ void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Obj
 
   STX_ASSERT(SCHEME_SYMBOLP(binding_sym));
 
-  if (!strcmp("equal-proc", SCHEME_SYM_VAL(SCHEME_STX_VAL(o))))
-    printf("here\n");
-
   phase = adjust_new_binding_phase(stx, phase);
 
   add_binding(stx->val, phase, stx->marks, binding_sym);
@@ -1547,6 +1556,108 @@ void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase,
   SCHEME_VEC_ELS(mc)[2] = scheme_false;
 
   scheme_extend_module_context(mc, modidx, ((Scheme_Stx *)o)->val, sym, modidx, sym, SCHEME_INT_VAL(defn_phase), NULL, NULL, 0);
+
+}
+
+XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
+{
+  return ((SAME_OBJ(a, b) || scheme_eqv(a, b))
+          ? 1
+          : 0);
+}
+
+static void do_add_module_binding(Scheme_Hash_Tree *marks, Scheme_Object *localname, Scheme_Object *phase,
+                                  Scheme_Object *modidx, Scheme_Object *exname, Scheme_Object *defn_phase,
+                                  Scheme_Object *inspector,
+                                  Scheme_Object *nominal_mod, Scheme_Object *nominal_ex,
+                                  Scheme_Object *src_phase, 
+                                  Scheme_Object *nom_phase,
+                                  int skip_marshal)
+{
+  Scheme_Object *elem;
+  int mod_phase;
+
+ /*
+   binding ::= mod_binding
+   .        |  (cons inspector mod_binding)
+   mod_binding ::=  modidx
+   .            |   (cons modidx exportname)
+   .            |   (cons modidx nominal_modidx)
+   .            |   (list* modidx exportname nominal_modidx_plus_phase nominal_exportname)
+   .            |   (list* modidx mod-phase exportname nominal_modidx_plus_phase nominal_exportname)
+   nominal_modix_plus_phase ::= nominal_modix
+   .                         |  (cons nominal_modix import_phase_plus_nominal_phase)
+   import_phase_plus_nominal_phase ::= import-phase-index
+   .                                |  (cons import-phase-index nom-phase)
+ */
+
+  mod_phase = SCHEME_INT_VAL(defn_phase);
+
+  if (!src_phase)
+    src_phase = phase;
+  if (!nom_phase)
+    nom_phase = scheme_make_integer(mod_phase);
+
+  if (SAME_OBJ(modidx, nominal_mod)
+      && SAME_OBJ(exname, nominal_ex)
+      && !mod_phase
+      && same_phase(src_phase, phase)
+      && same_phase(nom_phase, scheme_make_integer(mod_phase))) {
+    if (SAME_OBJ(localname, exname))
+      elem = modidx;
+    else
+      elem = CONS(modidx, exname);
+  } else if (SAME_OBJ(exname, nominal_ex)
+	     && SAME_OBJ(localname, exname)
+	     && !mod_phase
+             && same_phase(src_phase, phase)
+             && same_phase(nom_phase, scheme_make_integer(mod_phase))) {
+    /* It's common that a sequence of similar mappings shows up,
+       e.g., '(#%kernel . mzscheme) */
+    if (nominal_ipair_cache
+	&& SAME_OBJ(SCHEME_CAR(nominal_ipair_cache), modidx)
+	&& SAME_OBJ(SCHEME_CDR(nominal_ipair_cache), nominal_mod))
+      elem = nominal_ipair_cache;
+    else {
+      elem = ICONS(modidx, nominal_mod);
+      nominal_ipair_cache = elem;
+    }
+  } else {
+    if (same_phase(nom_phase, scheme_make_integer(mod_phase))) {
+      if (same_phase(src_phase, phase))
+        elem = nominal_mod;
+      else
+        elem = CONS(nominal_mod, src_phase);
+    } else {
+      elem = CONS(nominal_mod, CONS(src_phase, nom_phase));
+    }
+    elem = CONS(exname, CONS(elem, nominal_ex));
+    if (mod_phase)
+      elem = CONS(scheme_make_integer(mod_phase), elem);
+    elem = CONS(modidx, elem);
+  }
+
+  if (!SCHEME_FALSEP(inspector))
+    elem = CONS(inspector, elem);
+
+  add_binding(localname, phase, marks, elem);
+}
+
+void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
+                                         Scheme_Object *modidx, Scheme_Object *defn_name, Scheme_Object *defn_phase,
+                                         Scheme_Object *inspector,
+                                         Scheme_Object *nominal_mod, Scheme_Object *nominal_name,
+                                         Scheme_Object *nominal_import_phase, 
+                                         Scheme_Object *nominal_export_phase,
+                                         int skip_marshal)
+{
+  STX_ASSERT(SCHEME_STXP(o));
+  do_add_module_binding(((Scheme_Stx *)o)->marks, SCHEME_STX_VAL(o), phase,
+                        modidx, defn_name, defn_phase,
+                        inspector,
+                        nominal_mod, nominal_name,
+                        nominal_import_phase, nominal_export_phase,
+                        skip_marshal);
 }
 
 static int marks_subset(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b)
@@ -1580,13 +1691,6 @@ static int propagates_equal(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b)
   }
 
   return 1;
-}
-
-XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
-{
-  return ((SAME_OBJ(a, b) || scheme_eqv(a, b))
-          ? 1
-          : 0);
 }
 
 static void print_marks(Scheme_Hash_Tree *marks, Scheme_Hash_Tree *check_against_marks)
@@ -1640,7 +1744,7 @@ void scheme_stx_debug_print(Scheme_Object *_stx, int level)
       ht = (Scheme_Hash_Table *)SCHEME_CAR(mark->bindings);
       for (j = ht->size; j--; ) {
 	if (ht->vals[j]) {
-          printf("  %s =\n", scheme_write_to_string(ht->keys[j], NULL));
+          printf(" %s =\n", scheme_write_to_string(ht->keys[j], NULL));
           l = ht->vals[j];
           while (l && !SCHEME_NULLP(l)) {
             phase = SCHEME_VEC_ELS(SCHEME_CAR(l))[0];
@@ -1655,7 +1759,7 @@ void scheme_stx_debug_print(Scheme_Object *_stx, int level)
       l = SCHEME_CDR(mark->bindings);
       while (l && !SCHEME_NULLP(l)) {
         phase = SCHEME_VEC_ELS(SCHEME_CAR(l))[0];
-        printf("  @%s...:\n", scheme_write_to_string(phase, 0));
+        printf(" @%s...:\n", scheme_write_to_string(phase, 0));
         print_marks((Scheme_Hash_Tree *)SCHEME_VEC_ELS(SCHEME_CAR(l))[1], stx->marks);
         
         pes = SCHEME_VEC_ELS(SCHEME_CAR(l))[2];
@@ -1789,7 +1893,8 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase,
 }
 
 static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object *phase,
-                                                  int *_exact_match, int *_ambiguous)
+                                                  int *_exact_match, int *_ambiguous,
+                                                  Scheme_Hash_Tree **_binding_marks)
 {
   Scheme_Hash_Tree *best_set;
   Scheme_Object *phase_shift;
@@ -1806,9 +1911,12 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
   } else
     phase_shift = phase;
 
-  best_set = (Scheme_Hash_Tree *)do_stx_lookup(stx, phase_shift, NULL, NULL, NULL);
+  best_set = (Scheme_Hash_Tree *)do_stx_lookup(stx, phase_shift, NULL, 
+                                               NULL, NULL);
   if (!best_set)
     return NULL;
+
+  if (_binding_marks) *_binding_marks = best_set;
 
   /* Find again, this time checking to ensure no ambiguity: */
   return (Scheme_Object **)do_stx_lookup(stx, phase_shift, best_set,
@@ -1817,6 +1925,7 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
 
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                            int *_exact_match, int *_ambiguous,
+                                           Scheme_Hash_Tree **_binding_marks,
                                            Scheme_Object **insp,              /* access-granting inspector */
                                            Scheme_Object **nominal_modidx,    /* how it was imported */
                                            Scheme_Object **nominal_name,      /* imported as name */
@@ -1829,16 +1938,21 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object **cached_result, *result;
 
+  STX_ASSERT(SCHEME_STXP(o));
+
   if (_ambiguous) *_ambiguous = 0;
 
-  if (stx->u.cached_binding) {
+  if (stx->u.cached_binding && !_binding_marks && !_exact_match) {
     if (SAME_OBJ(stx->u.cached_binding[3], phase)
         && (SCHEME_INT_VAL(stx->u.cached_binding[1])
             == (((Scheme_Mark *)stx->u.cached_binding[2])->binding_version)))
       return stx->u.cached_binding[0];
   }
 
-  cached_result = do_stx_lookup_nonambigious(stx, phase, _exact_match, _ambiguous);
+  if (_binding_marks) *_binding_marks = NULL;
+  if (_exact_match) *_exact_match = 0;
+
+  cached_result = do_stx_lookup_nonambigious(stx, phase, _exact_match, _ambiguous, _binding_marks);
 
   if (!cached_result)
     return scheme_false;
@@ -1970,7 +2084,20 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase)
 {
-  return scheme_stx_lookup_w_nominal(o, phase, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+  return scheme_stx_lookup_w_nominal(o, phase, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+}
+
+Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase)
+{
+  int exact;
+  Scheme_Object *b;
+
+  b = scheme_stx_lookup_w_nominal(o, phase, &exact, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+  if (!exact)
+    return scheme_false;
+  else
+    return b;
 }
 
 void scheme_populate_pt_ht(Scheme_Module_Phase_Exports * pt) {
@@ -1991,7 +2118,7 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object **cached_result, *result;
 
-  cached_result = do_stx_lookup_nonambigious(stx, phase, NULL, NULL);
+  cached_result = do_stx_lookup_nonambigious(stx, phase, NULL, NULL, NULL);
 
   if (cached_result)
     result = cached_result[0];
@@ -2039,6 +2166,16 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
   return vec;
 }
 
+Scheme_Object *scheme_module_context_marks(Scheme_Object *mc)
+{
+  return SCHEME_VEC_ELS(mc)[0];
+}
+
+Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc)
+{
+  return SCHEME_VEC_ELS(mc)[2];
+}
+
 Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *phase)
 {
   Scheme_Object *vec;
@@ -2082,75 +2219,12 @@ void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-s
                                   Scheme_Object *nom_phase,   /* nominal export phase */
                                   int skip_marshal)           /* 1 => don't save on marshal; reconstructed via unmarshal info*/
 {
-  Scheme_Object *elem;
-  Scheme_Object *phase;
-  Scheme_Object *inspector;
-
-  phase = SCHEME_VEC_ELS(mc)[1];
-  inspector = SCHEME_VEC_ELS(mc)[2];
-
- /*
-   binding ::= mod_binding
-   .        |  (cons inspector mod_binding)
-   mod_binding ::=  modidx
-   .            |   (cons modidx exportname)
-   .            |   (cons modidx nominal_modidx)
-   .            |   (list* modidx exportname nominal_modidx_plus_phase nominal_exportname)
-   .            |   (list* modidx mod-phase exportname nominal_modidx_plus_phase nominal_exportname)
-   nominal_modix_plus_phase ::= nominal_modix
-   .                         |  (cons nominal_modix import_phase_plus_nominal_phase)
-   import_phase_plus_nominal_phase ::= import-phase-index
-   .                                |  (cons import-phase-index nom-phase)
- */
-
-  if (!src_phase)
-    src_phase = phase;
-  if (!nom_phase)
-    nom_phase = scheme_make_integer(mod_phase);
-
-  if (SAME_OBJ(modidx, nominal_mod)
-      && SAME_OBJ(exname, nominal_ex)
-      && !mod_phase
-      && same_phase(src_phase, phase)
-      && same_phase(nom_phase, scheme_make_integer(mod_phase))) {
-    if (SAME_OBJ(localname, exname))
-      elem = modidx;
-    else
-      elem = CONS(modidx, exname);
-  } else if (SAME_OBJ(exname, nominal_ex)
-	     && SAME_OBJ(localname, exname)
-	     && !mod_phase
-             && same_phase(src_phase, phase)
-             && same_phase(nom_phase, scheme_make_integer(mod_phase))) {
-    /* It's common that a sequence of similar mappings shows up,
-       e.g., '(#%kernel . mzscheme) */
-    if (nominal_ipair_cache
-	&& SAME_OBJ(SCHEME_CAR(nominal_ipair_cache), modidx)
-	&& SAME_OBJ(SCHEME_CDR(nominal_ipair_cache), nominal_mod))
-      elem = nominal_ipair_cache;
-    else {
-      elem = ICONS(modidx, nominal_mod);
-      nominal_ipair_cache = elem;
-    }
-  } else {
-    if (same_phase(nom_phase, scheme_make_integer(mod_phase))) {
-      if (same_phase(src_phase, phase))
-        elem = nominal_mod;
-      else
-        elem = CONS(nominal_mod, src_phase);
-    } else {
-      elem = CONS(nominal_mod, CONS(src_phase, nom_phase));
-    }
-    elem = CONS(exname, CONS(elem, nominal_ex));
-    if (mod_phase)
-      elem = CONS(scheme_make_integer(mod_phase), elem);
-    elem = CONS(modidx, elem);
-  }
-
-  if (!SCHEME_FALSEP(inspector))
-    elem = CONS(inspector, elem);
-
-  add_binding(localname, phase, (Scheme_Hash_Tree *)SCHEME_VEC_ELS(mc)[0], elem);
+  do_add_module_binding((Scheme_Hash_Tree *)SCHEME_VEC_ELS(mc)[0], localname, SCHEME_VEC_ELS(mc)[1],
+                        modidx, exname, scheme_make_integer(mod_phase),
+                        SCHEME_VEC_ELS(mc)[2],
+                        nominal_mod, nominal_ex,
+                        src_phase, nom_phase,
+                        skip_marshal);
 }
 
 void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mark> <phase> <inspector> <shifts>) */
@@ -2344,6 +2418,9 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
                           Scheme_Object *a_phase, Scheme_Object *b_phase)
 {
   Scheme_Object *a_bind, *b_bind;
+
+  STX_ASSERT(SCHEME_STXP(a));
+  STX_ASSERT(SCHEME_STXP(b));
   
   a_bind = scheme_stx_lookup(a, a_phase);
   b_bind = scheme_stx_lookup(b, b_phase);
@@ -2403,6 +2480,9 @@ int scheme_stx_env_bound_eq2(Scheme_Object *_a, Scheme_Object *_b,
 {
   Scheme_Stx *a = (Scheme_Stx *)_a;
   Scheme_Stx *b = (Scheme_Stx *)_b;
+
+  STX_ASSERT(SCHEME_STXP(_a));
+  STX_ASSERT(SCHEME_STXP(_b));
 
   if (!SAME_OBJ(a->val, b->val))
     return 0;
@@ -3930,7 +4010,7 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
   }
 
   m = scheme_stx_lookup_w_nominal(a, phase,
-                                  NULL, NULL,
+                                  NULL, NULL, NULL,
                                   &nom_mod, &nom_a,
                                   &src_phase_index,
                                   &nominal_src_phase,

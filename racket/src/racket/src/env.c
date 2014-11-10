@@ -2384,8 +2384,8 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   }
 
   while (env != bind_env) {
-    if (env->mark)
-      sym = scheme_stx_add_mark(sym, env->mark);
+    if (env->marks)
+      sym = scheme_stx_adjust_mark_or_marks(sym, env->marks, SCHEME_STX_ADD);
     env = env->next;
   }
 
@@ -2452,9 +2452,9 @@ delta_introducer_proc(void *_i_plus_m, int argc, Scheme_Object *argv[])
 static Scheme_Object *
 local_make_delta_introduce(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *sym, *binder, *introducer, *a[2], *v;
-  Scheme_Object *introducers = scheme_null, *mappers = scheme_null;
-  int renamed = 0;
+  Scheme_Object *sym, *binding, *a[2], *stx, *introducer;
+  Scheme_Hash_Tree *binding_marks;
+  int ambiguous;
   Scheme_Comp_Env *env;
 
   env = scheme_current_thread->current_local_env;
@@ -2466,6 +2466,34 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
 
   sym = argv[0];
 
+  binding = scheme_stx_lookup_w_nominal(sym, scheme_make_integer(env->genv->phase),
+                                        NULL, &ambiguous, &binding_marks,
+                                        NULL, NULL, NULL, NULL, NULL);
+  if (!binding) {
+    scheme_contract_error("syntax-local-make-delta-introducer",
+                          (ambiguous
+                           ? "identifier binding is ambigious"
+                           : "identifier is not bound"),
+                          "identifier", 1, argv[0],
+                          NULL);
+  }
+
+  stx = scheme_datum_to_syntax(SCHEME_STX_VAL(sym), scheme_false, scheme_false, 0, 0);
+  stx = scheme_stx_adjust_marks(stx, binding_marks, SCHEME_STX_ADD);
+
+  a[0] = sym;
+  a[1] = stx;
+
+  introducer = scheme_syntax_make_transfer_intro(2, a);
+
+  return scheme_make_closed_prim_w_arity(delta_introducer_proc, 
+                                         scheme_make_pair(scheme_make_pair(introducer,
+                                                                           scheme_null),
+                                                          scheme_null),
+                                         "syntax-delta-introducer", 1, 1);
+
+  // REMOVEME: figure out rename-identifier behavior
+#if 0
   while (1) {
     binder = NULL;
 
@@ -2491,7 +2519,7 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
     }
 
     if (!binder) {
-      /* Not a lexical biding. Tell make-syntax-delta-introducer to
+      /* Not a local binding. Tell make-syntax-delta-introducer to
          use module-binding information. */
       binder = scheme_false;
     }
@@ -2519,6 +2547,7 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
                                              "syntax-delta-introducer", 1, 1);
     }
   }
+#endif
 }
 
 Scheme_Object *scheme_get_local_inspector()

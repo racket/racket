@@ -949,6 +949,7 @@ namespace_val {
   gcMARK2(e->weak_self_link, gc);
 
   gcMARK2(e->binding_names, gc);
+  gcMARK2(e->interned_names, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -1248,7 +1249,7 @@ mark_comp_env {
   gcMARK2(e->base.insp, gc);
   gcMARK2(e->base.prefix, gc);
   gcMARK2(e->base.next, gc);
-  gcMARK2(e->base.mark, gc);
+  gcMARK2(e->base.marks, gc);
   gcMARK2(e->base.binders, gc);
   gcMARK2(e->base.bindings, gc);
   gcMARK2(e->base.renames, gc);

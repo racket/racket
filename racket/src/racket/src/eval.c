@@ -2361,7 +2361,7 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env)
 
   dummy = SCHEME_VEC_ELS(form)[3];
 
-  rhs_env = scheme_new_comp_env(scheme_get_env(NULL), NULL, SCHEME_TOPLEVEL_FRAME);
+  rhs_env = scheme_new_comp_env(scheme_get_env(NULL), NULL, NULL, SCHEME_TOPLEVEL_FRAME);
 
   if (!dm_env)
     dm_env = scheme_environment_from_dummy(dummy);
@@ -4002,7 +4002,7 @@ static void *compile_k(void)
     rec.env_already = 0;
     rec.comp_flags = comp_flags;
 
-    cenv = scheme_new_comp_env(genv, insp, SCHEME_TOPLEVEL_FRAME);
+    cenv = scheme_new_comp_env(genv, insp, NULL, SCHEME_TOPLEVEL_FRAME);
 
     if (for_eval) {
       /* Need to look for top-level `begin', and if we
@@ -4561,7 +4561,7 @@ static Scheme_Object *r_expand(Scheme_Object *obj, Scheme_Comp_Env *env,
 
 Scheme_Object *scheme_expand(Scheme_Object *obj, Scheme_Env *env)
 {
-  return r_expand(obj, scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(obj, scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
 		  -1, 1, 0, scheme_false, -1, 0);
 }
 
@@ -4735,7 +4735,7 @@ static Scheme_Object *expand(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
 		  -1, 1, 0, scheme_false, 0, 0);
 }
 
@@ -4748,7 +4748,7 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
   
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
 		  -1, -1, 0, scheme_false, 0, 0);
 }
 
@@ -4848,7 +4848,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 
   if (for_stx) {
     scheme_prepare_exp_env(env->genv);
-    env = scheme_new_comp_env(env->genv->exp_env, env->insp, 0);
+    env = scheme_new_comp_env(env->genv->exp_env, env->insp, NULL, 0);
     scheme_propagate_require_lift_capture(orig_env, env);
   }
   scheme_prepare_compile_env(env->genv);
@@ -5174,7 +5174,7 @@ expand_once(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
 		  1, 1, 0, scheme_false, 0, 0);
 }
 
@@ -5188,7 +5188,7 @@ expand_stx_once(int argc, Scheme_Object **argv)
   
   env = scheme_get_env(NULL);
 
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
 		  1, -1, 0, scheme_false, 0, 0);
 }
 
@@ -5199,7 +5199,7 @@ expand_to_top_form(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
 		  1, 1, 1, scheme_false, 0, 0);
 }
 
@@ -5213,7 +5213,7 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
   
   env = scheme_get_env(NULL);
 
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
 		  1, -1, 1, scheme_false, 0, 0);
 }
 
