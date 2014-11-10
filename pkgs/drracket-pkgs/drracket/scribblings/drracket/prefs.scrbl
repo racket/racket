@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.rkt" scribble/bnf scribble/struct)
+@(require "common.rkt" scribble/bnf scribble/struct
+          "indentation-table.rkt")
 
 @(define (PrefItem . s) (apply onscreen s))
 
@@ -36,7 +37,45 @@ The @onscreen{Editing} panel consists of several sub-panels:
 @item{@onscreen{Indenting}
 
       This panel controls which keywords DrRacket recognizes for
-      indenting, and how each keyword is treated.}
+      indenting, and how each keyword is treated.
+      
+      To decide how a particular line is indented, DrRacket starts
+      at the beginning of the line and looks
+      for an enclosing s-expression. It finds the first symbol
+      after that open parenthesis, and uses that to determine 
+      how to indent the line.
+      
+      If the symbol is not listed in any of the lists in the preferences
+      dialog, then it is indented like a function call, e.g.:
+      @verbatim[app-example1]
+      @verbatim[app-example2]
+      
+      If the symbol is listed in the @onscreen{Begin-like Keywords} section,
+      it gets one extra space when the first sub-expression is on
+      a different line and otherwise it looks like an application.
+      @verbatim[begin-example1]
+      @verbatim[begin-example2]
+      
+      If the symbol is listed in the @onscreen{Define-like Keywords} section,
+      then all of the subexpressions are indented one extra space, 
+      no matter what happens on the first line:
+      @verbatim[define-example1]
+      @verbatim[define-example2]
+      @verbatim[define-example3]
+      
+      If the symbol is listed in the @onscreen{Lambda-like Keywords} section,
+      then it is indented like define, except that there is three extra spaces
+      of indentation added when the first sub-expression is not on the 
+      same line as the keyword:
+      @verbatim[lambda-example1]
+      @verbatim[lambda-example2]
+      
+      If the symbol is listed in the @onscreen{For/fold-like Keywords} section,
+      it is indented just like the define section, except that the first two
+      sub-expressions are treated specially:
+      @verbatim[for/fold-example]
+
+      }
 
 @item{@onscreen{Square bracket}
 
