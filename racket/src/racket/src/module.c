@@ -7666,12 +7666,8 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
 
   binding = scheme_stx_lookup_exact(id, phase);
   if (SCHEME_FALSEP(binding)) {
-    /* not defined; generate a key like require_binding_to_key() */
-    binding = scheme_make_vector(3, NULL);
-    vec = scheme_module_resolve(modidx, 0);
-    SCHEME_VEC_ELS(binding)[0] = vec;
-    SCHEME_VEC_ELS(binding)[1] = exname;
-    SCHEME_VEC_ELS(binding)[2] = scheme_make_integer(exet);
+    /* not defined */
+    binding = NULL;
   } else {
     if (!SCHEME_VECTORP(binding)
         || (SCHEME_VECTORP(binding)
@@ -7690,11 +7686,19 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
       if (scheme_hash_get(required, binding)) {
         /* use error report below */
       } else {
-        scheme_wrong_syntax("module", id, form,
-                            "internal error: identifier is already imported, but we have no record of it");
-        return;
+        /* identifier has a binding in some context, but not within the current module */
+        binding = NULL;
       }
     }
+  }
+
+  if (!binding) {
+    /* generate a key like require_binding_to_key() */
+    binding = scheme_make_vector(3, NULL);
+    vec = scheme_module_resolve(modidx, 0);
+    SCHEME_VEC_ELS(binding)[0] = vec;
+    SCHEME_VEC_ELS(binding)[1] = exname;
+    SCHEME_VEC_ELS(binding)[2] = scheme_make_integer(exet);
   }
 
   if (!SAME_OBJ(src_phase_index, scheme_make_integer(0))
@@ -7727,7 +7731,12 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
 
     if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7])
         && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[7], id, phase)) {
-      /* can override */
+      /* can override; construct overriding `binding` */
+      binding = scheme_make_vector(3, NULL);
+      vec = scheme_module_resolve(modidx, 0);
+      SCHEME_VEC_ELS(binding)[0] = vec;
+      SCHEME_VEC_ELS(binding)[1] = exname;
+      SCHEME_VEC_ELS(binding)[2] = scheme_make_integer(exet);
     } else {
       /* error: already imported */
       srcs = scheme_null;
@@ -10444,11 +10453,6 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
               }
               if (SCHEME_TRUEP(SCHEME_VEC_ELS(v)[3]) == (k == 0)) {
                 Scheme_Object *noms;
-
-                if (!strcmp("andmap", SCHEME_SYM_VAL(provided->keys[i])))
-                  printf("%s\n",
-                         scheme_write_to_string(SCHEME_VEC_ELS(v)[2], NULL));
-
                 exs[count] = provided->keys[i];
                 exsns[count] = SCHEME_VEC_ELS(v)[2];
                 exss[count] = SCHEME_VEC_ELS(v)[1];
@@ -10465,9 +10469,6 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
                    We treat all such bindings as syntax, even though they
                    may correspond to variables. */
                 Scheme_Object *noms;
-                printf("%s %s\n",
-                       scheme_write_to_string(provided->keys[i], NULL),
-                       scheme_write_to_string(nominal_name, NULL));
                 exs[count] = provided->keys[i];
                 exsns[count] = nominal_name;
                 exss[count] = nominal_mod;
@@ -11700,7 +11701,12 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
         if (prefix)
           iname = scheme_symbol_append(prefix, iname);
 
-        iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
+        if (mark_src)
+          iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
+        else {
+          iname = scheme_datum_to_syntax(iname, scheme_false, scheme_false, 0, 0);
+          iname = scheme_stx_add_module_context(iname, rn); 
+        }
         if (all_simple) // REMOVEME: FIXME
           *all_simple = 0;
 
@@ -11742,8 +11748,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 
               scheme_add_module_binding_w_nominal(iname, to_phase,
                                                   modidx, exsns[j], (exets
-                                                                   ? scheme_make_integer(exets[j])
-                                                                   : scheme_make_integer(0)),
+                                                                     ? scheme_make_integer(exets[j])
+                                                                     : scheme_make_integer(0)),
                                                   scheme_module_context_inspector(rn),
                                                   nominal_modidx, exs[j],
                                                   src_phase_index,

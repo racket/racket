@@ -1882,7 +1882,7 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Object *phase,
     return NULL;
 
   if (check_subset) {
-    cached_result = MALLOC_N(Scheme_Object*, 4);
+    cached_result = MALLOC_N(Scheme_Object*, 5);
     cached_result[0] = result_best_so_far;
     cached_result[1] = scheme_make_integer(mark_best_so_far->binding_version);
     cached_result[2] = (Scheme_Object *)mark_best_so_far;
@@ -1926,7 +1926,7 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                            int *_exact_match, int *_ambiguous,
                                            Scheme_Hash_Tree **_binding_marks,
-                                           Scheme_Object **insp,              /* access-granting inspector */
+                                           Scheme_Object **_insp,             /* access-granting inspector */
                                            Scheme_Object **nominal_modidx,    /* how it was imported */
                                            Scheme_Object **nominal_name,      /* imported as name */
                                            Scheme_Object **src_phase,         /* phase level of import from nominal modidx */ 
@@ -1936,17 +1936,19 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
    #f */
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
-  Scheme_Object **cached_result, *result;
+  Scheme_Object **cached_result, *result, *insp;
 
   STX_ASSERT(SCHEME_STXP(o));
 
   if (_ambiguous) *_ambiguous = 0;
 
-  if (stx->u.cached_binding && !_binding_marks && !_exact_match) {
+  if (stx->u.cached_binding && !_binding_marks && !_exact_match && !nominal_name) {
     if (SAME_OBJ(stx->u.cached_binding[3], phase)
         && (SCHEME_INT_VAL(stx->u.cached_binding[1])
-            == (((Scheme_Mark *)stx->u.cached_binding[2])->binding_version)))
+            == (((Scheme_Mark *)stx->u.cached_binding[2])->binding_version))) {
+      if (_insp) *_insp = stx->u.cached_binding[4];
       return stx->u.cached_binding[0];
+    }
   }
 
   if (_binding_marks) *_binding_marks = NULL;
@@ -1980,14 +1982,14 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
 
     if (SCHEME_MODIDXP(l)) {
       SCHEME_VEC_ELS(result)[0] = l;
-      if (insp) *insp = scheme_false;
+      insp = scheme_false;
     } else if (SCHEME_PAIRP(l)) {
       /* A list for a module import */
       if (SCHEME_INSPECTORP(SCHEME_CAR(l))) {
-        if (insp) *insp = SCHEME_CAR(l);
+        insp = SCHEME_CAR(l);
         l = SCHEME_CDR(l);
       } else {
-        if (insp) *insp = scheme_false;
+        insp = scheme_false;
       }
       if (SCHEME_MODIDXP(l)) {
         SCHEME_VEC_ELS(result)[0] = l;
@@ -2065,7 +2067,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
     if (nominal_src_phase && !*nominal_src_phase)
       *nominal_src_phase = *src_phase;
 
-    l = apply_modidx_shifts(stx->shifts, SCHEME_VEC_ELS(result)[0], insp);
+    l = apply_modidx_shifts(stx->shifts, SCHEME_VEC_ELS(result)[0], &insp);
     SCHEME_VEC_ELS(result)[0] = l;
 
     if (nominal_modidx) {
@@ -2074,10 +2076,14 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
     }
 
     cached_result[0] = result;
-  }
+  } else
+    insp = scheme_false;
 
   cached_result[3] = phase;
+  cached_result[4] = insp;
   stx->u.cached_binding = cached_result;
+
+  if (_insp) *_insp = insp;
 
   return result;
 }

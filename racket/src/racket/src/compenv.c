@@ -1515,8 +1515,6 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
     sprintf(buf XFORM_OK_PLUS len, ".%d", i);
     sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
-    printf("next %s\n", buf);
-
     if (!scheme_hash_get(binding_names, sym)) {
       scheme_hash_set(binding_names, sym, scheme_true);
       return sym;
