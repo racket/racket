@@ -3888,7 +3888,7 @@ static Scheme_Object *extract_phase(const char *who, int pos, int argc, Scheme_O
 
 Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *a[2], *key, *val;
+  Scheme_Object *a[2], *key, *val, *src;
   Scheme_Object *phase;
   Scheme_Hash_Tree *delta, *m2;
   intptr_t i;
@@ -3901,16 +3901,29 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
   phase = extract_phase("make-syntax-delta-introducer", 2, argc, argv, scheme_make_integer(0), 1);
 
   delta = ((Scheme_Stx *)argv[0])->marks;
-  if (!SCHEME_FALSEP(argv[1])) {
-    m2 = ((Scheme_Stx *)argv[1])->marks;
-    
+
+  src = argv[1];
+  if (!SCHEME_FALSEP(src)) {
+    if (!marks_subset(((Scheme_Stx *)src)->marks, delta))
+      src = scheme_false;
+  }
+
+  if (!SCHEME_FALSEP(src)) {
+    m2 = ((Scheme_Stx *)src)->marks;
+  } else {
+    src = scheme_stx_lookup_w_nominal(argv[1], phase,
+                                      NULL, NULL, &m2,
+                                      NULL, NULL, NULL, NULL, NULL);
+    if (SCHEME_FALSEP(src))
+      m2 = NULL;
+  }
+
+  if (m2) {
     i = scheme_hash_tree_next(m2, -1);
     while (i != -1) {
       scheme_hash_tree_index(m2, i, &key, &val);
       if (scheme_hash_tree_get(delta, key))
-        scheme_hash_tree_set(delta, key, NULL);
-      else
-        scheme_hash_tree_set(delta, key, val);
+        delta = scheme_hash_tree_set(delta, key, NULL);
 
       i = scheme_hash_tree_next(m2, i);
     }
@@ -4021,6 +4034,13 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
                                   &src_phase_index,
                                   &nominal_src_phase,
                                   NULL);
+
+  if (get_symbol) {
+    if (SCHEME_VECTORP(m))
+      return SCHEME_VEC_ELS(m)[1];
+    else
+      return SCHEME_STX_VAL(a);
+  }
 
   if (!m)
     return scheme_false;

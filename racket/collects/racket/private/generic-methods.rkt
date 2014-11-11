@@ -158,8 +158,8 @@
       [(_ gen def ...)
        (let ()
          (define info (get-info 'generic-methods stx #'gen))
-         (define delta (syntax-local-make-delta-introducer (car (generic-info-methods info))))
-         (define methods (map delta (generic-info-methods info)))
+         (define delta (syntax-local-make-delta-introducer #'gen))
+         (define methods (map syntax-local-get-shadower (map delta (generic-info-methods info))))
          (with-syntax ([(method ...) methods])
            (syntax/loc stx
              (syntax-parameterize ([generic-method-context #'gen])

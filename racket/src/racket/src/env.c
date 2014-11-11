@@ -2366,6 +2366,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env, *bind_env;
   Scheme_Object *sym, *binder;
+  Scheme_Hash_Tree *bind_marks;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -2379,8 +2380,15 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   binder = scheme_find_local_binder(sym, env, &bind_env);
 
   if (!binder) {
-    if (env->genv->stx_context)
-      sym = scheme_stx_add_module_context(sym, env->genv->stx_context);
+    int ph = scheme_current_thread->current_local_env->genv->phase;
+    binder = scheme_stx_lookup_w_nominal(sym,
+                                         scheme_make_integer(ph),
+                                         NULL, NULL, &bind_marks,
+                                         NULL, NULL, NULL, NULL, NULL);
+           
+    if (!SCHEME_FALSEP(binder)) {
+      sym = scheme_stx_adjust_marks(sym, bind_marks, SCHEME_STX_REMOVE);
+    }
   }
 
   while (env != bind_env) {
@@ -2469,7 +2477,7 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
   binding = scheme_stx_lookup_w_nominal(sym, scheme_make_integer(env->genv->phase),
                                         NULL, &ambiguous, &binding_marks,
                                         NULL, NULL, NULL, NULL, NULL);
-  if (!binding) {
+  if (SCHEME_FALSEP(binding)) {
     scheme_contract_error("syntax-local-make-delta-introducer",
                           (ambiguous
                            ? "identifier binding is ambigious"
