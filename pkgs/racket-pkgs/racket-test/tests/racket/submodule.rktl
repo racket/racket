@@ -949,5 +949,28 @@
        (test #t list? (identifier-binding #'y))])))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check error message for variable errors in submodules
+
+(module variable-error-message-in-submodule racket/base
+  (module m1 racket/base
+    x
+    (define x 1))
+  (module m2 racket/base
+    (set! x 2)
+    (define x 1)))
+
+(err/rt-test
+ (dynamic-require '(submod 'variable-error-message-in-submodule m1) #f)
+ (λ (x) (and (exn:fail? x)
+             (regexp-match (regexp-quote "(submod 'variable-error-message-in-submodule m1)")
+                           (exn-message x)))))
+
+(err/rt-test
+ (dynamic-require '(submod 'variable-error-message-in-submodule m2) #f)
+ (λ (x) (and (exn:fail? x)
+             (regexp-match (regexp-quote "(submod 'variable-error-message-in-submodule m2)")
+                           (exn-message x)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
