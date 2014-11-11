@@ -1146,8 +1146,6 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 #endif
 
   if (ambiguous) {
-    // REMOVEME
-    scheme_stx_debug_print(find_id, 1);
     scheme_wrong_syntax(NULL, NULL, find_id,
                         "identifier's binding is ambiguous");
   }
@@ -1529,10 +1527,6 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
   Scheme_Object *sym, *binding, *phase;
   int exact_match;
 
-  /* use interned symbol when `id` has no extra or different marks */
-  if (0 && scheme_stx_in_plain_module_context(id, env->stx_context)) // REMOVEME
-    return SCHEME_STX_VAL(id);
-
   phase = scheme_env_phase(env);
 
   binding = scheme_stx_lookup_w_nominal(id, phase,
@@ -1746,7 +1740,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
     expr = scheme_stx_flip_mark(expr, local_mark);
 
   /* We don't really need a new symbol each time, since the mark
-     will generate new bindings. But lots of things work better or faster
+     will generate new bindings, but things may work better or faster
      when different bindings have different symbols. Use env->genv->id_counter
      to help keep name generation deterministic within a module. */
   rev_ids = scheme_null;
@@ -1970,8 +1964,8 @@ Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
       id = frame->binders[i];
       if (id) {
 	if (SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(id))) {
-          if (scheme_hash_tree_subset(((Scheme_Stx *)sym)->marks,
-                                      ((Scheme_Stx *)id)->marks)) {
+          if (scheme_mark_subset(((Scheme_Stx *)sym)->marks,
+                                 ((Scheme_Stx *)id)->marks)) {
             prop = scheme_stx_property(id, unshadowable_symbol, NULL);
             if (SCHEME_FALSEP(prop)) {
               if (_at_env) *_at_env = frame;
@@ -1985,8 +1979,8 @@ Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
     for (i = COMPILE_DATA(frame)->num_const; i--; ) {
       id = frame->binders[i];
       if (id && SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(id))) {
-        if (scheme_hash_tree_subset(((Scheme_Stx *)sym)->marks,
-                                    ((Scheme_Stx *)id)->marks)) {
+        if (scheme_mark_subset(((Scheme_Stx *)sym)->marks,
+                               ((Scheme_Stx *)id)->marks)) {
           prop = scheme_stx_property(id, unshadowable_symbol, NULL);
           if (SCHEME_FALSEP(prop)) {
             if (_at_env) *_at_env = frame;

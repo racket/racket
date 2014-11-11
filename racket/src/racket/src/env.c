@@ -516,6 +516,8 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
     scheme_current_thread->name = sym;
   }
 
+  scheme_init_syntax_bindings();
+
   scheme_init_module_resolver();
 
 #ifdef TIME_STARTUP_PROCESS
@@ -2366,7 +2368,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env, *bind_env;
   Scheme_Object *sym, *binder;
-  Scheme_Hash_Tree *bind_marks;
+  Scheme_Mark_Set *bind_marks;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -2386,9 +2388,8 @@ local_get_shadower(int argc, Scheme_Object *argv[])
                                          NULL, NULL, &bind_marks,
                                          NULL, NULL, NULL, NULL, NULL);
            
-    if (!SCHEME_FALSEP(binder)) {
+    if (!SCHEME_FALSEP(binder))
       sym = scheme_stx_adjust_marks(sym, bind_marks, SCHEME_STX_REMOVE);
-    }
   }
 
   while (env != bind_env) {
@@ -2461,7 +2462,7 @@ static Scheme_Object *
 local_make_delta_introduce(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *sym, *binding, *a[2], *stx, *introducer;
-  Scheme_Hash_Tree *binding_marks;
+  Scheme_Mark_Set *binding_marks;
   int ambiguous;
   Scheme_Comp_Env *env;
 

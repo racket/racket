@@ -213,6 +213,8 @@ ROSYM static Scheme_Object *module_name_symbol;
 ROSYM static Scheme_Object *nominal_id_symbol;
 ROSYM static Scheme_Object *phaseless_keyword;
 
+READ_ONLY static Scheme_Object *modbeg_syntax;
+
 /* global read-only syntax */
 READ_ONLY Scheme_Object *scheme_module_stx;
 READ_ONLY Scheme_Object *scheme_modulestar_stx;
@@ -222,7 +224,6 @@ READ_ONLY Scheme_Object *scheme_define_values_stx;
 READ_ONLY Scheme_Object *scheme_define_syntaxes_stx;
 READ_ONLY Scheme_Object *scheme_top_stx;
 READ_ONLY Scheme_Object *scheme_begin_for_syntax_stx;
-READ_ONLY static Scheme_Object *modbeg_syntax;
 READ_ONLY static Scheme_Object *require_stx;
 READ_ONLY static Scheme_Object *provide_stx;
 READ_ONLY static Scheme_Object *declare_stx;
@@ -525,7 +526,6 @@ void scheme_finish_kernel(Scheme_Env *env)
   /* When this function is called, the initial namespace has all the
      primitive bindings for syntax and procedures. This function fills
      in the module wrapper for #%kernel. */
-  Scheme_Object *w;
   char *running;
 
   REGISTER_SO(kernel);
@@ -629,6 +629,64 @@ void scheme_finish_kernel(Scheme_Env *env)
 
   scheme_sys_wraps(NULL);
 
+  REGISTER_SO(prefix_symbol);
+  REGISTER_SO(only_symbol);
+  REGISTER_SO(rename_symbol);
+  REGISTER_SO(all_except_symbol);
+  REGISTER_SO(prefix_all_except_symbol);
+  REGISTER_SO(all_from_symbol);
+  REGISTER_SO(all_from_except_symbol);
+  REGISTER_SO(all_defined_symbol);
+  REGISTER_SO(all_defined_except_symbol);
+  REGISTER_SO(prefix_all_defined_symbol);
+  REGISTER_SO(prefix_all_defined_except_symbol);
+  REGISTER_SO(struct_symbol);
+  REGISTER_SO(protect_symbol);
+  REGISTER_SO(expand_symbol);
+  REGISTER_SO(for_syntax_symbol);
+  REGISTER_SO(for_template_symbol);
+  REGISTER_SO(for_label_symbol);
+  REGISTER_SO(for_meta_symbol);
+  REGISTER_SO(just_meta_symbol);
+  prefix_symbol = scheme_intern_symbol("prefix");
+  only_symbol = scheme_intern_symbol("only");
+  rename_symbol = scheme_intern_symbol("rename");
+  all_except_symbol = scheme_intern_symbol("all-except");
+  prefix_all_except_symbol = scheme_intern_symbol("prefix-all-except");
+  all_from_symbol = scheme_intern_symbol("all-from");
+  all_from_except_symbol = scheme_intern_symbol("all-from-except");
+  all_defined_symbol = scheme_intern_symbol("all-defined");
+  all_defined_except_symbol = scheme_intern_symbol("all-defined-except");
+  prefix_all_defined_symbol = scheme_intern_symbol("prefix-all-defined");
+  prefix_all_defined_except_symbol = scheme_intern_symbol("prefix-all-defined-except");
+  struct_symbol = scheme_intern_symbol("struct");
+  protect_symbol = scheme_intern_symbol("protect");
+  expand_symbol = scheme_intern_symbol("expand");
+  for_syntax_symbol = scheme_intern_symbol("for-syntax");
+  for_template_symbol = scheme_intern_symbol("for-template");
+  for_label_symbol = scheme_intern_symbol("for-label");
+  for_meta_symbol = scheme_intern_symbol("for-meta");
+  just_meta_symbol = scheme_intern_symbol("just-meta");
+
+  REGISTER_SO(module_name_symbol);
+  module_name_symbol = scheme_intern_symbol("enclosing-module-name");
+
+  REGISTER_SO(nominal_id_symbol);
+  nominal_id_symbol = scheme_intern_symbol("nominal-id");
+
+  REGISTER_SO(phaseless_keyword);
+  {
+    const char *s = "cross-phase-persistent";
+    phaseless_keyword = scheme_intern_exact_keyword(s, strlen(s));
+  }
+}
+
+void scheme_init_syntax_bindings()
+{
+  // REMOVEME: FIXME: all of these need to be place-local
+  
+  Scheme_Object *w;
+
   REGISTER_SO(scheme_module_stx);
   REGISTER_SO(scheme_modulestar_stx);
   REGISTER_SO(scheme_module_begin_stx);
@@ -697,57 +755,6 @@ void scheme_finish_kernel(Scheme_Env *env)
   gensym_stx = scheme_datum_to_syntax(scheme_intern_symbol("gensym"), scheme_false, w, 0, 0);
   string_to_uninterned_symbol_stx = scheme_datum_to_syntax(scheme_intern_symbol("string->uninterned-symbol"), 
                                                            scheme_false, w, 0, 0);
-
-  REGISTER_SO(prefix_symbol);
-  REGISTER_SO(only_symbol);
-  REGISTER_SO(rename_symbol);
-  REGISTER_SO(all_except_symbol);
-  REGISTER_SO(prefix_all_except_symbol);
-  REGISTER_SO(all_from_symbol);
-  REGISTER_SO(all_from_except_symbol);
-  REGISTER_SO(all_defined_symbol);
-  REGISTER_SO(all_defined_except_symbol);
-  REGISTER_SO(prefix_all_defined_symbol);
-  REGISTER_SO(prefix_all_defined_except_symbol);
-  REGISTER_SO(struct_symbol);
-  REGISTER_SO(protect_symbol);
-  REGISTER_SO(expand_symbol);
-  REGISTER_SO(for_syntax_symbol);
-  REGISTER_SO(for_template_symbol);
-  REGISTER_SO(for_label_symbol);
-  REGISTER_SO(for_meta_symbol);
-  REGISTER_SO(just_meta_symbol);
-  prefix_symbol = scheme_intern_symbol("prefix");
-  only_symbol = scheme_intern_symbol("only");
-  rename_symbol = scheme_intern_symbol("rename");
-  all_except_symbol = scheme_intern_symbol("all-except");
-  prefix_all_except_symbol = scheme_intern_symbol("prefix-all-except");
-  all_from_symbol = scheme_intern_symbol("all-from");
-  all_from_except_symbol = scheme_intern_symbol("all-from-except");
-  all_defined_symbol = scheme_intern_symbol("all-defined");
-  all_defined_except_symbol = scheme_intern_symbol("all-defined-except");
-  prefix_all_defined_symbol = scheme_intern_symbol("prefix-all-defined");
-  prefix_all_defined_except_symbol = scheme_intern_symbol("prefix-all-defined-except");
-  struct_symbol = scheme_intern_symbol("struct");
-  protect_symbol = scheme_intern_symbol("protect");
-  expand_symbol = scheme_intern_symbol("expand");
-  for_syntax_symbol = scheme_intern_symbol("for-syntax");
-  for_template_symbol = scheme_intern_symbol("for-template");
-  for_label_symbol = scheme_intern_symbol("for-label");
-  for_meta_symbol = scheme_intern_symbol("for-meta");
-  just_meta_symbol = scheme_intern_symbol("just-meta");
-
-  REGISTER_SO(module_name_symbol);
-  module_name_symbol = scheme_intern_symbol("enclosing-module-name");
-
-  REGISTER_SO(nominal_id_symbol);
-  nominal_id_symbol = scheme_intern_symbol("nominal-id");
-
-  REGISTER_SO(phaseless_keyword);
-  {
-    const char *s = "cross-phase-persistent";
-    phaseless_keyword = scheme_intern_exact_keyword(s, strlen(s));
-  }
 }
 
 int scheme_is_kernel_modname(Scheme_Object *modname)
@@ -7411,9 +7418,11 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   if (rec[drec].comp)
-    benv = scheme_new_comp_env(menv, env->insp, scheme_module_context_marks(rn_set), SCHEME_MODULE_FRAME);
+    benv = scheme_new_comp_env(menv, env->insp, scheme_module_context_marks(rn_set), 
+                               SCHEME_MODULE_FRAME | SCHEME_KEEP_MARKS_FRAME);
   else
-    benv = scheme_new_expand_env(menv, env->insp, scheme_module_context_marks(rn_set), SCHEME_MODULE_FRAME);
+    benv = scheme_new_expand_env(menv, env->insp, scheme_module_context_marks(rn_set),
+                                 SCHEME_MODULE_FRAME | SCHEME_KEEP_MARKS_FRAME);
 
   /* If fm isn't a single expression, it certainly needs a
      `#%module-begin': */
@@ -9259,7 +9268,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   
   if (rec[drec].comp) {
     /* Module and each `begin-for-syntax' group manages its own prefix: */
-    cenv = scheme_new_comp_env(env->genv, env->insp, NULL, SCHEME_TOPLEVEL_FRAME);
+    cenv = scheme_new_comp_env(env->genv, env->insp, scheme_module_context_marks(rn_set), 
+                               SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME);
   } else
     cenv = scheme_extend_as_toplevel(env);
 
@@ -9956,7 +9966,8 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
                 required = (Scheme_Hash_Table *)SCHEME_VEC_ELS(tvec)[1];
                 
                 if (required) {
-                  a = scheme_stx_lookup(SCHEME_STX_CAR(l), tables->keys[k]);
+                  a = SCHEME_STX_CAR(l);
+                  a = scheme_stx_lookup(a, tables->keys[k]);
                   if (SCHEME_VECTORP(a)
                       && !SAME_OBJ(SCHEME_VEC_ELS(a)[0], _genv->module->self_modidx))
                     a = require_binding_to_key(a);

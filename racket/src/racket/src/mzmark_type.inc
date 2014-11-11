@@ -2284,9 +2284,7 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->guard_insp, gc);
   gcMARK2(e->access_insp, gc);
 
-  gcMARK2(e->rename_set, gc);
-  gcMARK2(e->temp_marked_names, gc);
-  gcMARK2(e->post_ex_rename_set, gc);
+  gcMARK2(e->stx_context, gc);
 
   gcMARK2(e->syntax, gc);
   gcMARK2(e->exp_env, gc);
@@ -2316,6 +2314,9 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(e->weak_self_link, gc);
 
+  gcMARK2(e->binding_names, gc);
+  gcMARK2(e->interned_names, gc);
+
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
 }
@@ -2329,9 +2330,7 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->guard_insp, gc);
   gcFIXUP2(e->access_insp, gc);
 
-  gcFIXUP2(e->rename_set, gc);
-  gcFIXUP2(e->temp_marked_names, gc);
-  gcFIXUP2(e->post_ex_rename_set, gc);
+  gcFIXUP2(e->stx_context, gc);
 
   gcFIXUP2(e->syntax, gc);
   gcFIXUP2(e->exp_env, gc);
@@ -2360,6 +2359,9 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->modvars, gc);
 
   gcFIXUP2(e->weak_self_link, gc);
+
+  gcFIXUP2(e->binding_names, gc);
+  gcFIXUP2(e->interned_names, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -2573,11 +2575,11 @@ static int stx_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcMARK2(stx->val, gc);
   gcMARK2(stx->srcloc, gc);
-  gcMARK2(stx->wraps, gc);
+  gcMARK2(stx->marks, gc);
+  gcMARK2(stx->u.to_propagate, gc);
+  gcMARK2(stx->shifts, gc);
   gcMARK2(stx->taints, gc);
   gcMARK2(stx->props, gc);
-  if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
-    gcMARK2(stx->u.modinfo_cache, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx));
 }
@@ -2586,11 +2588,11 @@ static int stx_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcFIXUP2(stx->val, gc);
   gcFIXUP2(stx->srcloc, gc);
-  gcFIXUP2(stx->wraps, gc);
+  gcFIXUP2(stx->marks, gc);
+  gcFIXUP2(stx->u.to_propagate, gc);
+  gcFIXUP2(stx->shifts, gc);
   gcFIXUP2(stx->taints, gc);
   gcFIXUP2(stx->props, gc);
-  if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
-    gcFIXUP2(stx->u.modinfo_cache, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx));
 }

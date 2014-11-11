@@ -1031,11 +1031,11 @@ stx_val {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcMARK2(stx->val, gc);
   gcMARK2(stx->srcloc, gc);
-  gcMARK2(stx->wraps, gc);
+  gcMARK2(stx->marks, gc);
+  gcMARK2(stx->u.to_propagate, gc);
+  gcMARK2(stx->shifts, gc);
   gcMARK2(stx->taints, gc);
   gcMARK2(stx->props, gc);
-  if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
-    gcMARK2(stx->u.modinfo_cache, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx));
 }
@@ -2401,6 +2401,14 @@ mark_srcloc {
   gcMARK2(s->src, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Srcloc));
+}
+
+mark_mark {
+ mark:
+  Scheme_Mark *m = (Scheme_Mark *)p;
+  gcMARK2(m->bindings, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Mark));
 }
 
 END syntax;

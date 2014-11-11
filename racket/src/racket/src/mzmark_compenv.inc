@@ -12,18 +12,18 @@ static int mark_comp_env_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->base.insp, gc);
   gcMARK2(e->base.prefix, gc);
   gcMARK2(e->base.next, gc);
-  gcMARK2(e->base.values, gc);
+  gcMARK2(e->base.marks, gc);
+  gcMARK2(e->base.binders, gc);
+  gcMARK2(e->base.bindings, gc);
   gcMARK2(e->base.renames, gc);
-  gcMARK2(e->base.uid, gc);
-  gcMARK2(e->base.uids, gc);
   gcMARK2(e->base.dup_check, gc);
   gcMARK2(e->base.intdef_name, gc);
   gcMARK2(e->base.in_modidx, gc);
   gcMARK2(e->base.skip_table, gc);
   
-  gcMARK2(e->data.const_names, gc);
+  gcMARK2(e->data.const_binders, gc);
+  gcMARK2(e->data.const_bindings, gc);
   gcMARK2(e->data.const_vals, gc);
-  gcMARK2(e->data.const_uids, gc);
   gcMARK2(e->data.sealed, gc);
   gcMARK2(e->data.use, gc);
   gcMARK2(e->data.lifts, gc);
@@ -39,18 +39,18 @@ static int mark_comp_env_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->base.insp, gc);
   gcFIXUP2(e->base.prefix, gc);
   gcFIXUP2(e->base.next, gc);
-  gcFIXUP2(e->base.values, gc);
+  gcFIXUP2(e->base.marks, gc);
+  gcFIXUP2(e->base.binders, gc);
+  gcFIXUP2(e->base.bindings, gc);
   gcFIXUP2(e->base.renames, gc);
-  gcFIXUP2(e->base.uid, gc);
-  gcFIXUP2(e->base.uids, gc);
   gcFIXUP2(e->base.dup_check, gc);
   gcFIXUP2(e->base.intdef_name, gc);
   gcFIXUP2(e->base.in_modidx, gc);
   gcFIXUP2(e->base.skip_table, gc);
   
-  gcFIXUP2(e->data.const_names, gc);
+  gcFIXUP2(e->data.const_binders, gc);
+  gcFIXUP2(e->data.const_bindings, gc);
   gcFIXUP2(e->data.const_vals, gc);
-  gcFIXUP2(e->data.const_uids, gc);
   gcFIXUP2(e->data.sealed, gc);
   gcFIXUP2(e->data.use, gc);
   gcFIXUP2(e->data.lifts, gc);

@@ -407,6 +407,8 @@ void scheme_init_module_resolver(void);
 
 void scheme_finish_kernel(Scheme_Env *env);
 
+void scheme_init_syntax_bindings(void);
+
 Scheme_Object *scheme_make_initial_inspectors(void);
 Scheme_Object *scheme_get_current_inspector(void);
 XFORM_NONGCING Scheme_Object *scheme_get_initial_inspector(void);
@@ -534,8 +536,6 @@ extern Scheme_Object *scheme_no_arity_property;
 extern Scheme_Object *scheme_chaperone_undefined_property;
 
 extern Scheme_Object *scheme_reduced_procedure_struct;
-
-extern Scheme_Hash_Tree *scheme_empty_hash_tree;
 
 /* recycle some constants that can't appear in code: */
 #define scheme_constant_key scheme_stack_dump_key
@@ -1042,13 +1042,15 @@ typedef struct Scheme_Stx_Srcloc {
 #define STX_SUBSTX_FLAG   0x1
 #define STX_ARMED_FLAG    0x2
 
+typedef struct Scheme_Mark_Set Scheme_Mark_Set;
+
 typedef struct Scheme_Stx {
   Scheme_Inclhash_Object iso; /* 0x1 and 0x2 of keyex used */
   Scheme_Object *val;
   Scheme_Stx_Srcloc *srcloc;
-  Scheme_Hash_Tree *marks; /* mark set: (hash <mark> #t ...) */
+  Scheme_Mark_Set *marks; /* mark set: (hash <mark> #t ...) */
   union {
-    Scheme_Hash_Tree *to_propagate; /* (hash  <mark> <mode> ...  #t (vector <prev-marks> <prev-propagate>)) */
+    Scheme_Mark_Set *to_propagate; /* (hash  <mark> <mode> ...  #t (vector <prev-marks> <prev-propagate>)) */
     Scheme_Object **cached_binding; /* array: binding, phase, counter */
   } u;
   Scheme_Object *shifts; /* <all-shifts> or (vector <all-shifts> <shifts-to-propagate> <base-shifts>); each starts with phase, if any */
@@ -1101,7 +1103,7 @@ Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, int mo
 Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m);
 Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m);
 Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m);
-Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Hash_Tree *marks, int mode);
+Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, int mode);
 Scheme_Object *scheme_stx_adjust_mark_or_marks(Scheme_Object *o, Scheme_Object *mark, int mode);
 
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
@@ -1134,6 +1136,8 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
 Scheme_Object *scheme_module_context_marks(Scheme_Object *mc);
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc);
+
+XFORM_NONGCING int scheme_mark_subset(Scheme_Mark_Set *a, Scheme_Mark_Set *b);
 
 XFORM_NONGCING void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *context);
 
@@ -1183,7 +1187,7 @@ Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                            int *_exact_match, int *_ambiguous,
-                                           Scheme_Hash_Tree **_binding_marks,
+                                           Scheme_Mark_Set **_binding_marks,
                                            Scheme_Object **insp,              /* access-granting inspector */
                                            Scheme_Object **nominal_modidx,    /* how it was imported */
                                            Scheme_Object **nominal_name,      /* imported as name */
@@ -3026,6 +3030,7 @@ int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
 #define SCHEME_INTDEF_SHADOW 1024
 #define SCHEME_POST_BIND_FRAME 2048
 #define SCHEME_NESTED_MODULE_FRAME 4096
+#define SCHEME_KEEP_MARKS_FRAME 8192
 
 /* Flags used with scheme_static_distance */
 #define SCHEME_ELIM_CONST 1

@@ -1664,7 +1664,7 @@ case_lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand
     mark = scheme_new_mark(5);
 
     newenv = scheme_add_compilation_frame(args, mark, env, 0);
-    
+
     body = scheme_stx_add_mark(body, mark);
     args = scheme_stx_add_mark(args, mark);
     SCHEME_EXPAND_OBSERVE_CASE_LAMBDA_RENAMES(erec[drec].observer, args, body);
@@ -3170,19 +3170,23 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
   if (len != 2)
     bad_form(form, len);
 
-  if (rec[drec].comp) {
-    stx = SCHEME_STX_CDR(form);
-    stx = SCHEME_STX_CAR(stx);
+  stx = SCHEME_STX_CDR(form);
+  stx = SCHEME_STX_CAR(stx);
+  
+  /* Remove marks for all enclosing local binding contexts. */
+  for (frame = env; frame; frame = frame->next) {
+    if (frame->marks && !(frame->flags & SCHEME_KEEP_MARKS_FRAME))
+      stx = scheme_stx_adjust_mark_or_marks(stx, frame->marks, SCHEME_STX_REMOVE);
+  }
 
-    /* Remove marks for all enclosing local binding contexts. */
-    for (frame = env; frame; frame = frame->next) {
-      if (frame->marks && !(frame->flags & SCHEME_MODULE_FRAME))
-        stx = scheme_stx_adjust_mark_or_marks(stx, frame->marks, SCHEME_STX_REMOVE);
-    }
-
+  if (rec[drec].comp)
     return scheme_register_stx_in_prefix(stx, env, rec, drec);
-  } else
-    return orig_form;
+  else {
+    form = SCHEME_STX_CAR(form);
+    return scheme_datum_to_syntax(scheme_make_pair(form,
+                                                   scheme_make_pair(stx, scheme_null)),
+                                  orig_form, orig_form, 0, 2);
+  }
 }
 
 static Scheme_Object *
@@ -5241,18 +5245,19 @@ Scheme_Object *scheme_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 Scheme_Object *scheme_pair_lifted(Scheme_Object *_ip, Scheme_Object **_ids, Scheme_Object *expr, Scheme_Comp_Env *env)
 {
   Scheme_Comp_Env **ip = (Scheme_Comp_Env **)_ip, *naya;
-  Scheme_Object *ids, *id, *mark;
+  Scheme_Object *ids, *id;
   int pos;
 
+  /* We don't add a mark for this frame, because the lifted identifier
+     already has a mark. */
+
   pos = scheme_list_length(*_ids);
-  mark = scheme_new_mark(9);
-  naya = scheme_new_compilation_frame(pos, SCHEME_CAPTURE_LIFTED, mark, (*ip)->next);
+  naya = scheme_new_compilation_frame(pos, SCHEME_CAPTURE_LIFTED, NULL, (*ip)->next);
   (*ip)->next = naya;
   *ip = naya;
 
   for (ids = *_ids; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
-    id = scheme_stx_add_mark(id, mark);
     scheme_add_compilation_binding(--pos, id, naya);
   }
 
