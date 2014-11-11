@@ -61,7 +61,6 @@
            method-in-interface? interface->method-names class->interface class-info
            (struct-out exn:fail:object)
            make-primitive-class
-           class/c ->m ->*m ->dm case->m object/c instanceof/c
            
            ;; "keywords":
            private public override augment

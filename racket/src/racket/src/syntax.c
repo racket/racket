@@ -1630,7 +1630,6 @@ void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase,
   SCHEME_VEC_ELS(mc)[2] = scheme_false;
 
   scheme_extend_module_context(mc, modidx, ((Scheme_Stx *)o)->val, sym, modidx, sym, SCHEME_INT_VAL(defn_phase), NULL, NULL, 0);
-
 }
 
 XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
@@ -2497,14 +2496,6 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
 
   if (SCHEME_SYMBOLP(a_bind) || SCHEME_SYMBOLP(b_bind))
     return SAME_OBJ(a_bind, b_bind);
-
-  if (!strcmp("begin", SCHEME_SYM_VAL(SCHEME_STX_VAL(a)))
-      && SAME_OBJ(SCHEME_STX_VAL(a), SCHEME_STX_VAL(b))) {
-    printf("%s vs. %s\n",
-           scheme_write_to_string(a_bind, NULL),
-           scheme_write_to_string(b_bind, NULL));
-  }
-
 
   if (SCHEME_FALSEP(a_bind) || SCHEME_FALSEP(b_bind)) {
     if (SCHEME_FALSEP(a_bind) && SCHEME_FALSEP(b_bind)) {

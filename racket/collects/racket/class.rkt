@@ -10,4 +10,5 @@
          "private/class-c-new.rkt")
   
 (provide-public-names)
-(provide generic?)
+(provide class/c ->m ->*m ->dm case->m object/c instanceof/c
+         generic?)
