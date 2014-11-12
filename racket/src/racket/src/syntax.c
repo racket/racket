@@ -643,14 +643,8 @@ Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, int mo
         && (stx->marks == marks))
       return (Scheme_Object *)stx;
 
-    if (!stx->u.to_propagate || (stx->u.to_propagate == scheme_empty_mark_set)) {
-      /* record base info as a shortcut for propagation */
-      Scheme_Object *vec;
-      vec = scheme_make_vector(2, NULL);
-      SCHEME_VEC_ELS(vec)[0] = (Scheme_Object *)stx->marks;
-      SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)(stx->u.to_propagate ? stx->u.to_propagate : scheme_empty_mark_set);
-      to_propagate = mark_set_set(to_propagate, scheme_true, vec);
-    }
+    if (!stx->u.to_propagate || (stx->u.to_propagate == scheme_empty_mark_set))
+      to_propagate = mark_set_set(to_propagate, scheme_true, (Scheme_Object *)stx->marks);
   } else
     to_propagate = NULL; /* => cleared binding cache */
 
@@ -948,7 +942,12 @@ static Scheme_Object *syntax_shift_phase(int argc, Scheme_Object **argv)
 
 /******************** lazy propagation ********************/
 
-int stx_shorts, stx_meds, stx_longs, stx_shoulda, stx_really_shoulda;
+#if 0
+# define COUNT_PROPAGATES(x) x
+int stx_shorts, stx_meds, stx_longs;
+#else
+# define COUNT_PROPAGATES(x) /* empty */
+#endif
 
 static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Set *to_propagate,
                                       Scheme_Mark_Set *parent_marks)
@@ -961,31 +960,33 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Set *to_prop
   if (!to_propagate || (to_propagate == scheme_empty_mark_set))
     return o;
 
+  /* Check whether the child marks currently match the
+     parent's marks before the propagated changes: */
   val = mark_set_get(to_propagate, scheme_true);
-  if (val
-      && SAME_OBJ(SCHEME_VEC_ELS(val)[0], (Scheme_Object *)stx->marks)
-      && (!(STX_KEY(stx) & STX_SUBSTX_FLAG)
-          || SAME_OBJ(SCHEME_VEC_ELS(val)[1], (stx->u.to_propagate
-                                               ? (Scheme_Object *)stx->u.to_propagate
-                                               : scheme_false)))) {
-    /* shortcut: child marks match parent */
-    stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx);
-    stx->marks = parent_marks;
-    if (STX_KEY(stx) & STX_SUBSTX_FLAG)
-      stx->u.to_propagate = to_propagate;
-    stx_shorts++;
-    return (Scheme_Object *)stx;
+  if (val && SAME_OBJ(val, (Scheme_Object *)stx->marks)) {
+    /* Yes, so we can take a shortcut: child marks still match parent.
+       Does the child need to propagate, and if so, does it just
+       get the parent's propagation? */
+    if (!(STX_KEY(stx) & STX_SUBSTX_FLAG)
+        || !stx->u.to_propagate
+        || SAME_OBJ(stx->u.to_propagate, scheme_empty_mark_set)) {
+      /* Yes, child matches the parent in all relevant dimensions */
+      stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx);
+      stx->marks = parent_marks;
+      if (STX_KEY(stx) & STX_SUBSTX_FLAG)
+        stx->u.to_propagate = to_propagate;
+      COUNT_PROPAGATES(stx_shorts++);
+      return (Scheme_Object *)stx;
+    } else {
+      /* Child marks match parent, so we don't need to reconstruct
+         the mark set, but we need to build a new propagation set */
+      flag = SCHEME_STX_PROPONLY;
+      COUNT_PROPAGATES(stx_meds++);
+    }
+  } else {
+    flag = 0;
+    COUNT_PROPAGATES(stx_longs++);
   }
-
-  flag = 0;
-  
-  if (val
-      && SAME_OBJ(SCHEME_VEC_ELS(val)[0], (Scheme_Object *)stx->marks)) {
-    /* partial shortcut: new marks will match, construct new propagates */
-    flag |= SCHEME_STX_PROPONLY;
-    stx_meds++;
-  } else
-    stx_longs++;
 
   i = mark_set_next(to_propagate, -1);
   while (i != -1) {
@@ -1002,24 +1003,13 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Set *to_prop
   }
 
   if ((flag & SCHEME_STX_PROPONLY) && !(flag & SCHEME_STX_MUTATE)) {
-    /* Must clone so that we can set marks to parent marks */
+    /* Force clone so that we can set marks to parent marks */
     o = clone_stx(o);
     flag |= SCHEME_STX_MUTATE;
   }
 
-  stx = (Scheme_Stx *)o;
-
-  if ((flag & SCHEME_STX_PROPONLY) || marks_equal(stx->marks, parent_marks)) {
-    if (!(flag & SCHEME_STX_PROPONLY))
-      stx_shoulda++;
-    stx->marks = parent_marks;
-    if ((STX_KEY(stx) & STX_SUBSTX_FLAG)
-        && stx->u.to_propagate
-        && propagates_equal(stx->u.to_propagate, to_propagate)) {
-      stx->u.to_propagate = to_propagate;
-      stx_really_shoulda++;
-    }
-  }
+  if (flag & SCHEME_STX_PROPONLY)
+    ((Scheme_Stx *)o)->marks = parent_marks;
 
   return o;
 }
@@ -1731,29 +1721,6 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                         nominal_mod, nominal_name,
                         nominal_import_phase, nominal_export_phase,
                         skip_marshal);
-}
-
-static int propagates_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b)
-{
-  intptr_t i;
-  Scheme_Object *key, *val, *val2;
-
-  if (mark_set_count(a) != mark_set_count(b)) return 0;
-
-  i = mark_set_next(a, -1);
-  while (i != -1) {
-    mark_set_index(a, i, &key, &val);
-
-    if (!SAME_OBJ(key, scheme_true)) {
-      val2 = mark_set_get(b, key);
-      if (!SAME_OBJ(val, val2))
-        return 0;
-    }
-
-    i = mark_set_next(a, i);
-  }
-
-  return 1;
 }
 
 static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_marks)
