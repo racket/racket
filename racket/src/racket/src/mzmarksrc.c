@@ -767,6 +767,8 @@ thread_val {
   gcMARK2(pr->ku.k.p3, gc);
   gcMARK2(pr->ku.k.p4, gc);
   gcMARK2(pr->ku.k.p5, gc);
+
+  gcMARK2(pr->self_for_proc_chaperone, gc);
   
   gcMARK2(pr->list_stack, gc);
   

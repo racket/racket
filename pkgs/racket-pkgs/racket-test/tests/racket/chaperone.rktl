@@ -13,10 +13,10 @@
   (test #t impersonator? a)
   (chaperone? a))
 
-(define-syntax-rule (as-chaperone-or-impersonator ([orig impersonator] ...) body ...)
+(define-syntax-rule (as-chaperone-or-impersonator ([orig impersonator ...] ...) body ...)
   (for-each (lambda (orig ...)
               body ...)
-            (list orig impersonator) ...))
+            (list orig impersonator ...) ...))
 
 ;; ----------------------------------------
 
@@ -59,14 +59,24 @@
 
 (let* ([p (lambda (x) x)]
        [p1 (impersonate-procedure p (lambda (y) y))]
-       [p2 (chaperone-procedure p1 (lambda (y) y))])
+       [p2 (chaperone-procedure p1 (lambda (y) y))]
+       [p1* (impersonate-procedure* p (lambda (self y) y))]
+       [p2* (chaperone-procedure* p1 (lambda (self y) y))])
   (test #t impersonator-of? p2 p)
   (test #t impersonator-of? p2 p1)
   (test #t impersonator? p1)
   (test #f chaperone? p1)
   (test #t chaperone? p2)
   (test #f chaperone-of? p2 p)
-  (test #t chaperone-of? p2 p1))
+  (test #t chaperone-of? p2 p1)
+  
+  (test #t impersonator-of? p2* p)
+  (test #t impersonator-of? p2* p1)
+  (test #t impersonator? p1*)
+  (test #f chaperone? p1*)
+  (test #t chaperone? p2*)
+  (test #f chaperone-of? p2* p)
+  (test #t chaperone-of? p2* p1))
 
 ;; ----------------------------------------
 
@@ -211,14 +221,30 @@
 
 (test #t chaperone?/impersonator (chaperone-procedure (lambda (x) x) (lambda (y) y)))
 (test #t impersonator? (impersonate-procedure (lambda (x) x) (lambda (y) y)))
+(test #t impersonator? (impersonate-procedure* (lambda (x) x) (lambda (self y) y)))
 (test #t procedure? (chaperone-procedure (lambda (x) x) (lambda (y) y)))
+(test #t procedure? (chaperone-procedure* (lambda (x) x) (lambda (self y) y)))
 (test #t procedure? (impersonate-procedure (lambda (x) x) (lambda (y) y)))
+(test #t procedure? (impersonate-procedure* (lambda (x) x) (lambda (self y) y)))
 (test #t (lambda (x) (procedure? x)) (chaperone-procedure (lambda (x) x) (lambda (y) y)))
 (test #t (lambda (x) (procedure? x)) (impersonate-procedure (lambda (x) x) (lambda (y) y)))
 (err/rt-test (chaperone-procedure (lambda (x) x) (lambda (y z) y)))
 (err/rt-test (impersonate-procedure (lambda (x) x) (lambda (y z) y)))
 (err/rt-test (chaperone-procedure (case-lambda [() 0] [(x) x]) (lambda (y) y)))
 (err/rt-test (impersonate-procedure (case-lambda [() 0] [(x) x]) (lambda (y) y)))
+(err/rt-test (chaperone-procedure (case-lambda [() 0] [(x) x]) (lambda (y) y)))
+(err/rt-test (impersonate-procedure (case-lambda [() 0] [(x) x]) (lambda (y) y)))
+(err/rt-test (chaperone-procedure* (lambda (x) x) (lambda (y) y)))
+(err/rt-test (impersonate-procedure* (lambda (x) x) (lambda (y) y)))
+(err/rt-test (chaperone-procedure* (lambda (x) x) (lambda (self z y) y)))
+(err/rt-test (impersonate-procedure* (lambda (x) x) (lambda (self z y) y)))
+(err/rt-test (chaperone-procedure* (case-lambda [() 0] [(x) x]) (lambda (self y) y)))
+(err/rt-test (chaperone-procedure* (case-lambda [() 0] [(x) x]) (case-lambda [() 0] [(self y) y])))
+(err/rt-test (impersonate-procedure* (case-lambda [() 0] [(x) x]) (case-lambda [() 0] [(self y) y])))
+(err/rt-test (chaperone-procedure* (case-lambda [() 0] [(x) x]) (case-lambda [(self) 0] [(self z y) y])))
+(err/rt-test (impersonate-procedure* (case-lambda [() 0] [(x) x]) (case-lambda [(self) 0] [(self z y) y])))
+(test #t procedure? (chaperone-procedure* (case-lambda [() 0] [(x) x]) (case-lambda [(self) 0] [(self y) y])))
+(test #t procedure? (impersonate-procedure* (case-lambda [() 0] [(x) x]) (case-lambda [(self) 0] [(self y) y])))
 
 (test 88 (impersonate-procedure (lambda (x) x) (lambda (y) 88)) 10)
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) 88)) 10))
@@ -226,9 +252,52 @@
 (test 89 (impersonate-procedure (lambda (x) x) (lambda (y) (values (lambda (z) 89) y))) 10)
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) (values (lambda (z) 89) y))) 10))
 
+(test 88 (impersonate-procedure* (lambda (x) x) (lambda (self y) 88)) 10)
+(letrec ([final (impersonate-procedure*
+                 (impersonate-procedure
+                  (impersonate-procedure* (lambda (x) x)
+                                          (lambda (self y)
+                                            (test #t eq? self final)
+                                            (add1 y)))
+                  (lambda (y)
+                    (add1 y)))
+                 (lambda (self y)
+                   (test #t eq? self final)
+                   (add1 y)))])
+  (test 13 final 10))
+(letrec ([final (impersonate-procedure*
+                 (impersonate-procedure
+                  (impersonate-procedure* (lambda (x) x)
+                                          (lambda (self y)
+                                            (test #t eq? self final)
+                                            (values list (add1 y))))
+                  (lambda (y)
+                    (values list (add1 y))))
+                 (lambda (self y)
+                   (test #t eq? self final)
+                   (values list (add1 y))))])
+  (test '(((13))) final 10))
+
+(define (chaperone-procedure** a b)
+  (chaperone-procedure* a (lambda (self . args)
+                            (apply b args))))
+(define (impersonate-procedure** a b)
+  (impersonate-procedure* a (lambda (self . args)
+                              (apply b args))))
+(define (chaperone-procedure**/kw a b)
+  (chaperone-procedure* a (make-keyword-procedure
+                           (lambda (kws kw-args self . args)
+                             (keyword-apply b kws kw-args args)))))
+(define (impersonate-procedure**/kw a b)
+  (impersonate-procedure* a (make-keyword-procedure
+                             (lambda (kws kw-args self . args)
+                               (keyword-apply b kws kw-args args)))))
+
 ;; Single argument, no post filter:
 (as-chaperone-or-impersonator
- ([chaperone-procedure impersonate-procedure])
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**
+                       impersonate-procedure**])
  (let* ([f (lambda (x) (list x x))]
         [in #f]
         [f2 (chaperone-procedure 
@@ -243,7 +312,9 @@
 
 ;; Multiple arguments, no post filter:
 (as-chaperone-or-impersonator
- ([chaperone-procedure impersonate-procedure])
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**
+                       impersonate-procedure**])
  (let* ([f (lambda (x y) (list x y))]
         [in #f]
         [f2 (chaperone-procedure 
@@ -258,7 +329,9 @@
 
 ;; Single argument, post filter on single value:
 (as-chaperone-or-impersonator
- ([chaperone-procedure impersonate-procedure])
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**
+                       impersonate-procedure**])
  (let* ([f (lambda (x) (list x x))]
         [in #f]
         [out #f]
@@ -279,7 +352,9 @@
 
 ;; Multiple arguments, post filter on multiple values:
 (as-chaperone-or-impersonator
- ([chaperone-procedure impersonate-procedure])
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**
+                       impersonate-procedure**])
  (let* ([f (lambda (x y z) (values y (list x z)))]
         [in #f]
         [out #f]
@@ -300,7 +375,9 @@
 
 ;; Optional keyword arguments:
 (as-chaperone-or-impersonator
- ([chaperone-procedure impersonate-procedure])
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**/kw
+                       impersonate-procedure**/kw])
  (let* ([f (lambda (x #:a [a 'a] #:b [b 'b]) (list x a b))]
         [in #f]
         [f2 (chaperone-procedure
@@ -327,7 +404,9 @@
 
 ;; Optional keyword arguments with result chaperone:
 (as-chaperone-or-impersonator
- ([chaperone-procedure impersonate-procedure])
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**/kw
+                       impersonate-procedure**/kw])
  (let* ([f (lambda (x #:a [a 'a] #:b [b 'b]) (list x a b))]
         [in #f]
         [out #f]
@@ -360,7 +439,9 @@
 
 ;; Required keyword arguments:
 (as-chaperone-or-impersonator
- ([chaperone-procedure impersonate-procedure])
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**/kw
+                       impersonate-procedure**/kw])
  (let* ([f (lambda (x #:a [a 'a] #:b b) (list x a b))]
         [in #f]
         [f2 (chaperone-procedure
@@ -387,7 +468,9 @@
 
 ;; Required keyword arguments:
 (as-chaperone-or-impersonator
- ([chaperone-procedure impersonate-procedure])
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**/kw
+                       impersonate-procedure**/kw])
  (let* ([f (lambda (x #:a [a 'a] #:b b) (list x a b))]
         [in #f]
         [out #f]

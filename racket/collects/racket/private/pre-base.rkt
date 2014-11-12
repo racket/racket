@@ -175,12 +175,15 @@
              (rename new:procedure-rename procedure-rename)
              (rename new:chaperone-procedure chaperone-procedure)
              (rename new:impersonate-procedure impersonate-procedure)
+             (rename new:chaperone-procedure* chaperone-procedure*)
+             (rename new:impersonate-procedure* impersonate-procedure*)             
              (rename new:collection-path collection-path)
              (rename new:collection-file-path collection-file-path)
              (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure 
                               procedure-arity procedure-reduce-arity raise-arity-error
                               procedure->method procedure-rename
                               chaperone-procedure impersonate-procedure
+                              chaperone-procedure* impersonate-procedure*
                               assq assv assoc
                               prop:incomplete-arity prop:method-arity-error)
              (all-from "reqprov.rkt")

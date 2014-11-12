@@ -216,6 +216,28 @@ mark during the call to @racket[wrapper-proc] (which allows tail-calls
 of impersonators with respect to wrapping impersonators to be detected within
 @racket[wrapper-proc]).}
 
+@defproc[(impersonate-procedure* [proc procedure?]
+                                 [wrapper-proc (or/c procedure? #f)]
+                                 [prop impersonator-property?]
+                                 [prop-val any] ... ...)
+         (and/c procedure? impersonator?)]{
+
+Like @racket[impersonate-procedure], except that @racket[wrapper-proc]
+receives an additional argument before all other arguments. The
+additional argument is the procedure @racket[_orig-proc] that was
+original applied.
+
+If the result of @racket[impersonate-procedure*] is applied directly,
+then @racket[_orig-proc] is that result. If the result is further
+impersonated before being applied, however, @racket[_orig-proc] is the
+further impersonator.
+
+An @racket[_orig-proc] argument might be useful so that
+@racket[wrapper-proc] can extract @tech{impersonator properties}
+that are overridden by further impersonators, for example.
+
+@history[#:added "6.1.1.5"]}
+
 
 @defproc[(impersonate-struct [v any/c]
                              [orig-proc (or/c struct-accessor-procedure?
@@ -582,6 +604,19 @@ list of chaperones of the keyword arguments that were supplied to the
 chaperone procedure (i.e., not counting optional arguments that were
 not supplied). The arguments must be ordered according to the sorted
 order of the supplied arguments' keywords.}
+
+
+@defproc[(chaperone-procedure* [proc procedure?]
+                               [wrapper-proc (or/c procedure? #f)]
+                               [prop impersonator-property?]
+                               [prop-val any] ... ...)
+         (and/c procedure? chaperone?)]{
+
+Like @racket[chaperone-procedure], but @racket[wrapper-proc] receives
+an extra argument as with @racket[impersonate-procedure*].
+
+@history[#:added "6.1.1.5"]}
+
 
 @defproc[(chaperone-struct [v any/c]
                            [orig-proc (or/c struct-accessor-procedure?

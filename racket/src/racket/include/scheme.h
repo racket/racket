@@ -1214,6 +1214,10 @@ typedef struct Scheme_Thread {
     } k;
   } ku;
 
+  /* To pass the current procedure from one chaperone
+     layer to the next: */
+  Scheme_Object *self_for_proc_chaperone;
+
   short suspend_break;
   short external_break;
 

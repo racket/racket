@@ -27,6 +27,8 @@
              new:procedure-rename
              new:chaperone-procedure
              new:impersonate-procedure
+             new:chaperone-procedure*
+             new:impersonate-procedure*
              (for-syntax kw-expander? kw-expander-impl kw-expander-proc
                          syntax-procedure-alias-property 
                          syntax-procedure-converted-arguments-property))
@@ -1522,18 +1524,30 @@
       procedure-rename))
 
   (define new:chaperone-procedure
-    (let ([chaperone-procedure 
+    (let ([chaperone-procedure
            (lambda (proc wrap-proc . props)
-             (do-chaperone-procedure #f chaperone-procedure 'chaperone-procedure proc wrap-proc props))])
+             (do-chaperone-procedure #f #f chaperone-procedure 'chaperone-procedure proc wrap-proc props))])
       chaperone-procedure))
 
   (define new:impersonate-procedure
-    (let ([impersonate-procedure 
+    (let ([impersonate-procedure
            (lambda (proc wrap-proc . props)
-             (do-chaperone-procedure #t impersonate-procedure 'impersonate-procedure proc wrap-proc props))])
+             (do-chaperone-procedure #t #f impersonate-procedure 'impersonate-procedure proc wrap-proc props))])
       impersonate-procedure))
 
-  (define (do-chaperone-procedure is-impersonator? chaperone-procedure name proc wrap-proc props)
+  (define new:chaperone-procedure*
+    (let ([chaperone-procedure*
+           (lambda (proc wrap-proc . props)
+             (do-chaperone-procedure #f #t chaperone-procedure* 'chaperone-procedure proc wrap-proc props))])
+      chaperone-procedure*))
+
+  (define new:impersonate-procedure*
+    (let ([impersonate-procedure*
+           (lambda (proc wrap-proc . props)
+             (do-chaperone-procedure #t #t impersonate-procedure* 'impersonate-procedure proc wrap-proc props))])
+      impersonate-procedure*))
+
+  (define (do-chaperone-procedure is-impersonator? self-arg? chaperone-procedure name proc wrap-proc props)
     (let ([n-proc (normalize-proc proc)]
           [n-wrap-proc (normalize-proc wrap-proc)])
       (if (or (not (keyword-procedure? n-proc))
@@ -1550,20 +1564,21 @@
           (apply chaperone-procedure proc wrap-proc props)
           (let-values ([(a) (procedure-arity proc)]
                        [(b) (procedure-arity wrap-proc)]
+                       [(d) (if self-arg? 1 0)]
                        [(a-req a-allow) (procedure-keywords proc)]
                        [(b-req b-allow) (procedure-keywords wrap-proc)])
             (define (includes? a b)
               (cond
                [(number? b) (cond
-                             [(number? a) (= b a)]
+                             [(number? a) (= b (+ a d))]
                              [(arity-at-least? a)
-                              (b . >= . (arity-at-least-value a))]
+                              (b . >= . (+ (arity-at-least-value a) d))]
                              [else
                               (ormap (lambda (a) (includes? a b)) a)])]
                [(arity-at-least? b) (cond
                                      [(number? a) #f]
                                      [(arity-at-least? a)
-                                      ((arity-at-least-value b) . >= . (arity-at-least-value a))]
+                                      ((arity-at-least-value b) . >= . (+ (arity-at-least-value a) d))]
                                      [else (ormap (lambda (a) (includes? b a)) a)])]
                [else (andmap (lambda (b) (includes? a b)) b)]))
 
@@ -1586,54 +1601,61 @@
                "original procedure" proc))
             (let*-values ([(kw-chaperone)
                            (let ([p (keyword-procedure-proc n-wrap-proc)])
-                             (case-lambda 
-                              [(kws args . rest)
-                               (call-with-values (lambda () (apply p kws args rest))
-                                 (lambda results
-                                   (let* ([len (length results)]
-                                          [alen (length rest)])
-                                     (unless (<= (+ alen 1) len (+ alen 2))
-                                       (raise-arguments-error
-                                        '|keyword procedure chaperone|
-                                        "wrong number of results from wrapper procedure"
-                                        "expected minimum number of results" (+ alen 1)
-                                        "expected maximum number of results" (+ alen 2)
-                                        "received number of results" len
-                                        "wrapper procedure" wrap-proc))
-                                     (let ([extra? (= len (+ alen 2))])
-                                       (let ([new-args ((if extra? cadr car) results)])
-                                         (unless (and (list? new-args)
-                                                      (= (length new-args) (length args)))
-                                           (raise-arguments-error
-                                            '|keyword procedure chaperone|
-                                            (format
-                                             "expected a list of keyword-argument values as first result~a from wrapper procedure"
-                                             (if (= len alen)
-                                                 ""
-                                                 " (after the result-wrapper procedure)"))
-                                            "first result" new-args
-                                            "wrapper procedure" wrap-proc))
-                                         (for-each
-                                          (lambda (kw new-arg arg)
-                                            (unless is-impersonator?
-                                              (unless (chaperone-of? new-arg arg)
-                                                (raise-arguments-error
-                                                 '|keyword procedure chaperone|
-                                                 (format
-                                                  "~a keyword result is not a chaperone of original argument from chaperoning procedure"
-                                                  kw)
-                                                 "result" new-arg
-                                                 "wrapper procedure" wrap-proc))))
-                                          kws
-                                          new-args
-                                          args))
-                                       (if extra?
-                                           (apply values (car results) kws (cdr results))
-                                           (apply values kws results))))))]
-                              ;; The following case exists only to make sure that the arity of
-                              ;; any procedure passed to `make-keyword-args' is covered
-                              ;; bu this procedure's arity.
-                              [other (error "shouldn't get here")]))]
+                             ;; `extra-arg ...` will be `self-proc` if `self-arg?`:
+                             (define-syntax gen-wrapper
+                               (syntax-rules ()
+                                 [(_ extra-arg ...)
+                                  (case-lambda 
+                                    [(extra-arg ... kws args . rest)
+                                     (call-with-values (lambda () (apply p kws args extra-arg ... rest))
+                                       (lambda results
+                                         (let* ([len (length results)]
+                                                [alen (length rest)])
+                                           (unless (<= (+ alen 1) len (+ alen 2))
+                                             (raise-arguments-error
+                                              '|keyword procedure chaperone|
+                                              "wrong number of results from wrapper procedure"
+                                              "expected minimum number of results" (+ alen 1)
+                                              "expected maximum number of results" (+ alen 2)
+                                              "received number of results" len
+                                              "wrapper procedure" wrap-proc))
+                                           (let ([extra? (= len (+ alen 2))])
+                                             (let ([new-args ((if extra? cadr car) results)])
+                                               (unless (and (list? new-args)
+                                                            (= (length new-args) (length args)))
+                                                 (raise-arguments-error
+                                                  '|keyword procedure chaperone|
+                                                  (format
+                                                   "expected a list of keyword-argument values as first result~a from wrapper procedure"
+                                                   (if (= len alen)
+                                                       ""
+                                                       " (after the result-wrapper procedure)"))
+                                                  "first result" new-args
+                                                  "wrapper procedure" wrap-proc))
+                                               (for-each
+                                                (lambda (kw new-arg arg)
+                                                  (unless is-impersonator?
+                                                    (unless (chaperone-of? new-arg arg)
+                                                      (raise-arguments-error
+                                                       '|keyword procedure chaperone|
+                                                       (format
+                                                        "~a keyword result is not a chaperone of original argument from chaperoning procedure"
+                                                        kw)
+                                                       "result" new-arg
+                                                       "wrapper procedure" wrap-proc))))
+                                                kws
+                                                new-args
+                                                args))
+                                             (if extra?
+                                                 (apply values (car results) kws (cdr results))
+                                                 (apply values kws results))))))]
+                                    ;; The following case exists only to make sure that the arity of
+                                    ;; any procedure passed to `make-keyword-args' is covered
+                                    ;; by this procedure's arity.
+                                    [other (error "shouldn't get here")])]))
+                             (if self-arg?
+                                 (gen-wrapper self-proc)
+                                 (gen-wrapper)))]
                           [(new-proc chap-accessor)
                            (let wrap ([proc proc] [n-proc n-proc])
                              (cond
@@ -1664,16 +1686,24 @@
                                      (chaperone-procedure
                                       proc
                                       (make-keyword-procedure 
-                                       (lambda (kws kw-args self . args)
-                                         ;; Chain to `kw-chaperone', pulling out the self
-                                         ;; argument, and then putting it back:
-                                         (define len (length args))
-                                         (call-with-values
-                                             (lambda () (apply kw-chaperone kws kw-args args))
-                                           (lambda results
-                                             (if (= (length results) (add1 len))
-                                                 (apply values (car results) self (cdr results))
-                                                 (apply values (car results) (cadr results) self (cddr results))))))))))
+                                       (let ()
+                                         ;; `extra-arg ...` will be `self-proc` if `self-arg?`:
+                                         (define-syntax gen-proc
+                                           (syntax-rules ()
+                                             [(_ extra-arg ...)
+                                              (lambda (extra-arg ... kws kw-args self . args)
+                                                ;; Chain to `kw-chaperone', pulling out the self
+                                                ;; argument, and then putting it back:
+                                                (define len (length args))
+                                                (call-with-values
+                                                    (lambda () (apply kw-chaperone extra-arg ... kws kw-args args))
+                                                  (lambda results
+                                                    (if (= (length results) (add1 len))
+                                                        (apply values (car results) self (cdr results))
+                                                        (apply values (car results) (cadr results) self (cddr results))))))]))
+                                         (if self-arg?
+                                             (gen-proc proc-self)
+                                             (gen-proc)))))))
                                   new-procedure-ref)])]
                               [(okp? n-proc)
                                (values
@@ -1721,7 +1751,7 @@
                   new-proc
                   (apply chaperone-struct new-proc 
                          ;; chaperone-struct insists on having at least one selector:
-                         chap-accessor (lambda (s v) v)
+                         chap-accessor #f
                          props)))))))
   
   (define (normalize-proc proc)

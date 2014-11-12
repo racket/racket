@@ -1377,6 +1377,8 @@ static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, S
 
 static Scheme_Object *do_eval_k_readjust_mark(void)
 {
+  Scheme_Thread *p = scheme_current_thread;
+  p->self_for_proc_chaperone = p->ku.k.p3;
   MZ_CONT_MARK_POS -= 2; /* undo increment in do_eval_stack_overflow() */
   return do_eval_k();
 }
@@ -1404,6 +1406,9 @@ static Scheme_Object *do_eval_stack_overflow(Scheme_Object *obj, int num_rands, 
   } else
     p->ku.k.p2 = (void *)rands;
   p->ku.k.i2 = get_value;
+
+  p->ku.k.p3 = p->self_for_proc_chaperone;
+  p->self_for_proc_chaperone = NULL;
 
   /* In case we got here via scheme_force_value_same_mark(), in case
      overflow handling causes the thread to sleep, and in case another

@@ -188,6 +188,8 @@ static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[]);
 static Scheme_Object *impersonate_procedure(int argc, Scheme_Object *argv[]);
+static Scheme_Object *chaperone_procedure_star(int argc, Scheme_Object *argv[]);
+static Scheme_Object *impersonate_procedure_star(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_result_arity (int argc, Scheme_Object *argv[]);
@@ -606,6 +608,16 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("impersonate-procedure",
 			     scheme_make_prim_w_arity(impersonate_procedure,
 						      "impersonate-procedure",
+						      2, -1),
+			     env);
+  scheme_add_global_constant("chaperone-procedure*",
+			     scheme_make_prim_w_arity(chaperone_procedure_star,
+						      "chaperone-procedure*",
+						      2, -1),
+			     env);
+  scheme_add_global_constant("impersonate-procedure*",
+			     scheme_make_prim_w_arity(impersonate_procedure_star,
+						      "impersonate-procedure*",
 						      2, -1),
 			     env);
 
@@ -3049,14 +3061,16 @@ static Scheme_Object *make_reduced_proc(Scheme_Object *proc, Scheme_Object *aty,
   return scheme_make_struct_instance(scheme_reduced_procedure_struct, 4, a);
 }
 
-static int is_subarity(Scheme_Object *req, Scheme_Object *orig)
+static int is_subarity(Scheme_Object *req, Scheme_Object *orig, int req_delta)
 {
-  Scheme_Object *oa, *ra, *ol, *lra, *ara, *prev, *pr, *tmp;
+  Scheme_Object *oa, *ra, *ol, *lra, *ara, *prev, *pr, *tmp, *rd;
 
   if (!SCHEME_PAIRP(orig) && !SCHEME_NULLP(orig))
     orig = scheme_make_pair(orig, scheme_null);
   if (!SCHEME_PAIRP(req) && !SCHEME_NULLP(req))
     req = scheme_make_pair(req, scheme_null);
+
+  rd = scheme_make_integer(req_delta);
 
   while (!SCHEME_NULLP(req)) {
     ra = SCHEME_CAR(req);
@@ -3075,12 +3089,12 @@ static int is_subarity(Scheme_Object *req, Scheme_Object *orig)
       oa = SCHEME_CAR(ol);
       if (SCHEME_INTP(ra) || SCHEME_BIGNUMP(ra)) {
         if (SCHEME_INTP(oa) || SCHEME_BIGNUMP(oa)) {
-          if (scheme_equal(ra, oa))
+          if (scheme_equal(scheme_bin_plus(ra, rd), oa))
             break;
         } else {
           /* orig is arity-at-least */
           oa = ((Scheme_Structure *)oa)->slots[0];
-          if (scheme_bin_lt_eq(oa, ra))
+          if (scheme_bin_lt_eq(oa, scheme_bin_plus(ra, rd)))
             break;
         }
       } else {
@@ -3100,10 +3114,10 @@ static int is_subarity(Scheme_Object *req, Scheme_Object *orig)
           /* check [lo, hi] vs oa: */
           ara = SCHEME_CAR(lra);
           if (SCHEME_FALSEP(SCHEME_CDR(ara))
-              || scheme_bin_lt_eq(oa, SCHEME_CDR(ara))) {
-            if (scheme_bin_gt_eq(oa, SCHEME_CAR(ara))) {
+              || scheme_bin_lt_eq(oa, scheme_bin_plus(SCHEME_CDR(ara), rd))) {
+            if (scheme_bin_gt_eq(oa, scheme_bin_plus(SCHEME_CAR(ara), rd))) {
               /* oa is in the range [lo, hi]: */
-              if (scheme_equal(oa, SCHEME_CAR(ara))) {
+              if (scheme_equal(oa, scheme_bin_plus(SCHEME_CAR(ara), rd))) {
                 /* the range is [oa, hi] */
                 if (at_least) {
                   /* oa is arity-at least, so drop from here */
@@ -3112,7 +3126,7 @@ static int is_subarity(Scheme_Object *req, Scheme_Object *orig)
                   else
                     ra = scheme_null;
                 } else {
-                  if (scheme_equal(oa, SCHEME_CDR(ara))) {
+                  if (scheme_equal(oa, scheme_bin_plus(SCHEME_CDR(ara), rd))) {
                     /* the range is [oa, oa], so drop it */
                     if (prev)
                       SCHEME_CDR(prev) = SCHEME_CDR(lra);
@@ -3121,12 +3135,14 @@ static int is_subarity(Scheme_Object *req, Scheme_Object *orig)
                   } else {
                     /* change range to [ao+1, hi] */
                     tmp = scheme_bin_plus(oa, scheme_make_integer(1));
+                    tmp = scheme_bin_minus(tmp, rd);
                     SCHEME_CAR(ara) = tmp;
                   }
                 }
-              } else if (scheme_equal(oa, SCHEME_CAR(ara))) {
+              } else if (scheme_equal(oa, scheme_bin_plus(SCHEME_CAR(ara), rd))) {
                 /* the range is [lo, oa], where lo < oa */
                 tmp = scheme_bin_minus(oa, scheme_make_integer(1));
+                tmp = scheme_bin_minus(tmp, rd);
                 SCHEME_CDR(ara) = tmp;
                 if (at_least) 
                   SCHEME_CDR(lra) = scheme_null;
@@ -3134,13 +3150,16 @@ static int is_subarity(Scheme_Object *req, Scheme_Object *orig)
                 /* split the range */
                 if (at_least) {
                   tmp = scheme_bin_minus(oa, scheme_make_integer(1));
+                  tmp = scheme_bin_minus(tmp, rd);
                   SCHEME_CDR(ara) = tmp;
                   SCHEME_CDR(lra) = scheme_null;
                 } else {
-                  pr = scheme_make_pair(scheme_make_pair(scheme_bin_plus(oa, scheme_make_integer(1)),
-                                                         SCHEME_CDR(ara)),
+                  tmp = scheme_bin_plus(oa, scheme_make_integer(1));
+                  tmp = scheme_bin_minus(tmp, rd);
+                  pr = scheme_make_pair(scheme_make_pair(tmp, SCHEME_CDR(ara)),
                                         SCHEME_CDR(lra));
                   tmp = scheme_bin_minus(oa, scheme_make_integer(1));
+                  tmp = scheme_bin_minus(tmp, rd);
                   SCHEME_CDR(ara) = tmp;
                   SCHEME_CDR(lra) = pr;
                 }
@@ -3227,7 +3246,7 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
   orig = get_or_check_arity(argv[0], -1, NULL, 1);
   aty = clone_arity(argv[1], 0, -1);
 
-  if (!is_subarity(aty, orig)) {
+  if (!is_subarity(aty, orig, 0)) {
     scheme_contract_error("procedure-reduce-arity",
                           "arity of procedure does not include requested arity",
                           "procedure", 1, argv[0],
@@ -3382,7 +3401,8 @@ static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *do_chaperone_procedure(const char *name, const char *whating,
-                                             int is_impersonator, int argc, Scheme_Object *argv[])
+                                             int is_impersonator, int pass_self,
+                                             int argc, Scheme_Object *argv[])
 {
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0], *orig, *naya, *r, *app_mark;
@@ -3402,12 +3422,13 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
   else {
     naya = get_or_check_arity(argv[1], -1, NULL, 1);
 
-    if (!is_subarity(orig, naya))
+    if (!is_subarity(orig, naya, pass_self ? 1 : 0))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "%s: arity of wrapper procedure does not cover arity of original procedure\n"
+                       "%s: arity of wrapper procedure does not cover arity of original procedure%s\n"
                        "  wrapper: %V\n"
                        "  original: %V",
                        name,
+                       (pass_self ? " (adding an extra argument)": ""),
                        argv[1],
                        argv[0]);
   }
@@ -3439,8 +3460,12 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
   px->prev = argv[0];
   px->props = props;
 
-  /* put procedure with known-good arity (to speed checking) in a vector: */
-  r = scheme_make_vector(3, scheme_make_integer(-1));
+  /* Put the procedure along with known-good arity (to speed checking;
+     initialized to -1) in a vector. An odd-sized vector makes the
+     chaperone recognized as a procedure chaperone, and a size of 5
+     (instead of 3) indicates that the wrapper procedure accepts a
+     "self" argument: */
+  r = scheme_make_vector((pass_self ? 5 : 3), scheme_make_integer(-1));
   SCHEME_VEC_ELS(r)[0] = argv[1];
   SCHEME_VEC_ELS(r)[2] = app_mark;
 
@@ -3456,12 +3481,22 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
 
 static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[])
 {
-  return do_chaperone_procedure("chaperone-procedure", "chaperoning", 0, argc, argv);
+  return do_chaperone_procedure("chaperone-procedure", "chaperoning", 0, 0, argc, argv);
 }
 
 static Scheme_Object *impersonate_procedure(int argc, Scheme_Object *argv[])
 {
-  return do_chaperone_procedure("impersonate-procedure", "impersonating", 1, argc, argv);
+  return do_chaperone_procedure("impersonate-procedure", "impersonating", 1, 0, argc, argv);
+}
+
+static Scheme_Object *chaperone_procedure_star(int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_procedure("chaperone-procedure*", "chaperoning", 0, 1, argc, argv);
+}
+
+static Scheme_Object *impersonate_procedure_star(int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_procedure("impersonate-procedure*", "impersonating", 1, 1, argc, argv);
 }
 
 static Scheme_Object *apply_chaperone_k(void)
@@ -3539,11 +3574,12 @@ Scheme_Object *_scheme_apply_native(Scheme_Object *obj, int num_rands, Scheme_Ob
 #define MAX_QUICK_CHAP_ARGV 5
 
 Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val, int checks)
-/* checks & 0x2 => no tail; checks == 0x3 => no tail or multiple;  */
+/* auto_val => no need to actually call the function (but handle further chaperoning);
+   checks & 0x2 => no tail; checks == 0x3 => no tail or multiple */
 {
   const char *what;
   Scheme_Chaperone *px;
-  Scheme_Object *v, *a[1], *a2[MAX_QUICK_CHAP_ARGV], **argv2, *post, *result_v, *orig_obj, *app_mark;
+  Scheme_Object *v, *a[1], *a2[MAX_QUICK_CHAP_ARGV], **argv2, *post, *result_v, *orig_obj, *app_mark, *self_proc;
   int c, i, need_restore = 0;
   int need_pop_mark;
   Scheme_Cont_Frame_Data cframe;
@@ -3574,6 +3610,15 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     orig_obj = NULL;
   }
   px = (Scheme_Chaperone *)o;
+
+  {
+    Scheme_Thread *p = scheme_current_thread;
+    self_proc = p->self_for_proc_chaperone;
+    if (self_proc)
+      p->self_for_proc_chaperone = NULL;
+    else
+      self_proc = o;
+  }
 
   if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
     what = "chaperone";
@@ -3618,11 +3663,29 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   } else
     need_pop_mark = 0;
 
+  if (SCHEME_VEC_SIZE(px->redirects) > 3) {
+    /* wrapper wants the "self" argument */
+    c = argc+1;
+    if (c <= MAX_QUICK_CHAP_ARGV)
+      argv2 = a2;
+    else
+      argv2 = MALLOC_N(Scheme_Object *, MAX_QUICK_CHAP_ARGV);
+    for (i = 0; i < argc; i++) {
+      argv2[i+1] = argv[i];
+    }
+    argv2[0] = self_proc;
+  } else {
+    /* wrapper doesn't need the extra "self" argument */
+    c = argc;
+    argv2 = argv;
+  }
+
   v = SCHEME_VEC_ELS(px->redirects)[0];
   if (SAME_TYPE(SCHEME_TYPE(v), scheme_native_closure_type))
-    v = _apply_native(v, argc, argv);
+    v = _apply_native(v, c, argv2);
   else
-    v = _scheme_apply_multi(v, argc, argv);
+    v = _scheme_apply_multi(v, c, argv2);
+
   if (v == SCHEME_MULTIPLE_VALUES) {
     GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
     c = p->ku.multiple.count;
@@ -3700,6 +3763,10 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     /* No filter for the result, so tail call: */
     if (app_mark)
       scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
+    if (SCHEME_CHAPERONEP(px->prev)) {
+      /* commuincate `self_proc` to the next layer: */
+      scheme_current_thread->self_for_proc_chaperone = self_proc;
+    }
     if (auto_val) {
       if (SCHEME_CHAPERONEP(px->prev))
         return do_apply_chaperone(px->prev, c, argv2, auto_val, 0);
@@ -3748,6 +3815,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       need_pop_mark = 1;
     }else
       need_pop_mark = 0;
+
+    if (SCHEME_CHAPERONEP(px->prev)) {
+      /* commuincate `self_proc` to the next layer: */
+      scheme_current_thread->self_for_proc_chaperone = self_proc;
+    }
 
     if (auto_val) {
       if (SCHEME_CHAPERONEP(px->prev))
