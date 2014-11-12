@@ -69,6 +69,17 @@
          (stx-map
            (λ (sg) (call-with-values (lambda () (parse-method-signature sg)) list))
            #'(method-signature ...)))
+       ;; (0-based) position of the "self" argument, for error reporting purposes
+       (define/with-syntax (self-i ...)
+         (stx-map
+          (λ (req-ids)
+            (for/first ([(id i) (in-indexed (syntax->list req-ids))]
+                        #:when (free-identifier=? id #'self-name))
+              i))
+          #'(req ...)))
+       (define/with-syntax ((req-name ...) ...) #'(req ...))
+       (define/with-syntax ((opt-name ...) ...) #'(opt ...))
+       (define/with-syntax (args ...) #'((req-name ... opt-name ...) ...))
        
        (define/with-syntax size n)
        (define/with-syntax [method-index ...] method-indices)
@@ -196,8 +207,8 @@
                    ...
                    [else (raise-argument-error 'method-name
                                                'contract-str
-                                               0
-                                               . req)])
+                                               self-i
+                                               . args)])
                  fallback)
              original)
            ...
