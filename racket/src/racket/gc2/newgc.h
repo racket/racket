@@ -153,6 +153,7 @@ typedef struct NewGC {
   void (*unsafe_allocation_abort)(struct NewGC *);
   uintptr_t memory_in_use; /* the amount of memory in use */
   uintptr_t pending_msg_size; /* set in master, only */
+  uintptr_t prev_pending_msg_size; /* set in master, only */
 
   /* blame the child thread infos */
   GC_Thread_Info *thread_infos;

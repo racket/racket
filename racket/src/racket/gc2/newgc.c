@@ -932,7 +932,7 @@ void GC_check_master_gc_request() {
 
   if (mgc) {
     /* check for GC needed due to GC_report_unsent_message_delta(): */
-    if ((mgc->gen0.current_size + mgc->pending_msg_size) >= mgc->gen0.max_size) {
+    if ((mgc->gen0.current_size + mgc->pending_msg_size) >= (mgc->gen0.max_size + mgc->prev_pending_msg_size)) {
       NewGC *gc = GC_get_GC();
 
       if (!postmaster_and_master_gc(gc))
@@ -2748,6 +2748,8 @@ static void collect_master(Log_Master_Info *lmi) {
     printf("END MASTER COLLECTION\n");
     GCVERBOSEprintf(gc, "END MASTER COLLECTION\n");
 #endif
+
+    MASTERGC->prev_pending_msg_size = MASTERGC->pending_msg_size;
 
     {
       int i = 0;
