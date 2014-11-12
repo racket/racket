@@ -394,6 +394,7 @@
 [string->uninterned-symbol (-String . -> . Sym)]
 [string->unreadable-symbol (-String . -> . Sym)]
 [gensym (->opt [(Un Sym -String)] Sym)]
+[symbol<? (->* (list -Symbol -Symbol) -Symbol -Boolean)]
 
 ;; Section 4.7 (Regular Expressions)
 [regexp? (make-pred-ty -Regexp)]
