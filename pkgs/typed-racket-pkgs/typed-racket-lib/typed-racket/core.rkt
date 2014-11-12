@@ -122,10 +122,14 @@
                              [else (set! did-I-suggest-:print-type-already? #t)
                                    :print-type-message]))]
               [x (int-err "bad type result: ~a" x)]))
-          (if ty-str
-              #`(begin (display '#,ty-str)
-                       #,(if (unbox include-extra-requires?)
-                             extra-requires
-                             #'(begin))
-                       #,(arm #'(begin transformed-body ...)))
+          (if (and ty-str
+                   (not (null? (syntax-e #'(transformed-body ...)))))
+              (with-syntax ([(transformed-body ... transformed-last)
+                             #'(transformed-body ...)])
+                #`(begin #,(if (unbox include-extra-requires?)
+                               extra-requires
+                               #'(begin))
+                         #,(arm #'(begin transformed-body ...))
+                         (begin0 #,(arm #'transformed-last)
+                           (display '#,ty-str))))
               (arm #'(begin transformed-body ...))))))]))
