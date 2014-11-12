@@ -143,9 +143,10 @@
                  ;; There's a `configure-runtime' declaration already:
                  (cons (quote-syntax printing:module-begin) (cdr l))
                  (list* (quote-syntax printing:module-begin)
-                        (quote-syntax (module configure-runtime '#%kernel
-                                        (#%require racket/runtime-config)
-                                        (configure #f)))
+                        (cons (quote-syntax module)
+                              (datum->syntax #f '(configure-runtime '#%kernel
+                                                  (#%require racket/runtime-config)
+                                                  (configure #f))))
                         (cdr l)))
              stx)
             (raise-syntax-error #f "bad syntax" stx)))))

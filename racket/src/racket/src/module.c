@@ -6870,250 +6870,6 @@ static void check_not_tainted(Scheme_Object *orig)
 			"cannot expand module body tainted by macro expansion");
 }
 
-static Scheme_Object *do_annotate_submodules_k(void);
-
-Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase, int incl_star)
-{
-  Scheme_Object *a, *d, *v, *fm2;
-  int changed = 0;
-
-#ifdef DO_STACK_CHECK
-# include "mzstkchk.h"
-  {
-    Scheme_Thread *p = scheme_current_thread;
-    p->ku.k.p1 = (void *)fm;
-    p->ku.k.i1 = phase;
-    p->ku.k.i2 = incl_star;
-    return scheme_handle_stack_overflow(do_annotate_submodules_k);
-  }
-#endif
-
-  if (SCHEME_STXP(fm))
-    check_not_tainted(fm);
-
-  if (!SCHEME_STX_PAIRP(fm))
-    return fm;
-
-  if (SCHEME_STXP(fm))
-    fm2 = scheme_stx_taint_disarm(fm, NULL);
-  else
-    fm2 = fm;
-
-  a = SCHEME_STX_CAR(fm2);
-  if (SCHEME_STX_PAIRP(a)) {
-    a = scheme_stx_taint_disarm(a, NULL);
-    v = SCHEME_STX_CAR(a);
-    if (SCHEME_STX_SYMBOLP(v)) {
-      if (scheme_stx_module_eq3(scheme_module_stx, v, 
-                                scheme_make_integer(0), scheme_make_integer(phase))
-          || (incl_star
-              && scheme_stx_module_eq3(scheme_modulestar_stx, v, 
-                                       scheme_make_integer(0), scheme_make_integer(phase)))) {
-        /* found a submodule */
-        v = scheme_stx_property(a, scheme_intern_symbol("submodule"), NULL);
-        if (SCHEME_FALSEP(v)) {
-          a = scheme_stx_property(a, scheme_intern_symbol("submodule"), a);
-          changed = 1;
-        }
-      } else if (scheme_stx_module_eq3(scheme_begin_for_syntax_stx, v, 
-                                       scheme_make_integer(0), scheme_make_integer(phase))) {
-        /* found `begin-for-syntax' */
-        v = do_annotate_submodules(a, phase+1, incl_star);
-        if (!SAME_OBJ(v, a)) {
-          changed = 1;
-          a = v;
-        }
-      } else if (scheme_stx_module_eq3(scheme_begin_stx, v, 
-                                       scheme_make_integer(0), scheme_make_integer(phase))) {
-        /* found `begin' */
-        v = do_annotate_submodules(a, phase, incl_star);
-        if (!SAME_OBJ(v, a)) {
-          changed = 1;
-          a = v;
-        }
-      }
-    }
-  }
-
-  v = SCHEME_STX_CDR(fm2);
-  d = do_annotate_submodules(v, phase, incl_star);
-
-  if (!changed && SAME_OBJ(v, d))
-    return fm;
-   
-  v = scheme_make_pair(a, d);
-  if (SCHEME_STXP(fm))
-    v = scheme_datum_to_syntax(v, fm, fm, 0, 2);
-
-  return v;
-}
-
-static Scheme_Object *do_annotate_submodules_k(void)
-{
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *fm = (Scheme_Object *)p->ku.k.p1;
-
-  p->ku.k.p1 = NULL;
-
-  return do_annotate_submodules(fm, p->ku.k.i1, p->ku.k.i2);
-}
-
-Scheme_Object *scheme_annotate_existing_submodules(Scheme_Object *orig_fm, int incl_star)
-{
-  Scheme_Object *fm = orig_fm;
-
-  if (!SCHEME_STX_PAIRP(fm))
-    return orig_fm;
-  fm = SCHEME_STX_CAR(fm);
-  if (!SCHEME_STX_SYMBOLP(fm))
-    return orig_fm;
-
-  if (scheme_stx_module_eq(scheme_module_begin_stx, fm, 0)) {
-    /* It's a `#%plain-module-begin' form */
-    return do_annotate_submodules(orig_fm, 0, incl_star);
-  }
-
-  return orig_fm;
-}
-
-static Scheme_Object *phase_shift_tail(Scheme_Object *v, Scheme_Object *ps)
-{
-  if (!SCHEME_STXP(v))
-    v = scheme_datum_to_syntax(v, scheme_false, scheme_false, 0, 0);
-
-  return scheme_stx_add_shift(v, ps);
-}
-
-static Scheme_Object *rebuild_with_phase_shift(Scheme_Object *orig, Scheme_Object *a, Scheme_Object *d, 
-                                               Scheme_Object *ps)
-{
-  if (!a) {
-    a = orig;
-    if (SCHEME_STXP(a))
-      a = scheme_stx_taint_disarm(a, NULL);
-    a = SCHEME_STX_CAR(a);
-    a = scheme_stx_add_shift(a, ps);
-  }
-  if (!d) {
-    d = orig;
-    if (SCHEME_STXP(d))
-      d = scheme_stx_taint_disarm(d, NULL);
-    d = SCHEME_STX_CDR(d);
-    d = phase_shift_tail(d, ps);
-  }
-
-  a = scheme_make_pair(a, d);
-
-  if (SCHEME_PAIRP(orig))
-    return a;
-
-  check_not_tainted(orig);
-
-  orig = scheme_stx_add_shift(orig, ps);
-  return scheme_datum_to_syntax(a, orig, orig, 0, 2);
-}
-
-static Scheme_Object *phase_shift_skip_submodules_k(void);
-
-static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm, Scheme_Object *ps, int phase)
-{
-  Scheme_Object *v0, *v1, *v2, *v3, *v4, *naya;
-
-#ifdef DO_STACK_CHECK
-# include "mzstkchk.h"
-  {
-    Scheme_Thread *p = scheme_current_thread;
-    p->ku.k.p1 = (void *)fm;
-    p->ku.k.p2 = (void *)ps;
-    p->ku.k.i1 = phase;
-    return scheme_handle_stack_overflow(phase_shift_skip_submodules_k);
-  }
-#endif
-
-  if (phase == -1) {
-    /* at top, so this is a `module[*]' form: */
-    v0 = fm;
-    if (SCHEME_STXP(v0))
-      v0 = scheme_stx_taint_disarm(v0, NULL);
-    v0 = SCHEME_STX_CDR(v0);
-    v1 = SCHEME_STX_CDR(v0);
-    v2 = SCHEME_STX_CDR(v1);
-    v3 = SCHEME_STX_CAR(v2);
-    v4 = scheme_stx_taint_disarm(v3, NULL);
-    v4 = SCHEME_STX_CDR(v4);
-
-    naya = phase_shift_skip_submodules(v4, ps, 0);
-    if (SAME_OBJ(naya, v4)) {
-      return scheme_stx_add_shift(fm, ps);
-    } else {
-      v3 = rebuild_with_phase_shift(v3, NULL, naya, ps);
-      v2 = rebuild_with_phase_shift(v2, v3, NULL, ps);
-      v1 = rebuild_with_phase_shift(v1, NULL, v2, ps);
-      v0 = rebuild_with_phase_shift(v0, NULL, v1, ps);
-      return rebuild_with_phase_shift(fm, NULL, v0, ps);
-    }
-  } else if (SCHEME_STX_NULLP(fm)) {
-    return fm;
-  } else {
-    v0 = fm;
-    if (SCHEME_STXP(v0))
-      v0 = scheme_stx_taint_disarm(v0, NULL);
-    v1 = SCHEME_STX_CAR(v0);
-    
-    if (SCHEME_STX_PAIRP(v1)) {
-      if (SCHEME_STXP(v1))
-        v1 = scheme_stx_taint_disarm(v1, NULL);  
-      v2 = SCHEME_STX_CAR(v1);
-      if (SCHEME_STX_SYMBOLP(v2)) {
-        if (scheme_stx_module_eq_x(scheme_module_stx, v2, phase)
-            || scheme_stx_module_eq_x(scheme_modulestar_stx, v2, phase)) {
-          /* found a submodule */
-          v2 = SCHEME_STX_CDR(fm);
-          naya = phase_shift_skip_submodules(v2, ps, phase);
-          if (SAME_OBJ(naya, v2))
-            naya = phase_shift_tail(naya, ps);
-          return rebuild_with_phase_shift(fm, v1, naya, ps);
-        } else if (scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, v2, phase)) {
-          /* found `begin-for-syntax': */
-          naya = phase_shift_skip_submodules(v1, ps, phase+1);
-          v2 = SCHEME_STX_CDR(fm);
-          v3 = phase_shift_skip_submodules(v2, ps, phase);
-          if (SAME_OBJ(naya, v1) && SAME_OBJ(v2, v3))
-            return fm;
-          else {
-            if (SAME_OBJ(naya, v1))
-              naya = phase_shift_tail(naya, ps);
-            if (SAME_OBJ(v2, v3))
-              v3 = phase_shift_tail(v3, ps);
-            return rebuild_with_phase_shift(fm, naya, v3, ps);
-          }
-        }
-      }
-    }
-
-    v3 = SCHEME_STX_CDR(fm);
-    v4 = phase_shift_skip_submodules(v3, ps, phase);
-    if (SAME_OBJ(v3, v4))
-      return fm;
-    else {
-      v1 = scheme_stx_add_shift(v1, ps);
-      return rebuild_with_phase_shift(fm, v1, v4, ps);
-    }
-  }
-}
-
-static Scheme_Object *phase_shift_skip_submodules_k(void)
-{
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *fm = (Scheme_Object *)p->ku.k.p1;
-  Scheme_Object *ps = (Scheme_Object *)p->ku.k.p2;
-
-  p->ku.k.p1 = NULL;
-  p->ku.k.p2 = NULL;
-
-  return phase_shift_skip_submodules(fm, ps, p->ku.k.i1);
-}
-
 static Scheme_Env *find_env(Scheme_Env *env, intptr_t ph)
 {
   return scheme_find_env_at_phase(env, scheme_make_integer(ph - env->phase));
@@ -7162,7 +6918,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Module *m;
   Scheme_Object *mbval, *orig_ii;
   Scheme_Object *this_empty_self_modidx;
-  int saw_mb, check_mb = 0, skip_strip = 0;
+  int saw_mb, check_mb = 0;
   Scheme_Object *restore_confusing_name = NULL;
   LOG_EXPAND_DECLS;
 
@@ -7170,15 +6926,6 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     SCHEME_EXPAND_OBSERVE_PRIM_MODULE(rec[drec].observer);
     if (rec[drec].depth > 0)
       rec[drec].depth++;
-  }
-
-  if (scheme_is_nested_module(env)) {
-    fm = scheme_stx_property(form, scheme_intern_symbol("submodule"), NULL);
-    if (SCHEME_STXP(fm)) {
-      form = fm;
-      skip_strip = 1;
-    } else
-      skip_strip = 0;
   }
 
   if (!scheme_is_toplevel(env))
@@ -7192,7 +6939,6 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   nm = SCHEME_STX_CAR(fm);
   if (!SCHEME_STX_SYMBOLP(nm))
     scheme_wrong_syntax(NULL, nm, form, "module name is not an identifier");
-  // REMOVEME printf("%s\n", scheme_write_to_string(nm, 0));
   fm = SCHEME_STX_CDR(fm);
   if (!SCHEME_STX_PAIRP(fm))
     scheme_wrong_syntax(NULL, NULL, form, NULL);
@@ -7200,15 +6946,20 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   fm = SCHEME_STX_CDR(fm);
   orig_ii = ii;
 
+  if (!SCHEME_STXP(fm))
+    fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
+
   if (scheme_is_nested_module(env)) {
     if (post && SCHEME_FALSEP(SCHEME_STX_VAL(ii))) {
       ii = NULL;
+      fm = scheme_stx_add_shift(fm, scheme_bin_minus(scheme_make_integer(0),
+                                                     super_phase_shift));
     } else {
+      Scheme_Mark_Set *super_marks;
+      super_marks = scheme_module_context_marks(scheme_stx_to_module_context(super_bxs->rn_stx));
+      ii = scheme_stx_adjust_marks(ii, super_marks, SCHEME_STX_REMOVE);
+      fm = scheme_stx_adjust_marks(fm, super_marks, SCHEME_STX_REMOVE);
       super_phase_shift = scheme_make_integer(0);
-      if (!skip_strip) {
-        ii = strip_lexical_context(ii);
-        fm = strip_lexical_context(fm);
-      }
     }
   }
 
@@ -7305,7 +7056,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                               scheme_false);
   } else {
     void **super_bxs_info;
-    Scheme_Object *rn, *rnss, *rnss2, *rn2;
+    Scheme_Object *shift;
 
     iidx = scheme_make_modidx(scheme_make_pair(submod_symbol,
                                                scheme_make_pair(scheme_make_utf8_string(".."),
@@ -7315,30 +7066,18 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
     super_phase_shift = scheme_bin_minus(scheme_make_integer(0), super_phase_shift);
 
-    rn = scheme_make_shift(super_phase_shift, 
-                           top_env->module->self_modidx, iidx, 
-                           menv->module_registry->exports,
-                           env->insp);
-
-    rnss2 = scheme_null;
-    for (rnss = super_bxs->rn_stx; SCHEME_PAIRP(rnss); rnss = SCHEME_CDR(rnss)) {
-      rn2 = SCHEME_CAR(rnss);
-      rn2 = scheme_stx_shift(rn2,
-                             scheme_make_integer(0),
-                             top_env->module->self_modidx, iidx, 
-                             NULL, env->insp);
-      rnss2 = scheme_make_pair(rn2, rnss2);
-    }
-    rnss2 = scheme_reverse(rnss2);
+    shift = scheme_make_shift(super_phase_shift, 
+                              top_env->module->self_modidx, iidx, 
+                              menv->module_registry->exports,
+                              env->insp);
     
-    super_bxs_info = MALLOC_N(void*, 7);
+    super_bxs_info = MALLOC_N(void*, 6);
     super_bxs_info[0] = super_bxs;
-    super_bxs_info[1] = rn;
+    super_bxs_info[1] = shift;
     super_bxs_info[2] = top_env->module->self_modidx;
     super_bxs_info[3] = iidx;
     super_bxs_info[4] = top_env;
     super_bxs_info[5] = super_phase_shift;
-    super_bxs_info[6] = rnss2;
     m->super_bxs_info = super_bxs_info;
   }
 
@@ -7402,26 +7141,19 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   if (ii)
     saw_mb = add_simple_require_renames(NULL, rn_set, menv, NULL, iim, iidx, scheme_make_integer(0), NULL, 1);
   else {
-    if (!skip_strip) {
-      Scheme_Object *rn;
-      rn = (Scheme_Object *)m->super_bxs_info[1];
-      if (!SCHEME_STXP(fm))
-        fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
-      fm = scheme_stx_add_module_context(fm, rn);
-      mb_ctx = scheme_stx_add_module_context(disarmed_form, rn);
-    } else {
-      if (!SCHEME_STXP(fm))
-        fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
-    }
-    /* there must be a `#%module-begin' in the enclosing module, right? */
+    Scheme_Object *shift;
+    shift = (Scheme_Object *)m->super_bxs_info[1];
+    fm = scheme_stx_add_shift(fm, shift);
+    mb_ctx = scheme_stx_add_shift(disarmed_form, shift);
+    /* REMOVEME: FIXME: there must be a `#%module-begin' in the enclosing module, right? */
     saw_mb = 1;
   }
 
   if (rec[drec].comp)
-    benv = scheme_new_comp_env(menv, env->insp, scheme_module_context_marks(rn_set), 
+    benv = scheme_new_comp_env(menv, env->insp, (Scheme_Object *)scheme_module_context_marks(rn_set), 
                                SCHEME_MODULE_FRAME | SCHEME_KEEP_MARKS_FRAME);
   else
-    benv = scheme_new_expand_env(menv, env->insp, scheme_module_context_marks(rn_set),
+    benv = scheme_new_expand_env(menv, env->insp, (Scheme_Object *)scheme_module_context_marks(rn_set),
                                  SCHEME_MODULE_FRAME | SCHEME_KEEP_MARKS_FRAME);
 
   /* If fm isn't a single expression, it certainly needs a
@@ -7429,13 +7161,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   if (SCHEME_STX_PAIRP(fm) && SCHEME_STX_NULLP(SCHEME_STX_CDR(fm))) {
     /* Perhaps expandable... */
     fm = SCHEME_STX_CAR(fm);
-
-    /* If the body is `#%plain-module-begin' and if any form is a
-       `module' form (i.e., already with the `module' binding, then
-       attach the original form as a property to the `module' form, so
-       that re-expansion can use it instead of dropping all lexical
-       context: */
-    fm = scheme_annotate_existing_submodules(fm, 1);
+    check_not_tainted(fm);
   } else {
     fm = scheme_make_pair(scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx, 0, 2), 
 			  fm);
@@ -7452,16 +7178,11 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   this_empty_self_modidx = scheme_get_submodule_empty_self_modidx(submodule_path);
 
+  /* phase shift to replace self_modidx of previous expansion: */
+  fm = scheme_stx_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL, m->insp);
+  
   if (ii) {
-    /* phase shift to replace self_modidx of previous expansion (if any): */
-    fm = scheme_stx_shift(fm, scheme_make_integer(0), this_empty_self_modidx, self_modidx, NULL, m->insp);
-
     fm = scheme_stx_add_module_context(fm, rn_set);
-  } else {
-    if (skip_strip) {
-      /* phase shift to replace self_modidx of previous expansion: */
-      fm = scheme_stx_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL, m->insp);
-    }
   }
 
   SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);
@@ -7574,10 +7295,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
     /* for future expansion, shift away from self_modidx: */
     ps = scheme_make_shift(NULL, self_modidx, this_empty_self_modidx, NULL, NULL);
-    if (m->pre_submodules) /* non-NULL => some submodules, even if it's '() */
-      fm = phase_shift_skip_submodules(fm, ps, -1);
-    else
-      fm = scheme_stx_add_shift(fm, ps);
+    fm = scheme_stx_add_shift(fm, ps);
 
     /* make self_modidx like the empty modidx */
     if (SAME_OBJ(this_empty_self_modidx, empty_self_modidx))
@@ -7831,10 +7549,12 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
                               Scheme_Env *super_genv,
                               Scheme_Env *genv,
                               Scheme_Object *phase_shift)
+/* Record imports from the enclosing module as imports here,
+   and record definitions from the enclosing module as imports here. */
 {
   Scheme_Hash_Table *ht, *required, *super_required;
-  Scheme_Object *phase, *super_name, *name, *super_vec, *vec;
-  Scheme_Object *l, *v, *super_defs, *key, *val;
+  Scheme_Object *phase, *super_key, *name, *super_vec, *vec;
+  Scheme_Object *l, *v, *super_defs, *key, *val, *binding;
   int i, j;
   Scheme_Env *super_def_genv, *def_genv;
 
@@ -7851,10 +7571,8 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
 
       for (j = super_required->size; j--; ) {
         if (super_required->vals[j]) {
-          super_name = super_required->keys[j];
+          super_key = super_required->keys[j];
           super_vec = super_required->vals[j];
-
-          name = super_name;
 
           vec = scheme_make_vector(9, NULL);
 
@@ -7877,16 +7595,15 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
           SCHEME_VEC_ELS(vec)[5] = SCHEME_VEC_ELS(super_vec)[5];
 
           v = SCHEME_VEC_ELS(super_vec)[6];
-          if (SCHEME_TRUEP(v))
-            v = scheme_stx_add_module_context(v, rn);
+          if (SCHEME_TRUEP(v) && !SAME_OBJ(phase_shift, scheme_make_integer(0)))
+            v = scheme_stx_add_shift(v, phase_shift);
           SCHEME_VEC_ELS(vec)[6] = v;
 
-          abort(); // which can be shadowed?
           SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
 
           SCHEME_VEC_ELS(vec)[8] = SCHEME_VEC_ELS(super_vec)[8];
 
-          scheme_hash_set(required, name, vec);
+          scheme_hash_set(required, super_key, vec);
         }
       }
     }
@@ -7912,12 +7629,14 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
        
         vec = scheme_make_vector(9, NULL);
 
-        abort();
-
         v = scheme_make_pair(to_idx, scheme_null);
         SCHEME_VEC_ELS(vec)[0] = v;
         SCHEME_VEC_ELS(vec)[1] = to_idx;
-        v = NULL; // intern_require_binding(name, super_def_genv);
+        binding = scheme_stx_lookup(name, phase);
+        if (!SCHEME_VECTORP(binding)
+            || !SAME_OBJ(phase, SCHEME_VEC_ELS(binding)[2]))
+          scheme_signal_error("internal error: broken binding of defined id from encloding module");
+        v = SCHEME_VEC_ELS(binding)[1];
         SCHEME_VEC_ELS(vec)[2] = v;
         if (scheme_lookup_in_table(super_def_genv->toplevel, (char *)v))
           SCHEME_VEC_ELS(vec)[3] = scheme_true;
@@ -7925,13 +7644,13 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
           SCHEME_VEC_ELS(vec)[3] = scheme_false;
         SCHEME_VEC_ELS(vec)[4] = SCHEME_STX_VAL(name);
         SCHEME_VEC_ELS(vec)[5] = name;
-        name = scheme_stx_add_module_context(name, rn);
+        if (!SAME_OBJ(phase_shift, scheme_make_integer(0)))
+          name = scheme_stx_add_shift(name, phase_shift);
         SCHEME_VEC_ELS(vec)[6] = name;
-        abort(); // which can be shadowed?
         SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
         SCHEME_VEC_ELS(vec)[8] = phase;
 
-        v = NULL; // intern_require_binding(name);
+        v = require_binding_to_key(binding);
         scheme_hash_set(required, v, vec);
       }
     }
@@ -8161,16 +7880,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
     *all_simple_renames = 0;
   }
   rn_stx = scheme_module_context_to_stx(rn_set);
-  if (env->genv->module->super_bxs_info && env->genv->module->super_bxs_info[6])
-    rn_stx = scheme_make_pair(rn_stx, env->genv->module->super_bxs_info[6]);
-  {
-    Scheme_Object *v;
-    if (SCHEME_PAIRP(rn_stx))
-      v = scheme_list_to_vector(rn_stx); 
-   else
-      v = rn_stx;
-    env->genv->module->rn_stx = v;
-  }
+  env->genv->module->rn_stx = rn_stx;
 
   bxs = scheme_malloc(sizeof(Module_Begin_Expand_State));
   bxs->tables = tables;
@@ -8186,6 +7896,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   bxs->modidx_cache = modidx_cache;
   bxs->redef_modname = redef_modname;
   bxs->end_statementss = scheme_null;
+  bxs->rn_stx = rn_stx;
 
   if (env->genv->module->super_bxs_info) {
     /* initialize imports that are available for export from the enclosing module's
@@ -8455,10 +8166,6 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       
       (void)do_module_execute(o, env->genv, 0, 1, root_module_name, NULL);
     }
-
-    if (!SCHEME_PAIRP(rn_stx))
-      rn_stx = scheme_make_pair(rn_stx, scheme_null);
-    bxs->rn_stx = rn_stx;
 
     if (!rec[drec].comp && (is_modulestar_stop(env))) {
       Scheme_Object *l = bxs->saved_submodules;
@@ -9268,7 +8975,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   
   if (rec[drec].comp) {
     /* Module and each `begin-for-syntax' group manages its own prefix: */
-    cenv = scheme_new_comp_env(env->genv, env->insp, scheme_module_context_marks(rn_set), 
+    cenv = scheme_new_comp_env(env->genv, env->insp, (Scheme_Object *)scheme_module_context_marks(rn_set), 
                                SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME);
   } else
     cenv = scheme_extend_as_toplevel(env);

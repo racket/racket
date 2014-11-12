@@ -1134,7 +1134,7 @@ Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme
 Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
-Scheme_Object *scheme_module_context_marks(Scheme_Object *mc);
+Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc);
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc);
 
 XFORM_NONGCING int scheme_mark_subset(Scheme_Mark_Set *a, Scheme_Mark_Set *b);

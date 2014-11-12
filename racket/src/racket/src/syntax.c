@@ -2202,9 +2202,9 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
   return vec;
 }
 
-Scheme_Object *scheme_module_context_marks(Scheme_Object *mc)
+Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc)
 {
-  return SCHEME_VEC_ELS(mc)[0];
+  return (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[0];
 }
 
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc)
