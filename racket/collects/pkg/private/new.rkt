@@ -7,8 +7,12 @@
          racket/system
          racket/string
          racket/date
+         racket/format
          setup/collection-name
          "print.rkt")
+
+(define (package-name? package)
+  (regexp-match-exact? #rx"[-_a-zA-Z0-9]*" package))
 
 (define (pkg-new name)
 
@@ -30,9 +34,16 @@
   (define year
     (number->string (date-year (current-date))))
 
+  (define sanitized-name
+    (if (string->number name)
+        (string-append "|" name "|")
+        name))
+
   ;; Because I wish I had @-expressions
   (define (expand/display str [table (hash #"name" name #"user" user
-                                           #"====" ==== #"year" year)])
+                                           #"====" ==== #"year" year
+                                           #"sanitized-name"
+                                           sanitized-name)])
     (let ([in (open-input-string str)])
       (let loop ()
         (let ([m (regexp-match #rx"<<([^>]*)>>" in 0 #f (current-output-port))])
@@ -44,7 +55,7 @@
   (cond
    [(directory-exists? name)
     (pkg-error (format "cannot make package, folder exists~n  path: ~a" name))]
-   [(not (collection-name-element? name))
+   [(not (package-name? name))
     (pkg-error (format "cannot make package, invalid collection name~n  name:  ~a"
                        name))]
    [else
@@ -165,13 +176,13 @@ EOS
 
 ;; Notice
 ;; To install (from within the package directory):
-;; $ raco pkg install
+;;   $ raco pkg install
 ;; To install (once uploaded to pkgs.racket-lang.org):
-;; $ raco pkg install <<name>>
+;;   $ raco pkg install <<name>>
 ;; To uninstall:
-;;  $ raco pkg remove <<name>>
+;;   $ raco pkg remove <<name>>
 ;; To view documentation:
-;;  $ raco doc <<name>>
+;;   $ raco doc <<name>>
 ;;
 ;; For your convenience, we have included a LICENSE.txt file, which links to
 ;; the GNU Lesser General Public License.
@@ -191,7 +202,7 @@ EOS
   )
 
 (module+ main
-  ;; Main entry point, executed when run with racket executable or DrRacket.
+  ;; Main entry point, executed when run with the `racket` executable or DrRacket.
   )
 
 EOS
@@ -203,13 +214,13 @@ EOS
         (with-output-to-file (format "~a.scrbl" name)
           (lambda () (expand/display #<<EOS
 #lang scribble/manual
-@require[@for-label[<<name>>
+@require[@for-label[<<sanitized-name>>
                     racket/base]]
 
 @title{<<name>>}
 @author{<<user>>}
 
-@defmodule[<<name>>]
+@defmodule[<<sanitized-name>>]
 
 Package Description Here
 

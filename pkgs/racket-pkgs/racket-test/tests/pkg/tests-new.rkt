@@ -36,4 +36,20 @@
      (shelly-case
       "folder already exists"
       $ "raco pkg new repeat"
-      $ "raco pkg new repeat" =exit> 1)))))
+      $ "raco pkg new repeat" =exit> 1)
+
+     (shelly-case
+      "package 9999"
+      $ "raco pkg new 9999"
+      $ "raco pkg install 9999/"
+      $ "raco pkg remove 9999")
+
+     (shelly-case
+      "package %12"
+      $ "raco pkg new %12" =exit> 1)
+
+     (shelly-case
+      "package _"
+      $ "raco pkg new _"
+      $ "raco pkg install _/"
+      $ "raco pkg remove _")))))
