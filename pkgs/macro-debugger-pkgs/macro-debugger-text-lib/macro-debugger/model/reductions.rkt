@@ -218,8 +218,12 @@
         [#:walk e2 'macro])]
     [(Wrap p:#%top (e1 e2 rs ?1))
      (R [! ?1]
-        [#:pattern (?top . ?var)]
-        [#:learn (list #'?var)])]
+        [#:pattern ?form]
+        [#:learn
+         (syntax-case #'?form ()
+           [(?top . ?var) (identifier? #'?var) (list #'?var)]
+           [?var (identifier? #'?var) (list #'?var)]
+           [_ (error 'macro-debugger "#%top has wrong form: ~s\n" #'?form)])])]
 
     [(Wrap p:provide (e1 e2 rs ?1 inners ?2))
      (let ([wrapped-inners (map expr->local-action inners)])
