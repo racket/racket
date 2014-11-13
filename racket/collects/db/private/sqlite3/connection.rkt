@@ -410,9 +410,18 @@
                        [else (caddr info)])])
            (define extra
              (string-append
+              ;; error code
+              (format "\n  error code: ~s" full-s)
               ;; query, if available
               (cond [sql (format "\n  SQL: ~e" sql)]
                     [else ""])
+              ;; query in sqlite3_stmt, if differs
+              (let* ([stmt (and pst (send pst get-handle))]
+                     [stmt_sql (and stmt (sqlite3_sql stmt))])
+                (cond [(equal? sql stmt_sql) ;; ie, either agree or both absent
+                       ""]
+                      [else
+                       (format "\n  sqlite3_sql: ~e" stmt_sql)]))
               ;; db file and mode, if relevant and available
               (cond [(memv s include-db-file-status-list)
                      (string-append
@@ -428,7 +437,7 @@
                                      sym
                                      `((code . ,sym)
                                        (message . ,message)
-                                       (errcode . ,s)
+                                       (errcode . ,full-s)
                                        (sql . ,sql)
                                        (db-file . ,db-file)
                                        (db-mode . ,db-mode)))))]))
