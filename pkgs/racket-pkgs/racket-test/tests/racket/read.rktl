@@ -196,6 +196,8 @@
 (err/rt-test (readstr "#\"\\c\"") exn:fail:read?)
 (err/rt-test (readstr "#\"\\777\"") exn:fail:read?)
 (err/rt-test (readstr "#\"\\u0040\"") exn:fail:read?)
+(err/rt-test (readstr "#\"\u0100\"") exn:fail:read?)
+(err/rt-test (readstr "#\"\u03BB\"") exn:fail:read?)
 
 (load-relative "numstrs.rktl")
 (let loop ([l number-table])

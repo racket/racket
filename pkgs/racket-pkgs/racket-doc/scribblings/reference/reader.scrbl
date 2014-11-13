@@ -521,7 +521,10 @@ literal.) See @secref["bytestrings"] for information on byte
 strings. The resulting byte string is @tech{interned} in 
 @racket[read-syntax] mode.
 Byte-string constants support the same escape sequences as
-character strings, except @litchar{\u} and @litchar{\U}.
+character strings, except @litchar{\u} and @litchar{\U}. Otherwise, each
+character within the byte-string quotes must have a Unicode code-point number
+in the range 0 to 255, which is used as the corresponding byte's value; if
+a character is not in that range, the @exnraise[exn:fail:read].
 
 When the reader encounters @as-index{@litchar{#<<}}, it starts parsing a
 @pidefterm{here string}. The characters following @litchar{#<<} until

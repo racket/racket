@@ -3283,14 +3283,19 @@ read_string(int is_byte, Scheme_Object *port,
 	  }
 	}
       }
+    } else if (is_byte && (ch > 255)) {
+      if (err_ok)
+	scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
+			"read: out-of-range character in byte string: %c",
+                        ch);
+      return NULL;
     }
 
     if (ch < 0) {
       if (err_ok)
 	scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
-			"read: out-of-range character in %s%s",
-			is_byte ? "byte " : "",
-			"string");
+			"read: out-of-range character in %sstring",
+			is_byte ? "byte " : "");
       return NULL;
     }
 

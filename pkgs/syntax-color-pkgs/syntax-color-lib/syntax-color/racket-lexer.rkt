@@ -82,22 +82,25 @@
    ;; What about byte string regexp strings
    [str (:or (:: (:? (:or "#px" "#rx")) "\"" (:* string-element (:: "\\" unicode)) "\"")
              byte-str)]
-   [byte-str (:: (:? (:or "#px" "#rx")) "#\"" (:* string-element) "\"")]
+   [byte-str (:: (:? (:or "#px" "#rx")) "#\"" (:* byte-string-element) "\"")]
    [string-element (:or (:~ "\"" "\\")
-                        "\\\""
-                        "\\\\"
-                        "\\a"
-                        "\\b"
-                        "\\t"
-                        "\\n"
-                        "\\v"
-                        "\\f"
-                        "\\r"
-                        "\\e"
-                        "\\'"
-                        (:: "\\" (:** 1 3 digit8))
-                        (:: "\\x" (:** 1 2 digit16))
-                        (:: "\\" #\newline))]
+                        string-escape)]
+   [byte-string-element (:or (:- (:/ "\x00" "\xFF") "\"" "\\")
+                             string-escape)]
+   [string-escape (:or "\\\""
+                       "\\\\"
+                       "\\a"
+                       "\\b"
+                       "\\t"
+                       "\\n"
+                       "\\v"
+                       "\\f"
+                       "\\r"
+                       "\\e"
+                       "\\'"
+                       (:: "\\" (:** 1 3 digit8))
+                       (:: "\\x" (:** 1 2 digit16))
+                       (:: "\\" #\newline))]
 
    [bad-str (:: (:? (:or "#px" "#rx")) (:? "#") "\"" 
                 (:* (:~ "\"" "\\")

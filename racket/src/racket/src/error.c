@@ -391,8 +391,8 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	      tlen = 1;
 	    } else {
 	      mzchar mc;
+              mc = c;
 	      tlen = scheme_utf8_encode_all(&mc, 1, (unsigned char *)buf);
-	      c = (int)mc;
 	    }
 	    t = buf;
 	  }
