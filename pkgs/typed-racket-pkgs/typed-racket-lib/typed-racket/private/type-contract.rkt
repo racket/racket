@@ -248,7 +248,7 @@
         ;; We special case this rather than just resorting to standard
         ;; App resolution (see case below) because the resolution process
         ;; will make type->static-contract infinite loop.
-        [(App: (Name: name _ _ #f) rands _)
+        [(App: (Name: name _ #f) rands _)
          ;; Key with (cons name 'app) instead of just name because the
          ;; application of the Name is not necessarily the same as the
          ;; Name type alone
@@ -264,7 +264,7 @@
                                                 (recursive-sc-use name*))))
                               (recursive-sc-use name*))])]
         ;; Implicit recursive aliases
-        [(Name: name-id dep-ids args #f)
+        [(Name: name-id args #f)
          (cond [;; recursive references are looked up in a special table
                 ;; that's handled differently by sc instantiation
                 (lookup-name-sc name-id typed-side)]

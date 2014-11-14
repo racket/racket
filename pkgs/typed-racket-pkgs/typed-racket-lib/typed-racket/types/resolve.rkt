@@ -60,7 +60,7 @@
                           " does not match the given number:"
                           " expected " num-poly
                           ", given " num-rands))))]
-      [(Name: _ _ args #f)
+      [(Name: _ args #f)
        (cond [args
               (define num-rands (length rands))
               (define num-args (length args))

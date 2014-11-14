@@ -41,9 +41,9 @@
          [(list (Name/simple: n) (Name/simple: n*))
           (or (free-identifier=? n n*)
               (overlap (resolve-once t1) (resolve-once t2)))]
-         [(list _ (Name: _ _ _ _))
+         [(list _ (? Name?))
            (overlap t1 (resolve-once t2))]
-         [(list (Name: _ _ _ _) _)
+         [(list (? Name?) _)
            (overlap (resolve-once t1) t2)]
          [(list (? Mu?) _) (overlap (unfold t1) t2)]
          [(list _ (? Mu?)) (overlap t1 (unfold t2))]
@@ -118,7 +118,7 @@
     (if (subtype old rem)
         (Un) ;; the empty type
         (match (list old rem)
-          [(list (or (App: _ _ _) (Name: _ _ _ _)) t)
+          [(list (or (App: _ _ _) (? Name?)) t)
            ;; must be different, since they're not subtypes
            ;; and n must refer to a distinct struct type
            old]

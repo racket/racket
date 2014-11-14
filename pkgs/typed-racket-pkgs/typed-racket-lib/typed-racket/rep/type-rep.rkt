@@ -122,11 +122,9 @@
 ;; A type name, potentially recursive or mutually recursive or pointing
 ;; to a type for a struct type
 ;; id is the name stored in the environment
-;; deps are the other aliases this depends on, if any
 ;; args are the type parameters for this type (or #f if none)
 ;; struct? indicates if this maps to a struct type
 (def-type Name ([id identifier?]
-                [deps (listof identifier?)]
                 [args (or/c #f (listof identifier?))]
                 [struct? boolean?])
   [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
@@ -138,7 +136,7 @@
   [#:intern (cons (Rep-seq rator) (map Rep-seq rands))]
   [#:frees (λ (f)
               (match rator 
-                ((Name: n _ _ _)
+                ((Name: n _ _)
                  (instantiate-frees n (map f rands)))
                 (else (f (resolve-app rator rands stx)))))]
 
@@ -1036,11 +1034,11 @@
 (define-match-expander Name/simple:
   (λ (stx)
     (syntax-parse stx
-      [(_ name-pat) #'(Name: name-pat _ _ _)])))
+      [(_ name-pat) #'(Name: name-pat _ _)])))
 
 ;; alternative to Name: that only matches struct names
 (define-match-expander Name/struct:
   (λ (stx)
     (syntax-parse stx
-      [(_) #'(Name: _ _ _ #t)]
-      [(_ name-pat) #'(Name: name-pat _ _ #t)])))
+      [(_) #'(Name: _ _ #t)]
+      [(_ name-pat) #'(Name: name-pat _ #t)])))

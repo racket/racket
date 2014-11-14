@@ -185,51 +185,12 @@
                                 free-identifier=?))
       alias))
 
-  ;; Reconstruct type alias dependency map based on class parent
-  ;; information. This ensures that the `deps` field is precise
-  ;; in all type aliases involving class types
-  (define (get-all-parent-deps id)
-    (define (get-deps parent)
-      (cdr (assoc parent type-alias-dependency-map free-identifier=?)))
-    (define parents (cdr (assoc id type-alias-class-map free-identifier=?)))
-    (cond [(null? parents) null]
-          [else
-           (define all-deps
-             (for/list ([parent (in-list parents)])
-               (append (get-deps parent)
-                       (get-all-parent-deps parent))))
-           (apply append all-deps)]))
-
-  (define new-dependency-map/classes
-    (for/list ([(id deps) (in-dict type-alias-dependency-map)])
-      (cond [(dict-has-key? type-alias-class-map id)
-             (define new-deps
-               (remove-duplicates (append (get-all-parent-deps id) deps)
-                                  free-identifier=?))
-             (cons id new-deps)]
-            [else (cons id deps)])))
-
-  ;; Do another pass on dependency map, using the connected
-  ;; components analysis data to determine which dependencies are
-  ;; actually needed for mutual recursion. Drop all others.
-  (define new-dependency-map
-    (for/list ([(id deps) (in-dict new-dependency-map/classes)])
-      ;; find the component this `id` participated in so
-      ;; that we can drop `deps` that aren't in that component
-      (define component
-        (findf (λ (component) (member id component free-identifier=?))
-               components))
-      (define new-deps
-        (filter (λ (dep) (member dep component free-identifier=?)) deps))
-      (cons id new-deps)))
-
   ;; Actually register recursive type aliases
   (define name-types
     (for/list ([id (in-list recursive-aliases)])
       (define record (dict-ref type-alias-map id))
       (match-define (list _ args) record)
-      (define deps (dict-ref new-dependency-map id))
-      (define name-type (make-Name id deps args #f))
+      (define name-type (make-Name id args #f))
       (register-resolved-type-alias id name-type)
       name-type))
 
