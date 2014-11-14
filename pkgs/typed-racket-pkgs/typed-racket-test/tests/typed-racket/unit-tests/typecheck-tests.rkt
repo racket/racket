@@ -3343,6 +3343,13 @@
                    `(li ,elem)))
                (void))
              -Void]
+
+       ;; PR 13653
+       [tc-e (let ()
+               (lambda: ((a : Symbol))
+                 (ann (values a a) (Values Symbol Symbol)))
+               (void))
+             -Void]
         )
 
   (test-suite
