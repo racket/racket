@@ -1137,7 +1137,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 #if 0
   // REMOVEME
-  if (SCHEME_FALSEP(binding) && !strcmp("require", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+  if (SCHEME_FALSEP(binding) && !strcmp("syntax-protect", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%d %s %s\n", ambiguous, scheme_write_to_string(find_id, NULL), scheme_write_to_string(binding, NULL));
     scheme_stx_debug_print(find_id, 1);
   }

@@ -7,53 +7,6 @@
              "member.rkt"
              (for-syntax '#%kernel "stx.rkt" "small-scheme.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
 
-  (define-syntax case-test
-    (lambda (x)
-      (syntax-case x ()
-        ;; For up to 3 elements, inline `eqv?' tests:
-	[(_ x (k))
-         (syntax (eqv? x 'k))]
-	[(_ x (k1 k2))
-         (syntax (let ([tmp x]) (if (eqv? tmp 'k1) #t (eqv? tmp 'k2))))]
-	[(_ x (k1 k2 k3))
-         (syntax (let ([tmp x]) (if (eqv? tmp 'k1) #t (if (eqv? tmp 'k2) #t (eqv? tmp 'k3)))))]
-	[(_ x (k ...))
-	 (syntax (memv x '(k ...)))])))
-
-  ;; Mostly from Dybvig:
-  (define-syntax (old-case x)
-    (syntax-case* x (else) (let ([else-stx (datum->syntax #f 'else)])
-                             (lambda (a b) (free-identifier=? a else-stx)))
-      ((_ v)
-       (syntax (#%expression (begin v (void)))))
-      ((_ v (else e1 e2 ...))
-       (syntax/loc x (#%expression (begin v (let-values () e1 e2 ...)))))
-      ((_ v ((k ...) e1 e2 ...))
-       (syntax/loc x (if (case-test v (k ...)) (let-values () e1 e2 ...) (void))))
-      ((self v ((k ...) e1 e2 ...) c1 c2 ...)
-       (syntax/loc x (let ((x v))
-                       (if (case-test x (k ...))
-                           (let-values () e1 e2 ...)
-                           (self x c1 c2 ...)))))
-      ((_ v (bad e1 e2 ...) . rest)
-       (raise-syntax-error 
-        #f
-        "bad syntax (not a datum sequence)"
-        x
-        (syntax bad)))
-      ((_ v clause . rest)
-       (raise-syntax-error 
-        #f
-        "bad syntax (missing expression after datum sequence)"
-        x
-        (syntax clause)))
-      ((_ . v)
-       (not (null? (syntax-e (syntax v))))
-       (raise-syntax-error 
-        #f
-        "bad syntax (illegal use of `.')"
-        x))))
-
   ;; From Dybvig:
   (define-syntax do
     (lambda (orig-x)
@@ -379,7 +332,7 @@
                    v)))])
         (values hash-update hash-update! hash-has-key? hash-ref!))))
 
-  (#%provide case old-case do
+  (#%provide case do
              parameterize parameterize* current-parameterization call-with-parameterization
              parameterize-break current-break-parameterization call-with-break-parameterization
              with-handlers with-handlers* call-with-exception-handler
