@@ -872,11 +872,11 @@ void scheme_prepare_env_stx_context(Scheme_Env *env)
                               insp);
 
     if (env->module)
-      intro_mark = scheme_new_mark(12);
+      intro_mark = scheme_new_multi_mark();
     else
       intro_mark = NULL;
 
-    mc = scheme_make_module_context(insp, shift, intro_mark, NULL);
+    mc = scheme_make_module_context(insp, shift, intro_mark);
     env->stx_context = mc;
   }
 }
@@ -2108,7 +2108,8 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
   }
 
   if (scheme_current_thread->current_local_mark)
-    sym = scheme_stx_flip_mark(sym, scheme_current_thread->current_local_mark);
+    sym = scheme_stx_flip_mark(sym, scheme_current_thread->current_local_mark,
+                               scheme_env_phase(env->genv));
 
   menv = NULL;
 
@@ -2278,7 +2279,7 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   }
   d[0] = env;
 
-  rib = scheme_new_mark(13);
+  rib = scheme_new_mark();
 
   c = scheme_alloc_object();
   c->type = scheme_intdef_context_type;
@@ -2335,7 +2336,8 @@ id_intdef_remove(int argc, Scheme_Object *argv[])
   skips = scheme_null;
 
   while (SCHEME_PAIRP(l)) {
-    res = scheme_stx_remove_mark(res, SCHEME_PTR2_VAL(SCHEME_CAR(l)));
+    res = scheme_stx_remove_mark(res, SCHEME_PTR2_VAL(SCHEME_CAR(l)), 
+                                 scheme_env_phase((Scheme_Env *)((Scheme_Object **)SCHEME_PTR1_VAL(SCHEME_CAR(l)))[0]));
     skips = scheme_make_pair(SCHEME_PTR2_VAL(SCHEME_CAR(l)), skips);
     l = SCHEME_CDR(l);
   }
@@ -2358,7 +2360,7 @@ local_introduce(int argc, Scheme_Object *argv[])
     scheme_wrong_contract("syntax-local-introduce", "syntax?", 0, argc, argv);
 
   if (scheme_current_thread->current_local_mark)
-    s = scheme_stx_flip_mark(s, scheme_current_thread->current_local_mark);
+    s = scheme_stx_flip_mark(s, scheme_current_thread->current_local_mark, scheme_env_phase(env->genv));
 
   return s;
 }
@@ -2389,12 +2391,14 @@ local_get_shadower(int argc, Scheme_Object *argv[])
                                          NULL, NULL, NULL, NULL, NULL);
            
     if (!SCHEME_FALSEP(binder))
-      sym = scheme_stx_adjust_marks(sym, bind_marks, SCHEME_STX_REMOVE);
+      sym = scheme_stx_adjust_marks(sym, bind_marks, scheme_env_phase(env->genv),
+                                    SCHEME_STX_REMOVE);
   }
 
   while (env != bind_env) {
     if (env->marks)
-      sym = scheme_stx_adjust_mark_or_marks(sym, env->marks, SCHEME_STX_ADD);
+      sym = scheme_stx_adjust_mark_or_marks(sym, env->marks, scheme_env_phase(env->genv),
+                                            SCHEME_STX_ADD);
     env = env->next;
   }
 
@@ -2402,7 +2406,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-introducer_proc(void *mark, int argc, Scheme_Object *argv[])
+introducer_proc(void *info, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *s;
 
@@ -2410,17 +2414,27 @@ introducer_proc(void *mark, int argc, Scheme_Object *argv[])
   if (!SCHEME_STXP(s))
     scheme_wrong_contract("syntax-introducer", "syntax?", 0, argc, argv);
 
-  return scheme_stx_flip_mark(s, (Scheme_Object *)mark);
+  return scheme_stx_flip_mark(s, ((Scheme_Object **)info)[0], ((Scheme_Object **)info)[1]);
 }
 
 static Scheme_Object *
 make_introducer(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *mark;
+  Scheme_Object *mark, **info;
+  Scheme_Env *genv;
 
-  mark = scheme_new_mark(14);
+  mark = scheme_new_mark();
+  info = MALLOC_N(Scheme_Object*, 2);
 
-  return scheme_make_closed_prim_w_arity(introducer_proc, mark,
+  info[0] = mark;
+  if (scheme_current_thread->current_local_env)
+    info[1] = scheme_env_phase(scheme_current_thread->current_local_env->genv);
+  else {
+    genv = (Scheme_Env *)scheme_get_param(scheme_current_config(), MZCONFIG_ENV);
+    info[1] = scheme_env_phase(genv);
+  }
+
+  return scheme_make_closed_prim_w_arity(introducer_proc, info,
 					 "syntax-introducer", 1, 1);
 }
 
@@ -2488,7 +2502,7 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
   }
 
   stx = scheme_datum_to_syntax(SCHEME_STX_VAL(sym), scheme_false, scheme_false, 0, 0);
-  stx = scheme_stx_adjust_marks(stx, binding_marks, SCHEME_STX_ADD);
+  stx = scheme_stx_adjust_marks(stx, binding_marks, scheme_env_phase(env->genv), SCHEME_STX_ADD);
 
   a[0] = sym;
   a[1] = stx;

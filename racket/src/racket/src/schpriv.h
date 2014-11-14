@@ -1043,17 +1043,18 @@ typedef struct Scheme_Stx_Srcloc {
 #define STX_ARMED_FLAG    0x2
 
 typedef struct Scheme_Mark_Set Scheme_Mark_Set;
+typedef struct Scheme_Mark_Table Scheme_Mark_Table;
 
 typedef struct Scheme_Stx {
   Scheme_Inclhash_Object iso; /* 0x1 and 0x2 of keyex used */
   Scheme_Object *val;
   Scheme_Stx_Srcloc *srcloc;
-  Scheme_Mark_Set *marks; /* mark set: (hash <mark> #t ...) */
+  Scheme_Mark_Table *marks;
   union {
-    Scheme_Mark_Set *to_propagate; /* (hash  <mark> <mode> ...  #t (vector <prev-marks> <prev-propagate>)) */
+    Scheme_Mark_Table *to_propagate;
     Scheme_Object **cached_binding; /* array: binding, phase, counter */
   } u;
-  Scheme_Object *shifts; /* <all-shifts> or (vector <all-shifts> <shifts-to-propagate> <base-shifts>); each starts with phase, if any */
+  Scheme_Object *shifts; /* <all-shifts> or (vector <all-shifts> <shifts-to-propagate> <base-shifts>) */
   Scheme_Object *taints; /* taint or taint-arming */
   Scheme_Object *props;
 } Scheme_Stx;
@@ -1088,9 +1089,10 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 				Scheme_Object *old,
 				Scheme_Object *origin);
 
-int scheme_stx_has_empty_wraps(Scheme_Object *);
+int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase);
 
-Scheme_Object *scheme_new_mark(int site);
+Scheme_Object *scheme_new_mark(void);
+Scheme_Object *scheme_new_multi_mark(void);
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
 Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 
@@ -1099,12 +1101,12 @@ Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 #define SCHEME_STX_FLIP     2
 #define SCHEME_STX_MUTATE   8  /* or'ed */
 #define SCHEME_STX_PROPONLY 16 /* or'ed, internal */
-Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, int mode);
-Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m);
-Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m);
-Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m);
-Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, int mode);
-Scheme_Object *scheme_stx_adjust_mark_or_marks(Scheme_Object *o, Scheme_Object *mark, int mode);
+Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
+Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
+Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
+Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_adjust_mark_or_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
 
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
@@ -1124,8 +1126,9 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 
 struct Scheme_Module_Phase_Exports; /* forward declaration */
 
-Scheme_Object *scheme_make_module_context(Scheme_Object *insp, Scheme_Object *shift_or_shifts,
-                                          Scheme_Object *intro_mark, Scheme_Object *within);
+Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
+                                          Scheme_Object *shift_or_shifts,
+                                          Scheme_Object *intro_multi_mark);
 Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc);
@@ -1136,8 +1139,6 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
 Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc);
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc);
-
-XFORM_NONGCING int scheme_mark_subset(Scheme_Mark_Set *a, Scheme_Mark_Set *b);
 
 XFORM_NONGCING void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *context);
 

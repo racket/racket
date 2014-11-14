@@ -31,6 +31,7 @@ static int mark_mark_SIZE(void *p, struct NewGC *gc) {
 static int mark_mark_MARK(void *p, struct NewGC *gc) {
   Scheme_Mark *m = (Scheme_Mark *)p;
   gcMARK2(m->bindings, gc);
+  gcMARK2(m->owner_multi_mark, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark));
 }
@@ -38,6 +39,7 @@ static int mark_mark_MARK(void *p, struct NewGC *gc) {
 static int mark_mark_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Mark *m = (Scheme_Mark *)p;
   gcFIXUP2(m->bindings, gc);
+  gcFIXUP2(m->owner_multi_mark, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark));
 }

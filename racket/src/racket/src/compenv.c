@@ -402,8 +402,9 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
 			"index out of range: %d", index);
 
   if (frame->marks) {
-    /* expected to be redundant, but just in case: */
-    val = scheme_stx_adjust_mark_or_marks(val, frame->marks, SCHEME_STX_ADD);
+    /* sometimes redundant: */
+    val = scheme_stx_adjust_mark_or_marks(val, frame->marks, scheme_env_phase(frame->genv),
+                                          SCHEME_STX_ADD);
   }
   
   frame->binders[index] = val;
@@ -515,7 +516,8 @@ void scheme_set_local_syntax(int pos,
       binding = scheme_stx_lookup(name, scheme_env_phase(env->genv));
     } else {
       if (env->marks)
-        name = scheme_stx_adjust_mark_or_marks(name, env->marks, SCHEME_STX_ADD);
+        name = scheme_stx_adjust_mark_or_marks(name, env->marks, scheme_env_phase(env->genv),
+                                               SCHEME_STX_ADD);
       
       binding = scheme_gensym(SCHEME_STX_VAL(name));
       
@@ -542,14 +544,10 @@ scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark, Scheme_Co
 
   for (i = 0; i < len ; i++) {
     if (SCHEME_STX_SYMBOLP(vals)) {
-      if (mark)
-        vals = scheme_stx_add_mark(vals, mark);
       scheme_add_compilation_binding(i, vals, frame);
     } else {
       Scheme_Object *a;
       a = SCHEME_STX_CAR(vals);
-      if (mark)
-        a = scheme_stx_add_mark(a, mark);
       scheme_add_compilation_binding(i, a, frame);
       vals = SCHEME_STX_CDR(vals);
     }
@@ -1137,7 +1135,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
                                         &rename_insp,
                                         NULL, NULL, NULL, NULL);
 
-#if 1
+#if 0
   // REMOVEME
   if (SCHEME_FALSEP(binding) && !strcmp("require", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%d %s %s\n", ambiguous, scheme_write_to_string(find_id, NULL), scheme_write_to_string(binding, NULL));
@@ -1739,7 +1737,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
                           NULL);
 
   if (local_mark)
-    expr = scheme_stx_flip_mark(expr, local_mark);
+    expr = scheme_stx_flip_mark(expr, scheme_env_phase(env->genv), local_mark);
 
   /* We don't really need a new symbol each time, since the mark
      will generate new bindings, but things may work better or faster
@@ -1751,7 +1749,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
     id_sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
     id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
-    id = scheme_stx_add_mark(id, scheme_new_mark(1));
+    id = scheme_stx_add_mark(id, scheme_new_mark(), scheme_env_phase(env->genv));
 
     rev_ids = scheme_make_pair(id, rev_ids);
   }
@@ -1774,7 +1772,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
   for (; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
     if (local_mark)
-      id = scheme_stx_flip_mark(id, local_mark);
+      id = scheme_stx_flip_mark(id, scheme_env_phase(env->genv), local_mark);
     rev_ids = scheme_make_pair(id, rev_ids);
   }
   ids = scheme_reverse(rev_ids);
@@ -1822,7 +1820,7 @@ scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, 
                           NULL);
   
   if (local_mark)
-    expr = scheme_stx_flip_mark(expr, local_mark);
+    expr = scheme_stx_flip_mark(expr, scheme_env_phase(env->genv), local_mark);
   orig_expr = expr;
 
   pr = scheme_make_pair(expr, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3]);
@@ -1861,7 +1859,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
                           NULL);
 
   
-  mark = scheme_new_mark(2);
+  mark = scheme_new_mark();
 
   if (SCHEME_RPAIRP(data))
     form = scheme_parse_lifted_require(form, phase, mark, SCHEME_CAR(data));
@@ -1876,7 +1874,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
   req_form = form;
 
   form = orig_form;
-  form = scheme_stx_flip_mark(form, mark);
+  form = scheme_stx_flip_mark(form, scheme_env_phase(env->genv), mark);
 
   SCHEME_EXPAND_OBSERVE_LIFT_REQUIRE(scheme_get_expand_observe(), req_form, orig_form, form);
 
@@ -1906,7 +1904,7 @@ Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *loc
                           NULL);
   
   if (local_mark)
-    form = scheme_stx_flip_mark(form, local_mark);
+    form = scheme_stx_flip_mark(form, scheme_env_phase(env->genv), local_mark);
   form = scheme_datum_to_syntax(scheme_make_pair(scheme_datum_to_syntax(scheme_intern_symbol("#%provide"), 
                                                                         scheme_false, scheme_sys_wraps(env), 
                                                                         0, 0),
@@ -1965,14 +1963,11 @@ Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
     for (i = frame->num_bindings; i--; ) {
       id = frame->binders[i];
       if (id) {
-	if (SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(id))) {
-          if (scheme_mark_subset(((Scheme_Stx *)sym)->marks,
-                                 ((Scheme_Stx *)id)->marks)) {
-            prop = scheme_stx_property(id, unshadowable_symbol, NULL);
-            if (SCHEME_FALSEP(prop)) {
-              if (_at_env) *_at_env = frame;
-              return id;
-            }
+	if (scheme_stx_module_eq2(sym, id, scheme_env_phase(env->genv))) {
+          prop = scheme_stx_property(id, unshadowable_symbol, NULL);
+          if (SCHEME_FALSEP(prop)) {
+            if (_at_env) *_at_env = frame;
+            return id;
           }
 	}
       }
@@ -1980,14 +1975,11 @@ Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
 
     for (i = COMPILE_DATA(frame)->num_const; i--; ) {
       id = frame->binders[i];
-      if (id && SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(id))) {
-        if (scheme_mark_subset(((Scheme_Stx *)sym)->marks,
-                               ((Scheme_Stx *)id)->marks)) {
-          prop = scheme_stx_property(id, unshadowable_symbol, NULL);
-          if (SCHEME_FALSEP(prop)) {
-            if (_at_env) *_at_env = frame;
-            return id;
-          }
+      if (id && scheme_stx_module_eq2(sym, id, scheme_env_phase(env->genv))) {
+        prop = scheme_stx_property(id, unshadowable_symbol, NULL);
+        if (SCHEME_FALSEP(prop)) {
+          if (_at_env) *_at_env = frame;
+          return id;
         }
       }
     }

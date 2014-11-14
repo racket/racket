@@ -2407,6 +2407,7 @@ mark_mark {
  mark:
   Scheme_Mark *m = (Scheme_Mark *)p;
   gcMARK2(m->bindings, gc);
+  gcMARK2(m->owner_multi_mark, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark));
 }

@@ -614,7 +614,7 @@ void scheme_finish_kernel(Scheme_Env *env)
     env->running = running;
     env->attached = 1;
     
-    rn = scheme_make_module_context(NULL, NULL, NULL, NULL);
+    rn = scheme_make_module_context(NULL, NULL, NULL);
     for (i = kernel->me->rt->num_provides; i--; ) {
       scheme_extend_module_context(rn, kernel_modidx, exs[i], exs[i], kernel_modidx, exs[i], 
                                    0, scheme_make_integer(0), NULL, 0);
@@ -851,7 +851,7 @@ static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p)
 {
   Scheme_Object *rn, *w;
 
-  rn = scheme_make_module_context(NULL, NULL, NULL, NULL);
+  rn = scheme_make_module_context(NULL, NULL, NULL);
   rn = scheme_module_context_at_phase(rn, scheme_make_integer(p));
 
   /* Add a module mapping for all kernel provides: */
@@ -6957,9 +6957,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     } else {
       Scheme_Mark_Set *super_marks;
       super_marks = scheme_module_context_marks(scheme_stx_to_module_context(super_bxs->rn_stx));
-      ii = scheme_stx_adjust_marks(ii, super_marks, SCHEME_STX_REMOVE);
-      fm = scheme_stx_adjust_marks(fm, super_marks, SCHEME_STX_REMOVE);
       super_phase_shift = scheme_make_integer(0);
+      ii = scheme_stx_adjust_marks(ii, super_marks, super_phase_shift, SCHEME_STX_REMOVE);
+      fm = scheme_stx_adjust_marks(fm, super_marks, super_phase_shift, SCHEME_STX_REMOVE);
     }
   }
 
@@ -7732,7 +7732,8 @@ static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_ids,
   return scheme_make_lifted_defn(scheme_sys_wraps(env), _ids, expr, _env);
 }
 
-static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t phase, Scheme_Object *mark)
+static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t phase,
+                                        Scheme_Object *mark, intptr_t mark_phase)
 {
   Scheme_Object *e = module_path;
 
@@ -7745,7 +7746,7 @@ static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t pha
   e = scheme_make_pair(require_stx, scheme_make_pair(e, scheme_null));
   e = scheme_datum_to_syntax(e, scheme_false, scheme_false, 0, 0);
 
-  e = scheme_stx_add_mark(e, mark);
+  e = scheme_stx_add_mark(e, mark, scheme_make_integer(mark_phase));
 
   return e;
 }
@@ -7765,7 +7766,7 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
   int *all_simple = (int *)((void **)data)[8];
   Scheme_Hash_Table *submodule_names = (Scheme_Hash_Table *)((void **)data)[9];
 
-  e = make_require_form(module_path, phase, mark);
+  e = make_require_form(module_path, phase, mark, env->phase);
 
   parse_requires(e, env->phase, base_modidx, env, for_m,
                  rns,
@@ -12184,7 +12185,7 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
 
   insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
-  rn_set = scheme_make_module_context(insp, NULL, NULL, NULL);
+  rn_set = scheme_make_module_context(insp, NULL, NULL);
 
   genv = env->genv;
   scheme_prepare_exp_env(genv);
@@ -12241,7 +12242,7 @@ Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path,
 {
   Scheme_Object *form;
 
-  form = make_require_form(module_path, phase, mark);
+  form = make_require_form(module_path, phase, mark, cenv->genv->phase);
 
   do_require_execute(cenv->genv, form);
 
