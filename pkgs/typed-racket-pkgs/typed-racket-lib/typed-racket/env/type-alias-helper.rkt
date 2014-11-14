@@ -46,7 +46,7 @@
   (define components (tarjan vertex-map))
   ;; extract the identifiers out of the results since we
   ;; don't need the whole vertex
-  (for/list ([component components])
+  (for/list ([component (in-list components)])
     (map vertex-data component)))
 
 ;; check-type-alias-contractive : Id Type -> Void
@@ -161,7 +161,7 @@
 
   ;; Check that no #:implements clauses are recursive
   (define counterexample
-    (for/or ([component class-components])
+    (for/or ([component (in-list class-components)])
       (and (or (not (= (length component) 1))
                (has-self-cycle? component type-alias-class-map))
            component)))
@@ -195,7 +195,7 @@
     (cond [(null? parents) null]
           [else
            (define all-deps
-             (for/list ([parent parents])
+             (for/list ([parent (in-list parents)])
                (append (get-deps parent)
                        (get-all-parent-deps parent))))
            (apply append all-deps)]))
