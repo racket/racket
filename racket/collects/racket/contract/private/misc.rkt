@@ -235,8 +235,19 @@
    #:stronger and-stronger?
    #:generate and/c-generate?))
 
+(define-syntax (and/c stx)
+  (syntax-case stx (pair? listof)
+    [(_ pair? (listof e))
+     #'(non-empty-listof e)]
+    [(_ (listof e) pair?)
+     #'(non-empty-listof e)]
+    [(_ . args)
+     #'(real-and/c . args)]
+    [x
+     (identifier? #'x)
+     #'real-and/c]))
 
-(define/subexpression-pos-prop (and/c . raw-fs)
+(define/subexpression-pos-prop (real-and/c . raw-fs)
   (let ([contracts (coerce-contracts 'and/c raw-fs)])
     (cond
       [(null? contracts) any/c]

@@ -153,6 +153,8 @@
   (ctest #t contract-stronger? (cons/c boolean? integer?) (cons/c boolean? integer?))
   (ctest #f contract-stronger? (cons/c boolean? integer?) (cons/c integer? boolean?))
   (ctest #t contract-stronger? (cons/c number? (listof number?)) (non-empty-listof number?))
+  (ctest #t contract-stronger? (and/c pair? (listof number?)) (non-empty-listof number?))
+  (ctest #t contract-stronger? (non-empty-listof number?) (and/c (listof number?) pair?))
   (ctest #t contract-stronger? (non-empty-listof number?) (cons/c number? (listof number?)))
   (ctest #t contract-stronger? (cons/c number? (list/c number? number?)) (non-empty-listof number?))
   (ctest #t contract-stronger? (cons/c number? (cons/c number? (listof number?))) (listof number?))
