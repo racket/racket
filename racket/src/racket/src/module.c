@@ -621,14 +621,6 @@ void scheme_finish_kernel(Scheme_Env *env)
     }
   }
 
-  REGISTER_SO(scheme_sys_wraps0);
-  REGISTER_SO(scheme_sys_wraps1);
-
-  scheme_sys_wraps0 = scheme_sys_wraps_phase_worker(0);
-  scheme_sys_wraps1 = scheme_sys_wraps_phase_worker(1);
-
-  scheme_sys_wraps(NULL);
-
   REGISTER_SO(prefix_symbol);
   REGISTER_SO(only_symbol);
   REGISTER_SO(rename_symbol);
@@ -686,6 +678,14 @@ void scheme_init_syntax_bindings()
   // REMOVEME: FIXME: all of these need to be place-local
   
   Scheme_Object *w;
+
+  REGISTER_SO(scheme_sys_wraps0);
+  REGISTER_SO(scheme_sys_wraps1);
+
+  scheme_sys_wraps0 = scheme_sys_wraps_phase_worker(0);
+  scheme_sys_wraps1 = scheme_sys_wraps_phase_worker(1);
+
+  scheme_sys_wraps(NULL);
 
   REGISTER_SO(scheme_module_stx);
   REGISTER_SO(scheme_modulestar_stx);
@@ -7149,12 +7149,16 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     saw_mb = 1;
   }
 
-  if (rec[drec].comp)
-    benv = scheme_new_comp_env(menv, env->insp, (Scheme_Object *)scheme_module_context_marks(rn_set), 
-                               SCHEME_MODULE_FRAME | SCHEME_KEEP_MARKS_FRAME);
-  else
-    benv = scheme_new_expand_env(menv, env->insp, (Scheme_Object *)scheme_module_context_marks(rn_set),
+  {
+    Scheme_Object *frame_marks;
+    frame_marks = (Scheme_Object *)scheme_module_context_marks(rn_set);
+    if (rec[drec].comp)
+      benv = scheme_new_comp_env(menv, env->insp, frame_marks,
                                  SCHEME_MODULE_FRAME | SCHEME_KEEP_MARKS_FRAME);
+    else
+      benv = scheme_new_expand_env(menv, env->insp, frame_marks,
+                                   SCHEME_MODULE_FRAME | SCHEME_KEEP_MARKS_FRAME);
+  }
 
   /* If fm isn't a single expression, it certainly needs a
      `#%module-begin': */
@@ -8976,7 +8980,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   
   if (rec[drec].comp) {
     /* Module and each `begin-for-syntax' group manages its own prefix: */
-    cenv = scheme_new_comp_env(env->genv, env->insp, (Scheme_Object *)scheme_module_context_marks(rn_set), 
+    Scheme_Object *frame_marks;
+    frame_marks = (Scheme_Object *)scheme_module_context_marks(rn_set);
+    cenv = scheme_new_comp_env(env->genv, env->insp, frame_marks,
                                SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME);
   } else
     cenv = scheme_extend_as_toplevel(env);

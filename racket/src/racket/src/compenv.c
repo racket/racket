@@ -1137,7 +1137,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 #if 0
   // REMOVEME
-  if (SCHEME_FALSEP(binding) && !strcmp("syntax-protect", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+  if (SCHEME_FALSEP(binding) && !strcmp("user-dir", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%d %s %s\n", ambiguous, scheme_write_to_string(find_id, NULL), scheme_write_to_string(binding, NULL));
     scheme_stx_debug_print(find_id, 1);
   }
@@ -1737,7 +1737,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
                           NULL);
 
   if (local_mark)
-    expr = scheme_stx_flip_mark(expr, scheme_env_phase(env->genv), local_mark);
+    expr = scheme_stx_flip_mark(expr, local_mark, scheme_env_phase(env->genv));
 
   /* We don't really need a new symbol each time, since the mark
      will generate new bindings, but things may work better or faster
@@ -1772,7 +1772,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
   for (; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
     if (local_mark)
-      id = scheme_stx_flip_mark(id, scheme_env_phase(env->genv), local_mark);
+      id = scheme_stx_flip_mark(id, local_mark, scheme_env_phase(env->genv));
     rev_ids = scheme_make_pair(id, rev_ids);
   }
   ids = scheme_reverse(rev_ids);
@@ -1820,7 +1820,7 @@ scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, 
                           NULL);
   
   if (local_mark)
-    expr = scheme_stx_flip_mark(expr, scheme_env_phase(env->genv), local_mark);
+    expr = scheme_stx_flip_mark(expr, local_mark, scheme_env_phase(env->genv));
   orig_expr = expr;
 
   pr = scheme_make_pair(expr, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3]);
@@ -1874,7 +1874,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
   req_form = form;
 
   form = orig_form;
-  form = scheme_stx_flip_mark(form, scheme_env_phase(env->genv), mark);
+  form = scheme_stx_flip_mark(form, mark, scheme_env_phase(env->genv));
 
   SCHEME_EXPAND_OBSERVE_LIFT_REQUIRE(scheme_get_expand_observe(), req_form, orig_form, form);
 
@@ -1904,7 +1904,7 @@ Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *loc
                           NULL);
   
   if (local_mark)
-    form = scheme_stx_flip_mark(form, scheme_env_phase(env->genv), local_mark);
+    form = scheme_stx_flip_mark(form, local_mark, scheme_env_phase(env->genv));
   form = scheme_datum_to_syntax(scheme_make_pair(scheme_datum_to_syntax(scheme_intern_symbol("#%provide"), 
                                                                         scheme_false, scheme_sys_wraps(env), 
                                                                         0, 0),
@@ -1974,7 +1974,7 @@ Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
     }
 
     for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-      id = frame->binders[i];
+      id = COMPILE_DATA(frame)->const_binders[i];
       if (id && scheme_stx_module_eq2(sym, id, scheme_env_phase(env->genv))) {
         prop = scheme_stx_property(id, unshadowable_symbol, NULL);
         if (SCHEME_FALSEP(prop)) {
@@ -2023,6 +2023,7 @@ void scheme_dup_symbol_check(DupCheckRecord *r, const char *where,
 			     Scheme_Object *form)
 {
   int i;
+  Scheme_Object *l;
 
   if (r->count <= 5) {
     for (i = 0; i < r->count; i++) {
@@ -2036,21 +2037,30 @@ void scheme_dup_symbol_check(DupCheckRecord *r, const char *where,
       return;
     } else {
       Scheme_Hash_Table *ht;
-      ht = scheme_make_hash_table(SCHEME_hash_bound_id);
+      ht = scheme_make_hash_table(SCHEME_hash_ptr);
       r->ht = ht;
       for (i = 0; i < r->count; i++) {
-	scheme_hash_set(ht, r->syms[i], scheme_true);
+        l = scheme_hash_get(ht, SCHEME_STX_VAL(r->syms[i]));
+        if (!l) l = scheme_null;
+        l = scheme_make_pair(r->syms[i], l);
+	scheme_hash_set(ht, SCHEME_STX_VAL(r->syms[i]), l);
       }
       r->count++;
     }
   }
 
-  if (scheme_hash_get(r->ht, symbol)) {
-    scheme_wrong_syntax(where, symbol, form,
-			"duplicate %s name", what);
-  }
+  l = scheme_hash_get(r->ht, SCHEME_STX_VAL(symbol));
+  if (!l) l = scheme_null;
+  scheme_hash_set(r->ht, SCHEME_STX_VAL(symbol), scheme_make_pair(symbol, l));
 
-  scheme_hash_set(r->ht, symbol, scheme_true);
+  while (!SCHEME_NULLP(l)) {
+    if (scheme_stx_bound_eq(symbol, SCHEME_CAR(l), scheme_make_integer(r->phase))) {
+      scheme_wrong_syntax(where, symbol, form,
+                          "duplicate %s name", what);
+      return;
+    }
+    l = SCHEME_CDR(l);
+  }
 }
 
 

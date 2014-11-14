@@ -943,7 +943,6 @@ typedef struct Scheme_Bucket_Table
 enum {
   SCHEME_hash_string,
   SCHEME_hash_ptr,
-  SCHEME_hash_bound_id,
   SCHEME_hash_weak_ptr,
   SCHEME_hash_late_weak_ptr
 };

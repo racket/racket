@@ -1312,18 +1312,6 @@ static Scheme_Object *propagate_mark_set(Scheme_Mark_Set *props, Scheme_Object *
   return o;
 }
 
-// REMOVEME
-Scheme_Object *list_to_set(Scheme_Object *l)
-{
-  Scheme_Hash_Tree *ht;
-  ht = scheme_make_hash_tree(1);
-  while (!SCHEME_NULLP(l)) {
-    ht = scheme_hash_tree_set(ht, SCHEME_CAR(l), scheme_false);
-    l = SCHEME_CDR(l);
-  }
-  return (Scheme_Object *)ht;
-}
-
 static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_propagate,
                                       Scheme_Mark_Table *parent_marks)
 {
@@ -1335,20 +1323,9 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
   if (!to_propagate || (to_propagate == empty_propagate_table))
     return o;
 
-  // REMOVEME
-  int check_same;
-  if (SAME_OBJ(((Scheme_Propagate_Table *)to_propagate)->prev, stx->marks)) {
-    check_same = 1;
-    if ((STX_KEY(stx) & STX_SUBSTX_FLAG)
-        && (!stx->u.to_propagate
-            || SAME_OBJ(stx->u.to_propagate, empty_propagate_table)))
-      check_same = 2;
-  } else
-    check_same = 0;
-
   /* Check whether the child marks currently match the
      parent's marks before the propagated changes: */
-  if (0 && SAME_OBJ(((Scheme_Propagate_Table *)to_propagate)->prev, stx->marks)) {// REMOVEME
+  if (SAME_OBJ(((Scheme_Propagate_Table *)to_propagate)->prev, stx->marks)) {
     /* Yes, so we can take a shortcut: child marks still match parent.
        Does the child need to propagate, and if so, does it just
        get the parent's propagation? */
@@ -1421,48 +1398,6 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
 
   if (flag & SCHEME_STX_PROPONLY)
     ((Scheme_Stx *)o)->marks = parent_marks;
-
-  // REMOVEME
-  if (check_same) {
-    if (!marks_equal(((Scheme_Stx *)o)->marks->phase_0, parent_marks->phase_0))
-      abort();
-    if (!marks_equal(((Scheme_Stx *)o)->marks->phase_1, parent_marks->phase_1))
-      abort();
-    if (!scheme_hash_tree_equal(((Scheme_Stx *)o)->marks->other_phases, parent_marks->other_phases))
-      abort();
-    if (!scheme_equal(list_to_set(((Scheme_Stx *)o)->marks->multi_marks), 
-                      list_to_set(parent_marks->multi_marks)))
-      abort();
-    if (check_same > 1) {
-      if (!marks_equal(((Scheme_Stx *)o)->u.to_propagate->phase_0, to_propagate->phase_0))
-        abort();
-      if (!marks_equal(((Scheme_Stx *)o)->u.to_propagate->phase_1, to_propagate->phase_1))
-        abort();
-      if (!scheme_hash_tree_equal(((Scheme_Stx *)o)->u.to_propagate->other_phases, to_propagate->other_phases))
-        abort();
-      if (!scheme_equal(list_to_set(((Scheme_Stx *)o)->u.to_propagate->multi_marks), 
-                        list_to_set(to_propagate->multi_marks)))
-        abort();
-      if (!scheme_equal(((Scheme_Propagate_Table *)((Scheme_Stx *)o)->u.to_propagate)->phase_shift, 
-                        ((Scheme_Propagate_Table *)to_propagate)->phase_shift))
-        abort();
-    }
-  }
-
-  // REMOVEME
-  {
-    Scheme_Object *l;
-    for (l = to_propagate->multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-      if (SCHEME_INT_VAL(SCHEME_VEC_ELS(SCHEME_CAR(l))[2]) == SCHEME_STX_REMOVE) {
-        for (val = ((Scheme_Stx *)o)->marks->multi_marks; !SCHEME_NULLP(val); val = SCHEME_CDR(val)) {
-          if (SAME_OBJ(SCHEME_CAR(SCHEME_CAR(val)), SCHEME_VEC_ELS(SCHEME_CAR(l))[0])
-              && SAME_OBJ(SCHEME_CDR(SCHEME_CAR(val)), SCHEME_VEC_ELS(SCHEME_CAR(l))[1])) {
-            abort();
-          }
-        }
-      }
-    }
-  }
 
   return o;
 }
@@ -2130,7 +2065,7 @@ void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase,
 {
   STX_ASSERT(SCHEME_SYMBOLP(((Scheme_Stx *)o)->val));
 
-  do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase), sym, phase,
+  do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase), SCHEME_STX_VAL(o), phase,
                         modidx, sym, defn_phase,
                         scheme_false,
                         modidx, sym,

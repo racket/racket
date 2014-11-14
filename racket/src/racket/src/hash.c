@@ -160,26 +160,6 @@ static void string_hash_indices(void *_key, intptr_t *_h, intptr_t *_h2)
     *_h2 = to_signed_hash(h2);
 }
 
-static void id_hash_indices(void *_key, intptr_t *_h, intptr_t *_h2)
-{
-  Scheme_Object *key = (Scheme_Object *)_key;
-  uintptr_t lkey;
-
-  if (SCHEME_STXP(key))
-    key = SCHEME_STX_VAL(key);
-    
-  lkey = PTR_TO_LONG((Scheme_Object *)key);
-  if (_h)
-    *_h = to_signed_hash(lkey);
-  if (_h2)
-    *_h2 = to_signed_hash(lkey >> 1);
-}
-
-static int not_stx_bound_eq(char *a, char *b)
-{
-  return !scheme_stx_bound_eq((Scheme_Object *)a, (Scheme_Object *)b, 0);
-}
-
 /*========================================================================*/
 /*                         normal hash table                              */
 /*========================================================================*/
@@ -198,10 +178,6 @@ Scheme_Hash_Table *scheme_make_hash_table(int type)
   if (type == SCHEME_hash_string) {
     table->make_hash_indices = string_hash_indices;
     table->compare = (Hash_Compare_Proc)strcmp;
-  }
-  if (type == SCHEME_hash_bound_id) {
-    table->make_hash_indices = id_hash_indices;
-    table->compare = (Hash_Compare_Proc)not_stx_bound_eq;
   }
 
   return table;
@@ -2836,24 +2812,6 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
 int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2)
 {
   return scheme_equal((Scheme_Object *)t1, (Scheme_Object *)t2);
-}
-
-int scheme_hash_tree_subset(Scheme_Hash_Tree *a, Scheme_Hash_Tree *b)
-{
-  intptr_t i;
-  Scheme_Object *key, *val;
-
-  i = scheme_hash_tree_next(a, -1);
-  while (i != -1) {
-    scheme_hash_tree_index(a, i, &key, &val);
-    if (!scheme_hash_tree_get(b, key))
-      return 0;
-
-    i = scheme_hash_tree_next(a, i);
-  }
-
-  return 1;
-
 }
 
 /*========================================================================*/
