@@ -293,6 +293,12 @@
          (match t
            [(Mu: _ _) (loop (unfold t))]
            [(Function/arrs: _ _ _ _ '()) t]
+           ;; if it's a union and there's only a single function type
+           ;; in there, use that (this helps for struct guard checking)
+           [(Union: ts)
+            (define subs (filter values (map loop ts)))
+            (and (= (length subs) 1)
+                 (car subs))]
            [_ #f]))]
       [_ #f]))
 
