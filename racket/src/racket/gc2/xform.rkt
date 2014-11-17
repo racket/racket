@@ -61,7 +61,7 @@
 
       ;; Setup an xform-collects tree for running xform.
       ;; Delete existing xform-collects tree if it's for an old version
-      (begin
+      (let retry ()
         (parameterize ([current-directory rel-dir])
           (unless (and (file-exists? "xform-collects/version.rkt")
                        (equal? (version)
@@ -88,7 +88,8 @@
                                                (sleep 0.1)
                                                (if (file-exists? lock-file)
                                                    (loop)
-                                                   (printf " ... continuing\n"))))
+                                                   (printf " ... continuing\n")))
+                                             (retry))
                                            (raise exn)))))])
                     (dynamic-wind
                         (lambda ()

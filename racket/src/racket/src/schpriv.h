@@ -1165,7 +1165,7 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, Scheme_Object *
                                               int save_unmarshal);
 void scheme_save_module_context_unmarshal(Scheme_Object *mc, Scheme_Object *info);
 
-void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *rn, 
+void scheme_do_module_context_unmarshal(Scheme_Object *modidx,
                                         Scheme_Object *context, Scheme_Object *src_phase,
                                         Scheme_Object *info, Scheme_Hash_Table *export_registry);
 

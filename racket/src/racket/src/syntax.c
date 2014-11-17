@@ -124,7 +124,7 @@ static void register_traversers(void);
 
 static int is_armed(Scheme_Object *v);
 static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone);
-static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec);
+static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks);
 
 static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b);
 static Scheme_Object *remove_at(Scheme_Object *l, Scheme_Object *p);
@@ -1996,6 +1996,11 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
   Scheme_Object *elem;
   int mod_phase;
 
+  if (SCHEME_FALSEP(modidx)) {
+    add_binding(localname, phase, marks, scheme_false);
+    return;
+  }
+
  /*
    binding ::= mod_binding
    .        |  (cons inspector mod_binding)
@@ -2248,7 +2253,7 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks, Scheme_Objec
                 /* Need unmarshal --- but only if the mark set is relevant */
                 if (scheme_mark_subset(binding_marks, marks)) {
                   /* unmarshal and restart this iteration of the loop */
-                  unmarshal_module_context_additions(stx, pes);
+                  unmarshal_module_context_additions(stx, pes, binding_marks);
                   j = 0;
                   break;
                 }
@@ -2385,7 +2390,11 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
     if (src_phase) *src_phase = NULL;
     if (nominal_src_phase) *nominal_src_phase = NULL;
 
-    if (SCHEME_MODIDXP(l)) {
+    if (SCHEME_FALSEP(l)) {
+      /* top-level bound */
+      SCHEME_VEC_ELS(result)[0] = scheme_false;
+      insp = scheme_false;
+    } else if (SCHEME_MODIDXP(l)) {
       SCHEME_VEC_ELS(result)[0] = l;
       insp = scheme_false;
     } else if (SCHEME_PAIRP(l)) {
@@ -2449,12 +2458,14 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
       else
         mod = scheme_false;
 
-
       SCHEME_VEC_ELS(result)[0] = (SCHEME_FALSEP(mod)
                                    ? SCHEME_VEC_ELS(l)[0]
                                    : mod);
 
       SCHEME_VEC_ELS(result)[1] = pt->provide_src_names[SCHEME_INT_VAL(pos)];
+
+      if (nominal_name)
+        *nominal_name = pt->provides[SCHEME_INT_VAL(pos)];
 
       if (pt->provide_src_phases)
         SCHEME_VEC_ELS(result)[2] = scheme_make_integer(pt->provide_src_phases[SCHEME_INT_VAL(pos)]);
@@ -2664,7 +2675,7 @@ void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-s
                         skip_marshal);
 }
 
-void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mark> <phase> <inspector> <shifts>) */
+void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mark> <phase> <inspector> <shifts>) or <phase> */
                                               Scheme_Object *modidx,      
                                               Scheme_Module_Phase_Exports *pt, 
                                               Scheme_Object *unmarshal_info,
@@ -2675,16 +2686,15 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
   Scheme_Object *phase, *pes;
   Scheme_Mark_Set *marks;
 
-  phase = SCHEME_VEC_ELS(mc)[1];
+  if (SCHEME_VECTORP(mc))
+    phase = SCHEME_VEC_ELS(mc)[1];
+  else
+    phase = mc;
 
   if (context)
     marks = extract_mark_set((Scheme_Stx *)context, phase);
   else
     marks = scheme_module_context_marks(mc);
-
-  if (unmarshal_info)
-    unmarshal_info = scheme_make_pair(scheme_make_pair(mc, context),
-                                      unmarshal_info);
 
   pes = scheme_make_vector(4, NULL);
   SCHEME_VEC_ELS(pes)[0] = modidx;
@@ -2720,9 +2730,9 @@ static Scheme_Hash_Table *extract_export_registry(Scheme_Object *shifts)
   return NULL;
 }
 
-static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec)
+static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks)
 {
-  Scheme_Object *modidx, *unmarshal_info, *mc, *context, *src_phase;
+  Scheme_Object *modidx, *unmarshal_info, *context, *src_phase;
   Scheme_Hash_Table *export_registry;
 
   modidx = SCHEME_VEC_ELS(vec)[0];
@@ -2737,11 +2747,10 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
   SCHEME_VEC_ELS(vec)[1] = scheme_false;
   SCHEME_VEC_ELS(vec)[2] = scheme_false;
 
-  mc = SCHEME_CAR(SCHEME_CAR(unmarshal_info));
-  context = SCHEME_CDR(SCHEME_CAR(unmarshal_info));
-  unmarshal_info = SCHEME_CDR(unmarshal_info);
+  context = scheme_datum_to_syntax(scheme_false, scheme_false, scheme_false, 0, 0);
+  context = scheme_stx_adjust_marks(context, marks, src_phase, SCHEME_STX_ADD);
 
-  scheme_do_module_context_unmarshal(modidx, mc, context, src_phase,
+  scheme_do_module_context_unmarshal(modidx, context, src_phase,
                                      unmarshal_info, export_registry);
 }
 
@@ -3448,20 +3457,27 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
     }
     r = tab;
 
-    /* convert pes to unmarshal request */
+    /* convert marks+pes to mark + unmarshal request */
     for (l = l2; l && !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-      v = SCHEME_CAR(l);
+      v = SCHEME_CDR(SCHEME_CAR(l));
       if (SCHEME_VEC_SIZE(v) == 4) {
         l2 = scheme_make_vector(3, NULL);
         SCHEME_VEC_ELS(l2)[0] = SCHEME_VEC_ELS(v)[0];
         SCHEME_VEC_ELS(l2)[1] = SCHEME_VEC_ELS(v)[2];
         SCHEME_VEC_ELS(l2)[2] = SCHEME_VEC_ELS(v)[3];
-        r = scheme_make_pair(l2, r);
+        v = l2;
       } else if (SCHEME_VEC_SIZE(v) == 3) {
         if (SCHEME_TRUEP(SCHEME_VEC_ELS(v)[0])) {
           /* never unmarshaled, so keep it */
-          r = scheme_make_pair(v, r);
-        }
+        } else
+          v = NULL;
+      } else {
+        abort();
+      }
+      if (v) {
+        marks = intern_tails(marks_to_sorted_list((Scheme_Mark_Set *)SCHEME_CAR(SCHEME_CAR(l))),
+                             mt->intern_map);
+        r = scheme_make_pair(scheme_make_pair(marks, v), r);
       }
     }
 
@@ -3876,7 +3892,10 @@ void scheme_mark_unmarshal_content(Scheme_Object *m, Scheme_Object *c, Scheme_Un
   intptr_t i, len;
 
   while (SCHEME_PAIRP(c)) {
-    l = scheme_make_pair(SCHEME_CAR(c), l);
+    marks = list_to_mark_set(SCHEME_CAR(SCHEME_CAR(c)), ut);
+    l = scheme_make_pair(scheme_make_pair((Scheme_Object *)marks,
+                                          SCHEME_CDR(SCHEME_CAR(c))),
+                         l);
     c = SCHEME_CDR(c);
   }
 

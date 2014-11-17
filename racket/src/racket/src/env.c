@@ -1465,9 +1465,13 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
 
   if (env->stx_context) {
     scheme_extend_module_context(env->stx_context,
-                                 env->module->self_modidx,
+                                 (env->module
+                                  ? env->module->self_modidx
+                                  : scheme_false),
                                  n, n,
-                                 env->module->self_modidx,
+                                 (env->module
+                                  ? env->module->self_modidx
+                                  : scheme_false),
                                  n,
                                  env->mod_phase,
                                  NULL,

@@ -394,8 +394,13 @@
                                     (current-load-relative-directory))
                             (list prefetches (current-load-relative-directory))
                             #f))
+             (with-syntax ([(req-in ...)
+                            (map (lambda (in)
+                                   (with-syntax ([in in])
+                                     (syntax/loc stx (require in))))
+                                 (syntax->list #'(in ...)))])
              (syntax/loc stx
-               (begin (require in) ...)))]))))
+               (begin req-in ...))))]))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; require transformers
