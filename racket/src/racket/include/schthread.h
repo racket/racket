@@ -223,6 +223,7 @@ typedef struct Thread_Local_Variables {
   intptr_t stack_copy_size_cache_[STACK_COPY_CACHE_SIZE];
   int scc_pos_;
   mzlonglong mark_counter_;
+  struct Scheme_Object *top_level_multi_marks_;
   struct Scheme_Object *last_phase_shift_;
   struct Scheme_Object *nominal_ipair_cache_;
   struct Scheme_Bucket_Table *taint_intern_table_;
@@ -599,9 +600,10 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define stack_copy_cache XOA (scheme_get_thread_local_variables()->stack_copy_cache_)
 #define stack_copy_size_cache XOA (scheme_get_thread_local_variables()->stack_copy_size_cache_)
 #define scc_pos XOA (scheme_get_thread_local_variables()->scc_pos_)
-#define last_phase_shift XOA (scheme_get_thread_local_variables()->last_phase_shift_)
 #define nominal_ipair_cache XOA (scheme_get_thread_local_variables()->nominal_ipair_cache_)
 #define mark_counter XOA (scheme_get_thread_local_variables()->mark_counter_)
+#define top_level_multi_marks XOA (scheme_get_thread_local_variables()->top_level_multi_marks_)
+#define last_phase_shift XOA (scheme_get_thread_local_variables()->last_phase_shift_)
 #define taint_intern_table XOA (scheme_get_thread_local_variables()->taint_intern_table_)
 #define scheme_current_thread XOA (scheme_get_thread_local_variables()->scheme_current_thread_)
 #define scheme_main_thread XOA (scheme_get_thread_local_variables()->scheme_main_thread_)

@@ -215,7 +215,8 @@ scheme_init_type ()
   set_name(scheme_will_executor_type, "<will-executor>");
   set_name(scheme_random_state_type, "<pseudo-random-generator>");
   set_name(scheme_regexp_type, "<regexp>");
-  set_name(scheme_rename_table_type, "<rename-table>");
+  set_name(scheme_mark_table_type, "<mark-table>");
+  set_name(scheme_propagate_table_type, "<propagate-table>");
   set_name(scheme_bucket_type, "<hash-table-bucket>");
   set_name(scheme_prefix_type, "<runtime-prefix>");
   set_name(scheme_resolve_prefix_type, "<resolve-prefix>");

@@ -1807,13 +1807,10 @@ mark_marshal_tables {
  mark:
   Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)p;
   gcMARK2(mt->symtab, gc);
-  gcMARK2(mt->rns, gc);
-  gcMARK2(mt->rn_refs, gc);
   gcMARK2(mt->st_refs, gc);
   gcMARK2(mt->st_ref_stack, gc);
-  gcMARK2(mt->reverse_map, gc);
-  gcMARK2(mt->same_map, gc);
-  gcMARK2(mt->shift_map, gc);
+  gcMARK2(mt->intern_map, gc);
+  gcMARK2(mt->mark_map, gc);
   gcMARK2(mt->top_map, gc);
   gcMARK2(mt->key_map, gc);
   gcMARK2(mt->delay_map, gc);
@@ -2410,6 +2407,30 @@ mark_mark {
   gcMARK2(m->owner_multi_mark, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark));
+}
+
+mark_mark_table {
+ mark:
+  Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
+  gcMARK2(m->phase_0, gc);
+  gcMARK2(m->phase_1, gc);
+  gcMARK2(m->other_phases, gc);
+  gcMARK2(m->multi_marks, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
+}
+
+mark_propagate_table {
+ mark:
+  Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
+  gcMARK2(m->mt.phase_0, gc);
+  gcMARK2(m->mt.phase_1, gc);
+  gcMARK2(m->mt.other_phases, gc);
+  gcMARK2(m->mt.multi_marks, gc);
+  gcMARK2(m->prev, gc);
+  gcMARK2(m->phase_shift, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Propagate_Table));
 }
 
 END syntax;

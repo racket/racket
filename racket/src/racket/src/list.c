@@ -2114,36 +2114,41 @@ static Scheme_Object *hash_table_copy(int argc, Scheme_Object *argv[])
     if (t->mutex) scheme_post_sema(t->mutex);
     return o;
   } else if (SCHEME_HASHTRP(v)) {
-    Scheme_Hash_Tree *t;
-    Scheme_Hash_Table *naya;
-    mzlonglong i;
-    Scheme_Object *k, *val;
-
-    if (SCHEME_NP_CHAPERONEP(v))
-      t = (Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(v);
-    else
-      t = (Scheme_Hash_Tree *)v;
-
-    if (scheme_is_hash_tree_equal((Scheme_Object *)t))
-      naya = scheme_make_hash_table_equal();
-    else if (scheme_is_hash_tree_eqv((Scheme_Object *)t))
-      naya = scheme_make_hash_table_eqv();
-    else
-      naya = scheme_make_hash_table(SCHEME_hash_ptr);
-
-    for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
-      scheme_hash_tree_index(t, i, &k, &val);
-      if (!SAME_OBJ((Scheme_Object *)t, v))
-        val = scheme_chaperone_hash_traversal_get(v, k, &k);
-      if (val)
-        scheme_hash_set(naya, k, val);
-    }
-
-    return (Scheme_Object *)naya;
+    return scheme_hash_tree_copy(v);
   } else {
     scheme_wrong_contract("hash-copy", "hash?", 0, argc, argv);
     return NULL;
   }
+}
+
+Scheme_Object *scheme_hash_tree_copy(Scheme_Object *v)
+{
+  Scheme_Hash_Tree *t;
+  Scheme_Hash_Table *naya;
+  mzlonglong i;
+  Scheme_Object *k, *val;
+
+  if (SCHEME_NP_CHAPERONEP(v))
+    t = (Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(v);
+  else
+    t = (Scheme_Hash_Tree *)v;
+
+  if (scheme_is_hash_tree_equal((Scheme_Object *)t))
+    naya = scheme_make_hash_table_equal();
+  else if (scheme_is_hash_tree_eqv((Scheme_Object *)t))
+    naya = scheme_make_hash_table_eqv();
+  else
+    naya = scheme_make_hash_table(SCHEME_hash_ptr);
+
+  for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
+    scheme_hash_tree_index(t, i, &k, &val);
+    if (!SAME_OBJ((Scheme_Object *)t, v))
+      val = scheme_chaperone_hash_traversal_get(v, k, &k);
+    if (val)
+      scheme_hash_set(naya, k, val);
+  }
+
+  return (Scheme_Object *)naya;
 }
 
 static Scheme_Object *hash_p(int argc, Scheme_Object *argv[])

@@ -2940,7 +2940,17 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_mark_type))
     {
       if (compact || !pp->print_unreadable) {
-	cannot_print(pp, notdisplay, obj, ht, compact);
+        Scheme_Object *idx;
+
+        idx = get_symtab_idx(mt, obj);
+        if (idx) {
+          print_symtab_ref(pp, idx);
+        } else {
+          print_compact(pp, CPT_MARK);
+          print_symtab_set(pp, mt, obj);
+          idx = get_symtab_idx(mt, obj);
+          print(scheme_mark_marshal_content(obj, mt), notdisplay, 1, ht, mt, pp);
+        }
       } else {
 	print_utf8_string(pp, "#<mark:", 0, 7);
         {
@@ -3304,7 +3314,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       if (compact)
 	closed = print(v, notdisplay, 1, NULL, mt, pp);
       else {
-        Scheme_Hash_Table *st_refs, *symtab, *rns, *tht;
+        Scheme_Hash_Table *st_refs, *symtab, *tht;
         intptr_t *shared_offsets;
         intptr_t st_len, j, shared_offset, start_offset;
 
@@ -3325,11 +3335,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
            later passes. */
 	symtab = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->symtab = symtab;
-	rns = scheme_make_hash_table(SCHEME_hash_ptr);
-        mt->rns = rns;
-        tht = scheme_make_hash_table(SCHEME_hash_ptr);
-        mt->shift_map = tht;
-        mt->reverse_map = NULL;
+	tht = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->pass = 0;
         scheme_hash_set(symtab, scheme_void, scheme_true); /* indicates registration phase */
 	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 0, NULL);
@@ -3344,10 +3350,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         mt->shared_offsets = shared_offsets;
 	symtab = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->symtab = symtab;
-	rns = scheme_make_hash_table(SCHEME_hash_ptr);
-        mt->rns = rns;
-        mt->reverse_map = NULL;
-        mt->top_map = NULL;
+	mt->top_map = NULL;
         mt->pass = 1;
 	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 
                         1, &st_len);
@@ -3355,10 +3358,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         /* "Print" the string again to get a measurement and symtab size. */
         symtab = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->symtab = symtab;
-	rns = scheme_make_hash_table(SCHEME_hash_ptr);
-        mt->rns = rns;
-        mt->reverse_map = NULL;
-        mt->top_map = NULL;
+	mt->top_map = NULL;
         mt->pass = 2;
 	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 
                         -1, &st_len);
@@ -3394,14 +3394,11 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_number(pp, st_len);
 	print_number(pp, slen);
 
-	/* Make symtab and rns again to ensure the same results 
+	/* Make symtab again to ensure the same results 
            for the final print: */
 	symtab = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->symtab = symtab;
-	rns = scheme_make_hash_table(SCHEME_hash_ptr);
-        mt->rns = rns;
-        mt->reverse_map = NULL;
-        mt->top_map = NULL;
+	mt->top_map = NULL;
         mt->pass = 3;
 
         start_offset = pp->print_offset;

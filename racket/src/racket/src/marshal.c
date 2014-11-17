@@ -1092,7 +1092,7 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
   while (i--) {
     if (rp->stxes[i]) {
       if (SCHEME_INTP(rp->stxes[i])) {
-        /* Need to foce this object, so we can write it.
+        /* Need to force this object, so we can write it.
            This should only happen if we're writing back 
            code loaded from bytecode. */
         scheme_load_delayed_syntax(rp, i);

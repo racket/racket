@@ -5470,7 +5470,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
   scheme_begin_dup_symbol_check(&r, env);
 
   env = scheme_new_compilation_frame(0, SCHEME_INTDEF_FRAME, rib, env);
-  env->intdef_name = ctx;
+  env->intdef_name = ectx;
 
  try_again:
 

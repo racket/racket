@@ -27,11 +27,47 @@
              racket/private/member
              racket/tcp
              racket/udp
-             '#%builtin) ; so it's attached
+             '#%builtin ; so it's attached
+             ;; For `old-case`:
+             (for-syntax racket/base))
+  
+  ;; Mostly from Dybvig:
+  (define-syntax (old-case x)
+    (syntax-case* x (else) (let ([else-stx (datum->syntax #f 'else)])
+                             (lambda (a b) (free-identifier=? a else-stx)))
+      ((_ v)
+       (syntax (#%expression (begin v (void)))))
+      ((_ v (else e1 e2 ...))
+       (syntax/loc x (#%expression (begin v (let-values () e1 e2 ...)))))
+      ((_ v ((k ...) e1 e2 ...))
+       (syntax/loc x (if (case-test v (k ...)) (let-values () e1 e2 ...) (void))))
+      ((self v ((k ...) e1 e2 ...) c1 c2 ...)
+       (syntax/loc x (let ((x v))
+                       (if (case-test x (k ...))
+                           (let-values () e1 e2 ...)
+                           (self x c1 c2 ...)))))
+      ((_ v (bad e1 e2 ...) . rest)
+       (raise-syntax-error 
+        #f
+        "bad syntax (not a datum sequence)"
+        x
+        (syntax bad)))
+      ((_ v clause . rest)
+       (raise-syntax-error 
+        #f
+        "bad syntax (missing expression after datum sequence)"
+        x
+        (syntax clause)))
+      ((_ . v)
+       (not (null? (syntax-e (syntax v))))
+       (raise-syntax-error 
+        #f
+        "bad syntax (illegal use of `.')"
+        x))))
 
   (#%provide require require-for-syntax require-for-template require-for-label
              provide provide-for-syntax provide-for-label
-             (all-from-except racket/private/more-scheme case old-case 
+             (all-from-except racket/private/more-scheme case
                               log-fatal log-error log-warning log-info log-debug
                               hash-update hash-update!)
              (rename old-case case)

@@ -4394,6 +4394,27 @@ static void unsafe_disallowed(struct CPort *port)
 		  "read (compiled): unsafe values disallowed");
 }
 
+static void make_ut(CPort *port)
+{
+  Scheme_Unmarshal_Tables *ut;
+  Scheme_Hash_Table *rht;
+  char *decoded;
+
+  ut = MALLOC_ONE_RT(Scheme_Unmarshal_Tables);
+  SET_REQUIRED_TAG(ut->type = scheme_rt_unmarshal_info);
+  port->ut = ut;
+  ut->rp = port;
+  if (port->delay_info)
+    port->delay_info->ut = ut;
+
+  decoded = (char *)scheme_malloc_atomic(port->symtab_size);
+  memset(decoded, 0, port->symtab_size);
+  ut->decoded = decoded;
+
+  rht = scheme_make_hash_table(SCHEME_hash_ptr);
+  port->ut->rns = rht;
+}
+
 /* Since read_compact_number is called often, we want it to be
    a cheap call in 3m, so avoid anything that allocated --- even
    error reporting, since we can make up a valid number. */
@@ -4772,25 +4793,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       {
         Scheme_Hash_Table *save_ht;
 
-	if (!port->ut) {
-          Scheme_Unmarshal_Tables *ut;
-	  Scheme_Hash_Table *rht;
-          char *decoded;
-
-          ut = MALLOC_ONE_RT(Scheme_Unmarshal_Tables);
-          SET_REQUIRED_TAG(ut->type = scheme_rt_unmarshal_info);
-          port->ut = ut;
-          ut->rp = port;
-          if (port->delay_info)
-            port->delay_info->ut = ut;
-
-          decoded = (char *)scheme_malloc_atomic(port->symtab_size);
-          memset(decoded, 0, port->symtab_size);
-          ut->decoded = decoded;
-
-	  rht = scheme_make_hash_table(SCHEME_hash_ptr);
-	  port->ut->rns = rht;
-	}
+	if (!port->ut)
+          make_ut(port);
 
         save_ht = *port->ht;
         *port->ht = NULL;
@@ -5168,6 +5172,21 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	SCHEME_APPN_FLAGS(app) = et;
 
 	return (Scheme_Object *)app;
+      }
+      break;
+    case CPT_MARK:
+      {
+        if (!port->ut)
+          make_ut(port);
+
+        v = scheme_new_mark();
+        l = read_compact_number(port);
+        if (l) {
+          RANGE_POS_CHECK(l, < port->symtab_size);
+          port->symtab[l] = v;
+        }
+        scheme_mark_unmarshal_content(v, read_compact(port, 0), port->ut);
+        return v;
       }
       break;
     default:

@@ -559,7 +559,6 @@ void scheme_finish_kernel(Scheme_Env *env)
     int i, j, count, syntax_start = 0;
     Scheme_Bucket **bs;
     Scheme_Object **exs;
-    Scheme_Object *rn;
     /* Provide all syntax and variables: */
     count = 0;
     for (j = 0; j < 2; j++) {
@@ -613,12 +612,6 @@ void scheme_finish_kernel(Scheme_Env *env)
     running[1] = 1;
     env->running = running;
     env->attached = 1;
-    
-    rn = scheme_make_module_context(NULL, NULL, NULL);
-    for (i = kernel->me->rt->num_provides; i--; ) {
-      scheme_extend_module_context(rn, kernel_modidx, exs[i], exs[i], kernel_modidx, exs[i], 
-                                   0, scheme_make_integer(0), NULL, 0);
-    }
   }
 
   REGISTER_SO(prefix_symbol);
@@ -678,6 +671,17 @@ void scheme_init_syntax_bindings()
   // REMOVEME: FIXME: all of these need to be place-local
   
   Scheme_Object *w;
+  Scheme_Object *rn;
+  int i;
+
+  rn = scheme_make_module_context(NULL, NULL, NULL);
+  for (i = kernel->me->rt->num_provides; i--; ) {
+    scheme_extend_module_context(rn, kernel_modidx,
+                                 kernel->me->rt->provides[i],
+                                 kernel->me->rt->provide_src_names[i], kernel_modidx, 
+                                 kernel->me->rt->provide_src_names[i], 
+                                 0, scheme_make_integer(0), NULL, 0);
+  }
 
   REGISTER_SO(scheme_sys_wraps0);
   REGISTER_SO(scheme_sys_wraps1);
@@ -1439,10 +1443,12 @@ static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Obj
 
   if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_module_index_type))
     form = argv[0];
-  else
+  else {
     form = scheme_datum_to_syntax(scheme_make_pair(require_stx,
                                                    scheme_make_pair(argv[0], scheme_null)),
                                   scheme_false, scheme_false, 1, 0);
+    form = scheme_stx_add_module_context(form, env->stx_context);
+  }
 
   insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
@@ -2785,16 +2791,18 @@ static Scheme_Object *is_module_path(int argc, Scheme_Object **argv)
           : scheme_false);
 }
 
-static Scheme_Object *require_binding_to_key(Scheme_Object *vec)
+static Scheme_Object *require_binding_to_key(Scheme_Object *vec, Scheme_Object *sym)
 {
   Scheme_Object *vec2;
 
-  vec2 = scheme_make_vector(3, NULL);
+  vec2 = scheme_make_vector(4, NULL);
   SCHEME_VEC_ELS(vec2)[1] = SCHEME_VEC_ELS(vec)[1];
   SCHEME_VEC_ELS(vec2)[2] = SCHEME_VEC_ELS(vec)[2];
+  SCHEME_VEC_ELS(vec2)[3] = sym;
 
   vec = scheme_module_resolve(SCHEME_VEC_ELS(vec)[0], 0);
   SCHEME_VEC_ELS(vec2)[0] = vec;
+
 
   return vec2;
 }
@@ -2866,11 +2874,12 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
       nml = scheme_make_pair(idx, scheme_null);
 
       /* Same as applying require_binding_to_key() on the new binding of `id` */
-      key = scheme_make_vector(3, NULL);
+      key = scheme_make_vector(4, NULL);
       modname = scheme_module_resolve(midx, 0);
       SCHEME_VEC_ELS(key)[0] = modname;
       SCHEME_VEC_ELS(key)[1] = exsns[i];
       SCHEME_VEC_ELS(key)[2] = (exets ? scheme_make_integer(exets[0]) : scheme_make_integer(0));
+      SCHEME_VEC_ELS(key)[3] = exsns[i];
 
       SCHEME_VEC_ELS(vec)[0] = nml;
       SCHEME_VEC_ELS(vec)[1] = midx;
@@ -6918,6 +6927,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Module *m;
   Scheme_Object *mbval, *orig_ii;
   Scheme_Object *this_empty_self_modidx;
+  Scheme_Mark_Set *super_marks;
   int saw_mb, check_mb = 0;
   Scheme_Object *restore_confusing_name = NULL;
   LOG_EXPAND_DECLS;
@@ -6949,18 +6959,17 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   if (!SCHEME_STXP(fm))
     fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
 
-  if (scheme_is_nested_module(env)) {
-    if (post && SCHEME_FALSEP(SCHEME_STX_VAL(ii))) {
-      ii = NULL;
-      fm = scheme_stx_add_shift(fm, scheme_bin_minus(scheme_make_integer(0),
-                                                     super_phase_shift));
-    } else {
-      Scheme_Mark_Set *super_marks;
-      super_marks = scheme_module_context_marks(scheme_stx_to_module_context(super_bxs->rn_stx));
-      super_phase_shift = scheme_make_integer(0);
-      ii = scheme_stx_adjust_marks(ii, super_marks, super_phase_shift, SCHEME_STX_REMOVE);
-      fm = scheme_stx_adjust_marks(fm, super_marks, super_phase_shift, SCHEME_STX_REMOVE);
-    }
+  if (scheme_is_nested_module(env))
+    super_marks = scheme_module_context_marks(scheme_stx_to_module_context(super_bxs->rn_stx));
+  else
+    super_marks = scheme_module_context_marks(scheme_make_top_level_module_context(scheme_env_phase(env->genv)));
+
+  if (post && SCHEME_FALSEP(SCHEME_STX_VAL(ii))) {
+    ii = NULL;
+  } else {
+    super_phase_shift = scheme_make_integer(0);
+    ii = scheme_stx_adjust_marks(ii, super_marks, super_phase_shift, SCHEME_STX_REMOVE);
+    fm = scheme_stx_adjust_marks(fm, super_marks, super_phase_shift, SCHEME_STX_REMOVE);
   }
 
   m = MALLOC_ONE_TAGGED(Scheme_Module);
@@ -7086,7 +7095,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   /* load the module for the initial require */
   if (iidx) {
     iim = module_load(_module_resolve(iidx, m->ii_src, NULL, 1), menv, NULL); 
-    start_module(iim, find_env(menv, SCHEME_INT_VAL(super_phase_shift)), 0, iidx, 1, 0, menv->phase, scheme_null, 0);
+    start_module(iim, find_env(menv, 0), 0, iidx, 1, 0, menv->phase, scheme_null, 0);
   } else
     iim = NULL;
 
@@ -7411,9 +7420,9 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
                && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase)
                && same_resolved_modidx(SCHEME_VEC_ELS(binding)[0], modidx)) {
       /* import is redunant, but may add new nominal info */
-      binding = require_binding_to_key(binding);
+      binding = require_binding_to_key(binding, SCHEME_STX_VAL(id));
     } else {
-      binding = require_binding_to_key(binding);
+      binding = require_binding_to_key(binding, SCHEME_STX_VAL(id));
       if (scheme_hash_get(required, binding)) {
         /* use error report below */
       } else {
@@ -7425,11 +7434,12 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
 
   if (!binding) {
     /* generate a key like require_binding_to_key() */
-    binding = scheme_make_vector(3, NULL);
+    binding = scheme_make_vector(4, NULL);
     vec = scheme_module_resolve(modidx, 0);
     SCHEME_VEC_ELS(binding)[0] = vec;
     SCHEME_VEC_ELS(binding)[1] = exname;
     SCHEME_VEC_ELS(binding)[2] = scheme_make_integer(exet);
+    SCHEME_VEC_ELS(binding)[3] = SCHEME_STX_VAL(id);
   }
 
   if (!SAME_OBJ(src_phase_index, scheme_make_integer(0))
@@ -7530,7 +7540,7 @@ static int check_already_required(Scheme_Hash_Table *required,
 {
   Scheme_Object *vec;
 
-  binding = require_binding_to_key(binding);
+  binding = require_binding_to_key(binding, SCHEME_STX_VAL(id));
 
   vec = scheme_hash_get(required, binding);
   if (vec) {
@@ -7654,7 +7664,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
         SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
         SCHEME_VEC_ELS(vec)[8] = phase;
 
-        v = require_binding_to_key(binding);
+        v = require_binding_to_key(binding, SCHEME_STX_VAL(name));
         scheme_hash_set(required, v, vec);
       }
     }
@@ -9672,7 +9682,7 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
           exns = SCHEME_CDR(SCHEME_CDR(SCHEME_CAR(rx)));
           for (l = exns; !SCHEME_STX_NULLP(l); l = SCHEME_STX_CDR(l)) {
             /* Make sure excluded name was required: */
-            Scheme_Object *a, *vec = NULL;
+            Scheme_Object *a, *b, *vec = NULL;
 
             for (k = 0; k < tables->size; k++) {
               if (tables->vals[k]) {
@@ -9681,11 +9691,11 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
                 
                 if (required) {
                   a = SCHEME_STX_CAR(l);
-                  a = scheme_stx_lookup(a, tables->keys[k]);
-                  if (SCHEME_VECTORP(a)
-                      && !SAME_OBJ(SCHEME_VEC_ELS(a)[0], _genv->module->self_modidx))
-                    a = require_binding_to_key(a);
-                  vec = scheme_hash_get(required, a);
+                  b = scheme_stx_lookup(a, tables->keys[k]);
+                  if (SCHEME_VECTORP(b)
+                      && !SAME_OBJ(SCHEME_VEC_ELS(b)[0], _genv->module->self_modidx))
+                    b = require_binding_to_key(b, SCHEME_STX_VAL(a));
+                  vec = scheme_hash_get(required, b);
                 } else
                   vec = NULL;
       
@@ -10170,7 +10180,7 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
               /* Skip definition for other round */
             } else if (!defined
                        && SCHEME_VECTORP(binding)
-                       && (v = scheme_hash_get(required, require_binding_to_key(binding)))) {
+                       && (v = scheme_hash_get(required, require_binding_to_key(binding, SCHEME_STX_VAL(prnt_name))))) {
               /* Required */
               if (protected) {
                 name = SCHEME_CAR(provided->vals[i]);

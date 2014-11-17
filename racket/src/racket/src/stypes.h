@@ -133,8 +133,8 @@ enum {
   scheme_multiple_values_type,          /* 109 */
   scheme_placeholder_type,              /* 110 */
   scheme_table_placeholder_type,        /* 111 */
-  scheme_rename_table_type,             /* 112 */
-  scheme_rename_table_set_type,         /* 113 */
+  scheme_mark_table_type,               /* 112 */
+  scheme_propagate_table_type,          /* 113 */
   scheme_svector_type,                  /* 114 */
   scheme_resolve_prefix_type,           /* 115 */
   scheme_security_guard_type,           /* 116 */

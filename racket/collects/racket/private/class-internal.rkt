@@ -30,47 +30,51 @@
 (provide provide-public-names
          ;; needed for Typed Racket
          (protect-out do-make-object find-method/who))
-(define-syntax-rule (provide-public-names)
-  (provide class class* class/derived
-           define-serializable-class define-serializable-class*
-           class? 
-           mixin
-           interface interface* interface?
-           object% object? externalizable<%> printable<%> writable<%> equal<%>
-           object=?
-           new make-object instantiate
-           send send/apply send/keyword-apply send* send+ dynamic-send
-           class-field-accessor class-field-mutator with-method
-           get-field set-field! field-bound? field-names
-           dynamic-get-field dynamic-set-field!
-           private* public*  pubment*
-           override* overment*
-           augride* augment*
-           public-final* override-final* augment-final*
-           define/private define/public define/pubment
-           define/override define/overment
-           define/augride define/augment
-           define/public-final define/override-final define/augment-final
-           define-local-member-name define-member-name 
-           member-name-key generate-member-key 
-           member-name-key? member-name-key=? member-name-key-hash-code
-           generic make-generic send-generic
-           is-a? subclass? implementation? interface-extension?
-           object-interface object-info object->vector
-           object-method-arity-includes?
-           method-in-interface? interface->method-names class->interface class-info
-           (struct-out exn:fail:object)
-           make-primitive-class
+(define-syntax (provide-public-names stx)
+  (datum->syntax
+   stx
+   '(provide class class* class/derived
+            define-serializable-class define-serializable-class*
+            class? 
+            mixin
+            interface interface* interface?
+            object% object? externalizable<%> printable<%> writable<%> equal<%>
+            object=?
+            new make-object instantiate
+            send send/apply send/keyword-apply send* send+ dynamic-send
+            class-field-accessor class-field-mutator with-method
+            get-field set-field! field-bound? field-names
+            dynamic-get-field dynamic-set-field!
+            private* public*  pubment*
+            override* overment*
+            augride* augment*
+            public-final* override-final* augment-final*
+            define/private define/public define/pubment
+            define/override define/overment
+            define/augride define/augment
+            define/public-final define/override-final define/augment-final
+            define-local-member-name define-member-name 
+            member-name-key generate-member-key 
+            member-name-key? member-name-key=? member-name-key-hash-code
+            generic make-generic send-generic
+            is-a? subclass? implementation? interface-extension?
+            object-interface object-info object->vector
+            object-method-arity-includes?
+            method-in-interface? interface->method-names class->interface class-info
+            (struct-out exn:fail:object)
+            make-primitive-class
+            class/c ->m ->*m ->dm case->m object/c instanceof/c
            
            ;; "keywords":
-           private public override augment
-           pubment overment augride
-           public-final override-final augment-final
-           field init init-field init-rest
-           rename-super rename-inner inherit inherit/super inherit/inner inherit-field
-           this this% super inner
-           super-make-object super-instantiate super-new
-           inspect absent abstract))
+            private public override augment
+            pubment overment augride
+            public-final override-final augment-final
+            field init init-field init-rest
+            rename-super rename-inner inherit inherit/super inherit/inner inherit-field
+            this this% super inner
+            super-make-object super-instantiate super-new
+            inspect absent abstract)
+   stx))
 
 ;;--------------------------------------------------------------------
 ;;  keyword setup

@@ -1043,7 +1043,14 @@ typedef struct Scheme_Stx_Srcloc {
 #define STX_ARMED_FLAG    0x2
 
 typedef struct Scheme_Mark_Set Scheme_Mark_Set;
-typedef struct Scheme_Mark_Table Scheme_Mark_Table;
+
+typedef struct Scheme_Mark_Table {
+  Scheme_Object so; /* scheme_mark_table_type or scheme_propagate_table_type */
+  Scheme_Mark_Set *phase_0;
+  Scheme_Mark_Set *phase_1;
+  Scheme_Hash_Tree *other_phases;
+  Scheme_Object *multi_marks;
+} Scheme_Mark_Table;
 
 typedef struct Scheme_Stx {
   Scheme_Inclhash_Object iso; /* 0x1 and 0x2 of keyex used */
@@ -1125,6 +1132,8 @@ Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *re
 Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv);
 
 struct Scheme_Module_Phase_Exports; /* forward declaration */
+
+Scheme_Object *scheme_make_top_level_module_context(Scheme_Object *phase);
 
 Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
                                           Scheme_Object *shift_or_shifts,
@@ -1251,6 +1260,9 @@ Scheme_Object *scheme_transfer_srcloc(Scheme_Object *to, Scheme_Object *from);
 int scheme_is_predefined_module_p(Scheme_Object *name);
 
 Scheme_Object *scheme_get_kernel_modidx(void);
+
+Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, struct Scheme_Marshal_Tables *mt);
+void scheme_mark_unmarshal_content(Scheme_Object *m, Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
 
 void scheme_stx_debug_print(Scheme_Object *stx, int level);
 
@@ -3199,13 +3211,10 @@ typedef struct Scheme_Marshal_Tables {
   MZTAG_IF_REQUIRED  
   int pass, print_now;
   Scheme_Hash_Table *symtab;
-  Scheme_Hash_Table *rns;
-  Scheme_Hash_Table *rn_refs;
   Scheme_Hash_Table *st_refs;
   Scheme_Object *st_ref_stack;
-  Scheme_Hash_Table *reverse_map; /* used on first pass */
-  Scheme_Hash_Table *same_map;    /* set on first pass, used on later passes */
-  Scheme_Hash_Table *shift_map;   /* effectively set on first pass */
+  Scheme_Hash_Table *intern_map;  /* filled on first pass */
+  Scheme_Hash_Table *mark_map;    /* filled on first pass */
   Scheme_Hash_Table *top_map;     /* used on every pass */
   Scheme_Hash_Table *key_map;     /* set after first pass, used on later passes */
   Scheme_Hash_Table *delay_map;   /* set during first pass, used on later passes */
@@ -4020,6 +4029,7 @@ int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Object *orig_t
 int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
                                Scheme_Hash_Tree *t2, Scheme_Object *orig_t2,
                                void *eql);
+Scheme_Object *scheme_hash_tree_copy(Scheme_Object *v);
 
 void scheme_set_root_param(int p, Scheme_Object *v);
 

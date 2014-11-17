@@ -3873,6 +3873,8 @@ Scheme_Object **scheme_current_argument_stack()
 
 static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env *genv)
 {
+  scheme_prepare_env_stx_context(genv);
+
   if (genv->stx_context) {
     if (SCHEME_STX_PAIRP(form)) {
       Scheme_Object *a, *d, *module_stx;
@@ -3880,7 +3882,7 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
       a = SCHEME_STX_CAR(form);
       if (SCHEME_STX_SYMBOLP(a)) {
 	a = scheme_stx_add_module_context(a, genv->stx_context);
-        module_stx = scheme_datum_to_syntax(scheme_intern_symbol("module"),
+        module_stx = scheme_datum_to_syntax(module_symbol,
                                             scheme_false, 
                                             scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
                                             0, 0);

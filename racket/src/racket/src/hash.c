@@ -1629,7 +1629,17 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       k = (k << 3) + k;
       k += equal_hash_key(midx->path, 0, hi);
       o = midx->base;
-      break;
+    }
+    break;
+  case scheme_mark_table_type:
+    {
+      Scheme_Mark_Table *mt = (Scheme_Mark_Table *)o;
+      hi->depth += 2;
+      k = (k << 3) + k;
+      k += equal_hash_key((Scheme_Object *)mt->phase_0, 0, hi);
+      k += equal_hash_key((Scheme_Object *)mt->phase_1, 0, hi);
+      k += equal_hash_key((Scheme_Object *)mt->other_phases, 0, hi);
+      o = mt->multi_marks;
     }
     break;
   default:
@@ -2097,6 +2107,18 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       v2 = equal_hash_key2(midx->base, hi);
       return v1 + v2;
     }
+  case scheme_mark_table_type:
+    {
+      Scheme_Mark_Table *mt = (Scheme_Mark_Table *)o;
+      uintptr_t k;
+      hi->depth += 2;
+      k = equal_hash_key2((Scheme_Object *)mt->phase_0, hi);
+      k += equal_hash_key2((Scheme_Object *)mt->phase_1, hi);
+      k += equal_hash_key2((Scheme_Object *)mt->other_phases, hi);
+      k += equal_hash_key2(mt->multi_marks, hi);
+      goto top;
+    }
+    break;
   case scheme_place_bi_channel_type:
     /* a bi channel has sendch and recvch, but
        sends are the same iff recvs are the same: */

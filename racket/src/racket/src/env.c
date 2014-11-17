@@ -516,6 +516,8 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
     scheme_current_thread->name = sym;
   }
 
+  scheme_init_stx_places(initial_main_os_thread);
+
   scheme_init_syntax_bindings();
 
   scheme_init_module_resolver();
@@ -537,7 +539,6 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_eval_places();
   scheme_init_compile_places();
   scheme_init_regexp_places();
-  scheme_init_stx_places(initial_main_os_thread);
   scheme_init_sema_places();
   scheme_init_gmp_places();
   scheme_init_kqueue();
@@ -859,9 +860,11 @@ static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client 
 
 void scheme_prepare_env_stx_context(Scheme_Env *env)
 {
-  if (!env->stx_context) {
-    Scheme_Object *mc, *shift, *insp, *intro_mark;
+  Scheme_Object *mc, *shift, *insp, *intro_mark;
 
+  if (env->stx_context) return;
+
+  if (env->module) {
     insp = env->access_insp;
     if (!insp)
       insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
@@ -871,14 +874,13 @@ void scheme_prepare_env_stx_context(Scheme_Env *env)
                               env->module_registry->exports,
                               insp);
 
-    if (env->module)
-      intro_mark = scheme_new_multi_mark();
-    else
-      intro_mark = NULL;
+    intro_mark = scheme_new_multi_mark();
 
     mc = scheme_make_module_context(insp, shift, intro_mark);
-    env->stx_context = mc;
-  }
+  } else
+    mc = scheme_make_top_level_module_context(scheme_env_phase(env));
+
+  env->stx_context = mc;
 }
 
 Scheme_Env *scheme_make_empty_env(void)
@@ -1011,7 +1013,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
 {
   if (!env->exp_env) {
     Scheme_Env *eenv;
-    Scheme_Object *modchain;
+    Scheme_Object *modchain, *mc;
 
     scheme_prepare_label_env(env);
 
@@ -1043,7 +1045,8 @@ void scheme_prepare_exp_env(Scheme_Env *env)
     eenv->instance_env = env->instance_env;
 
     scheme_prepare_env_stx_context(env);
-    eenv->stx_context = env->stx_context;
+    mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv));
+    eenv->stx_context = mc;
 
     if (env->disallow_unbound)
       eenv->disallow_unbound = env->disallow_unbound;
@@ -1054,7 +1057,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
 {
   if (!env->template_env) {
     Scheme_Env *eenv;
-    Scheme_Object *modchain;
+    Scheme_Object *modchain, *mc;
 
     scheme_prepare_label_env(env);
 
@@ -1081,7 +1084,8 @@ void scheme_prepare_template_env(Scheme_Env *env)
     eenv->modchain = modchain;
 
     scheme_prepare_env_stx_context(env);
-    eenv->stx_context = env->stx_context;
+    mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv));
+    eenv->stx_context = mc;
 
     env->template_env = eenv;
     eenv->exp_env = env;       
