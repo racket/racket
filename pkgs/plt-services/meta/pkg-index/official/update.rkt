@@ -23,7 +23,10 @@
           (define i (package-info pkg-name))
           (package-info-set!
            pkg-name
-           (hash-set i 'checksum-error (exn-message x))))])
+           (hash-set i 'checksum-error
+                     (regexp-replace* (regexp (github-client_secret))
+                                      (exn-message x)
+                                      "REDACTED"))))])
     (define i (package-info pkg-name))
     (define old-checksum
       (package-ref i 'checksum))

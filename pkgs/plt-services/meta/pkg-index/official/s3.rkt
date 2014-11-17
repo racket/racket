@@ -20,7 +20,7 @@
            "sync"
            "-m" "application/javascript"
            "--acl-public"
-           "--add-header" "Content-Encoding: gzip"
+           "--add-header" "Content-Encoding:gzip"
            "--delete-removed"
            (format "~a/pkgs-all.json.gz" static-path)
            (format "s3://~a/pkgs-all.json.gz" s3-bucket))
