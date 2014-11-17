@@ -6,18 +6,21 @@
          "prop.rkt"
          racket/list)
 
-(provide generate-env
-         env-stash
-         contract-random-generate
+(provide contract-random-generate
+         contract-random-generate-stash
+         contract-random-generate-get-current-environment
+         contract-random-generate/choose
+         contract-random-generate-env-hash
+         contract-random-generate-env?
          contract-exercise
          generate/direct
-         generate/choose
-         make-generate-ctc-fail
-         generate-ctc-fail?
+         contract-random-generate-fail
+         contract-random-generate-fail?
          with-definitely-available-contracts
          can-generate/env?
          try/env
-         multi-exercise)
+         multi-exercise
+         fail-escape)
 
 (define (contract-exercise #:fuel [fuel 10] v1 . vs)
   (define vals 
@@ -26,10 +29,17 @@
       val))
   (define ctcs (map value-contract vals))
   (define-values (go _) 
-    (parameterize ([generate-env (make-hash)])
+    (parameterize ([generate-env (contract-random-generate-env (make-hash))])
       ((multi-exercise ctcs) fuel)))
   (for ([x (in-range fuel)])
     (go vals)))
+
+(define (contract-random-generate-get-current-environment)
+  (define env (generate-env))
+  (unless (contract-random-generate-env? env)
+    (error 'get-current-contract-generation-environment
+           "expected to be called only during generation"))
+  env)
 
 ;; multi-exercise : (listof contract?) -> fuel -> (values (listof ctc) (-> (listof val[ctcs]) void)
 (define (multi-exercise orig-ctcs)
@@ -88,8 +98,9 @@
 
 ;; a stash of values and the contracts that they correspond to
 ;; that generation has produced earlier in the process 
-(define generate-env (make-parameter 'generate-env-not-currently-set))
-
+(define generate-env (make-parameter #f))
+(struct contract-random-generate-env (hash))
+  
 ;; (parameter/c (listof contract?))
 ;; contracts in this will definitely have values available
 ;; by the time generation happens; those values will be 
@@ -98,9 +109,20 @@
 
 ; Adds a new contract and value to the environment if
 ; they don't already exist
-(define (env-stash env ctc val)
-  (define curvals (hash-ref env ctc '()))
-  (hash-set! env ctc (cons val curvals)))
+(define (contract-random-generate-stash env ctc val)
+  (unless (contract-random-generate-env? env)
+    (raise-argument-error 'contract-random-generate-stash
+                          "contract-random-generate-env?"
+                          0
+                          env ctc val))
+  (unless (contract-struct? ctc)
+    (raise-argument-error 'contract-random-generate-stash
+                          "contract?"
+                          1
+                          env ctc val))
+  (define env-hash (contract-random-generate-env-hash env))
+  (define curvals (hash-ref env-hash ctc '()))
+  (hash-set! env-hash ctc (cons val curvals)))
 
 (define (with-definitely-available-contracts ctcs thunk)
   (parameterize ([definitely-available-contracts 
@@ -113,36 +135,66 @@
     (raise-argument-error 'contract-random-generate
                           "exact-nonnegative-integer?"
                           fuel))
-  (unless (or (not _fail) (and (procedure? _fail) (procedure-arity-includes? _fail 0)))
+  (unless (or (not _fail) 
+              (and (procedure? _fail) 
+                   (or (procedure-arity-includes? _fail 0)
+                       (procedure-arity-includes? _fail 1))))
     (raise-argument-error 'contract-random-generate
-                          (format "~s" '(or/c #f (-> any)))
+                          (format "~s" '(or/c #f (-> any) (-> boolean? any)))
                           3
                           ctc fuel _fail))
+  (define fail
+    (cond
+      [(not _fail) #f]
+      [(procedure-arity-includes? _fail 1) _fail]
+      [else (λ (x) (_fail))]))
+        
   (define proc
-    (parameterize ([generate-env (make-hash)]) 
-      (generate/choose def-ctc fuel)))
+    (parameterize ([generate-env (contract-random-generate-env (make-hash))])
+      (contract-random-generate/choose def-ctc fuel)))
+  (define-values (success? value)
+    (cond
+      [proc 
+       (let/ec k
+         (parameterize ([fail-escape (λ () (k #f #f))])
+           (values #t (proc))))]
+      [else (values #f #f)]))
   (cond
-    [proc (proc)]
-    [_fail (_fail)]
+    [(and success?
+          (not (contract-random-generate-fail? value)))
+     value]
+    [fail (fail (not success?))]
     [else
-     (error 'contract-random-generate
-            "unable to construct any generator for contract: ~e"
-            def-ctc)]))
+     (if success?
+         (error 'contract-random-generate
+                "unable generate a value satisfying: ~e"
+                def-ctc)
+         (error 'contract-random-generate
+                "unable to construct any generator for contract: ~e"
+                def-ctc))]))
 
 ;; generate/choose : contract? nonnegative-int -> (or/c #f (-> any/c))
 ; Iterates through generation methods until failure. Returns
 ; #f if no value could be generated
-(define (generate/choose ctc fuel)
+;; if it returns a thunk, the thunk will not return contract-random-generate-fail?
+(define (contract-random-generate/choose ctc fuel)
   (define direct (generate/direct ctc fuel))
   (define env-can? (can-generate/env? ctc))
   (define env (generate-env))
+  (unless (contract-random-generate-env? env)
+    (error 'contract-random-generate/choose 
+           "expected to be called only during generation"))
   (cond
     [direct
      (λ ()
        (define use-direct? (zero? (rand 2)))
-       (if use-direct?
-           (direct)
-           (try/env ctc env direct)))]
+       (cond
+         [use-direct?
+          (define candidate (direct))
+          (if (contract-random-generate-fail? candidate)
+              (try/env ctc env direct)
+              candidate)]
+         [else (try/env ctc env direct)]))]
     [env-can?
      (λ ()
        (try/env 
@@ -150,19 +202,27 @@
         (λ () (error 'generate/choose "internal generation failure"))))]
     [else #f]))
 
-; generate/direct :: contract nonnegative-int -> (or/c #f (-> val))
+;; generate/direct :: contract nonnegative-int -> (or/c #f (-> val))
 ;; generate directly via the contract's built-in generator, if possible
-(define (generate/direct ctc fuel) ((contract-struct-generate ctc) fuel))
+;; if it returns a thunk, the thunk will not return contract-random-generate-fail?
+(define (generate/direct ctc fuel) 
+  (define candidate ((contract-struct-generate ctc) fuel))
+  (cond
+    [(contract-random-generate-fail? candidate) ((fail-escape))]
+    [else candidate]))
   
 (define (try/env ctc env fail)
+  (define env-hash (contract-random-generate-env-hash env))
   (define available 
-    (for/list ([(avail-ctc vs) (in-hash env)]
+    (for/list ([(avail-ctc vs) (in-hash env-hash)]
                #:when (contract-stronger? avail-ctc ctc)
                [v (in-list vs)])
       v))
   (cond
     [(null? available) (fail)]
-    [else (oneof available)]))
+    [else
+     (oneof available)]))
+       
 
 (define (can-generate/env? ctc)
   (for/or ([avail-ctc (in-list (definitely-available-contracts))])

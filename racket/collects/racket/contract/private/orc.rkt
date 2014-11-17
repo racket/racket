@@ -121,7 +121,7 @@
 
 (define (or/c-exercise ho-contracts)
   (λ (fuel)
-    (define env (generate-env))
+    (define env (contract-random-generate-get-current-environment))
     (values (λ (val)
               (let loop ([ho-contracts ho-contracts])
                 (unless (null? ho-contracts)
@@ -130,7 +130,7 @@
                     [((contract-first-order ctc) val)
                      (define-values (exercise ctcs) ((contract-struct-exercise ctc) fuel))
                      (exercise val)
-                     (env-stash env ctc val)]
+                     (contract-random-generate-stash env ctc val)]
                     [else
                      (loop (cdr ho-contracts))]))))
             '())))
@@ -149,11 +149,11 @@
     [can-generate?
      ;; #f => try to use me in the env.
      (define options (cons #f (append directs ctcs)))
-     (define env (generate-env))
+     (define env (contract-random-generate-get-current-environment))
      (λ ()
        (let loop ([options (permute options)])
          (cond
-           [(null? options) (error 'or/c-generate "shouldn't fail!")]
+           [(null? options) contract-random-generate-fail]
            [else
             (define option (car options))
             (cond
@@ -165,7 +165,14 @@
                (try/env 
                 option env
                 (λ () (loop (cdr options))))]
-              [else (option)])])))]
+              [else 
+               (define-values (succ? val)
+                 (let/ec k
+                   (parameterize ([fail-escape (λ () (k #f #f))])
+                     (k #t (option)))))
+               (if succ? 
+                   val
+                   (loop (cdr options)))])])))]
     [else #f]))
 
 (define (single-or/c-list-contract? c)
@@ -482,7 +489,7 @@
      (λ (fuel)
        (if (zero? fuel)
            #f
-           (generate/choose (get-flat-rec-me ctc) (- fuel 1)))))))
+           (contract-random-generate/choose (get-flat-rec-me ctc) (- fuel 1)))))))
 
 (define-syntax (_flat-rec-contract stx)
   (syntax-case stx  ()

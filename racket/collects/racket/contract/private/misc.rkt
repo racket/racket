@@ -179,7 +179,65 @@
   (cond
     [(and/c-check-nonneg ctc real?) => values]
     [(and/c-check-nonneg ctc rational?) => values]
-    [else (λ (fuel) #f)]))
+    [(null? (base-and/c-ctcs ctc)) => (λ (fuel) #f)]
+    [else
+     (define flat (filter flat-contract? (base-and/c-ctcs ctc)))
+     (define ho (filter (λ (x) (not (flat-contract? x))) (base-and/c-ctcs ctc)))
+     (cond
+       [(null? ho)
+        (λ (fuel)
+          (define candidates
+            (let loop ([sub-contracts-after (cdr (base-and/c-ctcs ctc))]
+                       [sub-contract (car (base-and/c-ctcs ctc))]
+                       [sub-contracts-before '()]
+                       [candidates '()])
+              (define sub-gen (contract-random-generate/choose sub-contract fuel))
+              (define new-candidates
+                (cond
+                  [sub-gen
+                   (cons (cons sub-gen (append (reverse sub-contracts-before) sub-contracts-after))
+                         candidates)]
+                  [else candidates]))
+              (cond
+                [(null? sub-contracts-after) new-candidates]
+                [else (loop (cdr sub-contracts-after)
+                            (car sub-contracts-after)
+                            (cons sub-contract sub-contracts-before)
+                            new-candidates)])))
+          (cond
+            [(null? candidates) #f]
+            [else
+             (λ ()
+               (let loop ([attempts 10])
+                 (cond
+                   [(zero? attempts) contract-random-generate-fail]
+                   [else
+                    (define which (oneof candidates))
+                    (define val ((car which)))
+                    (cond
+                      [(andmap (λ (p?) (p? val)) (cdr which))
+                       val]
+                      [else
+                       (loop (- attempts 1))])])))]))]
+       [(null? (cdr ho))
+        (λ (fuel)
+          (define ho-gen (contract-random-generate/choose (car ho) fuel))
+          (cond
+            [ho-gen 
+             (λ ()
+               (let loop ([attempts 10])
+                 (cond
+                   [(zero? attempts) contract-random-generate-fail]
+                   [else
+                    (define val (ho-gen))
+                    (cond
+                      [(andmap (λ (p?) (p? val)) flat)
+                       val]
+                      [else
+                       (loop (- attempts 1))])])))]
+            [else #f]))]
+       [else
+        (λ (fuel) #f)])]))
 
 (define (and/c-check-nonneg ctc pred)
   (define sub-contracts (base-and/c-ctcs ctc))
@@ -476,7 +534,7 @@
 
 (define (listof-generate ctc)
   (λ (fuel)
-    (define eg (generate/choose (listof-ctc-elem-c ctc) fuel))
+    (define eg (contract-random-generate/choose (listof-ctc-elem-c ctc) fuel))
     (if eg
         (λ ()
           (let loop ([so-far (cond
@@ -501,14 +559,15 @@
     [else
      (define elem-ctc (listof-ctc-elem-c ctc))
      (λ (fuel)
-       (define env (generate-env))
+       (define env (contract-random-generate-get-current-environment))
        (values
         (λ (lst)
-          (env-stash env elem-ctc 
-                     (oneof
-                      (if (im-listof-ctc? ctc)
-                          (improper-list->list lst)
-                          lst))))
+          (contract-random-generate-stash
+           env elem-ctc 
+           (oneof
+            (if (im-listof-ctc? ctc)
+                (improper-list->list lst)
+                lst))))
         (list elem-ctc)))]))
 
 (define (improper-list->list l)
@@ -853,8 +912,8 @@
   (define ctc-car (the-cons/c-hd-ctc ctc))
   (define ctc-cdr (the-cons/c-tl-ctc ctc))
   (λ (fuel)
-    (define car-gen (generate/choose ctc-car fuel))
-    (define cdr-gen (generate/choose ctc-cdr fuel))
+    (define car-gen (contract-random-generate/choose ctc-car fuel))
+    (define cdr-gen (contract-random-generate/choose ctc-cdr fuel))
     (and car-gen
          cdr-gen
          (λ () (cons (car-gen) (cdr-gen))))))
@@ -940,7 +999,7 @@
   (define elem-ctcs (generic-list/c-args ctc))
   (λ (fuel)
     (define gens (for/list ([elem-ctc (in-list elem-ctcs)])
-                   (generate/choose elem-ctc fuel)))
+                   (contract-random-generate/choose elem-ctc fuel)))
     (cond
       [(andmap values gens)
        (λ ()
@@ -1327,18 +1386,19 @@
 (define any/c-neg-party-fn (λ (val) (λ (neg-party) val)))
 
 (define (random-any/c env fuel)
+  (define env-hash (contract-random-generate-env-hash env))
   (cond
-    [(zero? (hash-count env))
+    [(zero? (hash-count env-hash))
      (rand-choice
       [1/3 (any/c-simple-value)]
-      [1/3 (any/c-procedure env fuel)]
-      [else (any/c-from-predicate-generator env fuel)])]
+      [1/3 (any/c-procedure env-hash fuel)]
+      [else (any/c-from-predicate-generator env-hash fuel)])]
     [else
      (rand-choice
-      [1/4 (oneof (hash-ref env (oneof (hash-keys env))))]
+      [1/4 (oneof (hash-ref env-hash (oneof (hash-keys env-hash))))]
       [1/4 (any/c-simple-value)]
-      [1/4 (any/c-procedure env fuel)]
-      [else (any/c-from-predicate-generator env fuel)])]))
+      [1/4 (any/c-procedure env-hash fuel)]
+      [else (any/c-from-predicate-generator env-hash fuel)])]))
 
 (define (any/c-simple-value)
   (oneof '(0 #f "" () #() -1 1 #t elephant)))
@@ -1368,7 +1428,7 @@
    #:name (λ (ctc) 'any/c)
    #:generate (λ (ctc) 
                 (λ (fuel) 
-                  (define env (generate-env))
+                  (define env (contract-random-generate-get-current-environment))
                   (λ () (random-any/c env fuel))))
    #:first-order get-any?))
 

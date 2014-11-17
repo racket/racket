@@ -13,4 +13,9 @@
                        "contract/private/legacy.rkt"
                        "contract/private/ds.rkt")
          contract-random-generate
+         contract-random-generate-stash
+         contract-random-generate-get-current-environment
+         contract-random-generate/choose
+         contract-random-generate-fail
+         contract-random-generate-fail?
          contract-exercise)

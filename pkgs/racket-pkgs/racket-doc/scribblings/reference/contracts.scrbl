@@ -2357,12 +2357,13 @@ is expected to be the blame record for the contract on the value).
            #f]
           [#:generate
            generate
-           (->i ([c contract?])
-                ([generator 
-                  (c)
-                  (-> (and/c positive? real?) 
-                      (or/c #f
-                            (-> c)))]))
+           (or/c (->i ([c contract?])
+                      ([generator 
+                        (c)
+                        (-> (and/c positive? real?) 
+                            (or/c (-> (or/c contract-random-generate-fail? c))
+                                  #f))]))
+                 #f)
            #f]
           [#:exercise
            exercise
@@ -2405,12 +2406,13 @@ is expected to be the blame record for the contract on the value).
            #f]
           [#:generate
            generate
-           (->i ([c contract?])
-                ([generator 
-                  (c)
-                  (-> (and/c positive? real?) 
-                      (or/c #f
-                            (-> c)))]))
+           (or/c (->i ([c contract?])
+                      ([generator 
+                        (c)
+                        (-> (and/c positive? real?) 
+                            (or/c (-> (or/c contract-random-generate-fail? c))
+                                  #f))]))
+                 #f)
            #f]
           [#:exercise
            exercise
@@ -2453,12 +2455,13 @@ is expected to be the blame record for the contract on the value).
            #f]
           [#:generate
            generate
-           (->i ([c contract?])
-                ([generator 
-                  (c)
-                  (-> (and/c positive? real?) 
-                      (or/c #f
-                            (-> c)))]))
+           (or/c (->i ([c contract?])
+                      ([generator 
+                        (c)
+                        (-> (and/c positive? real?) 
+                            (or/c (-> (or/c contract-random-generate-fail? c))
+                                  #f))]))
+                 #f)
            #f]
           [#:exercise
            exercise
@@ -2491,7 +2494,8 @@ produces a blame-tracking projection defining the behavior of the contract;
 @racket[stronger], which is a predicate that determines whether this contract
 (passed in the first argument) is stronger than some other contract (passed
 in the second argument); @racket[generate], which returns a thunk
-that generates random values matching the contract or @racket[#f], indicating
+that generates random values matching the contract (using @racket[contract-random-generate-fail])
+to indicate failure) or @racket[#f] to indicate
 that random generation for this contract isn't supported; @racket[exercise],
 which returns a function that exercises values matching the contract (e.g.,
 if it is a function contract, it may call the function) and a list of contracts
@@ -2519,7 +2523,9 @@ projection accessor is expected not to wrap its argument in a higher-order
 fashion, analogous to the constraint on projections in
 @racket[make-flat-contract].
 
-@history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}]
+@history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}
+         #:changed "6.1.1.4" 
+         @list{Allow @racket[generate] to return @racket[contract-random-generate-fail]}]
 }
 
 @deftogether[(
@@ -2919,7 +2925,7 @@ parts of the contract system.
 
 @defproc[(contract-random-generate [ctc contract?]
                                    [fuel 5 exact-nonnegative-integer?]
-                                   [fail (or/c #f (-> any)) #f])
+                                   [fail (or/c #f (-> any) (-> boolean? any)) #f])
          any/c]{
 Attempts to randomly generate a value which will match the contract. The fuel
 argument limits how hard the generator tries to generate a value matching the
@@ -2928,7 +2934,13 @@ contract and is a rough limit of the size of the resulting value.
 The generator may fail to generate a value, either because some contracts
 do not have corresponding generators (for example, not all predicates have
 generators) or because there is not enough fuel. In either case, the
-thunk @racket[fail] is invoked.
+function @racket[fail] is invoked. If @racket[fail] accepts an argument,
+it is called with @racket[#t] when there is no generator for @racket[ctc]
+and called with @racket[#f] when there is a generator, but the generator
+ended up returning @racket[contract-random-generate-fail].
+
+@history[#:changed "6.1.1.5" @list{Allow @racket[fail] to accept a boolean.}]
+
 }
 
 @defproc[(contract-exercise [val any/c] ...+) void?]{
@@ -2938,4 +2950,63 @@ thunk @racket[fail] is invoked.
   contract and, for those that do, uses information about the contract's shape
   to poke and prod at the value. For example, if the value is function, it will
   use the contract to tell it what arguments to supply to the value. 
+}
+
+@defproc[(contract-random-generate/choose [c contract?] [fuel exact-nonnegative-integer?])
+         (or/c #f (-> c))]{
+  This function is like @racket[contract-random-generate], but it is intended to
+  be used with combinators that generate values based on sub-contracts
+  they have. It cannot be called, except during contract
+  generation. It will never fail, but it might escape back to an enclosing
+  call or to the original call to @racket[contract-random-generate].
+ 
+  It chooses one of several possible generation strategies, and thus it may not
+  actually use the generator associated with @racket[c], but might instead
+  use a stashed value that matches @racket[c] that it knows about via
+  @racket[contract-random-generate-stash].
+
+@history[#:added "6.1.1.5"]
+}
+
+@defthing[contract-random-generate-fail contract-random-generate-fail?]{
+  An atomic value that is used to indicate that a generator
+  failed to generate a value.
+
+@history[#:added "6.1.1.5"]
+}
+
+@defproc[(contract-random-generate-fail? [v any/c]) boolean?]{
+  A predicate to recognize @racket[contract-random-generate-fail].
+
+@history[#:added "6.1.1.5"]
+}
+
+@defproc[(contract-random-generate-env? [v any/c]) boolean?]{
+  Recognizes contract generation environments.
+
+@history[#:added "6.1.1.5"]
+}
+
+@defproc[(contract-random-generate-stash [env contract-random-generate-env?]
+                                         [c contract?]
+                                         [v c]) void?]{
+  This should be called with values that the program under
+  test supplies during contract generation. For example, when
+  @racket[(-> (-> integer? integer?) integer?)] is generated,
+  it may call its argument function. That argument function may
+  return an integer and, if so, that integer should be saved by
+  calling @racket[contract-random-generate-stash], so it can
+  be used by other integer generators.
+
+@history[#:added "6.1.1.5"]
+}
+
+@defproc[(contract-random-generate-get-current-environment) contract-random-generate-env?]{
+  Returns the environment currently being for generation. This function
+  can be called only during the dynamic extent of contract generation.
+  It is intended to be grabbed during the construction of a contract
+  generator and then used with @racket[contract-random-generate-stash]
+  while generation is happening.
+
+@history[#:added "6.1.1.5"]
 }

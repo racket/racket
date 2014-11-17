@@ -38,7 +38,7 @@
                 (cond
                   [(∀∃/c-neg? ctc)
                    (λ (fuel)
-                     (define env (generate-env))
+                     (define env (contract-random-generate-get-current-environment))
                      (λ () (random-any/c env fuel)))]
                   [else
                    (λ (fuel) #f)]))))

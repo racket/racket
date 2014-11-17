@@ -214,7 +214,7 @@
             (cond
               [(invariant? subc) #f]
               [(indep? subc)
-               (define sgen (generate/choose (indep-ctc subc) fuel))
+               (define sgen (contract-random-generate/choose (indep-ctc subc) fuel))
                (cond
                  [sgen (loop (cdr subcs) (cons sgen gens))]
                  [else #f])]
@@ -671,7 +671,7 @@
 
 (define (struct/dc-exercise stct)
   (λ (fuel)
-    (define env (generate-env))
+    (define env (contract-random-generate-get-current-environment))
     (values
      (λ (val) 
        ;; need to extract the fields and do it in 

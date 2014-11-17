@@ -728,19 +728,19 @@
               addl-available
               (λ ()
                 (for/list ([c (in-list (base->-rngs ctc))])
-                  (generate/choose c fuel))))
+                  (contract-random-generate/choose c fuel))))
              '()))
        (cond
          [(for/and ([rng-gen (in-list rngs-gens)])
             rng-gen)
-          (define env (generate-env))
+          (define env (contract-random-generate-get-current-environment))
           (λ ()
             (procedure-reduce-arity
              (λ args
                ; stash the arguments for use by other generators
                (for ([ctc (in-list dom-ctcs)]
                      [arg (in-list args)])
-                 (env-stash env ctc arg))
+                 (contract-random-generate-stash env ctc arg))
                ; exercise the arguments
                (for ([arg (in-list args)]
                      [dom-exer (in-list dom-exers)])
@@ -769,11 +769,11 @@
      (λ (fuel)
        (define gens 
          (for/list ([dom-ctc (in-list dom-ctcs)])
-           (generate/choose dom-ctc fuel)))
+           (contract-random-generate/choose dom-ctc fuel)))
        (define kwd-gens
          (for/list ([kwd-info (in-list dom-kwd-infos)])
-           (generate/choose (kwd-info-ctc kwd-info) fuel)))
-       (define env (generate-env))
+           (contract-random-generate/choose (kwd-info-ctc kwd-info) fuel)))
+       (define env (contract-random-generate-get-current-environment))
        (cond
          [(and (andmap values gens)
                (andmap values kwd-gens))
@@ -792,7 +792,7 @@
                 (when rng-ctcs
                   (for ([res-ctc (in-list rng-ctcs)]
                         [result (in-list results)])
-                    (env-stash env res-ctc result))))))
+                    (contract-random-generate-stash env res-ctc result))))))
            (or rng-ctcs '()))]
          [else
           (values void '())]))]

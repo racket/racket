@@ -9,8 +9,16 @@
 (define (some-crazy-predicate? x) (and (number? x) (= x 11)))
 
 (define (test-contract-generation ctc #:size [size 10])
-  (define example-val (contract-random-generate ctc size))
-  (contract ctc example-val 'pos 'neg))
+  (let/ec k
+    (define example-val (contract-random-generate 
+                         ctc size
+                         (λ (no-generator?)
+                           (if no-generator?
+                               (error 'test-contract-generation
+                                      "unable to construct any generator for contract: ~e"
+                                      ctc)
+                               (k 'we-tried-but-could-not-generate-anything)))))
+    (contract ctc example-val 'pos 'neg)))
 
 (for ([(k v) (in-hash predicate-generator-table)])
   (check-not-exn (λ () (test-contract-generation k))))
@@ -38,11 +46,16 @@
 (check-not-exn (λ () (test-contract-generation (</c 0.0))))
 (check-not-exn (λ () (test-contract-generation (=/c 0))))
 (check-not-exn (λ () (test-contract-generation (=/c 0.0))))
-(check-not-exn (λ () (test-contract-generation (and/c real? (not/c negative?)))))
-(check-not-exn (λ () (test-contract-generation (and/c rational? (not/c negative?)))))
 (check-not-exn (λ () (test-contract-generation (or/c boolean? boolean?))))
 (check-not-exn (λ () (test-contract-generation (cons/c integer? boolean?))))
 (check-not-exn (λ () (test-contract-generation any/c)))
+
+(check-not-exn (λ () (test-contract-generation (and/c real? (not/c negative?)))))
+(check-not-exn (λ () (test-contract-generation (and/c rational? (not/c negative?)))))
+(check-not-exn (λ () (test-contract-generation (and/c integer? even?))))
+(check-not-exn (λ () (test-contract-generation (and/c procedure? (-> integer? integer?)))))
+(check-not-exn (λ () (test-contract-generation (and/c integer? even?))))
+(check-not-exn (λ () (test-contract-generation (or/c (and/c real? positive? (</c 0)) boolean?))))
 
 (check-not-exn (λ () (test-contract-generation (listof boolean?))))
 (check-not-exn (λ () (test-contract-generation (listof some-crazy-predicate?))))
@@ -105,7 +118,7 @@
 
 (define (cannot-generate-exn? x)
   (and (exn:fail? x)
-       (regexp-match #rx"contract-random-generate: unable to construct" 
+       (regexp-match #rx"test-contract-generation: unable to construct" 
                      (exn-message x))))
 (check-exn cannot-generate-exn? (λ () (test-contract-generation some-crazy-predicate?)))
 (check-exn cannot-generate-exn? (λ () (test-contract-generation (list/c some-crazy-predicate?))))
@@ -126,6 +139,14 @@
 (check-exn cannot-generate-exn? (λ () (test-contract-generation 
                                        (or/c some-crazy-predicate?
                                              some-crazy-predicate?))))
+
+;; testing a bunch of impossible and/c's inside some or/c doesn't crash
+(check-not-exn (λ () (test-contract-generation 
+                      (or/c (or/c (and/c integer? boolean?)
+                                  (and/c (listof integer?) string?))
+                            (and/c (-> number? number?)
+                                   any/c
+                                   number?)))))
 
 (check-not-exn 
  (λ () 

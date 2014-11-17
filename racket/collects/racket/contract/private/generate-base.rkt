@@ -2,8 +2,9 @@
 (require "rand.rkt")
 
 (provide
-  (rename-out [sngleton-maker make-generate-ctc-fail])
-  generate-ctc-fail?
+  contract-random-generate-fail
+  contract-random-generate-fail?
+  fail-escape
   find-generate
   
   get-arg-names-space
@@ -19,13 +20,11 @@
 ;; generate 
 (define-struct env-item (ctc name))
 
-;; generate failure type
-(define-struct generate-ctc-fail ())
-(define a-generate-ctc-fail (make-generate-ctc-fail))
-(define sngleton-maker
-  (let ([make-generate-contract-fail
-         (λ () a-generate-ctc-fail)])
-    make-generate-contract-fail))
+(define fail-escape (make-parameter 'fail-escape-not-set))
+(define-values (contract-random-generate-fail contract-random-generate-fail?)
+  (let ()
+    (struct contract-random-generate-fail ())
+    (values (contract-random-generate-fail) contract-random-generate-fail?)))
 
 (define (gen-char fuel)
   (let* ([gen (oneof (list (rand-range 0 55295)
@@ -133,7 +132,7 @@
 ;; thread-cell
 (define arg-names-count (make-thread-cell 0))
 
-;; given a predicate returns a generate for this predicate or generate-ctc-fail
+;; given a predicate returns a generate for this predicate or contract-random-generate-fail
 (define (find-generate func [name "internal"])
   (hash-ref predicate-generator-table func #f))
 

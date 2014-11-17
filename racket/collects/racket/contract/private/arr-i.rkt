@@ -118,18 +118,18 @@
        (define gens (for/list ([arg-ctc (in-list (->i-arg-ctcs ctc))]
                                #:when (and (not (->i-arg-optional? arg-ctc))
                                            (not (->i-arg-kwd arg-ctc))))
-                      (generate/choose (->i-arg-contract arg-ctc) fuel)))
+                      (contract-random-generate/choose (->i-arg-contract arg-ctc) fuel)))
        (define kwd-gens (for/list ([arg-ctc (in-list (->i-arg-ctcs ctc))]
                                    #:when (and (not (->i-arg-optional? arg-ctc))
                                                (->i-arg-kwd arg-ctc)))
-                          (generate/choose (->i-arg-contract arg-ctc) fuel)))
+                          (contract-random-generate/choose (->i-arg-contract arg-ctc) fuel)))
        (define dom-kwds (for/list ([arg-ctc (in-list (->i-arg-ctcs ctc))]
                                    #:when (and (not (->i-arg-optional? arg-ctc))
                                                (->i-arg-kwd arg-ctc)))
                           (->i-arg-kwd arg-ctc)))
        (cond
          [(andmap values gens)
-          (define env (generate-env))
+          (define env (contract-random-generate-get-current-environment))
           (values (λ (f)
                     (call-with-values
                      (λ ()
@@ -150,7 +150,7 @@
                        ;; better: if we did actually stash the results we knew about.
                        '(for ([res-ctc (in-list rng-ctcs)]
                               [result (in-list results)])
-                          (env-stash env res-ctc result)))))
+                          (contract-random-generate-stash env res-ctc result)))))
                   ;; better here: if we promised the results we knew we could deliver
                   '())]
          [else
