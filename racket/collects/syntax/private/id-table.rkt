@@ -286,9 +286,10 @@ Notes (FIXME?):
           idtbl-count
           idtbl-iterate-first idtbl-iterate-next
           idtbl-iterate-key idtbl-iterate-value
+          in-idtbl in-idtbl-keys in-idtbl-values
           idtbl-map idtbl-for-each
           idtbl-mutable-methods idtbl-immutable-methods))
-       #'(begin
+       #`(begin
 
            ;; Struct defs at end, so that dict methods can refer to earlier procs
 
@@ -331,6 +332,85 @@ Notes (FIXME?):
              (id-table-iterate-key 'idtbl-iterate-key d pos))
            (define (idtbl-iterate-value d pos)
              (id-table-iterate-value 'idtbl-iterate-value d pos identifier->symbol identifier=?))
+
+           (define (fc-in-idtbl idt)
+             (unless (idtbl? idt)
+               (raise-type-error 'in-idtbl #,(symbol->string (syntax-e #'idtbl)) idt))
+             (make-do-sequence
+              (λ ()
+                 (values
+                  (λ (pos) (values (idtbl-iterate-key idt pos)
+                                   (idtbl-iterate-value idt pos)))
+                  (λ (pos) (idtbl-iterate-next idt pos))
+                  (idtbl-iterate-first idt)
+                  #f #f #f))))
+           (define (fc-in-idtbl-keys idt)
+             (unless (idtbl? idt)
+               (raise-type-error 'in-idtbl-keys #,(symbol->string (syntax-e #'idtbl)) idt))
+             (make-do-sequence
+              (λ ()
+                 (values
+                  (λ (pos) (idtbl-iterate-key idt pos))
+                  (λ (pos) (idtbl-iterate-next idt pos))
+                  (idtbl-iterate-first idt)
+                  #f #f #f))))
+           (define (fc-in-idtbl-values idt)
+             (unless (idtbl? idt)
+               (raise-type-error 'in-idtbl-values #,(symbol->string (syntax-e #'idtbl)) idt))
+             (make-do-sequence
+              (λ ()
+                 (values
+                  (λ (pos) (idtbl-iterate-value idt pos))
+                  (λ (pos) (idtbl-iterate-next idt pos))
+                  (idtbl-iterate-first idt)
+                  #f #f #f))))
+
+           (define-sequence-syntax in-idtbl
+             (λ () #'fc-in-idtbl)
+             (λ (stx)
+                (syntax-case stx ()
+                  [[(k v) (_ idt)]
+                   #'[(k v)
+                      (:do-in ([(t) idt])
+                              (unless (idtbl? t)
+                                (raise-type-error 'in-idtbl #,(symbol->string (syntax-e #'idtbl)) t))
+                              ([itr (idtbl-iterate-first t)])
+                              itr
+                              ([(k) (idtbl-iterate-key t itr)]
+                               [(v) (idtbl-iterate-value t itr)])
+                              #t
+                              #t
+                              ((idtbl-iterate-next t itr)))]])))
+           (define-sequence-syntax in-idtbl-keys
+             (λ () #'fc-in-idtbl-keys)
+             (λ (stx)
+                (syntax-case stx ()
+                  [[(k) (_ idt)]
+                   #'[(k)
+                      (:do-in ([(t) idt])
+                              (unless (idtbl? t)
+                                (raise-type-error 'in-idtbl-keys #,(symbol->string (syntax-e #'idtbl)) t))
+                              ([itr (idtbl-iterate-first t)])
+                              itr
+                              ([(k) (idtbl-iterate-key t itr)])
+                              #t
+                              #t
+                              ((idtbl-iterate-next t itr)))]])))
+           (define-sequence-syntax in-idtbl-values
+             (λ () #'fc-in-idtbl-values)
+             (λ (stx)
+                (syntax-case stx ()
+                  [[(v) (_ idt)]
+                   #'[(v)
+                      (:do-in ([(t) idt])
+                              (unless (idtbl? t)
+                                (raise-type-error 'in-idtbl-values #,(symbol->string (syntax-e #'idtbl)) t))
+                              ([itr (idtbl-iterate-first t)])
+                              itr
+                              ([(v) (idtbl-iterate-value t itr)])
+                              #t
+                              #t
+                              ((idtbl-iterate-next t itr)))]])))
 
            (define idtbl-mutable-methods
              (vector-immutable idtbl-ref
@@ -386,6 +466,9 @@ Notes (FIXME?):
                     idtbl-iterate-next
                     idtbl-iterate-key
                     idtbl-iterate-value
+                    in-idtbl
+                    in-idtbl-keys
+                    in-idtbl-values
                     idtbl-map
                     idtbl-for-each
 
