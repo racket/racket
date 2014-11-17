@@ -2357,14 +2357,13 @@ is expected to be the blame record for the contract on the value).
            #f]
           [#:generate
            generate
-           (or/c (->i ([c contract?])
-                      ([generator 
-                        (c)
-                        (-> (and/c positive? real?) 
-                            (or/c (-> (or/c contract-random-generate-fail? c))
-                                  #f))]))
-                 #f)
-           #f]
+           (->i ([c contract?])
+                ([generator
+                  (c)
+                  (-> (and/c positive? real?)
+                      (or/c (-> (or/c contract-random-generate-fail? c))
+                            #f))]))
+           (λ (c) (λ (fuel) #f))]
           [#:exercise
            exercise
            (->i ([c contract?])
@@ -2406,14 +2405,13 @@ is expected to be the blame record for the contract on the value).
            #f]
           [#:generate
            generate
-           (or/c (->i ([c contract?])
-                      ([generator 
-                        (c)
-                        (-> (and/c positive? real?) 
-                            (or/c (-> (or/c contract-random-generate-fail? c))
-                                  #f))]))
-                 #f)
-           #f]
+           (->i ([c contract?])
+                ([generator
+                  (c)
+                  (-> (and/c positive? real?)
+                      (or/c (-> (or/c contract-random-generate-fail? c))
+                            #f))]))
+           (λ (c) (λ (fuel) #f))]
           [#:exercise
            exercise
            (->i ([c contract?])
@@ -2455,14 +2453,13 @@ is expected to be the blame record for the contract on the value).
            #f]
           [#:generate
            generate
-           (or/c (->i ([c contract?])
-                      ([generator 
-                        (c)
-                        (-> (and/c positive? real?) 
-                            (or/c (-> (or/c contract-random-generate-fail? c))
-                                  #f))]))
-                 #f)
-           #f]
+           (->i ([c contract?])
+                ([generator
+                  (c)
+                  (-> (and/c positive? real?)
+                      (or/c (-> (or/c contract-random-generate-fail? c))
+                            #f))]))
+           (λ (c) (λ (fuel) #f))]
           [#:exercise
            exercise
            (->i ([c contract?])
