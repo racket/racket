@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual scribble/eval "guide-utils.rkt" "contracts-utils.rkt"
+@(require scribble/manual scribble/eval "../guide-utils.rkt" "utils.rkt"
           (for-label racket/contract))
 
 @title[#:tag "contracts-struct"]{Contracts on Structures}

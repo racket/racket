@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual scribble/core scribble/eval
-          "guide-utils.rkt" "contracts-utils.rkt"
+          "utils.rkt"
           (only-in racket/list argmax)
           (for-label racket/contract))
 

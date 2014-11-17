@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual scribble/eval "guide-utils.rkt" "contracts-utils.rkt"
+@(require scribble/manual scribble/eval "utils.rkt"
           (for-label framework/framework racket/contract racket/gui))
 
 @title[#:tag "contracts-general-functions"]{Contracts on Functions in General}

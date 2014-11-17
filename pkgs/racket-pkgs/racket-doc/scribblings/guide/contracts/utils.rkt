@@ -54,7 +54,7 @@
 (define-syntax (external-file stx)
   (syntax-case stx ()
     [(_ filename)
-     #`(include/reader #,(format "contracts-examples/~a.rkt" (syntax-e #'filename))
+     #`(include/reader #,(format "examples/~a.rkt" (syntax-e #'filename))
                        comment-racketmod-reader)]))
 
 (define contract-eval (make-base-eval))

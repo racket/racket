@@ -2,7 +2,7 @@
 @(require scribble/manual scribble/eval
           scribble/core racket/list 
           scribble/racket
-          "guide-utils.rkt" "contracts-utils.rkt"
+          "../guide-utils.rkt" "utils.rkt"
           (for-label racket/contract))
 
 @title[#:tag "contract-func"]{Simple Contracts on Functions}
