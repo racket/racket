@@ -17,63 +17,182 @@
                   integer-root
                   factorize))
 
-(provide enum
-         enum?
-         size
-         (contract-out
-          [encode (-> enum? any/c exact-nonnegative-integer?)]
-          [decode (-> enum? exact-nonnegative-integer? any/c)])
-         empty/e
-         const/e
-         from-list/e
-         fin/e
-         disj-sum/e
-         disj-append/e
-         cons/e
-         elegant-cons/e
-         dep/e
-         dep2/e ;; requires size (eventually should replace dep/e with this)
-         map/e
-         filter/e ;; very bad, only use for small enums
-         except/e 
-         thunk/e
-         fix/e
-         many/e
-         many1/e
-         list/e
-         vec/e
+(define nat? exact-nonnegative-integer?)
+(define (extended-nat? x)
+  (or (nat? x) (= x +inf.0)))
 
-         cantor-vec/e
-         cantor-list/e
-
-         box-vec/e
-         box-list/e
-         
-         traverse/e
-         hash-traverse/e
-         
-         fail/e
-         
-         approximate
-         to-list
-         to-stream
-         take/e
-         fold-enum
-
-         nat/e
-         range/e
-         slice/e
-         nat+/e
-
-         ;; Base type enumerators
-         any/e
-         var/e
-         var-prefix/e
-         num/e
-         integer/e
-         bool/e
-         real/e
-         string/e)
+(provide 
+ (contract-out
+  [enum 
+   (-> extended-nat? (-> nat? any/c) (-> any/c nat?)
+       enum?)]
+  [enum?
+   (-> any/c 
+       boolean?)]
+  [size
+   (-> enum?
+       extended-nat?)]
+  [decode 
+   (-> enum? nat?
+       any/c)]
+  [encode
+   (-> enum? any/c
+       nat?)]
+  [map/e
+   (->* (procedure? procedure? enum?)
+        #:rest (listof enum?)
+        enum?)]
+  ;; very bad, only use for small enums
+  [filter/e
+   (-> enum? (-> any/c boolean?)
+       enum?)]
+  [except/e
+   (->* (enum?)
+        #:rest list?
+        enum?)]
+  [to-stream
+   (-> enum? 
+       stream?)]
+  [approximate
+   (-> enum? nat?
+       list?)]
+  [to-list
+   (-> enum?
+       list?)]
+  [take/e
+   (-> enum? nat?
+       enum?)]
+  [slice/e
+   (-> enum? nat? nat?
+       enum?)]
+  [below/e
+   (-> nat?
+       enum?)]
+  [empty/e enum?]
+  [const/e
+   (-> any/c
+       enum?)]
+  [from-list/e
+   (-> list?
+       enum?)]
+  [fin/e
+   (-> list?
+       enum?)]
+  [nat/e enum?]
+  [int/e enum?]
+  [disj-sum/e
+   (->* () #:rest (listof (cons/c enum? (-> any/c boolean?)))
+        enum?)]
+  [disj-append/e
+   (->* (enum?) #:rest (listof (cons/c enum? (-> any/c boolean?)))
+        enum?)]
+  [fin-cons/e
+   (-> enum? enum?
+       enum?)]
+  [cons/e
+   (-> enum? enum?
+       enum?)]
+  [elegant-cons/e
+   (-> enum? enum?
+       enum?)]
+  [traverse/e
+   (-> (-> any/c enum?)
+       (listof any/c)
+       enum?)]
+  [hash-traverse/e
+   (-> (-> any/c enum?) hash?
+       enum?)]
+  [dep/e
+   (-> enum? (-> any/c enum?)
+       enum?)]
+  [dep2/e
+   (-> nat? enum? (-> any/c enum?)
+       enum?)]
+  [fold-enum
+   (-> (-> list? any/c enum?)
+       list?
+       enum?)]
+  [flip-dep/e
+   (-> enum? (-> any/c enum?)
+       enum?)]
+  [range/e
+   (-> nat? nat?
+       enum?)]
+  [thunk/e
+   (-> extended-nat? (-> enum?)
+       enum?)]
+  [fix/e
+   (case->
+    (-> (-> enum? enum?) 
+        enum?)
+    (-> extended-nat? (-> enum? enum?)
+        enum?))]
+  [many/e
+   (case->
+    (-> enum?
+        enum?)
+    (-> enum? nat?
+        enum?))]
+  [many1/e
+   (-> enum? 
+       enum?)]
+  [cantor-vec/e
+   (->* () #:rest (listof enum?)
+        enum?)]
+  [vec/e
+   (->* () #:rest (listof enum?)
+        enum?)]
+  [box-vec/e
+   (->* () #:rest (listof enum?)
+        enum?)]
+  [inf-fin-fair-list/e
+   (->* () #:rest (listof enum?)
+        enum?)]
+  [mixed-box-tuples/e
+   (-> (listof enum?)
+       enum?)]
+  [inf-fin-cons/e
+   (-> enum? enum?
+       enum?)]
+  [list/e
+   (->* () #:rest (listof enum?)
+        enum?)]
+  [nested-cons-list/e
+   (->* () #:rest (listof enum?)
+        enum?)]
+  [cantor-list/e
+   (->* () #:rest (listof enum?)
+        enum?)]
+  [box-list/e
+   (->* () #:rest (listof enum?)
+        enum?)]
+  [prime-length-box-list/e
+   (-> (listof enum?)
+       enum?)]
+  [box-tuples/e
+   (-> nat?
+       enum?)]
+  [bounded-list/e
+   (-> nat? nat?
+       enum?)]
+  [nat+/e
+   (-> nat?
+       enum?)]
+  [fail/e
+   (-> exn?
+       enum?)]
+  [char/e enum?]
+  [string/e enum?]
+  [from-1/e enum?]
+  [integer/e enum?]
+  [float/e enum?]
+  [real/e enum?]
+  [non-real/e enum?]
+  [num/e enum?]
+  [bool/e enum?]
+  [symbol/e enum?]
+  [base/e enum?]
+  [any/e enum?]))
 
 ;; an enum a is a struct of < Nat or +Inf, Nat -> a, a -> Nat >
 (struct enum
@@ -207,12 +326,6 @@
 ;; below/e
 (define (below/e n)
   (take/e nat/e n))
-
-;; display-enum : enum a, Nat -> void
-(define (display-enum e n)
-  (for ([i (range n)])
-    (display (decode e i))
-    (newline) (newline)))
 
 (define empty/e
   (enum 0
@@ -1551,7 +1664,7 @@
 (define bool/e
   (from-list/e '(#t #f)))
 
-(define var/e
+(define symbol/e
   (map/e
    (compose string->symbol list->string)
    (compose string->list symbol->string)
@@ -1562,25 +1675,10 @@
               (cons num/e number?)
               (cons string/e string?)
               (cons bool/e boolean?)
-              (cons var/e symbol?)))
+              (cons symbol/e symbol?)))
 
 (define any/e
   (fix/e +inf.0
          (λ (any/e)
             (disj-sum/e (cons base/e (negate pair?))
                         (cons (cons/e any/e any/e) pair?)))))
-(define (var-prefix/e s)
-  (define as-str (symbol->string s))
-  (map/e (compose string->symbol
-                  (curry string-append as-str)
-                  symbol->string)
-         (compose string->symbol
-                  list->string
-                  (curry (flip drop) (string-length as-str))
-                  string->list
-                  symbol->string)
-         var/e))
-
-(define (flip f)
-  (λ (x y)
-     (f y x)))

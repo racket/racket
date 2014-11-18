@@ -1,5 +1,7 @@
 #lang racket/base
 (require data/enumerate
+         racket/function
+         racket/list
          racket/contract/base)
 (provide enum
          enum?
@@ -51,10 +53,26 @@
 
          ;; Base type enumerators
          any/e
-         var/e
+         (rename-out [symbol/e var/e])
          var-prefix/e
          num/e
          integer/e
          bool/e
          real/e
          string/e)
+
+(define (var-prefix/e s)
+  (define as-str (symbol->string s))
+  (map/e (compose string->symbol
+                  (curry string-append as-str)
+                  symbol->string)
+         (compose string->symbol
+                  list->string
+                  (curry (flip drop) (string-length as-str))
+                  string->list
+                  symbol->string)
+         symbol/e))
+
+(define (flip f)
+  (λ (x y)
+     (f y x)))
