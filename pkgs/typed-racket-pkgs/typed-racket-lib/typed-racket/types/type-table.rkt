@@ -34,13 +34,29 @@
 (provide ;; Syntax class for is-ignored?
          ignore-table^)
 
-(define table (make-hasheq))
+(define type-table (make-hasheq))
 
-(define (reset-type-table) (set! table (make-hasheq)))
+;; This table keeps track of the same types as the type table
+;; but indexed on source location for tooltips and only retaining the
+;; last type for a given location.
+(define tooltip-table (make-hash))
+
+(define (reset-type-table) (set! type-table (make-hasheq)))
 
 (define (add-typeof-expr e t)
+  (when (and (syntax-position e) (syntax-span e))
+    ;; Only keep the latest type for a given location, which means that
+    ;; since typechecking proceeds inside-out we will only record the most
+    ;; relevant type for the expansion of macros (which often have misleading
+    ;; syntax locations on the subexpressions). A limitation of this approach
+    ;; is that for function bodies we may not retain all the types from case->
+    ;; branches.
+    (hash-set!
+     tooltip-table
+     (list (syntax-position e) (syntax-span e))
+     (list e t)))
   (when (optimize?)
-    (hash-update! table e
+    (hash-update! type-table e
                   ;; when typechecking a case-> type, types get added for
                   ;; the same subexpression multiple times, combine them
                   (lambda (old)
@@ -59,7 +75,7 @@
                   t)))
 
 (define (type-of e)
-  (hash-ref table e
+  (hash-ref type-table e
             (lambda () (int-err (format "no type for ~a at: ~a line ~a col ~a"
                                         (syntax->datum e)
                                         (syntax-source e)
@@ -77,10 +93,10 @@
 (define (type-table->tooltips)
   (define type-names (current-type-names))
   (for/fold ([tooltips '()])
-            ([(stx results) (in-hash table)]
-             #:when (and (syntax-position stx)
-                         (syntax-span stx))
-             #:unless (error-at-stx-loc? stx))
+            ([(pos+span stx+results) (in-hash tooltip-table)]
+             #:unless (error-at-stx-loc? (car stx+results)))
+    (match-define (list pos span) pos+span)
+    (match-define (list stx results) stx+results)
     ;; `printed-type-thunks` is #f if we should skip the type because it's
     ;; something not worth printing like Bottom or Error.
     (define printed-type-thunks
@@ -103,33 +119,38 @@
                                                 #:indent 2)))))]
         [(tc-any-results: _) "AnyValues"]))
     (cond [(not printed-type-thunks) tooltips]
-          ;; Put the tooltip only on the parens for compound expressions
-          ;; but put them on the whole expression for literals. This avoids
-          ;; overlapping tooltips.
-          [(or (not (pair? (syntax-e stx)))
-               ;; special-case quote because there's no worry of overlap
-               ;; in a (quote ...) and because literals expand out to a
-               ;; use of quote.
-               (let ([fst (car (syntax-e stx))])
-                 (and (identifier? fst)
-                      (free-identifier=? fst #'quote))))
-           (cons (vector stx
-                         (sub1 (syntax-position stx))
-                         (+ (sub1 (syntax-position stx)) (syntax-span stx))
-                         printed-type-thunks)
-                 tooltips)]
           [else
-           (list* (vector stx
-                          (sub1 (syntax-position stx))
-                          (syntax-position stx)
-                          printed-type-thunks)
-                  (vector stx
-                          (sub1 (+ (sub1 (syntax-position stx))
-                                   (syntax-span stx)))
-                          (+ (sub1 (syntax-position stx))
-                             (syntax-span stx))
-                          printed-type-thunks)
+           (append (make-tooltip-vector stx printed-type-thunks pos span)
                    tooltips)])))
+
+;; make-tooltip-vector : Syntax Thunk Int Int -> (Listof Vector)
+;; Compute the tooltip info to put in syntax properties
+(define (make-tooltip-vector stx type-thunk position span)
+  (cond ;; Put the tooltip only on the parens for compound expressions
+        ;; but put them on the whole expression for literals. This avoids
+        ;; overlapping tooltips.
+        [(or (not (pair? (syntax-e stx)))
+             ;; special-case quote because there's no worry of overlap
+             ;; in a (quote ...) and because literals expand out to a
+             ;; use of quote.
+             (let ([fst (car (syntax-e stx))])
+               (and (identifier? fst)
+                    (free-identifier=? fst #'quote))))
+         (list (vector stx
+                       (sub1 (syntax-position stx))
+                       (+ (sub1 (syntax-position stx)) (syntax-span stx))
+                       type-thunk))]
+        [else
+         (list (vector stx
+                       (sub1 (syntax-position stx))
+                       (syntax-position stx)
+                       type-thunk)
+               (vector stx
+                       (sub1 (+ (sub1 (syntax-position stx))
+                                (syntax-span stx)))
+                       (+ (sub1 (syntax-position stx))
+                          (syntax-span stx))
+                       type-thunk))]))
 
 ;; For expressions in test position keep track of if it evaluates to true/false
 (define test-position-table/true (make-hasheq))
