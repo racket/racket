@@ -55,7 +55,7 @@
                   #f))
  =>
  (bytes-sort
-  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: Thu, 01 Jan 1970 00:00:00 GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n<a href=\"#\">link</a>")
+  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: Wed, 31 Dec 1969 23:00:00 GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n<a href=\"#\">link</a>")
  
  (write-response (response/xexpr '(a ([href "#"]) "link")
                                       #:mime-type #"application/xml"))
