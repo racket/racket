@@ -139,14 +139,16 @@
 ;; make-tooltip-vector : Syntax Thunk Int Int -> (Listof Vector)
 ;; Compute the tooltip info to put in syntax properties
 (define (make-tooltip-vector stx type-thunk position span)
+  ;; Try to use the original syntax to guide the shape of the tooltip
+  (define located (locate-stx stx))
   (cond ;; Put the tooltip only on the parens for compound expressions
         ;; but put them on the whole expression for literals. This avoids
         ;; overlapping tooltips.
-        [(or (not (pair? (syntax-e stx)))
+        [(or (not (pair? (syntax-e located)))
              ;; special-case quote because there's no worry of overlap
              ;; in a (quote ...) and because literals expand out to a
              ;; use of quote.
-             (let ([fst (car (syntax-e stx))])
+             (let ([fst (car (syntax-e located))])
                (and (identifier? fst)
                     (free-identifier=? fst #'quote))))
          (list (vector stx
