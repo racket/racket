@@ -32,8 +32,6 @@
     [(: id (~and kw :) . more:omit-parens)
      (add-disappeared-use #'kw)
      (wrap stx #`(:-helper #,stx #,top-level? id more.type))]
-    [(: id : . more)
-     (wrap stx #`(:-helper #,stx #,top-level? id . more))]
     [(: e ...)
      (wrap stx #`(:-helper #,stx #,top-level? e ...))]))
 

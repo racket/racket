@@ -99,7 +99,11 @@
    [(-> (values Number Boolean Number)) (t:-> (-values (list N B N)))]
    [(Number -> Number) (t:-> N N)]
    [(All (A) Number -> Number) (-poly (a) (t:-> N N))]
+   [(All (A) Number -> Number -> Number) (-poly (a) (t:-> N (t:-> N N)))]
+   [(All (A) Number -> Number -> Number -> Number)
+    (-poly (a) (t:-> N (t:-> N (t:-> N N))))]
    [FAIL (All (A) -> Number Number)]
+   [FAIL (All (A) Listof Any)]
    [(All (A) (Number -> Number)) (-poly (a) (t:-> N N))]
    [(All (A) (-> Number Number)) (-poly (a) (t:-> N N))]
    [(All (A) A -> A) (-poly (a) (t:-> a a))]

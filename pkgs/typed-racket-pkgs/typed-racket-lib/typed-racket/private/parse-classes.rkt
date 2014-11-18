@@ -38,5 +38,5 @@
   ;;        or with #:fail-when. -- AT
   (pattern (~and (:->^ x y ~! z ...) (~fail))
            #:with type 'dummy)
-  (pattern (~and type ((~or (~once :->^) (~not :->^)) ...)))
+  (pattern (~and type ((~or (~between :->^ 1 +inf.0) (~not :->^)) ...)))
   (pattern (type)))

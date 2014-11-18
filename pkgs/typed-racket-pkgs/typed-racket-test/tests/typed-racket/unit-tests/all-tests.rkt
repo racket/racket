@@ -41,4 +41,5 @@
   "filter-tests.rkt"
   "metafunction-tests.rkt"
   "generalize-tests.rkt"
-  "rep-tests.rkt")
+  "rep-tests.rkt"
+  "prims-tests.rkt")
