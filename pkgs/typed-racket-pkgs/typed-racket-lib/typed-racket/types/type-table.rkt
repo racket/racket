@@ -36,6 +36,12 @@
 
 (define type-table (make-hasheq))
 
+;; A struct that helps track tooltip types for a given location
+;;   seen    - (Listof Syntax)
+;;   results - a TC-Result
+(struct tooltip (seen results) #:transparent)
+
+;; tooltip-table : (Hash (List Int Int) tooltip)
 ;; This table keeps track of the same types as the type table
 ;; but indexed on source location for tooltips and only retaining the
 ;; last type for a given location.
@@ -48,31 +54,38 @@
     ;; Only keep the latest type for a given location, which means that
     ;; since typechecking proceeds inside-out we will only record the most
     ;; relevant type for the expansion of macros (which often have misleading
-    ;; syntax locations on the subexpressions). A limitation of this approach
-    ;; is that for function bodies we may not retain all the types from case->
-    ;; branches.
-    (hash-set!
+    ;; syntax locations on the subexpressions).
+    (hash-update!
      tooltip-table
      (list (syntax-position e) (syntax-span e))
-     (list e t)))
+     (λ (old)
+       (match-define (tooltip seen results) old)
+       (if (member e seen)
+           ;; the car should be the latest stx for the location
+           (if (equal? e (car seen))
+               ;; combine types seen at the latest
+               (tooltip seen ((combine t) results))
+               old)
+           (tooltip (cons e seen) t)))
+     (tooltip (list e) t)))
   (when (optimize?)
-    (hash-update! type-table e
-                  ;; when typechecking a case-> type, types get added for
-                  ;; the same subexpression multiple times, combine them
-                  (lambda (old)
-                    (match* (old t)
-                      [((tc-result1: old-t) (tc-result1: t-t))
-                       (ret (Un old-t t-t))]
-                      [((tc-results: old-ts) (tc-results: t-ts))
-                       ;; filters don't matter at this point, since only
-                       ;; the optimizer reads this table
-                       (unless (= (length old-ts) (length t-ts))
-                         (int-err
-                          "type table: number of values don't agree ~a ~a"
-                          old-ts t-ts))
-                       (ret (map Un old-ts t-ts))]
-                      [(_ _) t])) ; irrelevant to the optimizer, just clobber
-                  t)))
+    (hash-update! type-table e (combine t) t)))
+
+;; when typechecking a case-> type, types get added for
+;; the same subexpression multiple times, combine them
+(define ((combine new) old)
+  (match* (old new)
+    [((tc-result1: old-t) (tc-result1: t-t))
+     (ret (Un old-t t-t))]
+    [((tc-results: old-ts) (tc-results: t-ts))
+     ;; filters don't matter at this point, since only
+     ;; the optimizer reads this table
+     (unless (= (length old-ts) (length t-ts))
+       (int-err
+        "type table: number of values don't agree ~a ~a"
+        old-ts t-ts))
+     (ret (map Un old-ts t-ts))]
+    [(_ _) new])) ; irrelevant to the optimizer, just clobber
 
 (define (type-of e)
   (hash-ref type-table e
@@ -94,9 +107,9 @@
   (define type-names (current-type-names))
   (for/fold ([tooltips '()])
             ([(pos+span stx+results) (in-hash tooltip-table)]
-             #:unless (error-at-stx-loc? (car stx+results)))
+             #:unless (error-at-stx-loc? (car (tooltip-seen stx+results))))
     (match-define (list pos span) pos+span)
-    (match-define (list stx results) stx+results)
+    (match-define (tooltip (cons stx _) results) stx+results)
     ;; `printed-type-thunks` is #f if we should skip the type because it's
     ;; something not worth printing like Bottom or Error.
     (define printed-type-thunks
