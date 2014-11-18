@@ -15,6 +15,7 @@
                      "sandbox-lib"
                      "pconvert-lib"
                      "unstable-flonum-lib"
+                     "unstable-list-lib"
                      "unstable"))
 (define update-implies '("typed-racket"))
 
