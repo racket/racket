@@ -78,6 +78,9 @@
   [const/e
    (-> any/c
        enum?)]
+  [from-list/e
+   (-> list?
+       enum?)]
   [fin/e
    (->* () #:rest list?
        enum?)]
