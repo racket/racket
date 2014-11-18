@@ -25,3 +25,4 @@ This manual documents data structure libraries available in the
 @include-section["integer-set.scrbl"]
 @include-section["bit-vector.scrbl"]
 @include-section["union-find.scrbl"]
+@include-section["enumerate.scrbl"]

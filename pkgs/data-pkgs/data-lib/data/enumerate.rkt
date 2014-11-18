@@ -23,6 +23,12 @@
 
 (provide 
  (contract-out
+  [nat?
+   (-> any/c 
+       boolean?)]
+  [extended-nat?
+   (-> any/c 
+       boolean?)]
   [enum 
    (-> extended-nat? (-> nat? any/c) (-> any/c nat?)
        enum?)]
@@ -72,11 +78,8 @@
   [const/e
    (-> any/c
        enum?)]
-  [from-list/e
-   (-> list?
-       enum?)]
   [fin/e
-   (-> list?
+   (->* () #:rest list?
        enum?)]
   [nat/e enum?]
   [int/e enum?]
@@ -84,7 +87,8 @@
    (->* () #:rest (listof (cons/c enum? (-> any/c boolean?)))
         enum?)]
   [disj-append/e
-   (->* (enum?) #:rest (listof (cons/c enum? (-> any/c boolean?)))
+   (->* ((cons/c enum? (-> any/c boolean?)))
+        #:rest (listof (cons/c enum? (-> any/c boolean?)))
         enum?)]
   [fin-cons/e
    (-> enum? enum?
@@ -236,8 +240,8 @@
           es/e)]))
 
 ;; filter/e : enum a, (a -> bool) -> enum a
-;; size won't be accurate!
-;; encode is not accurate right now!
+;; xxx size won't be accurate!
+;; xxx encode is not accurate right now!
 (define (filter/e e p)
   (enum (size e)
         (λ (n)
