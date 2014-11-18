@@ -504,14 +504,14 @@ extern Scheme_Object *scheme_date;
 
 extern Scheme_Object *scheme_liberal_def_ctx_type;
 
-extern Scheme_Object *scheme_module_stx;
-extern Scheme_Object *scheme_modulestar_stx;
-extern Scheme_Object *scheme_begin_stx;
-extern Scheme_Object *scheme_module_begin_stx;
-extern Scheme_Object *scheme_define_values_stx;
-extern Scheme_Object *scheme_define_syntaxes_stx;
-extern Scheme_Object *scheme_begin_for_syntax_stx;
-extern Scheme_Object *scheme_top_stx;
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_module_stx);
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_modulestar_stx);
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_begin_stx);
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_module_begin_stx);
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_define_values_stx);
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_define_syntaxes_stx);
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_begin_for_syntax_stx);
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_top_stx);
 
 extern Scheme_Object *scheme_recur_symbol, *scheme_display_symbol, *scheme_write_special_symbol;
 
@@ -1165,7 +1165,7 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, Scheme_Object *
                                               int save_unmarshal);
 void scheme_save_module_context_unmarshal(Scheme_Object *mc, Scheme_Object *info);
 
-void scheme_do_module_context_unmarshal(Scheme_Object *modidx,
+void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *req_modidx,
                                         Scheme_Object *context, Scheme_Object *src_phase,
                                         Scheme_Object *info, Scheme_Hash_Table *export_registry);
 

@@ -215,40 +215,45 @@ ROSYM static Scheme_Object *phaseless_keyword;
 
 READ_ONLY static Scheme_Object *modbeg_syntax;
 
-/* global read-only syntax */
-READ_ONLY Scheme_Object *scheme_module_stx;
-READ_ONLY Scheme_Object *scheme_modulestar_stx;
-READ_ONLY Scheme_Object *scheme_module_begin_stx;
-READ_ONLY Scheme_Object *scheme_begin_stx;
-READ_ONLY Scheme_Object *scheme_define_values_stx;
-READ_ONLY Scheme_Object *scheme_define_syntaxes_stx;
-READ_ONLY Scheme_Object *scheme_top_stx;
-READ_ONLY Scheme_Object *scheme_begin_for_syntax_stx;
-READ_ONLY static Scheme_Object *require_stx;
-READ_ONLY static Scheme_Object *provide_stx;
-READ_ONLY static Scheme_Object *declare_stx;
-READ_ONLY static Scheme_Object *set_stx;
-READ_ONLY static Scheme_Object *app_stx;
-READ_ONLY static Scheme_Object *lambda_stx;
-READ_ONLY static Scheme_Object *case_lambda_stx;
-READ_ONLY static Scheme_Object *let_values_stx;
-READ_ONLY static Scheme_Object *letrec_values_stx;
-READ_ONLY static Scheme_Object *if_stx;
-READ_ONLY static Scheme_Object *begin0_stx;
-READ_ONLY static Scheme_Object *set_stx;
-READ_ONLY static Scheme_Object *with_continuation_mark_stx;
-READ_ONLY static Scheme_Object *letrec_syntaxes_stx;
-READ_ONLY static Scheme_Object *var_ref_stx;
-READ_ONLY static Scheme_Object *expression_stx;
-READ_ONLY static Scheme_Object *quote_stx;
-READ_ONLY static Scheme_Object *datum_stx;
+/* global syntax */
+THREAD_LOCAL_DECL(Scheme_Object *scheme_module_stx);
+THREAD_LOCAL_DECL(Scheme_Object *scheme_modulestar_stx);
+THREAD_LOCAL_DECL(Scheme_Object *scheme_module_begin_stx);
+THREAD_LOCAL_DECL(Scheme_Object *scheme_begin_stx);
+THREAD_LOCAL_DECL(Scheme_Object *scheme_define_values_stx);
+THREAD_LOCAL_DECL(Scheme_Object *scheme_define_syntaxes_stx);
+THREAD_LOCAL_DECL(Scheme_Object *scheme_top_stx);
+THREAD_LOCAL_DECL(Scheme_Object *scheme_begin_for_syntax_stx);
 
-READ_ONLY static Scheme_Object *make_struct_type_stx;
-READ_ONLY static Scheme_Object *make_struct_type_property_stx;
-READ_ONLY static Scheme_Object *list_stx;
-READ_ONLY static Scheme_Object *cons_stx;
-READ_ONLY static Scheme_Object *gensym_stx;
-READ_ONLY static Scheme_Object *string_to_uninterned_symbol_stx;
+THREAD_LOCAL_DECL(Scheme_Object *more_constant_stxes[NUM_MORE_CONSTANT_STXES]);
+
+/* XOA is XFORM_OK_ASSIGN from "schthread.h" */
+#define CONSTANT_STX(pos) XOA (more_constant_stxes[pos])
+
+#define require_stx CONSTANT_STX(0)
+#define provide_stx CONSTANT_STX(1)
+#define declare_stx CONSTANT_STX(2)
+#define set_stx     CONSTANT_STX(3)
+#define app_stx     CONSTANT_STX(4)
+#define lambda_stx  CONSTANT_STX(5)
+#define case_lambda_stx CONSTANT_STX(6)
+#define let_values_stx  CONSTANT_STX(7)
+#define letrec_values_stx CONSTANT_STX(8)
+#define if_stx      CONSTANT_STX(9)
+#define begin0_stx  CONSTANT_STX(10)
+#define with_continuation_mark_stx CONSTANT_STX(11)
+#define letrec_syntaxes_stx CONSTANT_STX(12)
+#define var_ref_stx CONSTANT_STX(13)
+#define expression_stx CONSTANT_STX(14)
+#define quote_stx   CONSTANT_STX(15)
+#define datum_stx   CONSTANT_STX(16)
+
+#define make_struct_type_stx CONSTANT_STX(17)
+#define make_struct_type_property_stx CONSTANT_STX(18)
+#define list_stx    CONSTANT_STX(19)
+#define cons_stx    CONSTANT_STX(20)
+#define gensym_stx  CONSTANT_STX(21)
+#define string_to_uninterned_symbol_stx CONSTANT_STX(22)
 
 READ_ONLY static Scheme_Object *empty_self_modidx;
 READ_ONLY static Scheme_Object *empty_self_modname;
@@ -671,17 +676,6 @@ void scheme_init_syntax_bindings()
   // REMOVEME: FIXME: all of these need to be place-local
   
   Scheme_Object *w;
-  Scheme_Object *rn;
-  int i;
-
-  rn = scheme_make_module_context(NULL, NULL, NULL);
-  for (i = kernel->me->rt->num_provides; i--; ) {
-    scheme_extend_module_context(rn, kernel_modidx,
-                                 kernel->me->rt->provides[i],
-                                 kernel->me->rt->provide_src_names[i], kernel_modidx, 
-                                 kernel->me->rt->provide_src_names[i], 
-                                 0, scheme_make_integer(0), NULL, 0);
-  }
 
   REGISTER_SO(scheme_sys_wraps0);
   REGISTER_SO(scheme_sys_wraps1);
@@ -697,26 +691,9 @@ void scheme_init_syntax_bindings()
   REGISTER_SO(scheme_begin_stx);
   REGISTER_SO(scheme_define_values_stx);
   REGISTER_SO(scheme_define_syntaxes_stx);
-  REGISTER_SO(scheme_begin_for_syntax_stx);
-  REGISTER_SO(require_stx);
-  REGISTER_SO(provide_stx);
-  REGISTER_SO(declare_stx);
-  REGISTER_SO(set_stx);
-  REGISTER_SO(app_stx);
   REGISTER_SO(scheme_top_stx);
-  REGISTER_SO(lambda_stx);
-  REGISTER_SO(case_lambda_stx);
-  REGISTER_SO(let_values_stx);
-  REGISTER_SO(letrec_values_stx);
-  REGISTER_SO(if_stx);
-  REGISTER_SO(begin0_stx);
-  REGISTER_SO(set_stx);
-  REGISTER_SO(with_continuation_mark_stx);
-  REGISTER_SO(letrec_syntaxes_stx);
-  REGISTER_SO(var_ref_stx);
-  REGISTER_SO(expression_stx);
-  REGISTER_SO(quote_stx);
-  REGISTER_SO(datum_stx);
+  REGISTER_SO(scheme_begin_for_syntax_stx);
+  REGISTER_SO(more_constant_stxes);
 
   w = scheme_sys_wraps0;
   scheme_module_stx = scheme_datum_to_syntax(scheme_intern_symbol("module"), scheme_false, w, 0, 0);
@@ -744,13 +721,6 @@ void scheme_init_syntax_bindings()
   expression_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%expression"), scheme_false, w, 0, 0);
   quote_stx = scheme_datum_to_syntax(scheme_intern_symbol("quote"), scheme_false, w, 0, 0);
   datum_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%datum"), scheme_false, w, 0, 0);
-
-  REGISTER_SO(make_struct_type_stx);
-  REGISTER_SO(make_struct_type_property_stx);
-  REGISTER_SO(cons_stx);
-  REGISTER_SO(list_stx);
-  REGISTER_SO(gensym_stx);
-  REGISTER_SO(string_to_uninterned_symbol_stx);
 
   make_struct_type_stx = scheme_datum_to_syntax(scheme_intern_symbol("make-struct-type"), scheme_false, w, 0, 0);
   make_struct_type_property_stx = scheme_datum_to_syntax(scheme_intern_symbol("make-struct-type-property"), scheme_false, w, 0, 0);
@@ -10206,7 +10176,7 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
                 Scheme_Object *noms;
                 exs[count] = provided->keys[i];
                 exsns[count] = SCHEME_VEC_ELS(binding)[1];
-                exss[count] = nominal_mod;
+                exss[count] = SCHEME_VEC_ELS(binding)[0];
                 noms = adjust_for_rename(exs[count], nominal_name, cons(nominal_mod, scheme_null));
                 exsnoms[count] = noms;
                 exps[count] = protected;
@@ -11470,7 +11440,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
               ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
               done = 0;
             } else {
-              scheme_shadow(orig_env, iname, 1);
+              scheme_shadow(orig_env, SCHEME_STX_VAL(iname), 1);
               done = 1;
             }
           } else
@@ -11541,7 +11511,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
   }
 }
 
-void scheme_do_module_context_unmarshal(Scheme_Object *modidx,
+void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *req_modidx,
                                         Scheme_Object *context, Scheme_Object *src_phase,
                                         Scheme_Object *info, Scheme_Hash_Table *export_registry)
 {
@@ -11630,13 +11600,13 @@ void scheme_do_module_context_unmarshal(Scheme_Object *modidx,
     if (pt) {
       if (!pt->src_modidx && me->src_modidx)
         pt->src_modidx = me->src_modidx;
-      scheme_extend_module_context_with_shared(pt->phase_index, modidx, pt, pt->phase_index, src_phase, context, 0);
+      scheme_extend_module_context_with_shared(src_phase, req_modidx, pt, pt->phase_index, src_phase, context, 0);
     }
   } else {
     if (!SCHEME_NULLP(marks) || SCHEME_TRUEP(bdg))
       scheme_signal_error("internal error: unexpected marks/bdg");
 
-    add_single_require(me, pt_phase, src_phase, modidx, NULL,
+    add_single_require(me, pt_phase, src_phase, req_modidx, NULL,
                        NULL, scheme_false /* FIXME: rn */,
                        exns, NULL, prefix, NULL, NULL,
                        NULL,

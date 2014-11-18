@@ -1405,6 +1405,9 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 					   -1, genv->mod_phase, 0,
                                            NULL);
       }
+    } else if (SCHEME_VECTORP(binding) && !genv->module) {
+      /* The identifier is specifically bound as a top-level definition. */
+      return (Scheme_Object *)scheme_global_bucket(find_global_id, genv);
     } else
       return NULL;
   }

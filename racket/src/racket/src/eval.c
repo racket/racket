@@ -3881,18 +3881,22 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
       
       a = SCHEME_STX_CAR(form);
       if (SCHEME_STX_SYMBOLP(a)) {
-	a = scheme_stx_add_module_context(a, genv->stx_context);
-        module_stx = scheme_datum_to_syntax(module_symbol,
-                                            scheme_false, 
-                                            scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
-                                            0, 0);
-	if (scheme_stx_module_eq(a, module_stx, genv->phase)) {
-	  /* Don't add renames to the whole module; let the 
-	     module's language take over. */
-	  d = SCHEME_STX_CDR(form);
-	  a = scheme_make_pair(a, d);
-	  form = scheme_datum_to_syntax(a, form, form, 0, 1);
-	  return form;
+        if (SCHEME_TRUEP(scheme_stx_lookup(a, scheme_env_phase(genv)))) {
+          return form;
+        } else {
+          a = scheme_stx_add_module_context(a, genv->stx_context);
+          module_stx = scheme_datum_to_syntax(module_symbol,
+                                              scheme_false, 
+                                              scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
+                                              0, 0);
+          if (scheme_stx_module_eq(a, module_stx, genv->phase)) {
+            /* Don't add renames to the whole module; let the 
+               module's language take over. */
+            d = SCHEME_STX_CDR(form);
+            a = scheme_make_pair(a, d);
+            form = scheme_datum_to_syntax(a, form, form, 0, 1);
+            return form;
+          }
 	}
       }
     }
@@ -5534,6 +5538,7 @@ local_eval(int argc, Scheme_Object **argv)
 
   old_stx_env = stx_env;
   stx_env = scheme_new_compilation_frame(0, SCHEME_FOR_INTDEF, rib, stx_env);
+  scheme_add_local_syntax(cnt, stx_env);
 
   /* Mark names */
   if (scheme_current_thread->current_local_mark)

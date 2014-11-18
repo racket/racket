@@ -860,7 +860,7 @@ static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client 
 
 void scheme_prepare_env_stx_context(Scheme_Env *env)
 {
-  Scheme_Object *mc, *shift, *insp, *intro_mark;
+  Scheme_Object *mc, *shift, *insp;
 
   if (env->stx_context) return;
 
@@ -874,9 +874,7 @@ void scheme_prepare_env_stx_context(Scheme_Env *env)
                               env->module_registry->exports,
                               insp);
 
-    intro_mark = scheme_new_multi_mark();
-
-    mc = scheme_make_module_context(insp, shift, intro_mark);
+    mc = scheme_make_module_context(insp, shift, scheme_new_multi_mark());
   } else
     mc = scheme_make_top_level_module_context(scheme_env_phase(env));
 

@@ -81,6 +81,7 @@ MZ_EXTERN void scheme_init_os_thread(void);
 #define STACK_COPY_CACHE_SIZE 10
 #define BIGNUM_CACHE_SIZE 16
 #define STACK_CACHE_SIZE 32
+#define NUM_MORE_CONSTANT_STXES 24
 
 /* This structure must be 4 words: */
 typedef struct {
@@ -353,6 +354,15 @@ typedef struct Thread_Local_Variables {
   void *scheme_inotify_server_;
   struct Scheme_Object *configuration_callback_cache_[2];
   struct FFI_Orig_Place_Call *cached_orig_place_todo_;
+  struct Scheme_Object *scheme_module_stx_;
+  struct Scheme_Object *scheme_modulestar_stx_;
+  struct Scheme_Object *scheme_module_begin_stx_;
+  struct Scheme_Object *scheme_begin_stx_;
+  struct Scheme_Object *scheme_define_values_stx_;
+  struct Scheme_Object *scheme_define_syntaxes_stx_;
+  struct Scheme_Object *scheme_top_stx_;
+  struct Scheme_Object *scheme_begin_for_syntax_stx_;
+  struct Scheme_Object *more_constant_stxes_[NUM_MORE_CONSTANT_STXES];
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -731,6 +741,15 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_inotify_server XOA (scheme_get_thread_local_variables()->scheme_inotify_server_)
 #define configuration_callback_cache XOA (scheme_get_thread_local_variables()->configuration_callback_cache_)
 #define cached_orig_place_todo XOA (scheme_get_thread_local_variables()->cached_orig_place_todo_)
+#define scheme_module_stx XOA (scheme_get_thread_local_variables()->scheme_module_stx_)
+#define scheme_modulestar_stx XOA (scheme_get_thread_local_variables()->scheme_modulestar_stx_)
+#define scheme_module_begin_stx XOA (scheme_get_thread_local_variables()->scheme_module_begin_stx_)
+#define scheme_begin_stx XOA (scheme_get_thread_local_variables()->scheme_begin_stx_)
+#define scheme_define_values_stx XOA (scheme_get_thread_local_variables()->scheme_define_values_stx_)
+#define scheme_define_syntaxes_stx XOA (scheme_get_thread_local_variables()->scheme_define_syntaxes_stx_)
+#define scheme_top_stx XOA (scheme_get_thread_local_variables()->scheme_top_stx_)
+#define scheme_begin_for_syntax_stx XOA (scheme_get_thread_local_variables()->scheme_begin_for_syntax_stx_)
+#define more_constant_stxes XOA (scheme_get_thread_local_variables()->more_constant_stxes_)
 
 /* **************************************** */
 
