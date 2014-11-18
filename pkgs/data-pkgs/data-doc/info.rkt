@@ -8,6 +8,7 @@
 
 (define pkg-authors '(ryanc))
 (define build-deps '("data-lib"
+                     "data-enumerate-lib"
                      "racket-doc"
                      "scribble-lib"))
-(define update-implies '("data-lib"))
+(define update-implies '("data-lib" "data-enumerate-lib"))

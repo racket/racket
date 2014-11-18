@@ -4,7 +4,8 @@
 
 (define collection 'multi)
 
-(define deps '("scheme-lib"
+(define deps '("data-enumerate-lib"
+               "scheme-lib"
                "base"
                "data-lib"
                "math-lib"

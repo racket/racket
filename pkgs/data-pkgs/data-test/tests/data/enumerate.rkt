@@ -1,9 +1,10 @@
-#lang racket
-
+#lang racket/base
 (require rackunit
+         racket/function
+         racket/set
          data/gvector
-         redex/private/enumerator
-         (submod redex/private/enumerator test))
+         data/enumerate
+         (submod data/enumerate test))
 
 ;; const/e tests
 (let ([e (const/e 17)])
@@ -283,9 +284,6 @@
 (test-begin
  (check-equal? (list->inc-set '(2 0 1 2)) '(2 3 5 8))
  (check-equal? (inc-set->list '(2 3 5 8)) '(2 0 1 2)))
-
-(define (below/e n)
-  (take/e nat/e n))
 
 ;; multi-arg map/e test
 (define sums/e

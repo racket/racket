@@ -563,8 +563,11 @@ An @tech{enumeration} raises @racket[e] if @racket[decode] or
 @racket[encode] is called with on.
 
 @examples[#:eval the-eval
-(approximate (fail/e (exn:fail "Don't do that!" (current-continuation-marks)))
-             5)
+(approximate 
+ (fail/e
+  (exn:fail "Don't do that!"
+            (current-continuation-marks)))
+ 5)
 ]}
 
 @defthing[char/e enum?]{

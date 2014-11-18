@@ -1564,11 +1564,9 @@
           t
           t)))
 
-(module+
- test
+(module+ test
  (require rackunit)
  (provide check-bijection?
-          int/e
           find-size
           list->inc-set
           inc-set->list)
