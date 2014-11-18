@@ -123,11 +123,11 @@
                 (pretty-format-type (cleanup-type type))))]
         [(or (tc-results: types)
              (tc-results: types _ _ _ _)) ; FIXME, account for dty/dbound
-         (apply string-append
-                (for/list ([(type index) (in-indexed (in-list types))])
-                  (format "Value ~a:~n  ~a~n"
-                          (add1 index)
-                          (printer-thunk type-names
+         (printer-thunk type-names
+           (apply string-append
+                  (for/list ([(type index) (in-indexed (in-list types))])
+                    (format "Value ~a:~n  ~a~n"
+                            (add1 index)
                             (pretty-format-type (cleanup-type type)
                                                 #:indent 2)))))]
         [(tc-any-results: _) "AnyValues"]))

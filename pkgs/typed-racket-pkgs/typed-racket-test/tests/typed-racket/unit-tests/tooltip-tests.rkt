@@ -70,12 +70,12 @@
      (match-define (vector stx start* end* type*) tooltip)
      (printf "~a ~a ~a~n" start* end* (if (procedure? type*) (type*) type*))))
   (for/and ([entry (in-list lst)])
-    (match-define (list type start end) entry)
+    (match-define (list regex start end) entry)
     (for/or ([tooltip (in-list tooltips)])
       (match-define (vector stx start* end* type*) tooltip)
       (and (= start start*)
            (= end end*)
-           (equal? type (if (procedure? type*) (type*) type*))))))
+           (regexp-match? regex (if (procedure? type*) (type*) type*))))))
 
 ;; ensures there are no duplicate type tooltips for a single syntax location
 (define (unique-locations? tooltips)
@@ -90,9 +90,12 @@
 (define tests
   (test-suite "Tooltip tests"
     (check-tooltip (string-append "foo" "bar")
-                   (has-types-at? (list (list "String" 38 43))))
+                   (has-types-at? (list (list "^String$" 38 43))))
     (check-tooltip (for/list : (Listof Integer) ([i (list 1 2 3)]) i)
-                   (has-types-at? (list (list "(Listof Integer)" 23 24)
-                                        (list "(Listof Integer)" 72 73))))
+                   (has-types-at? (list (list "^\\(Listof Integer\\)$" 23 24)
+                                        (list "^\\(Listof Integer\\)$" 72 73))))
     (check-tooltip (class object% (super-new) (field [x : Integer 0]) x (set! x 3))
-                   (has-types-at? (list (list "Integer" 74 75))))))
+                   (has-types-at? (list (list "^Integer$" 74 75))))
+    (check-tooltip (values 1 2)
+                   (has-types-at? (list (list #rx"Value 1:.*One.*Value 2:.*Positive-Byte"
+                                              23 24))))))
