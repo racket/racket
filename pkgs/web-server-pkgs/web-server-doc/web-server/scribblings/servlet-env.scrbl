@@ -151,7 +151,7 @@ Like always, you don't even need to save the file.
                         [#:stuffer stuffer (stuffer/c serializable? bytes?) default-stuffer]
                         [#:manager manager manager? (make-threshold-LRU-manager #f (* 128 1024 1024))]
                         [#:servlet-namespace servlet-namespace (listof module-path?) empty]
-                        [#:server-root-path server-root-path path-string? default-server-root-path]
+                        [#:server-root-path server-root-path path-string? (collection-path "web-server" "default-web-root")]
                         [#:extra-files-paths extra-files-paths (listof path-string?) (list (build-path server-root-path "htdocs"))]
                         [#:servlets-root servlets-root path-string? (build-path server-root-path "htdocs")]
                         [#:servlet-current-directory servlet-current-directory path-string? servlets-root]
@@ -212,9 +212,13 @@ customizations do not, which the rest of this section describes.
  as its continuation manager. (The default manager limits the amount of memory to 64 MB and
  deals with memory pressure as discussed in the @racket[make-threshold-LRU-manager] documentation.)
  
- The server files are rooted at @racket[server-root-path] (which is the distribution root by default.)
- File paths, in addition to the @filepath["htdocs"] directory under @racket[server-root-path] may be
- provided with @racket[extra-files-paths]. These paths are checked first, in the order they appear in the list.
+ The server files are rooted at @racket[server-root-path] (which is
+the @filepath{default-web-root} directory in the
+@racketmodname[web-server] collection by default.)  File paths, in
+addition to the @filepath["htdocs"] directory under
+@racket[server-root-path] may be provided with
+@racket[extra-files-paths]. These paths are checked first, in the
+order they appear in the list.
  
  Other servlets are served from @racket[servlets-root]. 
  The modules specified by @racket[servlet-namespace] are shared between servlets found in @racket[servlets-root] and the current namespace (and therefore
