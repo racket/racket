@@ -49,9 +49,10 @@
          contract-continuation-mark-key
          
          (struct-out wrapped-extra-arg-arrow)
-         custom-write-property-proc)
+         contract-custom-write-property-proc
+         (rename-out [contract-custom-write-property-proc custom-write-property-proc]))
 
-(define (custom-write-property-proc stct port display?)
+(define (contract-custom-write-property-proc stct port display?)
   (write-string "#<" port)
   (cond
     [(flat-contract-struct? stct) (write-string "flat-" port)]
@@ -367,7 +368,7 @@
 ;
 
 (define-struct eq-contract (val name)
-  #:property prop:custom-write custom-write-property-proc
+  #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (eq? (eq-contract-val ctc) x)))
@@ -387,7 +388,7 @@
    #:list-contract? (λ (c) (null? (eq-contract-val c)))))
 
 (define-struct equal-contract (val name)
-  #:property prop:custom-write custom-write-property-proc
+  #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (equal? (equal-contract-val ctc) x)))
@@ -406,7 +407,7 @@
      (λ (fuel) (λ () v)))))
 
 (define-struct =-contract (val name)
-  #:property prop:custom-write custom-write-property-proc
+  #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (and (number? x) (= (=-contract-val ctc) x))))
@@ -425,7 +426,7 @@
      (λ (fuel) (λ () v)))))
 
 (define-struct regexp/c (reg name)
-  #:property prop:custom-write custom-write-property-proc
+  #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order
@@ -443,7 +444,7 @@
 ;; sane? : boolean -- indicates if we know that the predicate is well behaved
 ;; (for now, basically amounts to trusting primitive procedures)
 (define-struct predicate-contract (name pred generate sane?)
-  #:property prop:custom-write custom-write-property-proc
+  #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:stronger

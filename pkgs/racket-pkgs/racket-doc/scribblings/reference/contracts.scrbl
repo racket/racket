@@ -9,6 +9,11 @@
        (the-eval '(require racket/contract racket/contract/parametric racket/list))
        the-eval)))
 
+@(define blame-object
+   @tech[#:doc '(lib "scribblings/guide/guide.scrbl")]{blame object})
+@(define blame-objects
+   @tech[#:doc '(lib "scribblings/guide/guide.scrbl")]{blame objects})
+
 @title[#:tag "contracts" #:style 'toc]{Contracts}
 
 @guideintro["contracts"]{contracts}
@@ -1704,199 +1709,6 @@ accepted by the third argument to @racket[datum->syntax].
 @defmodule*/no-declare[(racket/contract/combinator)]
 @declare-exporting-ctc[racket/contract/combinator]
 
-Contracts are represented internally as functions that
-accept information about the contract (who is to blame,
-source locations, @|etc|) and produce projections (in the
-spirit of Dana Scott) that enforce the contract. A
-projection is a function that accepts an arbitrary value,
-and returns a value that satisfies the corresponding
-contract. For example, a projection that accepts only
-integers corresponds to the contract @racket[(flat-contract
-integer?)], and can be written like this:
-
-@racketblock[
-(define int-proj
-  (λ (x)
-    (if (integer? x)
-        x
-        (signal-contract-violation))))
-]
-
-As a second example, a projection that accepts unary functions
-on integers looks like this:
-
-@racketblock[
-(define int->int-proj
-  (λ (f)
-    (if (and (procedure? f)
-             (procedure-arity-includes? f 1))
-        (λ (x) (int-proj (f (int-proj x))))
-        (signal-contract-violation))))
-]
-
-Although these projections have the right error behavior,
-they are not quite ready for use as contracts, because they
-do not accommodate blame and do not provide good error
-messages. In order to accommodate these, contracts do not
-just use simple projections, but use functions that accept a
-@deftech{blame object} encapsulating
-the names of two parties that are the candidates for blame,
-as well as a record of the source location where the
-contract was established and the name of the contract. They
-can then, in turn, pass that information
-to @racket[raise-blame-error] to signal a good error
-message.
-
-Here is the first of those two projections, rewritten for
-use in the contract system:
-@racketblock[
-(define (int-proj blame)
-  (λ (x)
-    (if (integer? x)
-        x
-        (raise-blame-error
-         blame
-         x
-         '(expected: "<integer>" given: "~e")
-         x))))
-]
-The new argument specifies who is to be blamed for
-positive and negative contract violations.
-
-Contracts, in this system, are always
-established between two parties. One party provides some
-value according to the contract, and the other consumes the
-value, also according to the contract. The first is called
-the ``positive'' person and the second the ``negative''. So,
-in the case of just the integer contract, the only thing
-that can go wrong is that the value provided is not an
-integer. Thus, only the positive party can ever accrue
-blame.  The @racket[raise-blame-error] function always blames
-the positive party.
-
-Compare that to the projection for our function contract:
-
-@racketblock[
-(define (int->int-proj blame)
-  (define dom (int-proj (blame-swap blame)))
-  (define rng (int-proj blame))
-  (λ (f)
-    (if (and (procedure? f)
-             (procedure-arity-includes? f 1))
-        (λ (x) (rng (f (dom x))))
-        (raise-blame-error
-         blame
-         f
-         '(expected "a procedure of one argument" given: "~e")
-         f))))
-]
-
-In this case, the only explicit blame covers the situation
-where either a non-procedure is supplied to the contract or
-the procedure does not accept one argument. As with
-the integer projection, the blame here also lies with the
-producer of the value, which is
-why @racket[raise-blame-error] is passed @racket[blame] unchanged.
-
-The checking for the domain and range are delegated to
-the @racket[int-proj] function, which is supplied its
-arguments in the first two lines of
-the @racket[int->int-proj] function. The trick here is that,
-even though the @racket[int->int-proj] function always
-blames what it sees as positive, we can swap the blame parties by
-calling @racket[blame-swap] on the given @tech{blame object}, replacing
-the positive party with the negative party and vice versa.
-
-This technique is not merely a cheap trick to get the example to work,
-however. The reversal of the positive and the negative is a
-natural consequence of the way functions behave. That is,
-imagine the flow of values in a program between two
-modules. First, one module defines a function, and then that
-module is required by another. So far, the function itself
-has to go from the original, providing module to the
-requiring module. Now, imagine that the providing module
-invokes the function, supplying it an argument. At this
-point, the flow of values reverses. The argument is
-traveling back from the requiring module to the providing
-module! And finally, when the function produces a result,
-that result flows back in the original
-direction. Accordingly, the contract on the domain reverses
-the positive and the negative blame parties, just like the flow
-of values reverses.
-
-We can use this insight to generalize the function contracts
-and build a function that accepts any two contracts and
-returns a contract for functions between them.
-
-This projection also goes further and uses
-@racket[blame-add-context] to improve the error messages
-when a contract violation is detected.
-
-@racketblock[
-(define (make-simple-function-contract dom-proj range-proj)
-  (λ (blame)
-    (define dom (dom-proj (blame-add-context blame
-                                             "the argument of"
-                                             #:swap? #t)))
-    (define rng (range-proj (blame-add-context blame
-                                               "the range of")))
-    (λ (f)
-      (if (and (procedure? f)
-               (procedure-arity-includes? f 1))
-          (λ (x) (rng (f (dom x))))
-          (raise-blame-error
-           blame
-           f
-           '(expected "a procedure of one argument" given: "~e")
-           f)))))
-]
-
-While these projections are supported by the contract library
-and can be used to build new contracts, the contract library
-also supports a different API for projections that can be more
-efficient. Specifically, a @deftech{val first projection} accepts
-a blame object without the negative blame information and then
-returns a function that accepts the value to be contracted, and
-then finally accepts the name of the negative party to the contract
-before returning the value with the contract. Rewriting @racket[int->int-proj]
-to use this API looks like this:
-@racketblock[
-(define (int->int-proj blame)
-  (define dom-blame (blame-add-context blame
-                                       "the argument of"
-                                       #:swap? #t))
-  (define rng-blame (blame-add-context blame "the range of"))
-  (define (check-int v to-blame neg-party)
-    (unless (integer? v)
-      (raise-blame-error
-       to-blame #:missing-party neg-party
-       v
-       '(expected "an integer" given: "~e")
-       v)))
-  (λ (f)
-    (if (and (procedure? f)
-             (procedure-arity-includes? f 1))
-        (λ (neg-party)
-          (λ (x)
-            (check-int x dom-blame neg-party)
-            (define ans (f x))
-            (check-int ans rng-blame neg-party)
-            ans))
-        (λ (neg-party)
-          (raise-blame-error
-           blame #:missing-party neg-party
-           f
-           '(expected "a procedure of one argument" given: "~e")
-           f)))))]
-The advantage of this style of contract is that the @racket[_blame]
-and @racket[_v] arguments can be supplied on the server side of the
-contract boundary and the result can be used for every different
-client. With the simpler situation, a new blame object has to be
-created for each client.
-
-Projections like the ones described above, but suited to
-other, new kinds of value you might make, can be used with
-the contract library primitives below.
 
 @deftogether[(
 @defproc[(make-contract
@@ -2095,10 +1907,19 @@ contracts.  The error messages assume that the function named by
   the value cannot be coerced to a contract.
 }
 
+@defproc[(get/build-val-first-projection [c contract?])
+         (-> contract? blame? (-> any/c (-> any/c any/c)))]{
+  Returns the @racket[_val-first] projection for @racket[c].
+              
+  See @racket[make-contract] for more details.
+  
+@history[#:added "6.1.1.5"]
+}
+
 @subsection{Blame Objects}
 
 @defproc[(blame? [x any/c]) boolean?]{
-This predicate recognizes @tech{blame objects}.
+ This predicate recognizes @|blame-objects|.
 }
 
 @defproc[(blame-add-context [blame blame?]
@@ -2131,13 +1952,13 @@ the @racket[list/c] combinators each internally called
 
 The @racket[important] argument is used to build the beginning part
 of the contract violation. The last @racket[important] argument that
-gets added to a blame object is used. The @racket[class/c] contract
+gets added to a @|blame-object| is used. The @racket[class/c] contract
 adds an important argument, as does the @racket[->] contract (when
 @racket[->] knows the name of the function getting the contract).
 
 The @racket[swap?] argument has the effect of calling @racket[blame-swap]
 while adding the layer of context, but without creating an extra
-blame object.
+@|blame-object|.
 
 The context information recorded in blame structs keeps track of
 combinators that do not add information, and add the string @racket["..."]
@@ -2153,7 +1974,7 @@ passing @racket[#f] as the context string argument avoids adding the
 @defproc[(blame-negative [b blame?]) any/c]
 )]{
 These functions produce printable descriptions of the current positive and
-negative parties of a blame object.
+negative parties of a @|blame-object|.
 }
 
 @defproc[(blame-contract [b blame?]) any/c]{
@@ -2173,7 +1994,7 @@ source location was provided, all fields of the structure will contain
 }
 
 @defproc[(blame-swap [b blame?]) blame?]{
-This function swaps the positive and negative parties of a @tech{blame object}.
+This function swaps the positive and negative parties of a @|blame-object|.
 (See also @racket[blame-add-context].)
 }
 
@@ -2182,7 +2003,7 @@ This function swaps the positive and negative parties of a @tech{blame object}.
 @defproc[(blame-swapped? [b blame?]) boolean?]
 )]{
 
-These functions report whether the current blame of a given blame object is the
+These functions report whether the current blame of a given @|blame-object| is the
 same as in the original contract invocation (possibly of a compound contract
 containing the current one), or swapped, respectively.  Each is the negation of
 the other; both are provided for convenience and clarity.
@@ -2236,7 +2057,7 @@ to the error message guidelines in @secref["err-msg-conventions"].
 
 @defstruct[(exn:fail:contract:blame exn:fail:contract) ([object blame?])]{
   This exception is raised to signal a contract error. The @racket[object]
-  field contains a @tech{blame object} associated with a contract violation.
+  field contains a @|blame-object| associated with a contract violation.
 }
 
 @defparam[current-blame-format
@@ -2247,7 +2068,7 @@ A @tech{parameter} that is used when constructing a
 contract violation error. Its value is procedure that
 accepts three arguments:
 @itemize[
-@item{the blame object for the violation,}
+@item{the @|blame-object| for the violation,}
 @item{the value that the contract applies to, and}
 @item{a message indicating the kind of violation.}]
 The procedure then
@@ -2733,7 +2554,7 @@ Produces the name used to describe the contract in error messages.
 }
 
 @defproc[(value-blame [v has-blame?]) (or/c blame? #f)]{
-  Returns the blame object for the contract attached
+  Returns the @|blame-object| for the contract attached
   to @racket[v], if recorded. Otherwise it returns @racket[#f].
   
   To support @racket[value-contract] and @racket[value-blame]
@@ -2835,8 +2656,17 @@ makes a binary search tree contract, but one that is
 
 @defthing[contract-continuation-mark-key continuation-mark-key?]{
 Key used by continuation marks that are present during contract checking.
-The value of these marks are the blame objects that correspond to the contract
+The value of these marks are the @|blame-objects| that correspond to the contract
 currently being checked.
+}
+
+@defproc[(contract-custom-write-property-proc [c contract?] 
+                                              [p output-port?]
+                                              [mode (or/c #f #t 0 1)])
+         void?]{
+  Prints @racket[c] to @racket[p] using the contract's name.
+
+  @history[#:added "6.1.1.5"]
 }
 
 @section{@racketmodname[racket/contract/base]}
