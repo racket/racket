@@ -40,9 +40,9 @@
        (define op (to-syntax (string->symbol op-str)
                              (+ delta a-len) op-str))
        (to-syntax (list op a b) delta s)]
-      [else (to-syntax (or (string->number s) 
-                           (string->symbol s))
-                       delta s)]))
+      [_ (to-syntax (or (string->number s) 
+                        (string->symbol s))
+                    delta s)]))
 
   (unless expr-match
     (raise-read-error "bad arithmetic syntax" 
