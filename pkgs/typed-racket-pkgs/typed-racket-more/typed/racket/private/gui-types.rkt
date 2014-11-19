@@ -1488,9 +1488,9 @@
 
 (define-type Message%
   (Class #:implements Control<%>
-         (init [parent (Instance Area-Container<%>)] ; FIXME
-               [label (U String (Instance Bitmap%)
+         (init [label (U String (Instance Bitmap%)
                          (U 'app 'caution 'stop))]
+               [parent (Instance Area-Container<%>)] ; FIXME
                [style (Listof 'deleted) #:optional]
                [font (Instance Font%) #:optional]
                [enabled Any #:optional]
