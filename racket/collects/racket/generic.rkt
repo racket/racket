@@ -3,7 +3,7 @@
          racket/contract/combinator
          "private/generic.rkt"
          "private/generic-methods.rkt"
-         (for-syntax racket/base racket/local racket/syntax syntax/stx))
+         (for-syntax racket/base racket/syntax syntax/stx))
 
 ;; Convenience layer on top of racket/private/generic.
 ;; To avoid circular dependencies, racket/private/generic cannot use
