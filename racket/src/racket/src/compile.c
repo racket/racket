@@ -567,7 +567,7 @@ make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
   forms = SCHEME_STX_CDR(code);
   forms = SCHEME_STX_CDR(forms);
 
-  mark = scheme_new_mark();
+  mark = scheme_new_mark(8);
 
   frame = scheme_new_compilation_frame(data->num_params, SCHEME_LAMBDA_FRAME, mark, env);
   params = allparams;
@@ -646,7 +646,7 @@ lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
 
   lambda_check_args(args, form, env);
 
-  mark = scheme_new_mark();
+  mark = scheme_new_mark(8);
 
   newenv = scheme_add_compilation_frame(args, mark, env, 0);
 
@@ -1661,7 +1661,7 @@ case_lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand
 
     body = scheme_datum_to_syntax(body, line_form, line_form, 0, 0);
     
-    mark = scheme_new_mark();
+    mark = scheme_new_mark(8);
 
     newenv = scheme_add_compilation_frame(args, mark, env, 0);
 
@@ -2159,7 +2159,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   if (rec_env_already)
     mark = NULL;
   else
-    mark = scheme_new_mark();
+    mark = scheme_new_mark(9);
 
   names = MALLOC_N(Scheme_Object *, num_bindings);
   if (frame_already)
@@ -2527,7 +2527,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
     env = env_already;
     mark = NULL;
   } else {
-    mark = scheme_new_mark();
+    mark = scheme_new_mark(9);
     env = scheme_add_compilation_frame(vlist, 
                                        mark,
                                        origenv,
@@ -2558,7 +2558,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
 
     rhs = SCHEME_STX_CDR(v);
     rhs = SCHEME_STX_CAR(rhs);
-    if (mark) rhs = scheme_stx_add_mark(rhs, mark, scheme_env_phase(env->genv));
+    if (mark && letrec) rhs = scheme_stx_add_mark(rhs, mark, scheme_env_phase(env->genv));
     
     v = scheme_datum_to_syntax(cons(name, cons(rhs, scheme_null)), v, v, 0, 1);
     v = cons(v, scheme_null);
@@ -3628,7 +3628,7 @@ do_letrec_syntaxes(const char *where,
     stx_env = origenv;
     mark = NULL;
   } else {
-    mark = scheme_new_mark();
+    mark = scheme_new_mark(10);
     stx_env = scheme_new_compilation_frame(0, 0, mark, origenv);
   }
 
@@ -5457,7 +5457,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     }
   }
 
-  rib = scheme_new_mark();
+  rib = scheme_new_mark(11);
   ctx = scheme_alloc_object();
   ctx->type = scheme_intdef_context_type;
   d = MALLOC_N(void*, 3);
@@ -5562,7 +5562,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
           pre_exprs = scheme_reverse(pre_exprs);
 
-          exp_mark = scheme_new_mark();
+          exp_mark = scheme_new_mark(12);
 
           begin_stx = scheme_datum_to_syntax(begin_symbol, 
                                              scheme_false, 

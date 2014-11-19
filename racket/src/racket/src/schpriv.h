@@ -1098,7 +1098,7 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase);
 
-Scheme_Object *scheme_new_mark(void);
+Scheme_Object *scheme_new_mark(int kind);
 Scheme_Object *scheme_new_multi_mark(void);
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
 Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
@@ -1148,6 +1148,8 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
 Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc);
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc);
+
+void scheme_module_context_add_mapped_symbols(Scheme_Object *mc, Scheme_Hash_Table *mapped);
 
 XFORM_NONGCING void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *context);
 
@@ -3214,7 +3216,7 @@ typedef struct Scheme_Marshal_Tables {
   Scheme_Hash_Table *st_refs;
   Scheme_Object *st_ref_stack;
   Scheme_Hash_Table *intern_map;  /* filled on first pass */
-  Scheme_Hash_Table *mark_map;    /* filled on first pass */
+  Scheme_Hash_Table *identity_map; /* filled on first pass */
   Scheme_Hash_Table *top_map;     /* used on every pass */
   Scheme_Hash_Table *key_map;     /* set after first pass, used on later passes */
   Scheme_Hash_Table *delay_map;   /* set during first pass, used on later passes */

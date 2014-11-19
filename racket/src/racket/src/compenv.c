@@ -1155,8 +1155,15 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   if (ambiguous) {
     // REMOVEME
     scheme_stx_debug_print(find_id, 1);
-    scheme_wrong_syntax(NULL, NULL, find_id,
-                        "identifier's binding is ambiguous");
+    if (SAME_OBJ(scheme_env_phase(env->genv), scheme_make_integer(0)))
+      scheme_wrong_syntax(NULL, NULL, find_id,
+                          "identifier's binding is ambiguous");
+    else
+      scheme_wrong_syntax(NULL, NULL, find_id,
+                          "identifier's binding is ambiguous\n"
+                          "  at phase: %V",
+                          scheme_env_phase(env->genv));
+    return NULL;
   }
 
   /* If binding is a symbol, then it must be in the environment, or else
@@ -1761,7 +1768,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
     id_sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
     id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
-    id = scheme_stx_add_mark(id, scheme_new_mark(), scheme_env_phase(env->genv));
+    id = scheme_stx_add_mark(id, scheme_new_mark(6), scheme_env_phase(env->genv));
 
     rev_ids = scheme_make_pair(id, rev_ids);
   }
@@ -1871,7 +1878,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
                           NULL);
 
   
-  mark = scheme_new_mark();
+  mark = scheme_new_mark(6);
 
   if (SCHEME_RPAIRP(data))
     form = scheme_parse_lifted_require(form, phase, mark, SCHEME_CAR(data));

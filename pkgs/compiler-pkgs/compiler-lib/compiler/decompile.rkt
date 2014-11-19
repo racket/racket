@@ -141,38 +141,8 @@
                           [(box? datum)
                            (box (decompile-stx (unbox datum) stx-ht))]
                           [else datum])
-                         (let loop ([wraps wraps])
-                           (cond
-                            [(null? wraps) null]
-                            [else
-                             (or (hash-ref stx-ht wraps #f)
-                                 (let ([p (mcons #f #f)])
-                                   (hash-set! stx-ht wraps p)
-                                   (set-mcar! p (decompile-wrap (car wraps) stx-ht))
-                                   (set-mcdr! p (loop (cdr wraps)))
-                                   p))]))))
+                         wraps))
            p]))))
-
-(define (decompile-wrap w stx-ht)
-  (or (hash-ref stx-ht w #f)
-      (let ([v (match w
-                 [(lexical-rename has-free-id-renames?
-                                  ignored
-                                  alist)
-                  `(,(if has-free-id-renames? 'lexical/free-id=? 'lexical) . ,alist)]
-                 [(phase-shift amt src dest cancel-id)
-                  `(phase-shift ,amt ,src ,dest, cancel-id)]
-                 [(wrap-mark val)
-                  val]
-                 [(prune sym)
-                  `(prune ,sym)]
-                 [(module-rename phase kind set-id unmarshals renames mark-renames plus-kern?)
-                  `(module-rename ,phase ,kind ,set-id ,unmarshals ,renames ,mark-renames ,plus-kern?)]
-                 [(top-level-rename flag)
-                  `(top-level-rename ,flag)]
-                 [else w])])
-        (hash-set! stx-ht w v)
-        v)))
 
 (define (mpi->string modidx)
   (cond
@@ -350,7 +320,7 @@
     [(struct topsyntax (depth pos midpt))
      (list-ref/protect (glob-desc-vars globs) (+ midpt pos) 'topsyntax)]
     [(struct primval (id))
-     (hash-ref primitive-table id (lambda () (error "unknown primitive")))]
+     (hash-ref primitive-table id (lambda () (error "unknown primitive: " id)))]
     [(struct assign (id rhs undef-ok?))
      `(set! ,(decompile-expr id globs stack closed)
             ,(decompile-expr rhs globs stack closed))]

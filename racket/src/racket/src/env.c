@@ -1874,7 +1874,7 @@ namespace_mapped_symbols(int argc, Scheme_Object *argv[])
     }
   }
 
-  /* MACRO FIXME: more names mapped? */
+  scheme_module_context_add_mapped_symbols(env->stx_context, mapped);
 
   l = scheme_null;
   for (i = mapped->size; i--; ) {
@@ -2285,7 +2285,7 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   }
   d[0] = env;
 
-  rib = scheme_new_mark();
+  rib = scheme_new_mark(1);
 
   c = scheme_alloc_object();
   c->type = scheme_intdef_context_type;
@@ -2429,7 +2429,7 @@ make_introducer(int argc, Scheme_Object *argv[])
   Scheme_Object *mark, **info;
   Scheme_Env *genv;
 
-  mark = scheme_new_mark();
+  mark = scheme_new_mark(2);
   info = MALLOC_N(Scheme_Object*, 2);
 
   info[0] = mark;
