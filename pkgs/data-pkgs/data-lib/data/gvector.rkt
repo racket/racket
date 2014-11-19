@@ -7,7 +7,9 @@
          racket/dict
          racket/vector)
 
-(define (make-gvector #:capacity [capacity 10])
+(define DEFAULT-CAPACITY 10)
+
+(define (make-gvector #:capacity [capacity DEFAULT-CAPACITY])
   (gvector (make-vector capacity #f) 0))
 
 (define gvector*
@@ -46,7 +48,7 @@
              (vector-set! v index item))
            (set-gvector-n! gv (+ n item-count))]
           [else
-           (let* ([nn (let loop ([nn (max n 1)])
+           (let* ([nn (let loop ([nn (max DEFAULT-CAPACITY (vector-length v))])
                         (if (<= (+ n item-count) nn) nn (loop (* 2 nn))))]
                   [nv (make-vector nn #f)])
              (vector-copy! nv 0 v)

@@ -155,3 +155,9 @@
 
 (test-case "gvector, not equal, extension"
   (check-not-equal? (gvector 1) (gvector 1 2)))
+
+(test-case "gvector on large list"
+  (let ([g (apply gvector (for/list ([i 100]) i))])
+    (check-pred gvector? g)
+    (for ([i 100])
+      (check-equal? (gvector-ref g i) i))))
