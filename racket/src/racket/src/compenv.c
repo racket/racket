@@ -1135,7 +1135,16 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
                                         &rename_insp,
                                         NULL, NULL, NULL, NULL);
 
-#if 1
+#if 0
+  // REMOVEME
+  if (!strcmp("make-in-vector-like", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+    printf("%s\n", scheme_write_to_string(binding, NULL));
+    scheme_stx_debug_print(find_id, 1);
+    exit(1);
+  }
+#endif
+
+#if 0
   // REMOVEME
   if (SCHEME_FALSEP(binding) && !strcmp("make-syntax-mapping", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%d %s %s\n", ambiguous, scheme_write_to_string(find_id, NULL), scheme_write_to_string(binding, NULL));

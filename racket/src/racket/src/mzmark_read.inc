@@ -36,6 +36,7 @@ static int mark_cport_MARK(void *p, struct NewGC *gc) {
   gcMARK2(cp->magic_val, gc);
   gcMARK2(cp->shared_offsets, gc);
   gcMARK2(cp->delay_info, gc);
+  gcMARK2(cp->symtab_refs, gc);
   return
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
@@ -52,6 +53,7 @@ static int mark_cport_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(cp->magic_val, gc);
   gcFIXUP2(cp->shared_offsets, gc);
   gcFIXUP2(cp->delay_info, gc);
+  gcFIXUP2(cp->symtab_refs, gc);
   return
   gcBYTES_TO_WORDS(sizeof(CPort));
 }

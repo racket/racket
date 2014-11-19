@@ -1159,14 +1159,15 @@ void scheme_extend_module_context(Scheme_Object *mc, Scheme_Object *modidx,
                                   int skip_marshal);
 void scheme_extend_module_context_with_shared(Scheme_Object *mc, Scheme_Object *modidx, 
                                               struct Scheme_Module_Phase_Exports *pt, 
-                                              Scheme_Object *unmarshal_phase_index,
+                                              Scheme_Object *unmarshal_info,
                                               Scheme_Object *src_phase_index, 
                                               Scheme_Object *context,
                                               int save_unmarshal);
 void scheme_save_module_context_unmarshal(Scheme_Object *mc, Scheme_Object *info);
 
 void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *req_modidx,
-                                        Scheme_Object *context, Scheme_Object *src_phase,
+                                        Scheme_Object *context,
+                                        Scheme_Object *bind_phase, Scheme_Object *pt_phase, Scheme_Object *src_phase,
                                         Scheme_Object *info, Scheme_Hash_Table *export_registry);
 
 int scheme_stx_in_plain_module_context(Scheme_Object *stx, Scheme_Object *mc);

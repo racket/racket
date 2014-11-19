@@ -831,8 +831,8 @@ static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p)
   /* Add a module mapping for all kernel provides: */
   scheme_extend_module_context_with_shared(rn, kernel_modidx, 
                                            kernel->me->rt,
-                                           scheme_make_integer(p), /* unmarshal info */
-                                           scheme_make_integer(0),
+                                           scheme_false, /* unmarshal info */
+                                           scheme_make_integer(p),
                                            NULL,
                                            1);
 
@@ -2781,7 +2781,6 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
                                          Scheme_Hash_Table *required, Scheme_Object *orig_src,
                                          Scheme_Module *im, Scheme_Module_Phase_Exports *pt,
                                          Scheme_Object *idx,
-                                         Scheme_Object *marshal_phase_index,
                                          Scheme_Object *src_phase_index,
                                          int can_override)
 {
@@ -2799,8 +2798,8 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
     if (!pt->src_modidx && im->me->src_modidx)
       pt->src_modidx = im->me->src_modidx;
     scheme_extend_module_context_with_shared(rn, idx, pt, 
-                                             marshal_phase_index, 
-                                             scheme_make_integer(0), 
+                                             scheme_false, /* unmarshal info */ 
+                                             src_phase_index,
                                              NULL,
                                              1);
   } else
@@ -2866,9 +2865,8 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
   }
 
   if (shared_box) {
-    info = cons(idx, cons(marshal_phase_index, 
-                          cons(scheme_make_integer(0),
-                               cons(scheme_null, scheme_false))));
+    info = cons(idx, cons(scheme_make_integer(0),
+                          cons(scheme_null, scheme_false)));
     scheme_save_module_context_unmarshal(rn, info);
   }
 
@@ -2919,7 +2917,6 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
     saw_mb = do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, import_shift),  env,
                                            get_required_from_tables(tables, import_shift),
                                            orig_src, im, im->me->rt, idx,
-                                           scheme_make_integer(0),
                                            import_shift,
                                            can_override);
   else
@@ -2934,7 +2931,6 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
     do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, phase), env,
                                   get_required_from_tables(tables, phase),
                                   orig_src, im, im->me->et, idx,
-                                  scheme_make_integer(1),
                                   import_shift,
                                   can_override);
   }
@@ -2944,7 +2940,6 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
     do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, scheme_false), env,
                                   get_required_from_tables(tables, scheme_false),
                                   orig_src, im, im->me->dt, idx,
-                                  scheme_false,
                                   import_shift,
                                   can_override);
   }
@@ -2964,7 +2959,6 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
           do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, phase), env,
                                         get_required_from_tables(tables, phase),
                                         orig_src, im, (Scheme_Module_Phase_Exports *)val, idx,
-                                        key,
                                         import_shift,
                                         can_override);
         }
@@ -11238,7 +11232,7 @@ static int phaseless_rhs(Scheme_Object *val, int var_count, int phase)
 
 void add_single_require(Scheme_Module_Exports *me, /* from module */
                         Scheme_Object *only_phase,
-                        Scheme_Object *src_phase_index, /* import from pahse 0 to src_phase_index */
+                        Scheme_Object *src_phase_index, /* import from phase 0 to src_phase_index */
 			Scheme_Object *idx, /* from module's idx; may be saved for unmarshalling */
 			Scheme_Env *orig_env, /* env for mark_src or copy_vars */
 			Scheme_Object *rn_set, /* add requires to renames in this set when no mark_src */
@@ -11493,7 +11487,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
       }
 
       if (shared_rename)
-        scheme_extend_module_context_with_shared(rn, idx, pt, pt->phase_index, src_phase_index, mark_src, 1);
+        scheme_extend_module_context_with_shared(rn, idx, pt, scheme_false, src_phase_index, mark_src, 1);
 
       if (save_marshal_info) {
         Scheme_Object *info, *a;
@@ -11531,10 +11525,11 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 }
 
 void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *req_modidx,
-                                        Scheme_Object *context, Scheme_Object *src_phase,
+                                        Scheme_Object *context,
+                                        Scheme_Object *bind_phase, Scheme_Object *pt_phase, Scheme_Object *src_phase,
                                         Scheme_Object *info, Scheme_Hash_Table *export_registry)
 {
-  Scheme_Object *exns, *prefix, *name, *pt_phase, *marks, *bdg;
+  Scheme_Object *exns, *prefix, *name, *marks, *bdg;
   Scheme_Module_Exports *me;
   Scheme_Env *env;
   int share_all;
@@ -11556,11 +11551,10 @@ void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *re
       marks = SCHEME_VEC_ELS(marks)[0];
     } else
       bdg = scheme_false;
-  }    
+  }
 
   if (!SCHEME_PAIRP(info)) {
     share_all = 1;
-    pt_phase = info;
 
     exns = NULL;
     prefix = NULL;
@@ -11619,7 +11613,7 @@ void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *re
     if (pt) {
       if (!pt->src_modidx && me->src_modidx)
         pt->src_modidx = me->src_modidx;
-      scheme_extend_module_context_with_shared(src_phase, req_modidx, pt, pt->phase_index, src_phase, context, 0);
+      scheme_extend_module_context_with_shared(bind_phase, req_modidx, pt, scheme_false, src_phase, context, 0);
     }
   } else {
     if (!SCHEME_NULLP(marks) || SCHEME_TRUEP(bdg))
