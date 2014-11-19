@@ -161,3 +161,10 @@
     (check-pred gvector? g)
     (for ([i 100])
       (check-equal? (gvector-ref g i) i))))
+
+(test-case "gvector remove all, shrinks"
+  (let ([g (make-gvector)])
+    (for ([i 100]) (gvector-add! g i))
+    (for ([i 100])
+      (gvector-remove-last! g))
+    (check-equal? g (gvector))))

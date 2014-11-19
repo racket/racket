@@ -57,15 +57,22 @@
              (set-gvector-vec! gv nv)
              (set-gvector-n! gv (+ n item-count)))])))
 
+;; Shrink when vector length is > SHRINK-ON-FACTOR * #elements
+(define SHRINK-ON-FACTOR 3)
+;; ... unless it would shrink to less than SHRINK-MIN
 (define SHRINK-MIN 10)
+
+;; Shrink by SHRINK-BY-FACTOR
+(define SHRINK-BY-FACTOR 2)
 
 ;; SLOW!
 (define (gvector-remove! gv index)
   (let ([n (gvector-n gv)]
         [v (gvector-vec gv)])
     (check-index 'gvector-remove! index n #f)
-    (cond [(<= SHRINK-MIN (* 3 n) (vector-length v))
-           (let ([nv (make-vector (floor (/ (vector-length v) 2)) #f)])
+    (cond [(and (>= (vector-length v) (* SHRINK-ON-FACTOR n))
+                (>= (quotient (vector-length v) SHRINK-BY-FACTOR) SHRINK-MIN))
+           (let ([nv (make-vector (max SHRINK-MIN (quotient (vector-length v) SHRINK-BY-FACTOR)) #f)])
              (vector-copy! nv 0 v 0 index)
              (vector-copy! nv index v (add1 index) n)
              (set-gvector-n! gv (sub1 n))
@@ -80,8 +87,7 @@
         [v (gvector-vec gv)])
     (check-nonempty 'gvector-remove-last! n)
     (define last-val (vector-ref v (sub1 n)))
-    (set-gvector-n! gv (sub1 n))
-    (vector-set! v (sub1 n) #f)
+    (gvector-remove! gv (sub1 n))
     last-val))
 
 
