@@ -188,7 +188,7 @@ enum {
   scheme_module_phase_exports_type,     /* 164 */
   scheme_logger_type,                   /* 165 */
   scheme_log_reader_type,               /* 166 */
-  scheme_free_id_info_type,             /* 167 */
+  scheme_marshal_share_type,            /* 167 */
   scheme_rib_delimiter_type,            /* 168 */
   scheme_noninline_proc_type,           /* 169 */
   scheme_prune_context_type,            /* 170 */

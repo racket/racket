@@ -2277,6 +2277,7 @@ mark_cport {
   gcMARK2(cp->magic_val, gc);
   gcMARK2(cp->shared_offsets, gc);
   gcMARK2(cp->delay_info, gc);
+  gcMARK2(cp->symtab_refs, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(CPort));
 }

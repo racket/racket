@@ -2395,7 +2395,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
                                          scheme_make_integer(ph),
                                          NULL, NULL, &bind_marks,
                                          NULL, NULL, NULL, NULL, NULL);
-           
+
     if (!SCHEME_FALSEP(binder))
       sym = scheme_stx_adjust_marks(sym, bind_marks, scheme_env_phase(env->genv),
                                     SCHEME_STX_REMOVE);

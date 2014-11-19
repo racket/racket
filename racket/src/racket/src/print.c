@@ -1720,6 +1720,17 @@ void scheme_marshal_pop_refs(Scheme_Marshal_Tables *mt, int keep)
   }
 }
 
+Scheme_Object *scheme_make_marshal_shared(Scheme_Object *v)
+{
+  Scheme_Object *b;
+
+  b = scheme_alloc_small_object();
+  b->type = scheme_marshal_share_type;
+  SCHEME_PTR_VAL(b) = v;
+  
+  return b;
+}
+
 static void print_escaped(PrintParams *pp, int notdisplay, 
 			  Scheme_Object *obj, Scheme_Hash_Table *ht,
                           Scheme_Marshal_Tables *mt, int shared)
@@ -3213,6 +3224,26 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         print(SCHEME_PTR_VAL(obj), notdisplay, 1, ht, mt, pp);
         symtab_set(pp, mt, obj);
         set_symtab_shared(mt, obj);
+      }
+    }
+  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_marshal_share_type))
+    {
+      if (compact) {
+        Scheme_Object *idx;
+
+        idx = get_symtab_idx(mt, obj);
+        if (idx) {
+          print_symtab_ref(pp, idx);
+        } else {
+          int l;
+          l = add_symtab(mt, obj);
+          obj = SCHEME_PTR_VAL(obj);
+          if (l)
+            print_general_symtab_ref(pp, scheme_make_integer(l), CPT_SHARED);
+          print(obj, notdisplay, 1, ht, mt, pp);
+        }
+      } else {
+        print(SCHEME_PTR_VAL(obj), notdisplay, 0, ht, mt, pp);
       }
     }
   else if (!compact

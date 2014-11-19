@@ -712,6 +712,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_global_ref_type, twoptr_obj);
 
   GC_REG_TRAV(scheme_delay_syntax_type, small_object);
+  GC_REG_TRAV(scheme_marshal_share_type, small_object);
 
   GC_REG_TRAV(scheme_resolved_module_path_type, small_object);
 

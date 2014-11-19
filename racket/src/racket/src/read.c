@@ -4358,6 +4358,7 @@ typedef struct CPort {
   int unsafe_ok;
   Scheme_Object *orig_port;
   Scheme_Hash_Table **ht;
+  Scheme_Object *symtab_refs;
   Scheme_Unmarshal_Tables *ut;
   Scheme_Object **symtab;
   Scheme_Object *magic_sym, *magic_val;
@@ -4574,6 +4575,29 @@ static Scheme_Object *read_compact_escape(CPort *port)
   return read_escape_from_string(s, len, port->relto, port->ht);
 }
 
+static Scheme_Object *resolve_symtab_refs(Scheme_Object *v, CPort *port)
+{
+  Scheme_Object *l;
+
+  if (SCHEME_NULLP(port->symtab_refs))
+    return v;
+
+  v = scheme_make_pair(v, port->symtab_refs);
+
+  v = resolve_references(v, port->orig_port, NULL,
+                         scheme_make_hash_table(SCHEME_hash_ptr), 
+                         scheme_make_hash_table(SCHEME_hash_ptr), 
+                         0, 0);  
+
+  for (l = SCHEME_CDR(v); !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    port->symtab[SCHEME_INT_VAL(SCHEME_CAR(SCHEME_CAR(l)))] = SCHEME_CDR(SCHEME_CAR(l));
+  }
+  
+  port->symtab_refs = scheme_null;
+  
+  return SCHEME_CAR(v);
+}
+
 static Scheme_Object *read_compact(CPort *port, int use_stack);
 
 static Scheme_Object *read_compact_k(void)
@@ -4775,12 +4799,12 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	  l = scheme_make_pair(scheme_make_pair(k, v), l);
 	}
 
-	if (!(*port->ht)) {
-	  /* So that resolve_references is called to build the table: */
-	  Scheme_Hash_Table *tht;
-	  tht = scheme_make_hash_table(SCHEME_hash_ptr);
-	  *(port->ht) = tht;
-	}
+        if (!(*port->ht)) {
+          /* So that resolve_references is called to build the table: */
+          Scheme_Hash_Table *tht;
+          tht = scheme_make_hash_table(SCHEME_hash_ptr);
+          *(port->ht) = tht;
+        }
 
 	/* Let resolve_references complete the table construction: */
         v = scheme_alloc_object();
@@ -4801,7 +4825,9 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
 	v = read_compact(port, 1);
 
-        if (*port->ht) {
+        if (!SCHEME_NULLP(port->symtab_refs))
+          v = resolve_symtab_refs(v, port);
+        else if (*port->ht) {
           *port->ht = NULL;
           v = resolve_references(v, port->orig_port, NULL,
                                  scheme_make_hash_table(SCHEME_hash_ptr), 
@@ -5176,17 +5202,49 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_MARK:
       {
+        Scheme_Object *v2;
+
         if (!port->ut)
           make_ut(port);
 
-        v = scheme_new_mark();
+        v = scheme_box(scheme_false);
         l = read_compact_number(port);
+
         if (l) {
           RANGE_POS_CHECK(l, < port->symtab_size);
           port->symtab[l] = v;
         }
-        scheme_mark_unmarshal_content(v, read_compact(port, 0), port->ut);
+        
+        v2 = read_compact(port, 0);
+        SCHEME_BOX_VAL(v) = v2;
+
         return v;
+      }
+      break;
+    case CPT_SHARED:
+      {
+        Scheme_Object *ph;
+        
+        if (!port->ut)
+          make_ut(port);
+
+        ph = scheme_alloc_small_object();
+        ph->type = scheme_placeholder_type;
+        
+        l = read_compact_number(port);
+        RANGE_POS_CHECK(l, < port->symtab_size);
+        
+        port->symtab[l] = ph;
+
+        v = scheme_make_pair(scheme_make_pair(scheme_make_integer(l),
+                                              ph),
+                             port->symtab_refs);
+        port->symtab_refs = v;
+
+        v = read_compact(port, 0);
+        SCHEME_PTR_VAL(ph) = v;
+
+        return ph;
       }
       break;
     default:
@@ -5585,6 +5643,8 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       rp->shared_offsets = so;
       rp->delay_info = delay_info;
 
+      rp->symtab_refs = scheme_null;
+
       if (!delay_info) {
         /* Read shared parts: */
         intptr_t j, len;
@@ -5593,6 +5653,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
         for (j = 1; j < len; j++) {
           if (!symtab[j]) {
             v = read_compact(rp, 0);
+            v = resolve_symtab_refs(v, rp);
             symtab[j] = v;
           } else {
             if (j+1 < len)
@@ -5863,6 +5924,7 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   rp->relto = delay_info->relto;
   rp->shared_offsets = delay_info->shared_offsets;
   rp->delay_info = delay_info;
+  rp->symtab_refs = scheme_null;
 
   rp->pos = delay_info->shared_offsets[which - 1];
 
@@ -5881,6 +5943,7 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   scheme_current_thread->reading_delayed = NULL;
 
   /* Clean up: */
+  v = resolve_symtab_refs(v, rp);
 
   delay_info->current_rp = old_rp;
   if (delay_info->ut)
@@ -6653,7 +6716,7 @@ static Scheme_Object *expected_lang(const char *prefix, int ch,
 }
 
 /*========================================================================*/
-/*                         precise GC traversers                          */
+/*                         precise GC traversers                          g*/
 /*========================================================================*/
 
 #ifdef MZ_PRECISE_GC

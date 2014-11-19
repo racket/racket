@@ -3921,6 +3921,25 @@ int same_resolved_modidx(Scheme_Object *a, Scheme_Object *b)
   return scheme_equal(a, b);
 }
 
+Scheme_Object *resolved_module_path_to_modidx(Scheme_Object *rmp)
+{
+  Scheme_Object *path;
+
+  path = SCHEME_PTR_VAL(rmp);
+  if (!SCHEME_PATHP(path)) {
+    if (SCHEME_SYMBOLP(path))
+      path = scheme_make_pair(quote_symbol, scheme_make_pair(path, scheme_null));
+    else {
+      if (SCHEME_SYMBOLP(SCHEME_CAR(path)))
+        path = scheme_make_pair(scheme_make_pair(quote_symbol, scheme_make_pair(SCHEME_CAR(path), scheme_null)),
+                                scheme_null);
+      path = scheme_make_pair(submod_symbol, path);
+    }
+  }
+
+  return scheme_make_modidx(path, scheme_false, rmp);
+}
+
 Scheme_Object *scheme_get_submodule_empty_self_modidx(Scheme_Object *submodule_path)
 {
   Scheme_Bucket *b;
@@ -12021,6 +12040,9 @@ void parse_requires(Scheme_Object *form, int at_phase,
           scheme_hash_set(oht, x_mode, reqs);
         }
       }
+
+      if (SAME_TYPE(SCHEME_TYPE(idx), scheme_resolved_module_path_type))
+        idx = resolved_module_path_to_modidx(idx);
 
       add_single_require(m->me, x_just_mode, x_mode, idx, rename_env,
                          rn_set, NULL,

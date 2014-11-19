@@ -1262,7 +1262,6 @@ int scheme_is_predefined_module_p(Scheme_Object *name);
 Scheme_Object *scheme_get_kernel_modidx(void);
 
 Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, struct Scheme_Marshal_Tables *mt);
-void scheme_mark_unmarshal_content(Scheme_Object *m, Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
 
 void scheme_stx_debug_print(Scheme_Object *stx, int level);
 
@@ -3245,6 +3244,8 @@ Scheme_Object *scheme_unmarshal_wrap_get(Scheme_Unmarshal_Tables *ut,
 void scheme_unmarshal_wrap_set(Scheme_Unmarshal_Tables *ut, 
                                Scheme_Object *wraps_key, 
                                Scheme_Object *v);
+
+Scheme_Object *scheme_make_marshal_shared(Scheme_Object *v);
 
 int scheme_is_rename_transformer(Scheme_Object *o);
 int scheme_is_binding_rename_transformer(Scheme_Object *o);
