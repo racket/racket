@@ -22,6 +22,13 @@
                 gv))
              '#(1 2 3))
 
+(test-equal? "gvector-add! (lots)"
+             (let ()
+               (define g (gvector))
+               (apply gvector-add! g (build-list 11 values))
+               (gvector->vector g))
+             (for/vector ([i 11]) i))
+
 (test-equal? "gvector-ref"
              (let ([gv (gvector 1 2 3)])
                ;; 3 valid refs + 1 not-found

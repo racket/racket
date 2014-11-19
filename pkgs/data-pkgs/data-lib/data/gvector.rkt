@@ -46,7 +46,7 @@
              (vector-set! v index item))
            (set-gvector-n! gv (+ n item-count))]
           [else
-           (let* ([nn (let loop ([nn n])
+           (let* ([nn (let loop ([nn (max n 1)])
                         (if (<= (+ n item-count) nn) nn (loop (* 2 nn))))]
                   [nv (make-vector nn #f)])
              (vector-copy! nv 0 v)
