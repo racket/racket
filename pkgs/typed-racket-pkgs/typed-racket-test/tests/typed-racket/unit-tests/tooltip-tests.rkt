@@ -51,7 +51,9 @@
           [else
            (define stxs (vector-ref result 2))
            (define tooltips
-             (syntax-property (car stxs) 'mouse-over-tooltips))
+             (and (list? stxs)
+                  (syntax? (car stxs))
+                  (syntax-property (car stxs) 'mouse-over-tooltips)))
            (if tooltips
                (and (pred tooltips)
                     (unique-locations? tooltips))

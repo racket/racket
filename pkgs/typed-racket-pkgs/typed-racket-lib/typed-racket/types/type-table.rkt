@@ -19,7 +19,8 @@
  [add-typeof-expr (syntax? tc-results/c . -> . any/c)]
  [type-of (syntax? . -> . tc-results/c)]
  [reset-type-table (-> any/c)]
- [type-table->tooltips (-> (listof (vector/c any/c integer? integer? string?)))]
+ [type-table->tooltips
+  (-> (listof (vector/c any/c integer? integer? (or/c string? (-> string?)))))]
  [test-position-add-true (syntax? . -> . any)]
  [test-position-add-false (syntax? . -> . any)]
  [test-position-takes-true-branch (syntax? . -> . boolean?)]
