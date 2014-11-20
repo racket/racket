@@ -7,8 +7,8 @@
          enum?
          size
          (contract-out
-          (encode (-> enum? any/c exact-nonnegative-integer?))
-          (decode (-> enum? exact-nonnegative-integer? any/c)))
+          (rename to-nat encode (-> enum? any/c exact-nonnegative-integer?))
+          (rename from-nat decode (-> enum? exact-nonnegative-integer? any/c)))
          empty/e
          const/e
          from-list/e
