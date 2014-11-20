@@ -628,27 +628,14 @@
 ;;                         -> Option<Id> FieldDict MethodDict AugmentDict
 ;; Merges #:implements class type and the current class clauses appropriately
 (define (merge-with-parent-type row-var parent-type parent-stx fields methods augments)
-  ;; (Listof Symbol) Dict Dict String -> (Values Dict Dict)
-  ;; check for duplicates in a class clause
-  (define (check-duplicate-clause names super-names types super-types err-msg)
-    (define maybe-dup (check-duplicate (append names super-names)))
-    (cond [maybe-dup
-           (define type (car (dict-ref types maybe-dup)))
-           (define super-type (car (dict-ref super-types maybe-dup)))
-           (cond [;; if there is a duplicate, but the type is a subtype,
-                  ;; then let it through and check for any other duplicates
-                  (unless (subtype type super-type)
-                    (parse-error "class member type not a subtype of parent member type"
-                                 "member" maybe-dup
-                                 "type" type
-                                 "parent type" super-type))
-                  (check-duplicate-clause
-                   names (remove maybe-dup super-names)
-                   types (dict-remove super-types maybe-dup)
-                   err-msg)]
-                 [else
-                  (parse-error #:stx parent-stx err-msg "name" maybe-dup)])]
-          [else (values types super-types)]))
+  ;; merge-clause : Dict Dict -> Dict
+  ;; Merge all the non-duplicate entries from the parent types
+  (define (merge-clause parent-clause clause)
+    (for/fold ([clause clause])
+              ([(k v) (in-dict parent-clause)])
+      (if (dict-has-key? clause k)
+          clause
+          (dict-set clause k v))))
 
   (define (match-parent-type parent-type)
     (define resolved (resolve parent-type))
@@ -668,24 +655,6 @@
   (match-define (list (list super-method-names _) ...) super-methods)
   (match-define (list (list super-augment-names _) ...) super-augments)
 
-  ;; if any duplicates are found between this class and the superclass
-  ;; type, then raise an error
-  (define-values (checked-fields checked-super-fields)
-    (check-duplicate-clause
-     field-names super-field-names
-     fields super-fields
-     "field or init-field name conflicts with #:implements clause"))
-  (define-values (checked-methods checked-super-methods)
-    (check-duplicate-clause
-     method-names super-method-names
-     methods super-methods
-     "method name conflicts with #:implements clause"))
-  (define-values (checked-augments checked-super-augments)
-    (check-duplicate-clause
-     augment-names super-augment-names
-     augments super-augments
-     "augmentable method name conflicts with #:implements clause"))
-
   ;; it is an error for both the extending type and extended type
   ;; to have row variables
   (when (and row-var super-row-var)
@@ -693,9 +662,9 @@
                      " extend another type that has a row variable")))
 
   ;; then append the super types if there were no errors
-  (define merged-fields (append checked-super-fields checked-fields))
-  (define merged-methods (append checked-super-methods checked-methods))
-  (define merged-augments (append checked-super-augments checked-augments))
+  (define merged-fields (merge-clause super-fields fields))
+  (define merged-methods (merge-clause super-methods methods))
+  (define merged-augments (merge-clause super-augments augments))
 
   ;; make sure augments and methods are disjoint
   (define maybe-dup-method (check-duplicate (dict-keys merged-methods)))
@@ -773,9 +742,9 @@
                          [fields given-fields]
                          [methods given-methods]
                          [augments given-augments])
-                  ([parent-type parent-types]
-                   [parent-stx  (append (or (list parent/init-stx) null)
-                                        parent-stxs)])
+                  ([parent-type (reverse parent-types)]
+                   [parent-stx  (reverse (append (or (list parent/init-stx) null)
+                                                 parent-stxs))])
                 (merge-with-parent-type row-var parent-type parent-stx
                                         fields methods augments)))
 

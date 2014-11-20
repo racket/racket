@@ -312,7 +312,9 @@ additional provides all other bindings from @racketmodname[racket/class].
   and @racket[init-field] clauses.
 
   Multiple @racket[#:implements] clauses may be provided for a single class
-  type.
+  type. The types for the @racket[#:implements] clauses are merged in order and the
+  last type for a given method name or field is used (the types in the @racket[Class]
+  type itself takes precedence).
 
   @ex[
     (define-type Point<%> (Class (field [x Real] [y Real])))
