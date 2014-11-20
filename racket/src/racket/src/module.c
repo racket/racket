@@ -235,7 +235,6 @@ READ_ONLY static Scheme_Object *let_values_stx;
 READ_ONLY static Scheme_Object *letrec_values_stx;
 READ_ONLY static Scheme_Object *if_stx;
 READ_ONLY static Scheme_Object *begin0_stx;
-READ_ONLY static Scheme_Object *set_stx;
 READ_ONLY static Scheme_Object *with_continuation_mark_stx;
 READ_ONLY static Scheme_Object *letrec_syntaxes_stx;
 READ_ONLY static Scheme_Object *var_ref_stx;
@@ -654,7 +653,6 @@ void scheme_finish_kernel(Scheme_Env *env)
   REGISTER_SO(letrec_values_stx);
   REGISTER_SO(if_stx);
   REGISTER_SO(begin0_stx);
-  REGISTER_SO(set_stx);
   REGISTER_SO(with_continuation_mark_stx);
   REGISTER_SO(letrec_syntaxes_stx);
   REGISTER_SO(var_ref_stx);
