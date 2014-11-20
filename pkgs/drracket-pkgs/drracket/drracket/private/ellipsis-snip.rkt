@@ -1,14 +1,15 @@
 #lang racket/base
 (require racket/gui/base
+         racket/contract
          racket/class
+         (prefix-in r: racket/base)
          framework)
 (provide ellipsis-snip%)
 
 (define ellipsis-snip%
   (class snip%
-    (init-field extra)
+    (init-field extra [insertion-done? #f])
     (inherit get-style)
-    (define insertion-done? #f)
     (define str "...")
     (define/override (get-extent dc x y wb hb db sb lb rb)
       (set-box/f! lb 0)
@@ -36,7 +37,6 @@
               (do-insertion)
               (set! insertion-done? #t)
               (set! the-cursor-to-use #f)))
-          (printf "setting cursor to ~s\n" the-cursor-to-use)
           (send ed set-cursor the-cursor-to-use))))
     
     (define/private (do-insertion)
@@ -56,11 +56,13 @@
                (send ed insert/io "\n" insertion-pos (send ed get-err-style-delta))
                (loop (cdr strs))]))
           (send ed end-edit-sequence))))
-    (define/override (copy) (new ellipsis-snip% [extra extra]))
+    (define/override (copy) (new ellipsis-snip% 
+                                 [extra extra]
+                                 [insertion-done? insertion-done?]))
     (define/override (write f)
       (define bp (open-output-bytes))
-      (write extra bp)
-      (define b (get-output-bytes b))
+      (r:write (list insertion-done? extra) bp)
+      (define b (get-output-bytes bp))
       (send f put (bytes-length b) b))
     (super-new)
     (inherit set-flags get-flags get-admin set-snipclass)
@@ -72,12 +74,20 @@
 (define (set-box/f! b v) (when (box? b) (set-box! b v)))
 
 (provide snipclass)
+(define valid-data? (list/c boolean? (listof string?)))
 (define snipclass
   (new (class snip-class%
          (define/override (read f)
-           (new ellipsis-snip% [extra (read (open-input-bytes (send f get-unterminated-bytes)))]))
+           (define data (read (open-input-bytes (send f get-unterminated-bytes))))
+           (cond
+             [(valid-data? data)
+              (new ellipsis-snip% 
+                   [insertion-done? (list-ref data 0)]
+                   [extra (list-ref data 1)])]
+             [else
+              (new ellipsis-snip% [extra '()])]))
          (super-new))))
-(send snipclass set-version 1)
+(send snipclass set-version 2)
 (send snipclass set-classname 
       (format "~s" '((lib "ellipsis-snip.rkt" "drracket" "private")
                      (lib "ellipsis-snip-wxme.rkt" "drracket" "private"))))

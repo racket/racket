@@ -418,49 +418,11 @@ profile todo:
           (display msg (current-error-port))])]
       [else 
        (display msg (current-error-port))]))
-  
-  (define (collect-hidden-lines lines)
-    (let loop ([lines lines]
-               [ellipsis-line #f]
-               [collection #f])
-      (cond
-        [(null? lines)
-         (cond
-           [ellipsis-line
-            (list (list ellipsis-line collection))]
-           [else
-            '()])]
-        [else
-         (define line (car lines))
-         (cond
-           [ellipsis-line
-            (cond
-              [(regexp-match #rx"^   " line)
-               (loop (cdr lines) ellipsis-line (cons line collection))]
-              [else
-               (cons (list ellipsis-line collection)
-                     (loop (cdr lines) #f #f))])]
-           [else
-            (cond
-              [(regexp-match #rx"  [^ ].*[.][.][.]:$" line)
-               (loop (cdr lines) line '())]
-              [else
-               (cons line (loop (cdr lines) #f #f))])])])))
-  
+    
   (define (ellipsis-candidate? lines)
     (and ((length lines) . > . 1)
-         (for/and ([x (in-list lines)]
-                   [i (in-naturals)])
-           
-           (and
-            ;; if it's not the first line, it is indented.
-            (implies (not (zero? i))
-                     (regexp-match? #rx"^ " x))
-            
-            ;; if it has the indentation to match a `field' line,
-            ;; it has a colon
-            (implies (regexp-match? #rx"^  [^ ]" x)
-                     (regexp-match? #rx":" x))))))
+         (for/or ([x (in-list (cdr lines))])
+           (regexp-match ellipsis-error-message-field x))))
   
   (define (srcloc->edition/pair defs ints srcloc [port-name-matches-cache #f])
     (let ([src (srcloc-source srcloc)])
@@ -2437,3 +2399,114 @@ profile todo:
 
 
   (define-values/invoke-unit/infer stacktrace@))
+
+(define ellipsis-error-message-field #rx"  [^ ].*[.][.][.]:$")
+
+(define (collect-hidden-lines lines)
+  (let loop ([lines lines]
+             [ellipsis-line #f]
+             [collection #f])
+    (cond
+      [(null? lines)
+       (cond
+         [ellipsis-line
+          (list (list ellipsis-line collection))]
+         [else
+          '()])]
+      [else
+       (define line (car lines))
+       (cond
+         [ellipsis-line
+          (cond
+            [(regexp-match #rx"^   " line)
+             (loop (cdr lines) ellipsis-line (cons line collection))]
+            [else
+             (cons (list ellipsis-line collection)
+                   (loop lines #f #f))])]
+         [else
+          (cond
+            [(regexp-match ellipsis-error-message-field line)
+             (loop (cdr lines) line '())]
+            [else
+             (cons line (loop (cdr lines) #f #f))])])])))
+
+(module+ test
+  (require rackunit)
+  (check-equal?
+   (collect-hidden-lines
+    '("car: arity mismatch;"
+      " the expected number of arguments does not match the given number"
+      "  expected: 1"
+      "  given: 3"
+      "  arguments...:"
+      "   1"
+      "   2"
+      "   3"))
+   '("car: arity mismatch;"
+     " the expected number of arguments does not match the given number"
+     "  expected: 1"
+     "  given: 3"
+     ("  arguments...:" ("   3" "   2" "   1"))))
+  
+  (check-equal?
+   (collect-hidden-lines
+    '("car: arity mismatch;"
+      " the expected number of arguments does not match the given number"
+      "  expected: 1"
+      "  given: 3"
+      "  arguments...:"
+      "   1"
+      "   2"
+      "   3"
+      "  another field:"))
+   '("car: arity mismatch;"
+     " the expected number of arguments does not match the given number"
+     "  expected: 1"
+     "  given: 3"
+     ("  arguments...:" ("   3" "   2" "   1"))
+     "  another field:"))
+  
+  (check-equal?
+   (collect-hidden-lines
+    '("car: arity mismatch;"
+      " the expected number of arguments does not match the given number"
+      "  expected: 1"
+      "  given: 3"
+      "  arguments...:"
+      "   1"
+      "   2"
+      "   3"
+      "  arguments...:"
+      "   1"
+      "   2"
+      "   3"))
+   '("car: arity mismatch;"
+     " the expected number of arguments does not match the given number"
+     "  expected: 1"
+     "  given: 3"
+     ("  arguments...:" ("   3" "   2" "   1"))
+     ("  arguments...:" ("   3" "   2" "   1"))))
+  
+  (check-equal?
+   (collect-hidden-lines
+    '("car: arity mismatch;"
+      " the expected number of arguments does not match the given number"
+      "  expected: 1"
+      "  given: 3"
+      "  arguments...:"
+      "   1"
+      "   2"
+      "   3"
+      "  a different field:"
+      "  arguments...:"
+      "   1"
+      "   2"
+      "   3"))
+   '("car: arity mismatch;"
+     " the expected number of arguments does not match the given number"
+     "  expected: 1"
+     "  given: 3"
+     ("  arguments...:" ("   3" "   2" "   1"))
+     "  a different field:"
+     ("  arguments...:" ("   3" "   2" "   1")))))
+
