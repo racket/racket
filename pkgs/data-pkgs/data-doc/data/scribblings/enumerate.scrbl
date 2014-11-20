@@ -39,7 +39,7 @@ Identifies a value as an @tech{enumeration}.}
 
 Returns the size of an @tech{enumeration}.}
 
-@defproc[(decode [e enum?] [n exact-nonnegative-integer?]) any/c]{
+@defproc[(from-nat [e enum?] [n exact-nonnegative-integer?]) any/c]{
 
 Uses @racket[e] to decode @racket[n].}
 
@@ -52,7 +52,7 @@ Uses @racket[e] to encode @racket[x].}
 An @tech{enumeration} of the natural numbers.
    
 @examples[#:eval the-eval
-(decode nat/e 5)
+(from-nat nat/e 5)
 (to-nat nat/e 5)
 ]}
 
@@ -66,7 +66,7 @@ functions of @racket[e].
 @examples[#:eval the-eval
 (define map-1/e
   (map/e number->string string->number nat/e))
-(decode map-1/e 5)
+(from-nat map-1/e 5)
 (to-nat map-1/e "5")
 (define map-2/e
   (map/e (λ (x y) 
@@ -76,7 +76,7 @@ functions of @racket[e].
          (λ (x)
            (apply values (map string->number (string-split x))))
          nat/e nat/e))
-(decode map-2/e 5)
+(from-nat map-2/e 5)
 (to-nat map-2/e "1 2")
 ]}
 
@@ -90,7 +90,7 @@ so only use it for very small enumerations.
 @examples[#:eval the-eval
 (define filter-1/e
   (filter/e nat/e even?))
-(decode filter-1/e 5)
+(from-nat filter-1/e 5)
 (to-nat filter-1/e 8)
 ]}
 
@@ -103,7 +103,7 @@ Returns an @tech{enumeration} identical to @racket[e] except that all
 @examples[#:eval the-eval
 (define except-1/e
   (except/e nat/e 3))
-(decode except-1/e 5)
+(from-nat except-1/e 5)
 (to-nat except-1/e 8)
 ]}
 
@@ -137,7 +137,7 @@ diverge if @racket[e] is infinite.
 Identical to @racket[e] but only includes the first @racket[n] values.
 
 @examples[#:eval the-eval
-(decode (take/e map-2/e 5) 3)
+(from-nat (take/e map-2/e 5) 3)
 (to-nat (take/e map-2/e 5) "1 1")
 ]}
 
@@ -209,7 +209,9 @@ predicate identifying elements of it. Only one or zero predicates
 should return true on any value.
 
 @examples[#:eval the-eval
-(approximate (disj-sum/e (cons nat/e exact-nonnegative-integer?) (cons map-1/e string?)) 10)
+(approximate (disj-sum/e (cons nat/e exact-nonnegative-integer?)
+                         (cons map-1/e string?))
+             10)
 ]}
 
 @defproc[(disj-append/e [e-p (cons/c enum? (-> any/c boolean?))] ...+) enum?]{
@@ -220,9 +222,10 @@ the next. @racket[e-p] are formatted as in @racket[disj-sum/e]. All
 but the last enumeration should be finite.
 
 @examples[#:eval the-eval
-(approximate (disj-append/e (cons (take/e nat/e 4) exact-nonnegative-integer?)
-                            (cons map-1/e string?))
-             10)
+(approximate 
+ (disj-append/e (cons (take/e nat/e 4) exact-nonnegative-integer?)
+                (cons map-1/e string?))
+ 10)
 ]}
 
 @defproc[(fin-cons/e [x enum?] [y enum?]) enum?]{
@@ -552,8 +555,8 @@ An @tech{enumeration} of tuples of naturals of larger than @racket[lo].
 
 @defproc[(fail/e [e exn?]) enum?]{
 
-An @tech{enumeration} raises @racket[e] if @racket[decode] or
-@racket[to-nat] is called with on.
+An @tech{enumeration} raises @racket[e] if @racket[from-nat] or
+@racket[to-nat] is called with it.
 
 @examples[#:eval the-eval
 (approximate 
