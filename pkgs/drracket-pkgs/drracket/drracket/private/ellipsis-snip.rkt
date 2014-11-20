@@ -78,7 +78,7 @@
 (define snipclass
   (new (class snip-class%
          (define/override (read f)
-           (define data (read (open-input-bytes (send f get-unterminated-bytes))))
+           (define data (r:read (open-input-bytes (send f get-unterminated-bytes))))
            (cond
              [(valid-data? data)
               (new ellipsis-snip% 
@@ -91,7 +91,7 @@
 (send snipclass set-classname 
       (format "~s" '((lib "ellipsis-snip.rkt" "drracket" "private")
                      (lib "ellipsis-snip-wxme.rkt" "drracket" "private"))))
-
+(send (get-the-snip-class-list) add snipclass)
 
 (module+ main
   (define f (new frame% [label ""] [width 100] [height 100]))
