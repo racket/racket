@@ -17,7 +17,9 @@
                "racket-index"
                "sgl"
                "srfi-lib"
-               "string-constants-lib"))
+               "string-constants-lib"
+               "typed-racket-lib"
+               "typed-racket-more"))
 (define build-deps '("draw-doc"
                      "gui-doc"
                      "racket-doc"

@@ -1,10 +1,10 @@
-#lang racket
-(require racket/gui)
+#lang typed/racket
+(require typed/racket/gui)
+(provide start-game)
 
-(provide game@)
-
-(define game@ (unit (import) (export)
-
+(: get-bitmap ((Instance Bitmap%) -> (Values (U (Instance Bitmap%) #f)
+                                             (U Nonnegative-Integer #f)
+                                             (U Nonnegative-Integer #f))))
 (define (get-bitmap bitmap)
   (define f (make-object dialog% "Choose Size" #f #f #f #f #f '(resize-border)))
   (define bm-panel (make-object vertical-panel% f))
@@ -15,9 +15,11 @@
                                   (send bitmap get-height))
                  bm-panel))
   (define wide-panel (make-object vertical-panel% f '(border)))
+  (: sw (Instance Slider%))
   (define sw (make-object slider% "Tiles (width)" 2 30 wide-panel
                           (lambda (_1 _2) (update-horizontal-cutoff))))
   (define tall-panel (make-object vertical-panel% f '(border)))
+  (: sh (Instance Slider%))
   (define sh (make-object slider% "Tiles (height)" 2 30 tall-panel
                           (lambda (_1 _2) (update-vertical-cutoff))))
   (define button-panel (make-object horizontal-panel% f))
@@ -37,12 +39,14 @@
   (define horizontal-cutoff 0)
   (define horizontal-cutoff-message (make-object message% "" wide-panel))
 
+  (: update-vertical-cutoff (-> Void))
   (define (update-vertical-cutoff)
     (set! vertical-cutoff (modulo (send bitmap get-height) (send sh get-value)))
     (send vertical-cutoff-message set-label 
           (if (= 0 vertical-cutoff)
             ""
             (format "Vertical cutoff ~a pixels" vertical-cutoff))))
+  (: update-horizontal-cutoff (-> Void))
   (define (update-horizontal-cutoff)
     (set! horizontal-cutoff (modulo (send bitmap get-width) (send sw get-value)))
     (send horizontal-cutoff-message set-label
@@ -69,14 +73,17 @@
                  (- (send bitmap get-height) vertical-cutoff))]
            [bdc (make-object bitmap-dc% nb)])
       (send bdc draw-bitmap-section bitmap 0 0 0 0
-            (- (send bitmap get-width) horizontal-cutoff)
-            (- (send bitmap get-height) vertical-cutoff))
+            (assert (- (send bitmap get-width) horizontal-cutoff) positive?)
+            (assert (- (send bitmap get-height) vertical-cutoff) positive?))
       (send bdc set-bitmap #f)
       (values nb (send sw get-value) (send sh get-value)))))
 
-(define-struct loc (x y))
-;; board = (vector-of (vector-of (union #f (make-loc n1 n2))))
+(define-struct: loc ([x : Integer] [y : Integer]))
 
+;; board = (vector-of (vector-of (union #f (make-loc n1 n2))))
+(define-type Board (Vectorof (Vectorof (U #f loc))))
+
+(: board-for-each (Board (Integer Integer loc -> Void) -> Void))
 (define (board-for-each board f)
   (let loop ([i (vector-length board)])
     (unless (zero? i)
@@ -87,26 +94,32 @@
             (loop (- j 1)))))
       (loop (- i 1)))))
 
+(: move-one (Board Integer Integer Integer Integer -> Void))
 (define (move-one board from-i from-j to-i to-j)
   (let ([from-save (board-ref board from-i from-j)]
         [to-save (board-ref board to-i to-j)])
     (board-set! board from-i from-j to-save)
     (board-set! board to-i to-j from-save)))
 
+(: board-set! (Board Integer Integer (U #f loc) -> Void))
 (define (board-set! board i j v)
   (vector-set! (vector-ref board i) j v))
+(: board-ref (Board Integer Integer -> (U #f loc)))
 (define (board-ref board i j)
   (vector-ref (vector-ref board i) j))
 
+(: get-board-width (Board -> Nonnegative-Integer))
 (define (get-board-width board)
   (vector-length board))
+(: get-board-height (Board -> Nonnegative-Integer))
 (define (get-board-height board)
   (vector-length (vector-ref board 0)))
 
+(: randomize-board (Board Integer Integer -> Void))
 (define (randomize-board board hole-i hole-j)
   (let ([board-width (get-board-width board)]
         [board-height (get-board-height board)])
-    (let loop ([no-good #f]
+    (let loop ([no-good : (U #f Real) #f]
                [i (* 10 board-width board-height)]
                [m-hole-i hole-i]
                [m-hole-j hole-j])
@@ -133,17 +146,22 @@
                            [(0) (values (- m-hole-i 1) m-hole-j)]
                            [(1) (values (+ m-hole-i 1) m-hole-j)]
                            [(2) (values m-hole-i (- m-hole-j 1))]
-                           [(3) (values m-hole-i (+ m-hole-j 1))])])
+                           [(3) (values m-hole-i (+ m-hole-j 1))]
+                           ;; NOTE: change
+                           [else (error "better message needed")])])
              (if (and (<= 0 new-i)
                       (< new-i board-width)
                       (<= 0 new-j)
                       (< new-j board-height))
                (let ([next-no-good
-                      (case this-dir [(0) 1] [(1) 0] [(2) 3] [(3) 2])])
+                      (case this-dir [(0) 1] [(1) 0] [(2) 3] [(3) 2]
+                        ;; NOTE: change
+                        [else (error "better message needed")])])
                  (move-one board new-i new-j m-hole-i m-hole-j)
                  (loop next-no-good (- i 1) new-i new-j))
                (loop no-good (- i 1) m-hole-i m-hole-j))))]))))
 
+(: get-random-number (Integer (U #f Real) -> Real))
 (define (get-random-number bound no-good)
   (let ([raw (random (- bound 1))])
     (cond [(not no-good) raw]
@@ -151,38 +169,53 @@
           [else (+ raw 1)])))
 
 (define line-brush
-  (send the-brush-list find-or-create-brush "black" 'transparent))
-(define line-pen (send the-pen-list find-or-create-pen "white" 1 'solid))
+  (assert (send the-brush-list find-or-create-brush "black" 'transparent)))
+(define line-pen (assert (send the-pen-list find-or-create-pen "white" 1 'solid)))
 (define mistake-brush
-  (send the-brush-list find-or-create-brush "black" 'transparent))
+  (assert (send the-brush-list find-or-create-brush "black" 'transparent)))
 (define mistake-pen (send the-pen-list find-or-create-pen "red" 1 'solid))
-(define pict-brush (send the-brush-list find-or-create-brush "black" 'solid))
+(define pict-brush (assert (send the-brush-list find-or-create-brush "black" 'solid)))
 (define pict-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
-(define white-brush (send the-brush-list find-or-create-brush "white" 'solid))
+(define white-brush (assert (send the-brush-list find-or-create-brush "white" 'solid)))
 (define white-pen (send the-pen-list find-or-create-pen "white" 1 'solid))
 
+(define-type Slidey-Canvas%
+  (Class #:implements/inits Canvas%
+         (init-field [bitmap (Instance Bitmap%)]
+                     [board-width Nonnegative-Integer]
+                     [board-height Nonnegative-Integer])
+         [show-mistakes (Boolean -> Void)]))
+
+(: slidey-canvas% Slidey-Canvas%)
 (define slidey-canvas%
   (class canvas% 
     (init-field bitmap board-width board-height)
 
+    (: show-mistakes? Boolean)
     (define show-mistakes? #f)
     (define/public (show-mistakes nv)
       (set! show-mistakes? nv)
       (unless solved? (on-paint)))
 
+    (: solved? Boolean)
     (define solved? #f)
 
+    (: board Board)
     (define board
       (build-vector
        board-width
-       (lambda (i) (build-vector board-height (lambda (j) (make-loc i j))))))
+       (lambda: ([i : Integer])
+         (build-vector board-height (lambda: ([j : Integer]) : (U #f loc) (make-loc i j))))))
+
+    (: hole-i Integer)
     (define hole-i (- board-width 1))
+    (: hole-j Integer)
     (define hole-j (- board-height 1))
     (board-set! board hole-i hole-j #f)
 
     (define/override (on-paint)
       (if solved?
-        (send (get-dc) draw-bitmap bitmap 0 0)
+        (void (send (get-dc) draw-bitmap bitmap 0 0))
         (board-for-each board (lambda (i j v) (draw-cell i j)))))
 
     (define/override (on-event evt)
@@ -192,6 +225,7 @@
             (slide i j)))))
     (inherit get-client-size get-dc)
 
+    (: check-end-condition (-> Void))
     (define/private (check-end-condition)
       (let ([answer #t])
         (board-for-each
@@ -202,6 +236,7 @@
                (set! answer #f)))))
         (when answer (set! solved? #t))))
 
+    (: slide (Integer Integer -> Void))
     (define/private (slide i j)
       (cond
         [(= j hole-j)
@@ -231,16 +266,20 @@
            (on-paint))]
         [else (void)]))
 
+    (: xy->ij (Integer Integer -> (Values Integer Integer)))
     (define/private (xy->ij x y)
       (let-values ([(w h) (get-client-size)])
         (values (inexact->exact (floor (* board-width (/ x w))))
                 (inexact->exact (floor (* board-height (/ y h)))))))
 
+    (: ij->xywh (Real Real -> (Values Real Real Nonnegative-Real Nonnegative-Real)))
     (define/private (ij->xywh i j)
       (let-values ([(w h) (get-client-size)])
         (let ([cell-w (/ w board-width)]
               [cell-h (/ h board-height)])
           (values (* i cell-w) (* j cell-h) cell-w cell-h))))
+
+    (: draw-cell (Integer Integer -> Void))
     (define/private (draw-cell draw-i draw-j)
       (let-values ([(xd yd wd hd) (ij->xywh draw-i draw-j)])
         (let* ([dc (get-dc)]
@@ -273,38 +312,46 @@
     (min-client-width (send bitmap get-width))
     (min-client-height (send bitmap get-height))))
 
-(define f (make-object frame% "Slidey"))
-(define p (make-object horizontal-panel% f))
-(send p set-alignment 'center 'center)
-(define slidey-canvas
-  (make-object slidey-canvas%
-    (make-object bitmap%
-      (build-path (collection-file-path "11.jpg" "games" "slidey")))
-    6 6 p))
-(define bp (make-object horizontal-panel% f))
-(send bp stretchable-height #f)
-(define show-mistakes
-  (make-object check-box% "Show misplaced pieces" bp 
-               (lambda ___ (send slidey-canvas show-mistakes (send show-mistakes get-value)))))
-(make-object grow-box-spacer-pane% bp)
 
-(define (change-bitmap)
-  (let ([fn (get-file)])
-    (when fn
-      (let ([bm (make-object bitmap% fn)])
-        (cond
-          [(send bm ok?)
-           (let-values ([(bitmap w h) (get-bitmap bm)])
-             (when bitmap
-               (send p change-children (lambda (l) null))
-               (set! slidey-canvas (make-object slidey-canvas% bitmap w h p))))]
-                [else (message-box "Slidey" (format "Unrecognized image format: ~a" fn))])))))
+(define (start-game)
+  (define f (make-object frame% "Slidey"))
 
-(define mb (make-object menu-bar% f))
-(define file-menu (make-object menu% "File" mb))
-(make-object menu-item% "Open Image" file-menu (lambda (_1 _2) (change-bitmap)) #\o)
-(make-object menu-item% "Close Window" file-menu (lambda (_1 _2) (send f show #f)) #\w)
+  (define p (make-object horizontal-panel% f))
+  (send p set-alignment 'center 'center)
 
-(send f show #t)
+  (define slidey-canvas
+    (make-object slidey-canvas%
+      (make-object bitmap%
+        (build-path (collection-file-path "11.jpg" "games" "slidey")))
+      6 6 p))
 
-))
+  (define bp (make-object horizontal-panel% f))
+  (send bp stretchable-height #f)
+
+  (: show-mistakes (Instance Check-Box%))
+  (define show-mistakes
+    (make-object check-box% "Show misplaced pieces" bp
+      (lambda ___ (send slidey-canvas show-mistakes (send show-mistakes get-value)))))
+
+  (make-object grow-box-spacer-pane% bp)
+
+  (define (change-bitmap)
+    (let ([fn (get-file)])
+      (when fn
+        (let ([bm (make-object bitmap% fn)])
+          (cond
+            [(send bm ok?)
+             (let-values ([(bitmap w h) (get-bitmap bm)])
+               (when bitmap
+                 (send p change-children (lambda (l) null))
+                 (set! slidey-canvas
+                       (make-object slidey-canvas% bitmap (assert w) (assert h) p))))]
+            [else (message-box "Slidey" (format "Unrecognized image format: ~a" fn))])))))
+
+  (define mb (make-object menu-bar% f))
+
+  (define file-menu (make-object menu% "File" mb))
+  (make-object menu-item% "Open Image" file-menu (lambda (_1 _2) (change-bitmap)) #\o)
+  (make-object menu-item% "Close Window" file-menu (lambda (_1 _2) (send f show #f)) #\w)
+
+  (send f show #t))

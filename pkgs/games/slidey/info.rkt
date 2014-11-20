@@ -1,4 +1,4 @@
 #lang info
 
 (define game-set "Puzzle Games")
-(define game "slidey.rkt")
+(define game "slidey-main.rkt")
