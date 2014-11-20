@@ -93,7 +93,7 @@
      [("--check-pkg-deps") "Check package dependencies when collections specified"
       (add-flags '((always-check-dependencies #t)))]
      [("--fix-pkg-deps") "Auto-repair package-dependency declarations"
-      (add-flags '((check-dependencies #t)
+      (add-flags '((always-check-dependencies #t)
                    (fix-dependencies #t)))]
      [("--unused-pkg-deps") "Check for unused package-dependency declarations"
       (add-flags '((check-dependencies #t)
