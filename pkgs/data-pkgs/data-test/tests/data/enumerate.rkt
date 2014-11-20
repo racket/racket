@@ -9,28 +9,28 @@
 ;; const/e tests
 (let ([e (const/e 17)])
   (test-begin
-   (check-eq? (decode e 0) 17)
+   (check-eq? (from-nat e 0) 17)
    (check-exn exn:fail? 
               (λ ()
-                 (decode e 1)))
-   (check-eq? (encode e 17) 0)
+                 (from-nat e 1)))
+   (check-eq? (to-nat e 17) 0)
    (check-exn exn:fail?
               (λ ()
-                 (encode e 0)))
+                 (to-nat e 0)))
    (check-bijection? e)))
 
 ;; from-list/e tests
 (let ([e (from-list/e '(5 4 1 8))])
   (test-begin
-   (check-eq? (decode e 0) 5)
-   (check-eq? (decode e 3) 8)
+   (check-eq? (from-nat e 0) 5)
+   (check-eq? (from-nat e 3) 8)
    (check-exn exn:fail?
-              (λ () (decode e 4)))
-   (check-eq? (encode e 5) 0)
-   (check-eq? (encode e 8) 3)
+              (λ () (from-nat e 4)))
+   (check-eq? (to-nat e 5) 0)
+   (check-eq? (to-nat e 8) 3)
    (check-exn exn:fail?
               (λ ()
-                 (encode e 17)))
+                 (to-nat e 17)))
    (check-bijection? e)))
 
 ;; map test
@@ -38,23 +38,23 @@
 
 (test-begin
  (check-equal? (size nats+1) +inf.0)
- (check-equal? (decode nats+1 0) 1)
- (check-equal? (decode nats+1 1) 2)
+ (check-equal? (from-nat nats+1 0) 1)
+ (check-equal? (from-nat nats+1 1) 2)
  (check-bijection? nats+1))
 ;; encode check
 (test-begin
  (check-exn exn:fail?
             (λ ()
-               (decode nat/e -1))))
+               (from-nat nat/e -1))))
 
 ;; ints checks
 (test-begin
- (check-eq? (decode int/e 0) 0)         ; 0 -> 0
- (check-eq? (decode int/e 1) 1)         ; 1 -> 1
- (check-eq? (decode int/e 2) -1)        ; 2 -> 1
- (check-eq? (encode int/e 0) 0)
- (check-eq? (encode int/e 1) 1)
- (check-eq? (encode int/e -1) 2)
+ (check-eq? (from-nat int/e 0) 0)         ; 0 -> 0
+ (check-eq? (from-nat int/e 1) 1)         ; 1 -> 1
+ (check-eq? (from-nat int/e 2) -1)        ; 2 -> 1
+ (check-eq? (to-nat int/e 0) 0)
+ (check-eq? (to-nat int/e 1) 1)
+ (check-eq? (to-nat int/e -1) 2)
  (check-bijection? int/e))              ; -1 -> 2, -3 -> 4
 
 ;; sum tests
@@ -96,36 +96,36 @@
  
  (check-equal? (size bool-or-num) 6)
    
- (check-equal? (decode bool-or-num 0) #t)
- (check-equal? (decode bool-or-num 1) 0)
- (check-equal? (decode bool-or-num 2) #f)
- (check-equal? (decode bool-or-num 3) 1)
- (check-equal? (decode bool-or-num 4) 2)
- (check-equal? (decode bool-or-num 5) 3)
+ (check-equal? (from-nat bool-or-num 0) #t)
+ (check-equal? (from-nat bool-or-num 1) 0)
+ (check-equal? (from-nat bool-or-num 2) #f)
+ (check-equal? (from-nat bool-or-num 3) 1)
+ (check-equal? (from-nat bool-or-num 4) 2)
+ (check-equal? (from-nat bool-or-num 5) 3)
    
  (check-exn exn:fail?
             (λ ()
-               (decode bool-or-num 6)))
+               (from-nat bool-or-num 6)))
  (check-bijection? bool-or-num)
    
  (check-equal? (size bool-or-nat)
                +inf.0)
- (check-equal? (decode bool-or-nat 0) #t)
- (check-equal? (decode bool-or-nat 1) 0)
+ (check-equal? (from-nat bool-or-nat 0) #t)
+ (check-equal? (from-nat bool-or-nat 1) 0)
  (check-bijection? bool-or-nat)
    
  (check-equal? (size odd-or-even)
                +inf.0)
- (check-equal? (decode odd-or-even 0) 0)
- (check-equal? (decode odd-or-even 1) 1)
- (check-equal? (decode odd-or-even 2) 2)
+ (check-equal? (from-nat odd-or-even 0) 0)
+ (check-equal? (from-nat odd-or-even 1) 1)
+ (check-equal? (from-nat odd-or-even 2) 2)
  (check-exn exn:fail?
             (λ ()
-               (decode odd-or-even -1)))
- (check-equal? (encode odd-or-even 0) 0)   
- (check-equal? (encode odd-or-even 1) 1)
- (check-equal? (encode odd-or-even 2) 2)
- (check-equal? (encode odd-or-even 3) 3)
+               (from-nat odd-or-even -1)))
+ (check-equal? (to-nat odd-or-even 0) 0)   
+ (check-equal? (to-nat odd-or-even 1) 1)
+ (check-equal? (to-nat odd-or-even 2) 2)
+ (check-equal? (to-nat odd-or-even 3) 3)
  (check-bijection? odd-or-even)
 
  (check-bijection? nat-or-bool)
@@ -138,7 +138,7 @@
                (cons (many/e bool/e) list?)))
 
  (define (test-multi-layered i x)
-   (check-equal? (decode multi-layered i) x))
+   (check-equal? (from-nat multi-layered i) x))
  (map test-multi-layered
       (for/list ([i (in-range 31)])
         i)
@@ -165,23 +165,23 @@
                   (cons nat/e number?)))
  (check-equal? (size bool-or-num) 6)
    
- (check-equal? (decode bool-or-num 0) #t)
- (check-equal? (decode bool-or-num 1) #f)
- (check-equal? (decode bool-or-num 2) 0)
- (check-equal? (decode bool-or-num 3) 1)
- (check-equal? (decode bool-or-num 4) 2)
- (check-equal? (decode bool-or-num 5) 3)
+ (check-equal? (from-nat bool-or-num 0) #t)
+ (check-equal? (from-nat bool-or-num 1) #f)
+ (check-equal? (from-nat bool-or-num 2) 0)
+ (check-equal? (from-nat bool-or-num 3) 1)
+ (check-equal? (from-nat bool-or-num 4) 2)
+ (check-equal? (from-nat bool-or-num 5) 3)
    
  (check-exn exn:fail?
             (λ ()
-               (decode bool-or-num 6)))
+               (from-nat bool-or-num 6)))
  (check-bijection? bool-or-num)
    
  (check-equal? (size bool-or-nat)
                +inf.0)
- (check-equal? (decode bool-or-nat 0) #t)
- (check-equal? (decode bool-or-nat 1) #f)
- (check-equal? (decode bool-or-nat 2) 0)
+ (check-equal? (from-nat bool-or-nat 0) #t)
+ (check-equal? (from-nat bool-or-nat 1) #f)
+ (check-equal? (from-nat bool-or-nat 2) 0)
  (check-bijection? bool-or-nat))
 
 ;; cons/e tests
@@ -203,8 +203,8 @@
 (test-begin
 
  (check-equal? (size 1*b) 2)
- (check-equal? (decode 1*b 0) (cons 1 #t))
- (check-equal? (decode 1*b 1) (cons 1 #f))
+ (check-equal? (from-nat 1*b 0) (cons 1 #t))
+ (check-equal? (from-nat 1*b 1) (cons 1 #f))
  (check-bijection? 1*b)
  (check-bijection? b*1)
  (check-equal? (size bool*bool) 4)
@@ -226,7 +226,7 @@
 ;; fair product tests
 (define-simple-check (check-range? e l u approx)
   (let ([actual (for/set ([i (in-range l u)])
-                  (decode e i))]
+                  (from-nat e i))]
         [expected (list->set approx)])
     (equal? actual expected)))
 (test-begin
@@ -318,43 +318,43 @@
 
 (test-begin
  (check-equal? (size 3-up) 6)
- (check-equal? (decode 3-up 0) (cons 0 0))
- (check-equal? (decode 3-up 1) (cons 1 0))
- (check-equal? (decode 3-up 2) (cons 1 1))
- (check-equal? (decode 3-up 3) (cons 2 0))
- (check-equal? (decode 3-up 4) (cons 2 1))
- (check-equal? (decode 3-up 5) (cons 2 2))
+ (check-equal? (from-nat 3-up 0) (cons 0 0))
+ (check-equal? (from-nat 3-up 1) (cons 1 0))
+ (check-equal? (from-nat 3-up 2) (cons 1 1))
+ (check-equal? (from-nat 3-up 3) (cons 2 0))
+ (check-equal? (from-nat 3-up 4) (cons 2 1))
+ (check-equal? (from-nat 3-up 5) (cons 2 2))
  (check-bijection? 3-up)
 
  (check-equal? (size from-3) +inf.0)
- (check-equal? (decode from-3 0) (cons 0 0))
- (check-equal? (decode from-3 1) (cons 1 1))
- (check-equal? (decode from-3 2) (cons 2 2))
- (check-equal? (decode from-3 3) (cons 0 1))
- (check-equal? (decode from-3 4) (cons 1 2))
- (check-equal? (decode from-3 5) (cons 2 3))
- (check-equal? (decode from-3 6) (cons 0 2))
+ (check-equal? (from-nat from-3 0) (cons 0 0))
+ (check-equal? (from-nat from-3 1) (cons 1 1))
+ (check-equal? (from-nat from-3 2) (cons 2 2))
+ (check-equal? (from-nat from-3 3) (cons 0 1))
+ (check-equal? (from-nat from-3 4) (cons 1 2))
+ (check-equal? (from-nat from-3 5) (cons 2 3))
+ (check-equal? (from-nat from-3 6) (cons 0 2))
  (check-bijection? from-3)
 
  (check-equal? (size nats-to) +inf.0)
- (check-equal? (decode nats-to 0) (cons 0 0))
- (check-equal? (decode nats-to 1) (cons 1 0))
- (check-equal? (decode nats-to 2) (cons 1 1))
- (check-equal? (decode nats-to 3) (cons 2 0))
- (check-equal? (decode nats-to 4) (cons 2 1))
- (check-equal? (decode nats-to 5) (cons 2 2))
- (check-equal? (decode nats-to 6) (cons 3 0))
+ (check-equal? (from-nat nats-to 0) (cons 0 0))
+ (check-equal? (from-nat nats-to 1) (cons 1 0))
+ (check-equal? (from-nat nats-to 2) (cons 1 1))
+ (check-equal? (from-nat nats-to 3) (cons 2 0))
+ (check-equal? (from-nat nats-to 4) (cons 2 1))
+ (check-equal? (from-nat nats-to 5) (cons 2 2))
+ (check-equal? (from-nat nats-to 6) (cons 3 0))
  (check-bijection? nats-to)
 
  (check-equal? (size nats-up) +inf.0)
- (check-equal? (decode nats-up 0) (cons 0 0))
- (check-equal? (decode nats-up 1) (cons 0 1))
- (check-equal? (decode nats-up 2) (cons 1 1))
- (check-equal? (decode nats-up 3) (cons 0 2))
- (check-equal? (decode nats-up 4) (cons 1 2))
- (check-equal? (decode nats-up 5) (cons 2 2))
- (check-equal? (decode nats-up 6) (cons 0 3))
- (check-equal? (decode nats-up 7) (cons 1 3))
+ (check-equal? (from-nat nats-up 0) (cons 0 0))
+ (check-equal? (from-nat nats-up 1) (cons 0 1))
+ (check-equal? (from-nat nats-up 2) (cons 1 1))
+ (check-equal? (from-nat nats-up 3) (cons 0 2))
+ (check-equal? (from-nat nats-up 4) (cons 1 2))
+ (check-equal? (from-nat nats-up 5) (cons 2 2))
+ (check-equal? (from-nat nats-up 6) (cons 0 3))
+ (check-equal? (from-nat nats-up 7) (cons 1 3))
 
  (check-bijection? nats-up))
 
@@ -380,42 +380,42 @@
 
 (test-begin
  (check-equal? (size 3-up-2) 6)
- (check-equal? (decode 3-up-2 0) (cons 0 0))
- (check-equal? (decode 3-up-2 1) (cons 1 0))
- (check-equal? (decode 3-up-2 2) (cons 1 1))
- (check-equal? (decode 3-up-2 3) (cons 2 0))
- (check-equal? (decode 3-up-2 4) (cons 2 1))
- (check-equal? (decode 3-up-2 5) (cons 2 2))
+ (check-equal? (from-nat 3-up-2 0) (cons 0 0))
+ (check-equal? (from-nat 3-up-2 1) (cons 1 0))
+ (check-equal? (from-nat 3-up-2 2) (cons 1 1))
+ (check-equal? (from-nat 3-up-2 3) (cons 2 0))
+ (check-equal? (from-nat 3-up-2 4) (cons 2 1))
+ (check-equal? (from-nat 3-up-2 5) (cons 2 2))
  
- (check-equal? (encode 3-up-2 (cons 0 0)) 0)
- (check-equal? (encode 3-up-2 (cons 1 0)) 1)
- (check-equal? (encode 3-up-2 (cons 1 1)) 2)
- (check-equal? (encode 3-up-2 (cons 2 0)) 3)
+ (check-equal? (to-nat 3-up-2 (cons 0 0)) 0)
+ (check-equal? (to-nat 3-up-2 (cons 1 0)) 1)
+ (check-equal? (to-nat 3-up-2 (cons 1 1)) 2)
+ (check-equal? (to-nat 3-up-2 (cons 2 0)) 3)
 
  (check-equal? (size nats-to-2) +inf.0)
- (check-equal? (encode nats-to-2 (cons 0 0)) 0)
- (check-equal? (encode nats-to-2 (cons 1 0)) 1)
- (check-equal? (encode nats-to-2 (cons 1 1)) 2)
- (check-equal? (encode nats-to-2 (cons 2 0)) 3)
- (check-equal? (encode nats-to-2 (cons 2 1)) 4)
- (check-equal? (encode nats-to-2 (cons 2 2)) 5)
- (check-equal? (encode nats-to-2 (cons 3 0)) 6)
+ (check-equal? (to-nat nats-to-2 (cons 0 0)) 0)
+ (check-equal? (to-nat nats-to-2 (cons 1 0)) 1)
+ (check-equal? (to-nat nats-to-2 (cons 1 1)) 2)
+ (check-equal? (to-nat nats-to-2 (cons 2 0)) 3)
+ (check-equal? (to-nat nats-to-2 (cons 2 1)) 4)
+ (check-equal? (to-nat nats-to-2 (cons 2 2)) 5)
+ (check-equal? (to-nat nats-to-2 (cons 3 0)) 6)
 
- (check-equal? (decode nats-to-2 0) (cons 0 0))
- (check-equal? (decode nats-to-2 1) (cons 1 0))
- (check-equal? (decode nats-to-2 2) (cons 1 1))
- (check-equal? (decode nats-to-2 3) (cons 2 0))
- (check-equal? (decode nats-to-2 4) (cons 2 1))
- (check-equal? (decode nats-to-2 5) (cons 2 2))
- (check-equal? (decode nats-to-2 6) (cons 3 0)))
+ (check-equal? (from-nat nats-to-2 0) (cons 0 0))
+ (check-equal? (from-nat nats-to-2 1) (cons 1 0))
+ (check-equal? (from-nat nats-to-2 2) (cons 1 1))
+ (check-equal? (from-nat nats-to-2 3) (cons 2 0))
+ (check-equal? (from-nat nats-to-2 4) (cons 2 1))
+ (check-equal? (from-nat nats-to-2 5) (cons 2 2))
+ (check-equal? (from-nat nats-to-2 6) (cons 3 0)))
 
 ;; take/e test
 (define to-2 (up-to 2))
 (test-begin
  (check-equal? (size to-2) 3)
- (check-equal? (decode to-2 0) 0)
- (check-equal? (decode to-2 1) 1)
- (check-equal? (decode to-2 2) 2)
+ (check-equal? (from-nat to-2 0) 0)
+ (check-equal? (from-nat to-2 1) 1)
+ (check-equal? (from-nat to-2 2) 2)
  (check-bijection? to-2))
 
 ;; slic/e test
@@ -432,8 +432,8 @@
 
 (define not-3 (except/e nat/e 3))
 (test-begin
- (check-equal? (decode not-3 0) 0)
- (check-equal? (decode not-3 3) 4)
+ (check-equal? (from-nat not-3 0) 0)
+ (check-equal? (from-nat not-3 3) 4)
  (check-bijection? not-3))
 
 ;; fold-enum tests
@@ -454,5 +454,5 @@
 (define emptys/e
   (many/e empty/e))
 (test-begin
- (check-equal? (decode emptys/e 0) '())
+ (check-equal? (from-nat emptys/e 0) '())
  (check-bijection? emptys/e))

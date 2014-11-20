@@ -22,17 +22,9 @@ is linear in the bits of the number.
 @; XXX explain fairness
 @; XXX add citations
 
-@defproc[(nat? [x any/c]) boolean?]{
-
-Identifies a value as a natural number.}
-
-@defproc[(extended-nat? [x any/c]) boolean?]{
-
-Identifies a value as a natural number or positive infinity.}
-
-@defproc[(enum [size extended-nat?] 
-               [from (-> nat? any/c)]
-               [to (-> any/c nat?)])
+@defproc[(enum [size (or/c exact-nonnegative-integer? +inf.0)] 
+               [from (-> exact-nonnegative-integer? any/c)]
+               [to (-> any/c exact-nonnegative-integer?)])
          enum?]{
 
 Constructs an @tech{enumeration} of size @racket[size] where
@@ -43,15 +35,15 @@ function. }
 
 Identifies a value as an @tech{enumeration}.}
 
-@defproc[(size [e enum?]) extended-nat?]{
+@defproc[(size [e enum?]) (or/c exact-nonnegative-integer? +inf.0)]{
 
 Returns the size of an @tech{enumeration}.}
 
-@defproc[(decode [e enum?] [n nat?]) any/c]{
+@defproc[(decode [e enum?] [n exact-nonnegative-integer?]) any/c]{
 
 Uses @racket[e] to decode @racket[n].}
 
-@defproc[(encode [e enum?] [x any/c]) nat?]{
+@defproc[(to-nat [e enum?] [x any/c]) exact-nonnegative-integer?]{
 
 Uses @racket[e] to encode @racket[x].}
 
@@ -61,7 +53,7 @@ An @tech{enumeration} of the natural numbers.
    
 @examples[#:eval the-eval
 (decode nat/e 5)
-(encode nat/e 5)
+(to-nat nat/e 5)
 ]}
 
 @defproc[(map/e [f (-> a ... b)]
@@ -75,7 +67,7 @@ functions of @racket[e].
 (define map-1/e
   (map/e number->string string->number nat/e))
 (decode map-1/e 5)
-(encode map-1/e "5")
+(to-nat map-1/e "5")
 (define map-2/e
   (map/e (λ (x y) 
            (string-join
@@ -85,7 +77,7 @@ functions of @racket[e].
            (apply values (map string->number (string-split x))))
          nat/e nat/e))
 (decode map-2/e 5)
-(encode map-2/e "1 2")
+(to-nat map-2/e "1 2")
 ]}
 
 @defproc[(filter/e [e enum?] [p (-> any/c boolean?)]) enum?]{
@@ -99,19 +91,20 @@ so only use it for very small enumerations.
 (define filter-1/e
   (filter/e nat/e even?))
 (decode filter-1/e 5)
-(encode filter-1/e 8)
+(to-nat filter-1/e 8)
 ]}
 
 @defproc[(except/e [e enum?] [x any/c] ...) enum?]{
 
 Returns an @tech{enumeration} identical to @racket[e] except that all
-@racket[x] are not included in the decoding and cannot be encoded.
+@racket[x] are not included in the decoding and cannot be encoded
+(converted to a natural number).
 
 @examples[#:eval the-eval
 (define except-1/e
   (except/e nat/e 3))
 (decode except-1/e 5)
-(encode except-1/e 8)
+(to-nat except-1/e 8)
 ]}
 
 @defproc[(to-stream [e enum?]) stream?]{
@@ -122,7 +115,7 @@ Returns a stream of the values in @racket[e].
 (to-stream map-2/e)
 ]}
 
-@defproc[(approximate [e enum?] [n nat?]) list?]{
+@defproc[(approximate [e enum?] [n exact-nonnegative-integer?]) list?]{
 
 Returns a list of the first @racket[n] values in @racket[e].
 
@@ -139,16 +132,16 @@ diverge if @racket[e] is infinite.
 (to-list (take/e map-2/e 5))
 ]}
 
-@defproc[(take/e [e enum?] [n nat?]) enum?]{
+@defproc[(take/e [e enum?] [n exact-nonnegative-integer?]) enum?]{
 
 Identical to @racket[e] but only includes the first @racket[n] values.
 
 @examples[#:eval the-eval
 (decode (take/e map-2/e 5) 3)
-(encode (take/e map-2/e 5) "1 1")
+(to-nat (take/e map-2/e 5) "1 1")
 ]}
 
-@defproc[(slice/e [e enum?] [lo nat?] [hi nat?]) enum?]{
+@defproc[(slice/e [e enum?] [lo exact-nonnegative-integer?] [hi exact-nonnegative-integer?]) enum?]{
 
 Identical to @racket[e] but only includes the values between
 @racket[lo] and @racket[hi].
@@ -157,7 +150,7 @@ Identical to @racket[e] but only includes the values between
 (to-list (slice/e map-2/e 5 10))
 ]}
 
-@defproc[(below/e [max nat?]) enum?]{
+@defproc[(below/e [max exact-nonnegative-integer?]) enum?]{
 
 An @tech{enumeration} of the first @racket[max] naturals.
 
@@ -216,7 +209,7 @@ predicate identifying elements of it. Only one or zero predicates
 should return true on any value.
 
 @examples[#:eval the-eval
-(approximate (disj-sum/e (cons nat/e nat?) (cons map-1/e string?)) 10)
+(approximate (disj-sum/e (cons nat/e exact-nonnegative-integer?) (cons map-1/e string?)) 10)
 ]}
 
 @defproc[(disj-append/e [e-p (cons/c enum? (-> any/c boolean?))] ...+) enum?]{
@@ -227,7 +220,7 @@ the next. @racket[e-p] are formatted as in @racket[disj-sum/e]. All
 but the last enumeration should be finite.
 
 @examples[#:eval the-eval
-(approximate (disj-append/e (cons (take/e nat/e 4) nat?)
+(approximate (disj-append/e (cons (take/e nat/e 4) exact-nonnegative-integer?)
                             (cons map-1/e string?))
              10)
 ]}
@@ -276,7 +269,7 @@ of the enumerations returned by @racket[f] applied to each element of
                             nat/e))
               '("Brian" "Jenny" "Ted" "Ki")))
 (approximate traverse-1/e 5)
-(encode traverse-1/e 
+(to-nat traverse-1/e 
         '(("Brian" . 11) ("Jenny" . 15) ("Ted" . 16) ("Ki" . 7)))
 ]}
 
@@ -291,7 +284,7 @@ of the enumerations returned by @racket[f] applied to each value of
   (hash-traverse/e (λ (n) (below/e n))
                    (hash "Brian" 5 "Jenny" 15 "Ted" 25 "Ki" 30)))
 (approximate hash-traverse-1/e 5)
-(encode hash-traverse-1/e
+(to-nat hash-traverse-1/e
         '#hash(("Brian" . 4) ("Jenny" . 1) ("Ted" . 16) ("Ki" . 7)))
 ]}
 
@@ -304,10 +297,10 @@ Constructs an @tech{enumeration} of pairs of values @racket[a] and
 (define dep-1/e
   (dep/e nat/e (λ (a) (below/e a))))
 (approximate dep-1/e 5)
-(encode dep-1/e (cons 17 10))
+(to-nat dep-1/e (cons 17 10))
 ]}
 
-@defproc[(dep2/e [n extended-nat?] [a enum?] [b (-> any/c enum?)]) enum?]{
+@defproc[(dep2/e [n (or/c exact-nonnegative-integer? +inf.0)] [a enum?] [b (-> any/c enum?)]) enum?]{
 
 Like @racket[dep2/e] but requires the size of the resulting
 enumeration be given as @racket[n]. This is more efficient than
@@ -321,7 +314,7 @@ enumeration be given as @racket[n]. This is more efficient than
           (below/e 5)
           (λ (a) (below/e a))))
 (approximate dep2-1/e 5)
-(encode dep2-1/e (cons 4 3))
+(to-nat dep2-1/e (cons 4 3))
 ]}
 
 @defproc[(fold-enum [f (-> (listof a) b enum?)] [bs (listof b)]) enum?]{
@@ -336,10 +329,10 @@ is initialized to @racket['()].
                (below/e (+ (foldr + 0 as) b)))
              (list 1 2 3)))
 (approximate fold-enum-1/e 5)
-(encode fold-enum-1/e (list 0 1 1))
+(to-nat fold-enum-1/e (list 0 1 1))
 ]}
 
-@defproc[(range/e [lo nat?] [hi nat?]) enum?]{
+@defproc[(range/e [lo exact-nonnegative-integer?] [hi exact-nonnegative-integer?]) enum?]{
 
 An @tech{enumeration} of the naturals between @racket[lo] and @racket[hi].
 
@@ -347,7 +340,7 @@ An @tech{enumeration} of the naturals between @racket[lo] and @racket[hi].
 (approximate (range/e 42 64) 5)
 ]}
 
-@defproc[(thunk/e [size extended-nat?] [ep (-> enum?)]) enum?]{
+@defproc[(thunk/e [size (or/c exact-nonnegative-integer? +inf.0)] [ep (-> enum?)]) enum?]{
 
 A delayed @tech{enumeration} identical to @racket[ep]. This is
 typically used with @racket[fix/e].
@@ -357,7 +350,7 @@ typically used with @racket[fix/e].
 ]}
 
 @defproc*[([(fix/e [f (-> enum? enum?)]) enum?]
-           [(fix/e [size extended-nat?] [f (-> enum? enum?)]) enum?])]{
+           [(fix/e [size (or/c exact-nonnegative-integer? +inf.0)] [f (-> enum? enum?)]) enum?])]{
 
 An @tech{enumeration} calculated as the fixed-point of @racket[f]. If
 @racket[size] is not given, it is assumed to be @racket[+inf.0].
@@ -372,7 +365,7 @@ An @tech{enumeration} calculated as the fixed-point of @racket[f]. If
 ]}
 
 @defproc*[([(many/e [e enum?]) enum?]
-           [(many/e [e enum?] [n nat?]) enum?])]{
+           [(many/e [e enum?] [n exact-nonnegative-integer?]) enum?])]{
 
 An @tech{enumeration} of lists of length @racket[n] of values
 enumerated by @racket[e]. If @racket[n] is not given, lists of any
@@ -530,7 +523,7 @@ enumerations in @racket[es].
              5)
 ]}
 
-@defproc[(box-tuples/e [k nat?]) enum?]{
+@defproc[(box-tuples/e [k exact-nonnegative-integer?]) enum?]{
 
 An @tech{enumeration} of tuples of naturals of length @racket[k].
 
@@ -539,7 +532,7 @@ An @tech{enumeration} of tuples of naturals of length @racket[k].
              5)
 ]}
 
-@defproc[(bounded-list/e [k nat?] [n nat?]) enum?]{
+@defproc[(bounded-list/e [k exact-nonnegative-integer?] [n exact-nonnegative-integer?]) enum?]{
 
 An @tech{enumeration} of tuples of naturals up to @racket[n] of length @racket[k].
 
@@ -548,7 +541,7 @@ An @tech{enumeration} of tuples of naturals up to @racket[n] of length @racket[k
              5)
 ]}
 
-@defproc[(nat+/e [lo nat?]) enum?]{
+@defproc[(nat+/e [lo exact-nonnegative-integer?]) enum?]{
 
 An @tech{enumeration} of tuples of naturals of larger than @racket[lo].
 
@@ -560,7 +553,7 @@ An @tech{enumeration} of tuples of naturals of larger than @racket[lo].
 @defproc[(fail/e [e exn?]) enum?]{
 
 An @tech{enumeration} raises @racket[e] if @racket[decode] or
-@racket[encode] is called with on.
+@racket[to-nat] is called with on.
 
 @examples[#:eval the-eval
 (approximate 

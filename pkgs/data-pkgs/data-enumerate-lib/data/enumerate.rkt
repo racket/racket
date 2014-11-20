@@ -18,30 +18,23 @@
                   factorize))
 
 (define nat? exact-nonnegative-integer?)
-(define (extended-nat? x)
-  (or (nat? x) (= x +inf.0)))
+(define extended-nat/c (or/c nat? +inf.0))
 
 (provide 
  (contract-out
-  [nat?
-   (-> any/c 
-       boolean?)]
-  [extended-nat?
-   (-> any/c 
-       boolean?)]
   [enum 
-   (-> extended-nat? (-> nat? any/c) (-> any/c nat?)
+   (-> extended-nat/c (-> nat? any/c) (-> any/c nat?)
        enum?)]
   [enum?
    (-> any/c 
        boolean?)]
   [size
    (-> enum?
-       extended-nat?)]
-  [decode 
+       extended-nat/c)]
+  [from-nat 
    (-> enum? nat?
        any/c)]
-  [encode
+  [to-nat
    (-> enum? any/c
        nat?)]
   [map/e
@@ -126,13 +119,13 @@
    (-> nat? nat?
        enum?)]
   [thunk/e
-   (-> extended-nat? (-> enum?)
+   (-> extended-nat/c (-> enum?)
        enum?)]
   [fix/e
    (case->
     (-> (-> enum? enum?) 
         enum?)
-    (-> extended-nat? (-> enum? enum?)
+    (-> extended-nat/c (-> enum? enum?)
         enum?))]
   [many/e
    (case->
@@ -210,18 +203,18 @@
 (define (size e)
   (enum-size e))
 
-;; decode : enum a, Nat -> a
-(define (decode e n)
+;; from-nat : enum a, Nat -> a
+(define (from-nat e n)
   (if (and (< n (enum-size e))
            (>= n 0))
       ((enum-from e) n)
-      (error 'decode
+      (error 'from-nat
              (string-append "Index into enumerator out of range. "
                             "Tried to decode ~s in an enum of size ~s")
              n (size e))))
 
-;; encode : enum a, a -> Nat
-(define (encode e a)
+;; to-nat : enum a, a -> Nat
+(define (to-nat e a)
   ((enum-to e) a))
 
 ;; Helper functions
@@ -230,9 +223,9 @@
   (cond [(empty? es)
          (enum (size e)
                (λ (x) 
-                  (f (decode e x)))
+                  (f (from-nat e x)))
                (λ (n)
-                  (encode e (inv-f n))))]
+                  (to-nat e (inv-f n))))]
         [else
          (define es/e (apply list/e (cons e es)))
          (map/e
@@ -244,19 +237,19 @@
 
 ;; filter/e : enum a, (a -> bool) -> enum a
 ;; xxx size won't be accurate!
-;; xxx encode is not accurate right now!
+;; xxx to-nat is not accurate right now!
 (define (filter/e e p)
   (enum (size e)
         (λ (n)
            (let loop ([i 0]
                       [seen 0])
-             (let ([a (decode e i)])
+             (let ([a (from-nat e i)])
                (if (p a)
                    (if (= seen n)
                        a
                        (loop (+ i 1) (+ seen 1)))
                    (loop (+ i 1) seen)))))
-        (λ (x) (encode e x))))
+        (λ (x) (to-nat e x))))
 
 ;; except/e : (enum a) a* -> (enum a)
 ;; Everything inside e MUST be in the enumerator or you will get an error
@@ -264,16 +257,16 @@
   (define (except1/e x e)
     (cond [(= (size e) 0) e]
           [else
-           (define xi (encode e x))
-           (define (from-nat n)
-             (cond [(< n xi) (decode e n)]
-                   [else (decode e (add1 n))]))
-           (define (to-nat y)
-             (define yi (encode e y))
+           (define xi (to-nat e x))
+           (define (from-nat2 n)
+             (cond [(< n xi) (from-nat e n)]
+                   [else (from-nat e (add1 n))]))
+           (define (to-nat2 y)
+             (define yi (to-nat e y))
              (cond [(< yi xi) yi]
                    [(> yi xi) (sub1 yi)]
-                   [else (error 'encode "attempted to encode an excepted value")]))
-           (enum (max 0 (sub1 (size e))) from-nat to-nat)]))
+                   [else (error 'to-nat "attempted to encode an excepted value")]))
+           (enum (max 0 (sub1 (size e))) from-nat2 to-nat2)]))
   (foldr except1/e
          e
          excepts))
@@ -283,13 +276,13 @@
     (cond [(n . >= . (size e))
            empty-stream]
           [else
-           (stream-cons (decode e n)
+           (stream-cons (from-nat e n)
                         (loop (add1 n)))]))
   (loop 0))
 
 (define (approximate e n)
   (for/list ([i (in-range n)])
-    (decode e i)))
+    (from-nat e i)))
 
 ;; to-list : enum a -> listof a
 ;; better be finite
@@ -308,9 +301,9 @@
     (error 'take/e "there aren't ~s elements in ~s" n e))
   (enum n
         (λ (k)
-           (decode e k))
+           (from-nat e k))
         (λ (x)
-           (let ([k (encode e x)])
+           (let ([k (to-nat e x)])
              (unless (< k n)
                (error 'take/e "attempted to encode an element not in an enumerator"))
              k))))
@@ -322,12 +315,15 @@
     (error 'slice/e "bad range in slice/e: size: ~s, lo: ~s, hi: ~s" (size e) lo hi))
   (enum (hi . - . lo)
         (λ (n)
-           (decode e (n . + . lo)))
+           (from-nat e (n . + . lo)))
         (λ (x)
-           (define n (encode e x))
+           (define n (to-nat e x))
            (unless (and (n . >= . lo)
                         (n . <  . hi))
-             (error 'slice/e "attempted to encode an element removed by slice/e: ~s was excepted, originally ~s, but sliced between ~s and ~s" x n lo hi))
+             (error 'slice/e
+                    (string-append
+                     "attempted to encode an element removed by slice/e:"
+                     " ~s was excepted, originally ~s, but sliced between ~s and ~s" x n lo hi)))
            (n . - . lo))))
 
 ;; below/e
@@ -337,9 +333,9 @@
 (define empty/e
   (enum 0
         (λ (n)
-           (error 'decode "absurd"))
+           (error 'from-nat "absurd"))
         (λ (x)
-           (error 'encode "no elements in the enumerator"))))
+           (error 'to-nat "no elements in the enumerator"))))
 
 (define (const/e c)
   (enum 1
@@ -348,7 +344,7 @@
         (λ (x)
            (if (equal? c x)
                0
-               (error 'encode "value not in enumerator")))))
+               (error 'to-nat "value not in enumerator")))))
 
 ;; from-list/e :: Listof a -> Gen a
 ;; input list should not contain duplicates
@@ -408,8 +404,10 @@
   #:transparent)
 
 (struct list-layer
-  (max-index ;; Nat = layer-size + prev-layer-max-index: This is the maximum index into decode for this layer
-   inexhausted-bound ;; Nat, = min (map size inexhausteds): This is the maximum index in the tuple for encode
+   ;; Nat = layer-size + prev-layer-max-index: This is the maximum index into decode for this layer
+  (max-index
+   ;; Nat, = min (map size inexhausteds): This is the maximum index in the tuple for encode
+   inexhausted-bound
    exhausteds   ;; Vectorof (Enum a, Nat)
    inexhausteds ;; Vectorof (Enum a, Nat)
    )
@@ -490,9 +488,11 @@
        (define num-inexhausted
          (length cur-inexhausteds))
        (define max-index
-         (prev-max-index . + . (apply *
-                                      ((expt cur-bound num-inexhausted) . - . (expt prev-bound num-inexhausted))
-                                      (map (compose size car) cur-exhausteds))))
+         (prev-max-index
+          . + . 
+          (apply *
+                 ((expt cur-bound num-inexhausted) . - . (expt prev-bound num-inexhausted))
+                 (map (compose size car) cur-exhausteds))))
        (define cur-layer
          (list-layer max-index
                      cur-bound
@@ -513,11 +513,11 @@
 
 (define (find-index x e-ps [cur-index 0])
   (match e-ps
-    ['() (error 'encode "invalid term")]
+    ['() (error 'to-nat "invalid term")]
     [(cons (cons e in-e?)
            more-e-ps)
      (cond [(in-e? x)
-            (values (encode e x)
+            (values (to-nat e x)
                     cur-index)]
            [else
             (find-index x more-e-ps (add1 cur-index))])]))
@@ -532,14 +532,14 @@
     [((upper-bound tb ib eis) e-i)
      (define (loop low hi)
        (when (> low hi)
-         (error 'encode "internal bin search bug"))
+         (error 'to-nat "internal bin search bug"))
        (define mid
          (quotient (low . + . hi) 2))
        (define cur
          (cdr (vector-ref eis mid)))
        (cond [(low . = . mid)
               (unless (cur . = . e-i)
-                (error 'encode "internal binary search bug"))
+                (error 'to-nat "internal binary search bug"))
               mid]
              [(cur . = . e-i) mid]
              [(cur . < . e-i) (loop (add1 mid) hi)]
@@ -593,7 +593,7 @@
        (define len (vector-length es))
        (define-values (q r) (quotient/remainder this-i len))
        (define this-e (car (vector-ref es r)))
-       (decode this-e (+ q prev-ib)))
+       (from-nat this-e (+ q prev-ib)))
      (define (enc x)
        (define-values (index which-e)
          (find-index x e-ps))
@@ -616,14 +616,14 @@
      (define s2 (size e2))
      (when (infinite? s1)
        (error "Only the last enum in a call to disj-append/e can be infinite."))
-     (define (from-nat n)
-       (cond [(< n s1) (decode e1 n)]
-             [else (decode e2 (- n s1))]))
-     (define (to-nat x)
-       (cond [(1? x) (encode e1 x)]
-             [(2? x) (+ (encode e2 x) s1)]
-             [else (error 'encode "bad term")]))
-     (enum (+ s1 s2) from-nat to-nat)])
+     (define (from-nat2 n)
+       (cond [(< n s1) (from-nat e1 n)]
+             [else (from-nat e2 (- n s1))]))
+     (define (to-nat2 x)
+       (cond [(1? x) (to-nat e1 x)]
+             [(2? x) (+ (to-nat e2 x) s1)]
+             [else (error 'to-nat "bad term")]))
+     (enum (+ s1 s2) from-nat2 to-nat2)])
   (car
    (foldr1 (λ (e-p1 e-p2)
              (match* (e-p1 e-p2)
@@ -657,12 +657,12 @@
              (if fst-smaller?
                  (values r q)
                  (values q r)))
-           (cons (decode e1 n1)
-                 (decode e2 n2)))
+           (cons (from-nat e1 n1)
+                 (from-nat e2 n2)))
          (define/match (enc p)
            [((cons x1 x2))
-            (define n1 (encode e1 x1))
-            (define n2 (encode e2 x2))
+            (define n1 (to-nat e1 x1))
+            (define n2 (to-nat e2 x2))
             (define-values (q r)
               (if fst-smaller?
                   (values n2 n1)
@@ -702,12 +702,12 @@
                   (define n1 fl-root)
                   (define n2 (- n root-sq fl-root))
                   (values n1 n2)]))
-           (cons (decode e1 n1)
-                 (decode e2 n2)))
+           (cons (from-nat e1 n1)
+                 (from-nat e2 n2)))
          (define/match (enc p)
            [((cons x1 x2))
-            (define n1 (encode e1 x1))
-            (define n2 (encode e2 x2))
+            (define n1 (to-nat e1 x1))
+            (define n2 (to-nat e2 x2))
             (cond [(n1 . < . n2)
                    ((n2 . * . n2) . + . n1)]
                   [else
@@ -758,7 +758,7 @@
   (define (search-size sizes n)
     (define (loop cur)
       (let* ([lastSize (gvector-ref sizes (- cur 1))]
-             [e2 (f (decode e cur))]
+             [e2 (f (from-nat e cur))]
              [s  (+ lastSize (size e2))])
         (gvector-add! sizes s)
         (if (> s n)
@@ -770,7 +770,7 @@
   (define (fill-table sizes n)
     (let loop ([cur (gvector-count sizes)])
       (let* ([prevSize (gvector-ref sizes (- cur 1))]
-             [curE (f (decode e cur))]
+             [curE (f (from-nat e cur))]
              [s (+ prevSize (size curE))])
         (gvector-add! sizes s)
         (if (= cur n)
@@ -778,7 +778,7 @@
             (loop (+ cur 1))))))
   (if (= 0 (size e))
       empty/e
-      (let ([first (size (f (decode e 0)))])
+      (let ([first (size (f (from-nat e 0)))])
         (cond
          [(not (infinite? first))
           ;; memo table caches the size of the dependent enumerators
@@ -800,14 +800,14 @@
                                    0
                                    (gvector-ref sizes (- ind 1)))]
                             [m (- n l)]
-                            [x (decode e ind)]
+                            [x (from-nat e ind)]
                             [e2 (f x)]
-                            [y (decode e2 m)])
+                            [y (from-nat e2 m)])
                        (cons x y)))
                   (λ (ab)
                      (let* ([a (car ab)]
                             [b (cdr ab)]
-                            [ai (encode e a)]
+                            [ai (to-nat e a)]
                             [ei (f a)]
                             [nextSize (size ei)]
                             [sizeUpTo (if (= ai 0)
@@ -821,16 +821,16 @@
                                                                 (+ nextSize
                                                                    sizeUp))))))])
                        (+ sizeUpTo
-                          (encode ei b))))))]
+                          (to-nat ei b))))))]
          [(not (infinite? (size e)))
           (enum +inf.0
                 (λ (n)
                   (define-values (q r) (quotient/remainder n (size e)))
-                  (cons (decode e r)
-                        (decode (f (decode e r)) q)))
+                  (cons (from-nat e r)
+                        (from-nat (f (from-nat e r)) q)))
                 (λ (ab)
-                   (+ (* (size e) (encode (f (car ab)) (cdr ab)))
-                      (encode e (car ab)))))]
+                   (+ (* (size e) (to-nat (f (car ab)) (cdr ab)))
+                      (to-nat e (car ab)))))]
          [else ;; both infinite, same as cons/e
           (enum +inf.0               
                 (λ (n)
@@ -838,15 +838,15 @@
                           [t (tri k)]
                           [l (- n t)]
                           [m (- k l)]
-                          [a (decode e l)])
+                          [a (from-nat e l)])
                      (cons a
-                           (decode (f a) m))))
+                           (from-nat (f a) m))))
                 (λ (xs) ;; bijection from nxn -> n, inverse of previous
                    ;; (n,m) -> (n+m)(n+m+1)/2 + n
                    (unless (pair? xs)
-                     (error 'encode "not a pair"))
-                   (let ([l (encode e (car xs))]
-                         [m (encode (f (car xs)) (cdr xs))])
+                     (error 'to-nat "not a pair"))
+                   (let ([l (to-nat e (car xs))]
+                         [m (to-nat (f (car xs)) (cdr xs))])
                      (+ (/ (* (+ l m) (+ l m 1))
                            2)
                         l))))]))))
@@ -880,7 +880,7 @@
   (define (search-size sizes n)
     (define (loop cur)
       (let* ([lastSize (gvector-ref sizes (- cur 1))]
-             [e2 (f (decode e cur))]
+             [e2 (f (from-nat e cur))]
              [s  (+ lastSize (size e2))])
         (gvector-add! sizes s)
         (if (> s n)
@@ -892,7 +892,7 @@
   (define (fill-table sizes n)
     (let loop ([cur (gvector-count sizes)])
       (let* ([prevSize (gvector-ref sizes (- cur 1))]
-             [curE (f (decode e cur))]
+             [curE (f (from-nat e cur))]
              [s (+ prevSize (size curE))])
         (gvector-add! sizes s)
         (if (= cur n)
@@ -905,7 +905,7 @@
         ;; memo table caches the size of the dependent enumerators
         ;; sizes[n] = # of terms with left side index <= n
         ;; sizes : gvector int
-        (let* ([first (size (f (decode e 0)))]
+        (let* ([first (size (f (from-nat e 0)))]
                [sizes (gvector first)])
           (enum (if (infinite? (size e))
                     +inf.0
@@ -922,14 +922,14 @@
                                  0
                                  (gvector-ref sizes (- ind 1)))]
                           [m (- n l)]
-                          [x (decode e ind)]
+                          [x (from-nat e ind)]
                           [e2 (f x)]
-                          [y (decode e2 m)])
+                          [y (from-nat e2 m)])
                      (cons x y)))
                 (λ (ab)
                    (let* ([a (car ab)]
                           [b (cdr ab)]
-                          [ai (encode e a)]
+                          [ai (to-nat e a)]
                           [ei (f a)]
                           [nextSize (size ei)]
                           [sizeUpTo (if (= ai 0)
@@ -943,16 +943,16 @@
                                                               (+ nextSize
                                                                  sizeUp))))))])
                      (+ sizeUpTo
-                        (encode ei b))))))]
+                        (to-nat ei b))))))]
        [(not (infinite? (size e)))
         (enum +inf.0
               (λ (n)
                 (define-values (q r) (quotient/remainder n (size e)))
-                (cons (decode e r)
-                      (decode (f (decode e r)) q)))
+                (cons (from-nat e r)
+                      (from-nat (f (from-nat e r)) q)))
               (λ (ab)
-                 (+ (* (size e) (encode (f (car ab)) (cdr ab)))
-                    (encode e (car ab)))))]
+                 (+ (* (size e) (to-nat (f (car ab)) (cdr ab)))
+                    (to-nat e (car ab)))))]
        [else ;; both infinite, same as cons/e
         (enum +inf.0               
               (λ (n)
@@ -960,15 +960,15 @@
                         [t (tri k)]
                         [l (- n t)]
                         [m (- k l)]
-                        [a (decode e l)])
+                        [a (from-nat e l)])
                    (cons a
-                         (decode (f a) m))))
+                         (from-nat (f a) m))))
               (λ (xs) ;; bijection from nxn -> n, inverse of previous
                  ;; (n,m) -> (n+m)(n+m+1)/2 + n
                  (unless (pair? xs)
-                   (error 'encode "not a pair"))
-                 (let ([l (encode e (car xs))]
-                       [m (encode (f (car xs)) (cdr xs))])
+                   (error 'to-nat "not a pair"))
+                 (let ([l (to-nat e (car xs))]
+                       [m (to-nat (f (car xs)) (cdr xs))])
                    (+ (/ (* (+ l m) (+ l m 1))
                          2)
                       l))))])))
@@ -1030,9 +1030,9 @@
   (define promise/e (delay (thunk)))
   (enum s
         (λ (n)
-           (decode (force promise/e) n))
+           (from-nat (force promise/e) n))
         (λ (x)
-           (encode (force promise/e) x))))
+           (to-nat (force promise/e) x))))
 
 ;; fix/e : [size] (enum a -> enum a) -> enum a
 (define fix/e
@@ -1042,9 +1042,9 @@
      (define self (delay (f/e (fix/e size f/e))))
      (enum size
            (λ (n)
-             (decode (force self) n))
+             (from-nat (force self) n))
            (λ (x)
-             (encode (force self) x)))]))
+             (to-nat (force self) x)))]))
 
 ;; many/e : enum a -> enum (listof a)
 ;;       or : enum a, #:length natural -> enum (listof a)
@@ -1188,8 +1188,8 @@
       (take/e nat/e (size e))))
             
   (map/e
-   (curry map decode es)
-   (curry map encode es)
+   (curry map from-nat es)
+   (curry map to-nat es)
    (mixed-box-tuples/e nat/es)))
 
 (define (mixed-box-tuples/e es)
@@ -1208,9 +1208,10 @@
                          [e (in-list es)])
                 (cons e i)))
 
-            (define prev-cur-layers (map cons
-                                         (cons (list-layer 0 0 '() eis) (reverse (rest (reverse layers))))
-                                         layers))
+            (define prev-cur-layers 
+              (map cons
+                   (cons (list-layer 0 0 '() eis) (reverse (rest (reverse layers))))
+                   layers))
 
             (define layer/es
               (for/list ([prev-cur (in-list prev-cur-layers)])
@@ -1258,7 +1259,7 @@
                            min-index
                            _)
                      (when (n . < . max-index)
-                       (return (decode e (n . - . min-index))))]))))
+                       (return (from-nat e (n . - . min-index))))]))))
 
             (define (enc tup)
               (define m (apply max tup))
@@ -1270,7 +1271,7 @@
                            min-index
                            max-max)
                      (when (m . < . max-max)
-                       (return (+ min-index (encode e tup))))]))))
+                       (return (+ min-index (to-nat e tup))))]))))
 
             (enum (apply * (map size es))
                   dec
@@ -1309,13 +1310,13 @@
   (define (dec n)
     (define-values (q r)
       (quotient/remainder n fin-size))
-    (define x1 (decode e1 (if fst-finite? r q)))
-    (define x2 (decode e2 (if fst-finite? q r)))
+    (define x1 (from-nat e1 (if fst-finite? r q)))
+    (define x2 (from-nat e2 (if fst-finite? q r)))
     (cons x1 x2))
   (define/match (enc p)
     [((cons x1 x2))
-     (define n1 (encode e1 x1))
-     (define n2 (encode e2 x2))
+     (define n1 (to-nat e1 x1))
+     (define n2 (to-nat e2 x2))
      (define q (if fst-finite? n2 n1))
      (define r (if fst-finite? n1 n2))
      (+ (* fin-size q)
@@ -1438,12 +1439,12 @@
          (define k (length es))
          (define dec
            (compose
-            (λ (xs) (map decode es xs))
+            (λ (xs) (map from-nat es xs))
             (cantor-untuple k)))
          (define enc
            (compose
             (cantor-tuple k)
-            (λ (xs) (map encode es xs))))
+            (λ (xs) (map to-nat es xs))))
          (enum +inf.0 dec enc)]))
 
 (define (prime-factorize k)
@@ -1499,8 +1500,8 @@
                (prime-length-box-list/e chunk/es))]))]))
 
 (define (prime-length-box-list/e es)
-  (map/e (curry map decode es)
-         (curry map encode es)
+  (map/e (curry map from-nat es)
+         (curry map to-nat es)
          (box-tuples/e (length es))))
 
 (define (box-tuples/e k)
@@ -1538,14 +1539,14 @@
      (define layer (apply max xs))
      (define smallest (expt layer k))
      (define layer/e (bounded-list/e k layer))
-     (smallest . + . (encode layer/e xs))))
+     (smallest . + . (to-nat layer/e xs))))
 
 (define (box-untuple k)
   (λ (n)
      (define layer (integer-root n k))
      (define smallest (expt layer k))
      (define layer/e (bounded-list/e k layer))
-     (decode layer/e (n . - . smallest))))
+     (from-nat layer/e (n . - . smallest))))
 
 (define (nat+/e n)
   (map/e (λ (k)
@@ -1580,7 +1581,7 @@
      (andmap =
              nums
              (map (λ (n)
-                     (encode e (decode e n)))
+                     (to-nat e (from-nat e n)))
                   nums)))))
 ;; Base Type enumerators
 (define (between? x low high)
