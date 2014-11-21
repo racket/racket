@@ -1,7 +1,5 @@
 #lang racket/base
-
 (require "maze.rkt" 
-         (except-in "godel.rkt" unit/s)
          "../show-scribbling.rkt"
          racket/gui/base
          racket/class
@@ -52,13 +50,14 @@
               computer2
               player-icon)
   #:transparent)
-(define maze-count (spec-k (maze/s maze-w maze-h)))
+
+(define the-maze-count (maze-count maze-w maze-h))
 
 (define (state-next-edges the-state)
   (build-walls
-   (decode (maze/s maze-w maze-h)
-           (modulo (+ (state-maze-index the-state) 1)
-                   maze-count))
+   (decode-maze maze-w maze-h
+                (modulo (+ (state-maze-index the-state) 1)
+                        the-maze-count))
    maze-w
    maze-h))
 
@@ -142,7 +141,7 @@
 (define (next-maze)
   (define next-maze-state
     (fill-in-maze (current-state)
-                  (modulo (+ (state-maze-index (current-state)) 1) maze-count)))
+                  (modulo (+ (state-maze-index (current-state)) 1) the-maze-count)))
   (next-state!
    (if (game-over?)
        next-maze-state

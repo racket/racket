@@ -12,7 +12,10 @@
          draw-maze 
          build-walls
          decode-maze
-         maze/s)
+         maze-count)
+
+(define (maze-count w h)
+  (spec-k (maze/s w h)))
 
 (define (decode-maze maze-w maze-h n)
   (define mazes (maze/s maze-w maze-h))
