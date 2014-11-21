@@ -1667,4 +1667,20 @@
                (super-new)
                (define/override (get-this) this)))
            (void))
-         -Void]))
+         -Void]
+   ;; Test that depth subtyping is accounted for with overriden methods
+   [tc-e (let ()
+           (define-type-alias B% (Class [n (-> Real)]))
+           (: b% B%)
+           (define b%
+             (class object%
+               (super-new)
+               (define/public (n) 123.456)))
+           (define-type-alias C% (Class #:implements B% [n (-> Integer)]))
+           (: c% C%)
+           (define c%
+             (class b%
+               (super-new)
+               (override* [n (lambda () 5)])))
+           (send (new c%) n))
+         -Integer]))

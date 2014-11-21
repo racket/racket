@@ -1350,17 +1350,23 @@
       [(Class: _ inits fields publics augments init-rest)
        (values inits fields publics augments init-rest)]
       [_ (values #f #f #f #f #f)]))
-  (define-values (inits fields publics pubments init-rest-name)
+  (define-values (inits fields publics pubments overrides init-rest-name)
     (values (hash-ref parse-info 'init-internals)
             (hash-ref parse-info 'field-internals)
             (hash-ref parse-info 'public-internals)
             (hash-ref parse-info 'pubment-internals)
+            (hash-ref parse-info 'override-internals)
             (hash-ref parse-info 'init-rest-name)))
   (define init-types (make-inits inits super-inits expected-inits))
   (define field-types (make-type-dict fields super-fields expected-fields Univ))
-  (define public-types (make-type-dict (append publics pubments)
+
+  ;; This should consider all new public methods, but should also look at
+  ;; overrides to ensure that if an overriden method has a more specific type
+  ;; (via depth subtyping) then it's accounted for.
+  (define public-types (make-type-dict (append publics pubments overrides)
                                        super-methods expected-publics
                                        top-func))
+
   (define augment-types (make-type-dict
                          pubments super-augments expected-augments top-func
                          #:annotations-from augment-annotation-table))
