@@ -468,5 +468,3 @@
   (send f show #t))
 
 (module+ main (show-mazes))
-
-

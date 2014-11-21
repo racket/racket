@@ -80,6 +80,7 @@
 (define (current-state) (car the-states))
 (define (set-the-states! new-states)
   (set! the-states new-states)
+  (send game-number-canvas refresh)
   (send game-canvas refresh))
 
 (define (next-state! state)
@@ -207,9 +208,24 @@
               (and (loop neighbor (+ dist 1))
                    neighbor))])])))
   (values dir (hash-ref visited end)))
-  
 
 (define (add1/f n) (and n (+ n 1)))
+
+(define game-number-canvas%
+  (class canvas%
+    (inherit get-dc get-client-size)
+    (define/override (on-paint)
+      (define-values (w h) (get-client-size))
+      (define dc (get-dc))
+      (define s (str (state-maze-index (current-state))))
+      (define-values (tw _1 _2 _3) (send dc get-text-extent s))
+      (send dc draw-text s (/ (- w tw) 2) 0))
+    (define/private (str n) (format "Board #~a" n))
+    (super-new [style '(transparent)])
+    (inherit min-height)
+    (let ()
+      (define-values (_ h _2 _3) (send (get-dc) get-text-extent (str 0)))
+      (min-height (inexact->exact (ceiling h))))))
 
 (define game-canvas%
   (class canvas%
@@ -267,8 +283,8 @@
                          [min-width (* maze-w min-cell-size)]
                          [min-height (* maze-h min-cell-size)]))
 (define hp (new horizontal-panel% [parent f] [alignment '(right center)] [stretchable-height #f]))
-(define msg (new message% [parent hp] [label (format "Game #~a" initial-number)]))
-(void (new vertical-panel% [parent hp]))
+(define game-number-canvas (new game-number-canvas% [parent hp] [stretchable-height #f]))
+(void (new vertical-panel% [parent hp] [stretchable-width #f]))
 (define show-help (show-scribbling
                    '(lib "games/scribblings/games.scrbl")
                    "tally-maze"))
