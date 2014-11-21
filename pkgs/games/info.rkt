@@ -10,7 +10,7 @@
                "draw-lib"
                "drracket"
                "gui-lib"
-	       "net-lib"
+               "net-lib"
                "htdp-lib"
                "math-lib"
                "scribble-lib"
@@ -18,6 +18,7 @@
                "sgl"
                "srfi-lib"
                "string-constants-lib"
+               "data-enumerate-lib"
                "typed-racket-lib"
                "typed-racket-more"))
 (define build-deps '("draw-doc"

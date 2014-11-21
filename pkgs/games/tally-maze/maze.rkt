@@ -1,6 +1,5 @@
 #lang racket/base
-
-(require "godel.rkt" 
+(require data/enumerate
          racket/gui/base
          racket/class
          racket/set
@@ -15,16 +14,16 @@
          maze-count)
 
 (define (maze-count w h)
-  (spec-k (maze/s w h)))
+  (size (maze/e w h)))
 
 (define (decode-maze maze-w maze-h n)
-  (define mazes (maze/s maze-w maze-h))
+  (define mazes (maze/e maze-w maze-h))
   (unless (and (exact-nonnegative-integer? n)
-               (< n (spec-k mazes)))
+               (< n (size mazes)))
     (raise-argument-error 'decode-maze 
-                          (format "number less than ~a" (spec-k mazes))
+                          (format "number less than ~a" (size mazes))
                           n))
-    (decode mazes n))
+    (from-nat mazes n))
 
 (define (memoize f)
   (define ht (make-hash))
@@ -35,61 +34,61 @@
        (hash-set! ht args (apply f args))
        (hash-ref ht args)))))
 
-(define maze/s 
+(define maze/e 
   (memoize
    (λ (width height)
      (cond
-       [(or (= 1 height) (= 1 width)) (unit/s #f)]
+       [(or (= 1 height) (= 1 width)) (const/e #f)]
        [else
-        (k*k-bind/s
-         (wrap/s (fixed-length-list/s
-                  (enum/s '(l t r b))
-                  (wrap/s (nat-range/s (- height 1)) add1 sub1)
-                  (wrap/s (nat-range/s (- width 1)) add1 sub1))
-                 reverse reverse)
+        (dep/e
+         (map/e reverse reverse
+                 (fixed-length-list/e
+                  (fin/e 'l 't 'r 'b)
+                  (map/e add1 sub1 (below/e (- height 1)))
+                  (map/e add1 sub1 (below/e (- width 1)))))
          (λ (ul-w/h-and-break)
            (define ul-w (list-ref ul-w/h-and-break 0))
            (define ul-h (list-ref ul-w/h-and-break 1))
            (define missing (list-ref ul-w/h-and-break 2))
            (define lr-w (- width ul-w))
            (define lr-h (- height ul-h))
-           (fixed-length-list/s
+           (fixed-length-list/e
             
             (case missing
               [(l)
-               (fixed-length-list/s (unit/s #f)
-                                    (nat-range/s ul-h)
-                                    (nat-range/s lr-w)
-                                    (nat-range/s lr-h))]
+               (fixed-length-list/e (const/e #f)
+                                    (below/e ul-h)
+                                    (below/e lr-w)
+                                    (below/e lr-h))]
               [(t)
-               (fixed-length-list/s (nat-range/s ul-w)
-                                    (unit/s #f)
-                                    (nat-range/s lr-w)
-                                    (nat-range/s lr-h))]
+               (fixed-length-list/e (below/e ul-w)
+                                    (const/e #f)
+                                    (below/e lr-w)
+                                    (below/e lr-h))]
               [(r)
-               (fixed-length-list/s (nat-range/s ul-w)
-                                    (nat-range/s ul-h)
-                                    (unit/s #f)
-                                    (nat-range/s lr-h))]
+               (fixed-length-list/e (below/e ul-w)
+                                    (below/e ul-h)
+                                    (const/e #f)
+                                    (below/e lr-h))]
               [(b)
-               (fixed-length-list/s (nat-range/s ul-w)
-                                    (nat-range/s ul-h)
-                                    (nat-range/s lr-w)
-                                    (unit/s #f))])
+               (fixed-length-list/e (below/e ul-w)
+                                    (below/e ul-h)
+                                    (below/e lr-w)
+                                    (const/e #f))])
             
-            (maze/s ul-w ul-h)
-            (maze/s lr-w ul-h)
-            (maze/s ul-w lr-h)
-            (maze/s lr-w lr-h))))]))))
+            (maze/e ul-w ul-h)
+            (maze/e lr-w ul-h)
+            (maze/e ul-w lr-h)
+            (maze/e lr-w lr-h))))]))))
 
-(define (fixed-length-list/s . args)
+(define (fixed-length-list/e . args)
   (let loop ([args args])
     (cond
-      [(null? args) (unit/s '())]
-      [else (cons/s (car args) (loop (cdr args)))])))
+      [(null? args) (const/e '())]
+      [else (cons/e (car args) (loop (cdr args)))])))
 
 (define (pick-a-maze maze-w maze-h)
-  (define maze-count (spec-k (maze/s maze-w maze-h)))
+  (define maze-count (size (maze/e maze-w maze-h)))
   (+ (if (zero? (random 2))
          (/ maze-count 2)
          0)
@@ -367,7 +366,7 @@
 (module+ test
   (check-equal? (for/list ([i (in-range 1 10)])
                   (for/list ([j (in-range 1 10)])
-                    (spec-k (maze/s i j))))
+                    (size (maze/e i j))))
                 '((1 1 1 1 1 1 1 1 1)
                   (1 4 14 32 60 100 154 224 312)
                   (1 14 192 1592 9088 40200 144640 442024 1187712)
@@ -439,8 +438,8 @@
   ;(define maze-w 16) (define maze-h 16)
   ;(define maze-w 8) (define maze-h 8)
   
-  (define mazes (time (maze/s maze-w maze-h)))
-  (define maze-count (spec-k mazes))
+  (define mazes (time (maze/e maze-w maze-h)))
+  (define maze-count (size mazes))
   (printf "~a mazes\n" maze-count)
   
   (define slider-max-value (min maze-count 10000))
@@ -464,9 +463,9 @@
   (define bp (new horizontal-panel% [parent f] [stretchable-height #f]))
   (define (move-to n)
     (set! which (modulo n maze-count))
-    (set! current-edges (build-walls (decode mazes which) maze-w maze-h))
+    (set! current-edges (build-walls (from-nat mazes which) maze-w maze-h))
     (set! current-solution (find-solution current-edges maze-w maze-h))
-    (set! next-edges (build-walls (decode mazes (modulo (+ which 1) maze-count))
+    (set! next-edges (build-walls (from-nat mazes (modulo (+ which 1) maze-count))
                                   maze-w maze-h))
     (send slider set-value (- which starting-point))
     (send c refresh))
