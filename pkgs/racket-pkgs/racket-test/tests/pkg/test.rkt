@@ -39,7 +39,8 @@
  "locking"
  "overwrite"
  "config"
-
+ "clone"
+ 
  "network"
  "planet"
  "main-server"

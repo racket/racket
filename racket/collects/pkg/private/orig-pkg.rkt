@@ -8,11 +8,14 @@
 ;; An "orig-pkg" is the way that that a pacage source is recorded
 ;; in the installed-package database.
 
-(provide desc->orig-pkg)
+(provide desc->orig-pkg
+         same-orig-pkg?)
 
-(define (desc->orig-pkg type src extra-path)
+(define (desc->orig-pkg type src extra-path #:repo-url [repo-url #f])
   (case type
-    [(name) `(catalog ,src)]
+    [(name) (if repo-url
+                `(catalog ,src ,repo-url)
+                `(catalog ,src))]
     [(link static-link) `(,type
                           ,(path->string
                             (find-relative-path (pkg-installed-dir)
@@ -31,3 +34,10 @@
        ,src)]
     [(file dir) `(,type ,(simple-form-path* src))]
     [else `(url ,src)]))
+
+;; Ignore URL that is potentially recorded for a 'catalog kind:
+(define (same-orig-pkg? a b)
+  (if (and (eq? 'catalog (car a))
+           (eq? 'catalog (car b)))
+      (equal? (cadr a) (cadr b))
+      (equal? a b)))

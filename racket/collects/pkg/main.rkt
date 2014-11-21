@@ -41,7 +41,9 @@
 
 ;; Selects scope from `given-scope' through `user' arguments, or infers
 ;; a scope from `pkgs' if non-#f, and then calls `thunk'.
-(define (call-with-package-scope who given-scope scope-dir installation user pkgs pkgs-type thunk)
+(define (call-with-package-scope who given-scope scope-dir installation user pkgs
+                                 pkgs-type clone-type-can-be-name? given-name
+                                 thunk)
   (define scope
     (case given-scope
       [(installation user) given-scope]
@@ -63,15 +65,26 @@
                     (with-pkg-lock/read-only
                      (define-values (pkg scope)
                        (for/fold ([prev-pkg #f] [prev-scope #f]) ([pkg (in-list pkgs)])
-                         (define-values (pkg-name pkg-type)
-                           (package-source->name+type pkg pkgs-type
-                                                      #:must-infer-name? #t
-                                                      #:complain
-                                                      (lambda (s msg)
-                                                        ((current-pkg-error) 
-                                                         (~a "~a\n"
-                                                             "  given: ~a")
-                                                         msg s))))
+                         (define-values (pkg-name pkg-type/unused)
+                           (cond
+                            [given-name (values given-name #f)]
+                            [(and (eq? pkgs-type 'clone)
+                                  clone-type-can-be-name?
+                                  (let-values ([(pkg-name pkg-type) 
+                                                (package-source->name+type pkg #f)])
+                                    (and (eq? pkg-type 'name)
+                                         pkg-name)))
+                             => (lambda (name)
+                                  (values name #f))]
+                            [else
+                             (package-source->name+type pkg pkgs-type
+                                                        #:must-infer-name? #t
+                                                        #:complain
+                                                        (lambda (s msg)
+                                                          ((current-pkg-error) 
+                                                           (~a "~a\n"
+                                                               "  given: ~a")
+                                                           msg s)))]))
                          (define scope (find-pkg-installation-scope pkg-name))
                          (cond
                           [(not prev-pkg) (values pkg scope)]
@@ -168,7 +181,7 @@
              install-copy-defns ...
              (call-with-package-scope
               'install
-              scope scope-dir installation user #f a-type
+              scope scope-dir installation user #f a-type #f name
               (lambda ()
                 install-copy-checks ...
                 (when (and name (> (length pkg-source) 1))
@@ -232,19 +245,35 @@
              job-flags ...
              #:args pkg-source
              install-copy-defns ...
-             (let ([pkg-source (cond
-                                [(and (null? pkg-source)
-                                      (not all)
-                                      (not clone))
-                                 ;; In a package directory?
-                                 (define pkg (path->pkg (current-directory)))
-                                 (if pkg
-                                     (list pkg)
-                                     null)]
-                                [else pkg-source])])
+             (let ([pkg-source
+                    ;; Implement special rules for an empty list of package sources
+                    (cond
+                     [(or (not (null? pkg-source))
+                          all) ; --all has is own treatment of an empty list
+                      pkg-source]
+                     [clone
+                      ;; Use directory name as sole package name, if possible
+                      (define-values (base name dir?) (split-path clone))
+                      (cond
+                       [(and (path? name)
+                             (let-values ([(pkg-name pkg-type) 
+                                           (package-source->name+type (path-element->string name) #f)])
+                               (eq? pkg-type 'name)))
+                        (list (path-element->string name))]
+                       [else
+                        ((pkg-error 'update)
+                         (~a "cannot extract a valid package name from the `--clone' path\n"
+                             "  given path: ~a")
+                         clone)])]
+                     [else
+                      ;; In a package directory?
+                      (define pkg (path->pkg (current-directory)))
+                      (if pkg
+                          (list pkg)
+                          null)])])
                (call-with-package-scope
                 'update
-                scope scope-dir installation user pkg-source #f
+                scope scope-dir installation user pkg-source a-type #t name
                 (lambda ()
                   install-copy-checks ...
                   (define setup-collects
@@ -293,7 +322,7 @@
              #:args pkg
              (call-with-package-scope
               'remove
-              scope scope-dir installation user pkg 'name
+              scope scope-dir installation user pkg 'name #f #f
               (lambda ()
                 (define setup-collects
                   (with-pkg-lock
@@ -370,7 +399,7 @@
              #:args (from-version)
              (call-with-package-scope
               'migrate
-              scope scope-dir installation user #f #f
+              scope scope-dir installation user #f #f #f #f
               (lambda ()
                 (define setup-collects
                   (with-pkg-lock
@@ -438,7 +467,7 @@
              (lambda (accum . key+vals)
                (call-with-package-scope
                 'config
-                scope scope-dir installation user #f #f
+                scope scope-dir installation user #f #f #f #f
                 (lambda ()
                   (if set
                       (with-pkg-lock

@@ -16,6 +16,7 @@ utilities for working with package paths and installed-package
 databases.}
 
 @defstruct*[pkg-info ([orig-pkg (or/c (list/c 'catalog string?)
+                                      (list/c 'catalog string? string?)
                                       (list/c 'url string?)
                                       (list/c 'link string?)
                                       (list/c 'static-link string?)
@@ -24,7 +25,18 @@ databases.}
                       [auto? boolean?])
                       #:prefab]{
 
-A structure type that is used to report installed-package information.}
+A structure type that is used to report installed-package information.
+
+The @racket[orig-pkg] field describes the source of the package as
+installed, where @racket['catalog] refers to a package that was
+installed by consulting a catalog with a package name, and so on. The
+two-element @racket['catalog] form records a URL for a Git or GitHub
+package source when the catalog reported such a source, and the URL is
+used for operations that adjust @racket['clone]-form installations.
+
+@history[#:changed "6.1.1.5" @elem{Added @racket['clone] and two-level
+                                   @racket['catalog] variants for
+                                   @racket[orig-pkg].}]}
 
 
 @defstruct*[(sc-pkg-info pkg-info) ()]{
