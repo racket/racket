@@ -7,8 +7,7 @@
 ;; type variables, this additional environment is
 ;; needed to keep track of the constraints.
 
-(require "../utils/utils.rkt"
-         (rep type-rep))
+(require "../utils/utils.rkt")
 
 (provide initial-row-constraint-env
          current-row-constraints

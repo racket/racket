@@ -2,10 +2,11 @@
 
 (require "../utils/utils.rkt" syntax/parse
          (contract-req)
-         (rep type-rep)
          (env lexical-env)
          (private type-annotation)
          (for-label racket/base))
+
+(require-for-cond-contract (rep type-rep))
 
 (provide/cond-contract [find-annotation (syntax? identifier? . -> . (or/c #f Type/c))])
 

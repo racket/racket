@@ -1,8 +1,7 @@
 #lang racket/unit
 (require "../utils/utils.rkt"
-         (rep type-rep filter-rep object-rep)
-         (types abbrev union utils filter-ops)
-         (env lexical-env type-env-structs)
+         (rep filter-rep)
+         (types utils filter-ops)
          (utils tc-utils)
          (typecheck signatures tc-envops tc-metafunctions)
          (types type-table)

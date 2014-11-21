@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep)
          (utils tc-utils)
-         (env global-env mvar-env scoped-tvar-env)
+         (env global-env mvar-env)
          (except-in (types subtype abbrev union utils generalize)
                     -> ->* one-of/c)
          (private parse-type syntax-properties)

@@ -7,7 +7,7 @@
          (typecheck check-below tc-subst)
          (utils tc-utils)
          (rep type-rep filter-rep)
-         (except-in (types utils union abbrev subtype)
+         (except-in (types utils abbrev subtype)
                     -> ->* one-of/c))
 (require-for-cond-contract
   syntax/stx)

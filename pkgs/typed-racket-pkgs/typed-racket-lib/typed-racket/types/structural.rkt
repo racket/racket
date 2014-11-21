@@ -22,8 +22,7 @@
   (for-syntax
     racket/base
     syntax/parse
-    racket/syntax
-    unstable/sequence))
+    racket/syntax))
 (provide
   structural?
   structural-map)

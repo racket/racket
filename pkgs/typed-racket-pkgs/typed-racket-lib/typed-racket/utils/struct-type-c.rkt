@@ -1,6 +1,6 @@
 #lang racket/base
 (provide struct-type/c)
-(require racket/contract/base racket/contract/combinator)
+(require racket/contract/combinator)
 
 ;; struct-type/c generates contracts which protect structure type
 ;; descriptors. These descriptors can be used reflectively to create

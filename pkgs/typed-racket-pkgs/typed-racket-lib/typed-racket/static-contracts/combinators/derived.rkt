@@ -5,7 +5,7 @@
 ;; Ex: (listof/sc any/sc) => list?/sc
 
 (require "simple.rkt" "structural.rkt"
-         (for-template racket/base racket/list racket/set racket/promise racket/mpair
+         (for-template racket/base racket/list racket/set racket/promise
                        racket/class racket/async-channel))
 (provide (all-defined-out))
 

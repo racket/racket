@@ -1,9 +1,11 @@
 #lang racket/base
 (require "../utils/utils.rkt"
          racket/unit (contract-req)
-         (infer constraint-structs)
          (utils unit-utils)
          (rep type-rep))
+
+(require-for-cond-contract (infer constraint-structs))
+
 (provide (all-defined-out))
 
 (define-signature dmap^

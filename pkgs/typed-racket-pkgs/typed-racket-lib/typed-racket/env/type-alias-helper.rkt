@@ -9,9 +9,7 @@
          (private parse-type)
          (typecheck internal-forms)
          (types resolve base-abbrev)
-	 data/queue
          racket/dict
-         racket/format
          racket/list
          racket/match
          syntax/id-table

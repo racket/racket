@@ -12,7 +12,7 @@
          (rep type-rep object-rep filter-rep rep-utils free-variance)
          (for-syntax syntax/parse racket/base)
          (types abbrev union)
-         racket/syntax racket/dict racket/list
+         racket/dict racket/list
          mzlib/pconvert racket/match)
 
 (provide ;; convenience form for defining an initial environment

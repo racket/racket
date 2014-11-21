@@ -1,15 +1,17 @@
 #lang racket/base
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
-         racket/match syntax/stx
+         racket/match
          (prefix-in c: (contract-req))
          (env tvar-env)
          (for-syntax syntax/parse racket/base)
-         (types utils union subtype resolve abbrev
+         (types utils subtype resolve abbrev
                 substitute classes)
-         (typecheck tc-metafunctions tc-app-helper check-below)
+         (typecheck tc-metafunctions tc-app-helper)
          (rep type-rep)
          (r:infer infer))
+
+(require-for-cond-contract syntax/stx)
 
 (provide/cond-contract
   [tc/funapp

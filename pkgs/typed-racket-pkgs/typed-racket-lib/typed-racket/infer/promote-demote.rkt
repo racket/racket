@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt"
          (rep type-rep rep-utils)
-         (types abbrev union utils structural)
+         (types abbrev utils structural)
          (prefix-in c: (contract-req))
          racket/performance-hint
          racket/list racket/match)

@@ -7,7 +7,6 @@
          racket/promise
          (for-syntax racket/base syntax/parse racket/syntax)
          "../utils/utils.rkt"
-         (utils tc-utils)
          (only-in (utils literal-syntax-class)
            [define-literal-syntax-class define-literal-syntax-class*])
          (for-template racket/base)

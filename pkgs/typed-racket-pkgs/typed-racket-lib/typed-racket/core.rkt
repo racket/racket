@@ -7,8 +7,8 @@
          (except-in syntax/parse id)
          racket/match racket/syntax
          syntax/flatten-begin
-         (types utils abbrev generalize type-table)
-         (typecheck provide-handling tc-toplevel tc-app-helper)
+         (types utils abbrev generalize)
+         (typecheck provide-handling tc-app-helper)
          (rep type-rep)
          (for-template (base-env top-interaction))
          (utils utils tc-utils arm)

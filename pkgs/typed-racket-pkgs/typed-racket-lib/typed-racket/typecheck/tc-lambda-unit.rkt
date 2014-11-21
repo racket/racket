@@ -1,7 +1,7 @@
 #lang racket/unit
 
 (require "../utils/utils.rkt"
-         racket/dict racket/list syntax/parse racket/syntax syntax/stx
+         racket/dict racket/list syntax/parse syntax/stx
          racket/match syntax/id-table racket/set
          unstable/sequence
          (contract-req)
@@ -16,7 +16,6 @@
          (env lexical-env tvar-env index-env scoped-tvar-env)
          (utils tc-utils)
          (for-syntax
-           syntax/parse
            racket/base))
 
 (import tc-expr^)

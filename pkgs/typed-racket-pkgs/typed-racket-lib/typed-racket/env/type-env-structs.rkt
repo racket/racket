@@ -1,11 +1,11 @@
 #lang racket/base
 
-(require racket/dict racket/match 
+(require racket/match
          syntax/id-table
          (except-in "../utils/utils.rkt" env)
-         (contract-req)
-         (rep filter-rep type-rep)
-         (except-in (utils tc-utils) make-env))
+         (contract-req))
+
+(require-for-cond-contract (rep type-rep filter-rep))
 
 ;; types is a free-id-table of identifiers to types
 ;; props is a list of known propositions

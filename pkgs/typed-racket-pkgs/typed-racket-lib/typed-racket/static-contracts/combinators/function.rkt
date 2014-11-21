@@ -7,7 +7,7 @@
          racket/list racket/match
          racket/contract
          (for-template racket/base racket/contract/base)
-         (for-syntax racket/base racket/syntax syntax/parse))
+         (for-syntax racket/base syntax/parse))
 
 (provide
   (contract-out

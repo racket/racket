@@ -3,10 +3,9 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          racket/match racket/list
          (typecheck signatures tc-app-helper)
-         (types utils union subtype abbrev substitute)
+         (types utils abbrev substitute)
          (utils tc-utils)
-         (env tvar-env index-env)
-         (rep type-rep filter-rep)
+         (rep type-rep)
          (r:infer infer))
 
 (import tc-expr^ tc-lambda^ tc-let^ tc-app^)

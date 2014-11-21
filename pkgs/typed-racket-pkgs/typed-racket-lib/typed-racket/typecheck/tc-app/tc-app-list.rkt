@@ -4,7 +4,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          "utils.rkt"
-         syntax/parse syntax/stx racket/match unstable/sequence unstable/syntax
+         syntax/parse syntax/stx racket/match unstable/sequence
          (typecheck signatures tc-funapp)
          (types abbrev utils union substitute)
          (rep type-rep)

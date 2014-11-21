@@ -1,10 +1,10 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx
+(require syntax/parse
          (for-template racket/base racket/unsafe/ops)
          "../utils/utils.rkt"
          (utils tc-utils)
-         (types type-table struct-table)
+         (types struct-table)
          (optimizer utils logging))
 
 (provide struct-opt-expr)

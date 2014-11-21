@@ -3,8 +3,6 @@
 (require syntax/parse
          (for-template racket/base racket/unsafe/ops)
          "../utils/utils.rkt"
-         (utils tc-utils)
-         (types abbrev)
          (optimizer utils logging))
 
 (provide string-opt-expr)

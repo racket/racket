@@ -1,10 +1,10 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx unstable/sequence
+(require syntax/parse unstable/sequence
          (for-template racket/base)
          "../utils/utils.rkt"
          (optimizer utils logging)
-         (types abbrev type-table struct-table))
+         (types abbrev struct-table))
 
 (provide hidden-cost-log-expr)
 

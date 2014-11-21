@@ -3,8 +3,7 @@
 ;; Static contract for struct/c.
 
 (require "../structures.rkt" "../constraints.rkt"
-         racket/list racket/match
-         unstable/contract
+         racket/match
          racket/contract
          (for-template racket/base racket/contract/base "../../utils/struct-type-c.rkt")
          (for-syntax racket/base syntax/parse))

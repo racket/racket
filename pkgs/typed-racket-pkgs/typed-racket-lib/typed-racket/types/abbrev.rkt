@@ -12,7 +12,7 @@
          unstable/function
 
          (prefix-in c: (contract-req))
-         (rename-in (rep type-rep filter-rep object-rep rep-utils)
+         (rename-in (rep type-rep filter-rep object-rep)
                     [make-Base make-Base*])
          (types union numeric-tower)
          ;; Using this form so all-from-out works

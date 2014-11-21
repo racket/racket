@@ -7,7 +7,7 @@
          (for-template racket/base racket/unsafe/ops)
          "../utils/utils.rkt" "../utils/tc-utils.rkt"
          (rep type-rep)
-         (types abbrev type-table utils)
+         (types abbrev)
          (optimizer utils logging float))
 
 (provide sequence-opt-expr)

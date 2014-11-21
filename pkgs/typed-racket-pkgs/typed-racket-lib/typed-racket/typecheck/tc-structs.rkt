@@ -2,16 +2,17 @@
 
 (require "../utils/utils.rkt"
          syntax/struct syntax/parse racket/function racket/match racket/list
-         racket/struct-info
 
          (prefix-in c: (contract-req))
          (rep type-rep object-rep free-variance)
          (private parse-type syntax-properties)
-         (types abbrev utils resolve substitute type-table struct-table)
+         (types abbrev utils resolve substitute struct-table)
          (env global-env type-name-env type-alias-env tvar-env)
          (utils tc-utils)
          (typecheck def-binding internal-forms)
          (for-syntax syntax/parse racket/base))
+
+(require-for-cond-contract racket/struct-info)
 
 (provide tc/struct name-of-struct d-s
          refine-struct-variance!

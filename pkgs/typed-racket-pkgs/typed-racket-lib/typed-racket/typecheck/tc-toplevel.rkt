@@ -4,9 +4,9 @@
          racket/syntax syntax/parse syntax/stx syntax/id-table
          racket/list unstable/list racket/dict racket/match unstable/sequence
          (prefix-in c: (contract-req))
-         (rep type-rep free-variance)
+         (rep type-rep)
          (types utils abbrev type-table struct-table)
-         (private parse-type type-annotation type-contract syntax-properties)
+         (private parse-type type-annotation syntax-properties)
          (env global-env init-envs type-name-env type-alias-env
               lexical-env env-req mvar-env scoped-tvar-env
               type-alias-helper)

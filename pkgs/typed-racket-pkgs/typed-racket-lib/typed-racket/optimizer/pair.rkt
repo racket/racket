@@ -1,11 +1,10 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx
+(require syntax/parse
          racket/match
          (for-template racket/base racket/unsafe/ops racket/list)
          (for-syntax racket/base syntax/parse racket/syntax)
          "../utils/utils.rkt"
-         (utils tc-utils)
          (rep type-rep)
          (types type-table utils)
          (typecheck typechecker)

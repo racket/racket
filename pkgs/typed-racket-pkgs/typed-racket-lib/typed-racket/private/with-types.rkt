@@ -1,17 +1,14 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         (base-env base-types-extra extra-procs)
+         (base-env base-types-extra)
          (except-in (base-env prims) with-handlers λ lambda define)
-         (env type-name-env type-alias-env type-env-structs
-              global-env tvar-env)
+         (env type-name-env type-alias-env global-env)
          (private parse-type type-contract syntax-properties)
          (typecheck tc-toplevel typechecker)
          (types utils)
          (utils lift tc-utils disarm arm literal-syntax-class)
-         racket/match
          racket/promise
-         racket/require
          racket/syntax
          syntax/flatten-begin
          syntax/parse
@@ -30,7 +27,7 @@
                      for*/or for*/sum for*/product for*/first for*/last
                      for*/fold)
           (base-env prims)
-          (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
+          (prefix-in c: racket/contract/region))
          (for-label racket/base
                     (base-env base-types-extra)))
 

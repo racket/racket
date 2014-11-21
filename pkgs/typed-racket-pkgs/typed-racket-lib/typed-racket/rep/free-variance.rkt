@@ -1,6 +1,5 @@
 #lang racket/base
-(require "../utils/utils.rkt" 
-         racket/match
+(require racket/match
          racket/set
          racket/lazy-require) 
 

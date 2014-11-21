@@ -1,11 +1,10 @@
 #lang racket/base
 
-(require syntax/parse racket/dict
+(require syntax/parse
          syntax/parse/experimental/specialize
          "../utils/utils.rkt"
          (for-template racket/base racket/fixnum racket/unsafe/ops)
          (for-syntax racket/base syntax/parse racket/syntax)
-         (utils tc-utils)
          (types numeric-tower union)
          (optimizer utils logging))
 

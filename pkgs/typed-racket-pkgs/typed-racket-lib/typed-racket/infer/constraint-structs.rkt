@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require "../utils/utils.rkt" (rep type-rep) (contract-req) racket/match (for-syntax racket/base syntax/parse))
+(require "../utils/utils.rkt" (contract-req))
+
+(require-for-cond-contract (rep type-rep))
 
 ;; S, T types
 ;; represents S <: X <: T (see "Local Type Inference" pg. 12)

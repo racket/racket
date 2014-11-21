@@ -7,22 +7,21 @@
  syntax/parse
  (rep type-rep filter-rep object-rep)
  (utils tc-utils)
- (env type-name-env type-alias-env)
+ (env type-name-env)
  (rep rep-utils)
- (types resolve union utils kw-types printer)
+ (types resolve union utils printer)
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
  racket/match racket/syntax racket/list
  racket/format
  racket/dict
  unstable/list
- unstable/sequence
  (only-in (types abbrev) -Bottom)
  (static-contracts instantiate optimize structures combinators)
  ;; TODO make this from contract-req
  (prefix-in c: racket/contract)
  (contract-req)
- (for-syntax racket/base syntax/parse racket/syntax)
+ (for-syntax racket/base)
  (for-template racket/base racket/contract (utils any-wrap)))
 
 (provide

@@ -3,10 +3,8 @@
 ;; Provides functionality to take a static contract and turn it into a regular contract.
 
 (require
-  racket/function
   racket/match
   racket/dict
-  racket/sequence
   racket/contract
   racket/syntax
   (for-template racket/base racket/contract)

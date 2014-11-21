@@ -6,14 +6,8 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          "utils.rkt"
-         syntax/parse syntax/stx racket/match
-         racket/dict
-         racket/format
-         (env global-env)
+         syntax/parse
          (typecheck signatures)
-         (types base-abbrev resolve subtype union utils)
-         (rep type-rep)
-         (utils tc-utils)
          (for-template racket/base
                        ;; shift -1 because it's provided +1
                        racket/contract/private/provide))

@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt"
          (rep type-rep rep-utils)
-         (types abbrev union subtype resolve utils)
+         (types union subtype resolve utils)
          racket/match)
 
 (provide (rename-out [*remove remove]) overlap)

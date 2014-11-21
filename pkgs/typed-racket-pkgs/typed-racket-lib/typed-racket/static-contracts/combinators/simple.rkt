@@ -6,10 +6,8 @@
 ;; Ex: (flat/sc #'number?)
 
 (require
-  "../kinds.rkt"
   "../structures.rkt"
   "../constraints.rkt"
-  racket/list
   racket/match
   racket/contract)
 

@@ -1,10 +1,9 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx racket/dict racket/promise
+(require syntax/parse syntax/stx racket/promise
          racket/syntax racket/match syntax/parse/experimental/specialize
          "../utils/utils.rkt" racket/unsafe/ops unstable/sequence
          (for-template racket/base racket/math racket/flonum racket/unsafe/ops)
-         (utils tc-utils)
          (types numeric-tower subtype type-table utils)
          (optimizer utils numeric-utils logging float unboxed-tables))
 

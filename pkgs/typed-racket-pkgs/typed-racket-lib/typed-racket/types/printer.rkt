@@ -14,8 +14,7 @@
                   "types/utils.rkt"
                   "types/resolve.rkt"
                   "utils/utils.rkt"
-                  "utils/tc-utils.rkt"
-                  "env/type-name-env.rkt")
+                  "utils/tc-utils.rkt")
          (for-syntax racket/base syntax/parse))
 
 ;; printer-type: (one-of/c 'custom 'debug)

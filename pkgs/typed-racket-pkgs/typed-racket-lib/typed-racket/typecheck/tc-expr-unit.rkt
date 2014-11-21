@@ -4,17 +4,16 @@
 (require (rename-in "../utils/utils.rkt" [private private-in])
          racket/match (prefix-in - (contract-req))
          "signatures.rkt"
-         "check-below.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
-         (types utils abbrev union subtype type-table classes filter-ops remove-intersect resolve generalize)
-         (private-in parse-type type-annotation syntax-properties)
-         (rep type-rep filter-rep object-rep rep-utils)
+         "check-below.rkt" "../types/kw-types.rkt"
+         (types utils abbrev union subtype type-table filter-ops remove-intersect resolve generalize)
+         (private-in syntax-properties)
+         (rep type-rep filter-rep)
          (only-in (infer infer) restrict)
          (utils tc-utils)
-         (env lexical-env tvar-env index-env scoped-tvar-env)
-         racket/format racket/list
+         (env lexical-env)
+         racket/list
          racket/private/class-internal
-         syntax/parse syntax/stx
-         unstable/syntax
+         syntax/parse
          (only-in racket/list split-at)
          (typecheck internal-forms tc-envops)
          unstable/sequence

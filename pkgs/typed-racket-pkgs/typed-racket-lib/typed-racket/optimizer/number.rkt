@@ -4,7 +4,6 @@
          syntax/parse/experimental/specialize
          (for-template racket/base)
          "../utils/utils.rkt"
-         (utils tc-utils)
          (types numeric-tower union)
          (optimizer utils logging))
 

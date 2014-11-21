@@ -1,12 +1,12 @@
 #lang racket/unit
 
 (require "../utils/utils.rkt"
-         (except-in (types utils subtype abbrev union filter-ops remove-intersect) -> ->* one-of/c)
+         (except-in (types utils abbrev filter-ops remove-intersect) -> ->* one-of/c)
          (only-in (types abbrev) (-> t:->) [->* t:->*])
          (private type-annotation parse-type syntax-properties)
-         (env lexical-env type-alias-env type-alias-helper mvar-env
-              global-env type-env-structs scoped-tvar-env)
-         (rep type-rep filter-rep)
+         (env lexical-env type-alias-helper mvar-env
+              global-env scoped-tvar-env)
+         (rep filter-rep)
          syntax/free-vars
          (typecheck signatures tc-metafunctions tc-subst internal-forms tc-envops)
          (utils tarjan)
@@ -17,6 +17,7 @@
          ;; For internal type forms
          (for-template (only-in racket/base define-values)))
 
+(require-for-cond-contract (rep type-rep))
 
 (import tc-expr^)
 (export tc-let^)

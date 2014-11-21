@@ -2,12 +2,12 @@
 
 (require
   "../utils/utils.rkt"
-  (typecheck tc-expr-unit signatures tc-app-helper check-below)
-  (types tc-result tc-error utils abbrev classes type-table)
+  (typecheck signatures tc-app-helper check-below)
+  (types utils abbrev classes type-table)
   (rep type-rep)
   (utils tc-utils)
   (env index-env tvar-env scoped-tvar-env)
-  (private syntax-properties type-annotation parse-type)
+  (private syntax-properties parse-type)
   unstable/syntax
   racket/format
   racket/match

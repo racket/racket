@@ -8,7 +8,6 @@
   "../structures.rkt"
   "../terminal.rkt"
   "simple.rkt"
-  racket/match
   racket/contract
   (for-template racket/base))
 

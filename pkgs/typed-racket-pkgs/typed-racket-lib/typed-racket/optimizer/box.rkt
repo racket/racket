@@ -1,12 +1,8 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx
-         racket/match
+(require syntax/parse
          "../utils/utils.rkt"
          (for-template racket/base racket/unsafe/ops)
-         (utils tc-utils)
-         (rep type-rep)
-         (types type-table utils)
          (optimizer utils logging))
 
 (provide box-opt-expr)

@@ -1,8 +1,8 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx unstable/syntax unstable/sequence
+(require syntax/parse syntax/stx unstable/sequence
          syntax/parse/experimental/template
-         racket/list racket/dict racket/match racket/syntax
+         racket/match racket/syntax
          racket/promise
          "../utils/utils.rkt"
          (for-template racket/base)

@@ -6,7 +6,7 @@
          "utils.rkt"
          syntax/parse syntax/stx racket/match racket/set
          (typecheck signatures tc-app-helper tc-funapp tc-metafunctions)
-         (types abbrev utils union substitute subtype)
+         (types abbrev utils substitute subtype)
          (rep type-rep)
          (utils tc-utils)
          (r:infer infer)

@@ -4,7 +4,7 @@
          syntax/parse/experimental/specialize
          (for-template racket/base racket/extflonum racket/unsafe/ops)
          "../utils/utils.rkt"
-         (optimizer utils numeric-utils logging float fixnum))
+         (optimizer utils logging float fixnum))
 
 (provide extflonum-opt-expr)
 

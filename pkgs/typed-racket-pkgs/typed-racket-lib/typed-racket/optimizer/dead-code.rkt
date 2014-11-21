@@ -1,11 +1,10 @@
 #lang racket/base
 
-(require syntax/parse racket/promise syntax/stx unstable/sequence
+(require syntax/parse syntax/stx unstable/sequence
          racket/syntax
          (for-template racket/base)
          "../utils/utils.rkt"
          (types type-table)
-         (utils tc-utils)
          (optimizer utils logging))
 
 (provide dead-code-opt-expr)

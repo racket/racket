@@ -1,9 +1,8 @@
 #lang racket/base
 
 (require "utils/utils.rkt"
-         (except-in syntax/parse id) syntax/stx
+         syntax/stx
          racket/pretty racket/promise racket/lazy-require
-         racket/syntax
          (env type-name-env type-alias-env mvar-env)
          (utils tc-utils disarm mutated-vars lift)
          "standard-inits.rkt"

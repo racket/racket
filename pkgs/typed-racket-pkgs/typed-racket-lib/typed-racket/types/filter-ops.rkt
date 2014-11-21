@@ -2,10 +2,8 @@
 
 (require "../utils/utils.rkt"
          racket/list racket/match
-         racket/dict
          (prefix-in c: (contract-req))
          (rep type-rep filter-rep object-rep rep-utils)
-         (utils tc-utils)
          (only-in (infer infer) restrict)
          (types union subtype remove-intersect abbrev tc-result))
 

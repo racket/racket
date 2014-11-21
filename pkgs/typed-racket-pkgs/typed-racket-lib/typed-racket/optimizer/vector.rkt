@@ -1,10 +1,9 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx
+(require syntax/parse
          racket/match racket/flonum racket/extflonum
          (for-template racket/base racket/flonum racket/extflonum racket/unsafe/ops)
          "../utils/utils.rkt"
-         (utils tc-utils)
          (rep type-rep)
          (types type-table utils numeric-tower abbrev)
          (optimizer utils logging fixnum))

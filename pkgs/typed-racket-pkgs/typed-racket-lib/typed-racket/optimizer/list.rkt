@@ -2,8 +2,6 @@
 
 (require syntax/parse racket/match
          "../utils/utils.rkt"
-         (utils tc-utils)
-         (rep type-rep)
          (types abbrev utils type-table)
          (optimizer utils logging)
          (for-template racket/base racket/unsafe/ops))

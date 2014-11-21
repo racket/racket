@@ -8,12 +8,10 @@
          racket/list
          racket/match
          racket/set
-         racket/syntax
-         syntax/id-table
          syntax/parse
          syntax/stx
          "signatures.rkt"
-         (private parse-type syntax-properties type-annotation)
+         (private parse-type syntax-properties)
          (env lexical-env tvar-env global-env)
          (types utils abbrev union subtype resolve generalize)
          (typecheck check-below internal-forms)

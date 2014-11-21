@@ -7,7 +7,6 @@
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp)
          (types utils)
-         (private syntax-properties)
          (rep type-rep filter-rep object-rep))
 
 (import tc-expr^ tc-app-keywords^

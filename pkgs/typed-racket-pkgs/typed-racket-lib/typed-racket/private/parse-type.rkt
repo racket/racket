@@ -5,19 +5,17 @@
 (require "../utils/utils.rkt"
          (except-in (rep type-rep object-rep) make-arr)
          (rename-in (types abbrev union utils filter-ops resolve
-                           classes subtype)
+                           classes)
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util literal-syntax-class)
          syntax/stx (prefix-in c: (contract-req))
          syntax/parse unstable/sequence
-         (env tvar-env type-name-env type-alias-env mvar-env
+         (env tvar-env type-alias-env mvar-env
               lexical-env index-env row-constraint-env)
-         (only-in racket/list flatten)
          racket/dict
          racket/promise
          racket/format
          racket/match
-         racket/syntax
          (only-in unstable/list check-duplicate)
          "parse-classes.rkt"
          (for-label

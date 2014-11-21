@@ -5,7 +5,6 @@
 
 (require "../structures.rkt" "../constraints.rkt"
          racket/list racket/match
-         unstable/contract
          racket/contract
          racket/syntax
          (for-template racket/base racket/class)

@@ -5,12 +5,10 @@
          racket/struct-info racket/match syntax/parse
          (only-in (private type-contract) include-extra-requires?)
          (private syntax-properties)
-         (types printer)
          (typecheck renamer def-binding)
          (utils tc-utils)
          (for-syntax racket/base)
-         (for-template racket/base "def-export.rkt"
-                       (only-in racket/contract/base define-module-boundary-contract)))
+         (for-template racket/base "def-export.rkt"))
 
 (provide remove-provides provide? generate-prov get-alternate)
 
