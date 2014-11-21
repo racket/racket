@@ -36,7 +36,7 @@
   (define user? (not (or (eq? scope 'installation)
                          (path? scope))))
   (match orig-pkg
-    [`(,(or 'link 'static-link) ,_)
+    [`(,(or 'link 'static-link 'clone) ,_ . ,_)
      (links pkg-dir
             #:remove? #t
             #:user? user?

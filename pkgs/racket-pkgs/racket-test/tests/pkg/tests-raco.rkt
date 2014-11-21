@@ -48,7 +48,7 @@
     $ "cp -f test-pkgs/pkg-test1.zip test-pkgs/update-test/pkg-test1.zip"
     $ "cp -f test-pkgs/pkg-test1.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"
     (shelly-install* "remote packages can be updated"
-                     "http://localhost:9999/update-test/pkg-test1.zip"
+                     "http://localhost:9997/update-test/pkg-test1.zip"
                      "pkg-test1 pkg-test3"
                      $ "raco pkg install --copy test-pkgs/pkg-test3"
                      $ "racket -l pkg-test3/number" =exit> 1

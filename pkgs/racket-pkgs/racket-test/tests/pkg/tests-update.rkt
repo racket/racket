@@ -78,7 +78,7 @@
     $ "cp -f test-pkgs/pkg-test1.zip test-pkgs/update-test/pkg-test1.zip"
     $ "cp -f test-pkgs/pkg-test1.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"
     (shelly-install* "remote packages can be updated"
-                     "http://localhost:9999/update-test/pkg-test1.zip"
+                     "http://localhost:9997/update-test/pkg-test1.zip"
                      "pkg-test1"
                      $ "raco pkg update pkg-test1" =exit> 0 =stdout> "Downloading checksum for pkg-test1\nNo updates available\n"
                      $ "racket -e '(require pkg-test1/update)'" =exit> 42
@@ -95,7 +95,7 @@
     $ "cp -f test-pkgs/pkg-test3.zip test-pkgs/update-test/pkg-test3.zip"
     $ "cp -f test-pkgs/pkg-test3.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
     (shelly-install* "remote packages can be updated, single-collection to multi-collection"
-                     "test-pkgs/pkg-test1.zip http://localhost:9999/update-test/pkg-test3.zip"
+                     "test-pkgs/pkg-test1.zip http://localhost:9997/update-test/pkg-test3.zip"
                      "pkg-test1 pkg-test3"
                      $ "raco pkg update pkg-test3" =exit> 0 =stdout> "Downloading checksum for pkg-test3\nNo updates available\n"
                      $ "cp -f test-pkgs/pkg-test3-v2.zip test-pkgs/update-test/pkg-test3.zip"
@@ -111,7 +111,7 @@
     $ "cp -f test-pkgs/pkg-test3-v2.zip test-pkgs/update-test/pkg-test3.zip"
     $ "cp -f test-pkgs/pkg-test3-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
     (shelly-install* "remote packages can be updated, multi-colelction to single-collection"
-                     "test-pkgs/pkg-test1.zip http://localhost:9999/update-test/pkg-test3.zip"
+                     "test-pkgs/pkg-test1.zip http://localhost:9997/update-test/pkg-test3.zip"
                      "pkg-test1 pkg-test3"
                      $ "raco pkg update pkg-test3" =exit> 0 =stdout> "Downloading checksum for pkg-test3\nNo updates available\n"
                      $ "cp -f test-pkgs/pkg-test3.zip test-pkgs/update-test/pkg-test3.zip"
@@ -129,9 +129,9 @@
     $ "cp -f test-pkgs/pkg-test2.zip test-pkgs/update-test/pkg-test2.zip"
     $ "cp -f test-pkgs/pkg-test2.zip.CHECKSUM test-pkgs/update-test/pkg-test2.zip.CHECKSUM"
     (shelly-install* "update deps"
-                     "http://localhost:9999/update-test/pkg-test1.zip"
+                     "http://localhost:9997/update-test/pkg-test1.zip"
                      "pkg-test1"
-                     $ "raco pkg install http://localhost:9999/update-test/pkg-test2.zip"
+                     $ "raco pkg install http://localhost:9997/update-test/pkg-test2.zip"
                      $ "raco pkg update --update-deps pkg-test2" =exit> 0 
                      =stdout> "Downloading checksum for pkg-test2\nDownloading checksum for pkg-test1\nNo updates available\n"
                      $ "racket -e '(require pkg-test1/update)'" =exit> 42
@@ -151,9 +151,9 @@
     $ "cp -f test-pkgs/pkg-test3.zip test-pkgs/update-test/pkg-test3.zip"
     $ "cp -f test-pkgs/pkg-test3.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
     (shelly-install* "update original and deps"
-                     "http://localhost:9999/update-test/pkg-test1.zip"
+                     "http://localhost:9997/update-test/pkg-test1.zip"
                      "pkg-test1"
-                     $ "raco pkg install http://localhost:9999/update-test/pkg-test3.zip"
+                     $ "raco pkg install http://localhost:9997/update-test/pkg-test3.zip"
                      $ "raco pkg update --update-deps pkg-test3" =exit> 0 
                      =stdout> "Downloading checksum for pkg-test3\nDownloading checksum for pkg-test1\nNo updates available\n"
                      $ "racket -e '(require pkg-test1/update)'" =exit> 42
@@ -176,9 +176,9 @@
     $ "cp -f test-pkgs/pkg-test3.zip test-pkgs/update-test/pkg-test3.zip"
     $ "cp -f test-pkgs/pkg-test3.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
     (shelly-install* "update original, where update has no deps"
-                     "http://localhost:9999/update-test/pkg-test1.zip"
+                     "http://localhost:9997/update-test/pkg-test1.zip"
                      "pkg-test1"
-                     $ "raco pkg install http://localhost:9999/update-test/pkg-test3.zip"
+                     $ "raco pkg install http://localhost:9997/update-test/pkg-test3.zip"
                      $ "raco pkg update --update-deps pkg-test3" =exit> 0 
                      =stdout> "Downloading checksum for pkg-test3\nDownloading checksum for pkg-test1\nNo updates available\n"
                      $ "racket -e '(require pkg-test1/update)'" =exit> 42
@@ -201,9 +201,9 @@
     $ "cp -f test-pkgs/pkg-test3-v3.zip test-pkgs/update-test/pkg-test3.zip"
     $ "cp -f test-pkgs/pkg-test3-v3.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
     (shelly-install* "update and get updates for newly introduced deps"
-                     "http://localhost:9999/update-test/pkg-test1.zip"
+                     "http://localhost:9997/update-test/pkg-test1.zip"
                      "pkg-test1"
-                     $ "raco pkg install http://localhost:9999/update-test/pkg-test3.zip"
+                     $ "raco pkg install http://localhost:9997/update-test/pkg-test3.zip"
                      $ "racket -e '(require pkg-test3)'" =stdout> #rx"version 3 loaded"
                      $ "raco pkg update --update-deps pkg-test3" =exit> 0 
                      =stdout> "Downloading checksum for pkg-test3\nNo updates available\n"
@@ -225,7 +225,7 @@
     $ "cp -f test-pkgs/pkg-test1.zip test-pkgs/update-test/pkg-test1.zip"
     $ "cp -f test-pkgs/pkg-test1.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"
     (shelly-install* "update all"
-                     "http://localhost:9999/update-test/pkg-test1.zip"
+                     "http://localhost:9997/update-test/pkg-test1.zip"
                      "pkg-test1"
                      $ "raco pkg install test-pkgs/pkg-test2.zip"
                      $ "raco pkg update -a" =exit> 0 =stdout> "Downloading checksum for pkg-test1\nNo updates available\n"

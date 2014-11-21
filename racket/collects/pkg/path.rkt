@@ -129,7 +129,8 @@
         (define orig (pkg-info-orig-pkg v))
         (if (and (pair? orig)
                  (or (eq? 'link (car orig))
-                     (eq? 'static-link (car orig))))
+                     (eq? 'static-link (car orig))
+                     (eq? 'clone (car orig))))
             (let ([e (or (and cache
                               (hash-ref cache `(pkg-dir ,(cadr orig)) #f))
                          (let ([e (explode (simplify-path 

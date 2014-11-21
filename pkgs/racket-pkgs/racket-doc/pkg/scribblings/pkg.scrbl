@@ -378,7 +378,7 @@ directory @tech{package scopes}.
 The @exec{raco pkg} command provides package-management tools via
 sub-commands.
 
-@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ... 
+@subcommand{@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ... 
  --- Installs the given @tech{package sources} (eliminating exact-duplicate @nonterm{pkg-source}s).
      If a given @nonterm{pkg-source} is ``auto-installed'' (to satisfy some other package's
      dependency), then it is promoted to explicitly installed.
@@ -432,7 +432,7 @@ sub-commands.
   @item{@DFlag{skip-implies} --- Disables special treatment of dependencies that are listed
         in @racketidfont{implies} (see @secref["metadata"]) for an installed or updated package.}
 
-  @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
+  @item{@DFlag{link} --- Implies @exec{--type dir}
         and links the existing directory as an installed package, instead of copying the
         directory's content to install. Directory @tech{package sources} are treated as links
         by default, unless @DFlag{copy} is specified.
@@ -447,11 +447,18 @@ sub-commands.
         of the given directory will not change for each given directory that implements a
         @tech{multi-collection package}.}
 
-  @item{@DFlag{pkgs} --- Disables default installation of the current directory when no @nonterm{pkg-source}s
-        are supplied.}
-
   @item{@DFlag{copy} --- Disables default handling of directory @tech{package sources} as links,
         and instead treats them like other sources: package content is copied to install.}
+
+  @item{@DFlag{clone} @nonterm{dir} --- A Git or GitHub @tech{package
+        source} is cloned as @nonterm{dir} and locally linked as the
+        package implementation. Multiple @nonterm{pkg-source}
+        arguments make sense only if they all specify the same Git
+        repository (with different paths in the repository). The
+        @DFlag{clone} flag implies @DFlag{type} in the sense that each
+        @nonterm{pkg-source} must be either a Git or GitHub
+        @tech{package source}.  See @secref["git-workflow"] for more
+        information.}
 
   @item{@DFlag{binary} --- Strips source elements of a package before installing, and implies @DFlag{copy}.}
 
@@ -477,6 +484,9 @@ sub-commands.
         whose name corresponds to an already-installed package, except for promoting auto-installed
         packages to explicitly installed.}
 
+  @item{@DFlag{pkgs} --- Disables default installation of the current directory when no @nonterm{pkg-source}s
+        are supplied.}
+
   @item{@DFlag{all-platforms} --- Considers package dependencies independent of the current platform
         (instead of filtering dependencies to platforms other than the current one).}
 
@@ -501,6 +511,7 @@ sub-commands.
   @item{@DFlag{fail-fast} --- Breaks @exec{raco setup} as soon as any error is encountered.}
  ]
 
+@history[#:changed "6.1.1.5" @elem{Added the @DFlag{clone} flag.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ... 
@@ -513,13 +524,17 @@ any of the @nonterm{pkg-source}s (or their dependencies).
 If a @tech{package scope} is not specified, the scope is inferred from
 the given @nonterm{pkg-source}s.
 
+If no @racket{pkg-source}, @DFlag{all} or @Flag{a} flag, or
+@DFlag{clone} flag is specified, and if the current directory is
+within a package, then the enclosing package is updated.
+
  The @exec{update} sub-command accepts 
  the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{all} or @Flag{a} --- Update all packages, if no packages are given in the argument list.}
 
- @item{@DFlag{lookup} --- Checks Causes a @tech{package name} as a @nonterm{pkg-source} to be used
+ @item{@DFlag{lookup} --- Causes a @tech{package name} as a @nonterm{pkg-source} to be used
        as a replacement, instead of the name of a installed package that may have updates.
        (If the named package was installed through a package name, then there's effectively
         no difference.)}
@@ -534,6 +549,12 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{skip-implies} --- Same as for @command-ref{install}.}
  @item{@DFlag{link} --- Same as for @command-ref{install}.}
  @item{@DFlag{static-link} --- Same as for @command-ref{install}.}
+ @item{@DFlag{clone} @nonterm{dir} --- Same as for
+    @command-ref{install}, except that a @nonterm{pkg-source} can be
+    the name of an installed package. In that case, the package must
+    be currently installed from a Git or GitHub source, and that
+    source is used for the clone (which replaces the existing package
+    installation).}
  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
  @item{@DFlag{copy} --- Same as for @command-ref{install}.}
  @item{@DFlag{source} --- Same as for @command-ref{install}.}
@@ -550,6 +571,11 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
+
+@history[#:changed "6.1.1.5" @elem{Added the @DFlag{clone} flag, and added
+                                   update of enclosing package when no
+                                   arguments are provided.}]
+
 }
 
 @subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
@@ -581,12 +607,15 @@ the given @nonterm{pkg}s.
  ]
 }
 
-@subcommand{@command/toc{new} @nonterm{package} ---
-Populates a directory with the stubs for a new racket package, where
-@nonterm{package} is the name of the new package.
-If @nonterm{package} already exists as a folder in the current directory, no new
+
+@subcommand{@command/toc{new} @nonterm{pkg} ---
+Populates a directory with the stubs for a new package, where
+@nonterm{pkg} is the name of the new package.
+If @nonterm{pkg} already exists as a directory in the current directory, no new
 package is created.
-}
+
+@history[#:added "6.1.1.5"]}
+
 
 @subcommand{@command/toc{show} @nonterm{option} ... --- Print information about currently installed packages. 
  By default, packages are shown for all @tech{package scopes}, but only for packages
@@ -612,8 +641,7 @@ package is created.
  @item{@DFlag{scope-dir} @nonterm{dir} --- Shows only packages installed in @nonterm{dir}.}
  @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for 
        the installation name/version @nonterm{vers}.}
- ]
-}
+ ]}
 
 @subcommand{@command/toc{migrate} @nonterm{option} ... @nonterm{from-version}
  --- Installs packages that were previously installed in @exec{user}
@@ -977,6 +1005,10 @@ The following @filepath{info.rkt} fields are used by the package manager:
 @; ----------------------------------------
 
 @include-section["strip.scrbl"]
+
+@; ----------------------------------------
+
+@include-section["git-workflow.scrbl"]
 
 @; ----------------------------------------
 

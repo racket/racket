@@ -30,13 +30,13 @@
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-v-one.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-v-one.zip"))
+                     "http://localhost:9997/pkg-v-one.zip"))
 
   (hash-set! *index-ht-1* "pkg-w"
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-w-one.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-w-one.zip"))
+                     "http://localhost:9997/pkg-w-one.zip"))
   
   $ "raco pkg config --set catalogs http://localhost:9990"
 
@@ -57,7 +57,7 @@
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-v-two.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-v-two.zip"))
+                     "http://localhost:9997/pkg-v-two.zip"))
 
   (shelly-case
    "update"
@@ -68,12 +68,12 @@
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-v-three.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-v-three.zip"))
+                     "http://localhost:9997/pkg-v-three.zip"))
   (hash-set! *index-ht-1* "pkg-w"
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-w-two.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-w-two.zip"))
+                     "http://localhost:9997/pkg-w-two.zip"))
 
   (shelly-case
    "update again"
@@ -85,7 +85,7 @@
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-w-three.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-w-three.zip"))
+                     "http://localhost:9997/pkg-w-three.zip"))
 
   (shelly-case
    "update again"

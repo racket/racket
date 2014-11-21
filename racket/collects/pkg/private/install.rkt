@@ -23,16 +23,20 @@
          "metadata.rkt"
          "dep.rkt"
          "get-info.rkt"
+         "catalog.rkt"
          "dirs.rkt"
          "collects.rkt"
-         "addl-installs.rkt")
+         "addl-installs.rkt"
+         "repo-path.rkt"
+         "orig-pkg.rkt"
+         "git.rkt")
 
 (provide pkg-install
          pkg-update)
 
 (define (checksum-for-pkg-source pkg-source type pkg-name given-checksum download-printf)
   (case type
-    [(file-url dir-url github git)
+    [(file-url dir-url github git clone)
      (or given-checksum
 	 (remote-package-checksum `(url ,pkg-source) download-printf pkg-name #:type type))]
     [(file)
@@ -41,6 +45,9 @@
 	      (file->string checksum-pth))
 	 (and (file-exists? pkg-source)
 	      (call-with-input-file* pkg-source sha1)))]
+    [(name)
+     (or given-checksum
+         (remote-package-checksum `(catalog ,pkg-source) download-printf pkg-name #:type type))]
     [else given-checksum]))
 
 (define (disallow-package-path-overlaps pkg-name
@@ -154,9 +161,9 @@
   (define all-db (merge-pkg-dbs))
   (define path-pkg-cache (make-hash))
   (define (install-package/outer infos desc info)
-    (match-define (pkg-desc pkg type orig-name given-checksum auto?) desc)
+    (match-define (pkg-desc pkg type orig-name given-checksum auto? pkg-extra-path) desc)
     (match-define
-     (install-info pkg-name orig-pkg pkg-dir clean? checksum module-paths additional-installs)
+     (install-info pkg-name orig-pkg pkg-dir git-dir clean? checksum module-paths additional-installs)
      info)
     (define name? (eq? 'catalog (first orig-pkg)))
     (define this-dep-behavior (or dep-behavior
@@ -209,10 +216,13 @@
               ;; Also, make sure it's installed in the scope that we're changing:
               (hash-ref current-scope-db pkg-name #f))
          ;; promote an auto-installed package to a normally installed one
-         (lambda ()
-           (unless quiet?
-             (download-printf "Promoting ~a from auto-installed to explicitly installed\n" pkg-name))
-           (update-pkg-db! pkg-name (update-auto existing-pkg-info #f)))]
+         (cons
+          #f ; no repo change
+          ;; The `do-it` thunk:
+          (lambda ()
+            (unless quiet?
+              (download-printf "Promoting ~a from auto-installed to explicitly installed\n" pkg-name))
+            (update-pkg-db! pkg-name (update-auto existing-pkg-info #f))))]
         [else
          ;; Fail --- already installed
          (clean!)
@@ -405,7 +415,8 @@
                                                          #:all-platforms? all-platforms?
                                                          #:ignore-checksums? ignore-checksums?
                                                          #:use-cache? use-cache?
-                                                         #:from-command-line? from-command-line?)
+                                                         #:from-command-line? from-command-line?
+                                                         #:link-dirs? link-dirs?)
                                      name))
                                null))
                         deps))
@@ -508,7 +519,8 @@
                                                                #:all-platforms? all-platforms?
                                                                #:ignore-checksums? ignore-checksums?
                                                                #:use-cache? use-cache?
-                                                               #:from-command-line? from-command-line?)
+                                                               #:from-command-line? from-command-line?
+                                                               #:link-dirs? link-dirs?)
                                            update-pkgs)])
                 (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
             (match this-dep-behavior
@@ -531,48 +543,57 @@
                   (clean!)
                   (report-mismatch update-deps)])]))]
       [else
-       (λ ()
-         (when updating?
-           (download-printf "Re-installing ~a\n" pkg-name))
-         (define final-pkg-dir
-           (cond
+       (cons
+        ;; The repo to get new commits, if any:
+        (and git-dir
+             (list (enclosing-path-for-repo (caddr orig-pkg) git-dir)
+                   checksum))
+        ;; The "do-it" function (see `repos+do-its` below):
+        (λ ()
+          (when updating?
+            (download-printf "Re-installing ~a\n" pkg-name))
+          (define final-pkg-dir
+            (cond
              [clean?
-              (define final-pkg-dir (select-package-directory
-                                     (build-path (pkg-installed-dir) pkg-name)))
-              (make-parent-directory* final-pkg-dir)
-              (copy-directory/files pkg-dir final-pkg-dir #:keep-modify-seconds? #t)
+              (define final-pkg-dir (or git-dir
+                                        (select-package-directory
+                                         (build-path (pkg-installed-dir) pkg-name))))
+              (unless git-dir
+                (make-parent-directory* final-pkg-dir)
+                (copy-directory/files pkg-dir final-pkg-dir #:keep-modify-seconds? #t))
               (clean!)
               final-pkg-dir]
              [else
               pkg-dir]))
-         (define single-collect (pkg-single-collection final-pkg-dir
-                                                       #:name pkg-name
-                                                       #:namespace post-metadata-ns))
-         (log-pkg-debug "creating ~alink to ~e" 
-                        (if single-collect "single-collection " "") 
-                        final-pkg-dir)
-         (define scope (current-pkg-scope))
-         (links final-pkg-dir
-                #:name single-collect
-                #:user? (not (or (eq? 'installation scope)
-                                 (path? scope)))
-                #:file (scope->links-file scope)
-                #:root? (not single-collect)
-                #:static-root? (and (pair? orig-pkg)
-                                    (eq? 'static-link (car orig-pkg))))
-         (define alt-dir-name
-           ;; If we had to pick an alternate dir name, then record it:
-           (let-values ([(base name dir?) (split-path final-pkg-dir)])
-             (and (regexp-match? #rx"[+]" name)
-                  (path->string name))))
-         (define this-pkg-info
-           (make-pkg-info orig-pkg checksum auto? single-collect alt-dir-name))
-         (log-pkg-debug "updating db with ~e to ~e" pkg-name this-pkg-info)
-         (update-pkg-db! pkg-name this-pkg-info))]))
+          (define single-collect (pkg-single-collection final-pkg-dir
+                                                        #:name pkg-name
+                                                        #:namespace post-metadata-ns))
+          (log-pkg-debug "creating ~alink to ~e" 
+                         (if single-collect "single-collection " "") 
+                         final-pkg-dir)
+          (define scope (current-pkg-scope))
+          (links final-pkg-dir
+                 #:name single-collect
+                 #:user? (not (or (eq? 'installation scope)
+                                  (path? scope)))
+                 #:file (scope->links-file scope)
+                 #:root? (not single-collect)
+                 #:static-root? (and (pair? orig-pkg)
+                                     (eq? 'static-link (car orig-pkg))))
+          (define alt-dir-name
+            ;; If we had to pick an alternate dir name, then record it:
+            (let-values ([(base name dir?) (split-path final-pkg-dir)])
+              (and (regexp-match? #rx"[+]" name)
+                   (path->string name))))
+          (define this-pkg-info
+            (make-pkg-info orig-pkg checksum auto? single-collect alt-dir-name))
+          (log-pkg-debug "updating db with ~e to ~e" pkg-name this-pkg-info)
+          (update-pkg-db! pkg-name this-pkg-info)))]))
   (define metadata-ns (make-metadata-namespace))
   (define infos
     (for/list ([v (in-list descs)])
       (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v)
+                          #:at-dir (pkg-desc-extra-path v)
                           #:given-checksum (pkg-desc-checksum v)
                           #:use-cache? use-cache?
                           check-sums? download-printf
@@ -598,14 +619,49 @@
   (define all-descs (append old-descs descs))
   (define all-infos (append old-infos infos))
 
-  (define do-its
+  (define repo+do-its ; list of (cons #f-or-(list git-dir checksum) do-it-thunk)
     (map (curry install-package/outer all-infos)
          all-descs
          all-infos))
+  
+  ;; collapse planned repo actions, and make sure they don't conflict:
+  (define repos
+    (for/fold ([ht (hash)]) ([repo+do-it (in-list repo+do-its)])
+      (define repo (car repo+do-it))
+      (cond
+       [repo
+        (define git-dir (car repo))
+        (define checksum (cadr repo))
+        (define prev-checksum (hash-ref ht git-dir #f))
+        (when (and prev-checksum
+                   (not (equal? prev-checksum checksum)))
+          (pkg-error (~a "multiple packages in the same clone have different target commits\n"
+                         "  clone: ~a\n"
+                         "  commit: ~a\n"
+                         "  other commit: ~a")
+                     git-dir
+                     prev-checksum
+                     checksum))
+        (hash-set ht git-dir checksum)]
+       [else ht])))
+
+  ;; relevant commits have been fecthed to the repos, and now we need
+  ;; to check them out; If a checkout fails, then we've left the
+  ;; package installation in no worse shape than if a manual `git
+  ;; pull` failed
+  (for ([(git-dir checksum) (in-hash repos)])
+    (parameterize ([current-directory git-dir])
+      (download-printf "Merging commits at ~a\n"
+                       git-dir)
+      (git #:status (lambda (s) (download-printf "~a\n" s))
+           "merge" "--ff-only" checksum)))
+
+  ;; pre-succeed removes packages that are being updated
   (pre-succeed)
 
   (define post-metadata-ns (make-metadata-namespace))
-  (for-each (λ (t) (t)) do-its)
+  ;; moves packages into place and installs links:
+  (for-each (λ (t) ((cdr t))) repo+do-its)
 
   (define (is-promote? info)
     ;; if the package name is in `current-scope-db', we must
@@ -628,7 +684,7 @@
                           post-metadata-ns)))
 
   (cond
-   [(or (null? do-its)
+   [(or (null? repo+do-its)
         (and (not updating?) (andmap is-promote? all-infos)))
     ;; No actions, so no setup:
     'skip]
@@ -751,7 +807,7 @@
                        (for/list ([dep (in-list deps)])
                          (if (pkg-desc? dep)
                              dep
-                             (pkg-desc dep #f #f #f #t))))])])
+                             (pkg-desc dep #f #f #f #t #f))))])])
     (begin0
       (install-packages
        #:old-infos old-infos
@@ -813,7 +869,8 @@
                              #:all-platforms? all-platforms?
                              #:ignore-checksums? ignore-checksums?
                              #:use-cache? use-cache?
-                             #:from-command-line? from-command-line?)
+                             #:from-command-line? from-command-line?
+                             #:link-dirs? link-dirs?)
          pkg-name)
   (cond
    [(pkg-desc? pkg-name)
@@ -821,6 +878,7 @@
     (define-values (inferred-name type) (package-source->name+type
                                          (pkg-desc-source pkg-name)
                                          (pkg-desc-type pkg-name)
+                                         #:link-dirs? link-dirs?
                                          #:must-infer-name? (not (pkg-desc-name pkg-name))
                                          #:complain complain-about-source))
     (define name (or (pkg-desc-name pkg-name)
@@ -832,6 +890,7 @@
                                                   name
                                                   (pkg-desc-checksum pkg-name)
                                                   download-printf))
+    (hash-set! update-cache name new-checksum) ; record downloaded checksum
     (unless (or ignore-checksums? (not (pkg-desc-checksum pkg-name)))
       (unless (equal? (pkg-desc-checksum pkg-name) new-checksum)
         (pkg-error (~a "incorrect checksum on package\n"
@@ -841,10 +900,16 @@
                    (pkg-desc-source pkg-name)
                    (pkg-desc-checksum pkg-name) 
                    new-checksum)))
+
     (if (or (not (equal? (pkg-info-checksum info)
                          new-checksum))
             ;; No checksum available => always update
-            (not new-checksum))
+            (not new-checksum)
+            ;; Different source => always update
+            (not (equal? (pkg-info-orig-pkg info)
+                         (desc->orig-pkg type
+                                         (pkg-desc-source pkg-name)
+                                         (pkg-desc-extra-path pkg-name)))))
         ;; Update:
         (begin
           (hash-set! update-cache (pkg-desc-source pkg-name) #t)
@@ -852,7 +917,10 @@
                           (pkg-desc-type pkg-name)
                           name
                           (pkg-desc-checksum pkg-name)
-                          (pkg-desc-auto? pkg-name))))
+                          (pkg-desc-auto? pkg-name)
+                          (or (pkg-desc-extra-path pkg-name)
+                              (and (eq? type 'clone)
+                                   (current-directory))))))
         ;; No update needed, but maybe check dependencies:
         (if (or deps?
                 implies?)
@@ -865,7 +933,8 @@
                                  #:all-platforms? all-platforms?
                                  #:ignore-checksums? ignore-checksums?
                                  #:use-cache? use-cache?
-                                 #:from-command-line? from-command-line?)
+                                 #:from-command-line? from-command-line?
+                                 #:link-dirs? link-dirs?)
              name)
             null))]
    [(eq? #t (hash-ref update-cache pkg-name #f))
@@ -881,12 +950,10 @@
       (match orig-pkg
         [`(,(or 'link 'static-link) ,orig-pkg-dir)
          (if must-update?
-             (pkg-error (~a "cannot update linked packages~a\n"
+             (pkg-error (~a "cannot update linked packages;\n"
+                            " except with a replacement package source\n"
                             "  package name: ~a\n"
                             "  package source: ~a")
-                        (if from-command-line?
-                            " without `--link'"
-                            " without new link")
                         pkg-name
                         (normalize-path
                          (path->complete-path orig-pkg-dir (pkg-installed-dir))))
@@ -894,6 +961,7 @@
         [`(dir ,_)
          (if must-update?
              (pkg-error (~a "cannot update packages installed locally;\n"
+                            " except with a replacement package source;\n"
                             " package was installed via a local directory\n"
                         "  package name: ~a")
                         pkg-name)
@@ -901,11 +969,21 @@
         [`(file ,_)
          (if must-update?
              (pkg-error (~a "cannot update packages installed locally;\n"
+                            " except with a replacement package source;\n"
                             " package was installed via a local file\n"
                             "  package name: ~a")
                         pkg-name)
              null)]
-        [`(,_ ,orig-pkg-source)
+        [_
+         (define-values (orig-pkg-source orig-pkg-type orig-pkg-dir)
+           (if (eq? 'clone (car orig-pkg))
+               (values (caddr orig-pkg)
+                       'clone
+                       (enclosing-path-for-repo (caddr orig-pkg) (cadr orig-pkg)))
+               ;; It would be better if the type were preseved
+               ;; from install time, but we always make the
+               ;; URL unambigious:
+               (values (cadr orig-pkg) #f #f)))
          (define new-checksum
            (or (hash-ref update-cache pkg-name #f)
                (remote-package-checksum orig-pkg download-printf pkg-name)))
@@ -920,9 +998,8 @@
                     ;; there was a race between our checkig and updates on
                     ;; the catalog server:
                     (clear-checksums-in-cache! update-cache)
-                    ;; FIXME: the type shouldn't be #f here; it should be
-                    ;; preseved from install time:
-                    (list (pkg-desc orig-pkg-source #f pkg-name #f auto?))))
+                    (list (pkg-desc orig-pkg-source orig-pkg-type pkg-name #f auto?
+                                    orig-pkg-dir))))
              (if (or deps? implies?)
                  ;; Check dependencies
                  (append-map
@@ -935,7 +1012,8 @@
                                       #:all-platforms? all-platforms?
                                       #:ignore-checksums? ignore-checksums?
                                       #:use-cache? use-cache?
-                                      #:from-command-line? from-command-line?)
+                                      #:from-command-line? from-command-line?
+                                      #:link-dirs? link-dirs?)
                   ((package-dependencies metadata-ns db all-platforms? 
                                          #:only-implies? (not deps?))
                    pkg-name))
@@ -975,14 +1053,18 @@
                                                     #:all-platforms? all-platforms?
                                                     #:ignore-checksums? ignore-checksums?
                                                     #:use-cache? use-cache?
-                                                    #:from-command-line? from-command-line?)
-                                pkgs))
+                                                    #:from-command-line? from-command-line?
+                                                    #:link-dirs? link-dirs?)
+                                (map (convert-clone-name-to-clone-repo db)
+                                     pkgs)))
   (cond
     [(empty? pkgs)
      (unless quiet?
        (printf/flush (~a "No packages given to update"
                          (if from-command-line?
-                             ";\n use `--all' to update all packages"
+                             (~a
+                              ";\n use `--all' to update all packages, or run from a package's directory"
+                              "\n to update that package")
                              "")
                          "\n")))
      'skip]
@@ -1015,6 +1097,49 @@
       #:link-dirs? link-dirs?
       to-update)]))
 
+;; If `pkg` is a description with the type 'clone, but its syntax
+;; matches a ackage name, then infer a repo from the current package
+;; installation and return an alternate description.
+(define ((convert-clone-name-to-clone-repo db) pkg-name)
+  (cond
+   [(and (pkg-desc? pkg-name)
+         (eq? 'clone (pkg-desc-type pkg-name))
+         (let-values ([(name type) (package-source->name+type (pkg-desc-source pkg-name) 'name)])
+           name))
+    => (lambda (name)
+         ;; Infer or complain
+         (define info (package-info name #:db db))
+         (unless info
+           (pkg-error (~a "package is not currently installed\n"
+                          "  package: ~a")
+                      name))
+         (define new-pkg-name
+           (match (pkg-info-orig-pkg info)
+             [`(clone ,path ,url-str)
+              (pkg-error (~a "package is already a linked repository clone\n"
+                             "  package: ~a")
+                         name)]
+             [`(url ,url-str)
+              (define-values (current-name current-type)
+                (package-source->name+type url-str #f))
+              (case current-type
+                [(git github)
+                 ;; found a repo URL
+                 (pkg-desc url-str 'clone name
+                           (pkg-desc-checksum pkg-name)
+                           (pkg-desc-auto? pkg-name)
+                           (pkg-desc-extra-path pkg-name))]
+                [else #f])]
+             [else #f]))
+         (unless new-pkg-name
+           (pkg-error (~a "package is not currently installed from a repository\n"
+                          "  package: ~a\n"
+                          "  current installation: ~a")
+                      name
+                      (pkg-info-orig-pkg info)))
+         new-pkg-name)]
+   [else pkg-name]))
+
 ;; ----------------------------------------
 
 (define (clear-checksums-in-cache! update-cache)
@@ -1022,3 +1147,4 @@
                        #:when (string? v))
               k))
   (for ([k (in-list l)]) (hash-remove! update-cache k)))
+

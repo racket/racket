@@ -268,8 +268,8 @@ and grows up to become a Git repository that is registered with a
 
 @subsection[#:tag "automatic-creation"]{Automatic Creation}
 
-As a convenience, @command-ref{new} can automatically create single
-collection packages.
+As a convenience, @command-ref{new} can automate the creation of
+a @tech{single-collection package}.
 To create @nonterm{pkg-name}:
 
 @commandline{raco pkg new @nonterm{pkg-name}}
@@ -307,7 +307,7 @@ it to a @tech{multi-collection package} by restructuring the package
 directory, so you don't have to worry much about the choice when you
 get started.
 
-@subsection[#:tag "working-new-pkgs"]{Working with New Packages}
+@subsection[#:tag "working-new-pkgs"]{Linking and Developing New Packages}
 
 Whether creating a @tech{single-collection package} or a
 @tech{multi-collection package}, the next step is to link your
@@ -392,13 +392,17 @@ Whenever you
 @commandline{git push}
 
 your changes will automatically be discovered by those who use
-@exec{raco pkg update} after installing from your
+@command-ref{update} after installing from your
 GitHub-based @tech{package source}.
 
 As of Racket version 6.1.1.1, other Git repository services can work
 just as well as GitHub---including Gitorious or BitBucket---as long as
 the server supports either the ``smart'' HTTP(S) protocol or the
 native Git protocol (but use a @exec{git://} path for the latter).
+
+The Racket package manager provides more support for Git-based
+development than just deployment. See @secref["git-workflow"] for more
+information.
 
 @; - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -421,9 +425,9 @@ Your @tech{package source} is then something like
 Whenever you want to provide a new release of a package, recreate and reupload the
 package archive (and @tech{checksum}). Your changes will automatically be
 discovered by those who used your package source when they use
-@exec{raco pkg update}.
+@command-ref{update}.
 
-@margin-note{By default, @exec{raco pkg create} generates a
+@margin-note{By default, @command-ref{create} generates a
 @filepath{.zip} archive. For more options, refer to the
 @command-ref{create} documentation. If you want to generate an archive
 through some other means, simply archive what you made in the first
@@ -453,7 +457,7 @@ If you use this server, and if you use a public Git repository for
 deployment, then you will never need to open a web browser to update
 your package for end users. You just need to push to your Git
 repository, then within 24 hours, the PLT @tech{package catalog} will
-notice, and @exec{raco pkg update} will work on your user's machines.
+notice, and @command-ref{update} will work on your user's machines.
 
 @; - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -484,8 +488,8 @@ present interfaces to external, versioned things, such as
 
 @item{A @tech{version} declaration for a package is used only by other
 package implementors to effectively declare dependencies on provided
-features. Such declarations allow @exec{raco pkg install} and
-@exec{raco pkg update} to help check dependencies.  Declaring and
+features. Such declarations allow @command-ref{install} and
+@command-ref{update} to help check dependencies.  Declaring and
 changing a version is optional, and the @tech{package catalog}
 ignores version declarations; in particular, a package is a candidate
 for updating when its @tech{checksum} changes, independent of whether

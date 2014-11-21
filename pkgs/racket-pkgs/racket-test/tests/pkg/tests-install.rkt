@@ -59,9 +59,9 @@
     $ "raco pkg install test-pkgs/pkg-test1.zip.CHECKSUM" =exit> 1)
 
    (shelly-install "remote/URL/http package (file, tgz)"
-                   "http://localhost:9999/pkg-test1.tgz")
+                   "http://localhost:9997/pkg-test1.tgz")
    (shelly-install "remote/URL/http package (directory)"
-                   "http://localhost:9999/pkg-test1/")
+                   "http://localhost:9997/pkg-test1/")
 
    (with-fake-root
     (shelly-begin
@@ -96,19 +96,19 @@
 
    (shelly-case
     "remote/URL/http directory, non-existant file"
-    $ "raco pkg install http://localhost:9999/pkg-test1.rar" =exit> 1)
+    $ "raco pkg install http://localhost:9997/pkg-test1.rar" =exit> 1)
    (shelly-case
     "remote/URL/http directory, no manifest fail"
-    $ "raco pkg install http://localhost:9999/pkg-test1/pkg-test1/"
+    $ "raco pkg install http://localhost:9997/pkg-test1/pkg-test1/"
     =exit> 1
     =stderr> #rx"could not find MANIFEST")
    (shelly-case
     "remote/URL/http directory, bad manifest"
     ;; XXX why does this error now?
-    $ "raco pkg install http://localhost:9999/pkg-test1-manifest-error/" =exit> 1)
+    $ "raco pkg install http://localhost:9997/pkg-test1-manifest-error/" =exit> 1)
    (shelly-case
     "remote/URL/file, bad checksum"
-    $ "raco pkg install --checksum zzz http://localhost:9999/pkg-test1.tgz"
+    $ "raco pkg install --checksum zzz http://localhost:9997/pkg-test1.tgz"
     =exit> 1
     =stderr> #rx"mismatched checksum")
 

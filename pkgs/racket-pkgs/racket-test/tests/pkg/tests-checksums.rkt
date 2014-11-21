@@ -43,7 +43,7 @@
       (hasheq 'checksum
               (file->string "test-pkgs/pkg-test1-bad-checksum.zip.CHECKSUM")
               'source
-              "http://localhost:9999/pkg-test1-bad-checksum.zip"))
+              "http://localhost:9997/pkg-test1-bad-checksum.zip"))
      $ "raco pkg config --set catalogs http://localhost:9990 http://localhost:9991"
      $ "racket -e '(require pkg-test1)'" =exit> 1
      $ "raco pkg install pkg-test1" =exit> 1
@@ -53,20 +53,20 @@
     (shelly-case
      "checksums are checked (remote)"
      $ "racket -e '(require pkg-test1)'" =exit> 1
-     $ "raco pkg install http://localhost:9999/pkg-test1-bad-checksum.zip" =exit> 1
+     $ "raco pkg install http://localhost:9997/pkg-test1-bad-checksum.zip" =exit> 1
      $ "racket -e '(require pkg-test1)'" =exit> 1))
    (with-fake-root
     (shelly-case
      "checksums are required by default remotely (remote)"
      $ "racket -e '(require pkg-test1)'" =exit> 1
-     $ "raco pkg install http://localhost:9999/pkg-test1-no-checksum.zip" =exit> 1
+     $ "raco pkg install http://localhost:9997/pkg-test1-no-checksum.zip" =exit> 1
      $ "racket -e '(require pkg-test1)'" =exit> 1))
    (shelly-install* "but, bad checksums can be ignored (local)"
                     "--ignore-checksums test-pkgs/pkg-test1-bad-checksum.zip"
                     "pkg-test1-bad-checksum")
    (shelly-install* "but, bad checksums can be ignored (remote)"
-                    "--ignore-checksums http://localhost:9999/pkg-test1-bad-checksum.zip"
+                    "--ignore-checksums http://localhost:9997/pkg-test1-bad-checksum.zip"
                     "pkg-test1-bad-checksum")
    (shelly-install* "but, checksums can be missing if ignored (remote)"
-                    "--ignore-checksums http://localhost:9999/pkg-test1-no-checksum.zip"
+                    "--ignore-checksums http://localhost:9997/pkg-test1-no-checksum.zip"
                     "pkg-test1-no-checksum"))))
