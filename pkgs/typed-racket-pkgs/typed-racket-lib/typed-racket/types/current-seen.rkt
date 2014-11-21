@@ -17,6 +17,7 @@
 (define (remember s t A) 
   (if (or (Mu? s) (Mu? t)
           (Name? s) (Name? t)
+          (Instance? s) (Instance? t)
           (Struct? s) (Struct? t) 
           (App? s) (App? t))
       (cons (seen-before s t) A)

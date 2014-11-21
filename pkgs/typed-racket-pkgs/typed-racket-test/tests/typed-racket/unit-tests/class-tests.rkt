@@ -1651,4 +1651,20 @@
            (: d% D)
            (define d% (class object% (super-new) (define/public (m) (void))))
            (send (new d%) m))
-         Univ]))
+         Univ]
+   ;; Test for an infinite loop bug during subtyping for classes
+   [tc-e (let ()
+           (define-type-alias A% (Class [get-this (-> (Instance A%))]))
+           (define-type-alias B% (Class [get-this (-> (Instance B%))]))
+           (: a% A%)
+           (define a%
+             (class object%
+               (super-new)
+               (define/public (get-this) this)))
+           (: b% B%)
+           (define b%
+             (class a%
+               (super-new)
+               (define/override (get-this) this)))
+           (void))
+         -Void]))
