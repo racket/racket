@@ -34,6 +34,12 @@
   (or/c 'installation 'user
         (and/c path? complete-path?)))
 
+(define pkg-desc/opt
+  (let ([pkg-desc (lambda (source type name checksum auto?
+                             #:path [path #f])
+                    (pkg-desc source type name checksum auto? path))])
+    pkg-desc))
+
 (provide
  (all-from-out "path.rkt")
  with-pkg-lock
@@ -58,13 +64,15 @@
    (parameter/c (or/c #f real?))]
   [pkg-directory
    (-> string? (or/c path-string? #f))]
-  [pkg-desc 
-   (-> string? 
-       (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'github 'name) 
-       (or/c string? #f)
-       (or/c string? #f)
-       boolean?
-       pkg-desc?)]
+  [rename
+   pkg-desc/opt pkg-desc
+   (->* (string?
+         (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'github 'clone 'name)
+         (or/c string? #f)
+         (or/c string? #f)
+         boolean?)
+        (#:path (or/c #f path-string?))
+        pkg-desc?)]
   [pkg-config
    (->* (boolean? (listof string?))
         (#:from-command-line? boolean?)

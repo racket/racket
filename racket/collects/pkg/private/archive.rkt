@@ -134,7 +134,7 @@
       ;; Download/unpack existing package:
       (define-values (staged-name staged-dir staged-checksum clean? staged-mods)
         (pkg-stage
-         (pkg-desc (path->string pkg-dir) 'dir name checksum #f)
+         (pkg-desc (path->string pkg-dir) 'dir name checksum #f #f)
          #:in-place? #f
          #:use-cache? #t
          #:quiet? quiet?))

@@ -20,13 +20,13 @@
                (hasheq 'checksum
                        (file->string (format "test-pkgs/pkg-implied-~a.zip.CHECKSUM" s))
                        'source
-                       (format "http://localhost:9999/pkg-implied-~a.zip" s))))
+                       (format "http://localhost:9997/pkg-implied-~a.zip" s))))
   (implied-version! "one")
   (hash-set! *index-ht-1* "pkg-implies"
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-implies.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-implies.zip"))
+                     "http://localhost:9997/pkg-implies.zip"))
 
   (with-fake-root
    (shelly-begin

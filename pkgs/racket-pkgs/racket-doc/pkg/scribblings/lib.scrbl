@@ -125,18 +125,27 @@ scope}.}
 @deftogether[(
 @defproc[(pkg-desc? [v any/c]) boolean?]
 @defproc[(pkg-desc [source string?]
-                   [type (or/c #f 'file 'dir 'link 'static-link 
-                               'file-url 'dir-url 'git 'github 'name)]
+                   [type (or/c #f 'name 'file 'dir 'link 'static-link
+                               'file-url 'dir-url 'git 'github 'clone)]
                    [name (or/c string? #f)]
                    [checksum (or/c string? #f)]
-                   [auto? boolean?])
+                   [auto? boolean?]
+                   [#:path path (or/c #f path-string?) #f])
          pkg-desc?]
 )]{
 
 A @racket[pkg-desc] value describes a package source plus details of its
 intended interpretation, where the @racket[auto?] field indicates that
 the package is should be treated as installed automatically for a
-dependency.}
+dependency.
+
+The optional @racket[path] argument is intended for use when
+@racket[type] is @racket['clone], in which case it specifies< a
+directory containing the repository clone (where the repository itself
+is a directory within @racket[path]).
+
+@history[#:changed "6.1.1.1" @elem{Added @racket['git] as a @racket[type].}
+         #:changed "6.1.1.5" @elem{Added @racket['clone] as a @racket[type].}]}
 
 
 @defproc[(pkg-stage [desc pkg-desc?]
@@ -271,8 +280,12 @@ Implements @racket[pkg-update-command]. The result is the same as for
 @racket[pkg-install].
 
 A string in @racket[names] refers to an installed package that should
-be checked for updates. A @racket[pkg-desc] in @racket[names] indicates
-a package source that should replace the current installation.
+be checked for updates. A @racket[pkg-desc] in @racket[names]
+indicates a package source that should replace the current
+installation, except that a @racket[package-desc] can have the type
+@racket['clone] and a source with the syntax of a package name, in
+which case it refers to an existing package installation that should
+be converted to a Git repository clone.
 
 If @racket[from-command-line?]  is true, error messages may suggest
 specific command-line flags for @command-ref{update}.

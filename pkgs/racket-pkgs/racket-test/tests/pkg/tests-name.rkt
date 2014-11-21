@@ -96,6 +96,8 @@
   (check-equal-values? (parse "github://github.com/racket/fish.more/release" 'github) (values #f 'github #t))
   (check-equal-values? (parse "github://github.com/racket/./release" #f #rx"indicator") (values #f 'github #f))
   (check-equal-values? (parse "github://github.com/../fish/release" #f #rx"indicator") (values #f 'github #f))
+  (check-equal-values? (parse "github://github.com/racket/fish/master" 'clone) (values "fish" 'clone #t))
+  (check-equal-values? (parse "github://github.com/fish/master" 'clone #rx"three") (values #f 'clone #f))
 
   (check-equal-values? (parse "git://github.com/racket/fish" #f) (values "fish" 'github #t))
   (check-equal-values? (parse "git://github.com/racket/fish/" #f) (values "fish" 'github #t))
@@ -111,6 +113,8 @@
   (check-equal-values? (parse "git://github.com/racket/fish.more" 'github) (values #f 'github #t))
   (check-equal-values? (parse "git://github.com/racket/." #f #rx"indicator") (values #f 'github #f))
   (check-equal-values? (parse "git://github.com/../fish" #f #rx"indicator") (values #f 'github #f))
+  (check-equal-values? (parse "git://github.com/racket/fish" 'clone) (values "fish" 'clone #t))
+  (check-equal-values? (parse "racket/fish" 'github) (values "fish" 'github #t))
 
   (check-equal-values? (parse "git://not-github.com/racket/fish" #f #f) (values "fish" 'git #t))
   (check-equal-values? (parse "git://not-github.com/fish" #f #f) (values "fish" 'git #t))
@@ -123,6 +127,8 @@
   (check-equal-values? (parse "git://not-github.com/fish/?path=catfish/bill" #f) (values "bill" 'git #t))
   (check-equal-values? (parse "git://not-github.com/../fish.git/" #f) (values "fish" 'git #t))
   (check-equal-values? (parse "git://not-github.com/.././" #f #rx"indicator") (values #f 'git #f))
+  (check-equal-values? (parse "git://not-github.com/racket/fish" 'clone #f) (values "fish" 'clone #t))
+  (check-equal-values? (parse "git://not-github.com/.././" 'clone #rx"indicator") (values #f 'clone #f))
 
   (check-equal-values? (parse "http://racket-lang.org/racket/fish" 'git #f) (values "fish" 'git #t))
   (check-equal-values? (parse "https://racket-lang.org/racket/fish" 'git #f) (values "fish" 'git #t))
@@ -155,7 +161,7 @@
   (check-equal-values? (parse "" 'file-url) (values #f 'file-url #f))
   (check-equal-values? (parse "" 'dir-url) (values #f 'dir-url #f))
   (check-equal-values? (parse "" 'git) (values #f 'git #f))
-  (check-equal-values? (parse "" 'github #rx"empty") (values #f 'github #f))
+  (check-equal-values? (parse "" 'github #rx"two path elements") (values #f 'github #f))
 
   (void))
 

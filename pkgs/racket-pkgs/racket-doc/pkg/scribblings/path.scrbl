@@ -18,7 +18,8 @@ databases.}
 @defstruct*[pkg-info ([orig-pkg (or/c (list/c 'catalog string?)
                                       (list/c 'url string?)
                                       (list/c 'link string?)
-                                      (list/c 'static-link string?))]
+                                      (list/c 'static-link string?)
+                                      (list/c 'clone string? string?))]
                       [checksum (or/c #f string?)]
                       [auto? boolean?])
                       #:prefab]{

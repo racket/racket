@@ -29,13 +29,13 @@
   $ (~a "raco pkg config --set catalogs file://" (path->string db))
 
   $ "raco pkg catalog-show pkg-test1"
-  =stdout> #rx"Source: http://localhost:9999/pkg-test1.zip"
+  =stdout> #rx"Source: http://localhost:9997/pkg-test1.zip"
 
   (parameterize ([db:current-pkg-catalog-file db])
     (db:set-pkgs! "local"
                   (append (db:get-pkgs)
                           (list
-                           (db:pkg "fish" "local" "nemo@sub" "http://localhost:9999/fish.zip" "123" 
+                           (db:pkg "fish" "local" "nemo@sub" "http://localhost:9997/fish.zip" "123" 
                                    "Not a whale"))))
     (db:set-pkg-modules! "fish" "local" "123" '((lib "fish/main.rkt") (lib "fish/food.rkt")))
     (db:set-pkg-dependencies! "fish" "local" "123"
@@ -78,7 +78,7 @@
         (lambda (o)
           (write (hash 'name "whale"
                        'checksum cksum
-                       'source "http://localhost:9999/whale.plt"
+                       'source "http://localhost:9997/whale.plt"
                        'versions (hash "5.3.6"
                                        (hash 'checksum
                                              123)))

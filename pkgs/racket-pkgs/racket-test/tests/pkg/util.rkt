@@ -108,7 +108,7 @@
 (define (start-file-server)
   (serve/servlet (λ (req) (response/xexpr "None"))
                  #:command-line? #t
-                 #:port 9999
+                 #:port 9997
                  #:extra-files-paths (list (build-path test-directory "test-pkgs"))))
 
 (require "basic-index.rkt")
@@ -192,7 +192,7 @@
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test1.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-test1.zip"
+                     "http://localhost:9997/pkg-test1.zip"
                      'tags
                      '("first")))
 
@@ -200,7 +200,7 @@
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test2.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-test2.zip"
+                     "http://localhost:9997/pkg-test2.zip"
                      'dependencies
                      '("pkg-test1")))
 
@@ -208,7 +208,7 @@
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test2.zip.CHECKSUM")
                      'source
-                     "http://localhost:9999/pkg-test2.zip"
+                     "http://localhost:9997/pkg-test2.zip"
                      'dependencies
                      '("pkg-test1"))))
 

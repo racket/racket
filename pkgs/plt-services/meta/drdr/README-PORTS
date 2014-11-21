@@ -9,6 +9,9 @@ others don't accidentally conflict.
 8889 - tests/racket/benchmarks/shootout/typed/echo (optimized)
 9000 - DrDr Web server
 9001 - tests/net
+9990 - tests/pkg
+9997 - tests/pkg
+9998 - tests/pkg
 9999 - tests/web-server
 19200 - 2htdp/tests
 ...

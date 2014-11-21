@@ -1,12 +1,15 @@
 #lang racket/base
 (require racket/match
+         net/url
          "../path.rkt"
          "config.rkt"
          "lock.rkt"
          "pkg-db.rkt"
          "desc.rkt"
          "params.rkt"
-         "install.rkt")
+         "install.rkt"
+         "repo-path.rkt"
+         "dirs.rkt")
 
 (provide pkg-migrate)
 
@@ -24,17 +27,25 @@
   (define from-db
     (parameterize ([current-pkg-scope-version from-version])
       (installed-pkg-table #:scope 'user)))
+  (define installed-dir
+    (parameterize ([current-pkg-scope 'user])
+      (pkg-installed-dir)))
+  (define (path->complete-string p)
+    (path->string (path->complete-path p installed-dir)))
   (define to-install
     (sort
      (for/list ([(name info) (in-hash from-db)]
                 #:unless (pkg-info-auto? info))
-       (define-values (source type)
+       (define-values (source type dir)
          (match (pkg-info-orig-pkg info)
-           [(list 'catalog name) (values name 'name)]
-           [(list 'url url) (values url #f)]
-           [(list 'link path) (values path 'link)]
-           [(list 'static-link path) (values path 'static-link)]))
-       (pkg-desc source type name #f #f))
+           [(list 'catalog name) (values name 'name #f)]
+           [(list 'url url) (values url #f #f)]
+           [(list 'link path) (values (path->complete-string path) 'link #f)]
+           [(list 'static-link path) (values (path->complete-string path) 'static-link #f)]
+           [(list 'clone path url) (values url 'clone (enclosing-path-for-repo
+                                                       url
+                                                       (path->complete-path path)))]))
+       (pkg-desc source type name #f #f dir))
      string<?
      #:key pkg-desc-name))
   (unless quiet?
