@@ -17,14 +17,25 @@ object using a color name, and see also @racket[make-color].
 
 @defconstructor*/make[(()
                        ([red byte?] [green byte?] [blue byte?]
-                        [alpha (real-in 0 1) 1.0])
-                       ([color-name string?]))]{
+                                    [alpha (real-in 0 1) 1.0])
+                       ([color-name-or-obj (or/c string? (is-a?/c color%))]))]{
 
-Creates a new color with the given RGB values and alpha, or matching
- the given color name (using @racket["black"] if no color is given or if the
- name is not recognized). See @racket[color-database<%>] for more
- information on color names.
+  Creates a new color.
 
+  If three or four arguments are supplied to the constructor, the
+  color is created with those RGB and alpha values.
+
+  If a single @racket[color%] object is supplied, the color
+  is created with the same RGB and alpha values as the given
+  color.
+
+  If a string is supplied, then it is passed to the
+  @racket[color-database<%>]'s @method[color-database<%> find-color]
+  method to find a color (signaling an error if the color is not in
+  the @racket[color-database<%>]'s @method[color-database<%> get-names]
+  method's result).
+
+  If no arguments are supplied, the new color is black.
 }
 
 @defmethod[(red) byte?]{
