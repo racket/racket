@@ -433,7 +433,9 @@
   (for ([path (in-list paths)]
         [coll-path (in-list coll-paths)]
         [coll-mode (in-list coll-modes)]
-        [coll-main? (in-list coll-main?s)])
+        [coll-main? (in-list coll-main?s)]
+        ;; coll-path is #f for PLaneT packages
+        #:when coll-path)
     (when verbose?
       (setup-printf #f " checking ~a" path))
     (define dirs (find-compiled-directories path))
