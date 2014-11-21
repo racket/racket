@@ -89,11 +89,13 @@
     ;; to TR
     (tc-toplevel-form lifted-definitions)
     (tc-expr/check expanded-body (if expr? region-tc-result (ret ex-types))))
-  (report-all-errors)
   (set-box! typed-context? old-context)
   ;; then clear the new entries from the env ht
   (for ([i (in-syntax fvids)])
     (unregister-type i))
+  ;; report errors after setting the typed-context? flag and unregistering
+  ;; types to ensure that the state is cleaned up properly in the REPL
+  (report-all-errors)
   (with-syntax ([(fv.id ...) fvids]
                 [(cnt ...) fv-ctc-ids]
                 [(ex-id ...) exids]
