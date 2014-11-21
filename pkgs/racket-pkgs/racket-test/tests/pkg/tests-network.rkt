@@ -56,12 +56,23 @@
  (test-remote "git://github.com/mflatt/pkg-test")
  (test-remote "https://github.com/mflatt/pkg-test.git")
  (test-remote "https://bitbucket.org/mflatt/pkg-test.git")
+
+ (define (try-git-repo label type+repo)
+   (define tmp-dir (make-temporary-file "~a-clone" 'directory))
+   (shelly-install
+    label
+    type+repo
+    (shelly-wind
+     $ "racket -l racket/base -l pkg-test1/number -e '(number)'" =stdout> "10\n"
+     $ (~a "raco pkg update --clone " tmp-dir " pkg-test1")
+     $ "racket -l racket/base -l pkg-test1/number -e '(number)'" =stdout> "10\n"
+     $ (~a "raco pkg update " type+repo)
+     (finally
+      (delete-directory/files tmp-dir)))))
  
- (shelly-install 
+ (try-git-repo
   "remote/github with auto prefix and with branch"
-  "--type github mflatt/pkg-test?path=pkg-test1/#alt"
-  $ "racket -l racket/base -l pkg-test1/number -e '(number)'" =stdout> "10\n")
- (shelly-install 
+  "--type github mflatt/pkg-test?path=pkg-test1/#alt")
+ (try-git-repo
   "remote/git type"
-  "--type git https://bitbucket.org/mflatt/pkg-test?path=pkg-test1#alt"
-  $ "racket -l racket/base -l pkg-test1/number -e '(number)'" =stdout> "10\n"))
+  "--type git https://bitbucket.org/mflatt/pkg-test?path=pkg-test1#alt"))

@@ -195,9 +195,12 @@
 
     (when (and (pair? orig-pkg)
                (or (eq? (car orig-pkg) 'link)
-                   (eq? (car orig-pkg) 'static-link)))
+                   (eq? (car orig-pkg) 'static-link)
+                   (eq? (car orig-pkg) 'clone)))
       (disallow-package-path-overlaps pkg-name
-                                      pkg-dir
+                                      (if (eq? (car orig-pkg) 'clone)
+                                          git-dir
+                                          pkg-dir)
                                       path-pkg-cache
                                       simultaneous-installs))
     (cond
@@ -906,10 +909,10 @@
             ;; No checksum available => always update
             (not new-checksum)
             ;; Different source => always update
-            (not (equal? (pkg-info-orig-pkg info)
-                         (desc->orig-pkg type
-                                         (pkg-desc-source pkg-name)
-                                         (pkg-desc-extra-path pkg-name)))))
+            (not (same-orig-pkg? (pkg-info-orig-pkg info)
+                                 (desc->orig-pkg type
+                                                 (pkg-desc-source pkg-name)
+                                                 (pkg-desc-extra-path pkg-name)))))
         ;; Update:
         (begin
           (hash-set! update-cache (pkg-desc-source pkg-name) #t)
@@ -1119,6 +1122,13 @@
               (pkg-error (~a "package is already a linked repository clone\n"
                              "  package: ~a")
                          name)]
+             [`(catalog ,lookup-name ,url-str)
+              ;; Found a catalog-based installation that can be converted
+              ;; to a clone:
+              (pkg-desc url-str 'clone name
+                        (pkg-desc-checksum pkg-name)
+                        (pkg-desc-auto? pkg-name)
+                        (pkg-desc-extra-path pkg-name))]
              [`(url ,url-str)
               (define-values (current-name current-type)
                 (package-source->name+type url-str #f))

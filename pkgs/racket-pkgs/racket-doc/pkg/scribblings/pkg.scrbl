@@ -552,9 +552,12 @@ within a package, then the enclosing package is updated.
  @item{@DFlag{clone} @nonterm{dir} --- Same as for
     @command-ref{install}, except that a @nonterm{pkg-source} can be
     the name of an installed package. In that case, the package must
-    be currently installed from a Git or GitHub source, and that
+    be currently installed from a Git or GitHub source---possibly as
+    directed by a catalog---and that
     source is used for the clone (which replaces the existing package
-    installation).}
+    installation). If no @nonterm{pkg-source} is supplied, then
+    the last path element of @nonterm{dir} is used as a package name
+    and used as a @nonterm{pkg-source} argument.}
  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
  @item{@DFlag{copy} --- Same as for @command-ref{install}.}
  @item{@DFlag{source} --- Same as for @command-ref{install}.}

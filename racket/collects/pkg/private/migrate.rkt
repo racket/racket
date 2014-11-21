@@ -38,7 +38,7 @@
                 #:unless (pkg-info-auto? info))
        (define-values (source type dir)
          (match (pkg-info-orig-pkg info)
-           [(list 'catalog name) (values name 'name #f)]
+           [(list* 'catalog name _) (values name 'name #f)]
            [(list 'url url) (values url #f #f)]
            [(list 'link path) (values (path->complete-string path) 'link #f)]
            [(list 'static-link path) (values (path->complete-string path) 'static-link #f)]

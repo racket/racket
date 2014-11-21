@@ -39,7 +39,7 @@
 
 (define (remote-package-checksum pkg download-printf pkg-name #:type [type #f])
   (match pkg
-    [`(catalog ,pkg-name)
+    [`(catalog ,pkg-name . ,_)
      (hash-ref (package-catalog-lookup pkg-name #f download-printf) 'checksum)]
     [`(url ,pkg-url-str)
      (package-url->checksum pkg-url-str
@@ -104,11 +104,20 @@
                         #:force-strip? force-strip?)]
    [(eq? type 'clone)
     (define pkg-url (string->url pkg))
-    (define pkg-no-query (url->string
-                          (struct-copy url pkg-url
-                                       [query null])))
     (define-values (host port repo branch path)
       (split-git-or-hub-url pkg-url))
+    (define pkg-no-query
+      (url->string
+       (if (equal? "github" (url-scheme pkg-url))
+           ;; Convert "github://" to a real URL:
+           (url "https" #f host port #t
+                (map (lambda (s) (path/param s null)) (string-split repo "/"))
+                null
+                #f)
+           ;; Drop any query or fragment in the URL:
+           (struct-copy url pkg-url
+                        [query null]
+                        [fragment #f]))))
     (define clone-dir (or given-at-dir
                           (current-directory)))
 
@@ -579,11 +588,15 @@
     (when check-sums?
       (check-checksum given-checksum checksum "unexpected" pkg #f)
       (check-checksum checksum (install-info-checksum info) "incorrect" pkg #f))
+    (define repo-url (let-values ([(name type) (package-source->name+type source #f)])
+                       (and (or (eq? type 'git)
+                                (eq? type 'github))
+                            source)))
     (update-install-info-orig-pkg
      (update-install-info-checksum
       info
       checksum)
-     (desc->orig-pkg 'name pkg #f))]
+     (desc->orig-pkg 'name pkg #f #:repo-url repo-url))]
    [else
     (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
 
