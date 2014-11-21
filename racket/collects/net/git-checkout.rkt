@@ -8,6 +8,7 @@
          openssl/sha1
          openssl
          net/url
+         net/head
          (only-in net/url-connect current-https-protocol))
 
 ;; Stefan Saasen's "Reimplementing 'git clone' in Haskell from the bottom up"
@@ -31,13 +32,14 @@
                       #:tmp-dir [given-tmp-dir #f]
                       #:clean-tmp-dir? [clean-tmp-dir? (not given-tmp-dir)]
                       #:verify-server? [verify? #t]
-                      #:port [port (case transport
-                                     [(git) 9418]
-                                     [(http) 80]
-                                     [(https) 443])])
+                      #:port [given-port #f])
   (let retry-loop ([given-depth given-depth])
     (define tmp-dir (or given-tmp-dir
                         (make-temporary-file "git~a" 'directory)))
+    (define port (or given-port (case transport
+                                  [(git) 9418]
+                                  [(http) 80]
+                                  [(https) 443])))
     
     (define (status fmt . args)
       (define msg (apply format fmt args))
@@ -45,16 +47,25 @@
       (log-git-checkout-info msg))
     
     (status "Contacting ~a" host)
-    (define-values (i o) (initial-connect transport host verify? port repo))
+    (define-values (i o dumb-protocol?)
+      (initial-connect transport host verify? port repo status))
     ((let/ec esc
        (dynamic-wind
         void
         (lambda ()
-          (status "Getting refs")
+          (when (and dumb-protocol? dest-dir)
+            (error 'git-checkout
+                   "server implements dumb protocol, which supports reference discovery only"))
+          
+          (status "Getting refs~a" (if dumb-protocol? " [dumb protocol]" ""))
           (write-pkt o
                      "git-upload-pack " "/" repo "\0"
                      "host=" host "\0")
-          (define pkts (read-pkts i))
+          (define pkts (if dumb-protocol?
+                           ;; dumb protocol provide plain lines:
+                           (for/list ([l (in-lines i)]) (string-append l "\n"))
+                           ;; smart protocol provides packets:
+                           (read-pkts i)))
           (unless (pair? pkts)
             (error 'git-checkout "no initial pkts from the server"))
 
@@ -176,39 +187,52 @@
   ;; otherwise it returns a "broken link" web page
   '("User-Agent: git/1.9"))
 
-;; initial-connect: transport-sym string bool natural string
-;;                  -> (values input-port output-port)
+;; initial-connect: transport-sym string bool natural string status-proc
+;;                  -> (values input-port output-port boolean)
 ;;  Contacts the server and returns an output port for writing
 ;;  the request (ignored if not needed for the the transport)
-;;  and an input port from reading the available references
-(define (initial-connect transport host verify? port repo)
+;;  and an input port from reading the available references. The
+;;  boolean result indicates whether the protocol is "dumb".
+(define (initial-connect transport host verify? port repo status)
   (case transport
     [(git)
-     (tcp-connect host port)]
+     (define-values (i o) (tcp-connect host port))
+     (values i o #f)]
     [(http https)
      (define url-str
        (~a transport "://" host ":" port "/" repo
            "/info/refs?service=git-upload-pack"))
-     (define i (parameterize ([current-https-protocol (ssl-context verify?)])
-                 (get-pure-port (string->url url-str)
-                                http-request-headers)))
+     (define-values (i headers)
+       (parameterize ([current-https-protocol (ssl-context verify?)])
+         (get-pure-port/headers (string->url url-str)
+                                http-request-headers
+                                #:redirections 5)))
      (define ok? #f)
      (dynamic-wind
       void
       (lambda ()
-        (unless (regexp-match-peek #px#"^[0-9a-f]{4}#" i)
-          (error 'git-checkout (~a "error reading repository content;\n"
-                                   " response is not consistent with the Git protocol\n"
-                                   "  initial portion: ~s")
-                 (read-bytes 640 i)))
-        (define pkt (read-pkt i))
-        (define term-pkt (read-pkt i))
-        (unless (eof-object? term-pkt)
-          (error 'git-checkout (~a "expected a null packet, received something else\n"
-                                   "  packet: ~s")
-                 term-pkt))
+        (define dumb?
+          (cond
+           [(equal? (extract-field "Content-Type" headers)
+                    "application/x-git-upload-pack-advertisement")
+            ;; "smart" protocol
+            (unless (regexp-match-peek #px#"^[0-9a-f]{4}#" i)
+              (error 'git-checkout (~a "error reading repository content;\n"
+                                       " response is not consistent with the Git protocol\n"
+                                       "  initial portion: ~s")
+                     (read-bytes 640 i)))
+            (define pkt (read-pkt i))
+            (define term-pkt (read-pkt i))
+            (unless (eof-object? term-pkt)
+              (error 'git-checkout (~a "expected a null packet, received something else\n"
+                                       "  packet: ~s")
+                     term-pkt))
+            #f]
+           [else
+            ;; "dumb" protocol
+            #t]))
         (set! ok? #t)
-        (values i (open-output-nowhere)))
+        (values i (open-output-nowhere) dumb?))
       (lambda ()
         (unless ok? (close-input-port i))))]
     [else
@@ -272,8 +296,8 @@
   (filter
    values
    (for/list ([pkt (in-list pkts)])
-     (define m (regexp-match #px#"^([0-9a-fA-F]{40}) ([^\0\n]+)[\0\n]" pkt))
-     (unless m (error 'git-checkout "count not parse ref pkt\n  pkt: ~a"
+     (define m (regexp-match #px#"^([0-9a-fA-F]{40})[ \t]([^\0\n]+)[\0\n]" pkt))
+     (unless m (error 'git-checkout "could not parse ref pkt\n  pkt: ~s"
                       pkt))
      (define name (caddr m))
      (define id (bytes->string/utf-8 (cadr m)))
