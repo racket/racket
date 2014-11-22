@@ -9,6 +9,7 @@
          openssl
          net/url
          net/head
+         net/http-client
          (only-in net/url-connect current-https-protocol))
 
 ;; Stefan Saasen's "Reimplementing 'git clone' in Haskell from the bottom up"
@@ -53,10 +54,6 @@
        (dynamic-wind
         void
         (lambda ()
-          (when (and dumb-protocol? dest-dir)
-            (error 'git-checkout
-                   "server implements dumb protocol, which supports reference discovery only"))
-          
           (status "Getting refs~a" (if dumb-protocol? " [dumb protocol]" ""))
           (write-pkt o
                      "git-upload-pack " "/" repo "\0"
@@ -95,69 +92,76 @@
                                (status "Server does not support `shallow`")
                                #f])))
 
-          ;; Tell the server which commits we need
-          (set!-values (i o) (want-step transport host port repo i o))
-          (for ([want-commit (in-list want-commits)]
-                [pos (in-naturals)])
-            (write-pkt o "want " want-commit (if (zero? pos) " " "") "\n"))
-          (when depth
-            (write-pkt o "deepen " depth "\n"))
-          (write-pkt o)
+          (unless dumb-protocol?
+            ;; Tell the server which commits we need
+            (set!-values (i o) (want-step transport host port repo i o))
+            (for ([want-commit (in-list want-commits)]
+                  [pos (in-naturals)])
+              (write-pkt o "want " want-commit (if (zero? pos) " " "") "\n"))
+            (when depth
+              (write-pkt o "deepen " depth "\n"))
+            (write-pkt o)
 
-          ;; Tell the server that we're ready for the objects
-          (write-pkt o "done\n")
-          (set!-values (i o) (done-step transport host verify? port repo i o))
+            ;; Tell the server that we're ready for the objects
+            (write-pkt o "done\n")
+            (set!-values (i o) (done-step transport host verify? port repo i o))
 
-          (when depth
-            ;; If we wrote `deepen`, then the server replies with `shallow`s.
-            ;; Note that these were available before writing `done` in the
-            ;; case of the 'git transport, but it works here for all transports.
-            (let loop ()
-              (define r (read-pkt i))
-              (cond
-               [(eof-object? r)
-                (void)]
-               [(regexp-match? #rx"^shallow " r)
-                (loop)]
-               [else
-                (error 'git-checkout "expected shallow, got ~s" r)])))
+            (when depth
+              ;; If we wrote `deepen`, then the server replies with `shallow`s.
+              ;; Note that these were available before writing `done` in the
+              ;; case of the 'git transport, but it works here for all transports.
+              (let loop ()
+                (define r (read-pkt i))
+                (cond
+                 [(eof-object? r)
+                  (void)]
+                 [(regexp-match? #rx"^shallow " r)
+                  (loop)]
+                 [else
+                  (error 'git-checkout "expected shallow, got ~s" r)])))
 
-          ;; Tell the server that we're ready for the objects
-          (define nak (read-pkt i))
-          (unless (equal? #"NAK\n" nak)
-            (error 'git-checkout "expected NAK, got ~s" nak))
+            ;; Tell the server that we're ready for the objects
+            (define nak (read-pkt i))
+            (unless (equal? #"NAK\n" nak)
+              (error 'git-checkout "expected NAK, got ~s" nak)))
 
           (make-directory* tmp-dir)
           (define tmp (make-tmp-info tmp-dir #:fresh? #t))
           
+          (define (maybe-save-objects objs fn)
+            (unless clean-tmp-dir?
+              (call-with-output-file*
+               (build-path tmp-dir fn)
+               #:exists 'truncate
+               (lambda (o) (write objs o) (newline o)))))
+          
           (dynamic-wind
            void
            (lambda ()
-             ;; Read packfile pbjects, which are written into
-             ;; `tmp-dir`. If `depth` gives the server trouble,
-             ;; we might get an EOF, in which case we'll try again:
-             (define objs (read-packfile i tmp status
-                                         (and depth
-                                              (lambda ()
-                                                (esc (lambda ()
-                                                       (status "Unexpected EOF; retrying without depth")
-                                                       (retry-loop #f)))))))
+             (define obj-ids
+               (cond
+                [dumb-protocol?
+                 (read-dumb-objects want-commits tmp
+                                    transport host verify? port repo
+                                    status maybe-save-objects)]
+                [else
+                 ;; Read packfile pbjects, which are written into
+                 ;; `tmp-dir`. If `depth` gives the server trouble,
+                 ;; we might get an EOF, in which case we'll try again:
+                 (define objs
+                   (read-packfile i tmp status
+                                  (and depth
+                                       (lambda ()
+                                         (esc (lambda ()
+                                                (status "Unexpected EOF; retrying without depth")
+                                                (retry-loop #f)))))))
 
-             (unless clean-tmp-dir?
-               (call-with-output-file*
-                (build-path tmp-dir "objs")
-                #:exists 'truncate
-                (lambda (o) (write objs o) (newline o))))
+                 (maybe-save-objects objs "objs")
+
+                 ;; Convert deltas into full objects withing `tmp`:
+                 (rewrite-deltas objs tmp status)]))
              
-             ;; Convert deltas into full objects withing `tmp`:
-             (status "Applying deltas")
-             (define obj-ids (rewrite-deltas objs tmp))
-             
-             (unless clean-tmp-dir?
-               (call-with-output-file*
-                (build-path tmp-dir "all-objs")
-                #:exists 'truncate
-                (lambda (o) (write obj-ids o) (newline o))))
+             (maybe-save-objects obj-ids "all-objs")
              
              (define commit
                (or ref-commit
@@ -406,8 +410,9 @@
 
 (struct object (location  ; filename within tmp or position in small-object file
                 type      ; 'blob, 'commit, etc.; see `type-num->sym`
-                type-info ; #f or id
-                id)       ; sha1 as bytes
+                [type-info #:mutable] ; #f, id, or object
+                id        ; sha1 as bytes
+                [undelta #:mutable])
   #:prefab)
 
 ;; read-packfile : input-port tmp-info status-proc (or/c #f (-> any)) -> (listof object)
@@ -424,9 +429,10 @@
     (error 'git-checkout "only version 2 supported"))
   (define count-bstr (read-bytes-exactly 'count 4 i))
   (define count (integer-bytes->integer count-bstr #t #t))
+  (define obj-stream-poses (make-hash)) ; for OBJ_OFS_DELTA references
   (status "Getting ~a objects" count)
   (for/list ([pos (in-range count)])
-    (read-object i pos tmp)))
+    (read-object i tmp obj-stream-poses)))
 
 (define OBJ_COMMIT 1)
 (define OBJ_TREE 2)
@@ -441,9 +447,11 @@
                             OBJ_TAG 'tag
                             OBJ_OFS_DELTA 'ofs-delta
                             OBJ_REF_DELTA 'ref-delta))
+(define valid-types (for/list ([v (in-hash-values type-num->sym)]) v))
 
-;; read-object : input-port integer tmp-info -> object
-(define (read-object i pos tmp)
+;; read-object : input-port tmp-info (hash-of integer obj) -> object
+(define (read-object i tmp obj-stream-poses)
+  (define obj-stream-pos (file-position i))
   (define c (read-byte-only 'type-and-size i))
   (define type (bitwise-and (arithmetic-shift c -4) #x7))
   (when (zero? type) (error 'git-checkout "bad packfile type"))
@@ -458,19 +466,27 @@
      [(ref-delta)
       (read-bytes-exactly 'referenced-id 20 i)]
      [(ofs-delta)
-      (error 'gi-checkout "got OFS delta when we didn't claim to support it")]
+      (define delta (read-offset-integer i))
+      (hash-ref obj-stream-poses (- obj-stream-pos delta)
+                (lambda () (error 'git-checkout "OBJ_OFS_DELTA object not found")))]
      [else #f]))
+  (define obj
+    (save-object (lambda (o) (zlib-inflate i o)) len type-sym type-info tmp))
+  (hash-set! obj-stream-poses obj-stream-pos obj)
+  obj)
+
+;; save-object : (output-port ->) integer symbol any tmp-info -> object
+(define (save-object write-data len type-sym type-info tmp)
   (define filename (~a (case type-sym
-                        [(ref-delta) "delta"]
+                        [(ref-delta ofs-delta) "delta"]
                         [else "obj"])
-                       pos))
+                       (increment-object-count! tmp)))
   (define location
     (call-with-output-object
      tmp
      filename
      len
-     (lambda (o)
-       (zlib-inflate i o))))
+     write-data))
   (construct-object location type-sym type-info len tmp))
 
 ;; To build an `object`, we need to construct a SHA-1 from the object
@@ -484,65 +500,79 @@
              (define prefix (~a type-sym " " size "\0"))
              (sha1-bytes (input-port-append #f
                                             (open-input-string prefix)
-                                            i))))))
+                                            i))))
+          #f))
 
-;; rewrite-deltas : (listof object) -> tmp
+;; rewrite-deltas : (listof object) tmp status -> (hashof bytes object)
 ;; Given a mapping from ids to objects, combine each "delta" file with
 ;; a referenced object to create a new object file. The deltas,
 ;; referenced objects, and generated objects all are in `tmp`. The
 ;; result is an id-to-object mapping that includes all the given
 ;; objects plus the generated ones.
-(define (rewrite-deltas objs tmp)
+(define (rewrite-deltas objs tmp status)
+  (status "Applying deltas")
   (define ids (hash-copy
                (for/hash ([obj (in-list objs)])
                  (values (object-id obj) obj))))
-  (for ([obj (in-list objs)]
-        [pos (in-naturals)])
-    (when (eq? (object-type obj) 'ref-delta)
-      (define base-obj (hash-ref ids (object-type-info obj)))
-      (define new-filename (~a "obj" pos))
-      (call-with-input-object
-       tmp
-       ;; the delta file:
-       (object-location obj)
-       (lambda (i)
-         (call-with-input-object
-          tmp
-          ;; apply delta to this base object:
-          (object-location base-obj)
-          (lambda (src-in)
-            (define src-len (read-integer i))
-            (define dest-len (read-integer i))
-            (define location
-              (call-with-output-object
-               tmp
-               ;; write to this new object:
-               new-filename
-               dest-len
-               (lambda (o)
-                 ;; Each delta command is either "copy" or "insert"
-                 (let loop ()
-                   (define c (read-byte i))
-                   (cond
-                    [(eof-object? c)
-                     (void)]
-                    [(msb-set? c)
-                     ;; Copy
-                     (define src-offset (read-number-by-bits i (bitwise-and c #xF)))
-                     (define raw-src-len (read-number-by-bits i (bitwise-and (arithmetic-shift c -4)
-                                                                             #x7)))
-                     (define src-len (if (zero? raw-src-len) #x10000 raw-src-len))
-                     (file-position src-in src-offset)
-                     (copy-port-n src-in o src-len)
-                     (loop)]
-                    [else
-                     ;; Insert
-                     (copy-port-n i o c)
-                     (loop)])))))
-            ;; Add the geemrated object to our table:
-            (define new-obj (construct-object location (object-type base-obj) #f
-                                              dest-len tmp))
-            (hash-set! ids (object-id new-obj) new-obj)))))))
+  (for ([obj (in-list objs)])
+    (case (object-type obj)
+      [(ref-delta ofs-delta)
+       (define base-obj-id (if (eq? (object-type obj) 'ref-delta)
+                               ;; Base object is referenced directly:
+                               (object-type-info obj)
+                               ;; We have to find the object generated by another
+                               ;; "object", where the "object" may be a delta:
+                               (let ([v (object-type-info obj)])
+                                 (set-object-type-info! obj (object-id v))
+                                 (case (object-type v)
+                                   [(ref-delta ofs-delta) (object-undelta v)]
+                                   [else (object-id v)]))))
+       (define base-obj (hash-ref ids base-obj-id))
+       (define new-filename (~a "obj" (increment-object-count! tmp)))
+       (call-with-input-object
+        tmp
+        ;; the delta file:
+        (object-location obj)
+        (lambda (i)
+          (call-with-input-object
+           tmp
+           ;; apply delta to this base object:
+           (object-location base-obj)
+           (lambda (src-in)
+             (define src-len (read-integer i))
+             (define dest-len (read-integer i))
+             (define location
+               (call-with-output-object
+                tmp
+                ;; write to this new object:
+                new-filename
+                dest-len
+                (lambda (o)
+                  ;; Each delta command is either "copy" or "insert"
+                  (let loop ()
+                    (define c (read-byte i))
+                    (cond
+                     [(eof-object? c)
+                      (void)]
+                     [(msb-set? c)
+                      ;; Copy
+                      (define src-offset (read-number-by-bits i (bitwise-and c #xF)))
+                      (define raw-src-len (read-number-by-bits i (bitwise-and (arithmetic-shift c -4)
+                                                                              #x7)))
+                      (define src-len (if (zero? raw-src-len) #x10000 raw-src-len))
+                      (file-position src-in src-offset)
+                      (copy-port-n src-in o src-len)
+                      (loop)]
+                     [else
+                      ;; Insert
+                      (copy-port-n i o c)
+                      (loop)])))))
+             ;; Add the generated object to our table:
+             (define new-obj (construct-object location (object-type base-obj) #f
+                                               dest-len tmp))
+             (hash-set! ids (object-id new-obj) new-obj)
+             ;; Record undelta id:
+             (set-object-undelta! obj (object-id new-obj))))))]))
   ids)
 
 ;; ----------------------------------------
@@ -574,17 +604,13 @@
   (define obj (hash-ref obj-ids obj-id))
   (case (object-type obj)
     [(commit)
-     (define tree-id-bstr
+     (define-values (tree-id-str parent-id-strs)
        (call-with-input-object
         tmp
         (object-location obj)
         (lambda (i)
-          (define m (regexp-try-match #px"^tree ([0-9a-fA-F]{40})" i))
-          (unless m
-            (error 'git-checkout "cannot extract tree from commit file for ~s"
-                   (bytes->hex-string obj-id)))
-          (cadr m))))
-     (define tree-id (hex-string->bytes (bytes->string/utf-8 tree-id-bstr)))
+          (extract-commit-info i obj-id))))
+     (define tree-id (hex-string->bytes tree-id-str))
      (extract-tree tree-id obj-ids tmp dest-dir)]
     [(tag)
      (define commit-id-bstr
@@ -606,6 +632,28 @@
             (object-type obj)
             (bytes->hex-string obj-id))]))
 
+;; extract-commit-info: input-port bytes -> string (listof string)
+;;  Returns the commit's tree and parent ids.
+;;  The `obj-id` argument is used for error reporting, only.
+(define (extract-commit-info i obj-id)
+  (define m (regexp-try-match #px"^tree ([0-9a-fA-F]{40})" i))
+  (unless m
+    (error 'git-checkout
+           (~a "cannot extract tree from commit file for ~s\n"
+               "  content starts: ~s")
+           (bytes->hex-string obj-id)
+           (peek-bytes 64 0 i)))
+  (values
+   ;; tree id string:
+   (bytes->string/utf-8 (cadr m))
+   ;; Loop for parent ids strings:
+   (let loop ()
+     (define m (regexp-try-match #px"^\nparent ([0-9a-fA-F]{40})" i))
+     (if m
+         (cons (bytes->string/utf-8 (cadr m))
+               (loop))
+         null))))
+
 ;; extract-commit-tree : bytes (hash/c bytes object) tmp-info path -> void
 ;;  Extract the designated tree to `dest-dir`, using objects from `tmp`
 (define (extract-tree tree-id obj-ids tmp dest-dir)
@@ -616,11 +664,8 @@
    (object-location tree-obj)
    (lambda (i)
      (let loop ()
-       (define m (regexp-try-match #px"^([0-7]{3,6}) ([^\0]+)\0" i))
-       (when m
-         (define id (read-bytes-exactly 'id 20 i))
-         (define mode (cadr m))
-         (define fn (bytes->path-element (caddr m)))
+       (define-values (id mode fn) (extract-tree-entry i))
+       (when id
          (define (this-object-location)
            (object-location (hash-ref obj-ids id)))
          (case (datum-intern-literal mode)
@@ -641,10 +686,200 @@
            (error 'extract-tree "unknown mode: ~s" mode)])
          (loop))))))
 
+;; extract-tree-entry: input-port -> bytes-or-#f bytes-or-#f path-or-#f
+(define (extract-tree-entry i)
+  (define m (regexp-try-match #px"^([0-7]{3,6}) ([^\0]+)\0" i))
+  (cond
+   [m
+    (define id (read-bytes-exactly 'id 20 i))
+    (define mode (cadr m))
+    (define fn (bytes->path-element (caddr m)))
+    (values id mode fn)]
+   [else
+    (values #f #f #f)]))
+
+;; ----------------------------------------
+;; ``Dumb'' HTTP(S) server support
+
+;; read-dumb-objects : (listof string) (hash-of string object)
+;;                     symbol string boolean integer string
+;;                     status maybe-save-objects
+;;                     -> (hash-of string object)
+;;  Read the package files available on the server, then round up
+;;  any additional loose objects that we'll need.
+(define (read-dumb-objects id-strs tmp
+                           transport host verify? port repo
+                           status maybe-save-objects)
+  (define conn (http-conn))
+  (http-conn-open! conn
+                   host
+                   #:ssl? (if (eq? transport 'https)
+                              (ssl-context verify?)
+                              #f)
+                   #:port port)
+  
+  (define packfiles
+    (get-packfile-list conn repo))
+  
+  (define packed-objects
+    (for/fold ([objects (hash)]) ([packfile (in-list packfiles)])
+      (read-dumb-packfile packfile objects tmp conn repo status)))
+  
+  (maybe-save-objects packed-objects "packed-objs")
+
+  (status "Downloading loose objects")
+  (define objects
+    (read-dumb-loose-objects id-strs packed-objects (make-hash)
+                             tmp conn repo status))
+  
+  (http-conn-close! conn)
+  
+  (for/hash ([obj (in-hash-values objects)])
+    (values (object-id obj) obj)))
+
+;; get-packfile-list : conn string -> (listof string)
+;;  Get a list of packfiles available from the server
+(define (get-packfile-list conn repo)
+  (define-values (status-line headers i)
+    (http-conn-sendrecv! conn
+                         (~a "/" repo "/objects/info/packs")))
+  (check-status status-line "error getting packfile list")
+  
+  (for/list ([l (in-lines i)]
+             #:unless (equal? l ""))
+    (define m (regexp-match #rx"^P (.*)" l))
+    (unless m (error 'git-checkout "error parsing packfile list line\n  line: ~e" l))
+    (cadr m)))
+
+;; read-dumb-packfile : string (hashof string object) tmp conn strung status
+;;   -> (hashof string object)
+;; Read a packfile and apply its deltas, producing an updated mapping of objects
+;; that we have unpacked so far.
+(define (read-dumb-packfile packfile objects tmp conn repo status)
+  (define-values (status-line headers i)
+    (http-conn-sendrecv! conn
+                         (~a "/" repo "/objects/pack/" packfile)))
+  (check-status status-line (~a "error getting packfile " packfile))
+  
+  (define obj-list (read-packfile i tmp status #f))
+  (define obj-ids (rewrite-deltas obj-list tmp status))
+
+  ;; Add new objects to hash table:
+  (for/fold ([objects objects]) ([obj (in-hash-values obj-ids)])
+    (hash-set objects (bytes->hex-string (object-id obj)) obj)))
+  
+;; read-dumb-loose-objects : (listof string) (hash-of string object)
+;;                           (mutable-hash-of string #t)
+;;                           conn string status
+;;                           -> (hash-of string object)
+;;  Traverse the tree, looking for extra objects (not supplied by a packfile)
+;;  that we need to download
+(define (read-dumb-loose-objects id-strs objects seen tmp conn repo status)
+  (for/fold ([objects objects]) ([id-str (in-list id-strs)])
+    (cond
+     [(hash-ref seen id-str #f) objects]
+     [else
+      (define obj
+        (cond
+         [(hash-ref objects id-str #f)
+          => (lambda (obj) obj)]
+         [else
+          (define-values (status-line headers compressed-i)
+            (http-conn-sendrecv! conn
+                                 (~a "/" repo
+                                     "/objects/" (substring id-str 0 2)
+                                     "/" (substring id-str 2))))
+          (check-status status-line (format "error getting object ~a" id-str))
+          
+          ;; Set up decompression of stream:
+          (define-values (i decompressed-o) (make-pipe 4096))
+          (define exn #f)
+          (define inflate-thread
+            (thread (lambda ()
+                      (dynamic-wind
+                       void
+                       (lambda ()
+                         (with-handlers ([values (lambda (x) (set! exn x))])
+                           (zlib-inflate compressed-i decompressed-o)))
+                       (lambda ()
+                         (close-output-port decompressed-o)
+                         (close-input-port compressed-i))))))
+
+          ;; Parse the object description:
+          (define header-m (regexp-try-match #rx#"^[^\0]*\0" i))
+          (unless header-m
+            (error 'git-checkout "bad initial line for object content"))
+          (define header (car header-m))
+          (define header-len (bytes-length header))
+          (define type-sym (string->symbol
+                            (bytes->string/utf-8 (car (regexp-match #rx"^[^ ]*" header)))))
+          (define data-len (string->number
+                            (bytes->string/utf-8 (cadr (or (regexp-match #rx"[^ ]* ([0-9]+)" header)
+                                                           '(#"" #""))))))        
+          (unless (memq type-sym valid-types)
+            (error 'git-checkout "bad type: ~e" type-sym))
+          
+          (define obj
+            (save-object (lambda (o) (copy-port i o))
+                         data-len type-sym #f tmp))
+          
+          ;; Just in case:
+          (kill-thread inflate-thread)
+          (close-input-port compressed-i)
+          (when exn (raise exn))
+          
+          obj]))
+      
+      ;; Add the (potentially) new object to out table:
+      (define new-objects (hash-set objects id-str obj))
+      (hash-set! seen id-str #t)
+      
+      ;; Inspect the new object, looking for additional objects to download:
+      (define id (object-id obj))
+      (define (call-with-content proc)
+        (call-with-input-object
+         tmp
+         (object-location obj)
+         proc))
+      (define more-id-strs
+        (case (object-type obj)
+          [(commit)
+           (define-values (tree parents)
+             (call-with-content (lambda (i) (extract-commit-info i id))))
+           (cons tree parents)]
+          [(tree)
+           (call-with-content
+            (lambda (i)
+              (let loop ()
+                (define-values (content-id mode fn) (extract-tree-entry i))
+                (cond
+                 [(not content-id) null]
+                 [(equal? mode #"160000")
+                  ;; don't try to get a submodule commit
+                  (loop)]
+                 [else
+                  (cons (bytes->hex-string content-id)
+                        (loop))]))))]
+          [else
+           null]))
+      
+      (read-dumb-loose-objects more-id-strs new-objects seen
+                               tmp conn repo status)])))
+
+;; check-status : string string -> any
+;;  Check an HTTP status result and complain if there's a problem
+(define (check-status status-line msg)      
+  (define status (let ([m (regexp-match #rx"^[^ ]* ([0-9]+)" status-line)])
+                   (and m (string->number (bytes->string/utf-8 (cadr m))))))
+  (unless (memv status '(200))
+    (error 'git-checkout "~a\n  server respone: ~a"
+           msg
+           status-line)))
+
 ;; ----------------------------------------
 ;; Temporary directory & database
 
-(struct tmp-info (dir small-i small-o [pos #:mutable] [flush? #:mutable]))
+(struct tmp-info (dir small-i small-o [pos #:mutable] [flush? #:mutable] [obj-counter #:mutable]))
 
 ;; make-tmp-info : path -> tmp-info
 (define (make-tmp-info tmp-dir #:fresh? [fresh? #f])
@@ -652,12 +887,18 @@
                         (build-path tmp-dir "objs-small")
                         #:exists (if fresh? 'truncate 'update)))
   (file-stream-buffer-mode i 'none)
-  (tmp-info tmp-dir i o 0 #f))
+  (tmp-info tmp-dir i o 0 #f 0))
 
 ;; close-tmp-info : tmp-info -> void
 (define (close-tmp-info tmp)
   (close-input-port (tmp-info-small-i tmp))
   (close-output-port (tmp-info-small-o tmp)))
+
+;; increment-object-count! : tmp-info -> integer
+(define (increment-object-count! tmp)
+  (define n (add1 (tmp-info-obj-counter tmp)))
+  (set-tmp-info-obj-counter! tmp n)
+  n)
 
 ;; call-with-output-object : tmp-info string natural (output-port -> any) -> location
 (define (call-with-output-object tmp filename len proc)
@@ -775,6 +1016,27 @@
       (if (msb-set? c)
           (loop new-amt (+ shift 7))
           new-amt)])))
+
+;; Similar to read-integer, but for (negative) offsets
+(define (read-offset-integer i)
+  (define c (read-byte i))
+  (cond
+   [(eof-object? c) 0]
+   [else
+    (define delta (bitwise-and c #x7F))
+    (cond
+     [(not (msb-set? c)) delta]
+     [else
+      (let loop ([delta delta])
+        (define c (read-byte i))
+        (cond
+         [(eof-object? c) delta]
+         [else
+          (let ([delta (+ (arithmetic-shift (+ delta 1) 7)
+                          (bitwise-and c #x7F))])
+            (if (msb-set? c)
+                (loop delta)
+                delta))]))])]))
 
 ;; Another number format, where a bitmap `n` indicates
 ;; when to read a byte

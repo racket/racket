@@ -7,9 +7,7 @@
 @defmodule[net/git-checkout]{The @racketmodname[net/git-checkout]
 library provides support for extracting a directory tree from a Git
 repository that is hosted by a server that implements the @tt{git://}
-protocol or the ``smart'' protocol over HTTP(S).@margin-note*{The
-``dumb'' protocol over HTTP(S) is supported for reference discovery,
-but not for obtaining repository content.} The
+protocol or its layering over HTTP(S). The
 @racketmodname[net/git-checkout] library does not rely on external
 binaries (such as a @exec{git} client) or Git-specific native
 libraries (such as @filepath{libgit}).}
@@ -50,9 +48,7 @@ a branch, tag, commit ID, or tree ID) is extracted to
 If @racket[transport] is @racket['git], then the server is contacted
 using Git's native transport. If @racket[transport] is
 @racket['http] or @racket['https], then the server is contacted using
-HTTP(S) and the ``smart'' Git protocol; if the server supports only
-the ``dumb'' protocol, then @racket[dest-dir] must be @racket[#f].  In
-the case of @racket['https],
+HTTP(S).  In the case of @racket['https],
 the server's identity is verified unless @racket[verify-server?] is
 false or the @indexed-envvar{GIT_SSL_NO_VERIFY} environment variable
 is set.
