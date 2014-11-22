@@ -1,6 +1,8 @@
 #lang scribble/manual
 @(require scribble/eval
           (for-label data/enumerate
+                     data/enumerate/lib
+                     racket/math
                      racket/contract
                      racket/base))
 
@@ -661,5 +663,57 @@ An @tech{enumeration} of S-expressions.
 @examples[#:eval the-eval
 (approximate any/e 5)
 ]}
+
+@section{Library Enumerations}
+@(the-eval '(require data/enumerate/lib))
+
+@defmodule[data/enumerate/lib]
+
+This library defines some library @tech{enumerations} built on
+@racketmodname[data/enumerate].
+
+@defproc[(permutations-of-n/e [n exact-nonnegative-integer?])
+         enum?]{
+
+Returns an @tech{enumeration} of the permutations of the natural
+numbers smaller than @racket[n].
+
+@examples[#:eval the-eval
+(approximate (permutations-of-n/e 3) 5)
+]}
+
+@defproc[(permutations/e [l list?])
+         enum?]{
+
+Returns an @tech{enumeration} of the permutations of @racket[l].
+
+@examples[#:eval the-eval
+(approximate (permutations/e '(Brian Jenny Ted Ki)) 5)
+]}
+
+@defproc[(infinite-sequence/e [e enum?])
+         enum?]{
+
+Returns an @tech{enumeration} of infinite sequences of elements of
+@racket[e]. (Unfortunately, @racket[encode] does not work on this
+@tech{enumeration}, for reasons you may be able to predict.)
+
+The infinite sequence corresponding to the natural number @racket[_n]
+is based on dividing the bits of @racket[(* (+ 1 _n) pi)] into chunks
+of bits where the largest value is @racket[(size e)]. Since
+@racket[(* (+ 1 _n) pi)] has infinite digits, there are infinitely
+many such chunks. Since @racket[*] is defined on all naturals, there
+are infinitely many such numbers. The generation of the sequence is
+efficient in the sense that the digits are generated incrementally
+without needing to go deeper. The generation of the sequence is
+inefficient in the sense that the approximation of @racket[(* (+ 1 _n)
+pi)] gets larger and larger as you go deeper into the sequence.
+
+@examples[#:eval the-eval
+(define bjtk/e (from-list/e '(Brian Jenny Ted Ki)))
+(define bjtks/e (infinite-sequence/e bjtk/e))
+(for ([e (from-nat bjtks/e 42)]
+      [i (in-range 10)])
+  (printf "~a = ~a\n" i e))]}
 
 @close-eval[the-eval]
