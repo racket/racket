@@ -4,12 +4,15 @@
          racket/format
          racket/match
          racket/list
-         "download.rkt")
+         "../name.rkt"
+         "download.rkt"
+         "desc.rkt")
 
 (provide split-github-url
          split-git-url
          split-git-or-hub-url
-         enclosing-path-for-repo)
+         enclosing-path-for-repo
+         real-git-url)
 
 (define (split-github-url pkg-url)
   (if (equal? (url-scheme pkg-url) "github")
@@ -56,3 +59,16 @@
       (if (not (path? base))
           (error "path for git repo link is too short for path in package source")
           (loop (cdr path) base))])))
+
+(define (real-git-url pkg-url host port repo)
+  (url->string
+   (if (equal? "github" (url-scheme pkg-url))
+       ;; Convert "github://" to a real URL:
+       (url "https" #f host port #t
+            (map (lambda (s) (path/param s null)) (string-split repo "/"))
+            null
+            #f)
+       ;; Drop any query or fragment in the URL:
+       (struct-copy url pkg-url
+                    [query null]
+                    [fragment #f]))))

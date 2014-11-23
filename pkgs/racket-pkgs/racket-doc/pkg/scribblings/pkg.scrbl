@@ -383,8 +383,14 @@ sub-commands.
      If a given @nonterm{pkg-source} is ``auto-installed'' (to satisfy some other package's
      dependency), then it is promoted to explicitly installed.
 
-     If no @nonterm{pkg-source}s are supplied, the current directory is
-     installed as a link. See the @DFlag{link} flag below for more details.
+     If no @nonterm{pkg-source}s are supplied and the @DFlag{clone}
+     flag is not supplied, the current directory is installed as a
+     link. See the @DFlag{link} flag below for more details.
+
+     If no @nonterm{pkg-source}s are supplied and the @DFlag{clone}
+     flag is supplied, then the clone directory's name is used as the
+     only @nonterm{pkg-source} argument. See the @DFlag{clone} flag
+     below for more details.
 
  The @exec{install} sub-command accepts 
  the following @nonterm{option}s:
@@ -454,11 +460,15 @@ sub-commands.
         source} is cloned as @nonterm{dir} and locally linked as the
         package implementation. Multiple @nonterm{pkg-source}
         arguments make sense only if they all specify the same Git
-        repository (with different paths in the repository). The
+        repository (with different paths into the repository). The
         @DFlag{clone} flag implies @DFlag{type} in the sense that each
         @nonterm{pkg-source} must be either a Git or GitHub
-        @tech{package source}.  See @secref["git-workflow"] for more
-        information.}
+        @tech{package source} or a @tech{package name}, where a
+        @tech{package name} must be mapped by the @tech{package catalog} to a
+        Git or GitHub @tech{package source}. If no
+        @nonterm{pkg-source} is supplied, then the last path element
+        of @nonterm{dir} is used as a package name and used as a
+        @nonterm{pkg-source} argument.}
 
   @item{@DFlag{binary} --- Strips source elements of a package before installing, and implies @DFlag{copy}.}
 
@@ -503,6 +513,29 @@ sub-commands.
 
   @item{@DFlag{no-cache} --- Disables use of the download cache.}
 
+  @item{@DFlag{multi-clone} @nonterm{mode} --- Specifies the handling
+   of packages that are from the same Git repository but are installed
+   with different clone-linking modes or different clone directories.
+   (See also @secref["git-workflow"].)
+   The following modes are available:
+   @itemlist[
+
+      @item{@exec{fail} --- Reports an error and cancels the installation (the default mode).}
+
+      @item{@exec{force} --- Allows packages to have different clone-linking modes or clone directories.}
+
+      @item{@exec{convert} --- Converts non-clone-linked packages (either newly or previously installed)
+                               to clone-linked packages, assuming that the packages that are clone-linked
+                               all use the same clone directory. If clone-linked packages currently use
+                               different clone directories, installation fails.}
+
+      @item{@exec{ask} --- In the case when packages can be converted, ask the user whether to convert
+                           or allow the different clone-linking modes or clone directories. If converting
+                           is not an option, the installation fails.}
+
+    ]}
+
+
   @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
@@ -511,7 +544,8 @@ sub-commands.
   @item{@DFlag{fail-fast} --- Breaks @exec{raco setup} as soon as any error is encountered.}
  ]
 
-@history[#:changed "6.1.1.5" @elem{Added the @DFlag{clone} flag.}]}
+@history[#:changed "6.1.1.5" @elem{Added the @DFlag{clone} and
+                                   @DFlag{multi-clone} flags.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ... 
@@ -526,7 +560,10 @@ the given @nonterm{pkg-source}s.
 
 If no @racket{pkg-source}, @DFlag{all} or @Flag{a} flag, or
 @DFlag{clone} flag is specified, and if the current directory is
-within a package, then the enclosing package is updated.
+within a package, then the enclosing package is updated. If no
+@racket{pkg-source} is specified, but @DFlag{clone} is supplied, then
+the clone directory's name is used as the only @racket{pkg-source}
+argument.
 
  The @exec{update} sub-command accepts 
  the following @nonterm{option}s:
@@ -550,14 +587,12 @@ within a package, then the enclosing package is updated.
  @item{@DFlag{link} --- Same as for @command-ref{install}.}
  @item{@DFlag{static-link} --- Same as for @command-ref{install}.}
  @item{@DFlag{clone} @nonterm{dir} --- Same as for
-    @command-ref{install}, except that a @nonterm{pkg-source} can be
-    the name of an installed package. In that case, the package must
-    be currently installed from a Git or GitHub source---possibly as
-    directed by a catalog---and that
-    source is used for the clone (which replaces the existing package
-    installation). If no @nonterm{pkg-source} is supplied, then
-    the last path element of @nonterm{dir} is used as a package name
-    and used as a @nonterm{pkg-source} argument.}
+    @command-ref{install}, except that a @nonterm{pkg-source} as a
+    @tech{package name} is treated as the name of an installed
+    package. In that case, the package must be currently installed
+    from a Git or GitHub source---possibly as directed by a
+    catalog---and that source is used for the clone (which replaces
+    the existing package installation).}
  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
  @item{@DFlag{copy} --- Same as for @command-ref{install}.}
  @item{@DFlag{source} --- Same as for @command-ref{install}.}
@@ -571,15 +606,15 @@ within a package, then the enclosing package is updated.
  @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
  @item{@DFlag{strict-doc-conflicts} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
+ @item{@DFlag{multi-clone} @nonterm{mode} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
 
-@history[#:changed "6.1.1.5" @elem{Added the @DFlag{clone} flag, and added
-                                   update of enclosing package when no
-                                   arguments are provided.}]
-
-}
+@history[#:changed "6.1.1.5" @elem{Added the @DFlag{clone} and
+                                   @DFlag{multi-clone} flags, and
+                                   added update of enclosing package
+                                   when no arguments are provided.}]}
 
 @subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. By default, if a package is the dependency

@@ -229,6 +229,7 @@ is true, error messages may suggest specific command-line flags for
                            [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                            [#:force-strip? force-string? boolean? #f]
+                           [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
                            [#:link-dirs? link-dirs? boolean? #f])
          (or/c 'skip
                #f
@@ -244,6 +245,11 @@ The @racket[link-dirs?] argument determines whether package sources
 inferred to be directory paths should be treated as links or copied
 (like other package sources). Note that the default is @racket[#f],
 unlike the default built into @racket[pkg-install-command].
+
+A @racket[package-desc] can have the type @racket['clone] and a source
+with the syntax of a package name, in which case it refers to a
+@tech{package name} that must be mapped to a Git repository by the
+@tech{package catalog}, and in will be installed as a clone.
 
 Status information and debugging details are mostly reported to a logger
 named @racket['pkg], but information that is especially relevant to a
@@ -270,6 +276,7 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:from-command-line? from-command-line? boolean? #f]
                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                           [#:force-strip? force-string? boolean? #f]
+                          [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
                           [#:link-dirs? link-dirs? boolean? #f])
         (or/c 'skip
               #f
@@ -282,10 +289,10 @@ Implements @racket[pkg-update-command]. The result is the same as for
 A string in @racket[names] refers to an installed package that should
 be checked for updates. A @racket[pkg-desc] in @racket[names]
 indicates a package source that should replace the current
-installation, except that a @racket[package-desc] can have the type
-@racket['clone] and a source with the syntax of a package name, in
-which case it refers to an existing package installation that should
-be converted to a Git repository clone.
+installation; as an exception, if a @racket[package-desc] has the type
+@racket['clone] and a source with the syntax of a package name, it
+refers to an existing package installation that should be converted to
+a Git repository clone.
 
 If @racket[from-command-line?]  is true, error messages may suggest
 specific command-line flags for @command-ref{update}.

@@ -44,7 +44,7 @@
            [(list 'static-link path) (values (path->complete-string path) 'static-link #f)]
            [(list 'clone path url) (values url 'clone (enclosing-path-for-repo
                                                        url
-                                                       (path->complete-path path)))]))
+                                                       (path->complete-path path installed-dir)))]))
        (pkg-desc source type name #f #f dir))
      string<?
      #:key pkg-desc-name))

@@ -104,7 +104,8 @@
                         #:use-cache? boolean?
                         #:strip (or/c #f 'source 'binary 'binary-lib)
                         #:force-strip? boolean?
-                        #:link-dirs? boolean?)
+                        #:link-dirs? boolean?
+                        #:multi-clone-behavior (or/c 'fail 'force 'convert 'ask))
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-remove
    (->* ((listof string?))
@@ -134,7 +135,8 @@
                         #:from-command-line? boolean?
                         #:strip (or/c #f 'source 'binary 'binary-lib)
                         #:force-strip? boolean?
-                        #:link-dirs? boolean?)
+                        #:link-dirs? boolean?
+                        #:multi-clone-behavior (or/c 'fail 'force 'convert 'ask))
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-migrate
    (->* (string?)

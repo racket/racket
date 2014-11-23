@@ -28,17 +28,21 @@
          "collects.rkt"
          "addl-installs.rkt"
          "repo-path.rkt"
+         "clone-path.rkt"
          "orig-pkg.rkt"
          "git.rkt")
 
 (provide pkg-install
          pkg-update)
 
-(define (checksum-for-pkg-source pkg-source type pkg-name given-checksum download-printf)
+(define (checksum-for-pkg-source pkg-source type pkg-name given-checksum download-printf
+                                 #:catalog-lookup-cache [catalog-lookup-cache #f])
   (case type
     [(file-url dir-url github git clone)
      (or given-checksum
-	 (remote-package-checksum `(url ,pkg-source) download-printf pkg-name #:type type))]
+	 (remote-package-checksum `(url ,pkg-source) download-printf pkg-name
+                                  #:type type
+                                  #:catalog-lookup-cache catalog-lookup-cache))]
     [(file)
      (define checksum-pth (format "~a.CHECKSUM" pkg-source))
      (or (and (file-exists? checksum-pth)
@@ -47,7 +51,9 @@
 	      (call-with-input-file* pkg-source sha1)))]
     [(name)
      (or given-checksum
-         (remote-package-checksum `(catalog ,pkg-source) download-printf pkg-name #:type type))]
+         (remote-package-checksum `(catalog ,pkg-source) download-printf pkg-name
+                                  #:type type
+                                  #:catalog-lookup-cache catalog-lookup-cache))]
     [else given-checksum]))
 
 (define (disallow-package-path-overlaps pkg-name
@@ -99,26 +105,6 @@
                    other-pkg
                    other-dir)))))
 
-
-
-(define (ask question)
-  (let loop ()
-    (printf question)
-    (printf " [Y/n/a/?] ")
-    (flush-output)
-    (match (string-trim (read-line (current-input-port) 'any))
-      [(or "y" "Y" "")
-       'yes]
-      [(or "n" "N")
-       'no]
-      [(or "a" "A")
-       'always-yes]
-      [x
-       (eprintf "Invalid answer: ~a\n" x)
-       (eprintf " Answer nothing or `y' or `Y' for \"yes\", `n' or `N' for \"no\", or\n")
-       (eprintf " `a' or `A' for \"yes for all\".\n")
-       (loop)])))
-
 (define (format-deps update-deps)
   (format-list (for/list ([ud (in-list update-deps)])
                  (cond
@@ -140,7 +126,9 @@
          #:update-deps? update-deps?
          #:update-implies? update-implies?
          #:update-cache update-cache
-         #:updating? updating?
+         #:catalog-lookup-cache catalog-lookup-cache
+         #:updating? updating-all?
+         #:extra-updating extra-updating
          #:ignore-checksums? ignore-checksums?
          #:use-cache? use-cache?
          #:skip-installed? skip-installed?
@@ -154,6 +142,7 @@
          #:link-dirs? link-dirs?
          #:local-docs-ok? local-docs-ok?
          #:ai-cache ai-cache
+         #:clone-info clone-info
          descs)
   (define download-printf (if quiet? void printf/flush))
   (define check-sums? (not ignore-checksums?))
@@ -203,6 +192,9 @@
                                           pkg-dir)
                                       path-pkg-cache
                                       simultaneous-installs))
+    
+    (define updating? (or updating-all?
+                          (hash-ref extra-updating pkg-name #f)))
     (cond
       [(and (not updating?)
             (hash-ref all-db pkg-name #f)
@@ -215,7 +207,7 @@
         [(and (pkg-info-auto? existing-pkg-info)
               (not (pkg-desc-auto? desc))
               ;; Don't confuse a promotion request with a different-source install:
-              (equal? (pkg-info-orig-pkg existing-pkg-info) orig-pkg)
+              (same-orig-pkg? (pkg-info-orig-pkg existing-pkg-info) orig-pkg)
               ;; Also, make sure it's installed in the scope that we're changing:
               (hash-ref current-scope-db pkg-name #f))
          ;; promote an auto-installed package to a normally installed one
@@ -377,16 +369,19 @@
                        (format-list unsatisfied-deps))]
            ['search-auto
             ;; (show-dependencies unsatisfied-deps #f #t)
-            (raise (vector updating? infos pkg-name unsatisfied-deps void 'always-yes))]
+            (raise (vector updating? infos pkg-name unsatisfied-deps void 'always-yes clone-info))]
            ['search-ask
             (show-dependencies unsatisfied-deps #f #f)
             (case (if (eq? conversation 'always-yes)
                       'always-yes
                       (ask "Would you like to install these dependencies?"))
               [(yes)
-               (raise (vector updating? infos pkg-name unsatisfied-deps void 'again))]
+               (raise (vector updating? infos pkg-name unsatisfied-deps void 'again clone-info))]
               [(always-yes)
-               (raise (vector updating? infos pkg-name unsatisfied-deps void 'always-yes))]
+               (raise (vector updating? infos pkg-name unsatisfied-deps void 'always-yes clone-info))]
+              [(cancel)
+               (clean!)
+               (pkg-error "canceled")]
               [(no)
                (clean!)
                (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))])]))]
@@ -415,6 +410,7 @@
                                                          #:implies? update-implies?
                                                          #:update-cache update-cache
                                                          #:namespace metadata-ns
+                                                         #:catalog-lookup-cache catalog-lookup-cache
                                                          #:all-platforms? all-platforms?
                                                          #:ignore-checksums? ignore-checksums?
                                                          #:use-cache? use-cache?
@@ -429,7 +425,8 @@
                  (define (continue conversation)
                    (raise (vector #t infos pkg-name update-pkgs
                                   (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) update-pkgs))
-                                  conversation)))
+                                  conversation
+                                  clone-info)))
                  (match (if (andmap (lambda (dep) (set-member? implies (pkg-desc-name dep)))
                                     update-pkgs)
                             'search-auto
@@ -446,6 +443,9 @@
                        (continue 'again)]
                       [(always-yes)
                        (continue 'always-yes)]
+                      [(cancel)
+                       (clean!)
+                       (pkg-error "canceled")]
                       [(no)
                        ;; Don't fail --- just skip update
                        #f])])))))
@@ -519,6 +519,7 @@
                                                                #:implies? update-implies?
                                                                #:update-cache update-cache
                                                                #:namespace metadata-ns
+                                                               #:catalog-lookup-cache catalog-lookup-cache
                                                                #:all-platforms? all-platforms?
                                                                #:ignore-checksums? ignore-checksums?
                                                                #:use-cache? use-cache?
@@ -532,16 +533,19 @@
                (report-mismatch update-deps)]
               ['search-auto
                (show-dependencies update-deps #t #t)
-               (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'always-yes))]
+               (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'always-yes clone-info))]
               ['search-ask
                (show-dependencies update-deps #t #f)
                (case (if (eq? conversation 'always-yes)
                          'always-yes
                          (ask "Would you like to update these dependencies?"))
                  [(yes)
-                  (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'again))]
+                  (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'again clone-info))]
                  [(always-yes)
-                  (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'always-yes))]
+                  (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'always-yes clone-info))]
+                 [(cancel)
+                  (clean!)
+                  (pkg-error "canceled")]
                  [(no)
                   (clean!)
                   (report-mismatch update-deps)])]))]
@@ -601,6 +605,7 @@
                           #:use-cache? use-cache?
                           check-sums? download-printf
                           metadata-ns
+                          #:catalog-lookup-cache catalog-lookup-cache
                           #:strip strip-mode
                           #:force-strip? force-strip?
                           #:link-dirs? link-dirs?)))
@@ -672,15 +677,19 @@
     ;; already set up:
     (and (hash-ref current-scope-db (install-info-name info) #f) #t))
 
+  
+  (define updating-any?
+    (or updating-all? (positive? (hash-count extra-updating))))
+  
   (define setup-collects
     (let ([db (read-pkg-db)])
-      (get-setup-collects ((if updating?
+      (get-setup-collects ((if updating-any?
                                (make-close-over-depending (read-pkg-db)
                                                           post-metadata-ns
                                                           all-platforms?)
                                values)
                            (map install-info-name
-                                (if updating?
+                                (if updating-any?
                                     all-infos
                                     (filter-not is-promote? all-infos))))
                           db
@@ -688,7 +697,7 @@
 
   (cond
    [(or (null? repo+do-its)
-        (and (not updating?) (andmap is-promote? all-infos)))
+        (and (not updating-any?) (andmap is-promote? all-infos)))
     ;; No actions, so no setup:
     'skip]
    [else
@@ -750,9 +759,9 @@
 (define (snoc l x)
   (append l (list x)))
 
-(define (pkg-install descs
+(define (pkg-install given-descs
                      #:old-infos [old-infos empty]
-                     #:old-auto+pkgs [old-descs empty]
+                     #:old-descs [old-descs empty]
                      #:all-platforms? [all-platforms? #f]
                      #:force? [force #f]
                      #:ignore-checksums? [ignore-checksums? #f]
@@ -764,6 +773,7 @@
                      #:update-deps? [update-deps? #f]
                      #:update-implies? [update-implies? #t]
                      #:update-cache [update-cache (make-hash)]
+                     #:catalog-lookup-cache [catalog-lookup-cache (make-hash)]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
                      #:from-command-line? [from-command-line? #f]
@@ -771,28 +781,44 @@
                      #:strip [strip-mode #f]
                      #:force-strip? [force-strip? #f]
                      #:link-dirs? [link-dirs? #f]
-                     #:summary-deps [summary-deps empty])
-  (define new-descs
+                     #:summary-deps [summary-deps empty]
+                     #:multi-clone-behavior [old-clone-behavior 'fail]
+                     #:repo-descs [old-repo-descs (initial-repo-descs
+                                                   (read-pkg-db)
+                                                   (if quiet? void printf))])
+  (define download-printf (if quiet? void printf))
+  
+  (define descs
+    (map (convert-clone-name-to-clone-repo/install catalog-lookup-cache
+                                                   download-printf)
+         given-descs))
+  
+  (define filtered-descs
     (remove-duplicates
      (if (not skip-installed?)
          descs
          (let ([db (read-pkg-db)])
            (filter (lambda (d)
-                     (define pkg-name
-                       (or (pkg-desc-name d)
-                           (package-source->name (pkg-desc-source d) 
-                                                 (pkg-desc-type d))))
+                     (define pkg-name (desc->name d))
                      (define i (hash-ref db pkg-name #f))
                      (or (not i) (pkg-info-auto? i)))
                    descs)))
      pkg-desc=?))
+  (define-values (new-descs done-descs done-infos clone-behavior repo-descs
+                            extra-updating)
+    (adjust-to-normalize-repos filtered-descs old-descs old-infos
+                               old-clone-behavior old-repo-descs
+                               updating?
+                               catalog-lookup-cache
+                               download-printf
+                               from-command-line?))
   (with-handlers* ([vector?
                     (match-lambda
-                     [(vector updating? new-infos dep-pkg deps more-pre-succeed conv)
+                     [(vector updating? new-infos dep-pkg deps more-pre-succeed conv clone-info)
                       (pkg-install
-                       #:summary-deps (snoc summary-deps  (vector dep-pkg deps))
+                       #:summary-deps (snoc summary-deps (vector dep-pkg deps))
                        #:old-infos new-infos
-                       #:old-auto+pkgs (append old-descs new-descs)
+                       #:old-descs (append done-descs new-descs)
                        #:all-platforms? all-platforms?
                        #:force? force
                        #:ignore-checksums? ignore-checksums?
@@ -802,19 +828,22 @@
                        #:update-deps? update-deps?
                        #:update-implies? update-implies?
                        #:update-cache update-cache
+                       #:catalog-lookup-cache catalog-lookup-cache
                        #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
                        #:updating? updating?
                        #:conversation conv
                        #:strip strip-mode
                        #:force-strip? force-strip?
+                       #:multi-clone-behavior (vector-ref clone-info 0)
+                       #:repo-descs (vector-ref clone-info 1)
                        (for/list ([dep (in-list deps)])
                          (if (pkg-desc? dep)
                              dep
                              (pkg-desc dep #f #f #f #t #f))))])])
     (begin0
       (install-packages
-       #:old-infos old-infos
-       #:old-descs old-descs
+       #:old-infos done-infos
+       #:old-descs done-descs
        #:all-platforms? all-platforms?
        #:force? force
        #:ignore-checksums? ignore-checksums?
@@ -824,8 +853,13 @@
        #:update-deps? update-deps?
        #:update-implies? update-implies?
        #:update-cache update-cache
-       #:pre-succeed pre-succeed
+       #:catalog-lookup-cache catalog-lookup-cache
+       #:pre-succeed (λ ()
+                       (for ([pkg-name (in-hash-keys extra-updating)])
+                         ((remove-package quiet?) pkg-name))
+                       (pre-succeed))
        #:updating? updating?
+       #:extra-updating extra-updating
        #:quiet? quiet?
        #:from-command-line? from-command-line?
        #:conversation conversation
@@ -834,6 +868,8 @@
        #:link-dirs? link-dirs?
        #:local-docs-ok? (not strict-doc-conflicts?)
        #:ai-cache (box #f)
+       #:clone-info (vector clone-behavior
+                            repo-descs)
        new-descs)
       (unless (empty? summary-deps)
         (unless quiet?
@@ -868,6 +904,7 @@
                              #:deps? deps?
                              #:implies? implies?
                              #:namespace metadata-ns 
+                             #:catalog-lookup-cache catalog-lookup-cache
                              #:update-cache update-cache
                              #:all-platforms? all-platforms?
                              #:ignore-checksums? ignore-checksums?
@@ -892,7 +929,8 @@
                                                   type
                                                   name
                                                   (pkg-desc-checksum pkg-name)
-                                                  download-printf))
+                                                  download-printf
+                                                  #:catalog-lookup-cache catalog-lookup-cache))
     (hash-set! update-cache name new-checksum) ; record downloaded checksum
     (unless (or ignore-checksums? (not (pkg-desc-checksum pkg-name)))
       (unless (equal? (pkg-desc-checksum pkg-name) new-checksum)
@@ -933,6 +971,7 @@
                                  #:implies? implies?
                                  #:update-cache update-cache
                                  #:namespace metadata-ns
+                                 #:catalog-lookup-cache catalog-lookup-cache
                                  #:all-platforms? all-platforms?
                                  #:ignore-checksums? ignore-checksums?
                                  #:use-cache? use-cache?
@@ -989,7 +1028,8 @@
                (values (cadr orig-pkg) #f #f)))
          (define new-checksum
            (or (hash-ref update-cache pkg-name #f)
-               (remote-package-checksum orig-pkg download-printf pkg-name)))
+               (remote-package-checksum orig-pkg download-printf pkg-name
+                                        #:catalog-lookup-cache catalog-lookup-cache)))
          ;; Record downloaded checksum:
          (hash-set! update-cache pkg-name new-checksum)
          (or (and new-checksum
@@ -1012,6 +1052,7 @@
                                       #:implies? implies?
                                       #:update-cache update-cache
                                       #:namespace metadata-ns
+                                      #:catalog-lookup-cache catalog-lookup-cache
                                       #:all-platforms? all-platforms?
                                       #:ignore-checksums? ignore-checksums?
                                       #:use-cache? use-cache?
@@ -1037,7 +1078,8 @@
                     #:from-command-line? [from-command-line? #f]
                     #:strip [strip-mode #f]
                     #:force-strip? [force-strip? #f]
-                    #:link-dirs? [link-dirs? #f])
+                    #:link-dirs? [link-dirs? #f]
+                    #:multi-clone-behavior [clone-behavior 'fail])
   (define download-printf (if quiet? void printf))
   (define metadata-ns (make-metadata-namespace))
   (define db (read-pkg-db))
@@ -1046,6 +1088,7 @@
                 [all-mode? (hash-keys db)]
                 [else in-pkgs]))
   (define update-cache (make-hash))
+  (define catalog-lookup-cache (make-hash))
   (define to-update (append-map (packages-to-update download-printf db
                                                     #:must-update? (not all-mode?)
                                                     #:deps? (or update-deps? 
@@ -1053,12 +1096,13 @@
                                                     #:implies? update-implies?
                                                     #:update-cache update-cache
                                                     #:namespace metadata-ns
+                                                    #:catalog-lookup-cache catalog-lookup-cache
                                                     #:all-platforms? all-platforms?
                                                     #:ignore-checksums? ignore-checksums?
                                                     #:use-cache? use-cache?
                                                     #:from-command-line? from-command-line?
                                                     #:link-dirs? link-dirs?)
-                                (map (convert-clone-name-to-clone-repo db)
+                                (map (convert-clone-name-to-clone-repo/update db)
                                      pkgs)))
   (cond
     [(empty? pkgs)
@@ -1088,6 +1132,7 @@
       #:update-deps? update-deps?
       #:update-implies? update-implies?
       #:update-cache update-cache
+      #:catalog-lookup-cache catalog-lookup-cache
       #:quiet? quiet?
       #:from-command-line? from-command-line?
       #:strip strip-mode
@@ -1098,57 +1143,8 @@
       #:strict-doc-conflicts? strict-doc-conflicts?
       #:use-cache? use-cache?
       #:link-dirs? link-dirs?
+      #:multi-clone-behavior clone-behavior
       to-update)]))
-
-;; If `pkg` is a description with the type 'clone, but its syntax
-;; matches a ackage name, then infer a repo from the current package
-;; installation and return an alternate description.
-(define ((convert-clone-name-to-clone-repo db) pkg-name)
-  (cond
-   [(and (pkg-desc? pkg-name)
-         (eq? 'clone (pkg-desc-type pkg-name))
-         (let-values ([(name type) (package-source->name+type (pkg-desc-source pkg-name) 'name)])
-           name))
-    => (lambda (name)
-         ;; Infer or complain
-         (define info (package-info name #:db db))
-         (unless info
-           (pkg-error (~a "package is not currently installed\n"
-                          "  package: ~a")
-                      name))
-         (define new-pkg-name
-           (match (pkg-info-orig-pkg info)
-             [`(clone ,path ,url-str)
-              (pkg-error (~a "package is already a linked repository clone\n"
-                             "  package: ~a")
-                         name)]
-             [`(catalog ,lookup-name ,url-str)
-              ;; Found a catalog-based installation that can be converted
-              ;; to a clone:
-              (pkg-desc url-str 'clone name
-                        (pkg-desc-checksum pkg-name)
-                        (pkg-desc-auto? pkg-name)
-                        (pkg-desc-extra-path pkg-name))]
-             [`(url ,url-str)
-              (define-values (current-name current-type)
-                (package-source->name+type url-str #f))
-              (case current-type
-                [(git github)
-                 ;; found a repo URL
-                 (pkg-desc url-str 'clone name
-                           (pkg-desc-checksum pkg-name)
-                           (pkg-desc-auto? pkg-name)
-                           (pkg-desc-extra-path pkg-name))]
-                [else #f])]
-             [else #f]))
-         (unless new-pkg-name
-           (pkg-error (~a "package is not currently installed from a repository\n"
-                          "  package: ~a\n"
-                          "  current installation: ~a")
-                      name
-                      (pkg-info-orig-pkg info)))
-         new-pkg-name)]
-   [else pkg-name]))
 
 ;; ----------------------------------------
 
@@ -1157,4 +1153,3 @@
                        #:when (string? v))
               k))
   (for ([k (in-list l)]) (hash-remove! update-cache k)))
-

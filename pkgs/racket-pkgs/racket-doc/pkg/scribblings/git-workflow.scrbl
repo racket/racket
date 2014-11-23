@@ -66,7 +66,9 @@ develops only a few of them. The intended workflow is as follows:
   @commandline{@command{update} --clone @nonterm{dir} @nonterm{git-pkg-source}}
 
   which discards the original installation of the package and replaces
-  it with a local clone as @nonterm{dir}.}
+  it with a local clone as @nonterm{dir}. (As a convenience, when
+  @nonterm{git-pkg-source} and the last element of @nonterm{dir} are
+  the same, then @nonterm{git-pkg-source} can be omitted.)}
 
  @item{Manage changes to each of the developed packages in the usual
   way with @exec{git} tools, but @command-ref{update} is also available
@@ -80,8 +82,8 @@ affects the branch used for the initial checkout, while a non-empty
 path causes a subdirectory of the checkout to be linked for the
 package.
 
-The package developer will work with both @exec{git} tools and
-@exec{raco pkg} tools, and the tools interact in specific ways:
+The @exec{git} tools and @exec{raco pkg} tools interact in specific
+ways:
 
 @itemlist[
 
@@ -93,20 +95,25 @@ The package developer will work with both @exec{git} tools and
        already as @nonterm{dir}, then it is left in place and any new
        commits are fetched from @nonterm{git-pkg-source}. The package
        manager does not attempt to check whether a pre-existing
-       repository is consistent with @nonterm{git-pkg-source}; it
-       simply starts fetching new commits to the repository, and a
+       @nonterm{dir} is consistent with @nonterm{git-pkg-source}; it
+       simply starts fetching new commits to @nonterm{dir}, and a
        later @exec{git pull --ff-only} will detect any mismatch.
 
        Multiple @nonterm{git-pkg-source}s can be provided to
-       @command-ref{install}, which makes sense when multiple packages are
-       sourced from the same repository and can therefore share
+       @command-ref{install}, which makes sense when multiple packages
+       are sourced from the same repository and can therefore share
        @nonterm{dir}.  Whether through a single @exec{raco pkg} use or
        multiple uses with the same @exec{--clone @nonterm{dir}},
        packages from the same repository should be linked from the
-       same local clone, assuming that they are in the same repository
-       because they should be modified together. The package system,
-       however, makes no requirement of clone sharing among the
-       packages.}
+       same local clone (assuming that they are in the same repository
+       because they should be modified together). The package system
+       does not inherently require clone sharing among the packages,
+       but since non-sharing or inconsistent installation modes could
+       be confusing, @command-ref{install} and @command-ref{update}
+       reject non-sharing or inconsistent installations unless
+       overridden with @DFlag{multi-clone}. In typical cases,
+       @exec{@DFlag{multi-clone} ask} or @exec{@DFlag{multi-clone}
+       convert} can automatically fix inconsistencies.}
 
  @item{When pulling changes to repositories that have local copies,
        @command-ref{update} pulls changes with the equivalent of @exec{git

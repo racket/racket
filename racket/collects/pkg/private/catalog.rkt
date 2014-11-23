@@ -12,6 +12,7 @@
 (provide select-info-version
          source->relative-source
          package-catalog-lookup
+         package-catalog-lookup-source
          get-all-pkg-names-from-catalogs
          get-pkg-details-from-catalogs
          get-all-pkg-details-from-catalogs
@@ -126,42 +127,57 @@
         ;; No further adjustments:
         new-ht)))
 
-(define (package-catalog-lookup pkg details? download-printf)
+(define (package-catalog-lookup pkg details? cache download-printf)
+  (when (and details? cache)
+    (error "internal error: catalog-lookup cache doesn't keep details"))
   (or
-   (for/or ([i (in-list (pkg-catalogs))])
-     (if download-printf
-         (download-printf "Resolving ~s via ~a\n" pkg (url->string i))
-         (log-pkg-debug "consulting catalog ~a" (url->string i)))
-     (source->absolute-source
-      i
-      (select-info-version
-       (catalog-dispatch
-        i
-        ;; Server:
-        (lambda (i)
-          (define addr (add-version-query
-                        (combine-url/relative i (format "pkg/~a" pkg))))
-          (log-pkg-debug "resolving via ~a" (url->string addr))
-          (read-from-server
-           'package-catalog-lookup
-           addr
-           (lambda (v) (and (hash? v)
-                            (for/and ([k (in-hash-keys v)])
-                              (symbol? k))))
-           (lambda (s) #f)))
-        ;; Local database:
-        (lambda ()
-          (define pkgs (db:get-pkgs #:name pkg))
-          (and (pair? pkgs)
-               (db-pkg-info (car pkgs) details?)))
-        ;; Local directory:
-        (lambda (path)
-          (define pkg-path (build-path path "pkg" pkg))
-          (and (file-exists? pkg-path)
-               (call-with-input-file* pkg-path read)))))))
+   (and cache
+        (hash-ref cache pkg #f))
+   (add-to-cache
+    pkg cache
+    (for/or ([i (in-list (pkg-catalogs))])
+      (if download-printf
+          (download-printf "Resolving ~s via ~a\n" pkg (url->string i))
+          (log-pkg-debug "consulting catalog ~a" (url->string i)))
+      (source->absolute-source
+       i
+       (select-info-version
+        (catalog-dispatch
+         i
+         ;; Server:
+         (lambda (i)
+           (define addr (add-version-query
+                         (combine-url/relative i (format "pkg/~a" pkg))))
+           (log-pkg-debug "resolving via ~a" (url->string addr))
+           (read-from-server
+            'package-catalog-lookup
+            addr
+            (lambda (v) (and (hash? v)
+                        (for/and ([k (in-hash-keys v)])
+                          (symbol? k))))
+            (lambda (s) #f)))
+         ;; Local database:
+         (lambda ()
+           (define pkgs (db:get-pkgs #:name pkg))
+           (and (pair? pkgs)
+                (db-pkg-info (car pkgs) details?)))
+         ;; Local directory:
+         (lambda (path)
+           (define pkg-path (build-path path "pkg" pkg))
+           (and (file-exists? pkg-path)
+                (call-with-input-file* pkg-path read))))))))
    (pkg-error (~a "cannot find package on catalogs\n"
                   "  package: ~a")
               pkg)))
+
+(define (package-catalog-lookup-source pkg cache download-printf)
+  (hash-ref (package-catalog-lookup pkg #f cache download-printf)
+            'source))
+
+(define (add-to-cache pkg cache v)
+  (when (and cache v)
+    (hash-set! cache pkg v))
+  v)
 
 (define (read-from-server who url pred
                           [failure
@@ -254,7 +270,7 @@
 
 (define (get-pkg-details-from-catalogs name)
   (for/or ([i (in-list (pkg-catalogs))])
-    (package-catalog-lookup name #t #f)))
+    (package-catalog-lookup name #t #f #f)))
 
 (define (get-all-pkg-details-from-catalogs)
   (for/fold ([ht (hash)]) ([i (in-list (pkg-catalogs))])

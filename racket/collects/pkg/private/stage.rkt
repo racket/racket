@@ -37,10 +37,14 @@
 
 (struct install-info (name orig-pkg directory git-directory clean? checksum module-paths additional-installs))
 
-(define (remote-package-checksum pkg download-printf pkg-name #:type [type #f])
+(define (remote-package-checksum pkg download-printf pkg-name
+                                 #:type [type #f]
+                                 #:catalog-lookup-cache [catalog-lookup-cache #f])
   (match pkg
     [`(catalog ,pkg-name . ,_)
-     (hash-ref (package-catalog-lookup pkg-name #f download-printf) 'checksum)]
+     (hash-ref (package-catalog-lookup pkg-name #f catalog-lookup-cache
+                                       download-printf)
+               'checksum)]
     [`(url ,pkg-url-str)
      (package-url->checksum pkg-url-str
                             #:type type
@@ -64,6 +68,7 @@
                             check-sums?
                             download-printf
                             metadata-ns
+                            #:catalog-lookup-cache [catalog-lookup-cache #f]
                             #:strip [strip-mode #f]
                             #:force-strip? [force-strip? #f]
                             #:in-place? [in-place? #f]
@@ -106,18 +111,7 @@
     (define pkg-url (string->url pkg))
     (define-values (host port repo branch path)
       (split-git-or-hub-url pkg-url))
-    (define pkg-no-query
-      (url->string
-       (if (equal? "github" (url-scheme pkg-url))
-           ;; Convert "github://" to a real URL:
-           (url "https" #f host port #t
-                (map (lambda (s) (path/param s null)) (string-split repo "/"))
-                null
-                #f)
-           ;; Drop any query or fragment in the URL:
-           (struct-copy url pkg-url
-                        [query null]
-                        [fragment #f]))))
+    (define pkg-no-query (real-git-url pkg-url host port repo))
     (define clone-dir (or given-at-dir
                           (current-directory)))
 
@@ -570,7 +564,8 @@
                       (directory->module-paths pkg-dir pkg-name metadata-ns)
                       (directory->additional-installs pkg-dir pkg-name metadata-ns))]))]
    [(eq? type 'name)
-    (define catalog-info (package-catalog-lookup pkg #f download-printf))
+    (define catalog-info (package-catalog-lookup pkg #f catalog-lookup-cache
+                                                 download-printf))
     (log-pkg-debug "catalog response: ~s" catalog-info)
     (define source (hash-ref catalog-info 'source))
     (define checksum (hash-ref catalog-info 'checksum))
@@ -583,6 +578,7 @@
                                      check-sums?
                                      download-printf
                                      metadata-ns
+                                     #:catalog-lookup-cache catalog-lookup-cache
                                      #:strip strip-mode
                                      #:force-strip? force-strip?))
     (when check-sums?
