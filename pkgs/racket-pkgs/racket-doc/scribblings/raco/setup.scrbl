@@ -215,6 +215,10 @@ flags:
  @item{@DFlag{avoid-main} --- refrain from any setup actions that
   affect the installation, as opposed to user-specific actions.}
 
+ @item{@DFlag{force-user-docs} --- when building documentation, create
+  a user-specific documentation entry point even if it has the same
+  content as the main installation.}
+
 ]}
 @item{Selecting parallelism and other build modes:
 @itemize[
@@ -277,9 +281,10 @@ collections during an install:
 
    @commandline{env PLT_SETUP_OPTIONS="-j 1" make install}
 
-@history[#:changed "1.2" @elem{Added the @DFlag{pkgs},
+@history[#:changed "6.1" @elem{Added the @DFlag{pkgs},
                                @DFlag{check-pkg-deps}, and
-                               @DFlag{fail-fast} flags.}]
+                               @DFlag{fail-fast} flags.}
+         #:changed "6.1.1" @elem{Added the @DFlag{force-user-docs} flag.}]
 
 @; ------------------------------------------------------------------------
 
@@ -742,6 +747,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
                 [#:avoid-main? avoid-main? any/c #f]
                 [#:make-docs? make-docs? any/c #t]
                 [#:make-doc-index? make-doc-index? any/c #f]
+                [#:force-user-docs? force-user-docs? any/c #f]
                 [#:clean? clean? any/c #f]
                 [#:tidy? tidy? any/c #f]
                 [#:jobs jobs exact-nonnegative-integer? #f]
@@ -770,9 +776,13 @@ Runs @exec{raco setup} with various options:
  @item{@racket[make-docs?] --- if @racket[#f], disables any
        documentation-specific setup actions}
 
- @item{@racket[make-doc-index?] --- if @racket[#t], builds
+ @item{@racket[make-doc-index?] --- if true, builds
        documentation index collections in addition to @racket[collections],
        assuming that documentation is built}
+
+ @item{@racket[force-user-docs?] --- if true, then when building
+       documentation, create a user-specific documentation entry point
+       even if it has the same content as the installation}
 
  @item{@racket[clean?] --- if true, enables cleaning mode instead of setup mode}
 
@@ -792,7 +802,11 @@ Runs @exec{raco setup} with various options:
 ]
 
 The result is @racket[#t] if @exec{raco setup} completes without error,
-@racket[#f] otherwise.}
+@racket[#f] otherwise.
+
+@history[#:changed "6.1" @elem{Added the @racket[fail-fast?] argument.}
+         #:changed "6.1.1" @elem{Added the @racket[force-user-docs?] argument.}]}
+
 
 
 @subsection{@exec{raco setup} Unit}
@@ -1637,3 +1651,23 @@ the regexp matches @racket[(path->string sys-lib-subpath)],
 
 Like @racket[load-xref], but automatically find all cross-reference files for
 manuals that have been installed with @exec{raco setup}.}
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "materialize-user-docs"]{API for Materializing User-Specific Documentation}
+
+@defmodule[setup/materialize-user-docs]
+
+@history[#:added "1.1"]
+
+@defproc[(materialize-user-docs [on-setup ((-> boolean?) -> any) (lambda (setup) (setup))])
+         void?]{
+
+Checks whether a user-specific documentation entry point already
+exists with @racket[(find-user-doc-dir)], and if not, runs @exec{raco
+setup} in a mode that will create the entry point (to have the same
+content as the installation's documentation entry point.)
+
+The run of @exec{raco setup} is packaged in a thunk that is provided to
+@racket[on-setup], which can adjust the current output and error ports
+as appropriate and check the thunk's result for success.}

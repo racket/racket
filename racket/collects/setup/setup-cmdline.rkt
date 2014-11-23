@@ -107,6 +107,8 @@
       (add-flags '((make-planet #f)))]
      [("--avoid-main") "Do not make main-installation files"
       (add-flags '((avoid-main-installation #t)))]
+     [("--force-user-docs") "User-specific documentation even if matching installation"
+      (add-flags '((force-user-docs #t)))]
      #:help-labels
      " ------------------------------ modes ------------------------------ "
      #:once-each

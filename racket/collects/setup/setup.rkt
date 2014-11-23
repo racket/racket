@@ -17,6 +17,7 @@
                #:clean? [clean? #f]
                #:tidy? [tidy? #f]
                #:avoid-main? [avoid-main? #f]
+               #:force-user-docs? [force-user-docs? #f]
                #:jobs [parallel #f]
                #:fail-fast? [fail-fast? #f])
   (parameterize 
@@ -46,6 +47,8 @@
     [make-tidy (if tidy? #t (make-tidy))]
 
     [avoid-main-installation (if avoid-main? #t (avoid-main-installation))]
+
+    [force-user-docs (if force-user-docs? #t (force-user-docs))]
 
     [fail-fast fail-fast?]
     

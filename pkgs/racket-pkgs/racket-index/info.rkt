@@ -11,6 +11,8 @@
 
 (define pkg-authors '(eli jay matthias mflatt robby ryanc samth))
 
+(define version "1.1")
+
 ;; We need to be able to re-render this documentation even in
 ;; binary mode, since that's how we list new documentation:
 (define binary-keep-files '("scribblings"

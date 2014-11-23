@@ -89,11 +89,13 @@
 (define (info<? a b)
   (doc<? (info-doc a) (info-doc b)))
 
-(define (filter-user-docs docs make-user?)
+(define (filter-user-docs docs make-user? always-user?)
   (cond ;; Specifically disabled user stuff, filter
    [(not make-user?) (filter main-doc? docs)]
    ;; If we've built user-specific before, keep building
-   [(file-exists? (build-path (find-user-doc-dir) "index.html")) docs]
+   [(or always-user?
+        (file-exists? (build-path (find-user-doc-dir) "index.html")))
+    docs]
    ;; Otherwise, see if we need it:
    [(ormap (lambda (doc)
              (not (or (doc-under-main? doc)
@@ -137,9 +139,9 @@
          program-name       ; name of program that calls setup-scribblings
          only-dirs          ; limits doc builds
          latex-dest         ; if not #f, generate Latex output
-         auto-start-doc?    ; if #t, expands `only-dir' with [user-]start to
-                                        ;  catch new docs
+         auto-start-doc?    ; if #t, expands `only-dir' with [user-]start to catch new docs
          make-user?         ; are we making user stuff?
+         always-user?       ; make user-specific even if otherwise unneeded
          tidy?              ; clean up, even beyond `only-dirs'
          avoid-main?        ; avoid main collection, even for `tidy?'
          with-record-error  ; catch & record exceptions
@@ -221,7 +223,8 @@
                          (values k #t))]
             [infos (map get-info/full (map directory-record-path recs))])
        (filter-user-docs (append-map (get-docs main-dirs) infos recs)
-                         make-user?))
+                         make-user?
+                         always-user?))
      doc<?))
   (define-values (main-docs user-docs) (partition doc-under-main? docs))
   (define main-doc-exists? (ormap (lambda (d) (member 'main-doc-root (doc-flags d))) 
@@ -272,7 +275,8 @@
                               (and tidy? (not avoid-main?)))))
   (define auto-user? (and auto-start-doc? 
                           (or (ormap can-build*? user-docs)
-                              (and tidy? make-user?))))
+                              (and tidy? make-user?)
+                              always-user?)))
   (define (can-build**? doc) (can-build? only-dirs doc auto-main? auto-user?))
   
   (unless latex-dest
