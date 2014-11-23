@@ -34,6 +34,7 @@
          check-not-eqv?
          check-not-equal?
          check-match
+         check-match/values
          fail)
 
 ;; default-check-handler : any -> any
@@ -316,9 +317,42 @@
               (make-check-actual actual-val)
               (make-check-expected 'expected))
         (lambda ()
-         (check-true (match actual-val
-                       [expected pred]
-                       [_ #f]))))))]
+          (check-not-false (match actual-val
+                             [expected pred]
+                             [_ #f]))))))]
     [(_ actual expected)
      (syntax/loc stx (check-match actual expected #t))]))
+
+(define-syntax check-match/values
+  (lambda (stx)
+    (syntax-case stx (values)
+      [(check-match/values actual (values expected ...))
+       (syntax/loc stx (check-match/values actual (values expected ...) #:when #t))]
+      [(check-match/values actual (values expected ...) #:unless unless-condition)
+       (syntax/loc stx (check-match/values actual (values expected ...) #:when (not unless-condition)))]
+      [(check-match/values actual (values expected ...) #:when pred)
+       (quasisyntax
+        (let ([actual-lst (call-with-values (λ () actual) list)])
+          (with-check-info*
+           (list (make-check-name 'check-match/values)
+                 (make-check-location
+                  (list '#,(syntax-source stx)
+                        '#,(syntax-line stx)
+                        '#,(syntax-column stx)
+                        '#,(syntax-position stx)
+                        '#,(syntax-span stx)))
+                 (make-check-expression '#,(syntax->datum stx))
+                 (make-check-actual (cons 'values (map printed actual-lst)))
+                 (make-check-expected '(values expected ...)))
+           (lambda ()
+             (check-not-false (match actual-lst
+                                [(list expected ...) pred]
+                                [_ #f]))))))])))
+
+(struct printed (val) #:transparent
+  #:property prop:custom-write
+  (lambda (this out mode)
+    (if (integer? mode)
+        (print (printed-val this) out mode)
+        (print (printed-val this) out))))
 

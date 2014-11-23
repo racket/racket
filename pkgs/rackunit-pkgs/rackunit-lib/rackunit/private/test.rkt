@@ -106,6 +106,7 @@
          check-not-equal?
          check-regexp-match
          check-match
+         check-match/values
          fail)
 
 (define (void-thunk) (void))

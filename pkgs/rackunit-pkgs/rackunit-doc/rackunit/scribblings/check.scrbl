@@ -17,7 +17,7 @@ information detailing the failure.
 
 Although checks are implemented as macros, which is
 necessary to grab source location, they are conceptually
-functions (with the exception of @racket[check-match] below).
+functions (with the exception of @racket[check-match] and @racket[check-match/values] below).
 This means, for instance, checks always evaluate
 their arguments.  You can use checks as first class
 functions, though you will lose precision in the reported
@@ -221,6 +221,15 @@ This check fails because of a failure to match:
 @interaction[#:eval rackunit-eval
   (check-match (list 1 2) (list x) (odd? x))
 ]
+
+}
+
+@defform*[#:literals (values)
+          ((check-match/values expr (values pattern ...))
+           (check-match/values expr (values pattern ...) #:when pred)
+           (check-match/values expr (values pattern ...) #:unless pred))]{
+
+Like @racket[check-match], except handling multiple values.  
 
 }
 
