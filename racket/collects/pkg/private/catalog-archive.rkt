@@ -78,7 +78,7 @@
         ;; Download/unpack existing package:
         (define-values (staged-name staged-dir staged-checksum clean? staged-mods)
           (pkg-stage
-           (pkg-desc (db:pkg-source pkg) #f (db:pkg-name pkg) (db:pkg-checksum pkg) #f)
+           (pkg-desc (db:pkg-source pkg) #f (db:pkg-name pkg) (db:pkg-checksum pkg) #f #f)
            #:in-place? #t
            #:use-cache? #t
            #:quiet? quiet?))

@@ -98,7 +98,7 @@
                     #:log-debug-string (lambda (s) (log-pkg-debug s))))))
 
 
-(define (download-repo! url host repo dest-dir checksum
+(define (download-repo! url host port repo dest-dir checksum
                         #:download-printf [download-printf #f]
                         #:use-cache? [use-cache? #t])
   (log-pkg-debug "\t\tDownloading ~a to ~a" (url->string url) dest-dir)
@@ -107,7 +107,7 @@
   (define unpacked? #f)
   
   (define (download!)
-    (git-checkout host repo
+    (git-checkout host #:port port repo
                   #:dest-dir dest-dir
                   #:ref checksum
                   #:status-printf (or download-printf void)

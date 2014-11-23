@@ -175,7 +175,7 @@
        (let ()
          (match-define (pkg-info orig-pkg checksum _) info)
          (match orig-pkg
-           [`(,(or 'link 'static-link) ,orig-pkg-dir)
+           [`(,(or 'link 'static-link 'clone) ,orig-pkg-dir . ,_)
             (path->complete-path orig-pkg-dir (pkg-installed-dir))]
            [_
             (build-path (pkg-installed-dir) 

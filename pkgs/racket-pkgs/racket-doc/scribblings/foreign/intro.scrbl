@@ -2,7 +2,8 @@
 @(require "utils.rkt"
           scribble/racket
           (for-syntax racket/base)
-          (for-label ffi/unsafe/define))
+          (for-label ffi/unsafe/define
+                     ffi/unsafe/alloc))
 
 @(define-syntax _MEVENT (make-element-id-transformer
                          (lambda (stx) #'@schemeidfont{_MEVENT})))

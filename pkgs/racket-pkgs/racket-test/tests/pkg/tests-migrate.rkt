@@ -15,12 +15,12 @@
               (hasheq 'checksum
                       (file->string "test-pkgs/pkg-b-second.plt.CHECKSUM")
                       'source
-                      "http://localhost:9999/pkg-b-second.plt"))
+                      "http://localhost:9997/pkg-b-second.plt"))
    (hash-set! *index-ht-1* "pkg-a"
               (hasheq 'checksum
                       (file->string "test-pkgs/pkg-a-first.plt.CHECKSUM")
                       'source
-                      "http://localhost:9999/pkg-a-first.plt"))
+                      "http://localhost:9997/pkg-a-first.plt"))
    $ "raco pkg install -u --deps search-auto pkg-b" =exit> 0
    $ "raco pkg show -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+    \\(catalog pkg-a\\)\npkg-b +[a-f0-9]+ +\\(catalog pkg-b\\)\n"
    $ (~a "racket"

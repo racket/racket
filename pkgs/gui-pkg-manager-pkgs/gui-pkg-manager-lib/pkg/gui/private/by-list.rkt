@@ -28,6 +28,7 @@
         [(catalog) ""]
         [(link) "="]
         [(static-link) "="]
+        [(clone) "="]
         [(url) "@"])))
 
 (define by-list-panel%
