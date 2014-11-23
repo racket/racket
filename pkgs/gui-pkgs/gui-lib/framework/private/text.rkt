@@ -2559,7 +2559,8 @@
         (queue-callback
          (λ ()
            (do-insertion txts #f)
-           (sync signal)))))
+           (sync signal))
+         #f)))
     
     ;; do-insertion : (listof (cons (union string snip) style-delta)) boolean -> void
     ;; thread: eventspace main thread
@@ -2630,7 +2631,7 @@
                   (handle-evt
                    (alarm-evt (+ last-flush msec-timeout))
                    (λ (_)
-                     (define-values (viable-bytes remaining-queue)
+                     (define-values (viable-bytes remaining-queue remaining-empty?)
                        (split-queue converter text-to-insert))
                      ;; we always queue the work here since the 
                      ;; always event means no one waits for the callback
@@ -2639,10 +2640,27 @@
               (handle-evt
                flush-chan
                (λ (return-evt/to-insert-chan)
-                 (define-values (viable-bytes remaining-queue) (split-queue converter text-to-insert))
-                 (if (channel? return-evt/to-insert-chan)
-                     (channel-put return-evt/to-insert-chan viable-bytes) 
-                     (queue-insertion viable-bytes return-evt/to-insert-chan))
+                 (define remaining-queue #f)
+                 (define viable-bytess
+                   (let loop ([q text-to-insert])
+                     (define-values (viable-bytes next-remaining-queue remaining-empty?)
+                       (split-queue converter q))
+                     (cond
+                       [remaining-empty?
+                        (set! remaining-queue next-remaining-queue)
+                        (list viable-bytes)]
+                       [else (cons viable-bytes (loop next-remaining-queue))])))
+                 (cond
+                   [(channel? return-evt/to-insert-chan)
+                    (channel-put return-evt/to-insert-chan viable-bytess)]
+                   [else
+                    (let loop ([viable-bytess viable-bytess])
+                      (cond
+                        [(null? (cdr viable-bytess))
+                         (queue-insertion (car viable-bytess) return-evt/to-insert-chan)]
+                        [else
+                         (queue-insertion (car viable-bytess) always-evt)
+                         (loop (cdr viable-bytess))]))])
                  (loop remaining-queue (current-inexact-milliseconds))))
               (handle-evt
                clear-output-chan
@@ -2664,7 +2682,7 @@
                                 last-flush))]
                      [else
                       (let ([chan (make-channel)])
-                        (let-values ([(viable-bytes remaining-queue) 
+                        (let-values ([(viable-bytes remaining-queue remaining-empty?)
                                       (split-queue converter new-text-to-insert)])
                           (if return-chan
                               (channel-put return-chan viable-bytes)
@@ -2704,7 +2722,8 @@
           [(eq? (current-thread) (eventspace-handler-thread eventspace))
            (define to-insert-channel (make-channel))
            (thread (λ () (channel-put flush-chan to-insert-channel)))
-           (do-insertion (channel-get to-insert-channel) #f)]
+           (for ([ele (in-list (channel-get to-insert-channel))])
+             (do-insertion ele #f))]
           [else
            (sync
             (nack-guard-evt
@@ -2824,41 +2843,71 @@
     
     
     ;; split-queue : converter (queue (cons (union snip bytes) style) 
-    ;;            -> (values (listof (queue (cons (union snip bytes) style)) queue)
+    ;;            -> (values (listof (queue (cons (union snip bytes) style))
+    ;;                       queue
+    ;;                       boolean)
     ;; this function must only be called on the output-buffer-thread
     ;; extracts the viable bytes (and other stuff) from the front of the queue
     ;; and returns them as strings (and other stuff).
+    ;; the boolean result indicates that either the queue is empty or the remaining
+    ;;   bytes are not enough to actually build a character.
     (define/private (split-queue converter q)
+      
+      ;; this number based on testing in drracket's REPL
+      ;; the number can be 10x bigger if you use a vanilla
+      ;; text, but something about something in how DrRacket's
+      ;; styles or something else is set up makes this number
+      ;; take more like 20-60 msec per event (on my laptop)
+      ;; for a bytes containing all (char->integer #\a)s. Random
+      ;; bytes are slower, but probably that's not the common case.
+      (define too-many-bytes 1000)
+      
       (define lst (at-queue->list q))
       (let loop ([lst lst] [acc null])
         (cond
           [(null? lst)
            (values (reverse acc)
-                   (empty-at-queue))]
+                   (empty-at-queue)
+                   #t)]
           [else
            (define-values (front rest) (peel lst))
            (cond
              [(not front) (values (reverse acc)
-                                  (empty-at-queue))]
+                                  (empty-at-queue)
+                                  #t)]
              [(bytes? (car front))
               (define the-bytes (car front))
               (define key (cdr front))
               (cond
-                [(null? rest)
+                [(or (null? rest)
+                     (> (bytes-length the-bytes) too-many-bytes))
+                 (define remainder-re-enqueued (list->at-queue rest))
+                 (define-values (tail-queue short-enough-bytes)
+                   (cond
+                     [(< (bytes-length the-bytes) too-many-bytes)
+                      (values remainder-re-enqueued the-bytes)]
+                     [else
+                      (define leftovers (subbytes the-bytes
+                                                  too-many-bytes
+                                                  (bytes-length the-bytes)))
+                      (values (at-enqueue (cons leftovers key) remainder-re-enqueued)
+                              (subbytes the-bytes 0 too-many-bytes))]))
                  (define-values (converted-bytes src-read-k termination)
-                   (bytes-convert converter the-bytes))
+                   (bytes-convert converter short-enough-bytes))
                  (cond
                    [(eq? termination 'aborts)
                     (values (reverse (cons (cons (bytes->string/utf-8 converted-bytes) key) acc))
                             (at-enqueue 
-                             (cons (subbytes the-bytes
+                             (cons (subbytes short-enough-bytes
                                              src-read-k
-                                             (bytes-length the-bytes))
+                                             (bytes-length short-enough-bytes))
                                    key)
-                             (empty-at-queue)))]
+                             tail-queue
+                             (> (bytes-length the-bytes) too-many-bytes)))]
                    [else
                     (values (reverse (cons (cons (bytes->string/utf-8 converted-bytes) key) acc))
-                            (empty-at-queue))])]
+                            tail-queue
+                            (> (bytes-length the-bytes) too-many-bytes))])]
                 [else
                  (define-values (converted-bytes src-read-k termination)
                    (bytes-convert converter the-bytes))
@@ -3232,76 +3281,6 @@
     (port-count-lines! p)
     (values p read-chan clear-input-chan)))
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; queues
-;;
-(define-struct at-queue (front back count) #:mutable)
-(define (empty-at-queue) (make-at-queue '() '() 0))
-(define (at-enqueue e q) (make-at-queue 
-                          (cons e (at-queue-front q))
-                          (at-queue-back q)
-                          (+ (at-queue-count q) 1)))
-(define (at-queue-first q)
-  (at-flip-around q)
-  (let ([back (at-queue-back q)])
-    (if (null? back)
-        (error 'at-queue-first "empty queue")
-        (car back))))
-(define (at-queue-rest q)
-  (at-flip-around q)
-  (let ([back (at-queue-back q)])
-    (if (null? back)
-        (error 'queue-rest "empty queue")
-        (make-at-queue (at-queue-front q)
-                       (cdr back)
-                       (- (at-queue-count q) 1)))))
-(define (at-flip-around q)
-  (when (null? (at-queue-back q))
-    (set-at-queue-back! q (reverse (at-queue-front q)))
-    (set-at-queue-front! q '())))
-
-(define (at-queue-empty? q) (zero? (at-queue-count q)))
-(define (at-queue-size q) (at-queue-count q))
-
-;; queue->list : (queue x) -> (listof x)
-;; returns the elements in the order that successive deq's would have
-(define (at-queue->list q) 
-  (let ([ans (append (at-queue-back q) (reverse (at-queue-front q)))])
-    (set-at-queue-back! q ans)
-    (set-at-queue-front! q '())
-    ans))
-
-;; dequeue-n : queue number -> queue
-(define (at-dequeue-n queue n)
-  (let loop ([q queue]
-             [n n])
-    (cond
-      [(zero? n) q]
-      [(at-queue-empty? q) (error 'dequeue-n "not enough!")]
-      [else (loop (at-queue-rest q) (- n 1))])))
-
-;; peek-n : queue number -> queue
-(define (at-peek-n queue init-n)
-  (let loop ([q queue]
-             [n init-n])
-    (cond
-      [(zero? n) 
-       (when (at-queue-empty? q)
-         (error 'peek-n "not enough; asked for ~a but only ~a available" 
-                init-n 
-                (at-queue-size queue)))
-       (at-queue-first q)]
-      [else 
-       (when (at-queue-empty? q)
-         (error 'dequeue-n "not enough!"))
-       (loop (at-queue-rest q) (- n 1))])))
-
-;;
-;;  end queue abstraction
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #| 
 === AUTOCOMPLETE ===
@@ -4541,3 +4520,93 @@ designates the character that triggers autocompletion
                 (list '(#"x" . one) '((#"y" . two))))
   (check-equal? (peek-lst (list (cons #"x" 'one) (cons #"y" 'one) (cons #"z" 'two)))
                 (list '(#"xy" . one) '((#"z" . two)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; queues
+;;
+(define-struct at-queue (front back count) #:mutable)
+(define (empty-at-queue) (make-at-queue '() '() 0))
+(define (at-enqueue e q) (make-at-queue
+                          (cons e (at-queue-front q))
+                          (at-queue-back q)
+                          (+ (at-queue-count q) 1)))
+(define (at-queue-first q)
+  (at-flip-around q)
+  (let ([back (at-queue-back q)])
+    (if (null? back)
+        (error 'at-queue-first "empty queue")
+        (car back))))
+(define (at-queue-rest q)
+  (at-flip-around q)
+  (let ([back (at-queue-back q)])
+    (if (null? back)
+        (error 'queue-rest "empty queue")
+        (make-at-queue (at-queue-front q)
+                       (cdr back)
+                       (- (at-queue-count q) 1)))))
+(define (at-flip-around q)
+  (when (null? (at-queue-back q))
+    (set-at-queue-back! q (reverse (at-queue-front q)))
+    (set-at-queue-front! q '())))
+
+(define (at-queue-empty? q) (zero? (at-queue-count q)))
+(define (at-queue-size q) (at-queue-count q))
+
+;; queue->list : (queue x) -> (listof x)
+;; returns the elements in the order that successive deq's would have
+(define (at-queue->list q) 
+  (let ([ans (append (at-queue-back q) (reverse (at-queue-front q)))])
+    (set-at-queue-back! q ans)
+    (set-at-queue-front! q '())
+    ans))
+
+(define (list->at-queue l) (make-at-queue '() l (length l)))
+
+;; dequeue-n : queue number -> queue
+(define (at-dequeue-n queue n)
+  (let loop ([q queue]
+             [n n])
+    (cond
+      [(zero? n) q]
+      [(at-queue-empty? q) (error 'dequeue-n "not enough!")]
+      [else (loop (at-queue-rest q) (- n 1))])))
+
+;; peek-n : queue number -> queue
+(define (at-peek-n queue init-n)
+  (let loop ([q queue]
+             [n init-n])
+    (cond
+      [(zero? n) 
+       (when (at-queue-empty? q)
+         (error 'peek-n "not enough; asked for ~a but only ~a available" 
+                init-n 
+                (at-queue-size queue)))
+       (at-queue-first q)]
+      [else 
+       (when (at-queue-empty? q)
+         (error 'dequeue-n "not enough!"))
+       (loop (at-queue-rest q) (- n 1))])))
+
+;;
+;;  end queue abstraction
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(module+ test
+  (check-equal? (let* ([q1 (empty-at-queue)]
+                       [q2 (at-enqueue 1 q1)])
+                  (at-queue-first q2))
+                1)
+  (check-equal? (let* ([q1 (empty-at-queue)]
+                       [q2 (at-enqueue 1 q1)])
+                  (list (at-queue-size q1)
+                        (at-queue-size q2)))
+                (list 0 1))
+  (check-equal? (let* ([q1 (empty-at-queue)]
+                       [q2 (at-enqueue 1 q1)]
+                       [q3 (at-enqueue 2 q2)]
+                       [q4 (at-enqueue 3 q3)])
+                  (at-queue->list q4))
+                '(1 2 3))
+  (check-equal? (at-queue->list (list->at-queue '(1 2 3)))
+                '(1 2 3)))
