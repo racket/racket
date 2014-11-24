@@ -201,6 +201,8 @@
                                               (max (*i scale h) 1))])
            (cairo_surface_flush s)
            (cond
+            [(not (zero? (cairo_surface_status s)))
+             #f]
             [(cairo_image_surface_get_data s)
              (cond
               [b&w?

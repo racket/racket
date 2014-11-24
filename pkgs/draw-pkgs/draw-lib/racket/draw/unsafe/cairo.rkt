@@ -109,6 +109,8 @@
 
 (define-cairo cairo_get_target (_cfun _cairo_t -> _cairo_surface_t)) ;; not an allocator
 
+(define-cairo cairo_surface_status (_cfun _cairo_surface_t -> _int))
+
 (define-cairo cairo_surface_get_type (_cfun _cairo_surface_t -> _int))
 
 ;; Context
