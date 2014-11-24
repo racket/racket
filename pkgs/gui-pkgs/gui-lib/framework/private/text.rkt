@@ -2631,7 +2631,7 @@
                   (handle-evt
                    (alarm-evt (+ last-flush msec-timeout))
                    (λ (_)
-                     (define-values (viable-bytes remaining-queue remaining-empty?)
+                     (define-values (viable-bytes remaining-queue flush-keep-trying?)
                        (split-queue converter text-to-insert))
                      ;; we always queue the work here since the 
                      ;; always event means no one waits for the callback
@@ -2643,13 +2643,14 @@
                  (define remaining-queue #f)
                  (define viable-bytess
                    (let loop ([q text-to-insert])
-                     (define-values (viable-bytes next-remaining-queue remaining-empty?)
+                     (define-values (viable-bytes next-remaining-queue flush-keep-trying?)
                        (split-queue converter q))
                      (cond
-                       [remaining-empty?
+                       [flush-keep-trying?
+                        (cons viable-bytes (loop next-remaining-queue))]
+                       [else
                         (set! remaining-queue next-remaining-queue)
-                        (list viable-bytes)]
-                       [else (cons viable-bytes (loop next-remaining-queue))])))
+                        (list viable-bytes)])))
                  (cond
                    [(channel? return-evt/to-insert-chan)
                     (channel-put return-evt/to-insert-chan viable-bytess)]
@@ -2682,7 +2683,7 @@
                                 last-flush))]
                      [else
                       (let ([chan (make-channel)])
-                        (let-values ([(viable-bytes remaining-queue remaining-empty?)
+                        (let-values ([(viable-bytes remaining-queue flush-keep-trying?)
                                       (split-queue converter new-text-to-insert)])
                           (if return-chan
                               (channel-put return-chan viable-bytes)
@@ -2849,8 +2850,8 @@
     ;; this function must only be called on the output-buffer-thread
     ;; extracts the viable bytes (and other stuff) from the front of the queue
     ;; and returns them as strings (and other stuff).
-    ;; the boolean result indicates that either the queue is empty or the remaining
-    ;;   bytes are not enough to actually build a character.
+    ;; the boolean result is #t when a flush should try to get more stuff out of the
+    ;;   queue for a second GUI callback
     (define/private (split-queue converter q)
       
       ;; this number based on testing in drracket's REPL
@@ -2860,7 +2861,7 @@
       ;; take more like 20-60 msec per event (on my laptop)
       ;; for a bytes containing all (char->integer #\a)s. Random
       ;; bytes are slower, but probably that's not the common case.
-      (define too-many-bytes 1000)
+      (define bytes-limit-for-a-single-go 1000)
       
       (define lst (at-queue->list q))
       (let loop ([lst lst] [acc null])
@@ -2868,46 +2869,34 @@
           [(null? lst)
            (values (reverse acc)
                    (empty-at-queue)
-                   #t)]
+                   #f)]
           [else
            (define-values (front rest) (peel lst))
            (cond
              [(not front) (values (reverse acc)
                                   (empty-at-queue)
-                                  #t)]
+                                  #f)]
              [(bytes? (car front))
               (define the-bytes (car front))
               (define key (cdr front))
+              (define too-many-bytes? (>= (bytes-length the-bytes) bytes-limit-for-a-single-go))
               (cond
-                [(or (null? rest)
-                     (> (bytes-length the-bytes) too-many-bytes))
+                [(or (null? rest) too-many-bytes?)
                  (define remainder-re-enqueued (list->at-queue rest))
-                 (define-values (tail-queue short-enough-bytes)
+                 (define-values (converted-bytes src-read-amt termination)
+                   (bytes-convert converter the-bytes 0 (min (bytes-length the-bytes)
+                                                             bytes-limit-for-a-single-go)))
+                 (define new-at-queue 
                    (cond
-                     [(< (bytes-length the-bytes) too-many-bytes)
-                      (values remainder-re-enqueued the-bytes)]
+                     [(= src-read-amt (bytes-length the-bytes))
+                      remainder-re-enqueued]
                      [else
-                      (define leftovers (subbytes the-bytes
-                                                  too-many-bytes
-                                                  (bytes-length the-bytes)))
-                      (values (at-enqueue (cons leftovers key) remainder-re-enqueued)
-                              (subbytes the-bytes 0 too-many-bytes))]))
-                 (define-values (converted-bytes src-read-k termination)
-                   (bytes-convert converter short-enough-bytes))
-                 (cond
-                   [(eq? termination 'aborts)
-                    (values (reverse (cons (cons (bytes->string/utf-8 converted-bytes) key) acc))
-                            (at-enqueue 
-                             (cons (subbytes short-enough-bytes
-                                             src-read-k
-                                             (bytes-length short-enough-bytes))
-                                   key)
-                             tail-queue
-                             (> (bytes-length the-bytes) too-many-bytes)))]
-                   [else
-                    (values (reverse (cons (cons (bytes->string/utf-8 converted-bytes) key) acc))
-                            tail-queue
-                            (> (bytes-length the-bytes) too-many-bytes))])]
+                      (define leftovers (subbytes the-bytes src-read-amt (bytes-length the-bytes)))
+                      (at-enqueue (cons leftovers key) remainder-re-enqueued)]))
+                 (define converted-str (bytes->string/utf-8 (subbytes the-bytes 0 src-read-amt)))
+                 (values (reverse (cons (cons converted-str key) acc))
+                         new-at-queue
+                         too-many-bytes?)]
                 [else
                  (define-values (converted-bytes src-read-k termination)
                    (bytes-convert converter the-bytes))

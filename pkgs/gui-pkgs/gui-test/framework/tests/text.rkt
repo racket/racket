@@ -296,9 +296,10 @@
 ;; there is an internal buffer of this size, so writes that are larger and smaller are interesting
 (define buffer-size 4096)
 
-(let ([big-str (build-string (* buffer-size 2) (λ (i) (integer->char (+ (modulo i 26) (char->integer #\a)))))]
-      [non-ascii-str "λαβ一二三四五"])
-  
+(let ()
+  (define big-str
+    (build-string (* buffer-size 2) (λ (i) (integer->char (+ (modulo i 26) (char->integer #\a))))))
+  (define non-ascii-str "λαβ一二三四五")
   (define (do/separate-thread str mtd)
     (queue-sexp-to-mred
      `(let* ([t (new (text:ports-mixin text:wide-snip%))]
@@ -380,6 +381,23 @@
                (flush-output op)))))
          (when exn (raise exn))
          (send t get-text 0 (send t last-position))))))
+  
+  (let ([s "五"])
+    (test
+     'text:ports%.partial-encoding
+     (λ (x) (equal? x s))
+     (λ ()
+       (define bts (string->bytes/utf-8 s))
+       (queue-sexp-to-mred
+        `(let ()
+           (define t (new (text:ports-mixin text:wide-snip%)))
+           (define p (send t get-out-port))
+           (void (write-bytes (bytes ,(bytes-ref bts 0)) p))
+           (flush-output p)
+           (void (write-bytes ,(subbytes bts 1 (bytes-length bts)) p))
+           (flush-output p)
+           (send t get-text))))))
+
      
   ;; the next tests test the interaction when the current
   ;; thread is the same as the handler thread of the eventspace
