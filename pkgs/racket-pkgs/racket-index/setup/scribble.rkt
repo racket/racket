@@ -1254,7 +1254,8 @@
                                ;; Maybe further actions are appropriate, but
                                ;; overall clean-up and repair is intended to be
                                ;; the job of the regular documentation builder.
-                               (log-error (exn-message exn)))])
+                               (log-error (format "error moving documentation: ~a"
+                                                  (exn-message exn))))])
     (define dest-dir (doc-dest-dir doc))
     (define move? (and src-dir
                        (not (equal? (file-or-directory-identity src-dir)
