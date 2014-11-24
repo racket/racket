@@ -1589,7 +1589,7 @@ Provides a way to add arbitrary graphics to an editor's @techlink{display}.  Thi
  editor.
 
 The @racket[before?] argument is @racket[#t] when the method is called just
- before a painting the contents of the editor or @racket[#f] when it is
+ before painting the contents of the editor or @racket[#f] when it is
  called after painting. The @racket[left], @racket[top], @racket[right], and
  @racket[bottom] arguments specify which region of the editor is being
  repainted, in editor coordinates. To get the coordinates for
