@@ -42,7 +42,10 @@
                     (let* ([r (cdr exploded)]
                            ;; note: use "/"s, to get paths as in `require's
                            [r (map (lambda (p) (list #"/" p)) r)]
-                           [r (apply bytes-append (cdr (apply append r)))])
+                           [r (apply bytes-append (let ([l (apply append r)])
+                                                    (if (pair? l)
+                                                        (cdr l)
+                                                        null)))])
                       (string-append prefix (bytes->string/locale r))))))
         (if (procedure? default) (default path) default)))
   path->relative-string)
