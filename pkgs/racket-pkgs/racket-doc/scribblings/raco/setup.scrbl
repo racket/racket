@@ -1664,10 +1664,14 @@ manuals that have been installed with @exec{raco setup}.}
          void?]{
 
 Checks whether a user-specific documentation entry point already
-exists with @racket[(find-user-doc-dir)], and if not, runs @exec{raco
+exists in @racket[(find-user-doc-dir)], and if not, runs @exec{raco
 setup} in a mode that will create the entry point (to have the same
 content as the installation's documentation entry point.)
 
 The run of @exec{raco setup} is packaged in a thunk that is provided to
 @racket[on-setup], which can adjust the current output and error ports
-as appropriate and check the thunk's result for success.}
+as appropriate and check the thunk's result for success.
+
+The @racket[on-setup] argument is not called if the documentation entry
+point already exists in @racket[(find-user-doc-dir)].
+}
