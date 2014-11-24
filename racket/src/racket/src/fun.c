@@ -3627,6 +3627,10 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
 
   if (SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0])) {
     /* no redirection procedure */
+    if (SCHEME_CHAPERONEP(px->prev)) {
+      /* commuincate `self_proc` to the next layer: */
+      scheme_current_thread->self_for_proc_chaperone = self_proc;
+    }
     return _scheme_tail_apply(px->prev, argc, argv);
   }
 

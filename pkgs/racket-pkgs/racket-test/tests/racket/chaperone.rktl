@@ -253,18 +253,24 @@
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) (values (lambda (z) 89) y))) 10))
 
 (test 88 (impersonate-procedure* (lambda (x) x) (lambda (self y) 88)) 10)
-(letrec ([final (impersonate-procedure*
-                 (impersonate-procedure
-                  (impersonate-procedure* (lambda (x) x)
-                                          (lambda (self y)
-                                            (test #t eq? self final)
-                                            (add1 y)))
-                  (lambda (y)
-                    (add1 y)))
-                 (lambda (self y)
-                   (test #t eq? self final)
-                   (add1 y)))])
-  (test 13 final 10))
+(let-values ([(prop:blue blue? blue-ref) (make-impersonator-property 'blue)])
+  (letrec ([final (impersonate-procedure*
+                   (impersonate-procedure
+                    (impersonate-procedure
+                     (impersonate-procedure* (lambda (x) x)
+                                             (lambda (self y)
+                                               (test #t eq? self final)
+                                               (test 'whale blue-ref self)
+                                               (add1 y)))
+                     (lambda (y)
+                       (add1 y)))
+                    #f
+                    prop:blue
+                    'whale)
+                   (lambda (self y)
+                     (test #t eq? self final)
+                     (add1 y)))])
+    (test 13 final 10)))
 (letrec ([final (impersonate-procedure*
                  (impersonate-procedure
                   (impersonate-procedure* (lambda (x) x)
