@@ -17,18 +17,21 @@
 ;; all possible unix browsers, filtered later to just existing executables
 ;; order matters: the default will be the first of these that is found
 (define all-unix-browsers
-  '(;; common browsers
-    ;; xdg-open
+  '(;; proper generic utilities that start the user's default browser
+    xdg-open   ; should be the most used option
+    gnome-open ; older thing
+    ;; -- there is also `gvfs-open' but it seems to open the file
+    ;;    browser with the file selected instead, could be configured,
+    ;;    but if this is the default then it shouldn't be used
+    sensible-browser ; some ubuntu/debian thing, configured with $BROWSER
+    gnome-www-browser x-www-browser ; and this is managed via /etc/alternatives
+    ;; common browsers
     firefox google-chrome galeon opera mozilla konqueror seamonkey epiphany
     ;; known browsers
     camino skipstone
     ;; broken browsers (broken in that they won't work with plt-help)
-    ;; this is a configurable thing that is deprecated, but better
-    ;; than gnome-open (because it works)
+    ;; this is a configurable thing that is long deprecated
     htmlview
-    ;; gnome-open could be high, but the problem is that it doesn't
-    ;; handle file:// URLs with a query string.
-    gnome-open
     ;; dillo does not have javascript
     dillo
     ;; ancient browsers
@@ -196,10 +199,13 @@
     ;; finally, deal with the actual browser process
     [else
      (case browser
-       [(xdg-open gnome-open)
-        (w/trampoline)]
-       [(firefox konqueror dillo htmlview google-chrome)
-        (simple)]
+       ;; desktop-managed openers, need trampoline since "file:///..."
+       ;; is blindly checked as a file including query/fragment chars
+       [(xdg-open gnome-open) (w/trampoline)]
+       ;; simple tools that always invoke some browser directly
+       [(sensible-browser gnome-www-browser x-www-browser) (simple)]
+       ;; (mostly) modern browsers
+       [(firefox konqueror dillo htmlview google-chrome) (simple)]
        ;; don't really know how to run these
        [(camino skipstone mosaic) (simple)]
        [(galeon) (if (eq? 'browser-default separate-window?)
