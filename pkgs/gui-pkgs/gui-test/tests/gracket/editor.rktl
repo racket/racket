@@ -648,7 +648,17 @@
     (error 'notifications "too weak? ~e" count))
   (unless (<= 0 count2 (/ N 2))
     (error 'notifications "not weak enough? ~e" count2)))
-  
+
+;; ----------------------------------------
+;; make sure splitting a large string snip works:
+
+(void
+ (send (make-object string-snip% (make-string 100000 #\a))
+       split
+       50000
+       (box #f)
+       (box #f)))
+
 ;; ----------------------------------------
 ;; No #<unsafe-undefined> checks on certain class instances
 

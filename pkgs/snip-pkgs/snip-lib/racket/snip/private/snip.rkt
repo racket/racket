@@ -529,7 +529,7 @@
 
           (let ([s (string-snip-buffer snip)])
             (unless ((string-length s) . >= . position)
-              (set-string-snip-buffer! s (make-string position))))
+              (set-string-snip-buffer! snip (make-string position))))
           
           (string-copy! (string-snip-buffer snip)
                         0
