@@ -1209,6 +1209,9 @@ TODO
       (define/public (kill-evaluation) ; =Kernel=, =Handler=
         (when user-custodian
           (custodian-shutdown-all user-custodian))
+        (clear-input-port)
+        (clear-box-input-port)
+        (clear-output-ports)
         (set! user-custodian #f))
       
       (field (eval-thread-thunks null)
