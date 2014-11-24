@@ -157,7 +157,8 @@
 
 (define osascript (delay/sync (find-executable-path "osascript" #f)))
 (define (send-url/mac url)
-  (browser-run (force osascript) "-e" (format "open location \"~a\"" url)))
+  (send-via-trampoline url
+    (λ() (browser-run (force osascript) "-e" (format "open location \"~a\"" url)))))
 
 (define (send-url/unix url separate-window?)
   ;; in cases where a browser was uninstalled, we might get a preference that
@@ -175,6 +176,7 @@
     (cond [(assq browser (force existing-unix-browsers->exes)) => cdr]
           [else #f]))
   (define (simple) (browser-run exe url))
+  (define (w/trampoline) (send-via-trampoline url simple))
   (define (w/arg a) (browser-run exe a url))
   (define (try-remote)
     (or (system* exe "-remote" (format "openURL(~a~a)" url
@@ -194,7 +196,9 @@
     ;; finally, deal with the actual browser process
     [else
      (case browser
-       [(xdg-open gnome-open firefox konqueror dillo htmlview google-chrome)
+       [(xdg-open gnome-open)
+        (w/trampoline)]
+       [(firefox konqueror dillo htmlview google-chrome)
         (simple)]
        ;; don't really know how to run these
        [(camino skipstone mosaic) (simple)]
@@ -226,8 +230,12 @@
 ;; that redirects to the actual file and fragment.
 
 (define (send-url/win url)
+  (send-via-trampoline url
+    (λ() (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL))))
+
+(define (send-via-trampoline url simple)
   (if (not (regexp-match? #rx"[#?]" url))
-    (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL)
+    (simple)
     (send-url/contents
      (string-append
       "<html><head><meta http-equiv=\"refresh\" content=\"0;URL="url"\"></head>"
