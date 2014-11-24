@@ -75,6 +75,10 @@
 
 (application:current-app-name (string-constant drscheme))
 
+(preferences:set-default 'drracket:tried-materialize-user-docs
+                         (not (equal? (system-type) 'macosx))
+                         boolean?)
+
 (preferences:set-default 'drracket:open-module-path-last-used "" string?)
 
 (preferences:set-default 'drracket:logger-receiver-string "error debug@GC debug@PLaneT" string?)

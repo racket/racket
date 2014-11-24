@@ -6,9 +6,11 @@
          racket/class
          net/url
          setup/dirs
+         setup/materialize-user-docs
          help/search
          help/private/buginfo
          drracket/private/drsig
+         string-constants
          "local-member-names.rkt")
 
 (import [prefix drracket:frame: drracket:frame^]
@@ -87,5 +89,29 @@
 (define (goto-plt-license)
   (send-main-page #:sub "license/index.html"))
 
+(define (maybe-try-to-materialize-docs)
+  ;; under mac os x, the basic installation is put into a 'com.apple.quarantine'
+  ;; which has the strange effect of making osascript drop the query parameters
+  ;; for urls when they are sent to the browser. To work around this,
+  ;; we materialize the documentation indicies in a user-specific place the
+  ;; first time someone tries to read the docs with a specific query
+  ;; the 'drracket:tried-materialize-user-docs pref is initialized to #t
+  ;; on non-mac os x platforms so that we don't try at all there.
+  (unless (preferences:get 'drracket:tried-materialize-user-docs)
+    (preferences:set 'drracket:tried-materialize-user-docs #t)
+    (define sp (open-output-string))
+    (define succeeded? #t)
+    (materialize-user-docs (λ (go)
+                             (set! succeeded? #f)
+                             (parameterize ([current-output-port sp]
+                                            [current-error-port sp])
+                               (set! succeeded? (go)))))
+    (unless succeeded?
+      (message-box (string-constant drracket)
+                   (string-append
+                    "Attempting to materialize user docs failed:\n\n"
+                    (get-output-string sp))))))
+
 (define (help-desk [key #f] [context #f])
+  (when key (maybe-try-to-materialize-docs))
   (if key (perform-search key context) (send-main-page)))
