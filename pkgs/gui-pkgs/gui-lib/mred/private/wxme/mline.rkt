@@ -41,6 +41,7 @@
            set-scroll-length
            set-height
            calc-line-length
+           adjust-line-length
            set-starts-paragraph
            starts-paragraph
            adjust-max-width
@@ -639,20 +640,7 @@
           h mline-h set-mline-h!
           mline-y set-mline-y!))
 
-(define (calc-line-length mline)
-  (let ([l
-         (let ([nexts (snip->next (mline-last-snip mline))])
-           (let loop ([asnip (mline-snip mline)][l 0])
-             (if (eq? asnip nexts)
-                 l
-                 (let ([l (+ l (snip->count asnip))])
-                   (when (has-flag? (snip->flags asnip) WIDTH-DEPENDS-ON-X)
-                     (send asnip size-cache-invalid))
-                   (loop (snip->next asnip) l)))))])
-
-    (when (not (= l (mline-len mline)))
-      (set-length mline l)))
-
+(define (set-paragraph-ends mline)
   (let ([next (mline-next mline)])
     (cond
      [(and next
@@ -673,6 +661,27 @@
         (set-starts-paragraph mline #t))]
      [(positive? (starts-paragraph mline))
       (set-starts-paragraph mline #f)])))
+
+(define (calc-line-length mline)
+  (let ([l
+         (let ([nexts (snip->next (mline-last-snip mline))])
+           (let loop ([asnip (mline-snip mline)][l 0])
+             (if (eq? asnip nexts)
+                 l
+                 (let ([l (+ l (snip->count asnip))])
+                   (when (has-flag? (snip->flags asnip) WIDTH-DEPENDS-ON-X)
+                     (send asnip size-cache-invalid))
+                   (loop (snip->next asnip) l)))))])
+
+    (when (not (= l (mline-len mline)))
+      (set-length mline l)))
+  (set-paragraph-ends mline))
+
+;; A scalable variant of `calc-line-lengt`, but doesn't
+;; check WIDTH-DEPENDS-ON-X flags:
+(define (adjust-line-length mline delta)
+  (set-length mline (+ (mline-len mline) delta))
+  (set-paragraph-ends mline))
 
 (define (set-starts-paragraph mline starts?)
   (unless (= (if starts? 1 0) (starts-paragraph mline))
