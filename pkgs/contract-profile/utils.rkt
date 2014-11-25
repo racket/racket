@@ -151,7 +151,7 @@
   (define table
     (for/hash ([p srcs]
                [e extracted])
-      (values p (hash-ref shortened e))))
+      (values p (hash-ref shortened e (lambda () p)))))
   (lambda (p)
     (define target (hash-ref table p #f))
     (if target
