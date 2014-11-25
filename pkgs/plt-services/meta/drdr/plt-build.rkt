@@ -156,9 +156,13 @@
             (subprocess-kill the-process #t))))
     (thunk)))
 
-(define-runtime-path package-list "pkgs")
-(define (planet-packages)
-  (file->value package-list))
+(define (tested-packages)
+  (define tmp-file (make-temporary-file "pkgs~a.rktd" #f (current-temporary-directory)))
+  ;; Checkout the pkgs list
+  (scm-export-file (current-rev) (plt-repository) "pkgs/plt-services/meta/drdr/pkgs.rktd" tmp-file)
+  ;; Read it in
+  (define val (file->value tmp-file))
+  (delete-file tmp-file))
 
 (define (test-revision rev)
   (define rev-dir (revision-dir rev))
@@ -182,7 +186,8 @@
 
   (define pkgs-pths
     (list (build-path trunk-dir "racket" "collects")
-          (build-path trunk-dir "pkgs")))
+          (build-path trunk-dir "pkgs")
+          (build-path trunk-dir "racket" "share" "pkgs")))
   (define (test-directory dir-pth upper-sema)
     (define dir-log (build-path (trunk->log dir-pth) ".index.test"))
     (cond
@@ -290,18 +295,18 @@
           (write-cache! dir-log (current-seconds))
           (semaphore-post upper-sema)))]))
   ;; Some setup
-  (for ([pp (in-list (planet-packages))])
+  (for ([pp (in-list (tested-packages))])
+    (define (run name source)
+      (run/collect/wait/log
+       ;; XXX Give it its own timeout
+       #:timeout (current-make-install-timeout-seconds)
+       #:env (current-env)
+       (build-path log-dir "pkg" name)
+       raco-path
+       (list "pkg" "install" "--skip-installed" "-i" "--deps" "fail" "--name" name source)))
     (match pp
-      [`(,auth ,pkg ,majn ,minn ,ver)
-       (define maj (number->string majn))
-       (define min (number->string minn))
-       (run/collect/wait/log
-        ;; XXX Give it its own timeout
-        #:timeout (current-make-install-timeout-seconds)
-        #:env (current-env)
-        (build-path log-dir "planet" auth pkg maj min)
-        raco-path
-        (list "planet" "install" auth pkg maj min))]))
+      [`(,name ,source) (run name source)]
+      [(? string? name) (run name name)]))
   (run/collect/wait/log
    #:timeout (current-subprocess-timeout-seconds)
    #:env (current-env)
@@ -314,11 +319,9 @@
   (define (test-directories ps upper-sema)
     (define list-sema (make-semaphore 0))
     (define how-many 
-      (for/fold ([cnt 0]) ([p (in-list ps)])
-        (if (directory-exists? p)
-          (begin (test-directory p list-sema)
-                 (add1 cnt))
-          cnt)))
+      (for/sum ([p (in-list ps)] #:when (directory-exists? p))
+        (test-directory p list-sema)
+        1))
     (and (not (zero? how-many))
          (thread
           (lambda ()
