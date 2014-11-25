@@ -257,7 +257,8 @@
 
   (define pkg-path-cache (make-hash))
 
-  (define getinfo (make-getinfo (make-base-namespace)))
+  (define info-ns (make-base-namespace))
+  (define getinfo (make-getinfo info-ns))
 
   (define (make-cc* collection parent path omit-root info-root 
                     info-path info-path-mode shadowing-policy 
@@ -1161,8 +1162,9 @@
     (for ([cc ccs-to-compile])
       (define domain
         (with-handlers ([exn:fail? (lambda (x) (lambda () null))])
-          (dynamic-require (build-path (cc-path cc) "info.rkt")
-                           '#%info-domain)))
+          (parameterize ([current-namespace info-ns])
+            (dynamic-require (build-path (cc-path cc) "info.rkt")
+                             '#%info-domain))))
       ;; Get the table for this cc's info-domain cache:
       (define t (get-info-ht (cc-info-root cc)
                              (cc-info-path cc)
