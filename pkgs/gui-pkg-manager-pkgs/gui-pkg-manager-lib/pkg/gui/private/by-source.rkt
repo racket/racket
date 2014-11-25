@@ -66,7 +66,7 @@
     (init-field [in-terminal in-terminal])
     (init [text-field-initial-value #f]
           [(details-initially-shown? details-shown?) #f])
-    (super-new)
+    (super-new [stretchable-height #f])
     
     (inherit get-top-level-window)
 

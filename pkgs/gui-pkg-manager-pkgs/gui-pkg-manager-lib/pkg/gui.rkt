@@ -133,7 +133,10 @@
     (define old (send sel-panel active-child))
     (define new (list-ref (send sel-panel get-children) (send sel-tab get-selection)))
     (unless (eq? new old)
-      (send sel-panel active-child new)))
+      (send sel-panel active-child new)
+      (when (and terminal
+                 (not (send terminal is-closed?)))
+        (send sel-tab stretchable-height (send new stretchable-height)))))
   
   (define sel-tab
     (new tab-panel%
@@ -148,15 +151,20 @@
 
   (define sel-panel
     (new panel:single%
-         [parent sel-tab]))
+         [parent sel-tab]
+         [alignment '(center top)]))
 
   (define terminal #f)
   (define (in-terminal-panel abort-label thunk)
     (when terminal 
       (send terminal close))
+    (send sel-tab stretchable-height (send (send sel-panel active-child)
+                                           stretchable-height))
     (define t (in-terminal 
                #:abort-label abort-label
                #:close-label (string-constant install-pkg-close-terminal-output)
+               #:close-callback (lambda ()
+                                  (send sel-tab stretchable-height #t))
                #:container (send frame get-area-container)
                (λ (cust parent) (wrap-terminal-action thunk))))
     (set! terminal t)
