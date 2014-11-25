@@ -17,7 +17,8 @@
                      #:canvas-min-width (or/c #f exact-nonnegative-integer?)
                      #:canvas-min-height (or/c #f exact-nonnegative-integer?)
                      #:close-button? boolean?
-                     #:close-label string?)
+                     #:close-label string?
+                     #:close-callback (-> any))
                     (is-a?/c terminal<%>))])
  terminal<%>)
 
@@ -43,7 +44,8 @@
                      #:canvas-min-width [canvas-min-width #f]
                      #:canvas-min-height [canvas-min-height #f]
                      #:close-button? [close-button? #t]
-                     #:close-label [close-button-label (string-constant close)])
+                     #:close-label [close-button-label (string-constant close)]
+                     #:close-callback [user-close-callback void])
   (define orig-eventspace (current-eventspace))
   (define orig-custodian (current-custodian))
   (define inst-eventspace (if container
@@ -65,7 +67,8 @@
     (if frame
         (send frame show #f)
         (send container delete-child sub-container))
-    (close-callback))
+    (close-callback)
+    (user-close-callback))
   (define (close-callback)
     (custodian-shutdown-all installer-cust))
   
@@ -78,7 +81,9 @@
           (set! frame
                 (new (class frame%
                        (define/augment (can-close?) currently-can-close?)
-                       (define/augment (on-close) (close-callback))
+                       (define/augment (on-close)
+                         (close-callback)
+                         (user-close-callback))
                        (super-new [label title]
                                   [width 600]
                                   [height 300]))))
@@ -116,7 +121,8 @@
                   (new (class vertical-panel%
                          (super-new)
                          (define/override (on-superwindow-show on?)
-                           (unless on? (close-callback))))
+                           (unless on?
+                             (close-callback))))
                        [parent container])))
         
         (set! text (new (text:hide-caret/selection-mixin text:standard-style-list%)))
@@ -138,12 +144,6 @@
                                   [label close-button-label]
                                   [parent button-panel]
                                   [callback (λ (b e) (close))])))
-
-        (define (close)
-          (if frame
-              (send frame show #f)
-              (send container delete-child sub-container))
-          (close-callback))
 
         (define (kill-callback)
           (custodian-shutdown-all installer-cust)
@@ -253,6 +253,8 @@
               (cleanup-thunk)
               (custodian-shutdown-all installer-cust))))))))
   
+  (define (outside-close) (close))
+  
   (new (class* object% (terminal<%>)
          (super-new)
          (define/public (get-button-panel)
@@ -265,6 +267,4 @@
            currently-can-close?)
          (define/public (close)
            (unless (is-closed?)
-             (if frame
-                 (send frame show #f)
-                 (send container delete-child sub-container)))))))
+             (outside-close))))))
