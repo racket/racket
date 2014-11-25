@@ -2,7 +2,7 @@ srfi-lite-lib
 Copyright (c) 2010-2014 PLT Design Inc.
 
 This package is distributed under the GNU Lesser General Public
-License (LGPL).  This means that you can link Racket into proprietary
+License (LGPL).  This means that you can link this package into proprietary
 applications, provided you follow the rules stated in the LGPL.  You
 can also modify this package; if you distribute a modified version,
 you must distribute it under the terms of the LGPL, which in
