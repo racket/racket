@@ -342,9 +342,10 @@ scheme_init_fun (Scheme_Env *env)
                                                   2, 2,
                                                   0, -1);
 
+# define MAX_CALL_CC_ARG_COUNT 2
   o = scheme_make_prim_w_arity2(call_cc,
 				"call-with-current-continuation",
-				1, 2,
+				1, MAX_CALL_CC_ARG_COUNT,
 				0, -1);
 
   scheme_add_global_constant("call-with-current-continuation", o, env);
@@ -4494,13 +4495,15 @@ static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
   saved->type = scheme_rt_saved_stack;
 #endif
   if (share_from && (share_from->runstack_start == runstack_start)) {
+    intptr_t shared_amt;
     /* Copy just the difference between share_from's runstack and current runstack... */
     size = (share_from->ss.runstack_offset - (runstack XFORM_OK_MINUS runstack_start));
-    /* But add one, because call/cc takes one argument. If there's not one
-       move value on the stack, then call/cc must have received its argument
-       from elsewhere. */
-    if (share_from->ss.runstack_offset < p->runstack_size)
-      size++;
+    /* But skip the first few items, which are potentially call/cc's arguments: */
+    shared_amt = (p->runstack_size - share_from->ss.runstack_offset);
+    if (shared_amt > MAX_CALL_CC_ARG_COUNT)
+      size += MAX_CALL_CC_ARG_COUNT;
+    else
+      size += shared_amt;
   } else if (effective_prompt && (effective_prompt->runstack_boundary_start == runstack_start)) {
     /* Copy only up to the prompt */
     size = effective_prompt->runstack_boundary_offset - (runstack XFORM_OK_MINUS runstack_start);
@@ -5227,7 +5230,8 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
                                       Scheme_Cont *sub_cont, Scheme_Prompt *prompt,
                                       Scheme_Meta_Continuation *prompt_cont,
                                       Scheme_Prompt *effective_barrier_prompt,
-                                      int cm_only)
+                                      int cm_only,
+                                      int argc, Scheme_Object **argv)
 {
   Scheme_Cont *cont;
   Scheme_Cont_Jmp *buf_ptr;
@@ -5358,6 +5362,14 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
     Scheme_Saved_Stack *saved;
     saved = copy_out_runstack(p, MZ_RUNSTACK, MZ_RUNSTACK_START, sub_cont, 
                               (for_prompt ? p->meta_prompt : prompt));
+    if (argv == MZ_RUNSTACK) {
+      /* The copy of RUNSTACK that we just saved captures the arguments
+         to `call/cc`, but we don't want to retain those. */
+      intptr_t i;
+      for (i = 0; i < argc; i++) {
+        saved->runstack_start[i] = scheme_false;
+      }
+    }
     cont->runstack_copied = saved;
     if (!for_prompt && prompt) {
       /* Prune cont->runstack_saved to drop unneeded saves.
@@ -5423,7 +5435,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
 static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_prompt,
                                  Scheme_Object *result, 
                                  Scheme_Overflow *resume, int empty_to_next_mc,
-                                 Scheme_Object *prompt_tag, Scheme_Cont *sub_cont,
+                                 Scheme_Object *prompt_tag,
                                  Scheme_Dynamic_Wind *common_dw, int common_next_meta, 
                                  Scheme_Prompt *shortcut_prompt,
                                  int clear_cm_caches, int do_reset_cjs,
@@ -5431,6 +5443,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
 {
   MZ_MARK_STACK_TYPE copied_cms = 0;
   Scheme_Object **mv, *sub_conts = NULL;
+  Scheme_Cont *sub_cont;
   int mc;
 
   if (SAME_OBJ(result, SCHEME_MULTIPLE_VALUES)) {
@@ -5570,16 +5583,21 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
     while (sub_cont) {
       if (sub_cont->buf_ptr->buf.cont
           && (sub_cont->runstack_start == sub_cont->buf_ptr->buf.cont->runstack_start)) {
+        intptr_t delta;
         /* Copy shared part in: */
         sub_cont = sub_cont->buf_ptr->buf.cont;
         size = sub_cont->runstack_copied->runstack_size;
-        if (size) {
-          /* Skip the first item, since that's the call/cc argument,
-             which we don't want from the outer continuation. */
+        /* Skip potential call/cc argument(s), which we don't want
+           from the outer continuation. */
+        if (size > MAX_CALL_CC_ARG_COUNT)
+          delta = MAX_CALL_CC_ARG_COUNT;
+        else
+          delta = size;
+        if (size > delta) {
           memcpy(MZ_RUNSTACK XFORM_OK_PLUS done, 
-                 sub_cont->runstack_copied->runstack_start + 1, 
-                 (size - 1) * sizeof(Scheme_Object *));
-          done += (size - 1);
+                 sub_cont->runstack_copied->runstack_start + delta,
+                 (size - delta) * sizeof(Scheme_Object *));
+          done += (size - delta);
         }
       } else
         break;
@@ -5883,7 +5901,8 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 	 used by `continuation-marks'. */
 
       cont = grab_continuation(p, 0, 0, prompt_tag, pt, sub_cont,
-                               prompt, prompt_cont, effective_barrier_prompt, 1);
+                               prompt, prompt_cont, effective_barrier_prompt, 1,
+                               argc, argv);
 #ifdef MZ_USE_JIT
       cont->native_trace = ret;
 #endif
@@ -5897,7 +5916,8 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   }
 
   cont = grab_continuation(p, 0, composable, prompt_tag, pt, sub_cont, 
-                           prompt, prompt_cont, effective_barrier_prompt, 0);
+                           prompt, prompt_cont, effective_barrier_prompt, 0,
+                           argc, argv);
 
   scheme_zero_unneeded_rands(p);
 
@@ -5996,7 +6016,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     cont->empty_to_next_mc = 0;
 
     restore_continuation(cont, p, 0, result, resume, empty_to_next_mc, 
-                         pt, sub_cont, 
+                         pt,
                          common_dw, common_next_meta, shortcut_prompt,
                          !!resume, 1, 
                          use_next_cont, extra_marks);
@@ -6449,7 +6469,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
 
   /* Grab a continuation so that we capture the current Scheme stack,
      etc.: */
-  saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, 0);
+  saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL);
 
   if (p->meta_prompt)
     saved->prompt_stack_start = p->meta_prompt->stack_boundary;
@@ -6521,7 +6541,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
                                            since GC erases meta-prompt-blocked portion
                                            on the runstack. */
     restore_continuation(saved, p, 1, v, NULL, 0,
-                         NULL, NULL,
+                         NULL,
                          NULL, 0, NULL,
                          1, !p->cjs.jumping_to_continuation, 
                          NULL, NULL);

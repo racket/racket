@@ -447,5 +447,23 @@
          (f 10 #f)))))
 
 ;;----------------------------------------
+;; Check that a continuation doesn't retain the arguments
+;; to the call to `call/cc` that created the continuation.
+
+(when (eq? '3m (system-type 'gc))
+  (let ([ht (make-weak-hasheq)])
+    (define l
+      (for/list ([i 100])
+        (call/cc (let ([p (lambda (k) (cons i k))])
+                   (hash-set! ht p #t)
+                   p))))
+    (collect-garbage)
+    (collect-garbage)
+    ;; All of them should have been collected, but
+    ;; since GC makes only asymptotic promises,
+    ;; let's check that 3/4 were collected:
+    (test #t < (hash-count ht) (* 1/4 (length l)))))
+
+;;----------------------------------------
 
 (report-errs)
