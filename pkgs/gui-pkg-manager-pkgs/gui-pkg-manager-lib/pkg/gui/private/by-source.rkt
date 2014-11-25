@@ -74,13 +74,15 @@
                               [parent this] 
                               [stretchable-height #f]))
 
+    (define (save-tf!)
+      (preferences:set 'drracket:gui-installer-pkg-source (send tf get-value)))
     (define tf 
       (new text-field% 
            [parent source-panel] 
            [min-width 600]
            [label (~a sc-install-pkg-source-label ":")]
            [callback (λ (_1 _2) 
-                       (preferences:set 'drracket:gui-installer-pkg-source (send tf get-value))
+                       (save-tf!)
                        (adjust-all))]))
     (send tf set-value (or text-field-initial-value 
                            (preferences:get 'drracket:gui-installer-pkg-source)))
@@ -120,6 +122,7 @@
                                (if dir?
                                    (path->directory-path f) 
                                    f))))
+          (save-tf!)
           (adjust-all))))
     (define browse-button (new button%
                                [parent source-panel]
