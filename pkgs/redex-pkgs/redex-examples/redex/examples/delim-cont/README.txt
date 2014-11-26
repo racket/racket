@@ -1,3 +1,6 @@
+This model is from the paper _Adding Delimited and Composable Control
+to a Production Programming Environment_ from ICFP 2007.
+
 To run the tests using the model:
 ---------------------------------
 
