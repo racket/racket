@@ -70,6 +70,11 @@
 	   (putenv "PATH" (~a (find-console-bin-dir)
 			      ":"
 			      (getenv "PATH")))
+           ;; Some tests use `git`; make sure those calls don't
+           ;; operate on some other directory:
+           (environment-variables-set! (current-environment-variables)
+                                       #"GIT_DIR"
+                                       #f)
            (t)))
       (λ ()
         (delete-directory/files tmp-dir))))
