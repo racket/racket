@@ -2893,7 +2893,7 @@
                      [else
                       (define leftovers (subbytes the-bytes src-read-amt (bytes-length the-bytes)))
                       (at-enqueue (cons leftovers key) remainder-re-enqueued)]))
-                 (define converted-str (bytes->string/utf-8 (subbytes the-bytes 0 src-read-amt)))
+                 (define converted-str (bytes->string/utf-8 converted-bytes))
                  (values (reverse (cons (cons converted-str key) acc))
                          new-at-queue
                          too-many-bytes?)]

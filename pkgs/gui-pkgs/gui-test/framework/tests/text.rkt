@@ -397,6 +397,25 @@
            (void (write-bytes ,(subbytes bts 1 (bytes-length bts)) p))
            (flush-output p)
            (send t get-text))))))
+  
+  (let ([b (bytes 195 195 (char->integer #\a))])
+    (test
+     'text:ports%.broken-encoding
+     (λ (x) 
+       (define c (bytes-open-converter "UTF-8-permissive" "UTF-8"))
+       (define-values (result-bytes src-read-amt termination) (bytes-convert c b))
+       (equal? x (bytes->string/utf-8 result-bytes)))
+     (λ ()
+       (queue-sexp-to-mred
+        `(let ()
+           (define t (new (text:ports-mixin text:wide-snip%)))
+           (define p (send t get-out-port))
+           (yield
+            (thread
+             (λ ()
+               (write-bytes ,b p)
+               (flush-output p))))
+           (send t get-text))))))
 
      
   ;; the next tests test the interaction when the current
