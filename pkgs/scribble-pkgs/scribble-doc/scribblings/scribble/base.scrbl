@@ -467,6 +467,9 @@ which renders as
 
 See also @racket[verbatim].}
 
+@; ------------------------------------------------------------------------
+@section[#:tag "images"]{Images}
+
 
 @defproc[(image [path (or/c path-string? (cons/c 'collects (listof bytes?)))]
                 [#:scale scale real? 1.0]

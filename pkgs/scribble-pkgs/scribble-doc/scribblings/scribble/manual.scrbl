@@ -1781,7 +1781,7 @@ the link.}
 @; ------------------------------------------------------------------------
 @section[#:tag "manual-indexing"]{Indexing}
 
-See also @secref["base-indexing"].
+See also @secref["base-indexing"] for @racketmodname[scribble/base].
 
 @defform[(indexed-racket datum ...)]{
 
@@ -1818,15 +1818,6 @@ key for the index iterm does not include quotes.}
 
 @defproc[(indexed-envvar [pre-content pre-content?] ...) element?]{A
 combination of @racket[envvar] and @racket[as-index].}
-
-@; ------------------------------------------------------------------------
-@section[#:tag "manual-images"]{Images}
-
-@defproc[(image/plain [filename-relative-to-source string?]
-                      [pre-element any/c] ...)
-         element?]{
-
- An alias for @racket[image] for backward compatibility.}
 
 @; ------------------------------------------------------------------------
 @section{Bibliography}
@@ -1992,6 +1983,11 @@ described by @racket[what]), where @racket[replacement] describes a
 suitable replacement. The @racket[additional-notes] are included after the
 initial deprecation message.}
 
+@defproc[(image/plain [filename-relative-to-source string?]
+                      [pre-element any/c] ...)
+         element?]{
+
+ An alias for @racket[image] for backward compatibility.}
 
 @; ------------------------------------------------------------------------
 @section[#:tag "index-entries"]{Index-Entry Descriptions}
