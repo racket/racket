@@ -456,3 +456,31 @@
 (test-begin
  (check-equal? (from-nat emptys/e 0) '())
  (check-bijection? emptys/e))
+
+
+(define (to-str e print?)
+  (define sp (open-output-string))
+  (if print?
+      (print e sp)
+      (write e sp))
+  (get-output-string sp))
+;; printer tests
+(check-equal? (to-str nat/e #t) "#<enum: 0 1 2 3 4 5 6 7 8 9 10...>")
+(check-equal? (to-str (cons/e nat/e nat/e) #t) "#<enum: '(0 . 0) '(0 . 1) '(1 . 0)...>")
+(check-equal? (to-str (cons/e nat/e nat/e) #f) "#<enum: (0 . 0) (0 . 1) (1 . 0)...>")
+
+;; just check that it doesn't crash when we get deep nesting
+;; (checks that we end up in the case that just uses the string
+;; in the implementation of the enumerator printer)
+(check-equal? (string? (to-str
+                        (map/e (λ (i)
+                                 (map/e (λ (j)
+                                          (map/e (λ (k) (+ i j k))
+                                                 (λ (_) (error 'ack))
+                                                 nat/e))
+                                        (λ (_) (error 'ack))
+                                        nat/e))
+                               (λ (_) (error 'ack))
+                               nat/e)
+                        #t))
+              #t)
