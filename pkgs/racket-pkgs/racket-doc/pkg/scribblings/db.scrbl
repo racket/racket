@@ -46,6 +46,16 @@ determined by @racket[(find-system-path 'addon-dir)] and within a
 subdirectory determined by @racket[get-installation-name].}
 
 
+@defproc[(call-with-pkgs-transaction [proc (-> any)]) any]{
+
+Calls @racket[proc] so that multiple calls to other
+@racketmodname[pkg/db] functions are grouped as a database
+transaction, which avoids the overhead of making each individual call
+its own transaction.
+
+@history[#:added "6.1.1.5"]}
+
+
 @deftogether[(
 @defproc[(get-catalogs) (listof string?)]
 @defproc[(set-catalogs! [catalogs (listof string?)]) void?]
