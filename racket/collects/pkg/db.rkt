@@ -182,6 +182,8 @@
    (lambda (db)
      (prepare-catalog-table db)
      (prepare-pkg-table db)
+     (prepare-modules-table db)
+     (prepare-dependencies-table db)
      (call-with-transaction
       db
       (lambda ()
@@ -289,6 +291,8 @@
 (define (get-module-pkgs mod)
   (call-with-catalog-db
    (lambda (db)
+     (prepare-catalog-table db)
+     (prepare-modules-table db)
      (define rows
        (query-rows db
                    (~a "SELECT M.pkg, P.url, M.checksum"
