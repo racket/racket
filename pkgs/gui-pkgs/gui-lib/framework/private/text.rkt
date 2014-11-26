@@ -2647,21 +2647,24 @@
                        (split-queue converter q))
                      (cond
                        [flush-keep-trying?
-                        (cons viable-bytes (loop next-remaining-queue))]
+                        (cond
+                          [(channel? return-evt/to-insert-chan)
+                           (cons viable-bytes (loop next-remaining-queue))]
+                          [else
+                           (define c (make-channel))
+                           (queue-insertion viable-bytes c)
+                           (channel-put c #f)
+                           (loop next-remaining-queue)])]
                        [else
                         (set! remaining-queue next-remaining-queue)
-                        (list viable-bytes)])))
-                 (cond
-                   [(channel? return-evt/to-insert-chan)
-                    (channel-put return-evt/to-insert-chan viable-bytess)]
-                   [else
-                    (let loop ([viable-bytess viable-bytess])
-                      (cond
-                        [(null? (cdr viable-bytess))
-                         (queue-insertion (car viable-bytess) return-evt/to-insert-chan)]
-                        [else
-                         (queue-insertion (car viable-bytess) always-evt)
-                         (loop (cdr viable-bytess))]))])
+                        (cond
+                          [(channel? return-evt/to-insert-chan)
+                           (list viable-bytes)]
+                          [else
+                           (queue-insertion viable-bytes return-evt/to-insert-chan)
+                           #f])])))
+                 (when (channel? return-evt/to-insert-chan)
+                   (channel-put return-evt/to-insert-chan viable-bytess))
                  (loop remaining-queue (current-inexact-milliseconds))))
               (handle-evt
                clear-output-chan
