@@ -468,6 +468,7 @@
 (check-equal? (to-str nat/e #t) "#<enum: 0 1 2 3 4 5 6 7 8 9 10...>")
 (check-equal? (to-str (cons/e nat/e nat/e) #t) "#<enum: '(0 . 0) '(0 . 1) '(1 . 0)...>")
 (check-equal? (to-str (cons/e nat/e nat/e) #f) "#<enum: (0 . 0) (0 . 1) (1 . 0)...>")
+(check-equal? (to-str (const/e 0) #t) "#<enum: 0>")
 
 ;; just check that it doesn't crash when we get deep nesting
 ;; (checks that we end up in the case that just uses the string
