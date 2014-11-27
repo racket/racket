@@ -498,7 +498,7 @@
                 '())))]))
 
 ;; not quite the same as split-doms in arr-util.rkt, but similar idea.
-(define-for-syntax (:split-doms stx name raw-doms)
+(define-for-syntax (:split-doms stx name raw-doms this->*)
   (let loop ([raw-doms raw-doms]
              [doms '()]
              [kwd-doms '()]
@@ -514,7 +514,10 @@
          (loop #'rest
                doms
                (cons #'(kwd x) kwd-doms)
-               (cons #`[x arg] let-bindings)))]
+               (cons #`[x #,(syntax-property #'arg 
+                                             'racket/contract:negative-position 
+                                             this->*)]
+                     let-bindings)))]
       [(kwd arg . rest)
        (and (keyword? (syntax-e #'kwd))
             (keyword? (syntax-e #'arg)))
@@ -533,9 +536,12 @@
          (loop #'rest 
                (cons #'t doms) 
                kwd-doms
-               (cons #`[t x] let-bindings)))])))
+               (cons #`[t #,(syntax-property #'x
+                                             'racket/contract:negative-position 
+                                             this->*)]
+                     let-bindings)))])))
 
-(define-for-syntax (parse->*2 stx)
+(define-for-syntax (parse->*2 stx this->*)
   (syntax-case stx ()
     [(_ (raw-mandatory-dom ...) . other)
      (let ()
@@ -544,11 +550,11 @@
        (with-syntax ([(man-dom
                        man-dom-kwds
                        man-lets)
-                      (:split-doms stx '->* #'(raw-mandatory-dom ...))]
+                      (:split-doms stx '->* #'(raw-mandatory-dom ...) this->*)]
                      [(opt-dom
                        opt-dom-kwds
                        opt-lets)
-                      (:split-doms stx '->* raw-optional-doms)])
+                      (:split-doms stx '->* raw-optional-doms this->*)])
          (values
           #'man-dom
           #'man-dom-kwds
@@ -559,10 +565,11 @@
           rest-ctc pre rng-ctcs post)))]))
 
 (define-for-syntax (->*-valid-app-shapes stx)
+  (define this->* (gensym 'this->*))
   (define-values (man-dom man-dom-kwds man-lets
                           opt-dom opt-dom-kwds opt-lets
                           rest-ctc pre rng-ctcs post)
-    (parse->*2 stx))
+    (parse->*2 stx this->*))
   (with-syntax ([((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
                 [((optional-dom-kwd optional-dom-kwd-ctc) ...) opt-dom-kwds])
     (valid-app-shapes-from-man/opts (length (syntax->list man-dom))
@@ -574,10 +581,11 @@
 (define-syntax (->*2 stx)
   (cond
     [(->*2-handled? stx)
+     (define this->* (gensym 'this->*))
      (define-values (man-dom man-dom-kwds man-lets
                              opt-dom opt-dom-kwds opt-lets
                              rest-ctc pre rng-ctcs post)
-       (parse->*2 stx))
+       (parse->*2 stx this->*))
      (with-syntax ([(mandatory-dom ...) man-dom]
                    [((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
                    [(mandatory-let-bindings ...) man-lets]
@@ -604,25 +612,35 @@
             rest-ctc
             rng-ctcs
             (and post #'post-x)))
-         #`(let (mandatory-let-bindings ...
-                 optional-let-bindings ... 
-                 pre-let-binding ...
-                 post-let-binding ...)
-             (build--> '->*
-                       (list mandatory-dom ...)
-                       (list optional-dom ...)
-                       '(mandatory-dom-kwd ...)
-                       (list mandatory-dom-kwd-ctc ...)
-                       '(optional-dom-kwd ...)
-                       (list optional-dom-kwd-ctc ...)
-                       #,rest-ctc
-                       #,(and pre #t)
-                       #,(if rng-ctcs
-                             #`(list #,@rng-ctcs)
-                             #'#f)
-                       #,(and post #t)
-                       #,plus-one-arity-function 
-                       #,chaperone-constructor))))]
+         (syntax-property
+          #`(let (mandatory-let-bindings ...
+                  optional-let-bindings ... 
+                  pre-let-binding ...
+                  post-let-binding ...)
+              (build--> '->*
+                        (list mandatory-dom ...)
+                        (list optional-dom ...)
+                        '(mandatory-dom-kwd ...)
+                        (list mandatory-dom-kwd-ctc ...)
+                        '(optional-dom-kwd ...)
+                        (list optional-dom-kwd-ctc ...)
+                        #,rest-ctc
+                        #,(and pre #t)
+                        #,(if rng-ctcs
+                              #`(list #,@(for/list ([rng-ctc (in-list (syntax->list rng-ctcs))])
+                                           (syntax-property rng-ctc
+                                                            'racket/contract:positive-position
+                                                            this->*)))
+                              #'#f)
+                        #,(and post #t)
+                        #,plus-one-arity-function 
+                        #,chaperone-constructor))
+          
+          'racket/contract:contract
+          (vector this->*
+                  ;; the -> in the original input to this guy
+                  (list (car (syntax-e stx)))
+                  '()))))]
     [else
      (syntax-case stx ()
        [(_ args ...)
