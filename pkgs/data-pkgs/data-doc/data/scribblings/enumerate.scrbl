@@ -278,7 +278,7 @@ of the enumerations returned by @racket[f] applied to each element of
         '(("Brian" . 11) ("Jenny" . 15) ("Ted" . 16) ("Ki" . 7)))
 ]}
 
-@defproc[(hash-traverse/e [f (-> any/c enum?)] [xs (listof any/c)]) enum?]{
+@defproc[(hash-traverse/e [f (-> any/c enum?)] [xs (hash/c any/c any/c)]) enum?]{
 
 Constructs an @tech{enumeration} that simulatenously enumerates each
 of the enumerations returned by @racket[f] applied to each value of
