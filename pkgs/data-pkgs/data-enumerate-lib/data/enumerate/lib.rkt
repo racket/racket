@@ -1,8 +1,29 @@
 #lang racket/base
 (require racket/contract/base
          data/enumerate
+         math/base         
+         math/distributions
          math/number-theory
          racket/generator)
+
+;; pick-an-index : ([0,1] -> Nat) ∩ (-> Nat)
+(define (random-natural-w/o-limit [prob-of-zero 0.01])
+  (max (random-natural/no-mean prob-of-zero)
+       (random-natural/no-mean prob-of-zero)
+       (random-natural/no-mean prob-of-zero)))
+
+;; random-natural/no-mean : [0,1] -> Nat
+(define (random-natural/no-mean prob-of-zero)
+  (define x (sample (geometric-dist prob-of-zero)))
+  (define m1 (expt 2 (exact-floor x)))
+  (define m0 (quotient m1 2))
+  (random-integer m0 m1))
+
+(define (random-index e)
+  (define k (size e))
+  (if (infinite? k)
+      (random-natural-w/o-limit)
+      (random-natural k)))
 
 (define (BPP-digits N)
   (let loop ([8Pi -8])
@@ -168,6 +189,8 @@
 
 (provide
  (contract-out
+  [random-index
+   (-> enum? exact-nonnegative-integer?)]
   [infinite-sequence/e
    (-> enum? enum?)]
   [permutations/e

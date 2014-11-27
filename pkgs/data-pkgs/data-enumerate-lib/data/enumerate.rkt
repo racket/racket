@@ -106,7 +106,7 @@
    (-> enum? (-> any/c enum?)
        enum?)]
   [dep2/e
-   (-> nat? enum? (-> any/c enum?)
+   (-> extended-nat/c enum? (-> any/c enum?)
        enum?)]
   [fold-enum
    (-> (-> list? any/c enum?)

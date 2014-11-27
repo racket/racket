@@ -672,6 +672,19 @@ An @tech{enumeration} of S-expressions.
 This library defines some library @tech{enumerations} built on
 @racketmodname[data/enumerate].
 
+@defproc[(random-index [e enum?])
+         exact-nonnegative-integer?]{
+
+Returns a random index into @racket[e]. This works regardless of the
+size of @racket[e], unlike @racket[(random (size e))].
+
+@examples[#:eval the-eval
+(random (size nat/e))
+(random (size (below/e 5000000000)))
+(random-index nat/e)
+(random-index (below/e 5000000000))
+]}
+
 @defproc[(permutations-of-n/e [n exact-nonnegative-integer?])
          enum?]{
 
