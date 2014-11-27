@@ -50,7 +50,9 @@
          
          (struct-out wrapped-extra-arg-arrow)
          contract-custom-write-property-proc
-         (rename-out [contract-custom-write-property-proc custom-write-property-proc]))
+         (rename-out [contract-custom-write-property-proc custom-write-property-proc])
+         
+         set-listof-any!)
 
 (define (contract-custom-write-property-proc stct port display?)
   (write-string "#<" port)
@@ -210,17 +212,29 @@
   (let ()
     (struct name-default ())
     (values (name-default) name-default?)))
+
+;; these two definitions work around a cyclic
+;; dependency. When we coerce a value to a contract,
+;; we want to use (listof any/c) for list?, but
+;; the files are not set up for that, so we just
+;; bang it in here and use it only after it's been banged in.
+(define listof-any #f)
+(define (set-listof-any! c) (set! listof-any c))
+
 (define (coerce-contract/f x [name name-default])
   (define (coerce-simple-value x)
     (cond
       [(contract-struct? x) #f] ;; this has to come first, since some of these are procedure?.
       [(and (procedure? x) (procedure-arity-includes? x 1))
-       (make-predicate-contract (if (name-default? name)
-                                    (or (object-name x) '???)
-                                    name)
-                                x
-                                #f
-                                (memq x the-known-good-contracts))]
+       (cond
+         [(and (eq? x list?) listof-any) listof-any]
+         [else
+          (make-predicate-contract (if (name-default? name)
+                                       (or (object-name x) '???)
+                                       name)
+                                   x
+                                   #f
+                                   (memq x the-known-good-contracts))])]
       [(or (symbol? x) (boolean? x) (char? x) (null? x) (keyword? x))
        (make-eq-contract x
                          (if (name-default? name)

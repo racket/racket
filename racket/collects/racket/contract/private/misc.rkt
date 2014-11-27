@@ -1957,3 +1957,7 @@
      [(2) "nd"]
      [(3) "rd"]
      [else "th"])))
+
+;; this is a hack to work around cyclic linking issues;
+;; see definition of set-listof-any!
+(set-listof-any! (listof any/c))
