@@ -886,7 +886,11 @@
 (define (cons/c-name ctc)
   (define ctc-car (the-cons/c-hd-ctc ctc))
   (define ctc-cdr (the-cons/c-tl-ctc ctc))
-  (build-compound-type-name 'cons/c ctc-car ctc-cdr))
+  (cond
+    [(and (any/c? ctc-car) (any/c? ctc-cdr))
+     'pair?]
+    [else
+     (build-compound-type-name 'cons/c ctc-car ctc-cdr)]))
 
 (define (cons/c-stronger? this that) 
   (define this-hd (the-cons/c-hd-ctc this))
@@ -1959,5 +1963,5 @@
      [else "th"])))
 
 ;; this is a hack to work around cyclic linking issues;
-;; see definition of set-listof-any!
-(set-listof-any! (listof any/c))
+;; see definition of set-listof-any-and-cons/c-anyany!
+(set-listof-any-and-cons/c-anyany! (listof any/c) (cons/c any/c any/c))

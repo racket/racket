@@ -52,7 +52,7 @@
          contract-custom-write-property-proc
          (rename-out [contract-custom-write-property-proc custom-write-property-proc])
          
-         set-listof-any!)
+         set-listof-any-and-cons/c-anyany!)
 
 (define (contract-custom-write-property-proc stct port display?)
   (write-string "#<" port)
@@ -219,7 +219,10 @@
 ;; the files are not set up for that, so we just
 ;; bang it in here and use it only after it's been banged in.
 (define listof-any #f)
-(define (set-listof-any! c) (set! listof-any c))
+(define consc-anyany #f)
+(define (set-listof-any-and-cons/c-anyany! l p)
+  (set! listof-any l)
+  (set! consc-anyany p))
 
 (define (coerce-contract/f x [name name-default])
   (define (coerce-simple-value x)
@@ -228,6 +231,7 @@
       [(and (procedure? x) (procedure-arity-includes? x 1))
        (cond
          [(and (eq? x list?) listof-any) listof-any]
+         [(and (eq? x pair?) consc-anyany) consc-anyany]
          [else
           (make-predicate-contract (if (name-default? name)
                                        (or (object-name x) '???)
