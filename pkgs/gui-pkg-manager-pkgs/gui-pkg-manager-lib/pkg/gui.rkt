@@ -92,7 +92,6 @@
   (define by-source-panel
     (new by-source-panel% 
          [parent dlg]
-         [stretchable-height #f]
          [in-terminal in-terminal-panel]
          [text-field-initial-value package-to-offer]))
   
