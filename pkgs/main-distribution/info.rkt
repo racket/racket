@@ -21,7 +21,6 @@
                "frtime"
                "future-visualizer"
                "future-visualizer-typed"
-               "games"
                "gui"
                "htdp"
                "html"
