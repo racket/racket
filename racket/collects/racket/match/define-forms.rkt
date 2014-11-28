@@ -33,20 +33,62 @@
     (pattern name:id)
     (pattern [name:id default])
     (pattern (~seq kw:keyword name:id))
-    (pattern (~seq kw:keyword [name:id default]))))
+    (pattern (~seq kw:keyword [name:id default])))
+
+  (define (pats->bound-vars parse-id pats)
+    (remove-duplicates
+     (foldr (λ (pat vars) (append (bound-vars (parse-id pat)) vars)) '() pats)
+     bound-identifier=?))
+  (define (do-match-syntax stx parse-id match-id let-id rec? need-top-decl?)
+    (syntax-parse stx
+      [(_ ([(pats ...) rhs] ...) body ...+)
+       (cond
+        [(eq? 'expression (syntax-local-context))
+         (with-syntax ([LET let-id])
+           (syntax/loc stx
+             (LET ([(pats ...) rhs] ...) (#%expression body) ...)))]
+        [else
+         (define bound-vars-list (pats->bound-vars parse-id (syntax->list #'(pats ... ...))))
+         (define def-ctx (syntax-local-make-definition-context))
+         (syntax-local-bind-syntaxes bound-vars-list #f def-ctx)
+         (internal-definition-context-seal def-ctx)
+         (define (add-context e) (internal-definition-context-apply def-ctx e))
+         (with-syntax ([(vars ...) bound-vars-list]
+                       [(id ...) (map add-context bound-vars-list)]
+                       [(rhs ...) (if rec?
+                                      (map add-context (attribute rhs))
+                                      #'(rhs ...))]
+                       [(body ...) (map add-context (attribute body))]
+                       [MATCH match-id])
+           (with-syntax ([(top-decl ...)
+                          (if (and need-top-decl? (equal? 'top-level (syntax-local-context)))
+                              #'((define-syntaxes (id ...) (values)))
+                              null)])
+             #`(begin
+                 top-decl ...
+                 (define-values (id ...)
+                   (MATCH (rhs ...) #,stx [(pats ... ...) (values vars ...)]))
+                 body ...)))])])))
 
 (define-syntax-rule (define-forms parse-id
                       match match* match-lambda match-lambda*
 		      match-lambda** match-let match-let*
                       match-let-values match-let*-values
-		      match-define match-define-values match-letrec
+                      splicing-match-let
+                      splicing-match-let-values
+                      splicing-match-letrec
+                      splicing-match-letrec-values
+		      match-define match-define-values
+                      match-letrec match-letrec-values
 		      match/values match/derived match*/derived
                       define/match)
   (...
    (begin
      (provide match match* match-lambda match-lambda* match-lambda**
 	      match-let match-let* match-let-values match-let*-values
-              match-define match-define-values match-letrec
+              match-define match-define-values match-letrec match-letrec-values
+              splicing-match-let splicing-match-let-values
+              splicing-match-letrec splicing-match-letrec-values
 	      match/values match/derived match*/derived match-define-values
               define/match)
      (define-syntax (match* stx)
@@ -122,6 +164,21 @@
                   [(pats ...) #,(syntax/loc stx (match-let*-values (rest-pats ...)
                                                   body1 body ...))])))]))
 
+     (define-syntax (splicing-match-let-values stx)
+       (do-match-syntax stx parse-id #'match*/derived #'match-let-values #f #f))
+     
+     (define-syntax (splicing-match-let stx)
+       (syntax-parse stx
+         [(_ ([pat rhs] ...) body ...+)
+          (syntax/loc stx (splicing-match-let-values ([(pat) rhs] ...) body ...))]))
+
+     (define-syntax (splicing-match-letrec-values stx)
+       (do-match-syntax stx parse-id #'match*/derived #'match-letrec-values #t #t))
+     (define-syntax (splicing-match-letrec stx)
+       (syntax-parse stx
+         [(_ ([pat rhs] ...) body ...+)
+          (syntax/loc stx (splicing-match-letrec-values ([(pat) rhs] ...) body ...))]))
+
      ;; there's lots of duplication here to handle named let
      ;; some factoring out would do a lot of good
      (define-syntax (match-let stx)
@@ -150,6 +207,17 @@
                                  (quasisyntax/loc c (match-define #,p #,e)))
                             body1 body ...))]))
 
+     (define-syntax (match-letrec-values stx)
+       (syntax-parse stx
+         [(_ ((~and cl [(pat ...) exp]) ...) body1 body ...)
+          (quasisyntax/loc stx
+			   (let ()
+                            #,@(for/list ([c (in-syntax #'(cl ...))]
+                                          [p (in-syntax #'((pat ...) ...))]
+                                          [e (in-syntax #'(exp ...))])
+                                 (quasisyntax/loc c (match-define-values #,p #,e)))
+                            body1 body ...))]))
+
      (define-syntax (match-define stx)
        (syntax-parse stx
          [(_ pat rhs:expr)
@@ -157,21 +225,16 @@
             (with-syntax ([vars (bound-vars p)])
               (quasisyntax/loc stx
                 (define-values vars (match*/derived (rhs) #,stx
-				      [(pat) (values . vars)])))))]))
+                                      [(pat) (values . vars)])))))]))
 
      (define-syntax (match-define-values stx)
        (syntax-parse stx
          [(_ (pats ...) rhs:expr)
-          (define bound-vars-list (remove-duplicates
-                                   (foldr (λ (pat vars)
-                                             (append (bound-vars (parse-id pat)) vars))
-                                          '() (syntax->list #'(pats ...)))
-                                   bound-identifier=?))
-          (with-syntax ([(ids ...) (generate-temporaries #'(pats ...))])
-            (quasisyntax/loc stx
-              (define-values #,bound-vars-list
+          (with-syntax ([(ids ...) (pats->bound-vars parse-id (syntax->list #'(pats ...)))])
+            (syntax/loc stx
+              (define-values (ids ...)
                 (match/values rhs
-                  [(pats ...) (values . #,bound-vars-list)]))))]))
+                  [(pats ...) (values ids ...)]))))]))
 
      (define-syntax (define/match stx)
        (syntax-parse stx

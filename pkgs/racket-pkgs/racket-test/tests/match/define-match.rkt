@@ -55,3 +55,9 @@
 
 (check-equal? (list-fun '(1 2 3)) #t)
 (check-equal? (list-fun '(4 5 6)) #f)
+
+(define c 0)
+(define tmp 1)
+(splicing-match-let ([(app (λ _ c) c) tmp])
+   (define out c))
+(check-equal? out c)
