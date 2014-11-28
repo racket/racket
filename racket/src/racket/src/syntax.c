@@ -58,8 +58,7 @@ typedef struct Scheme_Mark {
   Scheme_Object so;
   mzlonglong id;
   Scheme_Object *bindings; /* list or marshaled info */
-  long binding_version;
-  int kind; // REMOVEME
+  intptr_t timestamp;
   Scheme_Object *owner_multi_mark; /* (cons <multi-mark> <phase>) */
 } Scheme_Mark;
 
@@ -70,10 +69,10 @@ typedef struct Scheme_Propagate_Table {
 } Scheme_Propagate_Table;
 
 THREAD_LOCAL_DECL(static mzlonglong mark_counter);
-THREAD_LOCAL_DECL(static Scheme_Object *top_level_multi_marks);
 THREAD_LOCAL_DECL(static Scheme_Object *last_phase_shift);
 THREAD_LOCAL_DECL(static Scheme_Object *nominal_ipair_cache);
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *taint_intern_table);
+THREAD_LOCAL_DECL(static intptr_t binding_cache_timestamp);
 
 static Scheme_Object *syntax_p(int argc, Scheme_Object **argv);
 
@@ -286,13 +285,6 @@ void scheme_init_stx_places(int initial_main_os_thread) {
 
   REGISTER_SO(taint_intern_table);
   taint_intern_table = scheme_make_weak_equal_table();
-
-  REGISTER_SO(top_level_multi_marks);
-  STX_ASSERT(mark_counter == 0);
-
-  top_level_multi_marks = scheme_make_pair(scheme_new_multi_mark(),
-                                           scheme_make_pair(scheme_new_multi_mark(),
-                                                            scheme_null));
 }
 
 /*========================================================================*/
@@ -541,7 +533,6 @@ Scheme_Object *scheme_new_mark(int kind)
   m->so.type = scheme_mark_type;
   id = ++mark_counter;
   m->id = id;
-  m->kind = kind;
 
   return (Scheme_Object *)m;
 }
@@ -929,6 +920,21 @@ Scheme_Object *scheme_stx_adjust_mark_or_marks(Scheme_Object *o, Scheme_Object *
     return scheme_stx_adjust_mark(o, mark, phase, mode);
   else
     return scheme_stx_adjust_marks(o, (Scheme_Mark_Set *)mark, phase, mode);
+}
+
+Scheme_Object *scheme_stx_remove_multi_marks(Scheme_Object *o)
+{
+  Scheme_Object *l = ((Scheme_Stx *)o)->marks->multi_marks;
+
+  while (!SCHEME_NULLP(l)) {
+    o = scheme_stx_remove_mark(o,
+                               extract_single_mark(SCHEME_CAR(SCHEME_CAR(l)),
+                                                   scheme_make_integer(0)),
+                               scheme_make_integer(0));
+    l = SCHEME_CDR(l);
+  }
+
+  return o;
 }
 
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase)
@@ -1886,30 +1892,30 @@ Scheme_Object *scheme_stx_taint_disarm(Scheme_Object *o, Scheme_Object *insp)
 
 /******************** bindings ********************/
 
-Scheme_Mark *extract_max_mark_and_increment_bindings(Scheme_Mark_Set *marks)
+Scheme_Mark *extract_max_mark_and_increment_timestamps(Scheme_Mark_Set *marks)
 {
   intptr_t i;
   Scheme_Object *key, *val;
   Scheme_Mark *mark;
   mzlonglong mark_id_val, id_val;
+  intptr_t timestamp;
+
+  timestamp = ++binding_cache_timestamp;
 
   i = mark_set_next(marks, -1);
   mark_set_index(marks, i, &key, &val);
 
   mark = (Scheme_Mark *)key;
   mark_id_val = mark->id;
-  if (mark_id_val < 0) mark_id_val = -mark_id_val;
-  mark->binding_version++;
+  mark->timestamp = timestamp;
 
   i = mark_set_next(marks, i);
   while (i != -1) {
     mark_set_index(marks, i, &key, &val);
 
-    ((Scheme_Mark *)key)->binding_version++;
+    ((Scheme_Mark *)key)->timestamp = timestamp;
 
     id_val = ((Scheme_Mark *)key)->id;
-    if (id_val < 0) id_val = -id_val;
-
     if (id_val > mark_id_val) {
       mark = (Scheme_Mark *)key;
       mark_id_val = id_val;
@@ -1919,6 +1925,23 @@ Scheme_Mark *extract_max_mark_and_increment_bindings(Scheme_Mark_Set *marks)
   }
 
   return mark;
+}
+
+static int mark_timestamps_older(Scheme_Mark_Set *marks, intptr_t timestamp)
+{
+  intptr_t i;
+  Scheme_Object *key, *val;
+
+  i = mark_set_next(marks, -1);
+  while (i != -1) {
+    mark_set_index(marks, i, &key, &val);
+
+    if (((Scheme_Mark *)key)->timestamp > timestamp)
+      return 0;
+    i = mark_set_next(marks, i);
+  }
+
+  return 1;
 }
 
 #define SCHEME_BINDING_MARKS(p) ((Scheme_Mark_Set *)SCHEME_CAR(p))
@@ -1932,7 +1955,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
   Scheme_Object *l, *p, *bind;
 
   if (mark_set_count(marks)) {
-    mark = extract_max_mark_and_increment_bindings(marks);
+    mark = extract_max_mark_and_increment_timestamps(marks);
   } else {
     scheme_signal_error("internal error: cannot bind identifier with an empty context");
     return;
@@ -2113,8 +2136,7 @@ static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_m
   while (i != -1) {
     mark_set_index(marks, i, &key, &val);
     
-    printf(" %s:%d", scheme_write_to_string(scheme_mark_printed_form(key), NULL),
-           ((Scheme_Mark *)key)->kind);
+    printf(" %s", scheme_write_to_string(scheme_mark_printed_form(key), NULL));
     if (((Scheme_Mark *)key)->owner_multi_mark)
       printf("/%" PRIdPTR, scheme_hash_key(SCHEME_CAR(((Scheme_Mark *)key)->owner_multi_mark)));
 
@@ -2376,8 +2398,8 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
   if (check_subset) {
     cached_result = MALLOC_N(Scheme_Object*, 5);
     cached_result[0] = result_best_so_far;
-    cached_result[1] = scheme_make_integer(mark_best_so_far->binding_version);
-    cached_result[2] = (Scheme_Object *)mark_best_so_far;
+    cached_result[1] = scheme_make_integer(binding_cache_timestamp);
+    cached_result[2] = (Scheme_Object *)best_so_far;
     
     return cached_result;
   } else
@@ -2425,10 +2447,21 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
 
   if (_ambiguous) *_ambiguous = 0;
 
-  if (0 && stx->u.cached_binding && !_binding_marks && !_exact_match && !nominal_name) { // REMOVEME
+  if (stx->u.cached_binding && !nominal_name) {
+    Scheme_Mark_Set *marks;
+
+    marks = (Scheme_Mark_Set *)stx->u.cached_binding[2];
+
     if (SAME_OBJ(stx->u.cached_binding[3], phase)
-        && (SCHEME_INT_VAL(stx->u.cached_binding[1])
-            == (((Scheme_Mark *)stx->u.cached_binding[2])->binding_version))) {
+        && mark_timestamps_older(marks, SCHEME_INT_VAL(stx->u.cached_binding[1]))) {
+      if (_binding_marks)
+        *_binding_marks = marks;
+      if (_exact_match) {
+        if (mark_set_count(marks) == mark_set_count(extract_mark_set(stx, phase)))
+          *_exact_match = 1;
+        else
+          *_exact_match = 0;
+      }
       if (_insp) *_insp = stx->u.cached_binding[4];
       return stx->u.cached_binding[0];
     }

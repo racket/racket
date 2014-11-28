@@ -224,10 +224,10 @@ typedef struct Thread_Local_Variables {
   intptr_t stack_copy_size_cache_[STACK_COPY_CACHE_SIZE];
   int scc_pos_;
   mzlonglong mark_counter_;
-  struct Scheme_Object *top_level_multi_marks_;
   struct Scheme_Object *last_phase_shift_;
   struct Scheme_Object *nominal_ipair_cache_;
   struct Scheme_Bucket_Table *taint_intern_table_;
+  intptr_t binding_cache_timestamp_;
   struct Scheme_Thread *scheme_current_thread_;
   struct Scheme_Thread *scheme_main_thread_;
   struct Scheme_Thread *scheme_first_thread_;
@@ -354,6 +354,8 @@ typedef struct Thread_Local_Variables {
   void *scheme_inotify_server_;
   struct Scheme_Object *configuration_callback_cache_[2];
   struct FFI_Orig_Place_Call *cached_orig_place_todo_;
+  struct Scheme_Object *scheme_sys_wraps0_;
+  struct Scheme_Object *scheme_sys_wraps1_;
   struct Scheme_Object *scheme_module_stx_;
   struct Scheme_Object *scheme_modulestar_stx_;
   struct Scheme_Object *scheme_module_begin_stx_;
@@ -612,9 +614,9 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scc_pos XOA (scheme_get_thread_local_variables()->scc_pos_)
 #define nominal_ipair_cache XOA (scheme_get_thread_local_variables()->nominal_ipair_cache_)
 #define mark_counter XOA (scheme_get_thread_local_variables()->mark_counter_)
-#define top_level_multi_marks XOA (scheme_get_thread_local_variables()->top_level_multi_marks_)
 #define last_phase_shift XOA (scheme_get_thread_local_variables()->last_phase_shift_)
 #define taint_intern_table XOA (scheme_get_thread_local_variables()->taint_intern_table_)
+#define binding_cache_timestamp XOA (scheme_get_thread_local_variables()->binding_cache_timestamp_)
 #define scheme_current_thread XOA (scheme_get_thread_local_variables()->scheme_current_thread_)
 #define scheme_main_thread XOA (scheme_get_thread_local_variables()->scheme_main_thread_)
 #define scheme_first_thread XOA (scheme_get_thread_local_variables()->scheme_first_thread_)
@@ -741,6 +743,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_inotify_server XOA (scheme_get_thread_local_variables()->scheme_inotify_server_)
 #define configuration_callback_cache XOA (scheme_get_thread_local_variables()->configuration_callback_cache_)
 #define cached_orig_place_todo XOA (scheme_get_thread_local_variables()->cached_orig_place_todo_)
+#define scheme_sys_wraps0 XOA (scheme_get_thread_local_variables()->scheme_sys_wraps0_)
+#define scheme_sys_wraps1 XOA (scheme_get_thread_local_variables()->scheme_sys_wraps1_)
 #define scheme_module_stx XOA (scheme_get_thread_local_variables()->scheme_module_stx_)
 #define scheme_modulestar_stx XOA (scheme_get_thread_local_variables()->scheme_modulestar_stx_)
 #define scheme_module_begin_stx XOA (scheme_get_thread_local_variables()->scheme_module_begin_stx_)

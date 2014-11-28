@@ -162,7 +162,7 @@ static Scheme_Object *convert_submodule_path(Scheme_Object *name,
                                              Scheme_Object *check_data);
 static int check_is_submodule(Scheme_Object *modname, Scheme_Object *_genv);
 
-static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p);
+static Scheme_Object *sys_wraps_phase(intptr_t p);
 
 static int phaseless_rhs(Scheme_Object *val, int var_count, int phase);
 
@@ -178,10 +178,6 @@ READ_ONLY static Scheme_Object *extfl_modname;
 READ_ONLY static Scheme_Object *futures_modname;
 READ_ONLY static Scheme_Object *unsafe_modname;
 READ_ONLY static Scheme_Object *foreign_modname;
-
-/* global read-only phase wraps */
-READ_ONLY static Scheme_Object *scheme_sys_wraps0;
-READ_ONLY static Scheme_Object *scheme_sys_wraps1;
 
 /* global read-only symbols */
 ROSYM static Scheme_Object *module_begin_symbol;
@@ -214,6 +210,10 @@ ROSYM static Scheme_Object *nominal_id_symbol;
 ROSYM static Scheme_Object *phaseless_keyword;
 
 READ_ONLY static Scheme_Object *modbeg_syntax;
+
+/* phase wraps */
+THREAD_LOCAL_DECL(static Scheme_Object *scheme_sys_wraps0);
+THREAD_LOCAL_DECL(static Scheme_Object *scheme_sys_wraps1);
 
 /* global syntax */
 THREAD_LOCAL_DECL(Scheme_Object *scheme_module_stx);
@@ -673,17 +673,13 @@ void scheme_finish_kernel(Scheme_Env *env)
 
 void scheme_init_syntax_bindings()
 {
-  // REMOVEME: FIXME: all of these need to be place-local
-  
   Scheme_Object *w;
 
   REGISTER_SO(scheme_sys_wraps0);
   REGISTER_SO(scheme_sys_wraps1);
 
-  scheme_sys_wraps0 = scheme_sys_wraps_phase_worker(0);
-  scheme_sys_wraps1 = scheme_sys_wraps_phase_worker(1);
-
-  scheme_sys_wraps(NULL);
+  scheme_sys_wraps0 = sys_wraps_phase(0);
+  scheme_sys_wraps1 = sys_wraps_phase(1);
 
   REGISTER_SO(scheme_module_stx);
   REGISTER_SO(scheme_modulestar_stx);
@@ -821,7 +817,7 @@ Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)
   return scheme_sys_wraps_phase(scheme_make_integer(phase));
 }
 
-static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p)
+static Scheme_Object *sys_wraps_phase(intptr_t p)
 {
   Scheme_Object *rn, *w;
 
@@ -854,7 +850,7 @@ Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase)
   if (p == 0) return scheme_sys_wraps0;
   if (p == 1) return scheme_sys_wraps1;
 
-  return scheme_sys_wraps_phase_worker(p);
+  return sys_wraps_phase(p);
 }
 
 void scheme_save_initial_module_set(Scheme_Env *env)
@@ -6910,7 +6906,6 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Module *m;
   Scheme_Object *mbval, *orig_ii;
   Scheme_Object *this_empty_self_modidx;
-  Scheme_Mark_Set *super_marks;
   int saw_mb, check_mb = 0;
   Scheme_Object *restore_confusing_name = NULL;
   LOG_EXPAND_DECLS;
@@ -6937,23 +6932,24 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     scheme_wrong_syntax(NULL, NULL, form, NULL);
   ii = SCHEME_STX_CAR(fm);
   fm = SCHEME_STX_CDR(fm);
-  orig_ii = ii;
-
-  if (!SCHEME_STXP(fm))
-    fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
-
-  if (scheme_is_nested_module(env))
-    super_marks = scheme_module_context_marks(scheme_stx_to_module_context(super_bxs->rn_stx));
-  else
-    super_marks = scheme_module_context_marks(scheme_make_top_level_module_context(scheme_env_phase(env->genv)));
 
   if (post && SCHEME_FALSEP(SCHEME_STX_VAL(ii))) {
     ii = NULL;
   } else {
+    /* "Punch a hole" in the enclosing context by removing all
+       module contexts that are present on the `module` form: */
+    fm = scheme_stx_remove_multi_marks(disarmed_form);
+    fm = SCHEME_STX_CDR(fm);
+    nm = SCHEME_STX_CAR(fm);
+    fm = SCHEME_STX_CDR(fm);
+    ii = SCHEME_STX_CAR(fm);
+    fm = SCHEME_STX_CDR(fm);
     super_phase_shift = scheme_make_integer(0);
-    ii = scheme_stx_adjust_marks(ii, super_marks, super_phase_shift, SCHEME_STX_REMOVE);
-    fm = scheme_stx_adjust_marks(fm, super_marks, super_phase_shift, SCHEME_STX_REMOVE);
   }
+
+  orig_ii = ii;
+  if (!SCHEME_STXP(fm))
+    fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
 
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   m->so.type = scheme_module_type;
@@ -9489,7 +9485,7 @@ static void install_stops(Scheme_Comp_Env *xenv, int phase, Scheme_Object **_beg
     scheme_set_local_syntax(20, scheme_module_stx, stop, xenv, 0);
     scheme_set_local_syntax(21, declare_stx, stop, xenv, 0);
   } else {
-    w = scheme_sys_wraps_phase_worker(phase);
+    w = scheme_sys_wraps_phase(scheme_make_integer(phase));
     s = scheme_datum_to_syntax(scheme_intern_symbol("begin"), scheme_false, w, 0, 0);
     scheme_set_local_syntax(0, s, stop, xenv, 0);
     s = scheme_datum_to_syntax(scheme_intern_symbol("define-values"), scheme_false, w, 0, 0);
@@ -10418,7 +10414,7 @@ static Scheme_Object *expand_provide(Scheme_Object *e, int at_phase,
   else
     scheme_set_local_syntax(0, scheme_datum_to_syntax(scheme_intern_symbol("begin"), 
                                                       scheme_false, 
-                                                      scheme_sys_wraps_phase_worker(at_phase), 
+                                                      scheme_sys_wraps_phase(scheme_make_integer(at_phase)), 
                                                       0, 0), 
                             stop, xenv, 0);
 

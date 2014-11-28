@@ -3156,6 +3156,7 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
 {
   int len;
   Scheme_Object *stx, *form;
+  Scheme_Comp_Env *frame;
 
   if (rec[drec].comp)
     env->prefix->non_phaseless = 1;
@@ -3169,12 +3170,24 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
   if (len != 2)
     bad_form(form, len);
 
-  if (rec[drec].comp) {
-    stx = SCHEME_STX_CDR(form);
-    stx = SCHEME_STX_CAR(stx);
+  stx = SCHEME_STX_CDR(form);
+  stx = SCHEME_STX_CAR(stx);
+  
+  /* Remove marks for all enclosing local binding contexts. */
+  for (frame = env; frame; frame = frame->next) {
+    if (frame->marks && !(frame->flags & SCHEME_KEEP_MARKS_FRAME))
+      stx = scheme_stx_adjust_mark_or_marks(stx, frame->marks,
+                                            scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
+  }
+
+  if (rec[drec].comp)
     return scheme_register_stx_in_prefix(stx, env, rec, drec);
-  } else
-    return orig_form;
+  else  {
+    form = SCHEME_STX_CAR(form);
+    return scheme_datum_to_syntax(scheme_make_pair(form,
+                                                   scheme_make_pair(stx, scheme_null)),
+                                  orig_form, orig_form, 0, 2);
+  }
 }
 
 static Scheme_Object *

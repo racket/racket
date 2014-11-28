@@ -1049,7 +1049,7 @@ typedef struct Scheme_Mark_Table {
   Scheme_Mark_Set *phase_0;
   Scheme_Mark_Set *phase_1;
   Scheme_Hash_Tree *other_phases;
-  Scheme_Object *multi_marks;
+  Scheme_Object *multi_marks; /* list of (cons multi_mark phase-shift) */
 } Scheme_Mark_Table;
 
 typedef struct Scheme_Stx {
@@ -1114,6 +1114,8 @@ Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m, Scheme
 Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
 Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode);
 Scheme_Object *scheme_stx_adjust_mark_or_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
+
+Scheme_Object *scheme_stx_remove_multi_marks(Scheme_Object *o);
 
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
