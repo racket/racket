@@ -908,7 +908,7 @@
                        (cond
                          [(or (send evt get-alt-down)
                               (send evt get-control-down))
-                          (dynamic-require 'tests/drracket/follow-log #f)]
+                          (dynamic-require 'framework/private/follow-log #f)]
                          [else
                           (collect-garbage)
                           (update-memory-text)]))]
