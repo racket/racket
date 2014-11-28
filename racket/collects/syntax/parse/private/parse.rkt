@@ -161,7 +161,8 @@
     [(syntax-parse stx-expr . clauses)
      (quasisyntax/loc stx
        (let ([x (datum->syntax #f stx-expr)])
-         (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx))))]))
+         (with ([this-syntax x])
+           (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx)))))]))
 
 (define-syntax (syntax-parser stx)
   (syntax-case stx ()
@@ -169,7 +170,8 @@
      (quasisyntax/loc stx
        (lambda (x)
          (let ([x (datum->syntax #f x)])
-           (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx)))))]))
+           (with ([this-syntax x])
+             (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx))))))]))
 
 (define-syntax (syntax-parser/template stx)
   (syntax-case stx ()
@@ -177,7 +179,8 @@
      (quasisyntax/loc stx
        (lambda (x)
          (let ([x (datum->syntax #f x)])
-           (parse:clauses x clauses one-template ctx))))]))
+           (with ([this-syntax x])
+             (parse:clauses x clauses one-template ctx)))))]))
 
 (define-syntax (define/syntax-parse stx)
   (syntax-case stx ()
