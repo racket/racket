@@ -1,2 +1,3 @@
-(("planet2-example" "git://github.com/jeapostrophe/planet2-example/")
- #;("games" "git://github.com/racket/games/"))
+(("drdr" "git://github.com/racket/drdr/")
+ ("drdr2" "git://github.com/racket/drdr2/")
+ ("pkg-build" "git://github.com/racket/pkg-build/"))
