@@ -727,9 +727,6 @@ path/s is either such a string or a list of them.
 "pkgs/frtime" responsible (jay gcooper)
 "pkgs/frtime/tests/time.rkt" drdr:random #t
 "pkgs/future-visualizer-pkgs" responsible (jamesswaine)
-"pkgs/games" responsible (mflatt robby)
-"pkgs/games/chat-noir" responsible (robby matthias)
-"pkgs/games/paint-by-numbers/raw-problems/build-solution-sets.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
 "pkgs/gui-pkg-manager-pkgs" responsible (mflatt)
 "pkgs/gui-pkgs" responsible (mflatt)
 "pkgs/gui-pkgs/gui-doc/mrlib" responsible (robby)
@@ -868,8 +865,6 @@ path/s is either such a string or a list of them.
 "pkgs/plot-pkgs/plot-test/plot/tests/extreme-bounds-tests.rkt" drdr:timeout 150
 "pkgs/plt-services" responsible (eli mflatt)
 "pkgs/plt-services/meta" responsible (eli)
-"pkgs/plt-services/meta/drdr" responsible (jay)
-"pkgs/plt-services/meta/drdr2" responsible (jay)
 "pkgs/plt-services/meta/images/taking-screenshots/racket-widget.scm" drdr:command-line #f
 "pkgs/plt-services/meta/pkg-index" responsible (jay)
 "pkgs/plt-services/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
