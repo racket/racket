@@ -3350,6 +3350,14 @@
                  (ann (values a a) (Values Symbol Symbol)))
                (void))
              -Void]
+
+       ;; Expected type for lambda should work if the Union has
+       ;; only one function type
+       [tc-e (let ()
+               (: f (Option (-> String String)))
+               (define f (lambda (x) (string-append x "foo")))
+               ((assert f) "bar"))
+             -String]
         )
 
   (test-suite

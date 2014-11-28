@@ -375,7 +375,8 @@ those functions.
 (struct maybe-type-vars name-spec ([f : t] ...) options ...)
 ([maybe-type-vars code:blank (v ...)]
  [name-spec name (code:line name parent)]
- [options #:transparent #:mutable])]{
+ [options #:transparent #:mutable
+          (code:line #:guard guard-expr)])]{
  Defines a @rtech{structure} with the name @racket[name], where the
  fields @racket[f] have types @racket[t], similar to the behavior of @|struct-id|
  from @racketmodname[racket/base].
@@ -395,7 +396,9 @@ from @racketmodname[racket/base].}
 (define-struct maybe-type-vars name-spec ([f : t] ...) options ...)
 ([maybe-type-vars code:blank (v ...)]
  [name-spec name (name parent)]
- [options #:transparent #:mutable])]{Legacy version of @racket[struct],
+ [options #:transparent #:mutable
+          (code:line #:guard guard-expr)])]
+{Legacy version of @racket[struct],
 corresponding to @|define-struct-id| from @racketmodname[racket/base].}
 
 @defform/subs[

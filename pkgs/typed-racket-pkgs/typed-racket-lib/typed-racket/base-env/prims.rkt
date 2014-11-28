@@ -563,6 +563,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 ;; Syntax classes and helpers for `struct:`
 (begin-for-syntax
   (define-syntax-class fld-spec
+    #:attributes (fld ty form)
     #:literals (:)
     #:description "[field-name : type]"
     (pattern [fld:id : ty]
@@ -571,6 +572,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #:fail-when #t
              (format "field `~a' requires a type annotation"
                      (syntax-e #'fld))
+             #:with ty 'dummy
              #:with form 'dummy))
 
   (define-syntax-class struct-name
@@ -615,10 +617,29 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax-parse stx
        [(_ vars:maybe-type-vars nm:struct-name (fs:fld-spec ...)
            opts:struct-options)
+        ;; Transplant the guard expression, if it exists, with a type annotation
+        ;; so that it's typechecked. Note that it doesn't matter if we rewrite `opts`
+        ;; to point at this transplanted definition since errors will highlight the
+        ;; correct original syntax.
+        (define guard-name (generate-temporary))
+        (define guard-expression
+          (if (attribute opts.guard)
+              (quasisyntax/loc (attribute opts.guard)
+                (begin (: #,guard-name (Option (-> fs.ty ... Symbol (values fs.ty ...))))
+                       (define #,guard-name #,(attribute opts.guard))))
+              #`(define #,guard-name #f)))
         (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())]
+              [transparent? (if (attribute opts.transparent?) #'(#:transparent) #'())]
               [cname (second (build-struct-names #'nm.name empty #t #t))])
           (with-syntax ([d-s (ignore-some
-                               (syntax/loc stx (define-struct nm (fs.fld ...) . opts)))]
+                               (quasisyntax/loc stx
+                                 (define-struct nm (fs.fld ...)
+                                   #,@mutable?
+                                   #,@transparent?
+                                   #:guard #,guard-name
+                                   #,@(apply append (map (λ (p v) (list '#:property p v))
+                                                         (attribute opts.prop)
+                                                         (attribute opts.prop-val))))))]
                         [dtsi (quasisyntax/loc stx
                                 (dtsi* (vars.vars ...) nm (fs.form ...)
                                        #:maker #,cname
@@ -626,7 +647,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
             (if (eq? (syntax-local-context) 'top-level)
                 ;; Use `eval` at top-level to avoid an unbound id error
                 ;; from dtsi trying to look at the d-s bindings.
-                #'(begin (eval (quote-syntax d-s))
+                #`(begin #,guard-expression
+                         (eval (quote-syntax d-s))
                          ;; It is important here that the object under the
                          ;; eval is a quasiquoted literal in order
                          ;; for #%top-interaction to get the lexical
@@ -639,24 +661,38 @@ This file defines two sorts of primitives. All of them are provided into any mod
                          ;; this module. This ensures that the `dtsi` macro
                          ;; is actually bound to its definition above.
                          (eval `(#%top-interaction . ,(quote-syntax dtsi))))
-                #'(begin d-s dtsi))))]))
+                #`(begin #,guard-expression d-s dtsi))))]))
    (lambda (stx)
      (syntax-parse stx
        [(_ vars:maybe-type-vars nm:struct-name/new (fs:fld-spec ...)
            opts:struct-options)
-        (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())])
+        (define guard-name (generate-temporary))
+        (define guard-expression
+          (if (attribute opts.guard)
+              (quasisyntax/loc (attribute opts.guard)
+                (begin (: #,guard-name (Option (-> fs.ty ... Symbol (values fs.ty ...))))
+                       (define #,guard-name #,(attribute opts.guard))))
+              #`(define #,guard-name #f)))
+        (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())]
+              [transparent? (if (attribute opts.transparent?) #'(#:transparent) #'())])
           (with-syntax ([d-s (ignore (quasisyntax/loc stx
                                        (struct #,@(attribute nm.new-spec) (fs.fld ...)
-                                               . opts)))]
+                                               #,@mutable?
+                                               #,@transparent?
+                                               #:guard #,guard-name
+                                               #,@(apply append (map (λ (p v) (list '#:property p v))
+                                                                     (attribute opts.prop)
+                                                                     (attribute opts.prop-val))))))]
                         [dtsi (quasisyntax/loc stx
                                 (dtsi* (vars.vars ...)
                                        nm.old-spec (fs.form ...)
                                        #,@mutable?))])
             ;; see comment above
             (if (eq? (syntax-local-context) 'top-level)
-                #'(begin (eval (quote-syntax d-s))
+                #`(begin #,guard-expression
+                         (eval (quote-syntax d-s))
                          (eval `(#%top-interaction . ,(quote-syntax dtsi))))
-                #'(begin d-s dtsi))))]))))
+                #`(begin #,guard-expression d-s dtsi))))]))))
 
 
 ;Copied from racket/private/define-struct
