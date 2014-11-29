@@ -6899,7 +6899,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                                 Scheme_Object *super_phase_shift)
 {
   Scheme_Object *fm, *disarmed_form;
-  Scheme_Object *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set, *mb_ctx;
+  Scheme_Object *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set, *mb_ctx, *ctx_form;
   Scheme_Module *iim;
   Scheme_Env *menv, *top_env;
   Scheme_Comp_Env *benv;
@@ -6935,10 +6935,12 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   if (post && SCHEME_FALSEP(SCHEME_STX_VAL(ii))) {
     ii = NULL;
+    ctx_form = fm;
   } else {
     /* "Punch a hole" in the enclosing context by removing all
        module contexts that are present on the `module` form: */
     fm = scheme_stx_remove_multi_marks(disarmed_form);
+    ctx_form = fm;
     fm = SCHEME_STX_CDR(fm);
     nm = SCHEME_STX_CAR(fm);
     fm = SCHEME_STX_CDR(fm);
@@ -7132,7 +7134,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     Scheme_Object *shift;
     shift = (Scheme_Object *)m->super_bxs_info[1];
     fm = scheme_stx_add_shift(fm, shift);
-    mb_ctx = scheme_stx_add_shift(disarmed_form, shift);
+    mb_ctx = scheme_stx_add_shift(ctx_form, shift);
     /* REMOVEME: FIXME: there must be a `#%module-begin' in the enclosing module, right? */
     saw_mb = 1;
   }
@@ -7173,27 +7175,23 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   /* phase shift to replace self_modidx of previous expansion: */
   fm = scheme_stx_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL, m->insp);
   
-  if (ii) {
+  if (ii)
     fm = scheme_stx_add_module_context(fm, rn_set);
-  }
 
   SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);
 
   if (!check_mb) {
-
     fm = scheme_check_immediate_macro(fm, benv, rec, drec, &mbval, NULL, 1);
 
     /* If expansion is not the primitive `#%module-begin', add local one: */
     if (!SAME_OBJ(mbval, modbeg_syntax)) {
       Scheme_Object *mb;
       mb = scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx, 0, 0);
+      if (ii)
+        mb = scheme_stx_add_module_context(mb, rn_set);
       fm = scheme_make_pair(mb, scheme_make_pair(fm, scheme_null));
-      fm = scheme_datum_to_syntax(fm, form, disarmed_form, 0, 2);
+      fm = scheme_datum_to_syntax(fm, form, ctx_form, 0, 2);
       fm = scheme_stx_property(fm, module_name_symbol, scheme_resolved_module_path_value(rmp));
-      if (ii) {
-        /* Since fm is a newly-created syntax object, we need to re-add context: */
-        fm = scheme_stx_add_module_context(fm, rn_set);
-      }
       
       SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer, fm);
 
@@ -10131,7 +10129,7 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
             protected = SCHEME_TRUEP(SCHEME_CDR(v));
             prnt_name = name;
 
-            binding = scheme_stx_lookup_w_nominal(name, phase, 
+            binding = scheme_stx_lookup_w_nominal(name, phase, 0,
                                                   NULL, NULL, NULL,
                                                   NULL,
                                                   &nominal_mod, &nominal_name,

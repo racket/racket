@@ -1130,7 +1130,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   pre_cache = ((Scheme_Stx *)find_id)->u.cached_binding;
 
-  binding = scheme_stx_lookup_w_nominal(find_id, scheme_env_phase(env->genv),
+  binding = scheme_stx_lookup_w_nominal(find_id, scheme_env_phase(env->genv), 0,
                                         NULL, &ambiguous, NULL,
                                         &rename_insp,
                                         NULL, NULL, NULL, NULL);
@@ -1503,8 +1503,6 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   return (Scheme_Object *)b;
 }
 
-
-
 static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
 {
   int i;
@@ -1552,7 +1550,7 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
 
   phase = scheme_env_phase(env);
 
-  binding = scheme_stx_lookup_w_nominal(id, phase,
+  binding = scheme_stx_lookup_w_nominal(id, phase, 1,
                                         &exact_match, NULL, NULL,
                                         NULL,
                                         NULL, NULL, NULL, NULL);

@@ -2493,13 +2493,13 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
     return best_so_far;
 }
 
-static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object *phase,
+static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object *phase, int for_bind,
                                                   int *_exact_match, int *_ambiguous,
                                                   Scheme_Mark_Set **_binding_marks)
 {
   Scheme_Mark_Set *marks, *best_set;
 
-  marks = extract_mark_set(stx, phase, 0);
+  marks = extract_mark_set(stx, phase, for_bind);
 
   best_set = (Scheme_Mark_Set *)do_stx_lookup(stx, marks,
                                               NULL, 
@@ -2515,7 +2515,7 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
                                          _exact_match, _ambiguous);
 }
 
-Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
+Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase, int for_bind,
                                            int *_exact_match, int *_ambiguous,
                                            Scheme_Mark_Set **_binding_marks,
                                            Scheme_Object **_insp,             /* access-granting inspector */
@@ -2557,7 +2557,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
   if (_binding_marks) *_binding_marks = NULL;
   if (_exact_match) *_exact_match = 0;
 
-  cached_result = do_stx_lookup_nonambigious(stx, phase,
+  cached_result = do_stx_lookup_nonambigious(stx, phase, for_bind,
                                              _exact_match, _ambiguous,
                                              _binding_marks);
 
@@ -2708,7 +2708,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase)
 {
-  return scheme_stx_lookup_w_nominal(o, phase, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+  return scheme_stx_lookup_w_nominal(o, phase, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 }
 
 Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase)
@@ -2716,7 +2716,7 @@ Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase)
   int exact;
   Scheme_Object *b;
 
-  b = scheme_stx_lookup_w_nominal(o, phase, &exact, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+  b = scheme_stx_lookup_w_nominal(o, phase, 0, &exact, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
   if (!exact)
     return scheme_false;
@@ -2742,7 +2742,7 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object **cached_result, *result;
 
-  cached_result = do_stx_lookup_nonambigious((Scheme_Stx *)from_o, phase,
+  cached_result = do_stx_lookup_nonambigious((Scheme_Stx *)from_o, phase, 0,
                                              NULL, NULL, NULL);
 
   if (cached_result)
@@ -5129,7 +5129,7 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
     m2 = NULL;
 
   if (!m2) {
-    src = scheme_stx_lookup_w_nominal(argv[1], phase,
+    src = scheme_stx_lookup_w_nominal(argv[1], phase, 0,
                                       NULL, NULL, &m2,
                                       NULL, NULL, NULL, NULL, NULL);
     if (SCHEME_FALSEP(src))
@@ -5250,7 +5250,7 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
       phase = scheme_bin_plus(dphase, phase);
   }
 
-  m = scheme_stx_lookup_w_nominal(a, phase,
+  m = scheme_stx_lookup_w_nominal(a, phase, 0,
                                   NULL, NULL, NULL, NULL,
                                   &nom_mod, &nom_a,
                                   &src_phase_index,
