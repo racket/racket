@@ -10,10 +10,8 @@
                ;; "Fake" dependencies to make them included
                ;; in a default build:
                "main-distribution-test"
-               "distro-build"
                "honu"
                "gui-pkg-manager"
-               "remote-shell"
                
                ;; Actual dependencies:
                "eli-tester"
@@ -28,8 +26,7 @@
                "compatibility-lib"
                "plt-web"
                "web-server-lib"
-               "rackunit-lib"
-               "remote-shell-lib"))
+               "rackunit-lib"))
 
 (define pkg-desc "Miscellaneous management and maintenance tools used by the Racket development team")
 
