@@ -1,4 +1,5 @@
 (("drdr" "git://github.com/racket/drdr/")
  ("drdr2" "git://github.com/racket/drdr2/")
  ("games" "git://github.com/racket/games/")
+ ("racket-lang-org" "git://github.com/racket/racket-lang-org/")
  ("pkg-build" "git://github.com/racket/pkg-build/"))
