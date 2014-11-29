@@ -24,7 +24,6 @@
                "scheme-lib"
                "scribble-lib"
                "compatibility-lib"
-               "plt-web"
                "web-server-lib"
                "rackunit-lib"))
 

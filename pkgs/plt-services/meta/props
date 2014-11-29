@@ -867,7 +867,6 @@ path/s is either such a string or a list of them.
 "pkgs/plt-services/meta/images/taking-screenshots/racket-widget.scm" drdr:command-line #f
 "pkgs/plt-services/meta/pkg-index" responsible (jay)
 "pkgs/plt-services/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
-"pkgs/plt-web-pkgs" responsible (mflatt samth)
 "pkgs/preprocessor" responsible (eli)
 "pkgs/profile-pkgs" responsible (eli samth stamourv)
 "pkgs/r5rs-pkgs" responsible (mflatt)
