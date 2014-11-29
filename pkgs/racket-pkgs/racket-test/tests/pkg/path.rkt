@@ -25,6 +25,6 @@
                 #f)
 
   (check-equal? (call-with-values
-                    (lambda () (path->pkg+subpath+collect (collection-file-path "serve-catalog.rkt" "distro-build")))
+                    (lambda () (path->pkg+subpath+collect (collection-file-path "info.rkt" "icons")))
                   list)
-                (list "distro-build-server" (build-path "serve-catalog.rkt") "distro-build")))
+                (list "icons" (build-path "info.rkt") "icons")))
