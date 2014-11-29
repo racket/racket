@@ -2417,6 +2417,8 @@ mark_mark_table {
   gcMARK2(m->phase_1, gc);
   gcMARK2(m->other_phases, gc);
   gcMARK2(m->multi_marks, gc);
+  gcMARK2(m->for_bind, gc);
+  /* If you add something here, add it to mark_propagate_table, too */
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
 }
@@ -2428,6 +2430,7 @@ mark_propagate_table {
   gcMARK2(m->mt.phase_1, gc);
   gcMARK2(m->mt.other_phases, gc);
   gcMARK2(m->mt.multi_marks, gc);
+  gcMARK2(m->mt.for_bind, gc);
   gcMARK2(m->prev, gc);
   gcMARK2(m->phase_shift, gc);
  size:

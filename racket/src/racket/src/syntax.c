@@ -126,6 +126,8 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
 XFORM_NONGCING static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b);
 static Scheme_Object *remove_at(Scheme_Object *l, Scheme_Object *p);
 
+static Scheme_Object *propagate_marks_for_bind(Scheme_Object *o, Scheme_Mark_Table *to_propagate,
+                                               Scheme_Mark_Table *parent_marks, int flag);
 static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
 
 #define CONS scheme_make_pair
@@ -615,23 +617,27 @@ Scheme_Object *extract_single_mark(Scheme_Object *multi_mark, Scheme_Object *pha
   return m;
 }
 
-static Scheme_Mark_Set *extract_mark_set(Scheme_Stx *stx, Scheme_Object *phase)
+static Scheme_Mark_Set *extract_mark_set(Scheme_Stx *stx, Scheme_Object *phase, int for_bind)
 {
+  Scheme_Mark_Table *mt = stx->marks;
   Scheme_Mark_Set *marks;
   Scheme_Object *multi_marks, *ph, *m;
 
+  if (for_bind && mt->for_bind)
+    mt = mt->for_bind;
+
   if (SAME_OBJ(phase, scheme_make_integer(0)))
-    marks = stx->marks->phase_0;
+    marks = mt->phase_0;
   else if (SAME_OBJ(phase, scheme_make_integer(1)))
-    marks = stx->marks->phase_1;
+    marks = mt->phase_1;
   else {
-    marks = (Scheme_Mark_Set *)scheme_hash_tree_get(stx->marks->other_phases,
+    marks = (Scheme_Mark_Set *)scheme_hash_tree_get(mt->other_phases,
                                                     phase);
     if (!marks)
       marks = empty_mark_set;
   }
 
-  for (multi_marks = stx->marks->multi_marks;
+  for (multi_marks = mt->multi_marks;
        !SCHEME_NULLP(multi_marks);
        multi_marks= SCHEME_CDR(multi_marks)) {
     if (SCHEME_FALSEP(phase))
@@ -701,6 +707,7 @@ static Scheme_Mark_Set *combine_mark(Scheme_Mark_Set *marks, Scheme_Object *m, i
       else
         return marks;
     } else if (mode == SCHEME_STX_FLIP) {
+      mode = SCHEME_INT_VAL(old_mode);
       mode = ((mode == SCHEME_STX_REMOVE) ? SCHEME_STX_ADD : SCHEME_STX_REMOVE);
       return mark_set_set(marks, m, scheme_make_integer(mode));
     } else
@@ -782,6 +789,26 @@ static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object 
 {
   Scheme_Object *l;
   Scheme_Mark_Set *marks;
+  Scheme_Mark_Table *mt2;
+
+  if (mode & SCHEME_STX_NOBIND) {
+    if (!mt->for_bind) {
+      mt2 = mt;
+      mt = clone_mark_table(mt, prev);
+      mt->for_bind = mt2;
+    }
+    mode -= SCHEME_STX_NOBIND;
+  } else if (mt->for_bind) {
+    STX_ASSERT(!mt->for_bind->for_bind);
+    mt2 = do_mark_at_phase(mt->for_bind, m, phase, mode, do_mark, do_mark_list,
+                           (prev
+                            ? (prev->for_bind 
+                               ? prev->for_bind 
+                               : prev)
+                            : NULL));
+    mt = clone_mark_table(mt, prev);
+    mt->for_bind = mt2;
+  }
 
   if (SCHEME_MARKP(m) && ((Scheme_Mark *)m)->owner_multi_mark) {
     if (!SCHEME_FALSEP(phase))
@@ -939,7 +966,7 @@ Scheme_Object *scheme_stx_remove_multi_marks(Scheme_Object *o)
 
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase)
 {
-  return (mark_set_count(extract_mark_set((Scheme_Stx *)stx, phase)) == 0);
+  return (mark_set_count(extract_mark_set((Scheme_Stx *)stx, phase, 0)) == 0);
 }
 
 /******************** shifts ********************/
@@ -1065,6 +1092,17 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
     else
       val = scheme_bin_plus(shift, ((Scheme_Propagate_Table *)mt)->phase_shift);
     ((Scheme_Propagate_Table *)mt2)->phase_shift = val;
+  }
+
+  if (mt2->for_bind) {
+    mt = shift_mark_table(mt2->for_bind, shift, shift_mm,
+                          (prev
+                           ? (prev->for_bind
+                              ? prev->for_bind
+                              : prev)
+                           : NULL));
+    STX_ASSERT(!mt->for_bind);
+    mt2->for_bind = mt;
   }
 
   return mt2;
@@ -1325,19 +1363,19 @@ static Scheme_Object *propagate_mark_set(Scheme_Mark_Set *props, Scheme_Object *
 }
 
 static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_propagate,
-                                      Scheme_Mark_Table *parent_marks)
+                                      Scheme_Mark_Table *parent_marks, int flag)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *key, *val;
   intptr_t i;
-  int flag;
 
   if (!to_propagate || (to_propagate == empty_propagate_table))
     return o;
 
   /* Check whether the child marks currently match the
      parent's marks before the propagated changes: */
-  if (SAME_OBJ(((Scheme_Propagate_Table *)to_propagate)->prev, stx->marks)) {
+  if (!(flag & SCHEME_STX_PROPONLY)
+      && SAME_OBJ(((Scheme_Propagate_Table *)to_propagate)->prev, stx->marks)) {
     /* Yes, so we can take a shortcut: child marks still match parent.
        Does the child need to propagate, and if so, does it just
        get the parent's propagation? */
@@ -1353,13 +1391,22 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
       return (Scheme_Object *)stx;
     } else {
       /* Child marks match parent, so we don't need to reconstruct
-         the mark set, but we need to build a new propagation set */
-      flag = SCHEME_STX_PROPONLY;
+         the mark set, but we need to build a new propagation set
+         to augment the propagate set already here */
+      flag |= SCHEME_STX_PROPONLY;
       COUNT_PROPAGATES(stx_meds++);
     }
   } else {
-    flag = 0;
     COUNT_PROPAGATES(stx_longs++);
+  }
+
+  if (to_propagate->for_bind) {
+    if (!(flag & SCHEME_STX_MUTATE)) {
+      flag |= SCHEME_STX_MUTATE;
+      o = clone_stx(o);
+    }
+    o = propagate_marks_for_bind(o, to_propagate, parent_marks, flag);
+    flag |= SCHEME_STX_NOBIND;
   }
 
   val = ((Scheme_Propagate_Table *)to_propagate)->phase_shift;
@@ -1414,7 +1461,47 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
   return o;
 }
 
-int shift_count;
+static Scheme_Object *propagate_marks_for_bind(Scheme_Object *o, Scheme_Mark_Table *to_propagate,
+                                               Scheme_Mark_Table *parent_marks, int flag)
+{
+  Scheme_Stx *stx = (Scheme_Stx *)o;
+  Scheme_Mark_Table *orig_mt, *orig_to_propagate;
+
+  to_propagate = to_propagate->for_bind;
+  if (parent_marks->for_bind)
+    parent_marks = parent_marks->for_bind;
+
+  orig_mt = stx->marks;
+  stx->marks = (orig_mt->for_bind ? orig_mt->for_bind : orig_mt);
+
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
+    orig_to_propagate = stx->u.to_propagate;
+    stx->u.to_propagate = (orig_to_propagate->for_bind
+                           ? orig_to_propagate->for_bind
+                           : orig_to_propagate);
+  }
+  
+  o = propagate_marks(o, to_propagate, parent_marks, flag);
+
+  stx = (Scheme_Stx *)o;
+  STX_ASSERT(!stx->marks->for_bind);
+  STX_ASSERT(!(STX_KEY(stx) & STX_SUBSTX_FLAG)
+             || !(stx->u.to_propagate->for_bind));
+
+  orig_mt = clone_mark_table(orig_mt, NULL);
+  STX_ASSERT(!stx->marks->for_bind);
+  orig_mt->for_bind = stx->marks;
+  stx->marks = orig_mt;
+  
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
+    orig_to_propagate = clone_mark_table(orig_to_propagate, orig_mt);
+    STX_ASSERT(!stx->u.to_propagate->for_bind);
+    orig_to_propagate->for_bind = stx->u.to_propagate;
+    stx->u.to_propagate = orig_to_propagate;
+  }
+
+  return o;
+}
 
 static Scheme_Object *propagate_shifts(Scheme_Object *result, Scheme_Object *shifts, int can_mutate)
 {
@@ -1449,7 +1536,7 @@ static Scheme_Object *propagate(Scheme_Object *result,
 {
   Scheme_Object *orig_result = result;
 
-  result = propagate_marks(result, to_propagate, parent_marks);
+  result = propagate_marks(result, to_propagate, parent_marks, 0);
 
   if (shifts)
     result = propagate_shifts(result, shifts, !SAME_OBJ(result, orig_result));
@@ -2001,7 +2088,7 @@ void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Obj
 
   STX_ASSERT(SCHEME_SYMBOLP(binding_sym));
 
-  add_binding(stx->val, phase, extract_mark_set(stx, phase), binding_sym);
+  add_binding(stx->val, phase, extract_mark_set(stx, phase, 1), binding_sym);
 }
 
 XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
@@ -2100,7 +2187,7 @@ void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase,
 {
   STX_ASSERT(SCHEME_SYMBOLP(((Scheme_Stx *)o)->val));
 
-  do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase), SCHEME_STX_VAL(o), phase,
+  do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase, 1), SCHEME_STX_VAL(o), phase,
                         modidx, sym, defn_phase,
                         scheme_false,
                         modidx, sym,
@@ -2117,7 +2204,7 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                          int skip_marshal)
 {
   STX_ASSERT(SCHEME_STXP(o));
-  do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase), SCHEME_STX_VAL(o), phase,
+  do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase, 1), SCHEME_STX_VAL(o), phase,
                         modidx, defn_name, defn_phase,
                         inspector,
                         nominal_mod, nominal_name,
@@ -2160,7 +2247,7 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level)
   Scheme_Mark_Set *marks;
   Scheme_Module_Phase_Exports *pt;
 
-  marks = extract_mark_set(stx, phase);
+  marks = extract_mark_set(stx, phase, 0);
   
   printf(" At phase %s:\n", scheme_write_to_string(phase, NULL));
   print_marks(marks, NULL);
@@ -2412,7 +2499,7 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
 {
   Scheme_Mark_Set *marks, *best_set;
 
-  marks = extract_mark_set(stx, phase);
+  marks = extract_mark_set(stx, phase, 0);
 
   best_set = (Scheme_Mark_Set *)do_stx_lookup(stx, marks,
                                               NULL, 
@@ -2457,7 +2544,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
       if (_binding_marks)
         *_binding_marks = marks;
       if (_exact_match) {
-        if (mark_set_count(marks) == mark_set_count(extract_mark_set(stx, phase)))
+        if (mark_set_count(marks) == mark_set_count(extract_mark_set(stx, phase, 0)))
           *_exact_match = 1;
         else
           *_exact_match = 0;
@@ -2663,7 +2750,7 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
   else
     result = scheme_false;
 
-  add_binding(stx->val, phase, extract_mark_set(stx, phase), result);
+  add_binding(stx->val, phase, extract_mark_set(stx, phase, 1), result);
 }
 
 /******************** module-import bindings ********************/
@@ -2803,7 +2890,7 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
     phase = mc;
 
   if (context)
-    marks = extract_mark_set((Scheme_Stx *)context, phase);
+    marks = extract_mark_set((Scheme_Stx *)context, phase, 1);
   else
     marks = scheme_module_context_marks(mc);
 
@@ -2930,7 +3017,7 @@ int scheme_stx_in_plain_module_context(Scheme_Object *stx, Scheme_Object *mc)
   marks = scheme_module_context_marks(mc);
   phase = SCHEME_VEC_ELS(mc)[1];
 
-  return marks_equal(extract_mark_set((Scheme_Stx *)stx, phase), marks);
+  return marks_equal(extract_mark_set((Scheme_Stx *)stx, phase, 0), marks);
 }
 
 /***********************************************************************/
@@ -3068,7 +3155,7 @@ int scheme_stx_env_bound_eq2(Scheme_Object *_a, Scheme_Object *_b,
   if (!SAME_OBJ(a->val, b->val))
     return 0;
 
-  return marks_equal(extract_mark_set(a, a_phase), extract_mark_set(b, b_phase));
+  return marks_equal(extract_mark_set(a, a_phase, 1), extract_mark_set(b, b_phase, 1));
 }
 
 int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase)
@@ -5031,11 +5118,11 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 
   phase = extract_phase("make-syntax-delta-introducer", 2, argc, argv, scheme_make_integer(0), 1);
 
-  delta = extract_mark_set((Scheme_Stx *)argv[0], phase);
+  delta = extract_mark_set((Scheme_Stx *)argv[0], phase, 0);
 
   src = argv[1];
   if (!SCHEME_FALSEP(src)) {
-    m2 = extract_mark_set((Scheme_Stx *)src, phase);
+    m2 = extract_mark_set((Scheme_Stx *)src, phase, 0);
     if (!scheme_mark_subset(m2, delta))
       m2 = NULL;
   } else

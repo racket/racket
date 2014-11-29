@@ -47,12 +47,16 @@ THREAD_LOCAL_DECL(int scheme_starting_up);
 
 /* globals READ-ONLY SHARED */
 Scheme_Object *scheme_varref_const_p_proc;
-READ_ONLY static Scheme_Object *kernel_symbol;
 READ_ONLY static Scheme_Env    *kernel_env;
 READ_ONLY static Scheme_Env    *unsafe_env;
 READ_ONLY static Scheme_Env    *flfxnum_env;
 READ_ONLY static Scheme_Env    *extfl_env;
 READ_ONLY static Scheme_Env    *futures_env;
+
+READ_ONLY static Scheme_Object *kernel_symbol;
+READ_ONLY static Scheme_Object *flip_symbol;
+READ_ONLY static Scheme_Object *add_symbol;
+READ_ONLY static Scheme_Object *add_for_reference_symbol;
 
 THREAD_LOCAL_DECL(static int intdef_counter);
 
@@ -805,6 +809,13 @@ static void make_kernel_env(void)
 
   REGISTER_SO(kernel_symbol);
   kernel_symbol = scheme_intern_symbol("#%kernel");
+
+  REGISTER_SO(flip_symbol);
+  REGISTER_SO(add_symbol);
+  REGISTER_SO(add_for_reference_symbol);
+  flip_symbol = scheme_intern_symbol("flip");
+  add_symbol = scheme_intern_symbol("add");
+  add_for_reference_symbol = scheme_intern_symbol("add-for-reference");
 
   MARK_START_TIME();
 
@@ -2415,12 +2426,27 @@ static Scheme_Object *
 introducer_proc(void *info, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *s;
+  int mode = SCHEME_STX_FLIP;
 
   s = argv[0];
-  if (!SCHEME_STXP(s))
+  if (!SCHEME_STXP(s)) {
     scheme_wrong_contract("syntax-introducer", "syntax?", 0, argc, argv);
+    return NULL;
+  }
+  if (argc > 1) {
+    if (SAME_OBJ(argv[1], flip_symbol))
+      mode = SCHEME_STX_FLIP;
+    else if (SAME_OBJ(argv[1], add_symbol))
+      mode = SCHEME_STX_ADD;
+    else if (SAME_OBJ(argv[1], add_for_reference_symbol))
+      mode = SCHEME_STX_ADD | SCHEME_STX_NOBIND;
+    else {
+      scheme_wrong_contract("syntax-introducer", "(or/c 'flip 'add 'add-for-reference)", 1, argc, argv);
+      return NULL;
+    }
+  }
 
-  return scheme_stx_flip_mark(s, ((Scheme_Object **)info)[0], ((Scheme_Object **)info)[1]);
+  return scheme_stx_adjust_mark(s, ((Scheme_Object **)info)[0], ((Scheme_Object **)info)[1], mode);
 }
 
 static Scheme_Object *
@@ -2441,7 +2467,7 @@ make_introducer(int argc, Scheme_Object *argv[])
   }
 
   return scheme_make_closed_prim_w_arity(introducer_proc, info,
-					 "syntax-introducer", 1, 1);
+					 "syntax-introducer", 1, 2);
 }
 
 static Scheme_Object *

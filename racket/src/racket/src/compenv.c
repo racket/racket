@@ -1260,18 +1260,16 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       return scheme_make_local(scheme_local_type, 0, 0);
     
     return NULL;
-  } else if (SCHEME_FALSEP(binding)) {
-    src_find_id = find_id;
-    modidx = NULL;
-    mod_defn_phase = NULL;
   } else {
     /* First, check for a "stop" */
     for (frame = env; frame->next != NULL; frame = frame->next) {
       if (frame->flags & SCHEME_FOR_STOPS) {
         int i;
         for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-          if (SCHEME_VECTORP(COMPILE_DATA(frame)->const_bindings[i])
-              && scheme_equal(COMPILE_DATA(frame)->const_bindings[i], binding)) {
+          if (scheme_equal(COMPILE_DATA(frame)->const_bindings[i], binding)
+              && (SCHEME_TRUEP(binding)
+                  || SAME_OBJ(SCHEME_STX_VAL(COMPILE_DATA(frame)->const_binders[i]),
+                              SCHEME_STX_VAL(find_id)))) {
             check_taint(find_id);
             
             return COMPILE_DATA(frame)->const_vals[i];
@@ -1282,11 +1280,17 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       }
     }
 
-    src_find_id = find_id;
-    modidx = SCHEME_VEC_ELS(binding)[0];
-    if (SCHEME_FALSEP(modidx)) modidx = NULL;
-    find_id = SCHEME_VEC_ELS(binding)[1];
-    mod_defn_phase = SCHEME_VEC_ELS(binding)[2];
+    if (SCHEME_FALSEP(binding)) {
+      src_find_id = find_id;
+      modidx = NULL;
+      mod_defn_phase = NULL;
+    } else {
+      src_find_id = find_id;
+      modidx = SCHEME_VEC_ELS(binding)[0];
+      if (SCHEME_FALSEP(modidx)) modidx = NULL;
+      find_id = SCHEME_VEC_ELS(binding)[1];
+      mod_defn_phase = SCHEME_VEC_ELS(binding)[2];
+    }
   }
 
   if (modidx) {

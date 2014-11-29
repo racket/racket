@@ -54,34 +54,29 @@
                (LET ([ids expr] ...)
                  (#%expression body)
                  ...)))
-           (let ([def-ctx (syntax-local-make-definition-context)]
-                 [ctx (list (gensym 'intdef))])
-             (syntax-local-bind-syntaxes (apply append all-ids) #f def-ctx)
-             (internal-definition-context-seal def-ctx)
-             (let* ([add-context
-                     (lambda (expr)
-                       (internal-definition-context-apply def-ctx expr))])
-               (with-syntax ([((id ...) ...)
-                              (map (lambda (ids)
-                                     (map add-context ids))
-                                   all-ids)]
-                             [(expr ...)
-                              (let ([exprs (syntax->list #'(expr ...))])
-                                (if rec?
-                                    (map add-context exprs)
-                                    exprs))]
-                             [(body ...)
-                              (map add-context (syntax->list #'(body ...)))]
-                             [DEF def-id])
-                 (with-syntax ([(top-decl ...)
-                                (if (and need-top-decl? (equal? 'top-level (syntax-local-context)))
-                                    #'((define-syntaxes (id ... ...) (values)))
-                                    null)])
-                   #'(begin
-                       top-decl ...
-                       (DEF (id ...) expr)
-                       ...
-                       body ...)))))))]))
+           (let ([add-context (make-syntax-introducer)])
+             (with-syntax ([((id ...) ...)
+                            (map (lambda (ids)
+                                   (map add-context ids))
+                                 all-ids)]
+                           [(expr ...)
+                            (let ([exprs (syntax->list #'(expr ...))])
+                              (if rec?
+                                  (map add-context exprs)
+                                  exprs))]
+                           [(body ...)
+                            (map (lambda (s) (add-context s 'add-for-reference))
+                                 (syntax->list #'(body ...)))]
+                           [DEF def-id])
+               (with-syntax ([(top-decl ...)
+                              (if (and need-top-decl? (equal? 'top-level (syntax-local-context)))
+                                  #'((define-syntaxes (id ... ...) (values)))
+                                  null)])
+                 #'(begin
+                     top-decl ...
+                     (DEF (id ...) expr)
+                     ...
+                     body ...))))))]))
 
 (define-syntax (splicing-let-syntax stx)
   (do-let-syntax stx #f #f #'let-syntax #'define-syntaxes #f))
