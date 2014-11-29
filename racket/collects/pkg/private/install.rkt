@@ -590,7 +590,8 @@
           (define alt-dir-name
             ;; If we had to pick an alternate dir name, then record it:
             (let-values ([(base name dir?) (split-path final-pkg-dir)])
-              (and (regexp-match? #rx"[+]" name)
+              (and (path? name)
+                   (regexp-match? #rx"[+]" name)
                    (path->string name))))
           (define this-pkg-info
             (make-pkg-info orig-pkg checksum auto? single-collect alt-dir-name))
