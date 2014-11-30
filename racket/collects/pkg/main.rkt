@@ -373,8 +373,11 @@
             ;; ----------------------------------------
             [show
              "Show information about installed packages"
+             #:usage-help
+             "Set the COLUMNS environment variable to configure the output without `-l'."
              #:once-each
              [#:bool all ("-a") "Show auto-installed packages, too"]
+             [#:bool long ("-l") "Show full column content"]
              [#:bool dir ("-d") "Show the directory where the package is installed"]
              #:once-any
              scope-flags ...
@@ -410,6 +413,7 @@
                    (with-pkg-lock/read-only
                     (pkg-show (if only-mode "" " ")
                               #:auto? all
+                              #:long? long
                               #:directory? dir)))))]
             ;; ----------------------------------------
             [migrate

@@ -998,7 +998,7 @@
                             "  package name: ~a\n"
                             "  package source: ~a")
                         pkg-name
-                        (normalize-path
+                        (simple-form-path
                          (path->complete-path orig-pkg-dir (pkg-installed-dir))))
              null)]
         [`(dir ,_)

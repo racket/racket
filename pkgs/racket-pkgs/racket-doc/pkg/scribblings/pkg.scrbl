@@ -664,7 +664,9 @@ package is created.
 
 @subcommand{@command/toc{show} @nonterm{option} ... --- Print information about currently installed packages. 
  By default, packages are shown for all @tech{package scopes}, but only for packages
- not marked as auto-installed to fulfill dependencies.
+ not marked as auto-installed to fulfill dependencies. Unless @Flag{l} or @DFlag{long} is specified,
+ the output is roughly constrained to 80 columns or the number of columns specified by the @envvar{COLUMNS}
+ environment variable.
 
  The @exec{show} sub-command accepts 
  the following @nonterm{option}s:
@@ -672,6 +674,8 @@ package is created.
  @itemlist[
 
  @item{@Flag{a} or @DFlag{all} --- Includes auto-installed packages in the listing.} 
+ @item{@Flag{l} or @DFlag{long} --- Show complete columns, instead of abbreviating to a width,
+                                    and use a more regular (but less human-readable) format for some columns.}
  @item{@Flag{d} or @DFlag{dir} --- Adds a column in the output for the directory where the package is installed.} 
 
  @item{@DFlag{scope} @nonterm{scope} --- Shows only packages in @nonterm{scope}, which is one of
@@ -686,7 +690,9 @@ package is created.
  @item{@DFlag{scope-dir} @nonterm{dir} --- Shows only packages installed in @nonterm{dir}.}
  @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for 
        the installation name/version @nonterm{vers}.}
- ]}
+ ]
+
+@history[#:changed "6.1.1.5" @elem{Added @Flag{l}/@DFlag{--long} and @envvar{COLUMNS} support.}]}
 
 @subcommand{@command/toc{migrate} @nonterm{option} ... @nonterm{from-version}
  --- Installs packages that were previously installed in @exec{user}

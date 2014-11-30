@@ -48,12 +48,12 @@
                       'source
                       "http://localhost:9997/pkg-a-first.plt"))
    $ "raco pkg install --deps search-auto pkg-b" =exit> 0 <input= "y\n"
-   $ "raco pkg show -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+    \\(catalog pkg-a\\)\npkg-b +[a-f0-9]+ +\\(catalog pkg-b\\)\n"
+   $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+    \\(catalog \"pkg-a\"\\)\npkg-b +[a-f0-9]+ +\\(catalog \"pkg-b\"\\)\n"
    $ "racket -e '(require pkg-b)'" =exit> 43
    $ "racket -e '(require pkg-a)'" =exit> 0
    ;; remove auto doesn't do anything because everything is needed
    $ "raco pkg remove -u --auto"
-   $ "raco pkg show -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+    \\(catalog pkg-a\\)\npkg-b +[a-f0-9]+ +\\(catalog pkg-b\\)\n"
+   $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+    \\(catalog \"pkg-a\"\\)\npkg-b +[a-f0-9]+ +\\(catalog \"pkg-b\"\\)\n"
    $ "racket -e '(require pkg-b)'" =exit> 43
    $ "racket -e '(require pkg-a)'" =exit> 0
    ;; pkg-a is now an auto
@@ -65,9 +65,9 @@
    $ "raco pkg update -a" =exit> 0
    $ "racket -e '(require pkg-a)'" =exit> 43
    $ "raco pkg remove pkg-b"
-   $ "raco pkg show -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+ +\\(catalog pkg-a\\)\n"
+   $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+ +\\(catalog \"pkg-a\"\\)\n"
    $ "racket -e '(require pkg-b)'" =exit> 1
    ;; pkg-a is now not needed
    $ "raco pkg remove --auto"
-   $ "raco pkg show -u -a" =stdout> " [none]\n"
+   $ "raco pkg show -l -u -a" =stdout> " [none]\n"
    $ "racket -e '(require pkg-a)'" =exit> 1)))

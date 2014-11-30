@@ -118,6 +118,7 @@
   [pkg-show
    (->* (string?)
         (#:directory? boolean?
+                      #:long? boolean?
                       #:auto? boolean?)
         void?)]
   [pkg-install
