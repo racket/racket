@@ -406,7 +406,7 @@
                          bool))
         (in-hole Context
                  (begin 
-                   (cond ((,(string->symbol (format "~s~s" (term id) '-bool)) x_1)
+                   (cond ((,(string->symbol (format "~a~a" (term id) '-bool)) x_1)
                           (matrix (x_2 ...)
                                   (((p_* ... -> r_*) eqs_* ...) ...)
                                   (pvar_2 ...)
@@ -621,7 +621,7 @@
                  (begin
                    (for
                     ((rt (parameterize ((context-match in-context))
-                           (in-list (,(string->symbol (format "~s~s" (term id) '-list)) x_1)))))
+                           (in-list (,(string->symbol (format "~a~a" (term id) '-list)) x_1)))))
                     (let ((cdr-rt (cdr rt)))
                       (matrix (cdr-rt x_2 ...)
                               (((p_* ... -> r_*) eqs_* ...) ...)
@@ -672,7 +672,7 @@
                  (begin 
                    (for
                     ((rt (parameterize ((context-match in-context))
-                           (in-list (,(string->symbol (format "~s~s" (term id) '-list)) x_1)))))
+                           (in-list (,(string->symbol (format "~a~a" (term id) '-list)) x_1)))))
                     (let ((car-rt (car rt))
                           (cdr-rt (cdr rt)))
                       (matrix (cdr-rt x_2 ...)
