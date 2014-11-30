@@ -561,22 +561,23 @@
                   (if current
                     ;; FIXME: 9000 is an arbitrary precedence level for
                     ;; function calls
-                    (if (> precedence 9000)
-                      (let ()
-                        (debug 2 "higher precedence call ~a\n" current)
-                        (define call (with-syntax ([current (left current)]
-                                                   [(parsed-args ...)
-                                                    (parse-comma-expression #'(args ...)) ])
-                                       (racket-syntax (current parsed-args ...))))
-                        (do-parse #'(rest ...) 9000 (lambda (x) x) call))
-                      (let ()
-                        (debug 2 "function call ~a\n" left)
-                        (define call (with-syntax ([current current]
-                                                   [(parsed-args ...)
-                                                    (parse-comma-expression #'(args ...)) ])
-                                       (debug "Parsed args ~a\n" #'(parsed-args ...))
-                                       (racket-syntax (current parsed-args ...))))
-                        (do-parse #'(rest ...) precedence left call)))
+                    (with-syntax ([app (datum->syntax #'head '#%app)])
+                          (if (> precedence 9000)
+                              (let ()
+                                (debug 2 "higher precedence call ~a\n" current)
+                                (define call (with-syntax ([current (left current)]
+                                                           [(parsed-args ...)
+                                                            (parse-comma-expression #'(args ...)) ])
+                                               (racket-syntax (app current parsed-args ...))))
+                                (do-parse #'(rest ...) 9000 (lambda (x) x) call))
+                              (let ()
+                                (debug 2 "function call ~a\n" left)
+                                (define call (with-syntax ([current current]
+                                                           [(parsed-args ...)
+                                                            (parse-comma-expression #'(args ...)) ])
+                                               (debug "Parsed args ~a\n" #'(parsed-args ...))
+                                               (racket-syntax (app current parsed-args ...))))
+                                (do-parse #'(rest ...) precedence left call))))
                     (let ()
                       (debug "inner expression ~a\n" #'(args ...))
                       (define-values (inner-expression unparsed) (parse #'(args ...)))
