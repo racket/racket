@@ -1146,7 +1146,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   // REMOVEME
   if (!strcmp("toppy", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%s\n", scheme_write_to_string(binding, NULL));
-    scheme_stx_debug_print(find_id, 1);
+    scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
   }
 #endif
 
@@ -1154,13 +1154,13 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   // REMOVEME
   if (SCHEME_FALSEP(binding) && !strcmp("make-syntax-mapping", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%d %s %s\n", ambiguous, scheme_write_to_string(find_id, NULL), scheme_write_to_string(binding, NULL));
-    scheme_stx_debug_print(find_id, 1);
+    scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
   }
 #endif
 
   if (ambiguous) {
     // REMOVEME
-    scheme_stx_debug_print(find_id, 1);
+    scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
     if (SAME_OBJ(scheme_env_phase(env->genv), scheme_make_integer(0)))
       scheme_wrong_syntax(NULL, NULL, find_id,
                           "identifier's binding is ambiguous");

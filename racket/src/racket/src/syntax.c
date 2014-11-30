@@ -1381,6 +1381,8 @@ static Scheme_Object *propagate_marks_for_bind(Scheme_Object *o, Scheme_Mark_Tab
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
     orig_to_propagate = stx->u.to_propagate;
+    if (!orig_to_propagate)
+      orig_to_propagate = empty_propagate_table;
     stx->u.to_propagate = (orig_to_propagate->for_bind
                            ? orig_to_propagate->for_bind
                            : orig_to_propagate);
@@ -2223,13 +2225,14 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level)
   }
 }
 
-void scheme_stx_debug_print(Scheme_Object *_stx, int level)
+void scheme_stx_debug_print(Scheme_Object *_stx, Scheme_Object *phase, int level)
 {
   Scheme_Stx *stx = (Scheme_Stx *)_stx;
 
+  STX_ASSERT(SCHEME_STXP(_stx));
+
   printf("%s:\n", scheme_write_to_string(stx->val, NULL));
-  print_at(stx, scheme_make_integer(0), level);
-  print_at(stx, scheme_make_integer(1), level);
+  print_at(stx, phase, level);
 }
 
 static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *mapped)
@@ -2642,12 +2645,21 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object **cached_result, *result;
+  int ambiguous = 0;
 
   STX_ASSERT(SCHEME_STXP(o));
   STX_ASSERT(SCHEME_STXP(from_o));
 
   cached_result = do_stx_lookup_nonambigious((Scheme_Stx *)from_o, phase, 0,
-                                             NULL, NULL, NULL);
+                                             NULL, &ambiguous, NULL);
+  if (ambiguous) {
+    // REMOVEME
+    scheme_stx_debug_print(o, phase, 1);
+    scheme_stx_debug_print(from_o, phase, 1);
+    scheme_wrong_syntax(NULL, NULL, from_o,
+                        "identifier's binding for rename transformer is ambiguous");
+    return;
+  }
 
   if (cached_result)
     result = cached_result[0];
@@ -2685,6 +2697,12 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
       }
     }
   }
+
+  printf("copy %s @ %s => %s\n", 
+         scheme_write_to_string(from_o, 0),
+         scheme_write_to_string(phase, 0),
+         scheme_write_to_string(result, 0));
+  scheme_stx_debug_print(from_o, phase, 1);
 
   add_binding(stx->val, phase, extract_mark_set(stx, phase, 1), result);
 }
@@ -5174,7 +5192,6 @@ static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv)
 
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv)
 {
-  scheme_stx_debug_print(argv[0], 1); // REMOVEME
   return do_module_binding("identifier-template-binding", argc, argv, scheme_make_integer(-1), 0);
 }
 

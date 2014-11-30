@@ -1268,7 +1268,7 @@ Scheme_Object *scheme_get_kernel_modidx(void);
 
 Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, struct Scheme_Marshal_Tables *mt);
 
-void scheme_stx_debug_print(Scheme_Object *stx, int level);
+void scheme_stx_debug_print(Scheme_Object *stx, Scheme_Object *phase, int level);
 
 /*========================================================================*/
 /*                   syntax run-time structures                           */

@@ -2778,7 +2778,8 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
                                          Scheme_Module *im, Scheme_Module_Phase_Exports *pt,
                                          Scheme_Object *idx,
                                          Scheme_Object *src_phase_index,
-                                         int can_override)
+                                         int can_override,
+                                         int skip_binding_step)
 {
   int i, saw_mb, numvals;
   Scheme_Object **exs, **exss, **exsns, *midx, *info, *vec, *nml, *mark_src, *shared_box, *id, *key, *modname;
@@ -2790,13 +2791,13 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
   if (!pt->num_provides)
     return 0;
 
-  if (with_shared) {
+  if (with_shared && !skip_binding_step) {
     if (!pt->src_modidx && im->me->src_modidx)
       pt->src_modidx = im->me->src_modidx;
     scheme_extend_module_context_with_shared(rn, idx, pt, 
                                              scheme_false, /* unmarshal info */ 
                                              src_phase_index,
-                                             NULL,
+                                             orig_src,
                                              1);
   } else
     shared_box = NULL;
@@ -2903,7 +2904,8 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
                                       Scheme_Module *im, Scheme_Object *idx,
                                       Scheme_Object *import_shift /* = src_phase_index */,
                                       Scheme_Object *only_export_phase,
-                                      int can_override)
+                                      int can_override,
+                                      int skip_binding_step)
 {
   int saw_mb;
   Scheme_Object *phase;
@@ -2914,7 +2916,8 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
                                            get_required_from_tables(tables, import_shift),
                                            orig_src, im, im->me->rt, idx,
                                            import_shift,
-                                           can_override);
+                                           can_override,
+                                           skip_binding_step);
   else
     saw_mb = 0;
   
@@ -2928,7 +2931,8 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
                                   get_required_from_tables(tables, phase),
                                   orig_src, im, im->me->et, idx,
                                   import_shift,
-                                  can_override);
+                                  can_override,
+                                  skip_binding_step);
   }
 
   if (im->me->dt
@@ -2937,7 +2941,8 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
                                   get_required_from_tables(tables, scheme_false),
                                   orig_src, im, im->me->dt, idx,
                                   import_shift,
-                                  can_override);
+                                  can_override,
+                                  skip_binding_step);
   }
 
   if (im->me->other_phases) {
@@ -2956,7 +2961,8 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
                                         get_required_from_tables(tables, phase),
                                         orig_src, im, (Scheme_Module_Phase_Exports *)val, idx,
                                         import_shift,
-                                        can_override);
+                                        can_override,
+                                        skip_binding_step);
         }
       }
     }
@@ -3051,7 +3057,8 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
               if (!im)
                 im = registry_get_loaded(menv, name);
               
-              add_simple_require_renames(NULL, rns, menv, NULL, im, idx, shift, NULL, 0);
+              add_simple_require_renames(NULL, rns, menv, NULL, im, idx, shift,
+                                         NULL, 0, 0);
             }
           }
         }
@@ -7137,9 +7144,11 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   mb_ctx = scheme_false;
 
   /* For each provide in iim, add a module rename to fm */
-  if (ii)
-    saw_mb = add_simple_require_renames(NULL, rn_set, menv, NULL, iim, iidx, scheme_make_integer(0), NULL, 1);
-  else {
+  if (ii) {
+    orig_ii = scheme_stx_add_module_context(orig_ii, rn_set);
+    saw_mb = add_simple_require_renames(orig_ii, rn_set, menv, NULL, iim, iidx, scheme_make_integer(0),
+                                        NULL, 1, 0);
+  } else {
     Scheme_Object *shift;
     shift = (Scheme_Object *)m->super_bxs_info[1];
     fm = scheme_stx_add_shift(fm, shift);
@@ -7166,7 +7175,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     fm = SCHEME_STX_CAR(fm);
     check_not_tainted(fm);
   } else {
-    fm = scheme_make_pair(scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx, 0, 2), 
+    fm = scheme_make_pair(scheme_datum_to_syntax(module_begin_symbol, form, (orig_ii ? orig_ii : mb_ctx), 0, 2), 
 			  fm);
     check_mb = 1;
   }
@@ -8391,7 +8400,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       add_simple_require_renames(orig_src, rn_set, env->genv, bxs->tables, 
                                  iim, nmidx,
                                  scheme_make_integer(0),
-                                 NULL, 1);
+                                 NULL, 1, 1);
 
       scheme_hash_set(bxs->modidx_cache, ((Scheme_Modidx *)nmidx)->path, nmidx);
     }
