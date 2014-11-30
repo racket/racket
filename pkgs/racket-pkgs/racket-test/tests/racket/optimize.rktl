@@ -1340,10 +1340,32 @@
 (test-comp '(lambda (w z) (box? (list (cons (random w) z))))
            '(lambda (w z) (random w) #f))
 
+(test-comp '(lambda () (begin0 (random 1) (random 2)))
+           '(lambda () (car (cons (random 1) (random 2)))))
+(test-comp '(lambda () (begin (random 1) (random 2)))
+           '(lambda () (cdr (cons (random 1) (random 2)))))
+
 (test-comp '(lambda (w)
-              (car (cons w (random))))
+              (begin (random) w))
            '(lambda (w)
-              (begin (random) w)))
+              (car (cons w (random)))))
+;don't exchange if it may capture a continuation
+(test-comp '(lambda (f) 
+              (begin (values (f)) (list 7)))
+           '(lambda (f) 
+              (car (cons (list 7) (values (f)))))
+           #f)
+;don't exchange if it may be not safe for space
+(test-comp '(lambda (f)
+              (let ([big (cons (f) (make-vector 10))])
+                (display big) 
+                (begin (make-vector 20) (car big))))
+           '(lambda (f)
+              (let ([big (cons (f) (make-vector 10))])
+                (display big) 
+                (car (cons (car big) (make-vector 20)))))
+           #f)
+
 (test-comp '(lambda (w)
               (begin
                 (list (random) w)
