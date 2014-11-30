@@ -104,10 +104,13 @@
 
   ;; ----------------------------------------
   ;; Get a package's info, returning its deps and implies:
-  (define (get-immediate-pkg-info! pkg)
+  (define (get-immediate-pkg-info! pkg dep-of)
     (define dir (pkg-directory pkg))
     (unless dir 
-      (error 'check-dependencies "package not installed: ~s" pkg))
+      (error 'check-dependencies "package not installed: ~s~a" pkg
+             (if dep-of
+                 (format "\n  dependency of: ~a" dep-of)
+                 "")))
     ;; Get package information:
     (define-values (checksum mods deps+build-deps+vers)
       (get-pkg-content (pkg-desc (if (path? dir) (path->string dir) dir) 'dir pkg #f #f)
@@ -186,19 +189,19 @@
   ;; ----------------------------------------
   ;; Flatten package dependencies, record mod->pkg mappings,
   ;; return representative package name (of a recursive set)
-  (define (register-pkg! pkg ancestors)
+  (define (register-pkg! pkg ancestors dep-of)
     (cond
      [(hash-ref pkg-reps pkg #f)
       => (lambda (rep-pkg) rep-pkg)]
      [else
       (when verbose?
         (setup-printf #f " checking dependencies of ~s" pkg))
-      (define-values (deps implies) (get-immediate-pkg-info! pkg))
+      (define-values (deps implies) (get-immediate-pkg-info! pkg dep-of))
       ;; Recur on all dependencies
       (define new-ancestors (hash-set ancestors pkg #t))
       (define rep-pkg
         (for/fold ([rep-pkg pkg]) ([dep (in-list deps)])
-          (define dep-rep-pkg (register-pkg! dep ancestors))
+          (define dep-rep-pkg (register-pkg! dep ancestors pkg))
           (cond
            [(not (set-member? implies dep))
             ;; not implied, so doesn't add external dependencies
@@ -225,7 +228,7 @@
   (define (init-pkg-internals! pkg)
     (unless (hash-ref pkg-internal-deps pkg #f)
       ;; register modules and compute externally visible dependencies
-      (register-pkg! pkg (hash))
+      (register-pkg! pkg (hash) #f)
       ;; combine flattened external dependencies to determine internal dependencies
       (define (flatten imm-deps)
         (for/fold ([deps (set)]) ([dep (in-set imm-deps)])
