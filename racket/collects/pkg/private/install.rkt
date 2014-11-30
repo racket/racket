@@ -1103,7 +1103,9 @@
                                                     #:use-cache? use-cache?
                                                     #:from-command-line? from-command-line?
                                                     #:link-dirs? link-dirs?)
-                                (map (convert-clone-name-to-clone-repo/update db)
+                                (map (convert-clone-name-to-clone-repo/update
+                                      db
+                                      from-command-line?)
                                      pkgs)))
   (cond
     [(empty? pkgs)

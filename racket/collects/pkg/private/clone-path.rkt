@@ -240,7 +240,7 @@
 ;; If `pkg-name` is a description with the type 'clone, but its syntax
 ;; matches a package name, then infer a repo from the current package
 ;; installation and return an alternate description.
-(define ((convert-clone-name-to-clone-repo/update db) pkg-name)
+(define ((convert-clone-name-to-clone-repo/update db from-command-line?) pkg-name)
   (cond
    [(and (pkg-desc? pkg-name)
          (eq? 'clone (pkg-desc-type pkg-name))
@@ -259,12 +259,27 @@
                                  #:auto? (pkg-desc-auto? pkg-name)
                                  #:extra-path (pkg-desc-extra-path pkg-name)
                                  #:reject-existing-clone? #t))
+         (define current-orig-pkg (pkg-info-orig-pkg info))
          (unless new-pkg-name
            (pkg-error (~a "package is not currently installed from a repository\n"
                           "  package: ~a\n"
-                          "  current installation: ~a")
+                          "  current installation: ~a"
+                          (cond
+                           [from-command-line?
+                            (case (car current-orig-pkg)
+                              [(link static-link)
+                               (~a "\n  extra advice:\n"
+                                   "   Your current installation is a directory link, and the directory might\n"
+                                   "   be a Git repostory checkout, but the package system doesn't know that.\n"
+                                   "   If so, try\n"
+                                   "    cd " (normalize-path
+                                              (path->complete-path (cadr current-orig-pkg) (pkg-installed-dir)))
+                                   "\n"
+                                   "    raco pkg update --clone . <repository-URL>")]
+                              [else ""])]
+                           [else ""]))
                       name
-                      (pkg-info-orig-pkg info)))
+                      current-orig-pkg))
          new-pkg-name)]
    [else pkg-name]))
 
