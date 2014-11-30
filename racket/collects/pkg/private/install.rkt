@@ -1080,6 +1080,7 @@
                     #:strip [strip-mode #f]
                     #:force-strip? [force-strip? #f]
                     #:link-dirs? [link-dirs? #f]
+                    #:lookup-for-clone? [lookup-for-clone? #f]
                     #:multi-clone-behavior [clone-behavior 'fail])
   (define download-printf (if quiet? void printf))
   (define metadata-ns (make-metadata-namespace))
@@ -1103,9 +1104,11 @@
                                                     #:use-cache? use-cache?
                                                     #:from-command-line? from-command-line?
                                                     #:link-dirs? link-dirs?)
-                                (map (convert-clone-name-to-clone-repo/update
-                                      db
-                                      from-command-line?)
+                                (map (if lookup-for-clone?
+                                         (convert-clone-name-to-clone-repo/install catalog-lookup-cache
+                                                                                   download-printf)
+                                         (convert-clone-name-to-clone-repo/update db
+                                                                                  from-command-line?))
                                      pkgs)))
   (cond
     [(empty? pkgs)

@@ -578,7 +578,7 @@ argument.
  @item{@DFlag{lookup} --- Causes a @tech{package name} as a @nonterm{pkg-source} to be used
        as a replacement, instead of the name of a installed package that may have updates.
        (If the named package was installed through a package name, then there's effectively
-        no difference.)}
+        no difference unless a different catalog is used.)}
 
  @item{@DFlag{type} @nonterm{type} or @Flag{t} @nonterm{type} --- Same as for @command-ref{install}.}
  @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- Same as for @command-ref{install}.}
@@ -593,7 +593,7 @@ argument.
  @item{@DFlag{clone} @nonterm{dir} --- Same as for
     @command-ref{install}, except that a @nonterm{pkg-source} as a
     @tech{package name} is treated as the name of an installed
-    package. In that case, the package must be currently installed
+    package (unless @DFlag{lookup} is specified). In that case, the package must be currently installed
     from a Git or GitHub source---possibly as directed by a
     catalog---and that source is used for the clone (which replaces
     the existing package installation).}

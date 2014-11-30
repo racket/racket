@@ -300,6 +300,8 @@
                 scope scope-dir installation user pkg-source a-type #t name
                 (lambda ()
                   install-copy-checks ...
+                  (define clone-path (and (eq? a-type 'clone)
+                                          (path->complete-path clone)))
                   (define setup-collects
                     (with-pkg-lock
                         (parameterize ([current-pkg-catalogs (and catalog
@@ -307,15 +309,15 @@
                           (pkg-update (for/list ([pkg-source (in-list pkg-source)])
                                         (cond
                                          [lookup
-                                          (pkg-desc pkg-source a-type name checksum #f)]
+                                          (pkg-desc pkg-source a-type name checksum #f
+                                                    #:path clone-path)]
                                          [else
                                           (define-values (pkg-name pkg-type) 
                                             (package-source->name+type pkg-source a-type))
                                           (if (eq? pkg-type 'name)
                                               pkg-name
                                               (pkg-desc pkg-source a-type name checksum #f
-                                                        #:path (and (eq? a-type 'clone)
-                                                                    (path->complete-path clone))))]))
+                                                        #:path clone-path))]))
                                       #:from-command-line? #t
                                       #:all? all
                                       #:dep-behavior (or (and auto 'search-auto)
@@ -334,6 +336,7 @@
                                                   (and binary 'binary)
                                                   (and binary-lib 'binary-lib))
                                       #:force-strip? force
+                                      #:lookup-for-clone? lookup
                                       #:multi-clone-behavior (or multi-clone
                                                                  (if batch
                                                                      'fail

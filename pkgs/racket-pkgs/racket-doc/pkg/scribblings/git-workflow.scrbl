@@ -61,14 +61,29 @@ develops only a few of them. The intended workflow is as follows:
  @item{Install all the relevant packages with @command-ref{install}.}
 
  @item{For each package to be developed out of a particular Git
-  repository named by @nonterm{git-pkg-source}, update the installation with
+  repository named by @nonterm{pkg-name}, update the installation with
 
-  @commandline{@command{update} --clone @nonterm{dir} @nonterm{git-pkg-source}}
+  @commandline{@command{update} --clone @nonterm{dir} @nonterm{pkg-name}}
 
   which discards the original installation of the package and replaces
-  it with a local clone as @nonterm{dir}. (As a convenience, when
-  @nonterm{git-pkg-source} and the last element of @nonterm{dir} are
-  the same, then @nonterm{git-pkg-source} can be omitted.)}
+  it with a local clone as @nonterm{dir}.
+
+  As a convenience, when @nonterm{git-pkg-source} and the last element
+  of @nonterm{dir} are the same, then @nonterm{pkg-name} can be
+  omitted. Put another way, the argument to @DFlag{clone} can be a
+  path to @nonterm{pkg-name}:
+
+  @commandline{@command{update} --clone @nonterm{path-to}/@nonterm{pkg-name}}}
+
+ @item{If a package's current installation is not drawn fro a Git
+  repository (e.g., it's drawn from a catalog of built packages for a
+  distribution or snapshot), but @nonterm{catalog} maps the package
+  name to the right Git repository, then combine @DFlag{clone} with
+  @DFlag{lookup} and @DFlag{catalog}:
+
+  @commandline{@command{update} --lookup --catalog @nonterm{catalog} --clone @nonterm{path-to}/@nonterm{pkg-name}}
+
+  A suitable @nonterm{catalog} might be @url{http://pkgs.racket-lang.org}.}
 
  @item{Manage changes to each of the developed packages in the usual
   way with @exec{git} tools, but @command-ref{update} is also available
@@ -82,7 +97,7 @@ affects the branch used for the initial checkout, while a non-empty
 path causes a subdirectory of the checkout to be linked for the
 package.
 
-The @exec{git} tools and @exec{raco pkg} tools interact in specific
+The @exec{git} and @exec{raco pkg} tools interact in specific
 ways:
 
 @itemlist[
@@ -110,10 +125,9 @@ ways:
        does not inherently require clone sharing among the packages,
        but since non-sharing or inconsistent installation modes could
        be confusing, @command-ref{install} and @command-ref{update}
-       reject non-sharing or inconsistent installations unless
-       overridden with @DFlag{multi-clone}. In typical cases,
-       @exec{@DFlag{multi-clone} ask} or @exec{@DFlag{multi-clone}
-       convert} can automatically fix inconsistencies.}
+       report non-sharing or inconsistent installations. In typical cases,
+       the default @exec{@DFlag{multi-clone} ask} mode can automatically
+       fix inconsistencies.}
 
  @item{When pulling changes to repositories that have local copies,
        @command-ref{update} pulls changes with the equivalent of @exec{git

@@ -218,6 +218,48 @@
        (delete-directory/files a-dir)))
 
     ;; ----------------------------------------
+    ;; Combining --clone and --lookup
+
+    (with-fake-root
+      (shelly-begin
+       (make-directory a-dir)
+       $ (~a "cd " a-dir "; git init")
+       (set-file (build-path a-dir "main.rkt") "#lang racket/base 1")
+       (~a "cd " a-dir "; git add .; git commit -m change; git update-server-info")
+       $ (commit-changes-cmd)
+       
+       (define (update-a-in-catalog!)
+         (hash-set! *index-ht-1* "a"
+                    (hasheq 'checksum
+                            (current-commit a-dir)
+                            'source
+                            "http://localhost:9998/a/.git")))
+       (update-a-in-catalog!)
+       $ "raco pkg config --set catalogs http://localhost:9990"      
+       
+       $ (~a "raco pkg install " a-dir)
+       $ "racket -l a" =stdout> "1\n"
+
+       (set-file (build-path a-dir "main.rkt") "#lang racket/base 2")
+       ;; didn't commit, yet
+       $ "racket -l a" =stdout> "2\n"
+
+       (shelly-case
+        "convert directory-linked to clone via --lookup"
+        $ (~a "raco pkg update --clone " (build-path clone-dir "a"))
+        =exit> 1
+        $ (~a "raco pkg update --lookup --clone " (build-path clone-dir "a"))
+        =exit> 0
+        $ "racket -l a" =stdout> "1\n"
+        
+        $ (commit-changes-cmd)
+        $ "raco pkg update a"
+        $ "racket -l a" =stdout> "2\n")
+       
+       (delete-directory/files (build-path clone-dir "a"))
+       (delete-directory/files a-dir)))
+
+    ;; ----------------------------------------
     ;; Detecting when packages should share a clone
 
     ;; Checks installing "two" when same-repo "one" is installed as a clone.
