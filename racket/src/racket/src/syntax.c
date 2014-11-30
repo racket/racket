@@ -192,9 +192,7 @@ void scheme_init_stx(Scheme_Env *env)
   empty_mark_set = (Scheme_Mark_Set *)empty_hash_tree;
   empty_mark_table = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
   empty_mark_table->so.type = scheme_mark_table_type;
-  empty_mark_table->phase_0 = empty_mark_set;
-  empty_mark_table->phase_1 = empty_mark_set;
-  empty_mark_table->other_phases = empty_hash_tree;
+  empty_mark_table->single_marks = empty_mark_set;
   empty_mark_table->multi_marks = scheme_null;
   empty_propagate_table = (Scheme_Mark_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
   memcpy(empty_propagate_table, empty_mark_table, sizeof(Scheme_Mark_Table));
@@ -626,16 +624,7 @@ static Scheme_Mark_Set *extract_mark_set(Scheme_Stx *stx, Scheme_Object *phase, 
   if (for_bind && mt->for_bind)
     mt = mt->for_bind;
 
-  if (SAME_OBJ(phase, scheme_make_integer(0)))
-    marks = mt->phase_0;
-  else if (SAME_OBJ(phase, scheme_make_integer(1)))
-    marks = mt->phase_1;
-  else {
-    marks = (Scheme_Mark_Set *)scheme_hash_tree_get(mt->other_phases,
-                                                    phase);
-    if (!marks)
-      marks = empty_mark_set;
-  }
+  marks = mt->single_marks;
 
   for (multi_marks = mt->multi_marks;
        !SCHEME_NULLP(multi_marks);
@@ -824,32 +813,14 @@ static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object 
     mt = clone_mark_table(mt, prev);
     mt->multi_marks = l;
     return mt;
-  } else if (SAME_OBJ(phase, scheme_make_integer(0))) {
-    marks = do_mark(mt->phase_0, m, mode);
-    if (SAME_OBJ(marks, mt->phase_0))
-      return mt;
-    mt = clone_mark_table(mt, prev);
-    mt->phase_0 = marks;
-    return mt;
-  } else if (SAME_OBJ(phase, scheme_make_integer(1))) {
-    marks = do_mark(mt->phase_1, m, mode);
-    if (SAME_OBJ(marks, mt->phase_1))
-      return mt;
-    mt = clone_mark_table(mt, prev);
-    mt->phase_1 = marks;
-    return mt;
   } else {
-    GC_CAN_IGNORE Scheme_Hash_Tree *other_phases;
-    marks = (Scheme_Mark_Set *)scheme_hash_tree_get(mt->other_phases, phase);
-    if (!marks) marks = empty_mark_set;
-    marks = do_mark(marks, m, mode);
+    marks = do_mark(mt->single_marks, m, mode);
+    if (SAME_OBJ(marks, mt->single_marks))
+      return mt;
     mt = clone_mark_table(mt, prev);
-    other_phases = scheme_hash_tree_set(mt->other_phases, phase, (Scheme_Object *)marks);
-    mt->other_phases = other_phases;
+    mt->single_marks = marks;
     return mt;
   }
-
-  // REMOVEME: FIXME: make sure that phases are interned
 }
 
 
@@ -1016,66 +987,18 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
                                            shift_multi_mark_t shift_mm, Scheme_Mark_Table *prev)
 {
   Scheme_Mark_Table *mt2;
-  Scheme_Mark_Set *marks;
-  Scheme_Hash_Tree *ht;
   Scheme_Object *l, *key, *val;
-  intptr_t i;
 
   if (SAME_OBJ(mt, empty_mark_table)) {
     STX_ASSERT(!prev);
     return mt;
   }
 
+  if (SCHEME_NULLP(mt->multi_marks) && !mt->for_bind && !prev) {
+    return mt;
+  }
+
   mt2 = clone_mark_table(mt, prev);
-
-  if (SCHEME_FALSEP(shift))
-    mt2->phase_0 = empty_mark_set;
-  else if (SAME_OBJ(shift, scheme_make_integer(-1)))
-    mt2->phase_0 = mt->phase_1;
-  else {
-    marks = (Scheme_Mark_Set *)scheme_hash_tree_get(mt->other_phases, 
-                                                    scheme_bin_minus(scheme_make_integer(0),
-                                                                     shift));
-    if (!marks) marks = empty_mark_set;
-    mt2->phase_0 = marks;
-  }
-
-  if (SCHEME_FALSEP(shift))
-    mt2->phase_1 = empty_mark_set;
-  else if (SAME_OBJ(shift, scheme_make_integer(1)))
-    mt2->phase_1 = mt->phase_0;
-  else {
-    marks = (Scheme_Mark_Set *)scheme_hash_tree_get(mt->other_phases,
-                                                    scheme_bin_minus(scheme_make_integer(1),
-                                                                     shift));
-    if (!marks) marks = empty_mark_set;
-    mt2->phase_1 = marks;
-  }
-  
-  ht = empty_hash_tree;
-  if (!SCHEME_FALSEP(shift)) {
-    i = scheme_hash_tree_next(mt->other_phases, -1);
-    while (i != -1) {
-      scheme_hash_tree_index(mt->other_phases, i, &key, &val);
-
-      if (!SCHEME_FALSEP(key))
-        key = scheme_bin_plus(key, shift);
-
-      if (!SAME_OBJ(key, scheme_make_integer(0))
-          && !SAME_OBJ(key, scheme_make_integer(1)))
-        ht = scheme_hash_tree_set(ht, key, val);
-    
-      i = scheme_hash_tree_next(mt->other_phases, i);
-    }
-
-    if (!SAME_OBJ(shift, scheme_make_integer(1)))
-      ht = scheme_hash_tree_set(ht, shift, (Scheme_Object *)mt->phase_0);
-
-    if (!SAME_OBJ(shift, scheme_make_integer(-1)))
-      ht = scheme_hash_tree_set(ht, scheme_bin_plus(scheme_make_integer(1), shift),
-                                (Scheme_Object *)mt->phase_1);
-  }
-  mt2->other_phases = ht;
 
   val = scheme_null;
   for (l = mt->multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
@@ -1367,7 +1290,6 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *key, *val;
-  intptr_t i;
 
   if (!to_propagate || (to_propagate == empty_propagate_table))
     return o;
@@ -1417,27 +1339,10 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
     o = val;
   }
 
-  val = propagate_mark_set(to_propagate->phase_0, o, scheme_make_integer(0), flag);
+  val = propagate_mark_set(to_propagate->single_marks, o, scheme_true, flag);
   if (!SAME_OBJ(o, val))
     flag |= SCHEME_STX_MUTATE;
   o = val;
-
-  val = propagate_mark_set(to_propagate->phase_1, o, scheme_make_integer(1), flag);
-  if (!SAME_OBJ(o, val))
-    flag |= SCHEME_STX_MUTATE;
-  o = val;
-
-  i = scheme_hash_tree_next(to_propagate->other_phases, -1);
-  while (i != -1) {
-    scheme_hash_tree_index(to_propagate->other_phases, i, &key, &val);
-
-    val = propagate_mark_set((Scheme_Mark_Set *)val, o, key, flag);
-    if (!SAME_OBJ(o, val))
-      flag |= SCHEME_STX_MUTATE;
-    o = val;
-    
-    i = scheme_hash_tree_next(to_propagate->other_phases, i);
-  }
 
   for (key = to_propagate->multi_marks; !SCHEME_NULLP(key); key = SCHEME_CDR(key)) {
     val = SCHEME_CAR(key);
@@ -2321,19 +2226,10 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level)
 void scheme_stx_debug_print(Scheme_Object *_stx, int level)
 {
   Scheme_Stx *stx = (Scheme_Stx *)_stx;
-  Scheme_Object *key, *val;
-  intptr_t i;
 
   printf("%s:\n", scheme_write_to_string(stx->val, NULL));
   print_at(stx, scheme_make_integer(0), level);
   print_at(stx, scheme_make_integer(1), level);
-
-  i = scheme_hash_tree_next(stx->marks->other_phases, -1);
-  while (i != -1) {
-    scheme_hash_tree_index(stx->marks->other_phases, i, &key, &val);
-    print_at(stx, key, level);
-    i = scheme_hash_tree_next(stx->marks->other_phases, i);
-  }
 }
 
 static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *mapped)
@@ -3517,47 +3413,6 @@ static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks)
   return r;
 }
 
-static Scheme_Object *sort_list(Scheme_Object *l, compar_t compar)
-{
-  Scheme_Object **a;
-  intptr_t i, len;
-
-  len = scheme_list_length(l);
-
-  a = MALLOC_N(Scheme_Object *, len);
-
-  for (i = 0; !SCHEME_NULLP(l); i++, l = SCHEME_CDR(l)) {
-    a[i] = SCHEME_CAR(l);
-  }
-
-  my_qsort(a, len, sizeof(Scheme_Object *), compar);
-  
-  l = scheme_null;
-  for (i = len; i--; ) {
-    l = scheme_make_pair(a[i], l);
-  }
-
-  return l;
-}
-
-static int compare_phase_at_car(const void *_a, const void *_b)
-{
-  Scheme_Object *a = *(Scheme_Object **)_a;
-  Scheme_Object *b = *(Scheme_Object **)_b;
-
-  if (SAME_OBJ(a, b))
-    return 0;
-
-  if (SCHEME_FALSEP(a))
-    return -1;
-  else if (SCHEME_FALSEP(b))
-    return 1;
-  else if (SCHEME_INT_VAL(a) < SCHEME_INT_VAL(b))
-    return -1;
-  else
-    return 1;
-}
-
 static Scheme_Object *drop_export_registries(Scheme_Object *shifts)
 {
   Scheme_Object *l, *a, *vec,*p, *first = scheme_null, *last = NULL;
@@ -3638,8 +3493,7 @@ static Scheme_Object *multi_marks_to_list(Scheme_Object *l, Scheme_Marshal_Table
 static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Table *ht;
-  Scheme_Object *key, *val, *vec, *v;
-  intptr_t i;
+  Scheme_Object *vec, *v;
 
   ht = mt->intern_map;
   if (!ht) {
@@ -3647,31 +3501,18 @@ static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
     mt->intern_map = ht;
   }
 
-  vec = scheme_make_vector(5, NULL);
+  vec = scheme_make_vector(3, NULL);
 
   v = intern_tails(drop_export_registries(stx->shifts), ht);
   SCHEME_VEC_ELS(vec)[0] = v;
 
-  v = intern_tails(marks_to_sorted_list(stx->marks->phase_0), ht);
+  /* REMOVEME: FIXME: handle ->for_bind (need bool & has repairs, too?) */
+
+  v = intern_tails(marks_to_sorted_list(stx->marks->single_marks), ht);
   SCHEME_VEC_ELS(vec)[1] = v;
 
-  v = intern_tails(marks_to_sorted_list(stx->marks->phase_1), ht);
-  SCHEME_VEC_ELS(vec)[2] = v;
-  
-  v = scheme_null;
-  i = scheme_hash_tree_next(stx->marks->other_phases, -1);
-  while (i != -1) {
-    scheme_hash_tree_index(stx->marks->other_phases, i, &key, &val);
-    val = intern_tails(marks_to_sorted_list((Scheme_Mark_Set *)val), ht);
-    v = scheme_make_pair(scheme_make_pair(key, val), v);
-    i = scheme_hash_tree_next(stx->marks->other_phases, i);
-  }
-  sort_list(v, compare_phase_at_car);
-  v = intern_tails(v, ht);
-  SCHEME_VEC_ELS(vec)[3] = v;
-
   v = intern_tails(multi_marks_to_list(stx->marks->multi_marks, mt), ht);
-  SCHEME_VEC_ELS(vec)[4] = v;
+  SCHEME_VEC_ELS(vec)[2] = v;
 
   v = scheme_hash_get(ht, vec);
   if (!v) {
@@ -4055,8 +3896,7 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
 /*                           datum->syntax                                */
 /*========================================================================*/
 
-// REMOVEME
-#define return_NULL abort()
+#define return_NULL return NULL
 
 Scheme_Mark_Set *list_to_mark_set(Scheme_Object *l, Scheme_Unmarshal_Tables *ut)
 {
@@ -4128,14 +3968,13 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
   Scheme_Mark_Table *mt;
   Scheme_Mark_Set *marks;
   Scheme_Object *l;
-  Scheme_Hash_Tree *ht;
   Scheme_Hash_Table *multi_mark;
 
   l = scheme_hash_get(ut->rns, w);
   if (l) return l;
 
   if (!SCHEME_VECTORP(w)
-      || (SCHEME_VEC_SIZE(w) != 5))
+      || (SCHEME_VEC_SIZE(w) != 3))
     return_NULL;
 
   mt = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
@@ -4143,27 +3982,10 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 
   marks = list_to_mark_set(SCHEME_VEC_ELS(w)[1], ut);
   if (!marks) return NULL;
-  mt->phase_0 = marks;
+  mt->single_marks = marks;
   STX_ASSERT(SCHEME_MARK_SETP(marks));
 
-  marks = list_to_mark_set(SCHEME_VEC_ELS(w)[2], ut);
-  if (!marks) return NULL;
-  mt->phase_1 = marks;
-  STX_ASSERT(SCHEME_MARK_SETP(marks));
-
-  l = SCHEME_VEC_ELS(w)[3];
-  ht = empty_hash_tree;
-  while (!SCHEME_NULLP(l)) {
-    if (!SCHEME_PAIRP(l)) return_NULL;
-    marks = list_to_mark_set(SCHEME_CDR(SCHEME_CAR(l)), ut);
-    if (!marks) return NULL;
-    ht = scheme_hash_tree_set(ht, SCHEME_CAR(SCHEME_CAR(l)), (Scheme_Object *)marks);
-    l = SCHEME_CDR(l);
-  }
-
-  mt->other_phases = ht;
-
-  mt->multi_marks = SCHEME_VEC_ELS(w)[4];
+  mt->multi_marks = SCHEME_VEC_ELS(w)[2];
   for (l = mt->multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SCHEME_VECTORP(SCHEME_CAR(SCHEME_CAR(l)))) {
       multi_mark = vector_to_multi_mark(SCHEME_CAR(SCHEME_CAR(l)), ut);
@@ -4192,7 +4014,8 @@ static Scheme_Object *validate_binding(Scheme_Object *p)
     Scheme_Object *midx;
 
     midx = SCHEME_CAR(p);
-    if (!SAME_TYPE(SCHEME_TYPE(midx), scheme_module_index_type))
+    if (SCHEME_TRUEP(midx)
+        && !SAME_TYPE(SCHEME_TYPE(midx), scheme_module_index_type))
       return_NULL;
 
     if (SCHEME_SYMBOLP(SCHEME_CDR(p))) {

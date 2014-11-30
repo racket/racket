@@ -1877,7 +1877,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     /* and it's introduced by this expression: */
     mark = scheme_new_mark(3);
-    rator = scheme_stx_flip_mark(rator, mark, scheme_env_phase(env->genv));
+    rator = scheme_stx_flip_mark(rator, mark, scheme_true);
 
     if (for_set) {
       Scheme_Object *tail, *setkw;
@@ -1921,7 +1921,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
     track_code = code;  /* after mode properties are removed */
 
     mark = scheme_new_mark(3);
-    code = scheme_stx_flip_mark(code, mark, scheme_env_phase(env->genv));
+    code = scheme_stx_flip_mark(code, mark, scheme_true);
 
     code = scheme_stx_taint_disarm(code, NULL);
 
@@ -1959,7 +1959,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
                        code);
     }
 
-    code = scheme_stx_flip_mark(code, mark, scheme_env_phase(env->genv));
+    code = scheme_stx_flip_mark(code, mark, scheme_true);
 
     code = scheme_stx_track(code, track_code, name);
     

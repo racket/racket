@@ -1636,9 +1636,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       Scheme_Mark_Table *mt = (Scheme_Mark_Table *)o;
       hi->depth += 2;
       k = (k << 3) + k;
-      k += equal_hash_key((Scheme_Object *)mt->phase_0, 0, hi);
-      k += equal_hash_key((Scheme_Object *)mt->phase_1, 0, hi);
-      k += equal_hash_key((Scheme_Object *)mt->other_phases, 0, hi);
+      k += equal_hash_key((Scheme_Object *)mt->single_marks, 0, hi);
       o = mt->multi_marks;
     }
     break;
@@ -2118,9 +2116,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       Scheme_Mark_Table *mt = (Scheme_Mark_Table *)o;
       uintptr_t k;
       hi->depth += 2;
-      k = equal_hash_key2((Scheme_Object *)mt->phase_0, hi);
-      k += equal_hash_key2((Scheme_Object *)mt->phase_1, hi);
-      k += equal_hash_key2((Scheme_Object *)mt->other_phases, hi);
+      k = equal_hash_key2((Scheme_Object *)mt->single_marks, hi);
       k += equal_hash_key2(mt->multi_marks, hi);
       return k;
     }

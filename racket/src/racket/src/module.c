@@ -7259,7 +7259,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 	      cons(nm,
 		   cons(orig_ii, cons(fm, scheme_null))));
 
-    fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
+    fm = scheme_datum_to_syntax(fm, form, ctx_form, 0, 2);
     
     if (hints) {
       fm = scheme_stx_property(fm, 
@@ -11524,8 +11524,6 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
       }
     }
   }
-
-  printf("done\n");
 
   if (ename) {
     scheme_wrong_syntax(NULL, ename, form, "no such provided variable");

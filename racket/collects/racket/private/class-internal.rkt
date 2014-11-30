@@ -659,7 +659,7 @@
     (define (main stx super-expr deserialize-id-expr name-id interface-exprs defn-and-exprs)
       (let-values ([(this-id) #'this-id]
                    [(the-obj) (datum->syntax (quote-syntax here) (gensym 'self))]
-                   [(the-finder) (datum->syntax (quote-syntax here) (gensym 'find-self))])
+                   [(the-finder) (datum->syntax #f (gensym 'find-self))])
         
         (let* ([def-ctx (syntax-local-make-definition-context)]
                [localized-map (make-bound-identifier-mapping)]
@@ -1679,8 +1679,6 @@
                                                                              (cdr (syntax-e stx))))))))])
                                                       (letrec-syntaxes+values
                                                           ([(plain-init-name) (make-init-redirect 
-                                                                               (quote-syntax set!)
-                                                                               (quote-syntax #%plain-app)
                                                                                (quote-syntax local-plain-init-name)
                                                                                (quote-syntax plain-init-name-localized))] ...)
                                                         ([(local-plain-init-name) unsafe-undefined] ...)

@@ -848,11 +848,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       {
         Scheme_Mark_Table *mt1 = (Scheme_Mark_Table *)obj1;
         Scheme_Mark_Table *mt2 = (Scheme_Mark_Table *)obj2;
-        if (!is_equal((Scheme_Object *)mt1->phase_0, (Scheme_Object *)mt2->phase_0, eql))
-          return 0;
-        if (!is_equal((Scheme_Object *)mt1->phase_1, (Scheme_Object *)mt2->phase_1, eql))
-          return 0;
-        if (!is_equal((Scheme_Object *)mt1->other_phases, (Scheme_Object *)mt2->other_phases, eql))
+        if (!is_equal((Scheme_Object *)mt1->single_marks, (Scheme_Object *)mt2->single_marks, eql))
           return 0;
         obj1 = mt1->multi_marks;
         obj2 = mt2->multi_marks;

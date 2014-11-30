@@ -2413,9 +2413,7 @@ mark_mark {
 mark_mark_table {
  mark:
   Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
-  gcMARK2(m->phase_0, gc);
-  gcMARK2(m->phase_1, gc);
-  gcMARK2(m->other_phases, gc);
+  gcMARK2(m->single_marks, gc);
   gcMARK2(m->multi_marks, gc);
   gcMARK2(m->for_bind, gc);
   /* If you add something here, add it to mark_propagate_table, too */
@@ -2426,9 +2424,7 @@ mark_mark_table {
 mark_propagate_table {
  mark:
   Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
-  gcMARK2(m->mt.phase_0, gc);
-  gcMARK2(m->mt.phase_1, gc);
-  gcMARK2(m->mt.other_phases, gc);
+  gcMARK2(m->mt.single_marks, gc);
   gcMARK2(m->mt.multi_marks, gc);
   gcMARK2(m->mt.for_bind, gc);
   gcMARK2(m->prev, gc);
