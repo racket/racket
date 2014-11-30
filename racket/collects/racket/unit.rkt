@@ -2177,7 +2177,7 @@
 (define-for-syntax (build-invoke-unit/infer units define? exports)
   (define (imps/exps-from-unit u)      
     (let* ([ui (lookup-def-unit u)]
-           [unprocess (let ([i (make-syntax-delta-introducer u (unit-info-orig-binder ui))])
+           [unprocess (let ([i (syntax-local-make-delta-introducer u #;(unit-info-orig-binder ui))])
                         (lambda (p)
                           (unprocess-tagged-id (cons (car p) (i (cdr p))))))]
            [isigs (map unprocess (unit-info-import-sig-ids ui))]

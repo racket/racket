@@ -2110,7 +2110,10 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
   int mod_phase;
 
   if (SCHEME_FALSEP(modidx)) {
-    add_binding(localname, phase, marks, scheme_false);
+    if (SAME_OBJ(localname, exname))
+      add_binding(localname, phase, marks, scheme_false);
+    else
+      add_binding(localname, phase, marks, scheme_make_pair(scheme_false, exname));
     return;
   }
 
@@ -2265,11 +2268,13 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level)
       for (j = ht->size; j--; ) {
 	if (ht->vals[j]
             && ((level > 1) || SAME_OBJ(ht->keys[j], stx->val))) {
-          printf("  %s =\n", scheme_write_to_string(ht->keys[j], NULL));
+          printf("  %s =", scheme_write_to_string(ht->keys[j], NULL));
           l = ht->vals[j];
           while (l && !SCHEME_NULLP(l)) {
             if (SCHEME_SYMBOLP(SCHEME_BINDING_VAL(SCHEME_CAR(l))))
-              printf("  local\n");
+              printf(" local\n");
+            else
+              printf(" %s\n", scheme_write_to_string(SCHEME_BINDING_VAL(SCHEME_CAR(l)), 0));
             print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks);
             l = SCHEME_CDR(l);
           }
@@ -2742,6 +2747,9 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object **cached_result, *result;
 
+  STX_ASSERT(SCHEME_STXP(o));
+  STX_ASSERT(SCHEME_STXP(from_o));
+
   cached_result = do_stx_lookup_nonambigious((Scheme_Stx *)from_o, phase, 0,
                                              NULL, NULL, NULL);
 
@@ -2749,6 +2757,38 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
     result = cached_result[0];
   else
     result = scheme_false;
+
+  if (SCHEME_FALSEP(result) || SCHEME_MODIDXP(result)) {
+    /* old mapping implicitly refers to the mapped name */
+    if (!SAME_OBJ(SCHEME_STX_VAL(o), SCHEME_STX_VAL(from_o)))
+      result = scheme_make_pair(result, SCHEME_STX_VAL(from_o));
+  } else if (SCHEME_PAIRP(result) && SCHEME_TRUEP(SCHEME_CAR(result))) {
+    /* check whether a more complex mapping implicitly refers to the mapped name */
+    Scheme_Object *insp, *r, *modidx;
+
+    /* skip over inspector, if any: */
+    if (SCHEME_INSPECTORP(result)) {
+      insp = SCHEME_CAR(result);
+      r = SCHEME_CDR(result);
+    } else {
+      insp = NULL;
+      r = result;
+    }
+
+    if (SCHEME_PAIRP(r)) {
+      /* next is modidx, then we can check for an exportname: */
+      modidx = SCHEME_CAR(r);
+      r = SCHEME_CDR(r);
+
+      if (SCHEME_MODIDXP(SCHEME_CAR(r))) {
+        /* need to add name: */
+        result = scheme_make_pair(SCHEME_STX_VAL(from_o), r);
+        result = scheme_make_pair(modidx, result);
+        if (insp)
+          result = scheme_make_pair(insp, result);
+      }
+    }
+  }
 
   add_binding(stx->val, phase, extract_mark_set(stx, phase, 1), result);
 }
@@ -3017,7 +3057,7 @@ int scheme_stx_in_plain_module_context(Scheme_Object *stx, Scheme_Object *mc)
   marks = scheme_module_context_marks(mc);
   phase = SCHEME_VEC_ELS(mc)[1];
 
-  return marks_equal(extract_mark_set((Scheme_Stx *)stx, phase, 0), marks);
+  return marks_equal(extract_mark_set((Scheme_Stx *)stx, phase, 1), marks);
 }
 
 /***********************************************************************/
@@ -3072,8 +3112,6 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
 /*                           stx comparison                               */
 /*========================================================================*/
 
-static int reason; // REMOVEME
-
 int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b, 
                           Scheme_Object *a_phase, Scheme_Object *b_phase)
 {
@@ -3086,15 +3124,31 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
   b_bind = scheme_stx_lookup(b, b_phase);
 
   if (SCHEME_SYMBOLP(a_bind) || SCHEME_SYMBOLP(b_bind)) {
-    reason = 1;
     return SAME_OBJ(a_bind, b_bind);
   }
 
   if (SCHEME_FALSEP(a_bind) || SCHEME_FALSEP(b_bind)) {
-    reason = 2;
-    
+    /* A `#f` binding can be equal to a vector that starts `#f` */
+    if (SCHEME_FALSEP(a_bind))
+      a = SCHEME_STX_VAL(a);
+    else if (SCHEME_VECTORP(a_bind)
+             && SCHEME_FALSEP(SCHEME_VEC_ELS(a_bind)[0])
+             && SAME_OBJ(SCHEME_VEC_ELS(a_bind)[2], a_phase)) {
+      a = SCHEME_VEC_ELS(a_bind)[1];
+      a_bind = scheme_false;
+    }
+
+    if (SCHEME_FALSEP(b_bind))
+      b = SCHEME_STX_VAL(b);
+    else if (SCHEME_VECTORP(b_bind)
+             && SCHEME_FALSEP(SCHEME_VEC_ELS(b_bind)[0])
+             && SAME_OBJ(SCHEME_VEC_ELS(b_bind)[2], b_phase)) {
+      b = SCHEME_VEC_ELS(b_bind)[1];
+      b_bind = scheme_false;
+    }
+
     if (SCHEME_FALSEP(a_bind) && SCHEME_FALSEP(b_bind))
-      return SAME_OBJ(SCHEME_STX_VAL(a), SCHEME_STX_VAL(b));
+      return SAME_OBJ(a, b);
     else
       return 0;
   }
@@ -3102,7 +3156,6 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
   /* Comparison of names & definition phases is fast, so try that next: */
   if (!SAME_OBJ(SCHEME_VEC_ELS(a_bind)[1], SCHEME_VEC_ELS(b_bind)[1])
       || !SAME_OBJ(SCHEME_VEC_ELS(a_bind)[2], SCHEME_VEC_ELS(b_bind)[2])) {
-    reason = 3;
     return 0;
   }
 
@@ -3110,8 +3163,6 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
 
   a_bind = scheme_module_resolve(SCHEME_VEC_ELS(a_bind)[0], 0);
   b_bind = scheme_module_resolve(SCHEME_VEC_ELS(b_bind)[0], 0);
-
-  reason = 4;
 
   return SAME_OBJ(a_bind, b_bind);
 }
@@ -4518,12 +4569,14 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
         return_NULL;
     }
     ((Scheme_Stx *)result)->marks = (Scheme_Mark_Table *)SCHEME_CAR(wraps);
+    STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)result)->marks), scheme_mark_table_type));
     ((Scheme_Stx *)result)->shifts = SCHEME_CDR(wraps);
   } else if (SCHEME_FALSEP((Scheme_Object *)stx_wraps)) {
     /* wraps already nulled */
   } else {
     /* Note: no propagation will be needed for SUBSTX */
     ((Scheme_Stx *)result)->marks = stx_wraps->marks;
+    STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)result)->marks), scheme_mark_table_type));
     ((Scheme_Stx *)result)->shifts = stx_wraps->shifts;
     if (SCHEME_VECTORP(((Scheme_Stx *)result)->shifts))
       ((Scheme_Stx *)result)->shifts = SCHEME_VEC_ELS(((Scheme_Stx *)result)->shifts)[0];
@@ -5272,6 +5325,11 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
     mod_phase = SCHEME_VEC_ELS(m)[2];
     m = SCHEME_VEC_ELS(m)[0];
 
+    if (SCHEME_FALSEP(m)) {
+      /* loses information; improve API in the future? */
+      return scheme_false;
+    }
+
     return CONS(m, CONS(a, CONS(nom_mod, 
                                 CONS(nom_a, 
                                      CONS(mod_phase,
@@ -5293,6 +5351,7 @@ static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv)
 
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv)
 {
+  scheme_stx_debug_print(argv[0], 1); // REMOVEME
   return do_module_binding("identifier-template-binding", argc, argv, scheme_make_integer(-1), 0);
 }
 

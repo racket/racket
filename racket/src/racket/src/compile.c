@@ -2527,7 +2527,10 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
     env = env_already;
     mark = NULL;
   } else {
-    mark = scheme_new_mark(9);
+    if (rec_env_already)
+      mark = NULL;
+    else
+      mark = scheme_new_mark(9);
     env = scheme_add_compilation_frame(vlist, 
                                        mark,
                                        origenv,
@@ -3170,6 +3173,7 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
   if (len != 2)
     bad_form(form, len);
 
+#if 1
   stx = SCHEME_STX_CDR(form);
   stx = SCHEME_STX_CAR(stx);
   
@@ -3188,6 +3192,14 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
                                                    scheme_make_pair(stx, scheme_null)),
                                   orig_form, orig_form, 0, 2);
   }
+#else
+  if (rec[drec].comp) {
+    stx = SCHEME_STX_CDR(form);
+    stx = SCHEME_STX_CAR(stx);
+    return scheme_register_stx_in_prefix(stx, env, rec, drec);
+  } else
+    return orig_form;
+#endif
 }
 
 static Scheme_Object *
@@ -3597,9 +3609,9 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
 
     if (scheme_is_binding_rename_transformer(SCHEME_PTR_VAL(macro))) {
       /* Rebind to the target identifier's binding */
-      scheme_add_binding_copy(name, 
+      scheme_add_binding_copy(name,
                               scheme_rename_transformer_id(SCHEME_PTR_VAL(macro)),
-                              scheme_make_integer(rhs_env->genv->phase));
+                              scheme_make_integer(stx_env->genv->phase));
     }
   }
   *_pos = i;
@@ -5699,6 +5711,12 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	    a = SCHEME_STX_CAR(l);
 	    scheme_set_local_syntax(cnt++, a, scheme_false, new_env, 0);
 	  }
+
+          /* Check for duplicates: */
+          for (l = names; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
+	    a = SCHEME_STX_CAR(l);
+            scheme_dup_symbol_check(&r, "internal definition", a, "binding", first);
+          }
 
 	  if (!is_val) {
 	    /* Evaluate and bind syntaxes */

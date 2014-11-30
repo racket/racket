@@ -2387,7 +2387,6 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env, *bind_env;
   Scheme_Object *sym, *binder;
-  Scheme_Mark_Set *bind_marks;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -2401,6 +2400,11 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   binder = scheme_find_local_binder(sym, env, &bind_env);
 
   if (!binder) {
+#if 1
+    sym = scheme_stx_remove_multi_marks(sym);
+#else
+    // REMOVEME: intermediate attempt at removing source module context:
+    Scheme_Mark_Set *bind_marks;
     int ph = scheme_current_thread->current_local_env->genv->phase;
     binder = scheme_stx_lookup_w_nominal(sym,
                                          scheme_make_integer(ph), 0,
@@ -2410,6 +2414,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     if (!SCHEME_FALSEP(binder))
       sym = scheme_stx_adjust_marks(sym, bind_marks, scheme_env_phase(env->genv),
                                     SCHEME_STX_REMOVE);
+#endif
   }
 
   while (env != bind_env) {

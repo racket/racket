@@ -408,11 +408,18 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
   }
   
   frame->binders[index] = val;
+  
+  if (!frame->bindings[index]) {
+    if (frame->flags & SCHEME_INTDEF_SHADOW) {
+      binding = scheme_stx_lookup(val, scheme_env_phase(frame->genv));
+    } else {
+      binding = scheme_gensym(SCHEME_STX_VAL(val));
+      scheme_add_local_binding(val, scheme_env_phase(frame->genv), binding);
+    }
 
-  binding = scheme_gensym(SCHEME_STX_VAL(val));
-  scheme_add_local_binding(val, scheme_env_phase(frame->genv), binding);
+    frame->bindings[index] = binding;
+  }
 
-  frame->bindings[index] = binding;
   frame->skip_table = NULL;
 }
 
@@ -1137,10 +1144,9 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 #if 0
   // REMOVEME
-  if (!strcmp("make-in-vector-like", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+  if (!strcmp("toppy", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%s\n", scheme_write_to_string(binding, NULL));
     scheme_stx_debug_print(find_id, 1);
-    exit(1);
   }
 #endif
 
@@ -1572,6 +1578,7 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
   env = scheme_find_env_at_phase(env, phase);
 
   sym = select_binding_name(SCHEME_STX_VAL(id), env);
+
   scheme_add_module_binding(id, phase,
                             (env->module ? env->module->self_modidx : scheme_false),
                             sym,

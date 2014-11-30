@@ -509,41 +509,38 @@
   (require (for-syntax racket/base))
 
   (define x 12)
-  (define-syntax bar (let ([x 10])
-                       (make-rename-transformer #'x)))
   (define-syntax foo (make-rename-transformer #'x))
   (list foo
         (identifier-binding #'foo)
         (free-identifier=? #'x #'foo))
-  (identifier-binding #'bar)
 
   (begin-for-syntax 
    (define-struct rt (id)
      #:property prop:rename-transformer 0
      #:omit-define-syntaxes))
 
-  (let-syntax ([q (make-rt #'x)])
-    (list q
-          (identifier-binding #'q)
-          (free-identifier=? #'q #'x)))
+  (define-syntax v (make-rt #'x))
+  (list v
+        (identifier-binding #'v)
+        (free-identifier=? #'v #'x))
 
-  (let ([w 11])
-    (letrec-syntax ([q (let ()
-                         (define-struct rt ()
-                           #:property prop:rename-transformer #'w)
-                         (make-rt))])
-      (list q
-            (identifier-binding #'q)
-            (free-identifier=? #'q #'w))))
+  (define w 11)
+  (define-syntax q (let ()
+                     (define-struct rt ()
+                       #:property prop:rename-transformer #'w)
+                     (make-rt)))
+  (list q
+        (identifier-binding #'q)
+        (free-identifier=? #'q #'w))
 
-  (letrec-syntax ([n (make-rename-transformer #'glob)])
-    (list (identifier-binding #'n)
-          (free-identifier=? #'n #'glob)))
-
-  (letrec-syntax ([i (make-rename-transformer #'glob)])
-    (letrec-syntax ([n (make-rename-transformer (syntax-property #'i 'not-free-identifier=? #f))])
-      (list (identifier-binding #'n)
-            (free-identifier=? #'n #'glob)))))
+  (define-syntax n1 (make-rename-transformer #'glob))
+  (list (identifier-binding #'n1)
+        (free-identifier=? #'n1 #'glob))
+  
+  (define-syntax i (make-rename-transformer #'glob))
+  (define-syntax n2 (make-rename-transformer (syntax-property #'i 'not-free-identifier=? #f)))
+  (list (identifier-binding #'n2)
+        (free-identifier=? #'n2 #'glob)))
 
 (let ([accum null])
   (parameterize ([current-print (lambda (v)
@@ -557,9 +554,8 @@
     (dynamic-require ''rename-transformer-tests #f))
   (test '((#f #t) 
           (#f #t)
-          (11 lexical #t)
+          (11 (mpi w mpi w 0 0 0) #t)
           (12 (mpi x mpi x 0 0 0) #t)
-          lexical
           (12 (mpi x mpi x 0 0 0) #t))
         values accum))
 

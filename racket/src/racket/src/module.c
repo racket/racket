@@ -107,7 +107,7 @@ static void eval_exptime(Scheme_Object *names, int count,
                          Scheme_Env *genv, Scheme_Comp_Env *env,
                          Resolve_Prefix *rp, int let_depth, int shift,
                          Scheme_Bucket_Table *syntax, int at_phase,
-                         Scheme_Object *free_id_rename_rn,
+                         Scheme_Object *ids_for_rename_trans,
                          Scheme_Object *insp);
 
 typedef struct Module_Begin_Expand_State {
@@ -6204,13 +6204,13 @@ static void *eval_exptime_k(void)
   Resolve_Prefix *rp;
   int let_depth, shift;
   Scheme_Bucket_Table *syntax;
-  Scheme_Object *free_id_rename_rn, *insp;
+  Scheme_Object *ids_for_rename_trans, *insp;
 
   names = (Scheme_Object *)p->ku.k.p1;
   expr = (Scheme_Object *)p->ku.k.p2;
   genv = (Scheme_Env *)SCHEME_VEC_ELS((Scheme_Object *)p->ku.k.p4)[0];
   comp_env = (Scheme_Comp_Env *)SCHEME_VEC_ELS((Scheme_Object *)p->ku.k.p4)[1];
-  free_id_rename_rn = SCHEME_VEC_ELS((Scheme_Object *)p->ku.k.p4)[2];
+  ids_for_rename_trans = SCHEME_VEC_ELS((Scheme_Object *)p->ku.k.p4)[2];
   rp = (Resolve_Prefix *)SCHEME_VEC_ELS((Scheme_Object *)p->ku.k.p4)[3];
   syntax = (Scheme_Bucket_Table *)SCHEME_VEC_ELS((Scheme_Object *)p->ku.k.p4)[4];
   insp = SCHEME_VEC_ELS((Scheme_Object *)p->ku.k.p4)[5];
@@ -6226,7 +6226,7 @@ static void *eval_exptime_k(void)
   p->ku.k.p5 = NULL;
 
   eval_exptime(names, count, expr, genv, comp_env, rp, let_depth, shift, syntax, at_phase, 
-               free_id_rename_rn, insp);
+               ids_for_rename_trans, insp);
 
   return NULL;
 }
@@ -6248,7 +6248,7 @@ static void eval_exptime(Scheme_Object *names, int count,
                          Resolve_Prefix *rp,
                          int let_depth, int shift, Scheme_Bucket_Table *syntax,
                          int at_phase,
-                         Scheme_Object *free_id_rename_rn,
+                         Scheme_Object *ids_for_rename_trans,
                          Scheme_Object *insp)
 {
   Scheme_Object *macro, *vals, *name, **save_runstack;
@@ -6262,7 +6262,7 @@ static void eval_exptime(Scheme_Object *names, int count,
     vals = scheme_make_vector(6, NULL);
     SCHEME_VEC_ELS(vals)[0] = (Scheme_Object *)genv;
     SCHEME_VEC_ELS(vals)[1] = (Scheme_Object *)comp_env;
-    SCHEME_VEC_ELS(vals)[2] = free_id_rename_rn;
+    SCHEME_VEC_ELS(vals)[2] = ids_for_rename_trans;
     SCHEME_VEC_ELS(vals)[3] = (Scheme_Object *)rp;
     SCHEME_VEC_ELS(vals)[4] = (Scheme_Object *)syntax;
     SCHEME_VEC_ELS(vals)[5] = insp;
@@ -6324,14 +6324,17 @@ static void eval_exptime(Scheme_Object *names, int count,
           macro->type = scheme_macro_type;
           SCHEME_PTR_VAL(macro) = values[i];
           
-          if (SCHEME_TRUEP(free_id_rename_rn)
+          if (SCHEME_TRUEP(ids_for_rename_trans)
               && scheme_is_binding_rename_transformer(values[i])) {
-            scheme_add_binding_copy(name,
+            scheme_add_binding_copy(SCHEME_CAR(ids_for_rename_trans),
                                     scheme_rename_transformer_id(values[i]),
                                     scheme_make_integer(0));
           }
 	
           scheme_add_to_table(syntax, (const char *)name, macro, 0);
+
+          if (SCHEME_TRUEP(ids_for_rename_trans))
+            ids_for_rename_trans = SCHEME_CDR(ids_for_rename_trans);
         }
 	
         return;
@@ -6342,6 +6345,12 @@ static void eval_exptime(Scheme_Object *names, int count,
       macro = scheme_alloc_small_object();
       macro->type = scheme_macro_type;
       SCHEME_PTR_VAL(macro) = vals;
+
+      if (SCHEME_TRUEP(ids_for_rename_trans)
+          && scheme_is_binding_rename_transformer(vals))
+        scheme_add_binding_copy(SCHEME_CAR(ids_for_rename_trans),
+                                scheme_rename_transformer_id(vals),
+                                scheme_make_integer(0));
       
       scheme_add_to_table(syntax, (const char *)name, macro, 0);
       
@@ -6935,7 +6944,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   if (post && SCHEME_FALSEP(SCHEME_STX_VAL(ii))) {
     ii = NULL;
-    ctx_form = fm;
+    ctx_form = disarmed_form;
   } else {
     /* "Punch a hole" in the enclosing context by removing all
        module contexts that are present on the `module` form: */
@@ -8592,7 +8601,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  /************ define-syntaxes & begin-for-syntax *************/
 	  /* Define the macro: */
 	  Scheme_Compile_Info mrec, erec1;
-	  Scheme_Object *names, *l, *code, *m, *vec, *boundname;
+	  Scheme_Object *names, *orig_names, *l, *code, *m, *vec, *boundname;
 	  Resolve_Prefix *rp;
 	  Resolve_Info *ri;
 	  Scheme_Comp_Env *oenv, *eenv;
@@ -8632,6 +8641,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  oenv = env;
 	  
           if (!for_stx) {
+            orig_names = scheme_null;
             for (l = names; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
               Scheme_Object *name, *orig_name, *binding;
               name = SCHEME_STX_CAR(l);
@@ -8640,6 +8650,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
               /* Remember the original: */
               all_rt_defs = scheme_make_pair(name, all_rt_defs);
+              orig_names = scheme_make_pair(name, orig_names);
 	    
               binding = scheme_stx_lookup_exact(name, scheme_make_integer(phase));
 
@@ -8665,7 +8676,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
               count++;
             }
-          }
+            orig_names = scheme_reverse(orig_names);
+          } else
+            orig_names = NULL;
 
           if (for_stx)
             names = NULL;
@@ -8768,7 +8781,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  eval_exptime(names, count, m, eenv->genv, rhs_env, rp, max_let_depth, 0, 
                        (for_stx ? env->genv->exp_env->toplevel : env->genv->syntax), 
                        phase + 1,
-                       for_stx ? scheme_false : rn,
+                       for_stx ? scheme_false : orig_names,
                        NULL);
           
 	  if (erec) {
@@ -11511,6 +11524,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
       }
     }
   }
+
+  printf("done\n");
 
   if (ename) {
     scheme_wrong_syntax(NULL, ename, form, "no such provided variable");
