@@ -62,7 +62,6 @@
                "serialize-cstruct-lib"
                "sgl"
                "shell-completion"
-               "slatex"
                "slideshow"
                "snip"
                "srfi"

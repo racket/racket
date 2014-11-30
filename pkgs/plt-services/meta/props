@@ -1142,7 +1142,6 @@ path/s is either such a string or a list of them.
 "pkgs/shell-completion" responsible (samth sstrickl stamourv)
 "pkgs/shell-completion/racket-completion.bash" drdr:command-line #f
 "pkgs/shell-completion/racket-completion.zsh" responsible (eli)
-"pkgs/slatex" responsible (sstrickl)
 "pkgs/slideshow-pkgs" responsible (mflatt robby)
 "pkgs/slideshow-pkgs/slideshow-exe/slideshow/examples/interlocking-components.scm" drdr:command-line #f
 "pkgs/snip-pkgs" responsible (mflatt)

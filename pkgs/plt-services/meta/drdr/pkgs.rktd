@@ -11,6 +11,7 @@
  ("distro-build-server" "git://github.com/racket/distro-build/?path=distro-build-server")
  ("distro-build-lib" "git://github.com/racket/distro-build/?path=distro-build-lib")
  ("distro-build" "git://github.com/racket/distro-build/?path=distro-build")
+ ("slatex" "git://github.com/racket/slatex")
  "sha"
  "http"
  "aws"
