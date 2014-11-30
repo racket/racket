@@ -550,7 +550,7 @@ static Scheme_Object *do_make_discarding_sequence(Scheme_Object *e1, Scheme_Obje
     return e1;
 
   /* use `begin` instead of `begin0` if we can swap the order: */
-  if (rev && movable_expression(e2, info, -id_offset, 0, 0, 0, 0, 50))
+  if (rev && movable_expression(e2, info, -id_offset, 0, 1, 1, 0, 50))
     rev = 0;
 
   return scheme_make_sequence_compilation(scheme_make_pair((rev ? e2 : e1),
