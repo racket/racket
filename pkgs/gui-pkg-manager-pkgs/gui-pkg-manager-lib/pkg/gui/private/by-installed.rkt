@@ -156,6 +156,7 @@
                         (lambda (names scope)
                           (apply
                            pkg-update-command
+                           #:batch #t
                            #:scope scope
                            names))))]))
 
@@ -187,6 +188,7 @@
                         (lambda (names scope)
                           (apply
                            pkg-remove-command
+                           #:batch #t
                            #:demote #t
                            #:scope scope
                            names))))]))
@@ -203,6 +205,7 @@
                         (lambda (names scope)
                           (apply
                            pkg-remove-command
+                           #:batch #t
                            #:scope scope
                            names))))]))
 

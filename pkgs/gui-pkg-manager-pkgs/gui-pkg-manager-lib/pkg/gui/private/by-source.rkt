@@ -183,7 +183,8 @@
                           [(install) (string-constant install-pkg-abort-install)]
                           [(update) (string-constant install-pkg-abort-update)])
                         (lambda ()
-                          (keyword-apply action 
+                          (keyword-apply action
+                                         #:batch #t
                                          (cmdline-kwds res)
                                          (cmdline-kwd-args res)
                                          (cmdline-args res))))

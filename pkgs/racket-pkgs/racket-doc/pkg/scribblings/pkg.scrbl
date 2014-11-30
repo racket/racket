@@ -415,12 +415,12 @@ sub-commands.
  @item{@DFlag{deps} @nonterm{behavior} --- Selects the behavior for dependencies, where @nonterm{behavior} is one of
   @itemlist[
    @item{@exec{fail} --- Cancels the installation if dependencies are uninstalled or version requirements are unmet. 
-        This behavior is the default for a @nonterm{pkg-source} that is not a @tech{package name}.}
+        This behavior is the default for non-@tech{interactive mode} for a @nonterm{pkg-source} that is not a @tech{package name}.}
    @item{@exec{force} --- Installs the package(s) despite missing dependencies or version requirements.
          Forcing an installation may leave package content in an inconsistent state.}
    @item{@exec{search-ask} --- Looks for dependencies (when uninstalled) or updates (when version requirements are unmet)
          via the configured @tech{package catalogs},
-         but asks if you would like the packages installed or updated. This behavior is the default for a
+         but asks if you would like the packages installed or updated. This behavior is the default in @tech{interactive mode} for a
          @nonterm{pkg-source} that is a @tech{package name}.}
    @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install or update.}
   ]}
@@ -520,7 +520,12 @@ sub-commands.
    The following modes are available:
    @itemlist[
 
-      @item{@exec{fail} --- Reports an error and cancels the installation (the default mode).}
+      @item{@exec{ask} --- In the case when packages can be converted, ask the user whether to convert
+                           or allow the different clone-linking modes or clone directories. If converting
+                           is not an option, the installation fails. This clone-handling mode is the default
+                           in @tech{interactive mode}.}
+
+      @item{@exec{fail} --- Reports an error and cancels the installation (the default in non-@tech{interactive mode}).}
 
       @item{@exec{force} --- Allows packages to have different clone-linking modes or clone directories.}
 
@@ -528,10 +533,6 @@ sub-commands.
                                to clone-linked packages, assuming that the packages that are clone-linked
                                all use the same clone directory. If clone-linked packages currently use
                                different clone directories, installation fails.}
-
-      @item{@exec{ask} --- In the case when packages can be converted, ask the user whether to convert
-                           or allow the different clone-linking modes or clone directories. If converting
-                           is not an option, the installation fails.}
 
     ]}
 
@@ -541,10 +542,13 @@ sub-commands.
 
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Install and setup with @nonterm{n} parallel jobs.}
 
+  @item{@DFlag{batch} --- Disables @deftech{interactive mode}, suppressing potential prompts for a user
+                          (e.g., about package dependencies or clone sharing).}
+
   @item{@DFlag{fail-fast} --- Breaks @exec{raco setup} as soon as any error is encountered.}
  ]
 
-@history[#:changed "6.1.1.5" @elem{Added the @DFlag{clone} and
+@history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch}, @DFlag{clone}, and
                                    @DFlag{multi-clone} flags.}]}
 
 
@@ -609,9 +613,10 @@ argument.
  @item{@DFlag{multi-clone} @nonterm{mode} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
+ @item{@DFlag{batch} --- Same as for @command-ref{install}.}
  ]
 
-@history[#:changed "6.1.1.5" @elem{Added the @DFlag{clone} and
+@history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch}, @DFlag{clone}, and
                                    @DFlag{multi-clone} flags, and
                                    added update of enclosing package
                                    when no arguments are provided.}]}
@@ -642,8 +647,10 @@ the given @nonterm{pkg}s.
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
+ @item{@DFlag{batch} --- Same as for @command-ref{install}.}
  ]
-}
+
+@history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch} flag.}]}
 
 
 @subcommand{@command/toc{new} @nonterm{pkg} ---

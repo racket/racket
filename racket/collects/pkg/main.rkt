@@ -228,7 +228,11 @@
                         (parameterize ([current-pkg-catalogs (and catalog
                                                                   (list (catalog->url catalog)))])
                           (pkg-install #:from-command-line? #t
-                                       #:dep-behavior (if auto 'search-auto deps)
+                                       #:dep-behavior (or (and auto 'search-auto)
+                                                          deps
+                                                          (if batch
+                                                              'fail
+                                                              #f)) ; 'search-ask for a package-name source, etc.
                                        #:all-platforms? all-platforms
                                        #:force? force
                                        #:ignore-checksums? ignore-checksums
@@ -241,7 +245,10 @@
                                                    (and binary 'binary)
                                                    (and binary-lib 'binary-lib))
                                        #:force-strip? force
-                                       #:multi-clone-behavior (or multi-clone 'fail)
+                                       #:multi-clone-behavior (or multi-clone 
+                                                                  (if batch
+                                                                      'fail
+                                                                      'ask))
                                        #:link-dirs? link-dirs?
                                        (for/list ([p (in-list sources)])
                                          (pkg-desc p a-type* name checksum #f
@@ -311,7 +318,11 @@
                                                                     (path->complete-path clone))))]))
                                       #:from-command-line? #t
                                       #:all? all
-                                      #:dep-behavior (if auto 'search-auto deps)
+                                      #:dep-behavior (or (and auto 'search-auto)
+                                                         deps
+                                                         (if batch
+                                                             'fail
+                                                             #f)) ; 'search-ask for a package-name source, etc.
                                       #:all-platforms? all-platforms
                                       #:force? force
                                       #:ignore-checksums? ignore-checksums
@@ -323,7 +334,10 @@
                                                   (and binary 'binary)
                                                   (and binary-lib 'binary-lib))
                                       #:force-strip? force
-                                      #:multi-clone-behavior (or multi-clone 'fail)
+                                      #:multi-clone-behavior (or multi-clone
+                                                                 (if batch
+                                                                     'fail
+                                                                     'ask))
                                       #:link-dirs? link-dirs?))))
                   (setup "updated" no-setup #f setup-collects jobs))))]
             ;; ----------------------------------------
@@ -402,7 +416,7 @@
              "Install packages installed for other version/name"
              #:once-each
              [install-dep-flags ...
-                                (dep-desc ... 
+                                (dep-desc ...
                                           "where the default is `search-auto'")]
              #:once-any
              [#:bool source () ("Strip built elements of the package before installing")]
@@ -586,9 +600,9 @@
     [#:bool user ("-u") "Shorthand for `--scope user'"]
     [(#:str dir #f) scope-dir () "Select package scope <dir>"])
    #:job-flags
-   ([#:bool no-setup () ("Don't run `raco setup' after changing packages (usually"
-                         "not a good idea)")]
-    [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"])
+   ([#:bool no-setup () ("Don't `raco setup' after changing packages (usually a bad idea)")]
+    [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
+    [#:bool batch () ("Disable interactive mode and all prompts")])
    #:catalog-flags
    ([(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"])
    #:install-type-flags
@@ -611,7 +625,7 @@
       "  search-auto: like `search-ask', but does not ask for permission")])
    #:install-dep-desc
    ("where the default is `search-ask' if <pkg-source> is a package name"
-    "or `fail' otherwise")
+    "in interactive mode, `fail' otherwise")
    #:install-force-flags
    ([#:bool all-platforms () "Follow package dependencies for all platforms"]
     [#:bool force () "Ignore conflicts"]
@@ -620,8 +634,8 @@
     [#:bool no-cache () "Disable download cache"])
    #:install-clone-flags
    ([(#:sym mode [fail force convert ask] #f) multi-clone ()
-     ("Specify treatment of multiple clones of a repository"
-      "valid <mode>s are: fail force convert ask")])
+     ("Specify treatment of multiple clones of a repository;"
+      "<mode>s: ask (interactive default), fail (other default), force, or convert")])
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"]
     [#:bool ignore-implies () "When updating, treat `implies' like other dependencies"])
