@@ -36,7 +36,7 @@ modules below, not by @racketmodname[db] or @racketmodname[db/base].
          sql-timestamp?]]]{
 
   Converts between this library's date and time values and SRFI 19's
-  date values (see @racketmodname[srfi/19]). SRFI dates store more
+  date values (see @racketmodname[srfi/19 #:indirect]). SRFI dates store more
   information than SQL dates and times, so converting a SQL time to a
   SRFI date, for example, puts zeroes in the year, month, and day
   fields.

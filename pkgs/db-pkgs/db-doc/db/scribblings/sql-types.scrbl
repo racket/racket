@@ -6,8 +6,7 @@
           racket/runtime-path
           "config.rkt"
           "tabbing.rkt"
-          (for-label (prefix-in srfi: srfi/19)
-                     db db/util/geometry db/util/postgresql
+          (for-label db db/util/geometry db/util/postgresql
                      json))
 
 @(define-runtime-path log-file "log-for-sql-types.rktd")
@@ -414,15 +413,15 @@ values.
   Represents SQL times and timestamps.
 
   The @racket[tz] field indicates the time zone offset as the number
-  of seconds east of GMT (as in SRFI 19). If @racket[tz] is
-  @racket[#f], the time or timestamp does not carry time zone
-  information.
+  of seconds east of GMT (as in @racketmodname[srfi/19
+  #:indirect]). If @racket[tz] is @racket[#f], the time or timestamp
+  does not carry time zone information.
 
   The @racket[sql-time] and @racket[sql-timestamp] structures store
   fractional seconds to nanosecond precision for compatibility with
-  SRFI 19. Note, however, that database systems generally do not
-  support nanosecond precision; PostgreSQL, for example, only supports
-  microsecond precision.
+  @racketmodname[srfi/19 #:indirect]. Note, however, that database
+  systems generally do not support nanosecond precision; PostgreSQL,
+  for example, only supports microsecond precision.
 
 @examples[#:eval the-eval
 (query-value pgc "select date '25-dec-1980'")
