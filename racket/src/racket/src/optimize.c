@@ -4370,8 +4370,7 @@ case_lambda_shift(Scheme_Object *data, int delta, int after_depth)
 static Scheme_Object *
 begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
 {
-  int i, count, drop = 0, prev_size, single_result = 0, preserves_marks = 0;
-  int kclock, sclock, movable;
+  int i, count, drop = 0, prev_size, single_result = 0, preserves_marks = 0, kclock, sclock;
   Scheme_Sequence *s = (Scheme_Sequence *)obj;
   Scheme_Object *inside = NULL, *expr, *orig_first;
   int id_offset = 0;
@@ -4417,7 +4416,7 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
   info->preserves_marks = 1;
   info->single_result = single_result;
 
-  if (drop && (s->count - drop) == 1 && (preserves_marks == 1)) {
+  if ((s->count - drop) == 1 && (preserves_marks == 1)) {
     /* If the first expression preserves marks we can drop the begin0 */
     return s->array[0];
   }
@@ -4458,13 +4457,6 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
       expr = (Scheme_Object *)s2;
     }
   } else {
-    if (drop && (s->count - drop) == 1) {
-      /* can't drop down to 1 expression */
-      s->array[s->count-1] = scheme_void;
-      --drop;
-      info->size += 1;
-    }
-
     if (drop) {
       Scheme_Sequence *s2;
       int j = 0;

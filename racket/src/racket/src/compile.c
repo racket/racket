@@ -2926,7 +2926,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
      to a bad .zo */
   Scheme_Object *list, *v, *good;
   Scheme_Sequence *o;
-  int count, i, k, total, last, first, setgood, addconst;
+  int count, i, k, total, last, first, setgood;
   Scheme_Type type;
 
   type = scheme_sequence_type;
@@ -2973,23 +2973,19 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
   
   if (count == 1) {
     if (opt < -1) {
-      /* can't optimize away a begin0 at read time; it's too late, since the
-         return is combined with EXPD_BEGIN0 */
-      addconst = 1;
+      /* can't optimize away a begin0 reading a .zo time */
     } else if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1, 0, NULL, NULL, 0, 0, 1)) {
       /* We can't optimize (begin0 expr cont) to expr because
 	 exp is not in tail position in the original (so we'd mess
 	 up continuation marks). */
-      addconst = 1;
     } else
       return good;
-  } else
-    addconst = 0;
+  }
 
-  o = scheme_malloc_sequence(count + addconst);
+  o = scheme_malloc_sequence(count);
 
   o->so.type = ((opt < 0) ? scheme_begin0_sequence_type : scheme_sequence_type);
-  o->count = count + addconst;
+  o->count = count;
   
   --total;
   for (i = k = 0; i < count; k++) {
@@ -3014,9 +3010,6 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       o->array[i++] = v;
   }
 
-  if (addconst)
-    o->array[i] = scheme_void;
-  
   return (Scheme_Object *)o;
 }
 
