@@ -18,4 +18,7 @@
  ("s3-sync" "git://github.com/mflatt/s3-sync")
  ("pkg-push" "git://github.com/racket/pkg-push/")
  ("racket-lang-org" "git://github.com/racket/racket-lang-org/")
- ("pkg-build" "git://github.com/racket/pkg-build/"))
+ ("pkg-build" "git://github.com/racket/pkg-build/")
+ ("preprocessor" "git://github.com/racket/preprocessor")
+ ("make" "git://github.com/racket/make")
+ ("eopl" "git://github.com/racket/eopl"))
