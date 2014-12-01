@@ -10,7 +10,9 @@
          read-pkg-file-hash
          path->pkg
          path->pkg+subpath
-         path->pkg+subpath+collect)
+         path->pkg+subpath+scope
+         path->pkg+subpath+collect
+         path->pkg+subpath+collect+scope)
 
 (struct pkg-info (orig-pkg checksum auto?) #:prefab)
 (struct pkg-info/alt pkg-info (dir-name) #:prefab) ; alternate installation directory
@@ -88,7 +90,7 @@
   (define p (explode given-p))
   (define (build-path* l)
     (if (null? l) 'same (apply build-path l)))
-  (for/fold ([pkg #f] [subpath #f] [collect #f])
+  (for/fold ([pkg #f] [subpath #f] [collect #f] [install-scope #f])
       ([scope (in-list (list* 'user
                               (get-pkgs-search-dirs)))]
        #:when (not pkg))
@@ -112,18 +114,19 @@
       (define len (length d))
       (define pkg-name (path-element->string (list-ref p len)))
       (if (regexp-match? #rx"pkgs[.]rktd" pkg-name)
-          (values #f #f #f) ; don't count the database as a package
+          (values #f #f #f #f) ; don't count the database as a package
           (values (if (regexp-match? #rx"[+]" pkg-name) ; +<n> used as an alternate path, sometimes
                       (regexp-replace #rx"[+].*$" pkg-name "")
                       pkg-name)
                   (build-path* (list-tail p (add1 len)))
                   (and want-collect?
                        (let ([i (hash-ref (read-pkg-db/cached) pkg-name #f)])
-                         (and i (sc-pkg-info? i) (sc-pkg-info-collect i))))))]
+                         (and i (sc-pkg-info? i) (sc-pkg-info-collect i))))
+                  scope))]
      [else
       ;; Maybe it's a linked package
       (define pkgs-dir (get-pkgs-dir scope))
-      (for/fold ([pkg #f] [subpath #f] [collect #f])
+      (for/fold ([pkg #f] [subpath #f] [collect #f] [install-scope #f])
           ([(k v) (in-hash (read-pkg-db/cached))]
            #:when (not pkg))
         (define orig (pkg-info-orig-pkg v))
@@ -142,19 +145,30 @@
               (if (sub-path? <= p e)
                   (values k
                           (build-path* (list-tail p (length e)))
-                          (and (sc-pkg-info? v) (sc-pkg-info-collect v)))
-                  (values #f #f #f)))
-            (values #f #f #f)))])))
+                          (and (sc-pkg-info? v) (sc-pkg-info-collect v))
+                          scope)
+                  (values #f #f #f #f)))
+            (values #f #f #f #f)))])))
 
-(define (path->pkg+subpath+collect given-p #:cache [cache #f])
+(define (path->pkg+subpath+collect+scope given-p #:cache [cache #f])
   (path->pkg+subpath+collect* 'path->pkg+subpath+collect given-p cache #t))
 
-(define (path->pkg+subpath given-p #:cache [cache #f])
-  (define-values (pkg rest rest2)
+(define (path->pkg+subpath+collect given-p #:cache [cache #f])
+  (define-values (pkg subpath collect scope)
+    (path->pkg+subpath+collect* 'path->pkg+subpath+collect given-p cache #t))
+  (values pkg subpath collect))
+
+(define (path->pkg+subpath+scope given-p #:cache [cache #f])
+  (define-values (pkg subpath collect scope)
     (path->pkg+subpath+collect* 'path->pkg+subpath given-p cache #f))
-  (values pkg rest))
+  (values pkg subpath scope))
+
+(define (path->pkg+subpath given-p #:cache [cache #f])
+  (define-values (pkg subpath collect scope)
+    (path->pkg+subpath+collect* 'path->pkg+subpath given-p cache #f))
+  (values pkg subpath))
 
 (define (path->pkg given-p #:cache [cache #f])
-  (define-values (pkg rest rest2)
+  (define-values (pkg subpath collect scope)
     (path->pkg+subpath+collect* path->pkg given-p cache #f))
   pkg)

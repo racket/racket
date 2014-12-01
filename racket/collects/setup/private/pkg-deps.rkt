@@ -318,8 +318,14 @@
   ;; ----------------------------------------
   (define doc-pkgs (make-hash))
   (define doc-reported (make-hash))
+  (define doc-all-registered? #f)
   (define (check-doc! pkg dep dest-dir)
     (define-values (base name dir?) (split-path dep))
+    (when (and all-pkgs-lazily?
+               (not doc-all-registered?)
+               (not (hash-ref doc-pkgs base #f)))
+      (set! doc-all-registered? #t)
+      (register-all-docs!))
     (define src-pkg (hash-ref doc-pkgs base #f))
     (when src-pkg
       (unless (check-dep! pkg src-pkg 'build)
@@ -423,6 +429,17 @@
               (check-doc! pkg dep dest-dir))]
            [else
             (hash-set! doc-pkgs (path->directory-path dest-dir) pkg)])))))
+
+  (define (register-all-docs!)
+    (define pkg-cache (make-hash))
+    (define dirs (find-relevant-directories '(scribblings)))
+    (for ([dir (in-list dirs)])
+      (define-values (pkg subpath scope) (path->pkg+subpath+scope dir #:cache pkg-cache))
+      (when pkg
+        (define main? (not (eq? scope 'user)))
+        (register-or-check-docs #f pkg dir main?))))
+  
+  ;; ----------------------------------------
 
   ;; For each collection, set up package info:
   (for ([path (in-list paths)]

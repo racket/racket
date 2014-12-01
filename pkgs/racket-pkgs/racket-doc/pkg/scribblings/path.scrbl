@@ -76,6 +76,16 @@ Like @racket[path->pkg], but returns a second value that represents
 the remainder of @racket[path] within the package's directory.}
 
 
+@defproc[(path->pkg+subpath+scope [path path-string?]
+                                  [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
+         (values (or/c string? #f)
+                 (or/c path? 'same #f)
+                 (or/c 'installation 'user (and/c path? complete-path?) #f))]{
+
+Like @racket[path->pkg+subpath], but returns a third value for the package's
+installation scope.}
+
+
 @defproc[(path->pkg+subpath+collect [path path-string?]
                                     [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
          (values (or/c string? #f) (or/c path? 'same #f) (or/c string? #f))]{
@@ -83,6 +93,17 @@ the remainder of @racket[path] within the package's directory.}
 Like @racket[path->pkg+subpath], but returns a third value for a
 collection name if the package is a single-collection package,
 @racket[#f] otherwise.}
+
+
+@defproc[(path->pkg+subpath+collect+scope [path path-string?]
+                                    [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
+         (values (or/c string? #f)
+                 (or/c path? 'same #f)
+                 (or/c string? #f)
+                 (or/c 'installation 'user (and/c path? complete-path?) #f))]{
+
+Like @racket[path->pkg+subpath+collects], but returns a fourth value for
+the package's installation scope.}
 
 
 @defproc[(get-pkgs-dir [scope (or/c 'installation 'user 'shared

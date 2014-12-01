@@ -330,6 +330,8 @@ The @racket[name] parameter is the name of the new package.
 
 
 @defproc[(pkg-show [indent string?]
+                   [#:auto? auto? boolean? #f]
+                   [#:long? long? boolean? #f]
                    [#:directory show-dir? boolean? #f])
          void?]{
 
@@ -338,7 +340,9 @@ printing to the current output port. See also
 @racket[installed-pkg-names] and @racket[installed-pkg-table].
 
 The package lock must be held to allow reads; see
-@racket[with-pkg-lock/read-only].}
+@racket[with-pkg-lock/read-only].
+
+@history[#:changed "6.1.1.5" @elem{Added the @racket[#:long?] argument.}]}
 
 
 @defproc[(pkg-migrate      [from-version string?]

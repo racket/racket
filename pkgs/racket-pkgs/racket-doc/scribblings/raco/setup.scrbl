@@ -187,9 +187,7 @@ flags:
  @item{@DFlag{check-pkg-deps} --- checks package dependencies (unless
   explicitly disabled) even when specific collections are provided to
   @exec{raco setup}, and even for packages that have no
-  dependency declarations. Currently, dependency checking related to
-  documentation cross-referencing is constrained to documents among
-  specified collections.}
+  dependency declarations.}
 
  @item{@DFlag{fix-pkg-deps} --- attempt to correct dependency
   mismatches by adjusting package @filepath{info.rkt} files (which makes
