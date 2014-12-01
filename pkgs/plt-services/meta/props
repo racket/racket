@@ -720,7 +720,6 @@ path/s is either such a string or a list of them.
 "pkgs/drracket-pkgs/drracket-test/tests/jpr" responsible (mflatt)
 "pkgs/ds-store-pkgs" responsible (mflatt)
 "pkgs/eli-tester" responsible (eli)
-"pkgs/eopl" responsible (dvanhorn)
 "pkgs/errortrace-pkgs" responsible (mflatt)
 "pkgs/errortrace-pkgs/errortrace-test/tests/errortrace/alert.rkt" responsible (eli)
 "pkgs/frtime" responsible (jay gcooper)
@@ -835,7 +834,6 @@ path/s is either such a string or a list of them.
 "pkgs/macro-debugger-pkgs" responsible (ryanc)
 "pkgs/main-distribution" responsible (eli jay matthias mflatt robby)
 "pkgs/main-distribution-test" responsible (eli jay matthias mflatt robby)
-"pkgs/make" responsible (mflatt)
 "pkgs/math-pkgs" responsible (ntoronto)
 "pkgs/math-pkgs/math-test/math/tests/bigfloat-custodian.rkt" drdr:random #t
 "pkgs/math-pkgs/math-test/math/tests/matrix-tests.rkt" drdr:timeout 120
@@ -867,7 +865,6 @@ path/s is either such a string or a list of them.
 "pkgs/plt-services/meta/images/taking-screenshots/racket-widget.scm" drdr:command-line #f
 "pkgs/plt-services/meta/pkg-index" responsible (jay)
 "pkgs/plt-services/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
-"pkgs/preprocessor" responsible (eli)
 "pkgs/profile-pkgs" responsible (eli samth stamourv)
 "pkgs/r5rs-pkgs" responsible (mflatt)
 "pkgs/r6rs-pkgs" responsible (mflatt)
