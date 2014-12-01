@@ -3015,7 +3015,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
   }
 
   if (addconst)
-    o->array[i] = scheme_false;
+    o->array[i] = scheme_void;
   
   return (Scheme_Object *)o;
 }

@@ -4462,7 +4462,7 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
   
     if (drop && (s->count - drop) == 1) {
       /* can't drop down to 1 expression */
-      s->array[s->count-1] = scheme_false;
+      s->array[s->count-1] = scheme_void;
       --drop;
       info->size += 1;
     }
