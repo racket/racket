@@ -7,7 +7,6 @@
                      "srfi-lite-lib"
                      "compatibility-doc"
                      "r6rs-doc"
-                     "srfi-doc"
                      "compatibility-lib"
                      "r6rs-lib"
                      "sandbox-lib"
