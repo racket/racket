@@ -3,7 +3,7 @@
 @begin[(require "../utils.rkt")
        (require (for-label (only-meta-in 0 [except-in typed/racket for])
                            (only-in racket/base for)
-                           racket/list srfi/14 net/url
+                           racket/list net/url
                            version/check))]
 
 
