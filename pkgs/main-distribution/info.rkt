@@ -17,7 +17,6 @@
                "drracket"
                "drracket-tool"
                "errortrace"
-               "frtime"
                "future-visualizer"
                "future-visualizer-typed"
                "gui"

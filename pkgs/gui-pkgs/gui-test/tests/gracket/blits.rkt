@@ -58,15 +58,15 @@
 
 (define targets
   (list
-   (collection-file-path "clock.png" "frtime" "tool")
-   (self-mask (collection-file-path "clock.png" "frtime" "tool"))
+   ;; (collection-file-path "clock.png" "frtime" "tool")
+   ;; (self-mask (collection-file-path "clock.png" "frtime" "tool"))
    (collection-file-path "foot-up.png" "icons")
    (collection-file-path "mred.xbm" "icons")
    (self-mask (collection-file-path "mred.xbm" "icons"))
    (plus-mask (collection-file-path "mred.xbm" "icons")
 	      (collection-file-path "PLT-206.png" "icons"))
-   (plus-mask (collection-file-path "clock.png" "frtime" "tool")
-	      (collection-file-path "mred.xbm" "icons"))
+   ;; (plus-mask (collection-file-path "clock.png" "frtime" "tool")
+   ;;            (collection-file-path "mred.xbm" "icons"))
    (collection-file-path "htdp-icon.gif" "icons")
    ))
 

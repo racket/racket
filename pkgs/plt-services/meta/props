@@ -722,8 +722,6 @@ path/s is either such a string or a list of them.
 "pkgs/eli-tester" responsible (eli)
 "pkgs/errortrace-pkgs" responsible (mflatt)
 "pkgs/errortrace-pkgs/errortrace-test/tests/errortrace/alert.rkt" responsible (eli)
-"pkgs/frtime" responsible (jay gcooper)
-"pkgs/frtime/tests/time.rkt" drdr:random #t
 "pkgs/future-visualizer-pkgs" responsible (jamesswaine)
 "pkgs/gui-pkg-manager-pkgs" responsible (mflatt)
 "pkgs/gui-pkgs" responsible (mflatt)
