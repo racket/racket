@@ -62,8 +62,8 @@
                               [(is-var-mutated? n)
                                (list)]
                               [else
-                               (list (-imp (-not-filter (-val #f) n) f+)
-                                     (-imp (-filter (-val #f) n) f-))]))))]
+                               (list (-or (-and (-not-filter (-val #f) n) f+)
+                                          (-and (-filter (-val #f) n) f-)))]))))]
           [(list (tc-result: e-ts (NoFilter:) _) ...)
            (values e-ts null)]))))
   ;; extend the lexical environment for checking the body

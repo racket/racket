@@ -58,6 +58,10 @@
     [(f f) #t]
     [((Top:) _) #t]
     [(_ (Bot:)) #t]
+    [((OrFilter: fs1) (OrFilter: fs2))
+     (andmap (lambda (disj2)
+               (memf (lambda (disj1) (filter-equal? disj1 disj2)) fs1)) 
+             fs2)]
     [((OrFilter: fs) f2)
      (and (memf (lambda (f) (filter-equal? f f2)) fs) #t)]
     [(f1 (AndFilter: fs))
