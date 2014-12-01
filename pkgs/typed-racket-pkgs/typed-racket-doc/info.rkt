@@ -6,7 +6,6 @@
                      "scheme-lib"
                      "srfi-lite-lib"
                      "compatibility-doc"
-                     "srfi-doc"
                      "compatibility-lib"
                      "sandbox-lib"
                      "at-exp-lib"

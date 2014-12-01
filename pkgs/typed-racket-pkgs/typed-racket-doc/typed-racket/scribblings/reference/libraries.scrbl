@@ -23,7 +23,7 @@ The @racketmodname[typed/racket/base] language corresponds to the
 
 Some libraries have counterparts in the @racketidfont{typed}
 collection, which provide the same exports as the untyped versions.
-Such libraries include @racketmodname[srfi/14],
+Such libraries include @racketmodname[srfi/14 #:indirect],
 @racketmodname[net/url], and many others.
 
 @racketmod[typed/racket
