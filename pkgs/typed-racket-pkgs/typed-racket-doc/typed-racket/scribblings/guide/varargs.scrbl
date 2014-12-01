@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@begin[(require "../utils.rkt" (for-label typed/racket/base) (for-label (only-in rnrs/lists-6 fold-left)))]
+@begin[(require "../utils.rkt" (for-label typed/racket/base))]
 
 @title[#:tag "varargs"]{Variable-Arity Functions: Programming with Rest Arguments}
 
@@ -43,7 +43,8 @@ of the rest parameter is used at the same type.
 @section{Non-Uniform Variable-Arity Functions}
 
 However, the rest argument may be used as a heterogeneous list.
-Take this (simplified) definition of the R6RS function @racket[fold-left]:
+Take this (simplified) definition of the R6RS function @tt{fold-left}:
+@; the above is not a link to avoid a dependency on the r6rs package
 
 @racketmod[
 racket

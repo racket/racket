@@ -12,7 +12,6 @@
                      "planet-lib"
                      "racket-test"
                      "rackunit-lib"
-                     "srfi-lib"
                      "syntax-color-lib"
                      "typed-racket-lib"
                      "unstable-contract-lib"

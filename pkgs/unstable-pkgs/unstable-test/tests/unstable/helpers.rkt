@@ -7,7 +7,7 @@
          check/sort
          with/c)
 
-(require rackunit racket/pretty srfi/67)
+(require rackunit racket/pretty)
 
 (define-syntax-rule (test e ...)
   (test-case (parameterize ([pretty-print-columns 50])
@@ -38,7 +38,7 @@
           (lambda () (fail-check))))))))
 
 (define (check/sort actual expected
-                    #:< [<< (<? default-compare)]
+                    #:< <<
                     #:= [== equal?])
   (with-check-info*
    (list (make-check-name 'check/sort)

@@ -3,7 +3,6 @@
   (require (prefix-in kernel: syntax/kerncase)
            gui-debugger/marks
            mzlib/etc
-           (prefix-in srfi: srfi/1/search)
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
            )
@@ -324,7 +323,7 @@
             (disarm expr) #f
             [var-stx (identifier? (syntax var-stx))
                      (let ([binder (and (syntax-original? expr)
-                                        (srfi:member expr bound-vars free-identifier=?))])
+                                        (member expr bound-vars free-identifier=?))])
                        (if binder
                            (record-bound-id 'ref expr (car binder))
                            (record-bound-id 'top-level expr expr))
@@ -365,7 +364,7 @@
             
             [(set! var val)
              (let ([binder (and (syntax-original? #'var)
-                                (srfi:member #'var bound-vars free-identifier=?))])
+                                (member #'var bound-vars free-identifier=?))])
                (when binder
                  (record-bound-id 'set expr (car binder)))
                (quasisyntax/loc expr (set! var #,(annotate #`val bound-vars #f module-name ))))]

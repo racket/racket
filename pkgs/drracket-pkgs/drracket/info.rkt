@@ -32,8 +32,6 @@
                "trace"
                "macro-debugger"
                "net-lib"
-               "srfi-lib"
-               "srfi-doc"
                "tex-table"
                "unstable-lib"
                "drracket-plugin-lib"

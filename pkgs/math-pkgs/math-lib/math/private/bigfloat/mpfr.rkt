@@ -9,8 +9,6 @@
          racket/runtime-path
          racket/promise
          racket/serialize
-         (only-in rnrs/arithmetic/bitwise-6
-                  bitwise-first-bit-set)
          "gmp.rkt"
          "utils.rkt")
 
@@ -126,6 +124,14 @@
 (define (bigfloat-equal? x1 x2 _)
   (or (and (bfnan? x1) (bfnan? x2))
       (bf=? x1 x2)))
+
+(define (bitwise-first-bit-set b)
+  (if (zero? b)
+      -1
+      (let loop ([b b][pos 0])
+        (if (zero? (bitwise-and b 1))
+            (loop (arithmetic-shift b -1) (add1 pos))
+            pos))))
 
 (define (canonicalize-sig+exp sig exp)
   (cond [(zero? sig)  (values 0 0)]

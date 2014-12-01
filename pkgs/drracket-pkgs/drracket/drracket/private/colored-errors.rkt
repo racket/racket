@@ -7,8 +7,6 @@
          racket/match
          parser-tools/lex
          (prefix-in : parser-tools/lex-sre)
-         (rename-in srfi/26 [cut //])
-         (only-in srfi/1 break)
          unstable/contract)
 
 (define-syntax (test stx) #'(begin)) ;; TODO: convert my test into DrRacket's test framework
@@ -94,8 +92,8 @@
   (map promote
        (append
         (append*
-         (filter-map (// match <> [(colored-msg-fragment locs _ _ c)
-                                   (map (// list <> c) (if (list? locs) locs (list locs)))] [_ #f])
+         (filter-map (λ (x) (match x [(colored-msg-fragment locs _ _ c)
+                                      (map (λ (x) (list x c)) (if (list? locs) locs (list locs)))] [_ #f]))
                      (colored-error-message-fragments msg)))
         (colored-error-message-additional-highlights msg))))
 
@@ -121,7 +119,7 @@
                      (match v [pattern #t] [_ #f]))]))
 
 (define (check-tildas-are-paired parsed)
-  (let loop ([tildas (filter (// match? <> (or 'TildaPipe 'PipeTilda)) parsed)] [i 1])
+  (let loop ([tildas (filter (λ (x) (match? x (or 'TildaPipe 'PipeTilda))) parsed)] [i 1])
     (match tildas
       [(list) (void)]
       [(list 'PipeTilda rst ...)
@@ -187,7 +185,7 @@
                   (list/c srcloc-syntax/c symbol? boolean?))
             the-arg 'caller 'TildaPipe)
   
-  (define is-important (and (list? the-arg) (findf (// eq? <> #t) the-arg)))
+  (define is-important (and (list? the-arg) (findf (λ (x) (eq? x #t)) the-arg)))
   (define color (and (list? the-arg) (findf symbol? the-arg)))
   (values (colored-msg-fragment (if (list? the-arg) (first the-arg) the-arg) sub is-important color) rest-args))
 
@@ -223,7 +221,7 @@
                   (error 'colored-format "There are ~a unused arguments" (length args)))
                 empty]
         [(list 'TildaPipe tail ...)
-         (define-values (left right) (break (// match? <> 'PipeTilda) tail))
+         (define-values (left right) (splitf-at tail (λ (x) (match? x 'PipeTilda))))
          (define-values (result rest-args) (colored-format:TildaPipe left args))
          (cons result (loop (rest right) rest-args))]
         [(list f tail ...)
@@ -268,7 +266,7 @@
 (define (important-srclocs msg)
   (append
    (flatten
-    (filter-map (// match <> [(colored-msg-fragment locs _ #t _) locs] [_ #f])
+    (filter-map (λ (x) (match x [(colored-msg-fragment locs _ #t _) locs] [_ #f]))
                 (colored-error-message-fragments msg)))
    (colored-error-message-additional-highlights msg)))
 

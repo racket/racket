@@ -3,7 +3,6 @@
 (define collection 'multi)
 
 (define deps '("base"
-               "r6rs-lib"
                "typed-racket-lib"
                "typed-racket-more"
                ("math-i386-macosx" #:platform "i386-macosx")
