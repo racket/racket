@@ -302,7 +302,7 @@ Generally, @racket[date-ticks-layout] tries to place ticks at minute, hour, day,
 
 To try to avoid displaying overlapping labels, @racket[date-ticks-format] chooses date formats from @racket[formats] for which labels will contain no redundant information.
 
-All the format specifiers given in @racketmodname[srfi/19] (which are derived from Unix's @tt{date} command), except those that represent time zones, are allowed in date format strings.
+All the format specifiers given in @racketmodname[srfi/19 #:indirect] (which are derived from Unix's @tt{date} command), except those that represent time zones, are allowed in date format strings.
 }
 
 @doc-apply[date-ticks-formats]{
@@ -326,7 +326,7 @@ Generally, @racket[time-ticks-layout] tries to place ticks at minute, hour and d
 
 To try to avoid displaying overlapping labels, @racket[time-ticks-format] chooses a date format from @racket[formats] for which labels will contain no redundant information.
 
-All the time-related format specifiers given in @racketmodname[srfi/19] (which are derived from Unix's @tt{date} command) are allowed in time format strings.
+All the time-related format specifiers given in @racketmodname[srfi/19 #:indirect] (which are derived from Unix's @tt{date} command) are allowed in time format strings.
 }
 
 @doc-apply[time-ticks-formats]{

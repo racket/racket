@@ -20,7 +20,6 @@
                      "scribble-lib"
                      "slideshow-doc"
                      "slideshow-lib"
-                     "srfi-doc"
                      "unstable-contract-lib"
                      "unstable-doc"))
 (define update-implies '("plot-lib"))
