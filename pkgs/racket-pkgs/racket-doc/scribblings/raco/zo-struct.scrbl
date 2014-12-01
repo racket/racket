@@ -491,6 +491,9 @@ binding, constructor, etc.}
 
 @defstruct+[(beg0 expr) ([seq (listof (or/c expr? seq? any/c))])]{
   Represents a @racket[begin0] expression.
+  
+  Unlike begin0, the first expression of beg0 may not be in tail position
+  even if it is the only one.
 
   After each expression in @racket[seq] is evaluated, the stack is
   restored to its depth from before evaluating the expression.}
