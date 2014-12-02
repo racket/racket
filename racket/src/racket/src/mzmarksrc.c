@@ -1811,6 +1811,7 @@ mark_marshal_tables {
   gcMARK2(mt->st_ref_stack, gc);
   gcMARK2(mt->intern_map, gc);
   gcMARK2(mt->identity_map, gc);
+  gcMARK2(mt->mark_map, gc);
   gcMARK2(mt->top_map, gc);
   gcMARK2(mt->key_map, gc);
   gcMARK2(mt->delay_map, gc);

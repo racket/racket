@@ -2951,7 +2951,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_mark_type))
     {
       if (compact || !pp->print_unreadable) {
-        Scheme_Object *idx;
+        Scheme_Object *idx, *n;
 
         idx = get_symtab_idx(mt, obj);
         if (idx) {
@@ -2960,6 +2960,11 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           print_compact(pp, CPT_MARK);
           print_symtab_set(pp, mt, obj);
           idx = get_symtab_idx(mt, obj);
+
+          n = scheme_hash_get(mt->mark_map, obj);
+          if (!n) n = scheme_make_integer(0);
+          print_compact_number(pp, SCHEME_INT_VAL(n));
+
           print(scheme_mark_marshal_content(obj, mt), notdisplay, 1, ht, mt, pp);
         }
       } else {
@@ -3345,7 +3350,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       if (compact)
 	closed = print(v, notdisplay, 1, NULL, mt, pp);
       else {
-        Scheme_Hash_Table *st_refs, *symtab, *tht;
+        Scheme_Hash_Table *st_refs, *symtab, *tht, *mark_map;
         intptr_t *shared_offsets;
         intptr_t st_len, j, shared_offset, start_offset;
 
@@ -3358,6 +3363,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         st_refs = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->st_refs = st_refs;
         mt->st_ref_stack = scheme_null;
+
+        mark_map = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->mark_map = mark_map;
 
 	/* "Print" the string once to determine graph references. On this pass,
            we first assume that everything is shared and make up sequential
@@ -3373,6 +3381,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
         sort_referenced_keys(mt);
         mt->rn_saved = NULL;
+
+        scheme_sort_marshal_marks(mt);
 
 	/* "Print" again, now that we know which values are actually
            shared. On this pass, shared values that reference other shared values
@@ -3424,6 +3434,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         
 	print_number(pp, st_len);
 	print_number(pp, slen);
+
+	print_number(pp, mt->mark_map->count);
 
 	/* Make symtab again to ensure the same results 
            for the final print: */

@@ -1098,6 +1098,7 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase);
 
 Scheme_Object *scheme_new_mark(int kind);
+mzlonglong scheme_alloc_marks(intptr_t amt);
 Scheme_Object *scheme_new_multi_mark(void);
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
 Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
@@ -1200,6 +1201,7 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase);
+Scheme_Object *scheme_stx_lookup_exact_for_bind(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase, int for_bind,
                                            int *_exact_match, int *_ambiguous,
                                            Scheme_Mark_Set **_binding_marks,
@@ -1267,6 +1269,7 @@ int scheme_is_predefined_module_p(Scheme_Object *name);
 Scheme_Object *scheme_get_kernel_modidx(void);
 
 Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, struct Scheme_Marshal_Tables *mt);
+void scheme_sort_marshal_marks(struct Scheme_Marshal_Tables *mt);
 
 void scheme_stx_debug_print(Scheme_Object *stx, Scheme_Object *phase, int level);
 
@@ -3219,6 +3222,7 @@ typedef struct Scheme_Marshal_Tables {
   Scheme_Object *st_ref_stack;
   Scheme_Hash_Table *intern_map;  /* filled on first pass */
   Scheme_Hash_Table *identity_map; /* filled on first pass */
+  Scheme_Hash_Table *mark_map;    /* filled on first pass, numbered before second */
   Scheme_Hash_Table *top_map;     /* used on every pass */
   Scheme_Hash_Table *key_map;     /* set after first pass, used on later passes */
   Scheme_Hash_Table *delay_map;   /* set during first pass, used on later passes */
