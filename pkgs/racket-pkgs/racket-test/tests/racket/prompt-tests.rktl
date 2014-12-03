@@ -322,6 +322,19 @@
 
 (test-breaks-ok)
 
+;; Make sure a jump to an enclosing continuation doesn't
+;; skip over a prompt:
+(test 25 values (+ 5
+                   (call-with-continuation-prompt
+                    (lambda ()
+                      (+ 1
+                         (call/cc
+                          (lambda (k)
+                            (+ 17
+                               (call-with-continuation-prompt
+                                (lambda ()
+                                  (k 1)))))))))))
+
 ;; ----------------------------------------
 ;; Overlapping continuations
 

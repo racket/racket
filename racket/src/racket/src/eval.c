@@ -1478,6 +1478,10 @@ static Scheme_Prompt *lookup_cont_prompt(Scheme_Cont *c,
   Scheme_Prompt *prompt;
   Scheme_Object *pt;
 
+  if (!c->runstack_copied)
+    /* This continuation is the same as another... */
+    c = c->buf_ptr->buf.cont;
+
   pt = c->prompt_tag;
   if (SCHEME_NP_CHAPERONEP(pt))
     pt = SCHEME_CHAPERONE_VAL(pt);
@@ -1615,10 +1619,17 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
 
   c = (Scheme_Cont *)obj;
   
+  /* Shortcut: if the target continuation is an extension of the current
+     continuation, and if no prompt is in the way, then escape directly. */
   if (can_ec
       && c->escape_cont
-      && scheme_escape_continuation_ok(c->escape_cont))
-    scheme_escape_to_continuation(c->escape_cont, num_rands, rands, (Scheme_Object *)c);
+      && scheme_escape_continuation_ok(c->escape_cont)) {
+    prompt = lookup_cont_prompt(c, &prompt_mc, &prompt_pos, LOOKUP_NO_PROMPT);
+    if (!prompt || (prompt->id
+                    && (prompt->id == c->prompt_id)
+                    && !prompt_mc))
+      scheme_escape_to_continuation(c->escape_cont, num_rands, rands, (Scheme_Object *)c);
+  }
       
   if (num_rands != 1) {
     GC_CAN_IGNORE Scheme_Object **vals;
