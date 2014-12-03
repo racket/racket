@@ -33,7 +33,10 @@
 (provide (struct-out install-info)
          remote-package-checksum
          stage-package/info
-         pkg-stage)
+         pkg-stage
+         package-url->checksum
+         github-client_secret
+         github-client_id)
 
 (struct install-info (name orig-pkg directory git-directory clean? checksum module-paths additional-installs))
 
