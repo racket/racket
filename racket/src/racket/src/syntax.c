@@ -524,27 +524,17 @@ void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *con
 
 /******************** marks ********************/
 
-static Scheme_Object *alloc_mark(mzlonglong id)
+Scheme_Object *scheme_new_mark(int kind)
 {
   Scheme_Mark *m;
+  mzlonglong id;
 
   m = (Scheme_Mark *)scheme_malloc_small_tagged(sizeof(Scheme_Mark));
   m->so.type = scheme_mark_type;
+  id = ++mark_counter;
   m->id = id;
 
   return (Scheme_Object *)m;
-}
-
-Scheme_Object *scheme_new_mark(int kind)
-{
-  return alloc_mark(++mark_counter);
-}
-
-mzlonglong scheme_alloc_marks(intptr_t amt)
-{
-  mzlonglong r = mark_counter;
-  mark_counter += amt;
-  return r+1;
 }
 
 Scheme_Object *scheme_new_multi_mark()
@@ -560,40 +550,37 @@ Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
 
 #define SCHEME_MARK_SETP(m) SCHEME_HASHTRP((Scheme_Object *)(m))
 
-XFORM_NONGCING static intptr_t mark_set_count(Scheme_Mark_Set *s)
+XFORM_NONGCING intptr_t mark_set_count(Scheme_Mark_Set *s)
 {
   return ((Scheme_Hash_Tree *)s)->count;
 }
 
-XFORM_NONGCING static Scheme_Object *mark_set_get(Scheme_Mark_Set *s, Scheme_Object *key)
+XFORM_NONGCING Scheme_Object *mark_set_get(Scheme_Mark_Set *s, Scheme_Object *key)
 {
   return scheme_eq_hash_tree_get((Scheme_Hash_Tree *)s, key);
 }
 
-static Scheme_Mark_Set *mark_set_set(Scheme_Mark_Set *s, Scheme_Object *key, Scheme_Object *val)
+Scheme_Mark_Set *mark_set_set(Scheme_Mark_Set *s, Scheme_Object *key, Scheme_Object *val)
 {
   return (Scheme_Mark_Set *)scheme_hash_tree_set((Scheme_Hash_Tree *)s, key, val);
 }
 
-XFORM_NONGCING static mzlonglong mark_set_next(Scheme_Mark_Set *s, mzlonglong pos)
+XFORM_NONGCING mzlonglong mark_set_next(Scheme_Mark_Set *s, mzlonglong pos)
 {
   return scheme_hash_tree_next((Scheme_Hash_Tree *)s, pos);
 }
 
-XFORM_NONGCING static int mark_set_index(Scheme_Mark_Set *s, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
+XFORM_NONGCING int mark_set_index(Scheme_Mark_Set *s, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
 {
   return scheme_hash_tree_index((Scheme_Hash_Tree *)s, pos, _key, _val);
 }
 
-XFORM_NONGCING static int mark_subset(Scheme_Mark_Set *sa, Scheme_Mark_Set *sb)
+XFORM_NONGCING int scheme_mark_subset(Scheme_Mark_Set *sa, Scheme_Mark_Set *sb)
 {
   Scheme_Hash_Tree *a = (Scheme_Hash_Tree *)sa;
   Scheme_Hash_Tree *b = (Scheme_Hash_Tree *)sb;
   intptr_t i;
   Scheme_Object *key, *val;
-
-  if (a->count > b->count)
-    return 0;
 
   i = scheme_hash_tree_next(a, -1);
   while (i != -1) {
@@ -607,50 +594,9 @@ XFORM_NONGCING static int mark_subset(Scheme_Mark_Set *sa, Scheme_Mark_Set *sb)
   return 1;
 }
 
-XFORM_NONGCING static int mark_subset_lt(Scheme_Mark_Set *sa, Scheme_Mark_Set *sb)
-{
-  Scheme_Hash_Tree *a = (Scheme_Hash_Tree *)sa;
-  Scheme_Hash_Tree *b = (Scheme_Hash_Tree *)sb;
-  intptr_t i;
-  int found = 0;
-  mzlonglong min_extra_id = 0, max_found_id = 0;
-  Scheme_Object *key, *val;
-  Scheme_Mark *mark;
-
-  if (a->count > b->count)
-    return 0;
-
-  i = scheme_hash_tree_next(b, -1);
-  while (i != -1) {
-    scheme_hash_tree_index(b, i, &key, &val);
-    mark = (Scheme_Mark *)key;
-    if (!scheme_eq_hash_tree_get(a, key)) {
-      if (!mark->owner_multi_mark) {
-        if (!min_extra_id || (mark->id < min_extra_id))
-          min_extra_id = mark->id;
-      }
-    } else {
-      found++;
-      if (!mark->owner_multi_mark) {
-        if (mark->id > max_found_id)
-          max_found_id = mark->id;
-      }
-    }
-
-    i = scheme_hash_tree_next(b, i);
-  }
-
-  if (found < a->count)
-    return 0;
-  if (min_extra_id && (min_extra_id < max_found_id))
-    return 0;
-
-  return 1;
-}
-
 static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b)
 {
-  return (mark_set_count(a) == mark_set_count(b)) && mark_subset(a, b);
+  return (mark_set_count(a) == mark_set_count(b)) && scheme_mark_subset(a, b);
 }
 
 Scheme_Object *extract_single_mark(Scheme_Object *multi_mark, Scheme_Object *phase)
@@ -2194,7 +2140,7 @@ static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_m
     i = mark_set_next(marks, i);
   }
 
-  if (check_against_marks && mark_subset_lt(marks, check_against_marks))
+  if (check_against_marks && scheme_mark_subset(marks, check_against_marks))
     printf(" [match]");
 
   printf("\n");
@@ -2312,7 +2258,7 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
         for (j = ht->size; j--; ) {
           l = ht->vals[j];
           while (l && !SCHEME_NULLP(l)) {
-            if (mark_subset_lt(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks)) {
+            if (scheme_mark_subset(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks)) {
               scheme_hash_set(mapped, ht->keys[j], scheme_true);
               break;
             }
@@ -2324,7 +2270,7 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
         l = SCHEME_CDR(mark->bindings);
         while (l && !SCHEME_NULLP(l)) {
           binding_marks = SCHEME_BINDING_MARKS(SCHEME_CAR(l));
-          if (mark_subset_lt(binding_marks, marks)) {
+          if (scheme_mark_subset(binding_marks, marks)) {
             pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
             if (SCHEME_VEC_SIZE(pes) == 3) {
               if (SCHEME_TRUEP(SCHEME_VEC_ELS(pes)[0])) {
@@ -2389,7 +2335,7 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
                 /* Not a pes; an unmarshal */
                 if (SCHEME_TRUEP(SCHEME_VEC_ELS(pes)[0])) {
                   /* Need unmarshal --- but only if the mark set is relevant */
-                  if (mark_subset_lt(binding_marks, marks)) {
+                  if (scheme_mark_subset(binding_marks, marks)) {
                     /* unmarshal and note that we must restart */
                     unmarshal_module_context_additions(stx, pes, binding_marks);
                     invalid = 1;
@@ -2413,8 +2359,8 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
               }
             }
           
-            if (binding_marks && mark_subset_lt(binding_marks, marks)) {
-              if (check_subset && !mark_subset(binding_marks, check_subset)) {
+            if (binding_marks && scheme_mark_subset(binding_marks, marks)) {
+              if (check_subset && !scheme_mark_subset(binding_marks, check_subset)) {
                 if (_ambiguous) *_ambiguous = 1;
                 return NULL; /* ambiguous */
               }
@@ -2682,19 +2628,6 @@ Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase)
     return b;
 }
 
-Scheme_Object *scheme_stx_lookup_exact_for_bind(Scheme_Object *o, Scheme_Object *phase)
-{
-  int exact;
-  Scheme_Object *b;
-
-  b = scheme_stx_lookup_w_nominal(o, phase, 1, &exact, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-
-  if (!exact)
-    return scheme_false;
-  else
-    return b;
-}
-
 void scheme_populate_pt_ht(Scheme_Module_Phase_Exports * pt) {
   if (!pt->ht) {
     /* Lookup table (which is created lazily) not yet created, so do that now... */
@@ -2764,6 +2697,12 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
       }
     }
   }
+
+  printf("copy %s @ %s => %s\n", 
+         scheme_write_to_string(from_o, 0),
+         scheme_write_to_string(phase, 0),
+         scheme_write_to_string(result, 0));
+  scheme_stx_debug_print(from_o, phase, 1);
 
   add_binding(stx->val, phase, extract_mark_set(stx, phase, 1), result);
 }
@@ -3674,35 +3613,8 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
     v = scheme_false;
 
   scheme_hash_set(mt->identity_map, m, v);
-  scheme_hash_set(mt->mark_map, m, scheme_make_integer(mt->mark_map->count));
 
   return v;
-}
-
-void scheme_sort_marshal_marks(struct Scheme_Marshal_Tables *mt)
-{
-  /* Compact the marks so that we can read them into a sequence of ids
-     on unmarshal that perserves relative order. */
-  Scheme_Object **a;
-  intptr_t i, j;
-
-  a = MALLOC_N(Scheme_Object*, mt->mark_map->count);
-
-  j = 0;
-  i = mt->mark_map->size;
-  if (i) {
-    while (--i) {
-      if (mt->mark_map->vals[i]) {
-        a[j++] = mt->mark_map->keys[i];
-      }
-    }
-
-    my_qsort(a, j, sizeof(Scheme_Object *), compare_marks);
-    
-    for (i = j; i--; ) {
-      scheme_hash_set(mt->mark_map, a[i], scheme_make_integer(i));
-    }
-  }
 }
 
 /*========================================================================*/
@@ -4184,20 +4096,17 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
   Scheme_Hash_Table *ht;
   Scheme_Mark_Set *marks;
   intptr_t i, len;
-  mzlonglong id;
 
   r = scheme_hash_get(ut->rns, box);
   if (r)
     return r;
 
-  if (!SCHEME_PAIRP(box)) return_NULL;
+  if (!SCHEME_BOXP(box)) return_NULL;
 
-  scheme_get_long_long_val(SCHEME_CDR(box), &id);
-
-  m = alloc_mark(id);
+  m = scheme_new_mark(0);
   scheme_hash_set(ut->rns, box, m);
 
-  c = SCHEME_CAR(box);
+  c = SCHEME_BOX_VAL(box);
 
   while (SCHEME_PAIRP(c)) {
     marks = list_to_mark_set(SCHEME_CAR(SCHEME_CAR(c)), ut);
@@ -5108,7 +5017,7 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
   src = argv[1];
   if (!SCHEME_FALSEP(src)) {
     m2 = extract_mark_set((Scheme_Stx *)src, phase, 0);
-    if (!mark_subset(m2, delta))
+    if (!scheme_mark_subset(m2, delta))
       m2 = NULL;
   } else
     m2 = NULL;

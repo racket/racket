@@ -4333,7 +4333,6 @@ typedef struct Scheme_Load_Delay {
   uintptr_t symtab_size;
   Scheme_Object **symtab;
   intptr_t *shared_offsets;
-  mzlonglong mark_id_base;
   Scheme_Object *relto;
   Scheme_Unmarshal_Tables *ut;
   struct CPort *current_rp;
@@ -4365,7 +4364,6 @@ typedef struct CPort {
   Scheme_Object *magic_sym, *magic_val;
   Scheme_Object *relto;
   intptr_t *shared_offsets;
-  mzlonglong mark_id_base;
   Scheme_Load_Delay *delay_info;
 } CPort;
 #define CP_GETC(cp) ((int)(cp->start[cp->pos++]))
@@ -5209,20 +5207,16 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         if (!port->ut)
           make_ut(port);
 
-        v = scheme_make_pair(scheme_false, scheme_false);
+        v = scheme_box(scheme_false);
         l = read_compact_number(port);
 
         if (l) {
           RANGE_POS_CHECK(l, < port->symtab_size);
           port->symtab[l] = v;
         }
-
-        l = read_compact_number(port);
-        v2 = scheme_make_integer_value_from_long_long(l+port->mark_id_base);
-        SCHEME_CDR(v) = v2;
         
         v2 = read_compact(port, 0);
-        SCHEME_CAR(v) = v2;
+        SCHEME_BOX_VAL(v) = v2;
 
         return v;
       }
@@ -5495,7 +5489,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   Scheme_Hash_Table *directory = NULL;
   Scheme_Object *result;
   intptr_t size, shared_size, got, offset = 0, directory_count = 0;
-  mzlonglong mark_id_base;
   CPort *rp;
   intptr_t symtabsize;
   Scheme_Object **symtab;
@@ -5606,9 +5599,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
                         shared_size, size);
       }
 
-      mark_id_base = scheme_alloc_marks(read_simple_number_from_port(port));
-
-      offset += 12;
+      offset += 8;
 
       rp = MALLOC_ONE_RT(CPort);
       SET_REQUIRED_TAG(rp->type = scheme_rt_compact_port);
@@ -5650,10 +5641,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       rp->magic_val = params->magic_val;
 
       rp->shared_offsets = so;
-      rp->mark_id_base = mark_id_base;
       rp->delay_info = delay_info;
-
-      rp->mark_id_base = mark_id_base;
 
       rp->symtab_refs = scheme_null;
 
@@ -5682,7 +5670,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
         delay_info->symtab_size = rp->symtab_size;
         delay_info->symtab = rp->symtab;
         delay_info->shared_offsets = rp->shared_offsets;
-        delay_info->mark_id_base = rp->mark_id_base;
         delay_info->relto = rp->relto;
         delay_info->unsafe_ok = rp->unsafe_ok;
 
@@ -5936,7 +5923,6 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   rp->symtab = delay_info->symtab;
   rp->relto = delay_info->relto;
   rp->shared_offsets = delay_info->shared_offsets;
-  rp->mark_id_base = delay_info->mark_id_base;
   rp->delay_info = delay_info;
   rp->symtab_refs = scheme_null;
 
