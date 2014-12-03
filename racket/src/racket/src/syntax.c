@@ -540,6 +540,11 @@ Scheme_Object *scheme_new_mark(int kind)
   return alloc_mark(++mark_counter);
 }
 
+Scheme_Object *scheme_new_unordered_mark(int kind)
+{
+  return alloc_mark(-(++mark_counter));
+}
+
 mzlonglong scheme_alloc_marks(intptr_t amt)
 {
   mzlonglong r = mark_counter;
@@ -626,7 +631,8 @@ XFORM_NONGCING static int mark_subset_lt(Scheme_Mark_Set *sa, Scheme_Mark_Set *s
     mark = (Scheme_Mark *)key;
     if (!scheme_eq_hash_tree_get(a, key)) {
       if (!mark->owner_multi_mark) {
-        if (!min_extra_id || (mark->id < min_extra_id))
+        if (!min_extra_id || ((mark->id > 0)
+                              && (mark->id < min_extra_id)))
           min_extra_id = mark->id;
       }
     } else {
@@ -3700,7 +3706,10 @@ void scheme_sort_marshal_marks(struct Scheme_Marshal_Tables *mt)
     my_qsort(a, j, sizeof(Scheme_Object *), compare_marks);
     
     for (i = j; i--; ) {
-      scheme_hash_set(mt->mark_map, a[i], scheme_make_integer(i));
+      if (((Scheme_Mark *)a[i])->id < 0)
+        scheme_hash_set(mt->mark_map, a[i], scheme_make_integer(-(i+1)));
+      else
+        scheme_hash_set(mt->mark_map, a[i], scheme_make_integer(i));
     }
   }
 }

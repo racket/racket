@@ -5205,6 +5205,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
     case CPT_MARK:
       {
         Scheme_Object *v2;
+        mzlonglong id;
 
         if (!port->ut)
           make_ut(port);
@@ -5218,7 +5219,11 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         }
 
         l = read_compact_number(port);
-        v2 = scheme_make_integer_value_from_long_long(l+port->mark_id_base);
+        if (l < 0)
+          id = -(-(l+1) + port->mark_id_base);
+        else
+          id = l + port->mark_id_base;
+        v2 = scheme_make_integer_value_from_long_long(id);
         SCHEME_CDR(v) = v2;
         
         v2 = read_compact(port, 0);
