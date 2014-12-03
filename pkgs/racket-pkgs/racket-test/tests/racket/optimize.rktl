@@ -906,8 +906,16 @@
 (test-comp 5 '(begin0 (begin0 5 'hi "apple" 1.5)))
 (test-comp 5 '(begin0 (begin0 5 'hi "apple") 1.5))
 
-; Can't drop `begin0' if the first expresson is not valueable:
-(test-comp '(begin0 (begin0 (+ 1 2) 0) 0) '(begin0 (begin0 (+ 1 2) 'hi "apple") 1.5))
+; Can't drop `begin0' if the first expresson is may change cotinuation marks:
+(test-comp '(lambda () 3)
+           '(lambda () (begin0 (begin0 (+ 1 2) 'hi "apple") 1.5)))
+(test-comp '(lambda () (let ([sum +]) (begin0 (begin0 (+ 1 2) 'hi "apple") 1.5)))
+           '(lambda () (let ([sum +]) (begin0 (begin0 (sum 1 2) 'hi "apple") 1.5))))
+(test-comp '(lambda (f) (begin0 (begin0 (f 1 2) #f) #f))
+           '(lambda (f) (begin0 (begin0 (f 1 2) 'hi "apple") 1.5)))
+(test-comp '(lambda (f) (f 1 2))
+           '(lambda (f) (begin0 (begin0 (f 1 2) 'hi "apple") 1.5))
+           #f)
 
 (test-comp 5 '(begin 'hi "apple" 1.5 5))
 (test-comp 5 '(begin (begin 'hi "apple" 1.5) 5))
@@ -916,6 +924,29 @@
 (test-comp 5 '(begin (begin0 'hi "apple") 1.5 5))
 (test-comp 5 '(begin (begin 'hi "apple" 1.5 5)))
 (test-comp 5 '(begin 'hi (begin "apple" 1.5 5)))
+
+(test-comp '(lambda () (begin (random) 5))
+           '(lambda () (begin0 5 (random))))
+(test-comp '(lambda () (begin (read) 5))
+           '(lambda () (begin0 5 (read))))
+(test-comp '(lambda () (begin (random) (cons 1 2)))
+           '(lambda () (begin0 (cons 1 2) (random))))
+(test-comp '(lambda () (begin (read) (cons 1 2)))
+           '(lambda () (begin0 (cons 1 2) (read)))
+           #f)
+
+(test-comp '(lambda () (random))
+           '(lambda () (begin0 (random) #f)))
+(test-comp '(lambda (f) (f))
+           '(lambda (f) (begin0 (f) #f))
+           #f)
+
+(test-comp '(lambda (f) (begin (random) (begin0 (f) 7)))
+           '(lambda (f) (begin0 (begin (random) (f)) 7)))
+(test-comp '(lambda () (begin (random) (random) (cons 1 2)))
+           '(lambda () (begin0 (begin (random) (cons 1 2)) (random))))
+
+
 
 (test-comp '(let ([x 8][y 9]) (lambda () x))
 	   '(let ([x 8][y 9]) (lambda () (if #f y x))))

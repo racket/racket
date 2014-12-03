@@ -425,8 +425,11 @@
      `(begin ,@(for/list ([expr (in-list exprs)])
                  (decompile-expr expr globs stack closed)))]
     [(struct beg0 (exprs))
-     `(begin0 ,@(for/list ([expr (in-list exprs)])
-                  (decompile-expr expr globs stack closed)))]
+     (if (> (length exprs) 1)
+       `(begin0 ,@(for/list ([expr (in-list exprs)])
+                    (decompile-expr expr globs stack closed)))
+       `(begin0 ,@(decompile-expr (car exprs) globs stack closed)
+                ,(void)))]
     [(struct with-cont-mark (key val body))
      `(with-continuation-mark
           ,(decompile-expr key globs stack closed)

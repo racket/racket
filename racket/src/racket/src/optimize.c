@@ -4370,8 +4370,10 @@ case_lambda_shift(Scheme_Object *data, int delta, int after_depth)
 static Scheme_Object *
 begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
 {
-  int i, count, drop = 0, prev_size, single_result = 0;
+  int i, count, drop = 0, prev_size, single_result = 0, preserves_marks = 0, kclock, sclock;
   Scheme_Sequence *s = (Scheme_Sequence *)obj;
+  Scheme_Object *inside = NULL, *expr, *orig_first;
+  int id_offset = 0;
   Scheme_Object *le;
   Optimize_Info_Sequence info_seq;
 
@@ -4389,8 +4391,12 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
                                ? scheme_optimize_result_context(context)
                                : 0));
 
-    if (!i)
+    if (!i) {
       single_result = info->single_result;
+      preserves_marks = info->preserves_marks;
+      kclock = info->kclock;
+      sclock = info->sclock;
+    }
 
     /* Inlining and constant propagation can expose omittable expressions: */
     if (i)
@@ -4405,37 +4411,79 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
     }
   }
 
-  if (drop) {
-    Scheme_Sequence *s2;
-    int j = 0;
-
-    if ((s->count - drop) == 1) {
-      /* can't drop down to 1 expression */
-      s->array[s->count-1] = scheme_false;
-      --drop;
-    }
-
-    s2 = scheme_malloc_sequence(s->count - drop);
-    s2->so.type = s->so.type;
-    s2->count = s->count - drop;
-
-    for (i = 0; i < s->count; i++) {
-      if (s->array[i]) {
-	s2->array[j++] = s->array[i];
-      }
-    }
-
-    obj = (Scheme_Object *)s2;
-  }
-
   optimize_info_seq_done(info, &info_seq);
 
   info->preserves_marks = 1;
   info->single_result = single_result;
 
+  if ((s->count - drop) == 1 && (preserves_marks == 1)) {
+    /* If the first expression preserves marks we can drop the begin0 */
+    return s->array[0];
+  }
+
+  expr = s->array[0];
+  orig_first = s->array[0];
+  extract_tail_inside(&expr, &inside, &id_offset);
+    
+  if (id_offset) {
+    /* don't change the first expression if it needs to be shifted */
+    inside = NULL;
+    expr = s->array[0];
+    id_offset = 0;
+  }
+  
+  /* Try optimize (begin0 <movable> ...) => (begin ... <movable>) */
+  if (movable_expression(expr, info, 0, 0, kclock != info->kclock,
+                         sclock != info->sclock, 0, 50)) {
+    if ((s->count - drop) == 1) {
+      /* drop the begin0 */
+      info->size -= 1;
+      /* expr = expr */
+    } else {
+      Scheme_Sequence *s2;
+      int j = 0;
+
+      s2 = scheme_malloc_sequence(s->count - drop);
+      s2->so.type = scheme_sequence_type;
+      s2->count = s->count - drop;
+
+      for (i = 1; i < s->count; i++) {
+        if (s->array[i]) {
+          s2->array[j++] = s->array[i];
+        }
+      }
+      s2->array[j++] = expr;
+
+      expr = (Scheme_Object *)s2;
+    }
+  
+  } else {
+  
+    if (drop) {
+      Scheme_Sequence *s2;
+      int j = 0;
+
+      s2 = scheme_malloc_sequence(s->count - drop);
+      s2->so.type = s->so.type;
+      s2->count = s->count - drop;
+
+      s2->array[j++] = expr;
+      for (i = 1; i < s->count; i++) {
+        if (s->array[i]) {
+          s2->array[j++] = s->array[i];
+        }
+      }
+
+      expr = (Scheme_Object *)s2;
+    } else {
+      s->array[0] = expr;
+      expr = (Scheme_Object *)s;
+    }
+  } 
+
   info->size += 1;
 
-  return obj;
+  return replace_tail_inside (expr, inside, orig_first);
 }
 
 static Scheme_Object *do_define_syntaxes_optimize(Scheme_Object *data, Optimize_Info *info)
