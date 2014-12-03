@@ -1098,7 +1098,6 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase);
 
 Scheme_Object *scheme_new_mark(int kind);
-Scheme_Object *scheme_new_unordered_mark(int kind);
 mzlonglong scheme_alloc_marks(intptr_t amt);
 Scheme_Object *scheme_new_multi_mark(void);
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);

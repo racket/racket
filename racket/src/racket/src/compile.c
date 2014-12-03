@@ -4764,7 +4764,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       sprintf(buf, " at phase %" PRIdPTR, env->genv->phase);
     }
     if (has_orig_unbound) {
-      scheme_stx_debug_print(stx, scheme_make_integer(env->genv->phase), 1); // REMOVEME
+      scheme_stx_lookup(stx, scheme_make_integer(env->genv->phase));
       scheme_wrong_syntax(scheme_compile_stx_string, 
                           orig_unbound_name, form, 
                           "unbound identifier%s;\n"

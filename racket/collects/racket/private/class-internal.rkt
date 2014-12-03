@@ -1554,8 +1554,7 @@
                                              ...
                                              [local-field-mutator
                                               (make-struct-field-mutator local-mutator local-field-pos #f)]
-                                             ...
-                                             [the-finder #f])
+                                             ...)
                                          (syntax-parameterize
                                           ([this-param (make-this-map (quote-syntax this-id)
                                                                       (quote-syntax the-finder)

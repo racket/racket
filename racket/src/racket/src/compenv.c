@@ -1767,15 +1767,17 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
   if (local_mark)
     expr = scheme_stx_flip_mark(expr, local_mark, scheme_env_phase(env->genv));
 
-  /* Use env->genv->id_counter to help keep name generation
-     deterministic within a module. */
+  /* We don't really need a new symbol each time, since the mark
+     will generate new bindings, but things may work better or faster
+     when different bindings have different symbols. Use env->genv->id_counter
+     to help keep name generation deterministic within a module. */
   rev_ids = scheme_null;
   while (count--) {
     sprintf(buf, "lifted.%d", env->genv->id_counter++);
     id_sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
-    
+
     id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
-    id = scheme_stx_add_mark(id, scheme_new_unordered_mark(6), scheme_env_phase(env->genv));
+    id = scheme_stx_add_mark(id, scheme_new_mark(6), scheme_env_phase(env->genv));
 
     rev_ids = scheme_make_pair(id, rev_ids);
   }

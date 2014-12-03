@@ -2149,14 +2149,13 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
       SCHEME_EXPAND_OBSERVE_LOCAL_VALUE_RESULT(observer, scheme_false);
       if ((argc > 1) && SCHEME_TRUEP(argv[1]))
 	return _scheme_tail_apply(argv[1], 0, NULL);
-      else {
+      else
 	scheme_contract_error(name,
                               (renamed 
                                ? "not defined as syntax (after renaming)"
                                : "not defined as syntax"),
                               "identifier", 1, argv[0],
                               NULL);
-      }
     }
     
     v = SCHEME_PTR_VAL(v);
