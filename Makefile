@@ -58,15 +58,9 @@ plain-in-place:
 	$(MAKE) pkgs-catalog
 	$(PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 
-# For Windows: set up the following collections first, so that native
-# libraries are in place for use by a full setup:
-LIB_PRE_COLLECTS = racket db com
-
 win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-pkgs-catalog
-	$(WIN32_PLAIN_RACKET) $(LIBSETUP) -nxiID $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) $(LIB_PRE_COLLECTS)
-	$(WIN32_PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 	$(WIN32_PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 
 # ------------------------------------------------------------
@@ -295,7 +289,7 @@ pkgs-catalog:
 	$(PLAIN_RACKET) $(PKGS_CATALOG)
 
 win32-pkgs-catalog:
-	$(MAKE) pkg-links PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
+	$(MAKE) pkgs-catalog PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 
 # ------------------------------------------------------------
 # On a server platform (for an installer build):
