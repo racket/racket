@@ -21,9 +21,7 @@
 
 # Packages (separated by spaces) to link in development mode or
 # to include in a distribution:
-PKGS = base racket-lib # plt-services
-LINK_PKGS = $(PKGS) racket-doc at-exp-lib racket-test racket-benchmarks racket-index
-INSTALL_PKGS = main-distribution main-distribution-test
+PKGS = main-distribution main-distribution-test
 
 # ------------------------------------------------------------
 # In-place build
@@ -38,8 +36,6 @@ WIN32_PLAIN_RACO = racket\racket -N raco -l- raco
 MACOSX_CHECK_ARGS = -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
 MACOSX_CHECK = $(PLAIN_RACKET) -G build/config $(MACOSX_CHECK_ARGS)
 
-LINK_MODE = --save
-
 CPUS = 
 
 in-place:
@@ -51,17 +47,16 @@ cpus-in-place:
 	$(MAKE) -j $(CPUS) plain-in-place JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
 
 # Explicitly propagate variables for non-GNU `make's:
-PKG_LINK_COPY_ARGS = PKGS="$(PKGS)" LINK_MODE="$(LINK_MODE)"
-PKG_LINK_COPY_EXTRA_ARGS = PKGS="$(LINK_PKGS)" LINK_MODE="$(LINK_MODE)"
 LIBSETUP = -N raco -l- raco setup
+
+INSTALL_PKGS_ARGS = $(JOB_OPTIONS) \
+                    --skip-installed --scope installation --deps search-auto \
+                    $(REQUIRED_PKGS) $(PKGS)
 
 plain-in-place:
 	$(MAKE) base
-	$(MAKE) pkg-links $(PKG_LINK_COPY_ARGS)
-	$(PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
-	$(MAKE) pkg-extra-links $(PKG_LINK_COPY_EXTRA_ARGS) # NOTE: no setup after this step
-	$(PLAIN_RACO) pkg install $(JOB_OPTIONS) --scope installation \
-	 --deps search-auto $(INSTALL_PKGS)
+	$(MAKE) pkgs-catalog
+	$(PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 
 # For Windows: set up the following collections first, so that native
 # libraries are in place for use by a full setup:
@@ -69,20 +64,10 @@ LIB_PRE_COLLECTS = racket db com
 
 win32-in-place:
 	$(MAKE) win32-base
-	$(MAKE) win32-pkg-links $(PKG_LINK_COPY_ARGS)
+	$(MAKE) win32-pkgs-catalog
 	$(WIN32_PLAIN_RACKET) $(LIBSETUP) -nxiID $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) $(LIB_PRE_COLLECTS)
 	$(WIN32_PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
-	$(WIN32_PLAIN_RACO) pkg install $(JOB_OPTIONS) --scope installation \
-	 --deps search-auto $(INSTALL_PKGS)
-
-again:
-	$(MAKE) LINK_MODE="--restore"
-
-IN_PLACE_COPY_ARGS = JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
-
-win32-again:
-	$(MAKE) LINK_MODE="--restore" $(IN_PLACE_COPY_ARGS)
-
+	$(WIN32_PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 
 # ------------------------------------------------------------
 # Unix-style build (Unix and Mac OS X, only)
@@ -304,16 +289,13 @@ WIN32_BUNDLE_RACO = bundle\racket\racket $(BUNDLE_RACO_FLAGS)
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
 
-LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs
+PKGS_CATALOG = -U -G build/config racket/src/pkgs-catalog.rkt pkgs
 
-pkg-links:
-	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(PKGS) $(REQUIRED_PKGS)
+pkgs-catalog:
+	$(PLAIN_RACKET) $(PKGS_CATALOG)
 
-pkg-extra-links:
-	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(LINK_PKGS) $(REQUIRED_PKGS)
-
-win32-pkg-links:
-	$(MAKE) pkg-links PLAIN_RACKET="$(WIN32_PLAIN_RACKET)" LINK_MODE="$(LINK_MODE)" PKGS="$(PKGS)"
+win32-pkgs-catalog:
+	$(MAKE) pkg-links PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 
 # ------------------------------------------------------------
 # On a server platform (for an installer build):

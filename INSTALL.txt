@@ -20,13 +20,19 @@ distributions will work in the
 way that you probably expect.
 
 
+>>>> SORRY! Some of the information in this file is out of date,
+>>>> and probably only in-place installation works at the moment.
+>>>> Build modes and information here are being updated.
+
 If you stick with this repository, then you have several options:
 
  * In-place build --- the default, creates a build in the "racket"
-   subdirectory that references the packages that reside in the "pkgs"
-   subdirectory. This is the most natural mode for developing Racket
-   itself or staying on the bleeding edge. See "Quick Instructions:
-   In-place Build" below.
+   subdirectory and installs packages that you specify, or
+   "main-distribution" plus "main-distribution-test" by default.  Any
+   package implementations that reside in the "pkgs" subdirectory are
+   linked in place. This is the most natural mode for developing
+   Racket itself or staying on the bleeding edge. See "Quick
+   Instructions: In-place Build" below.
 
  * Unix-style install --- installs to a given destination directory
    (Unix and Mac OS X, only), leaving no reference to the source
@@ -52,21 +58,18 @@ Quick Instructions: In-place Build
 On Unix, `make' (or `make in-place') creates a build in the "racket"
 directory.
 
-On Mac OS X, see the notes below on Git submodules, and then `make'
-(or `make in-place') creates a build in the "racket" directory.
-
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
-and 2013/12.0), see the notes below on Git submodules, and then `nmake
-win32-in-place' creates a build in the "racket" directory.  For
-information on configuring your command-line environment for Visual
-Studio, see "racket/src/worksp/README".
+and 2013/12.0), `nmake win32-in-place' creates a build in the "racket"
+directory. For information on configuring your command-line
+environment for Visual Studio, see "racket/src/worksp/README".
 
-On Windows with MinGW, see the notes below on Git submodules, and then
-`make PLAIN_RACkET=racket/racket', since MinGW uses Unix-style tools
-but generates a Windows-layout Racket build.
+On Windows with MinGW, `make PLAIN_RACKET=racket/racket', since MinGW
+uses Unix-style tools but generates a Windows-layout Racket build.
 
-In all cases, an in-place build includes (via links) packages that are
-in the "pkgs" directory.
+In all cases, an in-place build includes (via links) a few packages
+that are in the "pkgs" directory. To get new versions of those
+packages, as well as the Racket core, then use `git pull`. To get
+new versions of any other package, use `raco pkg update`.
 
 See "More Instructions: Building Racket" below for more information.
 
@@ -78,10 +81,9 @@ On Unix, `make unix-style PREFIX=<dir>' builds and installs into <dir>
 with binaries in "<dir>/bin", packages in "<dir>/share/racket/pkgs",
 documentation in "<dir>/share/racket/doc", etc.
 
-On Mac OS X, see the notes below on Git submodules, and then `make
-unix-style PREFIX=<dir>' builds and installs into "<dir>" with
-binaries in "<dir>/bin", packges in "<dir>/share/pkgs", documentation
-in "<dir>/doc", etc.
+On Mac OS X, `make unix-style PREFIX=<dir>' builds and installs into
+"<dir>" with binaries in "<dir>/bin", packges in "<dir>/share/pkgs",
+documentation in "<dir>/doc", etc.
 
 On Windows, Unix-style install is not supported.
 
@@ -93,26 +95,6 @@ assembles the installation in "<dest-dir>". Then, copy the content of
 "<dest-dir>" to the target root.
 
 See "More Instructions: Building Racket" below for more information.
-
-
-Git Submodules (Mac OS X and Windows)
-=====================================
-
-On Mac OS X and Windows, you'll need native-library packages in the
-"native-pkgs" directory for either an in-place build or a Unix-style
-install. The "native-pkgs" directory is treated in the same way as
-"pkgs"; for example, in-place build uses links into the "native-pkgs"
-directory.
-
-The "native-pkgs" directory is a Git submodule, so you'll need
-
-   git submodule init
-   git submodule update
-
-before you do anything else.
-
-The "native-pkgs" directory is also needed if you build for 64-bit
-Linux with the `--enable-natipkg` option to `configure`.
 
 
 More Instructions: Building Racket
@@ -130,13 +112,10 @@ unix-style'. (The `_qq' suffix on the variable name is a convention
 that indicates that single- and double-quote marks are allowed in the
 value.)
 
-The "pkgs" directory contains the packages that are included in a
-Racket distribution, plus some additional packages (such as tests).  A
-`make in-place' links to the package in-place, while `make unix-style'
-copies packages out of "pkgs" to install them.
-
-Either way, if you're building on Mac OS X or Windows, be sure to
-start with "Git Submodules", above.
+The "pkgs" directory contains packages that are tied to the Racket
+core implementation and are therefore kept in the same Git
+repository. A `make in-place' links to the package in-place, while
+`make unix-style' copies packages out of "pkgs" to install them.
 
 To install a subset of the packages in "pkgs", supply `PKGS' value to
 `make'. For example,
@@ -144,12 +123,10 @@ To install a subset of the packages in "pkgs", supply `PKGS' value to
   make PKGS="gui-lib readline-lib"
 
 links only the "gui-lib" and "readline-lib" packages and their
-dependencies. The default value of `PKGS' reaches all packages in
-"pkgs" among its dependencies. See "Linking Packages for In-place
-Development Mode", below, for more information on package links and
-using `again' or `LINK_MODE' to use remembered `PKGS' values from
-previous `make in-place's. Setting `PKGS' also works for `make
-unix-style'.
+dependencies. The default value of `PKGS' is "main-distribution
+main-distribution-test". If you run `make` a second time, all
+previously installed packages remain installed, while new packages are
+added. To uninstall previously selected package, use `raco pkg`.
 
 Using `make' (or `make in-place') sets the installation's name to
 "development", unless the installation has been previously configured

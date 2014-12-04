@@ -942,7 +942,7 @@
                    (pkg-desc-source pkg-name)
                    (pkg-desc-checksum pkg-name) 
                    new-checksum)))
-
+    
     (if (or (not (equal? (pkg-info-checksum info)
                          new-checksum))
             ;; No checksum available => always update
@@ -980,7 +980,7 @@
                                  #:link-dirs? link-dirs?)
              name)
             null))]
-   [(eq? #t (hash-ref update-cache pkg-name #f))
+   [(hash-ref update-cache pkg-name #f)
     ;; package is already being updated
     null]
    ;; A string indicates that package source that should be
@@ -1012,6 +1012,10 @@
               pkg-name))
             null))
       
+      (define (skip/update-dependencies)
+        (hash-set! update-cache pkg-name #t)
+        (update-dependencies))
+      
       (match orig-pkg
         [`(,(or 'link 'static-link) ,orig-pkg-dir)
          (if must-update?
@@ -1022,7 +1026,7 @@
                         pkg-name
                         (simple-form-path
                          (path->complete-path orig-pkg-dir (pkg-installed-dir))))
-             (update-dependencies))]
+             (skip/update-dependencies))]
         [`(dir ,_)
          (if must-update?
              (pkg-error (~a "cannot update packages installed locally;\n"
@@ -1030,7 +1034,7 @@
                             " package was installed via a local directory\n"
                         "  package name: ~a")
                         pkg-name)
-             (update-dependencies))]
+             (skip/update-dependencies))]
         [`(file ,_)
          (if must-update?
              (pkg-error (~a "cannot update packages installed locally;\n"
@@ -1038,7 +1042,7 @@
                             " package was installed via a local file\n"
                             "  package name: ~a")
                         pkg-name)
-             (update-dependencies))]
+             (skip/update-dependencies))]
         [_
          (define-values (orig-pkg-source orig-pkg-type orig-pkg-dir)
            (if (eq? 'clone (car orig-pkg))

@@ -122,7 +122,10 @@ directory}:
 
  @item{@indexed-racket['catalogs] --- a list of URL strings used as the search
        path for resolving package names. An @racket[#f] in the list
-       is replaced with the default search path.}
+       is replaced with the default search path. A string that does not
+       start with alphabetic characters followed by @litchar{://} is
+       treated as a path, where a relative path is relative to the
+       configuration directory.}
 
  @item{@indexed-racket['default-scope] --- either @racket["user"] or
        @racket["installation"], determining the default @tech[#:doc

@@ -568,7 +568,7 @@ The results are as follows:
 ]}
 
 @defproc[(extract-pkg-dependencies [info (symbol? (-> any/c) . -> . any/c)]
-                                   [#:build-deps? build-deps? boolean? #f]
+                                   [#:build-deps? build-deps? boolean? #t]
                                    [#:filter? filter? boolean? #f]
                                    [#:versions? versions? boolean? #f])
          (listof (or/c string? (cons/c string? list?)))]{
