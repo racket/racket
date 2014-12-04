@@ -813,8 +813,8 @@ result value meets the contract @racket[c].}
 Constructs a @tech{flat contract} from @racket[predicate]. A value
 satisfies the contract if the predicate returns a true value.
 
-This function is a holdover from before flat contracts could be used
-directly as predicates. It exists today for backwards compatibility.
+This function is a holdover from before predicates could be used
+directly as flat contracts. It exists today for backwards compatibility.
 }
 
 
@@ -823,8 +823,8 @@ directly as predicates. It exists today for backwards compatibility.
 
 Extracts the predicate from a flat contract.
 
-This function is a holdover from before flat contracts could 
-be used directly as predicates. It exists today for backwards compatibility.
+This function is a holdover from before flat contracts could be used
+directly as predicates. It exists today for backwards compatibility.
 }
 
 
