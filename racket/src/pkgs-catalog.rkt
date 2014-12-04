@@ -71,10 +71,11 @@
          [(directory-exists? src-f)
           (loop src-f)])))))
 
-(for ([l (directory-list (build-path catalog-path "pkg"))])
-  (unless (hash-ref found (path->string l) #f)
-    (printf " Uncataloging package ~a\n" (path->string l))
-    (delete-directory/files (build-path catalog-path "pkg" l))))
+(when (directory-exists? (build-path catalog-path "pkg"))
+  (for ([l (directory-list (build-path catalog-path "pkg"))])
+    (unless (hash-ref found (path->string l) #f)
+      (printf " Uncataloging package ~a\n" (path->string l))
+      (delete-directory/files (build-path catalog-path "pkg" l)))))
 
 (define metadata-ns (make-base-namespace))
 (define (get-pkg-info pkg-dir)
