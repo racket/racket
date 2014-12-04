@@ -40,6 +40,7 @@
  "overwrite"
  "config"
  "clone"
+ "catalog-links"
  
  "network"
  "planet"

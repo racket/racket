@@ -92,7 +92,7 @@
     (complain-proc s msg))
   (define complain-name
     (if must-infer-name? complain void))
-  (define (parse-path s)
+  (define (parse-path s [type type])
     (cond
      [(if type
           (eq? type 'file)
@@ -258,8 +258,22 @@
    [(and (not type)
          (regexp-match #rx"^file://" s))
     => (lambda (m)
-         ;; Note that we're ignoring a query & fragment, if any:
-         (parse-path (url->path (string->url s))))]
+         (define u (string->url s))
+         (define query-type
+           (for/or ([q (in-list (url-query u))])
+             (and (eq? (car q) 'type)
+                  (cond
+                   [(equal? (cdr q) "link") 'link]
+                   [(equal? (cdr q) "static-link") 'static-link]
+                   [(equal? (cdr q) "file") 'file]
+                   [(equal? (cdr q) "dir") 'dir]
+                   [else
+                    (complain "URL contains an unrecognized `type' query")
+                    'error]))))
+         (if (eq? query-type 'error)
+             (values #f 'dir)
+             ;; Note that we're ignoring other query & fragment parts, if any:
+             (parse-path (url->path u) (or query-type type))))]
    [(and (not type)
          (regexp-match? #rx"^[a-zA-Z]*://" s))
     (complain "unrecognized URL scheme")

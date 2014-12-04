@@ -154,6 +154,10 @@
   (check-equal-values? (parse "file:///root/fish.zip?ignored=yes#alsoIgnored" #f) (values "fish" 'file #t))
   (check-equal-values? (parse "file:///root/fish?ignored=yes#alsoIgnored" #f) (values "fish" 'dir #t))
 
+  (check-equal-values? (parse "file:///root/fish?type=link" #f) (values "fish" 'link #t))
+  (check-equal-values? (parse "file:///root/fish?type=static-link" #f) (values "fish" 'static-link #t))
+  (check-equal-values? (parse "file:///root/fish?type=sink" #f #rx"unrecognized") (values #f 'dir #f))
+
   (check-equal-values? (parse "random://racket-lang.org/fish.plt" #f #rx"scheme") (values #f #f #f))
 
   (check-equal-values? (parse "" #f) (values #f #f #f))

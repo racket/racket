@@ -127,7 +127,8 @@ The valid archive formats
 are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz}, 
 @filepath{.tar.gz}, and
 @filepath{.plt}.
-Any query or fragments parts of a @litchar{file://} URL are ignored.
+Other than a @litchar{type} query, which affects inference as described below,
+any query or fragments parts of a @litchar{file://} URL are ignored.
 
 For example, @filepath{~/tic-tac-toe.zip} is an archive package
 source, and its @tech{checksum} would be inside
@@ -143,7 +144,11 @@ format does not accommodate either an extra directory layer or a
 A package source is inferred to refer to an archive file
 only when it has a suffix matching a valid archive format
 and when it starts with @litchar{file://} or does not start
-with alphabetic characters followed by @litchar{://}. The inferred
+with alphabetic characters followed by @litchar{://}. In the
+case that the package source starts with @litchar{file://},
+it must be a URL without a @litchar{type} query or
+with a @litchar{type} query value of @litchar{file}.
+The inferred
 package name is the filename without its suffix.
 
 @history[#:changed "6.0.1.12"
@@ -151,13 +156,15 @@ package name is the filename without its suffix.
                content within a top-level directory.}
          #:changed "6.1.1.5"
          @elem{Changed @litchar{file://} parsing to accept a general
-               URL and ignore any query or fragment.}]}
+               URL, recognize a @litchar{type} query, and ignore any
+               other query or fragment.}]}
 
 @; ----------------------------------------
 @item{a local directory (as a plain path or @litchar{file://} URL)
 --- The name of the package is the name of the
 directory. The @tech{checksum} is not present.
-Any query or fragments parts of a @litchar{file://} URL are ignored.
+Other than a @litchar{type} query, which affects inference as described below,
+any query or fragments parts of a @litchar{file://} URL are ignored.
 
 For example,
 @filepath{~/tic-tac-toe/} is a directory package source.
@@ -166,12 +173,23 @@ A package source is inferred to refer
 to a directory only when it does not have a file-archive suffix, does
 not match the grammar of a package name, and either starts with starts 
 with @litchar{file://} or does not start
-with alphabetic characters followed by @litchar{://}. The inferred
-package name is the directory name.
+with alphabetic characters followed by @litchar{://}.  In the
+case that the package source starts with @litchar{file://},
+it must be a URL without a @litchar{type} query or
+with a @litchar{type} query value of @litchar{dir}, @litchar{link}, or
+@litchar{static-link}.
+The inferred package name is the directory name.
+
+When the package source is a @litchar{file://} URL with a
+@litchar{type} query value of @litchar{link} or @litchar{static-link},
+then the package is installed as directory link, the same as if
+@DFlag{--link} or @DFlag{--static-link} is supplied to
+@command-ref{install} or @command-ref{update}.
 
 @history[#:changed "6.1.1.5"
          @elem{Changed @litchar{file://} parsing to accept a general
-               URL and ignore any query or fragment.}]}
+               URL, recognize a @litchar{type} query, and ignore any
+               other query or fragment.}]}
 
 @item{a remote URL naming an archive --- This type follows the same
 rules as a local file path, but the archive and @tech{checksum} files are
@@ -450,7 +468,8 @@ sub-commands.
   @item{@DFlag{link} --- Implies @exec{--type dir}
         and links the existing directory as an installed package, instead of copying the
         directory's content to install. Directory @tech{package sources} are treated as links
-        by default, unless @DFlag{copy} is specified.
+        by default, unless @DFlag{copy} is specified or the directory name was reported by
+        a catalog instead of specified directly.
 
         The package is identified
         as a @tech{single-collection package} or a @tech{multi-collection package} at the

@@ -990,6 +990,28 @@
     =>
     (lambda (m)
       (match-define (pkg-info orig-pkg checksum auto?) m)
+      
+      (define (update-dependencies)
+        (if (or deps? implies?)
+            ;; Check dependencies
+            (append-map
+             (packages-to-update download-printf db
+                                 #:must-update? #f
+                                 #:deps? deps?
+                                 #:implies? implies?
+                                 #:update-cache update-cache
+                                 #:namespace metadata-ns
+                                 #:catalog-lookup-cache catalog-lookup-cache
+                                 #:all-platforms? all-platforms?
+                                 #:ignore-checksums? ignore-checksums?
+                                 #:use-cache? use-cache?
+                                 #:from-command-line? from-command-line?
+                                 #:link-dirs? link-dirs?)
+             ((package-dependencies metadata-ns db all-platforms? 
+                                    #:only-implies? (not deps?))
+              pkg-name))
+            null))
+      
       (match orig-pkg
         [`(,(or 'link 'static-link) ,orig-pkg-dir)
          (if must-update?
@@ -1000,7 +1022,7 @@
                         pkg-name
                         (simple-form-path
                          (path->complete-path orig-pkg-dir (pkg-installed-dir))))
-             null)]
+             (update-dependencies))]
         [`(dir ,_)
          (if must-update?
              (pkg-error (~a "cannot update packages installed locally;\n"
@@ -1008,7 +1030,7 @@
                             " package was installed via a local directory\n"
                         "  package name: ~a")
                         pkg-name)
-             null)]
+             (update-dependencies))]
         [`(file ,_)
          (if must-update?
              (pkg-error (~a "cannot update packages installed locally;\n"
@@ -1016,7 +1038,7 @@
                             " package was installed via a local file\n"
                             "  package name: ~a")
                         pkg-name)
-             null)]
+             (update-dependencies))]
         [_
          (define-values (orig-pkg-source orig-pkg-type orig-pkg-dir)
            (if (eq? 'clone (car orig-pkg))
@@ -1044,25 +1066,7 @@
                     (clear-checksums-in-cache! update-cache)
                     (list (pkg-desc orig-pkg-source orig-pkg-type pkg-name #f auto?
                                     orig-pkg-dir))))
-             (if (or deps? implies?)
-                 ;; Check dependencies
-                 (append-map
-                  (packages-to-update download-printf db
-                                      #:must-update? #f
-                                      #:deps? deps?
-                                      #:implies? implies?
-                                      #:update-cache update-cache
-                                      #:namespace metadata-ns
-                                      #:catalog-lookup-cache catalog-lookup-cache
-                                      #:all-platforms? all-platforms?
-                                      #:ignore-checksums? ignore-checksums?
-                                      #:use-cache? use-cache?
-                                      #:from-command-line? from-command-line?
-                                      #:link-dirs? link-dirs?)
-                  ((package-dependencies metadata-ns db all-platforms? 
-                                         #:only-implies? (not deps?))
-                   pkg-name))
-                 null))]))]
+             (update-dependencies))]))]
    [else null]))
 
 (define (pkg-update in-pkgs

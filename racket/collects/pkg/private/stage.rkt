@@ -587,15 +587,22 @@
     (when check-sums?
       (check-checksum given-checksum checksum "unexpected" pkg #f)
       (check-checksum checksum (install-info-checksum info) "incorrect" pkg #f))
-    (define repo-url (let-values ([(name type) (package-source->name+type source #f)])
-                       (and (or (eq? type 'git)
-                                (eq? type 'github))
-                            source)))
-    (update-install-info-orig-pkg
-     (update-install-info-checksum
-      info
-      checksum)
-     (desc->orig-pkg 'name pkg #f #:repo-url repo-url))]
+    (define-values (new-name new-type)  (package-source->name+type source #f))
+    (define repo-url (and (or (eq? new-type 'git)
+                              (eq? new-type 'github))
+                          source))
+    (case new-type
+      [(link static-link clone)
+       ;; The `source` must have been something like a `file://`
+       ;; URL that embeds a special installation type. In that case,
+       ;; we don't try to keep track of the catalog reference.
+       info]
+      [else
+       (update-install-info-orig-pkg
+        (update-install-info-checksum
+         info
+         checksum)
+        (desc->orig-pkg 'name pkg #f #:repo-url repo-url))])]
    [else
     (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
 
