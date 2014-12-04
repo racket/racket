@@ -20,8 +20,7 @@ distributions will work in the
 way that you probably expect.
 
 
->>>> SORRY! Some of the information in this file is out of date,
->>>> and probably only in-place installation works at the moment.
+>>>> SORRY! Some of the information in this file is out of date.
 >>>> Build modes and information here are being updated.
 
 If you stick with this repository, then you have several options:
@@ -419,10 +418,8 @@ In more detail:
      search is needed (because other documentation is not installed).
 
      The `SRC_CATALOG' variable determines the catalog that is used to
-     get package sources and native-library packages, but a value of
-     "local" triggers a bootstrap mode where packages are represented
-     by directories in the makefile's directory. For now, "local" is
-     the default.
+     get package sources and native-library packages. The default is
+     "http://pkgs.racket-lang.org".
 
      The server provides README files from the "build/readmes"
      directory. If "README.txt" does not exist when the sever is

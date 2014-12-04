@@ -142,12 +142,8 @@ racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 # end in "_q" or "_qq", don't use any quote marks on the right-hand
 # side of its definition.
 
-# Catalog for sources and native packages; use "local" to bootstrap
-# from package directories (in the same directory as this makefile)
-# plus the GitHub repository of raw native libraries. Otherwise, it's
-# a catalog URL (spaces allowed), and the catalog is copied to ensure
-# consistency across queries:
-SRC_CATALOG = local
+# Catalog for package sources:
+SRC_CATALOG = http://pkgs.racket-lang.org/
 
 # A URL embedded in documentation for remote searches, where a Racket
 # version and search key are added as query fields to the URL, and ""
@@ -301,6 +297,14 @@ server:
 	$(MAKE) base
 	$(MAKE) server-from-base
 
+server-from-base:
+	$(MAKE) build/site.rkt
+	$(MAKE) stamp
+	$(MAKE) build-from-catalog
+	$(MAKE) origin-collects
+	$(MAKE) built-catalog
+	$(MAKE) built-catalog-server
+
 build/site.rkt:
 	mkdir -p build
 	echo "#lang distro-build/config" > build/site.rkt
@@ -319,86 +323,13 @@ stamp-from-git:
 stamp-from-date:
 	date +"%Y%m%d" > build/stamp.txt
 
-local-from-base:
-	$(MAKE) build/site.rkt
-	$(MAKE) stamp
-	if [ "$(SRC_CATALOG)" = 'local' ] ; \
-          then $(MAKE) build-from-local ; \
-          else $(MAKE) build-from-catalog ; fi
-
-server-from-base:
-	$(MAKE) local-from-base
-	$(MAKE) origin-collects
-	$(MAKE) built-catalog
-	$(MAKE) built-catalog-server
-
-# Boostrap mode: make packages from local directories:
-build-from-local:
-	$(MAKE) local-catalog
-	$(MAKE) local-build
-
-# Set up a local catalog (useful on its own):
-local-catalog:
-	$(MAKE) native-from-git
-	$(MAKE) native-catalog
-	$(MAKE) local-source-catalog
-
-# Get pre-built native libraries from the repo:
-native-from-git:
-	if [ ! -d native-pkgs/racket-win32-i386 ]; then $(MAKE) complain-no-submodule ; fi
-complain-no-submodule:
-	: ================================================================
-	: Native packages are not in the expected subdirectory. Probably,
-	: you need to use 'git submodule init' and 'git submodule update' to get
-	: the submodule for native packages.
-	: ================================================================
-	exit 1
-
-# Create packages and a catalog for all native libraries:
-PACK_NATIVE = --native --pack build/native/pkgs \
-              ++catalog build/native/catalog \
-	      ++catalog build/local/catalog
-native-catalog:
-	$(RACKET) racket/src/pack-all.rkt --mods $(PACK_NATIVE) native-pkgs
-
-# Create a catalog for all packages in this directory:
-local-source-catalog:
-	$(RACKET) racket/src/pack-all.rkt --mods ++catalog build/local/catalog pkgs
-
-# Clear out a package build in "build/user", and then install
-# packages:
-local-build:
-	$(MAKE) fresh-user
-	$(MAKE) packages-from-local
-
-fresh-user:
-	rm -rf build/user
-
-set-server-config:
-	$(RACKET) -l distro-build/set-server-config build/user/config/config.rktd $(CONFIG_MODE_q) "" "" "$(DOC_SEARCH)" ""
-
-server-cache-config:
-	$(RACO) pkg config -i --set download-cache-dir build/cache
-	$(RACO) pkg config -i --set download-cache-max-files 1023
-	$(RACO) pkg config -i --set download-cache-max-bytes 671088640
-
-# Install packages from the source copies in this directory. The
-# packages are installed in user scope, but we set the add-on
-# directory to "build/user", so that we don't affect the actual
-# current user's installation (and to a large degree we're insulated
-# from it):
-packages-from-local:
-	$(RACO) pkg install $(LOCAL_USER_AUTO) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
-	$(MAKE) set-server-config
-	$(RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/local/catalog
-	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(LOCAL_USER_AUTO)
-	$(RACO) setup --avoid-main $(JOB_OPTIONS)
-
-# Install packages from a source catalog (as an alternative to
-# `build-from-local'), where the source catalog is specified as
-# `SRC_CATALOG':
+# Created a copy of `SRC_CATALOG', so that we snapshot checksums, and
+# start building from it. The packages are installed in user scope,
+# but we set the add-on directory to "build/user", so that we don't
+# affect the actual current user's installation (and to a large degree
+# we're insulated from it):
 build-from-catalog:
-	$(MAKE) fresh-user
+	rm -rf build/user
 	rm -rf build/catalog-copy
 	$(RACO) pkg catalog-copy "$(SRC_CATALOG)" build/catalog-copy
 	$(MAKE) server-cache-config
@@ -408,6 +339,14 @@ build-from-catalog:
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
 	rm -rf build/native
+
+server-cache-config:
+	$(RACO) pkg config -i --set download-cache-dir build/cache
+	$(RACO) pkg config -i --set download-cache-max-files 1023
+	$(RACO) pkg config -i --set download-cache-max-bytes 671088640
+
+set-server-config:
+	$(RACKET) -l distro-build/set-server-config build/user/config/config.rktd $(CONFIG_MODE_q) "" "" "$(DOC_SEARCH)" ""
 
 # Although a client will build its own "collects", pack up the
 # server's version to be used by each client, so that every client has
