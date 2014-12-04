@@ -57,7 +57,6 @@ LIBSETUP = -N raco -l- raco setup
 
 plain-in-place:
 	$(MAKE) base
-	if $(MACOSX_CHECK) ; then $(MAKE) native-from-git ; fi
 	$(MAKE) pkg-links $(PKG_LINK_COPY_ARGS)
 	$(PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 	$(MAKE) pkg-extra-links $(PKG_LINK_COPY_EXTRA_ARGS) # NOTE: no setup after this step
@@ -105,7 +104,7 @@ cpus-unix-style:
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
 	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' $(UNIX_BASE_ARGS)
-	$(MAKE) local-catalog-maybe-native RACKET="$(DESTDIR)$(PREFIX)/bin/racket"
+	$(MAKE) local-source-catalog
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
 	cd racket/src/build; $(MAKE) fix-paths
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(JOB_OPTIONS) -i --dep search-auto $(INSTALL_PKGS)
@@ -115,11 +114,6 @@ error-need-prefix:
 	: Please supply PREFIX="<dest-dir>" to set the install destination
 	: ================================================================
 	exit 1
-
-local-catalog-maybe-native:
-	if $(RACKET) $(MACOSX_CHECK_ARGS) ; \
-         then $(MAKE) local-catalog ; \
-         else $(MAKE) local-source-catalog ; fi
 
 # ------------------------------------------------------------
 # Base build
@@ -310,7 +304,7 @@ WIN32_BUNDLE_RACO = bundle\racket\racket $(BUNDLE_RACO_FLAGS)
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
 
-LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir native-pkgs
+LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs
 
 pkg-links:
 	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(PKGS) $(REQUIRED_PKGS)
@@ -319,7 +313,6 @@ pkg-extra-links:
 	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(LINK_PKGS) $(REQUIRED_PKGS)
 
 win32-pkg-links:
-	IF NOT EXIST native-pkgs\racket-win32-i386 $(MAKE) complain-no-submodule
 	$(MAKE) pkg-links PLAIN_RACKET="$(WIN32_PLAIN_RACKET)" LINK_MODE="$(LINK_MODE)" PKGS="$(PKGS)"
 
 # ------------------------------------------------------------
