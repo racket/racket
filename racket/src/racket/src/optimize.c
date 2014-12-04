@@ -3730,7 +3730,7 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta)
 {
   Scheme_Hash_Tree *types = src_info->types;
   Scheme_Object *pos, *pred;
-  intptr_t i;
+  mzlonglong i;
 
   if (!types)
     return;
