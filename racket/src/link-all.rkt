@@ -184,7 +184,8 @@
                                 (equal? dep "racket")))
            dep))))
     (if (set-empty? new-pkgs)
-        all-pkgs
+        all-pkgs all-pkgs
+        #;
         (loop (set-union new-pkgs all-pkgs) new-pkgs))))
 
 (define (is-auto? name) (not (set-member? pkgs name)))
@@ -228,7 +229,8 @@
 (void
  (parameterize ([current-pkg-scope (path->complete-path devel-pkgs-dir)])
    (with-pkg-lock
-    (pkg-install (for/list ([name (in-list (sort (set->list all-pkgs)
+    (pkg-install #:dep-behavior 'force
+                 (for/list ([name (in-list (sort (set->list all-pkgs)
                                                  ;; Non-auto before auto:
                                                  (lambda (a b)
                                                    (cond

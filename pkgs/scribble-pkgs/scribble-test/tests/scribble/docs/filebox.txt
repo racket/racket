@@ -1,7 +1,0 @@
-"zero.txt"
-
-"one.txt"
-A file box with one thing in it.
-
-"two.txt"
-A filebox with multiple things in it.

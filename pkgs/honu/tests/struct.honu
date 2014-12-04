@@ -1,7 +1,0 @@
-#lang honu
-
-// structure foo (bar) {a, b, c};
-structure foo {a, b, c};
-
-var x = foo(1, 2, 3);
-printf("x.a: ~a\n", x.a);

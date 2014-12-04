@@ -1,3 +1,0 @@
-#lang racklog
-true.
-true?
