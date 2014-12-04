@@ -147,10 +147,12 @@
   (check-equal-values? (parse "racket/fish/x" 'github #rx"two") (values #f 'github #f))
   (check-equal-values? (parse "fish" 'github #rx"two") (values #f 'github #f))
 
-  (check-equal-values? (parse "file://fish.plt" #f) (values "fish" 'file #t))
+  (check-equal-values? (parse "file://fish.plt" #f) (values #f 'dir #t)) ; missing root means an empty path
   (check-equal-values? (parse "file:///root/fish.plt" #f) (values "fish" 'file #t))
-  (check-equal-values? (parse "file://fish" #f) (values "fish" 'dir #t))
+  (check-equal-values? (parse "file://fish" #f) (values #f 'dir #t)) ; missing root means an empty path
   (check-equal-values? (parse "file:///root/fish" #f) (values "fish" 'dir #t))
+  (check-equal-values? (parse "file:///root/fish.zip?ignored=yes#alsoIgnored" #f) (values "fish" 'file #t))
+  (check-equal-values? (parse "file:///root/fish?ignored=yes#alsoIgnored" #f) (values "fish" 'dir #t))
 
   (check-equal-values? (parse "random://racket-lang.org/fish.plt" #f #rx"scheme") (values #f #f #f))
 

@@ -256,8 +256,10 @@
     (values (validate-name name complain-name #f)
             (or type (and name-type)))]
    [(and (not type)
-         (regexp-match #rx"^file://(.*)$" s))
-    => (lambda (m) (parse-path (cadr m)))]
+         (regexp-match #rx"^file://" s))
+    => (lambda (m)
+         ;; Note that we're ignoring a query & fragment, if any:
+         (parse-path (url->path (string->url s))))]
    [(and (not type)
          (regexp-match? #rx"^[a-zA-Z]*://" s))
     (complain "unrecognized URL scheme")

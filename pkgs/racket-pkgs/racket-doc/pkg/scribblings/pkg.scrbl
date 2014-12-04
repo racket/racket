@@ -127,6 +127,7 @@ The valid archive formats
 are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz}, 
 @filepath{.tar.gz}, and
 @filepath{.plt}.
+Any query or fragments parts of a @litchar{file://} URL are ignored.
 
 For example, @filepath{~/tic-tac-toe.zip} is an archive package
 source, and its @tech{checksum} would be inside
@@ -147,12 +148,16 @@ package name is the filename without its suffix.
 
 @history[#:changed "6.0.1.12"
          @elem{Changed treatment of an archive that contains all
-               content within a top-level directory.}]}
+               content within a top-level directory.}
+         #:changed "6.1.1.5"
+         @elem{Changed @litchar{file://} parsing to accept a general
+               URL and ignore any query or fragment.}]}
 
 @; ----------------------------------------
 @item{a local directory (as a plain path or @litchar{file://} URL)
 --- The name of the package is the name of the
 directory. The @tech{checksum} is not present.
+Any query or fragments parts of a @litchar{file://} URL are ignored.
 
 For example,
 @filepath{~/tic-tac-toe/} is a directory package source.
@@ -162,7 +167,11 @@ to a directory only when it does not have a file-archive suffix, does
 not match the grammar of a package name, and either starts with starts 
 with @litchar{file://} or does not start
 with alphabetic characters followed by @litchar{://}. The inferred
-package name is the directory name.}
+package name is the directory name.
+
+@history[#:changed "6.1.1.5"
+         @elem{Changed @litchar{file://} parsing to accept a general
+               URL and ignore any query or fragment.}]}
 
 @item{a remote URL naming an archive --- This type follows the same
 rules as a local file path, but the archive and @tech{checksum} files are

@@ -535,8 +535,8 @@
                       #f ; no git-dir
                       #f ; no clean?
                       given-checksum ; if a checksum is provided, just use it
-                      (directory->module-paths pkg pkg-name metadata-ns)
-                      (directory->additional-installs pkg pkg-name metadata-ns))]
+                      (directory->module-paths pkg-path pkg-name metadata-ns)
+                      (directory->additional-installs pkg-path pkg-name metadata-ns))]
        [else
         (define pkg-dir
           (if in-place?
