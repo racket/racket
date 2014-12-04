@@ -1,4 +1,0 @@
-6.0
-- samplers can now take snapshots of user-specified continuation marks
-- added a mode to use errortrace continuation marks instead of marks
-  from the runtime

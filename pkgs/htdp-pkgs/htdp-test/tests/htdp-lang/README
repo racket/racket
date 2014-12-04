@@ -1,9 +1,0 @@
-The files in this directory test the teaching language implementation.
-
-test-htdp.rkt
- this module runs most of the tests
-  
-test-image.rktl
- this module runs the htdp/image tests
-
-See beginner.rktl for more.

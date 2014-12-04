@@ -21,13 +21,19 @@
 
 # Packages (separated by spaces) to link in development mode or
 # to include in a distribution:
-PKGS = main-distribution plt-services
+PKGS = base racket-lib # plt-services
+LINK_PKGS = $(PKGS) racket-doc at-exp-lib racket-test racket-benchmarks racket-index
+INSTALL_PKGS = main-distribution main-distribution-test
 
 # ------------------------------------------------------------
 # In-place build
 
 PLAIN_RACKET = racket/bin/racket
 WIN32_PLAIN_RACKET = racket\racket
+
+PLAIN_RACO = racket/bin/racket -N raco -l- raco
+WIN32_PLAIN_RACO = racket\racket -N raco -l- raco
+
 
 MACOSX_CHECK_ARGS = -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
 MACOSX_CHECK = $(PLAIN_RACKET) -G build/config $(MACOSX_CHECK_ARGS)
@@ -46,6 +52,7 @@ cpus-in-place:
 
 # Explicitly propagate variables for non-GNU `make's:
 PKG_LINK_COPY_ARGS = PKGS="$(PKGS)" LINK_MODE="$(LINK_MODE)"
+PKG_LINK_COPY_EXTRA_ARGS = PKGS="$(LINK_PKGS)" LINK_MODE="$(LINK_MODE)"
 LIBSETUP = -N raco -l- raco setup
 
 plain-in-place:
@@ -53,6 +60,9 @@ plain-in-place:
 	if $(MACOSX_CHECK) ; then $(MAKE) native-from-git ; fi
 	$(MAKE) pkg-links $(PKG_LINK_COPY_ARGS)
 	$(PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	$(MAKE) pkg-extra-links $(PKG_LINK_COPY_EXTRA_ARGS) # NOTE: no setup after this step
+	$(PLAIN_RACO) pkg install $(JOB_OPTIONS) --scope installation \
+	 --deps search-auto $(INSTALL_PKGS)
 
 # For Windows: set up the following collections first, so that native
 # libraries are in place for use by a full setup:
@@ -63,6 +73,8 @@ win32-in-place:
 	$(MAKE) win32-pkg-links $(PKG_LINK_COPY_ARGS)
 	$(WIN32_PLAIN_RACKET) $(LIBSETUP) -nxiID $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) $(LIB_PRE_COLLECTS)
 	$(WIN32_PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	$(WIN32_PLAIN_RACO) pkg install $(JOB_OPTIONS) --scope installation \
+	 --deps search-auto $(INSTALL_PKGS)
 
 again:
 	$(MAKE) LINK_MODE="--restore"
@@ -96,6 +108,7 @@ plain-unix-style:
 	$(MAKE) local-catalog-maybe-native RACKET="$(DESTDIR)$(PREFIX)/bin/racket"
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
 	cd racket/src/build; $(MAKE) fix-paths
+	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(JOB_OPTIONS) -i --dep search-auto $(INSTALL_PKGS)
 
 error-need-prefix:
 	: ================================================================
@@ -301,6 +314,9 @@ LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir native-pk
 
 pkg-links:
 	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(PKGS) $(REQUIRED_PKGS)
+
+pkg-extra-links:
+	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(LINK_PKGS) $(REQUIRED_PKGS)
 
 win32-pkg-links:
 	IF NOT EXIST native-pkgs\racket-win32-i386 $(MAKE) complain-no-submodule

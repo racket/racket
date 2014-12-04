@@ -1,8 +1,0 @@
-  #t         
-  #true      
-  #f         
-  #false     
-  (a . < . b)
-  (< a b)    
-  "abcdef"   
-  ([{}])     
