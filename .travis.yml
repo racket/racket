@@ -10,7 +10,7 @@ compiler:
 # Just run tests for the core
 script:
   - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test"
-  - raco test -l tests/racket/run-quiet
+  - raco test -l tests/racket/test
   - racket -l tests/racket/contract/all
   - raco test -l tests/json/json
   - raco test -l tests/file/main
