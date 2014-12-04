@@ -10,21 +10,21 @@ compiler:
 # Just run tests for the core
 script:
   - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test"
-  - racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
-  - racket pkgs/racket-pkgs/racket-test/tests/racket/contract/all.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/json/json.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/file/main.rkt
-  - raco test pkgs/net-pkgs/net-test/tests/net/head.rkt
-  - raco test pkgs/net-pkgs/net-test/tests/net/uri-codec.rkt
-  - raco test pkgs/net-pkgs/net-test/tests/net/url.rkt
-  - raco test pkgs/net-pkgs/net-test/tests/net/url-port.rkt
-  - raco test pkgs/net-pkgs/net-test/tests/net/encoders.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/openssl/basic.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/openssl/https.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/match/plt-match-tests.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/zo-path.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/xml/test.rkt
-  - raco test pkgs/db-pkgs/db-test/tests/db/all-tests.rkt
+  - raco test -l tests/racket/run-quiet
+  - racket -l tests/racket/contract/all
+  - raco test -l tests/json/json
+  - raco test -l tests/file/main
+  - raco test -l tests/net/head
+  - raco test -l tests/net/uri-codec
+  - raco test -l tests/net/url
+  - raco test -l tests/net/url-port
+  - raco test -l tests/net/encoders
+  - raco test -l tests/openssl/basic
+  - raco test -l tests/openssl/https
+  - raco test -l tests/match/plt-match-tests
+  - raco test -l tests/zo-path
+  - raco test -l tests/xml/test
+  - raco test -l tests/db/all-tests
 notifications:
   irc: "chat.freenode.net#racket-dev"
   email: 
