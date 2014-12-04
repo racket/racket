@@ -6,6 +6,9 @@
 # It's common to configure the PLTADDONDIR to be here.
 /add-on/
 
+# This is where to put packages installed with `--clone`
+/extra-pkgs/
+
 # Everything below makes sense on any package repository, so it's
 # stuff that should be put into each such repository. The same holds
 # for ".mailmap" (which some people can decide if they want to thin it
