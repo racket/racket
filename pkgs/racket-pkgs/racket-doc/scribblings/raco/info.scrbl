@@ -21,6 +21,13 @@ example, an @filepath{info.rkt} file specifies how to build the
 documentation for a collection, and it lists plug-in tools for
 DrRacket or commands for @exec{raco} that the collection provides.
 
+@margin-note{
+  The fields specified in an @filepath{info.rkt} file are documented
+  in @secref["metadata" #:doc '(lib "pkg/scribblings/pkg.scrbl")] for
+  packages and in @secref["setup-info" #:doc '(lib "scribblings/raco/raco.scrbl")]
+  for collections.
+}
+
 Although an @filepath{info.rkt} file contains a module declaration, the
 declaration has a highly constrained form. It must match the following
 grammar of @racket[_info-module]:

@@ -956,6 +956,13 @@ For example, a basic @filepath{info.rkt} file might be
 
 The following @filepath{info.rkt} fields are used by the package manager:
 
+@margin-note{
+  When a package is a @tech{single collection package}, its @filepath{info.rkt}
+  file may specify additional fields that are used for the Scribble documentation
+  system or other tools. Many of these fields are described
+  in @secref["setup-info" #:doc '(lib "scribblings/raco/raco.scrbl")].
+}
+
 @itemlist[
 
  @item{@racketidfont{collection} --- either @racket['multi] to

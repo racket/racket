@@ -319,6 +319,12 @@ specific instructions on compiling the collection. See
 @filepath{info.rkt} that it uses, and see @secref["info.rkt"] for
 information on the format of an @filepath{info.rkt} file.
 
+Additional fields are used by the
+@seclink["top" #:doc '(lib "pkg/scribblings/pkg.scrbl") "Racket package manager"]
+and are documented in @secref["metadata" #:doc '(lib "pkg/scribblings/pkg.scrbl")].
+The @exec{raco test} command also recognizes additional fields, which are
+documented in @secref["test-config-info" #:doc '(lib "scribblings/raco/raco.scrbl")].
+
 Optional @filepath{info.rkt} fields trigger additional actions by
 @exec{raco setup}:
 
@@ -1290,7 +1296,9 @@ function for installing a single @filepath{.plt} file.
 
 @defmodule[setup/getinfo]{ The @racketmodname[setup/getinfo] library
    provides functions for accessing fields in @filepath{info.rkt}
-   files.}
+   files. The file format for @filepath{info.rkt} files is documented
+   in @secref["info.rkt" #:doc '(lib "scribblings/raco/raco.scrbl")].
+}
 
 @defproc[(get-info [collection-names (listof string?)]
                    [#:namespace namespace (or/c namespace? #f) #f]
