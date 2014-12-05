@@ -56,12 +56,14 @@ INSTALL_PKGS_ARGS = $(JOB_OPTIONS) \
 plain-in-place:
 	$(MAKE) base
 	$(MAKE) pkgs-catalog
-	$(PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
+	$(PLAIN_RACO) pkg install --no-setup $(INSTALL_PKGS_ARGS)
+	$(PLAIN_RACO) setup
 
 win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-pkgs-catalog
-	$(WIN32_PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
+	$(WIN32_PLAIN_RACO) pkg install --no-setup $(INSTALL_PKGS_ARGS)
+	$(WIN32_PLAIN_RACO) setup
 
 # ------------------------------------------------------------
 # Unix-style build (Unix and Mac OS X, only)
