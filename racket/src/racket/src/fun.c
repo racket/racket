@@ -4736,8 +4736,14 @@ static MZ_MARK_STACK_TYPE find_shareable_marks()
 
     if (seg[pos].pos < MZ_CONT_MARK_POS)
       break;
+
+    /* If a key is cont_key or scheme_stack_dump_key, then treat it
+       as sharable, because we don't mind if a new continuation gets
+       the old value. */
     if (SAME_OBJ(seg[pos].key, cont_key))
-      delta = 1;
+      delta++;
+    else if (SAME_OBJ(seg[pos].key, scheme_stack_dump_key))
+      delta++;
     else
       delta = 0;
   }
