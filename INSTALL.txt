@@ -20,9 +20,6 @@ distributions will work in the
 way that you probably expect.
 
 
->>>> SORRY! Some of the information in this file is out of date.
->>>> Build modes and information here are being updated.
-
 If you stick with this repository, then you have several options:
 
  * In-place build --- the default, creates a build in the "racket"
@@ -182,60 +179,42 @@ Installing Packages
 -------------------
 
 After you've built and installed minimal Racket, you could install
-packages via the package-catalog server --- ignoring the content of
-"pkgs" and "native-pkgs".
+packages via the package-catalog server, completely ignoring the
+content of "pkgs".
 
-If you want to install packages manually out of the "pkgs" and
-"native-pkgs" directories, the `local-catalog' target creates a
-catalog as "build/local/catalog" that points to the sources in "pkgs"
-and "native-pkgs". A Unix-style build works that way: it builds and
+If you want to install packages manually out of the "pkgs", the
+`local-catalog' target creates a catalog as "racket/local/catalog" that
+merges the currently configured catalog's content with pointers to the
+packages in "pkgs". A Unix-style build works that way: it builds and
 installs minimal Racket, and then it installs packags out of a catalog
 that is created by `make local-catalog'.
 
 Linking Packages for In-place Development Mode
 ----------------------------------------------
 
-Using the "main-distribution" package corresponds to a build that is
-like the main Racket distribution. Furthermore, if you install all of
-those packages with `raco pkg install -i --link ...', then you can
-edit libraries or update via `git pull' plus `raco setup' (as opposed
-to updating or reinstalling packages). That's how the in-place build
-works.
+With an in-place build, you can edit packages within "pkgs" directly
+or update those packages with `git pull' plus `raco setup', since the
+packages are installed with the equivalent of `raco pkg install -i
+--static-link ...'.
 
-The `pkg-links' target of the makefile links (or re-links) packages
-from "pkgs" and "native-pkgs" into the "racket" build. By default,
-`pkg-links' starts with the "main-distribution" and "plt-services"
-packages and links all of their dependencies, which includes all of
-the packages in "pkgs". Specify a subset of the packages with
-`PKGS="...."' as an argument to `make pkg-links'. Make the `pkg-links'
-target whenever the set of dependencies can change.
+Instead of actually using `raco pkg install --static-link ...`, the
+`pkgs-catalog' makefile target creates a catalog that points to the
+packages in "pkgs", and the catalog indicates that the packages are to
+be installed as links. The `pkgs-catalog' target further configures
+the new catalog as the first one to check when installing
+packages. The configuration adjustment is made only if no
+configuration file "racket/etc/config.rktd" exists already.
 
-Packages are linked in a database (at "racket/lib/devel-pkgs") that is
-added to the installation's search paths. As a result, the links
-affect only the build in the "racket" directory, and they are not
-mixed with any links that you specifically install in installation
-scope. Packages are linked with the `--no-setup' flag (effectively),
-which means that a `raco setup' is needed after installing links.
+All other packages (as specified by `PKGS') are installed via the
+default package catalog. They are installed in installation scope, but
+the content of "racket/share/pkgs" is not meant to be edited. To
+reinstall a package in a mode suitable for editing and manipulation
+with Git tools, use
 
-Native-library packages provide (on Mac OS X and Windows) pre-built
-native libraries, such as Cairo. They are available through a Git
-submodule "native-pkgs", so use `git submodule init' and `git
-submodule update' as needed.
+  raco pkg update --clone extra-pkgs/<pkg-name>
 
-By default, the `PKGS' value is remembered by `pkg-links', but a
-previously remembered value is not used. Supply `LINK_MODE=--restore'
-as an argument to to `make' to use the previously remembered `PKGS'
-value, if any. The `again' (or `win32-again') makefile target is the
-same as `in-place' (or `win32-in-place'), but with
-`LINK_MODE=--restore'. To suppress remembering a `PKGS' value, supply
-`LINK_MODE='; the `PKGS' value is saved by default because
-`LINK_MODE=--save' is the default.
-
-The `pkg-links' makefile target installs links to a specific
-"devel-pkgs" directory and also sets the default package scope for the
-build to "installation" mode. Both of those configuration adjustments
-are made only if no configuration file "racket/etc/config.rktd" exists
-already.
+The "extra-pkgs" directory name is a convention that is supported by a
+".gitignore" entry.
 
 
 The Whole Enchilada: Building Installers

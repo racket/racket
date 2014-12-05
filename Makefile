@@ -69,7 +69,8 @@ win32-in-place:
 PREFIX = 
 
 CONFIG_PREFIX_ARGS = --prefix="$(PREFIX)" --enable-macprefix
-UNIX_RACO_ARGS = $(JOB_OPTIONS) --catalog build/local/catalog --auto -i
+UNIX_CATALOG = build/local/catalog
+UNIX_RACO_ARGS = $(JOB_OPTIONS) --catalog $(UNIX_CATALOG) --auto -i
 UNIX_BASE_ARGS = SELF_FLAGS_qq="" SKIP_DESTDIR_FIX="skip"
 
 unix-style:
@@ -83,16 +84,21 @@ cpus-unix-style:
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
 	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' $(UNIX_BASE_ARGS)
-	$(MAKE) local-source-catalog
+	$(MAKE) local-catalog
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
 	cd racket/src/build; $(MAKE) fix-paths
-	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(JOB_OPTIONS) -i --dep search-auto $(INSTALL_PKGS)
 
 error-need-prefix:
 	: ================================================================
 	: Please supply PREFIX="<dest-dir>" to set the install destination
 	: ================================================================
 	exit 1
+
+LOC_CATALOG = build/local/pkgs-catalog
+
+local-catalog:
+	"$(DESTDIR)$(PREFIX)/bin/racket" racket/src/pkgs-catalog.rkt $(LOC_CATALOG) pkgs
+	"$(DESTDIR)$(PREFIX)/bin/raco" pkg catalog-copy --force --from-config $(LOC_CATALOG) $(UNIX_CATALOG)
 
 # ------------------------------------------------------------
 # Base build
@@ -279,10 +285,12 @@ WIN32_BUNDLE_RACO = bundle\racket\racket $(BUNDLE_RACO_FLAGS)
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
 
-PKGS_CATALOG = -U -G build/config racket/src/pkgs-catalog.rkt pkgs
+PKGS_CATALOG = -U -G build/config racket/src/pkgs-catalog.rkt --link
+PKGS_CONFIG = -U -G build/config racket/src/pkgs-config.rkt
 
 pkgs-catalog:
-	$(PLAIN_RACKET) $(PKGS_CATALOG)
+	$(PLAIN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs
+	$(PLAIN_RACKET) $(PKGS_CONFIG)
 
 win32-pkgs-catalog:
 	$(MAKE) pkgs-catalog PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"

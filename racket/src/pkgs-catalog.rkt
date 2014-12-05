@@ -1,49 +1,28 @@
 #lang racket/base
 (require racket/cmdline
          racket/file
-         racket/list
          racket/format
          racket/string
-         racket/set
          racket/path
          setup/getinfo
-         pkg/lib
-         pkg/path)
+         pkg/lib)
 
 ;; Find packages in a directory tree ("info.rkt" indicates a package),
-;; create a catalog that points to those packages to be installed as
-;; links, and adjust the configuration to consult that catalog first.
+;; create a catalog that points to those packages --- to be installed as
+;; links if `--link` is specified.
 
 ;; Used by the top-level Makefile in the main Racket repository.
 
-(define config-dir-path (build-path "racket" "etc"))
-(define config-file-path (build-path config-dir-path "config.rktd"))
-(define catalog-relative-path (build-path 'up "share" "pkgs-catalog"))
-(define catalog-relative-path-str (path->string catalog-relative-path))
-(define catalog-path (build-path config-dir-path catalog-relative-path))
+(define link? #f)
 
-(define dirs
+(define-values (catalog-path dirs)
   (command-line
+   #:once-each
+   ["--link" "Install packages as links"
+    (set! link? #t)]
    #:args
-   dir
-   dir))
-
-(when (file-exists? config-file-path)
-  (call-with-input-file*
-   config-file-path
-   (lambda (i)
-     (define r (read i))
-     (define l (hash-ref r 'catalogs #f))
-     (unless (and (list? l)
-                  ((length l) . >= . 1)
-                  (equal? (car l) catalog-relative-path-str))
-       (error 'pkgs-catalog
-              (~a "config file exists, but does not have a definition of `catalogs' that starts as expected\n"
-                  "  config file: ~a\n"
-                  "  expected initial element: ~s\n"
-                  "  possible solution: delete the config file")
-                config-file-path
-                catalog-relative-path-str)))))
+   (catalog-path . dir)
+   (values catalog-path dir)))
 
 ;; found: maps each available package name to a directory
 (define found (make-hash))
@@ -114,7 +93,9 @@
                                              (path->complete-path catalog-path))
                                             (simple-form-path
                                              (path->complete-path dir))))
-                       "?type=static-link"))
+                       (if link?
+                           "?type=static-link"
+                           "")))
            (author . ,(string-join (for/list ([r authors])
                                      (if (symbol? r)
                                          (format "~a@racket-lang.org" r)
@@ -156,17 +137,3 @@
 
 (unless (and (null? missing-authors) (null? missing-desc))
   (error 'link-all "not all packages have description and authors."))
-
-(unless (file-exists? config-file-path)
-  (printf "Writing ~a\n" config-file-path)
-  (call-with-output-file*
-   config-file-path
-   (lambda (o)
-     (write (hash 'catalogs
-                  (list catalog-relative-path-str #f)
-                  'installation-name
-                  "development"
-                  'default-scope
-                  "installation")
-            o)
-     (newline o))))
