@@ -165,9 +165,9 @@
                             (hash-set (hash-ref repo-descs repo)
                                       name
                                       converted-desc))
-                  (if (and (not updating?)
-                           (not (hash-ref (hash-ref new-repo-descs repo) name #f)))
-                      ;; Count the conversion as an update, not an install:
+                  (if (not (hash-ref (hash-ref new-repo-descs repo) name #f))
+                      ;; Count the conversion as an update, not an install,
+                      ;; and make sure it's removed before the re-install:
                       (hash-set extra-updates name #t)
                       extra-updates))))
       
