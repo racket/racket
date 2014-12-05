@@ -91,11 +91,20 @@ a parameter's value is @racket[#f], then the user's configuration is
 used.}
 
 
-@defproc[(pkg-directory [name string?]) (or/c path-string? #f)]{
+@defproc[(pkg-directory [name string?]
+                        [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
+         (or/c path-string? #f)]{
 
 Returns the directory that holds the installation of the installed
 (in any scope) package @racket[name], or @racket[#f] if no such package
-is installed.}
+is installed.
+
+For multiple calls to @racket[pkg-directory], supply the same
+@racket[equal?]-based mutable hash table (initially empty) as the
+@racket[cache] argument. Otherwise, package-installation information
+must be re-parsed on every call to @racket[pkg-directory].
+
+@history[#:changed "6.1.1.6" @elem{Added the @racket[#:cache] argument.}]}
 
 
 @defproc[(default-pkg-scope) (or/c 'installation 'user

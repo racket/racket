@@ -63,7 +63,9 @@
   [current-pkg-download-cache-max-bytes
    (parameter/c (or/c #f real?))]
   [pkg-directory
-   (-> string? (or/c path-string? #f))]
+   (->* (string?)
+        (#:cache (or/c #f (and/c hash? (not/c immutable?))))
+        (or/c path-string? #f))]
   [rename
    pkg-desc/opt pkg-desc
    (->* (string?
