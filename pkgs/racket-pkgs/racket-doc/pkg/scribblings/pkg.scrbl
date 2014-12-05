@@ -1073,12 +1073,21 @@ The following @filepath{info.rkt} fields are used by the package manager:
        set up (plus collections for global documentation indexes and
        links).}
 
+ @item{@racketidfont{distribution-preference} --- either
+       @racket['source], @racket['built], or @racket['binary],
+       indicating the most suitable distribution mode for the package
+       (but not a guarantee that it will be distributed as
+       such). Absence of this definition implies @racket['binary] if
+       the package has no @filepath{.rkt} or @filepath{.scrbl} files
+       other than @filepath{info.rkt} files, otherwise absence implies
+       @racket['built].}
+
  @item{@racketidfont{package-content-state} --- a list of two items;
        the first item is @racket['binary], @racket['binary-lib], or
        @racket['built], and the second item is either @racket[#f] or a
        string to represent a Racket version for compiled content. This
        information is used by @exec{raco pkg install} or @exec{raco
-       pkg update} witj @DFlag{source}, @DFlag{binary}, or
+       pkg update} with @DFlag{source}, @DFlag{binary}, or
        @DFlag{binary-lib} to ensure that the package content is
        consistent with the requested conversion; see also
        @secref["strip"]. Absence of this definition is treated the
@@ -1086,7 +1095,8 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
 ]
 
-@history[#:changed "6.1.0.5" @elem{Added @racketidfont{update-implies}.}]
+@history[#:changed "6.1.0.5" @elem{Added @racketidfont{update-implies}.}
+         #:changed "6.1.1.6" @elem{Added @racketidfont{distribution-preference}.}]
 
 @; ----------------------------------------
 
