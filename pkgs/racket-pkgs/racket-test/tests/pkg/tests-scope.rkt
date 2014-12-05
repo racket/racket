@@ -17,7 +17,6 @@
     (define main-dir (simplify-path (build-path (find-pkgs-dir) 'up)))
     $ "racket -l racket/base -l pkg/lib -l setup/dirs -e '(cons (find-pkgs-dir) (get-all-pkg-scopes))'"
     =stdout> (string-append (~v (list (build-path (fake-installation-dir) "pkgs")
-                                      (build-path main-dir "devel-pkgs")
                                       (build-path main-dir "pkgs")
                                       'installation
                                       'user))
