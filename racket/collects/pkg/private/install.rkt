@@ -912,7 +912,8 @@
                              #:ignore-checksums? ignore-checksums?
                              #:use-cache? use-cache?
                              #:from-command-line? from-command-line?
-                             #:link-dirs? link-dirs?)
+                             #:link-dirs? link-dirs?
+                             #:all-mode? [all-mode? #f])
          pkg-name)
   (cond
    [(pkg-desc? pkg-name)
@@ -1014,9 +1015,10 @@
             null))
       
       (define (skip/update-dependencies kind)
-        (download-printf "Skipping update of ~a: ~a\n"
-                         kind
-                         pkg-name)
+        (unless all-mode?
+          (download-printf "Skipping update of ~a: ~a\n"
+                           kind
+                           pkg-name))
         (hash-set! update-cache pkg-name #t)
         (update-dependencies))
       
@@ -1120,7 +1122,8 @@
                                                     #:ignore-checksums? ignore-checksums?
                                                     #:use-cache? use-cache?
                                                     #:from-command-line? from-command-line?
-                                                    #:link-dirs? link-dirs?)
+                                                    #:link-dirs? link-dirs?
+                                                    #:all-mode? all-mode?)
                                 (map (compose
                                       (if infer-clone-from-dir?
                                           (convert-directory-to-installed-clone db)
