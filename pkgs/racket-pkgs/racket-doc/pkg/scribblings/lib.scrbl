@@ -285,6 +285,7 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:from-command-line? from-command-line? boolean? #f]
                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                           [#:force-strip? force-string? boolean? #f]
+                          [#:lookup-for-clone? lookup-for-clone? boolean? #f]
                           [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
                           [#:link-dirs? link-dirs? boolean? #f])
         (or/c 'skip
@@ -301,7 +302,9 @@ indicates a package source that should replace the current
 installation; as an exception, if a @racket[package-desc] has the type
 @racket['clone] and a source with the syntax of a package name, it
 refers to an existing package installation that should be converted to
-a Git repository clone.
+a Git repository clone---unless @racket[lookup-for-clone?] is true,
+in which case the package name is resolved through a catalog to
+locate a Git repository clone.
 
 If @racket[from-command-line?]  is true, error messages may suggest
 specific command-line flags for @command-ref{update}.

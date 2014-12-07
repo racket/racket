@@ -160,12 +160,12 @@
         
         ;; A wacky merge of repsitories will happen here, but the checkout should not
         ;; get mangled. The package manager should bail out at the point that it would
-        ;; try to rebase the single "a" clone on different commits.
+        ;; try to fast-forward the single "a" clone on different commits.
         $ (~a "raco pkg install --clone " (build-path clone-dir "a")
               " http://localhost:9998/a/.git?path=one"
               " http://localhost:9998/another/a/.git?path=two")
         =exit> 1
-        =stderr> #rx"different target commits"
+        =stdout> #rx"different target commits"
         ;; Check that the old repo checkout is not mangled:
         $ (~a "racket " (build-path clone-dir "a" "two" "main.rkt")) =stdout> "2\n")))
 
@@ -351,6 +351,15 @@
             $ "racket -l three" =stdout> (if (eq? mode 'convert)
                                              "'three\n"
                                              "3\n")))
+            
+         (when (eq? mode 'convert)
+           (shelly-case
+            "Converting back to non-clone"
+            $ "raco pkg update --multi-clone convert --lookup one"
+            $ "racket -l two" =stdout> "2\n"
+            (when three?
+              (shelly-begin
+               $ "racket -l three" =stdout> "3\n"))))
          
          (delete-directory/files (build-path clone-dir "a"))
          (delete-directory/files a-dir)

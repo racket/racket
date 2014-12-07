@@ -49,7 +49,8 @@
                                    updating?       ; update vs. install mode
                                    catalog-lookup-cache
                                    download-printf
-                                   from-command-line?)
+                                   from-command-line?
+                                   convert-to-non-clone?)
   ;; A `repo-descs` is (hash repo (hash pkg-name desc) ...)
   (define (add-repo repo-descs repo name desc)
     (hash-set repo-descs repo
@@ -141,7 +142,15 @@
                (~a "  non-clone packages:"
                    (format-list non-clones)))))))
       
-      (define (convert-to-clones new-clone-behavior)
+      ;; Determine a direction of conversion; we consider converting from
+      ;; clones only for `raco pkg update --lookup`:
+      (define convert-direction
+        (cond
+         [(not (= (hash-count clones) 1)) #f]
+         [convert-to-non-clone? 'non-clone]
+         [else 'clone]))
+
+      (define (convert-to/from-clones new-clone-behavior)
         ;; Change `descs` to include each currently non-clone item as a clone
         (define clone (car (hash-keys clones)))
         (define ht (hash-ref repo-descs repo))
@@ -151,20 +160,30 @@
                    [clone-behavior new-clone-behavior]
                    [repo-descs repo-descs]
                    [extra-updates extra-updates])
-                  ([name (in-list non-clones)])
+                  ([name (in-list (case convert-direction
+                                    [(clone) non-clones]
+                                    [(non-clone) (car (hash-values clones))]))])
           (define desc (hash-ref ht name))
-          (define converted-desc (convert-desc-to-clone desc clone
-                                                        catalog-lookup-cache
-                                                        download-printf))
+          (define converted-desc
+            (case convert-direction
+              [(clone)
+               (convert-desc-to-clone desc clone
+                                      catalog-lookup-cache
+                                      download-printf)]
+              [(non-clone)
+               (convert-desc-to-lookup desc name)]))
           (values (cons converted-desc
                         (remove-desc-by-name name descs))
                   (remove-desc-by-name name done-descs)
                   (remove-info-by-name name done-infos)
                   clone-behavior
                   (hash-set repo-descs repo
-                            (hash-set (hash-ref repo-descs repo)
-                                      name
-                                      converted-desc))
+                            (let ([ht (hash-ref repo-descs repo)])
+                              (case convert-direction
+                                [(clone)
+                                 (hash-set ht name converted-desc)]
+                                [(non-clone)
+                                 (hash-remove ht name)])))
                   (if (not (hash-ref (hash-ref new-repo-descs repo) name #f))
                       ;; Count the conversion as an update, not an install,
                       ;; and make sure it's removed before the re-install:
@@ -176,22 +195,27 @@
         (download-printf "~a\n" (msg #:would "will"))
         (continue)]
        [(or (eq? clone-behavior 'fail)
-            ((hash-count clones) . > . 1))
-        (pkg-error "~a" (msg #:convert (if from-command-line?
+            (not convert-direction))
+        (pkg-error "~a" (msg #:convert (if (and from-command-line?
+                                                convert-direction)
                                            ";\n use `--multi-clone ask' for automated help"
                                            "")))]
        [(eq? clone-behavior 'convert)
-        (download-printf "~a\n" (msg #:convert ";\n CONVERTING the non-clone packages to clones"))
-        (convert-to-clones 'convert)]
+        (download-printf "~a\n" (msg #:convert (format ";\n CONVERTING the ~aclone packages to ~aclones"
+                                                       (if (eq? convert-direction 'clone) "non-" "")
+                                                       (if (eq? convert-direction 'clone) "" "NON-"))))
+        (convert-to/from-clones 'convert)]
        [else
         (displayln (msg))
-        (case (ask "Convert the non-clone packages to clones, too?"
+        (case (ask (format "Convert the ~aclone packages to ~aclones, too?"
+                           (if (eq? convert-direction 'clone) "non-" "")
+                           (if (eq? convert-direction 'clone) "" "NON-"))
                    #:default-yes? #f)
           [(no) (continue)]
           [(yes)
-           (convert-to-clones 'ask)]
+           (convert-to/from-clones 'ask)]
           [(always-yes)
-           (convert-to-clones 'convert)]
+           (convert-to/from-clones 'convert)]
           [(cancel)
            (pkg-error "canceled")])])])))
 
@@ -377,3 +401,9 @@
                       (pkg-desc-source d)))]
                [type 'clone]
                [extra-path clone]))
+
+(define (convert-desc-to-lookup d name)
+  (struct-copy pkg-desc d
+               [source name]
+               [type 'name]
+               [checksum #f]))

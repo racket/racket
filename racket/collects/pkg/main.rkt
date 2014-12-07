@@ -642,7 +642,7 @@
    #:install-clone-flags
    ([(#:sym mode [fail force convert ask] #f) multi-clone ()
      ("Specify treatment of multiple clones of a repository;"
-      "<mode>s: ask (interactive default), fail (other default), force, or convert")])
+      "<mode>s: convert, ask (interactive default), fail (other default), or force")])
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"]
     [#:bool ignore-implies () "When updating, treat `implies' like other dependencies"])

@@ -633,7 +633,7 @@
          all-descs
          all-infos))
   
-  ;; collapse planned repo actions, and make sure they don't conflict:
+  ;; collapse planned repo actions:
   (define repos
     (for/fold ([ht (hash)]) ([repo+do-it (in-list repo+do-its)])
       (define repo (car repo+do-it))
@@ -641,29 +641,28 @@
        [repo
         (define git-dir (car repo))
         (define checksum (cadr repo))
-        (define prev-checksum (hash-ref ht git-dir #f))
-        (when (and prev-checksum
-                   (not (equal? prev-checksum checksum)))
-          (pkg-error (~a "multiple packages in the same clone have different target commits\n"
-                         "  clone: ~a\n"
-                         "  commit: ~a\n"
-                         "  other commit: ~a")
-                     git-dir
-                     prev-checksum
-                     checksum))
-        (hash-set ht git-dir checksum)]
+        (define prev-checksums (hash-ref ht git-dir null))
+        (if (member checksum prev-checksums)
+            ht
+            (hash-set ht git-dir (cons checksum prev-checksums)))]
        [else ht])))
 
   ;; relevant commits have been fecthed to the repos, and now we need
-  ;; to check them out; If a checkout fails, then we've left the
+  ;; to check them out; if a checkout fails, then we've left the
   ;; package installation in no worse shape than if a manual `git
   ;; pull` failed
-  (for ([(git-dir checksum) (in-hash repos)])
+  (for ([(git-dir checksums) (in-hash repos)])
     (parameterize ([current-directory git-dir])
       (download-printf "Merging commits at ~a\n"
                        git-dir)
-      (git #:status (lambda (s) (download-printf "~a\n" s))
-           "merge" "--ff-only" checksum)))
+      (when ((length checksums) . > . 1)
+        (download-printf (~a "Multiple packages in the of the clone\n"
+                             "  " git-dir "\n"
+                             " have different target commits; will try each commit, which will work\n"
+                             " as long as some commit is a fast-forward of all of them\n")))
+      (for ([checksum (in-list checksums)])
+        (git #:status (lambda (s) (download-printf "~a\n" s))
+             "merge" "--ff-only" checksum))))
 
   ;; pre-succeed removes packages that are being updated
   (pre-succeed)
@@ -786,7 +785,8 @@
                      #:multi-clone-behavior [old-clone-behavior 'fail]
                      #:repo-descs [old-repo-descs (initial-repo-descs
                                                    (read-pkg-db)
-                                                   (if quiet? void printf))])
+                                                   (if quiet? void printf))]
+                     #:convert-to-non-clone? [convert-to-non-clone? #f])
   (define download-printf (if quiet? void printf))
   
   (define descs
@@ -812,7 +812,8 @@
                                updating?
                                catalog-lookup-cache
                                download-printf
-                               from-command-line?))
+                               from-command-line?
+                               convert-to-non-clone?))
   (with-handlers* ([vector?
                     (match-lambda
                      [(vector updating? new-infos dep-pkg deps more-pre-succeed conv clone-info)
@@ -1158,6 +1159,9 @@
       #:use-cache? use-cache?
       #:link-dirs? link-dirs?
       #:multi-clone-behavior clone-behavior
+      #:convert-to-non-clone? (and lookup-for-clone?
+                                   (andmap pkg-desc? in-pkgs)
+                                   (not (ormap pkg-desc-extra-path in-pkgs)))
       to-update)]))
 
 ;; ----------------------------------------

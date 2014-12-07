@@ -548,6 +548,11 @@ sub-commands.
    The following modes are available:
    @itemlist[
 
+      @item{@exec{convert} --- Converts non-clone-linked packages (either newly or previously installed)
+                               to clone-linked packages, assuming that the packages that are clone-linked
+                               all use the same clone directory. If clone-linked packages currently use
+                               different clone directories, installation fails.}
+
       @item{@exec{ask} --- In the case when packages can be converted, ask the user whether to convert
                            or allow the different clone-linking modes or clone directories. If converting
                            is not an option, the installation fails. This clone-handling mode is the default
@@ -556,11 +561,6 @@ sub-commands.
       @item{@exec{fail} --- Reports an error and cancels the installation (the default in non-@tech{interactive mode}).}
 
       @item{@exec{force} --- Allows packages to have different clone-linking modes or clone directories.}
-
-      @item{@exec{convert} --- Converts non-clone-linked packages (either newly or previously installed)
-                               to clone-linked packages, assuming that the packages that are clone-linked
-                               all use the same clone directory. If clone-linked packages currently use
-                               different clone directories, installation fails.}
 
     ]}
 
@@ -638,7 +638,12 @@ argument.
  @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
  @item{@DFlag{strict-doc-conflicts} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
- @item{@DFlag{multi-clone} @nonterm{mode} --- Same as for @command-ref{install}.}
+
+ @item{@DFlag{multi-clone} @nonterm{mode} --- Same as for @command-ref{install}, except that when
+       @DFlag{lookup} is specified and @DFlag{clone} is not specified, then conversion goes from
+       clone to non-clone linking---but only for sharing differences implied by the immediate
+       command-line arguments compared against existing package installations.}
+
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
