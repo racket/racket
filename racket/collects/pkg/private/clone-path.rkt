@@ -295,7 +295,7 @@
                                    "   Your current installation is a directory link, and the directory might\n"
                                    "   be a Git repostory checkout, but the package system doesn't know that.\n"
                                    "   If so, try\n"
-                                   "    cd " (simple-form-path
+                                   "    cd " (simplify-path
                                               (path->complete-path (cadr current-orig-pkg) (pkg-installed-dir)))
                                    "\n"
                                    "    raco pkg update --clone . <repository-URL>")]

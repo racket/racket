@@ -51,7 +51,7 @@
   (define-values (host port repo branch path)
     (split-git-or-hub-url (string->url url-str)))
   (let loop ([path path]
-             [in-repo-dir in-repo-dir])
+             [in-repo-dir (simplify-path in-repo-dir)])
     (cond
      [(null? path) in-repo-dir]
      [else

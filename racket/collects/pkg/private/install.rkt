@@ -1052,7 +1052,10 @@
            (if (eq? 'clone (car orig-pkg))
                (values (caddr orig-pkg)
                        'clone
-                       (enclosing-path-for-repo (caddr orig-pkg) (cadr orig-pkg)))
+                       (enclosing-path-for-repo (caddr orig-pkg)
+                                                (path->complete-path
+                                                 (cadr orig-pkg)
+                                                 (pkg-installed-dir))))
                ;; It would be better if the type were preseved
                ;; from install time, but we always make the
                ;; URL unambigious:
