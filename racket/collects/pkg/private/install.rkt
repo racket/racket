@@ -86,7 +86,7 @@
       (pkg-error (~a "cannot link a directory that overlaps with existing packages\n"
                      "  existing package: ~a\n"
                      "  overlapping path: ~a\n"
-                     "  a package: ~a")
+                     "  attempted package: ~a")
                  found-pkg
                  f
                  pkg-name)))
@@ -1095,6 +1095,7 @@
                     #:strip [strip-mode #f]
                     #:force-strip? [force-strip? #f]
                     #:link-dirs? [link-dirs? #f]
+                    #:infer-clone-from-dir? [infer-clone-from-dir? #f]
                     #:lookup-for-clone? [lookup-for-clone? #f]
                     #:multi-clone-behavior [clone-behavior 'fail])
   (define download-printf (if quiet? void printf))
@@ -1120,11 +1121,15 @@
                                                     #:use-cache? use-cache?
                                                     #:from-command-line? from-command-line?
                                                     #:link-dirs? link-dirs?)
-                                (map (if lookup-for-clone?
-                                         (convert-clone-name-to-clone-repo/install catalog-lookup-cache
-                                                                                   download-printf)
-                                         (convert-clone-name-to-clone-repo/update db
-                                                                                  from-command-line?))
+                                (map (compose
+                                      (if infer-clone-from-dir?
+                                          (convert-directory-to-installed-clone db)
+                                          values)
+                                      (if lookup-for-clone?
+                                          (convert-clone-name-to-clone-repo/install catalog-lookup-cache
+                                                                                    download-printf)
+                                          (convert-clone-name-to-clone-repo/update db
+                                                                                   from-command-line?)))
                                      pkgs)))
   (cond
     [(empty? pkgs)

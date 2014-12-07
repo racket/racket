@@ -587,15 +587,36 @@ update or replacement cannot be installed (e.g. it conflicts with
 another installed package), then this command fails without installing
 any of the @nonterm{pkg-source}s (or their dependencies).
 
-If a @tech{package scope} is not specified, the scope is inferred from
-the given @nonterm{pkg-source}s.
+The treatment of a @nonterm{pkg-source} depends on the way that it parses:
 
-If no @racket{pkg-source}, @DFlag{all} or @Flag{a} flag, or
+@itemlist[
+
+ @item{When a @nonterm{pkg-source} parses as a @tech{package name},
+       then the named package must be installed already, and it is
+       checked for updates. The @DFlag{lookup} and @DFlag{clone} flags
+       change this interpretation of @nonterm{pkg-source}.}
+
+ @item{If @nonterm{pkg-source} parses as a directory @tech{package
+       source}, and if the named package is installed as a link to a
+       Git repository clone, then the clone is checked for
+       updates. The @DFlag{link}, @DFlag{static-link}, and
+       @DFlag{copy} flags change this interpretation of
+       @nonterm{pkg-source}.}
+
+ @item{Otherwise, @nonterm{pkg-source} specifies a @tech{package
+       source} to replace the current installation of the named package.}
+
+]
+
+If no @nonterm{pkg-source}, @DFlag{all} or @Flag{a} flag, or
 @DFlag{clone} flag is specified, and if the current directory is
 within a package, then the enclosing package is updated. If no
-@racket{pkg-source} is specified, but @DFlag{clone} is supplied, then
-the clone directory's name is used as the only @racket{pkg-source}
+@nonterm{pkg-source} is specified, but @DFlag{clone} is supplied, then
+the clone directory's name is used as the only @nonterm{pkg-source}
 argument.
+
+If a @tech{package scope} is not specified, the scope is inferred from
+the given @nonterm{pkg-source}s.
 
  The @exec{update} sub-command accepts 
  the following @nonterm{option}s:
@@ -606,7 +627,7 @@ argument.
  @item{@DFlag{lookup} --- Causes a @tech{package name} as a @nonterm{pkg-source} to be used
        as a replacement, instead of the name of a installed package that may have updates.
        (If the named package was installed through a package name, then there's effectively
-        no difference unless a different catalog is used.)}
+        no difference, unless a different catalog is used.)}
 
  @item{@DFlag{type} @nonterm{type} or @Flag{t} @nonterm{type} --- Same as for @command-ref{install}.}
  @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- Same as for @command-ref{install}.}
@@ -616,8 +637,12 @@ argument.
  @item{@DFlag{update-deps} --- Same as for @command-ref{install}, but
        implied by @DFlag{auto} only for @command-ref{update}.}
  @item{@DFlag{skip-implies} --- Same as for @command-ref{install}.}
- @item{@DFlag{link} --- Same as for @command-ref{install}.}
+ @item{@DFlag{link} --- Same as for @command-ref{install}, but a
+       directory package source is treated as a link by default only
+       when it does not correspond to a link to a Git repository
+       clone.}
  @item{@DFlag{static-link} --- Same as for @command-ref{install}.}
+ @item{@DFlag{copy} --- Same as for @command-ref{install}.}
  @item{@DFlag{clone} @nonterm{dir} --- Same as for
     @command-ref{install}, except that a @nonterm{pkg-source} as a
     @tech{package name} is treated as the name of an installed
@@ -626,7 +651,6 @@ argument.
     catalog---and that source is used for the clone (which replaces
     the existing package installation).}
  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
- @item{@DFlag{copy} --- Same as for @command-ref{install}.}
  @item{@DFlag{source} --- Same as for @command-ref{install}.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}

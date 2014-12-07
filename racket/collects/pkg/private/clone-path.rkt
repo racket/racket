@@ -17,6 +17,7 @@
          adjust-to-normalize-repos
          convert-clone-name-to-clone-repo/update
          convert-clone-name-to-clone-repo/install
+         convert-directory-to-installed-clone
          desc->name
          desc->repo)
 
@@ -305,6 +306,37 @@
                       current-orig-pkg))
          new-pkg-name)]
    [else pkg-name]))
+
+(define ((convert-directory-to-installed-clone db) d)
+  (cond
+   [(pkg-desc? d)
+    (define-values (name type)
+      (package-source->name+type (pkg-desc-source d)
+                                 (pkg-desc-type d)
+                                 #:must-infer-name? (not (pkg-desc-name d))))
+    (case type
+     [(dir)
+      (define pkg-name (or (pkg-desc-name d) name))
+      (define info (package-info pkg-name #:db db))
+      (case (and info
+                 (car (pkg-info-orig-pkg info)))
+        [(clone)
+         (cond
+          [(equal? (path->directory-path
+                    (simple-form-path (pkg-desc-source d)))
+                   (path->directory-path
+                    (simplify-path
+                     (path->complete-path (cadr (pkg-info-orig-pkg info))
+                                          (pkg-installed-dir)))))
+           ;; Directory refers to a clone-linked package; preserve the
+           ;; link form:
+           (pkg-info->clone-desc pkg-name info
+                                 #:checksum #f
+                                 #:auto? (pkg-info-auto? info))]
+          [else d])]
+        [else d])]
+     [else d])]
+   [else d]))
 
 ;; ----------------------------------------
 

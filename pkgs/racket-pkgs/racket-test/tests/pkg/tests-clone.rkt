@@ -214,6 +214,13 @@
         $ "raco pkg update a"
         $ "racket -l a" =stdout> "3\n")
        
+       (shelly-case
+        "using directory name for an update should update the repo"
+        (set-file (build-path a-dir "main.rkt") "#lang racket/base 4")
+        $ (commit-changes-cmd)
+        $ (~a "raco pkg update " (build-path clone-dir "a"))
+        $ "racket -l a" =stdout> "4\n")
+       
        (delete-directory/files (build-path clone-dir "a"))
        (delete-directory/files a-dir)))
 

@@ -341,7 +341,8 @@
                                                                  (if batch
                                                                      'fail
                                                                      'ask))
-                                      #:link-dirs? link-dirs?))))
+                                      #:link-dirs? link-dirs?
+                                      #:infer-clone-from-dir? (not (or link static-link copy))))))
                   (setup "updated" no-setup #f setup-collects jobs))))]
             ;; ----------------------------------------
             [remove

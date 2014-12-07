@@ -271,7 +271,7 @@ specific command-line flags for @command-ref{install}.
 The package lock must be held; see @racket[with-pkg-lock].}
 
 
-@defproc[(pkg-update      [names (listof (or/c string? pkg-desc?))]
+@defproc[(pkg-update      [sources (listof (or/c string? pkg-desc?))]
                           [#:all? all? boolean? #f]
                           [#:dep-behavior dep-behavior
                                           (or/c #f 'fail 'force 'search-ask 'search-auto)
@@ -287,7 +287,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:force-strip? force-string? boolean? #f]
                           [#:lookup-for-clone? lookup-for-clone? boolean? #f]
                           [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
-                          [#:link-dirs? link-dirs? boolean? #f])
+                          [#:link-dirs? link-dirs? boolean? #f]
+                          [#:infer-clone-from-dir? infer-clone-from-dir? boolean? #f])
         (or/c 'skip
               #f
               (listof (or/c path-string?
@@ -296,8 +297,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
 Implements @racket[pkg-update-command]. The result is the same as for
 @racket[pkg-install].
 
-A string in @racket[names] refers to an installed package that should
-be checked for updates. A @racket[pkg-desc] in @racket[names]
+A string in @racket[sources] refers to an installed package that should
+be checked for updates. A @racket[pkg-desc] in @racket[sources]
 indicates a package source that should replace the current
 installation; as an exception, if a @racket[package-desc] has the type
 @racket['clone] and a source with the syntax of a package name, it
@@ -305,6 +306,14 @@ refers to an existing package installation that should be converted to
 a Git repository clone---unless @racket[lookup-for-clone?] is true,
 in which case the package name is resolved through a catalog to
 locate a Git repository clone.
+
+The @racket[link-dirs?] and @racket[infer-clone-from-dir?] arguments
+affect how directory paths in @racket[sources] are treated. The
+@racket[link-dirs?] argument is propagated to
+@racket[package-source->name+type], while
+@racket[infer-clone-from-dir?]  introduces a conversion from a
+directory source to a repository-clone source when the directory
+corresponds to an existing repository-clone installation.
 
 If @racket[from-command-line?]  is true, error messages may suggest
 specific command-line flags for @command-ref{update}.
