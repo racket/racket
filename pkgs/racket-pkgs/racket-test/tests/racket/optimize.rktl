@@ -2271,6 +2271,7 @@
   (test-pred 'impersonator?)
   (test-pred 'procedure?)
   (test-pred 'eof-object?)
+  (test-pred 'immutable?)
   (test-pred 'not))
 
 (let ([test-bin

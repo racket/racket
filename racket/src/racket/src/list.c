@@ -272,11 +272,9 @@ scheme_init_list (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant ("list*", p, env);
 
-  scheme_add_global_constant("immutable?",
-			     scheme_make_folding_prim(immutablep,
-						      "immutable?",
-						      1, 1, 1),
-			     env);
+  p = scheme_make_folding_prim(immutablep, "immutable?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant("immutable?", p, env);
 
   p = scheme_make_immed_prim(length_prim, "length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
