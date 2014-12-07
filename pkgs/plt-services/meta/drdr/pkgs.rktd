@@ -17,4 +17,5 @@
  ("pkg-push" "git://github.com/racket/pkg-push/")
  ("racket-lang-org" "git://github.com/racket/racket-lang-org/")
  ("pkg-index" "git://github.com/racket/pkg-index/")
- ("pkg-build" "git://github.com/racket/pkg-build/"))
+ ("pkg-build" "git://github.com/racket/pkg-build/")
+ ("taking-screenshots" "git://github.com/racket/taking-screenshots"))
