@@ -209,8 +209,7 @@
         (displayln (msg))
         (case (ask (format "Convert the ~aclone packages to ~aclones, too?"
                            (if (eq? convert-direction 'clone) "non-" "")
-                           (if (eq? convert-direction 'clone) "" "NON-"))
-                   #:default-yes? #f)
+                           (if (eq? convert-direction 'clone) "" "NON-")))
           [(no) (continue)]
           [(yes)
            (convert-to/from-clones 'ask)]
