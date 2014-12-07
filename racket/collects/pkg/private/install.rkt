@@ -1013,7 +1013,10 @@
               pkg-name))
             null))
       
-      (define (skip/update-dependencies)
+      (define (skip/update-dependencies kind)
+        (download-printf "Skipping update of ~a: ~a\n"
+                         kind
+                         pkg-name)
         (hash-set! update-cache pkg-name #t)
         (update-dependencies))
       
@@ -1027,7 +1030,7 @@
                         pkg-name
                         (simple-form-path
                          (path->complete-path orig-pkg-dir (pkg-installed-dir))))
-             (skip/update-dependencies))]
+             (skip/update-dependencies "linked package"))]
         [`(dir ,_)
          (if must-update?
              (pkg-error (~a "cannot update packages installed locally;\n"
@@ -1035,7 +1038,7 @@
                             " package was installed via a local directory\n"
                         "  package name: ~a")
                         pkg-name)
-             (skip/update-dependencies))]
+             (skip/update-dependencies "package installed locally"))]
         [`(file ,_)
          (if must-update?
              (pkg-error (~a "cannot update packages installed locally;\n"
@@ -1043,7 +1046,7 @@
                             " package was installed via a local file\n"
                             "  package name: ~a")
                         pkg-name)
-             (skip/update-dependencies))]
+             (skip/update-dependencies "package installed locally"))]
         [_
          (define-values (orig-pkg-source orig-pkg-type orig-pkg-dir)
            (if (eq? 'clone (car orig-pkg))
@@ -1101,7 +1104,8 @@
   (define update-cache (make-hash))
   (define catalog-lookup-cache (make-hash))
   (define to-update (append-map (packages-to-update download-printf db
-                                                    #:must-update? (not all-mode?)
+                                                    #:must-update? (and (not all-mode?)
+                                                                        (not update-deps?))
                                                     #:deps? (or update-deps? 
                                                                 all-mode?) ; avoid races
                                                     #:implies? update-implies?
