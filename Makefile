@@ -99,7 +99,7 @@ error-need-prefix:
 LOC_CATALOG = build/local/pkgs-catalog
 
 local-catalog:
-	"$(DESTDIR)$(PREFIX)/bin/racket" racket/src/pkgs-catalog.rkt $(LOC_CATALOG) pkgs
+	"$(DESTDIR)$(PREFIX)/bin/racket" -l- pkg/dirs-catalog --check-metadata $(LOC_CATALOG) pkgs
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg catalog-copy --force --from-config $(LOC_CATALOG) $(UNIX_CATALOG)
 
 # ------------------------------------------------------------
@@ -287,7 +287,7 @@ WIN32_BUNDLE_RACO = bundle\racket\racket $(BUNDLE_RACO_FLAGS)
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
 
-PKGS_CATALOG = -U -G build/config racket/src/pkgs-catalog.rkt --link
+PKGS_CATALOG = -U -G build/config -l- pkg/dirs-catalog --link --check-metadata
 PKGS_CONFIG = -U -G build/config racket/src/pkgs-config.rkt
 
 pkgs-catalog:

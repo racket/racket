@@ -50,3 +50,4 @@ to the @exec{raco pkg} sub-subcommands.
 @include-section["path.scrbl"]
 @include-section["name.scrbl"]
 @include-section["db.scrbl"]
+@include-section["dirs-catalog.scrbl"]
