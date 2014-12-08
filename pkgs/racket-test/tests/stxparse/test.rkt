@@ -2,6 +2,7 @@
 (require rackunit
          syntax/parse
          syntax/parse/debug
+         syntax/parse/define
          "setup.rkt"
          (for-syntax syntax/parse))
 
@@ -576,3 +577,25 @@
                   (syntax->datum #'(let ([x 1] [y 2] [z 3])
                                      (+ x y z))))
     ))
+
+(test-case "this-syntax"
+  (let ()
+    (define-syntax-class identity
+      [pattern _
+               #:with stx this-syntax])
+    (define stx #'(1 2 3))
+    (syntax-parse stx
+      [x:identity
+       (check-eq? this-syntax stx)
+       (check-eq? #'x.stx stx)])
+    ((syntax-parser
+       [x:identity
+        (check-eq? this-syntax stx)
+        (check-eq? #'x.stx stx)])
+     stx)
+    (define-simple-macro (x . _)
+      #:with stx (syntax/loc this-syntax (void))
+      stx)
+    (check-eq? (x) (void))
+    ))
+
