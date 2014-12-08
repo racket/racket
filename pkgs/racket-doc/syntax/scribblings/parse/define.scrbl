@@ -37,3 +37,25 @@ Defines a macro named @racket[macro-id]; equivalent to the following:
 ]
 
 }
+
+@defform[(define-syntax-parser macro-id parse-option ... clause ...+)]{
+
+Defines a macro named @racket[macro-id]; equivalent to:
+
+@racketblock[
+(define-syntax macro-id
+  (syntax-parser parse-option ... clause ...))
+]
+
+@myexamples[
+(define-syntax-parser fn3
+  [(fn3 x:id rhs:expr)
+   #'(lambda (x) rhs)]
+  [(fn3 x:id y:id rhs:expr)
+   #'(lambda (x y) rhs)])
+((fn3 x x) 17)
+((fn3 a b (+ a b)) 3 4)
+(fn3 1 2)
+(fn3 a #:b 'c)
+]}
+
