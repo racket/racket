@@ -631,7 +631,7 @@
                                             (current-continuation-marks))))
                            (void))
                        (when ts
-                         (hash-set! links-cache links-path (cons #hasheq() ts)))
+                         (hash-set! links-cache links-path (cons ts #hasheq())))
                        (if (exn:fail? exn)
                            (esc (make-hasheq))
                            ;; re-raise the exception (which is probably a break)
