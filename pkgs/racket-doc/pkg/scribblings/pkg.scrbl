@@ -1108,7 +1108,9 @@ The following @filepath{info.rkt} fields are used by the package manager:
        (but not a guarantee that it will be distributed as
        such). Absence of this definition implies @racket['binary] if
        the package has no @filepath{.rkt} or @filepath{.scrbl} files
-       other than @filepath{info.rkt} files, otherwise absence implies
+       other than @filepath{info.rkt} files, and if it has any
+       @filepath{.so}, @filepath{.dll}, @filepath{.dylib}, or
+       @filepath{.framework} files; otherwise, absence implies
        @racket['built].}
 
  @item{@racketidfont{package-content-state} --- a list of two items;
