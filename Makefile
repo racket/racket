@@ -293,6 +293,7 @@ PKGS_CONFIG = -U -G build/config racket/src/pkgs-config.rkt
 pkgs-catalog:
 	$(PLAIN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs
 	$(PLAIN_RACKET) $(PKGS_CONFIG)
+	$(PLAIN_RACKET) racket/src/pkgs-check.rkt racket/share/pkgs-catalog
 
 win32-pkgs-catalog:
 	$(MAKE) pkgs-catalog PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
