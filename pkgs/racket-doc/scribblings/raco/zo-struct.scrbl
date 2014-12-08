@@ -491,9 +491,13 @@ binding, constructor, etc.}
 
 @defstruct+[(beg0 expr) ([seq (listof (or/c expr? seq? any/c))])]{
   Represents a @racket[begin0] expression.
-
+  
   After each expression in @racket[seq] is evaluated, the stack is
-  restored to its depth from before evaluating the expression.}
+  restored to its depth from before evaluating the expression.
+
+  Unlike the @racket[begin0] source form, the first expression in
+  @racket[seq] is never in tail position, even if it is the only
+  expression in the list.}
 
 @defstruct+[(varref expr) ([toplevel (or/c toplevel? #t)] 
                            [dummy (or/c toplevel? #f)])]{
