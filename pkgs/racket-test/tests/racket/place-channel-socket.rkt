@@ -5,7 +5,8 @@
          rackunit)
 
 (module+ test
-  (main)
+  (when (place-enabled?)
+    (main))
   (module config info
     (define random? #t)))
 

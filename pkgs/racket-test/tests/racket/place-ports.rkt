@@ -4,7 +4,8 @@
          rackunit)
 
 (module+ test
-  (main))
+  (when (place-enabled?)
+    (main)))
 
 (define (main)
 

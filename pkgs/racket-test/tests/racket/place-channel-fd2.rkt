@@ -11,7 +11,8 @@
   (apply subprocess o i e (current-executable-path) args))
 
 (module+ test
-  (main))
+  (when (place-enabled?)
+    (main)))
 
 (define fdt (build-path (find-system-path 'temp-dir) "fdt.rkt"))
 

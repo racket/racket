@@ -16,8 +16,8 @@
     (place-channel-put in (cons us us))
     (define r (place-channel-get out))
     (test #t equal? (car r) (cdr r))
-    (test #f equal? us (car r))
-    (test #f equal? us (cdr r))
+    (test (not (place-enabled?)) equal? us (car r))
+    (test (not (place-enabled?)) equal? us (cdr r))
     (test #f symbol-interned? (car r))
     (test #f symbol-interned? (cdr r))
 
@@ -26,8 +26,8 @@
     (test #f symbol-interned? (car r2))
     (test #f symbol-interned? (cdr r2))
     (test #f equal? (car r2) (cdr r2))
-    (test #f equal? us (car r2))
-    (test #f equal? us2 (cdr r2)))
+    (test (not (place-enabled?)) equal? us (car r2))
+    (test (not (place-enabled?)) equal? us2 (cdr r2)))
 
   (let ()
     (define us (string->unreadable-symbol "foo2"))
