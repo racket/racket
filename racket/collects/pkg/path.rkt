@@ -109,12 +109,13 @@
      [(sub-path? < p d)
       ;; Under the installation mode's package directory.
       ;; We assume that no one else writes there, so the
-      ;; next path element is the package name (or the package
-      ;; name followed by "+<n>")
+      ;; next path element is the package name, the package
+      ;; name followed by "+<n>", or ".trash"
       (define len (length d))
       (define pkg-name (path-element->string (list-ref p len)))
-      (if (regexp-match? #rx"pkgs[.]rktd" pkg-name)
-          (values #f #f #f #f) ; don't count the database as a package
+      (if (or (regexp-match? #rx"pkgs[.]rktd" pkg-name)
+              (regexp-match? #rx"[.]trash" pkg-name))
+          (values #f #f #f #f) ; don't count the database or trash can as a package
           (values (if (regexp-match? #rx"[+]" pkg-name) ; +<n> used as an alternate path, sometimes
                       (regexp-replace #rx"[+].*$" pkg-name "")
                       pkg-name)

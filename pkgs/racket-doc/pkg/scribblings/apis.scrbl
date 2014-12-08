@@ -45,6 +45,8 @@ to the @exec{raco pkg} sub-subcommands.
                                                   @history[#:added "6.0.17"]}
 @defthing[pkg-archive-command procedure?]{Implements @command-ref{archive}.
                                                   @history[#:added "6.1.0.8"]}
+@defthing[pkg-empty-trash-command procedure?]{Implements @command-ref{empty-trash}.
+                                                  @history[#:added "6.1.1.6"]}
 
 @include-section["lib.scrbl"]
 @include-section["path.scrbl"]

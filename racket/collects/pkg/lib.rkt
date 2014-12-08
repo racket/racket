@@ -25,7 +25,8 @@
          "private/catalog-update.rkt"
          "private/catalog-archive.rkt"
          "private/suggestions.rkt"
-         "private/archive.rkt")
+         "private/archive.rkt"
+         "private/trash.rkt")
   
 (define dep-behavior/c
   (or/c #f 'fail 'force 'search-ask 'search-auto))
@@ -61,6 +62,10 @@
   [current-pkg-download-cache-max-files
    (parameter/c (or/c #f real?))]
   [current-pkg-download-cache-max-bytes
+   (parameter/c (or/c #f real?))]
+  [current-pkg-trash-max-packages
+   (parameter/c (or/c #f real?))]
+  [current-pkg-trash-max-seconds
    (parameter/c (or/c #f real?))]
   [pkg-directory
    (->* (string?)
@@ -98,6 +103,7 @@
                         #:update-deps? boolean?
                         #:update-implies? boolean?
                         #:quiet? boolean?
+                        #:use-trash? boolean?
                         #:from-command-line? boolean?
                         #:all-platforms? boolean?
                         #:force? boolean?
@@ -116,6 +122,7 @@
         (#:auto? boolean?
                  #:force? boolean?
                  #:quiet? boolean?
+                 #:use-trash? boolean?
                  #:from-command-line? boolean?
                  #:demote? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
@@ -137,6 +144,7 @@
                         #:use-cache? boolean?
                         #:skip-installed? boolean?
                         #:quiet? boolean?
+                        #:use-trash? boolean?
                         #:from-command-line? boolean?
                         #:strip (or/c #f 'source 'binary 'binary-lib)
                         #:force-strip? boolean?
@@ -186,6 +194,11 @@
                          #:quiet? boolean?
                          #:package-exn-handler (string? exn:fail? . -> . any))
         void?)]
+  [pkg-empty-trash
+   (->* ()
+        (#:list? boolean?
+                 #:quiet? boolean?)
+        void)]
   [default-pkg-scope
    (-> package-scope/c)]
   [installed-pkg-names

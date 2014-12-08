@@ -135,6 +135,7 @@
          #:force? force?
          #:all-platforms? all-platforms?
          #:quiet? quiet?
+         #:use-trash? use-trash?
          #:from-command-line? from-command-line?
          #:conversation conversation
          #:strip strip-mode
@@ -424,7 +425,7 @@
                (let ()
                  (define (continue conversation)
                    (raise (vector #t infos pkg-name update-pkgs
-                                  (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) update-pkgs))
+                                  (λ () (for-each (compose (remove-package quiet? use-trash?) pkg-desc-name) update-pkgs))
                                   conversation
                                   clone-info)))
                  (match (if (andmap (lambda (dep) (set-member? implies (pkg-desc-name dep)))
@@ -526,7 +527,7 @@
                                                                #:from-command-line? from-command-line?
                                                                #:link-dirs? link-dirs?)
                                            update-pkgs)])
-                (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
+                (λ () (for-each (compose (remove-package quiet? use-trash?) pkg-desc-name) to-update))))
             (match this-dep-behavior
               ['fail
                (clean!)
@@ -776,6 +777,7 @@
                      #:catalog-lookup-cache [catalog-lookup-cache (make-hash)]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
+                     #:use-trash? [use-trash? #f]
                      #:from-command-line? [from-command-line? #f]
                      #:conversation [conversation #f]
                      #:strip [strip-mode #f]
@@ -785,9 +787,9 @@
                      #:multi-clone-behavior [old-clone-behavior 'fail]
                      #:repo-descs [old-repo-descs (initial-repo-descs
                                                    (read-pkg-db)
-                                                   (if quiet? void printf))]
+                                                   (if quiet? void printf/flush))]
                      #:convert-to-non-clone? [convert-to-non-clone? #f])
-  (define download-printf (if quiet? void printf))
+  (define download-printf (if quiet? void printf/flush))
   
   (define descs
     (map (convert-clone-name-to-clone-repo/install catalog-lookup-cache
@@ -833,6 +835,9 @@
                        #:catalog-lookup-cache catalog-lookup-cache
                        #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
                        #:updating? updating?
+                       #:quiet? quiet?
+                       #:use-trash? use-trash?
+                       #:from-command-line? from-command-line?
                        #:conversation conv
                        #:strip strip-mode
                        #:force-strip? force-strip?
@@ -858,11 +863,12 @@
        #:catalog-lookup-cache catalog-lookup-cache
        #:pre-succeed (λ ()
                        (for ([pkg-name (in-hash-keys extra-updating)])
-                         ((remove-package quiet?) pkg-name))
+                         ((remove-package quiet? use-trash?) pkg-name))
                        (pre-succeed))
        #:updating? updating?
        #:extra-updating extra-updating
        #:quiet? quiet?
+       #:use-trash? use-trash?
        #:from-command-line? from-command-line?
        #:conversation conversation
        #:strip strip-mode
@@ -1093,6 +1099,7 @@
                     #:update-deps? [update-deps? #f]
                     #:update-implies? [update-implies? #t]
                     #:quiet? [quiet? #f]
+                    #:use-trash? [use-trash? #f]
                     #:from-command-line? [from-command-line? #f]
                     #:strip [strip-mode #f]
                     #:force-strip? [force-strip? #f]
@@ -1100,7 +1107,7 @@
                     #:infer-clone-from-dir? [infer-clone-from-dir? #f]
                     #:lookup-for-clone? [lookup-for-clone? #f]
                     #:multi-clone-behavior [clone-behavior 'fail])
-  (define download-printf (if quiet? void printf))
+  (define download-printf (if quiet? void printf/flush))
   (define metadata-ns (make-metadata-namespace))
   (define db (read-pkg-db))
   (define all-mode? (and all? (empty? in-pkgs)))
@@ -1157,13 +1164,14 @@
        (flush-output))
      (pkg-install
       #:updating? #t
-      #:pre-succeed (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))
+      #:pre-succeed (λ () (for-each (compose (remove-package quiet? use-trash?) pkg-desc-name) to-update))
       #:dep-behavior dep-behavior
       #:update-deps? update-deps?
       #:update-implies? update-implies?
       #:update-cache update-cache
       #:catalog-lookup-cache catalog-lookup-cache
       #:quiet? quiet?
+      #:use-trash? use-trash?
       #:from-command-line? from-command-line?
       #:strip strip-mode
       #:force-strip? force-strip?

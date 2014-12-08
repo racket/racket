@@ -573,11 +573,14 @@ sub-commands.
   @item{@DFlag{batch} --- Disables @deftech{interactive mode}, suppressing potential prompts for a user
                           (e.g., about package dependencies or clone sharing).}
 
+  @item{@DFlag{no-trash} --- Refrain from moving updated or removed packages to a trash folder.}
+
   @item{@DFlag{fail-fast} --- Breaks @exec{raco setup} as soon as any error is encountered.}
  ]
 
 @history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch}, @DFlag{clone}, and
-                                   @DFlag{multi-clone} flags.}]}
+                                   @DFlag{multi-clone} flags.}
+         #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ... 
@@ -671,12 +674,14 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
+ @item{@DFlag{no-trash} --- Same as for @command-ref{install}.}
  ]
 
 @history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch}, @DFlag{clone}, and
                                    @DFlag{multi-clone} flags, and
                                    added update of enclosing package
-                                   when no arguments are provided.}]}
+                                   when no arguments are provided.}
+         #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag.}]}
 
 @subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. By default, if a package is the dependency
@@ -705,9 +710,11 @@ the given @nonterm{pkg}s.
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
+ @item{@DFlag{no-trash} --- Same as for @command-ref{install}.}
  ]
 
-@history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch} flag.}]}
+@history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch} flag.}
+         #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag.}]}
 
 
 @subcommand{@command/toc{new} @nonterm{pkg} ---
@@ -856,8 +863,16 @@ for @nonterm{key}.
         documentation; an empty string, which is the default, disables
         the URL so that the local filesystem is used. This key can be
         set only in @exec{installation} scope.}
+  @item{@exec{trash-max-packages} --- A limit on the number of package implementations
+        that are kept in a trash folder when the package is removed or updated.}
+  @item{@exec{trash-max-seconds} --- A limit on the time since a package is removed or
+        updated that its implementation is kept in the trash folder. Package implementations are
+        removed from a trash folder only when another package is potentially added
+        to the trash folder or @command-ref{empty-trash} is used.}
  ]
-}
+
+@history[#:changed "6.1.1.6" @elem{Added @exec{trash-max-packages} and @exec{trash-max-seconds}.}]}
+
 
 @subcommand{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...
 --- Consults @tech{package catalogs} for a package (that is not necessarily installed)
@@ -961,10 +976,33 @@ for @nonterm{key}.
  @item{@DFlag{exclude} @nonterm{pkg} --- Omits the specified @nonterm{pkg} from the
         resulting catalog. This also causes the dependencies of @nonterm{pkg} to be
         omitted if @DFlag{include-deps} is specified. This flag can be provided multiple times.}
- @item{@DFlag{relative} --- Write package sources to @nonterm{dest-catalog} in relative-path form.}
+ @item{@DFlag{relative} --- Writes package sources to @nonterm{dest-catalog} in relative-path form.}
  ]
 
  @history[#:added "6.1.0.8"]
+}
+
+@subcommand{@command/toc{empty-trash} @nonterm{option} ...
+--- Removes or lists package implementations that were previously removed or updated and
+    are currently in the trash directory
+    for the specified @tech{package scope}. The @exec{trash-max-packages} and
+    @exec{trash-max-seconds} configuration keys (see @command-ref{config}) control
+    how many packages are kept in the trash directory and for how long.
+
+    The @exec{empty-trash} sub-command accepts
+    the following @nonterm{option}s:
+
+ @itemlist[
+ @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
+ @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
+ @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
+ @item{@DFlag{scope-dir} @nonterm{dir} --- Same as for @command-ref{install}.}
+
+ @item{@DFlag{list} or @Flag{l} --- Shows the trash directory path and its content, instead of
+                                    removing the current content.}
+ ]
+
+ @history[#:added "6.1.1.6"]
 }
 
 @; ----------------------------------------

@@ -134,6 +134,7 @@
     (syntax-case stx ()
       [(_ #:scope-flags (scope-flags ...)
           #:job-flags (job-flags ...)
+          #:trash-flags (trash-flags ...)
           #:catalog-flags (catalog-flags ...)
           #:install-type-flags (install-type-flags ...)
           #:install-dep-flags (install-dep-flags ...)
@@ -146,6 +147,7 @@
           #:install-copy-checks (install-copy-checks ...))
        (with-syntax ([([scope-flags ...]
                        [job-flags ...]
+                       [trash-flags ...]
                        [catalog-flags ...]
                        [install-type-flags ...]
                        [(install-dep-flags ... (dep-desc ...))]
@@ -157,6 +159,7 @@
                        [install-copy-checks ...])
                       (syntax-local-introduce #'([scope-flags ...]
                                                  [job-flags ...]
+                                                 [trash-flags ...]
                                                  [catalog-flags ...]
                                                  [install-type-flags ...]
                                                  [install-dep-flags ...]
@@ -194,6 +197,7 @@
              install-force-flags ...
              install-clone-flags ...
              job-flags ...
+             trash-flags ...
              [#:bool fail-fast () ("Break `raco setup' when it discovers an error")]
              #:args pkg-source
              install-copy-defns ...
@@ -250,6 +254,7 @@
                                                                       'fail
                                                                       'ask))
                                        #:link-dirs? link-dirs?
+                                       #:use-trash? (not no-trash)
                                        (for/list ([p (in-list sources)])
                                          (pkg-desc p a-type* name checksum #f
                                                    #:path (and (eq? a-type* 'clone)
@@ -279,6 +284,7 @@
              install-force-flags ...
              install-clone-flags ...
              job-flags ...
+             trash-flags ...
              #:args pkg-source
              install-copy-defns ...
              (let ([pkg-source
@@ -342,7 +348,8 @@
                                                                      'fail
                                                                      'ask))
                                       #:link-dirs? link-dirs?
-                                      #:infer-clone-from-dir? (not (or link static-link copy))))))
+                                      #:infer-clone-from-dir? (not (or link static-link copy))
+                                      #:use-trash? (not no-trash)))))
                   (setup "updated" no-setup #f setup-collects jobs))))]
             ;; ----------------------------------------
             [remove
@@ -355,6 +362,7 @@
              scope-flags ...
              #:once-each
              job-flags ...
+             trash-flags ...
              #:args pkg
              (call-with-package-scope
               'remove
@@ -366,7 +374,8 @@
                                #:from-command-line? #t
                                #:demote? demote
                                #:auto? auto
-                               #:force? force)))
+                               #:force? force
+                               #:use-trash? (not no-trash))))
                 (setup "removed" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [new
@@ -597,7 +606,21 @@
                                  (cons pkg pkgs)
                                  #:include-deps? include-deps
                                  #:exclude (exclude-list)
-                                 #:relative-sources? relative))]))]))
+                                 #:relative-sources? relative))]
+            ;; ----------------------------------------
+            [empty-trash
+             "Delete old package installations from the trash directory"
+             #:once-any
+             scope-flags ...
+             #:once-each
+             [#:bool list ("-l") "Show trash content without emptying"]
+             #:args ()
+             (call-with-package-scope
+              'empty-trash
+              scope scope-dir installation user #f #f #f #f
+              (lambda ()
+                (pkg-empty-trash #:list? list
+                                 #:quiet? #f)))]))]))
   (make-commands
    #:scope-flags
    ([(#:sym scope [installation user] #f) scope ()
@@ -611,6 +634,8 @@
    ([#:bool no-setup () ("Don't `raco setup' after changing packages (usually a bad idea)")]
     [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
     [#:bool batch () ("Disable interactive mode and all prompts")])
+   #:trash-flags
+   ([#:bool no-trash () ("Delete uninstalled/updated, instead of moving to a trash folder")])
    #:catalog-flags
    ([(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"])
    #:install-type-flags

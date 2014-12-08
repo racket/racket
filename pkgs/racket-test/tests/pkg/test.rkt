@@ -49,6 +49,7 @@
  "update-deps"
  "update-auto"
  "scope"
+ "trash"
  "migrate"
  "versions"
  "platform"

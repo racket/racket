@@ -91,6 +91,18 @@ a parameter's value is @racket[#f], then the user's configuration is
 used.}
 
 
+@deftogether[(
+@defparam[current-pkg-trash-max-packages max-packages (or/c #f real?)]
+@defparam[current-pkg-trash-max-seconds max-seconds (or/c #f real?)]
+)]{
+
+Parameters that determine the trash-directory limits.  If
+a parameter's value is @racket[#f], then the user's configuration is
+used.
+
+@history[#:added "6.1.1.6"]}
+
+
 @defproc[(pkg-directory [name string?]
                         [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (or/c path-string? #f)]{
@@ -234,7 +246,8 @@ is true, error messages may suggest specific command-line flags for
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                            [#:use-cache? use-cache? boolean? #t]
-                           [#:quiet? boolean? quiet? #f]
+                           [#:quiet? quiet? boolean? #f]
+                           [#:use-trash? use-trash? boolean? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                            [#:force-strip? force-string? boolean? #f]
@@ -268,7 +281,11 @@ port, unless @racket[quiet?] is true.
 If @racket[from-command-line?]  is true, error messages may suggest
 specific command-line flags for @command-ref{install}.
 
-The package lock must be held; see @racket[with-pkg-lock].}
+The package lock must be held; see @racket[with-pkg-lock].
+
+@history[#:changed "6.1.1.5" @elem{Added the @racket[#:multi-clone-mode] 
+                                   and @racket[#:infer-clone-from-dir?] arguments.}
+         #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}]}
 
 
 @defproc[(pkg-update      [sources (listof (or/c string? pkg-desc?))]
@@ -281,7 +298,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:ignore-checksums? ignore-checksums? boolean? #f]
                           [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                           [#:use-cache? use-cache? quiet? #t]
-                          [#:quiet? boolean? quiet? #f]
+                          [#:quiet? quiet? boolean? #f]
+                          [#:use-trash? boolean? use-trash? #f]
                           [#:from-command-line? from-command-line? boolean? #f]
                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                           [#:force-strip? force-string? boolean? #f]
@@ -318,14 +336,19 @@ corresponds to an existing repository-clone installation.
 If @racket[from-command-line?]  is true, error messages may suggest
 specific command-line flags for @command-ref{update}.
 
-The package lock must be held; see @racket[with-pkg-lock].}
+The package lock must be held; see @racket[with-pkg-lock].
+
+@history[#:changed "6.1.1.5" @elem{Added the @racket[#:multi-clone-mode] 
+                                   and @racket[#:infer-clone-from-dir?] arguments.}
+         #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}]}
 
 
 @defproc[(pkg-remove      [names (listof string?)]
                           [#:demote? demote? boolean? #f]
                           [#:auto? auto? boolean? #f]
                           [#:force? force? boolean? #f]
-                          [#:quiet? boolean? quiet? #f]
+                          [#:quiet? quiet? boolean? #f]
+                          [#:use-trash? boolean? use-trash? #f]
                           [#:from-command-line? from-command-line? boolean? #f])
          (or/c 'skip
                #f
@@ -339,7 +362,9 @@ Implements @racket[pkg-remove-command]. The result is the same as for
 If @racket[from-command-line?]  is true, error messages may suggest
 specific command-line flags for @command-ref{remove}.
 
-The package lock must be held; see @racket[with-pkg-lock].}
+The package lock must be held; see @racket[with-pkg-lock].
+
+@history[#:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}]}
 
 
 @defproc[(pkg-new [name path-string?])
@@ -374,7 +399,7 @@ The package lock must be held to allow reads; see
                            [#:use-cache? use-cache? boolean? #t]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
-                           [#:quiet? boolean? quiet? #f]
+                           [#:quiet? quiet? boolean? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                            [#:force-strip? force-string? boolean? #f])
@@ -469,6 +494,15 @@ process, while a function that logs the exception message and returns
 would allow archiving to continue for other packages.
 
 @history[#:added "6.1.0.8"]}
+
+
+@defproc[(pkg-empty-trash [#:list? show-list? boolean? #f]
+                          [#:quiet? quiet? boolean? #t])
+         void?]{
+
+Implements @racket[pkg-empty-trash].
+
+@history[#:added "6.1.1.6"]}
 
 
 @defproc[(pkg-catalog-update-local [#:catalogs catalogs (listof string?) (pkg-config-catalogs)]

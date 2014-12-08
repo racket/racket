@@ -17,7 +17,7 @@
     $ "raco pkg show -l -u -a -d" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source +Directory\npkg-test1 +[a-f0-9]+ .*pkg-test1\"\n"
     $ "racket -e '(require pkg-test1)'" =exit> 0
     $ "racket -e '(file-or-directory-permissions (collection-path \"pkg-test1\") #o500)'"
-    $ "raco pkg remove pkg-test1" =exit> 1
+    $ "raco pkg remove --no-trash pkg-test1" =exit> 1
     $ "racket -e '(require pkg-test1)'" =exit> 1)
 
    (shelly-case
