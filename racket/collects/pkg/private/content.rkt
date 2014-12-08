@@ -38,9 +38,15 @@
 
 (define (get-pkg-content desc 
                          #:namespace [metadata-ns (make-metadata-namespace)]
-                         #:extract-info [extract-info extract-pkg-dependencies])
+                         #:extract-info [extract-info extract-pkg-dependencies]
+                         #:use-cache? [use-cache? #f]
+                         #:quiet? [quiet? #t])
   (define-values (pkg-name dir cksum clean? module-paths) 
-    (pkg-stage desc #:in-place? #t #:namespace metadata-ns))
+    (pkg-stage desc
+               #:in-place? #t
+               #:namespace metadata-ns
+               #:use-cache? use-cache?
+               #:quiet? quiet?))
   (define get-info (get-info/full dir #:namespace metadata-ns))
   (begin0
    (values cksum

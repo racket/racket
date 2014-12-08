@@ -560,7 +560,10 @@ is passed on to @racket[get-info/full].}
                            ((or/c #f
                                   ((symbol?) ((-> any)) . ->* . any))
                             . -> . any)
-                           (lambda (get-pkg-info) ...)])
+                           (lambda (get-pkg-info) ...)]
+                          [#:namespace namespace namespace? (make-base-namespace)]
+                          [#:use-cache? use-cache? boolean? #f]
+                          [#:quiet? quiet? boolean? #t])
          (values (or/c #f string?) 
                  (listof module-path?)
                  any/c)]{
@@ -586,7 +589,19 @@ The results are as follows:
        information-getting function (or @racket[#f]) as returned by
        @racket[get-info].}
 
-]}
+]
+
+The @racket[namespace] argument is effectively passed along to
+@racket[get-info/full] and/or @racket[pkg-stage] for reading package
+and collection @filepath{info.rkt} files.
+
+The @racket[use-cache?] and @racket[quiet?] arguments are effectively
+passed to @racket[pkg-stage] to control the use of a download cache
+and status reporting.
+
+@history[#:changed "6.1.1.2" @elem{Added the @racket[#:use-cache?] and
+                                   @racket[#:quiet?] arguments.}]}
+
 
 @defproc[(extract-pkg-dependencies [info (symbol? (-> any/c) . -> . any/c)]
                                    [#:build-deps? build-deps? boolean? #t]

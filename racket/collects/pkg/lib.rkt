@@ -236,7 +236,9 @@
         (#:extract-info (-> (or/c #f
                                   ((symbol?) ((-> any)) . ->* . any))
                             any/c)
-                        #:namespace namespace?)
+                        #:namespace namespace?
+                        #:use-cache? boolean?
+                        #:quiet? boolean?)
         (values (or/c #f string?)
                 (listof module-path?)
                 any/c))]
