@@ -752,10 +752,9 @@ one of the following forms:
  @item{ @litchar{#\space}: space (ASCII 32)@nonalpha[]}
  @item{ @litchar{#\rubout}: delete (ASCII 127)@nonalpha[]}
 
- @item{@litchar{#\}@kleenerange[1 3]{@nonterm{digit@sub{8}}}:
-       Unicode for the octal number specified by @kleenerange[1
-       3]{@nonterm{digit@sub{8}}}, as in string escapes (see
-       @secref["parse-string"]).}
+ @item{@litchar{#\}@kleenerange[3 3]{@nonterm{digit@sub{8}}}:
+       Unicode for the octal number specified by three octal digits---as in string escapes (see
+       @secref["parse-string"]), but constrained to exactly three digits.}
 
 @;{
  Not implemented:
@@ -766,10 +765,12 @@ one of the following forms:
 }
 
  @item{@litchar{#\u}@kleenerange[1 4]{@nonterm{digit@sub{16}}}:
-       like @litchar{#\x}, but with up to four hexadecimal digits.}
+       Unicode for the hexadecimal number specified by @kleenerange[1
+       4]{@nonterm{digit@sub{16}}}, as in string escapes (see
+       @secref["parse-string"]).}
 
  @item{@litchar{#\U}@kleenerange[1 6]{@nonterm{digit@sub{16}}}:
-       like @litchar{#\x}, but with up to six hexadecimal digits.}
+       like @litchar{#\u}, but with up to six hexadecimal digits.}
 
  @item{@litchar{#\}@nonterm{c}: the character @nonterm{c}, as long
        as @litchar{#\}@nonterm{c} and the characters following it
