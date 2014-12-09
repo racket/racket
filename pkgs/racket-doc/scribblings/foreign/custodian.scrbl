@@ -31,10 +31,14 @@ custodian, even if @racket[weak?] is @racket[#f]; see
 
 Normally, @racket[weak?] should be false. To trigger actions based on
 finalization or custodian shutdown---whichever happens first---leave
-@racket[weak?] as @racket[#f] and have a finalizer cancel the shutdown
-action via @racket[unregister-custodian-shutdown]. Otherwise, a
-not-yet-run finalizer may remain pending after the custodian is
-shutdown.}
+@racket[weak?] as @racket[#f] and have a finalizer run in atomic mode
+and cancel the shutdown action via
+@racket[unregister-custodian-shutdown]. If @racket[weak?] is true or
+if the finalizer is not run in atomic mode, then there's no guarantee
+that either of the custodian or finalizer callbacks has completed by
+the time that the custodian shutdown has completed; @racket[v] might
+be no longer registered to the custodian, while the finalizer for
+@racket[v] might be still running or merely queued to run.}
 
 
 @defproc[(unregister-custodian-shutdown [v any/c]
