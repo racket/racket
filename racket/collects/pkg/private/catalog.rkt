@@ -136,9 +136,10 @@
    (add-to-cache
     pkg cache
     (for/or ([i (in-list (pkg-catalogs))])
-      (if download-printf
-          (download-printf "Resolving ~s via ~a\n" pkg (url->string i))
-          (log-pkg-debug "consulting catalog ~a" (url->string i)))
+      (define (consulting-catalog suffix)
+        (if download-printf
+            (download-printf "Resolv~a ~s via ~a\n" suffix pkg (url->string i))
+            (log-pkg-debug "consult~a catalog ~a" suffix (url->string i))))
       (source->absolute-source
        i
        (select-info-version
@@ -146,6 +147,7 @@
          i
          ;; Server:
          (lambda (i)
+           (consulting-catalog "ing")
            (define addr (add-version-query
                          (combine-url/relative i (format "pkg/~a" pkg))))
            (log-pkg-debug "resolving via ~a" (url->string addr))
@@ -160,12 +162,16 @@
          (lambda ()
            (define pkgs (db:get-pkgs #:name pkg))
            (and (pair? pkgs)
-                (db-pkg-info (car pkgs) details?)))
+                (begin
+                  (consulting-catalog "ed")
+                  (db-pkg-info (car pkgs) details?))))
          ;; Local directory:
          (lambda (path)
            (define pkg-path (build-path path "pkg" pkg))
            (and (file-exists? pkg-path)
-                (call-with-input-file* pkg-path read))))))))
+                (begin
+                  (consulting-catalog "ed")
+                  (call-with-input-file* pkg-path read)))))))))
    (pkg-error (~a "cannot find package on catalogs\n"
                   "  package: ~a")
               pkg)))
