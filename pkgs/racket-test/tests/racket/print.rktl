@@ -255,6 +255,18 @@
   (test +inf.0 print-syntax-width))
 
 ;; ----------------------------------------
+;; Try to provoke a stack overflow during printing of truncated
+;; values, ensuring that the stack-overflow handling doesn't
+;; interfere with the printer escape on truncation:
+
+(with-handlers ([void void])
+  (let loop ([i 6013])
+    (if (zero? i)
+        (break-thread)
+        (with-handlers ([void (lambda (x y) x)])
+          (loop (sub1 i))))))
+
+;; ----------------------------------------
 
 
 (report-errs)
