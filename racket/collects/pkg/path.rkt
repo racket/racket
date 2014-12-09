@@ -80,13 +80,12 @@
     (raise-argument-error who "(or/c #f (and/c hash? (not/c immutable?)))" cache))
   (define (explode p)
     (explode-path
-     (normal-case-path
-      (simplify-path (path->complete-path p)))))
+     (simplify-path (path->complete-path p))))
   (define (sub-path? < p d)
     (and ((length d) . < . (length p))
          (for/and ([de (in-list d)]
                    [pe (in-list p)])
-           (equal? de pe))))
+           (equal? (normal-case-path de) (normal-case-path pe)))))
   (define p (explode given-p))
   (define (build-path* l)
     (if (null? l) 'same (apply build-path l)))
@@ -105,6 +104,15 @@
           (let ([db (read-pkgs-db scope)])
             (when cache (hash-set! cache `(db ,scope) db))
             db)))
+    (define (normal-case-mapping/cached db)
+      (if (eq? 'windows (system-path-convention-type))
+	  (or (and cache
+		   (hash-ref cache `(normal-case ,scope) #f))
+	      (let ([ht (for/hash ([n (in-hash-keys db)])
+			  (values (normal-case-path n) n))])
+		(when cache (hash-set! cache `(normal-case ,scope) ht))
+		ht))
+	  #hash()))
     (cond
      [(sub-path? < p d)
       ;; Under the installation mode's package directory.
@@ -116,14 +124,26 @@
       (if (or (regexp-match? #rx"pkgs[.]rktd" pkg-name)
               (regexp-match? #rx"[.]trash" pkg-name))
           (values #f #f #f #f) ; don't count the database or trash can as a package
-          (values (if (regexp-match? #rx"[+]" pkg-name) ; +<n> used as an alternate path, sometimes
-                      (regexp-replace #rx"[+].*$" pkg-name "")
-                      pkg-name)
-                  (build-path* (list-tail p (add1 len)))
-                  (and want-collect?
-                       (let ([i (hash-ref (read-pkg-db/cached) pkg-name #f)])
-                         (and i (sc-pkg-info? i) (sc-pkg-info-collect i))))
-                  scope))]
+	  (let* ([pkg-name
+		  (if (regexp-match? #rx"[+]" pkg-name) ; +<n> used as an alternate path, sometimes
+		      (regexp-replace #rx"[+].*$" pkg-name "")
+		      pkg-name)]
+		 [db (read-pkg-db/cached)]
+		 ;; Double-check that such a package is installed, in case
+		 ;; there's a junk directory or the path case is wrong:
+		 [pkg-name (if (hash-ref db pkg-name #f)
+			       pkg-name
+			       (hash-ref (normal-case-mapping/cached db)
+					 (normal-case-path pkg-name)
+					 #f))])
+	    (if pkg-name
+		(values pkg-name
+			(build-path* (list-tail p (add1 len)))
+			(and want-collect?
+			     (let ([i (hash-ref (read-pkg-db/cached) pkg-name #f)])
+			       (and i (sc-pkg-info? i) (sc-pkg-info-collect i))))
+			scope)
+		(values #f #f #f #f))))]
      [else
       ;; Maybe it's a linked package
       (define pkgs-dir (get-pkgs-dir scope))
