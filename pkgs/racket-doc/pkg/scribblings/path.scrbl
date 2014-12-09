@@ -18,6 +18,8 @@ databases.}
 @defstruct*[pkg-info ([orig-pkg (or/c (list/c 'catalog string?)
                                       (list/c 'catalog string? string?)
                                       (list/c 'url string?)
+                                      (list/c 'file string?)
+                                      (list/c 'dir string?)
                                       (list/c 'link string?)
                                       (list/c 'static-link string?)
                                       (list/c 'clone string? string?))]
