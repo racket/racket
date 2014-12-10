@@ -1,0 +1,22 @@
+language: c
+
+env:
+- PATH=~/racket/bin:$PATH
+
+before_install:
+- export PKG=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 2`
+- echo $PKG
+- curl -L -o installer.sh http://www.cs.utah.edu/plt/snapshots/current/installers/min-racket-current-x86_64-linux-precise.sh
+- sh installer.sh --in-place --dest ~/racket/
+
+install:
+- racket -l- pkg/dirs-catalog --link --check-metadata pkgs-catalog .
+- echo file://`pwd`/pkgs-catalog/ > catalog-config.txt
+- raco pkg config catalogs >> catalog-config.txt
+- raco pkg config --set catalogs `cat catalog-config.txt`
+- raco pkg install --deps search-auto $PKG $PKG-test
+
+script:
+- raco test -p $PKG-test
+
+after_script:
