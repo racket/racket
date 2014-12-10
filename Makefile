@@ -57,13 +57,13 @@ plain-in-place:
 	$(MAKE) base
 	$(MAKE) pkgs-catalog
 	$(PLAIN_RACO) pkg install --no-setup $(INSTALL_PKGS_ARGS)
-	$(PLAIN_RACO) setup
+	$(PLAIN_RACO) setup $(JOB_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-pkgs-catalog
 	$(WIN32_PLAIN_RACO) pkg install --no-setup $(INSTALL_PKGS_ARGS)
-	$(WIN32_PLAIN_RACO) setup
+	$(WIN32_PLAIN_RACO) setup $(JOB_OPTIONS)
 
 # ------------------------------------------------------------
 # Unix-style build (Unix and Mac OS X, only)
