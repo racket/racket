@@ -8793,8 +8793,8 @@ static Scheme_Object *syntax_disarm(int argc, Scheme_Object **argv)
     insp = argv[1];
   } else
     insp = scheme_false;
-   
-  return scheme_stx_taint_disarm(argv[0], insp);
+
+  return scheme_syntax_taint_disarm(argv[0], insp);
 }
 
 static Scheme_Object *syntax_rearm(int argc, Scheme_Object **argv)
