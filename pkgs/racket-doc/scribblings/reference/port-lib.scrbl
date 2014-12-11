@@ -478,11 +478,12 @@ the result port does not affect writing directly to @racket[out].}
                               [line (or/c exact-positive-integer? #f)]
                               [column (or/c exact-nonnegative-integer? #f)]
                               [position exact-positive-integer?]
-                              [close? any/c #t])
+                              [close? any/c #t]
+                              [#:name name (object-name out)])
          input-port?]{
 
 Produces an input port that is equivalent to @racket[in] except in how
-it reports location information. The resulting port's content starts
+it reports location information (and possibly its name). The resulting port's content starts
 with the remaining content of @racket[in], and it starts at the given
 line, column, and position. A @racket[#f] for the line or column means
 that the line and column will always be reported as @racket[#f].
@@ -501,14 +502,19 @@ not increment when data is read from @racket[in].
 
 If @racket[close?] is true, then closing the resulting port also
 closes @racket[in]. If @racket[close?] is @racket[#f], then closing
-the resulting port does not close @racket[in].}
+the resulting port does not close @racket[in].
+
+The @racket[name] argument is used as the name for the resulting port;
+the default value keeps the same name as @racket[in].
+}
 
 
 @defproc[(relocate-output-port [out output-port?]
                                [line (or/c exact-positive-integer? #f)]
                                [column (or/c exact-nonnegative-integer? #f)]
                                [position exact-positive-integer?]
-                               [close? any/c #t])
+                               [close? any/c #t]
+                               [#:name name (object-name out)])
          output-port?]{
 
 Like @racket[relocate-input-port], but for output ports.}
@@ -524,7 +530,8 @@ Like @racket[relocate-input-port], but for output ports.}
                                                #f)]
                                 [init-pos exact-positive-integer?]
                                 [close? any/c #t]
-                                [count-lines! (-> any) void])
+                                [count-lines! (-> any) void]
+                                [#:name name (object-name out)])
           input-port?]{
 
 Like @racket[relocate-input-port], except that arbitrary position
@@ -547,7 +554,8 @@ is enabled for the resulting port. The default is @racket[void].}
                                                 #f)]
                                  [init-pos exact-positive-integer?]
                                  [close? any/c #t]
-                                 [count-lines! (-> any) void])
+                                 [count-lines! (-> any) void]
+                                 [#:name name (object-name out)])
           output-port?]{
 
 Like @racket[transplant-input-port], but for output ports.}

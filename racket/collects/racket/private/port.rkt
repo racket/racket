@@ -30,7 +30,7 @@
           (lambda (special) 
             (wrap-evt always-evt (lambda (x) #t)))))))
 
-(define (transplant-to-relocate transplant p line col pos close?)
+(define (transplant-to-relocate transplant p line col pos close? name)
   (let-values ([(init-l init-c init-p) (port-next-location p)])
     (transplant
      p
@@ -42,18 +42,19 @@
                                    c))
                  (and p init-p (+ p (- init-p) pos)))))
      pos
-     close?)))
+     close?
+     #:name name)))
 
 (define relocate-output-port
-  (lambda (p line col pos [close? #t])
+  (lambda (p line col pos [close? #t] #:name [name (object-name p)])
     (transplant-to-relocate
      transplant-output-port
-     p line col pos close?)))
+     p line col pos close? name)))
 
 (define transplant-output-port
-  (lambda (p location-proc pos [close? #t] [count-lines!-proc void])
+  (lambda (p location-proc pos [close? #t] [count-lines!-proc void] #:name [name (object-name p)])
     (make-output-port
-     (object-name p)
+     name
      p
      p ; `write' just redirects to `p'
      ;; Here's the slow way to redirect:
