@@ -127,10 +127,12 @@
                  #:demote? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-show
-   (->* (string?)
+   (->* (string? (or/c #f (listof string?)))
         (#:directory? boolean?
                       #:long? boolean?
-                      #:auto? boolean?)
+                      #:auto? boolean?
+                      #:full-checksum? boolean?
+                      #:rx? boolean?)
         void?)]
   [pkg-install
    (->* ((listof pkg-desc?))

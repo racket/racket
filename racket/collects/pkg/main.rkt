@@ -391,11 +391,13 @@
              #:once-each
              [#:bool all ("-a") "Show auto-installed packages, too"]
              [#:bool long ("-l") "Show full column content"]
+             [#:bool full-checksum () "Show the full checksum"]
+             [#:bool rx () "Treat <pkgs> as regular expressions"]
              [#:bool dir ("-d") "Show the directory where the package is installed"]
              #:once-any
              scope-flags ...
              [(#:str vers #f) version ("-v") "Show user-specific for installation <vers>"]
-             #:args ()
+             #:args pkg
              (define only-mode (case scope
                                  [(installation user) scope]
                                  [else
@@ -404,6 +406,7 @@
                                    [installation 'installation]
                                    [user 'user]
                                    [else (if version 'user #f)])]))
+             (define pkgs* (if (pair? pkg) pkg #f))
              (for ([mode (if only-mode
                              (list only-mode)
                              (append (let ([main (find-pkgs-dir)])
@@ -424,9 +427,11 @@
                                 [current-pkg-error (pkg-error 'show)]
                                 [current-pkg-scope-version (or version (get-installation-name))])
                    (with-pkg-lock/read-only
-                    (pkg-show (if only-mode "" " ")
+                    (pkg-show (if only-mode "" " ") pkgs*
                               #:auto? all
                               #:long? long
+                              #:rx? rx
+                              #:full-checksum? full-checksum
                               #:directory? dir)))))]
             ;; ----------------------------------------
             [migrate

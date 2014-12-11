@@ -10,65 +10,75 @@
 
 (provide pkg-show)
 
-(define (pkg-show indent 
+(define (pkg-show indent only-pkgs
                   #:directory? [dir? #f]
                   #:auto? [show-auto? #f]
-                  #:long? [long? #t])
-  (let ()
-    (define db (read-pkg-db))
-    (define pkgs (sort (hash-keys db) string-ci<=?))
-    (if (null? pkgs)
+                  #:full-checksum? [full-checksum #f]
+                  #:long? [long? #t]
+                  #:rx? [rx #f]
+                  #:name [name 'pkg-show])
+  (when (and rx (not only-pkgs))
+    (raise-user-error name "regular expression flag does not make sense without package names"))
+  (define db (read-pkg-db))
+  (define pkgs (sort (hash-keys db) string-ci<=?))
+  (define (shorten-checksum s full)
+    (if (or full (not (string? s)) (< (string-length s) 11))
+        s
+        (~a (substring s 0 (min 8 (string-length s))) "...")))
+  (define auto-shown? #f)
+  (define to-show
+    (for/list ([pkg (in-list pkgs)]
+               #:unless (and only-pkgs
+                             (not (memf (λ (v) (if rx (regexp-match? v pkg) (equal? v pkg)))
+                                        only-pkgs)))
+               #:when (or show-auto? only-pkgs
+                          (not (pkg-info-auto? (hash-ref db pkg)))))
+      (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
+      (when auto? (set! auto-shown? #t))
+      (append
+       (list (format "~a~a~a"
+                     indent
+                     pkg
+                     (if auto? "*" ""))
+             (if (or checksum long?)
+                 (format "~a" (shorten-checksum checksum full-checksum))
+                 "")
+             (let ([src (case (car orig-pkg)
+                          [(link static-link clone)
+                           (list* (car orig-pkg)
+                                  (path->string
+                                   (simple-form-path
+                                    (path->complete-path (cadr orig-pkg)
+                                                         (pkg-installed-dir))))
+                                  (cddr orig-pkg))]
+                          [else orig-pkg])])
+               (if long?
+                   (~s src)
+                   (apply ~a #:separator " " src))))
+       (if dir?
+           (let ([p (path->string
+                     (simple-form-path
+                      (pkg-directory* pkg #:db db)))])
+             (list (if long?
+                       (~s p)
+                       (~a p))))
+           empty))))
+    (if (null? to-show)
         (printf " [none]\n")
         (begin
           (table-display
            long?
-           (append '(right right middle)
-                   (if dir?
-                       '(left)
-                       '()))
+           (list* 'right 'right 'middle
+                   (if dir? '(left) '()))
            (list*
-            (append
-             (list (format "~aPackage~a"
+            (list* (format "~aPackage~a"
                            indent 
-                           (if show-auto? "[*=auto]" ""))
+                           (if auto-shown? "[*=auto]" ""))
                    "Checksum"
-                   "Source")
-             (if dir?
-                 (list "Directory")
-                 empty))
-            (for/list ([pkg (in-list pkgs)]
-                       #:when (or show-auto?
-                                  (not (pkg-info-auto? (hash-ref db pkg)))))
-              (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
-              (append
-               (list (format "~a~a~a"
-                             indent
-                             pkg
-                             (if auto? "*" ""))
-                     (if (or checksum long?)
-                         (format "~a" checksum)
-                         "")
-                     (let ([src (case (car orig-pkg)
-                                  [(link static-link clone)
-                                   (list* (car orig-pkg)
-                                          (path->string
-                                           (simple-form-path
-                                            (path->complete-path (cadr orig-pkg)
-                                                                 (pkg-installed-dir))))
-                                          (cddr orig-pkg))]
-                                  [else orig-pkg])])
-                       (if long?
-                           (~s src)
-                           (apply ~a #:separator " " src))))
-               (if dir?
-                   (let ([p (path->string
-                             (simple-form-path
-                              (pkg-directory* pkg #:db db)))])
-                     (list (if long?
-                               (~s p)
-                               (~a p))))
-                   empty)))))
-          (unless show-auto?
+                   "Source"
+                   (if dir? '("Directory") '()))
+            to-show))
+          (unless (or only-pkgs show-auto?)
             (define n (for/sum ([pkg (in-list pkgs)] 
                                 #:when (pkg-info-auto? (hash-ref db pkg)))
                                1))
@@ -76,7 +86,7 @@
               (printf "~a[~a auto-installed package~a not shown]\n"
                       indent
                       n
-                      (if (= n 1) "" "s"))))))))
+                      (if (= n 1) "" "s")))))))
 
 (define (table-display long? dots-poses l)
   (define how-many-cols (length (first l)))
@@ -94,23 +104,22 @@
                       80))
   (define max-widths
     (cond
-     [(or long?
-          ((apply + full-max-widths) . < . (- COLUMNS (* sep (sub1 how-many-cols)))))
-      full-max-widths]
-     [else
-      (define avail (- COLUMNS
-                       (car full-max-widths)
-                       (* sep (sub1 how-many-cols))))
-      (cons (car full-max-widths)
-            (for/list ([c (in-list (cdr full-max-widths))]
-                       [i (in-naturals 1)])
-              (define frac
-                ;; Give last column twice the space:
-                (if (= i (sub1 how-many-cols))
-                    (/ 2 how-many-cols)
-                    (/ 1 how-many-cols)))
-              (max 3
-                   (floor (* avail frac)))))]))
+      [(or long?
+           ((apply + full-max-widths) . < . (- COLUMNS (* sep (sub1 how-many-cols)))))
+       full-max-widths]
+      [else
+       (define avail (- COLUMNS
+                        (car full-max-widths)
+                        (* sep (sub1 how-many-cols))))
+       (cons (car full-max-widths)
+             (for/list ([(c i) (in-indexed (in-list (cdr full-max-widths)))])
+               (define frac
+                 ;; Give last column twice the space:
+                 (if (= i (sub1 how-many-cols))
+                     (/ 2 how-many-cols)
+                     (/ 1 how-many-cols)))
+               (max 3
+                    (floor (* avail frac)))))]))
   (for ([row (in-list l)])
     (for ([col (in-list row)]
           [i (in-naturals 1)]

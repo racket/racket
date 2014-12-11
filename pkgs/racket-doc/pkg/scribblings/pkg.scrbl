@@ -726,11 +726,14 @@ package is created.
 @history[#:added "6.1.1.5"]}
 
 
-@subcommand{@command/toc{show} @nonterm{option} ... --- Print information about currently installed packages. 
+@subcommand{@command/toc{show} @nonterm{option} ... @nonterm{pkg} ... --- Print information about currently installed packages. If @nonterm{pkg}s are specified, then only those packages are shown.
  By default, packages are shown for all @tech{package scopes}, but only for packages
- not marked as auto-installed to fulfill dependencies. Unless @Flag{l} or @DFlag{long} is specified,
+ not marked as auto-installed to fulfill dependencies. If a package is
+ explicitly specified, it is shown even if it is marked as
+ auto-installed. Unless @Flag{l} or @DFlag{long} is specified,
  the output is roughly constrained to 80 columns or the number of columns specified by the @envvar{COLUMNS}
- environment variable.
+ environment variable. Unless @DFlag{full-checksum} is specified,
+ checksums are abbreviated to 8 characters.
 
  The @exec{show} sub-command accepts 
  the following @nonterm{option}s:
@@ -739,7 +742,12 @@ package is created.
 
  @item{@Flag{a} or @DFlag{all} --- Includes auto-installed packages in the listing.} 
  @item{@Flag{l} or @DFlag{long} --- Show complete columns, instead of abbreviating to a width,
-                                    and use a more regular (but less human-readable) format for some columns.}
+                                    and use a more regular (but less
+ human-readable) format for some columns.}
+ @item{@DFlag{rx} --- Treat the @nonterm{pkg}s as regular expressions
+ for displaying specific packages.}
+ @item{@DFlag{full-checksum} --- Print the full instead of the
+ abbreviated checksum.}
  @item{@Flag{d} or @DFlag{dir} --- Adds a column in the output for the directory where the package is installed.} 
 
  @item{@DFlag{scope} @nonterm{scope} --- Shows only packages in @nonterm{scope}, which is one of
@@ -756,7 +764,10 @@ package is created.
        the installation name/version @nonterm{vers}.}
  ]
 
-@history[#:changed "6.1.1.5" @elem{Added @Flag{l}/@DFlag{--long} and @envvar{COLUMNS} support.}]}
+@history[#:changed "6.1.1.5" @elem{Added @Flag{l}/@DFlag{long} and
+@envvar{COLUMNS} support.}
+         #:changed "6.1.1.6" @elem{Added explicit @nonterm{pkg}s and
+         @DFlag{rx} and @DFlag{full-sha}.}]} 
 
 @subcommand{@command/toc{migrate} @nonterm{option} ... @nonterm{from-version}
  --- Installs packages that were previously installed in @exec{user}
