@@ -10,6 +10,26 @@ env:
 compiler:
   - gcc
   - clang
+matrix:
+  exclude:
+    - os: osx
+      compiler: gcc
+      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-places --disable-futures --disable-extflonum"
+    - os: osx
+      compiler: clang
+      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-places --disable-futures --disable-extflonum"
+    - os: osx
+      compiler: gcc
+      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit"
+    - os: osx
+      compiler: clang
+      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit"
+    - os: osx
+      compiler: gcc
+      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places --disable-futures --disable-extflonum"
+    - os: osx
+      compiler: clang
+      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places --disable-futures --disable-extflonum"
 # Just run tests for the core
 script:
   - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
