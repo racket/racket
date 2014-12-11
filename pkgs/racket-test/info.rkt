@@ -21,10 +21,7 @@
                "at-exp-lib"
 
                ;; used to test setup, module readers, pkg system
-               "scribble-lib"
-
-               ;; for random testing:
-               "redex-lib"))
+               "scribble-lib"))
 
 (define build-deps '("racket-index"
                      "scheme-lib"
