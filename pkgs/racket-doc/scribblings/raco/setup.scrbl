@@ -153,6 +153,11 @@ flags:
    libraries (as specified in @filepath{info.rkt}; see
    @secref["setup-info"]).}
 
+ @item{@DFlag{only-foreign-libs} --- disable actions other than
+   installing foreign libraries; equivalent to @Flag{nxiIdD}, except
+   that @DFlag{only-foreign-libs} doesn't reject (redundant)
+   specification of those individual flags.}
+
  @item{@DFlag{no-install} or @Flag{i} --- refrain from running
    pre-install actions (as specified in @filepath{info.rkt} files; see
    @secref["setup-info"]).}
@@ -282,7 +287,8 @@ collections during an install:
 @history[#:changed "6.1" @elem{Added the @DFlag{pkgs},
                                @DFlag{check-pkg-deps}, and
                                @DFlag{fail-fast} flags.}
-         #:changed "6.1.1" @elem{Added the @DFlag{force-user-docs} flag.}]
+         #:changed "6.1.1" @elem{Added the @DFlag{force-user-docs} flag.}
+         #:changed "6.1.1.6" @elem{Added the @DFlag{only-foreign-libs} flag.}]
 
 @; ------------------------------------------------------------------------
 

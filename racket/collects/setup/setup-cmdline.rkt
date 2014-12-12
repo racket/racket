@@ -26,6 +26,16 @@
     (set! x-flags (append (reverse l) x-flags)))
 
   (define-values (short-name long-name raco?) (get-names))
+  
+  (define disable-action-flags
+    '((make-zo #f)
+      (call-install #f)
+      (call-post-install #f)
+      (make-launchers #f)
+      (make-info-domain #f)
+      (make-docs #f)
+      (check-dependencies #f)
+      (make-foreign-libs #f)))
 
   ;; Beware of the poor-man's duplicate of this command-line specification
   ;; in "main.rkt"!
@@ -61,15 +71,8 @@
      " ------------------------------ tasks ------------------------------ "
      #:once-each
      [("-c" "--clean") "Delete existing compiled files; implies -nxiIFDK"
-      (add-flags '((clean #t)
-                   (make-zo #f)
-                   (call-install #f)
-                   (call-post-install #f)
-                   (make-launchers #f)
-                   (make-info-domain #f)
-                   (make-docs #f)
-                   (check-dependencies #f)
-                   (make-foreign-libs #f)))]
+      (add-flags (append '((clean #t))
+                         disable-action-flags))]
      [("-n" "--no-zo") "Do not create \".zo\" files"
       (add-flags '((make-zo #f)))]
      [("--trust-zos") "Trust existing \".zo\"s (use only with prepackaged \".zo\"s)"
@@ -78,6 +81,10 @@
       (add-flags '((make-launchers #f)))]
      [("-F" "--no-foreign-libs") "Do not install foreign libraries"
       (add-flags '((make-foreign-libs #f)))]
+     [("--only-foreign-libs") "Disable actions except installing foreign libraries"
+      (add-flags (for/list ([fl (in-list disable-action-flags)]
+                            #:unless (eq? (car fl) 'make-foreign-libs))
+                   fl))]
      [("-i" "--no-install") "Do not call collection-specific pre-installers"
       (add-flags '((call-install #f)))]
      [("-I" "--no-post-install") "Do not call collection-specific post-installers"

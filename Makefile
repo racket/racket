@@ -52,18 +52,21 @@ LIBSETUP = -N raco -l- raco setup
 INSTALL_PKGS_ARGS = $(JOB_OPTIONS) \
                     --skip-installed --scope installation --deps search-auto \
                     $(REQUIRED_PKGS) $(PKGS)
+ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 plain-in-place:
 	$(MAKE) base
 	$(MAKE) pkgs-catalog
 	$(PLAIN_RACO) pkg install --no-setup $(INSTALL_PKGS_ARGS)
-	$(PLAIN_RACO) setup $(JOB_OPTIONS)
+	$(PLAIN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
+	$(PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-pkgs-catalog
 	$(WIN32_PLAIN_RACO) pkg install --no-setup $(INSTALL_PKGS_ARGS)
-	$(WIN32_PLAIN_RACO) setup $(JOB_OPTIONS)
+	$(WIN32_PLAIN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
+	$(WIN32_PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 # ------------------------------------------------------------
 # Unix-style build (Unix and Mac OS X, only)
