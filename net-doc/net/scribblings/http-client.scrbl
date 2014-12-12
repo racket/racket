@@ -78,9 +78,11 @@ Closes the output side of @racket[hc], if it is live.
          void?]{
 
 Sends an HTTP request to @racket[hc] to the URI @racket[uri] using
-HTTP version @racket[version] the method @racket[method] and the
+HTTP version @racket[version], the method @racket[method], and the
 additional headers given in @racket[headers] and the additional data
-@racket[data].
+@racket[data]. If @racket[method] is @racket[#"HEAD"] (or
+@racket["HEAD"] or @racket['HEAD]), provide the same @racket[method]
+when calling @racket[http-conn-recv!] to avoid attempting to receive content.
 
 If @racket[data] is a procedure, it will be called once with a
 procedure of one argument, which is a string or
@@ -102,11 +104,13 @@ This function does not support requests that expect
 
 @defproc[(http-conn-recv! [hc http-conn-live?]
                           [#:content-decode decodes (listof symbol?) '(gzip)]
+                          [#:method method (or/c bytes? string? symbol?) #"GET"]
                           [#:close? close? boolean? #f])
          (values bytes? (listof bytes?) input-port?)]{
 
-Parses an HTTP response from @racket[hc], while decoding the encodings
-listed in @racket[decodes].
+Parses an HTTP response from @racket[hc] for the method
+@racket[method] while decoding the encodings listed in
+@racket[decodes].
 
 Returns the status line, a list of headers, and an port which contains
 the contents of the response.
@@ -116,7 +120,8 @@ following the response parsing. If @racket[close?] is @racket[#f],
 then the connection is only closed if the server instructs the client
 to do so.
 
-}
+@history[#:changed "6.1.1.6" @elem{Added the @racket[#:method] argument.}]}
+
 
 @defproc[(http-conn-sendrecv! [hc http-conn-live?] [uri (or/c bytes? string?)]
                               [#:version version (or/c bytes? string?) #"1.1"]

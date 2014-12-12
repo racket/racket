@@ -102,6 +102,7 @@
                                              #:data body)
                          (begin0
                           (hc:http-conn-recv! c
+                                              #:method method
                                               #:close? #t)
                           (check-equal? #f (hc:http-conn-live? c))))
                        raw ereq estatus eheaders econtent))
@@ -254,6 +255,12 @@
     (λ (w) (void))
     "HTTP/1.1 200 OK\r\n\r\n"
     #"PUT / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n0\r\n\r\n"
+    #"HTTP/1.1 200 OK"
+    '()
+    #""]
+
+   ["HEAD" #f "HTTP/1.1 200 OK\r\n\r\n"
+    #"HEAD / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '()
     #""]))
