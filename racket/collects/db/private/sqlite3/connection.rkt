@@ -2,6 +2,7 @@
 (require racket/class
          ffi/unsafe
          ffi/unsafe/atomic
+         ffi/unsafe/custodian
          unstable/error
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
@@ -375,7 +376,7 @@
     ;; ----
 
     (super-new)
-    (register-finalizer this
+    (register-finalizer-and-custodian-shutdown this
                         (lambda (obj)
                           ;; Keep a reference to the class to keep all FFI callout objects
                           ;; (eg, sqlite3_close) used by its methods from being finalized.
