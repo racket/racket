@@ -1,7 +1,9 @@
 #lang racket/base
-(require ffi/unsafe)
+(require ffi/unsafe
+         ffi/unsafe/atomic)
 
 (provide (protect-out register-custodian-shutdown
+                      register-finalizer-and-custodian-shutdown
                       unregister-custodian-shutdown))
 
 (define _Scheme_Custodian_Reference-pointer
@@ -41,3 +43,20 @@
 
 (define (unregister-custodian-shutdown obj mref)
   (scheme_remove_managed mref obj))
+
+(define (register-finalizer-and-custodian-shutdown value callback
+                                                   [custodian (current-custodian)]
+                                                   #:at-exit? [at-exit? #f])
+  (define done? #f)
+  (define (do-callback obj) ; called in atomic mode
+    (unless done?
+      (set! done? #t)
+      (callback obj)))
+  (define registration
+    (register-custodian-shutdown value do-callback custodian #:at-exit? at-exit?))
+  (register-finalizer value
+    (lambda (obj)
+      (call-as-atomic
+       (lambda ()
+         (unregister-custodian-shutdown obj registration)
+         (do-callback obj))))))

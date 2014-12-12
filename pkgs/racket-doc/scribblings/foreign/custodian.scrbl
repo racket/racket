@@ -38,7 +38,8 @@ if the finalizer is not run in atomic mode, then there's no guarantee
 that either of the custodian or finalizer callbacks has completed by
 the time that the custodian shutdown has completed; @racket[v] might
 be no longer registered to the custodian, while the finalizer for
-@racket[v] might be still running or merely queued to run.}
+@racket[v] might be still running or merely queued to run. See also
+@racket[register-finalizer-and-custodian-shutdown].}
 
 
 @defproc[(unregister-custodian-shutdown [v any/c]
@@ -48,3 +49,18 @@ be no longer registered to the custodian, while the finalizer for
 Cancels a custodian-shutdown registration, where @racket[registration]
 is a previous result from @racket[register-custodian-shutdown] applied
 to @racket[v].}
+
+@defproc[(register-finalizer-and-custodian-shutdown
+                 [v any/c]
+                 [callback (any/c . -> . any)]
+                 [custodian custodian? (current-custodian)]
+                 [#:at-exit? at-exit? any/c #f]
+                 [#:weak? weak? any/c #f])
+         void?]{
+
+Registers @racket[callback] to be applied (in atomic mode) to
+@racket[v] when @racket[custodian] is shutdown or when @racket[v] is
+about to be collected by the garbage collector, whichever happens
+first. The @racket[callback] is only applied to @racket[v] once.
+
+@history[#:added "6.1.1.6"]}
