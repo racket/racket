@@ -1030,9 +1030,11 @@ The following @filepath{info.rkt} fields are used by the package manager:
   in @secref["setup-info" #:doc '(lib "scribblings/raco/raco.scrbl")].
 }
 
+@(define (definfofield s) @as-index{@racketidfont{@s}})
+
 @itemlist[
 
- @item{@racketidfont{collection} --- either @racket['multi] to
+ @item{@definfofield{collection} --- either @racket['multi] to
        implement a @tech{multi-collection package} or a string or
        @racket['use-pkg-name] to implement a @tech{single-collection
        package}. If @racketidfont{collection} is defined as a string,
@@ -1048,10 +1050,10 @@ The following @filepath{info.rkt} fields are used by the package manager:
        and so defining @racketidfont{collection} to a string is
        preferable for a @tech{single-collection package}.}
 
- @item{@racketidfont{version} --- a @tech{version} string. The default
+ @item{@definfofield{version} --- a @tech{version} string. The default
        @tech{version} of a package is @racket["0.0"].}
 
- @item{@racketidfont{deps} --- a list of dependencies, where each
+ @item{@definfofield{deps} --- a list of dependencies, where each
        dependency has one of the following forms:
 
        @itemlist[
@@ -1103,7 +1105,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
        it's better to specify a versioned dependency on
        @racket["base"], instead.}
 
- @item{@racketidfont{build-deps} --- like @racketidfont{deps}, but for
+ @item{@definfofield{build-deps} --- like @racketidfont{deps}, but for
        dependencies that can be dropped in a @tech{binary package},
        which does not include sources; see @secref["strip"]. The
        @racketidfont{build-deps} and @racketidfont{deps} lists are
@@ -1111,7 +1113,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
        @racketidfont{build-deps} when converting a package for
        @DFlag{binary} mode.}
 
- @item{@racketidfont{implies} --- a list of strings and
+ @item{@definfofield{implies} --- a list of strings and
        @racket['core]. Each string refers to a package listed in
        @racketidfont{deps} and indicates that a dependency on the
        current package counts as a dependency on the named package;
@@ -1126,13 +1128,13 @@ The following @filepath{info.rkt} fields are used by the package manager:
        @pkgname{base} package to declare it as the representative of
        core Racket libraries.}
 
- @item{@racketidfont{update-implies} --- a list of strings. Each
+ @item{@definfofield{update-implies} --- a list of strings. Each
        string refers to a package listed in @racketidfont{deps}
        or @racketidfont{build-deps}
        and indicates that the implied packages are automatically updated
        whenever the implying package is updated.}
 
- @item{@racketidfont{setup-collects} --- a list of path strings and/or
+ @item{@definfofield{setup-collects} --- a list of path strings and/or
        lists of path strings, which are used as collection names to
        set up via @exec{raco setup} after the package is installed, or
        @racket['all] to indicate that all collections need to be
@@ -1140,7 +1142,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
        set up (plus collections for global documentation indexes and
        links).}
 
- @item{@racketidfont{distribution-preference} --- either
+ @item{@definfofield{distribution-preference} --- either
        @racket['source], @racket['built], or @racket['binary],
        indicating the most suitable distribution mode for the package
        (but not a guarantee that it will be distributed as
@@ -1151,7 +1153,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
        @filepath{.framework} files; otherwise, absence implies
        @racket['built].}
 
- @item{@racketidfont{package-content-state} --- a list of two items;
+ @item{@definfofield{package-content-state} --- a list of two items;
        the first item is @racket['binary], @racket['binary-lib], or
        @racket['built], and the second item is either @racket[#f] or a
        string to represent a Racket version for compiled content. This
