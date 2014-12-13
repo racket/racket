@@ -2722,6 +2722,7 @@
 ;; operations on mutable values:
 (let ()
   (define (check-omit-ok expr [yes? #t])
+    (displayln (list expr 1 '!))
     ;; can omit:
     (test-comp `(module m racket/base
                   (require racket/unsafe/ops)
@@ -2733,6 +2734,7 @@
                     ,expr
                     (f x)))
                yes?)
+    (displayln (list expr 2 '!))
     ;; cannot reorder:
     (test-comp `(module m racket/base
                   (require racket/unsafe/ops)
@@ -2745,7 +2747,9 @@
                   (define (f x)
                     (vector-ref x x)
                     (f x ,expr)))
-               #f))
+               #f)
+     (displayln (list expr 3 '!))
+  )
   (map check-omit-ok
        '((unsafe-vector-ref x x)
          (unsafe-vector*-ref x x)
@@ -3017,7 +3021,137 @@
                 #t
                 (letrec ([z (lambda () z)]) (f z) #f)
                 (letrec ([z (lambda () z)]) (f z) #t))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check remotion of dead code after error
+(test-comp '(lambda () (random) (error 'error))
+           '(lambda () (random) (error 'error) 5))
+(test-comp '(lambda () (random) (error 'error))
+           '(lambda () (random) (error 'error) (random) 5))
+(test-comp '(lambda () (error 'error))
+           '(lambda () 5 (error 'error) 5))
+(test-comp '(lambda (f) (f) (f) (error 'error))
+           '(lambda (f) (f) (f) (error 'error) (f)))
+
+(test-comp '(lambda (f) (begin0 (f) (random) (error 'error)))
+           '(lambda (f) (begin0 (f) (random) (error 'error) (random) (f))))
+(test-comp '(lambda (f) (error 'error))
+           '(lambda (f) (begin0 (error 'error) (random) (f))))
+(test-comp '(lambda (f) (error 'error))
+           '(lambda (f) (begin0 7 (error 'error) (random) (f))))
+
+(test-comp '(lambda (n)
+              (let ([p (begin (error 'error) (fl+ n n))])
+                (if (flonum? p)
+                    (fl+ p p)
+                    'bad)))
+           '(lambda (n)
+              (let ([p (begin (error 'error) (fl- n n))])
+                (if (flonum? p)
+                    (fl+ p p)
+                    'bad))))
+
+(test-comp '(lambda () (if (error 'error) 1 2))
+           '(lambda () (if (error 'error) 1 2) 5))
+(test-comp '(lambda () (error 'error))
+           '(lambda () (if (error 'error) 1 2) 5))
+(test-comp '(lambda (x) (if x (error 'error) 0) 3)
+           '(lambda (x) (if x (error 'error) 0) 4)
+           #f)
+(test-comp '(lambda (x) (if x 0 (error 'error)) 3)
+           '(lambda (x) (if x 0 (error 'error)) 4)
+           #f)
+(test-comp '(lambda (x) (if x (error 'error 1) (error 'error 2)))
+           '(lambda (x) (if x (error 'error 1) (error 'error 2)) 5))
+
+(test-comp '(lambda (x) (if x (error 'error) (car x)) (unsafe-car x))
+           '(lambda (x) (if x (error 'error) (car x)) (car x)))
+(test-comp '(lambda (x) (if x (car x) (error 'error)) (unsafe-car x))
+           '(lambda (x) (if x (car x) (error 'error)) (car x)))
+(test-comp '(lambda (x) (if x (begin (car x) (error 'error)) 0) (unsafe-car x))
+           '(lambda (x) (if x (begin (car x) (error 'error)) 0) (car x))
+           #f)
+(test-comp '(lambda (x) (if x 0 (begin (car x) (error 'error))) (unsafe-car x))
+           '(lambda (x) (if x 0 (begin (car x) (error 'error))) (car x))
+           #f)
+
+(test-comp '(lambda (x) (if (car x) (error 'error) 0) (unsafe-car x))
+           '(lambda (x) (if (car x) (error 'error) 0) (car x)))
+(test-comp '(lambda (x) (if (car x) 0 (error 'error)) (unsafe-car x))
+           '(lambda (x) (if (car x) 0 (error 'error)) (car x)))
+
+(test-comp '(lambda (f) (error 'error))
+           '(lambda (f) (with-continuation-mark (error 'error) 'v (f))))
+(test-comp '(lambda (f) (values (f)) (error 'error))
+           '(lambda (f) (with-continuation-mark (f) (error 'error) (f))))
+
+(test-comp '(lambda (f x) (f x x) (set! x 3) (error 'error))
+           '(lambda (f x) (f x x) (set! x 3) (set! x (error 'error)) 5))
+(test-comp '(lambda (f x) (error 'error))
+           '(lambda (f x) (set! x (error 'error)) 5))
+(test-comp '(lambda (f) (let ([x (random)]) (f x x) (set! x 3) (error 'error)))
+           '(lambda (f) (let ([x (random)]) (f x x) (set! x 3) (set! x (error 'error)) 5)))
+(test-comp '(lambda (f) (let ([x (random)]) (error 'error)))
+           '(lambda (f) (let ([x (random)]) (set! x (error 'error)) 5)))
+
+#;(test-comp '(lambda (f) (error 'error))
+           '(lambda (f) (call-with-values (error 'error) (f))))
+#;(test-comp '(lambda (g) (g) (error 'error))
+           '(lambda (g) (call-with-values (g) (error 'error))))
+
+(test-comp '(lambda () (error 'error))
+           '(lambda () ((error 'error) 0) 5))
+(test-comp '(lambda () (error 'error))
+           '(lambda () (car (error 'error)) 5))
+(test-comp '(lambda () (error 'error))
+           '(lambda () (not (error 'error)) 5))
+(test-comp '(lambda (f) (values (f)) (error 'error))
+           '(lambda (f) ((f) (error 'error)) 5))
            
+(test-comp '(lambda () (error 'error))
+           '(lambda () ((error 'error) 0 1) 5))
+(test-comp '(lambda () (error 'error))
+           '(lambda () (cons (error 'error) 1) 5))
+(test-comp '(lambda () (error 'error))
+           '(lambda () (cons 0 (error 'error)) 5))
+(test-comp '(lambda (f) (f) (error 'error))
+           '(lambda (f) (f) (cons (error 'error) (f)) 5))
+(test-comp '(lambda (f) (values (f)) (error 'error))
+           '(lambda (f) (cons (f) (error 'error)) 5))
+(test-comp '(lambda (f) (values (f)) (error 'error))
+           '(lambda (f) ((f) (error 'error) (f)) 5))
+(test-comp '(lambda (f g) (values (f)) (values (g)) (error 'error))
+           '(lambda (f g) ((f) (g) (error 'error)) 5))
+
+(test-comp '(lambda (f) (error 'error))
+           '(lambda (f) ((error 'error) (f) (f) (f)) 5))
+(test-comp '(lambda (f) (values (f)) (error 'error))
+           '(lambda (f) ((f) (error 'error) (f) (f)) 5))
+(test-comp '(lambda (f) (values (f)) (values (f)) (error 'error))
+           '(lambda (f) ((f) (f) (error 'error) (f)) 5))
+(test-comp '(lambda (f) (values (f)) (values (f)) (values (f)) (error 'error))
+           '(lambda (f) ((f) (f) (f) (error 'error)) 5))
+
+(test-comp `(module m racket/base
+              (define x 5)
+              (set! x 3)
+              (error 'error))
+           `(module m racket/base
+              (define x 5)
+              (set! x 3)
+              (set! x (error 'error))))
+
+(test-comp `(module m racket/base
+              (module bad racket/base
+                (error 'error))
+              (random)
+              5)
+           `(module m racket/base
+              (module bad racket/base
+                (error 'error))
+              (random))
+           #f)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check splitting of definitions
 (test-comp `(module m racket/base
