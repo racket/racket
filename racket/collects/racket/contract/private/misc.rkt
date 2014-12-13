@@ -1135,8 +1135,11 @@
      (higher-order-list/c ctc-args)]))
 
 (define (list/c-name-proc c) 
-  (apply build-compound-type-name
-         'list/c (generic-list/c-args c)))
+  (define args (generic-list/c-args c))
+  (cond
+    [(null? args) ''()]
+    [else (apply build-compound-type-name 'list/c args)]))
+
 (define ((list/c-first-order c) x)
   (and (list? x)
        (= (length x) (length (generic-list/c-args c)))
@@ -2108,5 +2111,8 @@
      [else "th"])))
 
 ;; this is a hack to work around cyclic linking issues;
-;; see definition of set-listof-any-and-cons/c-anyany!
-(set-listof-any-and-cons/c-anyany! (listof any/c) (cons/c any/c any/c))
+;; see definition of set-some-basic-contracts!
+(set-some-basic-contracts!
+ (listof any/c)
+ (cons/c any/c any/c)
+ (list/c))

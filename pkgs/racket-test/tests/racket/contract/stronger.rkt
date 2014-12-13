@@ -150,6 +150,8 @@
         (or/c (-> string?) (-> integer? integer?) integer?)
         (or/c (-> integer? integer?) integer?))
   
+  (ctest #t contract-stronger? (list/c) '())
+  (ctest #t contract-stronger? (list/c) '())
   (ctest #t contract-stronger? (cons/c boolean? integer?) (cons/c boolean? integer?))
   (ctest #f contract-stronger? (cons/c boolean? integer?) (cons/c integer? boolean?))
   (ctest #t contract-stronger? (cons/c number? (listof number?)) (non-empty-listof number?))

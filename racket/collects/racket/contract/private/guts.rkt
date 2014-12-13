@@ -52,7 +52,7 @@
          contract-custom-write-property-proc
          (rename-out [contract-custom-write-property-proc custom-write-property-proc])
          
-         set-listof-any-and-cons/c-anyany!)
+         set-some-basic-contracts!)
 
 (define (contract-custom-write-property-proc stct port display?)
   (write-string "#<" port)
@@ -220,9 +220,11 @@
 ;; bang it in here and use it only after it's been banged in.
 (define listof-any #f)
 (define consc-anyany #f)
-(define (set-listof-any-and-cons/c-anyany! l p)
+(define list/c-empty #f)
+(define (set-some-basic-contracts! l p mt)
   (set! listof-any l)
-  (set! consc-anyany p))
+  (set! consc-anyany p)
+  (set! list/c-empty mt))
 
 (define (coerce-contract/f x [name name-default])
   (define (coerce-simple-value x)
@@ -239,7 +241,8 @@
                                    x
                                    #f
                                    (memq x the-known-good-contracts))])]
-      [(or (symbol? x) (boolean? x) (char? x) (null? x) (keyword? x))
+      [(null? x) list/c-empty]
+      [(or (symbol? x) (boolean? x) (char? x) (keyword? x))
        (make-eq-contract x
                          (if (name-default? name)
                              (if (or (null? x)
