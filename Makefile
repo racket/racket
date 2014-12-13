@@ -49,7 +49,7 @@ cpus-in-place:
 # Explicitly propagate variables for non-GNU `make's:
 LIBSETUP = -N raco -l- raco setup
 
-INSTALL_PKGS_ARGS = $(JOB_OPTIONS) \
+INSTALL_PKGS_ARGS = $(JOB_OPTIONS) --no-setup --pkgs \
                     --skip-installed --scope installation --deps search-auto \
                     $(REQUIRED_PKGS) $(PKGS)
 ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
@@ -57,14 +57,14 @@ ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 plain-in-place:
 	$(MAKE) base
 	$(MAKE) pkgs-catalog
-	$(PLAIN_RACO) pkg install --no-setup $(INSTALL_PKGS_ARGS)
+	$(PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 	$(PLAIN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
 	$(PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-pkgs-catalog
-	$(WIN32_PLAIN_RACO) pkg install --no-setup $(INSTALL_PKGS_ARGS)
+	$(WIN32_PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 	$(WIN32_PLAIN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
 	$(WIN32_PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
