@@ -1,7 +1,9 @@
 #lang racket/base
 
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     "arr-util.rkt")
          racket/promise
+         syntax/location
          (only-in "../../private/promise.rkt" prop:force promise-forcer)
          "prop.rkt"
          "blame.rkt"
@@ -20,7 +22,7 @@
          string-len/c
          false/c
          printable/c
-         listof list*of non-empty-listof cons/c list/c
+         listof list*of non-empty-listof cons/c list/c cons/dc
          promise/c
          syntax/c
          
@@ -858,7 +860,7 @@
       (λ (neg-party)
         (unless (pair? v)
           (raise-not-cons-blame-error blame #:missing-party neg-party v))
-        (combine v 
+        (combine v
                  ((car-p (car v)) neg-party)
                  ((cdr-p (cdr v)) neg-party))))))
 
@@ -892,7 +894,7 @@
     [else
      (build-compound-type-name 'cons/c ctc-car ctc-cdr)]))
 
-(define (cons/c-stronger? this that) 
+(define (cons/c-stronger? this that)
   (define this-hd (the-cons/c-hd-ctc this))
   (define this-tl (the-cons/c-tl-ctc this))
   (cond
@@ -971,6 +973,149 @@
      (chaperone-cons/c ctc-car ctc-cdr)]
     [else
      (impersonator-cons/c ctc-car ctc-cdr)]))
+
+(define (cons/dc-val-first-projection ctc)
+  (define undep-proj (get/build-val-first-projection (the-cons/dc-undep ctc)))
+  (define dep-proc (the-cons/dc-dep ctc))
+  (define forwards? (the-cons/dc-forwards? ctc))
+  (λ (blame)
+    (define car-blame (blame-add-car-context blame))
+    (define cdr-blame (blame-add-cdr-context blame))
+    (define undep-proj+blame (undep-proj (if forwards? car-blame cdr-blame)))
+    (define undep-proj+indy-blame
+      (undep-proj (blame-replace-negative
+                   (if forwards? cdr-blame car-blame)
+                   (the-cons/dc-here ctc))))
+    (λ (val)
+      (cond
+        [(pair? val)
+         (λ (neg-party)
+           (define-values (orig-undep orig-dep)
+             (if forwards?
+                 (values (car val) (cdr val))
+                 (values (cdr val) (car val))))
+           (define new-undep ((undep-proj+blame orig-undep) neg-party))
+           (define new-dep-ctc (coerce-contract
+                                'cons/dc
+                                (dep-proc ((undep-proj+indy-blame orig-undep) neg-party))))
+           (define new-dep ((((get/build-val-first-projection new-dep-ctc)
+                              (if forwards? cdr-blame car-blame))
+                             orig-dep)
+                            neg-party))
+           (if forwards?
+               (cons new-undep new-dep)
+               (cons new-dep new-undep)))]
+        [else
+         (λ (neg-party)
+           (raise-not-cons-blame-error blame val #:missing-party neg-party))]))))
+
+(define (cons/dc-name ctc)
+  (define info (the-cons/dc-name-info ctc))
+  (if (the-cons/dc-forwards? ctc)
+      `(cons/dc [,(vector-ref info 0) ,(contract-name (the-cons/dc-undep ctc))]
+                [,(vector-ref info 1) (,(vector-ref info 0))
+                                      ,(vector-ref info 2)])
+      `(cons/dc [,(vector-ref info 0) (,(vector-ref info 1))
+                                      ,(vector-ref info 2)]
+                [,(vector-ref info 1) ,(contract-name (the-cons/dc-undep ctc))])))
+(define (cons/dc-first-order ctc)
+  (λ (val)
+    (and (pair? val)
+         (contract-first-order-passes?
+          (the-cons/dc-undep ctc)
+          (if (the-cons/dc-forwards? ctc) (car val) (cdr val))))))
+
+(define (cons/dc-stronger? this that) #f)
+
+(struct the-cons/dc (forwards? undep dep here name-info))
+
+(struct flat-cons/dc the-cons/dc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:val-first-projection cons/dc-val-first-projection
+   #:name cons/dc-name
+   #:first-order cons/dc-first-order
+   #:stronger cons/dc-stronger?))
+
+(struct chaperone-cons/dc the-cons/dc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:val-first-projection cons/dc-val-first-projection
+   #:name cons/dc-name
+   #:first-order cons/dc-first-order
+   #:stronger cons/dc-stronger?))
+
+(struct impersonator-cons/dc the-cons/dc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:contract
+  (build-contract-property
+   #:val-first-projection cons/dc-val-first-projection
+   #:name cons/dc-name
+   #:first-order cons/dc-first-order
+   #:stronger cons/dc-stronger?))
+
+(define-syntax (cons/dc stx)
+  (define (kwds->constructor stx)
+    (syntax-case stx ()
+      [() #'chaperone-cons/dc]
+      [(#:chaperone) #'chaperone-cons/dc]
+      [(#:flat) #'flat-cons/dc]
+      [(#:impersonator) #'impersonator-cons/dc]
+      [(x . y) (raise-syntax-error
+                'cons/dc
+                "expected a keyword, either #:chaperone, #:flat, or #:impersonator"
+                stx
+                #'x)]))
+  (define this-one (gensym 'ctc))
+  (syntax-property
+   (syntax-case stx ()
+     [(_ [hd e1] [tl (hd2) e2] . kwds)
+      (begin
+        (unless (free-identifier=? #'hd2 #'hd)
+          (raise-syntax-error 'cons/dc
+                              "expected matching identifiers"
+                              stx
+                              #'hd
+                              (list #'hd2)))
+        #`(#,(kwds->constructor #'kwds)
+           #t
+           (coerce-contract 'cons/dc #,(syntax-property
+                                        #'e1
+                                        'racket/contract:positive-position
+                                        this-one))
+           (λ (hd2) #,(syntax-property
+                       #'e2
+                       'racket/contract:positive-position
+                       this-one))
+           (quote-module-name)
+           '#(hd tl #,(compute-quoted-src-expression #'e2))))]
+     [(_ [hd (tl2) e1] [tl e2] . kwds)
+      (begin
+        (unless (free-identifier=? #'tl2 #'tl)
+          (raise-syntax-error 'cons/dc
+                              "expected matching identifiers"
+                              stx
+                              #'tl
+                              (list #'tl2)))
+        #`(#,(kwds->constructor #'kwds)
+           #f
+           (coerce-contract 'cons/dc #,(syntax-property
+                                        #'e2
+                                        'racket/contract:positive-position
+                                        this-one))
+           (λ (tl2) #,(syntax-property
+                       #'e1
+                       'racket/contract:positive-position
+                       this-one))
+           (quote-module-name)
+           '#(hd tl #,(compute-quoted-src-expression #'e1))))])
+   'racket/contract:contract
+   (vector this-one
+           (list (car (syntax-e stx)))
+           '())))
+
 
 (define (raise-not-cons-blame-error blame val #:missing-party [missing-party #f])
   (raise-blame-error

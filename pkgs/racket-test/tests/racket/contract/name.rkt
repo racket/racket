@@ -378,6 +378,9 @@
                       (augride [q (->m (<=/c 4) integer?)])))
   (test-name '(class/c (field n)) (class/c (field n)))
 
+  (test-name '(cons/dc [hd integer?] [tl (hd) (if (positive? hd) integer? boolean?)])
+             (cons/dc [hd integer?] [tl (hd) (if (positive? hd) integer? boolean?)]))
+  
   (test-name '(struct/dc s
                          [a integer?]
                          [b symbol?]

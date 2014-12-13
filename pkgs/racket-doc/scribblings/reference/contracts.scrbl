@@ -436,12 +436,46 @@ match @racket[car-c] and @racket[cdr-c], respectively. Beware that
 when this contract is applied to a value, the result is not
 necessarily @racket[eq?] to the input.
 
-If the @racket[cdr-c] contract is a @racket[list-contract?], then 
+If the @racket[cdr-c] contract is a @racket[list-contract?], then
 @racket[cons/c] returns a @racket[list-contract?].
+
+@examples[#:eval (contract-eval)
+                 (define/contract a-pair-of-numbers
+                   (cons/c number? number?)
+                   (cons 1 2))
+                                
+                 (define/contract not-a-pair-of-numbers
+                   (cons/c number? number?)
+                   (cons #f #t))]
 
 @history[#:changed "6.0.1.13" @list{Added the @racket[list-contract?] propagating behavior.}]
 }
 
+@defform*[[(cons/dc [car-id contract-expr] [cdr-id (car-id) contract-expr] cons/dc-option)
+           (cons/dc [car-id (cdr-id) contract-expr] [cdr-id contract-expr] cons/dc-option)]
+          #:grammar ([cons/dc-option (code:line)
+                                     #:flat
+                                     #:chaperone
+                                     #:impersonator])]{
+
+Produces a contract that recognizes pairs whose first and second elements
+match the expressions after @racket[car-id] and @racket[cdr-id], respectively.
+
+In the first case, the contract on the @racket[cdr-id] portion of the contract
+may depend on the value in the @racket[car-id] portion of the pair and in
+the second case, the reverse is true.
+
+@examples[#:eval (contract-eval)
+                 (define/contract an-ordered-pair-of-reals
+                   (cons/dc [hd real?] [tl (hd) (>=/c hd)])
+                   (cons 1 2))
+                                
+                 (define/contract not-an-ordered-pair-of-reals
+                   (cons/dc [hd real?] [tl (hd) (>=/c hd)])
+                   (cons 2 1))]
+
+@history[#:added "6.1.1.6"]
+}
 
 @defproc[(list/c [c contract?] ...) list-contract?]{
 

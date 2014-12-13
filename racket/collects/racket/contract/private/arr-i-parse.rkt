@@ -261,39 +261,6 @@ code does the parsing and validation of the syntax.
                   (list fst)
                   (cons fst (loop (cdr vars)))))])))
 
-(define (compute-quoted-src-expression stx)
-  (define max-depth 4)
-  (define max-width 5)
-  (let loop ([stx stx]
-             [depth max-depth])
-    (cond
-      [(zero? depth) '...]
-      [else
-       (define lst (syntax->list stx))
-       (cond
-         [lst 
-          (if (<= (length lst) max-width)
-              (for/list ([ele (in-list lst)])
-                (loop ele (- depth 1)))
-              (append (for/list ([ele (in-list lst)]
-                                 [i (in-range (- max-width 1))])
-                        (loop ele (+ depth 1)))
-                      '(...)))]
-         [else
-          (define ele (syntax-e stx))
-          (cond
-            [(or (symbol? ele)
-                 (boolean? ele)
-                 (char? ele)
-                 (number? ele))
-             ele]
-            [(string? ele)
-             (if (< (string-length ele) max-width)
-                 ele
-                 '...)]
-            [else
-             '...])])])))
-
 (define (parse-doms stx optional? doms)
   (let loop ([doms doms])
     (syntax-case doms ()
@@ -599,7 +566,6 @@ code does the parsing and validation of the syntax.
 (provide
  parse-->i
  ->i-valid-app-shapes
- compute-quoted-src-expression
  (struct-out istx)
  (struct-out arg/res)
  (struct-out arg)

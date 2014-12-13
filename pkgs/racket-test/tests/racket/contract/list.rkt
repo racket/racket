@@ -63,4 +63,89 @@
    '(contract (list*of integer?) (list 1 2) 'pos 'neg))
   (test/pos-blame 
    'imlistof5
-   '(contract (list*of integer?) (cons #f #t) 'pos 'neg)))
+   '(contract (list*of integer?) (cons #f #t) 'pos 'neg))
+  
+  (test/pos-blame
+   'cons/dc1
+   '(contract (cons/dc [hd integer?] [tl (hd) integer?])
+              1
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'cons/dc2
+   '(contract (cons/dc [hd integer?] [tl (hd) integer?])
+              (cons 1 0)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'cons/dc3
+   '(contract (cons/dc [hd integer?] [tl (hd) integer?])
+              (cons #f 0)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'cons/dc4
+   '(contract (cons/dc [hd integer?] [tl (hd) integer?])
+              (cons 0 #f)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'cons/dc5
+   '(contract (cons/dc [hd integer?] [tl (hd) (<=/c hd)])
+              (cons 0 2)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'cons/dc6
+   '(contract (cons/dc [hd (tl) integer?] [tl integer?])
+              1
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'cons/dc7
+   '(contract (cons/dc [hd (tl) integer?] [tl integer?])
+              (cons 1 0)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'cons/dc8
+   '(contract (cons/dc [hd (tl) integer?] [tl integer?])
+              (cons #f 0)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'cons/dc9
+   '(contract (cons/dc [hd (tl) integer?] [tl integer?])
+              (cons 0 #f)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'cons/dc10
+   '(contract (cons/dc [hd (tl) (<=/c tl)] [tl integer?])
+              (cons 2 0)
+              'pos
+              'neg))
+  
+  (test/spec-passed/result
+   'cons/dc11
+   '(chaperone-contract? (cons/dc [hd integer?] [tl (hd) integer?]))
+   #t)
+  (test/spec-passed/result
+   'cons/dc12
+   '(flat-contract? (cons/dc [hd integer?] [tl (hd) integer?] #:flat))
+   #t)
+  (test/spec-passed/result
+   'cons/dc13
+   '(contract? (cons/dc [hd integer?] [tl (hd) integer?] #:impersonator))
+   #t)
+  
+  )

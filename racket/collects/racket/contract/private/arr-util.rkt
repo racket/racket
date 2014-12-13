@@ -3,7 +3,41 @@
 (require "application-arity-checking.rkt")
 (provide split-doms
          sort-keywords
-         valid-app-shapes-from-man/opts)
+         valid-app-shapes-from-man/opts
+         compute-quoted-src-expression)
+
+(define (compute-quoted-src-expression stx)
+  (define max-depth 4)
+  (define max-width 5)
+  (let loop ([stx stx]
+             [depth max-depth])
+    (cond
+      [(zero? depth) '...]
+      [else
+       (define lst (syntax->list stx))
+       (cond
+         [lst
+          (if (<= (length lst) max-width)
+              (for/list ([ele (in-list lst)])
+                (loop ele (- depth 1)))
+              (append (for/list ([ele (in-list lst)]
+                                 [i (in-range (- max-width 1))])
+                        (loop ele (+ depth 1)))
+                      '(...)))]
+         [else
+          (define ele (syntax-e stx))
+          (cond
+            [(or (symbol? ele)
+                 (boolean? ele)
+                 (char? ele)
+                 (number? ele))
+             ele]
+            [(string? ele)
+             (if (< (string-length ele) max-width)
+                 ele
+                 '...)]
+            [else
+             '...])])])))
 
 ;; split-doms : syntax identifier syntax -> syntax
 ;; given a sequence of keywords interpersed with other
@@ -61,11 +95,6 @@
     (cond
       [(null? pairs) null]
       [else (insert (car pairs) (loop (cdr pairs)))])))
-
-
-
-
- 
 
 (define (valid-app-shapes-from-man/opts min-arg-length num-of-opts rest? man-kwds opt-kwds)
   (define opt+man-dom-lengths
