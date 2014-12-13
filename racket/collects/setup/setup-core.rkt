@@ -1625,9 +1625,8 @@
                                  #t)
                                 (unless already?
                                   (hash-set! dests dest #t)
-                                  (delete-directory/files dest #:must-exist? #f)
-                                  (let-values ([(base name dir?) (split-path dest)])
-                                    (when (path? base) (make-directory* base)))
+                                  (delete-directory/files/hard dest)
+				  (make-parent-directory* dest)
                                   (if (file-exists? src)
                                       (if (cc-main? cc)
                                           (copy-file src dest)
@@ -1702,6 +1701,7 @@
         lib-key))
 
     (define (tidy-libs user? target-dir lib-dir installed-libs ccs-to-compile)
+      (clean-previous-delete-failures lib-dir path->relative-string/*)
       (define receipt-path (build-path lib-dir receipt-file))
       (define ht (read-receipt-hash receipt-path))
       (define ht2 (for/fold ([ht (hash)]) ([(k v) (in-hash ht)])
@@ -1729,7 +1729,7 @@
                                 (directory-exists? lib-path))
                         (setup-printf "deleting" (string-append what " ~a")
                                       (path->relative-string/* lib-path))
-                        (delete-directory/files lib-path))
+                        (delete-directory/files/hard lib-path))
                       ht])))
       (unless (equal? ht ht2)
         (setup-printf "updating" (format "~a list" what))
@@ -1804,6 +1804,47 @@
                          (lambda (info) #t)
                          void
                          copy-file))
+
+  (define setup-delete-prefix #"raco-setup-delete-")
+
+  (define (delete-directory/files/hard dest)
+    (cond
+     [(and (eq? 'windows (system-type))
+           (file-exists? dest))
+      ;; To handle DLLs that may be opened, try moving and then
+      ;; deleting. The delete may well fail, but at least the
+      ;; file will be out of the way for another try.
+      (define-values (base name dir?) (split-path dest))
+      (define delete-dest (build-path base
+                                      (bytes->path-element
+                                       (bytes-append
+                                        setup-delete-prefix
+                                        (path-element->bytes name)))))
+      (rename-file-or-directory dest delete-dest #t)
+      (try-delete-file delete-dest)]
+     [else
+      (delete-directory/files dest #:must-exist? #f)]))
+
+  (define (try-delete-file f)
+    (with-handlers ([exn:fail:filesystem?
+                     (lambda (exn)
+                       (setup-printf
+                        "WARNING"
+                        "error deleteing file: ~a"
+                        (exn-message exn)))])
+      (delete-file f)))
+
+  (define (clean-previous-delete-failures lib-dir path->relative-string/*)
+    (when (and (eq? 'windows (system-type))
+	       (directory-exists? lib-dir))
+      (for ([f (in-list (directory-list lib-dir))])
+        (define bstr (path-element->bytes f))
+        (when (equal? (subbytes bstr 0 (min (bytes-length setup-delete-prefix)
+                                            (bytes-length bstr)))
+                      setup-delete-prefix)
+          (define p (build-path lib-dir f))
+          (setup-printf "deleting" (path->relative-string/* p))
+          (try-delete-file (build-path lib-dir f))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;       Package-dependency checking         ;;

@@ -635,7 +635,18 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    RPATH setting of @litchar{$ORIGIN} and the file is being installed
    to a user-specific location, then the file's RPATH is adjusted to
    @litchar{$ORIGIN:} followed by the path to the main installation's
-   library directory as reported by @racket[(find-lib-dir)].}
+   library directory as reported by @racket[(find-lib-dir)].
+
+   On Windows, deleting a previously installed foreign library may be
+   complicated by a lock on the file, if it is in use. To compensate,
+   @exec{raco setup} deletes a foriegn-library file by first renaming
+   the file to have the prefix @filepath{raco-setup-delete-}; it then
+   attempts to delete the renamed file and merely issues a warning on
+   a failure to delete the renamed file. Meanwhile, in modes where
+   @exec{raco setup} removes uninstalled libraries, it attempts to
+   delete any file in the foreign-library directory whose name starts
+   with @filepath{raco-setup-delete-} (in an attempt to clean up after
+   previous failures).}
 
  @item{@indexed-racket[move-foreign-libs] : @racket[(listof (and/c
    path-string? relative-path?))] --- Like @racket[copy-foreign-libs],
@@ -646,7 +657,11 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    path-string? relative-path?))] --- Files to copy into a
    directory where shared files are found.
    If @racket[install-platform] is defined, then the files are copied
-   only if the current platform matches the definition.}
+   only if the current platform matches the definition.
+
+   On Windows, uninstalled files are deleted in the same way as for
+   @racket[copy-foreign-libs], and the name prefix
+   @filepath{raco-setup-delete-} is similarly special.}
 
  @item{@indexed-racket[move-shared-files] : @racket[(listof (and/c
    path-string? relative-path?))] --- Like @racket[copy-shared-files],
@@ -657,7 +672,11 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    path-string? relative-path? filename-extension))] --- Files to copy
    into a @tt{man} directory. The file suffix determines its category;
    for example, @litchar{.1} should be used for a @tt{man} page
-   describing an executable.}
+   describing an executable.
+
+   On Windows, uninstalled files are deleted in the same way as for
+   @racket[copy-foreign-libs], and the name prefix
+   @filepath{raco-setup-delete-} is similarly special.}
 
  @item{@indexed-racket[move-man-pages] : @racket[(listof (and/c
    path-string? relative-path? filename-extension))] --- Like
