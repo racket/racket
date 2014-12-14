@@ -1764,7 +1764,7 @@ accepted by the third argument to @racket[datum->syntax].
           [#:stronger stronger
                       (or/c #f (-> contract? contract? boolean?))
                       #f]
-          [#:list-contract is-list-contract? boolean? #f])
+          [#:list-contract? is-list-contract? boolean? #f])
          contract?]
 @defproc[(make-chaperone-contract
           [#:name name any/c 'anonymous-chaperone-contract]
@@ -1785,7 +1785,7 @@ accepted by the third argument to @racket[datum->syntax].
           [#:stronger stronger
                       (or/c #f (-> contract? contract? boolean?))
                       #f]
-          [#:list-contract is-list-contract? boolean? #f])
+          [#:list-contract? is-list-contract? boolean? #f])
          chaperone-contract?]
 @defproc[(make-flat-contract
           [#:name name any/c 'anonymous-flat-contract]
@@ -1806,7 +1806,7 @@ accepted by the third argument to @racket[datum->syntax].
           [#:stronger stronger
                       (or/c #f (-> contract? contract? boolean?))
                       #f]
-          [#:list-contract is-list-contract? boolean? #f])
+          [#:list-contract? is-list-contract? boolean? #f])
          flat-contract?]
 )]{
 
