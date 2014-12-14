@@ -161,7 +161,7 @@ static void set_cache(void *p, Scheme_Object *last)
 
 Scheme_Object *scheme_native_stack_trace(void)
 {
-  void *p, *q;
+  void *p, *q, *prev_frame_p;
   uintptr_t stack_end, real_stack_end, stack_start, halfway;
   Scheme_Object *name, *last = NULL, *first = NULL, *tail;
   int prev_had_name = 0;
@@ -208,12 +208,12 @@ Scheme_Object *scheme_native_stack_trace(void)
   p = gs();
 #endif
 
-  halfway = STK_DIFF(stack_end, (uintptr_t)p) / 2;
+  halfway = STK_DIFF(stack_end, (uintptr_t)stack_start) / 2;
   if (halfway < CACHE_STACK_MIN_TRIGGER)
     halfway = stack_end;
   else {
 #ifdef STACK_GROWS_DOWN
-    halfway += (uintptr_t)p;
+    halfway += (uintptr_t)stack_start;
 #else
     halfway += stack_end;
 #endif
@@ -317,6 +317,8 @@ Scheme_Object *scheme_native_stack_trace(void)
       return first;
   }
 #endif
+
+  prev_frame_p = NULL;
 
   while (unsuccess < UNKNOWN_FRAME_LIMIT) {
 #ifdef MZ_USE_DWARF_LIBUNWIND
@@ -431,9 +433,9 @@ Scheme_Object *scheme_native_stack_trace(void)
        might not be used (depending on how the C compiler optimized the
        code); any frame whose procedure has a name is JITted code, so
        it will use the return address from the stack. */
-    if (STK_COMP((uintptr_t)halfway, (uintptr_t)p)
+    if (STK_COMP((uintptr_t)halfway, (uintptr_t)prev_frame_p)
 	&& prev_had_name) {
-      set_cache(p, last);
+      set_cache(prev_frame_p, last);
       if (!added_list_elem)
 	shift_cache_to_next = 1;
       halfway = stack_end;
@@ -451,6 +453,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 	if (!(STK_COMP((uintptr_t)pp, stack_end)
 	      && STK_COMP(stack_start, (uintptr_t)pp)))
 	  break;
+	prev_frame_p = pp;
 # ifdef MZ_USE_JIT_ARM
         stack_addr = (unw_word_t)&(pp[JIT_NEXT_FP_OFFSET+2]);
 	unw_manual_step(&c, 
@@ -465,6 +468,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 # endif
 	manual_unw = 0;
       } else {
+	prev_frame_p = NULL;
         unw_step(&c);
         q = (void *)unw_get_ip(&c);
         if (unw_reset_bad_ptr_flag(&c))
@@ -478,6 +482,7 @@ Scheme_Object *scheme_native_stack_trace(void)
       if (STK_COMP((uintptr_t)q, (uintptr_t)p))
         break;
       p = q;
+      prev_frame_p = p;
     }
   }
 
