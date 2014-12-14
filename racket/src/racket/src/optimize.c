@@ -4370,7 +4370,7 @@ case_lambda_shift(Scheme_Object *data, int delta, int after_depth)
 static Scheme_Object *
 begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
 {
-  int i, count, drop = 0, prev_size, single_result = 0, preserves_marks = 0, kclock, sclock;
+  int i, count, drop = 0, prev_size, single_result = 0, preserves_marks = 0, kclock = 0, sclock = 0;
   Scheme_Sequence *s = (Scheme_Sequence *)obj;
   Scheme_Object *inside = NULL, *expr, *orig_first;
   int id_offset = 0;
