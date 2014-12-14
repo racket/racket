@@ -536,6 +536,10 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that various shaodwings are allowed:
 
+(module third-provide racket/base
+  (provide third)
+  (define third (lambda (x) (car (cdr (cdr x))))))
+
 (module subm-example-20 racket/base
   (require (only-in racket/list third))
   (provide first get-first second)
@@ -554,7 +558,7 @@
     (provide second s))
 
   (module* third #f
-    (require (only-in mzlib/list third)) ; different binding than from `racket/list'
+    (require (only-in 'third-provide third)) ; different binding than from `racket/list'
     (define t third)
     (provide third t)))
 

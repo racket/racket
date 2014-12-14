@@ -13,6 +13,9 @@
                "cext-lib" ; tested here
                "pconvert-lib" ; tested here
 
+               ;; "racket-test-core" used to be part of this pkg
+               "racket-test-core"
+
                ;; for `pkg` tests
                "web-server-lib"
                "rackunit-lib"

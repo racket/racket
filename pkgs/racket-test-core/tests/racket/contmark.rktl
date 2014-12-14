@@ -101,9 +101,9 @@
 					 (with-continuation-mark 'key 10 (extract-current-continuation-marks 'key))
 					 (extract-current-continuation-marks 'key)))))
 
-(require (lib "mzlib/unit200.rkt"))
+(require (prefix-in unit: scheme/unit))
 
-;; Hide keywords from scheme/unit.rkt:
+;; ;; Hide keywords from scheme/unit.rkt:
 (define import #f)
 (define export #f)
 (define link #f)
@@ -111,10 +111,10 @@
 (wcm-test '(11)
 	  (lambda ()
 	    (with-continuation-mark 'x 10
-	      (invoke-unit
-	       (unit 
-		 (import)
-		 (export)
+	      (unit:invoke-unit
+	       (unit:unit 
+		 (unit:import)
+		 (unit:export)
 		 
 		 (with-continuation-mark 'x 11
 		   (continuation-mark-set->list
@@ -124,10 +124,10 @@
 (wcm-test '(11 10) 
 	  (lambda ()
 	    (with-continuation-mark 'x 10
-	      (invoke-unit
-	       (unit 
-		 (import)
-		 (export)
+	      (unit:invoke-unit
+	       (unit:unit 
+		 (unit:import)
+		 (unit:export)
 		 
 		 (define l (with-continuation-mark 'x 11
 			     (continuation-mark-set->list
