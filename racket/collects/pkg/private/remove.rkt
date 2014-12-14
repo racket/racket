@@ -25,9 +25,13 @@
         (printf/flush "Demoting ~a to auto-installed\n" pkg-name))
       (update-pkg-db! pkg-name (update-auto pi #t)))))
 
-(define ((remove-package quiet? use-trash?) pkg-name)
+(define ((remove-package for-install? quiet? use-trash?) pkg-name)
   (unless quiet?
-    (printf/flush "Removing ~a\n" pkg-name))
+    (printf/flush "~a ~a\n"
+                  (if for-install?
+                      "Uninstalling to prepare re-install of"
+                      "Removing")
+                  pkg-name))
   (define db (read-pkg-db))
   (define pi (package-info pkg-name #:db db))
   (match-define (pkg-info orig-pkg checksum _) pi)
@@ -142,7 +146,7 @@
      (set->list (set-subtract (list->set in-pkgs)
                               (list->set remove-pkgs)))))
 
-  (for-each (remove-package quiet? use-trash?)
+  (for-each (remove-package #f quiet? use-trash?)
             remove-pkgs)
 
   (cond

@@ -425,7 +425,7 @@
                (let ()
                  (define (continue conversation)
                    (raise (vector #t infos pkg-name update-pkgs
-                                  (λ () (for-each (compose (remove-package quiet? use-trash?) pkg-desc-name) update-pkgs))
+                                  (λ () (for-each (compose (remove-package #t quiet? use-trash?) pkg-desc-name) update-pkgs))
                                   conversation
                                   clone-info)))
                  (match (if (andmap (lambda (dep) (set-member? implies (pkg-desc-name dep)))
@@ -527,7 +527,7 @@
                                                                #:from-command-line? from-command-line?
                                                                #:link-dirs? link-dirs?)
                                            update-pkgs)])
-                (λ () (for-each (compose (remove-package quiet? use-trash?) pkg-desc-name) to-update))))
+                (λ () (for-each (compose (remove-package #t quiet? use-trash?) pkg-desc-name) to-update))))
             (match this-dep-behavior
               ['fail
                (clean!)
@@ -863,7 +863,7 @@
        #:catalog-lookup-cache catalog-lookup-cache
        #:pre-succeed (λ ()
                        (for ([pkg-name (in-hash-keys extra-updating)])
-                         ((remove-package quiet? use-trash?) pkg-name))
+                         ((remove-package #t quiet? use-trash?) pkg-name))
                        (pre-succeed))
        #:updating? updating?
        #:extra-updating extra-updating
@@ -1169,7 +1169,7 @@
        (flush-output))
      (pkg-install
       #:updating? #t
-      #:pre-succeed (λ () (for-each (compose (remove-package quiet? use-trash?) pkg-desc-name) to-update))
+      #:pre-succeed (λ () (for-each (compose (remove-package #t quiet? use-trash?) pkg-desc-name) to-update))
       #:dep-behavior dep-behavior
       #:update-deps? update-deps?
       #:update-implies? update-implies?
