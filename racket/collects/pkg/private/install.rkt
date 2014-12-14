@@ -1144,13 +1144,18 @@
   (cond
     [(empty? pkgs)
      (unless quiet?
-       (printf/flush (~a "No packages given to update"
-                         (if from-command-line?
-                             (~a
-                              ";\n use `--all' to update all packages, or run from a package's directory"
-                              "\n to update that package")
-                             "")
-                         "\n")))
+       (cond
+        [all?
+         (printf/flush (~a "No updates available; no packages installed in ~a scope\n")
+                       (current-pkg-scope))]
+        [else
+         (printf/flush (~a "No packages given to update"
+                           (if from-command-line?
+                               (~a
+                                ";\n use `--all' to update all packages, or run from a package's directory"
+                                "\n to update that package")
+                               "")
+                           "\n"))]))
      'skip]
     [(empty? to-update)
      (unless quiet?
