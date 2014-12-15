@@ -234,9 +234,9 @@
                           (pkg-install #:from-command-line? #t
                                        #:dep-behavior (or (and auto 'search-auto)
                                                           deps
-                                                          (if batch
-                                                              'fail
-                                                              #f)) ; 'search-ask for a package-name source, etc.
+                                                          (cond
+                                                           [batch 'fail]                                                           
+                                                           [else 'search-ask]))
                                        #:all-platforms? all-platforms
                                        #:force? force
                                        #:ignore-checksums? ignore-checksums
@@ -328,9 +328,9 @@
                                       #:all? all
                                       #:dep-behavior (or (and auto 'search-auto)
                                                          deps
-                                                         (if batch
-                                                             'fail
-                                                             #f)) ; 'search-ask for a package-name source, etc.
+                                                         (cond
+                                                          [batch 'fail]
+                                                          [else 'search-ask]))
                                       #:all-platforms? all-platforms
                                       #:force? force
                                       #:ignore-checksums? ignore-checksums
@@ -662,8 +662,7 @@
       "              and asks for permission to auto-install"
       "  search-auto: like `search-ask', but does not ask for permission")])
    #:install-dep-desc
-   ("where the default is `search-ask' if <pkg-source> is a package name"
-    "in interactive mode, `fail' otherwise")
+   ("where the default is `search-ask' in interactive mode, `fail' otherwise")
    #:install-force-flags
    ([#:bool all-platforms () "Follow package dependencies for all platforms"]
     [#:bool force () "Ignore conflicts"]

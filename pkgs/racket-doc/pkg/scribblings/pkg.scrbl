@@ -442,13 +442,12 @@ sub-commands.
  @item{@DFlag{deps} @nonterm{behavior} --- Selects the behavior for dependencies, where @nonterm{behavior} is one of
   @itemlist[
    @item{@exec{fail} --- Cancels the installation if dependencies are uninstalled or version requirements are unmet. 
-        This behavior is the default for non-@tech{interactive mode} for a @nonterm{pkg-source} that is not a @tech{package name}.}
+        This behavior is the default for non-@tech{interactive mode}.}
    @item{@exec{force} --- Installs the package(s) despite missing dependencies or version requirements.
          Forcing an installation may leave package content in an inconsistent state.}
    @item{@exec{search-ask} --- Looks for dependencies (when uninstalled) or updates (when version requirements are unmet)
          via the configured @tech{package catalogs},
-         but asks if you would like the packages installed or updated. This behavior is the default in @tech{interactive mode} for a
-         @nonterm{pkg-source} that is a @tech{package name}.}
+         but asks if you would like the packages installed or updated. This behavior is the default in @tech{interactive mode}.}
    @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install or update.}
   ]}
 
@@ -580,7 +579,8 @@ sub-commands.
 
 @history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch}, @DFlag{clone}, and
                                    @DFlag{multi-clone} flags.}
-         #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag.}]}
+         #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag, and changed
+                                   the @DFlag{deps} default to depend only on interactive mode.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ... 
@@ -681,7 +681,8 @@ the given @nonterm{pkg-source}s.
                                    @DFlag{multi-clone} flags, and
                                    added update of enclosing package
                                    when no arguments are provided.}
-         #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag.}]}
+         #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag, and changed
+                                   the @DFlag{deps} default to depend only on interactive mode.}]}
 
 @subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. By default, if a package is the dependency

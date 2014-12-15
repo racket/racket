@@ -25,10 +25,10 @@
     (shelly-case
      "local - fail (default)"
      $ "racket -e '(require pkg-test2)'" =exit> 1
-     $ "raco pkg install test-pkgs/pkg-test2.zip" =exit> 1
-     $ "raco pkg install test-pkgs/pkg-test1.zip" =exit> 0
+     $ "raco pkg install --batch test-pkgs/pkg-test2.zip" =exit> 1
+     $ "raco pkg install --batch test-pkgs/pkg-test1.zip" =exit> 0
      $ "raco pkg show" =exit> 0
-     $ "raco pkg install test-pkgs/pkg-test2.zip" =exit> 0
+     $ "raco pkg install --batch test-pkgs/pkg-test2.zip" =exit> 0
      $ "racket -e '(require pkg-test2)'" =exit> 0
      $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
      $ "raco pkg remove pkg-test2"
@@ -39,9 +39,9 @@
     (shelly-case
      "local - fail (default, single-collection)"
      $ "racket -e '(require pkg-test3)'" =exit> 1
-     $ "raco pkg install test-pkgs/pkg-test3.zip" =exit> 1
-     $ "raco pkg install test-pkgs/pkg-test1.zip" =exit> 0
-     $ "raco pkg install test-pkgs/pkg-test3.zip" =exit> 0
+     $ "raco pkg install --batch test-pkgs/pkg-test3.zip" =exit> 1
+     $ "raco pkg install --batch test-pkgs/pkg-test1.zip" =exit> 0
+     $ "raco pkg install --batch test-pkgs/pkg-test3.zip" =exit> 0
      $ "racket -e '(require pkg-test3)'" =exit> 0
      $ "raco pkg remove pkg-test3"))
 
@@ -49,7 +49,7 @@
     (shelly-case
      "local - looks at all packages given on cmdline"
      $ "racket -e '(require pkg-test2)'" =exit> 1
-     $ "raco pkg install test-pkgs/pkg-test2.zip test-pkgs/pkg-test1.zip" =exit> 0
+     $ "raco pkg install --batch test-pkgs/pkg-test2.zip test-pkgs/pkg-test1.zip" =exit> 0
      $ "racket -e '(require pkg-test2)'" =exit> 0
      $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
      $ "raco pkg remove pkg-test2"
