@@ -877,6 +877,8 @@ static int common2(mz_jit_state *jitter, void *_data)
   jit_jmpr(JIT_R2);
   CHECK_LIMIT();
 
+  scheme_jit_register_sub_func(jitter, sjc.stack_cache_pop_code, scheme_false);
+
   /* *** bad_app_vals_target *** */
   /* Non-proc is in R0 */
   sjc.bad_app_vals_target = jit_get_ip();
