@@ -613,7 +613,7 @@
       (test #f semaphore-try-wait? s)
       (test #f semaphore-try-wait? s2))))
 
-(require tests/net/available)
+(require "net-available.rkt")
 (when (tcp-localhost-available?)
 (define (listen-port x)
   (let-values ([(la lp pa pp) (tcp-addresses x #t)])
