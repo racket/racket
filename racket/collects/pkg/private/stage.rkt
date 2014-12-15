@@ -657,7 +657,9 @@
                    #:dest-dir #f
                    #:ref branch
                    #:status-printf (lambda (fmt . args)
-                                     (log-pkg-debug (apply format fmt args)))
+                                     (define (strip-ending-newline s)
+                                       (regexp-replace #rx"\n$" s ""))
+                                     (log-pkg-debug (strip-ending-newline (apply format fmt args))))
                    #:transport (string->symbol (url-scheme pkg-url)))]
     [(github)
      (match-define (list* user repo branch path)
