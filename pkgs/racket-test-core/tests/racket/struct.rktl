@@ -646,7 +646,7 @@
 ;; ------------------------------------------------------------
 ;; Property type supers
 
-(require (only-in mzscheme [prop:procedure mz:prop:procedure])) ; more primitive - no keywords
+(require (only-in '#%kernel [prop:procedure mz:prop:procedure])) ; more primitive - no keywords
 
 (let ([try
        (lambda (base prop:procedure)
