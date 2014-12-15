@@ -32,6 +32,8 @@
                      "base"
                      "data-lib"))
 
+(define implies '("racket-test-core"))
+
 (define pkg-desc "Base Racket test suites")
 
 (define pkg-authors '(eli jay matthias mflatt robby ryanc samth))
