@@ -154,7 +154,7 @@
        (download-printf "Cloning repository locally for staging\n")
        (git #:status status "clone" clone-dir tmp-dir)
        (parameterize ([current-directory tmp-dir])
-         (git #:status status "fetch" clone-dir (or checksum branch))
+         (git #:status status "fetch" clone-dir branch)
          (git #:status status "checkout" (or checksum branch)))
 
        (lift-git-directory-content tmp-dir path)
