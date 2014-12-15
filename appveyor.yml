@@ -1,0 +1,8 @@
+version: 1.0.{build}
+clone_depth: 50
+build_script:
+- '"c:\Program Files (x86)\Microsoft Visual Studio 10.0\vc\vcvarsall.bat" x86'
+- echo %cd%
+- nmake win32-in-place PKGS="racket-test-core"
+- echo %cd%
+- racket\racket.exe -l tests/racket/test
