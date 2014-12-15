@@ -1509,10 +1509,10 @@
 	      (f y))
 	   '11)
 
-(test-comp '(module m mzscheme
+(test-comp '(module m racket/base
               (define (f x) (+ x 1))
               (f 8))
-	   '(module m mzscheme
+	   '(module m racket/base
               (define (f x) (+ x 1))
               9))
 
@@ -2106,29 +2106,29 @@
 (test-comp '(procedure-arity-includes? integer? 1)
            #t)
 
-(test-comp '(module m mzscheme
+(test-comp '(module m racket/base
               (define foo integer?)
               (display (procedure-arity-includes? foo 1)))
-           '(module m mzscheme
+           '(module m racket/base
               (define foo integer?)
               (display #t)))
 
-(test-comp '(module m mzscheme
+(test-comp '(module m racket/base
               (void 10))
-           '(module m mzscheme))
+           '(module m racket/base))
 
-(test-comp '(module m mzscheme
+(test-comp '(module m racket/base
               (void (quote-syntax unused!)))
-           '(module m mzscheme))
+           '(module m racket/base))
 
-(test-comp '(module m mzscheme
+(test-comp '(module m '#%kernel
               (values 1 2))
-           '(module m mzscheme))
+           '(module m '#%kernel))
 
-(test-comp '(module m mzscheme
+(test-comp '(module m racket/base
               (printf "pre\n")
               (void 10))
-           '(module m mzscheme
+           '(module m racket/base
               (printf "pre\n")))
 
 (let ([try-equiv
@@ -3043,14 +3043,14 @@
            (write (compile expr) w)
            (parameterize ([read-accept-compiled #t])
              (read r))))])
-  (check '(module m mzscheme
+  (check '(module m racket/base
             (provide f)
             (define (f x)
               (let loop ([n 0])
                 (set! x (+ n 1)) ; close over mutated variable
                 (loop n #f)
                 (loop n)))))
-  (check '(module m mzscheme
+  (check '(module m racket/base
             (provide f)
             (define s (make-string 10))
             (define (f x)
@@ -3062,7 +3062,7 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Make sure "mutated?" flag isn't confused with "ready" flag:
-(module bad-order mzscheme  
+(module bad-order racket/base
   (define (f) (printf "~a\n" i))
   (f)
   (define i 9)
@@ -3083,7 +3083,7 @@
 ;; call-with-values optimization
 
 ;; should get converted to let:
-(module cwv-1 mzscheme
+(module cwv-1 racket/base
   (define (cwv-1-f x)
     (call-with-values (lambda () (+ x 3))
       (lambda (y) (+ y 2))))
@@ -3092,7 +3092,7 @@
 (test 15 cwv-1-f 10)
 
 ;; known function doesn't expect 1 argument
-(module cwv-2 mzscheme
+(module cwv-2 racket/base
   (define (cwv-2-f x)
     (call-with-values (lambda () (+ x 3))
       (lambda (y z) (+ y 2))))
@@ -3101,7 +3101,7 @@
 (err/rt-test (cwv-2-f 10) exn:fail:contract:arity?)
 
 ;; known function, unknown number of results:
-(module cwv-3 mzscheme
+(module cwv-3 racket/base
   (define (cwv-3-f g)
     (call-with-values (lambda () (g))
       (lambda (y) (+ y 2))))
@@ -3111,7 +3111,7 @@
 (err/rt-test (cwv-3-f (lambda () (values 1 2))) exn:fail:contract:arity?)
 
 ;; ditto, need 2 results:
-(module cwv-4 mzscheme
+(module cwv-4 racket/base
   (define (cwv-4-f g)
     (call-with-values (lambda () (g))
       (lambda (y z) (+ y z 2))))
@@ -3122,7 +3122,7 @@
 (err/rt-test (cwv-4-f (lambda () (values 1 2 10))) exn:fail:contract:arity?)
 
 ;; unknown first function:
-(module cwv-5 mzscheme
+(module cwv-5 racket/base
   (define (cwv-5-f g)
     (call-with-values g
       (lambda (y) (+ y 2))))
@@ -3132,7 +3132,7 @@
 (err/rt-test (cwv-5-f (lambda () (values 1 2))) exn:fail:contract:arity?)
 
 ;; ditto, need 2 results:
-(module cwv-6 mzscheme
+(module cwv-6 racket/base
   (define (cwv-6-f g)
     (call-with-values g
       (lambda (y z) (+ y z 2))))
@@ -3143,7 +3143,7 @@
 (err/rt-test (cwv-6-f (lambda () (values 1 2 10))) exn:fail:contract:arity?)
 
 ;; unknown second function:
-(module cwv-2-1 mzscheme
+(module cwv-2-1 racket/base
   (define (cwv-2-1-f x h)
     (call-with-values (lambda () (+ x 3))
       h))
@@ -3152,7 +3152,7 @@
 (test 15 cwv-2-1-f 10 (lambda (y) (+ y 2)))
 
 ;; unknown function doesn't expect 1 argument
-(module cwv-2-2 mzscheme
+(module cwv-2-2 racket/base
   (define (cwv-2-2-f x h)
     (call-with-values (lambda () (+ x 3))
       h))
@@ -3161,7 +3161,7 @@
 (err/rt-test (cwv-2-2-f 10 (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
 
 ;; known function, unknown number of results:
-(module cwv-2-3 mzscheme
+(module cwv-2-3 racket/base
   (define (cwv-2-3-f g h)
     (call-with-values (lambda () (g))
       h))
@@ -3174,7 +3174,7 @@
 (err/rt-test (cwv-2-3-f (lambda () (values 1 2 3)) (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
 
 ;; unknown first function:
-(module cwv-2-5 mzscheme
+(module cwv-2-5 racket/base
   (define (cwv-2-5-f g h)
     (call-with-values g h))
   (provide cwv-2-5-f))

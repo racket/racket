@@ -654,7 +654,7 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(module m-wcm_ mzscheme
+(module m-wcm_ racket/base
   (provide m-wcm-go)
   (define (m-wcm-go test)
     (let ([v #f])
