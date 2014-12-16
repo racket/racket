@@ -65,28 +65,27 @@
            empty))))
     (if (null? to-show)
         (printf " [none]\n")
-        (begin
-          (table-display
-           long?
-           (list* 'right 'right 'middle
-                   (if dir? '(left) '()))
-           (list*
-            (list* (format "~aPackage~a"
-                           indent 
-                           (if auto-shown? "[*=auto]" ""))
-                   "Checksum"
-                   "Source"
-                   (if dir? '("Directory") '()))
-            to-show))
-          (unless (or only-pkgs show-auto?)
-            (define n (for/sum ([pkg (in-list pkgs)] 
-                                #:when (pkg-info-auto? (hash-ref db pkg)))
-                               1))
-            (unless (zero? n)
-              (printf "~a[~a auto-installed package~a not shown]\n"
-                      indent
-                      n
-                      (if (= n 1) "" "s")))))))
+        (table-display
+         long?
+         (list* 'right 'right 'middle
+                (if dir? '(left) '()))
+         (list*
+          (list* (format "~aPackage~a"
+                         indent 
+                         (if auto-shown? "[*=auto]" ""))
+                 "Checksum"
+                 "Source"
+                 (if dir? '("Directory") '()))
+          to-show)))
+    (unless (or only-pkgs show-auto?)
+      (define n (for/sum ([pkg (in-list pkgs)] 
+                          #:when (pkg-info-auto? (hash-ref db pkg)))
+                  1))
+      (unless (zero? n)
+        (printf "~a[~a auto-installed package~a not shown]\n"
+                indent
+                n
+                (if (= n 1) "" "s")))))
 
 (define (table-display long? dots-poses l)
   (define how-many-cols (length (first l)))
