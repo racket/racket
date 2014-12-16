@@ -1000,96 +1000,98 @@
                pkg-name)
               null))
         
-        (define missing-deps
-          (for/list ([dep (in-list deps)]
-                     #:unless (equal? dep "racket")
-                     #:unless (package-info dep #:db db #f))
-            dep))
+        (define (check-missing-dependencies k)
+          (define missing-deps
+            (for/list ([dep (in-list deps)]
+                       #:unless (equal? dep "racket")
+                       #:unless (package-info dep #:db db #f))
+              dep))
+          (cond
+           [(pair? missing-deps)
+            ;; A dependency is missing. Treat the dependent package as
+            ;; needing an update, even if it is installed as a link, so
+            ;; that the user is asked about installing dependencies, etc.
+            (log-pkg-debug "Missing dependencies of ~s: ~s" pkg-name missing-deps)
+            (update-loop (pkg-info->desc pkg-name info) #f #t #t)]
+           [else (k)]))
+          
+        (define (update-dependencies)
+          (hash-set! update-cache (box pkg-name) #t)
+          (if (or deps? implies?)
+              ;; Check dependencies
+              (append-map
+               (lambda (dep) (update-loop dep #f #f #t))
+               deps)
+              null))
         
-        (cond
-         [(pair? missing-deps)
-          ;; A dependency is missing. Treat the dependent package as
-          ;; needing an update, even if it is installed as a link, so
-          ;; that the user is asked about installing dependencies, etc.
-          (log-pkg-debug "Missing dependencies of ~s: ~s" pkg-name missing-deps)
-          (update-loop (pkg-info->desc pkg-name info) #f #t #t)]
-         [else
-          
-          (define (update-dependencies)
-            (hash-set! update-cache (box pkg-name) #t)
-            (if (or deps? implies?)
-                ;; Check dependencies
-                (append-map
-                 (lambda (dep) (update-loop dep #f #f #t))
-                 deps)
-                null))
-          
-          (define (skip/update-dependencies kind)
-            (unless (or all-mode? (not report-skip?))
-              (download-printf "Skipping update of ~a: ~a\n"
-                               kind
-                               pkg-name))
-            (update-dependencies))
-          
-          (match orig-pkg
-            [`(,(or 'link 'static-link) ,orig-pkg-dir)
-             (if must-update?
-                 (pkg-error (~a "cannot update linked packages;\n"
-                                " except with a replacement package source\n"
-                                "  package name: ~a\n"
-                                "  package source: ~a")
-                            pkg-name
-                            (simple-form-path
-                             (path->complete-path orig-pkg-dir (pkg-installed-dir))))
-                 (skip/update-dependencies "linked package"))]
-            [`(dir ,_)
-             (if must-update?
-                 (pkg-error (~a "cannot update packages installed locally;\n"
-                                " except with a replacement package source;\n"
-                                " package was installed via a local directory\n"
-                                "  package name: ~a")
-                            pkg-name)
-                 (skip/update-dependencies "package installed locally"))]
-            [`(file ,_)
-             (if must-update?
-                 (pkg-error (~a "cannot update packages installed locally;\n"
-                                " except with a replacement package source;\n"
-                                " package was installed via a local file\n"
-                                "  package name: ~a")
-                            pkg-name)
-                 (skip/update-dependencies "package installed locally"))]
-            [_
-             (define-values (orig-pkg-source orig-pkg-type orig-pkg-dir)
-               (if (eq? 'clone (car orig-pkg))
-                   (values (caddr orig-pkg)
-                           'clone
-                           (enclosing-path-for-repo (caddr orig-pkg)
-                                                    (path->complete-path
-                                                     (cadr orig-pkg)
-                                                     (pkg-installed-dir))))
-                   ;; It would be better if the type were preseved
-                   ;; from install time, but we always make the
-                   ;; URL unambigious:
-                   (values (cadr orig-pkg) #f #f)))
-             (define new-checksum
-               (hash-ref update-cache pkg-name
-                         (lambda ()
-                           (remote-package-checksum orig-pkg download-printf pkg-name
-                                                    #:catalog-lookup-cache catalog-lookup-cache))))
-             ;; Record downloaded checksum:
-             (hash-set! update-cache pkg-name new-checksum)
-             (or (and new-checksum
-                      (not (equal? checksum new-checksum))
-                      ;; Update it:
-                      (begin
-                        ;; Flush cache of downloaded checksums, in case
-                        ;; there was a race between our checkig and updates on
-                        ;; the catalog server:
-                        (clear-checksums-in-cache! update-cache)
-                        (list (pkg-desc orig-pkg-source orig-pkg-type pkg-name #f auto?
-                                        orig-pkg-dir))))
-                 ;; Continue with dependencies, maybe
-                 (update-dependencies))])]))]
+        (define (skip/update-dependencies kind)
+          (check-missing-dependencies
+           (lambda ()
+             (unless (or all-mode? (not report-skip?))
+               (download-printf "Skipping update of ~a: ~a\n"
+                                kind
+                                pkg-name))
+             (update-dependencies))))
+        
+        (match orig-pkg
+          [`(,(or 'link 'static-link) ,orig-pkg-dir)
+           (if must-update?
+               (pkg-error (~a "cannot update linked packages;\n"
+                              " except with a replacement package source\n"
+                              "  package name: ~a\n"
+                              "  package source: ~a")
+                          pkg-name
+                          (simple-form-path
+                           (path->complete-path orig-pkg-dir (pkg-installed-dir))))
+               (skip/update-dependencies "linked package"))]
+          [`(dir ,_)
+           (if must-update?
+               (pkg-error (~a "cannot update packages installed locally;\n"
+                              " except with a replacement package source;\n"
+                              " package was installed via a local directory\n"
+                              "  package name: ~a")
+                          pkg-name)
+               (skip/update-dependencies "package installed locally"))]
+          [`(file ,_)
+           (if must-update?
+               (pkg-error (~a "cannot update packages installed locally;\n"
+                              " except with a replacement package source;\n"
+                              " package was installed via a local file\n"
+                              "  package name: ~a")
+                          pkg-name)
+               (skip/update-dependencies "package installed locally"))]
+          [_
+           (define-values (orig-pkg-source orig-pkg-type orig-pkg-dir)
+             (if (eq? 'clone (car orig-pkg))
+                 (values (caddr orig-pkg)
+                         'clone
+                         (enclosing-path-for-repo (caddr orig-pkg)
+                                                  (path->complete-path
+                                                   (cadr orig-pkg)
+                                                   (pkg-installed-dir))))
+                 ;; It would be better if the type were preseved
+                 ;; from install time, but we always make the
+                 ;; URL unambigious:
+                 (values (cadr orig-pkg) #f #f)))
+           (define new-checksum
+             (hash-ref update-cache pkg-name
+                       (lambda ()
+                         (remote-package-checksum orig-pkg download-printf pkg-name
+                                                  #:catalog-lookup-cache catalog-lookup-cache))))
+           ;; Record downloaded checksum:
+           (hash-set! update-cache pkg-name new-checksum)
+           (or (and new-checksum
+                    (not (equal? checksum new-checksum))
+                    ;; Update it:
+                    (begin
+                      ;; Flush cache of downloaded checksums, in case
+                      ;; there was a race between our checkig and updates on
+                      ;; the catalog server:
+                      (clear-checksums-in-cache! update-cache)
+                      (list (pkg-desc orig-pkg-source orig-pkg-type pkg-name #f auto?
+                                      orig-pkg-dir))))
+               ;; Continue with dependencies, maybe
+               (check-missing-dependencies update-dependencies))]))]
      [else null])))
 
 (define (pkg-update in-pkgs
