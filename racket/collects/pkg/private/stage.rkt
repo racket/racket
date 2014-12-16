@@ -87,11 +87,11 @@
                                                'dir)
                                            'file))
                                    #:must-infer-name? (not given-pkg-name)
-                                   #:complain complain-about-source)
+                                   #:complain (complain-about-source given-pkg-name))
         (package-source->name+type pkg given-type
                                    #:link-dirs? link-dirs?
                                    #:must-infer-name? (not given-pkg-name)
-                                   #:complain complain-about-source)))
+                                   #:complain (complain-about-source given-pkg-name))))
   (define pkg-name (or given-pkg-name inferred-pkg-name))
   (when (and type (not pkg-name))
     (pkg-error (~a "could not infer package name from source\n"

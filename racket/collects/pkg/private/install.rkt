@@ -931,7 +931,7 @@
                                            (pkg-desc-type pkg-name)
                                            #:link-dirs? link-dirs?
                                            #:must-infer-name? (not (pkg-desc-name pkg-name))
-                                           #:complain complain-about-source))
+                                           #:complain (complain-about-source  (pkg-desc-name pkg-name))))
       (define name (or (pkg-desc-name pkg-name)
                        inferred-name))
       ;; Check that the package is installed, and get current checksum:

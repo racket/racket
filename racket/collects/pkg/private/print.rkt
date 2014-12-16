@@ -31,12 +31,15 @@
   (apply printf fmt args)
   (flush-output))
 
-(define (complain-about-source s reason)
+(define ((complain-about-source given-name) s reason)
   (pkg-error (~a "invalid package source;\n"
                  " ~a\n"
-                 "  given: ~a")
+                 "  given: ~a~a")
              reason
-             s))
+             s
+             (if given-name
+                 (~a "\n  for package name: " given-name)
+                 "")))
 
 (define (ask question
              #:default-yes? [default-yes? #t])
