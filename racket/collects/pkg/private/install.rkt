@@ -904,7 +904,9 @@
 ;; If `must-update?', then complain if the package is not
 ;; updatable.
 ;; The `update-cache' argument is used to cache which packages
-;; are already being updated and downloaded checksums.
+;; are already being updated and their downloaded checksums;
+;; it maps a package name to a checksum, and a box of the package
+;; name to #t (to avoid multiple update attempts).
 (define ((packages-to-update download-printf db
                              #:must-update? [must-update? #t]
                              #:deps? deps?
@@ -922,7 +924,8 @@
          pkg-name)
   (let update-loop ([pkg-name pkg-name]
                     [must-update? must-update?]
-                    [force-update? force-update?])
+                    [force-update? force-update?]
+                    [report-skip? #t])
     (cond
      [(pkg-desc? pkg-name)
       ;; Infer the package-source type and name:
@@ -965,7 +968,7 @@
                                                    (pkg-desc-extra-path pkg-name)))))
           ;; Update:
           (begin
-            (hash-set! update-cache (pkg-desc-source pkg-name) #t)
+            (hash-set! update-cache (box name) #t)
             (list (pkg-desc (pkg-desc-source pkg-name)
                             (pkg-desc-type pkg-name)
                             name
@@ -977,9 +980,9 @@
           ;; No update needed, but maybe check dependencies:
           (if (or deps?
                   implies?)
-              (update-loop name #f #f)
+              (update-loop name #f #f #f)
               null))]
-     [(hash-ref update-cache pkg-name #f)
+     [(hash-ref update-cache (box pkg-name) #f)
       ;; package is already being updated
       null]
      ;; A string indicates that package source that should be
@@ -1005,27 +1008,27 @@
         
         (cond
          [(pair? missing-deps)
-          ;; A dependency is missing. Treat the dependenct package as
+          ;; A dependency is missing. Treat the dependent package as
           ;; needing an update, even if it is installed as a link, so
           ;; that the user is asked about installing dependencies, etc.
           (log-pkg-debug "Missing dependencies of ~s: ~s" pkg-name missing-deps)
-          (update-loop (pkg-info->desc pkg-name info) #f #t)]
+          (update-loop (pkg-info->desc pkg-name info) #f #t #t)]
          [else
           
           (define (update-dependencies)
+            (hash-set! update-cache (box pkg-name) #t)
             (if (or deps? implies?)
                 ;; Check dependencies
                 (append-map
-                 (lambda (dep) (update-loop dep #f #f))
+                 (lambda (dep) (update-loop dep #f #f #t))
                  deps)
                 null))
           
           (define (skip/update-dependencies kind)
-            (unless all-mode?
+            (unless (or all-mode? (not report-skip?))
               (download-printf "Skipping update of ~a: ~a\n"
                                kind
                                pkg-name))
-            (hash-set! update-cache pkg-name #t)
             (update-dependencies))
           
           (match orig-pkg
@@ -1069,22 +1072,23 @@
                    ;; URL unambigious:
                    (values (cadr orig-pkg) #f #f)))
              (define new-checksum
-               (or (hash-ref update-cache pkg-name #f)
-                   (remote-package-checksum orig-pkg download-printf pkg-name
-                                            #:catalog-lookup-cache catalog-lookup-cache)))
+               (hash-ref update-cache pkg-name
+                         (lambda ()
+                           (remote-package-checksum orig-pkg download-printf pkg-name
+                                                    #:catalog-lookup-cache catalog-lookup-cache))))
              ;; Record downloaded checksum:
              (hash-set! update-cache pkg-name new-checksum)
              (or (and new-checksum
                       (not (equal? checksum new-checksum))
+                      ;; Update it:
                       (begin
-                        ;; Update it:
-                        (hash-set! update-cache pkg-name #t)
                         ;; Flush cache of downloaded checksums, in case
                         ;; there was a race between our checkig and updates on
                         ;; the catalog server:
                         (clear-checksums-in-cache! update-cache)
                         (list (pkg-desc orig-pkg-source orig-pkg-type pkg-name #f auto?
                                         orig-pkg-dir))))
+                 ;; Continue with dependencies, maybe
                  (update-dependencies))])]))]
      [else null])))
 
@@ -1116,7 +1120,7 @@
                 [else in-pkgs]))
   (define update-cache (make-hash))
   (define catalog-lookup-cache (make-hash))
-  (define to-update (append-map (packages-to-update download-printf db
+  (define to-updat* (append-map (packages-to-update download-printf db
                                                     #:must-update? (and (not all-mode?)
                                                                         (not update-deps?))
                                                     #:deps? (or update-deps? 
@@ -1157,11 +1161,25 @@
                                "")
                            "\n"))]))
      'skip]
-    [(empty? to-update)
+    [(empty? to-updat*)
      (unless quiet?
        (printf/flush "No updates available\n"))
      'skip]
     [else
+     (define to-update
+       (hash-values
+        (for/fold ([ht #hash()]) ([u (in-list to-updat*)])
+          (cond
+           [(hash-ref ht (pkg-desc-name u) #f)
+            => (lambda (v)
+                 (cond
+                  [(pkg-desc=? v u) ht]
+                  [else
+                   (pkg-error (~a "cannot update with conflicting update information;\n"
+                                  "  package name: ~a")
+                              (pkg-desc-name u))]))]
+           [else
+            (hash-set ht (pkg-desc-name u) u)]))))
      (unless quiet?
        (printf "Updating:\n")
        (for ([u (in-list to-update)])
