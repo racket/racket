@@ -9,12 +9,6 @@
 
 (this-test-is-run-by-the-main-test)
 
-(define (set-file path content)
-  (call-with-output-file* 
-   path
-   #:exists 'truncate/replace
-   (lambda (o) (displayln content o))))
-
 (pkg-tests
  (define git-exe (find-executable-path
                   (if (eq? 'windows (system-type)) "git.exe" "git")))

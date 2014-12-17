@@ -7,13 +7,6 @@
 
 (this-test-is-run-by-the-main-test)
 
-(define (set-file path content)
-  (make-parent-directory* path)
-  (call-with-output-file* 
-   path
-   #:exists 'truncate/replace
-   (lambda (o) (displayln content o))))
-
 (define (make-cat-entry #:name name
                         #:source source
                         #:deps [deps null]

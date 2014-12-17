@@ -217,4 +217,10 @@
                      'dependencies
                      '("pkg-test1"))))
 
+(define (set-file path content)
+  (call-with-output-file* 
+   path
+   #:exists 'truncate/replace
+   (lambda (o) (displayln content o))))
+
 (provide (all-defined-out))

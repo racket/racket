@@ -17,7 +17,7 @@
 (pkg-tests
  (shelly-begin
   (initialize-catalogs)
-
+  
   $ "raco pkg create --format plt test-pkgs/pkg-test1/"
   $ "raco pkg create --format plt test-pkgs/pkg-test1-not-conflict/"
   (shelly-install "only modules are considered for conflicts"
@@ -77,6 +77,40 @@
                    $ "raco pkg install --force test-pkgs/pkg-test1.zip" =exit> 0
                    $ "racket -e '(require pkg-test1/conflict)'" =exit> 43
                    $ "raco pkg remove pkg-test1-conflict"))
+
+  (with-fake-root
+    (shelly-case
+     "update succeeds when module is moved to dependency"
+     (define tmp-dir (path->directory-path (make-temporary-file "pkg~a" 'directory)))
+     
+     (shelly-wind
+      (define a-dir (build-path tmp-dir "a"))
+      (make-directory a-dir)
+      (set-file (build-path a-dir "info.rkt") "#lang info\n(define collection \"a\")\n")
+      (set-file (build-path a-dir "apple.rkt") "#lang racket/base\n")
+
+      (define b-dir (build-path tmp-dir "b"))
+      (make-directory b-dir)
+      (set-file (build-path b-dir "info.rkt") "#lang info\n(define collection \"a\")\n")
+      (set-file (build-path b-dir "apple.rkt") "#lang racket/base\n")
+      
+      $ (~a "raco pkg install --copy " a-dir " " b-dir)
+      =exit> 1 
+      =stderr> #rx"packages conflict"
+      
+      $ (~a "raco pkg install --copy " a-dir)
+      (set-file (build-path a-dir "info.rkt") 
+                (~a "#lang info\n(define collection \"a\")\n"
+                    "(define deps '((" (~s (path->string b-dir)) ")))\n"))
+      $ (~a "raco pkg update --auto --copy " a-dir)
+      =exit> 1 
+      =stderr> #rx"packages conflict"
+      
+      (delete-file (build-path a-dir "apple.rkt"))
+      $ (~a "raco pkg update --auto --copy " a-dir)
+      
+      (finally
+       (delete-directory/files tmp-dir)))))
 
   (shelly-case
    "conflict extra installs"
