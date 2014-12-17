@@ -8,13 +8,14 @@
                ;; the tests use -min.0 etc
                "unstable-flonum-lib"
                ;; the tests use zo-structs
-               "compiler-lib"
+               "zo-lib"
                ;; the tests use the scribble reader
                "at-exp-lib"
-               ;; the below are all tested here
-               "sandbox-lib"
+               ;; the ffi tests use these
                "serialize-cstruct-lib"
-               "cext-lib"))
+               "dynext-lib"
+               ;; sandboxes are tested here
+               "sandbox-lib"))
 
 (define pkg-desc "Minimal core version of Racket test suites")
 
