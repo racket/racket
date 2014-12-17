@@ -75,7 +75,7 @@ develops only a few of them. The intended workflow is as follows:
 
   @commandline{@command{update} --clone @nonterm{path-to}/@nonterm{pkg-name}}}
 
- @item{If a package's current installation is not drawn fro a Git
+ @item{If a package's current installation is not drawn from a Git
   repository (e.g., it's drawn from a catalog of built packages for a
   distribution or snapshot), but @nonterm{catalog} maps the package
   name to the right Git repository, then combine @DFlag{clone} with

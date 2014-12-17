@@ -337,7 +337,7 @@ for information on how package information is extracted from a catalog.
 @subsection[#:tag "concept:auto"]{Explicit vs@|._| Auto-Installation}
 
 When a package is installed, the original source of its installation
-is recorded, as well as whether the instalation was an @tech{automatic installation}. An
+is recorded, as well as whether the installation was an @tech{automatic installation}. An
 @deftech{automatic installation} is one that was installed because it
 was a dependency of a non-@tech{automatic installation} package.
 
