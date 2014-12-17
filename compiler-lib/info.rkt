@@ -4,7 +4,10 @@
 
 (define deps '("base"
                "scheme-lib"
-               "rackunit-lib"))
+               "rackunit-lib"
+               "zo-lib"))
+
+(define implies '("zo-lib"))
 
 (define pkg-desc "implementation (no documentation) part of \"compiler\"")
 
