@@ -1119,11 +1119,11 @@
                              [(abs)
                               (and (complete-path? p)
                                    (match c
-                                     [(list 'planet (? string? a) (? string? p))
+                                     [(list 'planet (? string? a) (? string? pk))
                                       ;; Check that the package is installed and maps to `p`:
-                                      (and (get-installed-package a p d e)
+                                      (and (get-installed-package a pk d e)
                                            (let ([bp (resolve-planet-path
-                                                      `(planet "bogus.rkt" (,a ,p ,d ,e)))])
+                                                      `(planet "bogus.rkt" (,a ,pk ,d ,e)))])
                                              (and (path? bp)
                                                   (let-values ([(base name dir?) (split-path bp)])
                                                     (and (path? base)
