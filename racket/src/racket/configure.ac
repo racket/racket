@@ -625,6 +625,11 @@ case "$host_os" in
     enable_pthread_by_default=yes
     try_kqueue_syscall=yes
     ;;
+  bitrig*)
+    LIBS="$LIBS -Wl,--export-dynamic"
+    enable_pthread_by_default=yes
+    try_kqueue_syscall=yes
+    ;;
   dragonfly*)
     LIBS="$LIBS -Wl,--export-dynamic"
     enable_pthread_by_default=yes
