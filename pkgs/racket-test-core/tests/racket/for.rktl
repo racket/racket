@@ -3,8 +3,7 @@
 
 (Section 'for)
 
-(require compatibility/mlist
-         "for-util.rkt")
+(require "for-util.rkt")
 
 (test-sequence [(0 1 2)] 3)
 (test-sequence [(0 1 2)] (in-range 3))
@@ -16,8 +15,8 @@
 
 (test-sequence [(a b c)] '(a b c))
 (test-sequence [(a b c)] (in-list '(a b c)))
-(test-sequence [(a b c)] (mlist 'a 'b 'c))
-(test-sequence [(a b c)] (in-mlist (mlist 'a 'b 'c)))
+(test-sequence [(a b c)] (mcons 'a (mcons 'b (mcons 'c empty))))
+(test-sequence [(a b c)] (in-mlist (mcons 'a (mcons 'b (mcons 'c empty)))))
 (test-sequence [(a b c)] #(a b c))
 (test-sequence [(a b c)] (in-vector #(a b c)))
 (test-sequence [(a b c)] (in-vector (chaperone-vector #(a b c) (lambda (vec i val) val) (lambda (vec i val) val))))
