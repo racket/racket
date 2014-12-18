@@ -3704,6 +3704,7 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t s
       } else if (WAS_WSAEMSGSIZE(errid)) {
 	x = end - start;
 	errid = 0;
+	break;
       } else if (WAS_EAGAIN(errid)) {
 	if (can_block) {
 	  /* Block and eventually try again. */
