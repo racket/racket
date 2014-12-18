@@ -1137,7 +1137,7 @@
    make-weak-hash make-weak-hasheq make-weak-hasheqv)))
 
 (for-each
- (lambda (h1)
+ (lambda (h1)   
    (let* ([get-k #f]
           [get-v #f]
           [set-k #f]
@@ -1199,7 +1199,27 @@
              (set! get-v #f)
              (test #t values (equal? h2 (hash-set h1 'key 'val)))
              (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
-             (void)))))))
+             (void))))))
+   ;; Check that `hash-set` propagates in a way that allows
+   ;; `chaperone-of?` to work recursively:
+   (let ()
+     (define proc (lambda (x) (add1 x)))
+     (define h2 (hash-set h1 1 proc))
+     (define (add-chap h2)
+       (chaperone-hash h2
+                       (λ (h k) (values k (λ (h k v) v)))
+                       (λ (h k v) (values k v))
+                       (λ _ #f)
+                       (λ (h k) k)))
+     (define h3 (add-chap h2))
+     (test #t chaperone-of? h3 h2)
+     (test #f chaperone-of? h3 (add-chap h2))
+     (define h4 (hash-set h3 1 proc))
+     (test #t chaperone-of? h4 h3)
+     (define h5 (hash-set h3 1 (chaperone-procedure proc void)))
+     (test #t chaperone-of? h5 h3)
+     (test #f chaperone-of? (hash-set h3 1 sub1) h3)
+     (test #f chaperone-of? (hash-set h3 2 sub1) h3)))
  (list #hash() #hasheq() #hasheqv()))
 
 ;; ----------------------------------------

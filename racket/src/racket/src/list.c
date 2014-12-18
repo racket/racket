@@ -2914,6 +2914,9 @@ static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, i
   } else
     clear = scheme_false;
 
+  /* The allocation of this vector is used to detect when two
+     chaperoned immutable hash tables can be
+     `{chaperone,impersonator}-of?` when they're not eq. */
   redirects = scheme_make_vector(5, NULL);
   SCHEME_VEC_ELS(redirects)[0] = argv[1];
   SCHEME_VEC_ELS(redirects)[1] = argv[2];
