@@ -1,9 +1,15 @@
+#lang racket/base
 
-(load-relative "loadtest.rktl")
-
-(Section 'char-set/srfi-14)
-
+(require rackunit)
 (require srfi/14/char-set)
+
+(define-syntax test
+  (syntax-rules ()
+    [(_ #t p? args ...) (check-true (p? args ...))]
+    [(_ #f p? args ...) (check-false (p? args ...))]
+    [(_ e args ...) (check-equal? e (args ...))]))
+
+(define-syntax-rule (err/rt-test e) (check-exn exn:fail? (λ () e)))
 
 ;; NOTE: tests assume that ! functions are actually functional
 
@@ -295,7 +301,8 @@
   )
 
 ;; ----------------------------------------
-  
+
+
 ;;; This is a regression testing suite for the SRFI-14 char-set library.
 ;;; Olin Shivers
 
@@ -304,9 +311,9 @@
 			 (begin (one-test tst) ...))))
 		(one-test (syntax-rules (let)
 			    ((_ (let . rest))
-			     (test #t 'let... (let . rest)))
+			     (check-true (let . rest)))
 			    ((_ (op arg ...))
-			     (test #t op arg ...)))))
+			     (check-true (op arg ...))))))
   (let ((vowel? (lambda (c) (member c '(#\a #\e #\i #\o #\u)))))
 
     (tests
@@ -504,8 +511,4 @@
 ;; ----------------------------------------
 
 ;; PR 8624 --- make sure there's no error:
-(test #t values (string? (char-set->string (char-set-complement char-set:graphic))))
-
-;; ----------------------------------------
-
-(report-errs)
+(check-true (string? (char-set->string (char-set-complement char-set:graphic))))

@@ -528,9 +528,4 @@
   (test '(20 19 18 17 16 15 14 13 12 11) range 20 10 -1)
   (test '(10 11.5 13.0 14.5) range 10 15 1.5))
 
-;; ---------- check no collisions with srfi/1 ----------
-(test (void)
-      eval '(module foo scheme/base (require scheme/base srfi/1/list))
-           (make-base-namespace))
-
 (report-errs)

@@ -229,9 +229,4 @@
   (err/rt-test (vector-map (lambda (x) x) #() #() #()) (check-regs #rx"vector-map" #rx"mismatch between procedure arity")))
 
 
-;; ---------- check no collisions with srfi/43 ----------
-#;(test (void)
-      eval '(module foo scheme/base (require scheme/base srfi/43))
-           (make-base-namespace))
-
 (report-errs)
