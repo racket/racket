@@ -34,7 +34,6 @@
 (load-in-sandbox "resource.rktl")
 (load-in-sandbox "syntaxlibs.rktl")
 (load-in-sandbox "subprocess.rktl")
-(load-in-sandbox "char-set.rktl")
 (load-in-sandbox "bytes.rktl")
 (load-in-sandbox "trace.rktl")
 (load-in-sandbox "trait.rktl")

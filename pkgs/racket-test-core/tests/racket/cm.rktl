@@ -4,7 +4,7 @@
 (Section 'cm)
 
 (require compiler/cm
-         scheme/file)
+         racket/file)
 
 (define dir (build-path (find-system-path 'temp-dir)
                         "plt-cm-test"))
