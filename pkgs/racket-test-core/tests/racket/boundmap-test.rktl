@@ -85,8 +85,9 @@
               l))))
   
   (let-values ([(y1 y2 y3 y4)
-                (syntax-case (expand #'(module m mzscheme (require (prefix x: mzscheme)) + x:+ - x:-)) ()
-                  [(a b c (d e f y1 y2 y3 y4))
+                ;; #%plain-module-begin avoids wrapping the ids we want in `call-with-values`
+                (syntax-case (expand #'(module m racket/base (#%plain-module-begin (require (prefix-in x: racket/base)) + x:+ - x:-))) ()
+                  [(a b c (d e y1 y2 y3 y4))
                    (values (syntax y1)
                            (syntax y2)
                            (syntax y3)

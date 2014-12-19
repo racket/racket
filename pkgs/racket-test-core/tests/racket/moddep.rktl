@@ -61,6 +61,8 @@
 
 ;; The "mzlib" and "ffi" collections are chosen to exist only in main "collects",
 ;; but that's fragile.
+;; STH: 12/18/14: The above is no longer true, but there's now a "mzlib" collection
+;;      in "racket-test-core" so that these tests can pass.
 (let ([mzlib (collection-path "mzlib")]
       [ffi (collection-path "ffi")])
   (test-rmp (build-path mzlib "x.rkt") '(lib "x.ss") #f)

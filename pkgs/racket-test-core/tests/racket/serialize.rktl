@@ -297,7 +297,7 @@
       
 ;; ----------------------------------------
 
-(module ser-mod mzscheme
+(module ser-mod racket/base
    (require racket/serialize)
    (provide ser-mod-test)
 

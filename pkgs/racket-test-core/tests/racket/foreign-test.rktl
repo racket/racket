@@ -95,9 +95,10 @@
       (putenv "TEMP" (find-dir "Temporary directory" "C:/Temp" "C:/tmp")))
     (when 64bit? (putenv "Platform" "X64"))))
 
-(require dynext/compile dynext/link mzlib/etc)
+(require dynext/compile dynext/link racket/runtime-path)
+(define-runtime-path here ".")
 (define delete-test-files
-  (let ([c  (build-path (this-expression-source-directory) "foreign-test.c")]
+  (let ([c  (build-path here "foreign-test.c")]
         [o  (build-path (current-directory)
                         (if (eq? 'windows (system-type))
                           "foreign-test.obj" "foreign-test.o"))]
@@ -564,8 +565,7 @@
 
 ;; check cstruct serialization (define-serialize-cstruct must be at module level, can't use (let () ...))
 (module mod-cstruct-serialize racket/base
-  (require (for-syntax racket/base rackunit)
-           rackunit
+  (require (for-syntax racket/base)
            racket/serialize
            racket/list
            ffi/unsafe
@@ -589,12 +589,41 @@
   ;; run multiple times to better catching gc related errors
   (define num-runs 5)
 
+  (define-syntax-rule (check-exn exn thunk)
+    (if (regexp? exn)
+        (err/rt-test (thunk) (lambda (e) (regexp-match? exn (exn-message e))))
+        (err/rt-test (thunk) exn)))
+   (define-syntax-rule (err/rt-test e p?)
+     (with-handlers ([p? void]
+                     [exn:fail? (lambda (exn) (eprintf "exn test ~a failed, expected ~a but got ~a\n" 'e p? exn))])
+       e))
+
   ;; --- syntax errors
+  (define-syntax-rule (check-not-exn e)
+    (with-handlers ([exn:fail? (lambda (exn) (eprintf "no-exn test ~a failed, got exn ~a\n" 'e exn))])
+      e))
+
+  (define-syntax-rule (check-equal? e v)
+    (let ([r e]
+          [v* v])
+      (unless (equal? e v*)
+        (eprintf "check-equal? ~a: expected ~a but got ~a" 'e v* r))))
   (begin-for-syntax
+   (define-syntax-rule (err/rt-test e p?)
+     (with-handlers ([p? void]
+                     [exn:fail? (lambda (exn) (eprintf "exn test ~a failed, expected ~a but got ~a\n" 'e p? exn))])
+       e))
+   (define-syntax-rule (check-not-exn e)
+     (with-handlers ([exn:fail? (lambda (exn) (eprintf "no-exn test ~a failed, got exn ~a\n" 'e exn))])
+       e))
    (define-syntax-rule (check-exn+rx exn rx thunk)
      (begin
-       (check-exn exn thunk)
-       (check-exn rx thunk)))
+       (err/rt-test (thunk) exn)
+       (err/rt-test (thunk) (lambda (e) (regexp-match? rx (exn-message e))))))
+
+
+
+
 
    (check-exn+rx exn:fail:syntax? #rx"id must start with"
                  (lambda () (local-expand #'(define-serializable-cstruct F1a ([a _int])) 'module #f)))
@@ -718,7 +747,7 @@
 
      (define s1 (serialize a))
      (define ds1 (deserialize s1))
-     (check-true (ptr-equal? (C-b (A-c ds1)) (D-b (A-d ds1))))
+     (check-equal? #t (ptr-equal? (C-b (A-c ds1)) (D-b (A-d ds1))))
 
      (collect-garbage)
      (check-equal? (C-b (A-c a)) (D-b (A-d a)))
@@ -793,7 +822,7 @@
      (define ds (deserialize (serialize par)))
      (collect-garbage)
 
-     (check-true
+     (check-equal? #t
       (for*/and ([i 2] [j 5])
         (= (SINT-a (array-ref (PTRAR-a ds) i j)) (+ 10 j (* i 5)))))
 
@@ -805,7 +834,7 @@
      (define ds2 (deserialize (serialize ear)))
      (collect-garbage)
 
-     (check-true
+     (check-equal? #t
       (for*/and ([i 2] [j 5])
         (= (SINT-a (array-ref (EMBAR-a ds2) i j)) (+ 10 j (* i 5)))))))
 

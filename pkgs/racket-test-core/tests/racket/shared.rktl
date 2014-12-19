@@ -4,9 +4,16 @@
 (Section 'shared)
 
 (require racket/shared
+         (prefix-in s: scheme/base)
          racket/undefined)
 
-(require (only-in mzscheme define-struct))
+(define-syntax define-struct
+  (syntax-rules ()
+    [(_ e (f ...))
+     (s:define-struct e (f ...) #:mutable)]
+    [(_ e s (f ...))
+     (s:define-struct e s (f ...) #:mutable)]))
+
 (load-relative "shared-tests.rktl")
 
 (err/rt-test (shared ([x x]) x) exn:fail:contract:variable?)
@@ -17,7 +24,13 @@
                  (unbox x)))
 
 (namespace-require/copy 'scheme/base)
-(require (only-in mzscheme define-struct))
+
+(define-syntax define-struct
+  (syntax-rules ()
+    [(_ e (f ...))
+     (s:define-struct e (f ...) #:mutable)]
+    [(_ e s (f ...))
+     (s:define-struct e s (f ...) #:mutable)]))
 (load-relative "shared-tests.rktl")
 
 ;; Check that `shared' works with `struct':

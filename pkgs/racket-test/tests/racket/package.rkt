@@ -1,8 +1,18 @@
+#lang racket/load
+(require rackunit racket/package (for-syntax racket/base))
 
-(load-relative "loadtest.rktl")
-(require scheme/package)
+(define-syntax test
+  (syntax-rules ()
+    [(_ #t p? args ...) (check-true (p? args ...))]
+    [(_ #f p? args ...) (check-false (p? args ...))]
+    [(_ e n args ...) (if (procedure? n) 
+                          (check-equal? e (n args ...))
+                          (check-equal? e args ...))]))
 
-(Section 'packages)
+(define-syntax err/rt-test
+  (syntax-rules ()
+    [(_ e) (check-exn exn:fail? (λ () e))]
+    [(_ e ty?) (check-exn ty? (λ () e))]))
 
 (define-syntax (test-pack-seq stx)
   (syntax-case stx ()
@@ -42,9 +52,9 @@
     ;; top level
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
-        (namespace-attach-module orig 'scheme/package)
-        (namespace-require '(for-syntax scheme/base))
-        (namespace-require 'scheme/package)
+        (namespace-attach-module orig 'racket/package)
+        (namespace-require '(for-syntax racket/base))
+        (namespace-require 'racket/package)
         (for-each eval forms)
         (if (fail? expr)
             (err/rt-test (eval (fail-expr expr)) result)
@@ -52,9 +62,9 @@
     ;; let
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
-        (namespace-attach-module orig 'scheme/package)
-        (namespace-require '(for-syntax scheme/base))
-        (namespace-require 'scheme/package)
+        (namespace-attach-module orig 'racket/package)
+        (namespace-require '(for-syntax racket/base))
+        (namespace-require 'racket/package)
         (let ([e `(let () (begin . ,forms) ,(fail-expr expr))])
           (if (fail? expr)
               (err/rt-test (eval e) result)
@@ -62,9 +72,9 @@
     ;; nested let
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
-        (namespace-attach-module orig 'scheme/package)
-        (namespace-require '(for-syntax scheme/base))
-        (namespace-require 'scheme/package)
+        (namespace-attach-module orig 'racket/package)
+        (namespace-require '(for-syntax racket/base))
+        (namespace-require 'racket/package)
         (let ([e (let loop ([forms forms])
                    (if (null? (cdr forms))
                        `(let () (begin . ,forms) ,(fail-expr expr))
@@ -76,10 +86,10 @@
     ;; module
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
-        (namespace-attach-module orig 'scheme/package)
-        (let ([m `(module m scheme/base
-                    (require (for-syntax scheme/base)
-                             scheme/package)
+        (namespace-attach-module orig 'racket/package)
+        (let ([m `(module m racket/base
+                    (require (for-syntax racket/base)
+                             racket/package)
                     (begin . ,forms)
                     (define result ,(fail-expr expr))
                     (provide result))])
@@ -263,6 +273,3 @@
 
 (test 5 dynamic-require '(submod 'package-in-a-submodule main) 'out)
 
-;; ----------------------------------------
-
-(report-errs)

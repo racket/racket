@@ -14,7 +14,6 @@
 (load-in-sandbox "flonum.rktl")
 (load-in-sandbox "string.rktl")
 
-(load-in-sandbox "mpair.rktl")
 (load-in-sandbox "async-channel.rktl")
 (load-in-sandbox "pathlib.rktl")
 (load-in-sandbox "filelib.rktl")
@@ -28,7 +27,6 @@
 (load-in-sandbox "pretty.rktl")
 (load-in-sandbox "control.rktl")
 (load-in-sandbox "serialize.rktl")
-(load-in-sandbox "package.rktl")
 (load-in-sandbox "sandbox.rktl")
 (load-in-sandbox "shared.rktl")
 (load-in-sandbox "resource.rktl")

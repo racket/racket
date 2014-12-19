@@ -1,9 +1,14 @@
+#lang racket/base
 
-(load-relative "loadtest.rktl")
+(require rackunit racket/mpair)
 
-(Section 'mpair)
+(define-syntax test
+  (syntax-rules ()
+    [(_ #t p? args ...) (check-true (p? args ...))]
+    [(_ #f p? args ...) (check-false (p? args ...))]
+    [(_ e args ...) (check-equal? e (args ...))]))
 
-(require scheme/mpair)
+(define-syntax-rule (err/rt-test e) (check-exn exn:fail? (λ () e)))
 
 
 ;; ----------------------------------------
@@ -13,10 +18,9 @@
 (test (mlist 1) mreverse! (mlist 1))
 (test (mlist 3 2 1) mreverse! (mlist 1 2 3))
 
-(define a (mlist 1 2 3))
-(test (mlist 3 2 1) mreverse! a)
-(test (mlist 1) values a)
-
+(define a0 (mlist 1 2 3))
+(test (mlist 3 2 1) mreverse! a0)
+(test (mlist 1) values a0)
 ;; ----------------------------------------
 ;; mappend!
 
@@ -50,6 +54,3 @@
 (test a3result mappend! a3 a3)
 (test a3result values a3)
 
-;; ----------------------------------------
-
-(report-errs)
