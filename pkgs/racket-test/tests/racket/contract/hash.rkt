@@ -191,7 +191,43 @@
       (for ([(k v) (in-hash h)])
         (hash-ref k v))))
   
+  (test/pos-blame
+   'hash/dc1
+   '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)])
+              1
+              'pos 'neg))
+  (test/pos-blame
+   'hash/dc2
+   '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)])
+              (hash #f #f)
+              'pos 'neg))
   
+  (test/pos-blame
+   'hash/dc3
+   '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)])
+              (hash 0 #f)
+              'pos 'neg))
+  
+  (test/pos-blame
+   'hash/dc4
+   '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)])
+              (hash 1 "x")
+              'pos 'neg))
+  (test/pos-blame
+   'hash/dc5
+   '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)])
+              (hash 3 "x")
+              'pos 'neg)) 
+  (test/pos-blame
+   'hash/dc6
+   '(contract (hash/dc [d integer?] [r (d) string?] #:immutable #f)
+              (hash 3 "x")
+              'pos 'neg))
+  (test/spec-passed
+   'hash/dc7
+   '(contract (hash/dc [d integer?] [r (d) string?] #:immutable #t)
+              (hash 3 "x")
+              'pos 'neg))
   
   (test/no-error
    '(let ([v (chaperone-hash (make-immutable-hash (list (cons 1 2)))

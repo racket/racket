@@ -696,6 +696,40 @@ and either a @tech{chaperone} or @tech{impersonator} of the original hash table
 for mutable hash tables.
 }]}
 
+@defform[(hash/dc [key-id key-contract-expr] [value-id (key-id) value-contract-expr]
+                  hash/dc-option)
+         #:grammar ([hash/dc-option (code:line)
+                                    (code:line #:immutable immutable?-expr hash/dc-option)
+                                    (code:line #:kind kind-expr hash/dc-option)])]{
+ Creates a contract for @racket[hash?] tables with keys matching @racket[key-contract-expr]
+ and where the contract on the values can depend on the key itself, since
+ @racket[key-id] will be bound to the corresponding key before evaluating
+ the @racket[values-contract-expr].
+ 
+ If @racket[immutable?-expr] is @racket[#t], then only @racket[immutable?] hashes
+ are accepted. If it is @racket[#f] then @racket[immutable?] hashes are always
+ rejected. It defaults to @racket['dont-care], in which case both mutable and
+ immutable hashes are accepted.
+ 
+ If @racket[kind-expr] evaluates to @racket['flat], then @racket[key-contract-expr]
+ and @racket[value-contract-expr] are expected to evaluate to @racket[flat-contract?]s.
+ If it is @racket['chaperone], then they are expected to be @racket[chaperone-contract?]s,
+ and it may also be @racket['impersonator], in which case they may be any @racket[contract?]s.
+ The default is @racket['chaperone].
+ 
+ @examples[#:eval
+            (contract-eval)
+            (define/contract h
+              (hash/dc [k real?] [v (k) (>=/c k)])
+              (hash 1 3
+                    2 4))
+            (define/contract h
+              (hash/dc [k real?] [v (k) (>=/c k)])
+              (hash 3 1
+                    4 2))]
+ 
+ 
+}
 
 @defproc[(channel/c [val contract?])
           contract?]{

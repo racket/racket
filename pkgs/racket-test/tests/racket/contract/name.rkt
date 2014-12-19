@@ -260,7 +260,11 @@
   (test-name '(hash/c symbol? boolean? #:immutable #t) (hash/c symbol? boolean? #:immutable #t))
   (test-name '(hash/c symbol? boolean? #:immutable #f) (hash/c symbol? boolean? #:immutable #f))
   (test-name '(hash/c symbol? boolean?) (hash/c symbol? boolean? #:immutable 'dont-care))
-
+  (test-name '(hash/dc [k symbol?] [v (k) boolean?]) 
+             (hash/dc [k symbol?] [v (k) boolean?]))
+  (test-name '(hash/dc [k symbol?] [v (k) boolean?] #:immutable #t #:kind 'flat) 
+             (hash/dc [k symbol?] [v (k) boolean?]  #:immutable #t #:kind 'flat))
+  
   (test-name '(box/c boolean?) (box/c boolean?))
   (test-name '(box/c boolean?) (box/c (flat-contract boolean?)))
   (test-name 'the-name (flat-rec-contract the-name))
