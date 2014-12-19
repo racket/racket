@@ -191,6 +191,51 @@
       (for ([(k v) (in-hash h)])
         (hash-ref k v))))
   
+  (test/spec-passed
+   'hash/c14
+   '(let ()
+      (define h (hash 1 #f))
+      (hash-set (contract (hash/c integer? boolean?) h 'pos 'neg)
+                1 "x")))
+  
+  (test/spec-passed/result
+   'hash/c15
+   '(let ()
+      (define h (hash 1 #f))
+      (chaperone-of? (contract (hash/c integer? boolean?) h 'pos 'neg)
+                     h))
+   #t)
+  
+  (test/spec-passed
+   'hash/c16
+   '(let ()
+      (define h (hash 1 #f))
+      (define c-h
+        (chaperone-hash
+         h
+         (λ (h k) (values k (λ (h k v) v)))
+         (λ (h k v) (values k v))
+         (λ (h k) k)
+         (λ (h k) k)))
+      (hash-set (contract (hash/c integer? boolean?) c-h 'pos 'neg)
+                1 "x")))
+  
+  (test/spec-passed/result
+   'hash/c17
+   '(let ()
+      (define h (hash 1 #f))
+      (define c-h
+        (chaperone-hash
+         h
+         (λ (h k) (values k (λ (h k v) v)))
+         (λ (h k v) (values k v))
+         (λ (h k) k)
+         (λ (h k) k)))
+      (chaperone-of? (contract (hash/c integer? boolean?) c-h 'pos 'neg)
+                     c-h))
+   #t)
+
+  
   (test/pos-blame
    'hash/dc1
    '(contract (hash/dc [d integer?] [r (d) (if (even? d) string? symbol?)])

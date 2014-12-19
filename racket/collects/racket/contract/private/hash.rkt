@@ -237,16 +237,11 @@
 (define (handle-the-hash val neg-party
                          pos-dom-proj neg-dom-proj mk-pos-rng-proj mk-neg-rng-proj
                          chaperone-or-impersonate-hash ctc blame)
-  (if (and (immutable? val) (not (chaperone? val)))
-      (let ([hash-maker
-             (cond
-               [(hash-equal? val) make-immutable-hash]
-               [(hash-eqv? val) make-immutable-hasheqv]
-               [(hash-eq? val) make-immutable-hasheq])])
-        (hash-maker
-         (for/list ([(k v) (in-hash val)])
-           (cons ((pos-dom-proj k) neg-party)
-                 (((mk-pos-rng-proj k) v) neg-party)))))
+  (if (immutable? val) 
+      (for/fold ([h val]) ([(k v) (in-hash val)])
+        (hash-set h
+                  ((pos-dom-proj k) neg-party)
+                  (((mk-pos-rng-proj k) v) neg-party)))
       (chaperone-or-impersonate-hash
        val
        (λ (h k)
