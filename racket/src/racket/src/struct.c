@@ -5446,7 +5446,11 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
       return NULL;
     name = a;
 
-    immutable_array = mutability_data_to_immutability_data(icnt + ucnt, mutables);
+    if ((icnt + ucnt) || (mutables && SCHEME_VEC_SIZE(mutables))) {
+      immutable_array = mutability_data_to_immutability_data(icnt + ucnt, mutables);
+      if (!immutable_array)
+        return NULL;
+    }
 
     if (parent && (icnt + parent->num_slots > MAX_STRUCT_FIELD_COUNT))
       return NULL;

@@ -1113,5 +1113,12 @@
 (err/rt-test (make-prefab-struct '(foo 5 bar 2999999999999999) 1))
 
 ;; ----------------------------------------
+;; Check that prefab mutable-field spec makes sense for size:
+
+(err/rt-test (make-prefab-struct '(foo 5 (1 #f) #(1) bar 2 #(99999)) 1 2 3 4 5 6 7 8))
+(test #t struct? (make-prefab-struct '(foo 5 (1 #f) #(1) bar 2 #()) 1 2 3 4 5 6 7 8))
+(test #t struct? (make-prefab-struct '(foo 5 (1 #f) #(1) bar 0 #()) 1 2 3 4 5 6))
+
+;; ----------------------------------------
 
 (report-errs)
