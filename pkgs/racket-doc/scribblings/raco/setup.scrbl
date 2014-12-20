@@ -32,6 +32,7 @@
                     racket/path
                     setup/collects
                     syntax/modcollapse
+                    racket/runtime-path
                     pkg/path))
 
 @(define-syntax-rule (local-module mod . body)
@@ -50,6 +51,8 @@
 @(define (defaults v) 
    @elem{The default is @|v|.})
 
+@(define pkg-doc '(lib "pkg/scribblings/pkg.scrbl"))
+
 @title[#:tag "setup" #:style 'toc]{@exec{raco setup}: Installation Management}
 
 The @exec{raco setup} command builds bytecode, documentation,
@@ -57,7 +60,7 @@ executables, and metadata indexes for all installed collections.
 
 The collections that are built by @exec{raco setup} can be part of the
 original Racket distribution, installed via the package manager (see
-@other-manual['(lib "pkg/scribblings/pkg.scrbl")]), installed via
+@other-manual[pkg-doc]), installed via
 @|PLaneT| (see @other-manual['(lib "planet/planet.scrbl")]), linked
 via @exec{raco link}, in a directory that is listed in the
 @envvar{PLTCOLLECTS} environment variable, or placed into one of the
@@ -182,28 +185,25 @@ flags:
   whether dependencies among libraries are properly reflected by
   package-level dependency declarations, whether modules are declared
   by multiple packages, and whether package version dependencies are
-  satisfied. Dependency checking uses @filepath{.zo} files, associated
-  @filepath{.dep} files, and the documentation index. Unless
-  @DFlag{check-pkg-deps} is specified, dependency checking is disabled
-  if any collection is specified for @exec{raco setup}, and missing
-  dependencies are not treated as an error for a package that has no
-  dependency declarations.}
+  satisfied. See @secref["setup-check-deps"] for more information.}
 
  @item{@DFlag{check-pkg-deps} --- checks package dependencies (unless
   explicitly disabled) even when specific collections are provided to
-  @exec{raco setup}, and even for packages that have no
-  dependency declarations.}
+  @exec{raco setup}, and even for packages that have no dependency
+  declarations. See @secref["setup-check-deps"] for more information.}
 
  @item{@DFlag{fix-pkg-deps} --- attempt to correct dependency
-  mismatches by adjusting package @filepath{info.rkt} files (which makes
-  sense only for packages that are installed as links).}
+  mismatches by adjusting package @filepath{info.rkt} files (which
+  makes sense only for packages that are installed as links). See
+  @secref["setup-check-deps"] for more information.}
 
  @item{@DFlag{unused-pkg-deps} --- attempt to report dependencies that
   are declared but are unused. Beware that some package dependencies
   may be intentionally unused (e.g., declared to force installation of
   other packages as a convenience), and beware that package
   dependencies may be reported as unused only because compilation of
-  relevant modules has been suppressed.}
+  relevant modules has been suppressed.  See
+  @secref["setup-check-deps"] for more information.}
 
 ]}
 @item{Constraining user versus installation setup:
@@ -757,6 +757,45 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 @; ------------------------------------------------------------------------
 
 @include-section["info.scrbl"]
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "setup-check-deps"]{Package Dependency Checking}
+
+When @exec{raco setup} is run with no arguments,@margin-note*{Unless
+@DFlag{check-pkg-deps} is specified, dependency checking is disabled
+if any collection is specified for @exec{raco setup}.} after building
+all collections and documentation, @exec{raco setup} check package
+dependencies. Specifically, it inspects compiled files and
+documentation to check that references across package boundaries are
+reflected by dependency declarations in each package-level
+@filepath{info.rkt} file (see @secref[#:doc pkg-doc "metadata"]).
+Dependency checking in @exec{raco setup} is intended as an aid to
+package developers to help them declare dependencies correctly. The
+@exec{raco setup} process itself does not depend on package dependency
+declarations; a missing dependency creates trouble only for others who
+later install a package. To accommodate the early stages of package
+development, missing dependencies are not treated as an error for a
+package that has no dependency declarations.
+
+Dependency checking uses @filepath{.zo} files, associated
+@filepath{.dep} files, and the documentation index. Dynamic
+references, such as through @racket[dynamic-require], are not visible
+to the dependency checker; only dependencies via @racket[require],
+@racket[define-runtime-module-path-index], and other forms that
+cooperate with @racket[raco make] are visible for dependency checking.
+
+Dependency checking is sensitive to whether a dependency is needed
+only as a build-time dependency. A build-time dependency is one that
+is not present in a package if it is converted to a @tech[#:doc
+pkg-doc]{binary package} (see @secref[#:doc pkg-doc "strip"]). For
+example, @filepath{tests} and @filepath{scribblings} directories are
+stripped away in a binary package by default, so cross-package
+references from directories with those names are treated as build
+dependencies. Build-time-only dependencies can be listed as
+@racket[build-deps] instead of @racket[deps] in a package's
+@filepath{info.rkt} file; dependencies listed in @racket[deps],
+meanwhile, are treated as both run-time and build-time dependencies.
 
 @; ------------------------------------------------------------------------
 
