@@ -105,7 +105,7 @@
   (test #t
         'trace-lambda-anonymous
         (match tout
-          [(list (pregexp #px">\\(.+\\.rktl?:\\d+:\\d+ 120\\)") "<120") #t]
+          [(list (pregexp #px">\\(.+\\.rktl?:\\d+:\\d+[|]? 120\\)") "<120") #t]
           [_ #f])))
 
 (report-errs)
