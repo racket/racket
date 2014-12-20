@@ -167,6 +167,31 @@
     (delete-directory/files a-dir)
     
     ;; ----------------------------------------
+    ;; Using local changes for metadata
+
+    (make-directory a-dir)
+    $ (~a "cd " a-dir "; git init")
+    (set-file (build-path a-dir "main.rkt") "#lang racket/base 1")
+    $ (commit-changes-cmd)
+
+    (with-fake-root
+      (shelly-begin
+       (shelly-case
+        "basic --clone installation"
+        $ (~a "raco pkg install --clone " (build-path clone-dir "a") " --name a http://localhost:9998/a/.git")
+        $ "racket -l a" =stdout> "1\n")
+
+       (shelly-case
+        "update of metadata in clone"
+        (set-file (build-path clone-dir "a" "info.rkt") "#lang info\n(define deps '(\"b\"))\n")
+        $ (~a "raco pkg update --update-deps --deps fail a")
+        =exit> 1
+        =stderr> #rx"missing dependencies")))
+
+    (delete-directory/files (build-path clone-dir "a"))
+    (delete-directory/files a-dir)
+
+    ;; ----------------------------------------
     ;; Conversion to a clone
 
     (with-fake-root

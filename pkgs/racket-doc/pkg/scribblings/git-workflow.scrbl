@@ -151,17 +151,21 @@ ways:
        (which is then the same as the local repository state).}
 
  @item{When checking a @command-ref{install} or @command-ref{update}
-       request for collisions, commits are first fetched with
-       @exec{git fetch}, and an additional local clone is created in a
-       temporary directory. If the overall installation or update is
-       deemed to be successful with respect to remote commits (not
-       necessarily the current commit in each local repository) in
-       that copy, then an update to the linked repository checkout
-       proceeds. Finally, after all checkouts succeed, other package
-       installations and updates are completed and recorded. If a
-       checkout fails (e.g., due to a conflict or uncommitted change),
-       then the repository checkout is left in a failed state, but all
-       package actions are otherwise canceled.}
+       request for dependencies and collisions, the clone directory's
+       content is used directly only if the current checkout includes
+       the target commit.
+
+       Otherwise, commits are first fetched with @exec{git fetch}, and
+       an additional local clone is created in a temporary directory.
+       If the overall installation or update is deemed to be
+       successful with respect to remote commits (not necessarily the
+       current commit in each local repository) in that copy, then an
+       update to the linked repository checkout proceeds. Finally,
+       after all checkouts succeed, other package installations and
+       updates are completed and recorded. If a checkout fails (e.g.,
+       due to a conflict or uncommitted change), then the repository
+       checkout is left in a failed state, but all package actions are
+       otherwise canceled.}
 
  @item{Removing a package with @command-ref{remove} leaves the
        repository checkout intact while removing the package link.}

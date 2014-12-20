@@ -13,6 +13,7 @@
 
 (define (git #:status [status void]
              #:quiet-stderr? [quiet-stderr? #t] ; suppress stderr unless error
+             #:fail-mode [fail-mode 'error]
              . args)
   (define exe (force git-exe))
   (unless exe
@@ -29,7 +30,12 @@
                                          (lambda () (raise exn)))])
                  (define r (apply system* exe args))
                  (lambda () r)))))
-  (unless r
+  (cond
+   [r #t]
+   [else
     (when quiet-stderr?
       (write-bytes (get-output-bytes stderr) (current-error-port)))
-    (pkg-error "Git command failed")))
+    (case fail-mode
+      [(status) #f]
+      [else
+       (pkg-error "Git command failed")])]))

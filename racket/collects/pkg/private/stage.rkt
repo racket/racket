@@ -117,12 +117,37 @@
     (define pkg-no-query (real-git-url pkg-url host port repo))
     (define clone-dir (or given-at-dir
                           (current-directory)))
-
-    (define tmp-dir (make-temporary-file
-                     (string-append "~a-" pkg-name)
-                     'directory))
     
     (define (status s) (download-printf "~a\n" s))
+
+    (define orig-pkg (desc->orig-pkg 'clone pkg given-at-dir))
+
+    (define checksum
+      (or given-checksum
+          (remote-package-checksum orig-pkg download-printf pkg-name)))
+
+    ;; If the clone directory already exists, and if it already has
+    ;; the target commit, then we use that directory. It may have
+    ;; changes to package metadata (even uncommitted changes) that
+    ;; we'd prefer to use
+    (define working-dir
+      (and (directory-exists? clone-dir)
+           (or (not checksum)
+               (let ([o (open-output-bytes)])
+                 (and (parameterize ([current-directory clone-dir]
+                                     [current-error-port (open-output-bytes)]
+                                     [current-output-port o])
+                        (git "log" "--pretty=%H" #:fail-mode 'status))
+                      (regexp-match (~a "(?m:^" (regexp-quote checksum) ")")
+                                    (get-output-bytes o)))))
+           (if (null? path)
+               clone-dir
+               (apply build-path clone-dir path))))
+
+    (define tmp-dir (and (not working-dir)
+                         (make-temporary-file
+                          (string-append "~a-" pkg-name)
+                          'directory)))
 
     (define staged? #f)
     (dynamic-wind
@@ -137,33 +162,31 @@
          (parameterize ([current-directory clone-dir])
            (git #:status status "clone" "-b" branch pkg-no-query ".")))
 
-       (define orig-pkg (desc->orig-pkg 'clone pkg given-at-dir))
+       (unless working-dir
+         (parameterize ([current-directory clone-dir])
+           (download-printf "Fetching from remote repository ~a\n"
+                            pkg-no-query)
+           (git #:status status "fetch" pkg-no-query)))
 
-       (define checksum
-         (or given-checksum
-             (remote-package-checksum orig-pkg download-printf pkg-name)))
-
-       (parameterize ([current-directory clone-dir])
-         (download-printf "Fetching from remote repository ~a\n"
-                          pkg-no-query)
-         (git #:status status "fetch" pkg-no-query))
-
-       ;; Make a clone of the [to-be-]linked checkout so that
-       ;; we can check dependencies, etc., before changing
-       ;; the checkout.
-       (download-printf "Cloning repository locally for staging\n")
-       (git #:status status "clone" clone-dir tmp-dir)
-       (parameterize ([current-directory tmp-dir])
-         (git #:status status "fetch" clone-dir branch)
-         (git #:status status "checkout" (or checksum branch)))
-
-       (lift-git-directory-content tmp-dir path)
+       (cond
+        [tmp-dir
+         ;; Make a clone of the [to-be-]linked checkout so that
+         ;; we can check dependencies, etc., before changing
+         ;; the checkout.
+         (download-printf "Cloning repository locally for staging\n")
+         (git #:status status "clone" clone-dir tmp-dir)
+         (parameterize ([current-directory tmp-dir])
+           (git #:status status "fetch" clone-dir branch)
+           (git #:status status "checkout" (or checksum branch)))
+         (lift-git-directory-content tmp-dir path)]
+        [else
+         (download-printf "Using clone directory directly for metadata\n")])
 
        (begin0
         (update-install-info-checksum
          (update-install-info-orig-pkg
           (update-install-info-git-dir
-           (stage-package/info tmp-dir
+           (stage-package/info (or working-dir tmp-dir)
                                'dir
                                pkg-name
                                #:at-dir given-at-dir
@@ -176,14 +199,15 @@
                                #:strip strip-mode
                                #:force-strip? force-strip?
                                #:in-place? #t
-                               #:in-place-clean? #t)
+                               #:in-place-clean? (not working-dir))
            (apply build-path clone-dir path))
           orig-pkg)
          checksum)
         (set! staged? #t)))
      (λ ()
        (unless staged?
-         (delete-directory/files tmp-dir))))]
+         (when tmp-dir
+           (delete-directory/files tmp-dir)))))]
    [(or (eq? type 'file-url)
         (eq? type 'dir-url)
         (eq? type 'github)
