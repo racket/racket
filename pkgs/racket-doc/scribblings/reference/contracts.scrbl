@@ -1190,6 +1190,25 @@ The @racket[#:pre-cond] and @racket[#:post-cond] keywords are aliases for
   access to a single shared integer.
 }
 
+@defproc[(dynamic->* 
+          [#:mandatory-domain-contracts mandatory-domain-contracts (listof contract?) '()]
+          [#:optional-domain-contracts optional-domain-contracts (listof contract?) '()]
+          [#:mandatory-keywords mandatory-keywords (listof keyword?) '()]
+          [#:mandatory-keyword-contracts mandatory-keyword-contracts (listof contract?) '()]
+          [#:optional-keywords optional-keywords (listof keyword?) '()]
+          [#:optional-keyword-contracts optional-keyword-contracts (listof contract?) '()]
+          [#:rest-contract rest-contract (or/c #f contract?) #f]
+          [#:range-contracts range-contracts (or/c #f (listof contract?))])
+         contract?]{
+  Like @racket[->*], except the number of arguments and results can be computed
+  at runtime, instead of being fixed at compile-time. Passing @racket[#f] as the
+  @racket[#:range-contracts] argument produces a contract like one where @racket[any]
+  is used with @racket[->] or @racket[->*].
+  
+  For many uses, @racket[dynamic->*]'s result is slower than @racket[->*] (or @racket[->]), 
+  but for some it has comparable speed. The name of the contract returned by
+  @racket[dynamic->*] uses the @racket[->] or @racket[->*] syntax.
+}
 
 @defform[(unconstrained-domain-> range-expr ...)]{
 

@@ -356,5 +356,58 @@
       (struct x (a))
       (eq? (contract predicate/c x? 'pos 'neg) x?))
    #t)
+
+  
+  (test/spec-passed/result
+   'dynamic->*1
+   '((contract (dynamic->* #:mandatory-domain-contracts (list any/c any/c)
+                           #:range-contracts (list any/c))
+               (λ (x z) (+ x z)) 'pos 'neg)
+     2 3)
+   5)
+  
+  (test/pos-blame
+   'dynamic->*2
+   '((contract (dynamic->* #:mandatory-domain-contracts (list any/c any/c)
+                           #:range-contracts (list any/c any/c))
+               (λ (x z) (+ x z)) 'pos 'neg)
+     2 3))
+  
+  (test/neg-blame
+   'dynamic->*3
+   '((contract (dynamic->* #:mandatory-domain-contracts (list integer? integer?)
+                           #:range-contracts (list integer?))
+               (λ (x z) (+ x z)) 'pos 'neg)
+     #f #f))
+  
+  (test/spec-passed/result
+   'dynamic->*5
+   '((contract (dynamic->* #:mandatory-keywords '(#:x)
+                           #:mandatory-keyword-contracts (list integer?)
+                           #:mandatory-domain-contracts (list any/c any/c)
+                           #:range-contracts (list any/c))
+               (λ (#:x x y z) (+ x z)) 'pos 'neg)
+     #:x 1 2 3)
+   4)
+  
+  (test/spec-passed
+   'dynamic->*6
+   '((contract (dynamic->* #:mandatory-domain-contracts (build-list 11 (λ (x) any/c))
+                           #:range-contracts (build-list 11 (λ (x) any/c)))
+               values 'pos 'neg)
+     1 2 3 4 5 6 7 8 9 10 11))
+  
+  (test/spec-passed/result
+   'dynamic->*7
+   '((contract (dynamic->* #:rest-contract (listof any/c)
+                           #:range-contracts #f)
+               (λ whatever whatever) 'pos 'neg)
+     1 2 3 4 5 6 7)
+   '(1 2 3 4 5 6 7))
+  
+  (test/spec-passed/result
+   'dynamic->*8
+   '((contract (dynamic->* #:range-contracts #f) (λ () 1) 'pos 'neg))
+   1)
   
   )

@@ -960,6 +960,43 @@
         ((dynamic-require ''provide/contract49-m2 'go))))
    "f:")
   
+  (test/spec-passed/result
+   'provide/contract50
+   '(let ()
+      (eval '(module provide/contract50-m1 racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         [f (dynamic->* #:mandatory-domain-contracts (list any/c)
+                                        #:range-contracts (list any/c))]))
+               (define (f x) x)))
+      (eval '(module provide/contract50-m2 racket/base
+               (require 'provide/contract50-m1)
+               (define x (f 1))
+               (provide x)))
+      (eval '(dynamic-require ''provide/contract50-m2 'x)))
+   1)
+  
+  ;; make sure the dynamic->* doesn't go thru the "fast" path when there is a direct call
+  ;; because that path isn't actually implemented in the combinator (so contract-out
+  ;; doesn't try to use it)
+  (test/spec-passed/result
+   'provide/contract51
+   '(let ()
+      (eval '(module provide/contract51-m1 racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         [f (dynamic->* #:mandatory-keywords '(#:x #:y #:z #:w)
+                                        #:mandatory-keyword-contracts (list any/c any/c any/c any/c)
+                                        #:range-contracts (list any/c any/c any/c any/c))]))
+               (define (f #:x x #:y y #:z z #:w w) (values x y z w))))
+      (eval '(module provide/contract51-m2 racket/base
+               (require 'provide/contract51-m1)
+               (define-values (x y z w) (f #:x 1 #:y 2 #:z 3 #:w 4))
+               (define a (list x y z w))
+               (provide a)))
+      (eval '(dynamic-require ''provide/contract51-m2 'a)))
+   '(1 2 3 4))
+  
   (contract-error-test
    'contract-error-test8
    #'(begin

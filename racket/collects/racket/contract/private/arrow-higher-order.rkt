@@ -286,7 +286,7 @@
                                                            #,(if dom-rest #f max-arity)
                                                            '(req-kwd ...)
                                                            '(opt-kwd ...))))])))))))))))
-  
+
 (define (maybe-cons-kwd c x r neg-party)
   (if (eq? arrow:unspecified-dom x)
       r
