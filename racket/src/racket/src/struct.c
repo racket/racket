@@ -5364,7 +5364,7 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
 {
   Scheme_Struct_Type *parent = NULL;
   Scheme_Object *a, *uninit_val, *mutables, *name;
-  int ucnt, icnt;
+  intptr_t ucnt, icnt;
   char *immutable_array = NULL;
 
   if (SCHEME_SYMBOLP(key))

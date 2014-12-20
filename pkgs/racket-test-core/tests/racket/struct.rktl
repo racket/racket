@@ -1107,5 +1107,11 @@
   (test #t procedure? mut))
 
 ;; ----------------------------------------
+;; Check that prefab struct size limit is enforced:
+
+(err/rt-test (make-prefab-struct '(foo 2999999999999999) 1))
+(err/rt-test (make-prefab-struct '(foo 5 bar 2999999999999999) 1))
+
+;; ----------------------------------------
 
 (report-errs)
