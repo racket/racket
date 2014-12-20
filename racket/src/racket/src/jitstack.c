@@ -288,11 +288,17 @@ Scheme_Object *scheme_native_stack_trace(void)
 	else
 	  first = name;
 	last = name;
+	if (shift_cache_to_next) {
+	  stack_cache_stack[stack_cache_stack_pos].cache = last;
+	  shift_cache_to_next = 0;
+	}
       }
 
       if (cache_sp) {
 	if (STK_COMP((uintptr_t)halfway, (uintptr_t)cache_sp)) {
 	  set_cache(cache_sp, last);
+	  if (!name)
+	    shift_cache_to_next = 1;
 	  halfway = stack_end;
 	  unsuccess = -100000; /* if we got halfway, no need to bail out later */
 	}
@@ -305,6 +311,9 @@ Scheme_Object *scheme_native_stack_trace(void)
 	break;
       }
     }
+
+    if (shift_cache_to_next)
+      stack_cache_stack[stack_cache_stack_pos].cache = tail;
 
     if (last)
       SCHEME_CDR(last) = tail;
