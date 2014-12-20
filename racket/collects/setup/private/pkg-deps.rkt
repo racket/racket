@@ -46,13 +46,13 @@
   (define pkg-versions (make-hash)) ; save declared versions
   (define path-cache (make-hash))
   (define metadata-ns (make-base-namespace))
+  (define pkg-dir-cache (make-hash))
+  (define missing-pkgs (make-hash))
 
   (hash-set! pkg-internal-deps "racket" (list (set) (set)))
   (hash-set! pkg-external-deps "racket" (set))
   (hash-set! pkg-reps "racket" "racket")
   
-  (define pkg-dir-cache (make-hash))
-
   ;; ----------------------------------------
   ;; printinf helpers:
   (define (setup-printf* task s . args)
@@ -90,7 +90,7 @@
   (define (check-module-declaration mod pkg)
     (let ([already-pkg (hash-ref mod-pkg mod #f)])
       (when already-pkg
-        (setup-fprintf* (current-error-port) #f 
+        (setup-fprintf* (current-error-port) #f
                         (string-append
                          "module provided by multiple packages:\n"
                          "  module: ~s\n"
@@ -108,30 +108,37 @@
   ;; Get a package's info, returning its deps and implies:
   (define (get-immediate-pkg-info! pkg dep-of)
     (define dir (pkg-directory pkg #:cache pkg-dir-cache))
-    (unless dir 
-      (error 'check-dependencies "package not installed: ~s~a" pkg
-             (if dep-of
-                 (format "\n  dependency of: ~a" dep-of)
-                 "")))
+    (unless dir
+      (unless (hash-ref missing-pkgs pkg #f)
+        (hash-set! missing-pkgs pkg #t)
+        (setup-fprintf* (current-error-port) #f
+                        "package not installed: ~s~a"
+                        pkg
+                        (if dep-of
+                            (format "\n  dependency of: ~a" dep-of)
+                            ""))))
     ;; Get package information:
     (define-values (checksum mods deps+build-deps+vers)
-      (get-pkg-content (pkg-desc (if (path? dir) (path->string dir) dir) 'dir pkg #f #f)
-                       #:namespace metadata-ns
-                       #:extract-info (lambda (i)
-                                        (cons
-                                         (if (and i
-                                                  (or (i 'deps (lambda () #f))
-                                                      (i 'build-deps (lambda () #f))))
-                                             (cons
-                                              (extract-pkg-dependencies i
-                                                                        #:build-deps? #f
-                                                                        #:filter? #t
-                                                                        #:versions? #t)
-                                              (extract-pkg-dependencies i
-                                                                        #:filter? #t
-                                                                        #:versions? #t))
-                                             #f)
-                                         (and i (i 'version (lambda () #f)))))))
+      (cond
+       [dir
+        (get-pkg-content (pkg-desc (if (path? dir) (path->string dir) dir) 'dir pkg #f #f)
+                         #:namespace metadata-ns
+                         #:extract-info (lambda (i)
+                                          (cons
+                                           (if (and i
+                                                    (or (i 'deps (lambda () #f))
+                                                        (i 'build-deps (lambda () #f))))
+                                               (cons
+                                                (extract-pkg-dependencies i
+                                                                          #:build-deps? #f
+                                                                          #:filter? #t
+                                                                          #:versions? #t)
+                                                (extract-pkg-dependencies i
+                                                                          #:filter? #t
+                                                                          #:versions? #t))
+                                               #f)
+                                           (and i (i 'version (lambda () #f))))))]
+       [else (values #f null (cons (cons null null) #f))]))
     (define vers (cdr deps+build-deps+vers))
     (define deps+build-deps (car deps+build-deps+vers))
     (unless (or deps+build-deps must-declare-deps?)
@@ -149,7 +156,7 @@
                                                     (map car (car deps+build-deps))))
                              (set)))
     (define implies 
-      (list->set (let ([i (get-info/full dir #:namespace metadata-ns)])
+      (list->set (let ([i (and dir (get-info/full dir #:namespace metadata-ns))])
                    (if i
                        (i 'implies (lambda () null))
                        null))))
@@ -555,10 +562,15 @@
   ;; Report result summary and (optionally) repair:
   (define all-ok? (and (zero? (hash-count missing))
                        (zero? (hash-count dup-mods))
-                       (zero? (hash-count bad-version-dependencies))))
+                       (zero? (hash-count bad-version-dependencies))
+                       (zero? (hash-count missing-pkgs))))
   (unless all-ok?
     (setup-fprintf (current-error-port) #f
                    "--- summary of package problems ---")
+    (for ([(pkg) (in-hash-keys missing-pkgs)])
+      (setup-fprintf* (current-error-port) #f
+                      "package not installed: ~a"
+                      pkg))
     (for ([(pkg deps) (in-hash bad-version-dependencies)])
       (setup-fprintf* (current-error-port) #f
                       (string-append
