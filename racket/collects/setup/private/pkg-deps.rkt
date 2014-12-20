@@ -51,6 +51,8 @@
   (hash-set! pkg-external-deps "racket" (set))
   (hash-set! pkg-reps "racket" "racket")
   
+  (define pkg-dir-cache (make-hash))
+
   ;; ----------------------------------------
   ;; printinf helpers:
   (define (setup-printf* task s . args)
@@ -105,7 +107,7 @@
   ;; ----------------------------------------
   ;; Get a package's info, returning its deps and implies:
   (define (get-immediate-pkg-info! pkg dep-of)
-    (define dir (pkg-directory pkg))
+    (define dir (pkg-directory pkg #:cache pkg-dir-cache))
     (unless dir 
       (error 'check-dependencies "package not installed: ~s~a" pkg
              (if dep-of
@@ -601,7 +603,7 @@
                 (for/list ([k (in-list pkgs)])
                   (format "\n   ~s" k)))))
       (when fix?
-        (define info-path (build-path (pkg-directory pkg) "info.rkt"))
+        (define info-path (build-path (pkg-directory pkg #:cache pkg-dir-cache) "info.rkt"))
         (setup-printf #f "repairing ~s..." info-path)
         (fix-info-deps-definition info-path 'deps (car pkgss))
         (fix-info-deps-definition info-path 'build-deps (cadr pkgss))))
