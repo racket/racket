@@ -3177,6 +3177,24 @@
               (random))
            #f)
 
+#;(test-comp `(module m racket/base
+              f
+              (error 'error))
+           `(module m racket/base
+              f
+              (error 'error)
+              (define f 5))
+           #f)
+           
+(test-comp `(module m racket/base
+              (define f 5)
+              (error 'error))
+           `(module m racket/base
+              (define f 5)
+              (error 'error)
+              (set! f 0))
+           #f)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check splitting of definitions
 (test-comp `(module m racket/base
