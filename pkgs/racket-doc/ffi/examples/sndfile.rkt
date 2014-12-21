@@ -11,11 +11,10 @@
 ;; a conservative extension of the earlier version (1.0.17?), and I
 ;; think you'll get graceful failures if the version is wrong.
 
-(define-runtime-path mac-ffi-path "./lib/libsndfile")
 (define libsndfile
   (match (system-type)
     ['unix (ffi-lib "libsndfile"   '("1.0.21" "1.0.20" ""))]
-    ['macosx (ffi-lib mac-ffi-path '("1.0.21" "1.0.20" ""))]
+    ['macosx (ffi-lib "libsndfile" '("1.0.21" "1.0.20" ""))]
     ['windows (error 'libsndfile "libsndfile not supported on windows.")]))
 
 ;; ==================== Types etc ====================
