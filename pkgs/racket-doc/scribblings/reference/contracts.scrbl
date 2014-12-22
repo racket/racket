@@ -976,9 +976,13 @@ each value must match its respective contract.}
            [optional-doms (code:line) (optional-dom ...)]
            [optional-dom dom-expr (code:line keyword dom-expr)]
            [rest (code:line) (code:line #:rest rest-expr)]
-           [pre (code:line) (code:line #:pre pre-cond-expr)]
+           [pre (code:line) 
+                (code:line #:pre pre-cond-expr)
+                (code:line #:pre/desc pre-cond-expr)]
            [range range-expr (values range-expr ...) any]
-           [post (code:line) (code:line #:post post-cond-expr)])]{
+           [post (code:line) 
+                 (code:line #:post post-cond-expr)
+                 (code:line #:post/desc post-cond-expr)])]{
 
 The @racket[->*] contract combinator produces contracts for functions
 that accept optional arguments (either keyword or positional) and/or
@@ -1005,14 +1009,24 @@ going to end up disallowing empty argument lists.
 The @racket[pre-cond-expr] and @racket[post-cond-expr]
 expressions are checked as the function is called and returns,
 respectively, and allow checking of the environment without an
-explicit connection to an argument (or a result).
+explicit connection to an argument (or a result). If the @racket[#:pre]
+or @racket[#:post] keywords are used, then a @racket[#f] result is
+treated as a failure and any other result is treated as success.
+If the @racket[#:pre/desc] or @racket[#:post/desc] keyword is used,
+the result of the expression must be either a boolean, a string, or a
+list of strings, where @racket[#t] means success and any of the other
+results mean failure. If the result is a string or a list of strings,
+the strings are expected to have at exactly one space after each
+newline and multiple are used as lines in the error message; the contract
+itself adds single space of indentation to each of the strings in that case.
+The formatting requirements are not checked but they
+match the recommendations in @secref["err-msg-conventions"].
 
 As an example, the contract
 @racketblock[(->* () (boolean? #:x integer?) #:rest (listof symbol?) symbol?)]
 matches functions that optionally accept a boolean, an
 integer keyword argument @racket[#:x] and arbitrarily more
 symbols, and that return a symbol.
-
 }
 
 @defform*/subs[#:literals (any values)

@@ -14,6 +14,7 @@
                        (values (flat-contract integer?) (flat-contract boolean?))))
   (test/no-error '(->* ((flat-contract integer?)) () #:rest (flat-contract integer?) any))
   (test/no-error '(->* ((flat-contract integer?)) () #:pre #t (flat-contract integer?) #:post #t))
+  (test/no-error '(->* (any/c) () #:pre/desc #t (flat-contract integer?) #:post/desc #t))
   
   
   
@@ -601,6 +602,84 @@
                (λ () 1)
                'pos
                'neg)))
+  
+  (test/neg-blame
+   '->*pre/post-8
+   '((contract (->* () () #:pre/desc #f integer? #:post/desc #f)
+               (λ () 1)
+               'pos
+               'neg)))
+  
+  (test/neg-blame
+   '->*pre/post-9
+   '((contract (->* () () #:pre/desc "" integer? #:post/desc #f)
+               (λ () 1)
+               'pos
+               'neg)))
+  
+  (test/neg-blame
+   '->*pre/post-10
+   '((contract (->* () () #:pre/desc '("qqq") integer? #:post/desc #f)
+               (λ () 1)
+               'pos
+               'neg)))
+  
+  (test/pos-blame
+   '->*pre/post-11
+   '((contract (->* () () #:pre/desc #t integer? #:post/desc #f)
+               (λ () 1)
+               'pos
+               'neg)))
+  
+  (test/pos-blame
+   '->*pre/post-12
+   '((contract (->* () () #:pre/desc #t integer? #:post/desc "")
+               (λ () 1)
+               'pos
+               'neg)))
+  
+  (test/pos-blame
+   '->*pre/post-13
+   '((contract (->* () () #:pre/desc #t integer? #:post/desc '("qqc"))
+               (λ () 1)
+               'pos
+               'neg)))
+  
+  (test/pos-blame
+   '->*pre/post-14
+   '((contract (->* () () #:pre/desc #t integer? #:post/desc '("qqc"))
+               (λ () 1)
+               'pos
+               'neg)))
+  
+  (test/neg-blame
+   '->*pre/post-15
+   '((contract (->* (integer?) #:pre/desc '("something" "not so great" "happened") any)
+               (λ (x) 1)
+               'pos 'neg)
+     1))
+  
+  (contract-error-test
+   '->*pre/post-16
+   '((contract (->* () () #:pre/desc '("something wonderful") integer? #:post/desc '("qqc"))
+                (λ () 1)
+                'pos
+                'neg))
+   (λ (x)
+     (and (exn:fail:contract? x)
+          (regexp-match #rx"\n *something wonderful\n"
+                        (exn-message x)))))
+  
+  (contract-error-test
+   '->*pre/post-17
+   '((contract (->* () () integer? #:post/desc "something horrible")
+               (λ () 1)
+               'pos
+               'neg))
+   (λ (x)
+     (and (exn:fail:contract? x)
+          (regexp-match #rx"\n *something horrible\n"
+                        (exn-message x)))))
   
   (test/spec-passed
    '->*-opt-optional1

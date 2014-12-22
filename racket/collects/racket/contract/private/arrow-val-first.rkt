@@ -73,12 +73,12 @@
                     optional-args
                     mandatory-kwds
                     optional-kwds
-                    pre
+                    pre pre/desc
                     rest
                     rngs
-                    post)
-  (define key (and (not pre)
-                   (not post)
+                    post post/desc)
+  (define key (and (not pre) (not pre/desc)
+                   (not post) (not post/desc)
                    (list (length regular-args)
                          (length optional-args)
                          (map syntax-e mandatory-kwds)
@@ -100,20 +100,20 @@
               optional-args
               mandatory-kwds
               optional-kwds
-              pre
+              pre pre/desc
               rest
               rngs
-              post)
+              post post/desc)
              (build-chaperone-constructor/real
               '() ;; this-args 
               regular-args
               optional-args
               mandatory-kwds
               optional-kwds
-              pre
+              pre pre/desc
               rest
               rngs
-              post))]))
+              post post/desc))]))
 
 (define-syntax (build-populars stx)
   (syntax-case stx ()
@@ -142,20 +142,20 @@
                        mans opts
                        mandatory-kwds
                        optional-kwds
-                       #f
+                       #f #f
                        rest
                        rng-vars
-                       #f))
+                       #f #f))
                   (define #,(syntax-local-introduce chaperone-id)
                     #,(build-chaperone-constructor/real
                        '() ;; this arg
                        mans opts
                        mandatory-kwds
                        optional-kwds
-                       #f
+                       #f #f
                        rest
                        rng-vars
-                       #f))))
+                       #f #f))))
          (define popular-chaperone-key-table
            (make-hash
             (list #,@(for/list ([id (in-list popular-key-ids)]
@@ -167,10 +167,10 @@
                     optional-args
                     mandatory-kwds
                     optional-kwds
-                    pre
+                    pre pre/desc
                     rest
                     rngs
-                    post)
+                    post post/desc)
   (with-syntax ([(regb ...) (generate-temporaries regular-args)]
                 [(optb ...) (generate-temporaries optional-args)]
                 [(kb ...) (generate-temporaries mandatory-kwds)]
@@ -194,11 +194,11 @@
                     [(the-call ...) #'(f ((regb arg-x) neg-party) ... kwd-arg-exps ...)]
                     [(pre-check ...)
                      (if pre 
-                         (list #`(check-pre-condition blame neg-party f #,pre))
+                         (list #`(check-pre-cond  #,pre blame neg-party f))
                          (list))]
                     [(post-check ...)
                      (if post
-                         (list #`(check-post-condition blame neg-party f #,post))
+                         (list #`(check-post-cond #,post blame neg-party f))
                          (list))]
                     [(restb) (generate-temporaries '(rest-args))])
         (define body-proc
@@ -412,19 +412,6 @@
             [(keyword<? opt-kwd kwd)
              (loop mandatory-kwds (cdr optional-kwds) kwds)])])])))
 
-                   
-(define (check-pre-condition blame neg-party val thunk)
-  (unless (thunk)
-    (raise-blame-error
-     (blame-swap blame) #:missing-party neg-party val
-     "#:pre condition failure")))
-
-(define (check-post-condition blame neg-party val thunk)
-  (unless (thunk)
-    (raise-blame-error
-     blame #:missing-party neg-party val
-     "#:post condition failure")))
-
 (define-for-syntax (parse-arrow-args stx args this->)
   (let loop ([args args]
              [regular-args '()]
@@ -501,7 +488,7 @@
            [rng (add-pos-obligations (list #'rng))]))
        (define-values (plus-one-arity-function chaperone-constructor)
          (build-plus-one-arity-function+chaperone-constructor 
-          stx regular-args '() kwds '() #f #f rngs #f))
+          stx regular-args '() kwds '() #f #f #f rngs #f #f))
        (syntax-property
         #`(let #,let-bindings
             #,(quasisyntax/loc stx
@@ -568,7 +555,7 @@
   (syntax-case stx ()
     [(_ (raw-mandatory-dom ...) . other)
      (let ()
-       (define-values (raw-optional-doms rest-ctc pre rng-ctcs post)
+       (define-values (raw-optional-doms rest-ctc pre pre/desc rng-ctcs post post/desc)
          (arrow:parse-leftover->* stx #'other))
        (with-syntax ([(man-dom
                        man-dom-kwds
@@ -585,13 +572,13 @@
           #'opt-dom
           #'opt-dom-kwds
           #'opt-lets
-          rest-ctc pre rng-ctcs post)))]))
+          rest-ctc pre pre/desc rng-ctcs post post/desc)))]))
 
 (define-for-syntax (->*-valid-app-shapes stx)
   (define this->* (gensym 'this->*))
   (define-values (man-dom man-dom-kwds man-lets
                           opt-dom opt-dom-kwds opt-lets
-                          rest-ctc pre rng-ctcs post)
+                          rest-ctc pre pre/desc rng-ctcs post post/desc)
     (parse->*2 stx this->*))
   (with-syntax ([((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
                 [((optional-dom-kwd optional-dom-kwd-ctc) ...) opt-dom-kwds])
@@ -607,7 +594,7 @@
      (define this->* (gensym 'this->*))
      (define-values (man-dom man-dom-kwds man-lets
                              opt-dom opt-dom-kwds opt-lets
-                             rest-ctc pre rng-ctcs post)
+                             rest-ctc pre pre/desc rng-ctcs post post/desc)
        (parse->*2 stx this->*))
      (with-syntax ([(mandatory-dom ...) man-dom]
                    [((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
@@ -618,11 +605,11 @@
                    [(pre-x post-x) (generate-temporaries '(pre-cond post-cond))])
        (with-syntax ([((kwd dom opt?) ...) #'((mandatory-dom-kwd mandatory-dom-kwd-ctc #f) ...
                                               (optional-dom-kwd optional-dom-kwd-ctc #t) ...)]
-                     [(pre-let-binding ...) (if pre
-                                                (list #`[pre-x (λ () #,pre)])
-                                                (list))]
-                     [(post-let-binding ...) (if post
-                                                 (list #`[post-x (λ () #,post)])
+                     [(pre-let-binding ...) (if (or pre pre/desc)
+                                               (list #`[pre-x (λ () #,(or pre pre/desc))])
+                                               (list))]
+                     [(post-let-binding ...) (if (or post post/desc)
+                                                 (list #`[post-x (λ () #,(or post post/desc))])
                                                  (list))])
          (define-values (plus-one-arity-function chaperone-constructor)
            (build-plus-one-arity-function+chaperone-constructor
@@ -632,9 +619,11 @@
             (syntax->list #'(mandatory-dom-kwd ...))
             (syntax->list #'(optional-dom-kwd ...))
             (and pre #'pre-x)
+            (and pre/desc #'pre-x)
             rest-ctc
             rng-ctcs
-            (and post #'post-x)))
+            (and post #'post-x)
+            (and post/desc #'post-x)))
          (syntax-property
           #`(let (mandatory-let-bindings ...
                   optional-let-bindings ... 
