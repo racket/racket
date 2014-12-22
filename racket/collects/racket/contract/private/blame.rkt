@@ -278,7 +278,7 @@
       [(blame-value blme)
        (format "~a: ~a" (blame-value blme) self-or-not)]
       [else
-       (format "~a:" self-or-not)]))
+       (format "~a" self-or-not)]))
   
   (define blame-parties (blame-positive blme))
   (define blaming-line
@@ -308,9 +308,17 @@
                 (from-info (blame-negative blme)))])
           (format "  contract from: ~a" from-negative-message))))
   
+  (define custom-message-appears-to-start-with-fields?
+    (regexp-match? #rx"[^\n]*:" custom-message))
+  
   (combine-lines
-   start-of-message
-   (format "  ~a"  custom-message)
+   (if custom-message-appears-to-start-with-fields?
+       start-of-message
+       (string-append start-of-message ";"))
+   (format (if custom-message-appears-to-start-with-fields?
+               "  ~a"
+               " ~a")
+           custom-message)
    context-lines
    (if context-lines
        contract-line
