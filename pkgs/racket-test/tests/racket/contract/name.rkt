@@ -126,7 +126,7 @@
                   #:post (q) (if (equal? q 14) 'aha any/c)))
   (test-name '(->i ((p any/c) (q (p) (void (((((...))))) 2 3 ...))) any)
              (->i ([p any/c]
-                   [q (p) (void (((((1))))) 2 3 4 5 6 7 8 9 10)])
+                   [q (p) (void ((((((1)))))) 2 3 4 5 6 7 8 9 10)])
                   any))
   
 
