@@ -685,6 +685,8 @@ static Scheme_Object *make_discarding_first_sequence(Scheme_Object *e1, Scheme_O
   e1 = optimize_ignored(e1, info, id_offset, 1, 1, 5);
   if (!e1)
     return e2;
+  if (!single_valued_noncm_expression(e1, 5))
+    e1 = ensure_single_value(e1);
   return make_sequence_2(e1, e2);
 }
 
