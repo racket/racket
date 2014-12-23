@@ -14,7 +14,8 @@
 (provide (for-syntax build-chaperone-constructor/real)
          ->-proj
          check-pre-cond
-         check-post-cond)
+         check-post-cond
+         pre-post/desc-result->string)
 
 (define-for-syntax (build-chaperone-constructor/real this-args
                                                      mandatory-dom-projs 
@@ -79,32 +80,36 @@
      (void)]
     [else
      (define msg
-       (cond
-         [(equal? condition-result #f)
-          (if pre?
-              "#:pre condition"
-              "#:post condition")]
-         [(string? condition-result) condition-result]
-         [(and (list? condition-result)
-               (andmap string? condition-result))
-          (apply
-           string-append
-           (let loop ([s condition-result])
-             (cond
-               [(null? s) '()]
-               [(null? (cdr s)) s]
-               [else (list* (car s)
-                            "\n " 
-                            (loop (cdr s)))])))]
-         [else
-          (error
-           '->*
-           "expected #:~a/desc to produce (or/c boolean? string? (listof string?)), got ~e"
-           (if pre? "pre" "post")
-           condition-result)]))
+       (pre-post/desc-result->string condition-result pre? '->*))
      (raise-blame-error (if pre? (blame-swap blame) blame)
                         #:missing-party neg-party
                         val "~a" msg)]))
+
+(define (pre-post/desc-result->string condition-result pre? who)
+  (cond
+    [(equal? condition-result #f)
+     (if pre?
+         "#:pre condition"
+         "#:post condition")]
+    [(string? condition-result)
+     condition-result]
+    [(and (list? condition-result)
+          (andmap string? condition-result))
+     (apply
+      string-append
+      (let loop ([s condition-result])
+        (cond
+          [(null? s) '()]
+          [(null? (cdr s)) s]
+          [else (list* (car s)
+                       "\n " 
+                       (loop (cdr s)))])))]
+    [else
+     (error
+      who
+      "expected #:~a/desc to produce (or/c boolean? string? (listof string?)), got ~e"
+      (if pre? "pre" "post")
+      condition-result)]))
 
 (define-for-syntax (create-chaperone blame val  
                                      this-args

@@ -98,6 +98,8 @@
               (->i () #:pre () #t [q number?]))
   (test-name '(->i () #:pre () #t [q () number?] #:post () #t)
               (->i () #:pre () #t [q () number?] #:post () #t))
+  (test-name '(->i () #:pre () #t [q () number?] #:post/desc () #t)
+              (->i () #:pre () #t [q () number?] #:post/desc () #t))
   (test-name '(->i ([x integer?]) #:pre (x) #t [q (x) number?] #:post (x) #t)
               (->i ([x integer?]) #:pre (x) #t [q (x) number?] #:post (x) #t))
   (test-name '(->i ([x real?]) [_ (x) (>/c x)])
@@ -108,6 +110,8 @@
                    #:post/name (y) "car" (car y))
               (->i ([x any/c]) [y () any/c] #:post/name (y) "pair" (pair? y)
                    #:post/name (y) "car" (car y)))
+  (test-name '(->i () #:pre/desc () #t [q number?])
+              (->i () #:pre/desc () #t [q number?]))
   (test-name '(->i ([p any/c]
                     [q (p) (if (equal? p 10) 'aha any/c)])
                    #:rest [rest (p) (if (equal? p 11) 'aha any/c)]

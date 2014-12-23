@@ -1049,6 +1049,8 @@ symbols, and that return a symbol.
  [pre-condition (code:line)
                 (code:line #:pre (id ...) 
                            boolean-expr pre-condition)
+                (code:line #:pre/desc (id ...) 
+                           expr pre-condition)
                 (code:line #:pre/name (id ...)
                            string boolean-expr pre-condition)]
  [dependent-range any
@@ -1059,6 +1061,8 @@ symbols, and that return a symbol.
  [post-condition (code:line)
                  (code:line #:post (id ...)
                             boolean-expr post-condition)
+                 (code:line #:post/desc (id ...)
+                            expr post-condition)
                  (code:line #:post/name (id ...)
                             string boolean-expr post-condition)]
  [id+ctc [id contract-expr]
@@ -1068,10 +1072,9 @@ symbols, and that return a symbol.
 )]{
 
 The @racket[->i] contract combinator differs from the @racket[->*]
-combinator in that the support pre- and post-condition clauses and
-in that each argument and result is named. These names can then
+combinator in that each argument and result is named and these names can
 be used in the subcontracts and in the pre-/post-condition clauses.
-In short, contracts now express dependencies among arguments and results.
+In other words, @racket[->i] expresses dependencies among arguments and results.
 
 The first sub-form of a @racket[->i] contract covers the mandatory and the
 second sub-form covers the optional arguments. Following that is an optional
@@ -1079,6 +1082,8 @@ rest-args contract, and an optional pre-condition. The pre-condition is
 introduced with the @racket[#:pre] keyword followed by the list of names on
 which it depends. If the @racket[#:pre/name] keyword is used, the string
 supplied is used as part of the error message; similarly with @racket[#:post/name].
+If @racket[#:pre/desc] or @racket[#:post/desc] is used, the the result of
+the expression is treated the same way as @racket[->*].
 
 The @racket[dependent-range] non-terminal specifies the possible result
 contracts. If it is @racket[any], then any value is allowed. Otherwise, the

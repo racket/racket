@@ -646,6 +646,20 @@
                'pos 'neg)
      (cons #f 1)))
   
+  (test/neg-blame
+   '->i35-g
+   '((contract (->i ([x any/c]) #:pre/desc (x) (pair? x) #:pre/desc (x) (car x) any)
+               (λ (x) 1)
+               'pos 'neg)
+     (cons #f 1)))
+  
+  (test/neg-blame
+   '->i35-h
+   '((contract (->i ([x any/c]) #:pre/desc (x) '("x") any)
+               (λ (x) 1)
+               'pos 'neg)
+     (cons #f 1)))
+  
   (test/spec-passed/result
    '->i36
    '((contract (->i ([f (-> number? number?)]) [res number?])
@@ -797,6 +811,28 @@
                     [y () any/c]
                     #:post/name (y) "pair" (pair? y)
                     #:post/name (y) "car" (car y))
+               (lambda (x) x)
+               'pos
+               'neg)
+     (cons #f 1)))
+  
+  (test/pos-blame
+   '->i47-f
+   '((contract (->i ([x any/c])
+                    [y () any/c]
+                    #:post/desc (y) (pair? y)
+                    #:post/desc (y) (car y))
+               (lambda (x) x)
+               'pos
+               'neg)
+     (cons #f 1)))
+  
+  (test/pos-blame
+   '->i47-g
+   '((contract (->i ([x any/c])
+                    [y () any/c]
+                    #:post/desc (y) (pair? y)
+                    #:post/desc (y) "x")
                (lambda (x) x)
                'pos
                'neg)
