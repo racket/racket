@@ -9,10 +9,36 @@
 (define (compute-quoted-src-expression stx)
   (define max-depth 4)
   (define max-width 5)
+  (define max-str/kwd/sym-length 20)
+  (define number-bound 1000000)
+  
+  (define (simple? ele)
+    (or (and (symbol? ele)
+             (< (string-length (symbol->string ele)
+                               max-str/kwd/sym-length)))
+        (and (keyword? ele)
+             (< (string-length (keyword->string ele)
+                               max-str/kwd/sym-length)))
+        (boolean? ele)
+        (char? ele)
+        (null? ele)
+        (and (string? ele)
+             (< (string-length ele) max-str/kwd/sym-length))
+        (and (number? ele)
+             (simple-rational? (real-part ele))
+             (simple-rational? (imag-part ele)))))
+  
+  (define (simple-rational? ele)
+    (or (inexact? ele)
+        (<= (- number-bound) (numerator ele) number-bound)
+        (<= (denominator ele) number-bound)))
+  
   (let loop ([stx stx]
              [depth max-depth])
     (cond
-      [(zero? depth) '...]
+      [(zero? depth)
+       (define ele (syntax-e stx))
+       (if (simple? ele) ele '...)]
       [else
        (define lst (syntax->list stx))
        (cond
@@ -26,18 +52,7 @@
                       '(...)))]
          [else
           (define ele (syntax-e stx))
-          (cond
-            [(or (symbol? ele)
-                 (boolean? ele)
-                 (char? ele)
-                 (number? ele))
-             ele]
-            [(string? ele)
-             (if (< (string-length ele) max-width)
-                 ele
-                 '...)]
-            [else
-             '...])])])))
+          (if (simple? ele) ele '...)])])))
 
 ;; split-doms : syntax identifier syntax -> syntax
 ;; given a sequence of keywords interpersed with other
