@@ -309,7 +309,7 @@
           (format "  contract from: ~a" from-negative-message))))
   
   (define custom-message-appears-to-start-with-fields?
-    (regexp-match? #rx"[^\n]*:" custom-message))
+    (regexp-match? #rx"^[^\n]*:" custom-message))
   
   (combine-lines
    (if custom-message-appears-to-start-with-fields?
