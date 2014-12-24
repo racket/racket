@@ -3132,6 +3132,31 @@
 (test-comp '(lambda (f) (values (f)) (values (f)) (values (f)) (error 'error))
            '(lambda (f) ((f) (f) (f) (error 'error)) 5))
 
+(test-comp '(lambda (f) (let ([x (error 'error)]) #f))
+           '(lambda (f) (let ([x (error 'error)]) (f x x)) 5))
+(test-comp '(lambda (f) (let ([x (error 'error)] [y #f]) #f))
+           '(lambda (f) (let ([x (error 'error)] [y (random)]) (f x x y y)) 5))
+(test-comp '(lambda (f) (let ([x (random)] [y (random)]) (f x x y y) (error 'error)))
+           '(lambda (f) (let ([x (random)] [y (random)]) (f x x y y) (error 'error)) 5))
+(test-comp '(lambda (f) (let-values ([(x) (error 'error)] [(y) #f] [(z) #f] ) #f))
+           '(lambda (f) (let-values ([(x) (error 'error)] [(y z) (f)]) (f x x y y z z)) 5))
+(test-comp '(lambda (f) (let-values ([(x) (error 'error)] [(y) #f] [(z) #f]) #f))
+           '(lambda (f) (let-values ([(x y) (values (error 'error) (random))] [(z) (f)]) (f x x y y z z)) 5))
+(test-comp '(lambda (f) (let-values ([(x) (begin (random) (error 'error))] [(y) #f] [(z) #f]) #f))
+           '(lambda (f) (let-values ([(x y) (values (random) (error 'error))] [(z) (f)]) (f x x y y z z)) 5))
+;alternative reduction:
+#;(test-comp '(lambda (f) (let-values ([(x) (random)] [(y) (error 'error)] [(z) #f]) #f))
+             '(lambda (f) (let-values ([(x y) (values (random) (error 'error))] [(z) (f)]) (f x x y y z z)) 5))
+
+(test-comp '(lambda (f) (letrec ([x (lambda() y)] [y (lambda () x)]) (f x y) (error 'error)))
+           '(lambda (f) (letrec ([x (lambda() y)] [y (lambda () x)]) (f x y) (error 'error)) 5))
+(test-comp '(lambda (f) (letrec ([x (lambda() y)] [y (lambda () x)] [z (error 'error)]) #f))
+           '(lambda (f) (letrec ([x (lambda() y)] [y (lambda () x)] [z (error 'error)]) (f x y z)) 5))
+(test-comp '(lambda (f) (letrec ([x (lambda() y)] [z (error 'error)] [y #f]) #f))
+           '(lambda (f) (letrec ([x (lambda() y)] [z (error 'error)] [y (lambda () x)]) (f x y z)) 5))
+(test-comp '(lambda (f) (letrec ([z (error 'error)] [x #f] [y #f]) #f))
+           '(lambda (f) (letrec ([z (error 'error)] [x (lambda() y)] [y (lambda () x)]) (f x y z)) 5))
+
 (test-comp `(module m racket/base
               (define x 5)
               (set! x 3)

@@ -5215,7 +5215,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   Scheme_Object *body, *value, *ready_pairs = NULL, *rp_last = NULL, *ready_pairs_start;
   Scheme_Once_Used *first_once_used = NULL, *last_once_used = NULL, *once_used;
   int i, j, pos, is_rec, not_simply_let_star = 0, undiscourage, split_shift, skip_opts = 0;
-  int did_set_value, checked_once, skip_depth, unused_clauses;
+  int did_set_value, checked_once, skip_depth, unused_clauses, found_escapes;
   int remove_last_one = 0, inline_fuel, rev_bind_order;
   int post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
 
@@ -5278,15 +5278,15 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         && (((Scheme_Local *)clv->body)->position == 0)) {
       if (worth_lifting(clv->value)) {
         if (post_bind) {
-	  /* Just drop the let */
-	  return scheme_optimize_expr(clv->value, info, context);
+          /* Just drop the let */
+          return scheme_optimize_expr(clv->value, info, context);
 	} else {
-	  info = optimize_info_add_frame(info, 1, 0, 0);
-	  body = scheme_optimize_expr(clv->value, info, context);
+          info = optimize_info_add_frame(info, 1, 0, 0);
+          body = scheme_optimize_expr(clv->value, info, context);
           info->next->single_result = info->single_result;
           info->next->preserves_marks = info->preserves_marks;
-	  optimize_info_done(info, NULL);
-	  return body;
+          optimize_info_done(info, NULL);
+          return body;
 	}
       }
     }
@@ -5470,6 +5470,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   retry_start = NULL;
   ready_pairs_start = NULL;
   did_set_value = 0;
+  found_escapes = 0;
   for (i = head->num_clauses; i--; ) {
     pre_body = (Scheme_Compiled_Let_Value *)body;
     pos = pre_body->position;
@@ -5502,12 +5503,24 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     }
 
     if (!skip_opts) {
-      optimize_info_seq_step(rhs_info, &info_seq);
-      value = scheme_optimize_expr(pre_body->value, rhs_info,
-                                   ((pre_body->count == 1)
-                                    ? OPT_CONTEXT_SINGLED
-                                    : 0));
-      pre_body->value = value;
+      if (!found_escapes) {
+        optimize_info_seq_step(rhs_info, &info_seq);
+        value = scheme_optimize_expr(pre_body->value, rhs_info,
+                                     ((pre_body->count == 1)
+                                      ? OPT_CONTEXT_SINGLED
+                                      : 0));
+        pre_body->value = value;
+        if (rhs_info->escapes)
+          found_escapes = 1;
+      } else {
+        optimize_info_seq_step(rhs_info, &info_seq);
+        value = scheme_false;
+        pre_body->value = value;
+        body_info->single_result = 1;
+        body_info->preserves_marks = 1;
+        body_info->escapes = 1;
+        body_info->size++;
+      }
     } else {
       value = pre_body->value;
       --skip_opts;
@@ -5537,7 +5550,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
        !rev_bind_order, so checks are needed to make sure that's ok. */
     skip_depth = (is_rec ? (pre_body->position + pre_body->count) : 0);
     if ((pre_body->count != 1)
-        && is_values_apply(value, pre_body->count, rhs_info, skip_depth, 1)
+        && (found_escapes
+            || (is_values_apply(value, pre_body->count, rhs_info, skip_depth, 1)
         && ((!is_rec && no_mutable_bindings(pre_body)
              && (rev_bind_order
                  /* When !rev_bind_order, the transformation reorders the arguments
@@ -5549,7 +5563,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
                an identifier in a way that could expose reordering: */
             || scheme_omittable_expr(value, pre_body->count, -1, 0, rhs_info, info,
                                      skip_depth, 0,
-                                     rev_bind_order ? ID_OMIT : NO_MUTABLE_ID_OMIT))) {
+                                     rev_bind_order ? ID_OMIT : NO_MUTABLE_ID_OMIT))))) {
       if (!pre_body->count && !i) {
         /* We want to drop the clause entirely, but doing it
            here messes up the loop for letrec. So wait and
@@ -5592,7 +5606,20 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         }
 
         naya = (Scheme_Compiled_Let_Value *)rest;
-        unpack_values_application(value, naya, rev_bind_order, rhs_info, NULL);
+        if (!found_escapes) {
+          unpack_values_application(value, naya, rev_bind_order, rhs_info, NULL);
+        } else {
+          Scheme_Compiled_Let_Value *naya2 = naya;
+          int i;
+          for (i = 0; i < pre_body->count; i++) {
+            if (!i)
+              naya2->value = value;
+            else
+              naya2->value = scheme_false;
+            naya2 = (Scheme_Compiled_Let_Value *)naya2->body;
+          }
+        }
+
         if (prev_body)
           prev_body->body = (Scheme_Object *)naya;
         else
@@ -5601,7 +5628,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         i += (pre_body->count - 1);
         if (pre_body->count) {
           /* We're backing up. Since the RHSs have been optimized
-             already, don re-optimize. */
+             already, don't re-optimize. */
           skip_opts = pre_body->count - 1;
           pre_body = naya;
           body = (Scheme_Object *)naya;
@@ -5684,7 +5711,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           cnt = ((pre_body->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
 
         optimize_propagate(body_info, pos, value, cnt == 1);
-	did_set_value = 1;
+        did_set_value = 1;
         checked_once = 1;
       } else if (value && !is_rec) {
         int cnt, ct;
@@ -5760,8 +5787,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
       Scheme_Object *prop_later = NULL;
 
       if (did_set_value) {
-	/* Next RHS ends a reorderable sequence.
-	   Re-optimize from retry_start to pre_body, inclusive.
+        /* Next RHS ends a reorderable sequence.
+           Re-optimize from retry_start to pre_body, inclusive.
            For procedures, assume CLOS_SINGLE_RESULT and CLOS_PRESERVES_MARKS for all,
            but then assume not for all if any turn out not (i.e., approximate fix point). */
         int flags;
@@ -5780,17 +5807,17 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         /* Re-optimize loop: */
         clv = retry_start;
         cl = clones;
-	while (1) {
-	  value = clv->value;
+        while (1) {
+         value = clv->value;
           if (cl) {
             cl_first = SCHEME_CAR(cl);
             if (!cl_first)
               cl = SCHEME_CDR(cl);
           } else
             cl_first = NULL;
-	  if (cl_first && SAME_OBJ(value, SCHEME_CAR(cl_first))) {
+          if (cl_first && SAME_OBJ(value, SCHEME_CAR(cl_first))) {
             /* Try optimization. */
-	    Scheme_Object *self_value;
+            Scheme_Object *self_value;
             int sz;
             char use_psize;
 
@@ -5802,7 +5829,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
             }
 
             cl = SCHEME_CDR(cl);
-	    self_value = SCHEME_CDR(cl_first);
+            self_value = SCHEME_CDR(cl_first);
 
             /* Drop old size, and remove old inline fuel: */
             sz = compiled_proc_body_size(value, 0);
@@ -5925,7 +5952,15 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   } else if (split_shift)
     optimize_info_done(rhs_info, body_info);
 
-  body = scheme_optimize_expr(body, body_info, scheme_optimize_tail_context(context));
+  if (!found_escapes) {
+    body = scheme_optimize_expr(body, body_info, scheme_optimize_tail_context(context));
+  } else {
+    body = scheme_false;
+    body_info->single_result = 1;
+    body_info->preserves_marks = 1;
+    body_info->escapes = 1;
+    body_info->size++;
+  }
   if (head->num_clauses)
     pre_body->body = body;
   else
