@@ -515,13 +515,35 @@
                           (format "~a" (object-name pred2?))
                           1
                           arg1 arg2)))
+(struct integer-in-ctc (start end)
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:name (λ (ctc) `(integer-in ,(integer-in-ctc-start ctc)
+                                ,(integer-in-ctc-end ctc)))
+   #:first-order (λ (ctc)
+                   (define start (integer-in-ctc-start ctc))
+                   (define end (integer-in-ctc-end ctc))
+                   (λ (x) (and (exact-integer? x)
+                               (<= start x end))))
+   #:stronger (λ (this that)
+                (define this-start (integer-in-ctc-start this))
+                (define this-end (integer-in-ctc-end that))
+                (cond
+                  [(integer-in-ctc? that)
+                   (define that-start (integer-in-ctc-start that))
+                   (define that-end (integer-in-ctc-end that))
+                   (<= that-start this-start this-end that-end)]
+                  [else #f]))
+   #:generate (λ (ctc)
+                (define start (integer-in-ctc-start ctc))
+                (define end (integer-in-ctc-end ctc))
+                (λ (fuel)
+                  (λ ()
+                    (+ start (random (min 4294967087 (+ (- end start) 1)))))))))
+
 (define/final-prop (integer-in start end)
   (check-two-args 'integer-in start end exact-integer? exact-integer?)
-  (flat-named-contract 
-   `(integer-in ,start ,end)
-   (λ (x)
-     (and (exact-integer? x)
-          (<= start x end)))))
+  (integer-in-ctc start end))
 
 (define/final-prop (real-in start end)
   (check-two-args 'real-in start end real? real?)

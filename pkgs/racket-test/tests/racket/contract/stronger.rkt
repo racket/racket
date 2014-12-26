@@ -10,6 +10,9 @@
   (contract-eval '(define-contract-struct triple (a b c)))
   
   (ctest #t contract-stronger? any/c any/c)
+  (ctest #t contract-stronger? (integer-in 0 4) (integer-in 0 4))
+  (ctest #t contract-stronger? (integer-in 1 3) (integer-in 0 4))
+  (ctest #f contract-stronger? (integer-in 0 4) (integer-in 1 3))
   (ctest #t contract-stronger? (between/c 1 3) (between/c 0 4))
   (ctest #f contract-stronger? (between/c 0 4) (between/c 1 3))
   (ctest #t contract-stronger? (>=/c 3) (>=/c 2))
