@@ -287,7 +287,7 @@ space. Use @racket[raise-arguments-error], instead.}
                                            (listof
                                             (or/c exact-nonnegative-integer?
                                                   arity-at-least?)))]
-                            [arg-v any/c #f] ...)
+                            [arg-v any/c] ...)
          any]{
 
 Creates an @racket[exn:fail:contract:arity] value and @racket[raise]s

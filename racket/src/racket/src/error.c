@@ -3009,7 +3009,7 @@ static int is_arity_list(Scheme_Object *l)
   while (!SCHEME_NULLP(l)) {
     a = SCHEME_CAR(l);
     if (!scheme_nonneg_exact_p(a)
-        && !scheme_nonneg_exact_p(a))
+        && !is_arity_at_least(a))
       return 0;
     l = SCHEME_CDR(l);
   }
