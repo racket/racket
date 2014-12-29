@@ -18,10 +18,10 @@
 '(+ - ... !.. $.+ %.- &.! *.: /:. :+. <-. =. >. ?. ~. _. ^.)
 
 (define disjoint-type-functions
-  (list boolean? char? null? number? pair? procedure? string? symbol? vector?))
+  (list boolean? char? null? number? pair? procedure? string? bytes? symbol? keyword? vector? void?))
 (define type-examples
   (list
-   #t #f #\a '() 9739 '(test) record-error "test" "" 'test '#() '#(a b c) ))
+   #t #f #\a '() 9739 '(test) record-error "test" "" #"test" #"" 'test '#:test '#() '#(a b c) (void)))
 (define i 1)
 (for-each (lambda (x) (display (make-string i #\ ))
 		  (set! i (+ 3 i))
@@ -36,6 +36,16 @@
 	   (newline)
 	   t))
        type-examples))
+
+(define count-in-disjoint-types
+  (lambda (x) 
+    (apply + (map (lambda (f) 
+                    (if (f x) 1 0))
+                  disjoint-type-functions))))
+
+(for-each (lambda (x)
+            (test 1 count-in-disjoint-types x))
+          type-examples)
 
 (test #f not #t)
 (test #f not 3)
