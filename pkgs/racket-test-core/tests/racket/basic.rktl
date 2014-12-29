@@ -2061,6 +2061,29 @@
 (err/rt-test (list->vector 'hello))
 (err/rt-test (list->vector '(#\h . #\e)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; errors
+
+(err/rt-test (raise-arity-error 'f 5) exn:fail:contract:arity?)
+(err/rt-test (raise-arity-error 'f (make-arity-at-least 5)) exn:fail:contract:arity?)
+(err/rt-test (raise-arity-error 'f (list 1 (make-arity-at-least 5))) exn:fail:contract:arity?)
+(err/rt-test (raise-arity-error + 5) exn:fail:contract:arity?)
+(err/rt-test (raise-arity-error + (make-arity-at-least 5)) exn:fail:contract:arity?)
+(err/rt-test (raise-arity-error + (list 1 (make-arity-at-least 5))) exn:fail:contract:arity?)
+
+(define (exn:fail:contract:arity?/#f e) (not (exn:fail:contract:arity? e)))
+
+(err/rt-test (raise-arity-error 'f -5) exn:fail:contract:arity?/#f)
+(err/rt-test (raise-arity-error 'f -5) exn:fail:contract?)
+(err/rt-test (raise-arity-error 'f (list 1 'x)) exn:fail:contract:arity?/#f)
+(err/rt-test (raise-arity-error 'f (list 1 'x)) exn:fail:contract?)
+(err/rt-test (raise-arity-error 1 1) exn:fail:contract:arity?/#f)
+(err/rt-test (raise-arity-error 1 1) exn:fail:contract?)
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; continuations
 
 (test-cont)
 
