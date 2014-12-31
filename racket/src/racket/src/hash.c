@@ -1640,12 +1640,6 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       o = mt->multi_marks;
     }
     break;
-  case scheme_marshal_share_type:
-    {
-      k -= scheme_marshal_share_type;
-      o = SCHEME_PTR_VAL(o);
-    }
-    break;
   default:
     {
       Scheme_Primary_Hash_Proc h1 = scheme_type_hash1s[t];
@@ -2121,9 +2115,6 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       return k;
     }
     break;
-  case scheme_marshal_share_type:
-    o = SCHEME_PTR_VAL(o);
-    goto top;
   case scheme_place_bi_channel_type:
     /* a bi channel has sendch and recvch, but
        sends are the same iff recvs are the same: */

@@ -854,12 +854,6 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
         obj2 = mt2->multi_marks;
         goto top;
       }
-    case scheme_marshal_share_type:
-      {
-        obj1 = SCHEME_PTR_VAL(obj1);
-        obj2 = SCHEME_PTR_VAL(obj2);
-        goto top;
-      }
     default:
       if (!eql->for_chaperone && ((t1 == scheme_chaperone_type)
                                   || (t1 == scheme_proc_chaperone_type))) {

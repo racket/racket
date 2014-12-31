@@ -403,8 +403,8 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
 
   if (frame->marks) {
     /* sometimes redundant: */
-    val = scheme_stx_adjust_mark_or_marks(val, frame->marks, scheme_env_phase(frame->genv),
-                                          SCHEME_STX_ADD);
+    val = scheme_stx_adjust_frame_marks(val, frame->marks, scheme_env_phase(frame->genv),
+                                        SCHEME_STX_ADD);
   }
   
   frame->binders[index] = val;
@@ -523,8 +523,8 @@ void scheme_set_local_syntax(int pos,
       binding = scheme_stx_lookup(name, scheme_env_phase(env->genv));
     } else {
       if (env->marks)
-        name = scheme_stx_adjust_mark_or_marks(name, env->marks, scheme_env_phase(env->genv),
-                                               SCHEME_STX_ADD);
+        name = scheme_stx_adjust_frame_marks(name, env->marks, scheme_env_phase(env->genv),
+                                             SCHEME_STX_ADD);
       
       binding = scheme_gensym(SCHEME_STX_VAL(name));
       
@@ -1100,7 +1100,7 @@ void scheme_dump_env(Scheme_Comp_Env *env)
 /*********************************************************************/
 /* 
 
-   scheme_lookup_binding() is the main resolver of lexical, module,
+   scheme_compile_lookup() is the main resolver of lexical, module,
    and top-level bindings. Depending on the value of `flags', it can
    return a value whose type tag is:
 
@@ -1120,7 +1120,7 @@ void scheme_dump_env(Scheme_Comp_Env *env)
 */
 
 Scheme_Object *
-scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
+scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 		      Scheme_Object *in_modidx,
 		      Scheme_Env **_menv, int *_protected,
                       Scheme_Object **_local_binder,
@@ -1249,7 +1249,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
                                     "local syntax identifier cannot be mutated");
               return NULL;
             }
-            
+
             return val;
           }
         }
@@ -1966,8 +1966,10 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
   init_compile_data((Scheme_Comp_Env *)&inlined_e);
   inlined_e.base.prefix = NULL;
 
-  v = scheme_lookup_binding(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, 
-                            NULL, NULL, NULL, NULL, NULL);
+  v = scheme_compile_lookup(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, 
+                            NULL,
+                            NULL, NULL,
+                            NULL, NULL);
   if (v) {
     if (!SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type)) {
       *_use_map = -1;

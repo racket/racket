@@ -1054,7 +1054,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
     eenv->instance_env = env->instance_env;
 
     scheme_prepare_env_stx_context(env);
-    mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv));
+    mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv), 1);
     eenv->stx_context = mc;
 
     if (env->disallow_unbound)
@@ -1093,7 +1093,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
     eenv->modchain = modchain;
 
     scheme_prepare_env_stx_context(env);
-    mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv));
+    mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv), 1);
     eenv->stx_context = mc;
 
     env->template_env = eenv;
@@ -2131,13 +2131,14 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
   menv = NULL;
 
   while (1) {
-    v = scheme_lookup_binding(sym, env,
+    v = scheme_compile_lookup(sym, env,
 			      (SCHEME_NULL_FOR_UNBOUND
 			       + SCHEME_RESOLVE_MODIDS
 			       + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
 			      scheme_current_thread->current_local_modidx, 
-			      &menv, NULL, NULL, NULL);
+			      &menv, NULL,
+                              NULL, NULL);
 
     SCHEME_EXPAND_OBSERVE_RESOLVE(observer, sym);
 
@@ -2419,8 +2420,8 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 
   while (env != bind_env) {
     if (env->marks)
-      sym = scheme_stx_adjust_mark_or_marks(sym, env->marks, scheme_env_phase(env->genv),
-                                            SCHEME_STX_ADD);
+      sym = scheme_stx_adjust_frame_marks(sym, env->marks, scheme_env_phase(env->genv),
+                                          SCHEME_STX_ADD);
     env = env->next;
   }
 
@@ -2557,13 +2558,14 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
   while (1) {
     binder = NULL;
 
-    v = scheme_lookup_binding(sym, env,
+    v = scheme_compile_lookup(sym, env,
 			      (SCHEME_NULL_FOR_UNBOUND
 			       + SCHEME_RESOLVE_MODIDS
 			       + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
 			      scheme_current_thread->current_local_modidx, 
-			      NULL, NULL, &binder, NULL);
+			      NULL, NULL,
+                              &binder, NULL);
     
     /* Deref globals */
     if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type))

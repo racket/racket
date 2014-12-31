@@ -3884,7 +3884,7 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
         if (SCHEME_TRUEP(scheme_stx_lookup(a, scheme_env_phase(genv)))) {
           return form;
         } else {
-          a = scheme_stx_add_module_context(a, genv->stx_context);
+          a = scheme_stx_add_module_frame_context(a, genv->stx_context);
           module_stx = scheme_datum_to_syntax(module_symbol,
                                               scheme_false, 
                                               scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
@@ -3901,7 +3901,7 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
       }
     }
 
-    form = scheme_stx_add_module_context(form, genv->stx_context);
+    form = scheme_stx_add_module_frame_context(form, genv->stx_context);
   }
 
   return form;

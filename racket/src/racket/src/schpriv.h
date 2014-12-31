@@ -1113,7 +1113,10 @@ Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Ob
 Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
 Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
 Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode);
-Scheme_Object *scheme_stx_adjust_mark_or_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_adjust_frame_expression_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
+
+Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark, Scheme_Object *expr_mark);
 
 Scheme_Object *scheme_stx_remove_multi_marks(Scheme_Object *o);
 
@@ -1140,15 +1143,19 @@ Scheme_Object *scheme_make_top_level_module_context(Scheme_Object *phase);
 Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
                                           Scheme_Object *shift_or_shifts,
                                           Scheme_Object *intro_multi_mark);
-Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *phase);
+Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *phase, int for_expr);
 
 Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc);
+Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Object *mc);
+Scheme_Object *scheme_stx_add_module_expression_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc);
 
 Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
 Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc);
+Scheme_Object *scheme_module_context_frame_marks(Scheme_Object *mc);
+Scheme_Object *scheme_module_context_expression_frame_marks(Scheme_Object *mc);
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc);
 
 void scheme_module_context_add_mapped_symbols(Scheme_Object *mc, Scheme_Hash_Table *mapped);
@@ -1199,7 +1206,7 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
 void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase);
-Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase);
+Scheme_Object *scheme_stx_lookup_exact_for_bind(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase, int for_bind,
                                            int *_exact_match, int *_ambiguous,
                                            Scheme_Mark_Set **_binding_marks,
@@ -2473,7 +2480,7 @@ typedef struct Scheme_Comp_Env
   Scheme_Object *insp;  /* code inspector for checking protected */
   Comp_Prefix *prefix;  /* stack base info: globals and stxes */
 
-  Scheme_Object *marks; /* can be NULL */
+  Scheme_Object *marks; /* can be NULL, a mark, a mark set, or (cons mark-set nobind-mark) */
 
   struct Scheme_Object **binders; /* identifiers */
   struct Scheme_Object **bindings; /* symbols */
@@ -2765,7 +2772,7 @@ Scheme_Comp_Env *scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object
 					      Scheme_Comp_Env *env, int flags);
 Scheme_Comp_Env *scheme_require_renames(Scheme_Comp_Env *env);
 
-Scheme_Object *scheme_lookup_binding(Scheme_Object *symbol, Scheme_Comp_Env *env, int flags, 
+Scheme_Object *scheme_compile_lookup(Scheme_Object *symbol, Scheme_Comp_Env *env, int flags, 
 				     Scheme_Object *in_modidx, 
 				     Scheme_Env **_menv, int *_protected,
                                      Scheme_Object **_local_binder,
