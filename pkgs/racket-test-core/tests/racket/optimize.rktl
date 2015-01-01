@@ -1356,7 +1356,10 @@
            '(lambda ()
               (let ([y (random)])
                 (begin0 y (set! y 5)))))
-                
+
+(test-comp '(lambda (w) (car w) (mcar w))
+           '(lambda (w) (begin (car w) (mcar w) (random))))
+
 ; test for unary aplications
 (test-comp -1
            '(- 1))

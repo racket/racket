@@ -2840,7 +2840,8 @@ static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app,
                          Scheme_Object *rand, int id_offset,
                          const char *who, Scheme_Object *expect_pred, Scheme_Object *unsafe)
 /* Replace the rator with an unsafe version if we know that it's ok. Alternatively,
-   the rator implies a check, so add type information for subsequent expressions. */
+   the rator implies a check, so add type information for subsequent expressions. 
+   If the rand has alredy a different type, mark that this will generate an error. */
 {
   if (IS_NAMED_PRIM(app->rator, who)) {
     if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
@@ -2853,8 +2854,11 @@ static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app,
           return;
 
         pred = optimize_get_predicate(pos, info);
-        if (pred && SAME_OBJ(pred, expect_pred))
-          app->rator = unsafe;
+        if (pred)
+          if (SAME_OBJ(pred, expect_pred))
+            app->rator = unsafe;
+          else
+            info->escapes = 1;
         else
           add_type(info, pos, expect_pred);
       }
