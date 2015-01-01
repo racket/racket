@@ -1358,7 +1358,15 @@
                 (begin0 y (set! y 5)))))
 
 (test-comp '(lambda (w) (car w) (mcar w))
-           '(lambda (w) (begin (car w) (mcar w) (random))))
+           '(lambda (w) (car w) (mcar w) (random)))
+(test-comp '(lambda (w) (car w w))
+           '(lambda (w) (car w w) (random)))
+(test-comp '(lambda (w) (car w w w))
+           '(lambda (w) (car w w w) (random)))
+(test-comp '(lambda (w) (cons w))
+           '(lambda (w) (cons w) (random)))
+(test-comp '(lambda (w) (cons))
+           '(lambda (w) (cons) (random)))
 
 ; test for unary aplications
 (test-comp -1
