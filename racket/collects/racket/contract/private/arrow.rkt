@@ -1713,12 +1713,14 @@
     [else
      passes?]))
 
-(define (bad-number-of-results blame val rng-len args [case-context #f])
+(define (bad-number-of-results blame val rng-len args [case-context #f]
+                               #:missing-party [missing-party #f])
   (define num-values (length args))
   (define blame-case (if case-context 
                          (blame-add-context blame (format "the ~a case of" (n->th (+ case-context 1))))
                          blame))
   (raise-blame-error (blame-add-range-context blame-case)
+                     #:missing-party missing-party
                      val 
                      "expected ~a value~a, returned ~a value~a"
                      rng-len (if (= rng-len 1) "" "s")

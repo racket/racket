@@ -50,6 +50,12 @@
                'neg)
      1))
   
+  (test/neg-blame
+   'contract-arrow-values6
+   '(((contract (-> (-> (listof integer?)) any)
+                (λ (x) x)
+                'pos 'neg)
+      (λ () (values 1 2)))))
   
   (test/pos-blame
    'contract-arrow-keyword1

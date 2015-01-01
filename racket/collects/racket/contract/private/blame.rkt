@@ -247,7 +247,8 @@
   (unless (blame-positive blme)
     (raise-argument-error 'default-blame-format
                           "a blame object with a non-#f positive field"
-                          blme))
+                          0
+                          blme x custom-message))
   
   (define source-message (source-location->string (blame-source blme)))
   

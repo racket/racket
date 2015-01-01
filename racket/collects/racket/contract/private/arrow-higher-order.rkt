@@ -169,7 +169,8 @@
                                         post ...
                                         rng-results))]
                                     [args
-                                     (arrow:bad-number-of-results blame val rng-len args)]))))
+                                     (arrow:bad-number-of-results blame val rng-len args
+                                                                  #:missing-party neg-party)]))))
                            null)])
           (let* ([min-method-arity (length doms)]
                  [max-method-arity (+ min-method-arity (length opt-doms))]
