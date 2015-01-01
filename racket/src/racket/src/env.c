@@ -2276,7 +2276,7 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   Scheme_Object *c, *rib;
   void **d;
 
-  d = MALLOC_N(void*, 3);
+  d = MALLOC_N(void*, 4);
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -2296,6 +2296,7 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
     d[1] = argv[0];
   }
   d[0] = env;
+  d[3] = env;
 
   rib = scheme_new_mark(1);
 

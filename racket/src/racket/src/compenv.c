@@ -403,8 +403,8 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
 
   if (frame->marks) {
     /* sometimes redundant: */
-    val = scheme_stx_adjust_frame_marks(val, frame->marks, scheme_env_phase(frame->genv),
-                                        SCHEME_STX_ADD);
+    val = scheme_stx_adjust_frame_bind_marks(val, frame->marks, scheme_env_phase(frame->genv),
+                                             SCHEME_STX_ADD);
   }
   
   frame->binders[index] = val;
@@ -523,8 +523,8 @@ void scheme_set_local_syntax(int pos,
       binding = scheme_stx_lookup(name, scheme_env_phase(env->genv));
     } else {
       if (env->marks)
-        name = scheme_stx_adjust_frame_marks(name, env->marks, scheme_env_phase(env->genv),
-                                             SCHEME_STX_ADD);
+        name = scheme_stx_adjust_frame_bind_marks(name, env->marks, scheme_env_phase(env->genv),
+                                                  SCHEME_STX_ADD);
       
       binding = scheme_gensym(SCHEME_STX_VAL(name));
       

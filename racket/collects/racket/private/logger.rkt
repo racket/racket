@@ -26,7 +26,7 @@
   (define-syntax log-warning (make-define-log 'warning #'(current-logger) #'(logger-name l)))
   (define-syntax log-info (make-define-log 'info #'(current-logger) #'(logger-name l)))
   (define-syntax log-debug (make-define-log 'debug #'(current-logger) #'(logger-name l)))
-
+  
   (define (check-logger who)
     (lambda (v)
       (unless (logger? v)

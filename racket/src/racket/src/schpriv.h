@@ -1114,6 +1114,7 @@ Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m, Scheme
 Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
 Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode);
 Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_adjust_frame_bind_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
 Scheme_Object *scheme_stx_adjust_frame_expression_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
 
 Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark, Scheme_Object *expr_mark);

@@ -5494,10 +5494,18 @@ static Scheme_Object *add_mark_at_phase(Scheme_Object *a, Scheme_Object *m_p)
   return scheme_stx_add_mark(a, SCHEME_CAR(m_p), SCHEME_CDR(m_p));
 }
 
+static Scheme_Object *revert_expr_marks(Scheme_Object *a, Scheme_Object *m_p)
+{
+  return scheme_stx_adjust_frame_expression_marks(a,
+                                                  SCHEME_CAR(m_p),
+                                                  SCHEME_CDR(m_p),
+                                                  SCHEME_STX_REMOVE);
+}
+
 static Scheme_Object *
 local_eval(int argc, Scheme_Object **argv)
 {
-  Scheme_Comp_Env *env, *stx_env, *old_stx_env;
+  Scheme_Comp_Env *env, *stx_env, *old_stx_env, *init_env;
   Scheme_Object *l, *a, *rib, *expr, *names, *rn_names, *observer;
   int cnt = 0, pos;
 
@@ -5528,6 +5536,7 @@ local_eval(int argc, Scheme_Object **argv)
 
   update_intdef_chain(argv[2]);
   stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[2]))[0];
+  init_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[2]))[3];
   rib = SCHEME_PTR2_VAL(argv[2]);
 
   if (!scheme_is_sub_env(stx_env, env)) {
@@ -5551,7 +5560,13 @@ local_eval(int argc, Scheme_Object **argv)
   /* Initialize environment slots to #f, which means "not syntax". */
   cnt = 0;
   for (l = names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-    scheme_set_local_syntax(cnt++, SCHEME_CAR(l), scheme_false, stx_env, 0);
+    a = SCHEME_CAR(l);
+    if (init_env->marks)
+      a = scheme_stx_adjust_frame_expression_marks(a,
+                                                   init_env->marks,
+                                                   scheme_env_phase(init_env->genv),
+                                                   SCHEME_STX_REMOVE);
+    scheme_set_local_syntax(cnt++, a, scheme_false, stx_env, 0);
   }
 	  
   stx_env->in_modidx = scheme_current_thread->current_local_modidx;
@@ -5576,6 +5591,9 @@ local_eval(int argc, Scheme_Object **argv)
     expr = scheme_stx_add_mark(expr, rib, scheme_env_phase(stx_env->genv));
     rn_names = scheme_named_map_1(NULL, add_mark_at_phase, names,
                                   scheme_make_pair(rib, scheme_env_phase(stx_env->genv)));
+    if (init_env->marks)
+      rn_names = scheme_named_map_1(NULL, revert_expr_marks, rn_names,
+                                    scheme_make_pair(init_env->marks, scheme_env_phase(init_env->genv)));
     scheme_bind_syntaxes("local syntax definition", rn_names, expr,
 			 stx_env->genv->exp_env, stx_env->insp, &rec, 0,
 			 stx_env, stx_env,
