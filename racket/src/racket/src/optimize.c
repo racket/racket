@@ -1930,6 +1930,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   if (bad_app) {
     int len;
     const char *pname, *context;
+    info->escapes = 1;
     pname = scheme_get_proc_name(bad_app, &len, 0);
     context = scheme_optimize_context_to_string(info->context);
     scheme_log(info->logger,
@@ -2575,7 +2576,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
 {
   Scheme_Object *le;
   Scheme_App_Rec *app;
-  int i, n, rator_flags = 0, sub_context = 0;
+  int i, n, rator_apply_escapes = 0, rator_flags = 0, sub_context = 0;
   Optimize_Info_Sequence info_seq;
 
   app = (Scheme_App_Rec *)o;
@@ -2630,12 +2631,12 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
       return scheme_make_sequence_compilation(l, 1);
     }
 
-
     if (!i) {
       /* Maybe found "((lambda" after optimizing; try again */
       le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 1);
       if (le)
         return le;
+      rator_apply_escapes = info->escapes;
     }
   }
 
@@ -2654,6 +2655,11 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
       && (SCHEME_TYPE(((Scheme_Closure_Data *)app->args[3])->code) > _scheme_compiled_values_types_)
       && !SCHEME_PROCP(((Scheme_Closure_Data *)app->args[3])->code)) {
     app->args[3] = ((Scheme_Closure_Data *)app->args[3])->code;
+  }
+
+  if (rator_apply_escapes) {
+   info->escapes = 1;
+   SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
   }
 
   return finish_optimize_application(app, info, context, rator_flags);
@@ -2930,7 +2936,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 {
   Scheme_App2_Rec *app;
   Scheme_Object *le;
-  int rator_flags = 0, sub_context, ty;
+  int rator_flags = 0, rator_apply_escapes, sub_context, ty;
   Optimize_Info_Sequence info_seq;
 
   app = (Scheme_App2_Rec *)o;
@@ -2959,6 +2965,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
     le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context, 1);
     if (le)
       return le;
+    rator_apply_escapes = info->escapes;
   }
 
   if (SAME_PTR(scheme_not_prim, app->rator)){
@@ -2977,6 +2984,11 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   if (info->escapes) {
     info->size += 1;
     return make_discarding_first_sequence(app->rator, app->rand, info, 0);
+  }
+
+  if (rator_apply_escapes) {
+   info->escapes = 1;
+   SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
   }
 
   return finish_optimize_application2(app, info, context, rator_flags);
@@ -3235,7 +3247,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 {
   Scheme_App3_Rec *app;
   Scheme_Object *le;
-  int rator_flags = 0, sub_context, ty, flags;
+  int rator_flags = 0, rator_apply_escapes, sub_context, ty, flags;
   Optimize_Info_Sequence info_seq;
 
   app = (Scheme_App3_Rec *)o;
@@ -3279,6 +3291,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
     le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context, 1);
     if (le)
       return le;
+    rator_apply_escapes = info->escapes;
   }
 
   /* 1st arg */
@@ -3323,6 +3336,11 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 
   flags = appn_flags(app->rator, info);
   SCHEME_APPN_FLAGS(app) |= flags;
+
+  if (rator_apply_escapes) {
+   info->escapes = 1;
+   SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+  }
 
   return finish_optimize_application3(app, info, context, rator_flags);
 }
