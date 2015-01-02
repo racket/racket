@@ -1708,9 +1708,10 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 {
   int offset = 0, single_use = 0, psize = 0;
   Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
-  int nested_count = 0, outside_nested = 0, already_opt = optimized_rator, nonleaf;
+  int nested_count = 0, outside_nested = 0, already_opt = optimized_rator, nonleaf, noapp;
 
-  if ((info->inline_fuel < 0) && info->has_nonleaf)
+  noapp = !app && !app2 && !app3;
+  if ((info->inline_fuel < 0 || noapp) && info->has_nonleaf)
     return NULL;
 
   /* Move inside `let' bindings, so we can convert ((let (....) proc) arg ...)
@@ -1787,7 +1788,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     Scheme_Object *cp;
     int i, count;
 
-    if (!app && !app2 && !app3)
+    if (noapp)
       return le;
 
     count = cl->count;
@@ -1815,7 +1816,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     Scheme_Closure_Data *data = (Scheme_Closure_Data *)le;
     int sz;
 
-    if (!app && !app2 && !app3)
+    if (noapp)
       return le;
 
     *_flags = SCHEME_CLOSURE_DATA_FLAGS(data);
@@ -1823,7 +1824,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     if ((data->num_params == argc)
         || ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
             && (argc + 1 >= data->num_params))
-        || (!app && !app2 && !app3)) {
+        || noapp) {
       int threshold, is_leaf = 0;
 
       if (!already_opt) {
@@ -1907,8 +1908,12 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   if (scheme_check_leaf_rator(le, _flags))
     nonleaf = 0;
 
-  if (le && SCHEME_PROCP(le) && (app || app2 || app3)) {
+  if (le && SCHEME_PROCP(le)) {
     Scheme_Object *a[1];
+
+    if (noapp)
+      return le;
+
     a[0] = le;
     if (!scheme_check_proc_arity(NULL, argc, 0, 1, a))  {
       bad_app = le;
@@ -3630,10 +3635,6 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
           }
         }
       }
-    }
-
-    if (!f_is_proc && SCHEME_PROCP(f)) {
-      f_is_proc = f;
     }
   }
 
