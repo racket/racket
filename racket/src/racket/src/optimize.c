@@ -3347,6 +3347,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 
 static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimize_Info *info, int context, int rator_flags)
 {
+  int flags;
   Scheme_Object *le;
   int all_vals = 1;
   int id_offset = 0;
@@ -3585,6 +3586,9 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
   }
 
   register_local_argument_types(NULL, NULL, app, info);
+
+  flags = appn_flags(app->rator, info);
+  SCHEME_APPN_FLAGS(app) |= flags;
 
   return finish_optimize_any_application((Scheme_Object *)app, app->rator, 2,
                                          info, context);
