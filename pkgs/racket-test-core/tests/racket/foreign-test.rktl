@@ -148,6 +148,9 @@
   (check t 'd 16)
   (check t '(a b) 3))
 
+;; Make sure `_box` at least compiles:
+(test #t ctype? (_fun (_box _int) -> _void))
+
 (define-cstruct _ic7i ([i1 _int]
                        [c7 _c7_list]
                        [i2 _int]))

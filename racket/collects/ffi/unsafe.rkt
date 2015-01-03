@@ -351,7 +351,7 @@
          [else (set! keys (cons (cons key val) keys))]))
      (let loop ([t (disarm orig)])
        (define (next rest . args) (apply setkey! args) (loop rest))
-       (define (rearm e) (syntax-rearm e orig))
+       (define (rearm e) (syntax-rearm e orig #t))
        (syntax-case* t
            (type: expr: bind: 1st-arg: prev-arg: pre: post: keywords: =>)
            id=?
