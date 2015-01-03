@@ -145,6 +145,13 @@ makefile and the `raco setup' part, use
 which recurs with `make -j <n> JOB_OPTIONS="-j <n>"'. Setting `CPUS'
 also works with `make unix-style'.
 
+Use `make as-is' (or `nmake win32-as-is') to perform the same build
+actions as `make in-place`, but without consulting any package
+catalogs or package sources to install or update packages. In other
+words, use `make as-is' to rebuild after local changes that could
+include changes to the Racket core. (If you change only packages, then
+`raco setup' should suffice.)
+
 If you need even more control over the build, carry on to "Even More
 Instructions: Building Racket Pieces".
 

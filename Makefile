@@ -73,6 +73,24 @@ win32-in-place:
 	$(WIN32_PLAIN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
 	$(WIN32_PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
+# Rebuild without consulting catalogs or package sources:
+
+as-is:
+	if [ "$(CPUS)" = "" ] ; \
+         then $(MAKE) plain-as-is PKGS="$(PKGS)" ; \
+         else $(MAKE) cpus-as-is CPUS="$(CPUS)" PKGS="$(PKGS)" ; fi
+
+cpus-as-is:
+	$(MAKE) -j $(CPUS) plain-as-is JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
+
+plain-as-is:
+	$(MAKE) base
+	$(PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+
+win32-as-is:
+	$(MAKE) base
+	$(WIN32_PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+
 # ------------------------------------------------------------
 # Unix-style build (Unix and Mac OS X, only)
 
