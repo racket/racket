@@ -15,6 +15,8 @@
          @litchar{0} through @litchar{9}, 
          @litchar{_}, and @litchar{-}})
 
+@(define raco-doc '(lib "scribblings/raco/raco.scrbl"))
+
 @(define (gtech s)
    @tech[#:doc '(lib "scribblings/guide/guide.scrbl") s])
 
@@ -388,7 +390,7 @@ A directory path can be used as a @tech{package scope}, in which case
 package operations affect the set of packages installations in the
 directory. An installation can be configured to include the
 directory in its search path for installed packages (see
-@secref["config-file" #:doc '(lib "scribblings/raco/raco.scrbl")]).
+@secref["config-file" #:doc raco-doc]).
 
 Conflict checking disallows installation of the same or conflicting
 package in different scopes, but if such a configuration is forced,
@@ -1039,7 +1041,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
   When a package is a @tech{single collection package}, its @filepath{info.rkt}
   file may specify additional fields that are used for the Scribble documentation
   system or other tools. Many of these fields are described
-  in @secref["setup-info" #:doc '(lib "scribblings/raco/raco.scrbl")].
+  in @secref["setup-info" #:doc raco-doc].
 }
 
 @(define (definfofield s) @as-index{@racketidfont{@s}})
@@ -1115,11 +1117,14 @@ The following @filepath{info.rkt} fields are used by the package manager:
        on the Racket run-time system, which is potentially useful when
        a version is included in the dependency. For most purposes,
        it's better to specify a versioned dependency on
-       @racket["base"], instead.}
+       @racket["base"], instead.
+
+       See also @secref["setup-check-deps" #:doc raco-doc].}
 
  @item{@definfofield{build-deps} --- like @racketidfont{deps}, but for
        dependencies that can be dropped in a @tech{binary package},
-       which does not include sources; see @secref["strip"]. The
+       which does not include sources; see @secref["strip"] and
+       @secref["setup-check-deps" #:doc raco-doc]. The
        @racketidfont{build-deps} and @racketidfont{deps} lists are
        appended, while @command-ref["create"] strips away
        @racketidfont{build-deps} when converting a package for

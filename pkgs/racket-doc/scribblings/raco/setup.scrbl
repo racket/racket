@@ -770,13 +770,50 @@ dependencies. Specifically, it inspects compiled files and
 documentation to check that references across package boundaries are
 reflected by dependency declarations in each package-level
 @filepath{info.rkt} file (see @secref[#:doc pkg-doc "metadata"]).
+
 Dependency checking in @exec{raco setup} is intended as an aid to
 package developers to help them declare dependencies correctly. The
 @exec{raco setup} process itself does not depend on package dependency
-declarations; a missing dependency creates trouble only for others who
-later install a package. To accommodate the early stages of package
-development, missing dependencies are not treated as an error for a
-package that has no dependency declarations.
+declarations. Similarly, a package with a missing dependency
+declaration may install successfully for other users, as long as they
+happen to have the dependencies installed already. A missing
+dependency creates trouble for others who install a package without
+having the dependency installed already.
+
+Practically every package depends on the @filepath{base} package,
+which includes the collections that are in a minimal variant of
+Racket. Declaring a dependency on @filepath{base} may seem
+unnecessary, since its collections are always installed. In a future
+version of Racket, however, the minimal collections may change, and
+the new set of minimal collections will then have a package name, such
+as @filepath{base2}. Declaring a dependency on @filepath{base} ensures
+forward compatibility, and @exec{raco setup} complains if the
+declaration is missing.
+
+To accommodate the early stages of package development, missing
+dependencies are not treated as an error for a package that has no
+dependency declarations.
+
+@subsection{Declaring Build-Time Dependencies}
+
+A build-time dependency is one that is not present in a package if it
+is converted to a @tech[#:doc pkg-doc]{binary package} (see
+@secref[#:doc pkg-doc "strip"]). For example, @filepath{tests} and
+@filepath{scribblings} directories are stripped away in a binary
+package by default, so cross-package references from directories with
+those names are treated as build dependencies. Similarly,
+@racketidfont{test} and @racketidfont{doc} submodules are stripped
+away, so references within those submodules create build dependencies.
+
+Build-time-only dependencies can be listed as @racket[build-deps]
+instead of @racket[deps] in a package's @filepath{info.rkt} file.
+Dependencies listed in @racket[deps], meanwhile, are treated as both
+run-time and build-time dependencies. The advantage of using
+@racket[build-deps], instead of listing all dependencies in
+@racket[deps], is that a binary version of the package can install
+with fewer dependencies.
+
+@subsection{How Dependency Checking Works}
 
 Dependency checking uses @filepath{.zo} files, associated
 @filepath{.dep} files, and the documentation index. Dynamic
@@ -786,16 +823,11 @@ to the dependency checker; only dependencies via @racket[require],
 cooperate with @racket[raco make] are visible for dependency checking.
 
 Dependency checking is sensitive to whether a dependency is needed
-only as a build-time dependency. A build-time dependency is one that
-is not present in a package if it is converted to a @tech[#:doc
-pkg-doc]{binary package} (see @secref[#:doc pkg-doc "strip"]). For
-example, @filepath{tests} and @filepath{scribblings} directories are
-stripped away in a binary package by default, so cross-package
-references from directories with those names are treated as build
-dependencies. Build-time-only dependencies can be listed as
-@racket[build-deps] instead of @racket[deps] in a package's
-@filepath{info.rkt} file; dependencies listed in @racket[deps],
-meanwhile, are treated as both run-time and build-time dependencies.
+only as a build-time dependency. If @exec{raco setup} detects that a
+missing dependency could be added as a built-time dependency, it will
+suggest the addition, but @exec{raco setup} will not suggest
+converting a normal dependency to a build-time dependency (since every
+normal dependency counts as a build-time dependency, too).
 
 @; ------------------------------------------------------------------------
 
