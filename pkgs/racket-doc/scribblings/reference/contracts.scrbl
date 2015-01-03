@@ -2299,7 +2299,8 @@ is expected to be the blame record for the contract on the value).
                   (-> (and/c positive? real?)
                       (values
                        (-> c void?)
-                       (listof contract?)))]))]
+                       (listof contract?)))]))
+           (λ (c) (λ (fuel) (values void '())))]
           [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          flat-contract-property?]
 @defproc[(build-chaperone-contract-property
@@ -2347,7 +2348,8 @@ is expected to be the blame record for the contract on the value).
                   (-> (and/c positive? real?)
                       (values
                        (-> c void?)
-                       (listof contract?)))]))]
+                       (listof contract?)))]))
+           (λ (c) (λ (fuel) (values void '())))]
           [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          chaperone-contract-property?]
 @defproc[(build-contract-property
@@ -2395,7 +2397,8 @@ is expected to be the blame record for the contract on the value).
                   (-> (and/c positive? real?)
                       (values
                        (-> c void?)
-                       (listof contract?)))]))]
+                       (listof contract?)))]))
+           (λ (c) (λ (fuel) (values void '())))]
           [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          contract-property?])]{
 
