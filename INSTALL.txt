@@ -64,8 +64,9 @@ uses Unix-style tools but generates a Windows-layout Racket build.
 
 In all cases, an in-place build includes (via links) a few packages
 that are in the "pkgs" directory. To get new versions of those
-packages, as well as the Racket core, then use `git pull`. To get
-new versions of any other package, use `raco pkg update`.
+packages, as well as the Racket core, then use `git pull'. Afterward,
+or to get new versions of any other package, use `make in-place'
+again, which includes a `raco pkg update' step.
 
 See "More Instructions: Building Racket" below for more information.
 
@@ -86,7 +87,7 @@ On Windows, Unix-style install is not supported.
 A Unix-style install leaves no reference to this source directory.
 
 To split the build and install steps of a Unix-style installation,
-supply `DESTDIR=<dest-dir>` with `make unix-style PREFIX=<dir>`, which
+supply `DESTDIR=<dest-dir>' with `make unix-style PREFIX=<dir>', which
 assembles the installation in "<dest-dir>". Then, copy the content of
 "<dest-dir>" to the target root.
 
@@ -120,9 +121,10 @@ To install a subset of the packages in "pkgs", supply `PKGS' value to
 
 links only the "gui-lib" and "readline-lib" packages and their
 dependencies. The default value of `PKGS' is "main-distribution
-main-distribution-test". If you run `make` a second time, all
-previously installed packages remain installed, while new packages are
-added. To uninstall previously selected package, use `raco pkg`.
+main-distribution-test". If you run `make' a second time, all
+previously installed packages remain installed and are updated, while
+new packages are added. To uninstall previously selected package, use
+`raco pkg remove'.
 
 Using `make' (or `make in-place') sets the installation's name to
 "development", unless the installation has been previously configured
