@@ -20,9 +20,9 @@ libraries (usually along with @racket[ffi/objc]).
 @defthing[_NSString ctype?]{
 
 A type that converts between Racket strings and
-@as-index{@tt{NSString}} (a.k.a. @as-index{@tt{CFString}})
+@as-index{@tt{NSString*}} (a.k.a. @as-index{@tt{CFStringRef}})
 values. That is, use @tt{_NSString} as a type for a foreign-function
-@tt{NSString} argument or result.
+@tt{NSString*} argument or result.
 
 The @racket[_NSString] conversion keeps a weak mapping from Racket
 strings to converted strings, so that converting the same string (in
