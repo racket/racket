@@ -85,9 +85,11 @@
              (iloop (loop (car subm) accum) (cdr subm)))))))
   (write-bytes (int->bytes (length pre-mod-bytess)) outp)
   ;; Size of btree:
-  (define btree-size 
+  (define header-size
     (+ 8
-       (string-length (version))
+       (string-length (version))))
+  (define btree-size
+    (+ header-size
        (apply + (for/list ([mb (in-list pre-mod-bytess)])
                   (+ (bytes-length (mod-bytes-name-bstr mb))
                      20)))))
@@ -99,7 +101,7 @@
                              (cons (mod-bytes (mod-bytes-code-bstr mb)
                                               (mod-bytes-name-bstr mb)
                                               offset)
-                                   (loop (+ offset 
+                                   (loop (+ offset
                                             (bytes-length (mod-bytes-code-bstr mb)))
                                          (cdr mod-bytess)))))))
   ;; Sort by name for btree order:
@@ -108,7 +110,7 @@
   (define right-offsets (make-vector (vector-length sorted-mod-bytess) 0))
   ;; Write out btree or compute offsets:
   (define (write-btree write-bytes)
-    (let loop ([lo 0] [hi (vector-length sorted-mod-bytess)] [pos 0])
+    (let loop ([lo 0] [hi (vector-length sorted-mod-bytess)] [pos header-size])
       (define mid (quotient (+ lo hi) 2))
       (define mb (vector-ref sorted-mod-bytess mid))
       (define name-len (bytes-length (mod-bytes-name-bstr mb)))

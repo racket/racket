@@ -2,7 +2,8 @@
 (require racket/pretty
          compiler/zo-parse
          compiler/zo-marshal
-         compiler/decompile)
+         compiler/decompile
+         racket/file)
 
 (define ex-mod1
   '(module m racket
@@ -64,6 +65,12 @@
       (write c o)
       (let ([p (zo-parse (open-input-bytes (get-output-bytes o)))])
         (let ([b (zo-marshal p)])
+          ;; Check that submodule table is ok:
+          (parameterize ([read-accept-compiled #t]
+                         [current-output-port (open-output-bytes)])
+            (define f (make-temporary-file))
+            (call-with-output-file f #:exists 'truncate (lambda (f) (display b f)))
+            (dynamic-require f #f))
           (let ([p2 (zo-parse (open-input-bytes b))]
                 [to-string (lambda (p)
                              (let ([o (open-output-bytes)])
