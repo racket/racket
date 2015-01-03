@@ -13,7 +13,9 @@
          "blame.rkt"
          "prop.rkt"
          "arrow.rkt"
-         "misc.rkt")
+         "misc.rkt"
+         "generate.rkt"
+         )
 
 (define-for-syntax lifted-ccrs (make-hasheq))
 
@@ -182,7 +184,15 @@
   (contract-first-order-passes? (force-recursive-contract ctc)
                                 val))
 
-(struct recursive-contract ([name #:mutable] thunk [ctc #:mutable] list-contract?)
+(define (recursive-contract-generate ctc)
+  (λ (fuel)
+    (cond
+      [(zero? fuel) #f]
+      [else
+       (force-recursive-contract ctc)
+       (contract-random-generate/choose (recursive-contract-ctc ctc) (- fuel 1))])))
+
+(struct recursive-contract ([name #:mutable] [thunk #:mutable] [ctc #:mutable] list-contract?)
   #:property prop:recursive-contract (λ (this)
                                        (force-recursive-contract this)
                                        (recursive-contract-ctc this)))
@@ -195,6 +205,7 @@
    #:first-order recursive-contract-first-order
    #:projection recursive-contract-projection
    #:stronger recursive-contract-stronger
+   #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))
 (struct chaperone-recursive-contract recursive-contract ()
   #:property prop:custom-write custom-write-property-proc
@@ -204,6 +215,7 @@
    #:first-order recursive-contract-first-order
    #:projection recursive-contract-projection
    #:stronger recursive-contract-stronger
+   #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))
 (struct impersonator-recursive-contract recursive-contract ()
   #:property prop:custom-write custom-write-property-proc
@@ -213,4 +225,5 @@
    #:first-order recursive-contract-first-order
    #:projection recursive-contract-projection
    #:stronger recursive-contract-stronger
+   #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))

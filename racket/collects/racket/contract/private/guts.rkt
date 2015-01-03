@@ -232,6 +232,7 @@
       [(contract-struct? x) #f] ;; this has to come first, since some of these are procedure?.
       [(and (procedure? x) (procedure-arity-includes? x 1))
        (cond
+         [(eq? x null?) list/c-empty]
          [(and (eq? x list?) listof-any) listof-any]
          [(and (eq? x pair?) consc-anyany) consc-anyany]
          [else

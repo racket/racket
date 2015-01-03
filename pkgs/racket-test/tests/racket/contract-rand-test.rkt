@@ -76,6 +76,17 @@
 
 (check-not-exn
  (λ ()
+   (test-contract-generation
+    null?)))
+
+(check-not-exn
+ (λ ()
+   (test-contract-generation
+    (letrec ([c (or/c null? (cons/c real? (recursive-contract c)))])
+      c))))
+
+(check-not-exn
+ (λ ()
    (struct s (a b) #:transparent)
    (test-contract-generation
     (struct/dc s [a integer?] [b boolean?]))))
