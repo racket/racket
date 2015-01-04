@@ -8,7 +8,7 @@
                  'racket/class
                  'racket/contract/private/blame)])
   
-  (contract-eval '(define (extract-context-lines thunk)
+  (contract-eval '(define (extract-context-lines opt/c? thunk)
                     (define str
                       (with-handlers ((exn:fail:contract:blame? exn-message))
                         (thunk)
@@ -30,7 +30,11 @@
                                (cond
                                  [(or (regexp-match #rx"^the " line)
                                       (regexp-match #rx"^an " line)
-                                      (regexp-match #rx"^a " line))
+                                      (regexp-match #rx"^a " line)
+                                      
+                                      ;; opt/c needs to be fixed so it includes
+                                      ;; the right context in the right places
+                                      (and (not opt/c?) (regexp-match #rx"^[.][.][.]$" line)))
                                   (cons line (loop (cdr lines)))]
                                  [else
                                   (loop (cdr lines))])]))]
@@ -51,7 +55,7 @@
     (contract-eval
      #:test-case-name name
      `(,test #:test-case-name ',name
-             ',context extract-context-lines
+             ',context extract-context-lines #f
              (lambda () ,expression)))
     (let/ec k
       (define rewritten (rewrite-to-add-opt/c expression k))
@@ -60,7 +64,7 @@
         (contract-eval 
          #:test-case-name opt-name
          `(,test #:test-case-name ',opt-name
-                 ',context extract-context-lines (lambda () ,rewritten))))))
+                 ',context extract-context-lines #t (lambda () ,rewritten))))))
   
   (context-test '("the 1st argument of")
                 '((contract (-> boolean? integer? integer?)
@@ -475,6 +479,17 @@
                             (λ (x) 1)
                             'pos 'neg)
                   1))
+  
+  (context-test '("the range of"
+                  "the save-file method in")
+                '(send (contract (instanceof/c
+                                  (class/c [save-file (-> any/c number?)]))
+                                 (new
+                                  (class object%
+                                    (define/public (save-file) #f)
+                                    (super-new)))
+                                 'pos 'neg)
+                       save-file))
   
   (let* ([blame-pos (contract-eval '(make-blame (srcloc #f #f #f #f #f)
                                                 #f
