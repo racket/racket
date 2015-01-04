@@ -1049,6 +1049,25 @@
 
 (define (cons/dc-stronger? this that) #f)
 
+(define (cons/dc-generate ctc)
+  (define undep-ctc (the-cons/dc-undep ctc))
+  (define dep-mk-ctc (the-cons/dc-dep ctc))
+  (define forwards? (the-cons/dc-forwards? ctc))
+  (λ (fuel)
+    (define undep-gen (contract-random-generate/choose undep-ctc fuel))
+    (define pair-gens
+      (for*/list ([i (in-range 5)]
+                  [v (in-value (undep-gen))]
+                  [g (in-value (contract-random-generate/choose (dep-mk-ctc v) fuel))]
+                  #:when g)
+        (if forwards?
+            (λ () (cons v (g)))
+            (λ () (cons (g) v)))))
+    (define howmany (length pair-gens))
+    (and (not (zero? howmany))
+         (λ ()
+           ((list-ref pair-gens (random howmany)))))))
+
 (struct the-cons/dc (forwards? undep dep here name-info))
 
 (struct flat-cons/dc the-cons/dc ()
@@ -1058,7 +1077,8 @@
    #:val-first-projection cons/dc-val-first-projection
    #:name cons/dc-name
    #:first-order cons/dc-first-order
-   #:stronger cons/dc-stronger?))
+   #:stronger cons/dc-stronger?
+   #:generate cons/dc-generate))
 
 (struct chaperone-cons/dc the-cons/dc ()
   #:property prop:custom-write custom-write-property-proc
@@ -1067,7 +1087,8 @@
    #:val-first-projection cons/dc-val-first-projection
    #:name cons/dc-name
    #:first-order cons/dc-first-order
-   #:stronger cons/dc-stronger?))
+   #:stronger cons/dc-stronger?
+   #:generate cons/dc-generate))
 
 (struct impersonator-cons/dc the-cons/dc ()
   #:property prop:custom-write custom-write-property-proc
@@ -1076,7 +1097,8 @@
    #:val-first-projection cons/dc-val-first-projection
    #:name cons/dc-name
    #:first-order cons/dc-first-order
-   #:stronger cons/dc-stronger?))
+   #:stronger cons/dc-stronger?
+   #:generate cons/dc-generate))
 
 (define-syntax (cons/dc stx)
   (define (kwds->constructor stx)

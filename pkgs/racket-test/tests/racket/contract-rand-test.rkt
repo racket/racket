@@ -50,6 +50,8 @@
 (check-not-exn (λ () (test-contract-generation (=/c 0.0))))
 (check-not-exn (λ () (test-contract-generation (or/c boolean? boolean?))))
 (check-not-exn (λ () (test-contract-generation (cons/c integer? boolean?))))
+(check-not-exn (λ () (test-contract-generation (cons/dc [hd integer?] [tl (hd) (<=/c hd)]))))
+(check-not-exn (λ () (test-contract-generation (cons/dc [hd (tl) (<=/c tl)] [tl integer?]))))
 (check-not-exn (λ () (test-contract-generation any/c)))
 
 (check-not-exn (λ () (test-contract-generation (and/c real? (not/c negative?)))))
