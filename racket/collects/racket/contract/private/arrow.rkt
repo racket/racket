@@ -420,7 +420,21 @@
        (if (and (null? req-kwd) (null? opt-kwd))
            (λ (kwds kwd-args . args)
              (raise-blame-error (blame-swap blame) val
-                                '(expected: "no keywords")))
+                                (list 'expected:
+                                      "no keywords"
+                                      'given:
+                                      (apply
+                                       string-append
+                                       (let loop ([kwds kwds])
+                                         (cond
+                                           [(null? kwds) '()]
+                                           [(null? (cdr kwds))
+                                            (list "#:" (keyword->string (car kwds)))]
+                                           [else
+                                            (list* "#:"
+                                                   (keyword->string (car kwds))
+                                                   " "
+                                                   (loop (cdr kwds)))]))))))
            (λ (kwds kwd-args . args)
              (with-continuation-mark
               contract-continuation-mark-key blame

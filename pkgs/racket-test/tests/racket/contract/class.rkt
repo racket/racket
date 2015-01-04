@@ -2459,7 +2459,22 @@
                             'pos 'neg))])
       (object=? (send o get-this) o))
    #t)
-
+  
+  (test/spec-passed/result
+   'keywords-in-error-message1
+   '(with-handlers ([exn:fail:contract:blame? (λ (x)
+                                                (define m
+                                                  (regexp-match #rx"given: ([^\n]*)" (exn-message x)))
+                                                (and m (list-ref m 1)))])
+      (send (new (contract (class/c [save-file (-> any/c void?)])
+                           (class object%
+                             (define/public (save-file #:unscaled? [x 1])
+                               (void))
+                             (super-new))
+                           'pos 'neg))
+            save-file #:unscaled? #t))
+   "#:unscaled?")
+  
   ;; this test case won't pass until the internal-ctc
   ;; call is delayed in the new class/c projections
   ;; (but otherwise it passes)
