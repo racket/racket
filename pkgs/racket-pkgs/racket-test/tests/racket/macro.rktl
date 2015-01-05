@@ -232,11 +232,12 @@
 
 (test #t 'free-identifier=?-of-rename-via-shadower
       (let ([y 5])
-        (let-syntax ([m (lambda (stx)
-                          #`(quote-syntax #,(syntax-local-get-shadower #'x)))])
+        (let-syntax ([m (lambda ()
+                          (syntax-local-get-shadower #'x))])
           (let-syntax ([x (make-rename-transformer #'y)])
-            (free-identifier=? (m) #'y)))))
-
+            (let-syntax ([n (lambda (stx)
+                              #`#,(free-identifier=? ((syntax-local-value #'m)) #'y))])
+              (n))))))
 
 (test #t set!-transformer? (make-set!-transformer void))
 (test #t rename-transformer? (make-rename-transformer #'void))
@@ -262,9 +263,8 @@
 (test 6 'plus (keep-context + 1 2 3))
 (test 6 'plus (keep-context . (+ 1 2 3)))
 
-(unless building-flat-tests?
-  (eval-syntax
-   #'(test 6 'plus (discard-context keep-context . (+ 1 2 3)))))
+(eval-syntax
+ #'(test 6 'plus (discard-context keep-context . (+ 1 2 3))))
 
 (syntax-test #'(discard-context + 1 2 3))
 (syntax-test #'(discard-context . (+ 1 2 3)))
@@ -955,7 +955,7 @@
         (syntax-parse stx
           [(_ unmarked . body)
            (define/syntax-parse marked
-             (syntax-local-introduce (attribute unmarked)))
+             (datum->syntax #f (syntax->datum (attribute unmarked))))
            #'(#%plain-lambda {marked}
                (define-syntaxes {unmarked}
                  (make-rename-transformer #'marked))
@@ -967,12 +967,14 @@
     (lam x x)))
 
 ;; ----------------------------------------
-;; Check consistency of `free-identifier=?' and binding
+;; Check consistency of `free-identifier=?' and binding;
+;;  the result changed with the new macro system, so
+;;  it's consistent the other way around
 
 (module consistency-free-id-A racket
   (provide g (rename-out [*a a]))
   (define *a 10)
-  (define a 10)
+  (define a 11)
   (define-syntax g #'a))
 
 (module consistency-free-id-B racket
@@ -983,7 +985,7 @@
       [(_ ref)
        (with-syntax ([in (syntax-local-introduce
                           (syntax-local-value #'g))])
-         #'(let ([in 10]) ; BINDING
+         #'(let ([in 12]) ; BINDING
              (list (free-identifier=? #'in #'ref)
                    in
                    ref)))])) ; REFERENCE
@@ -991,7 +993,7 @@
 
 (require 'consistency-free-id-B)
 
-(test (list #t 10 10) consistency-free-id)
+(test (list #f 12 10) consistency-free-id)
 
 ;; ----------------------------------------
 ;; Check `syntax-local-lift...` outside of macro:

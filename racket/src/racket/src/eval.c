@@ -3945,7 +3945,7 @@ static int get_comp_flags(Scheme_Config *config)
 static void *compile_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *form;
+  Scheme_Object *form, *frame_marks;
   int writeable, for_eval, rename, enforce_consts, comp_flags;
   Scheme_Env *genv;
   Scheme_Compile_Info rec, rec2;
@@ -3996,6 +3996,11 @@ static void *compile_k(void)
       comp_flags |= COMP_ENFORCE_CONSTS;
   }
 
+  if (genv->stx_context)
+    frame_marks = scheme_module_context_frame_marks(genv->stx_context);
+  else
+    frame_marks = NULL;
+
   while (1) {
     scheme_prepare_compile_env(genv);
 
@@ -4008,7 +4013,7 @@ static void *compile_k(void)
     rec.env_already = 0;
     rec.comp_flags = comp_flags;
 
-    cenv = scheme_new_comp_env(genv, insp, NULL, SCHEME_TOPLEVEL_FRAME);
+    cenv = scheme_new_comp_env(genv, insp, frame_marks, SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME);
 
     if (for_eval) {
       /* Need to look for top-level `begin', and if we
@@ -4567,7 +4572,8 @@ static Scheme_Object *r_expand(Scheme_Object *obj, Scheme_Comp_Env *env,
 
 Scheme_Object *scheme_expand(Scheme_Object *obj, Scheme_Env *env)
 {
-  return r_expand(obj, scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(obj, scheme_new_expand_env(env, NULL, scheme_true,
+                                             SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME), 
 		  -1, 1, 0, scheme_false, -1, 0);
 }
 
@@ -4741,7 +4747,8 @@ static Scheme_Object *expand(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
+                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME),
 		  -1, 1, 0, scheme_false, 0, 0);
 }
 
@@ -4754,7 +4761,8 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
   
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
+                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME),
 		  -1, -1, 0, scheme_false, 0, 0);
 }
 
@@ -5178,7 +5186,8 @@ expand_once(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
+                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME), 
 		  1, 1, 0, scheme_false, 0, 0);
 }
 
@@ -5192,7 +5201,8 @@ expand_stx_once(int argc, Scheme_Object **argv)
   
   env = scheme_get_env(NULL);
 
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
+                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME),
 		  1, -1, 0, scheme_false, 0, 0);
 }
 
@@ -5203,7 +5213,8 @@ expand_to_top_form(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true, 
+                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME),
 		  1, 1, 1, scheme_false, 0, 0);
 }
 
@@ -5217,7 +5228,8 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
   
   env = scheme_get_env(NULL);
 
-  return r_expand(argv[0], scheme_new_expand_env(env, NULL, NULL, SCHEME_TOPLEVEL_FRAME), 
+  return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
+                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME),
 		  1, -1, 1, scheme_false, 0, 0);
 }
 

@@ -361,6 +361,13 @@ Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, Sc
 {
   Scheme_Comp_Env *e;
 
+  if (SAME_OBJ(marks, scheme_true)) {
+    if (genv->stx_context)
+      marks = scheme_module_context_frame_marks(genv->stx_context);
+    else
+      marks = NULL;
+  }
+
   e = scheme_new_comp_env(genv, insp, marks, flags);
   e->prefix = NULL;
 

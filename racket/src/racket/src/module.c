@@ -7266,7 +7266,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     formname = SCHEME_STX_CAR(disarmed_form);
     fm = cons(formname,
 	      cons(nm,
-		   cons(orig_ii, cons(fm, scheme_null))));
+		   cons((orig_ii ? orig_ii : scheme_false),
+                        cons(fm, scheme_null))));
 
     fm = scheme_datum_to_syntax(fm, form, ctx_form, 0, 2);
     
@@ -12174,6 +12175,8 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
      into top-level if that works without error. We need those two
      steps to avoid creating some bindings before discovering a
      collision. */
+  if (rn_set)
+    form = revert_expression_marks_via_context(form, rn_set, scheme_env_phase(env));
 
   parse_requires(form, env->phase, modidx, env, NULL,
                  rn_set,
