@@ -1,12 +1,18 @@
 language: c
 
+sudo: false
+
+cache:
+  directories:
+  - $HOME/.racket/download-cache
+
 env:
 - PATH=~/racket/bin:$PATH
 
 before_install:
 - export PKG=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 2`
 - echo $PKG
-- curl -L -o installer.sh http://www.cs.utah.edu/plt/snapshots/current/installers/min-racket-current-x86_64-linux-precise.sh
+- curl -L -o installer.sh http://plt.eecs.northwestern.edu/snapshots/current/installers/min-racket-current-x86_64-linux-precise.sh
 - sh installer.sh --in-place --dest ~/racket/
 
 install:
@@ -15,8 +21,8 @@ install:
 - raco pkg config catalogs >> catalog-config.txt
 - raco pkg config --set catalogs `cat catalog-config.txt`
 - raco pkg install --deps search-auto $PKG-test
+- raco pkg install --deps search-auto compiler-lib
+- ls $HOME/.racket/download-cache
 
 script:
 - raco test -p $PKG-test
-
-after_script:
