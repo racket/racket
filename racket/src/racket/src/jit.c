@@ -1329,12 +1329,13 @@ static Scheme_Native_Closure_Data *create_native_case_lambda(Scheme_Case_Lambda 
     o = c->array[i];
     if (SCHEME_PROCP(o))
       o = (Scheme_Object *)((Scheme_Closure *)o)->code;
-    data = (Scheme_Closure_Data *)o;
+    data = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
+    memcpy(data, o, sizeof(Scheme_Closure_Data));
     ensure_closure_native(data, ndata);
     if (data->u.native_code->max_let_depth > max_let_depth)
       max_let_depth = data->u.native_code->max_let_depth;
+    c->array[i] = (Scheme_Object *)data;
   }
-  printf("%d\n", max_let_depth);
   ndata->max_let_depth = max_let_depth;
   ndata->closure_size = -(count + 1); /* Indicates case-lambda */
 
