@@ -4493,5 +4493,24 @@
 (err/rt-test (f 10))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that JIT-inlined `apply` doesn't overflow the runstack
+
+(define (f n done? . args)
+  (cond
+   [(positive? n)
+    (or (f (sub1 n) done?) #t)]
+   [done? #t]
+   [(= 50 (length args))
+    100]
+   [(apply f 0 #t 1 2 3 4 5 6 7 8 9 10 args)
+    (apply f 0 #f (cons 1 args))]))
+
+(for/fold ([v 0]) ([i 2])
+  (+ v
+     (for/fold ([v2 0]) ([i (in-range 100 512)])
+       (f i #f))))
+(collect-garbage)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

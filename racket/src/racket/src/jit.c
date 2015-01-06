@@ -1334,6 +1334,7 @@ static Scheme_Native_Closure_Data *create_native_case_lambda(Scheme_Case_Lambda 
     if (data->u.native_code->max_let_depth > max_let_depth)
       max_let_depth = data->u.native_code->max_let_depth;
   }
+  printf("%d\n", max_let_depth);
   ndata->max_let_depth = max_let_depth;
   ndata->closure_size = -(count + 1); /* Indicates case-lambda */
 
@@ -3714,9 +3715,9 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
 #endif
   }
   
-  /* Add a couple of extra slots to computed let-depth, in case
-     we haven't quite computed right for inlined uses, etc. */
-  max_depth = WORDS_TO_BYTES(data->max_let_depth + gdata.max_extra + 2);
+  /* Add a couple of extra slots to computed let-depth, as needed
+     by various inlined operations. */
+  max_depth = WORDS_TO_BYTES(data->max_let_depth + gdata.max_extra + 4);
   if (gdata.max_tail_depth > max_depth)
     max_depth = gdata.max_tail_depth;
 

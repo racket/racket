@@ -2583,13 +2583,15 @@ Scheme_Object **scheme_alloc_runstack(intptr_t len)
 #ifdef MZ_PRECISE_GC
   intptr_t sz;
   void **p;
-  sz = sizeof(Scheme_Object*) * (len + 4);
+  sz = sizeof(Scheme_Object*) * (len + 5);
   p = (void **)GC_malloc_tagged_allow_interior(sz);
   *(Scheme_Type *)(void *)p = scheme_rt_runstack;
   ((intptr_t *)(void *)p)[1] = gcBYTES_TO_WORDS(sz);
   ((intptr_t *)(void *)p)[2] = 0;
   ((intptr_t *)(void *)p)[3] = len;
-  return (Scheme_Object **)(p + 4);
+# define MZ_RUNSTACK_OVERFLOW_CANARY 0xFF77FF77
+  ((intptr_t *)(void *)p)[4] = MZ_RUNSTACK_OVERFLOW_CANARY;
+  return (Scheme_Object **)(p + 5);
 #else
   return (Scheme_Object **)scheme_malloc_allow_interior(sizeof(Scheme_Object*) * len);
 #endif
@@ -2602,14 +2604,25 @@ void scheme_set_runstack_limits(Scheme_Object **rs, intptr_t len, intptr_t start
    writing and scanning pages that could be skipped for a minor
    GC. For CGC, we have to just clear out the unused part. */
 {
+  scheme_check_runstack_edge(rs);
 #ifdef MZ_PRECISE_GC
-  if (((intptr_t *)(void *)rs)[-2] != start)
-    ((intptr_t *)(void *)rs)[-2] = start;
-  if (((intptr_t *)(void *)rs)[-1] != end)
-    ((intptr_t *)(void *)rs)[-1] = end;
+  if (((intptr_t *)(void *)rs)[-3] != start)
+    ((intptr_t *)(void *)rs)[-3] = start;
+  if (((intptr_t *)(void *)rs)[-2] != end)
+    ((intptr_t *)(void *)rs)[-2] = end;
 #else
   memset(rs, 0, start * sizeof(Scheme_Object *));
   memset(rs + end, 0, (len - end) * sizeof(Scheme_Object *));
+#endif
+}
+
+void scheme_check_runstack_edge(Scheme_Object **rs)
+{
+#ifdef MZ_PRECISE_GC
+  if (((intptr_t *)rs)[-1] != MZ_RUNSTACK_OVERFLOW_CANARY) {
+    scheme_log_abort("internal error: runstack overflow detected");
+    abort();
+  }
 #endif
 }
 

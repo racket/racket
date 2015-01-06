@@ -653,6 +653,7 @@ void scheme_prepare_this_thread_for_GC(Scheme_Thread *t);
 
 Scheme_Object **scheme_alloc_runstack(intptr_t len);
 void scheme_set_runstack_limits(Scheme_Object **rs, intptr_t len, intptr_t start, intptr_t end);
+void scheme_check_runstack_edge(Scheme_Object **rs);
 
 void scheme_alloc_list_stack(Scheme_Thread *p);
 void scheme_clean_list_stack(Scheme_Thread *p);

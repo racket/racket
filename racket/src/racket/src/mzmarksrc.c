@@ -804,8 +804,8 @@ runstack_val {
   intptr_t *s = (intptr_t *)p;
  mark:
   void **a, **b;
-  a = (void **)s + 4 + s[2];
-  b = (void **)s + 4 + s[3];
+  a = (void **)s + 5 + s[2];
+  b = (void **)s + 5 + s[3];
   while (a < b) {
     gcMARK2(*a, gc);
     a++;
@@ -814,14 +814,14 @@ runstack_val {
  fixup:
   /* Zero out the part that we didn't mark, in case it becomes
      live later. */
-  a = (void **)s + 4;
-  b = (void **)s + 4 + s[2];
+  a = (void **)s + 5;
+  b = (void **)s + 5 + s[2];
   while (a < b) {
     *a = RUNSTACK_ZERO_VAL;
     a++;
   }
-  a = (void **)s + 4 + s[3];
-  b = (void **)s + 4 + (s[1] - 4);
+  a = (void **)s + 5 + s[3];
+  b = (void **)s + 5 + (s[1] - 5);
   while (a < b) {
     *a = RUNSTACK_ZERO_VAL;
     a++;

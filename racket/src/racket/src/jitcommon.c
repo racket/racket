@@ -990,6 +990,7 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
   jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(1)); /* index */
   if (setter) {
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(4));
+    CHECK_RUNSTACK_OVERFLOW();
     jit_stxi_p(WORDS_TO_BYTES(3), JIT_RUNSTACK, JIT_R0); /* save value */
   } else {
     jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R0); /* save value */
@@ -1001,7 +1002,7 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
   CHECK_LIMIT();
   JIT_UPDATE_THREAD_RSPTR();
   __END_SHORT_JUMPS__(1);
-  scheme_generate_non_tail_call(jitter, 3, 0, 0, 0, 0, 0, 0, 1, 0);
+  scheme_generate_non_tail_call(jitter, 3, 0, 0, 0, 0, 0, 0, 1, 0, NULL);
   __START_SHORT_JUMPS__(1);
   CHECK_LIMIT();
   if (setter) {
@@ -3394,8 +3395,10 @@ static int more_common0(mz_jit_state *jitter, void *_data)
     CHECK_LIMIT();
     mz_rs_sync();
 
+    CHECK_RUNSTACK_OVERFLOW();
+
     __END_SHORT_JUMPS__(1);
-    scheme_generate_non_tail_call(jitter, 2, 0, 1, 0, 0, 0, 0, 0, 0);
+    scheme_generate_non_tail_call(jitter, 2, 0, 1, 0, 0, 0, 0, 0, 0, NULL);
     CHECK_LIMIT();
     __START_SHORT_JUMPS__(1);
 
@@ -3693,7 +3696,7 @@ static int more_common1(mz_jit_state *jitter, void *_data)
   /* argc is in V1 */
   {
     int multi_ok;
-    GC_CAN_IGNORE jit_insn *ref1, *ref2, *ref3, *ref4, *ref6, *ref7, *refloop;
+    GC_CAN_IGNORE jit_insn *ref1, *ref2, *ref3, *ref4, *ref6, *ref7, *refloop, *reftop;
     void *code;
 
     for (multi_ok = 0; multi_ok < 2; multi_ok++) {
@@ -3798,7 +3801,8 @@ static int more_common1(mz_jit_state *jitter, void *_data)
       jit_movr_p(JIT_RUNSTACK, JIT_R2);
       jit_rshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
       jit_movr_i(JIT_R0, JIT_R1);
-      ref6 = jit_jmpi(jit_forward());
+      reftop = jit_get_ip();
+      scheme_generate_non_tail_call(jitter, -1, 0, 1, multi_ok, 0, 0, 1, 0, 0, NULL);
       CHECK_LIMIT();
 
       /***********************************/
@@ -3806,31 +3810,15 @@ static int more_common1(mz_jit_state *jitter, void *_data)
       mz_patch_branch(ref1);
       mz_patch_branch(ref3);
       mz_patch_branch(ref4);
+      __END_SHORT_JUMPS__(1);
 
-      /* We have to copy the args, because the generic apply
-         wants to pop N arguments. */
-      jit_lshi_ul(JIT_R0, JIT_V1, JIT_LOG_WORD_SIZE);
-      jit_subr_p(JIT_R2, JIT_RUNSTACK, JIT_R0);
-      refloop = jit_get_ip();
-      jit_subi_l(JIT_R0, JIT_R0, JIT_WORD_SIZE);
-      jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
-      jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
-      CHECK_LIMIT();
-      __START_INNER_TINY__(1);
-      (void)jit_bnei_l(refloop, JIT_R0, 0);
-      __END_INNER_TINY__(1);
-
-      jit_movr_p(JIT_RUNSTACK, JIT_R2);
-
-      /* Set V1 and local2 for arguments to generic tail-call handler: */
+      /* Set R0 and V1 for arguments to generic tail-call handler: */
       jit_movr_p(JIT_R0, JIT_V1);
       (void)jit_movi_p(JIT_V1, scheme_apply_proc);
 
-      mz_patch_ucbranch(ref6);
-
-      __END_SHORT_JUMPS__(1);
-    
-      scheme_generate_non_tail_call(jitter, -1, 0, 1, multi_ok, 0, 0, 1, 0, 0);
+      /* -3 here means "don't pop the arguments"; need regular argument
+         handling via `reftop` for tail calls */
+      scheme_generate_non_tail_call(jitter, -3, 0, 1, multi_ok, 0, 0, 1, 0, 0, reftop);
 
       scheme_jit_register_sub_func(jitter, code, scheme_false);
     }

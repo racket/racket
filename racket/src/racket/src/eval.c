@@ -796,6 +796,8 @@ void *scheme_enlarge_runstack(intptr_t size, void *(*k)())
     escape = 0;
     p = scheme_current_thread; /* might have changed! */
 
+    scheme_check_runstack_edge(MZ_RUNSTACK_START);
+
     if (cont_count == scheme_cont_capture_count) {
       if (!p->spare_runstack || (p->runstack_size > p->spare_runstack_size)) {
         p->spare_runstack = MZ_RUNSTACK_START;
