@@ -20,7 +20,7 @@
                (enclosing-path-for-repo url-str
                                         (path->complete-path path
                                                              (pkg-installed-dir))))]
-    [`(catalog ,lookup-name ,url-str)
+    [`(catalog ,lookup-name . ,_)
      (pkg-desc lookup-name 'name name
                checksum auto?
                #f)]
