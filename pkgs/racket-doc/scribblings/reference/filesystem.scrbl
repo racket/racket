@@ -185,47 +185,47 @@ paths. Parts of @racket[str] that do not form a valid path are not
 included in the returned list.}
 
 
-@defproc[(find-executable-path [program-sub path-string?]
-                               [related-sub (or/c path-string? #f) #f]
+@defproc[(find-executable-path [program path-string?]
+                               [related (or/c path-string? #f) #f]
                                [deepest? any/c #f]) 
          (or/c path? #f)]{
 
-Finds a path for the executable @racket[program-sub], returning
+Finds a path for the executable @racket[program], returning
 @racket[#f] if the path cannot be found.
 
-If @racket[related-sub] is not @racket[#f], then it must be a relative
-path string, and the path found for @racket[program-sub] must be such
-that the file or directory @racket[related-sub] exists in the same
+If @racket[related] is not @racket[#f], then it must be a relative
+path string, and the path found for @racket[program] must be such
+that the file or directory @racket[related] exists in the same
 directory as the executable. The result is then the full path for the
-found @racket[related-sub], instead of the path for the executable.
+found @racket[related], instead of the path for the executable.
  
 This procedure is used by the Racket executable to find the
 standard library collection directory (see @secref["collects"]).  In
-this case, @racket[program-sub] is the name used to start Racket and
-@racket[related-sub] is @racket["collects"].  The @racket[related-sub]
-argument is used because, on @|AllUnix|, @racket[program-sub] may
+this case, @racket[program] is the name used to start Racket and
+@racket[related] is @racket["collects"].  The @racket[related]
+argument is used because, on @|AllUnix|, @racket[program] may
 involve a sequence of soft links; in this case,
-@racket[related-sub] determines which link in the chain is relevant.
+@racket[related] determines which link in the chain is relevant.
 
-If @racket[related-sub] is not @racket[#f], then when
-@racket[find-executable-path] does not find a @racket[program-sub]
+If @racket[related] is not @racket[#f], then when
+@racket[find-executable-path] does not find a @racket[program]
 that is a link to another file path, the search can continue with the
 destination of the link. Further links are inspected until
-@racket[related-sub] is found or the end of the chain of links is
+@racket[related] is found or the end of the chain of links is
 reached. If @racket[deepest?] is @racket[#f] (the default), then the
 result corresponds to the first path in a chain of links for which
-@racket[related-sub] is found (and further links are not actually
+@racket[related] is found (and further links are not actually
 explored); otherwise, the result corresponds to the last link in the
-chain for which @racket[related-sub] is found.
+chain for which @racket[related] is found.
 
-If @racket[program-sub] is a pathless name,
+If @racket[program] is a pathless name,
 @racket[find-executable-path] gets the value of the
 @indexed-envvar{PATH} environment variable; if this environment
 variable is defined, @racket[find-executable-path] tries each path in
-@envvar{PATH} as a prefix for @racket[program-sub] using the search
+@envvar{PATH} as a prefix for @racket[program] using the search
 algorithm described above for path-containing
-@racket[program-sub]s. If the @envvar{PATH} environment variable is
-not defined, @racket[program-sub] is prefixed with the current
+@racket[program]s. If the @envvar{PATH} environment variable is
+not defined, @racket[program] is prefixed with the current
 directory and used in the search algorithm above. (On Windows, the
 current directory is always implicitly the first item in
 @envvar{PATH}, so @racket[find-executable-path] checks the current
