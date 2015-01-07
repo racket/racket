@@ -8,7 +8,7 @@
   (define p
     (find-relative-path 
      (collection-file-path "index-scope.rkt" "scribblings/main/private")
-     (find-user-pkgs-dir)
+     (simple-form-path (find-user-pkgs-dir))
      #:more-than-root? #t))
   (and (path? p)
        (let loop ([p p])
