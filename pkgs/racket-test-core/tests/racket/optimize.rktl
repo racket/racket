@@ -635,6 +635,9 @@
     (bin-exact 1.0+2.0i 'make-rectangular 1.0 2)
     (bin-exact 1.0+0.5i 'make-rectangular 1.0 1/2)
     (bin-exact 0.75+2.0i 'make-rectangular 3/4 2.0)
+    (bin-exact 0.75+2.0i 'make-rectangular 0.75f0 2.0)
+    (bin-exact 0.75+2.0i 'make-rectangular 0.75 2.0f0)
+    (bin-exact 0.75f0+2.0f0i 'make-rectangular 0.75f0 2.0f0)
     (bin-exact 1 'make-rectangular 1 0)
     (bin-exact 1.0 'make-rectangular 1.0 0)
 
