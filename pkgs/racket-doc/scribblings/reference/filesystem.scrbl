@@ -1134,9 +1134,9 @@ to avoid problems due to concurrent readers of @racket[file].
 
 The @racket[proc] function is called with an output port for the
 temporary file, plus the path of the temporary file. The result of
-@racket[proc] is the result of @racket[call-with-atomic-output].
+@racket[proc] is the result of @racket[call-with-atomic-output-file].
 
-The @racket[call-with-atomic-output] function arranges to delete
+The @racket[call-with-atomic-output-file] function arranges to delete
 temporary files on exceptions.
 
 Windows prevents programs from deleting or replacing files that are
@@ -1144,7 +1144,7 @@ open, but it allows renaming of open files. Therefore, on Windows,
 @racket[call-with-atomic-output-file] creates a second temporary file
 @racket[_extra-tmp-file], renames @racket[file] to
 @racket[_extra-tmp-file], renames the temporary file written by
-@racket[proc] to @racket[p], and finally deletes
+@racket[proc] to @racket[file], and finally deletes
 @racket[_extra-tmp-file].}
 
 
