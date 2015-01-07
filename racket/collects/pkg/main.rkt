@@ -122,7 +122,13 @@
          (let-values ([(pkg-name pkg-type) 
                        (package-source->name+type (path-element->string name) #f)])
            (eq? pkg-type 'name)))
-    (list (path-element->string name))]
+    (define pkg (path-element->string name))
+    (printf (~a "Inferred package name from given `--clone' path\n"
+                "  package: ~a\n"
+                "  given path: ~a\n")
+            pkg
+            name)
+    (list pkg)]
    [else
     ((pkg-error cmd)
      (~a "cannot extract a valid package name from the `--clone' path\n"
@@ -207,7 +213,7 @@
                      [(not (null? pkg-source))
                       pkg-source]
                      [clone
-                      (clone-to-package-name clone 'update)]
+                      (clone-to-package-name clone 'install)]
                      [else
                       pkg-source])])
                (call-with-package-scope
@@ -224,8 +230,10 @@
                   ;; as a linked directory
                   (define-values (sources a-type*)
                     (if (and (not pkgs) (null? pkg-source))
-                        (values (list (path->string (current-directory)))
-                                'link)
+                        (begin
+                          (printf "Linking current directory as a package\n")
+                          (values (list (path->string (current-directory)))
+                                  'link))
                         (values pkg-source a-type)))
                   (define setup-collects
                     (with-pkg-lock
@@ -299,7 +307,10 @@
                       ;; In a package directory?
                       (define pkg (path->pkg (current-directory)))
                       (if pkg
-                          (list pkg)
+                          (begin
+                            (printf "Updating current directory's package: ~a\n"
+                                    pkg)
+                            (list pkg))
                           null)])])
                (call-with-package-scope
                 'update
