@@ -20,7 +20,7 @@
     [(regexp-match  #rx"contract violation\n *([^\n]*)\n" msg)
      =>
      (λ (x) (cadr x))]
-    [(regexp-match #rx"broke its contract\n *([^\n]*)\n" msg)
+    [(regexp-match #rx"broke its contract;?\n *([^\n]*)\n" msg)
      =>
      (lambda (x) (cadr x))]
     [else (error 'test-contract-error
