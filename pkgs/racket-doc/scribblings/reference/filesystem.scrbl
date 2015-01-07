@@ -201,8 +201,8 @@ found @racket[related-sub], instead of the path for the executable.
  
 This procedure is used by the Racket executable to find the
 standard library collection directory (see @secref["collects"]).  In
-this case, @racket[program] is the name used to start Racket and
-@racket[related] is @racket["collects"].  The @racket[related-sub]
+this case, @racket[program-sub] is the name used to start Racket and
+@racket[related-sub] is @racket["collects"].  The @racket[related-sub]
 argument is used because, on @|AllUnix|, @racket[program-sub] may
 involve a sequence of soft links; in this case,
 @racket[related-sub] determines which link in the chain is relevant.
