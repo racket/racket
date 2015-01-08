@@ -744,13 +744,14 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    module. More specifically, used modules are determined when
    deleting a @filepath{.dep} file, which would have been created to
    accompany a @filepath{.zo} file when the @filepath{.zo} was built
-   by @exec{raco setup}. If the @filepath{.dep} file indicates another
-   module, that module's @filepath{.zo} is deleted only if it also has
-   an accompanying @filepath{.dep} file. In that case, the
-   @filepath{.dep} file is deleted, and additional used modules are
-   deleted based on the used module's @filepath{.dep} file, etc.
-   Supplying a specific list of collections to @exec{raco setup} disables
-   this dependency-based deletion of compiled files.}
+   by @exec{raco setup} or @exec{raco make} (see
+   @secref["Dependency\x20Files"]). If the @filepath{.dep} file
+   indicates another module, that module's @filepath{.zo} is deleted
+   only if it also has an accompanying @filepath{.dep} file. In that
+   case, the @filepath{.dep} file is deleted, and additional used
+   modules are deleted based on the used module's @filepath{.dep}
+   file, etc. Supplying a specific list of collections to @exec{raco
+   setup} disables this dependency-based deletion of compiled files.}
 
 ]
 
@@ -816,9 +817,10 @@ with fewer dependencies.
 @subsection{How Dependency Checking Works}
 
 Dependency checking uses @filepath{.zo} files, associated
-@filepath{.dep} files, and the documentation index. Dynamic
-references, such as through @racket[dynamic-require], are not visible
-to the dependency checker; only dependencies via @racket[require],
+@filepath{.dep} files (see @secref["Dependency Files"]), and the
+documentation index. Dynamic references, such as through
+@racket[dynamic-require], are not visible to the dependency checker;
+only dependencies via @racket[require],
 @racket[define-runtime-module-path-index], and other forms that
 cooperate with @racket[raco make] are visible for dependency checking.
 

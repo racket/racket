@@ -123,7 +123,7 @@ would create only @filepath{compiled/b_rkt.zo} and
 
 @; ----------------------------------------------------------------------
 
-@section{Dependency Files}
+@section[#:tag "Dependency Files"]{Dependency Files}
 
 In addition to a bytecode file, @exec{raco make} creates a file
 @filepath{compiled/@nonterm{name}_@nonterm{ext}.dep} that records
@@ -538,7 +538,7 @@ messages are instances of a @racket[parallel-compile-event] prefab structure:
 
 @racketblock[
   (struct parallel-compile-event (worker event) #:prefab)
-].
+]
 
 The worker field is the index of the worker that the created the event. The event
 field is a @racket[compile-event] as document in
