@@ -3005,10 +3005,10 @@ submodule). Introduced submodules have the names
 @racket[lazy-require-]@racket[_n]@racketidfont{-}@racket[_m], where
 @racket[_n] is a phase-level number and @racket[_m] is a number.
 
-When the use of a lazily-required function triggers module loading,
-@racket[register-external-module] declares a potential compilation
-dependency (in case the function is used in the process of compiling a
-module).
+When the use of a lazily-required function triggers module loading, it
+also triggers a use of @racket[register-external-module] to declare an
+indirect compilation dependency (in case the function is used in the
+process of compiling a module).
 
 @examples[#:eval lazy-require-eval
 (lazy-require

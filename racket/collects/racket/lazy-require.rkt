@@ -110,4 +110,4 @@
                  modpath
                  (variable-reference->resolved-module-path vr))))])
     (when (path? path)
-      (register-external-module path))))
+      (register-external-module path #:indirect? #t))))

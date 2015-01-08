@@ -489,6 +489,7 @@
             ;; Treat everything in ".dep" as 'build mode...
             (define deps (cddr (call-with-input-file* (build-path dir f) read)))
             (for ([dep (in-list deps)])
+              ;; Note: indirect dependencies (which start with 'indirect) are ignored
               (when (and (pair? dep)
                          (eq? 'collects (car dep)))
                 (define path-strs (map bytes->string/utf-8 (cdr dep)))

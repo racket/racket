@@ -231,9 +231,13 @@
 (define (get-dep-sha1s deps up-to-date collection-cache read-src-syntax mode roots must-exist? seen)
   (let ([l (for/fold ([l null]) ([dep (in-list deps)])
              (and l
+                  ;; (cons 'indirect dep) => indirect dependency (for pkg-dep checking)
                   ;; (cons 'ext rel-path) => a non-module file, check source
                   ;; rel-path => a module file name, check cache
-                  (let* ([ext? (and (pair? dep) (eq? 'ext (car dep)))]
+                  (let* ([dep (if (and (pair? dep) (eq? 'indirect (car dep)))
+                                  (cdr dep)
+                                  dep)]
+                         [ext? (and (pair? dep) (eq? 'ext (car dep)))]
                          [p (collects-relative*->path (if ext? (cdr dep) dep) collection-cache)])
                     (cond
                      [ext? (let ([v (get-source-sha1 p)])
@@ -273,19 +277,26 @@
                                          external-module-deps ; can create cycles if misused!
                                          reader-deps))]
         [external-deps (remove-duplicates external-deps)])
+    (define (path*->collects-relative/maybe-indirect dep)
+      (if (and (pair? dep) (eq? 'indirect (car dep)))
+          (cons 'indirect (path*->collects-relative (cdr dep)))
+          (path*->collects-relative dep)))
     (with-compile-output dep-path
       (lambda (op tmp-path)
         (let ([deps (append
-                     (map path*->collects-relative deps)
+                     (map path*->collects-relative/maybe-indirect deps)
                      (map (lambda (x)
-                            (cons 'ext (path*->collects-relative x)))
+                            (define d (path*->collects-relative/maybe-indirect x))
+                            (if (and (pair? d) (eq? 'indirect d))
+                                (cons 'indirect (cons 'ext (cdr d)))
+                                (cons 'ext d)))
                           external-deps))])
-        (write (list* (version)
-                      (cons (or src-sha1 (get-source-sha1 path))
-                            (get-dep-sha1s deps up-to-date collection-cache read-src-syntax mode roots #t #hash()))
-                      deps)
-               op)
-        (newline op))))))
+          (write (list* (version)
+                        (cons (or src-sha1 (get-source-sha1 path))
+                              (get-dep-sha1s deps up-to-date collection-cache read-src-syntax mode roots #t #hash()))
+                        deps)
+                 op)
+          (newline op))))))
 
 (define (format-time sec)
   (let ([d (seconds->date sec)])
@@ -311,6 +322,7 @@
 (define-struct ext-reader-guard (proc top)
   #:property prop:procedure (struct-field-index proc))
 (define-struct file-dependency (path module?) #:prefab)
+(define-struct (file-dependency/indirect file-dependency) () #:prefab)
 
 (define (compile-zo* mode roots path src-sha1 read-src-syntax zo-name up-to-date collection-cache)
   ;; The `path' argument has been converted to .rkt or .ss form,
@@ -322,10 +334,14 @@
   (define reader-deps null)
   (define deps-sema (make-semaphore 1))
   (define done-key (gensym))
-  (define (external-dep! p module?)
+  (define (external-dep! p module? indirect?)
+    (define bstr (path->bytes p))
+    (define dep (if indirect?
+                    (cons 'indirect bstr)
+                    bstr))
     (if module?
-        (set! external-module-deps (cons (path->bytes p) external-module-deps))
-        (set! external-deps (cons (path->bytes p) external-deps))))
+        (set! external-module-deps (cons dep external-module-deps))
+        (set! external-deps (cons dep external-deps))))
   (define (reader-dep! p)
     (call-with-semaphore
      deps-sema
@@ -386,7 +402,8 @@
                    (file-dependency? (vector-ref l 2))
                    (path? (file-dependency-path (vector-ref l 2))))
           (external-dep! (file-dependency-path (vector-ref l 2))
-                         (file-dependency-module? (vector-ref l 2))))
+                         (file-dependency-module? (vector-ref l 2))
+                         (file-dependency/indirect? (vector-ref l 2))))
         (loop))))
 
   ;; Write the code and dependencies:
@@ -627,9 +644,13 @@
               ;; If `sha1-only?', then `maybe-compile-zo' returns a #f or thunk:
               (maybe-compile-zo sha1-only? deps mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen)]
              [(ormap
-               (lambda (p)
+               (lambda (raw-p)
+                 ;; (cons 'indirect dep) => indirect dependency (for pkg-dep checking)
                  ;; (cons 'ext rel-path) => a non-module file (check date)
                  ;; rel-path => a module file name (check transitive dates)
+                 (define p (if (and (pair? raw-p) (eq? 'indirect (car raw-p)))
+                               (cdr raw-p)
+                               raw-p))
                  (define ext? (and (pair? p) (eq? 'ext (car p))))
                  (define d (collects-relative*->path (if ext? (cdr p) p) collection-cache))
                  (define t

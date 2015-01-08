@@ -550,25 +550,36 @@ field is a @racket[compile-event] as document in
 
 @defmodule[compiler/cm-accomplice]
 
-@defproc[(register-external-file [file (and path? complete-path?)]) void?]{
+@defproc[(register-external-file [file (and path? complete-path?)]
+                                 [#:indirect? indirect? any/c #f])
+         void?]{
 
-Logs a message (see @racket[log-message]) at level @racket['info] to 
-a logger named @racket['cm-accomplice]. The
-message data is a @racketidfont{file-dependency} prefab structure type
-with two fields; the first field's value is @racket[file] and the second
-field's value is @racket[#f] (to indicate a non-module dependency).
+Logs a message (see @racket[log-message]) at level @racket['info] to a
+logger named @racket['cm-accomplice]. The message data is a
+@racketidfont{file-dependency} prefab structure type with two fields;
+the first field's value is @racket[file] and the second field's value
+is @racket[#f] (to indicate a non-module dependency). If the
+@racket[indirect?] argument is true, the data is more specifically an
+instance of a @racketidfont{file-dependency/indirect} prefab structure
+type that is a subtype of @racketidfont{file-dependency} with no new
+fields.
 
 A compilation manager implemented by @racketmodname[compiler/cm] looks
-for such messages to register an external dependency. The compilation
-manager records (in a @filepath{.dep} file) the path as contributing
-to the implementation of the module currently being
+for such messages to register an external dependency. In response, the
+compilation manager records (in a @filepath{.dep} file) the path as
+contributing to the implementation of the module currently being
 compiled. Afterward, if the registered file is modified, the
-compilation manager will know to recompile the module.
+compilation manager will know to recompile the module. An ``indirect''
+dependency has no effect on recompilation, but it can signal to other
+tools, such as a package-dependency checker, that the dependency is
+indirect (and should not imply a direct package dependency).
 
 The @racket[include] macro, for example, calls this procedure with the
 path of an included file as it expands an @racket[include] form.}
 
-@defproc[(register-external-module [file (and path? complete-path?)]) void?]{
+@defproc[(register-external-module [file (and path? complete-path?)]
+                                   [#:indirect? indirect? any/c #f])
+         void?]{
 
 Like @racket[register-external-file], but logs a message with a
 @racketidfont{file-dependency} prefab structure type whose second
