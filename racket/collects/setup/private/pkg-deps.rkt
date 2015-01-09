@@ -12,7 +12,8 @@
          racket/path
          setup/dirs
          setup/doc-db
-         version/utils)
+         version/utils
+         compiler/private/dep)
 
 (provide check-package-dependencies)
 
@@ -489,11 +490,10 @@
             ;; Treat everything in ".dep" as 'build mode...
             (define deps (cddr (call-with-input-file* (build-path dir f) read)))
             (for ([dep (in-list deps)])
-              ;; Note: indirect dependencies (which start with 'indirect) are ignored
-              (when (and (pair? dep)
-                         (eq? 'collects (car dep)))
-                (define path-strs (map bytes->string/utf-8 (cdr dep)))
-                (define mod `(lib ,(string-join path-strs "/")))
+              (when (and (not (external-dep? dep))
+                         (not (indirect-dep? dep))
+                         (collects-relative-dep? dep))
+                (define mod (dep->module-path dep))
                 (check-mod! mod 'build pkg f dir)))))
         ;; Treat all (direct) documentation links as 'build mode:
         (register-or-check-docs #t pkg path coll-main?))))

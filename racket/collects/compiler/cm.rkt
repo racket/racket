@@ -10,7 +10,8 @@
          openssl/sha1
          racket/place
          setup/collects
-         compiler/compilation-path)
+         compiler/compilation-path
+         compiler/private/dep)
 
 (provide make-compilation-manager-load/use-compiled-handler
          managed-compile-zo
@@ -231,14 +232,8 @@
 (define (get-dep-sha1s deps up-to-date collection-cache read-src-syntax mode roots must-exist? seen)
   (let ([l (for/fold ([l null]) ([dep (in-list deps)])
              (and l
-                  ;; (cons 'indirect dep) => indirect dependency (for pkg-dep checking)
-                  ;; (cons 'ext rel-path) => a non-module file, check source
-                  ;; rel-path => a module file name, check cache
-                  (let* ([dep (if (and (pair? dep) (eq? 'indirect (car dep)))
-                                  (cdr dep)
-                                  dep)]
-                         [ext? (and (pair? dep) (eq? 'ext (car dep)))]
-                         [p (collects-relative*->path (if ext? (cdr dep) dep) collection-cache)])
+                  (let* ([ext? (external-dep? dep)]
+                         [p (collects-relative*->path (dep->encoded-path dep) collection-cache)])
                     (cond
                      [ext? (let ([v (get-source-sha1 p)])
                              (cond
@@ -644,15 +639,9 @@
               ;; If `sha1-only?', then `maybe-compile-zo' returns a #f or thunk:
               (maybe-compile-zo sha1-only? deps mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen)]
              [(ormap
-               (lambda (raw-p)
-                 ;; (cons 'indirect dep) => indirect dependency (for pkg-dep checking)
-                 ;; (cons 'ext rel-path) => a non-module file (check date)
-                 ;; rel-path => a module file name (check transitive dates)
-                 (define p (if (and (pair? raw-p) (eq? 'indirect (car raw-p)))
-                               (cdr raw-p)
-                               raw-p))
-                 (define ext? (and (pair? p) (eq? 'ext (car p))))
-                 (define d (collects-relative*->path (if ext? (cdr p) p) collection-cache))
+               (lambda (p)
+                 (define ext? (external-dep? p))
+                 (define d (collects-relative*->path (dep->encoded-path p) collection-cache))
                  (define t
                    (if ext?
                        (cons (or (try-file-time d) +inf.0) #f)

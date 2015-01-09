@@ -37,6 +37,7 @@
          "private/elf.rkt"
          "private/pkg-deps.rkt"
          "collection-name.rkt"
+         compiler/private/dep
          (only-in pkg/lib pkg-directory
                   pkg-single-collection))
 
@@ -681,9 +682,9 @@
           (with-input-from-file path read)))
       (when (and (pair? deps) (list? deps))
         (for ([s (in-list (cddr deps))])
-          (unless (and (pair? s) (eq? 'ext (car s)))
-            (define new-s (main-collects-relative->path s))
-            (when (path-string? new-s) (hash-set! dependencies new-s #t))))))
+          (unless (external-dep? s)
+              (define new-s (dep->path s))
+              (when (path-string? new-s) (hash-set! dependencies new-s #t))))))
     (delete-file path))
 
   (define (delete-files-in-directory path printout dependencies)
