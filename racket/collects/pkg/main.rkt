@@ -273,7 +273,9 @@
              "Update packages"
              #:once-each
              [#:bool all ("-a") ("Update all packages if no <pkg-source> is given")]
-             [#:bool lookup () "For each name <pkg-source>, look up in catalog"]
+             [#:bool lookup ()
+                     ("When <pkg-source> is a name, get source from a catalog instead of"
+                      "  using the currently installed source; unclones or combines with `--clone'")]
              #:once-each
              install-type-flags ...
              #:once-any
@@ -656,13 +658,12 @@
    ([(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"])
    #:install-type-flags
    ([(#:sym type [file dir file-url dir-url git github name] #f) type ("-t") 
-     ("Type of <pkg-source>;"
-      "valid <types>s are: file, dir, file-url, dir-url, git, github, or name;"
-      "if not specified, the type is inferred syntactically")]
-    [(#:str name #f) name ("-n") ("Name of package, instead of inferred"
-                                  "(makes sense only when a single <pkg-source> is given)")]
-    [(#:str checksum #f) checksum () ("Checksum of package, either expected or selected"
-                                      "(makes sense only when a single <pkg-source> is given)")])
+     ("Specify type of <pkg-source>, instead of inferred;"
+      "valid <types>s are: file, dir, file-url, dir-url, git, github, or name")]
+    [(#:str name #f) name ("-n") ("Specify name of package, instead of inferred;"
+                                  "makes sense only when a single <pkg-source> is given")]
+    [(#:str checksum #f) checksum () ("Checksum of package, either expected or selected;"
+                                      "makes sense only when a single <pkg-source> is given")])
    #:install-dep-flags
    ([(#:sym mode [fail force search-ask search-auto] #f) deps ()
      ("Specify the behavior for uninstalled dependencies, with"

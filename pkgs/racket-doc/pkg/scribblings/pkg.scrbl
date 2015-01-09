@@ -341,7 +341,8 @@ for information on how package information is extracted from a catalog.
 When a package is installed, the original source of its installation
 is recorded, as well as whether the installation was an @tech{automatic installation}. An
 @deftech{automatic installation} is one that was installed because it
-was a dependency of a non-@tech{automatic installation} package.
+was a dependency of some other package (as opposed to being installed
+explicitly by a user).
 
 @subsection[#:tag "concept:conflicts"]{Package Conflicts}
 
@@ -409,7 +410,7 @@ sub-commands.
 
 @subcommand{@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ... 
  --- Installs the given @tech{package sources} (eliminating exact-duplicate @nonterm{pkg-source}s).
-     If a given @nonterm{pkg-source} is ``auto-installed'' (to satisfy some other package's
+     If a given @nonterm{pkg-source} is @seclink["concept:auto"]{auto-installed} (to satisfy some other package's
      dependency), then it is promoted to explicitly installed.
 
      If no @nonterm{pkg-source}s are supplied and the @DFlag{clone}
@@ -426,15 +427,15 @@ sub-commands.
 
  @itemlist[
 
- @item{@DFlag{type} @nonterm{type} or @Flag{t} @nonterm{type} --- specifies an interpretation of the package source,
+ @item{@DFlag{type} @nonterm{type} or @Flag{t} @nonterm{type} --- Specifies an interpretation of the package source,
        where @nonterm{type} is either @exec{file}, @exec{dir}, @exec{file-url}, @exec{dir-url}, @exec{git}, @exec{github}, 
-       or @exec{name}.}
+       or @exec{name}. The type is normally inferred for each @nonterm{pkg-source}.}
 
- @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- specifies the name of the package,
+ @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- Specifies the name of the package,
        which makes sense only when a single @nonterm{pkg-source} is provided. The name is normally
        inferred for each @nonterm{pkg-source}.}
 
- @item{@DFlag{checksum} @nonterm{checksum} --- specifies a checksum for the package,
+ @item{@DFlag{checksum} @nonterm{checksum} --- Specifies a checksum for the package,
        which normally makes sense only when a single @nonterm{pkg-source} is provided. The use of
        @nonterm{checksum} depends on @nonterm{pkg-source}: for a Git or GitHub source, @nonterm{checksum} selects a checksum;
        for a @tech{package name}, file path, or remote URL as a source, @nonterm{checksum} specifies an expected checksum;
@@ -449,7 +450,7 @@ sub-commands.
          Forcing an installation may leave package content in an inconsistent state.}
    @item{@exec{search-ask} --- Looks for dependencies (when uninstalled) or updates (when version requirements are unmet)
          via the configured @tech{package catalogs},
-         but asks if you would like the packages installed or updated. This behavior is the default in @tech{interactive mode}.}
+         but asks the user whether packages should be installed or updated. This behavior is the default in @tech{interactive mode}.}
    @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install or update.}
   ]}
 
@@ -475,7 +476,7 @@ sub-commands.
         The package is identified
         as a @tech{single-collection package} or a @tech{multi-collection package} at the
         time that it is installed, and that categorization does not change even if the @schemeidfont{collection}
-        definition in @filepath{info.rkt} is changed (i.e., he package must be removed and re-installed
+        definition in @filepath{info.rkt} is changed (i.e., the package must be removed and re-installed
         for the change to take effect).}
 
   @item{@DFlag{static-link} --- Implies @DFlag{link}, and also indicates that subdirectories
@@ -487,21 +488,26 @@ sub-commands.
 
   @item{@DFlag{clone} @nonterm{dir} --- A Git or GitHub @tech{package
         source} is cloned as @nonterm{dir} and locally linked as the
-        package implementation. Multiple @nonterm{pkg-source}
+        package implementation. See also @secref["clone-link"].
+
+        If no @nonterm{pkg-source} is supplied, then the last path element
+        of @nonterm{dir} is used as a package name and used as a
+        @nonterm{pkg-source} argument.
+
+        Multiple @nonterm{pkg-source}
         arguments make sense only if they all specify the same Git
         repository (with different paths into the repository). The
         @DFlag{clone} flag implies @DFlag{type} in the sense that each
         @nonterm{pkg-source} must be either a Git or GitHub
         @tech{package source} or a @tech{package name}, where a
         @tech{package name} must be mapped by the @tech{package catalog} to a
-        Git or GitHub @tech{package source}. If no
-        @nonterm{pkg-source} is supplied, then the last path element
-        of @nonterm{dir} is used as a package name and used as a
-        @nonterm{pkg-source} argument.}
+        Git or GitHub @tech{package source}.}
 
-  @item{@DFlag{binary} --- Strips source elements of a package before installing, and implies @DFlag{copy}.}
+  @item{@DFlag{binary} --- Strips source elements of a package before installing, and implies @DFlag{copy}.
+                           See also @secref["strip"].}
 
-  @item{@DFlag{source} --- Strips built elements of a package before installing, and implies @DFlag{copy}.}
+  @item{@DFlag{source} --- Strips built elements of a package before installing, and implies @DFlag{copy}.
+                           See also @secref["strip"].}
 
  @item{@DFlag{scope} @nonterm{scope} --- Selects the @tech{package scope} for installation, where @nonterm{scope} is one of
   @itemlist[
@@ -516,11 +522,11 @@ sub-commands.
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
  
- @item{@DFlag{catalog} @nonterm{catalog} --- Use @nonterm{catalog} instead of of the currently configured 
+ @item{@DFlag{catalog} @nonterm{catalog} --- Uses @nonterm{catalog} instead of of the currently configured 
        @tech{package catalogs}.}
 
-  @item{@DFlag{skip-installed} --- Ignore any @nonterm{pkg-source}
-        whose name corresponds to an already-installed package, except for promoting auto-installed
+  @item{@DFlag{skip-installed} --- Ignores any @nonterm{pkg-source}
+        whose name corresponds to an already-installed package, except for promoting @seclink["concept:auto"]{auto-installed}
         packages to explicitly installed.}
 
   @item{@DFlag{pkgs} --- Disables default installation of the current directory when no @nonterm{pkg-source}s
@@ -569,12 +575,12 @@ sub-commands.
   @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
-  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Install and setup with @nonterm{n} parallel jobs.}
+  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Installs and runs @exec{raco setup} with @nonterm{n} parallel jobs.}
 
   @item{@DFlag{batch} --- Disables @deftech{interactive mode}, suppressing potential prompts for a user
                           (e.g., about package dependencies or clone sharing).}
 
-  @item{@DFlag{no-trash} --- Refrain from moving updated or removed packages to a trash folder.}
+  @item{@DFlag{no-trash} --- Refrains from moving updated or removed packages to a trash folder.}
 
   @item{@DFlag{fail-fast} --- Breaks @exec{raco setup} as soon as any error is encountered.}
  ]
@@ -603,7 +609,7 @@ The treatment of a @nonterm{pkg-source} depends on the way that it parses:
 
  @item{If @nonterm{pkg-source} parses as a directory @tech{package
        source}, and if the named package is installed as a link to a
-       Git repository clone, then the clone is checked for
+       @seclink["clone-link"]{Git repository clone}, then the clone is checked for
        updates. The @DFlag{link}, @DFlag{static-link}, and
        @DFlag{copy} flags change this interpretation of
        @nonterm{pkg-source}.}
@@ -627,12 +633,24 @@ the given @nonterm{pkg-source}s.
  the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{all} or @Flag{a} --- Update all packages, if no packages are given in the argument list.}
+ @item{@DFlag{all} or @Flag{a} --- Updates all packages, if no packages are given in the argument list.}
 
- @item{@DFlag{lookup} --- Causes a @tech{package name} as a @nonterm{pkg-source} to be used
-       as a replacement, instead of the name of a installed package that may have updates.
-       (If the named package was installed through a package name, then there's effectively
-        no difference, unless a different catalog is used.)}
+ @item{@DFlag{lookup} --- Causes a @tech{package name} as a
+       @nonterm{pkg-source} to be used as a replacement that is looked
+       up in a catalog, instead of the name of an installed package
+       that may have updates from its current source. (If the named
+       package was installed through a package name, then there's
+       effectively no difference, unless a different catalog is
+       used.)
+
+       By default, if @nonterm{pkg-source} refers to a package that is
+       currently linked as a @seclink["clone-link"]{Git repository
+       clone}, then replacing the installation with a
+       catalog-specified source has the effect of removing the clone
+       link. However, the @DFlag{lookup} flag can be combined with the
+       @DFlag{clone} flag (assuming that the catalog maps the package
+       to a Git repository) so that the resulting installation is a
+       linked repository clone.}
 
  @item{@DFlag{type} @nonterm{type} or @Flag{t} @nonterm{type} --- Same as for @command-ref{install}.}
  @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- Same as for @command-ref{install}.}
@@ -644,7 +662,7 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{skip-implies} --- Same as for @command-ref{install}.}
  @item{@DFlag{link} --- Same as for @command-ref{install}, but a
        directory package source is treated as a link by default only
-       when it does not correspond to a link to a Git repository
+       when it does not correspond to a link or a Git repository
        clone.}
  @item{@DFlag{static-link} --- Same as for @command-ref{install}.}
  @item{@DFlag{copy} --- Same as for @command-ref{install}.}
@@ -654,7 +672,11 @@ the given @nonterm{pkg-source}s.
     package (unless @DFlag{lookup} is specified). In that case, the package must be currently installed
     from a Git or GitHub source---possibly as directed by a
     catalog---and that source is used for the clone (which replaces
-    the existing package installation).}
+    the existing package installation).
+
+    To convert a clone-linked package to a normal installation, use
+    @command-ref{update} either with the @DFlag{lookup} flag or with
+    a replacement @tech{package source} that is not a package name.}
  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
  @item{@DFlag{source} --- Same as for @command-ref{install}.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
@@ -698,12 +720,12 @@ the given @nonterm{pkg}s.
  the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{demote} --- ``Remove'' explicitly installed packages by demoting them to auto-installed
+ @item{@DFlag{demote} --- ``Removes'' explicitly installed packages by demoting them to @seclink["concept:auto"]{auto-installed}
                             (leaving auto-installed packages as such). Combined with @DFlag{auto}, removes
                             packages for which there are no dependencies.}
- @item{@DFlag{force} --- Ignore dependencies when removing packages.}
+ @item{@DFlag{force} --- Ignores dependencies when removing packages.}
  @item{@DFlag{auto} --- In addition to removing each @nonterm{pkg},
-                        remove auto-installed packages (i.e., installed by the @exec{search-auto} or @exec{search-ask}
+                        removes @seclink["concept:auto"]{auto-installed} packages (i.e., installed by the @exec{search-auto} or @exec{search-ask}
                         dependency behavior, or demoted via @DFlag{demote}) that are no longer required by any
                         explicitly installed package.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
@@ -729,9 +751,11 @@ package is created.
 @history[#:added "6.1.1.5"]}
 
 
-@subcommand{@command/toc{show} @nonterm{option} ... @nonterm{pkg} ... --- Print information about currently installed packages. If @nonterm{pkg}s are specified, then only those packages are shown.
+@subcommand{@command/toc{show} @nonterm{option} ... @nonterm{pkg} ... --- Prints information about currently installed packages.
+
+ If @nonterm{pkg}s are specified, then only those packages are shown.
  By default, packages are shown for all @tech{package scopes}, but only for packages
- not marked as auto-installed to fulfill dependencies. If a package is
+ not marked as @seclink["concept:auto"]{auto-installed}. If a package is
  explicitly specified, it is shown even if it is marked as
  auto-installed. Unless @Flag{l} or @DFlag{long} is specified,
  the output is roughly constrained to 80 columns or the number of columns specified by the @envvar{COLUMNS}
@@ -743,15 +767,15 @@ package is created.
 
  @itemlist[
 
- @item{@Flag{a} or @DFlag{all} --- Includes auto-installed packages in the listing.} 
- @item{@Flag{l} or @DFlag{long} --- Show complete columns, instead of abbreviating to a width,
+ @item{@Flag{a} or @DFlag{all} --- Includes @seclink["concept:auto"]{auto-installed} packages in the listing.} 
+ @item{@Flag{l} or @DFlag{long} --- Shows complete columns, instead of abbreviating to a width,
                                     and use a more regular (but less
  human-readable) format for some columns.}
- @item{@DFlag{rx} --- Treat the @nonterm{pkg}s as regular expressions
+ @item{@DFlag{rx} --- Treats the @nonterm{pkg}s as regular expressions
  for displaying specific packages.}
- @item{@DFlag{full-checksum} --- Print the full instead of the
+ @item{@DFlag{full-checksum} --- Prints the full instead of the
  abbreviated checksum.}
- @item{@Flag{d} or @DFlag{dir} --- Adds a column in the output for the directory where the package is installed.} 
+ @item{@Flag{d} or @DFlag{dir} --- Adds a column in the output to show the directory where the package is installed.} 
 
  @item{@DFlag{scope} @nonterm{scope} --- Shows only packages in @nonterm{scope}, which is one of
   @itemlist[
@@ -815,26 +839,26 @@ package is created.
  the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{from-dir} --- Treat @nonterm{directory-or-package} as a directory path; this is the default mode.}
- @item{@DFlag{from-install} --- Treat @nonterm{directory-or-package} as the name of an installed package 
+ @item{@DFlag{from-dir} --- Treats @nonterm{directory-or-package} as a directory path; this is the default mode.}
+ @item{@DFlag{from-install} --- Treats @nonterm{directory-or-package} as the name of an installed package 
        (instead of a directory).}
  @item{@DFlag{format} @nonterm{format} --- Specifies the archive format. 
       The allowed @nonterm{format}s are: @exec{zip} (the default), @exec{tgz}, and @exec{plt}. 
       This option must be specified if @DFlag{manifest} is not present.}
  @item{@DFlag{manifest} --- Creates a manifest file for a directory, rather than an archive.}
- @item{@DFlag{as-is} --- Bundle all content of the package directory as is, with no filtering
+ @item{@DFlag{as-is} --- Bundles all content of the package directory as is, with no filtering
        of sources, compiled files, or repository elements.}
- @item{@DFlag{source} --- Bundle only sources in the package directory; see @secref["strip"].}
- @item{@DFlag{binary} --- Bundle compiled bytecode and rendered
+ @item{@DFlag{source} --- Bundles only sources in the package directory; see @secref["strip"].}
+ @item{@DFlag{binary} --- Bundles compiled bytecode and rendered
        documentation in the package directory; see @secref["strip"].}
- @item{@DFlag{built} --- Bundle compiled sources, bytecode, and rendered
+ @item{@DFlag{built} --- Bundles compiled sources, bytecode, and rendered
        documentation in the package directory, filtering repository elements; see @secref["strip"].}
   @item{@DFlag{dest} @nonterm{dest-dir} --- Writes generated bundles to @nonterm{dest-dir}.}
   ]
 }
 
 @subcommand{@command/toc{config} @nonterm{option} ... @optional[@nonterm{key}] @nonterm{val} ... --- 
-View and modify the configuration of the package manager. If @nonterm{key} is not provided,
+Views and modifies the configuration of the package manager. If @nonterm{key} is not provided,
 the values for all recognized keys are shown. The @nonterm{val} arguments are allowed
 only when @DFlag{set} is used, in which case the @nonterm{val}s are used as the new values
 for @nonterm{key}.
@@ -897,15 +921,15 @@ for @nonterm{key}.
  the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{all} --- Show information for all available packages. When using this flag,
+ @item{@DFlag{all} --- Shows information for all available packages. When using this flag,
                       supply no @nonterm{packaee-name}s.}
- @item{@DFlag{only-names} --- Show only package names. This option is mainly useful with 
+ @item{@DFlag{only-names} --- Shows only package names. This option is mainly useful with 
                               @DFlag{all}, but when a @nonterm{packaee-name} is provided,
                               catalogs are consulted to ensure that he package is available.}
- @item{@DFlag{modules} --- Show the modules that are implemented by a package.}
- @item{@DFlag{catalog} @nonterm{catalog} --- Query @nonterm{catalog} instead of the currently configured 
+ @item{@DFlag{modules} --- Shows the modules that are implemented by a package.}
+ @item{@DFlag{catalog} @nonterm{catalog} --- Queries @nonterm{catalog} instead of the currently configured 
        @tech{package catalogs}.}
- @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Query catalogs 
+ @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Queries catalogs 
        for a result specific to @nonterm{version},
        instead of the installation's Racket version.}
  ]
@@ -935,9 +959,9 @@ for @nonterm{key}.
                          over new information.}
  @item{@DFlag{override} --- Changes merging so that new information takes precedence
                          over information already in @nonterm{dest-catalog}.}
- @item{@DFlag{relative} --- Write package sources to @nonterm{dest-catalog} in relative-path form,
+ @item{@DFlag{relative} --- Writes package sources to @nonterm{dest-catalog} in relative-path form,
                             when possible.}
- @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Copy catalog
+ @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Copies catalog
        results specific to @nonterm{version}
        (for catalogs that make a distinction), instead of the installation's Racket version.}
  ]
@@ -960,10 +984,10 @@ for @nonterm{key}.
  @item{@DFlag{from-config} --- Adds the currently configured 
        @tech{package catalogs} to the end of the @nonterm{src-catalog}s list.}
  @item{@DFlag{state} @nonterm{state-database} --- To enable incremental
-       updating, Reads and writes the database @nonterm{state-database}, which must have the suffix
+       updating, reads and writes the database @nonterm{state-database}, which must have the suffix
        @filepath{.sqlite}, as the current state of @nonterm{dest-dir}.}
- @item{@DFlag{relative} --- Write package sources to @nonterm{dest-catalog} in relative-path form.}
- @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Copy catalog
+ @item{@DFlag{relative} --- Writes package sources to @nonterm{dest-catalog} in relative-path form.}
+ @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Copies catalog
        results specific to @nonterm{version}
        (for catalogs that make a distinction), instead of the installation's Racket version.}
  ]

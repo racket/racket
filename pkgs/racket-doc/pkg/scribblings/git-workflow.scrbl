@@ -31,7 +31,7 @@ repository clone. Furthermore, a directory-linked package can be
 promoted to a clone-linked package with @command-ref{update}.
 
 
-@section{Linking a Git Checkout as a Clone}
+@section[#:tag "clone-link"]{Linking a Git Checkout as a Clone}
 
 When a package is installed with
 
