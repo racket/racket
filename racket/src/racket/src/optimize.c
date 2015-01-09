@@ -2865,12 +2865,12 @@ static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app,
           return;
 
         pred = optimize_get_predicate(pos, info);
-        if (pred)
+        if (pred) {
           if (SAME_OBJ(pred, expect_pred))
             app->rator = unsafe;
           else
             info->escapes = 1;
-        else
+        } else
           add_type(info, pos, expect_pred);
       }
     }
