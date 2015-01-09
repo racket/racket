@@ -560,16 +560,16 @@ logger named @racket['cm-accomplice]. The message data is a
 the first field's value is @racket[file] and the second field's value
 is @racket[#f] (to indicate a non-module dependency). If the
 @racket[indirect?] argument is true, the data is more specifically an
-instance of a @racketidfont{file-dependency/indirect} prefab structure
-type that is a subtype of @racketidfont{file-dependency} with no new
-fields.
+instance of a @racketidfont{file-dependency/options} prefab structure
+type that is a subtype of @racketidfont{file-dependency} with one extra
+field: a hash table mapping @racket['indirect] to @racket[#t].
 
 A compilation manager implemented by @racketmodname[compiler/cm] looks
 for such messages to register an external dependency. In response, the
 compilation manager records (in a @filepath{.dep} file) the path as
 contributing to the implementation of the module currently being
 compiled. Afterward, if the registered file is modified, the
-compilation manager will know to recompile the module. An ``indirect''
+compilation manager will know to recompile the module. An indirect
 dependency has no effect on recompilation, but it can signal to other
 tools, such as a package-dependency checker, that the dependency is
 indirect (and should not imply a direct package dependency).

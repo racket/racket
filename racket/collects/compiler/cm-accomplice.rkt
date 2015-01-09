@@ -16,5 +16,6 @@
                'cm-accomplice
                (format "file dependency: ~s" f)
                (if indirect?
-                   `#s((file-dependency/indirect file-dependency 2) ,f ,module?)
+                   `#s((file-dependency/options file-dependency 2) ,f ,module?
+                       #hasheq((indirect . #t)))
                    `#s(file-dependency ,f ,module?))))

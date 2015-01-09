@@ -317,7 +317,7 @@
 (define-struct ext-reader-guard (proc top)
   #:property prop:procedure (struct-field-index proc))
 (define-struct file-dependency (path module?) #:prefab)
-(define-struct (file-dependency/indirect file-dependency) () #:prefab)
+(define-struct (file-dependency/options file-dependency) (table) #:prefab)
 
 (define (compile-zo* mode roots path src-sha1 read-src-syntax zo-name up-to-date collection-cache)
   ;; The `path' argument has been converted to .rkt or .ss form,
@@ -398,7 +398,10 @@
                    (path? (file-dependency-path (vector-ref l 2))))
           (external-dep! (file-dependency-path (vector-ref l 2))
                          (file-dependency-module? (vector-ref l 2))
-                         (file-dependency/indirect? (vector-ref l 2))))
+                         (and (file-dependency/options? (vector-ref l 2))
+                              (hash-ref (file-dependency/options-table (vector-ref l 2))
+                                        'indirect
+                                        #f))))
         (loop))))
 
   ;; Write the code and dependencies:
