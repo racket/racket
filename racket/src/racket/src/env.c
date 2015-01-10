@@ -2411,8 +2411,8 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     // REMOVEME: intermediate attempt at removing source module context:
     Scheme_Mark_Set *bind_marks;
     int ph = scheme_current_thread->current_local_env->genv->phase;
-    binder = scheme_stx_lookup_w_nominal(sym,
-                                         scheme_make_integer(ph), 0,
+    binder = scheme_stx_lookup_w_nominal(sym, scheme_make_integer(ph),
+                                         0, 0,
                                          NULL, NULL, &bind_marks,
                                          NULL, NULL, NULL, NULL, NULL);
 
@@ -2531,7 +2531,8 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
 
   sym = argv[0];
 
-  binding = scheme_stx_lookup_w_nominal(sym, scheme_make_integer(env->genv->phase), 0,
+  binding = scheme_stx_lookup_w_nominal(sym, scheme_make_integer(env->genv->phase),
+                                        0, 0,
                                         NULL, &ambiguous, &binding_marks,
                                         NULL, NULL, NULL, NULL, NULL);
   if (SCHEME_FALSEP(binding)) {

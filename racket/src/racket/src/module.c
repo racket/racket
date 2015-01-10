@@ -10176,7 +10176,8 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
             protected = SCHEME_TRUEP(SCHEME_CDR(v));
             prnt_name = name;
 
-            binding = scheme_stx_lookup_w_nominal(name, phase, 0,
+            binding = scheme_stx_lookup_w_nominal(name, phase,
+                                                  0, 0,
                                                   NULL, NULL, NULL,
                                                   NULL,
                                                   &nominal_mod, &nominal_name,

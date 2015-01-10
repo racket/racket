@@ -1208,7 +1208,8 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_exact_for_bind(Scheme_Object *o, Scheme_Object *phase);
-Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase, int for_bind,
+Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
+                                           int for_bind, int stop_at_free_eq,
                                            int *_exact_match, int *_ambiguous,
                                            Scheme_Mark_Set **_binding_marks,
                                            Scheme_Object **insp,              /* access-granting inspector */
