@@ -909,15 +909,18 @@
   (define-syntax (++y-macro stx) (syntax-protect #'++x))
   (define-syntax (++y-macro2 stx) (syntax-protect (datum->syntax stx '++x)))
   (define-syntax (++u-macro stx) (syntax-protect #'++u))
+  (define-syntax (++v-macro stx) (syntax-protect #'++v))
   (define-syntax ++u2 (make-rename-transformer (syntax-protect #'++u)))
-  (define ++u 8) ; unexported
-  (provide ++y ++y-macro ++y-macro2 ++u-macro ++u2))
+  (define ++u 8) ; would be unexported, but export of rename transformer exports it
+  (define ++v 9) ; unexported
+  (provide ++y ++y-macro ++y-macro2 ++u-macro ++u2 ++v-macro))
 (require '++n)
 
 (test 10 values ++y)
 (test 10 values ++y-macro)
 (test 8 values ++u-macro)
 (test 8 values ++u2)
+(test 9 values ++v-macro)
 
 (require '++m)
 

@@ -4296,9 +4296,8 @@ static void setup_accessible_table(Scheme_Module *m)
         /* Add syntax as negative ids: */
         count = pt->num_provides;
         for (i = nvp; i < count; i++) {
-          if (SCHEME_FALSEP(pt->provide_srcs[i])) {
+          if (SCHEME_FALSEP(pt->provide_srcs[i]))
             scheme_hash_set(ht, pt->provide_src_names[i], scheme_make_integer(-(i+1)));
-          }
         }
 
         if (!j) {
@@ -4575,7 +4574,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
         pos = scheme_hash_get(env->module->exp_infos[env->mod_phase]->accessible, symbol);
       else
         pos = NULL;
-      
+        
       if (pos) {
         if (SCHEME_PAIRP(pos)) {
           if (_is_constant) *_is_constant = SCHEME_CDR(pos);
@@ -6336,9 +6335,9 @@ static void eval_exptime(Scheme_Object *names, int count,
             scheme_add_binding_copy(SCHEME_CAR(ids_for_rename_trans),
                                     scheme_rename_transformer_id(values[i]),
                                     scheme_make_integer(0));
-          }
-	
-          scheme_add_to_table(syntax, (const char *)name, macro, 0);
+            /* don't add to table, since any reference will go to the original */
+          } else
+            scheme_add_to_table(syntax, (const char *)name, macro, 0);
 
           if (SCHEME_TRUEP(ids_for_rename_trans))
             ids_for_rename_trans = SCHEME_CDR(ids_for_rename_trans);
@@ -6354,12 +6353,13 @@ static void eval_exptime(Scheme_Object *names, int count,
       SCHEME_PTR_VAL(macro) = vals;
 
       if (SCHEME_TRUEP(ids_for_rename_trans)
-          && scheme_is_binding_rename_transformer(vals))
+          && scheme_is_binding_rename_transformer(vals)) {
         scheme_add_binding_copy(SCHEME_CAR(ids_for_rename_trans),
                                 scheme_rename_transformer_id(vals),
                                 scheme_make_integer(0));
-      
-      scheme_add_to_table(syntax, (const char *)name, macro, 0);
+        /* don't add to table, since any reference will go to the original */
+      } else
+        scheme_add_to_table(syntax, (const char *)name, macro, 0);
       
       return;
     } else
@@ -9932,7 +9932,7 @@ static Scheme_Object **compute_indirects(Scheme_Env *genv,
 
   if (vars) {
     start = 0;
-    end = pt->num_var_provides;
+    end = pt->num_provides; /* check both vars & syntax, in case of rename transformer */
   } else {
     start = pt->num_var_provides;
     end = pt->num_provides;
@@ -9974,9 +9974,11 @@ static Scheme_Object **compute_indirects(Scheme_Env *genv,
         if (SAME_OBJ(name, exsns[j]))
           break;
       }
-	
-      if (j == end)
+
+      if (j == end) {
         exis[count++] = name;
+        printf("%s\n", scheme_write_to_string(name, 0)); // REMOVEME
+      }
     }
   }
 
@@ -12176,7 +12178,7 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
      steps to avoid creating some bindings before discovering a
      collision. */
   if (rn_set)
-    form = revert_expression_marks_via_context(form, rn_set, scheme_env_phase(env));
+    form = revert_expression_marks_via_context(form, rn_set, env->phase);
 
   parse_requires(form, env->phase, modidx, env, NULL,
                  rn_set,

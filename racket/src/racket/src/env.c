@@ -1509,8 +1509,11 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
       v = scheme_lookup_in_table(env->syntax, (const char *)n);
       if (v) {
         v = SCHEME_PTR_VAL(v);
-        if (scheme_is_binding_rename_transformer(v))
+        if (scheme_is_binding_rename_transformer(v)) {
+          n = scheme_datum_to_syntax(n, scheme_false, scheme_false, 0, 0);
+          n = scheme_stx_add_module_context(n, env->stx_context);
           scheme_add_binding_copy(n, scheme_rename_transformer_id(v), scheme_env_phase(env));
+        }
       }
     }
   }

@@ -642,9 +642,11 @@ static Scheme_Mark_Set *extract_mark_set(Scheme_Stx *stx, Scheme_Object *phase, 
        multi_marks= SCHEME_CDR(multi_marks)) {
     if (SCHEME_FALSEP(phase))
       ph = scheme_false;
-    else
-      ph = scheme_bin_minus(phase,
-                            SCHEME_CDR(SCHEME_CAR(multi_marks)));
+    else {
+      ph = SCHEME_CDR(SCHEME_CAR(multi_marks));
+      if (!SCHEME_FALSEP(ph))
+        ph = scheme_bin_minus(phase, ph);
+    }
     m = extract_single_mark(SCHEME_CAR(SCHEME_CAR(multi_marks)), ph);
 
     marks = mark_set_set(marks, m, scheme_true);
