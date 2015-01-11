@@ -1048,7 +1048,6 @@ typedef struct Scheme_Mark_Table {
   Scheme_Object so; /* scheme_mark_table_type or scheme_propagate_table_type */
   Scheme_Mark_Set *single_marks;
   Scheme_Object *multi_marks; /* list of (cons multi_mark phase-shift) */
-  struct Scheme_Mark_Table *for_bind; /* NULL if binding marks are the same */
 } Scheme_Mark_Table;
 
 typedef struct Scheme_Stx {
@@ -1105,7 +1104,6 @@ Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 #define SCHEME_STX_ADD      0
 #define SCHEME_STX_REMOVE   1
 #define SCHEME_STX_FLIP     2
-#define SCHEME_STX_NOBIND   8  /* or'ed */
 #define SCHEME_STX_MUTATE   16 /* or'ed */
 #define SCHEME_STX_PROPONLY 32 /* or'ed, internal */
 Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode);
@@ -1208,9 +1206,9 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
 void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase);
-Scheme_Object *scheme_stx_lookup_exact_for_bind(Scheme_Object *o, Scheme_Object *phase);
+Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
-                                           int for_bind, int stop_at_free_eq,
+                                           int stop_at_free_eq,
                                            int *_exact_match, int *_ambiguous,
                                            Scheme_Mark_Set **_binding_marks,
                                            Scheme_Object **insp,              /* access-granting inspector */

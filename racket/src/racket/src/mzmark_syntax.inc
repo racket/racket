@@ -57,8 +57,6 @@ static int mark_mark_table_MARK(void *p, struct NewGC *gc) {
   Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
   gcMARK2(m->single_marks, gc);
   gcMARK2(m->multi_marks, gc);
-  gcMARK2(m->for_bind, gc);
-  /* If you add something here, add it to mark_propagate_table, too */
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
 }
@@ -67,8 +65,6 @@ static int mark_mark_table_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
   gcFIXUP2(m->single_marks, gc);
   gcFIXUP2(m->multi_marks, gc);
-  gcFIXUP2(m->for_bind, gc);
-  /* If you add something here, add it to mark_propagate_table, too */
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
 }
@@ -84,9 +80,7 @@ static int mark_propagate_table_SIZE(void *p, struct NewGC *gc) {
 
 static int mark_propagate_table_MARK(void *p, struct NewGC *gc) {
   Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
-  gcMARK2(m->mt.single_marks, gc);
-  gcMARK2(m->mt.multi_marks, gc);
-  gcMARK2(m->mt.for_bind, gc);
+  mark_mark_table_MARK(&m->mt, gc);
   gcMARK2(m->prev, gc);
   gcMARK2(m->phase_shift, gc);
   return
@@ -95,9 +89,7 @@ static int mark_propagate_table_MARK(void *p, struct NewGC *gc) {
 
 static int mark_propagate_table_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
-  gcFIXUP2(m->mt.single_marks, gc);
-  gcFIXUP2(m->mt.multi_marks, gc);
-  gcFIXUP2(m->mt.for_bind, gc);
+  mark_mark_table_FIXUP(&m->mt, gc);
   gcFIXUP2(m->prev, gc);
   gcFIXUP2(m->phase_shift, gc);
   return

@@ -7400,7 +7400,7 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
     syntax = (Scheme_Bucket_Table *)(SCHEME_VEC_ELS(tvec)[2]);
   }
 
-  binding = scheme_stx_lookup_exact_for_bind(id, phase);
+  binding = scheme_stx_lookup_exact(id, phase);
   if (SCHEME_FALSEP(binding)) {
     /* not defined */
     binding = NULL;
@@ -8579,7 +8579,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	    /* Remember the original: */
 	    all_rt_defs = scheme_make_pair(name, all_rt_defs);
 	    
-            binding = scheme_stx_lookup_exact_for_bind(name, scheme_make_integer(phase));
+            binding = scheme_stx_lookup_exact(name, scheme_make_integer(phase));
 
             if (!SCHEME_FALSEP(binding)) {
               if (SCHEME_SYMBOLP(binding)) {
@@ -8677,7 +8677,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
               all_rt_defs = scheme_make_pair(name, all_rt_defs);
               orig_names = scheme_make_pair(name, orig_names);
 	    
-              binding = scheme_stx_lookup_exact_for_bind(name, scheme_make_integer(phase));
+              binding = scheme_stx_lookup_exact(name, scheme_make_integer(phase));
 
               if (!SCHEME_FALSEP(binding)) {
                 if (SCHEME_SYMBOLP(binding)) {
@@ -10175,7 +10175,7 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
             prnt_name = name;
 
             binding = scheme_stx_lookup_w_nominal(name, phase,
-                                                  0, 0,
+                                                  0,
                                                   NULL, NULL, NULL,
                                                   NULL,
                                                   &nominal_mod, &nominal_name,
@@ -12120,7 +12120,7 @@ static void check_dup_require(Scheme_Object *id, Scheme_Object *self_modidx,
 {
   Scheme_Object *binding;
 
-  binding = scheme_stx_lookup_exact_for_bind(id, to_phase);
+  binding = scheme_stx_lookup_exact(id, to_phase);
   if (SCHEME_FALSEP(binding)) {
     /* not bound, so import is ok */
   } else if (SCHEME_VECTORP(binding)
