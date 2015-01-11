@@ -5122,17 +5122,20 @@ Scheme_Object *scheme_transfer_srcloc(Scheme_Object *to, Scheme_Object *from)
 static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], Scheme_Object *p)
 {
   Scheme_Object *r, *delta, *taint_p, *phase;
+  int mode = SCHEME_STX_ADD;
 
   r = argv[0];
+  if (argc > 1)
+    mode = scheme_get_introducer_mode("syntax-delta-introducer", 1, argc, argv);
 
   if (!SCHEME_STXP(r))
-    scheme_wrong_contract("delta-introducer", "syntax?", 0, argc, argv);
+    scheme_wrong_contract("syntax-delta-introducer", "syntax?", 0, argc, argv);
 
   delta = SCHEME_PRIM_CLOSURE_ELS(p)[0];
   taint_p = SCHEME_PRIM_CLOSURE_ELS(p)[1];
   phase = SCHEME_PRIM_CLOSURE_ELS(p)[2];
 
-  r = scheme_stx_adjust_marks(r, (Scheme_Mark_Set *)delta, phase, SCHEME_STX_ADD);
+  r = scheme_stx_adjust_marks(r, (Scheme_Mark_Set *)delta, phase, mode);
 
   if (SCHEME_TRUEP(taint_p))
     r = scheme_stx_taint(r);
@@ -5220,7 +5223,7 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
     a[1] = scheme_true;
   a[2] = phase;
 
-  return scheme_make_prim_closure_w_arity(delta_introducer, 3, a, "delta-introducer", 1, 1);
+  return scheme_make_prim_closure_w_arity(delta_introducer, 3, a, "delta-introducer", 1, 2);
 }
 
 static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)

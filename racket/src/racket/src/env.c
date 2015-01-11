@@ -56,7 +56,7 @@ READ_ONLY static Scheme_Env    *futures_env;
 READ_ONLY static Scheme_Object *kernel_symbol;
 READ_ONLY static Scheme_Object *flip_symbol;
 READ_ONLY static Scheme_Object *add_symbol;
-READ_ONLY static Scheme_Object *add_for_reference_symbol;
+READ_ONLY static Scheme_Object *remove_symbol;
 
 THREAD_LOCAL_DECL(static int intdef_counter);
 
@@ -812,10 +812,10 @@ static void make_kernel_env(void)
 
   REGISTER_SO(flip_symbol);
   REGISTER_SO(add_symbol);
-  REGISTER_SO(add_for_reference_symbol);
+  REGISTER_SO(remove_symbol);
   flip_symbol = scheme_intern_symbol("flip");
   add_symbol = scheme_intern_symbol("add");
-  add_for_reference_symbol = scheme_intern_symbol("add-for-reference");
+  remove_symbol = scheme_intern_symbol("remove");
 
   MARK_START_TIME();
 
@@ -2432,6 +2432,23 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   return sym;
 }
 
+int scheme_get_introducer_mode(const char *who, int which, int argc, Scheme_Object **argv)
+{
+  // REMOVEME: FIXME: document API change for 2 functions that use this
+  int mode = SCHEME_STX_FLIP;
+
+  if (SAME_OBJ(argv[1], flip_symbol))
+    mode = SCHEME_STX_FLIP;
+  else if (SAME_OBJ(argv[1], add_symbol))
+    mode = SCHEME_STX_ADD;
+  else if (SAME_OBJ(argv[1], remove_symbol))
+    mode = SCHEME_STX_REMOVE;
+  else
+    scheme_wrong_contract(who, "(or/c 'flip 'add 'remove)", 1, argc, argv);
+  
+  return mode;
+}
+
 static Scheme_Object *
 introducer_proc(void *info, int argc, Scheme_Object *argv[])
 {
@@ -2443,18 +2460,8 @@ introducer_proc(void *info, int argc, Scheme_Object *argv[])
     scheme_wrong_contract("syntax-introducer", "syntax?", 0, argc, argv);
     return NULL;
   }
-  if (argc > 1) {
-    if (SAME_OBJ(argv[1], flip_symbol))
-      mode = SCHEME_STX_FLIP;
-    else if (SAME_OBJ(argv[1], add_symbol))
-      mode = SCHEME_STX_ADD;
-    else if (SAME_OBJ(argv[1], add_for_reference_symbol))
-      mode = SCHEME_STX_ADD | SCHEME_STX_NOBIND;
-    else {
-      scheme_wrong_contract("syntax-introducer", "(or/c 'flip 'add 'add-for-reference)", 1, argc, argv);
-      return NULL;
-    }
-  }
+  if (argc > 1)
+    mode = scheme_get_introducer_mode("syntax-introducer", 1, argc, argv);
 
   return scheme_stx_adjust_mark(s, ((Scheme_Object **)info)[0], ((Scheme_Object **)info)[1], mode);
 }

@@ -9975,10 +9975,8 @@ static Scheme_Object **compute_indirects(Scheme_Env *genv,
           break;
       }
 
-      if (j == end) {
+      if (j == end)
         exis[count++] = name;
-        printf("%s\n", scheme_write_to_string(name, 0)); // REMOVEME
-      }
     }
   }
 

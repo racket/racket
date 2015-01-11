@@ -1136,6 +1136,7 @@ Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *re
                                              Scheme_Object *uid);
 
 Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv);
+int scheme_get_introducer_mode(const char *who, int which, int argc, Scheme_Object **argv);
 
 struct Scheme_Module_Phase_Exports; /* forward declaration */
 
