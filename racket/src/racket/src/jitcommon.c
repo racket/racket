@@ -3802,8 +3802,10 @@ static int more_common1(mz_jit_state *jitter, void *_data)
       jit_rshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
       jit_movr_i(JIT_R0, JIT_R1);
       reftop = jit_get_ip();
+      __END_SHORT_JUMPS__(1);
       scheme_generate_non_tail_call(jitter, -1, 0, 1, multi_ok, 0, 0, 1, 0, 0, NULL);
       CHECK_LIMIT();
+      __START_SHORT_JUMPS__(1);
 
       /***********************************/
       /* slow path: */
