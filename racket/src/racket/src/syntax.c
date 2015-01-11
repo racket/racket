@@ -40,13 +40,16 @@ READ_ONLY Scheme_Mark_Set *empty_mark_set;
 READ_ONLY static Scheme_Stx_Srcloc *empty_srcloc;
 
 typedef struct Scheme_Mark {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso; /* includes SCHEME_MARK_NONORIGINAL flag */
   mzlonglong id;
   Scheme_Object *bindings; /* list or marshaled info */
   intptr_t timestamp;
-  int kind;
+  int kind; // REMOVEME
   Scheme_Object *owner_multi_mark; /* (cons <multi-mark> <phase>) */
 } Scheme_Mark;
+
+#define SCHEME_MARK_FLAGS(mark) MZ_OPT_HASH_KEY(&(mark)->iso)
+#define SCHEME_MARK_NONORIGINAL 0x1
 
 typedef struct Scheme_Propagate_Table {
   Scheme_Mark_Table mt;
@@ -514,12 +517,23 @@ Scheme_Object *scheme_new_mark(int kind)
   mzlonglong id;
 
   m = (Scheme_Mark *)scheme_malloc_small_tagged(sizeof(Scheme_Mark));
-  m->so.type = scheme_mark_type;
+  m->iso.so.type = scheme_mark_type;
   id = ++mark_counter;
   m->id = id;
   m->kind = kind;
 
   return (Scheme_Object *)m;
+}
+
+Scheme_Object *scheme_new_nonoriginal_mark(int kind)
+{
+  Scheme_Object *m;
+
+  m = scheme_new_mark(kind);
+
+  SCHEME_MARK_FLAGS((Scheme_Mark*)m) |= SCHEME_MARK_NONORIGINAL;
+
+  return m;
 }
 
 Scheme_Object *scheme_new_multi_mark()
@@ -3643,8 +3657,13 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
       }
     }
 
+    if (SCHEME_MARK_FLAGS((Scheme_Mark*)m) & SCHEME_MARK_NONORIGINAL)
+      r = scheme_make_pair(scheme_true, r);
+
     v = r;
-  } else
+  } else if (SCHEME_MARK_FLAGS((Scheme_Mark*)m) & SCHEME_MARK_NONORIGINAL)
+    v = scheme_true;
+  else
     v = scheme_false;
 
   scheme_hash_set(mt->identity_map, m, v);
@@ -4149,11 +4168,17 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
     return r;
 
   if (!SCHEME_BOXP(box)) return_NULL;
-
-  m = scheme_new_mark(0);
-  scheme_hash_set(ut->rns, box, m);
-
   c = SCHEME_BOX_VAL(box);
+
+  /* Content as #t or (cons #t ...) is a non-original mark */
+  if (SAME_OBJ(c, scheme_true))
+    m = scheme_new_nonoriginal_mark(0);
+  else if (SCHEME_PAIRP(c) && SAME_OBJ(scheme_true, SCHEME_CAR(c))) {
+    c = SCHEME_CDR(c);
+    m = scheme_new_nonoriginal_mark(0);
+  } else
+    m = scheme_new_mark(0);
+  scheme_hash_set(ut->rns, box, m);
 
   while (SCHEME_PAIRP(c)) {
     marks = list_to_mark_set(SCHEME_CAR(SCHEME_CAR(c)), ut);
@@ -4831,6 +4856,8 @@ static Scheme_Object *syntax_tainted_p(int argc, Scheme_Object **argv)
 static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
 {
   Scheme_Stx *stx;
+  Scheme_Object *key, *val;
+  intptr_t i;
 
   if (!SCHEME_STXP(argv[0]))
     scheme_wrong_contract("syntax-original?", "syntax?", 0, argc, argv);
@@ -4855,11 +4882,18 @@ static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
   } else
     return scheme_false;
 
-  // REMOVEME: FIXME: look for any non-module marks
-  if (0)
-    return scheme_true;
-  else
-    return scheme_false;
+  /* Look for any non-original mark: */
+  i = mark_set_next(stx->marks->single_marks, -1);
+  while (i != -1) {
+    mark_set_index(stx->marks->single_marks, i, &key, &val);
+
+    if ((SCHEME_MARK_FLAGS((Scheme_Mark*)key) & SCHEME_MARK_NONORIGINAL))
+      return scheme_false;
+    
+    i = mark_set_next(stx->marks->single_marks, i);
+  }
+
+  return scheme_true;
 }
 
 Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
