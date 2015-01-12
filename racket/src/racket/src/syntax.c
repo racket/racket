@@ -1928,7 +1928,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
 /* `val` can be a symbol (local binding), a modidx/pair/#f
    (module/global binding), a shared-binding vector (i.e., a pes), or
    a syntax object (for a `free-identifier=?` equivalence) to be
-   mutable-paired with the existing binding; the `sym` argument shold
+   mutable-paired with the existing binding; the `sym` argument should
    be NULL when `val` is a shared-binding vector */
 
 {
@@ -1956,7 +1956,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
   }
 
   if (SCHEME_STXP(val))
-    val = scheme_make_mutable_pair(scheme_false, val);
+    val = scheme_make_mutable_pair(scheme_false, scheme_make_pair(val, phase));
 
   bind = scheme_make_pair((Scheme_Object *)marks, val);
 
@@ -2412,6 +2412,32 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
                                          _exact_match, _ambiguous);
 }
 
+static Scheme_Object *apply_accumulated_shifts(Scheme_Object *result, Scheme_Object *prev_shifts, 
+                                               Scheme_Object **_insp, Scheme_Object **nominal_modidx)
+{
+  Scheme_Object *o;
+
+  if (!SCHEME_NULLP(prev_shifts) && SCHEME_VECTORP(result)) {
+    /* Clone result vector to apply accumulated shifts */
+    o = scheme_make_vector(3, NULL);
+    SCHEME_VEC_ELS(o)[0] = SCHEME_VEC_ELS(result)[0];
+    SCHEME_VEC_ELS(o)[1] = SCHEME_VEC_ELS(result)[1];
+    SCHEME_VEC_ELS(o)[2] = SCHEME_VEC_ELS(result)[2];
+    result = o;
+    
+    for (; !SCHEME_NULLP(prev_shifts); prev_shifts = SCHEME_CDR(prev_shifts)) {
+      o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), SCHEME_VEC_ELS(result)[0], _insp);
+      SCHEME_VEC_ELS(result)[0] = o;
+      if (nominal_modidx) {
+        o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), *nominal_modidx, NULL);
+        *nominal_modidx = o;
+      }
+    }
+  }
+
+  return result;
+}
+
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase, 
                                            int stop_at_free_eq,
                                            int *_exact_match, int *_ambiguous,
@@ -2426,7 +2452,8 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
    #f */
 {
   Scheme_Stx *stx;
-  Scheme_Object **cached_result, *result, *insp, *free_eq_mpair;
+  Scheme_Object **cached_result, *result, *insp, *free_eq_mpair, *prev_shifts = scheme_null;
+  Scheme_Hash_Table *free_id_seen = NULL;
 
   STX_ASSERT(SCHEME_STXP(o));
 
@@ -2456,12 +2483,20 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
         if (SCHEME_MPAIRP(o)) {
           if (!stop_at_free_eq) {
             o = SCHEME_CDR(o);
+            phase = SCHEME_CDR(o);
+            o = SCHEME_CAR(o);
             /* recur to handle `free-identifier=?` chain */
+            if (!free_id_seen)
+              free_id_seen = scheme_make_hash_table(SCHEME_hash_ptr);
+            if (scheme_hash_get(free_id_seen, o))
+              return scheme_false; /* found a cycle */
+            scheme_hash_set(free_id_seen, o, scheme_true);
+            prev_shifts = scheme_make_pair(stx->shifts, prev_shifts);
             continue;
           } else
-            return SCHEME_CAR(o);
+            return apply_accumulated_shifts(SCHEME_CAR(o), prev_shifts, _insp, NULL);
         } else
-          return o;
+          return apply_accumulated_shifts(o, prev_shifts, _insp, NULL);
       }
     }
 
@@ -2616,7 +2651,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
       insp = scheme_false;
 
     if (free_eq_mpair) {
-      free_eq_mpair = scheme_make_mutable_pair(cached_result[0],
+      free_eq_mpair = scheme_make_mutable_pair(result,
                                                SCHEME_CDR(free_eq_mpair));
       cached_result[0] = free_eq_mpair;
     }
@@ -2628,10 +2663,13 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
     if (_insp) *_insp = insp;
 
     if (!free_eq_mpair || stop_at_free_eq)
-      return result;
+      return apply_accumulated_shifts(result, prev_shifts, _insp, nominal_modidx);
 
     /* Recur for `free-identifier=?` mapping */
     o = SCHEME_CDR(free_eq_mpair);
+    phase = SCHEME_CDR(o);
+    o = SCHEME_CAR(o);
+    prev_shifts = scheme_make_pair(stx->shifts, prev_shifts);
   }
 }
 
@@ -3590,10 +3628,18 @@ static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
   return v;
 }
 
+static Scheme_Object *marshal_free_id_info(Scheme_Object *id_plus_phase, Scheme_Marshal_Tables *mt)
+{
+  Scheme_Stx *stx = (Scheme_Stx *)SCHEME_CAR(id_plus_phase);
+
+  return scheme_make_pair(scheme_make_pair(stx->val, wraps_to_datum(stx, mt)),
+                          SCHEME_CDR(id_plus_phase));
+}
+
 Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Table *ht;
-  Scheme_Object *v, *l, *r, *l2, *tab, *marks;
+  Scheme_Object *v, *l, *r, *l2, *tab, *marks, *free_id_info;
   intptr_t i, j;
 
   if (!mt->identity_map) {
@@ -3610,7 +3656,8 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
     ht = (Scheme_Hash_Table *)SCHEME_CAR(v);
     l2 = SCHEME_CDR(v);
 
-    /* remove inspector, if any, from each mapping in the hash table */
+    /* remove inspector, if any, from each mapping in the hash table,
+       and adjust encoding of `free-identifier=?` equivalences */
     tab = scheme_make_vector(2 * ht->count, NULL);
     j = 0;
     for (i = ht->size; i--; ) {
@@ -3618,9 +3665,19 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
       if (l) {
         r = scheme_null;
         while (l && !SCHEME_NULLP(l)) {
-          v = SCHEME_CDR(SCHEME_CAR(l));
+          v = SCHEME_BINDING_VAL(SCHEME_CAR(l));
+          if (SCHEME_MPAIRP(v)) {
+            /* has a `free-id=?` equivalence; the marshaled form of a mark's content
+               cannot contain a syntax object, so we keep just the syntax object's symbol
+               and marks */
+            free_id_info = marshal_free_id_info(SCHEME_CDR(v), mt);
+            v = SCHEME_CAR(v);
+          } else
+            free_id_info = NULL;
           if (SCHEME_PAIRP(v) && SCHEME_INSPECTORP(SCHEME_CAR(v)))
             v = SCHEME_CDR(v);
+          if (free_id_info)
+            v = scheme_box(scheme_make_pair(v, free_id_info)); /* a box indicates `free-id=?` info */
           marks = intern_tails(marks_to_sorted_list((Scheme_Mark_Set *)SCHEME_CAR(SCHEME_CAR(l))),
                                mt->intern_map);
           r = scheme_make_pair(scheme_make_pair(marks, v), r);
@@ -4082,7 +4139,6 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
   mt->multi_marks = l;
 
   l = scheme_make_pair((Scheme_Object *)mt, SCHEME_VEC_ELS(w)[0]);
-
   scheme_hash_set(ut->rns, w, l);
 
   return l;
@@ -4156,9 +4212,25 @@ static Scheme_Object *validate_binding(Scheme_Object *p)
   return p;
 }
 
+static Scheme_Object *unmarshal_free_id_info(Scheme_Object *p, Scheme_Unmarshal_Tables *ut)
+{
+  Scheme_Object *o, *phase;
+
+  phase = SCHEME_CDR(p);
+  p = SCHEME_CAR(p);
+  o = scheme_make_stx(SCHEME_CAR(p), NULL, NULL);
+  p = datum_to_wraps(SCHEME_CDR(p), ut);
+
+  ((Scheme_Stx *)o)->marks = (Scheme_Mark_Table *)SCHEME_CAR(p);
+  STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)o)->marks), scheme_mark_table_type));
+  ((Scheme_Stx *)o)->shifts = SCHEME_CDR(p);
+
+  return scheme_make_pair(o, phase);
+}
+
 Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tables *ut)
 {
-  Scheme_Object *l = scheme_null, *l2, *r, *b, *m, *c;
+  Scheme_Object *l = scheme_null, *l2, *r, *b, *m, *c, *free_id;
   Scheme_Hash_Table *ht;
   Scheme_Mark_Set *marks;
   intptr_t i, len;
@@ -4179,6 +4251,8 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
   } else
     m = scheme_new_mark(0);
   scheme_hash_set(ut->rns, box, m);
+  /* Since we've created the mark before unmarshaling its content,
+     cycles among marks are ok. */
 
   while (SCHEME_PAIRP(c)) {
     marks = list_to_mark_set(SCHEME_CAR(SCHEME_CAR(c)), ut);
@@ -4198,11 +4272,21 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
       while (SCHEME_PAIRP(l2)) {
         marks = list_to_mark_set(SCHEME_CAR(SCHEME_CAR(l2)), ut);
         if (marks) {
-          b = validate_binding(SCHEME_CDR(SCHEME_CAR(l2)));
-          if (b)
+          b = SCHEME_CDR(SCHEME_CAR(l2));
+          if (SCHEME_BOXP(b)) {
+            /* has `free-id=?` info */
+            b = SCHEME_BOX_VAL(b);
+            free_id = unmarshal_free_id_info(SCHEME_CDR(b), ut);
+            b = SCHEME_CAR(b);
+          } else
+            free_id = NULL;
+          b = validate_binding(b);
+          if (b) {
+            if (free_id)
+              b = scheme_make_mutable_pair(b, free_id);
             r = scheme_make_pair(scheme_make_pair((Scheme_Object *)marks, b),
                                  r);
-          else
+          } else
             return_NULL;
         } else
           return_NULL;
