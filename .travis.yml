@@ -24,7 +24,9 @@ install:
 - raco pkg config --set catalogs `cat catalog-config.txt`
 - raco pkg install -i --deps search-auto $PKG-test
 - raco pkg install -i --deps search-auto compiler-lib
+- raco pkg install -i --deps search-auto cover
 - ls $HOME/.racket/download-cache
 
 script:
 - raco test -p $PKG-test
+- raco cover -c coveralls $TRAVIS_BUILD_DIR/coverage .
