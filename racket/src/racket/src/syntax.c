@@ -1959,7 +1959,7 @@ static int mark_timestamps_older(Scheme_Mark_Set *marks, intptr_t timestamp)
 #define SCHEME_BINDING_MARKS(p) ((Scheme_Mark_Set *)SCHEME_CAR(p))
 #define SCHEME_BINDING_VAL(p)   SCHEME_CDR(p)
 
-XFORM_NONGCING static void save_old_value(Scheme_Object *old_val, Scheme_Object *mp)
+XFORM_NONGCING static void save_old_value(Scheme_Object *mp, Scheme_Object *old_val)
 {
   if (SCHEME_MPAIRP(old_val))
     SCHEME_CAR(mp) = SCHEME_CAR(old_val);

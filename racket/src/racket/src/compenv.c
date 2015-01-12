@@ -1104,6 +1104,23 @@ void scheme_dump_env(Scheme_Comp_Env *env)
   }
 }
 
+static int same_binding(Scheme_Object *a, Scheme_Object *b)
+{
+  if (SCHEME_VECTORP(a) && SCHEME_VECTORP(b)) {
+    if (SAME_OBJ(SCHEME_VEC_ELS(a)[1], SCHEME_VEC_ELS(b)[1])
+        && SAME_OBJ(SCHEME_VEC_ELS(a)[2], SCHEME_VEC_ELS(b)[2])
+        && (SAME_OBJ(SCHEME_VEC_ELS(a)[0], SCHEME_VEC_ELS(b)[0])
+            || (SCHEME_TRUEP(SCHEME_VEC_ELS(a)[0])
+                && SCHEME_TRUEP(SCHEME_VEC_ELS(b)[0])
+                && scheme_equal(scheme_module_resolve(SCHEME_VEC_ELS(a)[0], 0),
+                                scheme_module_resolve(SCHEME_VEC_ELS(b)[0], 0)))))
+      return 1;
+    else
+      return 0;
+  } else
+    return scheme_equal(a, b);
+}
+
 /*********************************************************************/
 /* 
 
@@ -1280,7 +1297,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       if (frame->flags & SCHEME_FOR_STOPS) {
         int i;
         for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-          if (scheme_equal(COMPILE_DATA(frame)->const_bindings[i], binding)
+          if (same_binding(COMPILE_DATA(frame)->const_bindings[i], binding)
               && (SCHEME_TRUEP(binding)
                   || SAME_OBJ(SCHEME_STX_VAL(COMPILE_DATA(frame)->const_binders[i]),
                               SCHEME_STX_VAL(find_id)))) {

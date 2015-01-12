@@ -28,7 +28,6 @@
              racket/tcp
              racket/udp
              '#%builtin ; so it's attached
-             ;; For `old-case`:
              (for-syntax racket/base))
   
   ;; Mostly from Dybvig:
@@ -64,6 +63,19 @@
         #f
         "bad syntax (illegal use of `.')"
         x))))
+  
+  (define-syntax case-test
+    (lambda (x)
+      (syntax-case x ()
+        ;; For up to 3 elements, inline `eqv?' tests:
+	[(_ x (k))
+         (syntax (eqv? x 'k))]
+	[(_ x (k1 k2))
+         (syntax (let ([tmp x]) (if (eqv? tmp 'k1) #t (eqv? tmp 'k2))))]
+	[(_ x (k1 k2 k3))
+         (syntax (let ([tmp x]) (if (eqv? tmp 'k1) #t (if (eqv? tmp 'k2) #t (eqv? tmp 'k3)))))]
+	[(_ x (k ...))
+	 (syntax (memv x '(k ...)))])))
 
   (#%provide require require-for-syntax require-for-template require-for-label
              provide provide-for-syntax provide-for-label
