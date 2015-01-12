@@ -54,7 +54,7 @@ typedef struct Scheme_Mark {
 typedef struct Scheme_Propagate_Table {
   Scheme_Mark_Table mt;
   Scheme_Mark_Table *prev; /* points to old mark table */
-  Scheme_Object *phase_shift;
+  Scheme_Object *phase_shift; /* number of (box <n>); latter converts only <n> to #f */
 } Scheme_Propagate_Table;
 
 THREAD_LOCAL_DECL(static mzlonglong mark_counter);
@@ -125,7 +125,10 @@ static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unm
 
 #define SCHEME_INSPECTORP(obj) SAME_TYPE(scheme_inspector_type, SCHEME_TYPE(obj))
 #define SCHEME_MODIDXP(l) SAME_TYPE(SCHEME_TYPE(l), scheme_module_index_type)
-#define SCHEME_PHASE_SHIFTP(a) (SCHEME_INTP(a) || SCHEME_BIGNUMP(a) || SCHEME_FALSEP(a))
+#define SCHEME_PHASEP(a) (SCHEME_INTP(a) || SCHEME_BIGNUMP(a) || SCHEME_FALSEP(a))
+
+#define SCHEME_PHASE_SHIFTP(a) (SCHEME_PHASEP(a) || (SCHEME_BOXP(a) && SCHEME_PHASEP(SCHEME_BOX_VAL(a))))
+/* #f as a phase shift is an alias for (box 0) */
 
 #define SCHEME_MULTI_MARKP(o) SCHEME_HASHTP(o)
 #define SCHEME_MARKP(x) (SAME_TYPE(SCHEME_TYPE(x), scheme_mark_type))
@@ -634,16 +637,26 @@ static Scheme_Mark_Set *extract_mark_set(Scheme_Stx *stx, Scheme_Object *phase)
   for (multi_marks = mt->multi_marks;
        !SCHEME_NULLP(multi_marks);
        multi_marks= SCHEME_CDR(multi_marks)) {
-    if (SCHEME_FALSEP(phase))
-      ph = scheme_false;
-    else {
-      ph = SCHEME_CDR(SCHEME_CAR(multi_marks));
-      if (!SCHEME_FALSEP(ph))
-        ph = scheme_bin_minus(phase, ph);
-    }
-    m = extract_single_mark(SCHEME_CAR(SCHEME_CAR(multi_marks)), ph);
+    ph = SCHEME_CDR(SCHEME_CAR(multi_marks));
+    if (SCHEME_FALSEP(phase)) {
+      if (!SCHEME_BOXP(ph)) {
+        /* number phase shift, so look for #f */
+        ph = scheme_false;
+      } else {
+        /* phase shift of some <n> to #f, so look for <n> */
+        ph = SCHEME_BOX_VAL(ph); 
+      }
+    } else if (SCHEME_BOXP(ph)) {
+      /* we want a number phase, but this is shifted to #f */
+      ph = NULL;
+    } else
+      ph = scheme_bin_minus(phase, ph);
 
-    marks = mark_set_set(marks, m, scheme_true);
+    if (ph) {
+      m = extract_single_mark(SCHEME_CAR(SCHEME_CAR(multi_marks)), ph);
+      
+      marks = mark_set_set(marks, m, scheme_true);
+    }
   }
 
   return marks;
@@ -967,40 +980,73 @@ int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase)
 
 /******************** shifts ********************/
 
+XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
+{
+  return ((SAME_OBJ(a, b) || scheme_eqv(a, b))
+          ? 1
+          : 0);
+}
+
+static Scheme_Object *add_shifts(Scheme_Object *old_shift, Scheme_Object *shift)
+/* The new `shift` is allowed to be #f, but `old_shift` and the result are
+   normalized to `(box 0)` */
+{
+  if (SCHEME_BOXP(shift) && SCHEME_FALSEP(SCHEME_BOX_VAL(shift))) {
+    /* (box #f) is an impossible shift, so discard */
+    return NULL;
+  }
+
+  if ((SCHEME_FALSEP(shift) || SCHEME_BOXP(shift))
+      && SCHEME_BOXP(old_shift)) {
+    /* shifting some numbered phase when already shifted to #f; discard */
+    return NULL;
+  }
+
+  if (SCHEME_BOXP(old_shift)) {
+    /* numbered shift on already shifted to #f => no change */
+    return old_shift;
+  }
+
+  if (SCHEME_FALSEP(shift)) {
+    /* shift of <n> before shifting 0 to #f => shift -<n> to #f */
+    return scheme_box(scheme_bin_minus(scheme_make_integer(0), old_shift));
+  } else if (SCHEME_BOXP(shift)) {
+    /* shift of <n> before shifting <m> to #f => shift <m>-<n> to #f */
+    if (SAME_OBJ(old_shift, scheme_make_integer(0)))
+      return shift;
+    else
+      return scheme_box(scheme_bin_minus(SCHEME_BOX_VAL(shift), old_shift));
+  } else
+    return scheme_bin_plus(old_shift, shift);
+}
+
 static Scheme_Object *shift_multi_mark(Scheme_Object *p, Scheme_Object *shift)
 {
-  Scheme_Object *phase;
-  
-  phase = SCHEME_CDR(p);
-  if (SCHEME_FALSEP(shift)) {
-    if (!SAME_OBJ(phase, scheme_make_integer(0)))
-      return NULL;
-    else
-      return scheme_make_pair(SCHEME_CAR(p), scheme_false);
-  } else if (SCHEME_FALSEP(phase))
+  shift = add_shifts(SCHEME_CDR(p), shift);
+
+  if (!shift)
+    return NULL;
+
+  if (SAME_OBJ(shift, SCHEME_CDR(p)))
     return p;
-  else
-    return scheme_make_pair(SCHEME_CAR(p), scheme_bin_plus(phase, shift));
+
+  return scheme_make_pair(SCHEME_CAR(p), shift);
 }
 
 static Scheme_Object *shift_prop_multi_mark(Scheme_Object *p, Scheme_Object *shift)
 {
-  Scheme_Object *phase, *p2;
+  Scheme_Object *p2;
   
-  phase = SCHEME_VEC_ELS(p)[1];
-  if (SCHEME_FALSEP(shift)) {
-    if (!SAME_OBJ(phase, scheme_make_integer(0)))
-      return NULL;
-    else
-      phase = scheme_false;
-  } else if (SCHEME_FALSEP(phase))
+  shift = add_shifts(SCHEME_VEC_ELS(p)[1], shift);
+  if (!shift)
+    return NULL;
+
+  if (SAME_OBJ(shift, SCHEME_VEC_ELS(p)[1]))
     return p;
-  else
-    phase = scheme_bin_plus(phase, shift);
-  
+
   p2 = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(p2)[0] = SCHEME_VEC_ELS(p)[0];
-  SCHEME_VEC_ELS(p2)[1] = phase;
+  SCHEME_VEC_ELS(p2)[1] = shift;
   SCHEME_VEC_ELS(p2)[2] = SCHEME_VEC_ELS(p)[2];
   
   return p2;
@@ -1019,9 +1065,8 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
     return mt;
   }
 
-  if (SCHEME_NULLP(mt->multi_marks) && !prev) {
+  if (SCHEME_NULLP(mt->multi_marks) && !prev)
     return mt;
-  }
 
   mt2 = clone_mark_table(mt, prev);
 
@@ -1034,12 +1079,11 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
   mt2->multi_marks = val;
 
   if (prev) {
-    if (SCHEME_FALSEP(shift)
-        || SCHEME_FALSEP(((Scheme_Propagate_Table *)mt)->phase_shift))
-      val = scheme_false;
-    else
-      val = scheme_bin_plus(shift, ((Scheme_Propagate_Table *)mt)->phase_shift);
-    ((Scheme_Propagate_Table *)mt2)->phase_shift = val;
+    /* record accumulated shift for propagation */
+    shift = add_shifts(((Scheme_Propagate_Table *)mt)->phase_shift, shift);
+    if (!shift)
+      shift = scheme_box(scheme_false); /* i.e., the impossible shift */
+    ((Scheme_Propagate_Table *)mt2)->phase_shift = shift;
   }
 
   return mt2;
@@ -1991,13 +2035,6 @@ void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Obj
   add_binding(stx->val, phase, extract_mark_set(stx, phase), binding_sym);
 }
 
-XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
-{
-  return ((SAME_OBJ(a, b) || scheme_eqv(a, b))
-          ? 1
-          : 0);
-}
-
 static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localname, Scheme_Object *phase,
                                   Scheme_Object *modidx, Scheme_Object *exname, Scheme_Object *defn_phase,
                                   Scheme_Object *inspector,
@@ -2413,26 +2450,42 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
 }
 
 static Scheme_Object *apply_accumulated_shifts(Scheme_Object *result, Scheme_Object *prev_shifts, 
-                                               Scheme_Object **_insp, Scheme_Object **nominal_modidx)
+                                               Scheme_Object **_insp, Scheme_Object **nominal_modidx,
+                                               Scheme_Stx *stx, Scheme_Object *orig_name, Scheme_Object *phase)
+/* Adjust result to take the `free-id=?` chain into account: adjust a
+   `#f` result to add in the original name, or adjust a module name
+   for modidx shifts */
 {
   Scheme_Object *o;
 
-  if (!SCHEME_NULLP(prev_shifts) && SCHEME_VECTORP(result)) {
-    /* Clone result vector to apply accumulated shifts */
-    o = scheme_make_vector(3, NULL);
-    SCHEME_VEC_ELS(o)[0] = SCHEME_VEC_ELS(result)[0];
-    SCHEME_VEC_ELS(o)[1] = SCHEME_VEC_ELS(result)[1];
-    SCHEME_VEC_ELS(o)[2] = SCHEME_VEC_ELS(result)[2];
-    result = o;
+  if (SCHEME_VECTORP(result)) {
+    if (!SCHEME_NULLP(prev_shifts)
+        || (SCHEME_FALSEP(SCHEME_VEC_ELS(result)[0])
+            && !SAME_OBJ(stx->val, orig_name))) {
+      /* Clone result vector */
+      o = scheme_make_vector(3, NULL);
+      SCHEME_VEC_ELS(o)[0] = SCHEME_VEC_ELS(result)[0];
+      SCHEME_VEC_ELS(o)[1] = SCHEME_VEC_ELS(result)[1];
+      SCHEME_VEC_ELS(o)[2] = SCHEME_VEC_ELS(result)[2];
+      result = o;
+
+      if (SCHEME_FALSEP(SCHEME_VEC_ELS(result)[1]))
+        SCHEME_VEC_ELS(result)[1] = stx->val;
     
-    for (; !SCHEME_NULLP(prev_shifts); prev_shifts = SCHEME_CDR(prev_shifts)) {
-      o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), SCHEME_VEC_ELS(result)[0], _insp);
-      SCHEME_VEC_ELS(result)[0] = o;
-      if (nominal_modidx) {
-        o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), *nominal_modidx, NULL);
-        *nominal_modidx = o;
+      for (; !SCHEME_NULLP(prev_shifts); prev_shifts = SCHEME_CDR(prev_shifts)) {
+        o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), SCHEME_VEC_ELS(result)[0], _insp);
+        SCHEME_VEC_ELS(result)[0] = o;
+        if (nominal_modidx) {
+          o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), *nominal_modidx, NULL);
+          *nominal_modidx = o;
+        }
       }
     }
+  } else if (SCHEME_FALSEP(result) && !SAME_OBJ(stx->val, orig_name)) {
+    result = scheme_make_vector(3, NULL);
+    SCHEME_VEC_ELS(result)[0] = scheme_false;
+    SCHEME_VEC_ELS(result)[1] = stx->val;
+    SCHEME_VEC_ELS(result)[2] = phase;
   }
 
   return result;
@@ -2452,10 +2505,13 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
    #f */
 {
   Scheme_Stx *stx;
-  Scheme_Object **cached_result, *result, *insp, *free_eq_mpair, *prev_shifts = scheme_null;
+  Scheme_Object **cached_result, *result, *insp;
+  Scheme_Object *free_eq_mpair, *prev_shifts = scheme_null, *orig_name;
   Scheme_Hash_Table *free_id_seen = NULL;
 
   STX_ASSERT(SCHEME_STXP(o));
+
+  orig_name = SCHEME_STX_VAL(o);
 
   while (1) { /* loop for `free-identifier=?` chains */
     stx = (Scheme_Stx *)o;
@@ -2494,9 +2550,11 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
             prev_shifts = scheme_make_pair(stx->shifts, prev_shifts);
             continue;
           } else
-            return apply_accumulated_shifts(SCHEME_CAR(o), prev_shifts, _insp, NULL);
+            return apply_accumulated_shifts(SCHEME_CAR(o), prev_shifts, _insp, NULL,
+                                            stx, orig_name, phase);
         } else
-          return apply_accumulated_shifts(o, prev_shifts, _insp, NULL);
+          return apply_accumulated_shifts(o, prev_shifts, _insp, NULL,
+                                          stx, orig_name, phase);
       }
     }
 
@@ -2508,7 +2566,8 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
                                                _binding_marks);
 
     if (!cached_result)
-      return scheme_false;
+      return apply_accumulated_shifts(scheme_false, scheme_null, NULL, NULL,
+                                      stx, orig_name, phase);
 
     result = cached_result[0];
 
@@ -2663,7 +2722,8 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
     if (_insp) *_insp = insp;
 
     if (!free_eq_mpair || stop_at_free_eq)
-      return apply_accumulated_shifts(result, prev_shifts, _insp, nominal_modidx);
+      return apply_accumulated_shifts(result, prev_shifts, _insp, nominal_modidx,
+                                      stx, orig_name, phase);
 
     /* Recur for `free-identifier=?` mapping */
     o = SCHEME_CDR(free_eq_mpair);
@@ -4076,7 +4136,7 @@ static Scheme_Hash_Table *vector_to_multi_mark(Scheme_Object *mht, Scheme_Unmars
   if (len & 1) return_NULL;
 
   for (i = 0; i < len; i += 2) {
-    if (!SCHEME_PHASE_SHIFTP(SCHEME_VEC_ELS(mht)[i]))
+    if (!SCHEME_PHASEP(SCHEME_VEC_ELS(mht)[i]))
       return_NULL;
     mark = mark_unmarshal_content(SCHEME_VEC_ELS(mht)[i+1], ut);
     if (!mark) return_NULL;

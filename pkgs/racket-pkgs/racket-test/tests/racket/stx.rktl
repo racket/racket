@@ -616,11 +616,10 @@
   (test eval 'expand-to-top-form (eval (expand-syntax-to-top-form #'eval)))
   (test #t syntax? (expand-syntax-to-top-form (datum->syntax #f 'eval))))
 
-(let ()
-  (define-syntax name 'dummy)
-  (define-syntax alias (make-rename-transformer #'name))
-  (test (identifier-binding-symbol #'name)
-        identifier-binding-symbol #'alias))
+(define-syntax @$@name 'dummy)
+(define-syntax @$@alias (make-rename-transformer #'@$@name))
+(test (identifier-binding-symbol #'@$@name)
+      identifier-binding-symbol #'@$@alias)
 
 (require (only-in racket/base [add1 increment-by-one]))
 (test (identifier-binding-symbol #'add1)
