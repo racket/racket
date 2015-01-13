@@ -4343,7 +4343,7 @@ ref_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int c
   if (!a) return NULL;
 
   b = SCHEME_PTR2_VAL(data);
-  b = optimize_clone(dup_ok, a, info, delta, closure_depth);
+  b = optimize_clone(dup_ok, b, info, delta, closure_depth);
   if (!b) return NULL;
 
   naya = scheme_alloc_object();

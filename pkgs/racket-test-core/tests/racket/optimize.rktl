@@ -4526,5 +4526,16 @@
 (collect-garbage)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `#%variable-reference` inlines ok:
+
+(let ([go
+       (lambda ()
+         (define foo 3)
+         (#%variable-reference foo))])
+  (define v (list (go) (go)))
+  (set! v v)
+  (test '(#t #t) map variable-reference? v))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
