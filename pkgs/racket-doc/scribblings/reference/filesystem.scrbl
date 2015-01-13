@@ -270,8 +270,17 @@ Deletes the file with path @racket[path] if it exists, otherwise the
 @exnraise[exn:fail:filesystem]. If @racket[path] is a link, the link
 is deleted rather than the destination of the link.
 
+On Windows, if an initial attempt to delete the file fails with a
+permission error and the value of
+@racket[current-force-delete-permissions] is true, then
+@racket[delete-file] attempts to change the file's permissions (to
+allow writes) and then delete the file.
+
 On Windows, @racket[delete-file] can delete a symbolic link, but not
-a junction. Use @racket[delete-directory] to delete a junction.}
+a junction. Use @racket[delete-directory] to delete a junction.
+
+@history[#:changed "6.1.1.7" @elem{Changed Windows behavior to use
+                                   @racket[current-force-delete-permissions].}]}
 
 
 @defproc[(rename-file-or-directory [old path-string?]
@@ -419,6 +428,14 @@ link as opposed to a junction.
 
 @history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
+
+@defparam[current-force-delete-permissions any/c boolean?]{
+
+A @tech{parameter} that determines on Windows whether
+@racket[delete-file] and @racket[delete-directory] attempt to change a
+file or directory's permissions to delete it. The default value is
+@racket[#t].}
+
 @;------------------------------------------------------------------------
 @section[#:tag "directories"]{Directories}
 
@@ -482,7 +499,16 @@ is not created successfully, the @exnraise[exn:fail:filesystem].}
 
 Deletes an existing directory with the path @racket[path]. If the
 directory is not deleted successfully, the
-@exnraise[exn:fail:filesystem].}
+@exnraise[exn:fail:filesystem].
+
+On Windows, if an initial attempt to delete the directory fails with a
+permission error and the value of @racket[current-force-delete-permissions]
+is true, then @racket[delete-file] attempts to change the
+directory's permissions (to allow writes) and then delete the
+directory.
+
+@history[#:changed "6.1.1.7" @elem{Changed Windows behavior to use
+                                   @racket[current-force-delete-permissions].}]}
 
 
 @defproc[(directory-list [path path-string? (current-directory)]

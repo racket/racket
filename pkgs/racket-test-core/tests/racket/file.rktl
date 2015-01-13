@@ -1780,5 +1780,38 @@
 (err/rt-test (exn:fail:filesystem:errno "a" (current-continuation-marks) '#(10)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure a file without write permission can be deleted
+
+(let ()
+  (define dir (make-temporary-file "~a-tmp" 'directory))
+  (define file (build-path dir "f"))
+  (call-with-output-file file void)
+
+  (file-or-directory-permissions file #o555)
+  (file-or-directory-permissions dir #o555)
+
+  ;; On Unix, non-writable directory means the file
+  ;; can't be deleted.
+  (unless (eq? 'windows (system-type))
+    (unless (eq? 'exn (with-handlers ([void (lambda (exn) 'exn)])
+                        (delete-file file)))
+      (error "expected an error")))
+
+  (file-or-directory-permissions dir #o777)
+  ;; On Windows, non-writable file means the file can't
+  ;; be deleted --- but turn off `current-force-delete-permissions`,
+  ;; which works around that behavior.
+  (when (eq? 'windows (system-type))
+    (parameterize ([current-force-delete-permissions #f])
+      (unless (eq? 'exn (with-handlers ([void (lambda (exn) 'exn)])
+                          (delete-file file)))
+        (error "expected an error"))))
+
+  ;; In default mode, non-writable things in writable directories
+  ;; an be deleted everywhere:
+  (delete-file file)
+  (delete-directory dir))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

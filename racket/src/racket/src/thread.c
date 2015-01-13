@@ -7925,6 +7925,8 @@ static void make_initial_config(Scheme_Thread *p)
     init_param(cells, paramz, MZCONFIG_CURRENT_ENV_VARS, ev);
   }
 
+  init_param(cells, paramz, MZCONFIG_FORCE_DELETE_PERMS, scheme_true);
+
   {
     Scheme_Object *rs;
     rs = scheme_make_random_state(scheme_get_milliseconds());

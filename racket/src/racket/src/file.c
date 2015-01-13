@@ -219,6 +219,7 @@ static Scheme_Object *find_system_path(int argc, Scheme_Object **argv);
 static Scheme_Object *current_directory(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_user_directory(int argc, Scheme_Object *argv[]);
 #endif
+static Scheme_Object *current_force_delete_perms(int argc, Scheme_Object *argv[]);
 
 static int has_null(const char *s, intptr_t l);
 static void raise_null_error(const char *name, Scheme_Object *path, const char *mod);
@@ -564,6 +565,11 @@ void scheme_init_file(Scheme_Env *env)
 						       MZCONFIG_CURRENT_USER_DIRECTORY),
 			     env);
 #endif
+  scheme_add_global_constant("current-force-delete-permissions",
+			     scheme_register_parameter(current_force_delete_perms,
+						       "current-force-delete-permissions",
+						       MZCONFIG_FORCE_DELETE_PERMS),
+			     env);
 
 #ifndef NO_FILE_SYSTEM_UTILS
   scheme_add_global_constant("current-library-collection-paths",
@@ -4126,28 +4132,60 @@ static char *filename_for_error(Scheme_Object *p)
                             0);
 }
 
+#ifdef DOS_FILE_SYSTEM
+static int enable_write_permission(char *fn)
+{
+  int len;
+  int flags;
+
+  if (SCHEME_FALSEP(scheme_get_param(scheme_current_config(), MZCONFIG_FORCE_DELETE_PERMS)))
+    return 0;
+
+  len = strlen(fn);
+  return UNC_stat(fn, len, &flags, NULL, NULL, NULL, NULL, NULL, MZ_UNC_WRITE);
+}
+#endif
+
 static Scheme_Object *delete_file(int argc, Scheme_Object **argv)
 {
   int errid;
+  const char *fn;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_contract("delete-file", "path-string?", 0, argc, argv);
 
+  fn = scheme_expand_string_filename(argv[0],
+                                     "delete-file",
+                                     NULL,
+                                     SCHEME_GUARD_FILE_DELETE);
+
+#ifdef DOS_FILE_SYSTEM
+  if (DeleteFileW(MSC_WIDE_PATH(fn)))
+    return scheme_void;
+  errid = GetLastError();
+  if (errid == ERROR_ACCESS_DENIED) {
+    /* Maybe it's just that the file has no write permission. Provide a more
+       Unix-like experience by attempting to change the file's permission. */
+    if (enable_write_permission(fn)) {
+      if (DeleteFileW(MSC_WIDE_PATH(fn)))
+        return scheme_void;
+      errid = GetLastError();
+    }
+  }
+#else
   while (1) {
-    if (!MSC_W_IZE(unlink)(MSC_WIDE_PATH(scheme_expand_string_filename(argv[0],
-								       "delete-file",
-								       NULL,
-								       SCHEME_GUARD_FILE_DELETE))))
+    if (!MSC_W_IZE(unlink)(MSC_WIDE_PATH(fn)))
       return scheme_void;
     else if (errno != EINTR)
       break;
   }
   errid = errno;
-  
+#endif
+
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, 
 		   "delete-file: cannot delete file\n"
                    "  path: %q\n"
-                   "  system error: %e",
+                   "  system error: %E",
 		   filename_for_error(argv[0]),
 		   errid);
 
@@ -5692,7 +5730,7 @@ static Scheme_Object *delete_directory(int argc, Scheme_Object *argv[])
   return scheme_false;
 #else
 # ifdef DOS_FILE_SYSTEM
-  int tried_cwd = 0;
+  int tried_cwd = 0, tried_perm = 0;
 # endif
   char *filename;
 
@@ -5714,6 +5752,10 @@ static Scheme_Object *delete_directory(int argc, Scheme_Object *argv[])
       tcd = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY);
       scheme_os_setcwd(SCHEME_PATH_VAL(tcd), 0);
       tried_cwd = 1;
+    } else if ((errno == EACCES) && !tried_perm) {
+      /* Maybe the directory doesn't have write permission. */
+      (void)enable_write_permission(filename);
+      tried_perm = 1;
     }
 # endif
     else if (errno != EINTR)
@@ -6261,6 +6303,13 @@ static Scheme_Object *current_user_directory(int argc, Scheme_Object **argv)
 }
 
 #endif
+
+static Scheme_Object *current_force_delete_perms(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-force-delete-permissions",
+                             scheme_make_integer(MZCONFIG_FORCE_DELETE_PERMS),
+                             argc, argv, -1, NULL, NULL, 1);
+}
 
 static Scheme_Object *check_link_key_val(Scheme_Object *key, Scheme_Object *val)
 {
