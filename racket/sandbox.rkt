@@ -1013,7 +1013,8 @@
        (read ,(build-path (find-user-pkgs-dir) "pkgs.rktd"))
        (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
-       (read ,(find-lib-dir))
+       ,@(for/list ([dir (get-lib-search-dirs)])
+           `(read ,dir))
        ,@(let ([d (find-config-dir)])
            (if d
                `((read ,(build-path d "config.rktd")))
