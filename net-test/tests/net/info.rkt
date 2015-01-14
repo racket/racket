@@ -1,4 +1,3 @@
 #lang info
 
-(define test-responsibles '(("websocket.rkt" jay)
-                            ("url-port.rkt" jay)))
+(define test-responsibles '(("url-port.rkt" jay)))

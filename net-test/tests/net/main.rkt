@@ -14,8 +14,7 @@
          (prefix-in cookie:    "cookie.rkt")
          (prefix-in encoders:  "encoders.rkt")
          (prefix-in mime:      "mime.rkt")
-         (prefix-in url-port:  "url-port.rkt")
-         (prefix-in websocket: "websocket.rkt"))
+         (prefix-in url-port:  "url-port.rkt"))
 
 (define (tests)
   (test do (ip:tests)
@@ -28,7 +27,6 @@
         do (cookie:tests)
         do (encoders:tests)
         do (mime:tests)
-        do (url-port:tests)
-        do (websocket:tests)))
+        do (url-port:tests)))
 
 (tests)
