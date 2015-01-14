@@ -274,7 +274,9 @@ On Windows, if an initial attempt to delete the file fails with a
 permission error and the value of
 @racket[current-force-delete-permissions] is true, then
 @racket[delete-file] attempts to change the file's permissions (to
-allow writes) and then delete the file.
+allow writes) and then delete the file; the permission change followed
+by deletion is a non-atomic sequence, with no attempt to revert a
+permission change if the deletion fails.
 
 On Windows, @racket[delete-file] can delete a symbolic link, but not
 a junction. Use @racket[delete-directory] to delete a junction.
@@ -505,7 +507,9 @@ On Windows, if an initial attempt to delete the directory fails with a
 permission error and the value of @racket[current-force-delete-permissions]
 is true, then @racket[delete-file] attempts to change the
 directory's permissions (to allow writes) and then delete the
-directory.
+directory; the permission change followed by deletion is a non-atomic
+sequence, with no attempt to revert a permission change if the deletion
+fails.
 
 @history[#:changed "6.1.1.7" @elem{Changed Windows behavior to use
                                    @racket[current-force-delete-permissions].}]}
