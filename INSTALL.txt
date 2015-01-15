@@ -74,13 +74,14 @@ See "More Instructions: Building Racket" below for more information.
 Quick Instructions: Unix-style Install
 ======================================
 
-On Unix, `make unix-style PREFIX=<dir>' builds and installs into <dir>
-with binaries in "<dir>/bin", packages in "<dir>/share/racket/pkgs",
-documentation in "<dir>/share/racket/doc", etc.
+On Unix, `make unix-style PREFIX=<dir>' builds and installs into
+"<dir>" (which must be an absolute path) with binaries in "<dir>/bin",
+packages in "<dir>/share/racket/pkgs", documentation in
+"<dir>/share/racket/doc", etc.
 
 On Mac OS X, `make unix-style PREFIX=<dir>' builds and installs into
-"<dir>" with binaries in "<dir>/bin", packges in "<dir>/share/pkgs",
-documentation in "<dir>/doc", etc.
+"<dir>" (whichmust be an absolute path) with binaries in "<dir>/bin",
+packges in "<dir>/share/pkgs", documentation in "<dir>/doc", etc.
 
 On Windows, Unix-style install is not supported.
 
@@ -88,8 +89,9 @@ A Unix-style install leaves no reference to this source directory.
 
 To split the build and install steps of a Unix-style installation,
 supply `DESTDIR=<dest-dir>' with `make unix-style PREFIX=<dir>', which
-assembles the installation in "<dest-dir>". Then, copy the content of
-"<dest-dir>" to the target root.
+assembles the installation in "<dest-dir>" (which must be an absolute
+path). Then, copy the content of "<dest-dir>" to the target root
+"<dir>".
 
 See "More Instructions: Building Racket" below for more information.
 
