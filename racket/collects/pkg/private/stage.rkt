@@ -172,11 +172,13 @@
         [tmp-dir
          ;; Make a clone of the [to-be-]linked checkout so that
          ;; we can check dependencies, etc., before changing
-         ;; the checkout.
+         ;; the checkout. By using `--shared` for the clone, all
+         ;; the commits that we've fetched will be available to
+         ;; checkout (even though they may be unreachable at this
+         ;; point, since we haven't merged the fetched commits).
          (download-printf "Cloning repository locally for staging\n")
-         (git #:status status "clone" clone-dir tmp-dir)
+         (git #:status status "clone" "--shared" clone-dir tmp-dir)
          (parameterize ([current-directory tmp-dir])
-           (git #:status status "fetch" clone-dir branch)
            (git #:status status "checkout" (or checksum branch)))
          (lift-git-directory-content tmp-dir path)]
         [else
