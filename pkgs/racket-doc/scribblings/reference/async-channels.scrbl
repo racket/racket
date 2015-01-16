@@ -11,6 +11,8 @@
 
 @note-lib-only[racket/async-channel]
 
+@section{Creating and Using Asynchronous Channels}
+
 @margin-note/ref{See also @secref["threadmbox"].}
 
 An @deftech{asynchronous channel} is like a @tech{channel}, but it buffers
@@ -105,5 +107,59 @@ limit); @resultItself{asychronous channel-put event}.}
 (async-channel-put to-server 'quit)
 ]
 
+@section{Contracts and Impersonators on Asynchronous Channels}
 
+@defproc[(async-channel/c [c contract?]) contract?]{
 
+Returns a contract that recognizes asynchronous channels. Values put into or
+retrieved from the channel must match @racket[c].
+
+If the @racket[c] argument is a flat contract or a chaperone contract, then the
+result will be a chaperone contract. Otherwise, the result will be an
+impersonator contract.
+
+When an @racket[async-channel/c] contract is applied to an asynchronous channel,
+the result is not @racket[eq?] to the input. The result will be either a
+@tech{chaperone} or @tech{impersonator} of the input depending on the type of
+contract.}
+
+@defproc[(impersonate-async-channel [channel async-channel?]
+                                    [get-proc (any/c . -> . any/c)]
+                                    [put-proc (any/c . -> . any/c)]
+                                    [prop impersonator-property?]
+                                    [prop-val any] ...
+                                    ...)
+         (and/c async-channel? impersonator?)]{
+
+Returns an impersonator of @racket[channel], which redirects the
+@racket[async-channel-get] and @racket[async-channel-put] operations.
+
+The @racket[get-proc] must accept the value that @racket[async-channel-get]
+produces on @racket[channel]; it must produce a replacement value, which is the
+result of the get operation on the impersonator.
+
+The @racket[put-proc] must accept the value passed to @racket[async-channel-put]
+called on @racket[channel]; it must produce a replacement value, which is the
+value passed to the put procedure called on the original channel.
+
+The @racket[get-proc] and @racket[put-proc] procedures are called for all
+operations that get or put values from the channel, not just
+@racket[async-channel-get] and @racket[async-channel-put].
+
+Pairs of @racket[prop] and @racket[prop-val] (the number of arguments to
+@racket[impersonate-async-channel] must be odd) add
+@tech{impersonator properties} or override @tech{impersonator property} values
+of @racket[channel].}
+
+@defproc[(chaperone-async-channel [channel async-channel?]
+                                  [get-proc (any/c . -> . any/c)]
+                                  [put-proc (any/c . -> . any/c)]
+                                  [prop impersonator-property?]
+                                  [prop-val any] ...
+                                  ...)
+         (and/c async-channel? chaperone?)]{
+
+Like @racket[impersonate-async-channel], but the @racket[get-proc] procedure
+must produce the same value or a chaperone of the original value, and
+@racket[put-proc] must produce the same value or a chaperone of the original
+value.}
