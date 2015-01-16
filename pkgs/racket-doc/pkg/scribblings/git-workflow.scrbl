@@ -42,7 +42,10 @@ repository source, the package is installed by creating a Git clone of
 @nonterm{git-pkg-source} as @nonterm{dir}. The clone's checkout is
 linked in the same way as a directory, but unlike a plain directory
 link, the Racket package manager keeps track of the repository
-connection.
+connection. The @nonterm{git-pkg-source} must be a Git or GitHub
+package source, or it must be a package name that the catalog maps to
+a Git or GitHub package source; if the source URL includes a fragment,
+it must name a branch or tag (as opposed to a raw commit).
 
 When the repository at @nonterm{git-pkg-source} is changed so that the
 source has a new checksum, then @command-ref{update} for the package pulls

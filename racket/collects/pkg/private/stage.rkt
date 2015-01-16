@@ -166,7 +166,7 @@
          (parameterize ([current-directory clone-dir])
            (download-printf "Fetching from remote repository ~a\n"
                             pkg-no-query)
-           (git #:status status "fetch" pkg-no-query)))
+           (git #:status status "fetch" pkg-no-query branch)))
 
        (cond
         [tmp-dir
