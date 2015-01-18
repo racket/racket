@@ -218,6 +218,7 @@
                      '("pkg-test1"))))
 
 (define (set-file path content)
+  (make-parent-directory* path)
   (call-with-output-file* 
    path
    #:exists 'truncate/replace
