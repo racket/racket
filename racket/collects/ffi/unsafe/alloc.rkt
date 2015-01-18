@@ -7,6 +7,13 @@
 
 (define allocated (make-late-weak-hasheq))
 
+;; A way to show all still-unfinalized values on exit:
+#;
+(plumber-add-flush! (current-plumber)
+                    (lambda (v)
+                      (for ([(k v) (in-hash allocated)])
+                        (printf "~s\n" k))))
+
 (define (deallocate v)
   ;; Called as a finalizer, we we assume that the
   ;; enclosing thread will not be interrupted.

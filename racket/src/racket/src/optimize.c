@@ -4309,6 +4309,29 @@ ref_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     int is_mutated = 0;
     optimize_info_mutated_lookup(info, SCHEME_LOCAL_POS(v), &is_mutated);
     SCHEME_PTR1_VAL(data) = (is_mutated ? scheme_false : scheme_true);
+  } else if (SAME_TYPE(SCHEME_TYPE(v), scheme_compiled_toplevel_type)) {
+    /* Knowing whether a top-level variable is fixed lets up optimize
+       uses of `variable-reference-constant?` */
+    if (info->top_level_consts) {
+      int pos = SCHEME_TOPLEVEL_POS(v);
+      int fixed = 0;
+
+      if (scheme_hash_get(info->top_level_consts, scheme_make_integer(pos)))
+        fixed = 1;
+      else {
+        GC_CAN_IGNORE Scheme_Object *t;
+        t = scheme_hash_get(info->top_level_consts, scheme_false);
+        if (t) {
+          if (scheme_hash_get((Scheme_Hash_Table *)t, scheme_make_integer(pos)))
+            fixed = 1;
+        }
+      }
+
+      if (fixed) {
+        v = scheme_toplevel_to_flagged_toplevel(v, SCHEME_TOPLEVEL_FIXED);
+        SCHEME_PTR1_VAL(data) = v;
+      }
+    }
   }
 
   info->preserves_marks = 1;

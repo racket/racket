@@ -884,8 +884,8 @@
 	  (begin
             #;
 	    (printf "~s\n~s\n" 
-                    (zo-parse (open-input-bytes t1))
-                    (zo-parse (open-input-bytes t2)))
+                     (zo-parse (open-input-bytes t1))
+                     (zo-parse (open-input-bytes t2)))
 	    #f
 	    )))))
 
@@ -3035,6 +3035,17 @@
                 #t
                 (letrec ([z (lambda () z)]) (f z) #f)
                 (letrec ([z (lambda () z)]) (f z) #t))))
+
+(test-comp `(module m racket/base
+             (define f (random))
+             (define g (random))
+             (list (variable-reference-constant? (#%variable-reference f))
+                   (#%variable-reference g)))
+           `(module m racket/base
+             (define f (random))
+             (define g (random))
+             (list #t
+                   (#%variable-reference g))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check remotion of dead code after error
