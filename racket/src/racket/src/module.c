@@ -1686,7 +1686,6 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
   Scheme_Object *past_checkeds, *future_checkeds, *future_todos, *past_to_modchains, *past_todos;
   Scheme_Module *m2;
   int same_namespace, set_env_for_notify = 0, phase, orig_phase, max_phase;
-  int just_declare;
   Scheme_Object *nophase_todo;
   Scheme_Hash_Table *nophase_checked;
 
@@ -1750,20 +1749,12 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
   checked = scheme_make_hash_table(SCHEME_hash_ptr);
   scheme_hash_set(checked, name, scheme_true);
   
-  just_declare = 0;
-
   /* Check whether todo, or anything it needs, is already declared
      incompatibly. Successive iterations of the outer loop explore
      successive phases (i.e, for-syntax levels). */
   while (!SCHEME_NULLP(todo)) {
     if (phase > max_phase)
       max_phase = phase;
-    if (phase < orig_phase) {
-      /* As soon as we start traversing negative phases, stop transferring
-         instances (i.e., transfer declarations only). This transfer-only
-         mode should stick even even if we go back into positive phases. */
-      just_declare = 1;
-    }
 
     if (!checked)
       checked = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -1860,7 +1851,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 	    if (!scheme_hash_get(checked, name)) {
               LOG_ATTACH(printf("Add %d %s (%p)\n", phase, scheme_write_to_string(name, 0), checked));
 	      todo = scheme_make_pair(name, todo);
-	      scheme_hash_set(checked, name, just_declare ? scheme_false : scheme_true);
+	      scheme_hash_set(checked, name, (phase < orig_phase) ? scheme_false : scheme_true);
 	    }
 	    l = SCHEME_CDR(l);
 	  }
@@ -1873,7 +1864,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 	    if (!scheme_hash_get(next_checked, name)) {
 	      LOG_ATTACH(printf("Add +%d %s (%p)\n", phase+1, scheme_write_to_string(name, 0), next_checked));
 	      next_phase_todo = scheme_make_pair(name, next_phase_todo);
-	      scheme_hash_set(next_checked, name, just_declare ? scheme_false : scheme_true);
+	      scheme_hash_set(next_checked, name, ((phase+1) < orig_phase) ? scheme_false : scheme_true);
 	    }
 	    l = SCHEME_CDR(l);
 	  }
@@ -1887,7 +1878,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
               if (!scheme_hash_get(prev_checked, name)) {
                 LOG_ATTACH(printf("Add -%d %s (%p)\n", phase-1, scheme_write_to_string(name, 0), prev_checked));
                 prev_phase_todo = scheme_make_pair(name, prev_phase_todo);
-                scheme_hash_set(prev_checked, name, just_declare ? scheme_false : scheme_true);
+                scheme_hash_set(prev_checked, name, (((phase-1) < orig_phase) ? scheme_false : scheme_true));
               }
               l = SCHEME_CDR(l);
             }
@@ -1902,7 +1893,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
                 if (!scheme_hash_get(nophase_checked, name)) {
                   LOG_ATTACH(printf("Add * %s\n", scheme_write_to_string(name, NULL)));
                   nophase_todo = scheme_make_pair(name, nophase_todo);
-                  scheme_hash_set(nophase_checked, name, just_declare ? scheme_false : scheme_true);
+                  scheme_hash_set(nophase_checked, name, scheme_true);
                 }
                 l = SCHEME_CDR(l);
               }
@@ -1946,7 +1937,11 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
                                         SCHEME_INT_VAL(oht->keys[i]), 
                                         scheme_write_to_string(name, 0), a_checked));
                       a_todo = scheme_make_pair(name, a_todo);
-                      scheme_hash_set(a_checked, name, just_declare ? scheme_false : scheme_true);
+                      scheme_hash_set(a_checked,
+                                      name,
+                                      (((phase + SCHEME_INT_VAL(oht->keys[i])) < orig_phase)
+                                       ? scheme_false 
+                                       : scheme_true));
                     }
                     l = SCHEME_CDR(l);
                   }
@@ -1984,7 +1979,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
                     name = make_sub_modidx_pair(menv, name, i);
                     LOG_ATTACH(printf("Add s %s\n", scheme_write_to_string(SCHEME_CAR(name), NULL)));
                     nophase_todo = scheme_make_pair(name, nophase_todo);
-                    scheme_hash_set(nophase_checked, SCHEME_CAR(name), just_declare ? scheme_false : scheme_true);
+                    scheme_hash_set(nophase_checked, SCHEME_CAR(name), scheme_true);
                   }
                   l = SCHEME_CDR(l);
                 }
@@ -2169,7 +2164,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
               name = make_sub_modidx_pair(menv, name, i);
               LOG_ATTACH(printf("Add s %s\n", scheme_write_to_string(SCHEME_CAR(name), NULL)));
               nophase_todo = scheme_make_pair(name, nophase_todo);
-              scheme_hash_set(nophase_checked, SCHEME_CAR(name), just_declare ? scheme_false : scheme_true);
+              scheme_hash_set(nophase_checked, SCHEME_CAR(name), scheme_true);
             }
             l = SCHEME_CDR(l);
           }
@@ -2267,18 +2262,28 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 
     for (i = checked->size; i--; ) {
       if (checked->vals[i]) {
+        int just_declare = SCHEME_FALSEP(checked->vals[i]);
 	name = checked->keys[i];
-        just_declare = SCHEME_FALSEP(checked->vals[i]);
 
 	if (!is_builtin_modname(name)) {
 	  menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_modchain), name);
 	  
-	  LOG_ATTACH(printf("Copy %d %s\n", phase, scheme_write_to_string(name, 0)));
+	  LOG_ATTACH(printf("Copy %d %s (%d)\n", phase, scheme_write_to_string(name, 0), just_declare));
 
-	  menv2 = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(to_modchain), name);
-	  if (!menv2) {
-	    /* Clone/copy menv for the new namespace: */
-            if ((phase >= orig_phase) && !just_declare) {
+          /* Declare in the new namespace: */
+          if (!scheme_hash_get(to_env->module_registry->exports, name)) {
+            scheme_hash_set(to_env->module_registry->loaded, name, (Scheme_Object *)menv->module);
+            scheme_hash_set(to_env->module_registry->exports, name, (Scheme_Object *)menv->module->me);
+	    
+            /* Push name onto notify list: */
+            if (!same_namespace)
+              notifies = scheme_make_pair(name, notifies);
+          }
+
+          /* Clone/copy menv for the new namespace: */
+          if ((phase >= orig_phase) && !just_declare) {
+            menv2 = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(to_modchain), name);
+            if (!menv2) {
               menv2 = scheme_copy_module_env(menv, to_env, to_modchain, orig_phase);
               if (menv->attached)
                 menv2->attached = 1;
@@ -2286,13 +2291,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
               check_phase(menv2, NULL, phase);
               scheme_hash_set(MODCHAIN_TABLE(to_modchain), name, (Scheme_Object *)menv2);
             }
-	    scheme_hash_set(to_env->module_registry->loaded, name, (Scheme_Object *)menv->module);
-	    scheme_hash_set(to_env->module_registry->exports, name, (Scheme_Object *)menv->module->me);
-	    
-	    /* Push name onto notify list: */
-	    if (!same_namespace)
-	      notifies = scheme_make_pair(name, notifies);
-	  }
+          }
 	}
       }
     }

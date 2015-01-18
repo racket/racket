@@ -250,9 +250,9 @@ registry} of @racket[dest-namespace].
 
 In addition to @racket[modname], every module that it imports
 (directly or indirectly) is also recorded in the current namespace's
-@tech{module registry}, and instances at the same @tech{phase} or
-lower are also attached to @racket[dest-namespace] (while
-@tech{visits} at the module's phase and instances at higher phases are
+@tech{module registry}, and instances at the same @tech{phase}
+are also attached to @racket[dest-namespace] (while
+@tech{visits} at the module's phase and instances at higher or lower phases are
 not attached, nor even made @tech{available} for on-demand
 @tech{visits}). The inspector of the module invocation in
 @racket[dest-namespace] is the same as inspector of the invocation in

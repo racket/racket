@@ -217,6 +217,27 @@
     (namespace-attach-module-declaration ns0 ''sample ns1)))
 
 ;; ----------------------------------------
+;; Check that `namespace-attach-module' works with with for-template
+;; requires.
+
+(module nma-for-template-m racket/base
+  (define x 1))
+
+(module nma-for-template-n racket/base
+  (require (for-syntax 'nma-for-template-m)))
+
+(module nma-for-template-p racket/base
+  (require (for-template 'nma-for-template-n)))
+
+(require 'nma-for-template-p)
+
+(let ([ns (make-base-namespace)])
+  (namespace-attach-module (current-namespace) ''nma-for-template-p ns)
+  (parameterize ([current-namespace ns])
+    (namespace-require ''nma-for-template-p))
+  (namespace-attach-module (current-namespace) ''nma-for-template-m ns))
+
+;; ----------------------------------------
 ;; Check that `make-base-empty-namespace' is kill-safe,
 ;; which amounts to a test that the module-name resolver
 ;; is kill-safe. When the test fails, it probably gets
