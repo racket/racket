@@ -258,5 +258,37 @@
   (for ([t thds]) (kill-thread t)))
 
 ;; ----------------------------------------
+;; Check that an unoptimizable `(variable-reference-constant? (#%variable-reference r))`
+;; expression does not retain a reference to the namespace --- since not retaining
+;; a reference can be important to the expansion to a call to a keyword-accepting
+;; function.
+
+(when (eq? '3m (system-type 'gc))
+  (define (mk)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval '(module module-with-unoptimized-varref-constant racket/base
+              (define (r)
+                (variable-reference-constant?
+                 (#%variable-reference r)))
+              (define top (box 1))
+              (define top-boxed (make-weak-box top))
+              (set! r r)
+              (provide r top-boxed)))
+      (list (dynamic-require ''module-with-unoptimized-varref-constant 'r)
+            (dynamic-require ''module-with-unoptimized-varref-constant 'top-boxed))))
+
+  (let ([l (for/list ([i 10])
+             (mk))])
+    (collect-garbage)
+    (define fraction-retained
+      (/ (for/fold ([n 0]) ([p (in-list l)])
+           (if (weak-box-value (cadr p))
+               (add1 n)
+               n))
+         (for/fold ([n 0]) ([p (in-list l)])
+           (if (car p) (add1 n) n))))
+    (test #t < fraction-retained 1/2)))
+
+;; ----------------------------------------
 
 (report-errs)

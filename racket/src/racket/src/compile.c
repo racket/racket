@@ -1351,7 +1351,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 
   /* retaining `dummy' ensures that the environment stays
      linked from the actual variable */
-  if (rec[drec].comp)
+  if (rec[drec].comp && ((l == 1) || !rec[drec].testing_constantness))
     dummy = scheme_make_environment_dummy(env);
   else
     dummy = NULL;
@@ -1433,6 +1433,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
     o = scheme_alloc_object();
     o->type = scheme_varref_form_type;
     SCHEME_PTR1_VAL(o) = (Scheme_Object *)var;
+    if (!dummy) dummy = scheme_false;
     SCHEME_PTR2_VAL(o) = (Scheme_Object *)dummy;
     return o;
   } else {
