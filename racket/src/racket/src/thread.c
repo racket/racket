@@ -177,6 +177,8 @@ THREAD_LOCAL_DECL(static int thread_swap_count);
 THREAD_LOCAL_DECL(int scheme_did_gc_count);
 THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
 
+THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
+
 SHARED_OK static int init_load_on_demand = 1;
 
 #ifdef RUNSTACK_IS_GLOBAL
@@ -447,6 +449,8 @@ static int can_break_param(Scheme_Thread *p);
 static int post_system_idle();
 
 static Scheme_Object *current_stats(int argc, Scheme_Object *args[]);
+
+static void log_peak_memory_use();
 
 SHARED_OK static Scheme_Object **config_map;
 
@@ -1827,6 +1831,7 @@ void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt)
 
 void do_run_atexit_closers_on_all()
 {
+  log_peak_memory_use();
   scheme_run_atexit_closers_on_all(NULL);
 }
 
@@ -9081,6 +9086,10 @@ static void inform_GC(int master_gc, int major_gc,
                       intptr_t post_child_places_used)
 {
   Scheme_Logger *logger;
+
+  if (!master_gc && (pre_used > max_gc_pre_used_bytes))
+    max_gc_pre_used_bytes = pre_used;
+
   logger = scheme_get_gc_logger();
   if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
     /* Don't use scheme_log(), because it wants to allocate a buffer
@@ -9147,6 +9156,28 @@ static void inform_GC(int master_gc, int major_gc,
   }
 #endif
 }
+
+static void log_peak_memory_use()
+{
+  Scheme_Logger *logger;
+  logger = scheme_get_gc_logger();
+  if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
+    char buf[256], nums[128], *num;
+    intptr_t buflen;
+    num = gc_num(nums, max_gc_pre_used_bytes);
+    sprintf(buf,
+            "" PLACE_ID_FORMAT "atexit peak was %sK",
+#ifdef MZ_USE_PLACES
+            scheme_current_place_id,
+#endif
+            num);
+    buflen = strlen(buf);
+    scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, scheme_false);
+  }
+}
+
+#else
+ static void log_peak_memory_use() {}
 #endif
 
 /*========================================================================*/

@@ -326,6 +326,7 @@ typedef struct Thread_Local_Variables {
   volatile short delayed_break_ready_;
   struct Scheme_Thread *main_break_target_thread_;
   intptr_t scheme_code_page_total_;
+  intptr_t max_gc_pre_used_bytes_;
   int locale_on_;
   void *current_locale_name_ptr_;
   int gensym_counter_;
@@ -711,6 +712,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define delayed_break_ready XOA (scheme_get_thread_local_variables()->delayed_break_ready_)
 #define main_break_target_thread XOA (scheme_get_thread_local_variables()->main_break_target_thread_)
 #define scheme_code_page_total XOA (scheme_get_thread_local_variables()->scheme_code_page_total_)
+#define max_gc_pre_used_bytes XOA (scheme_get_thread_local_variables()->max_gc_pre_used_bytes_)
 #define locale_on XOA (scheme_get_thread_local_variables()->locale_on_)
 #define current_locale_name_ptr XOA (scheme_get_thread_local_variables()->current_locale_name_ptr_)
 #define gensym_counter XOA (scheme_get_thread_local_variables()->gensym_counter_)
