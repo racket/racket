@@ -1295,5 +1295,11 @@
   (delete-file zo-path))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `provide` doesn't run enclosed expanders until within a
+;; module (as opposed to a `#%module-begin` expansion):
+
+(module check-contract-out-by-itself racket (provide (contract-out)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
