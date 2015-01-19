@@ -1,6 +1,7 @@
 /* 
    Provides:
       reset_object_traces
+      clear_object_traces
       register_traced_object
       print_traced_objects
       print_out_pointer
@@ -22,12 +23,20 @@
 
 
 # define MAX_FOUND_OBJECTS 5000
-static int found_object_count;
+static int found_object_count = -1;
 static void *found_objects[MAX_FOUND_OBJECTS];
 
 static void reset_object_traces()
 {
+  if (found_object_count < 0)
+    GC_add_roots(found_objects, found_objects + MAX_FOUND_OBJECTS);
+
   found_object_count = 0;
+}
+
+static void clear_object_traces()
+{
+  memset(found_objects, 0, sizeof(found_objects));
 }
 
 static void register_traced_object(void *p)

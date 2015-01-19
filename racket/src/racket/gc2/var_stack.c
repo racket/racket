@@ -8,6 +8,10 @@ void GC_X_variable_stack(void **var_stack, intptr_t delta, void *limit, void *st
   stack_depth = 0;
 #endif
 
+#if MZ_GC_BACKTRACE
+  X_source_resolve2(stack_mem, gc);
+#endif
+
   while (var_stack) {
     var_stack = (void **)((char *)var_stack + delta);
 
