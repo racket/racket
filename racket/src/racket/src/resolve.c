@@ -81,6 +81,7 @@ static Scheme_Object *shift_toplevel(Scheme_Object *expr, int delta);
 static int resolving_in_procedure(Resolve_Info *info);
 static int is_nonconstant_procedure(Scheme_Object *data, Resolve_Info *info, int skip);
 static int resolve_is_inside_proc(Resolve_Info *info);
+static void set_tl_pos_used(Resolve_Info *info, int pos);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -2421,6 +2422,8 @@ Scheme_Object *scheme_resolve_expr(Scheme_Object *expr, Resolve_Info *info)
       c = resolve_toplevel_pos(info);
       p = resolve_quote_syntax_pos(info);
 
+      set_tl_pos_used(info, i+p+1);
+
       qs = MALLOC_ONE_TAGGED(Scheme_Quote_Syntax);
       qs->so.type = scheme_quote_syntax_type;
       qs->depth = c;
@@ -2744,14 +2747,16 @@ static void set_tl_pos_used(Resolve_Info *info, int pos)
 
   /* Fixnum-like bit packing avoids allocation in the common case of a
      small prefix. We use 31 fixnum-like bits (even on a 64-bit
-     platform, and even though fixnums are only 30 bits). */
+     platform, and even though fixnums are only 30 bits). There's one
+     bit for each normal top-level, one bit for all syntax objects,
+     and one bit for each lifted top-level. */
 
-  if (pos >= info->prefix->num_toplevels)
-    tl_pos = pos - (info->prefix->num_stxes
-                    ? (info->prefix->num_stxes + 1)
-                    : 0);
+  if (pos > (info->prefix->num_toplevels + info->prefix->num_stxes))
+    tl_pos = pos - info->prefix->num_stxes; /* lifted */
+  else if (pos >= info->prefix->num_toplevels)
+    tl_pos = info->prefix->num_toplevels; /* any syntax object */
   else
-    tl_pos = pos;
+    tl_pos = pos; /* normal top level */
 
   tl_map = ensure_tl_map_len(info->tl_map, tl_pos + 1);
   info->tl_map = tl_map;

@@ -5682,7 +5682,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     }
     i += rp->num_lifts;
 
-    tl_map_len = ((rp->num_toplevels + rp->num_lifts) + 31) / 32;
+    tl_map_len = ((rp->num_toplevels + rp->num_lifts + (rp->num_stxes ? 1 : 0)) + 31) / 32;
 
     pf = scheme_malloc_tagged(sizeof(Scheme_Prefix) 
                               + ((i-mzFLEX_DELTA) * sizeof(Scheme_Object *))
@@ -5788,7 +5788,7 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
       /* If not marked, only references are through closures: */
       if (!GC_is_marked2(pf, gc)) {
         /* Clear slots that are not use in map */
-        maxpos = (pf->num_slots - pf->num_stxes - (pf->num_stxes ? 1 : 0));
+        maxpos = (pf->num_slots - pf->num_stxes);
         use_bits = PREFIX_TO_USE_BITS(pf);
         for (i = (maxpos + 31) / 32; i--; ) {
           int j;
@@ -5797,12 +5797,19 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
               int pos;
               pos = (i * 32) + j;
               if (pos < pf->num_toplevels)
-                pf->a[pos] = NULL;
+                pf->a[pos] = NULL; /* top level */
               else if (pos < maxpos) {
-                if (pf->num_stxes)
-                  pf->a[pos + pf->num_stxes + 1] = NULL;
-                else
-                  pf->a[pos] = NULL;
+                if (pf->num_stxes) {
+                  if (pos == pf->num_toplevels) {
+                    /* any syntax object */
+                    int k;
+                    for (k = pf->num_stxes+1; k--;) {
+                      pf->a[k + pf->num_toplevels] = NULL;
+                    }
+                  } else
+                    pf->a[pos + pf->num_stxes] = NULL; /* lifted */
+                } else
+                  pf->a[pos] = NULL; /* lifted */
               }
             }
           }
@@ -5817,7 +5824,7 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
 
       /* Clear use map */
       use_bits = PREFIX_TO_USE_BITS(pf);
-      maxpos = (pf->num_slots - pf->num_stxes - (pf->num_stxes ? 1 : 0));
+      maxpos = (pf->num_slots - pf->num_stxes);
       for (i = (maxpos + 31) / 32; i--; )
         use_bits[i] = 0;
 

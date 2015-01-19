@@ -307,21 +307,27 @@ binding, constructor, etc.}
   values; also, this information is redundant, since it can be inferred
   by the bindings referenced though @racket[closure-map].
 
-  Which a closure captures top-level or module-level variables, they
-  are represented in the closure by capturing a prefix (in the sense
+  Which a closure captures top-level or module-level variables or
+  refers to a syntax-object constant, the variables and constants are
+  represented in the closure by capturing a prefix (in the sense
   of @racket[prefix]).  The @racket[toplevel-map] field indicates
   which top-level and lifted variables are actually used by the
   closure (so that variables in a prefix can be pruned by the run-time
-  system if they become unused). A @racket[#f] value indicates either
-  that no prefix is captured or all variables in the prefix should be
+  system if they become unused) and whether any syntax objects are
+  used (so that the syntax objects as a group can be similarly
+  pruned). A @racket[#f] value indicates either that no prefix is
+  captured or all variables and syntax objects in the prefix should be
   considered used. Otherwise, numbers in the set indicate which
   variables and lifted variables are used. Variables are numbered
   consecutively by position in the prefix starting from
-  @racket[0]. Lifted variables are numbered immediately
+  @racket[0], but the number equal to the number of non-lifted
+  variables corresponds to syntax objects (i.e., the number is
+  include if any syntax-object constant is used). Lifted variables 
+  are numbered immediately
   afterward---which means that, if the prefix contains any syntax
   objects, lifted-variable numbers are shifted down relative to a
-  @racket[toplevel] by the number of syntax object in the prefix plus
-  one (which makes the @racket[toplevel-map] set more compact).
+  @racket[toplevel] by the number of syntax object in the prefix
+  (which makes the @racket[toplevel-map] set more compact).
 
   When the function is called, the rest-argument list (if any) is pushed
   onto the stack, then the normal arguments in reverse order, then the
@@ -332,7 +338,12 @@ binding, constructor, etc.}
   The @racket[max-let-depth] field indicates the maximum stack depth
   created by @racket[body] plus the arguments and closure-captured
   values pushed onto the stack.  The @racket[body] field is the
-  expression for the closure's body.}
+  expression for the closure's body.
+
+  @history[#:changed "6.1.1.8" @elem{Added a number to
+  @racket[toplevel-map] to indicate whether any syntax object is used,
+  shifting numbers for lifted variables up by one if any syntax object
+  is in the prefix.}]}
 
 @defstruct+[(closure expr)
             ([code lam?] [gen-id symbol?])]{

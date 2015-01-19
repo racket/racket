@@ -990,7 +990,7 @@ prefix_val {
  size:
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
-                    + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
+                    + ((((pf->num_slots - pf->num_stxes) + 31) / 32) 
                        * sizeof(int))));
 }
 
