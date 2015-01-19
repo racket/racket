@@ -1258,14 +1258,8 @@
                  val)]
               [else
                (λ (neg-party)
-                 (raise-blame-error
-                  blame #:missing-party neg-party 
-                  val
-                  '(expected: "a list of ~a elements" given: "~a element~a\n  complete list: ~e")
-                  expected-length 
-                  actual-length
-                  (if (= actual-length 1) "" "s")
-                  val))])]
+                 (expected-a-list-of-len val actual-length expected-length blame 
+                                         #:missing-party neg-party))])]
            [else
             (λ (neg-party)
               (raise-blame-error blame #:missing-party neg-party
@@ -1281,14 +1275,7 @@
          (let* ([args (generic-list/c-args c)]
                 [expected (length args)]
                 [actual (length x)])
-           (unless (= actual expected)
-             (raise-blame-error
-              blame x
-              '(expected: "a list of ~a elements" given: "~a element~a\n  complete list: ~e")
-              expected 
-              actual
-              (if (= actual 1) "" "s")
-              x))
+           (expected-a-list-of-len x actual expected blame)
            (for ([arg/c (in-list args)] [v (in-list x)] [i (in-naturals 1)])
              (((contract-projection arg/c) 
                (add-list-context blame i))
@@ -1306,14 +1293,7 @@
     (λ (x)
       (unless (list? x) (expected-a-list x blame))
       (define actual (length x))
-      (unless (= actual expected)
-        (raise-blame-error
-         blame x
-         '(expected: "a list of ~a elements" given: "~a element~a\n complete list: ~e")
-         expected
-         actual
-         (if (= actual 1) "" "s")
-         x))
+      (expected-a-list-of-len x actual expected blame #:missing-party #f)
       (for/list ([item (in-list x)]
                  [proj (in-list projs)])
         (proj item)))))
@@ -1324,13 +1304,23 @@
 
 (define (expected-a-list-of-len x actual expected blame #:missing-party [missing-party #f])
   (unless (= actual expected)
-    (raise-blame-error
-     blame #:missing-party missing-party x
-     '(expected: "a list of ~a elements" given: "~a element~a\n complete list: ~e")
-     expected
-     actual
-     (if (= actual 1) "" "s")
-     x)))
+    (cond
+      [(null? x)
+       (raise-blame-error
+        blame #:missing-party missing-party x
+        '(expected: "a list of ~a element~a" given: "~e")
+        expected
+        (if (= expected 1) "" "s")
+        x)]
+      [else
+       (raise-blame-error
+        blame #:missing-party missing-party x
+        '(expected: "a list of ~a element~a" given: "~a element~a\n  complete list: ~e")
+        expected
+        (if (= expected 1) "" "s")
+        actual
+        (if (= actual 1) "" "s")
+        x)])))
 
 (define (list/c-chaperone/other-val-first-projection c)
   (define projs (map get/build-val-first-projection (generic-list/c-args c)))
