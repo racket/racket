@@ -137,6 +137,10 @@
           #:rest [x (x) number?]
           any))
   
+  (contract-syntax-error-test
+   '->i-stx23
+   #'(->i ([f (f x) any/c]) (#:x [x any/c]) [res any/c]))
+  
   (test/spec-passed
    '->i1
    '((contract (->i () () [x number?]) (lambda () 1) 'pos 'neg)))

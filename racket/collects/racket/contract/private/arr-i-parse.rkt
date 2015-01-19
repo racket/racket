@@ -250,8 +250,8 @@ code does the parsing and validation of the syntax.
           [else
            (let ([new-visited (cons var visited)])
              (for ([neighbor (in-list (free-identifier-mapping-get neighbors var))])
-               (loop neighbor new-visited)
-               (free-identifier-mapping-put! safe var #t)))])))))
+               (loop neighbor new-visited))
+             (free-identifier-mapping-put! safe var #t))])))))
 
 ;; trim-at : identifier? (listof identifier?) -> (listof identifier?)
 ;; returns the shortest prefix of vars that ends with var
