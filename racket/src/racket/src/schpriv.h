@@ -2360,6 +2360,9 @@ typedef struct Scheme_Prefix
   Scheme_Object so; /* scheme_prefix_type */
   int num_slots, num_toplevels, num_stxes;
   struct Scheme_Prefix *next_final; /* for special GC handling */
+#ifdef MZ_GC_BACKTRACE
+  Scheme_Object *backpointer;
+#endif
   Scheme_Object *a[mzFLEX_ARRAY_DECL]; /* array of objects */
   /* followed by an array of `int's for tl_map uses */
 } Scheme_Prefix;

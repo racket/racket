@@ -23,6 +23,9 @@
            all other marking: */
         pf->next_final = scheme_prefix_finalize;
         scheme_prefix_finalize = pf;
+#ifdef MZ_GC_BACKTRACE
+        pf->backpointer = (Scheme_Object *)c;
+#endif
       }
       mark_stxes = 0;
 

@@ -571,6 +571,11 @@ GC2_EXTERN void GC_report_unsent_message_delta(intptr_t amt);
  is within a factor of 2 or so.
  */
 
+GC2_EXTERN void GC_set_backpointer_object(void *p);
+/*
+ Registers the current object for backpointers, which is used when backtrace
+ support is enabled.
+*/
 
 # ifdef __cplusplus
 };

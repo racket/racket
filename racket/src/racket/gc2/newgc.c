@@ -2156,6 +2156,13 @@ static void *get_backtrace(mpage *page, void *ptr, int *kind)
 
 #define three_arg_no_op(a, b, c) /* */
 
+void GC_set_backpointer_object(void *p)
+{
+#ifdef MZ_GC_BACKTRACE
+  set_backtrace_source(GC_get_GC(), p, PAGE_TAGGED);
+#endif
+}
+
 /*****************************************************************************/
 /* Routines dealing with various runtime execution stacks                    */
 /*                                                                           */

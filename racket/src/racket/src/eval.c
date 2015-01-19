@@ -5816,6 +5816,9 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
           use_bits[i] = 0;
         }
         /* Should mark/copy pf, but not trigger or require mark propagation: */
+#ifdef MZ_GC_BACKTRACE
+        GC_set_backpointer_object(pf->backpointer);
+#endif
         gcMARK(pf);
         pf = (Scheme_Prefix *)GC_resolve2(pf, gc);
         GC_retract_only_mark_stack_entry(pf, gc);
