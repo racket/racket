@@ -8989,6 +8989,10 @@ static void get_ready_for_GC()
     scheme_current_thread->gmp_tls_data = data;
   }
 
+#ifdef MZ_PRECISE_GC
+  scheme_clean_native_symtab();
+#endif
+
   scheme_did_gc_count++;
 }
 

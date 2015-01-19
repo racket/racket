@@ -614,8 +614,8 @@ void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b)
 
 void scheme_clean_native_symtab(void)
 {
-#ifndef MZ_PRECISE_GC
   clear_symbols_for_collected();
+#ifndef MZ_PRECISE_GC
   jit_notify_freed_code();
 #endif
 }
