@@ -4,67 +4,63 @@
          "../experimental/template.rkt"
          racket/dict)
 
-(provide function-header arg args)
+(provide function-header formal formals)
 
 (define-syntax-class function-header
-  (pattern ((~or header:function-header name:id) . args:args)
+  (pattern ((~or header:function-header name:id) . args:formals)
            #:attr params
            (template ((?@ . (?? header.params ()))
                       . args.params))))
 
-(define-syntax-class args
+(define-syntax-class formals
   #:attributes (params)
-  (pattern (arg:arg ...)
+  (pattern (arg:formal ...)
            #:attr params #'(arg.name ...)
            #:fail-when (check-duplicate-identifier (syntax->list #'params))
-           "duplicate argument name"
-           #:fail-when (check-duplicate (syntax->list #'(arg.kw ...))
-                                        #:key (λ (x)
-                                                (syntax->datum x))
+                       "duplicate argument name"
+           #:fail-when (check-duplicate (attribute arg.kw)
                                         #:same? (λ (x y)
-                                                  (and x y (equal? x y))))
-           "duplicate keyword for argument"
+                                                  (and x y (equal? (syntax-e x)
+                                                                   (syntax-e y)))))
+                       "duplicate keyword for argument"
            #:fail-when (invalid-option-placement
-                        (syntax->list #'((arg.name arg.default) ...)))
-           "default-value expression missing")
-  (pattern (arg:arg ... . rest:id)
+                        (map list (attribute arg.name) (attribute arg.default)))
+                       "default-value expression missing")
+  (pattern (arg:formal ... . rest:id)
            #:attr params #'(arg.name ... rest)
            #:fail-when (check-duplicate-identifier (syntax->list #'params))
-           "duplicate argument name"
-           #:fail-when (check-duplicate (syntax->list #'(arg.kw ...))
-                                        #:key (λ (x)
-                                                (syntax->datum x))
+                       "duplicate argument name"
+           #:fail-when (check-duplicate (attribute arg.kw)
                                         #:same? (λ (x y)
-                                                  (and x y (equal? x y))))
-           "duplicate keyword for argument"
+                                                  (and x y (equal? (syntax-e x)
+                                                                   (syntax-e y)))))
+                       "duplicate keyword for argument"
            #:fail-when (invalid-option-placement
-                        (syntax->list #'((arg.name arg.default) ...)))
-           "default-value expression missing"))
+                        (map list (attribute arg.name) (attribute arg.default)))
+                       "default-value expression missing"))
 
-(define-splicing-syntax-class arg
+(define-splicing-syntax-class formal
   #:attributes (name kw default)
   (pattern name:id
-           #:attr kw #'#f
-           #:attr default #'#f)
+           #:attr kw #f
+           #:attr default #f)
   (pattern [name:id default]
-           #:attr kw #'#f)
+           #:attr kw #f)
   (pattern (~seq kw:keyword name:id)
-           #:attr default #'#f)
+           #:attr default #f)
   (pattern (~seq kw:keyword [name:id default])))
 
 (define (invalid-option-placement optional-list)
   (define iop
-    (for/fold ([status      'required])
+    (for/fold ([status 'required])
               ([i optional-list]
                #:break (syntax? status))
-      (define i* (syntax->list i))
-      ;(match* (status (syntax->datum (cadr i*)))
       (cond [(eq? status 'required)
-             (cond [(syntax->datum (cadr i*)) 'optional]
-                   [else                      'required])]
+             (cond [(not i)    'optional]
+                   [else       'required])]
             [else
-             (cond [(syntax->datum (cadr i*)) 'optional]
-                   [else                      (car i*)])])))
+             (cond [(not i)    'optional]
+                   [else       (car i)])])))
   (if (syntax? iop) iop #f))
 
 ;; Copied from unstable/list
