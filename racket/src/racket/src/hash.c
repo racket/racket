@@ -795,6 +795,10 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
       if (actual * FILL_FACTOR < table->count) {
 	/* Decrement size so that the table won't actually grow. */
 	table->size >>= 1;
+        if ((table->size > 64) && (2 * actual * FILL_FACTOR < table->count)) {
+          /* Allow the table to shrink */
+          table->size >>= 1;
+        }
       }
     }
 
