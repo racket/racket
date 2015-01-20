@@ -195,7 +195,7 @@
          '()))
 
 (define (add-async-channel-context blame)
-  (blame-add-context blame "the content of"))
+  (blame-add-context blame "a value passed through"))
 
 (define (check-async-channel/c ctc val blame)
   (unless (async-channel? val)
