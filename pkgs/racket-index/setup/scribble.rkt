@@ -20,7 +20,8 @@
          scribble/base-render
          scribble/core
          scribble/html-properties
-         scribble/manual ; really shouldn't be here... see dynamic-require-doc
+         scribble/tag
+         scribble/private/manual-class-struct ; really shouldn't be here... see dynamic-require-doc
          scribble/private/run-pdflatex
          setup/xref
          scribble/xref
@@ -1208,6 +1209,7 @@
                        (set-info-out-hash! info (get-info-out-hash doc latex-dest))
                        (set-info-need-out-write?! info #f)
                        (set-info-done-time! info (current-inexact-milliseconds)))
+
                      (when (info-need-in-write? info)
                        (render-time "xref-in" (write-in/info latex-dest info lock main-doc-exists?))
                        (set-info-need-in-write?! info #f))
@@ -1499,7 +1501,7 @@
       (namespace-attach-module ns 'scribble/html-render p)
       ;; This is here for de-serialization; we need a better repair than
       ;;  hard-wiring the "manual.rkt" library:
-      (namespace-attach-module ns 'scribble/manual p)
+      (namespace-attach-module ns 'scribble/private/manual-class-struct p)
       (parameterize ([current-namespace p])
         (call-in-nested-thread (lambda ()
                                  (define sub
