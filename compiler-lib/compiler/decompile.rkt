@@ -478,12 +478,20 @@
                                    '()
                                    (list
                                     (for/list ([pos (in-set tl-map)])
-                                      (list-ref/protect (glob-desc-vars globs)
-                                                        (if (or (pos . < . (glob-desc-num-tls globs))
-                                                                (zero? (glob-desc-num-stxs globs)))
-                                                            pos
-                                                            (+ pos (glob-desc-num-stxs globs) 1))
-                                                        'lam)))))))
+                                      (define tl-pos
+                                        (cond
+                                         [(or (pos . < . (glob-desc-num-tls globs))
+                                              (zero? (glob-desc-num-stxs globs)))
+                                          pos]
+                                         [(= pos (glob-desc-num-tls globs))
+                                          'stx]
+                                         [else
+                                          (+ pos (glob-desc-num-stxs globs))]))
+                                      (if (eq? tl-pos 'stx)
+                                          '#%syntax
+                                          (list-ref/protect (glob-desc-vars globs)
+                                                            tl-pos
+                                                            'lam))))))))
          ,(decompile-expr body globs
                           (append captures
                                   (append vars rest-vars))

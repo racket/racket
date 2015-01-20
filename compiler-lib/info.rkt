@@ -2,7 +2,7 @@
 
 (define collection 'multi)
 
-(define deps '("base"
+(define deps '(["base" #:version "6.1.1.8"]
                "scheme-lib"
                "rackunit-lib"
                "zo-lib"))
