@@ -2151,6 +2151,11 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
                            + SCHEME_TAIL_COPY_THRESHOLD);
 
     data->tl_map = new_info->tl_map;
+    if (!data->tl_map && has_tl) {
+      /* Our reason to refer to the top level has apparently gone away;
+         record that we're not using anything */
+      data->tl_map = (void *)0x1;
+    }
 
     /* Add code to box set!ed argument variables: */
     for (i = 0; i < num_params; i++) {
