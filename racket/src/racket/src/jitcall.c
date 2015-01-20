@@ -694,6 +694,8 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
      Put procedure and argc in place, then jump to apply: */
   mz_patch_branch(ref2);
   jit_ldxi_p(JIT_V1, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_rator);
+  (void)jit_movi_p(JIT_R0, NULL);
+  jit_stxi_p(&((Scheme_Thread *)0x0)->ku.apply.tail_rator, JIT_R1, JIT_R0);
   jit_ldxi_l(JIT_R0, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_num_rands);
   __END_SHORT_JUMPS__(1);
   (void)jit_jmpi(reftop);
