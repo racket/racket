@@ -102,18 +102,21 @@
 (define will-executor (make-will-executor))
 
 (define finalizer-thread
-  (thread/suspend-to-kill
-   (lambda ()
-     (let loop ()
-       (with-handlers
-           ([(lambda (e) #t)
-             (lambda (e)
-               ((error-display-handler)
-                (cond [(exn? e)
-                       (format "prepared statement finalizer thread handled exception:\n~a"
-                               (exn-message e))]
-                      [else
-                       "prepared statement finalizer thread handled non-exception"])
-                e))])
-         (will-execute will-executor))
-       (loop)))))
+  ;; Set parameters for the new thread to avoid references to the
+  ;; namespace, since prepared statements may be bound to globals, etc.
+  (parameterize ([current-namespace (make-empty-namespace)])
+    (thread/suspend-to-kill
+     (lambda ()
+       (let loop ()
+         (with-handlers
+             ([(lambda (e) #t)
+               (lambda (e)
+                 ((error-display-handler)
+                  (cond [(exn? e)
+                         (format "prepared statement finalizer thread handled exception:\n~a"
+                                 (exn-message e))]
+                        [else
+                         "prepared statement finalizer thread handled non-exception"])
+                  e))])
+           (will-execute will-executor))
+         (loop))))))
