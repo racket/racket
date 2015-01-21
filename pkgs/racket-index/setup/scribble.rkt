@@ -21,7 +21,7 @@
          scribble/core
          scribble/html-properties
          scribble/tag
-         scribble/private/manual-class-struct ; really shouldn't be here... see dynamic-require-doc
+         scribble/private/manual-class-struct ; really shouldn't be here... see make-isolated-namespace
          scribble/private/run-pdflatex
          setup/xref
          scribble/xref
@@ -1460,7 +1460,9 @@
           "render"
           (with-record-error
            (doc-src-file doc)
-           (lambda () (send renderer render (list v) (list dest-dir) ri))
+           (lambda ()
+             (parameterize ([current-namespace (make-isolated-namespace)])
+               (send renderer render (list v) (list dest-dir) ri)))
            void))
          (unless (or latex-dest (main-doc? doc))
            ;; Since dest dir is the same place as pre-built documentation,
@@ -1487,31 +1489,31 @@
   (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
     body ...))
 
+(define (make-isolated-namespace)
+  ;; For loading documents or contexts where deserialization
+  ;;  might load additional modules.
+  (let ([p (make-empty-namespace)]
+        [ns (namespace-anchor->empty-namespace anchor)])
+    (namespace-attach-module ns 'scribble/base-render p)
+    (namespace-attach-module ns 'scribble/html-render p)
+    ;; This is here for de-serialization; we need a better repair than
+    ;;  hard-wiring the "manual.rkt" library:
+    (namespace-attach-module ns 'scribble/private/manual-class-struct p)
+    p))
+
 (define (dynamic-require-doc mod-path)
   ;; Use a separate namespace so that we don't end up with all the
   ;;  documentation loaded at once.
-  ;; Use a custodian to compensate for examples executed during the build
-  ;;  that may not be entirely clean (e.g., leaves a stuck thread).
-  (let ([p (make-empty-namespace)]
-        [c (make-custodian)]
-        [ch (make-channel)]
-        [ns (namespace-anchor->empty-namespace anchor)])
-    (parameterize ([current-custodian c])
-      (namespace-attach-module ns 'scribble/base-render p)
-      (namespace-attach-module ns 'scribble/html-render p)
-      ;; This is here for de-serialization; we need a better repair than
-      ;;  hard-wiring the "manual.rkt" library:
-      (namespace-attach-module ns 'scribble/private/manual-class-struct p)
-      (parameterize ([current-namespace p])
-        (call-in-nested-thread (lambda ()
-                                 (define sub
-                                   (if (and (pair? mod-path)
-                                            (eq? (car mod-path) 'submod))
-                                       (append mod-path '(doc))
-                                       `(submod ,mod-path doc)))
-                                 (if (module-declared? sub #t)
-                                     (dynamic-require sub 'doc)
-                                     (dynamic-require mod-path 'doc))))))))
+  (parameterize ([current-namespace (make-isolated-namespace)])
+    (call-in-nested-thread (lambda ()
+                             (define sub
+                               (if (and (pair? mod-path)
+                                        (eq? (car mod-path) 'submod))
+                                   (append mod-path '(doc))
+                                   `(submod ,mod-path doc)))
+                             (if (module-declared? sub #t)
+                                 (dynamic-require sub 'doc)
+                                 (dynamic-require mod-path 'doc))))))
 
 (define (write- latex-dest vers doc name datas prep! final!)
   (let* ([filename (sxref-path latex-dest doc name)])
