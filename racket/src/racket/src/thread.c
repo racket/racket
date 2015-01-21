@@ -1845,7 +1845,13 @@ void scheme_set_atexit(Scheme_At_Exit_Proc p)
 
 void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
 {
-  if (!cust_closers) {
+#if defined(MZ_USE_PLACES)
+# define RUNNING_IN_ORIGINAL_PLACE (scheme_current_place_id == 0)
+#else
+# define RUNNING_IN_ORIGINAL_PLACE 1
+#endif
+
+  if (!cust_closers && RUNNING_IN_ORIGINAL_PLACE) {
     if (replacement_at_exit) {
       replacement_at_exit(do_run_atexit_closers_on_all);
     } else {
