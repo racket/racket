@@ -59,7 +59,7 @@
   (test-string 'chinese #f "2006/5/4 星期四")
   (test-string 'chinese #t "2006/5/4 星期四 03:02:01")
   (test-string 'german #f "4. Mai 2006")
-  (test-string 'german #t "4. Mai 2006, 03.02")
+  (test-string 'german #t "4. Mai 2006, 03:02")
   (test-string 'indian #f "4-5-2006")
   (test-string 'indian #t "4-5-2006 3:02:01am")
   (test-string 'irish #f "Thursday, 4th May 2006")
