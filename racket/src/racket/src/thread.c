@@ -1823,6 +1823,8 @@ void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt)
      will have terminated everything else anyway. For a
      polite exit, other threads can run. */
 
+  log_peak_memory_use();
+
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {  
@@ -1833,7 +1835,6 @@ void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt)
 
 void do_run_atexit_closers_on_all()
 {
-  log_peak_memory_use();
   scheme_run_atexit_closers_on_all(NULL);
 }
 
@@ -9095,7 +9096,9 @@ static void inform_GC(int master_gc, int major_gc,
 {
   Scheme_Logger *logger;
 
-  if (!master_gc && (pre_used > max_gc_pre_used_bytes))
+  if (!master_gc 
+      && (pre_used > max_gc_pre_used_bytes)
+      && (max_gc_pre_used_bytes >= 0))
     max_gc_pre_used_bytes = pre_used;
 
   logger = scheme_get_gc_logger();
@@ -9168,19 +9171,24 @@ static void inform_GC(int master_gc, int major_gc,
 static void log_peak_memory_use()
 {
   Scheme_Logger *logger;
-  logger = scheme_get_gc_logger();
-  if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
-    char buf[256], nums[128], *num;
-    intptr_t buflen;
-    num = gc_num(nums, max_gc_pre_used_bytes);
-    sprintf(buf,
-            "" PLACE_ID_FORMAT "atexit peak was %sK",
+  if (max_gc_pre_used_bytes > 0) {
+    logger = scheme_get_gc_logger();
+    if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
+      char buf[256], nums[128], *num;
+      intptr_t buflen;
+      memset(nums, 0, sizeof(nums));
+      num = gc_num(nums, max_gc_pre_used_bytes);
+      sprintf(buf,
+              "" PLACE_ID_FORMAT "atexit peak was %sK",
 #ifdef MZ_USE_PLACES
-            scheme_current_place_id,
+              scheme_current_place_id,
 #endif
-            num);
-    buflen = strlen(buf);
-    scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, scheme_false);
+              num);
+      buflen = strlen(buf);
+      scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, scheme_false);
+      /* Setting to a negative value ensures that we log the peak only once: */
+      max_gc_pre_used_bytes = -1;
+    }
   }
 }
 
