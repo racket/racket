@@ -518,8 +518,9 @@
 (struct integer-in-ctc (start end)
   #:property prop:flat-contract
   (build-flat-contract-property
-   #:name (λ (ctc) `(integer-in ,(integer-in-ctc-start ctc)
-                                ,(integer-in-ctc-end ctc)))
+   #:name (λ (ctc) 
+            `(integer-in ,(integer-in-ctc-start ctc)
+                         ,(integer-in-ctc-end ctc)))
    #:first-order (λ (ctc)
                    (define start (integer-in-ctc-start ctc))
                    (define end (integer-in-ctc-end ctc))
@@ -543,7 +544,14 @@
 
 (define/final-prop (integer-in start end)
   (check-two-args 'integer-in start end exact-integer? exact-integer?)
-  (integer-in-ctc start end))
+  (if (= start end)
+      
+      ;; won't fail, but gets us a contract struct
+      ;; something seems safer to always produce 
+      ;; from a contract operation
+      (coerce-contract 'integer-in start)
+      
+      (integer-in-ctc start end)))
 
 (define/final-prop (real-in start end)
   (check-two-args 'real-in start end real? real?)
