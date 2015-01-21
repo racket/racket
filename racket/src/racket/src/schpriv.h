@@ -4136,7 +4136,7 @@ typedef struct Scheme_Place_Async_Channel {
   intptr_t delta;
   intptr_t wr_ref, rd_ref; /* ref counts on readers and writers */
 #if defined(MZ_USE_PLACES)
-  mzrt_mutex *lock;
+  mzrt_mutex *lock; /* no allocation while this lock is held */
 #endif
   Scheme_Object **msgs;
   void **msg_memory;
@@ -4177,7 +4177,7 @@ typedef struct Scheme_Place {
 typedef struct Scheme_Place_Object {
   Scheme_Object so;
 #if defined(MZ_USE_PLACES)
-  mzrt_mutex *lock;
+  mzrt_mutex *lock; /* no allocation or place-channel locks while this lock is held */
   mzrt_sema *pause;
 #endif
   char die;
