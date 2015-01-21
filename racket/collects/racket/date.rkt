@@ -118,7 +118,7 @@
                        [(12) "Dezember"]
                        [else ""])
                      " " year)
-               (list ", " hour24 "." minute))]
+               (list ", " hour24 ":" minute))]
       [(irish) 
        (values (list week-day ", " day day-th " " month " " year)
                (list ", " hour12 ":" minute am-pm))]
