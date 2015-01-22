@@ -158,11 +158,11 @@ otherwise platform-independent.}
 Sets elements in @racket[results] to report current performance
 statistics. If @racket[thd] is not @racket[#f], a particular set of
 thread-specific statistics are reported, otherwise a different set of
-global statics are reported.
+global (within the current @tech{place}) statics are reported.
 
-For global statistics, up to @math{11} elements are set in the vector,
+For global statistics, up to @math{12} elements are set in the vector,
 starting from the beginning. If @racket[results] has @math{n} elements
-where @math{n < 11}, then the @math{n} elements are set to the first
+where @math{n < 12}, then the @math{n} elements are set to the first
 @math{n} performance-statistics values. The reported statistics values
 are as follows, in the order that they are set within
 @racket[results]:
@@ -179,7 +179,7 @@ are as follows, in the order that they are set within
   by @racket[current-gc-milliseconds].}
 
   @item{@racket[3]: The number of garbage collections performed since
-  start-up.}
+  start-up within the current @tech{place}.}
 
   @item{@racket[4]: The number of thread context switches performed since
   start-up.}
@@ -206,6 +206,9 @@ are as follows, in the order that they are set within
   @item{@racket[10]: The number of bytes allocated for machine code
   that is not reported by @racket[current-memory-use].}
 
+  @item{@racket[11]: The peak number of allocated bytes just
+  before a garbage collection.}
+
  ]
 
 For thread-specific statistics, up to @math{4} elements are set in the
@@ -227,4 +230,5 @@ vector:
   thread's continuation.}
 
  ]
-}
+
+@history[#:changed "6.1.1.8" @elem{Added vector position @racket[11] for global statistics.}]}

@@ -9320,6 +9320,8 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
     
     switch (SCHEME_VEC_SIZE(v)) {
     default:
+    case 12:
+      set_perf_vector(v, ov, 11, scheme_make_integer(max_gc_pre_used_bytes));
     case 11:
       set_perf_vector(v, ov, 10, scheme_make_integer(scheme_jit_malloced));
     case 10:

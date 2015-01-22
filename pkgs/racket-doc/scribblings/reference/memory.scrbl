@@ -312,7 +312,9 @@ any custodians.
 
 When Racket is compiled without support for memory accounting, the
 estimate is the same (i.e., all memory) for any individual custodian;
-see also @racket[custodian-memory-accounting-available?].}
+see also @racket[custodian-memory-accounting-available?].
+
+See also @racket[vector-set-performance-stats!].}
 
 @defproc[(dump-memory-stats [v any/c] ...) any]{
 
