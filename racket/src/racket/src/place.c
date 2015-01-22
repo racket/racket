@@ -3266,8 +3266,8 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
           mzrt_mutex_unlock(ch->lock);
 
           new_msgs = GC_master_malloc(sizeof(Scheme_Object*) * sz * 2);
-          new_msg_memory = GC_master_malloc(sizeof(void*) * ch->size * 2);
-          new_chains = GC_master_malloc(sizeof(Scheme_Object*) * ch->size * 2);
+          new_msg_memory = GC_master_malloc(sizeof(void*) * sz * 2);
+          new_chains = GC_master_malloc(sizeof(Scheme_Object*) * sz * 2);
 
           mzrt_mutex_lock(ch->lock);
         }
