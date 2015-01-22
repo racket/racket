@@ -177,9 +177,7 @@ THREAD_LOCAL_DECL(static int thread_swap_count);
 THREAD_LOCAL_DECL(int scheme_did_gc_count);
 THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
 
-#ifdef MZ_PRECISE_GC
 THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
-#endif
 
 SHARED_OK static int init_load_on_demand = 1;
 
@@ -8935,6 +8933,10 @@ static void get_ready_for_GC()
 {
   start_this_gc_real_time = scheme_get_inexact_milliseconds();
   start_this_gc_time = scheme_get_process_milliseconds();
+
+#ifndef MZ_PRECISE_GC
+  max_gc_pre_used_bytes = GC_get_memory_use();
+#endif
 
 #ifdef MZ_USE_FUTURES
   scheme_future_block_until_gc();
