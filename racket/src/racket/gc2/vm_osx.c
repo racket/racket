@@ -181,6 +181,8 @@ static void *os_alloc_pages(size_t len)
 
   retval = vm_allocate(task_self, (vm_address_t*)&r, len, TRUE);
   if(retval != KERN_SUCCESS) {
+    if (retval == KERN_NO_SPACE)
+      return NULL;
     GCPRINT(GCOUTF, "Couldn't allocate memory: %s\n", mach_error_string(retval));
     abort();
   }
