@@ -3718,7 +3718,8 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   
   /* Add a couple of extra slots to computed let-depth, as needed
      by various inlined operations. */
-  max_depth = WORDS_TO_BYTES(data->max_let_depth + gdata.max_extra + 4);
+# define JIT_RUNSTACK_RESERVE 4
+  max_depth = WORDS_TO_BYTES(data->max_let_depth + gdata.max_extra + JIT_RUNSTACK_RESERVE);
   if (gdata.max_tail_depth > max_depth)
     max_depth = gdata.max_tail_depth;
 
@@ -3807,7 +3808,7 @@ static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *dat
   ndata->arity_code = sjc.on_demand_jit_arity_code;
   ndata->u2.orig_code = data;
   ndata->closure_size = data->closure_size;
-  ndata->max_let_depth = 0x4 | (case_lam ? 0x2 : 0) | (clear_code_after_jit ? 0x1 : 0);
+  ndata->max_let_depth = (JIT_RUNSTACK_RESERVE * sizeof(void*)) | (case_lam ? 0x2 : 0) | (clear_code_after_jit ? 0x1 : 0);
   ndata->tl_map = data->tl_map;
 
 #if 0
