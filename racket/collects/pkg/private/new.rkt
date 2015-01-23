@@ -97,24 +97,41 @@ EOS
         (lambda () (display #<<EOS
 language: c
 
-# Supply at least one RACKET_VERSION environment variable definition
-# here. RACKET_VERSION is used by the install-racket.sh script
-# (specifed below under before_install) to select the version of
-# Racket to download and install.
+# Based from: https://github.com/greghendershott/travis-racket
+
+# Optional: To use Travis CI's newer container infrastucture,
+# un-comment the following line. (Also be sure RACKET_DIR is set to
+# somewhere like ~/racket that doesn't require sudo.)
 #
-# If you supply more than one, you can create multiple builds (a
-# Travis-CI build matrix resulting in multiple builds). You can use
-# this to test against multiple Racket versions.
+# sudo: false
+
 env:
- - RACKET_VERSION=6.0
- - RACKET_VERSION=6.0.1
- - RACKET_VERSION=6.1
- - RACKET_VERSION=6.1.1
- - RACKET_VERSION=HEAD
+  global:
+    # Supply a global RACKET_DIR environment variable. This is where
+    # Racket will be installed. A good idea is to use ~/racket because
+    # that doesn't require sudo to install and is therefore compatible
+    # with Travis CI's newer container infrastructure.
+    - RACKET_DIR=~/racket
+  matrix:
+    # Supply at least one RACKET_VERSION environment variable. This is
+    # used by the install-racket.sh script (run at before_install,
+    # below) to select the version of Racket to download and install.
+    #
+    # Supply more than one RACKET_VERSION (as in the example below) to
+    # create a Travis-CI build matrix to test against multiple Racket
+    # versions.
+    # - RACKET_VERSION=5.3.4
+    # - RACKET_VERSION=5.3.5
+    # - RACKET_VERSION=5.92
+    - RACKET_VERSION=6.0
+    - RACKET_VERSION=6.1
+    - RACKET_VERSION=6.1.1
+    - RACKET_VERSION=HEAD
 
 before_install:
 - git clone https://github.com/greghendershott/travis-racket.git
 - cat travis-racket/install-racket.sh | bash # pipe to bash not sh!
+- export PATH="${RACKET_DIR}/bin:${PATH}" #install-racket.sh can't set for us
 
 install:
 
