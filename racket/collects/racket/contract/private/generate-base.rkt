@@ -36,6 +36,10 @@
      (rand-choice [1/2 -1]  [else 1])
      (exact-nonnegative-integer-gen fuel)))
 
+(define (exact-integer-gen fuel)
+  (* (rand-choice [1/2 -1]  [else 1])
+     (exact-nonnegative-integer-gen fuel)))
+
 (define (exact-nonnegative-integer-gen fuel)
   (rand-choice
    [1/10 0]
@@ -63,6 +67,9 @@
    ;; generate integer? 
    integer?
    integer-gen
+   
+   exact-integer?
+   exact-integer-gen
    
    exact-nonnegative-integer?
    exact-nonnegative-integer-gen
