@@ -112,7 +112,7 @@ Contracts in Racket are subdivided into three different categories:
 
 For more about this hierarchy, see @tech{chaperones} and
 a research paper on chaperones, impersonators, and how they can be used to 
-implement contracts~@cite{Strickland12}.
+implement contracts @cite{Strickland12}.
 
 @local-table-of-contents[]
 
