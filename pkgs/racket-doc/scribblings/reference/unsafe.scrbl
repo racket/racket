@@ -284,7 +284,7 @@ fixnum).}
 
 @deftogether[(
 @defproc[(unsafe-fxvector-length [v fxvector?]) fixnum?]
-@defproc[(unsafe-fxvector-ref [v fxvector?] [k fixnum?]) any/c]
+@defproc[(unsafe-fxvector-ref [v fxvector?] [k fixnum?]) fixnum?]
 @defproc[(unsafe-fxvector-set! [v fxvector?] [k fixnum?] [x fixnum?]) void?]
 )]{
 
@@ -296,7 +296,7 @@ fixnum).}
 
 @deftogether[(
 @defproc[(unsafe-flvector-length [v flvector?]) fixnum?]
-@defproc[(unsafe-flvector-ref [v flvector?] [k fixnum?]) any/c]
+@defproc[(unsafe-flvector-ref [v flvector?] [k fixnum?]) flonum?]
 @defproc[(unsafe-flvector-set! [v flvector?] [k fixnum?] [x flonum?]) void?]
 )]{
 
@@ -423,7 +423,7 @@ but further constrained to consume or produce a fixnum.
 
 @deftogether[(
 @defproc[(unsafe-extflvector-length [v extflvector?]) fixnum?]
-@defproc[(unsafe-extflvector-ref [v extflvector?] [k fixnum?]) any/c]
+@defproc[(unsafe-extflvector-ref [v extflvector?] [k fixnum?]) extflonum?]
 @defproc[(unsafe-extflvector-set! [v extflvector?] [k fixnum?] [x extflonum?]) void?]
 )]{
 
