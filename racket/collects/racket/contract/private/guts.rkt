@@ -446,19 +446,35 @@
    (λ (ctc) 
      (define v (=-contract-val ctc))
      (λ (fuel)
-	(λ ()
-	   (case (random 5)
-	     [(0) (cond
-		   [(exact? v)
-		    (define iv (exact->inexact v))
-		    (if (= iv v) iv v)]
-		   [(and (inexact? v) 
-			 (not (memv v '(+inf.0 -inf.0 +inf.f -inf.f 
-					nan.0 nan.f))))
-		    (define ev (inexact->exact v))
-		    (if (= ev v) ev v)]
-		   [else v])]
-	     [else v]))))))
+       (cond
+         [(zero? v)
+          ;; zero has a whole bunch of different numbers that
+          ;; it could be, so just pick one of them at random
+          (λ ()
+            (oneof '(0
+                     -0.0 0.0 0.0f0 -0.0f0
+                     0.0+0.0i 0.0f0+0.0f0i 0+0.0i 0.0+0i)))]
+         [else
+          (λ ()
+            (case (random 10)
+              [(0)
+               (define inf/nan '(+inf.0 -inf.0 +inf.f -inf.f +nan.0 +nan.f))
+               ;; try the inexact/exact variant (if there is one)
+               (cond
+                 [(exact? v)
+                  (define iv (exact->inexact v))
+                  (if (= iv v) iv v)]
+                 [(and (inexact? v) (not (memv v inf/nan)))
+                  (define ev (inexact->exact v))
+                  (if (= ev v) ev v)]
+                 [else v])]
+              [(1)
+               ;; try to add an inexact imaginary part
+               (define c (+ v 0+0.0i))
+               (if (= c v) c v)]
+              [else
+               ;; otherwise, just stick with the original number (80% of the time)
+               v]))])))))
 
 (define-struct regexp/c (reg name)
   #:property prop:custom-write contract-custom-write-property-proc
