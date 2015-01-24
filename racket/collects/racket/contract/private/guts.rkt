@@ -445,7 +445,20 @@
    #:generate
    (λ (ctc) 
      (define v (=-contract-val ctc))
-     (λ (fuel) (λ () v)))))
+     (λ (fuel)
+	(λ ()
+	   (case (random 5)
+	     [(0) (cond
+		   [(exact? v)
+		    (define iv (exact->inexact v))
+		    (if (= iv v) iv v)]
+		   [(and (inexact? v) 
+			 (not (memv v '(+inf.0 -inf.0 +inf.f -inf.f 
+					nan.0 nan.f))))
+		    (define ev (inexact->exact v))
+		    (if (= ev v) ev v)]
+		   [else v])]
+	     [else v]))))))
 
 (define-struct regexp/c (reg name)
   #:property prop:custom-write contract-custom-write-property-proc
