@@ -66,8 +66,14 @@ values would be equal. See also @racket[gen:equal+hash] and @racket[prop:imperso
 Two values are @racket[eqv?] if and only if they are @racket[eq?],
 unless otherwise specified for a particular datatype.
 
-The @tech{number} and @tech{character} datatypes are the only ones for which
-@racket[eqv?] differs from @racket[eq?].
+The @tech{number} and @tech{character} datatypes are the only ones for
+which @racket[eqv?] differs from @racket[eq?]. Two numbers are
+@racket[eqv?] when they have the same exactness, precision, and are
+both equal and non-zero, both @racket[+0.0], both @racket[+0.0f0], both
+@racket[-0.0], both @racket[-0.0f0], both @racket[+nan.0], or both
+@racket[+nan.f]---considering real and imaginary components separately
+in the case of @tech{complex numbers}. Two characters are
+@racket[eqv?] when their @racket[char->integer] results are equal.
 
 @examples[
 (eqv? 'yes 'yes)
