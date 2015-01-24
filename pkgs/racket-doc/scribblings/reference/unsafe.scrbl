@@ -282,6 +282,18 @@ fixnum).}
 
 
 @deftogether[(
+@defproc[(unsafe-fxvector-length [v fxvector?]) fixnum?]
+@defproc[(unsafe-fxvector-ref [v fxvector?] [k fixnum?]) any/c]
+@defproc[(unsafe-fxvector-set! [v fxvector?] [k fixnum?] [x fixnum?]) void?]
+)]{
+
+Unsafe versions of @racket[fxvector-length], @racket[fxvector-ref], and
+@racket[fxvector-set!]. A @tech{fxvector}'s size can never be larger than a
+@tech{fixnum} (so even @racket[fxvector-length] always returns a
+fixnum).}
+
+
+@deftogether[(
 @defproc[(unsafe-flvector-length [v flvector?]) fixnum?]
 @defproc[(unsafe-flvector-ref [v flvector?] [k fixnum?]) any/c]
 @defproc[(unsafe-flvector-set! [v flvector?] [k fixnum?] [x flonum?]) void?]
