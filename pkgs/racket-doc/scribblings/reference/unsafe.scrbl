@@ -2,6 +2,7 @@
 @(require "mz.rkt"
           (for-label racket/unsafe/ops
                      racket/flonum
+                     racket/fixnum
                      racket/extflonum
                      (only-in ffi/vector
                               f64vector?
@@ -278,6 +279,18 @@ always returns a fixnum).}
 Unsafe versions of @racket[bytes-length], @racket[bytes-ref], and
 @racket[bytes-set!]. A bytes's size can never be larger than a
 @tech{fixnum} (so even @racket[bytes-length] always returns a
+fixnum).}
+
+
+@deftogether[(
+@defproc[(unsafe-fxvector-length [v fxvector?]) fixnum?]
+@defproc[(unsafe-fxvector-ref [v fxvector?] [k fixnum?]) any/c]
+@defproc[(unsafe-fxvector-set! [v fxvector?] [k fixnum?] [x fixnum?]) void?]
+)]{
+
+Unsafe versions of @racket[fxvector-length], @racket[fxvector-ref], and
+@racket[fxvector-set!]. A @tech{fxvector}'s size can never be larger than a
+@tech{fixnum} (so even @racket[fxvector-length] always returns a
 fixnum).}
 
 
