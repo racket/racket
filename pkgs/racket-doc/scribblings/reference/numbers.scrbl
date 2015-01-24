@@ -213,7 +213,8 @@ number, @racket[#f] otherwise.}
 
 @defproc[(inexact->exact [z number?]) exact?]{ Coerces @racket[z] to an
  exact number. If @racket[z] is already exact, it is returned. If @racket[z]
- is @racket[+inf.0], @racket[-inf.0], or @racket[+nan.0], then the
+ is @racket[+inf.0], @racket[-inf.0], @racket[+nan.0],
+ @racket[+inf.f], @racket[-inf.f], or @racket[+nan.f], then the
  @exnraise[exn:fail:contract].
 
 @mz-examples[(inexact->exact 1) (inexact->exact 1.0)]}

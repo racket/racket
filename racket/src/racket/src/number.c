@@ -3948,17 +3948,13 @@ scheme_inexact_to_exact (int argc, Scheme_Object *argv[])
   if (SCHEME_INTP(o))
     return o;
   t = _SCHEME_TYPE(o);
-  if (t == scheme_double_type
-#ifdef MZ_USE_SINGLE_FLOATS
-      || t == scheme_float_type
-#endif
-      ) {
-    double d = SCHEME_FLOAT_VAL(o);
+  if (t == scheme_double_type) {
+    double d = SCHEME_DBL_VAL(o);
 
     /* Try simple case: */
     Scheme_Object *i = scheme_make_integer((intptr_t)d);
     if ((double)SCHEME_INT_VAL(i) == d) {
-# ifdef NAN_EQUALS_ANYTHING
+#ifdef NAN_EQUALS_ANYTHING
       if (!MZ_IS_NAN(d))
 #endif
 	return i;
@@ -3966,6 +3962,22 @@ scheme_inexact_to_exact (int argc, Scheme_Object *argv[])
 
     return scheme_rational_from_double(d);
   }
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (t == scheme_float_type) {
+    float d = SCHEME_FLT_VAL(o);
+
+    /* Try simple case: */
+    Scheme_Object *i = scheme_make_integer((intptr_t)d);
+    if ((double)SCHEME_INT_VAL(i) == d) {
+# ifdef NAN_EQUALS_ANYTHING
+      if (!MZ_IS_NAN(d))
+# endif
+	return i;
+    }
+
+    return scheme_rational_from_float(d);
+  }
+#endif
   if (t == scheme_bignum_type)
     return o;
   if (t == scheme_rational_type)
@@ -4062,13 +4074,6 @@ extfl_to_inexact (int argc, Scheme_Object *argv[])
   return NULL;
 #endif
 }
-
-#ifdef MZ_USE_SINGLE_FLOATS
-int scheme_check_float(const char *where, float f, const char *dest)
-{
-  return scheme_check_double(where, f, dest);
-}
-#endif
 
 GEN_BIN_PROT(bin_bitwise_and);
 GEN_BIN_PROT(bin_bitwise_or);
