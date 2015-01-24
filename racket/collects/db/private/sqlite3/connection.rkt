@@ -354,7 +354,7 @@
           (define s (simplify-status full-s))
           (cond [(and (= s SQLITE_BUSY) (< iteration busy-retry-limit))
                  (sleep busy-retry-delay)
-                 (handle* who thunk (add1 iteration))]
+                 (handle* who thunk (add1 iteration) pst)]
                 [else
                  (when (> iteration 0)
                    (log-db-debug "continuing ~s with ~s after SQLITE_BUSY x ~s"
