@@ -1406,7 +1406,8 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                              2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_OMITABLE
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("unsafe-fxvector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_fxvector_set, "unsafe-fxvector-set!",
