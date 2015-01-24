@@ -85,7 +85,7 @@
       [(or (boolean? konst) (char? konst) (null? konst))
        (values #`(eq? #,konst #,v)
                "eq?")]
-      [(or (string? konst) (bytes? konst))
+      [(or (string? konst) (bytes? konst) (equal? konst +nan.0) (equal? konst +nan.f))
        (values #`(equal? #,konst #,v)
                "equal?")]
       [(number? konst)

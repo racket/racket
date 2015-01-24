@@ -27,6 +27,7 @@
 
 ;; test =, eq?, and equal? contract random generators
 (check-not-exn (λ () (test-contract-generation 0)))
+(check-not-exn (λ () (test-contract-generation +nan.0)))
 (check-not-exn (λ () (test-contract-generation 'x)))
 (check-not-exn (λ () (test-contract-generation "x")))
 

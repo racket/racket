@@ -251,7 +251,7 @@
                                  `',x
                                  x)
                              name))]
-      [(or (bytes? x) (string? x))
+      [(or (bytes? x) (string? x) (equal? +nan.0 x) (equal? +nan.f x))
        (make-equal-contract x (if (name-default? name) x name))]
       [(number? x)
        (make-=-contract x (if (name-default? name) x name))]

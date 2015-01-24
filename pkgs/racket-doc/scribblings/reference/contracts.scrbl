@@ -56,10 +56,12 @@ ordinary Racket values that double as contracts, including
 @racket[null], which are treated as contracts that recognize
 themselves, using @racket[eq?], }
 
-@item{@tech{strings} and @tech{byte strings}, which are treated as contracts
+@item{@tech{strings}, @tech{byte strings}, @racket[+nan.0], and
+       @racket[+nan.f], which are treated as contracts
 that recognize themselves using @racket[equal?], }
 
-@item{@tech{numbers}, which are treated as contracts
+@item{@tech{numbers} (except @racket[+nan.0] and
+       @racket[+nan.f]), which are treated as contracts
 that recognize themselves using @racket[=],}
 
 @item{@tech{regular expressions}, which are treated as contracts
@@ -113,6 +115,9 @@ Contracts in Racket are subdivided into three different categories:
 For more about this hierarchy, see @tech{chaperones} and
 a research paper on chaperones, impersonators, and how they can be used to 
 implement contracts @cite{Strickland12}.
+
+@history[#:changed "6.1.1.8" @list{Changed @racket[+nan.0] and @racket[+nan.f] to
+                                           be @racket[equal?]-based contracts.}]
 
 @local-table-of-contents[]
 

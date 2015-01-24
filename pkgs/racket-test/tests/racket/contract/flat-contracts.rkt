@@ -58,6 +58,8 @@
   (test-flat-contract "x" "x" 'x)
   (test-flat-contract 1 1 2)
   (test-flat-contract #e1 #i1.0 'x)
+  (test-flat-contract +nan.0 +nan.0 +nan.f)
+  (test-flat-contract +nan.f +nan.f +nan.0)
   (test-flat-contract #rx".x." "axq" "x")
   (test-flat-contract #rx#".x." #"axq" #"x")
   (test-flat-contract #rx".x." #"axq" #"x")
