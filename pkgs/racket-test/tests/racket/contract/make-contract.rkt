@@ -3,7 +3,8 @@
 (require "test-util.rkt")
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace 'racket/contract)])
+                (make-basic-contract-namespace 'racket/contract 
+                                               'racket/contract/private/blame)])
 (contract-eval
  '(define proj:add1->sub1
     (make-contract
@@ -133,6 +134,29 @@
  '(contract proj:bad-prime-box-list/c (list (box 2) (box 3)) 'pos 'neg)
  exn:fail?)
 
+  (test/pos-blame
+   'build-chaperone-contract-property1
+   '(let ()
+      (struct val-first-none ()
+        #:property prop:chaperone-contract
+        (build-chaperone-contract-property
+         #:val-first-projection (λ (me)
+                                  (λ (blame)
+                                    (λ (val)
+                                      (λ (neg-party)
+                                        (raise-blame-error
+                                         blame
+                                         val
+                                         "bad")))))
+         #:name (λ (x) 'the-name)
+         ;; make a very aproximate first-order check
+         #:first-order (λ (c) (λ (x) #t))
+         #:stronger (λ (x y) #f)))
+      
+      (((contract-projection (val-first-none))
+        (make-blame (srcloc #f #f #f #f #f) 5 (λ () 'the-name) 'pos 'neg #t))
+       5)))
+  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  make-flat-contract

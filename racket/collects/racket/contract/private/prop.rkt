@@ -281,8 +281,9 @@
               (if (skip-projection-wrapper?)
                   get-projection
                   (projection-wrapper get-projection)))]
-            [else (get-first-order-projection
-                   get-name get-first-order)])]
+            [else (val-first-projection->projection get-val-first-projection
+                                                    get-name
+                                                    get-first-order)])]
          [stronger (or stronger weakest)])
 
     (mk get-name get-first-order
@@ -341,8 +342,18 @@
 
 (define (weakest a b) #f)
 
-(define ((get-first-order-projection get-name get-first-order) c)
-  (first-order-projection (get-name c) (get-first-order c)))
+(define ((val-first-projection->projection get-val-first-projection
+                                           get-name
+                                           get-first-order) c)
+  (cond
+    [(flat-contract-struct? c)
+     (first-order-projection (get-name c) (get-first-order c))]
+    [else
+     (define vfp (get-val-first-projection c))
+     (λ (blame)
+       (define vp (vfp blame))
+       (λ (val)
+         ((vp val) #f)))]))
 
 (begin-encourage-inline
   (define (first-order-projection name first-order)
