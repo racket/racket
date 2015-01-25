@@ -6,6 +6,17 @@
 (require racket/extflonum
          "for-util.rkt")
 
+; minimal tests for when extflonum are no available
+(test "+inf.t" format "~a" +inf.t)
+(test "-inf.t" format "~a" -inf.t)
+(test "+nan.t" format "~a" +nan.t)
+(test "7.0t0" format "~a" 007.000t000)
+(test "-7.0t0" format "~a" -007.000t000)
+(test #t extflonum? 7.t0)
+(test #f extflonum? 7.0)
+(test #f number? 7.t0)
+(test #t number? 7.0)
+
 (when (extflonum-available?)
   ;; ----------------------------------------
 
