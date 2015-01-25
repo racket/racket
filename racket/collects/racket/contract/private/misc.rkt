@@ -545,12 +545,7 @@
 (define/final-prop (integer-in start end)
   (check-two-args 'integer-in start end exact-integer? exact-integer?)
   (if (= start end)
-      
-      ;; won't fail, but gets us a contract struct
-      ;; something seems safer to always produce 
-      ;; from a contract operation
-      (coerce-contract 'integer-in start)
-      
+      (and/c start exact?)
       (integer-in-ctc start end)))
 
 (define/final-prop (real-in start end)

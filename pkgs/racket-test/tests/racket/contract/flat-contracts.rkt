@@ -40,6 +40,7 @@
   (test-flat-contract '(integer-in 0 10) 0 11)
   (test-flat-contract '(integer-in 0 10) 10 3/2)
   (test-flat-contract '(integer-in 0 10) 1 1.0)
+  (test-flat-contract '(integer-in 1 1) 1 1.0)
   (test-flat-contract '(real-in 1 10) 3/2 20)
   (test-flat-contract '(string-len/c 3) "ab" "abc")
   (test-flat-contract 'natural-number/c 5 -1)
