@@ -1012,7 +1012,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
-                                                            | SCHEME_PRIM_WANTS_FLONUM_FIRST
+                                                            | SCHEME_PRIM_WANTS_FLONUM_BOTH
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_add_global_constant("flexpt", p, env);
 
@@ -1277,7 +1277,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
-                                                            | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
+                                                            | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
   scheme_add_global_constant("extflexpt", p, env);
 }
