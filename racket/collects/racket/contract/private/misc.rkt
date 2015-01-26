@@ -441,7 +441,9 @@
   (check-two-args 'between/c x y real? real?))
 (define/final-prop (between/c x y)
   (check-between/c x y)
-  (make-between/c-s x y))
+  (if (= x y)
+      (coerce-contract 'between/c x)
+      (make-between/c-s x y)))
 
 (define (make-</c->/c-contract-property name </> -/+ less/greater)
   (build-flat-contract-property

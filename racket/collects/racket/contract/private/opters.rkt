@@ -195,7 +195,9 @@
                                      [that that])
                          (syntax (<= this that))))))
               #:chaperone #t
-              #:name #''(between/c n m))))))]
+              #:name #'(if (= n m)
+                           n
+                           '(between/c n m)))))))]
     [_ (opt/unknown opt/i opt/info stx)]))
 
 (define (raise-opt-between/c-error blame val lo hi)

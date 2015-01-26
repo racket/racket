@@ -177,6 +177,8 @@
   
   (test-flat-contract '(between/c 1 10) 3 11)
   (test-flat-contract '(between/c 1 10) 4 1+1i)
+  (test-flat-contract '(between/c 9 9) 9 10)
+  (test-flat-contract '(between/c 9 9) 9.0 10)
   (test-flat-contract '(<=/c 1) 0 1+1i)
   (test-flat-contract '(</c 1) 0 1+1i)
   (test-flat-contract '(>/c 1) 4 1+1i)
