@@ -1214,12 +1214,16 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	      break;
 	    } else {
 	      if (fail_with_error) {
+                int started = 0;
                 if (!phase 
                     && srcm->me->rt->provide_srcs
                     && SCHEME_TRUEP(srcm->me->rt->provide_srcs[i])) {
                   /* Handle simple re-exporting */
                   int j;
                   Scheme_Module *srcm2;
+
+                  start_module(m, env, 0, modidx, 0, 1, base_phase, scheme_null, 0);
+                  started = 1;
 
                   srcmname = srcm->me->rt->provide_srcs[i];
                   srcmname = scheme_modidx_shift(srcmname, srcm->me->src_modidx, srcm->self_modidx);
@@ -1269,7 +1273,8 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
                   Scheme_Config *config;
                   Scheme_Cont_Frame_Data cframe;
 
-                  start_module(m, env, 0, modidx, 0, 1, base_phase, scheme_null, 0);
+                  if (!started)
+                    start_module(m, env, 0, modidx, 0, 1, base_phase, scheme_null, 0);
                   ns = scheme_make_namespace(0, NULL);
                   a[0] = (Scheme_Object *)env;
                   a[1] = srcm->modname;
