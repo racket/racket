@@ -174,6 +174,15 @@
 
   (define (port? x) (or (input-port? x) (output-port? x)))
 
+  (define writeln
+    (case-lambda
+     [(v) (writeln v (current-output-port))]
+     [(v p) 
+      (unless (output-port? p)
+        (raise-argument-error 'writeln "output-port?" 1 v p))
+      (write v p)
+      (newline p)]))
+  
   (define displayln
     (case-lambda
      [(v) (displayln v (current-output-port))]
@@ -182,6 +191,18 @@
         (raise-argument-error 'displayln "output-port?" 1 v p))
       (display v p)
       (newline p)]))
+  
+  (define println
+    (case-lambda
+      [(v) (println v (current-output-port) 0)]
+      [(v p) (println v p 0)]
+      [(v p d)
+       (unless (output-port? p)
+         (raise-argument-error 'println "output-port?" 1 v p d))
+       (unless (and (number? d) (or (= 0 d) (= d 1)))
+         (raise-argument-error 'println "(or/c 0 1)" 2 v p d))
+       (print v p d)
+       (newline p)]))
 
   ;; -------------------------------------------------------------------------
 
@@ -232,7 +253,7 @@
              path-list-string->path-list find-executable-path
              collection-path collection-file-path load/use-compiled
              guard-evt channel-get channel-try-get channel-put
-             port? displayln
+             port? writeln displayln println
              find-library-collection-paths
              find-library-collection-links
              bytes-environment-variable-name?
