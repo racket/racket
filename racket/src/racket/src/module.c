@@ -3928,6 +3928,7 @@ Scheme_Object *scheme_make_modidx(Scheme_Object *path,
 				  Scheme_Object *resolved)
 {
   Scheme_Modidx *modidx;
+  Scheme_Object *subpath;
 
   if (SCHEME_MODNAMEP(path))
     return path;
@@ -3945,13 +3946,16 @@ Scheme_Object *scheme_make_modidx(Scheme_Object *path,
   modidx->path = path;
 
   /* base is needed only for relative-path strings,
-     `file' forms, and `(submod "." ...)' forms: */
-  if (SCHEME_CHAR_STRINGP(path)
-      || (SCHEME_PAIRP(path)
-          && SAME_OBJ(file_symbol, SCHEME_CAR(path)))
-      || (SCHEME_PAIRP(path)
-          && SAME_OBJ(submod_symbol, SCHEME_CAR(path))
-          && SCHEME_CHAR_STRINGP(SCHEME_CAR(SCHEME_CDR(path)))))
+     `file' forms, path literals, and `(submod ...)' forms: */
+  if (SCHEME_PAIRP(path)
+      && SAME_OBJ(submod_symbol, SCHEME_CAR(path)))
+    subpath = SCHEME_CAR(SCHEME_CDR(path));
+  else
+    subpath = path;
+  if (SCHEME_CHAR_STRINGP(subpath)
+      || (SCHEME_PAIRP(subpath)
+          && SAME_OBJ(file_symbol, SCHEME_CAR(subpath)))
+      || SCHEME_PATHP(subpath))
     modidx->base = base_modidx;
   else
     modidx->base = scheme_false;
