@@ -2809,7 +2809,8 @@ Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path,
 Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
                                            intptr_t phase,
                                            Scheme_Object *mark,
-                                           void *data);
+                                           void *data,
+                                           Scheme_Object **_ref_expr);
 
 void scheme_add_local_syntax(int cnt, Scheme_Comp_Env *env);
 void scheme_set_local_syntax(int pos, Scheme_Object *name, Scheme_Object *val,

@@ -3808,7 +3808,6 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
   EXPLAIN(fprintf(stderr, "%d Resolving %s@%d [skips: %s]: -------------\n", 
                   depth, SCHEME_SYM_VAL(SCHEME_STX_VAL(a)), SCHEME_INT_VAL(orig_phase),
                   scheme_write_to_string(skip_ribs ? skip_ribs : scheme_false, NULL)));
-
   WRAP_POS_INIT(wraps, ((Scheme_Stx *)a)->wraps);
 
   while (1) {

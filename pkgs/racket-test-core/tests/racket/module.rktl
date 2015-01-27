@@ -1301,5 +1301,41 @@
 (module check-contract-out-by-itself racket (provide (contract-out)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `local-require` in a compile-time position:
+
+(module provides-a-for-local-require racket/base
+  (define a 1)
+  (provide a))
+
+(module uses-a-in-macro-rhs racket/base
+  (require (for-syntax racket/base))
+  (provide one)
+  
+  (define-syntax (m stx)
+    (local-require 'provides-a-for-local-require)
+    #`#,a)
+  
+  (define one (m)))
+
+(test 1 dynamic-require ''uses-a-in-macro-rhs 'one)
+
+(module uses-a-in-begin-for-syntax racket/base
+  (require (for-syntax racket/base))
+  (provide one)
+  
+  (begin-for-syntax
+    (define one-ct
+      (let ()
+        (local-require 'provides-a-for-local-require)
+        a)))
+  
+  (define-syntax (m stx)
+    #`#,one-ct)
+  
+  (define one (m)))
+
+(test 1 dynamic-require ''uses-a-in-begin-for-syntax 'one)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

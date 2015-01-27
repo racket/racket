@@ -8022,15 +8022,72 @@ static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_ids,
   return scheme_make_lifted_defn(scheme_sys_wraps(env), _ids, expr, _env);
 }
 
+static Scheme_Object *shift_require_phase(Scheme_Object *e, Scheme_Object *phase, int can_just_meta)
+{
+  Scheme_Object *l, *a;
+
+  l = e;
+  if (SCHEME_STXP(l)) l = SCHEME_STX_VAL(l);
+  if (SCHEME_PAIRP(l)) {
+    a = SCHEME_CAR(l);
+    if (SCHEME_STXP(a)) a = SCHEME_STX_VAL(a);
+
+    if (can_just_meta && SAME_OBJ(a, just_meta_symbol)) {
+      /* Shift any `for-meta` within `just-meta`: */
+      l = SCHEME_CDR(l);
+      if (scheme_proper_list_length(l) >= 1) {
+        a = SCHEME_CAR(l);
+        if (SCHEME_STXP(a)) a = SCHEME_STX_VAL(a);
+        if (SCHEME_FALSEP(a) || SCHEME_INTP(a) || SCHEME_BIGNUMP(a)) {
+          e = scheme_null;
+          for (l = SCHEME_CDR(l); SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+            e = scheme_make_pair(shift_require_phase(SCHEME_CAR(l), phase, 0),
+                                 e);
+          }
+
+          e = scheme_reverse(e);
+          return scheme_make_pair(just_meta_symbol, scheme_make_pair(a, e));
+        } else
+          l = scheme_make_pair(e, scheme_null);        
+      } else
+        l = scheme_make_pair(e, l);
+    } else if (SAME_OBJ(a, for_meta_symbol)) {
+      l = SCHEME_CDR(l);
+      if (SCHEME_PAIRP(l)) {
+        a = SCHEME_CAR(l);
+        if (SCHEME_STXP(a)) a = SCHEME_STX_VAL(a);
+        if (SCHEME_FALSEP(a)) {
+          return e;
+        } else if (SCHEME_INTP(a) || SCHEME_BIGNUMP(a)) {
+          phase = scheme_bin_plus(a, phase);
+          l = SCHEME_CDR(l);
+        } else
+          l = scheme_make_pair(e, scheme_null);
+      } else
+        l = scheme_make_pair(e, scheme_null);
+    } else if (SAME_OBJ(a, for_label_symbol)) {
+      return e;
+    } else if (SAME_OBJ(a, for_syntax_symbol)) {
+      phase = scheme_bin_plus(scheme_make_integer(1), phase);
+      l = SCHEME_CDR(l);
+    } else if (SAME_OBJ(a, for_template_symbol)) {
+      phase = scheme_bin_plus(scheme_make_integer(-1), phase);
+      l = SCHEME_CDR(l);
+    } else
+      l = scheme_make_pair(e, scheme_null);
+  } else
+    l = scheme_make_pair(e, scheme_null);
+   
+  return scheme_make_pair(for_meta_symbol,
+                          scheme_make_pair(phase, l));
+}
+
 static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t phase, Scheme_Object *mark)
 {
   Scheme_Object *e = module_path;
 
   if (phase != 0) {
-    e = scheme_make_pair(for_meta_symbol,
-                         scheme_make_pair(scheme_make_integer(phase),
-                                          scheme_make_pair(e,
-                                                           scheme_null)));
+    e = shift_require_phase(e, scheme_make_integer(phase), 1);
   }
   e = scheme_make_pair(require_stx, scheme_make_pair(e, scheme_null));
   e = scheme_datum_to_syntax(e, scheme_false, scheme_false, 0, 0);
@@ -8043,7 +8100,8 @@ static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t pha
 Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
                                            intptr_t phase,
                                            Scheme_Object *mark,
-                                           void *data)
+                                           void *data,
+                                           Scheme_Object **_ref_expr)
 {
   Scheme_Object *e;
   Scheme_Object *base_modidx = (Scheme_Object *)((void **)data)[1];
@@ -8056,18 +8114,29 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
   int *all_simple = (int *)((void **)data)[8];
   Scheme_Hash_Table *submodule_names = (Scheme_Hash_Table *)((void **)data)[9];
 
-  e = make_require_form(module_path, phase, mark);
+  if (*_ref_expr) {
+    e = scheme_add_rename(*_ref_expr, post_ex_rns);
+    *_ref_expr = e;
+  }
+
+  e = make_require_form(module_path, phase - env->phase, mark);
 
   parse_requires(e, env->phase, base_modidx, env, for_m,
                  rns, post_ex_rns,
                  check_require_name, tables,
                  redef_modname, 
                  0, 0, 1, 
-                 1, 0,
+                 1, phase ? 1 : 0,
                  all_simple, 
                  NULL,
                  submodule_names,
                  NULL);
+
+  scheme_prepare_compile_env(env);
+  if (phase > env->phase) {
+    /* Right-hand side of a `define-syntax`; need to prepare compile-time env */
+    scheme_prepare_compile_env(env->exp_env);
+  }
 
   return e;
 }
