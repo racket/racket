@@ -2241,7 +2241,7 @@ static char *UNC_readlink(const char *fn)
 
   if (!DeviceIoControlProc) return NULL;
 
-  h = CreateFileW(WIDE_PATH(fn), GENERIC_READ,
+  h = CreateFileW(WIDE_PATH(fn), FILE_READ_ATTRIBUTES,
 		  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
 		  OPEN_EXISTING,
 		  FILE_FLAG_BACKUP_SEMANTICS | mzFILE_FLAG_OPEN_REPARSE_POINT,
@@ -2276,12 +2276,41 @@ static char *UNC_readlink(const char *fn)
     return NULL;
   }
 
-  off = rp->u.SymbolicLinkReparseBuffer.PrintNameOffset;
-  len = rp->u.SymbolicLinkReparseBuffer.PrintNameLength;
+  if (rp->ReparseTag == IO_REPARSE_TAG_SYMLINK) {
+    off = rp->u.SymbolicLinkReparseBuffer.SubstituteNameOffset;
+    len = rp->u.SymbolicLinkReparseBuffer.SubstituteNameLength;
+    if (!len) {
+      off = rp->u.SymbolicLinkReparseBuffer.PrintNameOffset;
+      len = rp->u.SymbolicLinkReparseBuffer.PrintNameLength;
+    }
+  } else {
+    off = rp->u.MountPointReparseBuffer.SubstituteNameOffset;
+    len = rp->u.MountPointReparseBuffer.SubstituteNameLength;
+    if (!len) {
+      off = rp->u.MountPointReparseBuffer.PrintNameOffset;
+      len = rp->u.MountPointReparseBuffer.PrintNameLength;
+    }
+  }
+
   lk = (wchar_t *)scheme_malloc_atomic(len + 2);
 
-  memcpy(lk, (char *)rp->u.SymbolicLinkReparseBuffer.PathBuffer + off, len);
+  if (rp->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+    memcpy(lk, (char *)rp->u.SymbolicLinkReparseBuffer.PathBuffer + off, len);
+  else
+    memcpy(lk, (char *)rp->u.MountPointReparseBuffer.PathBuffer + off, len);
+  
   lk[len>>1] = 0;
+
+  if ((lk[0] == '\\') && (lk[1] == '?') && (lk[2] == '?') && (lk[3] == '\\')) {
+    /* "?\\" is a prefix that means "unparsed", or something like that */
+    memmove(lk, lk+4, len - 8);
+    len -= 8;
+    lk[len>>1] = 0;
+  }
+
+  /* Make sure it's not empty, because that would form a bad path: */
+  if (!lk[0])
+    return NULL;
 
   return NARROW_PATH(lk);
 }
@@ -2433,6 +2462,15 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, int *islink,
     len -= 5;
     drive_end -= 5;
     copy[len] = 0;
+  }
+  /* If we ended up with "X:[/]", then add a "." at the end so that we get information
+     for the drive, not the current directory of the drive: */
+  if (is_drive_letter(copy[0]) && (copy[1] == ':')
+      && (!copy[2]
+	  || (IS_A_DOS_SEP(copy[2]) && !copy[3]))) {
+    copy[2] = '\\';
+    copy[3] = '.';
+    copy[4] = 0;
   }
 
   if (!GetFileAttributesExW(WIDE_PATH(copy), GetFileExInfoStandard, &fd)) {
