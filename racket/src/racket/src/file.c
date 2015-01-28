@@ -2306,6 +2306,14 @@ static char *UNC_readlink(const char *fn)
     memmove(lk, lk+4, len - 8);
     len -= 8;
     lk[len>>1] = 0;
+
+    if ((lk[0] == 'U') && (lk[1] == 'N') && (lk[2] == 'C') && (lk[3] == '\\')) {
+      /* "UNC\" is a further prefix that means "UNC"; replace "UNC" with "\" */
+      memmove(lk, lk+2, len - 4);
+      lk[0] = '\\';
+      len -= 4;
+      lk[len>>1] = 0;
+    }
   }
 
   /* Make sure it's not empty, because that would form a bad path: */
