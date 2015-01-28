@@ -9,6 +9,7 @@ build_script:
 - '"c:\Program Files (x86)\Microsoft Visual Studio 10.0\vc\vcvarsall.bat" x86'
 - echo %cd%
 - nmake win32-in-place PKGS="racket-test-core"
+- nmake win32-base
 
 test_script:
 - echo %cd%
