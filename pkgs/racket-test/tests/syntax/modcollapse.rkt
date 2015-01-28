@@ -122,3 +122,24 @@
 (check (collapse-module-path-index submod-submod-foo
                                    here)
        `(submod ,(build-path here-dir "foo.rkt") test))
+
+
+(define dirrel (module-path-index-join
+                "x/banana.rkt"
+                self))
+(check (collapse-module-path-index dirrel)
+       "x/banana.rkt")
+(check (collapse-module-path-index dirrel
+                                   here)
+       (build-path here-dir "x/banana.rkt"))
+
+(define rel-dirrel (module-path-index-join
+                    "apple.rkt"
+                    (module-path-index-join
+                     "x/banana.rkt"
+                     self)))
+(check (collapse-module-path-index rel-dirrel)
+       "x/apple.rkt")
+(check (collapse-module-path-index rel-dirrel
+                                   here)
+       (build-path here-dir "x" "apple.rkt"))
