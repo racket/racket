@@ -13,6 +13,7 @@
 @include-section["smtp.scrbl"]
 @include-section["sendmail.scrbl"]
 @include-section["head.scrbl"]
+@include-section["unihead.scrbl"]
 @include-section["imap.scrbl"]
 @include-section["pop3.scrbl"]
 @include-section["mime.scrbl"]
