@@ -448,5 +448,19 @@
   (test "#false" pretty-format #f))
 
 ;; ----------------------------------------
+;; check that an all-powerful inspector doesn't break the pretty printer internally
+
+(let-values ([(pp v)
+              (parameterize ([current-namespace (make-base-namespace)]
+                             [current-inspector (make-inspector)])
+                (define pp (dynamic-require 'racket/pretty 'pretty-print))
+                (struct a (x))
+                (values pp (a 1)))])
+  (define o  (open-output-bytes))
+  (parameterize ([current-output-port o])
+    (pp v))
+  (test "(a 1)\n" get-output-string o))
+
+;; ----------------------------------------
 
 (report-errs)
