@@ -30,6 +30,16 @@
         #rx"expected natural number greater than 5")
   (terx whatever (~reflect x (r-nat> 0) #:attributes (wrong nope)))
 
+  (define r-nat>1 (reified-syntax-class-curry r-nat> 1))
+
+  (tok (1 2 -3 -4 5) ((~or (~reflect yes (r-nat>1) #:attributes (diff)) no) ...)
+       (and (s= (yes ...) '(2 5))
+            (s= (yes.diff ...) '(1 4))
+            (s= (no ...) '(1 -3 -4))))
+  (terx 0 (~reflect pos (r-nat>1))
+        #rx"expected natural number greater than 1")
+  (terx whatever (~reflect x (r-nat>1) #:attributes (wrong nope)))
+
   (define-splicing-syntax-class opt
     (pattern (~seq #:a a:expr)))
   (define r-opt (reify-syntax-class opt))
