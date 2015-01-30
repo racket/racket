@@ -252,7 +252,7 @@ interface @racket[(class->interface object%)], and is transparent
             public pubment public-final override override-final overment augment augride
             augment-final private abstract inherit inherit/super inherit/inner
             rename-super rename-inner begin lambda case-lambda let-values letrec-values
-            define-values #%plain-lambda)
+            define-values #%plain-lambda chaperone-procedure)
 (class* superclass-expr (interface-expr ...)
   class-clause
   ...)
@@ -314,7 +314,9 @@ interface @racket[(class->interface object%)], and is transparent
   (let-values ([(id) method-procedure] ...+) 
     id)
   (letrec-values ([(id) method-procedure] ...+) 
-    id)])]{
+    id)
+  (chaperone-procedure method-procedure wrapper-proc
+                       . other-args)])]{
 
 Produces a class value.
 
