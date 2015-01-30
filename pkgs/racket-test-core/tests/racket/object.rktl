@@ -2055,5 +2055,26 @@
   (void))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test chaperone-procedure on method definitions
+
+(test #t class? (class object% (public m) (define m (chaperone-procedure (λ (x) x) values))))
+(test #t class? (class object%
+                  (public m)
+                  (define m
+                    (chaperone-procedure (case-lambda [(x) x]) values))))
+(test #t class? (class object%
+                  (public m)
+                  (define m
+                    (let-values ([(m) (chaperone-procedure (λ (x) x) values)])
+                      m))))
+(test #t zero? (send (new (class object%
+                            (super-new)
+                            (public m)
+                            (define m
+                              (let-values ([(m) (chaperone-procedure (λ () 0) values)])
+                                m))))
+                     m))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
