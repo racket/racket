@@ -6,7 +6,11 @@
 @interaction-eval[#:eval cookie-eval (require net/cookie)]
 
 
-@title[#:tag "cookie"]{Cookie: HTTP Client Storage}
+@title[#:tag "cookie"]{Cookie: Legacy HTTP Client Storage}
+
+  @deprecated[@racketmodname[net/cookies/server]]{
+    The new @secref["cookies" #:doc '(lib "net/scribblings/net.scrbl")]
+    library implements RFC 6265, which supersedes the obsolete RFC 2109.}
 
 @defmodule[net/cookie]{The @racketmodname[net/cookie] library provides
 utilities for using cookies as specified in RFC 2109 @cite["RFC2109"].}
@@ -180,7 +184,8 @@ won't have a cookie set then first arrive at your site.
 
 @margin-note{@racket[cookie@] and @racket[cookie^] are deprecated.
 They exist for backward-compatibility and will likely be removed in
-the future. New code should use the @racketmodname[net/cookie] module.}
+the future. New code should use the @racketmodname[net/cookies/server]
+or @racketmodname[net/cookies/user-agent] module.}
 
 @defmodule[net/cookie-unit]
 
