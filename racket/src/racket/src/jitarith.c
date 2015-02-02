@@ -104,6 +104,7 @@ static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, in
         if (IS_NAMED_PRIM(obj, "flatan")) return 1;
         if (IS_NAMED_PRIM(obj, "fllog")) return 1;
         if (IS_NAMED_PRIM(obj, "flexp")) return 1;
+        if (IS_NAMED_PRIM(obj, "flexpt")) return 1;
       }
     }
   }
@@ -147,6 +148,7 @@ static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, in
         if (IS_NAMED_PRIM(obj, "extflatan")) return 1;
         if (IS_NAMED_PRIM(obj, "extfllog")) return 1;
         if (IS_NAMED_PRIM(obj, "extflexp")) return 1;
+        if (IS_NAMED_PRIM(obj, "extflexpt")) return 1;
       }
     }
   }
@@ -1132,6 +1134,7 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
         arith = 13 -> sqrt
         arith = 14 -> unary floating-point op (consult `rator')
         arith = 15 -> inexact->exact
+        arith = 16 -> flexpt
         cmp = 0 -> = or zero?
         cmp = +/-1 -> >=/<=
         cmp = +/-2 -> >/< or positive/negative?
