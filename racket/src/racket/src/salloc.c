@@ -242,7 +242,7 @@ void scheme_setup_thread_local_key_if_needed() XFORM_SKIP_PROC
     abort();
   }
 # if defined(__APPLE__) && defined(__MACH__)
-  /* Darwin version 11 (Max OS X Lion) changes the offset from %gs
+  /* Darwin version 11 (Mac OS X Lion) changes the offset from %gs
      for thread-local storage. */
   {
     int name[2];
