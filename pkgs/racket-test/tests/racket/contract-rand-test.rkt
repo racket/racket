@@ -35,6 +35,7 @@
 (check-not-exn (λ () (test-contract-generation +nan.0)))
 (check-not-exn (λ () (test-contract-generation 'x)))
 (check-not-exn (λ () (test-contract-generation "x")))
+(check-not-exn (λ () (test-contract-generation #t)))
 
 (check-not-exn (λ () (test-contract-generation (listof boolean?))))
 (check-not-exn (λ () (test-contract-generation (listof number?))))
@@ -168,6 +169,14 @@
                             (and/c (-> number? number?)
                                    any/c
                                    number?)))))
+
+;; in this test, the and/c shoudl generate a dynamic
+;; failure, which should trigger the 'cons/c' failing
+;; it shouldn't make a pair of a strange value and #t
+(check-not-exn
+ (λ ()
+   (test-contract-generation
+    (cons/c #t (and/c integer? even? odd?)))))
 
 (check-not-exn 
  (λ () 

@@ -140,15 +140,17 @@
     (filter
      values
      (for/list ([ctc (in-list ctcs)])
-       (generate/direct ctc fuel))))
+       ((contract-struct-generate ctc) fuel))))
   (define can-generate?
     (or (pair? directs)
         (for/or ([ctc (in-list ctcs)])
           (can-generate/env? ctc))))
   (cond
     [can-generate?
-     ;; #f => try to use me in the env.
-     (define options (cons #f (append directs ctcs)))
+     ;; #f => try to use the entire or/c contract in the environment
+     (define options (cons #f (append 
+                               (map (λ (x) (cons 'direct x)) directs)
+                               (map (λ (x) (cons 'env x)) ctcs))))
      (define env (contract-random-generate-get-current-environment))
      (λ ()
        (let loop ([options (permute options)])
@@ -158,21 +160,28 @@
             (define option (car options))
             (cond
               [(not option)
-               (try/env
-                or/c-ctc env
-                (λ () (loop (cdr options))))]
-              [(contract? option)
-               (try/env 
-                option env
-                (λ () (loop (cdr options))))]
-              [else 
+               (define candidate (try/env or/c-ctc env))
+               (cond
+                 [(contract-random-generate-fail? candidate)
+                  (loop (cdr options))]
+                 [else
+                  candidate])]
+              [(equal? (car option) 'env)
+               (define candidate (try/env (cdr option) env))
+               (cond
+                 [(contract-random-generate-fail? candidate)
+                  (loop (cdr options))]
+                 [else
+                  candidate])]
+              [(equal? (car option) 'direct)
                (define-values (succ? val)
                  (let/ec k
                    (parameterize ([fail-escape (λ () (k #f #f))])
-                     (k #t (option)))))
-               (if succ? 
+                     (k #t ((cdr option))))))
+               (if (and succ? (not (contract-random-generate-fail? val)))
                    val
-                   (loop (cdr options)))])])))]
+                   (loop (cdr options)))]
+              [else (error 'racket/contract/orc.rkt "ack ~s" options)])])))]
     [else #f]))
 
 (define (single-or/c-list-contract? c)
