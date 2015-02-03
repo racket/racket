@@ -5330,10 +5330,17 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type)
   return key;
 }
 
-static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutables) {
-  char *immutable_array = NULL;
+static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutables, int *_min_cnt)
+/* If `_min_cnt` is not NULL, then mutability positions can determine a minimum
+   argument count that is bigger than `icnt`. */
+{
+  char *immutable_array = NULL, *a2;
 
-  if (icnt > 0) {
+  if (_min_cnt)
+    *_min_cnt = icnt;
+  
+  if ((icnt > 0) || _min_cnt) {
+    int sz = (icnt ? icnt : 1);
     immutable_array = (char *)scheme_malloc_atomic(icnt);
     memset(immutable_array, 1, icnt);
 
@@ -5341,7 +5348,7 @@ static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutab
       int i;
       int len;
       len = SCHEME_VEC_SIZE(mutables);
-      if (len > icnt)
+      if ((len > icnt) && !_min_cnt)
         return NULL;
 
       for (i = 0; i < len; i++) {
@@ -5350,21 +5357,34 @@ static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutab
         a = SCHEME_VEC_ELS(mutables)[i];
         if (!SCHEME_INTP(a)
             || (SCHEME_INT_VAL(a) < 0)
-            || (SCHEME_INT_VAL(a) >= icnt))
+            || ((SCHEME_INT_VAL(a) >= icnt)
+                && !_min_cnt))
           return NULL;
         a_val = SCHEME_INT_VAL(a);
+        if (_min_cnt && (a_val >= *_min_cnt)) {
+          *_min_cnt = a_val+1;
+        }
+        if (a_val >= sz) {
+          a2 = (char *)scheme_malloc_atomic(a_val * 2);
+          memset(a2, 1, a_val * 2);
+          memcpy(a2, immutable_array, sz);
+          sz = a_val * 2;
+          immutable_array = a2;
+        }
         immutable_array[a_val] = 0;
       }
     }
   }
+  
   return immutable_array;
 }
 
-Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_count)
+Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int min_field_count)
 {
   Scheme_Struct_Type *parent = NULL;
   Scheme_Object *a, *uninit_val, *mutables, *name;
   intptr_t ucnt, icnt;
+  int inferred_size = 0;
   char *immutable_array = NULL;
 
   if (SCHEME_SYMBOLP(key))
@@ -5373,9 +5393,8 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
   if (scheme_proper_list_length(key) < 0)
     return NULL;
 
-  if (field_count > MAX_STRUCT_FIELD_COUNT)
-    field_count = MAX_STRUCT_FIELD_COUNT;
-
+  if (min_field_count > MAX_STRUCT_FIELD_COUNT)
+    min_field_count = MAX_STRUCT_FIELD_COUNT;
 
   {
     Scheme_Struct_Type *stype = NULL;
@@ -5422,11 +5441,12 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
     if (!SCHEME_INTP(a)) {
       if (SCHEME_NULLP(SCHEME_CDR(key))) {
         /* For last one, size can be inferred */
-        icnt = field_count - ucnt - (parent
-                                     ? parent->num_slots
-                                     : 0);
+        icnt = min_field_count - ucnt - (parent
+                                         ? parent->num_slots
+                                         : 0);
         if (icnt < 0)
           icnt = 0;
+        inferred_size = 1;
       } else
         return NULL;
     } else {
@@ -5447,9 +5467,14 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
     name = a;
 
     if ((icnt + ucnt) || (mutables && SCHEME_VEC_SIZE(mutables))) {
-      immutable_array = mutability_data_to_immutability_data(icnt + ucnt, mutables);
+      int min_cnt;
+      immutable_array = mutability_data_to_immutability_data(icnt + ucnt,
+                                                             mutables,
+                                                             inferred_size ? &min_cnt : NULL);
       if (!immutable_array)
         return NULL;
+      if (inferred_size && (min_cnt > icnt + ucnt))
+        icnt = min_cnt - ucnt;
     }
 
     if (parent && (icnt + parent->num_slots > MAX_STRUCT_FIELD_COUNT))

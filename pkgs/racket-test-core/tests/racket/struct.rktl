@@ -1070,6 +1070,10 @@
 (test #t prefab-key? 'apple)
 (test #f prefab-key? '#(apple))
 (test #t prefab-key? '(apple 4))
+(test #t prefab-key? '(foo #(0)))
+(test #f prefab-key? '(foo 0 #(0)))
+(err/rt-test (make-prefab-struct '(foo #(0))) (lambda (exn)
+                                                (regexp-match? #rx"mismatch" (exn-message exn))))
 
 ;; ----------------------------------------
 ;; We can make a bogus mutator, but we can't apply it:
