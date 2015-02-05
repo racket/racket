@@ -132,9 +132,11 @@
 
     ;; ----
 
+    ;; LOCKING: requires unlocked
     (define/public (call-with-lock who proc)
       (call-with-lock* who proc #f #t))
 
+    ;; LOCKING: requires unlocked
     (define/public-final (call-with-lock* who proc hopeless require-connected?)
       (let ([me (thread-dead-evt (current-thread))]
             [eb? (break-enabled)]
@@ -189,14 +191,17 @@
           (for-each call-with-continuation-barrier async-calls))))
 
     ;; needs overriding
+    ;; LOCKING: must not block, must not acquire lock
     (define/public (connected?) #f)
 
+    ;; LOCKING: requires locked
     (define/public (add-delayed-call! proc)
       (set! delayed-async-calls (cons proc delayed-async-calls)))
 
     ;; on-break-within-lock : -> void
     ;; Called before unlock; makes it easy to disconnect on any break
     ;; within lock.
+    ;; LOCKING: called within lock
     (define/public (on-break-within-lock)
       (void))
 
@@ -212,6 +217,7 @@
     (super-new)
 
     ;; disconnect : -> void
+    ;; LOCKING: requires unlocked
     (define/public (disconnect)
       (when (connected?)
         (call-with-lock* 'disconnect
@@ -219,6 +225,7 @@
                          (lambda () (disconnect* #f))
                          #f)))
 
+    ;; LOCKING: requires locked
     (define/public (disconnect* politely?)
       (dprintf "  ** disconnecting~a\n" (if politely? " politely" ""))
       (void))
@@ -264,7 +271,6 @@
 
     ;; ----
 
-    ;; (inherit call-with-lock)
     (define/override (call-with-lock fsym proc)
       (super call-with-lock fsym
              (lambda ()

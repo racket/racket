@@ -48,6 +48,15 @@
     (define/override (call-with-lock fsym proc)
       (call-with-lock* fsym (lambda () (set! saved-tx-status (get-tx-status)) (proc)) #f #t))
 
+    ;; Custodian shutdown can cause disconnect even in the middle of
+    ;; operation (with lock held). So use (A _) around any FFI calls,
+    ;; check still connected.
+    (define-syntax-rule (A e ...)
+      (call-as-atomic
+       (lambda ()
+         (unless -db (error/disconnect-in-lock 'sqlite3))
+         e ...)))
+
     (define/private (get-db fsym)
       (or -db (error/not-connected fsym)))
 
@@ -73,19 +82,19 @@
           (when delenda
             (for ([pst (in-hash-values delenda)])
               (send pst finalize #f)))
-          (void (sqlite3_reset stmt))
-          (void (sqlite3_clear_bindings stmt))
+          (A (sqlite3_reset stmt)
+             (sqlite3_clear_bindings stmt))
           (for ([i (in-naturals 1)]
                 [param (in-list params)])
             (load-param fsym db stmt i param))
           (let* ([info
-                  (for/list ([i (in-range (sqlite3_column_count stmt))])
-                    `((name . ,(sqlite3_column_name stmt i))
-                      (decltype . ,(sqlite3_column_decltype stmt i))))]
+                  (for/list ([i (in-range (A (sqlite3_column_count stmt)))])
+                    (A `((name . ,(sqlite3_column_name stmt i))
+                         (decltype . ,(sqlite3_column_decltype stmt i)))))]
                  [saved-last-insert-rowid
-                  (and (null? info) (sqlite3_last_insert_rowid db))]
+                  (and (null? info) (A (sqlite3_last_insert_rowid db)))]
                  [saved-total-changes
-                  (and (null? info) (sqlite3_total_changes db))]
+                  (and (null? info) (A (sqlite3_total_changes db)))]
                  [result
                   (or cursor?
                       (step* fsym db stmt #f +inf.0 pst))])
@@ -99,8 +108,8 @@
                    (cursor-result info pst (box #f))]
                   [else
                    (simple-result
-                    (let ([last-insert-rowid (sqlite3_last_insert_rowid db)]
-                          [total-changes (sqlite3_total_changes db)])
+                    (let ([last-insert-rowid (A (sqlite3_last_insert_rowid db))]
+                          [total-changes (A (sqlite3_total_changes db))])
                       ;; Not all statements clear last_insert_rowid, changes; so
                       ;; extra guards to make sure results are relevant.
                       `((insert-id
@@ -108,7 +117,7 @@
                                  last-insert-rowid))
                         (affected-rows
                          . ,(if (> total-changes saved-total-changes)
-                                (sqlite3_changes db)
+                                (A (sqlite3_changes db))
                                 0)))))])))))
 
     (define/public (fetch/cursor fsym cursor fetch-size)
@@ -139,23 +148,23 @@
     (define/private (load-param fsym db stmt i param)
       (HANDLE fsym
        (cond [(int64? param)
-              (sqlite3_bind_int64 stmt i param)]
+              (A (sqlite3_bind_int64 stmt i param))]
              [(real? param) ;; includes >64-bit exact integers
-              (sqlite3_bind_double stmt i (exact->inexact param))]
+              (A (sqlite3_bind_double stmt i (exact->inexact param)))]
              [(string? param)
-              (sqlite3_bind_text stmt i param)]
+              (A (sqlite3_bind_text stmt i param))]
              [(bytes? param)
-              (sqlite3_bind_blob stmt i param)]
+              (A (sqlite3_bind_blob stmt i param))]
              [(sql-null? param)
-              (sqlite3_bind_null stmt i)]
+              (A (sqlite3_bind_null stmt i))]
              [else
               (error/internal* fsym "bad parameter value" '("value" value) param)])))
 
     (define/private (step* fsym db stmt end-box fetch-limit pst)
       (with-handlers ([exn:fail?
                        (lambda (e)
-                         (void (sqlite3_reset stmt))
-                         (void (sqlite3_clear_bindings stmt))
+                         (A (sqlite3_reset stmt)
+                            (sqlite3_clear_bindings stmt))
                          (raise e))])
         (let loop ([fetch-limit fetch-limit])
           (if (zero? fetch-limit)
@@ -164,30 +173,30 @@
                 (cond [c
                        (cons c (loop (sub1 fetch-limit)))]
                       [else
-                       (void (sqlite3_reset stmt))
-                       (void (sqlite3_clear_bindings stmt))
+                       (A (sqlite3_reset stmt)
+                          (sqlite3_clear_bindings stmt))
                        (when end-box (set-box! end-box #t))
                        null]))))))
 
     (define/private (step fsym db stmt pst)
-      (let ([s (HANDLE fsym (sqlite3_step stmt) pst)])
+      (let ([s (HANDLE fsym (A (sqlite3_step stmt)) pst)])
         (cond [(= s SQLITE_DONE) #f]
               [(= s SQLITE_ROW)
-               (let* ([column-count (sqlite3_column_count stmt)]
+               (let* ([column-count (A (sqlite3_column_count stmt))]
                       [vec (make-vector column-count)])
                  (for ([i (in-range column-count)])
                    (vector-set! vec i
-                                (let ([type (sqlite3_column_type stmt i)])
+                                (let ([type (A (sqlite3_column_type stmt i))])
                                   (cond [(= type SQLITE_NULL)
                                          sql-null]
                                         [(= type SQLITE_INTEGER)
-                                         (sqlite3_column_int64 stmt i)]
+                                         (A (sqlite3_column_int64 stmt i))]
                                         [(= type SQLITE_FLOAT)
-                                         (sqlite3_column_double stmt i)]
+                                         (A (sqlite3_column_double stmt i))]
                                         [(= type SQLITE_TEXT)
-                                         (sqlite3_column_text stmt i)]
+                                         (A (sqlite3_column_text stmt i))]
                                         [(= type SQLITE_BLOB)
-                                         (sqlite3_column_blob stmt i)]
+                                         (A (sqlite3_column_blob stmt i))]
                                         [else
                                          (error/internal* fsym "unknown column type"
                                                           "type" type)]))))
@@ -200,26 +209,24 @@
       (let*-values ([(db) (get-db fsym)]
                     [(prep-status stmt)
                      (HANDLE fsym
-                      (call-as-atomic
-                       ;; Do not allow break/kill between prepare and
-                       ;; entry of stmt in table.
-                       (lambda ()
-                         (let-values ([(prep-status stmt tail?)
+                      ;; Do not allow break/kill between prepare and
+                      ;; entry of stmt in table.
+                      (A (let-values ([(prep-status stmt tail?)
                                        (sqlite3_prepare_v2 db sql)])
                            (when tail?
                              (when stmt (sqlite3_finalize stmt))
                              (error* fsym "multiple statements given"
                                      '("given" value) sql))
                            (when stmt (hash-set! stmt-table stmt #t))
-                           (values prep-status stmt)))))])
+                           (values prep-status stmt))))])
         (when DEBUG?
           (dprintf "  << prepared statement #x~x\n" (cast stmt _pointer _uintptr)))
         (unless stmt (error* fsym "SQL syntax error" '("given" value) sql))
         (let* ([param-typeids
-                (for/list ([i (in-range (sqlite3_bind_parameter_count stmt))])
+                (for/list ([i (in-range (A (sqlite3_bind_parameter_count stmt)))])
                   'any)]
                [result-dvecs
-                (for/list ([i (in-range (sqlite3_column_count stmt))])
+                (for/list ([i (in-range (A (sqlite3_column_count stmt)))])
                   '#(any))]
                [pst (new prepared-statement%
                          (handle stmt)
@@ -236,8 +243,8 @@
       (call-as-atomic
        (lambda ()
          (let ([db -db])
-           (set! -db #f)
            (when db
+             (set! -db #f)
              ;; Free all of connection's prepared statements. This will leave
              ;; pst objects with dangling foreign objects, so don't try to free
              ;; them again---check that -db is not-#f.
@@ -275,7 +282,7 @@
     ;; http://www.sqlite.org/lang_transaction.html
 
     (define/private (read-tx-status)
-      (not (sqlite3_get_autocommit -db)))
+      (not (A (sqlite3_get_autocommit -db))))
 
     (define/override (start-transaction* fsym isolation option)
       ;; Isolation level can be set to READ UNCOMMITTED via pragma, but
@@ -371,7 +378,10 @@
       (when (memv (simplify-status full-s) maybe-rollback-status-list)
         (when (and saved-tx-status -db (not (read-tx-status))) ;; was in trans, now not
           (set-tx-status! who 'invalid)))
-      (handle-status* who full-s -db db-spec pst))
+      (handle-status* who full-s this db-spec pst))
+
+    (define/public (get-error-message)
+      (A (sqlite3_errmsg -db)))
 
     ;; ----
     (super-new)
@@ -381,7 +391,7 @@
      ;; (eg, sqlite3_close) used by its methods from being finalized.
      (let ([dont-gc this%])
        (lambda (obj)
-         (send obj disconnect)
+         (send obj disconnect* #f)
          ;; Dummy result to prevent reference from being optimized away
          dont-gc)))))
 
@@ -406,8 +416,12 @@
                 [sym
                  (cadr info)]
                 [message
-                 (cond [(and (= s SQLITE_ERROR) db)
-                        (sqlite3_errmsg db)]
+                 (cond [(= s SQLITE_ERROR)
+                        (cond [(is-a? db connection%)
+                               (send db get-error-message)]
+                              [(sqlite3_database? db)
+                               (sqlite3_errmsg db)]
+                              [else (caddr info)])]
                        [else (caddr info)])])
            (define extra
              (string-append
@@ -416,13 +430,6 @@
               ;; query, if available
               (cond [sql (format "\n  SQL: ~e" sql)]
                     [else ""])
-              ;; query in sqlite3_stmt, if differs
-              (let* ([stmt (and pst (send pst get-handle))]
-                     [stmt_sql (and stmt (sqlite3_sql stmt))])
-                (cond [(equal? sql stmt_sql) ;; ie, either agree or both absent
-                       ""]
-                      [else
-                       (format "\n  sqlite3_sql: ~e" stmt_sql)]))
               ;; db file and mode, if relevant and available
               (cond [(memv s include-db-file-status-list)
                      (string-append
