@@ -844,3 +844,24 @@ If @racket[sig-identifier] is not bound to a signature, then the
 @exnraise[exn:fail:syntax]. In that case, the given
 @racket[err-syntax] argument is used as the source of the error, where
 @racket[sig-identifier] is used as the detail source location.}
+
+
+@defproc[(unit-static-init-dependencies [unit-identifier identifier?]
+                                        [err-syntax syntax?])
+         (list/c (cons/c (or/c symbol? #f)
+                         identifier?))]{
+
+If @racket[unit-identifier] is bound to static unit information via
+@racket[define-unit] (or other such forms), the result is a list of
+pairs. Each pair combines a tag (or @racket[#f] for no tag) and a
+signature name, indicating an initialization dependency of the unit on
+the specified import (i.e., the same tag and signature are included in
+the first result from @racket[unit-static-signatures]).
+
+If @racket[unit-identifier] is not bound to static unit information,
+then the @exnraise[exn:fail:syntax]. In that case, the given
+@racket[err-syntax] argument is used as the source of the error, where
+@racket[unit-identifier] is used as the detail source location.
+
+@history[#:added "6.1.1.8"]}
+

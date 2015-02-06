@@ -1816,7 +1816,7 @@
                     (make-unit-info (quote-syntax u)
                                     (list (cons 'itag (quote-syntax isig)) ...)
                                     (list (cons 'etag (quote-syntax esig)) ...)
-                                    (list (cons 'deptag (quote-syntax deptag)) ...)
+                                    (list (cons 'deptag (quote-syntax depsig)) ...)
                                     (quote-syntax name)
                                     contracted?)))))))))
       ((_)
