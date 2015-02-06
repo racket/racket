@@ -1369,13 +1369,13 @@
        (let-values (((u x y z) (build-unit/new-import-export (check-unit-syntax #'x))))
          u)))))
 
-;; build-compound-unit : syntax-object  -> 
-;;                      (values syntax-object (listof identifier) (listof identifier))
+;; build-compound-unit : syntax-object [static-dep-info] -> 
+;;                      (values syntax-object (listof identifier) (listof identifier) (listof identifier))
 ;; constructs the code for a compound-unit expression.  stx match the return of 
 ;; check-compound-syntax
-;; The two additional values are the identifiers of the compound-unit's import and export
-;; signatures
-(define-for-syntax (build-compound-unit stx)
+;; The three additional values are the identifiers of the compound-unit's import and export
+;; signatures plus identifiers for initialization dependencies
+(define-for-syntax (build-compound-unit stx [static-dep-info null])
   (define-struct lnkid-record (access-code names ctime-ids rtime-ids source-idx sigid siginfo))
   (define (lnkid-rec->keys t rec)
     (map (lambda (rid) (build-key t rid))
@@ -1634,7 +1634,7 @@
                                (unit-export ((export-key ...) export-code) ...)))))))
               (map syntax-e (syntax->list #'((import-tag . import-sigid) ...)))
               (map syntax-e (syntax->list #'((export-tag . export-sigid) ...)))
-              '()))))))
+              static-dep-info))))))
     (((i ...) (e ...) (l ...))
      (for-each check-link-line-syntax (syntax->list #'(l ...))))))
 
@@ -1803,7 +1803,7 @@
        (begin
          (check-id #'name)
          (let-values (((exp i e d) (parameterize ([error-syntax (syntax-property (error-syntax) 'inferred-name (syntax-e #'name))])
-                                     (build #'rest ))))
+                                     (build #'rest))))
            (with-syntax ((((itag . isig) ...) i)
                          (((etag . esig) ...) e)
                          (((deptag . depsig) ...) d)
@@ -1823,7 +1823,7 @@
        (raise-stx-err err-msg)))))
 
 ;; build-define-unit : syntax-object
-;;                     (syntax-object -> (values syntax-object (listof identifier) (listof identifier))
+;;                     (syntax-object -> (values syntax-object (listof identifier) (listof identifier) (listof identifier))
 ;;                     string ->
 ;;                     syntax-object
 (define-for-syntax build-define-unit (build-define-unit-helper #f))
@@ -2122,6 +2122,46 @@
                          (unprocess-tagged-id
                           (cons (car tid) lnkid))]))]))
                (syntax->list #'(export ...)))])
+         
+         (define init-deps
+           (for/fold ([init-deps '()]) ([u (in-list units)]
+                                        [sub-in (in-list sub-ins)]
+                                        [u-pos (in-naturals)])
+             (for/fold ([init-deps init-deps]) ([dep (in-list (unit-info-deps u))])
+               ;; Find the link for this dependency:
+               (define lr
+                 (for/or ([lr (in-list sub-in)])
+                   (and (eq? (link-record-tag lr)
+                             (car dep))
+                        (free-identifier=? (link-record-sigid lr)
+                                           (cdr dep))
+                        lr)))
+               ;; If `lr` refers to an import, then propoagate the dependency.
+               ;; If it refers to a linked unit, make sure that unit is earlier.
+               (cond
+                [(for/or ([import-sig (in-list import-sigs)])
+                   (and (free-identifier=? (link-record-linkid import-sig)
+                                           (link-record-linkid lr))
+                        import-sig))
+                 ;; imported
+                 => (lambda (import-sig)
+                      (cons (cons (link-record-tag import-sig)
+                                  (link-record-sigid import-sig))
+                            init-deps))]
+                [(for/or ([sub-out (in-list sub-outs)]
+                          [i-pos (in-naturals)])
+                   (for/or ([olr (in-list sub-out)])
+                     (and (free-identifier=? (link-record-linkid olr)
+                                             (link-record-linkid lr))
+                          i-pos)))
+                 => (lambda (i-pos)
+                      (unless (i-pos . < . u-pos)
+                        (raise-stx-err "unit depends on initialization of later unit" 
+                                       (link-record-linkid lr)))
+                      init-deps)]
+                [else
+                 (error "internal error: cannot find link source for init-dependency check")]))))
+         
          (with-syntax (((import ...)
                         (map unprocess-link-record-bind import-sigs))
                        (((out ...) ...)
@@ -2140,7 +2180,8 @@
                                        units (syntax->list #'(u ...)))))
            (build-compound-unit #`((import ...)
                                    #,exports
-                                   (((out ...) unit-id in ...) ...)))))))
+                                   (((out ...) unit-id in ...) ...))
+                                init-deps)))))
     (((i ...) (e ...) (l ...))
      (for-each check-link-line-syntax (syntax->list #'(l ...))))))
 

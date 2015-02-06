@@ -458,6 +458,11 @@ specific bindings for some of a unit's imports. The long form need not
 name all of a unit's exports or supply all of a unit's imports if the
 remaining parts can be inferred.
 
+When a unit declares initialization dependencies,
+@racket[compound-unit/infer] checks that the @racket[link] declaration
+is consistent with those dependencies, and it reports a syntax error if
+not.
+
 Like @racket[compound-unit], the @racket[compound-unit/infer] form
 produces a (compound) unit without statically binding information
 about the result unit's imports and exports. That is,
@@ -465,7 +470,12 @@ about the result unit's imports and exports. That is,
 not generate it. Two additional forms,
 @racket[define-compound-unit] and
 @racket[define-compound-unit/infer], generate static information
-(where the former does not consume static information).}
+(where the former does not consume static information).
+
+@history[#:changed "6.1.1.8" @elem{Added static checking of the @racket[link]
+                                   clause with respect to declared
+                                   initialization dependencies.}]}
+
 
 @defform[
 #:literals (import export link)
@@ -476,7 +486,9 @@ not generate it. Two additional forms,
 ]{
 
 Like @racket[compound-unit], but binds static information about the
-compound unit like @racket[define-unit].}
+compound unit like @racket[define-unit], including the propagation of
+initialization-dependency information (on remaining inports) from the
+linked units.}
 
 
 @defform[
@@ -488,7 +500,7 @@ compound unit like @racket[define-unit].}
 ]{
 
 Like @racket[compound-unit/infer], but binds static information about
-the compound unit like @racket[define-unit].}
+the compound unit like @racket[define-compound-unit].}
 
 @defform[
 #:literals (import export)
