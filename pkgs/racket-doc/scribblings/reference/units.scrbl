@@ -222,7 +222,7 @@ of bindings for import or export:
  specified by @racket[sig-spec].}
 
  @item{Each @racket[(struct id (field ...) struct-option ...)]  adds
- all of the identifiers that would be bound by @racket[(struct id
+ all of the identifiers that would be bound by @racket[(define-struct id
  (field ...) field-option ...)], where the extra option
  @racket[#:omit-constructor] omits the constructor identifier.}
 
