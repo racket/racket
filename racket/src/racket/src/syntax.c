@@ -2600,6 +2600,8 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
       if (SCHEME_FALSEP(l)) {
         /* top-level bound */
         SCHEME_VEC_ELS(result)[0] = scheme_false;
+        /* phase of defn must be binding phase: */
+        SCHEME_VEC_ELS(result)[2] = phase;
         insp = scheme_false;
       } else if (SCHEME_MODIDXP(l)) {
         SCHEME_VEC_ELS(result)[0] = l;
@@ -2950,6 +2952,7 @@ Scheme_Object *scheme_stx_add_module_expression_context(Scheme_Object *stx, Sche
 }
 
 void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-set> <phase> <inspector> ...) */
+                                  Scheme_Object *ctx,         /* binding context (as stx) or NULL */
                                   Scheme_Object *modidx,      /* actual source module */
                                   Scheme_Object *localname,   /* name in local context */
                                   Scheme_Object *exname,      /* name in definition context  */
@@ -2960,7 +2963,14 @@ void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-s
                                   Scheme_Object *nom_phase,   /* nominal export phase */
                                   int skip_marshal)           /* 1 => don't save on marshal; reconstructed via unmarshal info*/
 {
-  do_add_module_binding(scheme_module_context_marks(mc), localname, SCHEME_VEC_ELS(mc)[1],
+  Scheme_Mark_Set *marks;
+  
+  if (ctx)
+    marks = extract_mark_set((Scheme_Stx *)ctx, SCHEME_VEC_ELS(mc)[1]);
+  else
+    marks = scheme_module_context_marks(mc);
+  
+  do_add_module_binding(marks, localname, SCHEME_VEC_ELS(mc)[1],
                         modidx, exname, scheme_make_integer(mod_phase),
                         SCHEME_VEC_ELS(mc)[2],
                         nominal_mod, nominal_ex,
@@ -3070,20 +3080,39 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
                                      unmarshal_info, export_registry);
 }
 
-Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc)
+Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr)
 {
-  return scheme_stx_add_module_context(scheme_datum_to_syntax(scheme_true,
-                                                              scheme_false,
-                                                              scheme_false,
-                                                              0, 0),
-                                       mc);
+  Scheme_Object *plain, *o, *for_intro, *vec;
+
+  plain = scheme_datum_to_syntax(scheme_true, scheme_false, scheme_false, 0, 0);
+
+  o = scheme_stx_add_module_context(plain, mc);
+
+  if (!track_expr)
+    return o;
+
+  if (SCHEME_TRUEP(SCHEME_VEC_ELS(mc)[4])) {
+    /* Keep track of intro mark separately: */
+    for_intro = scheme_stx_introduce_to_module_context(plain, mc);
+    vec = scheme_make_vector(2, NULL);
+    SCHEME_VEC_ELS(vec)[0] = o;
+    SCHEME_VEC_ELS(vec)[1] = for_intro;
+    return scheme_datum_to_syntax(vec, scheme_false, scheme_false, 0, 0);
+  } else
+    return o;
 }
 
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
 {
   Scheme_Stx *stx = (Scheme_Stx *)_stx;
   Scheme_Object *vec, *shifts, *a, *multi_marks, *phase = scheme_make_integer(0);
-  Scheme_Object *expr_mark = scheme_false;
+  Scheme_Object *expr_mark = scheme_false, *intro_mark;
+
+  if (SCHEME_VECTORP(stx->val)) {
+    intro_mark = SCHEME_VEC_ELS(stx->val)[1];
+    stx = (Scheme_Stx *)(SCHEME_VEC_ELS(stx->val)[0]);
+  } else
+    intro_mark = NULL;
 
   shifts = stx->shifts;
   if (SCHEME_VECTORP(shifts))
@@ -3102,13 +3131,22 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
     mark_set_index(stx->marks->single_marks, i, &key, &val);
     expr_mark = key;
   }
+
+  if (intro_mark) {
+    stx = (Scheme_Stx *)intro_mark;
+    if (SCHEME_PAIRP(stx->marks->multi_marks)) {
+      intro_mark = SCHEME_CAR(SCHEME_CAR(stx->marks->multi_marks));
+    } else
+      intro_mark = scheme_false;
+  } else
+    intro_mark = scheme_false;
   
   vec = scheme_make_vector(6, NULL);
   SCHEME_VEC_ELS(vec)[0] = multi_marks;
   SCHEME_VEC_ELS(vec)[1] = phase;
   SCHEME_VEC_ELS(vec)[2] = scheme_false; /* not sure this is right */
   SCHEME_VEC_ELS(vec)[3] = shifts;
-  SCHEME_VEC_ELS(vec)[4] = scheme_false;
+  SCHEME_VEC_ELS(vec)[4] = intro_mark;
   SCHEME_VEC_ELS(vec)[5] = expr_mark;
 
   return vec;

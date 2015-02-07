@@ -2802,7 +2802,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
   } else
     shared_box = NULL;
 
-  mark_src = scheme_module_context_to_stx(rn);
+  mark_src = scheme_module_context_to_stx(rn, 0);
 
   exs = pt->provides;
   exsns = pt->provide_src_names;
@@ -2814,8 +2814,8 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
       midx = scheme_modidx_shift(exss[i], im->me->src_modidx, idx);
     else
       midx = idx;
-    if (!with_shared) {
-      scheme_extend_module_context(rn, midx, exs[i], exsns[i], idx, exs[i], 
+    if (!with_shared && !skip_binding_step) {
+      scheme_extend_module_context(rn, orig_src, midx, exs[i], exsns[i], idx, exs[i], 
                                    exets ? exets[i] : 0, src_phase_index, pt->phase_index,
                                    1);
     }
@@ -3003,7 +3003,7 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 	for (i = 0; i < m->me->rt->num_provides; i++) {
 	  if (SCHEME_FALSEP(m->me->rt->provide_srcs[i])) {
 	    name = m->me->rt->provide_src_names[i];
-	    scheme_extend_module_context(one_rn, m->self_modidx, name, name, m->self_modidx, name, 0, 
+	    scheme_extend_module_context(one_rn, NULL, m->self_modidx, name, name, m->self_modidx, name, 0, 
                                         scheme_make_integer(0), NULL, 0);
 	  }
 	}
@@ -3012,12 +3012,12 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
           one_rn = scheme_module_context_at_phase(rns, scheme_make_integer(j), 0);
           for (i = 0; i < exp_info->num_indirect_provides; i++) {
             name = exp_info->indirect_provides[i];
-            scheme_extend_module_context(one_rn, m->self_modidx, name, name, m->self_modidx, name, j, 
+            scheme_extend_module_context(one_rn, NULL, m->self_modidx, name, name, m->self_modidx, name, j, 
                                         scheme_make_integer(j), NULL, 0);
           }
           for (i = 0; i < exp_info->num_indirect_syntax_provides; i++) {
             name = exp_info->indirect_syntax_provides[i];
-            scheme_extend_module_context(one_rn, m->self_modidx, name, name, m->self_modidx, name, j, 
+            scheme_extend_module_context(one_rn, NULL, m->self_modidx, name, name, m->self_modidx, name, j, 
                                         scheme_make_integer(j), NULL, 0);
           }
         }
@@ -3063,7 +3063,7 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
           }
         }
 	
-	rns = scheme_module_context_to_stx(rns);
+	rns = scheme_module_context_to_stx(rns, 1);
 	m->rn_stx = rns;
       } else if (SCHEME_PAIRP(m->rn_stx)) {
 	/* Delayed shift: */
@@ -7146,6 +7146,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     orig_ii = scheme_stx_add_module_context(orig_ii, rn_set);
     saw_mb = add_simple_require_renames(orig_ii, rn_set, menv, NULL, iim, iidx, scheme_make_integer(0),
                                         NULL, 1, 0);
+    mb_ctx = scheme_datum_to_syntax(scheme_false, scheme_false, orig_ii, 0, 0);
+    // mb_ctx = scheme_stx_add_module_frame_context(mb_ctx, rn_set);
   } else {
     Scheme_Object *shift;
     shift = (Scheme_Object *)m->super_bxs_info[1];
@@ -7173,7 +7175,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     fm = SCHEME_STX_CAR(fm);
     check_not_tainted(fm);
   } else {
-    fm = scheme_make_pair(scheme_datum_to_syntax(module_begin_symbol, form, (orig_ii ? orig_ii : mb_ctx), 0, 2), 
+    fm = scheme_make_pair(scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx /* REMOVEME (orig_ii ? orig_ii : mb_ctx) */, 0, 2), 
 			  fm);
     check_mb = 1;
   }
@@ -7203,10 +7205,10 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     if (!SAME_OBJ(mbval, modbeg_syntax)) {
       Scheme_Object *mb;
       mb = scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx, 0, 0);
-      if (ii)
+      if (0 && ii) /* REMOVEME */
         mb = scheme_stx_add_module_frame_context(mb, rn_set);
       fm = scheme_make_pair(mb, scheme_make_pair(fm, scheme_null));
-      fm = scheme_datum_to_syntax(fm, form, ctx_form, 0, 2);
+      fm = scheme_datum_to_syntax(fm, form, mb_ctx, 0, 2);
       fm = scheme_stx_property(fm, module_name_symbol, scheme_resolved_module_path_value(rmp));
       
       SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer, fm);
@@ -7888,7 +7890,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   if (env->genv->module->super_bxs_info) {
     *all_simple_renames = 0;
   }
-  rn_stx = scheme_module_context_to_stx(rn_set);
+  rn_stx = scheme_module_context_to_stx(rn_set, 1);
   env->genv->module->rn_stx = rn_stx;
 
   bxs = scheme_malloc(sizeof(Module_Begin_Expand_State));
@@ -12140,6 +12142,7 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
   Scheme_Hash_Table *ht;
   Scheme_Object *rn_set, *modidx;
   Scheme_Object *rest, *insp;
+  Scheme_Env *tmp_env;
 
   if (env->module)
     modidx = env->module->self_modidx;
@@ -12163,23 +12166,34 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
   insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
   rn_set = env->stx_context;
-
-  if (rest) {
-    ht = scheme_make_hash_table_equal();
-  } else {
-    ht = NULL;
-  }
-
-  /* REMOVEME: FIXME: parse into dummy environment, first, then parse
-     into top-level if that works without error. We need those two
-     steps to avoid creating some bindings before discovering a
-     collision. */
   if (rn_set)
     form = revert_expression_marks_via_context(form, rn_set, env->phase);
+  
+  if (rest) {
+    /* Parse into dummy environment, first, then parse
+       into top-level if that works without error. We need those two
+       steps to avoid creating some bindings before discovering a
+       collision, and also for checking for duplicates in the spec as
+       opposed to duplicates with existing imports. */
+    ht = scheme_make_hash_table_equal();
+
+    tmp_env = scheme_make_env_like(env);
+    scheme_prepare_exp_env(tmp_env);
+    scheme_prepare_template_env(tmp_env);
+
+    parse_requires(form, tmp_env->phase, modidx, tmp_env, NULL,
+                   tmp_env->stx_context,
+                   check_dup_require, ht,
+                   NULL,
+                   0, 0, 0, 
+                   -1, 1,
+                   NULL, NULL, NULL,
+                   NULL);
+  }
 
   parse_requires(form, env->phase, modidx, env, NULL,
                  rn_set,
-                 check_dup_require, ht,
+                 NULL, NULL,
                  NULL,
                  !env->module, 0, 0, 
                  -1, 1,

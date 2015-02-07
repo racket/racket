@@ -1151,7 +1151,7 @@ Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Ob
 Scheme_Object *scheme_stx_add_module_expression_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc);
 
-Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc);
+Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
 Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc);
@@ -1163,7 +1163,7 @@ void scheme_module_context_add_mapped_symbols(Scheme_Object *mc, Scheme_Hash_Tab
 
 XFORM_NONGCING void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *context);
 
-void scheme_extend_module_context(Scheme_Object *mc, Scheme_Object *modidx,
+void scheme_extend_module_context(Scheme_Object *mc, Scheme_Object *ctx, Scheme_Object *modidx,
                                   Scheme_Object *locname, Scheme_Object *exname,
                                   Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
                                   intptr_t mod_phase, Scheme_Object *src_phase_index, 
@@ -3511,6 +3511,8 @@ Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv);
 Scheme_Env *scheme_new_module_env(Scheme_Env *env, Scheme_Module *m,
                                   int new_exp_module_tree, int new_pre_registry);
 int scheme_is_module_env(Scheme_Comp_Env *env);
+
+Scheme_Env *scheme_make_env_like(Scheme_Env *base);
 
 Scheme_Object *scheme_module_resolve(Scheme_Object *modidx, int load_it);
 Scheme_Env *scheme_module_access(Scheme_Object *modname, Scheme_Env *env, intptr_t rev_mod_phase);

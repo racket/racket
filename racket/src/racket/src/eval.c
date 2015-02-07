@@ -3996,10 +3996,14 @@ static void *compile_k(void)
       comp_flags |= COMP_ENFORCE_CONSTS;
   }
 
+  scheme_prepare_env_stx_context(genv);
+
   if (genv->stx_context)
     frame_marks = scheme_module_context_frame_marks(genv->stx_context);
   else
     frame_marks = NULL;
+
+  form = scheme_stx_introduce_to_module_context(form, genv->stx_context);
 
   while (1) {
     scheme_prepare_compile_env(genv);
@@ -4028,6 +4032,7 @@ static void *compile_k(void)
                                             1);
 	if (SAME_OBJ(gval, scheme_begin_syntax)) {
 	  if (scheme_stx_proper_list_length(form) > 1){
+            form = scheme_stx_introduce_to_module_context(form, genv->stx_context);
 	    form = SCHEME_STX_CDR(form);
 	    tl_queue = scheme_append(scheme_flatten_syntax_list(form, NULL),
 				     tl_queue);
@@ -4042,6 +4047,8 @@ static void *compile_k(void)
 	  o = scheme_frame_get_lifts(cenv);
 	  if (!SCHEME_NULLP(o)
               || !SCHEME_NULLP(rl)) {
+            o = scheme_named_map_1(NULL, scheme_stx_introduce_to_module_context, o, genv->stx_context);
+            rl = scheme_named_map_1(NULL, scheme_stx_introduce_to_module_context, rl, genv->stx_context);
 	    tl_queue = scheme_make_pair(form, tl_queue);
 	    tl_queue = scheme_append(o, tl_queue);
 	    tl_queue = scheme_append(rl, tl_queue);

@@ -1167,9 +1167,9 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
                                         &rename_insp,
                                         NULL, NULL, NULL, NULL);
 
-#if 0
+#if 1
   // REMOVEME
-  if (!strcmp("toppy", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+  if (!strcmp("define$", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%s\n", scheme_write_to_string(binding, NULL));
     scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
   }
@@ -1594,8 +1594,9 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
                       (env->module
                        ? env->module->self_modidx
                        : scheme_false))
-          && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase))
+          && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase)) {
         return SCHEME_VEC_ELS(binding)[1];
+      }
       /* Since the binding didn't match, we'll "shadow" the binding
          by replacing it below. */
     }

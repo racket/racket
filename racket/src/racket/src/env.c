@@ -968,6 +968,11 @@ static Scheme_Env *make_env(Scheme_Env *base, int toplevel_size)
   return env;
 }
 
+Scheme_Env *scheme_make_env_like(Scheme_Env *base)
+{
+  return make_env(base, 10);
+}
+
 Scheme_Env *
 scheme_new_module_env(Scheme_Env *env, Scheme_Module *m,
                       int new_exp_module_tree, int new_pre_registry)
@@ -1474,6 +1479,7 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
 
   if (env->stx_context) {
     scheme_extend_module_context(env->stx_context,
+                                 NULL,
                                  (env->module
                                   ? env->module->self_modidx
                                   : scheme_false),
