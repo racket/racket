@@ -1633,11 +1633,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
     break;
   case scheme_mark_table_type:
     {
-      Scheme_Mark_Table *mt = (Scheme_Mark_Table *)o;
-      hi->depth += 2;
-      k = (k << 3) + k;
-      k += equal_hash_key((Scheme_Object *)mt->single_marks, 0, hi);
-      o = mt->multi_marks;
+      abort(); // REMOVEME
     }
     break;
   default:
@@ -2107,12 +2103,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
     }
   case scheme_mark_table_type:
     {
-      Scheme_Mark_Table *mt = (Scheme_Mark_Table *)o;
-      uintptr_t k;
-      hi->depth += 2;
-      k = equal_hash_key2((Scheme_Object *)mt->single_marks, hi);
-      k += equal_hash_key2(mt->multi_marks, hi);
-      return k;
+      abort(); // REMOVEME
     }
     break;
   case scheme_place_bi_channel_type:

@@ -2413,7 +2413,10 @@ mark_mark {
 mark_mark_table {
  mark:
   Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
-  gcMARK2(m->single_marks, gc);
+  gcMARK2(m->phase_0, gc);
+  gcMARK2(m->phase_1, gc);
+  gcMARK2(m->other_phases, gc);
+  gcMARK2(m->all_phases, gc);
   gcMARK2(m->multi_marks, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));

@@ -2478,7 +2478,7 @@ make_introducer(int argc, Scheme_Object *argv[])
   Scheme_Object *mark, **info;
   Scheme_Env *genv;
 
-  mark = scheme_new_mark(2);
+  mark = scheme_new_nonoriginal_mark(2);
   info = MALLOC_N(Scheme_Object*, 2);
 
   info[0] = mark;
