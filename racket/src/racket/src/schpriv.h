@@ -1046,10 +1046,7 @@ typedef struct Scheme_Mark_Set Scheme_Mark_Set;
 
 typedef struct Scheme_Mark_Table {
   Scheme_Object so; /* scheme_mark_table_type or scheme_propagate_table_type */
-  Scheme_Mark_Set *phase_0;
-  Scheme_Mark_Set *phase_1;
-  Scheme_Hash_Tree *other_phases;
-  Scheme_Mark_Set *all_phases; /* phaseless marks */
+  Scheme_Mark_Set *single_marks;
   Scheme_Object *multi_marks; /* list of (cons multi_mark phase-shift) */
 } Scheme_Mark_Table;
 

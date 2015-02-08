@@ -3181,10 +3181,8 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
 {
   int len;
   Scheme_Object *stx, *form;
-#if 0
   Scheme_Comp_Env *frame;
-#endif
-  
+
   if (rec[drec].comp)
     env->prefix->non_phaseless = 1;
 
@@ -3197,7 +3195,7 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
   if (len != 2)
     bad_form(form, len);
 
-#if 0
+#if 1
   stx = SCHEME_STX_CDR(form);
   stx = SCHEME_STX_CAR(stx);
   
@@ -4792,7 +4790,6 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       phase = buf;
       sprintf(buf, " at phase %" PRIdPTR, env->genv->phase);
     }
-    scheme_stx_debug_print(form, scheme_env_phase(env->genv), 1);
     if (has_orig_unbound) {
       scheme_wrong_syntax(scheme_compile_stx_string, 
                           orig_unbound_name, form, 

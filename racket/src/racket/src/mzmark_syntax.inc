@@ -55,10 +55,7 @@ static int mark_mark_table_SIZE(void *p, struct NewGC *gc) {
 
 static int mark_mark_table_MARK(void *p, struct NewGC *gc) {
   Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
-  gcMARK2(m->phase_0, gc);
-  gcMARK2(m->phase_1, gc);
-  gcMARK2(m->other_phases, gc);
-  gcMARK2(m->all_phases, gc);
+  gcMARK2(m->single_marks, gc);
   gcMARK2(m->multi_marks, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
@@ -66,10 +63,7 @@ static int mark_mark_table_MARK(void *p, struct NewGC *gc) {
 
 static int mark_mark_table_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
-  gcFIXUP2(m->phase_0, gc);
-  gcFIXUP2(m->phase_1, gc);
-  gcFIXUP2(m->other_phases, gc);
-  gcFIXUP2(m->all_phases, gc);
+  gcFIXUP2(m->single_marks, gc);
   gcFIXUP2(m->multi_marks, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
