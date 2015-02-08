@@ -222,7 +222,7 @@ of bindings for import or export:
  specified by @racket[sig-spec].}
 
  @item{Each @racket[(struct id (field ...) struct-option ...)]  adds
- all of the identifiers that would be bound by @racket[(define-struct id
+ all of the identifiers that would be bound by @racket[(struct id
  (field ...) field-option ...)], where the extra option
  @racket[#:omit-constructor] omits the constructor identifier.}
 
@@ -782,7 +782,6 @@ Unlike the body of a @racketmodname[racket/unit] module, a
 @racket[require] in a @racketmodname[racket/signature] module must be
 a literal use of @racket[require].
 
-
 The resulting signature is exported as
 @racket[_base]@racketidfont["^"], where @racket[_base] is derived from
 the enclosing module's name (i.e., its symbolic name, or its path
@@ -790,6 +789,11 @@ without the directory and file suffix). If the module name ends in
 @racketidfont{-sig}, then @racket[_base] corresponds to the module
 name before @racketidfont{-sig}. Otherwise, the module name serves as
 @racket[_base].
+
+A @racket[struct] form as a @racket[sig-spec] is consistent with the
+definitions introduced by @racket[define-struct], as opposed to
+definitions introduced @racket[struct]. (That behavior was originally
+a bug, but it is preserved for compatibility.)
 
 @; ----------------------------------------------------------------------
 
