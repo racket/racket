@@ -940,6 +940,30 @@ stream, but plain lists can be used as streams, and functions such as
   the methods in @racket[gen:stream].
 }
 
+@defproc[(stream/c [c contract?]) contract?]{
+Returns a contract that recognizes streams. All elements of the stream must match
+@racket[c].
+
+If the @racket[c] argument is a flat contract or a chaperone contract, then the
+result will be a chaperone contract. Otherwise, the result will be an
+impersonator contract.
+
+When an @racket[stream/c] contract is applied to an asynchronous channel,
+the result is not @racket[eq?] to the input. The result will be either a
+@tech{chaperone} or @tech{impersonator} of the input depending on the type of
+contract.
+
+Contracts on streams are evaluated lazily by necessity (since streams may be
+infinite). Contract violations will not be raised until the value in violation
+is retrieved from the stream. As an exception to this rule, streams that are
+lists are checked immediately, as if @racket[c] had been used with
+@racket[listof].
+
+If a contract is applied to a stream, and that stream is subsequently used as
+the tail of another stream (as the second parameter to @racket[stream-cons]),
+the new elements will not be checked with the contract, but the tail's elements
+will still be enforced.}
+
 @close-eval[sequence-evaluator]
 
 @; ======================================================================
