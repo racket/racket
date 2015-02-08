@@ -253,6 +253,7 @@ that are overridden by further impersonators, for example.
 
 
 @defproc[(impersonate-struct [v any/c]
+                             [struct-type struct-type? _unspecified]
                              [orig-proc (or/c struct-accessor-procedure?
                                               struct-mutator-procedure?
                                               struct-type-property-accessor-procedure?)]
@@ -264,7 +265,10 @@ that are overridden by further impersonators, for example.
 Returns an impersonator of @racket[v], which redirects certain
 operations on the impersonated value. The @racket[orig-proc]s
 indicate the operations to redirect, and the corresponding
-@racket[redirect-proc]s supply the redirections.
+@racket[redirect-proc]s supply the redirections. The optional
+@racket[struct-type] argument, when provided, acts as a witness for
+the representation of @racket[v], which must be an instance of
+@racket[struct-type].
 
 The protocol for a @racket[redirect-proc] depends on the corresponding
 @racket[orig-proc], where @racket[_self] refers to the value to which
@@ -306,7 +310,7 @@ to @racket[impersonate-struct] must be odd) add impersonator properties
 or override impersonator-property values of @racket[v].
 
 Each @racket[orig-proc] must indicate a distinct operation. If no
-@racket[orig-proc]s are supplied, then no @racket[prop]s must be
+@racket[struct-type] and no @racket[orig-proc]s are supplied, then no @racket[prop]s must be
 supplied. If @racket[orig-proc]s are supplied only with @racket[#f]
 @racket[redirect-proc]s and no @racket[prop]s are supplied, then
 @racket[v] is returned unimpersonated.
@@ -320,7 +324,9 @@ after @racket[redirect-proc] (in the case of a mutator).
 @history[#:changed "6.1.1.2" @elem{Changed first argument to an
                                    accessor or mutator
                                    @racket[redirect-proc] from
-                                   @racket[v] to @racket[_self].}]}
+                                   @racket[v] to @racket[_self].}
+         #:changed "6.1.1.8" @elem{Added optional @racket[struct-type]
+                                   argument.}]}
 
 
 @defproc[(impersonate-vector [vec (and/c vector? (not/c immutable?))]
@@ -632,6 +638,7 @@ an extra argument as with @racket[impersonate-procedure*].
 
 
 @defproc[(chaperone-struct [v any/c]
+                           [struct-type struct-type? _unspecified]
                            [orig-proc (or/c struct-accessor-procedure?
                                             struct-mutator-procedure?
                                             struct-type-property-accessor-procedure?
@@ -671,18 +678,24 @@ a @racket[orig-proc] is originally applied:
        must return each values or a chaperone of each value. The
        @racket[redirect-proc] is not called if @racket[struct-info]
        would return @racket[#f] as its first argument. An
-       @racket[orig-proc] can be @racket[struct-info] only if some
-       other @racket[orig-proc] is supplied.}
+       @racket[orig-proc] can be @racket[struct-info] only if
+       @racket[struct-type] or some other @racket[orig-proc] is supplied.}
 
  @item{Any accessor or mutator @racket[orig-proc] that is an
        @tech{impersonator} must be specifically a @tech{chaperone}.}
 
 ]
 
+Supplying a property accessor for @racket[orig-proc] enables
+@racket[prop] arguments, the same as supplying an accessor, mutator,
+or structure type.
+
 @history[#:changed "6.1.1.2" @elem{Changed first argument to an
                                    accessor or mutator
                                    @racket[redirect-proc] from
-                                   @racket[v] to @racket[_self].}]}
+                                   @racket[v] to @racket[_self].}
+         #:changed "6.1.1.8" @elem{Added optional @racket[struct-type]
+                                   argument.}]}
 
 
 @defproc[(chaperone-vector [vec vector?]

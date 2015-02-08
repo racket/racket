@@ -5829,7 +5829,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
   const char *kind;
   Scheme_Hash_Tree *props = NULL, *red_props = NULL, *empty_red_props = NULL, *setter_positions = NULL;
   intptr_t field_pos;
-  int empty_si_chaperone = 0, *empty_redirects = NULL, has_redirect = 0;
+  int empty_si_chaperone = 0, *empty_redirects = NULL, has_redirect = 0, witnessed = 0;
 
   if (argc == 1) return argv[0];
 
@@ -5852,14 +5852,33 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
   else
     inspector = NULL;
 
-  for (i = 1; i < argc; i++) {
+  i = 1;
+
+  if ((i < argc) && (SCHEME_STRUCT_TYPEP(argv[i])
+                     || (SCHEME_NP_CHAPERONEP(argv[i])
+                         && SCHEME_STRUCT_TYPEP(SCHEME_CHAPERONE_VAL(argv[i]))))) {
+    if (!SCHEME_STRUCTP(val) || !scheme_is_struct_instance((SCHEME_NP_CHAPERONEP(argv[i])
+                                                            ? SCHEME_CHAPERONE_VAL(argv[i])
+                                                            : argv[i]),
+                                                           val)) {
+      scheme_contract_error(name,
+                            "given value is not an instance of the given structure type",
+                            "struct type", 1, argv[i],
+                            "value", 1, argv[0],
+                            NULL);
+      return NULL;
+    }
+    i++;
+    witnessed = 1;
+  }
+
+  for (; i < argc; i++) {
     proc = argv[i];
 
     if ((i > 1) && SAME_TYPE(SCHEME_TYPE(proc), scheme_chaperone_property_type)) {
       props = scheme_parse_chaperone_props(name, i, argc, argv);
       break;
     }
-    
 
     a[0] = proc;
     if (SCHEME_CHAPERONEP(proc)) proc = SCHEME_CHAPERONE_VAL(proc);
@@ -5869,21 +5888,29 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
         offset = stype->num_slots;
       else
         offset = 0;
+      witnessed = 1;
     } else if (SCHEME_TRUEP(struct_getter_p(1, a))) {
       kind = "accessor";
       offset = 0;
+      witnessed = 1;
     } else if (SCHEME_TRUEP(struct_prop_getter_p(1, a))) {
       kind = "struct-type property accessor";
       offset = -1;
+      witnessed = 1;
     } else if (!is_impersonator && SAME_OBJ(proc, struct_info_proc)) {
       kind = "struct-info";
       offset = -2;
     } else {
-      scheme_wrong_contract(name, 
-                            "(or/c struct-accessor-procedure?\n"
-			    "      struct-mutator-procedure?\n"
-                            "      struct-type-property-accessor-procedure?\n"
-			    "      (one-of/c struct-info))",
+#define CHAP_PROC_CONTRACT_STR(extra)                      \
+      ("(or/c " extra "struct-accessor-procedure?\n"      \
+       "      struct-mutator-procedure?\n"                 \
+       "      struct-type-property-accessor-procedure?\n"  \
+       "      (one-of/c struct-info))")
+      
+      scheme_wrong_contract(name,
+                            ((i == 1)
+                             ? CHAP_PROC_CONTRACT_STR("struct-type?\n      ")
+                             : CHAP_PROC_CONTRACT_STR("")),
                             i, argc, argv);
       return NULL;
     }
@@ -6075,6 +6102,18 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
 
   if (!has_redirect && !props)
     return argv[0];
+
+  if (!witnessed) {
+    scheme_contract_error(name,
+                          (is_impersonator
+                           ? "cannot impersonate value as a structure without a witness"
+                           : "cannot chaperone value as a structure without a witness"),
+                          "explanation", 0, ("a structure type, accessor, or mutator acts as a witness\n"
+                                             "   that the given value's representation can be chaperoned or impersonated"),
+                          "given value", 1, argv[0],
+                          NULL);
+    return NULL;
+  }
   
   if (!redirects) {
     /* a non-structure chaperone */

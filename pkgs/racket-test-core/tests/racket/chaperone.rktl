@@ -530,6 +530,12 @@
    (define-struct p (u) #:property prop:green 'green)
    (define-struct r (t) #:property prop:red 'red)
    (define-struct (q p) (v w))
+   (define-struct specific ())
+   (test #t chaperone?/impersonator (chaperone-struct (specific) struct:specific prop:blue 'blue))
+   (test #t chaperone?/impersonator (chaperone-struct (specific)
+                                                      (chaperone-struct-type struct:specific 
+                                                                             values values values)
+                                                      prop:blue 'blue))
    (test #t chaperone?/impersonator (chaperone-struct (make-a 1 2) a-x (lambda (a v) v)
                                                       set-a-x! (lambda (a v) v)))
    (test #t chaperone?/impersonator (chaperone-struct (make-b 1 2 3) a-x (lambda (a v) v)
@@ -708,7 +714,10 @@
           (test #t eq? p1 (chaperone-struct p1
                                             p-u #f))
           (test 0 p-u p2)
-          (test 'green green-ref p2)))))
+          (test 'green green-ref p2)))
+      
+      (err/rt-test (chaperone-struct 10 struct-info void))
+      (err/rt-test (chaperone-struct 10 struct-info void prop:blue 'blue))))
 
 ;; test to see if the guard is actually called even when impersonated
 (let ()
