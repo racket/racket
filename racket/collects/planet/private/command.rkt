@@ -68,6 +68,17 @@
                                (values "help" '())
                                (values (car argslist) (cdr argslist)))])
                (prefix-case the-command
+                            #:ambiguous (lambda (opts)
+                                          (raise-user-error
+                                           (string->symbol (format "~a ~a" p the-command))
+                                           (string-append "does not identify a unique subcommand;\n"
+                                                          " please use a longer name for the intended subcommand\n"
+                                                          "  given: " the-command "\n"
+                                                          "  subcommands with a matching prefix:"
+                                                          (apply
+                                                           string-append
+                                                           (for/list ([opt (in-list opts)])
+                                                             (format "\n   ~a" opt))))))
                             [n 
                              (parameterize ([current-svn-style-command n])
                                (command-line 
