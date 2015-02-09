@@ -21,6 +21,8 @@ reader are @tech{interned} in @racket[read-syntax] mode.
 
 @see-read-print["character"]{characters}
 
+@history[#:changed "6.1.1.8" @elem{Updated from Unicode 5.0.1 to Unicode 7.0.0.}]
+
 @; ----------------------------------------
 @section{Characters and Scalar Values}
 

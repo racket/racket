@@ -1469,7 +1469,8 @@
    #\u3000
    ;; Post SRFI-14?
    #\u205F
-   #\u180E))
+   ;; #\u180E --- in Unicode 7, this code point changed from Zs to Cf
+   ))
 
 ;; Punctuation in Latin-1:
 (check-all-latin-1
@@ -1498,8 +1499,10 @@
    #\{
    #\}
    #\u00A1
+   #\u00A7 ;; Made punctuation in Unicode 7.0
    #\u00AB
    ;; #\u00AD ;; Treated as a control character now?
+   #\u00B6 ;; Made punctuation in Unicode 7.0
    #\u00B7
    #\u00BB
    #\u00BF))
@@ -1521,7 +1524,7 @@
    #\u00A4
    #\u00A5
    #\u00A6
-   #\u00A7
+   ;; #\u00A7 ;; Made punctuation in Unicode 7.0
    #\u00A8
    #\u00A9
    #\u00AC
@@ -1530,7 +1533,7 @@
    #\u00B0
    #\u00B1
    #\u00B4
-   #\u00B6
+   ;; #\u00B6 ;; Made punctuation in Unicode 7.0
    #\u00B8
    #\u00D7
    #\u00F7))
@@ -1558,7 +1561,7 @@
    #\u3000
    ;; Post SRFI-14?
    #\u205F
-   #\u180E
+   ;; #\u180E --- in Unicode 7, this code point changed from Zs to Cf
    ))
 
 
@@ -1579,7 +1582,8 @@
 	 (if (char-numeric? c) 1 0)
 	 (if (char-punctuation? c) 1 0)
 	 (if (char-symbolic? c) 
-             (if (char<=? #\u24B6 c #\u24E9)
+             (if (or (char<=? #\u24B6 c #\u24E9)
+                     (char<=? #\U1F130 c #\U1F189)) ;; added in Unicode 6.0
                  0 ;; Those are both alphabetic and symbolic
                  1)
              0))
