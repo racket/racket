@@ -136,7 +136,7 @@ this list are treated as by-position arguments. To pass a list of
 keyword arguments to a function, use
 the @racket[keyword-apply] function, which accepts a function to apply
 and three lists. The first two lists are in parallel, where the first
-list contains keywords (sorted by @racket[keyword<]), and the second
+list contains keywords (sorted by @racket[keyword<?]), and the second
 list contains a corresponding argument for each keyword. The third
 list contains by-position function arguments, as for @racket[apply].
 
