@@ -1363,7 +1363,7 @@
 ;; type.
 (provide define-cstruct)
 (define-syntax (define-cstruct stx)
-  (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx 
+  (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx slot-offsets-stx
                        alignment-stx malloc-mode-stx property-stxes property-binding-stxes
                        no-equal?)
     (define name
@@ -1389,6 +1389,7 @@
          [struct-string        (format "~a?" name)]
          [(slot ...)           slot-names-stx]
          [(slot-type ...)      slot-types-stx]
+         [(slot-offset ...)    slot-offsets-stx]
          [TYPE                 (id name)]
          [cpointer:TYPE        (id "cpointer:"name)]
          [struct:cpointer:TYPE (if (null? property-stxes)
@@ -1496,7 +1497,7 @@
                 (define-values (stype ...)  (values slot-type ...))
                 (define types (list stype ...))
                 (define alignment-v alignment)
-                (define offsets (compute-offsets types alignment-v))
+                (define offsets (map (lambda (u c) (or u c)) (list slot-offset ...) (compute-offsets types alignment-v)))
                 (define-values (offset ...) (apply values offsets))
                 (define all-tags (cons TYPE-tag super-tags))
                 (define _TYPE*
@@ -1596,9 +1597,9 @@
            (if (list? what) (apply string-append what) what)
            stx xs))
   (syntax-case stx ()
-    [(_ type ([slot slot-type] ...) . more)
+    [(_ type (slot-def ...) . more)
      (or (stx-pair? #'type)
-         (stx-pair? #'(slot ...)))
+         (stx-pair? #'(slot-def ...)))
      (let-values ([(_TYPE _SUPER)
                    (syntax-case #'type ()
                      [(t s) (values #'t #'s)]
@@ -1656,28 +1657,33 @@
               _TYPE))
        (unless (regexp-match? #rx"^_." (symbol->string (syntax-e _TYPE)))
          (err "cstruct name must begin with a `_'" _TYPE))
+       
+       (with-syntax 
+         ([((slot slot-type slot-offset) ...) 
+             (syntax-case #'(slot-def ...) ()
+               [((slot slot-type) ...) #'((slot slot-type #f) ...)]
+               [((slot slot-type slot-offset) ...) #'((slot slot-type slot-offset) ...)]
+               [_ (err "bad field specification, expecting `[name ctype]' or `[name ctype offset]'" #'(slot-def ...))])])
+
        (for ([s (in-list (syntax->list #'(slot ...)))])
          (unless (identifier? s)
            (err "bad field name, expecting an identifier" s)))
-       (if _SUPER
-         (make-syntax _TYPE #t
-                      #`(#,(datum->syntax _TYPE 'super _TYPE) slot ...)
-                      #`(#,_SUPER slot-type ...)
-                      alignment
-                      malloc-mode
-                      properties
-                      property-bindings
-                      no-equal?)
-         (make-syntax _TYPE #f #'(slot ...) #`(slot-type ...) 
-                      alignment malloc-mode properties property-bindings no-equal?)))]
+
+         (if _SUPER
+             (make-syntax _TYPE #t
+                          #`(#,(datum->syntax _TYPE 'super _TYPE) slot ...)
+                          #`(#,_SUPER slot-type ...)
+                          #'(0 slot-offset ...)
+                          alignment
+                          malloc-mode
+                          properties
+                          property-bindings
+                          no-equal?)
+             (make-syntax _TYPE #f #'(slot ...) #`(slot-type ...) #`(slot-offset ...)
+                          alignment malloc-mode properties property-bindings no-equal?))))]
     [(_ type () . more)
      (identifier? #'type)
      (err "must have either a supertype or at least one field")]
-    ;; specific errors for bad slot specs, leave the rest for a generic error
-    [(_ type (bad ...) . more)
-     (err "bad field specification, expecting `[name ctype]'"
-          (ormap (lambda (s) (syntax-case s () [[n ct] #t] [_ s]))
-                 (syntax->list #'(bad ...))))]
     [(_ type bad . more)
      (err "bad field specification, expecting a sequence of `[name ctype]'"
           #'bad)]))
