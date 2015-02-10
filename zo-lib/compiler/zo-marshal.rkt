@@ -1092,7 +1092,7 @@
             [l (cons max-let-depth l)]
             [l (cons internal-context l)] ; module->namespace syntax
             [l (list* #f #f l)] ; obsolete `functional?' info
-            [l (cons lang-info l)] ; lang-info
+            [l (cons (protect-quote lang-info) l)] ; lang-info
             [l (cons (map convert-module post-submodules) l)]
             [l (cons (map convert-module pre-submodules) l)]
             [l (cons (if (memq 'cross-phase flags) #t #f) l)]
