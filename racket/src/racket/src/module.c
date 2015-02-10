@@ -289,6 +289,7 @@ THREAD_LOCAL_DECL(static Scheme_Object *global_shift_cache);
 #define MODULE_MODFORM_KIND 4
 #define SAVED_MODFORM_KIND 5
 #define DECLARE_MODFORM_KIND 6
+#define LIFTREQ_MODFORM_KIND 7
 
 /* combined bitwise: */
 #define NON_PHASELESS_IMPORT 0x1
@@ -8860,7 +8861,15 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	e = scheme_expand_expr(e, xenv, &erec1, 0);	
       }
 
-      lifted_reqs = scheme_append(scheme_frame_get_require_lifts(xenv), lifted_reqs);
+      lifted_reqs = scheme_frame_get_require_lifts(xenv);
+      if (erec && !SCHEME_NULLP(lifted_reqs)) {
+        p = scheme_make_pair(scheme_make_pair(lifted_reqs, scheme_make_integer(LIFTREQ_MODFORM_KIND)), scheme_null);
+        if (last)
+          SCHEME_CDR(last) = p;
+        else
+          first = p;
+        last = p;
+      }
 
       fst = scheme_frame_get_lifts(xenv);
       if (!SCHEME_NULLP(fst)) {
@@ -9129,8 +9138,17 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             m = scheme_compile_expr_lift_to_let(code, eenv, &mrec, 0);
           }
 
-          if (!for_stx)
-            lifted_reqs = scheme_append(scheme_frame_get_require_lifts(eenv), lifted_reqs);
+          if (!for_stx) {
+            lifted_reqs = scheme_frame_get_require_lifts(eenv);
+            if (erec && !SCHEME_NULLP(lifted_reqs)) {
+              p = scheme_make_pair(scheme_make_pair(lifted_reqs, scheme_make_integer(LIFTREQ_MODFORM_KIND)), scheme_null);
+              if (last)
+                SCHEME_CDR(last) = p;
+              else
+                first = p;
+              last = p;
+            }
+          }
 
           m = scheme_letrec_check_expr(m);
 
@@ -9410,6 +9428,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     } else if (kind == DECLARE_MODFORM_KIND) {
       expanded_l = scheme_make_pair(e, expanded_l);
       p = SCHEME_CDR(p);
+    } else if (kind == LIFTREQ_MODFORM_KIND) {
+      expanded_l = scheme_append(e, expanded_l);
+      p = SCHEME_CDR(p);
     } else if ((kind == PROVIDE_MODFORM_KIND)
                || (kind == MODULE_MODFORM_KIND)) {
       /* handle `provide's and `module's in later passes */
@@ -9455,7 +9476,10 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	e = scheme_compile_expr(e, nenv, &crec1, 0);
       }
 
-      lifted_reqs = scheme_append(scheme_frame_get_require_lifts(cenv), lifted_reqs);
+      lifted_reqs = scheme_frame_get_require_lifts(cenv);
+      if (erec && !SCHEME_NULLP(lifted_reqs))
+        expanded_l = scheme_make_pair(SCHEME_CAR(expanded_l),
+                                      scheme_append(lifted_reqs, SCHEME_CDR(expanded_l)));
       
       l = scheme_frame_get_lifts(cenv);
       if (SCHEME_NULLP(l)) {
@@ -9604,14 +9628,6 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   if (!SCHEME_NULLP(exp_body)) {
     if (*bxs->_num_phases < phase + 2)
       *bxs->_num_phases = phase + 2;
-  }
-
-  if (erec) {
-    /* Add lifted requires */
-    if (!SCHEME_NULLP(lifted_reqs)) {
-      lifted_reqs = scheme_reverse(lifted_reqs);
-      expanded_l = scheme_append(lifted_reqs, expanded_l);
-    }
   }
 
   if (requested_phaseless) {

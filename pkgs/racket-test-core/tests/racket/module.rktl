@@ -1337,5 +1337,22 @@
 (test 1 dynamic-require ''uses-a-in-begin-for-syntax 'one)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check lifted requires, submodules, and re-expansion:
+
+(define lifted-require-of-submodule
+  `(,#'module m racket/base
+    (require (for-syntax racket/base))
+    (module a racket/base
+      (provide a)
+      (define a 'a))
+
+    (define-syntax (m stx)
+      (syntax-local-lift-require '(submod "." a) (syntax-local-introduce #'a)))
+
+    (m)))
+
+(test #t syntax? (expand-syntax (expand lifted-require-of-submodule)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
