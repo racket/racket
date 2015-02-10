@@ -1627,7 +1627,7 @@
                        [(#:malloc-mode m . rest) 
                         (not malloc-mode)
                         (loop #'rest alignment #'m properties property-bindings no-equal?)]
-                       [(#:alignment m . rest) 
+                       [(#:malloc-mode m . rest) 
                         (err "multiple specifications of #:malloc-mode" (head))]
                        [(#:property) (err "missing property expression for #:property" (head))]
                        [(#:property prop) (err "missing value expression for #:property" (head))]

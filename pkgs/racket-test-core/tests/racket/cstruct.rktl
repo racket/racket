@@ -72,12 +72,14 @@
 (syntax-test #'(define-cstruct x ()))
 (syntax-test #'(define-cstruct #f ()))
 (syntax-test #'(define-cstruct _y (y)))
-(syntax-test #'(define-cstruct _y () #:alignment))
-(syntax-test #'(define-cstruct _y () #:alignment 2 #:alignment 2))
-(syntax-test #'(define-cstruct _y () #:property))
-(syntax-test #'(define-cstruct _y () #:property x))
-(syntax-test #'(define-cstruct _y () #:property x y . 10))
-(syntax-test #'(define-cstruct _y () #:no-equal #:no-equal))
+(syntax-test #'(define-cstruct _y ([x _int]) #:alignment) #rx"missing expression for #:alignment")
+(syntax-test #'(define-cstruct _y ([x _int]) #:alignment 2 #:alignment 2) #rx"multiple specifications of #:alignment")
+(syntax-test #'(define-cstruct _y ([x _int]) #:malloc-mode) #rx"missing expression for #:malloc-mode")
+(syntax-test #'(define-cstruct _y ([x _int]) #:malloc-mode 'atomic #:malloc-mode 'atomic) #rx"multiple specifications of #:malloc-mode")
+(syntax-test #'(define-cstruct _y ([x _int]) #:property) #rx"missing property expression for #:property")
+(syntax-test #'(define-cstruct _y ([x _int]) #:property x)  #rx"missing value expression for #:property")
+(syntax-test #'(define-cstruct _y ([x _int]) #:property x y . 10))
+(syntax-test #'(define-cstruct _y ([x _int]) #:no-equal #:no-equal) #rx"multiple specifications of #:no-equal")
 
 ;; ----------------------------------------
 ;; Check struct properties and subtypes:
