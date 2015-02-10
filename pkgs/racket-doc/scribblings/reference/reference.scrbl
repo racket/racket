@@ -31,6 +31,9 @@ most prominent libraries. The companion manual @|Guide| provides a
 friendlier (though less precise and less complete) overview of the
 language.
 
+@margin-note{The source of this manual is available on
+@hyperlink["https://github.com/plt/racket/tree/master/pkgs/racket-doc/scribblings/reference"]{GitHub}.}
+
 @defmodulelang*[(racket/base racket)
                 ;; Use sources for overlap with `scheme' and `mzscheme':
                 #:use-sources ('#%kernel
@@ -48,6 +51,7 @@ language.
 Unless otherwise noted, the bindings defined in this manual are
 exported by the @racketmodname[racket/base] and @racketmodname[racket]
 languages.}
+
 
 @margin-note{The @racketmodname[racket/base] library is much smaller than
 the @racketmodname[racket] library and will typically load faster.

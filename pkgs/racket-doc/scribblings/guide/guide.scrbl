@@ -15,6 +15,9 @@ Racket. From @seclink["datatypes"]{Chapter 3} on, this guide dives
 into details---covering much of the Racket toolbox, but leaving
 precise details to @|Racket| and other reference manuals.
 
+@margin-note{The source of this manual is available on
+@hyperlink["https://github.com/plt/racket/tree/master/pkgs/racket-doc/scribblings/guide"]{GitHub}.}
+
 @table-of-contents[]
 
 @include-section["welcome.scrbl"]
