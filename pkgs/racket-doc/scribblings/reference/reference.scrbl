@@ -49,6 +49,9 @@ Unless otherwise noted, the bindings defined in this manual are
 exported by the @racketmodname[racket/base] and @racketmodname[racket]
 languages.}
 
+If you would like to contribute to the maintenance of this reference,
+you can find it the source on @hyperlink[https://github.com/plt/racket/tree/master/pkgs/racket-doc/scribblings/reference]{GitHub}.
+
 @margin-note{The @racketmodname[racket/base] library is much smaller than
 the @racketmodname[racket] library and will typically load faster.
 
