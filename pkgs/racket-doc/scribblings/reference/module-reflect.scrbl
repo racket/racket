@@ -455,7 +455,7 @@ Return @racket[#t] if @racket[compiled-module-code] represents a
                                      module-path-index?)]
                           [provided (or/c symbol? #f 0 void?)]
                           [fail-thunk (-> any) (lambda () ....)])
-         any]{
+         (or/c void? any/c)]{
 
 Dynamically @tech{instantiates} the module specified by @racket[mod]
 in the current namespace's registry at the namespace's @tech{base
@@ -472,11 +472,14 @@ above the @tech{base phase}.
 
 When @racket[provided] is a symbol, the value of the module's export
 with the given name is returned, and still the module is not
-@tech{visit}ed or made @tech{available} in higher phases. If the
-module exports @racket[provided] as syntax, then a use of the binding
+@tech{visit}ed or made @tech{available} in higher phases.
+
+If the module exports @racket[provided] as syntax, then a use of the binding
 is expanded and evaluated in a fresh namespace to which the module is
 attached, which means that the module is @tech{visit}ed in the fresh
-namespace. If the module has no such exported variable or syntax, then
+namespace. The expanded syntax must return a single value.
+
+If the module has no such exported variable or syntax, then
 @racket[fail-thunk] is called; the default @racket[fail-thunk] raises
 @racket[exn:fail:contract]. If the variable named by @racket[provided]
 is exported protected (see @secref["modprotect"]), then the
