@@ -449,7 +449,7 @@ Like @racket[for*/fold], but the extra @racket[orig-datum] is used as the source
 
 Defines @racket[id] as syntax. An @racket[(id . _rest)] form is
 treated specially when used to generate a sequence in a
-@racket[_clause] of @racket[for] (or one of its variants). In that
+@racket[_for-clause] of @racket[for] (or one of its variants). In that
 case, the procedure result of @racket[clause-transform-expr] is called
 to transform the clause.
 
@@ -462,18 +462,21 @@ produce a procedure (of one argument) that is used as a macro
 transformer.
 
 When the @racket[clause-transform-expr] transformer is used, it is
-given a @racket[_clause] as an argument, where the clause's form is
+given a @racket[_for-clause] as an argument, where the clause's form is
 normalized so that the left-hand side is a parenthesized sequence of
 identifiers. The right-hand side is of the form @racket[(id . _rest)].
 The result can be either @racket[#f], to indicate that the forms
 should not be treated specially (perhaps because the number of bound
 identifiers is inconsistent with the @racket[(id . _rest)] form), or a
-new @racket[_clause] to replace the given one. The new clause might
+new @racket[_for-clause] to replace the given one. The new clause might
 use @racket[:do-in]. To protect identifiers in the result of 
 @racket[clause-transform-expr], use @racket[for-clause-syntax-protect]
 instead of @racket[syntax-protect].
 
 @mz-examples[#:eval for-eval
+(define (check-nat n)
+  (unless (exact-nonnegative-integer? n)
+    (raise-argument-error 'in-digits "exact-nonnegative-integer?" n)))
 (define-sequence-syntax in-digits
   (lambda () #'in-digits/proc)
   (lambda (stx)
@@ -482,16 +485,16 @@ instead of @racket[syntax-protect].
        #'[(d)
           (:do-in
             ([(n) nat])
-            (unless (exact-nonnegative-integer? n)
-              (raise-type-error 'in-digits "exact non-negative integer" n))
+            (check-nat n)
             ([i n])
             (not (zero? i))
             ([(j d) (quotient/remainder i 10)])
             #true
             #true
-            [j])]])))
+            [j])]]
+      [_ #f])))
 
-(define (in-digits/proc n [b 10])
+(define (in-digits/proc n)
   (for/list ([d (in-digits n)]) d))
 
 (for/list ([d (in-digits 1138)]) d)
@@ -509,7 +512,7 @@ instead of @racket[syntax-protect].
                  (loop-arg ...))]{
 
 A form that can only be used as a @racket[_seq-expr] in a
-@racket[_clause] of @racket[for] (or one of its variants).
+@racket[_for-clause] of @racket[for] (or one of its variants).
 
 Within a @racket[for], the pieces of the @racket[:do-in] form are
 spliced into the iteration essentially as follows:
