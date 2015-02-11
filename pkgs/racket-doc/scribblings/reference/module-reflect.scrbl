@@ -4,6 +4,8 @@
 
 @title{Module Names and Loading}
 
+@(define mod-eval (make-base-eval))
+
 @;------------------------------------------------------------------------
 @section[#:tag "modnameresolver"]{Resolving Module Names}
 
@@ -470,14 +472,36 @@ and the module is not @tech{visit}ed (see @secref["mod-parse"]) or
 even made @tech{available} (for on-demand @tech{visits}) in phases
 above the @tech{base phase}.
 
+@examples[#:eval mod-eval
+  (module a racket/base (displayln "hello"))
+  (dynamic-require ''a #f)
+]
+
 When @racket[provided] is a symbol, the value of the module's export
 with the given name is returned, and still the module is not
 @tech{visit}ed or made @tech{available} in higher phases.
+
+@examples[#:eval mod-eval
+  (module b racket/base
+    (provide dessert)
+    (define dessert "gulab jamun"))
+  (dynamic-require ''b 'dessert)
+]
 
 If the module exports @racket[provided] as syntax, then a use of the binding
 is expanded and evaluated in a fresh namespace to which the module is
 attached, which means that the module is @tech{visit}ed in the fresh
 namespace. The expanded syntax must return a single value.
+
+@examples[#:eval mod-eval
+  (module c racket/base
+    (require (for-syntax racket/base))
+    (provide dessert2)
+    (define dessert "nanaimo bar")
+    (define-syntax dessert2
+      (make-rename-transformer #'dessert)))
+  (dynamic-require ''c 'dessert2)
+]
 
 If the module has no such exported variable or syntax, then
 @racket[fail-thunk] is called; the default @racket[fail-thunk] raises
@@ -570,3 +594,5 @@ the running Racket instance. Predefined modules always have a symbolic
 resolved module path, and they may be predefined always or
 specifically within a particular executable (such as one created by
 @exec{raco exe} or @racket[create-embedding-executable]).}
+
+@(close-eval mod-eval)
