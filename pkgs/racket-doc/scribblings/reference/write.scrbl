@@ -68,13 +68,17 @@ any way.}
 @defproc[(writeln [datum any/c] [out output-port? (current-output-port)])
          void?]{
 
-The same as @racket[(write datum out)] followed by @racket[(newline out)].}
+The same as @racket[(write datum out)] followed by @racket[(newline out)].
+
+@history[#:added "6.1.1.8"]}
+
 
 @defproc[(displayln [datum any/c] [out output-port? (current-output-port)])
          void?]{
 
 The same as @racket[(display datum out)] followed by @racket[(newline out)],
 which is similar to @tt{println} in Pascal or Java.}
+
 
 @defproc[(println [datum any/c] [out output-port? (current-output-port)]
                   [quote-depth (or/c 0 1) 0])
@@ -83,11 +87,13 @@ which is similar to @tt{println} in Pascal or Java.}
 The same as @racket[(print datum out quote-depth)] followed by
 @racket[(newline out)].
 
-This is not equivalent to @tt{println} in other languages because, by default,
-it uses the printing conventions of @racket[write]. For a closer analog, use
-@racket[displayln] instead.}
+The @racket[println] function is not equivalent to @tt{println} in
+other languages, because @racket[println] uses printing conventions
+that are closer to @racket[write] than to @racket[display]. For a closer
+analog to @tt{println} in other languages, use @racket[displayln].
 
-@history[#:changed "6.1.1.8" @elem{Added @racket[writeln] and @racket[displayln].}]
+@history[#:added "6.1.1.8"]}
+
 
 @defproc[(fprintf [out output-port?] [form string?] [v any/c] ...) void?]{
 
