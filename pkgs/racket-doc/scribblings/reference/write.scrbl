@@ -11,7 +11,7 @@
 Writes @racket[datum] to @racket[out], normally in such a way that
 instances of core datatypes can be read back in. If @racket[out] has a
 handler associated to it via @racket[port-write-handler], then the
-handler is called. Otherwise, the default printer is used (in
+handler is called. Otherwise, the @seclink["printing"]{default printer} is used (in
 @racket[write] mode), as configured by various parameters.
 
 See @secref["printing"] for more information about the default
@@ -34,7 +34,7 @@ Displays @racket[datum] to @racket[out], similar to @racket[write],
 but usually in such a way that byte- and character-based datatypes are
 written as raw bytes or characters. If @racket[out] has a handler
 associated to it via @racket[port-display-handler], then the handler
-is called. Otherwise, the default printer is used (in @racket[display]
+is called. Otherwise, the @seclink["printing"]{default printer} is used (in @racket[display]
 mode), as configured by various parameters.
 
 See @secref["printing"] for more information about the default
@@ -46,11 +46,11 @@ initial cycle check.}
                 [quote-depth (or/c 0 1) 0])
          void?]{
 
-Writes @racket[datum] to @racket[out], normally the same way as
-@racket[write]. If @racket[out] has a handler associated to it via
-@racket[port-print-handler], then the handler is called. Otherwise,
-the handler specified by @racket[global-port-print-handler] is called;
-the default handler uses the default printer in @racket[write] mode.
+Prints @racket[datum] to @racket[out]. If @racket[out] has a handler
+associated to it via @racket[port-print-handler], then the handler is
+called. Otherwise, the handler specified by
+@racket[global-port-print-handler] is called; the default handler uses
+the @seclink["printing"]{default printer} in @racket[print] mode.
 
 The optional @racket[quote-depth] argument adjusts printing when the
 @racket[print-as-expression] parameter is set to @racket[#t]. In that
