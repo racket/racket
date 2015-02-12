@@ -178,6 +178,38 @@
      (and (exn:fail:contract:blame? x)
           (regexp-match #rx"promised: foo?" (exn-message x)))))
   
+  (test/spec-passed/result
+   'struct/c-contract-accessor
+   '(begin
+      (require (for-syntax racket/base))
+      (let ()
+        (struct d (vec))
+
+        (define dx-vec (contract (-> (struct/c d (vectorof any/c)) any) d-vec 'pos 'neg))
+        (define-syntax dx (list #'struct:d #'d #'d? (list #'dx-vec) (list #f) #f))
+
+        (struct gds dx ())
+        (define gd (contract (struct/c gds (vectorof any/c)) (gds (vector 1)) 'pos 'neg))
+        (vector-ref (d-vec gd) 0)))
+   1)
+  
+  (test/spec-passed
+   'struct/c-simple-contract-accessor 
+   '(let ()
+     (struct x (v))
+     
+     (define val1 (x (λ (e) e)))
+     (define val2
+       (chaperone-struct 
+        val1 x-v (λ (f v) (chaperone-procedure v (λ (a) a)))))
+     
+     (x-v (contract (struct/c x (any/c . -> . any/c)) val1 'y 'n))
+     (x-v (contract (struct/c x (any/c . -> . any/c)) val2 'y 'n))
+     (x-v (contract (struct/dc x [v (any/c . -> . any/c)]) val1 'y 'n))
+     (x-v (contract (struct/dc x [v (any/c . -> . any/c)]) val2 'y 'n))
+     (x-v (contract (struct/dc x [v () (any/c . -> . any/c)]) val1 'y 'n))
+     (x-v (contract (struct/dc x [v () (any/c . -> . any/c)]) val2 'y 'n))))
+  
   
   ;
   ;

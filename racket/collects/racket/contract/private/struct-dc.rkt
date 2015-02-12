@@ -349,15 +349,13 @@
                                                     (reverse (invariant-fields subcontract))))
                    (values chaperone-args impersonate-args)]
                   [(immutable? subcontract)
-                   (define projd
-                     (with-continuation-mark
-                      contract-continuation-mark-key blame
-                      (proj (sel v))))
+                   (define (chk fld v) (with-continuation-mark
+                                           contract-continuation-mark-key blame
+                                         (proj v)))
+                   (chk #f (sel v)) ;; check the field contract immediately
                    (values (if (flat-contract? (indep-ctc subcontract))
                                chaperone-args
-                               (list* sel
-                                      (λ (fld v) projd)
-                                      chaperone-args))
+                               (list* sel chk chaperone-args))
                            impersonate-args)]
                   [(lazy-immutable? subcontract)
                    (values (list* sel
@@ -397,15 +395,13 @@
                    (define proj (dep-ctc-blame-proj blame))
                    (cond
                      [(dep-immutable? subcontract)
-                      (define projd (proj (sel v)))
+                      (define (chk fld v) (with-continuation-mark
+                                              contract-continuation-mark-key blame
+                                            (proj v)))
+                      (chk #f (sel v)) ;; check the field contract immediately
                       (values (if (flat-contract? dep-ctc)
                                   chaperone-args
-                                  (list* sel
-                                         (λ (fld v)
-                                           (with-continuation-mark
-                                            contract-continuation-mark-key blame
-                                            projd))
-                                         chaperone-args))
+                                  (list* sel chk chaperone-args))
                               impersonate-args)]
                      [(dep-lazy-immutable? subcontract)
                       (values (list* sel
@@ -1350,12 +1346,10 @@
                                     (cache-λ (strct #,sub-val)
                                              #,this-body-code)])
                                proc-name)
-                           #`(let ([answer (let ([#,sub-val 
-                                                  (#,sel-id
-                                                   #,(opt/info-val opt/info))])
-                                             #,this-body-code)])
-                               (let ([proc-name (λ (strct fld) answer)])
-                                 proc-name))))))
+                           #`(let ([proc-name (λ (strct #,sub-val) #,this-body-code)])
+                               ;; check the field contract immediately
+                               (proc-name #f (#,sel-id #,(opt/info-val opt/info)))
+                               proc-name)))))
 
               (define this-fo-code 
                 (and (and (optres-flat this-optres)
