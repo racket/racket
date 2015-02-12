@@ -517,6 +517,24 @@
   (sync (system-idle-evt))
   (test 'not-ready values ok?))
 
+;; If a `nack-guard-evt` function returns a `choice-evt`,
+;; then chosing any of those should avoid a NACK:
+(let ([n #f])
+  (sync (nack-guard-evt (lambda (nack)
+                          (set! n nack)
+                          (choice-evt always-evt never-evt))))
+  (test #f sync/timeout 0 n)
+  
+  (define ns null)
+  (sync (let loop ([n 100])
+          (nack-guard-evt (lambda (nack)
+                            (set! ns (cons nack ns))
+                            (if (zero? n)
+                                (choice-evt always-evt never-evt)
+                                (loop (sub1 n)))))))
+  (test #f ormap (lambda (n) (sync/timeout 0 n)) ns))
+  
+
 ;; ----------------------------------------
 ;; Poll waitables
 

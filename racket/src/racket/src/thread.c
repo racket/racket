@@ -6881,11 +6881,41 @@ Scheme_Object *scheme_make_evt_set(int argc, Scheme_Object **argv)
   return (Scheme_Object *)make_evt_set("internal-make-evt-set", argc, argv, 0, 1);
 }
 
+static Scheme_Object *get_members(Scheme_Object *skip_nacks)
+{
+  if (!skip_nacks)
+    return scheme_null;
+  else if (scheme_list_length(skip_nacks) > 5) {
+    Scheme_Hash_Tree *ht;
+    ht = scheme_make_hash_tree(0);
+    for (; SCHEME_PAIRP(skip_nacks); skip_nacks = SCHEME_CDR(skip_nacks)) {
+      ht = scheme_hash_tree_set(ht, SCHEME_CAR(skip_nacks), scheme_true);
+    }
+    return (Scheme_Object *)ht;
+  } else
+    return skip_nacks;
+}
+
+XFORM_NONGCING static int is_member(Scheme_Object *a, Scheme_Object *l)
+{
+  if (SCHEME_HASHTRP(l)) {
+    if (scheme_eq_hash_tree_get((Scheme_Hash_Tree *)l, a))
+      return 1;
+  } else {
+    for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      if (SAME_OBJ(a, SCHEME_CAR(l)))
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
 static void post_syncing_nacks(Syncing *syncing, int as_escape)
 /* Also removes channel-syncers. Can be called multiple times. */
 {
   int i, c;
-  Scheme_Object *l, *syncs = NULL;
+  Scheme_Object *l, *syncs = NULL, *skip_nacks = NULL;
   Syncing *next;
 
   do {
@@ -6928,8 +6958,17 @@ static void post_syncing_nacks(Syncing *syncing, int as_escape)
           if ((i + 1) != syncing->result) {
             l = syncing->nackss[i];
             if (l) {
+              if (!skip_nacks) {
+                if (syncing->result) {
+                  /* Skip any nacks from the chosen event. If the
+                     list of nacks is long, convert to a hash tree. */
+                  skip_nacks = get_members(syncing->nackss[syncing->result-1]);
+                } else
+                  skip_nacks = scheme_null;
+              }
               for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-                scheme_post_sema_all(SCHEME_CAR(l));
+                if (!is_member(SCHEME_CAR(l), skip_nacks))
+                  scheme_post_sema_all(SCHEME_CAR(l));
               }
             }
             syncing->nackss[i] = NULL;
