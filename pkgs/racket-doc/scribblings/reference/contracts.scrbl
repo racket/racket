@@ -591,6 +591,49 @@ inspect the entire tree.
 @history[#:changed "6.0.1.6" @elem{Added @racket[#:inv].}]
 }
 
+@defproc[(prefab/c [key prefab-key?] [field contract?] ...)
+         contract?]{
+  Produces a contract that recognizes instances of the @tech{prefab}
+  structure type corresponding to @racket[key]. See @racket[make-prefab-struct]
+  for a description of valid key shapes. The number of @racket[field]
+  contracts provided must be consistent with the provided @racket[key].
+
+  @examples[#:eval (contract-eval)
+    (prefab/c 'foo integer?)
+    (prefab/c '(foo bar 1) integer?)
+    (prefab/c '(foo 3) integer? string?)
+  ]
+
+  Each @racket[field] contract is applied to an instance's fields in
+  the same order as the order in the printed form of a prefab struct.
+  That is, the parent fields come before the child fields and auto-value
+  fields come after the ordinary fields.
+
+  The contract will detect if @racket[key] corresponds to a struct
+  type with mutable fields and check field contracts on mutation appropriately.
+  Impersonator contracts are only allowed on fields that are mutable.
+
+  @examples[#:eval (contract-eval)
+    (struct band (members) #:prefab)
+    (define/contract some-band
+      (prefab/c 'band (listof string?))
+      (band (list "Paddy" "Martin")))
+    (struct band/year band (year) #:prefab)
+    (define/contract some-other-band
+      (prefab/c '(band/year 1 band 1) (listof string?) integer?)
+      (band/year (list "Shen" "Micro") 2005))
+  ]
+
+  The contract is a flat contract if all of the @racket[field]
+  contracts are flat contracts and @racket[key] describes a prefab
+  struct type that has no mutable fields. The contract is a
+  chaperone contract if all of the @racket[field] contracts are
+  chaperone contracts. Otherwise the contract that is produced
+  is an impersonator contract.
+
+  @history[#:added "6.1.1.8"]
+}
+
 @defproc[(parameter/c [in contract?] [out contract? in])
          contract?]{
 
