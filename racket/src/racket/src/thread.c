@@ -1607,9 +1607,6 @@ static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[])
                                  NULL);
   }
 
-  /* Init extractors: */
-  scheme_add_custodian_extractor(0, NULL);
-
   /* Count children: */
   kids = 0;
   for (c = CUSTODIAN_FAM(m->children); c; c = CUSTODIAN_FAM(c->sibling)) {
