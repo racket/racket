@@ -58,7 +58,7 @@ A syntax object matches a @racket[pattern] as follows:
  any @racket[literal-id]. The @racket[id] is further bound as
  @deftech{pattern variable} for the corresponding @racket[fender-expr]
  (if any) and @racket[result-expr]. A pattern-variable binding is a
- transformer binding; the pattern variable can be reference only
+ transformer binding; the pattern variable can be referenced only
  through forms like @racket[syntax]. The binding's value is the syntax
  object that matched the pattern with a @deftech{depth marker} of
  @math{0}.
