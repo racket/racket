@@ -2148,6 +2148,32 @@
            '(module m racket/base
               (printf "pre\n")))
 
+(test-comp '(module out racket/base
+              (module in racket/base
+                (provide inlinable-function)
+                (define inlinable-function (lambda (x) (list 1 x 3))))
+              (require 'in)
+              (lambda () (display (inlinable-function 2)) (list 1 2 3)))
+           '(module out racket/base  
+              (module in racket/base
+                (provide inlinable-function)
+                (define inlinable-function (lambda (x) (list 1 x 3))))
+              (require 'in)
+              (lambda () (display (inlinable-function 2)) (inlinable-function 2))))
+
+(test-comp '(module out racket/base
+              (module in racket/base
+                (provide inlinable-function)
+                (define inlinable-function (lambda (x) (list 1 x 3))))
+              (require 'in)
+              (lambda () (display (procedure? inlinable-function)) #t))
+           '(module out racket/base  
+              (module in racket/base
+                (provide inlinable-function)
+                (define inlinable-function (lambda (x) (list 1 x 3))))
+              (require 'in)
+              (lambda () (display (procedure? inlinable-function)) (procedure? inlinable-function))))
+      
 (let ([try-equiv
        (lambda (extras)
          (lambda (a b)

@@ -1698,19 +1698,22 @@ int scheme_check_leaf_rator(Scheme_Object *le, int *_flags)
 
 Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int argc,
 				   Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
-                                   int *_flags, int context, int optimized_rator)
+                                   int *_flags, int context, int optimized_rator, int id_offset)
 /* Zero or one of app, app2 and app3 should be non-NULL.
    If app, we're inlining a general application. If app2, we're inlining an
    application with a single argument and if app3, we're inlining an
    application with two arguments.
    If not app, app2, or app3, just return a known procedure, if any,
    and do not check arity. */
+/* id_offset can be non 0 only when app, app2 and app3 are NULL */ 
 {
   int offset = 0, single_use = 0, psize = 0;
   Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
   int nested_count = 0, outside_nested = 0, already_opt = optimized_rator, nonleaf, noapp;
 
   noapp = !app && !app2 && !app3;
+  if (id_offset && !noapp)
+    return NULL;
   if ((info->inline_fuel < 0) && info->has_nonleaf && !noapp)
     return NULL;
 
@@ -1727,7 +1730,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   if (!optimized_rator && SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
     /* Check for inlining: */
-    le = optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset, &single_use, 0, 0, &psize, NULL);
+    int pos = SCHEME_LOCAL_POS(le);
+    le = optimize_info_lookup(info, pos - id_offset, &offset, &single_use, 0, 0, &psize, NULL);
     outside_nested = 1;
     already_opt = 1;
   }
@@ -2601,7 +2605,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
 
   for (i = 0; i < n; i++) {
     if (!i) {
-      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 0);
+      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 0, 0);
       if (le)
         return le;
     }
@@ -2638,7 +2642,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
 
     if (!i) {
       /* Maybe found "((lambda" after optimizing; try again */
-      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 1);
+      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 1, 0);
       if (le)
         return le;
       rator_apply_escapes = info->escapes;
@@ -2950,7 +2954,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   if (le)
     return le;
 
-  le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context, 0);
+  le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context, 0, 0);
   if (le)
     return le;
 
@@ -2967,7 +2971,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 
   {
     /* Maybe found "((lambda" after optimizing; try again */
-    le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context, 1);
+    le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context, 1, 0);
     if (le)
       return le;
     rator_apply_escapes = info->escapes;
@@ -3165,7 +3169,9 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       }
 
       if (SAME_OBJ(scheme_procedure_p_proc, app->rator)) {
-        if (lookup_constant_proc(info, rand, id_offset)) {
+        int flags, sub_context = 0;
+        if (lookup_constant_proc(info, rand, id_offset)
+            || optimize_for_inline(info, rand, 1, NULL, NULL, NULL, &flags, sub_context, 0, id_offset)) {
           info->preserves_marks = 1;
           info->single_result = 1;
           return replace_tail_inside(scheme_true, inside, app->rand);
@@ -3276,7 +3282,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   if (le) 
     return le;
 
-  le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context, 0);
+  le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context, 0, 0);
   if (le)
     return le;
 
@@ -3293,7 +3299,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 
   {
     /* Maybe found "((lambda" after optimizing; try again */
-    le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context, 1);
+    le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context, 1, 0);
     if (le)
       return le;
     rator_apply_escapes = info->escapes;
@@ -3620,7 +3626,7 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
     if (rev) {
       int rator2_flags;
       Scheme_Object *o_f;
-      o_f = optimize_for_inline(info, rev, 1, NULL, NULL, NULL, &rator2_flags, context, 0);
+      o_f = optimize_for_inline(info, rev, 1, NULL, NULL, NULL, &rator2_flags, context, 0, 0);
       if (o_f) {
         f_is_proc = rev;
 
