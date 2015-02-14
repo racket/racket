@@ -1002,14 +1002,17 @@ below for a more efficient approach.
 @history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}]}
 
 
-@defform[(define-cstruct id/sup ([field-id type-expr] ...) property ...)
+@defform[(define-cstruct id/sup ([field-id type-expr field-option ...] ...)
+           property ...)
          #:grammar [(id/sup _id
                             (_id _super-id))
+                    (field-option (code:line #:offset offset-expr))
                     (property (code:line #:alignment alignment-expr)
                               (code:line #:malloc-mode malloc-mode-expr)
                               (code:line #:property prop-expr val-expr)
                               #:no-equal)]
-         #:contracts ([alignment-expr (or/c #f 1 2 4 8 16)]
+         #:contracts ([offset-expr exact-integer?]
+                      [alignment-expr (or/c #f 1 2 4 8 16)]
                       [malloc-mode-expr (one-of/c 'raw 'atomic 'nonatomic
                                                   'atomic-interior 'interior
                                                   'stubborn 'uncollectable 'eternal)]
@@ -1020,7 +1023,8 @@ resulting type deals with C structs in binary form, rather than
 marshaling them to Racket values.  The syntax is similar to
 @racket[define-struct], providing accessor functions for raw struct
 values (which are pointer objects); the @racket[_id]
-must start with @litchar{_}, and at most one @racket[#:alignment]
+must start with @litchar{_}, at most one @racket[#:offset] can be
+supplied for a field, and at most one @racket[#:alignment]
 or @racket[#:malloc-mode] can be supplied. If no @racket[_super-id]
 is provided, then at least one field must be specified.
 
@@ -1087,6 +1091,11 @@ defined as @racket[_id]@racketidfont{-pointer}.  The @racket[_id] type
 should not be used when a pointer is expected, since it will cause the
 struct to be copied rather than use the pointer value, leading to
 memory corruption.
+
+Field offsets within the structure are normally computed
+automatically, but the offset for a field can be specified with
+@racket[#:offset]. Specifying @racket[#:offset] for a field affects
+the default offsets computed for all remaining fields.
 
 Instances of the new type are not normally Racket structure instances.
 However, if at least one @racket[#:property] modifier is specified,
@@ -1247,7 +1256,8 @@ expects arguments for both the super fields and the new ones:
  (define b (make-B 1 2 3))
 ]
 
-@history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}]}
+@history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}
+         #:changed "6.1.1.8" @elem{Added @racket[#:offset] for fields.}]}
 
 @; ------------------------------------------------------------
 

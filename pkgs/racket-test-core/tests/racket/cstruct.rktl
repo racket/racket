@@ -57,7 +57,7 @@
       (test '((10 20 30 40.0) 500.0) quint->list* kv)
       (test '((11 21 31 40.25) 500.25) quint->list* (list*->quint '((11 21 31 40.25) 500.25)))
       
-      (define-cstruct _due [(x _byte 0) (y _byte 1)])
+      (define-cstruct _due [(x _byte #:offset 0) (y _byte #:offset 1)])
       (define cv (make-due 255 1))
       (test 255 due-x cv)
       (test 1 due-y cv)
@@ -65,8 +65,10 @@
       (set-due-x! cv 1)
       (test 1 due-x cv)
       (test 1 due-y cv)
+      (define-cstruct _due2 [(x _byte #:offset 0) (y _byte)])
+      (test 1 due2-y (cast cv _due-pointer _due2-pointer))
       
-      (define-cstruct (_tre _due) [(z _short 2)])
+      (define-cstruct (_tre _due) [(z _short #:offset 2)])
       (define dv (make-tre 255 1 20))
       (test 255 due-x dv)
       (test 1 due-y dv)
@@ -75,7 +77,7 @@
       (test 255 due-y dv)
       (test 20 tre-z dv)
       
-      (define-cstruct _quattro [(pre _tre 0) (v _int 4)])
+      (define-cstruct _quattro [(pre _tre) (v _int #:offset 4)])
       (define qtv (make-quattro dv 50))
       (test 255 due-x qtv)
       (test 255 due-y qtv)

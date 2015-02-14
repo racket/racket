@@ -1303,18 +1303,20 @@
 ;; ----------------------------------------------------------------------------
 ;; Struct wrappers
 
-(define (compute-offsets types alignment)
+(define (compute-offsets types alignment declared)
   (let ([alignment (if (memq alignment '(#f 1 2 4 8 16))
                        alignment
                        #f)])
-    (let loop ([ts types] [cur 0] [r '()])
+    (let loop ([ts types] [ds declared] [cur 0] [r '()])
       (if (null? ts)
           (reverse r)
           (let* ([algn (if alignment 
                            (min alignment (ctype-alignof (car ts)))
                            (ctype-alignof (car ts)))]
-                 [pos  (+ cur (modulo (- (modulo cur algn)) algn))])
+                 [pos (or (car ds)
+                          (+ cur (modulo (- (modulo cur algn)) algn)))])
             (loop (cdr ts)
+                  (cdr ds)
                   (+ pos (ctype-sizeof (car ts)))
                   (cons pos r)))))))
 
@@ -1497,7 +1499,7 @@
                 (define-values (stype ...)  (values slot-type ...))
                 (define types (list stype ...))
                 (define alignment-v alignment)
-                (define offsets (map (lambda (u c) (or u c)) (list slot-offset ...) (compute-offsets types alignment-v)))
+                (define offsets (compute-offsets types alignment-v (list slot-offset ...)))
                 (define-values (offset ...) (apply values offsets))
                 (define all-tags (cons TYPE-tag super-tags))
                 (define _TYPE*
@@ -1658,17 +1660,16 @@
        (unless (regexp-match? #rx"^_." (symbol->string (syntax-e _TYPE)))
          (err "cstruct name must begin with a `_'" _TYPE))
        
-       (with-syntax 
-         ([((slot slot-type slot-offset) ...) 
-             (syntax-case #'(slot-def ...) ()
-               [((slot slot-type) ...) #'((slot slot-type #f) ...)]
-               [((slot slot-type slot-offset) ...) #'((slot slot-type slot-offset) ...)]
-               [_ (err "bad field specification, expecting `[name ctype]' or `[name ctype offset]'" #'(slot-def ...))])])
-
-       (for ([s (in-list (syntax->list #'(slot ...)))])
-         (unless (identifier? s)
-           (err "bad field name, expecting an identifier" s)))
-
+       (with-syntax ([(#(slot slot-type slot-offset) ...) 
+                      (for/list ([slot-def (in-list (syntax->list #'(slot-def ...)))])
+                        (define (check-slot name type offset)
+                          (unless (identifier? name)
+                            (err "bad field name, expecting an identifier" name))
+                          (vector name type offset))
+                        (syntax-case slot-def ()
+                          [(slot slot-type) (check-slot #'slot #'slot-type #f)]
+                          [(slot slot-type #:offset slot-offset) (check-slot #'slot #'slot-type #'slot-offset)]
+                          [_ (err "bad field specification, expecting `[name ctype]' or `[name ctype #:offset offset]'" #'slot-def)]))])
          (if _SUPER
              (make-syntax _TYPE #t
                           #`(#,(datum->syntax _TYPE 'super _TYPE) slot ...)
