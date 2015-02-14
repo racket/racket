@@ -3626,7 +3626,10 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
     if (rev) {
       int rator2_flags;
       Scheme_Object *o_f;
-      o_f = optimize_for_inline(info, rev, 1, NULL, NULL, NULL, &rator2_flags, context, 0, 0);
+      o_f = lookup_constant_proc(info, rev, 0);
+      if (!o_f)
+        o_f = optimize_for_inline(info, rev, 1, NULL, NULL, NULL, &rator2_flags, context, 0, 0);
+
       if (o_f) {
         f_is_proc = rev;
 
