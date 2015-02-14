@@ -3430,6 +3430,28 @@
 (err/rt-test (cwv-2-5-f (lambda () (values 1 2 3)) (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Transform call-with-values to direct aplication:
+(test-comp '(lambda (f) (f 7))
+           '(lambda (f) (call-with-values (lambda () 7) (lambda (x) (f x)))))
+(test-comp '(lambda () (car 7))
+           '(lambda () (call-with-values (lambda () 7) car)))
+(test-comp '(lambda () ('not-a-procedure 7))
+           '(lambda () (call-with-values (lambda () 7) 'not-a-procedure))
+           #f)
+(test-comp '(module ? racket/base
+              (define f (lambda (x) (list x 0)))
+              (lambda () (display f) (f 7)))
+           '(module ? racket/base
+              (define f (lambda (x) (list x 0)))
+              (lambda () (display f) (call-with-values (lambda () 7) f))))
+(test-comp '(module ? racket/base
+              (define f (let ([tmp (list 0)]) (lambda (x) (list x tmp))))
+              (lambda () (f 7)))
+           '(module ? racket/base
+              (define f (let ([tmp (list 0)]) (lambda (x) (list x tmp))))
+              (lambda () (call-with-values (lambda () 7) f))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Inlining with higher-order functions:
 
 (test 0 'ho1 (let ([x (random 1)])
@@ -4505,7 +4527,7 @@
              (report-answer-all 8)))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check that cross-module inlining decmopiles a function
+;; Check that cross-module inlining decompiles a function
 ;; with correct use counts on arguments (specifically: B is used
 ;; twice, so the argument expression can't be inlined for two uses)
 
