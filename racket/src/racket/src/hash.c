@@ -138,6 +138,10 @@ typedef uintptr_t hash_v_t;
 
 #define MAX_HASH_DEPTH 128
 
+/* For detecting and debugging accidental dependencies on hash-table order,
+   it might be helpful to invert the order at the lowest level: */
+/* #define REVERSE_HASH_TABLE_ORDER 1 */
+
 /*========================================================================*/
 /*                         hashing functions                              */
 /*========================================================================*/
@@ -184,6 +188,11 @@ static int not_stx_bound_eq(char *a, char *b)
 /*                         normal hash table                              */
 /*========================================================================*/
 
+#ifdef REVERSE_HASH_TABLE_ORDER
+# define HASH_TO_ARRAY_INDEX(h, mask) ((mask) - (h))
+#else
+# define HASH_TO_ARRAY_INDEX(h, mask) (h)
+#endif
 
 Scheme_Hash_Table *scheme_make_hash_table(int type)
 {
@@ -257,7 +266,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
     if (table->compare == scheme_compare_equal) {
       /* Direct calls can be significant faster than indirect */
       scheme_hash_request_count++;
-      while ((tkey = keys[h])) {
+      while ((tkey = keys[HASH_TO_ARRAY_INDEX(h, mask)])) {
         if (SAME_PTR(tkey, GONE)) {
           if (set > 1) {
             useme = h;
@@ -265,14 +274,14 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
           }
         } else if (scheme_equal(tkey, key)) {
           if (set) {
-            table->vals[h] = val;
+            table->vals[HASH_TO_ARRAY_INDEX(h, mask)] = val;
             if (!val) {
-              keys[h] = GONE;
+              keys[HASH_TO_ARRAY_INDEX(h, mask)] = GONE;
               --table->count;
             }
             return val;
           } else
-            return table->vals[h];
+            return table->vals[HASH_TO_ARRAY_INDEX(h, mask)];
         }
         scheme_hash_iteration_count++;
         if (!h2) {
@@ -283,7 +292,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
       }
     } else {
       scheme_hash_request_count++;
-      while ((tkey = keys[h])) {
+      while ((tkey = keys[HASH_TO_ARRAY_INDEX(h, mask)])) {
         if (SAME_PTR(tkey, GONE)) {
           if (set > 1) {
             useme = h;
@@ -291,14 +300,14 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
           }
         } else if (!table->compare(tkey, (char *)key)) {
           if (set) {
-            table->vals[h] = val;
+            table->vals[HASH_TO_ARRAY_INDEX(h, mask)] = val;
             if (!val) {
-              keys[h] = GONE;
+              keys[HASH_TO_ARRAY_INDEX(h, mask)] = GONE;
               --table->count;
             }
             return val;
           } else
-            return table->vals[h];
+            return table->vals[HASH_TO_ARRAY_INDEX(h, mask)];
         }
         scheme_hash_iteration_count++;
         if (!h2) {
@@ -310,17 +319,17 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
     }
   } else {
     scheme_hash_request_count++;
-    while ((tkey = keys[h])) {
+    while ((tkey = keys[HASH_TO_ARRAY_INDEX(h, mask)])) {
       if (SAME_PTR(tkey, key)) {
 	if (set) {
-	  table->vals[h] = val;
+	  table->vals[HASH_TO_ARRAY_INDEX(h, mask)] = val;
 	  if (!val) {
-	    keys[h] = GONE;
+	    keys[HASH_TO_ARRAY_INDEX(h, mask)] = GONE;
 	    --table->count;
 	  }
 	  return val;
 	} else
-	  return table->vals[h];
+	  return table->vals[HASH_TO_ARRAY_INDEX(h, mask)];
       } else if (SAME_PTR(tkey, GONE)) {
 	if (set > 1) {
 	  useme = h;
@@ -370,8 +379,8 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
   }
 
   table->count++;
-  table->keys[h] = key;
-  table->vals[h] = val;
+  table->keys[HASH_TO_ARRAY_INDEX(h, mask)] = key;
+  table->vals[HASH_TO_ARRAY_INDEX(h, mask)] = val;
 
   return val;
 }
@@ -395,11 +404,11 @@ static Scheme_Object *do_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, 
   keys = table->keys;
   
   scheme_hash_request_count++;
-  while ((tkey = keys[h])) {
+  while ((tkey = keys[HASH_TO_ARRAY_INDEX(h, mask)])) {
     if (SAME_PTR(tkey, key)) {
-      table->vals[h] = val;
+      table->vals[HASH_TO_ARRAY_INDEX(h, mask)] = val;
       if (!val) {
-	keys[h] = GONE;
+	keys[HASH_TO_ARRAY_INDEX(h, mask)] = GONE;
 	--table->count;
       }
       return val;
@@ -426,8 +435,8 @@ static Scheme_Object *do_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, 
   }
 
   table->count++;
-  table->keys[h] = key;
-  table->vals[h] = val;
+  table->keys[HASH_TO_ARRAY_INDEX(h, mask)] = key;
+  table->vals[HASH_TO_ARRAY_INDEX(h, mask)] = val;
 
   return val;
 }
@@ -450,9 +459,9 @@ XFORM_NONGCING static Scheme_Object *do_hash_get(Scheme_Hash_Table *table, Schem
   keys = table->keys;
   
   scheme_hash_request_count++;
-  while ((tkey = keys[h])) {
+  while ((tkey = keys[HASH_TO_ARRAY_INDEX(h, mask)])) {
     if (SAME_PTR(tkey, key)) {
-      return table->vals[h];
+      return table->vals[HASH_TO_ARRAY_INDEX(h, mask)];
     } 
     scheme_hash_iteration_count++;
     h = (h + h2) & mask;
@@ -735,7 +744,7 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
   if (table->weak) {
     int reuse_bucket = 0;
     scheme_hash_request_count++;
-    while ((bucket = table->buckets[h])) {
+    while ((bucket = table->buckets[HASH_TO_ARRAY_INDEX(h, mask)])) {
       if (bucket->key) {
 	void *hk = (void *)HT_EXTRACT_WEAK(bucket->key);
 	if (!hk) {
@@ -759,7 +768,7 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
     }
   } else {
     scheme_hash_request_count++;
-    while ((bucket = table->buckets[h])) {
+    while ((bucket = table->buckets[HASH_TO_ARRAY_INDEX(h, mask)])) {
       if (SAME_PTR(bucket->key, key))
 	return bucket;
       else if (compare && !compare((void *)bucket->key, (void *)key))
@@ -832,7 +841,7 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
   else
     bucket = allocate_bucket(table, key, NULL);
 
-  table->buckets[h] = bucket;
+  table->buckets[HASH_TO_ARRAY_INDEX(h, mask)] = bucket;
 
   table->count++;
 
@@ -2174,6 +2183,18 @@ typedef struct AVLNode {
 # define AVL_ASSERT_ONLY(x) /* empty */
 #endif
 
+#ifdef REVERSE_HASH_TABLE_ORDER
+# define HASH_KEY_GT_OP <
+# define HASH_KEY_LT_OP >
+# define QUICK_TABLE_INIT_LEFT  1
+# define QUICK_TABLE_INIT_RIGHT 0
+#else
+# define HASH_KEY_GT_OP >
+# define HASH_KEY_LT_OP <
+# define QUICK_TABLE_INIT_LEFT  0
+# define QUICK_TABLE_INIT_RIGHT 1
+#endif
+
 XFORM_NONGCING static int get_height(AVLNode* t)
 {
   if (t == NULL)
@@ -2231,7 +2252,7 @@ XFORM_NONGCING static AVLNode *avl_find(uintptr_t code, AVLNode *s)
     
     if (s->code == code)
       return s;
-    else if (s->code > code)
+    else if (s->code HASH_KEY_GT_OP code)
       s = s->left;
     else
       s = s->right;
@@ -2319,7 +2340,7 @@ static AVLNode *avl_ins(uintptr_t code, Scheme_Object *key, Scheme_Object *val, 
   if (t == NULL)
     return AVL_CHK(make_avl(NULL, code, key, val, NULL), code);
   else {
-    if (t->code > code) {
+    if (t->code HASH_KEY_GT_OP code) {
       /* insert on left */
       AVLNode *left;
 
@@ -2332,7 +2353,7 @@ static AVLNode *avl_ins(uintptr_t code, Scheme_Object *key, Scheme_Object *val, 
       fix_height(t);
       
       return check_rotate_right(t);
-    } else if (t->code < code) {
+    } else if (t->code HASH_KEY_LT_OP code) {
       /* insert on right */
       AVLNode *right;
       
@@ -2355,7 +2376,7 @@ static AVLNode* avl_del(AVLNode* t, uintptr_t code)
   if (t == NULL)
     return NULL;
   else {
-    if (code < t->code) {
+    if (code HASH_KEY_LT_OP t->code) {
       /* delete on left */
       AVLNode *new_left;
       
@@ -2367,7 +2388,7 @@ static AVLNode* avl_del(AVLNode* t, uintptr_t code)
       t->left = new_left;
       fix_height(t);
       return check_rotate_left(t);
-    } else if (code > t->code) {
+    } else if (code HASH_KEY_GT_OP t->code) {
       /* delete on right */
       AVLNode *new_right;
       
@@ -2415,7 +2436,7 @@ static AVLNode *avl_replace(AVLNode *s, AVLNode *orig, AVLNode *naya)
 
   s = avl_clone(s);
 
-  if (s->code > orig->code) {
+  if (s->code HASH_KEY_GT_OP orig->code) {
     next = avl_replace(s->left, orig, naya);
     s->left = next;
   } else {
@@ -2598,8 +2619,8 @@ static void *hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Ob
         static AVLNode *sn;
 
         /* avoid intermediate allocations by constructing directly: */
-        sn = make_avl(NULL, 1, added->key, added->val, NULL);
-        sn = make_avl(NULL, 0, key, val, sn);
+        sn = make_avl(NULL, QUICK_TABLE_INIT_RIGHT, added->key, added->val, NULL);
+        sn = make_avl(NULL, QUICK_TABLE_INIT_LEFT, key, val, sn);
 
         val = (Scheme_Object *)sn;
         key = NULL;
