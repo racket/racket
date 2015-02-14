@@ -1711,7 +1711,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   int nested_count = 0, outside_nested = 0, already_opt = optimized_rator, nonleaf, noapp;
 
   noapp = !app && !app2 && !app3;
-  if ((info->inline_fuel < 0 || noapp) && info->has_nonleaf)
+  if ((info->inline_fuel < 0) && info->has_nonleaf && !noapp)
     return NULL;
 
   /* Move inside `let' bindings, so we can convert ((let (....) proc) arg ...)
