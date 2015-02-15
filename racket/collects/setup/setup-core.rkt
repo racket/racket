@@ -37,6 +37,7 @@
          "private/elf.rkt"
          "private/pkg-deps.rkt"
          "collection-name.rkt"
+         "private/format-error.rkt"
          compiler/private/dep
          (only-in pkg/lib pkg-directory
                   pkg-single-collection))
@@ -151,12 +152,13 @@
     (when (fail-fast)
       (break-thread original-thread)))
   (define (handle-error cc desc exn out err type)
-      (if (verbose)
-          ((error-display-handler)
-           (format "~a\n" (exn->string exn))
-           exn)
-          (eprintf "~a\n" (exn->string exn)))
-      (append-error cc desc exn out err type))
+    (define long? #t) ; possibly better: (define long? (verbose))
+    (cond
+     [(exn? exn)
+      (format-error exn #:long? long?)]
+     [(and (pair? exn) (string? (car exn)) (string? (cdr exn)))
+      (eprintf "~a\n" ((if long? car cdr) exn))])
+    (append-error cc desc exn out err type))
   (define (record-error cc desc go fail-k)
     (with-handlers ([exn:fail?
                      (lambda (x)
@@ -174,8 +176,12 @@
                                                           [(path? cc)
                                                            (path->relative-string/setup cc #:cache pkg-path-cache)]
                                                           [else cc]))
-        (unless (null? x) (for ([str (in-list (regexp-split #rx"\n" (exn->string x)))])
-                            (setup-fprintf port #f "  ~a" str)))
+        (let ([msg (if (exn? x)
+                       (format-error x #:long? #f #:to-string? #t #:cache pkg-path-cache)
+                       ;; `x` is a pair of long and short strings:
+                       (cdr x))])
+          (unless (null? x) (for ([str (in-list (regexp-split #rx"\n" msg))])
+                              (setup-fprintf port #f "  ~a" str))))
         (unless (zero? (string-length out)) (eprintf "STDOUT:\n~a=====\n" out))
         (unless (zero? (string-length err)) (eprintf "STDERR:\n~a=====\n" err)))))
 

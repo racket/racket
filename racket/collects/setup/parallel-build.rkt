@@ -13,6 +13,7 @@
          compiler/find-exe
          racket/place
          syntax/modresolve
+         "private/format-error.rkt"
          (for-syntax racket/base))
 
 
@@ -90,8 +91,8 @@
         [(list (list cc file last) (list result-type out err))
           (begin0
             (match result-type
-              [(list 'ERROR msg)
-                (append-error cc "making" (exn msg (current-continuation-marks)) out err "error")
+              [(list 'ERROR long-msg short-msg)
+                (append-error cc "making" (cons long-msg short-msg) out err "error")
                 #t]
               [(list 'LOCK fn) (lm/lock lock-mgr fn wrkr) #f]
               [(list 'UNLOCK fn) (lm/unlock lock-mgr fn) #f]
@@ -102,7 +103,7 @@
               ['DONE
                 (define (string-!empty? s) (not (zero? (string-length s))))
                 (when (ormap string-!empty? (list out err))
-                  (append-error cc "making" null out err "output"))
+                  (append-error cc "making" #f out err "output"))
                 ;(when last (printer (current-output-port) "made" "~a" (cc-name cc)))
                 #t]
               [else (eprintf "Failed trying to match:\n~e\n" result-type)]))]
@@ -112,7 +113,7 @@
         [else
           (match work 
             [(list-rest (list cc file last) message)
-              (append-error cc "making" null "" "" "error")
+              (append-error cc "making" #f "" "" "error")
               (eprintf "work-done match cc failed.\n")
               (eprintf "trying to match:\n~e\n" (list work msg))
               #t]
@@ -301,11 +302,12 @@
               (send/msg (list (list 'UNLOCK (path->bytes fn)) "" ""))]
              [x (send/error (format "DIDNT MATCH C ~v\n" x))]
              [else (send/error (format "DIDNT MATCH C\n"))]))
-         (with-handlers ([exn:fail? (lambda (x)
-                                      (define sp (open-output-string))
-                                      (parameterize ([current-error-port sp])
-                                        ((error-display-handler) (exn-message x) x))
-                                      (send/resp (list 'ERROR (get-output-string sp))))])
+         (with-handlers ([exn:fail? (lambda (x)             
+                                      (send/resp (list 'ERROR
+                                                       ;; Long form shows context:
+                                                       (format-error x #:long? #t #:to-string? #t)
+                                                       ;; Short form for summary omits context:
+                                                       (format-error x #:long? #f #:to-string? #t))))])
            (parameterize ([parallel-lock-client lock-client]
                           [compile-context-preservation-enabled (member 'disable-inlining options )]
                           [manager-trace-handler

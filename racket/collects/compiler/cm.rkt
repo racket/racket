@@ -26,6 +26,9 @@
          get-compiled-file-sha1
          with-compile-output
          
+         managed-compiled-context-key
+         make-compilation-context-error-display-handler
+         
          parallel-lock-client
          make-compile-lock
          compile-lock->parallel-lock-client)
@@ -48,6 +51,22 @@
 (define manager-skip-file-handler (make-parameter (λ (x) #f)))
 (define depth (make-parameter 0))
 (define parallel-lock-client (make-parameter #f))
+
+(define managed-compiled-context-key (gensym))
+(define (make-compilation-context-error-display-handler orig)
+  (lambda (str exn)
+    (define l (continuation-mark-set->list
+               (exn-continuation-marks exn)
+               managed-compiled-context-key))
+    (orig (if (null? l)
+              str
+              (apply
+               string-append
+               str
+               "\n  compilation context...:"
+               (for/list ([i (in-list l)])
+                 (format "\n   ~a" i))))
+          exn)))
 
 (define (file-stamp-in-collection p)
   (file-stamp-in-paths p (current-library-collection-paths)))
@@ -383,9 +402,12 @@
                            d))
                        rg))]
                    [current-logger accomplice-logger])
-      (get-module-code path mode compile
-                       (lambda (a b) #f) ; extension handler
-                       #:source-reader read-src-syntax)))
+      (with-continuation-mark
+        managed-compiled-context-key
+        path
+        (get-module-code path mode compile
+                         (lambda (a b) #f) ; extension handler
+                         #:source-reader read-src-syntax))))
   (define dest-roots (list (car roots)))
   (define code-dir (get-compilation-dir path #:modes (list mode) #:roots dest-roots))
 
@@ -689,7 +711,10 @@
                        cache
                        collection-cache
                        #f
-                       #:security-guard security-guard)])
+                       #:security-guard security-guard)]
+                     [error-display-handler
+                      (make-compilation-context-error-display-handler
+                       (error-display-handler))])
         (compile-root (car (use-compiled-file-paths))
                       (current-compiled-file-roots)
                       (path->complete-path src)
