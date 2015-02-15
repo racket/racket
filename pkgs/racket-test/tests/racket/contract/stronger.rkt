@@ -346,6 +346,33 @@
   (ctest #f contract-stronger?
          (instanceof/c (class/c (m (-> any/c (<=/c 4)))))
          (instanceof/c (class/c (m (-> any/c (<=/c 3))))))
+
+  (ctest #t contract-stronger?
+         (object/c (m (-> any/c (<=/c 3))))
+         (object/c (m (-> any/c (<=/c 4)))))
+  (ctest #t contract-stronger?
+         (object/c (field (f (<=/c 4))))
+         (object/c (field (f (<=/c 4)))))
+  (ctest #t contract-stronger?
+         (object/c (m (-> any/c (<=/c 3)))
+                   (n (-> any/c any/c)))
+         (object/c (m (-> any/c (<=/c 4)))))
+  (ctest #f contract-stronger?
+         (object/c (m (-> any/c (<=/c 4))))
+         (object/c (m (-> any/c (<=/c 3)))))
+  (ctest #f contract-stronger?
+         (object/c (field (f (<=/c 4))))
+         (object/c (field (f (<=/c 3)))))
+  (ctest #f contract-stronger?
+         (object/c (m (-> any/c (<=/c 3))))
+         (object/c (n (-> any/c (<=/c 4)))))
+  (ctest #f contract-stronger?
+         (object/c (field (x any/c)))
+         (object/c (field (y any/c))))
+  (ctest #f contract-stronger?
+         (object/c (m (-> any/c (<=/c 4))))
+         (object/c (m (-> any/c (<=/c 3)))
+                   (n (-> any/c any/c))))
   
   (ctest #t contract-stronger? (is-a?/c object%) (is-a?/c object%))
   (ctest #t contract-stronger? (is-a?/c (class object% (super-new))) (is-a?/c object%))

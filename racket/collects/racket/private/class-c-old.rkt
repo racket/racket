@@ -1202,108 +1202,21 @@
           #:key (compose symbol->string car)))
   (values (map car sorted) (map cdr sorted)))
 
-;; dynamic-object/c : Listof<Symbol> Listof<Contract>
-;;                    Listof<Symbol> Listof<Contract>
-;;                    -> Contract
-;; An external constructor provided in order to allow runtime
-;; construction of object contracts by libraries that want to
-;; implement their own object contract variants
-(define (dynamic-object/c method-names method-contracts
-                          field-names field-contracts)
-  (define (ensure-symbols names)
-    (unless (and (list? names) (andmap symbol? names))
-      (raise-argument-error 'dynamic-object/c "(listof symbol?)" names)))
-  (define (ensure-length names ctcs)
-    (unless (= (length names) (length ctcs))
-      (raise-arguments-error 'dynamic-object/c
-                             "expected the same number of names and contracts"
-                             "names" names
-                             "contracts" ctcs)))
-  (ensure-symbols method-names)
-  (ensure-length method-names method-contracts)
-  (ensure-symbols field-names)
-  (ensure-length field-names field-contracts)
-  (make-base-object/c
-   method-names (coerce-contracts 'dynamic-object/c method-contracts)
-   field-names (coerce-contracts 'dynamic-object/c field-contracts)))
-
-(define (check-object-contract obj methods fields fail)
-  (unless (object? obj)
-    (fail '(expected: "an object" given: "~e") obj))
-  (let ([cls (object-ref/unwrap obj)])
-    (let ([method-ht (class-method-ht cls)])
-      (for ([m methods])
-        (unless (hash-ref method-ht m #f)
-          (fail "no public method ~a" m))))
-    (let ([field-ht (class-field-ht cls)])
-      (for ([m fields])
-        (unless (hash-ref field-ht m #f)
-          (fail "no public field ~a" m)))))
-  #t)
-
-(define (object/c-proj ctc)
-  (λ (blame)
-    (λ (obj)
-      (make-wrapper-object ctc obj blame 
-                           (base-object/c-methods ctc) (base-object/c-method-contracts ctc)
-                           (base-object/c-fields ctc) (base-object/c-field-contracts ctc)))))
-
-(define (object/c-first-order ctc)
-  (λ (obj)
-    (let/ec ret
-      (check-object-contract obj 
-                             (base-object/c-methods ctc) 
-                             (base-object/c-fields ctc)
-                             (λ args (ret #f))))))
-
-(define-struct base-object/c (methods method-contracts fields field-contracts)
-  #:property prop:custom-write custom-write-property-proc
-  #:property prop:contract
-  (build-contract-property 
-   #:projection object/c-proj
-   #:name
-   (λ (ctc)
-     (let* ([pair-ids-ctcs
-             (λ (is ctcs)
-               (map (λ (i ctc)
-                      (build-compound-type-name i ctc))
-                    is ctcs))]
-            [handle-optional
-             (λ (name is ctcs)
-               (if (null? is)
-                   null
-                   (list (cons name (pair-ids-ctcs is ctcs)))))])
-       (apply build-compound-type-name
-              'object/c 
-              (append
-               (pair-ids-ctcs (base-object/c-methods ctc) (base-object/c-method-contracts ctc))
-               (handle-optional 'field 
-                                (base-object/c-fields ctc)
-                                (base-object/c-field-contracts ctc))))))
-   #:first-order object/c-first-order))
-
-(define-syntax (object/c stx)
-  (syntax-case stx ()
-    [(_ form ...)
-     (let ()
-       (define-values (bindings pfs)
-         (parse-class/c-specs (syntax->list #'(form ...)) #t))
-       (with-syntax ([methods #`(list #,@(reverse (hash-ref pfs 'methods null)))]
-                     [method-ctcs #`(list #,@(reverse (hash-ref pfs 'method-contracts null)))]
-                     [fields #`(list #,@(reverse (hash-ref pfs 'fields null)))]
-                     [field-ctcs #`(list #,@(reverse (hash-ref pfs 'field-contracts null)))]
-                     [bindings bindings])
-         (syntax/loc stx
-           (let bindings
-             (make-base-object/c methods method-ctcs fields field-ctcs)))))]))
-
 (define (instanceof/c-proj ctc)
-  (define proj (contract-projection (base-instanceof/c-class-ctc ctc)))
+  (define proj
+    (if (base-instanceof/c? ctc)
+        (contract-projection (base-instanceof/c-class-ctc ctc))
+        (object/c-class-proj ctc)))
   (λ (blame)
     (define p (proj (blame-add-context blame #f)))
     (λ (val)
       (unless (object? val)
         (raise-blame-error blame val '(expected: "an object" given: "~e") val))
+      (when (base-object/c? ctc)
+        (check-object-contract val
+                               (base-object/c-methods ctc)
+                               (base-object/c-fields ctc)
+                               (λ args (apply raise-blame-error blame val args))))
       (define original-obj (if (has-original-object? val) (original-object val) val))
       (define new-cls (p (object-ref val)))
       (cond
@@ -1467,6 +1380,135 @@
 (define (instanceof/c cctc)
   (let ([ctc (coerce-contract 'instanceof/c cctc)])
     (make-base-instanceof/c ctc)))
+
+;; dynamic-object/c : Listof<Symbol> Listof<Contract>
+;;                    Listof<Symbol> Listof<Contract>
+;;                    -> Contract
+;; An external constructor provided in order to allow runtime
+;; construction of object contracts by libraries that want to
+;; implement their own object contract variants
+(define (dynamic-object/c method-names method-contracts
+                          field-names field-contracts)
+  (define (ensure-symbols names)
+    (unless (and (list? names) (andmap symbol? names))
+      (raise-argument-error 'dynamic-object/c "(listof symbol?)" names)))
+  (define (ensure-length names ctcs)
+    (unless (= (length names) (length ctcs))
+      (raise-arguments-error 'dynamic-object/c
+                             "expected the same number of names and contracts"
+                             "names" names
+                             "contracts" ctcs)))
+  (ensure-symbols method-names)
+  (ensure-length method-names method-contracts)
+  (ensure-symbols field-names)
+  (ensure-length field-names field-contracts)
+  (make-base-object/c
+   method-names (coerce-contracts 'dynamic-object/c method-contracts)
+   field-names (coerce-contracts 'dynamic-object/c field-contracts)))
+
+(define (object/c-class-proj ctc)
+  (define methods (base-object/c-methods ctc))
+  (define method-contracts (base-object/c-method-contracts ctc))
+  (define fields (base-object/c-fields ctc))
+  (define field-contracts (base-object/c-field-contracts ctc))
+  (λ (blame)
+    (λ (val)
+      (make-wrapper-class
+       val blame
+       methods method-contracts fields field-contracts))))
+
+(define (check-object-contract obj methods fields fail)
+  (unless (object? obj)
+    (fail '(expected: "an object" given: "~e") obj))
+  (let ([cls (object-ref/unwrap obj)])
+    (let ([method-ht (class-method-ht cls)])
+      (for ([m methods])
+        (unless (hash-ref method-ht m #f)
+          (fail "no public method ~a" m))))
+    (let ([field-ht (class-field-ht cls)])
+      (for ([m fields])
+        (unless (hash-ref field-ht m #f)
+          (fail "no public field ~a" m)))))
+  #t)
+
+(define (object/c-first-order ctc)
+  (λ (obj)
+    (let/ec ret
+      (check-object-contract obj
+                             (base-object/c-methods ctc)
+                             (base-object/c-fields ctc)
+                             (λ args (ret #f))))))
+
+(define (object/c-stronger this that)
+  (cond
+    [(base-object/c? that)
+     (and
+      ;; methods
+      (check-one-object base-object/c-methods base-object/c-method-contracts this that)
+
+      ;; check both ways for fields (since mutable)
+      (check-one-object base-object/c-fields base-object/c-field-contracts this that)
+      (check-one-object base-object/c-fields base-object/c-field-contracts that this)
+
+      ;; width subtyping
+      (all-included? (base-object/c-methods that)
+                     (base-object/c-methods this))
+      (all-included? (base-object/c-fields that)
+                     (base-object/c-fields this)))]
+    [else #f]))
+
+;; See `check-one-stronger`. The difference is that this one only checks the
+;; names that are in both this and that.
+(define (check-one-object names-sel ctcs-sel this that)
+  (for/and ([this-name (in-list (names-sel this))]
+            [this-ctc (in-list (ctcs-sel this))])
+    (or (not (member this-name (names-sel that)))
+        (for/or ([that-name (in-list (names-sel that))]
+                 [that-ctc (in-list (ctcs-sel that))])
+          (and (equal? this-name that-name)
+               (contract-stronger? this-ctc that-ctc))))))
+
+(define-struct base-object/c (methods method-contracts fields field-contracts)
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:contract
+  (build-contract-property
+   #:projection instanceof/c-proj
+   #:name
+   (λ (ctc)
+     (let* ([pair-ids-ctcs
+             (λ (is ctcs)
+               (map (λ (i ctc)
+                      (build-compound-type-name i ctc))
+                    is ctcs))]
+            [handle-optional
+             (λ (name is ctcs)
+               (if (null? is)
+                   null
+                   (list (cons name (pair-ids-ctcs is ctcs)))))])
+       (apply build-compound-type-name
+              'object/c
+              (append
+               (pair-ids-ctcs (base-object/c-methods ctc) (base-object/c-method-contracts ctc))
+               (handle-optional 'field
+                                (base-object/c-fields ctc)
+                                (base-object/c-field-contracts ctc))))))
+   #:first-order object/c-first-order
+   #:stronger object/c-stronger))
+
+(define-syntax (object/c stx)
+  (syntax-case stx ()
+    [(_ form ...)
+     (let ()
+       (define-values (bindings pfs)
+         (parse-class/c-specs (syntax->list #'(form ...)) #t))
+       (with-syntax ([methods #`(list #,@(reverse (hash-ref pfs 'methods null)))]
+                     [method-ctcs #`(list #,@(reverse (hash-ref pfs 'method-contracts null)))]
+                     [fields #`(list #,@(reverse (hash-ref pfs 'fields null)))]
+                     [field-ctcs #`(list #,@(reverse (hash-ref pfs 'field-contracts null)))]
+                     [bindings bindings])
+         (syntax/loc stx
+           (let bindings
+             (make-base-object/c methods method-ctcs fields field-ctcs)))))]))
 
 ;; make-wrapper-object: contract object blame 
 ;;                      (listof symbol) (listof contract?) (listof symbol) (listof contract?)
