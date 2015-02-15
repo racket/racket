@@ -3186,7 +3186,7 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
       l = scheme_get_stack_trace(scheme_struct_ref(argv[1], 1));
       while (!SCHEME_NULLP(l)) {
 	if (!max_cnt) {
-	  scheme_write_byte_string("...\n", 4, port);
+	  scheme_write_byte_string("\n   ...", 7, port);
 	  break;
 	} else {
 	  Scheme_Object *name, *loc;
