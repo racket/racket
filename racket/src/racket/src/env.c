@@ -2496,19 +2496,25 @@ make_introducer(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 delta_introducer_proc(void *_i_plus_m, int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *p = (Scheme_Object *)_i_plus_m, *l, *v, *a[1];
-  const char *who = "delta introducer attached to a rename transformer";
+  Scheme_Object *p = (Scheme_Object *)_i_plus_m, *l, *v, *a[2], *mode = NULL;
+  const char *who = "syntax-delta-introducer";
 
   v = argv[0];
   if (!SCHEME_STXP(v) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(v))) {
     scheme_wrong_contract(who, "identifier?", 0, argc, argv);
   }
+  if (argc > 1) {
+    (void)scheme_get_introducer_mode(who, 1, argc, argv);
+    mode = argv[1];
+  }
+
   
   /* Apply mapping functions: */
   l = SCHEME_CDR(p);
   while (SCHEME_PAIRP(l)) {
     a[0] = v;
-    v = _scheme_apply(SCHEME_CAR(l), 1, a);
+    a[1] = mode;
+    v = _scheme_apply(SCHEME_CAR(l), (mode ? 2 : 1), a);
     l = SCHEME_CDR(l);
   }
 
@@ -2516,7 +2522,8 @@ delta_introducer_proc(void *_i_plus_m, int argc, Scheme_Object *argv[])
   l = SCHEME_CAR(p);
   while (SCHEME_PAIRP(l)) {
     a[0] = v;
-    v = _scheme_apply(SCHEME_CAR(l), 1, a);
+    a[1] = mode;
+    v = _scheme_apply(SCHEME_CAR(l), (mode ? 2 : 1), a);
     if (!SCHEME_STXP(v) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(v))) {
       a[0] = v;
       scheme_wrong_contract(who, "identifier?", -1, -1, a);
@@ -2569,7 +2576,7 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
                                          scheme_make_pair(scheme_make_pair(introducer,
                                                                            scheme_null),
                                                           scheme_null),
-                                         "syntax-delta-introducer", 1, 1);
+                                         "syntax-delta-introducer", 1, 2);
 
   // REMOVEME: figure out rename-identifier behavior
 #if 0

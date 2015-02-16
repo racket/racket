@@ -184,7 +184,7 @@
                                                (define-values (i) j)))
           (let ((a 1) (g 2) (j 3))
             (lookup-sig-mac x)))))
-(test stx-bound-id=? #'(((#f . a) b f) (((c d) . e) ((i) . (#f . j))) ((((#f . g)) . #'h)))
+(test stx-bound-id=? #'((a b f) (((c d) . e) ((i) . j)) (((g) . #'h)))
       (let ((a 1) (g 2) (j 3))
         (define-signature x (a b (define-values (c d) e) f
                                (define-syntaxes (g) #'h)

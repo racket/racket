@@ -3202,10 +3202,10 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
   /* Remove marks for all enclosing local binding contexts. */
   for (frame = env; frame; frame = frame->next) {
     if (frame->marks) {
-      if (frame->flags & SCHEME_KEEP_MARKS_FRAME)
+      if (frame->flags & SCHEME_KEEP_MARKS_FRAME) {
         stx = scheme_stx_adjust_frame_expression_marks(stx, frame->marks,
                                                        scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
-      else
+      } else
         stx = scheme_stx_adjust_frame_marks(stx, frame->marks,
                                             scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
     }

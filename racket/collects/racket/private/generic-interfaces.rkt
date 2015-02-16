@@ -37,7 +37,8 @@
   (define (hash2-proc x h) (equal-secondary-hash-code x))
 
   (define-syntax gen:equal+hash
-    (make-generic-info (quote-syntax prop:gen:equal+hash)
+    (make-generic-info (quote-syntax gen:equal+hash)
+                       (quote-syntax prop:gen:equal+hash)
                        (quote-syntax equal+hash?)
                        (quote-syntax gen:equal+hash-acc)
                        (list (quote-syntax equal-proc)
@@ -68,7 +69,8 @@
       [else (error 'write-proc "internal error; should not happen")]))
 
   (define-syntax gen:custom-write
-    (make-generic-info (quote-syntax prop:gen:custom-write)
+    (make-generic-info (quote-syntax gen:custom-write)
+                       (quote-syntax prop:gen:custom-write)
                        (quote-syntax gen:custom-write?)
                        (quote-syntax gen:custom-write-acc)
                        (list (quote-syntax write-proc))))

@@ -1167,7 +1167,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
                                         &rename_insp,
                                         NULL, NULL, NULL, NULL);
 
-#if 1
+#if 0
   // REMOVEME
   if (!strcmp("define$", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%s\n", scheme_write_to_string(binding, NULL));

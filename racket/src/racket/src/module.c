@@ -2845,7 +2845,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
       SCHEME_VEC_ELS(key)[0] = modname;
       SCHEME_VEC_ELS(key)[1] = exsns[i];
       SCHEME_VEC_ELS(key)[2] = (exets ? scheme_make_integer(exets[0]) : scheme_make_integer(0));
-      SCHEME_VEC_ELS(key)[3] = exsns[i];
+      SCHEME_VEC_ELS(key)[3] = exs[i];
 
       SCHEME_VEC_ELS(vec)[0] = nml;
       SCHEME_VEC_ELS(vec)[1] = midx;
@@ -10188,7 +10188,7 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
             } else {
               defined = 0;
               name = scheme_false;
-            } 
+            }
 
             if (defined && lookup(name_env, k, name)) {
               /* Defined locally */

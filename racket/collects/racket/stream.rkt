@@ -39,7 +39,8 @@
          stream-count)
 
 (define-syntax gen:stream
-  (make-generic-info (quote-syntax prop:stream)
+  (make-generic-info (quote-syntax gen:stream)
+                     (quote-syntax prop:stream)
                      (quote-syntax stream-via-prop?)
                      (quote-syntax stream-get-generics)
                      (list (quote-syntax stream-empty?)

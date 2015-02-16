@@ -2025,6 +2025,8 @@
             [import-sigs (map process-signature 
                               (syntax->list #'(import ...)))]
             [sig-introducers (map (lambda (unit u)
+                                    (syntax-local-make-delta-introducer u)
+                                    #;
                                     (make-syntax-delta-introducer u (unit-info-orig-binder unit)))
                                   units us)]
             [sub-outs
@@ -2211,6 +2213,7 @@
         (if (null? units)
             (values imps exps)
             (let-values ([(i e) (imps/exps-from-unit (car units))])
+              (map syntax-local-value i)
               (loop (cdr units) (append i imps) (append e exps))))))
     (define-values (isig tagged-import-sigs import-tagged-infos 
                          import-tagged-sigids import-sigs)

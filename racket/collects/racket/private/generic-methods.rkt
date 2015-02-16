@@ -23,16 +23,18 @@
                     generic-info?
                     generic-info-get
                     generic-info-set!)
-      (make-struct-type 'generic-info #f 4 0))
+      (make-struct-type 'generic-info #f 5 0))
 
-    (define-values (generic-info-property
+    (define-values (generic-info-name
+                    generic-info-property
                     generic-info-predicate
                     generic-info-accessor
                     generic-info-methods)
-      (values (make-struct-field-accessor generic-info-get 0 'property)
-              (make-struct-field-accessor generic-info-get 1 'predicate)
-              (make-struct-field-accessor generic-info-get 2 'accessor)
-              (make-struct-field-accessor generic-info-get 3 'methods)))
+      (values (make-struct-field-accessor generic-info-get 0 'name)
+              (make-struct-field-accessor generic-info-get 1 'property)
+              (make-struct-field-accessor generic-info-get 2 'predicate)
+              (make-struct-field-accessor generic-info-get 3 'accessor)
+              (make-struct-field-accessor generic-info-get 4 'methods)))
 
     (define (check-identifier! name ctx stx)
       (unless (identifier? stx)
@@ -158,8 +160,14 @@
       [(_ gen def ...)
        (let ()
          (define info (get-info 'generic-methods stx #'gen))
-         (define delta (syntax-local-make-delta-introducer #'gen))
-         (define methods (map syntax-local-get-shadower (map delta (generic-info-methods info))))
+         (define orig-id (generic-info-name info))
+         (define methods (map (lambda (id)
+                                ((make-syntax-delta-introducer id orig-id)
+                                 (datum->syntax #'gen
+                                                (syntax-e id)
+                                                id
+                                                id)))
+                              (generic-info-methods info)))
          (with-syntax ([(method ...) methods])
            (syntax/loc stx
              (syntax-parameterize ([generic-method-context #'gen])
