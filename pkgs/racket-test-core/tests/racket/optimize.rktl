@@ -1494,6 +1494,21 @@
                       (set! x x))))
             #f)
 
+(test-comp '(module m racket/base
+             (define (true) #t)
+             (define no (if (true) (lambda (x) (cons x 'no)) display))
+             (newline) ; <--- just to break the simultaneous group
+             (define yes (if (true) (lambda (x) (cons x 'yes)) display))
+             (no 5)
+             (yes 5))
+           '(module m racket/base
+             (define (true) #t)
+             (define no (lambda (x) (cons x 'no)))
+             (newline)
+             (define yes (lambda (x) (cons x 'yes)))
+             (cons 5 'no)
+             (cons 5 'yes)))
+
 (test-comp '(let ([x 1][y 2]) x)
 	   '1)
 (test-comp '(let ([x 1][y 2]) (+ y x))

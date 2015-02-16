@@ -6874,19 +6874,17 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               if (e2) {
                 int pos;
                 pos = tl->position;
-                if (sstruct) {
-                  /* Add directly to `info->top_level_consts' for use
-                     by sub-struct declarations in the same set */
-                  if (!info->top_level_consts) {
-                    Scheme_Hash_Table *tlc;
-                    tlc = scheme_make_hash_table(SCHEME_hash_ptr);
-                    info->top_level_consts = tlc;
-                  }
-                  scheme_hash_set(info->top_level_consts, scheme_make_integer(pos), e2);
+
+                consts = info->top_level_consts;
+                if (!consts) {
+                  consts = scheme_make_hash_table(SCHEME_hash_ptr);
+                  info->top_level_consts = consts;
+                }
+                scheme_hash_set(consts, scheme_make_integer(pos), e2);
+
+                if (sstruct || (SCHEME_TYPE(e2) > _scheme_compiled_values_types_)) {
+                  /* No use re-optimizing */
                 } else {
-                  if (!consts)
-                    consts = scheme_make_hash_table(SCHEME_hash_ptr);
-                  scheme_hash_set(consts, scheme_make_integer(pos), e2);
                   if (!re_consts)
                     re_consts = scheme_make_hash_table(SCHEME_hash_ptr);
                   scheme_hash_set(re_consts, scheme_make_integer(i_m),
@@ -6896,9 +6894,12 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                 /* At least mark it as fixed */
                 if (!fixed_table) {
                   fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
-                  if (!consts)
+                  if (!info->top_level_consts) {
                     consts = scheme_make_hash_table(SCHEME_hash_ptr);
-                  scheme_hash_set(consts, scheme_false, (Scheme_Object *)fixed_table);
+                    info->top_level_consts = consts;
+                    consts = NULL;
+                  }
+                  scheme_hash_set(info->top_level_consts, scheme_false, (Scheme_Object *)fixed_table);
                 }
                 scheme_hash_set(fixed_table, scheme_make_integer(tl->position), scheme_true);
               }
@@ -6935,19 +6936,6 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       /* If we have new constants, re-optimize to inline: */
       if (consts) {
         int flags;
-
-	if (!info->top_level_consts) {
-	  info->top_level_consts = consts;
-	} else {
-	  int i;
-	  for (i = 0; i < consts->size; i++) {
-	    if (consts->vals[i]) {
-	      scheme_hash_set(info->top_level_consts,
-			      consts->keys[i],
-			      consts->vals[i]);
-	    }
-	  }
-	}
 
         /* Same as in letrec: assume CLOS_SINGLE_RESULT and
            CLOS_PRESERVES_MARKS for all, but then assume not for all
@@ -7049,9 +7037,12 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     if (next_pos_ready > -1) {
       if (!fixed_table) {
         fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
-        if (!consts)
+        if (!info->top_level_consts) {
           consts = scheme_make_hash_table(SCHEME_hash_ptr);
-        scheme_hash_set(consts, scheme_false, (Scheme_Object *)fixed_table);
+          info->top_level_consts = consts;
+          consts = NULL;
+        }
+        scheme_hash_set(info->top_level_consts, scheme_false, (Scheme_Object *)fixed_table);
       }
       scheme_hash_set(fixed_table, scheme_make_integer(next_pos_ready), scheme_true);
       next_pos_ready = -1;
