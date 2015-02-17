@@ -1327,7 +1327,7 @@
                        type . types)
   (let* ([types   (cons type types)]
          [stype   (make-cstruct-type types #f alignment)]
-         [offsets (compute-offsets types alignment)]
+         [offsets (compute-offsets types alignment (map (lambda (x) #f) types))]
          [len     (length types)])
     (make-ctype stype
       (lambda (vals)
