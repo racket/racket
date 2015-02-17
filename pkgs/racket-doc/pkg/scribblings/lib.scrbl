@@ -299,7 +299,8 @@ The package lock must be held; see @racket[with-pkg-lock].
                           [#:force? force? boolean? #f]
                           [#:ignore-checksums? ignore-checksums? boolean? #f]
                           [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
-                          [#:use-cache? use-cache? quiet? #t]
+                          [#:use-cache? use-cache? boolean? #t]
+                          [#:skip-uninstalled? skip-uninstalled? boolean? #t]
                           [#:quiet? quiet? boolean? #f]
                           [#:use-trash? boolean? use-trash? #f]
                           [#:from-command-line? from-command-line? boolean? #f]
@@ -344,7 +345,7 @@ The package lock must be held; see @racket[with-pkg-lock].
 @history[#:changed "6.1.1.5" @elem{Added the @racket[#:multi-clone-mode] 
                                    and @racket[#:infer-clone-from-dir?] arguments.}
          #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}
-         #:changed "6.1.1.8" @elem{Added the @racket[#:pull-mode] argument.}]}
+         #:changed "6.1.1.8" @elem{Added the @racket[#:skip-uninstalled?] and @racket[#:pull-mode] arguments.}]}
 
 
 @defproc[(pkg-remove      [names (listof string?)]

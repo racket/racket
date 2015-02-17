@@ -966,6 +966,7 @@
                              #:use-cache? use-cache?
                              #:from-command-line? from-command-line?
                              #:link-dirs? link-dirs?
+                             #:skip-uninstalled? [skip-uninstalled? #f]
                              #:all-mode? [all-mode? #f]
                              #:force-update? [force-update? #f])
          pkg-name)
@@ -985,58 +986,64 @@
       (define name (or (pkg-desc-name pkg-name)
                        inferred-name))
       ;; Check that the package is installed, and get current checksum:
-      (define info (package-info name #:db db))
-      (define new-checksum (checksum-for-pkg-source (pkg-desc-source pkg-name)
-                                                    type
-                                                    name
-                                                    (pkg-desc-checksum pkg-name)
-                                                    download-printf
-                                                    #:catalog-lookup-cache catalog-lookup-cache
-                                                    #:remote-checksum-cache remote-checksum-cache))
-      (hash-set! update-cache name new-checksum) ; record downloaded checksum
-      (unless (or ignore-checksums? (not (pkg-desc-checksum pkg-name)))
-        (unless (equal? (pkg-desc-checksum pkg-name) new-checksum)
-          (pkg-error (~a "incorrect checksum on package\n"
-                         "  package source: ~a\n"
-                         "  expected: ~e\n"
-                         "  got: ~e")
-                     (pkg-desc-source pkg-name)
-                     (pkg-desc-checksum pkg-name) 
-                     new-checksum)))
-      
-      (if (or force-update?
-              (not (equal? (pkg-info-checksum info)
-                           new-checksum))
-              ;; No checksum available => always update
-              (not new-checksum)
-              ;; Different source => always update
-              (not (same-orig-pkg? (pkg-info-orig-pkg info)
-                                   (desc->orig-pkg type
-                                                   (pkg-desc-source pkg-name)
-                                                   (pkg-desc-extra-path pkg-name)))))
-          ;; Update:
-          (begin
-            (hash-set! update-cache (box name) #t)
-            (list (pkg-desc (pkg-desc-source pkg-name)
-                            (pkg-desc-type pkg-name)
-                            name
-                            (pkg-desc-checksum pkg-name)
-                            (pkg-desc-auto? pkg-name)
-                            (or (pkg-desc-extra-path pkg-name)
-                                (and (eq? type 'clone)
-                                     (current-directory))))))
-          ;; No update needed, but maybe check dependencies:
-          (if (or deps?
-                  implies?)
-              (update-loop name #f #f #f)
-              null))]
+      (define info (package-info name #:db db (not skip-uninstalled?)))
+      (cond
+       [(not info)
+        ;; Not installed, and we're skipping uninstalled
+        null]
+       [else
+        (define new-checksum (checksum-for-pkg-source (pkg-desc-source pkg-name)
+                                                      type
+                                                      name
+                                                      (pkg-desc-checksum pkg-name)
+                                                      download-printf
+                                                      #:catalog-lookup-cache catalog-lookup-cache
+                                                      #:remote-checksum-cache remote-checksum-cache))
+        (hash-set! update-cache name new-checksum) ; record downloaded checksum
+        (unless (or ignore-checksums? (not (pkg-desc-checksum pkg-name)))
+          (unless (equal? (pkg-desc-checksum pkg-name) new-checksum)
+            (pkg-error (~a "incorrect checksum on package\n"
+                           "  package source: ~a\n"
+                           "  expected: ~e\n"
+                           "  got: ~e")
+                       (pkg-desc-source pkg-name)
+                       (pkg-desc-checksum pkg-name) 
+                       new-checksum)))
+        
+        (if (or force-update?
+                (not (equal? (pkg-info-checksum info)
+                             new-checksum))
+                ;; No checksum available => always update
+                (not new-checksum)
+                ;; Different source => always update
+                (not (same-orig-pkg? (pkg-info-orig-pkg info)
+                                     (desc->orig-pkg type
+                                                     (pkg-desc-source pkg-name)
+                                                     (pkg-desc-extra-path pkg-name)))))
+            ;; Update:
+            (begin
+              (hash-set! update-cache (box name) #t)
+              (list (pkg-desc (pkg-desc-source pkg-name)
+                              (pkg-desc-type pkg-name)
+                              name
+                              (pkg-desc-checksum pkg-name)
+                              (pkg-desc-auto? pkg-name)
+                              (or (pkg-desc-extra-path pkg-name)
+                                  (and (eq? type 'clone)
+                                       (current-directory))))))
+            ;; No update needed, but maybe check dependencies:
+            (if (or deps?
+                    implies?)
+                (update-loop name #f #f #f)
+                null))])]
      [(hash-ref update-cache (box pkg-name) #f)
       ;; package is already being updated
       null]
      ;; A string indicates that package source that should be
      ;; looked up in the installed packages to get the old source
      ;; for getting the checksum:
-     [(package-info pkg-name #:db db must-update?)
+     [(package-info pkg-name #:db db (and must-update?
+                                          (not skip-uninstalled?)))
       =>
       (lambda (info)
         (match-define (pkg-info orig-pkg checksum auto?) info)
@@ -1150,6 +1157,7 @@
                     #:force? [force? #f]
                     #:ignore-checksums? [ignore-checksums? #f]
                     #:strict-doc-conflicts? [strict-doc-conflicts? #f]
+                    #:skip-uninstalled? [skip-uninstalled? #f]
                     #:use-cache? [use-cache? #t]
                     #:update-deps? [update-deps? #f]
                     #:update-implies? [update-implies? #t]
@@ -1187,6 +1195,7 @@
                                                     #:ignore-checksums? ignore-checksums?
                                                     #:use-cache? use-cache?
                                                     #:from-command-line? from-command-line?
+                                                    #:skip-uninstalled? skip-uninstalled?
                                                     #:link-dirs? link-dirs?
                                                     #:all-mode? all-mode?)
                                 (map (compose
@@ -1197,6 +1206,7 @@
                                           (convert-clone-name-to-clone-repo/install catalog-lookup-cache
                                                                                     download-printf)
                                           (convert-clone-name-to-clone-repo/update db
+                                                                                   skip-uninstalled?
                                                                                    from-command-line?)))
                                      pkgs)))
   (cond

@@ -26,6 +26,8 @@
    (shelly-install "local packages can't be updated (file)"
                    "test-pkgs/pkg-test1.zip"
                    $ "raco pkg update pkg-test1" =exit> 1)
+   (shelly-case "update of uninstalled with --skip-uninstalled"
+                $ "raco pkg update --skip-uninstalled nosuchpackage")
 
    (define tmp-dir (path->directory-path (make-temporary-file "pkg~a" 'directory)))
    (shelly-wind

@@ -86,10 +86,11 @@
                                                            msg s)))]))
                          (define scope (find-pkg-installation-scope pkg-name))
                          (cond
-                          [(not prev-pkg) (values pkg scope)]
+                          [(or (not prev-pkg) (not prev-scope)) (values pkg scope)]
+                          [(not scope) (values prev-pkg prev-scope)]
                           [(equal? scope prev-scope) (values prev-pkg prev-scope)]
                           [else
-                           ((current-pkg-error) 
+                           ((current-pkg-error)
                             (~a "given packages are installed in different scopes\n"
                                 "  package: ~a\n"
                                 "  scope: ~a\n"
@@ -292,6 +293,7 @@
              scope-flags ...
              #:once-each
              catalog-flags ...
+             [#:bool skip-uninstalled () ("Skip a given <pkg-source> if not installed")]
              install-force-flags ...
              install-clone-flags ...
              job-flags ...
@@ -350,6 +352,7 @@
                                       #:ignore-checksums? ignore-checksums
                                       #:strict-doc-conflicts? strict-doc-conflicts
                                       #:use-cache? (not no-cache)
+                                      #:skip-uninstalled? skip-uninstalled
                                       #:update-deps? (or update-deps auto)
                                       #:update-implies? (not ignore-implies)
                                       #:strip (or (and source 'source)

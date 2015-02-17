@@ -264,7 +264,10 @@
 ;; If `pkg-name` is a description with the type 'clone, but its syntax
 ;; matches a package name, then infer a repo from the current package
 ;; installation and return an alternate description.
-(define ((convert-clone-name-to-clone-repo/update db from-command-line?) pkg-name)
+(define ((convert-clone-name-to-clone-repo/update db
+                                                  skip-uninstalled?
+                                                  from-command-line?)
+         pkg-name)
   (cond
    [(and (pkg-desc? pkg-name)
          (eq? 'clone (pkg-desc-type pkg-name))
@@ -272,39 +275,40 @@
            name))
     => (lambda (name)
          ;; Infer or complain
-         (define info (package-info name #:db db))
-         (unless info
-           (pkg-error (~a "package is not currently installed\n"
-                          "  package: ~a")
-                      name))
-         (define new-pkg-name
-           (pkg-info->clone-desc name info
-                                 #:checksum (pkg-desc-checksum pkg-name)
-                                 #:auto? (pkg-desc-auto? pkg-name)
-                                 #:extra-path (pkg-desc-extra-path pkg-name)
-                                 #:reject-existing-clone? #t))
-         (define current-orig-pkg (pkg-info-orig-pkg info))
-         (unless new-pkg-name
-           (pkg-error (~a "package is not currently installed from a repository\n"
-                          "  package: ~a\n"
-                          "  current installation: ~a"
-                          (cond
-                           [from-command-line?
-                            (case (car current-orig-pkg)
-                              [(link static-link)
-                               (~a "\n  extra advice:\n"
-                                   "   Your current installation is a directory link, and the directory might\n"
-                                   "   be a Git repostory checkout, but the package system doesn't know that.\n"
-                                   "   If so, try\n"
-                                   "    cd " (simplify-path
-                                              (path->complete-path (cadr current-orig-pkg) (pkg-installed-dir)))
-                                   "\n"
-                                   "    raco pkg update --clone . <repository-URL>")]
-                              [else ""])]
-                           [else ""]))
-                      name
-                      current-orig-pkg))
-         new-pkg-name)]
+         (define info (package-info name #:db db (not skip-uninstalled?)))
+         (cond
+          [(not info)
+           ;; Skipping uninstalled packages
+           #f]
+          [else
+           (define new-pkg-name
+             (pkg-info->clone-desc name info
+                                   #:checksum (pkg-desc-checksum pkg-name)
+                                   #:auto? (pkg-desc-auto? pkg-name)
+                                   #:extra-path (pkg-desc-extra-path pkg-name)
+                                   #:reject-existing-clone? #t))
+           (define current-orig-pkg (pkg-info-orig-pkg info))
+           (unless new-pkg-name
+             (pkg-error (~a "package is not currently installed from a repository\n"
+                            "  package: ~a\n"
+                            "  current installation: ~a"
+                            (cond
+                             [from-command-line?
+                              (case (car current-orig-pkg)
+                                [(link static-link)
+                                 (~a "\n  extra advice:\n"
+                                     "   Your current installation is a directory link, and the directory might\n"
+                                     "   be a Git repostory checkout, but the package system doesn't know that.\n"
+                                     "   If so, try\n"
+                                     "    cd " (simplify-path
+                                                (path->complete-path (cadr current-orig-pkg) (pkg-installed-dir)))
+                                     "\n"
+                                     "    raco pkg update --clone . <repository-URL>")]
+                                [else ""])]
+                             [else ""]))
+                        name
+                        current-orig-pkg))
+           new-pkg-name]))]
    [else pkg-name]))
 
 (define ((convert-directory-to-installed-clone db) d)
@@ -317,7 +321,7 @@
     (case type
      [(dir)
       (define pkg-name (or (pkg-desc-name d) name))
-      (define info (package-info pkg-name #:db db))
+      (define info (package-info pkg-name #:db db #f))
       (case (and info
                  (car (pkg-info-orig-pkg info)))
         [(clone)

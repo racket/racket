@@ -109,6 +109,7 @@
                         #:force? boolean?
                         #:ignore-checksums? boolean?
                         #:strict-doc-conflicts? boolean?
+                        #:skip-uninstalled? boolean?
                         #:use-cache? boolean?
                         #:strip (or/c #f 'source 'binary 'binary-lib)
                         #:force-strip? boolean?
