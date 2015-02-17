@@ -269,7 +269,7 @@ inferred to be directory paths should be treated as links or copied
 (like other package sources). Note that the default is @racket[#f],
 unlike the default built into @racket[pkg-install-command].
 
-A @racket[package-desc] can have the type @racket['clone] and a source
+A @racket[pkg-desc] can have the type @racket['clone] and a source
 with the syntax of a package name, in which case it refers to a
 @tech{package name} that must be mapped to a Git repository by the
 @tech{package catalog}, and in will be installed as a clone.
@@ -321,7 +321,7 @@ Implements @racket[pkg-update-command]. The result is the same as for
 A string in @racket[sources] refers to an installed package that should
 be checked for updates. A @racket[pkg-desc] in @racket[sources]
 indicates a package source that should replace the current
-installation; as an exception, if a @racket[package-desc] has the type
+installation; as an exception, if a @racket[pkg-desc] has the type
 @racket['clone] and a source with the syntax of a package name, it
 refers to an existing package installation that should be converted to
 a Git repository clone---unless @racket[lookup-for-clone?] is true,
