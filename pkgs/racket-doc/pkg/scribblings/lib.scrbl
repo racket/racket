@@ -252,6 +252,7 @@ is true, error messages may suggest specific command-line flags for
                            [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                            [#:force-strip? force-string? boolean? #f]
                            [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
+                           [#:pull-mode pull-mode (or/c 'ff-only 'try 'rebase) 'ff-only]
                            [#:link-dirs? link-dirs? boolean? #f])
          (or/c 'skip
                #f
@@ -285,7 +286,8 @@ The package lock must be held; see @racket[with-pkg-lock].
 
 @history[#:changed "6.1.1.5" @elem{Added the @racket[#:multi-clone-mode] 
                                    and @racket[#:infer-clone-from-dir?] arguments.}
-         #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}]}
+         #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}
+         #:changed "6.1.1.8" @elem{Added the @racket[#:pull-mode] argument.}]}
 
 
 @defproc[(pkg-update      [sources (listof (or/c string? pkg-desc?))]
@@ -305,6 +307,7 @@ The package lock must be held; see @racket[with-pkg-lock].
                           [#:force-strip? force-string? boolean? #f]
                           [#:lookup-for-clone? lookup-for-clone? boolean? #f]
                           [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
+                          [#:pull-mode pull-mode (or/c 'ff-only 'try 'rebase) 'ff-only]
                           [#:link-dirs? link-dirs? boolean? #f]
                           [#:infer-clone-from-dir? infer-clone-from-dir? boolean? #f])
         (or/c 'skip
@@ -340,7 +343,8 @@ The package lock must be held; see @racket[with-pkg-lock].
 
 @history[#:changed "6.1.1.5" @elem{Added the @racket[#:multi-clone-mode] 
                                    and @racket[#:infer-clone-from-dir?] arguments.}
-         #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}]}
+         #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}
+         #:changed "6.1.1.8" @elem{Added the @racket[#:pull-mode] argument.}]}
 
 
 @defproc[(pkg-remove      [names (listof string?)]

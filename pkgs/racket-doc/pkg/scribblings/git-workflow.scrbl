@@ -134,10 +134,14 @@ ways:
 
  @item{When pulling changes to repositories that have local copies,
        @command-ref{update} pulls changes with the equivalent of @exec{git
-       pull --ff-only}.}
+       pull --ff-only} by default. Supplying @exec{@DFlag{pull} rebase}
+       pulls changes with the equivalent of @exec{git pull --rebase}, instead.
+       Supplying @exec{@DFlag{pull} try} attempts to pull with @exec{git
+       pull --ff-only}, but failure is ignored.}
 
  @item{When @command-ref{update} is given a specific commit as the target
        of the update, it uses the equivalent of @exec{git merge --ff-only
+       @nonterm{checksum}} or @exec{git merge --rebase
        @nonterm{checksum}}. This approach is intended to preserve any
        changes to the package made locally, but it implies that the
        package cannot be ``downgraded'' to a older commit simply by

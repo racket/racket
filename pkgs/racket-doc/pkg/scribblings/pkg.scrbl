@@ -571,6 +571,22 @@ sub-commands.
 
     ]}
 
+  @item{@DFlag{pull} @nonterm{mode} --- Specifies the way that commits
+   are merged to clone-linked packages (see @secref["git-workflow"])
+   on installation or update. The following modes are available:
+
+   @itemlist[
+
+      @item{@exec{ff-only} --- Commits are merged using @DFlag{ff-only}, and installation fails
+                               if the fast-forward merge fails.}
+
+      @item{@exec{try} --- Like @exec{ff-only}, but if the fast-forward fails, the repository checkout is
+                           left as-is, and installation continues.}
+
+      @item{@exec{rebase} --- Commits are merged using @exec{git rebase} instead of @exec{git merge}.}
+
+    ]}
+
 
   @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
@@ -588,7 +604,8 @@ sub-commands.
 @history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch}, @DFlag{clone}, and
                                    @DFlag{multi-clone} flags.}
          #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag, and changed
-                                   the @DFlag{deps} default to depend only on interactive mode.}]}
+                                   the @DFlag{deps} default to depend only on interactive mode.}
+         #:changed "6.1.1.8" @elem{Added the @DFlag{pull} flag.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ... 
@@ -695,6 +712,8 @@ the given @nonterm{pkg-source}s.
        clone to non-clone linking---but only for sharing differences implied by the immediate
        command-line arguments compared against existing package installations.}
 
+ @item{@DFlag{pull} @nonterm{mode} --- Same as for @command-ref{install}}
+
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
@@ -706,7 +725,8 @@ the given @nonterm{pkg-source}s.
                                    added update of enclosing package
                                    when no arguments are provided.}
          #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag, and changed
-                                   the @DFlag{deps} default to depend only on interactive mode.}]}
+                                   the @DFlag{deps} default to depend only on interactive mode.}
+         #:changed "6.1.1.8" @elem{Added the @DFlag{pull} flag.}]}
 
 @subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. By default, if a package is the dependency

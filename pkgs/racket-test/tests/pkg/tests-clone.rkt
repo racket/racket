@@ -91,6 +91,26 @@
         $ "racket -l a" =stdout> "3.5\n")
        
        (shelly-case
+        "failed update can be ignored with `--pull try'"
+        (set-file (build-path clone-dir "a" "main.rkt") "#lang racket/base 3.5")
+        $ (~a "raco pkg update --pull try a") =exit> 0 =stdout> #rx"anyway"
+        $ "racket -l a" =stdout> "3.5\n")
+       
+       (shelly-case
+        "rebase mode fails on conflicts"
+        $ (~a "raco pkg update --pull rebase a") =exit> 1
+        $ "racket -l a" =stdout> "3.5\n")
+       
+       (shelly-case
+        "rebase succeeds on non-conflifting changes"
+        (set-file (build-path clone-dir "a" "main.rkt") "#lang racket/base 3") ; reverts local change
+        (set-file (build-path clone-dir "a" "more.rkt") "#lang racket/base 30")
+        $ (~a "cd " (build-path clone-dir "a") "; git add .; git commit -m change")
+        $ (~a "raco pkg update --pull rebase a")
+        $ "racket -l a" =stdout> "4\n"
+        $ "racket -l a/more" =stdout> "30\n")
+       
+       (shelly-case
         "removal of --clone installation leaves local clone intact"
         $ "raco pkg remove a"
         $ "racket -l a" =exit> 1

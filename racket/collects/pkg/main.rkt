@@ -261,6 +261,7 @@
                                                                   (if batch
                                                                       'fail
                                                                       'ask))
+                                       #:pull-behavior pull
                                        #:link-dirs? link-dirs?
                                        #:use-trash? (not no-trash)
                                        (for/list ([p (in-list sources)])
@@ -360,6 +361,7 @@
                                                                  (if batch
                                                                      'fail
                                                                      'ask))
+                                      #:pull-behavior pull
                                       #:link-dirs? link-dirs?
                                       #:infer-clone-from-dir? (not (or link static-link copy))
                                       #:use-trash? (not no-trash)))))
@@ -684,7 +686,10 @@
    #:install-clone-flags
    ([(#:sym mode [fail force convert ask] #f) multi-clone ()
      ("Specify treatment of multiple clones of a repository;"
-      "<mode>s: convert, ask (interactive default), fail (other default), or force")])
+      "<mode>s: convert, ask (interactive default), fail (other default), or force")]
+    [(#:sym mode [ff-only try rebase] 'ff-only) pull ()
+     ("Specify `git pull' mode for repository clonse;"
+      "<mode>s: ff-only (the default), try, or rebase")])
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"]
     [#:bool ignore-implies () "When updating, treat `implies' like other dependencies"])

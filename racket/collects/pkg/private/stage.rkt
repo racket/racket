@@ -42,22 +42,32 @@
 
 (define (remote-package-checksum pkg download-printf pkg-name
                                  #:type [type #f]
-                                 #:catalog-lookup-cache [catalog-lookup-cache #f])
-  (match pkg
-    [`(catalog ,pkg-name . ,_)
-     (hash-ref (package-catalog-lookup pkg-name #f catalog-lookup-cache
-                                       download-printf)
-               'checksum)]
-    [`(url ,pkg-url-str)
-     (package-url->checksum pkg-url-str
-                            #:type type
-                            #:download-printf download-printf
-                            #:pkg-name pkg-name)]
-    [`(clone ,_ ,pkg-url-str)
-     (package-url->checksum pkg-url-str
-                            #:type 'clone
-                            #:download-printf download-printf
-                            #:pkg-name pkg-name)]))
+                                 #:catalog-lookup-cache [catalog-lookup-cache #f]
+                                 #:remote-checksum-cache [remote-checksum-cache #f])
+  (cond
+   [(and remote-checksum-cache
+         (hash-ref remote-checksum-cache pkg #f))
+    => (lambda (checksum) checksum)]
+   [else
+    (define checksum
+      (match pkg
+        [`(catalog ,pkg-name . ,_)
+         (hash-ref (package-catalog-lookup pkg-name #f catalog-lookup-cache
+                                           download-printf)
+                   'checksum)]
+        [`(url ,pkg-url-str)
+         (package-url->checksum pkg-url-str
+                                #:type type
+                                #:download-printf download-printf
+                                #:pkg-name pkg-name)]
+        [`(clone ,_ ,pkg-url-str)
+         (package-url->checksum pkg-url-str
+                                #:type 'clone
+                                #:download-printf download-printf
+                                #:pkg-name pkg-name)]))
+    (when remote-checksum-cache
+      (hash-set! remote-checksum-cache pkg checksum))
+    checksum]))
 
 ;; Downloads a package (if needed) and unpacks it (if needed) into a  
 ;; temporary directory.
@@ -72,6 +82,7 @@
                             download-printf
                             metadata-ns
                             #:catalog-lookup-cache [catalog-lookup-cache #f]
+                            #:remote-checksum-cache [remote-checksum-cache #f]
                             #:strip [strip-mode #f]
                             #:force-strip? [force-strip? #f]
                             #:in-place? [in-place? #f]
@@ -124,7 +135,9 @@
 
     (define checksum
       (or given-checksum
-          (remote-package-checksum orig-pkg download-printf pkg-name)))
+          (remote-package-checksum orig-pkg download-printf pkg-name
+                                   #:catalog-lookup-cache catalog-lookup-cache
+                                   #:remote-checksum-cache remote-checksum-cache)))
 
     ;; If the clone directory already exists, and if it already has
     ;; the target commit, then we use that directory. It may have
@@ -225,7 +238,9 @@
       ;; then check whether it matches the expected one, but we choose
       ;; to avoid an extra trip to the server.
       (or given-checksum
-          (remote-package-checksum orig-pkg download-printf pkg-name)))
+          (remote-package-checksum orig-pkg download-printf pkg-name
+                                   #:catalog-lookup-cache catalog-lookup-cache
+                                   #:remote-checksum-cache remote-checksum-cache)))
     (when check-sums?
       (check-checksum given-checksum found-checksum "unexpected" pkg #f))
     (define checksum (or found-checksum given-checksum))
@@ -608,6 +623,7 @@
                                      download-printf
                                      metadata-ns
                                      #:catalog-lookup-cache catalog-lookup-cache
+                                     #:remote-checksum-cache remote-checksum-cache
                                      #:strip strip-mode
                                      #:force-strip? force-strip?))
     (when check-sums?

@@ -37,13 +37,15 @@
          pkg-update)
 
 (define (checksum-for-pkg-source pkg-source type pkg-name given-checksum download-printf
-                                 #:catalog-lookup-cache [catalog-lookup-cache #f])
+                                 #:catalog-lookup-cache [catalog-lookup-cache #f]
+                                 #:remote-checksum-cache [remote-checksum-cache #f])
   (case type
     [(file-url dir-url github git clone)
      (or given-checksum
-	 (remote-package-checksum `(url ,pkg-source) download-printf pkg-name
+         (remote-package-checksum `(url ,pkg-source) download-printf pkg-name
                                   #:type type
-                                  #:catalog-lookup-cache catalog-lookup-cache))]
+                                  #:catalog-lookup-cache catalog-lookup-cache
+                                  #:remote-checksum-cache remote-checksum-cache))]
     [(file)
      (define checksum-pth (format "~a.CHECKSUM" pkg-source))
      (or (and (file-exists? checksum-pth)
@@ -54,7 +56,8 @@
      (or given-checksum
          (remote-package-checksum `(catalog ,pkg-source) download-printf pkg-name
                                   #:type type
-                                  #:catalog-lookup-cache catalog-lookup-cache))]
+                                  #:catalog-lookup-cache catalog-lookup-cache
+                                  #:remote-checksum-cache remote-checksum-cache))]
     [else given-checksum]))
 
 (define (disallow-package-path-overlaps pkg-name
@@ -128,6 +131,7 @@
          #:update-implies? update-implies?
          #:update-cache update-cache
          #:catalog-lookup-cache catalog-lookup-cache
+         #:remote-checksum-cache remote-checksum-cache
          #:updating? updating-all?
          #:extra-updating extra-updating
          #:ignore-checksums? ignore-checksums?
@@ -145,6 +149,7 @@
          #:local-docs-ok? local-docs-ok?
          #:ai-cache ai-cache
          #:clone-info clone-info
+         #:pull-behavior pull-behavior
          descs)
   (define download-printf (if quiet? void printf/flush))
   (define check-sums? (not ignore-checksums?))
@@ -216,7 +221,7 @@
          (cons
           #f ; no repo change
           ;; The `do-it` thunk:
-          (lambda ()
+          (lambda (fail-repos)
             (unless quiet?
               (download-printf "Promoting ~a from auto-installed to explicitly installed\n" pkg-name))
             (update-pkg-db! pkg-name (update-auto existing-pkg-info #f))))]
@@ -413,6 +418,7 @@
                                                          #:update-cache update-cache
                                                          #:namespace metadata-ns
                                                          #:catalog-lookup-cache catalog-lookup-cache
+                                                         #:remote-checksum-cache remote-checksum-cache
                                                          #:all-platforms? all-platforms?
                                                          #:ignore-checksums? ignore-checksums?
                                                          #:use-cache? use-cache?
@@ -522,6 +528,7 @@
                                                                #:update-cache update-cache
                                                                #:namespace metadata-ns
                                                                #:catalog-lookup-cache catalog-lookup-cache
+                                                               #:remote-checksum-cache remote-checksum-cache
                                                                #:all-platforms? all-platforms?
                                                                #:ignore-checksums? ignore-checksums?
                                                                #:use-cache? use-cache?
@@ -552,13 +559,14 @@
                   (clean!)
                   (report-mismatch update-deps)])]))]
       [else
+       (define repo (and git-dir
+                         (enclosing-path-for-repo (caddr orig-pkg) git-dir)))
        (cons
         ;; The repo to get new commits, if any:
-        (and git-dir
-             (list (enclosing-path-for-repo (caddr orig-pkg) git-dir)
-                   checksum))
+        (and repo (list repo
+                        checksum))
         ;; The "do-it" function (see `repos+do-its` below):
-        (λ ()
+        (λ (fail-repos)
           (when updating?
             (download-printf "Re-installing ~a\n" pkg-name))
           (define final-pkg-dir
@@ -595,8 +603,14 @@
               (and (path? name)
                    (regexp-match? #rx"[+]" name)
                    (path->string name))))
+          (define new-checksum
+            (if (hash-ref fail-repos repo #f)
+                ;; Failed `git pull` => record checksum as #f, because we've lost track
+                ;; of the state of this package:
+                #f
+                checksum))
           (define this-pkg-info
-            (make-pkg-info orig-pkg checksum auto? single-collect alt-dir-name))
+            (make-pkg-info orig-pkg new-checksum auto? single-collect alt-dir-name))
           (log-pkg-debug "updating db with ~e to ~e" pkg-name this-pkg-info)
           (update-pkg-db! pkg-name this-pkg-info)))]))
   (define metadata-ns (make-metadata-namespace))
@@ -609,6 +623,7 @@
                           check-sums? download-printf
                           metadata-ns
                           #:catalog-lookup-cache catalog-lookup-cache
+                          #:remote-checksum-cache remote-checksum-cache
                           #:strip strip-mode
                           #:force-strip? force-strip?
                           #:link-dirs? link-dirs?)))
@@ -653,25 +668,50 @@
   ;; to check them out; if a checkout fails, then we've left the
   ;; package installation in no worse shape than if a manual `git
   ;; pull` failed
-  (for ([(git-dir checksums) (in-hash repos)])
-    (parameterize ([current-directory git-dir])
-      (download-printf "Merging commits at ~a\n"
-                       git-dir)
-      (when ((length checksums) . > . 1)
-        (download-printf (~a "Multiple packages in the of the clone\n"
-                             "  " git-dir "\n"
-                             " have different target commits; will try each commit, which will work\n"
-                             " as long as some commit is a fast-forward of all of them\n")))
-      (for ([checksum (in-list checksums)])
-        (git #:status (lambda (s) (download-printf "~a\n" s))
-             "merge" "--ff-only" checksum))))
+  (define fail-repos
+    (for/fold ([fail-repos #hash()]) ([(git-dir checksums) (in-hash repos)])
+      (parameterize ([current-directory git-dir])
+        (download-printf "Merging commits at ~a\n"
+                         git-dir)
+        (when ((length checksums) . > . 1)
+          (download-printf (~a "Multiple packages in the of the clone\n"
+                               "  " git-dir "\n"
+                               " have different target commits; will try each commit, which will work\n"
+                               " as long as some commit is a fast-forward of all of them\n")))
+        (for/fold ([fail-repos fail-repos]) ([checksum (in-list checksums)])
+          (define rebase? (eq? pull-behavior 'rebase))
+          (define ok?
+            (git #:status (lambda (s) (download-printf "~a\n" s))
+                 #:fail-mode 'status
+                 (if rebase? "rebase" "merge")
+                 (if rebase? "--onto" "--ff-only")
+                 checksum))
+          (cond
+           [ok? fail-repos]
+           [else
+            (case pull-behavior
+              [(try)
+               (download-printf (~a "Pulling commits failed, but continuing anyway~a\n")
+                                (if from-command-line?
+                                    " due to `--pull try'"
+                                    ""))
+               (hash-set fail-repos git-dir #t)]
+              [else
+               (pkg-error (~a "pulling commits to clone failed~a\n"
+                              "  clone: ~a\n"
+                              "  target commit: ~a")
+                          (if from-command-line?
+                              ";\n fix clone manually or use `--pull try' or `--pull rebase'"
+                              "")
+                          git-dir
+                          checksum)])])))))
 
   ;; pre-succeed removes packages that are being updated
   (pre-succeed)
 
   (define post-metadata-ns (make-metadata-namespace))
   ;; moves packages into place and installs links:
-  (for-each (λ (t) ((cdr t))) repo+do-its)
+  (for-each (λ (t) ((cdr t) fail-repos)) repo+do-its)
 
   (define (is-promote? info)
     ;; if the package name is in `current-scope-db', we must
@@ -776,6 +816,7 @@
                      #:update-implies? [update-implies? #t]
                      #:update-cache [update-cache (make-hash)]
                      #:catalog-lookup-cache [catalog-lookup-cache (make-hash)]
+                     #:remote-checksum-cache [remote-checksum-cache (make-hash)]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
                      #:use-trash? [use-trash? #f]
@@ -789,6 +830,7 @@
                      #:repo-descs [old-repo-descs (initial-repo-descs
                                                    (read-pkg-db)
                                                    (if quiet? void printf/flush))]
+                     #:pull-behavior [pull-behavior 'ff-only]
                      #:convert-to-non-clone? [convert-to-non-clone? #f])
   (define download-printf (if quiet? void printf/flush))
   
@@ -834,6 +876,7 @@
                        #:update-implies? update-implies?
                        #:update-cache update-cache
                        #:catalog-lookup-cache catalog-lookup-cache
+                       #:remote-checksum-cache remote-checksum-cache
                        #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
                        #:updating? updating?
                        #:quiet? quiet?
@@ -844,6 +887,7 @@
                        #:force-strip? force-strip?
                        #:multi-clone-behavior (vector-ref clone-info 0)
                        #:repo-descs (vector-ref clone-info 1)
+                       #:pull-behavior pull-behavior
                        (for/list ([dep (in-list deps)])
                          (if (pkg-desc? dep)
                              dep
@@ -862,6 +906,7 @@
        #:update-implies? update-implies?
        #:update-cache update-cache
        #:catalog-lookup-cache catalog-lookup-cache
+       #:remote-checksum-cache remote-checksum-cache
        #:pre-succeed (λ ()
                        (for ([pkg-name (in-hash-keys extra-updating)])
                          ((remove-package #t quiet? use-trash?) pkg-name))
@@ -879,6 +924,7 @@
        #:ai-cache (box #f)
        #:clone-info (vector clone-behavior
                             repo-descs)
+       #:pull-behavior pull-behavior
        new-descs)
       (unless (empty? summary-deps)
         (unless quiet?
@@ -913,6 +959,7 @@
                              #:implies? implies?
                              #:namespace metadata-ns 
                              #:catalog-lookup-cache catalog-lookup-cache
+                             #:remote-checksum-cache remote-checksum-cache
                              #:update-cache update-cache
                              #:all-platforms? all-platforms?
                              #:ignore-checksums? ignore-checksums?
@@ -944,7 +991,8 @@
                                                     name
                                                     (pkg-desc-checksum pkg-name)
                                                     download-printf
-                                                    #:catalog-lookup-cache catalog-lookup-cache))
+                                                    #:catalog-lookup-cache catalog-lookup-cache
+                                                    #:remote-checksum-cache remote-checksum-cache))
       (hash-set! update-cache name new-checksum) ; record downloaded checksum
       (unless (or ignore-checksums? (not (pkg-desc-checksum pkg-name)))
         (unless (equal? (pkg-desc-checksum pkg-name) new-checksum)
@@ -1077,7 +1125,8 @@
              (hash-ref update-cache pkg-name
                        (lambda ()
                          (remote-package-checksum orig-pkg download-printf pkg-name
-                                                  #:catalog-lookup-cache catalog-lookup-cache))))
+                                                  #:catalog-lookup-cache catalog-lookup-cache
+                                                  #:remote-checksum-cache remote-checksum-cache))))
            ;; Record downloaded checksum:
            (hash-set! update-cache pkg-name new-checksum)
            (or (and new-checksum
@@ -1112,7 +1161,8 @@
                     #:link-dirs? [link-dirs? #f]
                     #:infer-clone-from-dir? [infer-clone-from-dir? #f]
                     #:lookup-for-clone? [lookup-for-clone? #f]
-                    #:multi-clone-behavior [clone-behavior 'fail])
+                    #:multi-clone-behavior [clone-behavior 'fail]
+                    #:pull-behavior [pull-behavior 'ff-only])
   (define download-printf (if quiet? void printf/flush))
   (define metadata-ns (make-metadata-namespace))
   (define db (read-pkg-db))
@@ -1122,6 +1172,7 @@
                 [else in-pkgs]))
   (define update-cache (make-hash))
   (define catalog-lookup-cache (make-hash))
+  (define remote-checksum-cache (make-hash))
   (define to-updat* (append-map (packages-to-update download-printf db
                                                     #:must-update? (and (not all-mode?)
                                                                         (not update-deps?))
@@ -1131,6 +1182,7 @@
                                                     #:update-cache update-cache
                                                     #:namespace metadata-ns
                                                     #:catalog-lookup-cache catalog-lookup-cache
+                                                    #:remote-checksum-cache remote-checksum-cache
                                                     #:all-platforms? all-platforms?
                                                     #:ignore-checksums? ignore-checksums?
                                                     #:use-cache? use-cache?
@@ -1195,6 +1247,7 @@
       #:update-implies? update-implies?
       #:update-cache update-cache
       #:catalog-lookup-cache catalog-lookup-cache
+      #:remote-checksum-cache remote-checksum-cache
       #:quiet? quiet?
       #:use-trash? use-trash?
       #:from-command-line? from-command-line?
@@ -1210,6 +1263,7 @@
       #:convert-to-non-clone? (and lookup-for-clone?
                                    (andmap pkg-desc? in-pkgs)
                                    (not (ormap pkg-desc-extra-path in-pkgs)))
+      #:pull-behavior pull-behavior
       to-update)]))
 
 ;; ----------------------------------------
