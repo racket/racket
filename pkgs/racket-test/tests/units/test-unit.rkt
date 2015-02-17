@@ -3,7 +3,7 @@
 (require (for-syntax racket/private/unit-compiletime
                      racket/private/unit-syntax))
 (require "test-harness.rkt"
-         scheme/unit)
+         racket/unit)
 
 (define-syntax (lookup-sig-mac stx)
   (parameterize ((error-syntax stx))
@@ -43,105 +43,148 @@
 
 ;; Keyword errors
 (test-syntax-error "misuse of import"
+                   "misuse of unit keyword"
   import)
 (test-syntax-error "misuse of export"
+                   "misuse of unit keyword"
   export)
 (test-syntax-error "misuse of init-depend"
+                   "misuse of unit keyword"
   init-depend)
 (test-syntax-error "misuse of link"
+                   "misuse of compound-unit keyword"
   link)
 (test-syntax-error "misuse of only"
+                   "misuse of unit import keyword"
   only)
 (test-syntax-error "misuse of except"
+                   "misuse of unit import keyword"
   except)
 (test-syntax-error "misuse of prefix"
+                   "misuse of unit import and export keyword"
   prefix)
 (test-syntax-error "misuse of rename"
+                   "misuse of unit import and export keyword"
   rename)
 (test-syntax-error "misuse of tag"
+                   "misuse of unit import and export keyword"
   tag)
 
 ;; define-signature-forms syntax errors
 (test-syntax-error "define-signature-form: missing arguments"
+                   "bad syntax (not a list)"
   (define-signature-form))
 (test-syntax-error "define-signature-form: missing arguments"
+                   "bad syntax"
   (define-signature-form (a b)))
 (test-syntax-error "define-signature-form: too many arguments"
+                   "expected syntax matching (define-signature-form (id id) expr ...)"
   (define-signature-form (a b c d) 1 2))
 (test-syntax-error "define-signature-form: dot"
+                   "bad syntax"
   (define-signature-form (a b) . c))
 (test-syntax-error "define-signature-form: set!"
+                   "illegal use of signature form"
   (let ()
     (define-signature-form (a b) b)
     (set! a 1)))
 
 (test-syntax-error "define-signature-form: bad params"
+                   "bad syntax (not a list)"
   (define-signature-form 1 2))
 (test-syntax-error "define-signature-form: bad params"
+                   "bad syntax (not a list)"
   (define-signature-form a 2))
-(test-syntax-error "define-signature-form: name not id"
+(test-syntax-error "define-signature-form: not an identifier"
   (define-signature-form (1 a) 1))
 (test-syntax-error "define-signature-form: param not id"
+                   "not an identifier"
   (define-signature-form (a 1) 1))
 (test-syntax-error "define-signature-form: param dot"
+                   "bad syntax (not a list)"
   (define-signature-form (a . b) 1))
 
 
 ;; define-signature syntax-errors
 (test-syntax-error "define-signature: missing name"
+                   "expected syntax matching" 
   (define-signature))
 (test-syntax-error "define-signature: missing sig"
+                   "expected syntax matching"
   (define-signature x))
 (test-syntax-error "define-signature: too many args"
+                   "expected syntax matching"
   (define-signature x (a b) 1))
 (test-syntax-error "define-signature: bad name"
+                   "not an identifier"
   (define-signature 1 (a b)))
 (test-syntax-error "define-signature: bad name"
+                   "not an identifier"
   (define-signature x extends 1 (a b)))
 (test-syntax-error "define-signature: not a signature"
+                   "unknown signature"
   (define-signature x extends y12 (a b)))
 (test-syntax-error "define-signature: not a signature"
+                   "unknown signature"
   (let () (define-signature x extends x (a b))))
 (test-syntax-error "define-signature: bad name"
+                   "not an identifier"
   (define-signature (a . b) (a b)))
 (test-syntax-error "define-signature: dot"
+                   "expected syntax matching"
   (define-signature b . (a b)))
 (test-syntax-error "define-signature: dot"
+                   "bad syntax (illegal use of `.')"
   (define-signature b (a b) . 2))
 (test-syntax-error "define-signature: set!"
+                   "set!: illegal use of signature name"
   (let ()
     (define-signature a (a))
     (set! a 1)))
 (test-syntax-error "define-signature: bad sig"
+                   "expected syntax matching"
   (define-signature x y))
 (test-syntax-error "define-signature: bad sig"
+                   "define-signature: expected either an identifier or signature form"
   (define-signature x (1)))
+
 (test-syntax-error "define-signature: bad sig"
+                   "define-signature: bad syntax (illegal use of `.')"
   (define-signature x (a . b)))
 (test-syntax-error "define-signature: bad signature form"
+                   "define-signature: unknown signature form"
   (define-signature x ((a))))
 (test-syntax-error "define-signature: bad signature form"
+                   "define-signature: not a signature form"
   (define-signature x ((define-signature))))
 (test-syntax-error "define-values: malformed (in define-signature)"
+                   "define-values: bad variable list"
   (define-signature x ((define-values 1 2))))
 (test-syntax-error "define-signature: bad form (does not return list)"
+                   "define-signature: expected list of results from signature form, got 1"
   (let ()
     (define-signature-form (a b) 1)
     (define-signature x ((a 1)))))
 (test-syntax-error "define-signature: unknown form"
+                   "define-signature: unknown signature form"
   (let ()
     (define-signature-form (a b) (list #'(c d)))
     (define-signature x ((a 1)))
     1))
 (test-syntax-error "define-signature: duplicate name"
+                   "define-signature: duplicate identifier"
   (define-signature x (a a)))
 (test-syntax-error "define-signature: duplicate values"
+                   "define-signature: duplicate identifier"
   (define-signature x (a (define-values (a) 1))))
 (test-syntax-error "define-signature: duplicate values"
+                   "define-signature: duplicate identifier"
   (define-signature x (a (define-values (b b) 1))))
 (test-syntax-error "define-signature: duplicate values"
+                   "define-signature: duplicate identifier"
   (define-signature x (a (define-values (b) 1) (define-syntaxes (b) 1))))
 (test-syntax-error "define-signature: duplicate values"
+                   "define-signature: duplicate identifier"
   (let ()
     (define-signature test (y))
     (define-signature x extends test ((define-values (y) 1)))))
@@ -207,112 +250,156 @@
 
 ;; unit syntax errors (without sub-signatures)
 (test-syntax-error "unit: bad sig import"
+                   "unit: bad import spec"
   (unit (import 1) (export)))
 (test-syntax-error "unit: bad sig export"
+                   "unit: bad export spec"
   (unit (import) (export 1)))
 (test-syntax-error "unit: unknown sig import"
+                   "unit: unknown signature"
   (unit (import a) (export)))
 (test-syntax-error "unit: unknown sig export"
+                   "unit: unknown signature"
   (unit (import) (export a)))
 (test-syntax-error "unit: bad tag (not identifier)"
+                   "unit: tag must be a symbol"
   (unit (import (tag 1 empty-sig)) (export)))
 (test-syntax-error "unit: bad tag (not identifier)"
+                   "unit: tag must be a symbol"
   (unit (import) (export (tag 'a empty-sig))))
 (test-syntax-error "define-values: bad syntax (in unit)"
+                   "define-values: bad syntax (has 0 parts after keyword)"
   (unit (import) (export) (define-values)))
 (test-syntax-error "unit: multiple definition"
+                   "unit: variable defined twice"
   (unit (import) (export) (define-values (x x) (values 1 2))))
 (test-syntax-error "unit: multiple definition"
+                   "unit: variable defined twice"
   (unit (import) (export) (define-syntaxes (x x) (values 1 2))))
 (test-syntax-error "unit: multiple definition"
+                   "unit: variable defined twice"
   (unit (import) (export) (define x 1) (define x 2)))
 (test-syntax-error "unit: multiple definition"
+                   "unit: variable defined twice"
   (unit (import) (export) (define-syntax x 1) (define-syntax x 2)))
 (test-syntax-error "unit: multiple definition"
+                   "unit: variable defined twice"
   (unit (import) (export) (define x 1) (define-syntax x 2)))
 (test-syntax-error "unit: re-export"
+                   "unit: import x is exported"
   (unit (import x-sig) (export x-sig) (define x 1)))
 (test-syntax-error "unit: redefine import"
+                   "unit: definition for imported identifier"
   (unit (import x-sig) (export) (define x 1)))
 (test-syntax-error "unit: set! import"
+                   "unit: cannot set! imported or exported variables"
   (unit (import x-sig) (export) (set! x 1)))
 (test-syntax-error "unit: set! export"
+                   "unit: cannot set! imported or exported variables"
   (unit (import) (export x-sig) (define x 1) (set! x 1)))
 (test-syntax-error "unit: undefined export"
   (unit (import) (export x-sig)))
 (test-syntax-error "unit: undefined export"
   (unit (import) (export (prefix x: x-sig)) (define x 1)))
 (test-syntax-error "unit: syntax export"
+                   "unit: cannot export syntax from a unit"
   (unit (import) (export x-sig) (define-syntax x 1)))
 (test-syntax-error "unit: duplicate import"
+                   "unit: x is imported by multiple signatures"
   (unit (import x-sig x-sig2) (export)))
 (test-syntax-error "unit: duplicate export"
+                   "unit: x is exported by multiple signatures"
   (unit (import) (export x-sig x-sig2) (define x 12)))
 (test-syntax-error "unit: duplicate import signature"
-  (unit (import x-sig (prefix a x-sig)) (export)))
+                   (unit (import x-sig (prefix a x-sig)) (export)))
 (test-syntax-error "unit: duplicate export signature"
+                   "unit: the signature of x-sig extends this signature"
   (unit (import) (export x-sig (prefix a x-sig))
         (define x 1) (define ax 2)))
 (test-syntax-error "unit: duplicate import signature"
   (unit (import (tag t x-sig) (tag t (prefix a x-sig))) (export)))
 (test-syntax-error "unit: duplicate export signature"
+                   "unit: the signature of (tag t x-sig) extends this signature"
   (unit (import) (export (tag t x-sig) (tag t (prefix a x-sig)))
         (define x 1) (define ax 2)))
 (test-syntax-error "unit: duplicate export signature"
+                   "unit: the signature of x-sig extends this signature"
   (unit (import) (export x-sig x-sig)
         (define x 1)))
 
 
 ;; compound-unit syntax errors (without sub-signatures)
 (test-syntax-error "compound-unit: bad import clause"
+                   "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
   (compound-unit (import (a empty-sig)) (export) (link)))
 (test-syntax-error "compound-unit: import clause bad link id"
+                   "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
   (compound-unit (import (1 : empty-sig)) (export) (link)))
 (test-syntax-error "compound-unit: import clause unknown sig"
+                   "compound-unit: unknown signature"
   (compound-unit (import (a : empty-si)) (export) (link)))
 (test-syntax-error "compound-unit: export bad link id"
+                   "compound-unit: not an identifier"
   (compound-unit (import) (export a 1 b) (link)))
 (test-syntax-error "compound-unit: link line bad link id"
+                   "compound-unit: not an identifier"
   (compound-unit (import) (export) (link (((a : empty-sig)) b 1))))
 (test-syntax-error "compound-unit: import clause bad sig id"
+                   "compound-unit: not an identifier"
   (compound-unit (import (a : ())) (export) (link)))
 (test-syntax-error "compound-unit: link line clause bad sig id"
+                   "compound-unit: not an identifier"
   (compound-unit (import) (export) (link (((a : "")) b))))
 (test-syntax-error "compound-unit: link line clause bad"
+                   "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
   (compound-unit (import) (export) (link (((a empty-sig)) b))))
 (test-syntax-error "compound-unit: link line clause unknown"
+                   "compound-unit: unknown signature"
   (compound-unit (import) (export) (link (((a : b)) b))))
 (test-syntax-error "compound-unit: duplicate link ids"
+                   "compound-unit: duplicate linking identifier definition"
   (compound-unit (import (x : x-sig) (x : y-sig)) (export) (link)))
 (test-syntax-error "compound-unit: duplicate link ids"
+                   "compound-unit: duplicate linking identifier definition"
   (compound-unit (import) (export) (link (((x : x-sig) (x : y-sig)) u))))
 (test-syntax-error "compound-unit: duplicate link ids"
+                   "compound-unit: duplicate linking identifier definition"
   (compound-unit (import (x : x-sig)) (export) (link (((x : x-sig)) u))))
 (test-syntax-error "export: unbound link id"
+                   "compound-unit: unknown linking identifier"
   (compound-unit (import) (export a) (link)))
 (test-syntax-error "link link: unbound link id"
+                   "compound-unit: unknown linking identifier"
   (compound-unit (import) (export) (link (() u a))))
 (test-syntax-error "compound-unit: re-export"
+                   "compound-unit: cannot directly export an import"
   (compound-unit (import (S : x-sig)) (export S) (link)))
 (test-syntax-error "compound-unit: re-export"
+                   "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
   (compound-unit (import (tag s (S : x-sig)))  (export (tag t S)) (link)))
 (test-syntax-error "compound-unit: duplicate export signature"
+                   "compound-unit: the signature of X1 extends this signature"
   (compound-unit (import) (export X1 X2)
                  (link (((X1 : x-sig)) (unit (import) (export x-sig) (define x 1)))
                        (((X2 : x-sig)) (unit (import) (export x-sig) (define x 1))))))
 (test-syntax-error "compound-unit: duplicate export signature"
+                   "compound-unit: the signature of (tag t X1) extends this signature"
   (compound-unit (import) (export (tag t X1) (tag t X2))
                  (link (((X1 : x-sig)) (unit (import) (export x-sig) (define x 1)))
                        (((X2 : x-sig)) (unit (import) (export x-sig) (define x 1))))))
 
 ;; define-values/invoke-unit syntax errors
 (test-syntax-error "define-values/invoke-unit: no unit"
+                   "define-values/invoke-unit: missing unit"
   (define-values/invoke-unit))
 (test-syntax-error "define-values/invoke-unit: dot"
+                   "define-values/invoke-unit: expected syntax matching (define-values/invoke-unit <unit-expression> (import <sig-expr> ...) (export <sig-expr> ...))"
   (define-values/invoke-unit x y . x))
 (test-syntax-error "define-values/invoke-unit: bad sig"
+                   "define-values/invoke-unit: expected syntax matching (define-values/invoke-unit <unit-expression> (import <sig-expr> ...) (export <sig-expr> ...))"
   (define-values/invoke-unit 1 1))
 (test-syntax-error "define-values/invoke-unit: duplicate exports"
+                   "define-values/invoke-unit: expected syntax matching (define-values/invoke-unit <unit-expression> (import <sig-expr> ...) (export <sig-expr> ...))"
   (define-values/invoke-unit (unit (import) (export (prefix x: x-sig) x-sig2)
                                (define x 1)
                                (define x:x 2))
@@ -481,39 +568,39 @@
   (test 1 x))
 
 ;; simple runtime errors (no subtyping, no deps)
-(test-runtime-error exn:fail:contract? "compound-unit: not a unit"
+(test-runtime-error exn:fail:contract? "compound-unit: result of unit expression was not a unit: 1" "compound-unit: not a unit"
   (compound-unit (import) (export) (link (() 1))))
-(test-runtime-error exn:fail:contract? "compound-unit: missing import"
+(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "compound-unit: missing import"
   (compound-unit (import) (export)
                  (link (() (unit (import x-sig) (export))))))
-(test-runtime-error exn:fail:contract? "compound-unit: missing import"
+(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "compound-unit: missing import"
   (compound-unit (import (X : x-sig)) (export)
                  (link (() (unit (import x-sig) (export))
                            (tag u X)))))
-(test-runtime-error exn:fail:contract? "compound-unit: missing import"
+(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an import for tag u with signature x-sig, which this usage context does not supply" "compound-unit: missing import"
   (compound-unit (import (X : x-sig)) (export)
                  (link (() (unit (import (tag u x-sig)) (export))
                            X))))
-(test-runtime-error exn:fail:contract? "compound-unit: missing export"
+(test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply" "compound-unit: missing export"
   (compound-unit (import) (export)
                  (link (((X : x-sig)) (unit (import) (export))))))
-(test-runtime-error exn:fail:contract? "compound-unit: missing export"
+(test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an export for tag u with signature x-sig, which the given unit does not supply" "compound-unit: missing export"
   (compound-unit (import) (export)
                  (link (((X : (tag u x-sig))) (unit (import) (export x-sig) (define x 1))))))
-(test-runtime-error exn:fail:contract? "compound-unit: missing export"
+(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an import for tag u with signature x-sig, which this usage context does not supply" "compound-unit: missing export"
   (compound-unit (import) (export)
                  (link (((X : x-sig)) (unit (import (tag u x-sig)) (export))))))
 
-(test-runtime-error exn:fail:contract? "invoke-unit: not a unit"
+(test-runtime-error exn:fail:contract? "invoke-unit: result of unit expression was not a unit: 1" "invoke-unit: not a unit"
   (invoke-unit 1))
-(test-runtime-error exn:fail:contract? "invoke-unit: unit has imports"
+(test-runtime-error exn:fail:contract? "invoke-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "invoke-unit: unit has imports"
   (invoke-unit (unit (import x-sig) (export) x)))
 
-(test-runtime-error exn:fail:contract? "define-values/invoke-unit: not a unit"
+(test-runtime-error exn:fail:contract? "define-values/invoke-unit: result of unit expression was not a unit: 1" "define-values/invoke-unit: not a unit"
   (define-values/invoke-unit 1 (import) (export)))
-(test-runtime-error exn:fail:contract? "define-values/invoke-unit: has imports"
+(test-runtime-error exn:fail:contract? "define-values/invoke-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "define-values/invoke-unit: has imports"
   (define-values/invoke-unit (unit (import x-sig) (export) x) (import) (export)))
-(test-runtime-error exn:fail:contract? "define-values/invoke-unit: signature mismatch"
+(test-runtime-error exn:fail:contract? "define-values/invoke-unit: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply" "define-values/invoke-unit: signature mismatch"
   (define-values/invoke-unit (unit (import) (export)) (import) (export x-sig)))
 
 ;; unit creation w/o signatures (including macros and prefixes/renames).
@@ -985,16 +1072,16 @@
   (define u1 (unit (import) (export x-sig) (define x 1)))
   (define u2 (unit (import x-sub) (export)))
   
-  (test-runtime-error exn:fail:contract? "compound-unit: not a subtype"
+  (test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an untagged export with signature x-sub, which the given unit does not supply" "compound-unit: not a subtype"
                       (compound-unit (import) (export)
                                      (link (((S : x-sub)) u1))))
   
-  (test-runtime-error exn:fail:contract? "compound-unit: not a subtype"
+  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sub, which this usage context does not supply" "compound-unit: not a subtype"
                       (compound-unit (import) (export)
                                      (link (((S : x-sig)) u1)
                                            (() u2 S))))
   
-  (test-runtime-error exn:fail:contract? "compound-unit: not a subtype"
+  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sub, which this usage context does not supply" "compound-unit: not a subtype"
                       (compound-unit (import (S : x-sig)) (export)
                                      (link (() u2 S)))))
 
@@ -1002,27 +1089,30 @@
   (define u1 (unit (import) (export x-sub y-sub) (define x 1) (define xx 2) (define y 3) (define yy 4)))
   (define-values/invoke-unit u1 (import) (export x-sig))
   (test 1 x)
-  (test-runtime-error exn? "unbound identifier" xx)
-  (test-runtime-error exn? "unbound identifier" y)
-  (test-runtime-error exn? "unbound identifier" yy))
+  (test-runtime-error exn? "xx: undefined;\n cannot reference undefined identifier" "unbound identifier" xx)
+  (test-runtime-error exn? "y: undefined;\n cannot reference undefined identifier" "unbound identifier" y)
+  (test-runtime-error exn? "yy: undefined;\n cannot reference undefined identifier" "unbound identifier" yy))
 
 (let ()
   (define u1 (unit (import) (export x-sig) (define x 1)))
-  (test-runtime-error exn:fail:contract? "define-values/invoke-unit: not a subtype"
+  (test-runtime-error exn:fail:contract? "define-values/invoke-unit: this usage context expects a unit with an untagged export with signature x-sub, which the given unit does not supply" "define-values/invoke-unit: not a subtype"
                       (define-values/invoke-unit u1 (import) (export x-sub))))
 
 ;; export-subtyping
 (test-syntax-error "duplicate exports (subtypes)"
+                   "unit: the signature of x-sub extends this signature"
                    (unit (import) (export x-sig x-sub)
                          (define x 1)
                          (define xx 1)))
 (test-syntax-error "duplicate exports (subtypes)"
+                   "unit: the signature of x-sub extends this signature"
                    (unit (import) (export x-sub x-sig)
                          (define x 1)
                          (define xx 1)))
 (let ()
   (define u (unit (import) (export x-sub) (define x 1) (define xx 1)))
   (test-syntax-error "duplicate exports (subtypes)"
+                     "compound-unit: unknown signature"
                      (compound-unit (import) (export l1 l2)
                                     (link (((l1 : s1)) u)
                                           (((l2 : s2)) u)))))
@@ -1054,18 +1144,21 @@
          (compound-unit (import) (export)
                         (link (((S3 : x-sub2) (S2 : x-sub)) u)
                               (() u3 S3 S2)))))
-  (test-runtime-error exn:fail:contract? "ambiguous export"
+  (test-runtime-error exn:fail:contract?
+                      "compound-unit: this usage context expects a unit with an untagged export with signature x-sig, which the given unit supplies multiple times"
+                      "ambiguous export"
                       (compound-unit (import) (export)
-                                     (link (((S1 : x-sig)) u)))))
-  (test-runtime-error exn:fail:contract? "ambiguous import"
+                                     (link (((S1 : x-sig)) u))))
+  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sig, which this usage context supplies multiple times" "ambiguous import"
                       (compound-unit (import (S1 : x-sub) (S2 : x-sub2)) (export)
                                      (link (() u2 S1 S2))))
 
 (test-syntax-error "duplicate links (subtype)"
+                   "compound-unit: the signature of S2 extends this signature"
                     (compound-unit (import) (export)
                                      (link (((S1 : x-sig)) u3)
                                            (() u1 S2 S1)
-                                           (((S2 : x-sig)) u3))))
+                                           (((S2 : x-sig)) u3)))))
 
 ;; tags
 (let ()
@@ -1092,7 +1185,7 @@
                         (link (((S2a : s3)) u2)
                               (((S2b : s2)) u3)
                               (() u1 S2a (tag t S2b))))))
-  (test-runtime-error exn:fail:contract? "compound-unit: signature mismatch"
+  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature s3, which this usage context does not supply" "compound-unit: signature mismatch"
         (invoke-unit
          (compound-unit (import) (export)
                         (link (((S1 : s1)) u2)
@@ -1115,7 +1208,7 @@
          (compound-unit (import) (export)
                         (link (((S1 : (tag t x-sig)) (S2 : x-sig)) u1)
                               (() u2 S1)))))
-  (test-runtime-error exn:fail:contract? "compound-unit: signature mismatch"
+  (test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an untagged export with signature x-sub, which the given unit does not supply" "compound-unit: signature mismatch"
                       (invoke-unit
                        (compound-unit (import) (export)
                                       (link (((S1 : (tag t x-sub)) (S2 : x-sub)) u1)
@@ -1136,25 +1229,35 @@
 
 
 (test-syntax-error "unit-from-context: no sigs"
+                   "unit-from-context: missing export-spec"
   (unit-from-context))
 (test-syntax-error "unit-from-context: too many sigs"
+                   "unit-from-context: nothing is permitted after export-spec"
   (unit-from-context s1 s2))
 (test-syntax-error "unit-from-context: too many sigs"
+                   "unit-from-context: nothing is permitted after export-spec"
   (unit-from-context s1 . s2))
 (test-syntax-error "unit-from-context: bad sig"
+                   "unit-from-context: bad export spec"
   (unit-from-context 1))
 
 (test-syntax-error "unit-from-context: no name"
+                   "define-unit-from-context: missing unit name and signature"
   (define-unit-from-context))
 (test-syntax-error "unit-from-context: no sigs"
+                   "define-unit-from-context: missing export-spec"
   (define-unit-from-context s1))
 (test-syntax-error "unit-from-context: no sigs"
+                   "define-unit-from-context: missing export-spec"
   (define-unit-from-context n))
 (test-syntax-error "unit-from-context: too many sigs"
+                   "define-unit-from-context: nothing is permitted after export-spec"
   (define-unit-from-context n s1 s2))
 (test-syntax-error "unit-from-context: too many sigs"
+                   "define-unit-from-context: nothing is permitted after export-spec"
   (define-unit-from-context n s1 . s2))
 (test-syntax-error "unit-from-context: bad sig"
+                   "define-unit-from-context: bad export spec"
   (define-unit-from-context n 1))
 
 
@@ -1163,21 +1266,73 @@
 (test-syntax-error "struct: missing name and fields"
   (define-signature x ((struct))))
 (test-syntax-error "struct: missing name"
+                   "struct: bad syntax; missing fields"
   (define-signature x ((struct n))))
 (test-syntax-error "struct: bad name"
+                   "struct: expected an identifier to name the structure type"
   (define-signature x ((struct 1 ()))))
 (test-syntax-error "struct: bad fields (dot)"
+                   "struct: bad syntax; expected a parenthesized sequence of fields"
   (define-signature x ((struct n (x . y)))))
 (test-syntax-error "struct: bad fields"
+                   "struct: bad syntax; expected a parenthesized sequence of fields"
   (define-signature x ((struct n 1))))
 (test-syntax-error "struct: bad omission"
+                   "struct: expected a keyword to specify option: #:mutable, #:constructor-name, #:extra-constructor-name, #:omit-constructor, #:omit-define-syntaxes, or #:omit-define-values"
   (define-signature x ((struct n () t))))
 (test-syntax-error "struct: bad omission (dot)"
+                   "struct: bad syntax"
   (define-signature x ((struct n () . -selectors))))
 (test-syntax-error "struct: bad omission"
+                   "struct: expected a keyword to specify option: #:mutable, #:constructor-name, #:extra-constructor-name, #:omit-constructor, #:omit-define-syntaxes, or #:omit-define-values"
   (define-signature x ((struct n () x))))
 
 (let ()
+  (define-signature sig ((struct s (x y))))
+  (test 3
+    (invoke-unit
+     (compound-unit (import) (export)
+                    (link (((S : sig)) (unit (import) (export sig)
+                                             (define-struct s (x y))))
+                          (() (unit (import sig) (export)
+                                    (match (s 1 2)
+                                      ((struct s (a b)) (+ a b))))
+                              S)))))
+  (let ()
+    (define-values/invoke-unit (unit (import) (export sig) (define-struct s (x y)))
+      (import)
+      (export sig))
+    (test 3
+      (match (s 1 2)
+        ((struct s (a b)) (+ a b)))))
+  (let ()
+    (define u
+      (unit (import) (export (rename sig (make-s/defaults s)))
+            (define-struct s (x y))
+            (define (make-s/defaults x)
+              (make-s x 'default))))
+    (define-values/invoke-unit u (import) (export sig))
+    (test #t (s? (s 1))))
+
+  (let ((set-s-x! 1))
+    (define-signature sig ((struct s (x y))))
+    (test 1
+      (invoke-unit
+       (compound-unit (import) (export)
+                      (link (((S : sig)) (unit (import) (export sig) (define-struct s (x y))))
+                            (() (unit (import sig) (export)
+                                      set-s-x!) S))))))
+  ;; TODO: Pending bug fix in units
+  #;(let ((s 1))
+    (define-signature sig ((struct s (x y) #:omit-constructor)))
+    (test 1
+      (invoke-unit
+       (compound-unit (import) (export)
+                      (link (((S : sig)) (unit (import) (export sig) (define-struct s (x y))))
+                            (() (unit (import sig) (export)
+                                      s) S)))))))
+(let ()
+  (local-require scheme/unit)
   (define-signature sig ((struct s (x y))))
   (test 3
     (invoke-unit
@@ -1238,27 +1393,29 @@
 (define u5 (unit (import) (export s2)
                  (define a 12)))
 (test-syntax-error "unit: bad dependency"
+                   "unit: initialization dependency on unknown import"
                    (unit (import (tag t s1)) (export) (init-depend s1)))
 (test-syntax-error "unit: bad dependency"
+                   "unit: initialization dependency on unknown import"
                    (unit (import s1) (export) (init-depend (tag t s1))))
 
 (test 12 (invoke-unit (compound-unit (import) (export)
                                      (link (((S1 : s1)) u2)
                                            (() u1 S1)))))
 
-(test-runtime-error exn:fail:contract? "Dependency violation"
+(test-runtime-error exn:fail:contract? "compound-unit: untagged initialization dependent signature s1 is supplied from a later unit with link S1" "Dependency violation"
                     (compound-unit (import) (export)
                                      (link (() u1 S1)
                                            (((S1 : s1)) u2))))
 
-(test-runtime-error exn:fail:contract? "Dependency violation"
+(test-runtime-error exn:fail:contract? "compound-unit: initialization dependent signature s1 with tag t is supplied from a later unit with link S1" "Dependency violation"
                     (compound-unit (import) (export)
                                      (link (() u3 (tag t S1))
                                            (((S1 : s1)) u2))))
 
 
 
-(test-runtime-error exn:fail:contract? "Dependency violation"
+(test-runtime-error exn:fail:contract? "compound-unit: untagged initialization dependent signature s1 is supplied from a later unit with link S2" "Dependency violation"
                     (compound-unit (import) (export)
                                      (link (() u4 S2)
                                            (((S2 : s2)) u5))))
@@ -1276,9 +1433,9 @@
                         (link (((A : x-sig) (B : y-sig)) v)
                               (() u A B))))))
 
-(test-runtime-error exn:fail:contract? "not subunit"
+(test-runtime-error exn:fail:contract? "define-unit-binding: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply" "not subunit"
                     (let () (define-unit-binding u2 u (import x-sig) (export x-sig)) 1))
-(test-runtime-error exn:fail:contract? "not subunit"
+(test-runtime-error exn:fail:contract? "define-unit-binding: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "not subunit"
                     (let () (define-unit-binding u2 u (import) (export)) 1))
 (test-runtime-error exn:fail:contract? "not a unit"
                     (let () (define-unit-binding u2 1 (import) (export)) 1))
@@ -1286,33 +1443,42 @@
 (test-syntax-error "define-unit-binding: duplicate import"
                    (define-unit-binding u 1 (import x-sig x-sig) (export)))
 (test-syntax-error "define-unit-binding: export subtypes"
+                   "define-unit-binding: the signature of x-sub extends this signature"
                    (define-unit-binding u 1 (import) (export x-sig x-sub)))
 (test-syntax-error "define-unit-binding: export subtypes"
+                   "define-unit-binding: the signature of x-sub extends this signature"
                    (define-unit-binding u 1 (import) (export x-sub x-sig)))
 (test-syntax-error "define-unit-binding: bad dependency"
+                   "define-unit-binding: initialization dependency on unknown import"
                    (define-unit-binding u 1 (import x-sig) (export) (init-depend x-sub)))
 (test-syntax-error "define-unit-binding: bad dependency"
+                   "define-unit-binding: initialization dependency on unknown import"
                    (define-unit-binding u 1 (import x-sub) (export) (init-depend x-sig)))
 
 
 (test-syntax-error "define-unit: missing name, import, export"
+                   "define-unit: missing unit name, import clause, and export clause"
   (define-unit))
 (test-syntax-error "define-unit: missing import, export"
+                   "define-unit: missing import and export clauses"
   (define-unit a))
 (test-syntax-error "define-unit: missing export"
   (define-unit a (import)))
 (test-syntax-error "define-unit: missing name"
+                   "define-unit: not an identifier"
   (define-unit (import) (export)))
 (test-syntax-error "define-unit: bad name"
+                   "define-unit: not an identifier"
   (define-unit "x" (import) (export)))
 (test-syntax-error "define-unit: bad syntax"
+                   "define-unit: import clause must start with keyword \"import\""
   (define-unit x (unit (import) (export))))
-(test-runtime-error exn:fail:contract? "define-unit: bad set!"
+(test-runtime-error exn:fail:contract? "set!: unit argument expects an untagged import with signature s, which this usage context does not supply" "define-unit: bad set!"
   (let ()
     (define-signature s ())
     (define-unit x (import) (export) 1)
     (set! x (unit (import s) (export) 1))))
-(test-runtime-error exn:fail:contract? "define-unit: bad set!"
+(test-runtime-error exn:fail:contract? "set!: this usage context expects a unit with an untagged export with signature s, which the given unit does not supply" "define-unit: bad set!"
   (let ()
     (define-signature s ())
     (define-unit x (import) (export s) 1)
@@ -1322,47 +1488,63 @@
 (test-syntax-error "define-compound-unit: missing import"
   (define-compound-unit x))
 (test-syntax-error "define-compound-unit: missing name"
+                   "define-compound-unit: missing unit name"
   (define-compound-unit))
 (test-syntax-error "define-compound-unit: missing name"
+                   "define-compound-unit: not an identifier"
   (define-compound-unit (import) (link) (export)))
 (test-syntax-error "define-compound-unit: bad name"
+                   "define-compound-unit: not an identifier"
   (define-compound-unit 1 (import) (link) (export)))
 
 (test-syntax-error "invoke-unit/infer : no unit"
+                   "invoke-unit/infer: missing unit"
   (invoke-unit/infer))
 (test-syntax-error "invoke-unit/infer : not a unit"
+                   "invoke-unit/infer: not an identifier"
   (invoke-unit/infer 1))
 (test-syntax-error "invoke-unit/infer : not a unit"
+                   "invoke-unit/infer: unknown unit definition"
   (let ([x 1]) (invoke-unit/infer x)))
 (test-syntax-error "invoke-unit/infer : not a unit"
+                   "invoke-unit/infer: not a unit definition"
   (let-syntax ([x 1]) (invoke-unit/infer x)))
 (test-syntax-error "invoke-unit/infer: too much"
+                   "invoke-unit/infer: expected syntax matching (invoke-unit/infer <define-unit-identifier>) or (invoke-unit/infer (link <define-unit-identifier> ...))"
   (invoke-unit/infer x y))
 
 (define-unit u (import x-sig) (export))
 (define-unit v (import) (export x-sig) (define x 3))
 
 (test-syntax-error "invoke-unit/infer : no unit"
+                   "invoke-unit/infer: no units in link clause"
   (invoke-unit/infer (link)))
 (test-syntax-error "invoke-unit/infer : not a unit"
+                   "invoke-unit/infer: not an identifier"
   (invoke-unit/infer (link 1 u)))
 (test-syntax-error "invoke-unit/infer : not a unit"
+                   "invoke-unit/infer: unknown unit definition"
   (let ([x 1]) (invoke-unit/infer (link u x))))
 (test-syntax-error "invoke-unit/infer : not a unit"
+                   "invoke-unit/infer: not a unit definition"
   (let-syntax ([x 1]) (invoke-unit/infer (link x u))))
 (invoke-unit/infer (link u v))
 
 (test-syntax-error "define-values/invoke-unit/infer: no unit"
+                   "define-values/invoke-unit/infer: missing unit"
   (define-values/invoke-unit/infer))
 (test-syntax-error "define-values/invoke-unit/infer: not a unit"
+                   "define-values/invoke-unit/infer: not an identifier"
   (define-values/invoke-unit/infer 1))
 (test-syntax-error "define-values/invoke-unit/infer: not a unit"
+                   "define-values/invoke-unit/infer: unknown unit definition"
   (let ((x 1))
     (define-values/invoke-unit/infer x)))
 (test-syntax-error "define-values/invoke-unit/infer: not a unit"
   (let-syntax ((x 1))
     (define-values/invoke-unit/infer x)))
 (test-syntax-error "define-values/invoke-unit/infer: too much"
+                   "define-values/invoke-unit/infer: expected syntax matching (define-values/invoke-unit/infer [(export <define-signature-identifier>)] <define-unit-identifier>) or (define-values/invoke-unit/infer  [(export <define-signature-identifier>)] (link <define-unit-identifier> ...))"
   (define-values/invoke-unit/infer x y))
 
 (define-unit u (import x-sig) (export) x)
@@ -1371,8 +1553,10 @@
 (test-syntax-error "define-values/invoke-unit/infer: no unit"
   (define-values/invoke-unit/infer (link)))
 (test-syntax-error "define-values/invoke-unit/infer: not a unit"
+                   "define-values/invoke-unit/infer: not an identifier"
   (define-values/invoke-unit/infer (link 1 u)))
 (test-syntax-error "define-values/invoke-unit/infer: not a unit"
+                   "define-values/invoke-unit/infer: unknown unit definition"
   (let ([x 1])
     (define-values/invoke-unit/infer (link u x))))
 (test-syntax-error "define-values/invoke-unit/infer: not a unit"
@@ -1380,15 +1564,13 @@
     (define-values/invoke-unit/infer (link u x))))
 
 (test-runtime-error
- exn:fail:contract:variable?
- "undefined"
+ exn:fail:contract:variable? "undefined"
  (let ()
    (define-values/invoke-unit/infer (link u v))
    x))
 
 (test-runtime-error
- exn:fail:contract:variable?
- "undefined"
+ exn:fail:contract:variable? "undefined"
  (let ()
    (define-values/invoke-unit/infer (export x-sig) (link u v))
    x))
@@ -1397,15 +1579,20 @@
   (define-values/invoke-unit/infer (export x-sig) v)
   x)
 (test-syntax-error "define-values/invoke-unit/infer: doesn't export y"
+                   "define-values/invoke-unit/infer: no subunit exports signature y-sig"
   (define-values/invoke-unit/infer (export y-sig) (link u v)))
 
-(test-runtime-error exn? "define-values/invoke-unit/infer: unbound variable: x"
+(test-runtime-error exn? "x: undefined"
+                    "define-values/invoke-unit/infer: unbound variable: x"
   (let ()
     (define-values/invoke-unit/infer (export) (link u v))
     x))
 (test-syntax-error "define-values/invoke-unit/infer: doesn't export y"
+                   "define-values/invoke-unit/infer: no subunit exports signature y-sig"
   (define-values/invoke-unit/infer (export y-sig) v))
-(test-runtime-error exn? "define-values/invoke-unit/infer: unbound variable: x"
+(test-runtime-error exn?
+                    "x: undefined"
+                    "define-values/invoke-unit/infer: unbound variable: x"
    (let ()
      (define-values/invoke-unit/infer (export) v)
      x))
@@ -1423,15 +1610,42 @@
     (export s^)
     (define a 2))
   (define-values/invoke-unit/infer (export) (link v@ u@))
-  (test-syntax-error "define-values/invoke-unit/infer: init-depend broken"
-    (define-values/invoke-unit/infer (export) (link u@ v@))))
+  (void))
 
-(define-unit u (import x-sig) (export) x)
-(test-syntax-error "define-values/invoke-unit/infer: bad imports"
-  (define-values/invoke-unit/infer u))
-(define-unit u (import x-sig y-sig) (export))
-(test-syntax-error "define-values/invoke-unit/infer: bad imports"
-  (define-values/invoke-unit/infer u))
+(test-syntax-error
+ "define-values/invoke-unit/infer: init-depend broken"
+ "define-values/invoke-unit/infer: unit depends on initialization of later unit"
+ (let ()
+   (define-signature s^ (a))
+   (define-signature t^ (b))
+   (define-unit u@
+     (import s^)
+     (export t^)
+     (init-depend s^)
+     (define b a))
+   (define-unit v@
+     (import)
+     (export s^)
+     (define a 2))
+   (define-values/invoke-unit/infer (export) (link u@ v@))
+   (void)))
+
+(test-syntax-error
+ "define-values/invoke-unit/infer: bad imports"
+ "x: unbound identifier in module"
+ (module foo racket
+   (define-signature x-sig (x))
+   (define-unit u (import x-sig) (export) x)
+   (define-values/invoke-unit/infer u)))
+
+(test-syntax-error
+ "define-values/invoke-unit/infer: bad imports"
+ "y: unbound identifier in module"
+  (module foo racket
+    (define-signature x-sig (x))
+    (define-signature y-sig (y))
+    (define-unit u (import x-sig y-sig) (export))
+    (define-values/invoke-unit/infer u)))
 (define-unit u (import) (export x-sig y-sig)
   (define x 10)
   (define y 20))
@@ -1474,16 +1688,20 @@
 (test-syntax-error "compound-unit/infer: missing export"
   (compound-unit/infer (link) (import)))
 (test-syntax-error "compound-unit/infer: bad unit"
+                   "compound-unit/infer: bad linking line"
   (compound-unit/infer (import) (export) (link 1)))
 (test-syntax-error "compound-unit/infer: bad import"
-  (compound-unit/infer (import (a : b)) (export) (link)))
+                   "compound-unit/infer: unknown signature"
+  (compound-unit/infer (import (a : fake-signature)) (export) (link)))
 (test-syntax-error "compound-unit/infer: bad link"
+                   "compound-unit/infer: unknown unit definition"
   (compound-unit/infer (import) (export) (link (((A : b)) c))))
 (test-syntax-error "compound-unit/infer: unknown sig"
   (compound-unit/infer (import ??) (export) (link)))
 (test-syntax-error "compound-unit/infer: unknown sig"
   (compound-unit/infer (import) (export ??) (link)))
 (test-syntax-error "compound-unit/infer: unknown sig"
+                   "compound-unit/infer: unknown linking identifier"
   (compound-unit/infer (import) (export) (link (() u ??))))
 
 
@@ -1516,14 +1734,44 @@
   (export)
   (+ x y z))
 
-(test-syntax-error "compound-unit/infer: re-export"
-  (compound-unit/infer (import (l : x-sig)) (export x-sig) (link)))
-(test-syntax-error "compound-unit/infer: duplicate def and import"
-  (compound-unit/infer (import y-sig x-sig) (export) (link x y)))
+(test-syntax-error
+ "compound-unit/infer: re-export"
+ "compound-unit/infer: cannot directly export an import"       
+ (module foo racket
+   (define-signature x-sig (x))
+   (compound-unit/infer (import (l : x-sig)) (export x-sig) (link))))
+(test-syntax-error
+ "compound-unit/infer: duplicate def and import"
+ "compound-unit/infer: multiple linkages satisfy untagged x-sig import"
+  (module foo racket
+    (define-signature x-sig (x))
+    (define-signature y-sig (y))
+    (define-unit x
+      (import x-sig)
+      (export y-sig)
+      (define y x)
+      y)
+    (define-unit y
+      (import y-sig)
+      (export (rename x-sig (x x)))
+      (define x y)
+      x)
+    (compound-unit/infer (import y-sig x-sig) (export) (link x y))))
 (test-syntax-error "compound-unit/infer: unprovided sig"
-  (compound-unit/infer (import) (export) (link x)))
-(test-syntax-error "compound-unit/infer: unprovided sig"
-  (compound-unit/infer (import) (export x-sig) (link)))
+                   "compound-unit/infer: no linkages satisfy untagged x-sig import"
+  (module foo racket
+    (define-signature x-sig (x))
+    (define-signature y-sig (y))
+    (define-unit x
+      (import x-sig)
+      (export y-sig)
+      (define y x)
+      y)
+    (compound-unit/infer (import) (export) (link x))))
+(test-syntax-error
+ "compound-unit/infer: unprovided sig"
+ "compound-unit/infer: no sub unit exports this signature"
+ (compound-unit/infer (import) (export x-sig) (link)))
 
 (test-runtime-error
  exn:fail:contract:variable?
@@ -1611,29 +1859,44 @@
 
 ;; unit/new-import-export
 
-(test-runtime-error exn:fail:contract? "unit/new-import-export: not a unit"
+(test-runtime-error exn:fail:contract? "unit/new-import-export: result of unit expression was not a unit: 1" "unit/new-import-export: not a unit"
   (unit/new-import-export (import) (export)
                           (() 1)))
 
-(test-runtime-error exn:fail:contract? "unit/new-import-export: not a subtype"
+(test-runtime-error exn:fail:contract? "unit/new-import-export: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply" "unit/new-import-export: not a subtype"
   (unit/new-import-export (import) (export)
                           ((x-sig) (unit (import) (export)))))
 
 
-(test-runtime-error exn:fail:contract? "unit/new-import-export: not a subtype"
+(test-runtime-error exn:fail:contract? "unit/new-import-export: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "unit/new-import-export: not a subtype"
   (unit/new-import-export (import) (export)
                           (() (unit (import x-sig) (export)))))
 
 (define-unit u (import x-sig) (export y-sig)
   (define y x))
 
-(test-syntax-error "unit/new-import-export: not enough imports"
-  (unit/new-import-export (import) (export x-sig)
-                          ((y-sig) u x-sig)))
+(test-syntax-error
+ "unit/new-import-export: not enough imports"
+ "unit/new-import-export: identifier x is not present in new imports"
+ (module foo racket
+   (define-signature x-sig (x))
+   (define-signature y-sig (y))
+   (define-unit u (import x-sig) (export y-sig)
+     (define y x))
+   (unit/new-import-export (import) (export x-sig)
+                           ((y-sig) u x-sig))))
 
-(test-syntax-error "unit/new-import-export: too many exports"
-  (unit/new-import-export (import x-sig) (export y-sig z-sig)
-                          ((y-sig) u x-sig)))
+(test-syntax-error
+ "unit/new-import-export: too many exports"
+ "unit/new-import-export: identifier z is not present in old exports"
+ (module foo racket
+   (define-signature x-sig (x))
+   (define-signature y-sig (y))
+   (define-signature z-sig (z))
+   (define-unit u (import x-sig) (export y-sig)
+     (define y x))
+   (unit/new-import-export (import x-sig) (export y-sig z-sig)
+                           ((y-sig) u x-sig))))
 
 (let ()
   (define-unit u 
@@ -1796,9 +2059,9 @@
 
 (test 'zero (use-unit))
 (test 'zero (use-unit2))
-(test-runtime-error exn:fail:contract:variable? "context mismatch; no u-a"
+(test-runtime-error exn:fail:contract:variable? "u-a: undefined;\n cannot reference undefined identifier" "context mismatch; no u-a"
   (use-unit-badly1 u-a))
-(test-runtime-error exn:fail:contract:variable? "context mismatch; no u-a"
+(test-runtime-error exn:fail:contract:variable? "u-a: undefined;\n cannot reference undefined identifier" "context mismatch; no u-a"
   (use-unit-badly2 sig^))
 
 (test 12
@@ -1919,5 +2182,3 @@
 (test '(0 0) (dynamic-require ''check-define-values-invoke-unit-spec 'results))
 
 ;; ----------------------------------------
-
-(displayln "tests passed")

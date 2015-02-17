@@ -1,5 +1,5 @@
 (module test-harness racket
-  (require syntax/stx)
+  (require syntax/stx rackunit)
               
   (provide (all-defined-out))
 
@@ -34,23 +34,24 @@
 
   (define-syntax test-syntax-error
     (syntax-rules ()
-      ((_ err expr)
-       (with-handlers ((exn:fail:syntax? (lambda (exn)
-                                           (printf "get expected syntax error \"~a\"\n  got message \"~a\"\n\n"
-                                                   err
-                                                   (exn-message exn)))))
-         (expand #'expr)
-         (error 'test-syntax-error "expected syntax error \"~a\" on ~a, got none" err 'expr)))))
+      ((_ err expr) (test-syntax-error "" err expr))
+      ((_ note err expr)
+       (check-exn
+        (lambda (e) (and (exn:fail:syntax? e)
+                         (regexp-match? (regexp-quote err)
+                                        (exn-message e))))
+        (lambda () (expand #'expr))
+        note))))
   
   (define-syntax test-runtime-error
     (syntax-rules ()
+      ((_ err-pred err note expr) (test-runtime-error err-pred err expr))
       ((_ err-pred err expr)
-       (with-handlers ((err-pred (lambda (exn)
-                                   (printf "got expected runtime error \"~a\"\n  got message \"~a\"\n\n"
-                                           err
-                                           (exn-message exn)))))
-         expr
-         (error 'test-runtime-error "expected runtime error \"~a\" on ~a, got none" err 'expr)))))
+       (check-exn
+        (λ (exn) (and (err-pred exn)
+                      (let ([msg (exn-message exn)])
+                        (and (regexp-match? (regexp-quote err) msg)))))
+        (λ () expr (void))))))
   
   (define-syntax test
     (syntax-rules ()

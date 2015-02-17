@@ -2,7 +2,8 @@
 
 (require "test-harness.rkt"
          racket/unit
-         racket/contract)
+         racket/contract
+         rackunit)
 
 (define temp-unit-blame-re "\\(unit temp[0-9]*\\)")
 (define top-level "top-level")
@@ -14,6 +15,9 @@
 (define (match-obj re msg)
   (or (regexp-match? (format "~a: contract violation" re) msg)
       (regexp-match? (format "~a: broke its own contract" re) msg)))
+
+(define (match-err re msg)
+  (regexp-match? re msg))
 
 (define (get-ctc-err msg)
   (cond
@@ -34,7 +38,14 @@
 (define-syntax test-contract-error/regexp
   (syntax-rules ()
     ((_ blame obj err expr)
-     (with-handlers ((exn:fail:contract?
+     (check-exn (λ (exn)
+                  (and (exn:fail:contract? exn)
+                       (let ([msg (exn-message exn)])
+                         (and (match-blame blame msg)
+                              (match-obj obj msg)
+                              (match-err err msg)))))
+                (λ () expr))
+     #;(with-handlers ((exn:fail:contract?
                       (lambda (exn)
                         (let ([msg (exn-message exn)])
                           (cond
@@ -46,6 +57,10 @@
                              (error 'test-contract-error
                                     "object \"~a\" not found in:\n\"~a\""
                                     obj msg)]
+                            [(not (match-err err msg))
+                             (error 'test-contract-error
+                                    "error \"~a\" not found in:\n\"~a\""
+                                    err msg)]
                             [else 
                              (printf "got expected contract error \"~a\" on ~a blaming ~a: ok\n\t\"~a\"\n\n" 
                                      err obj blame (get-ctc-err msg))])))))
@@ -94,14 +109,17 @@
 
   (define-values (c d) (values "foo" 3)))
 
-(test-syntax-error "misuse of contracted"
+(test-syntax-error "misuse of contracted" "misuse of define-signature keyword"                   
   contracted)
 (test-syntax-error "invalid forms after contracted in signature"
+                   "expected a list of [id contract]"
   (define-signature x ((contracted x y))))
 (test-syntax-error "identifier not first part of pair after contracted in signature"
+                   "expected a list of [id contract]"
   (define-signature x ((contracted [(-> number? number?) x]))))
 
 (test-syntax-error "identifier h? not bound anywhere"
+                   "unbound identifier"
   (module h?-test racket
     (define-signature s^
       ((define-values (f?) (values number?))
@@ -109,19 +127,20 @@
        (contracted [f (-> f? (and/c g? h?))])))))
 
 (test-syntax-error "f not defined in unit exporting sig3"
+                   "undefined export"
   (unit (import) (export sig3 sig4)
         (define a #t)
         (define g zero?)
         (define (b t) (if t 3 0))))
 
-(test-contract-error "(unit unit1)" "x" "not a number"
+(test-contract-error "(unit unit1)" "x" "number?"
   (invoke-unit unit1))
 
-(test-contract-error "(unit unit1)" "x"  "not a number"
+(test-contract-error "(unit unit1)" "x"  "number?"
   (invoke-unit (compound-unit (import) (export)
                               (link (((S1 : sig1)) unit1)
                                     (() unit2 S1)))))
-(test-contract-error/regexp temp-unit-blame-re "a" "not a number"
+(test-contract-error/regexp temp-unit-blame-re "a" "number?"
   (invoke-unit (compound-unit (import) (export)
                               (link (((S3 : sig3) (S4 : sig4))
                                      (unit (import) (export sig3 sig4)
@@ -131,7 +150,7 @@
                                            (define (b t) (if t 3 0))))
                                     (() unit3 S3 S4)))))
 
-(test-contract-error/regexp temp-unit-blame-re "g" "not a boolean"
+(test-contract-error/regexp temp-unit-blame-re "g" "boolean?"
   (invoke-unit (compound-unit (import) (export)
                               (link (((S3 : sig3) (S4 : sig4))
                                      (unit (import) (export sig3 sig4)
@@ -141,7 +160,7 @@
                                            (define (b t) (if t 3 0))))
                                     (() unit3 S3 S4)))))
 
-(test-contract-error "(unit unit4)" "b" "not a boolean"
+(test-contract-error "(unit unit4)" "b" "boolean?"
   (invoke-unit (compound-unit (import) (export)
                               (link (((S3 : sig3) (S4 : sig4))
                                      (unit (import) (export sig3 sig4)
@@ -151,7 +170,7 @@
                                            (define (b t) (if t 3 0))))
                                     (() unit4 S3 S4)))))
 
-(test-contract-error "(unit unit5)" "d" "not a symbol"
+(test-contract-error "(unit unit5)" "d" "symbol?"
   (invoke-unit unit5))
 
 (define-unit unit6
@@ -181,7 +200,7 @@
     (import)
     (export sig1)))
 
-(test-contract-error "(unit unit7)" "x" "not a boolean"
+(test-contract-error "(unit unit7)" "x" "boolean?"
   (invoke-unit unit7))
 
 (define-unit unit8
@@ -196,7 +215,7 @@
     (export sig2))
   (f #t))
 
-(test-contract-error "(unit unit8)" "f" "not a number"
+(test-contract-error "(unit unit8)" "f" "number?"
   (invoke-unit unit8))
 
 (define-unit unit9
@@ -211,7 +230,7 @@
     (export sig2))
   (f 3))
 
-(test-contract-error "(unit unit9-1)" "f" "not a number"
+(test-contract-error "(unit unit9-1)" "f" "number?"
   (invoke-unit unit9))
 
 (define-values/invoke-unit
@@ -221,7 +240,7 @@
   (import)
   (export sig2))
 
-(test-contract-error top-level "f" "not a number"
+(test-contract-error top-level "f" "number?"
   (f #t))
 
 (define-unit unit10
@@ -233,13 +252,13 @@
 (let ()
   (define x 0)
   (define f (lambda (x) #t))
-  (test-contract-error "(unit u)" "f" "not a number"
+  (test-contract-error "(unit u)" "f" "number?"
     (invoke-unit unit10 (import sig1 sig2))))
 
 (let ()
   (define x 1)
   (define f values)
-  (test-contract-error "(unit unit10)" "f" "not a number"
+  (test-contract-error "(unit unit10)" "f" "number?"
     (invoke-unit unit10 (import sig1 sig2))))
 
 ;; testing that contracts from extended signatures are checked properly
@@ -252,9 +271,9 @@
   (define-values/invoke-unit unit11
     (import)
     (export sig3))
-  (test-contract-error "(unit unit11)" "f" "not a number"
+  (test-contract-error "(unit unit11)" "f" "number?"
     (f 3))
-  (test-contract-error top-level "f" "not a number"
+  (test-contract-error top-level "f" "number?"
     (f #t)))
 
 ;; unit/new-import-export tests
@@ -319,7 +338,7 @@
     (export)
     (link [((S : sig8)) unit19]
           [() unit20 S]))
-  (test-contract-error "(unit unit19)" "f" "not a number"
+  (test-contract-error "(unit unit19)" "f" "number?"
     (invoke-unit unit22)))
 
 ;; contracted import -> uncontracted import
@@ -340,7 +359,7 @@
     (export)
     (link [((S : sig7)) unit18]
           [() unit23 S]))
-  (test-contract-error "(unit unit23)" "f" "not a number"
+  (test-contract-error "(unit unit23)" "f" "number?"
     (invoke-unit unit25)))
 
 ;; contracted import -> contracted import
@@ -369,7 +388,7 @@
     (export)
     (link [((S : sig9)) unit28-1]
           [() unit26 S]))
-  (test-contract-error "(unit unit28-1)" "f" "not a number"
+  (test-contract-error "(unit unit28-1)" "f" "number?"
     (invoke-unit unit28-2)))
 
 ;; uncontracted export -> contracted export
@@ -390,7 +409,7 @@
     (export)
     (link [((S : sig8)) unit29]
           [() unit17 S]))
-  (test-contract-error "(unit unit17)" "f" "not a number"
+  (test-contract-error "(unit unit17)" "f" "number?"
     (invoke-unit unit31)))
 
 ;; contracted export -> uncontracted export
@@ -411,7 +430,7 @@
     (export)
     (link [((S : sig7)) unit32]
           [() unit16 S]))
-  (test-contract-error "(unit unit32)" "f" "not a number"
+  (test-contract-error "(unit unit32)" "f" "number?"
     (invoke-unit unit34)))
 
 ;; contracted export -> contracted export
@@ -440,7 +459,7 @@
     (export)
     (link [((S : sig9)) unit35]
           [() unit37-1 S]))
-  (test-contract-error "(unit unit37-1)" "f" "not a number"
+  (test-contract-error "(unit unit37-1)" "f" "number?"
     (invoke-unit unit37-2)))
 
 ;; Converting units with internal contract violations
@@ -456,7 +475,7 @@
     (export)
     (link [((S : sig8)) unit15]
           [() unit38 S]))
-  (test-contract-error "(unit unit38)" "f" "not a number"
+  (test-contract-error "(unit unit38)" "f" "number?"
     (invoke-unit unit39)))
 (let ()
   (define-compound-unit unit40
@@ -464,7 +483,7 @@
     (export)
     (link [((S : sig8)) unit19]
           [() unit38 S]))
-  (test-contract-error "(unit unit38)" "f" "not a number"
+  (test-contract-error "(unit unit38)" "f" "number?"
     (invoke-unit unit40)))
 
 ;; contracted import -> uncontracted import
@@ -478,7 +497,7 @@
     (export)
     (link [((S : sig7)) unit14]
           [() unit41 S]))
-  (test-contract-error "(unit unit17)" "f" "not a number"
+  (test-contract-error "(unit unit17)" "f" "number?"
     (invoke-unit unit42)))
 (let ()
   (define-compound-unit unit43
@@ -486,7 +505,7 @@
     (export)
     (link [((S : sig7)) unit18]
           [() unit41 S]))
-  (test-contract-error "(unit unit17)" "f" "not a number"
+  (test-contract-error "(unit unit17)" "f" "number?"
     (invoke-unit unit43)))
 
 ;; contracted import -> contracted import
@@ -504,7 +523,7 @@
     (export)
     (link [((S : sig9)) unit45-1]
           [() unit44 S]))
-  (test-contract-error "(unit unit17)" "f" "not a number"
+  (test-contract-error "(unit unit17)" "f" "number?"
     (invoke-unit unit45-2)))
 (let ()
   (define-unit unit46-1
@@ -516,7 +535,7 @@
     (export)
     (link [((S : sig9)) unit46-1]
           [() unit44 S]))
-  (test-contract-error "(unit unit17)" "f" "not a number"
+  (test-contract-error "(unit unit17)" "f" "number?"
     (invoke-unit unit46-2)))
 
 ;; uncontracted export -> contracted export
@@ -530,7 +549,7 @@
     (export)
     (link [((S : sig8)) unit47]
           [() unit13 S]))
-  (test-contract-error "(unit unit47)" "f" "not a number"
+  (test-contract-error "(unit unit47)" "f" "number?"
     (invoke-unit unit48)))
 (let ()
   (define-compound-unit unit49
@@ -538,7 +557,7 @@
     (export)
     (link [((S : sig8)) unit47]
           [() unit17 S]))
-  (test-contract-error "(unit unit17)" "f" "not a number"
+  (test-contract-error "(unit unit17)" "f" "number?"
     (invoke-unit unit49)))
 
 ;; contracted import -> uncontracted import
@@ -552,7 +571,7 @@
     (export)
     (link [((S : sig7)) unit50]
           [() unit12 S]))
-  (test-contract-error "(unit unit19)" "f" "not a number"
+  (test-contract-error "(unit unit19)" "f" "number?"
     (invoke-unit unit51)))
 (let ()
   (define-compound-unit unit52
@@ -560,7 +579,7 @@
     (export)
     (link [((S : sig7)) unit50]
           [() unit16 S]))
-  (test-contract-error "(unit unit50)" "f" "not a number"
+  (test-contract-error "(unit unit50)" "f" "number?"
     (invoke-unit unit52)))
 
 ;; contracted export -> contracted export
@@ -578,7 +597,7 @@
     (export)
     (link [((S : sig9)) unit53]
           [() unit54-1 S]))
-  (test-contract-error "(unit unit19)" "f" "not a number"
+  (test-contract-error "(unit unit19)" "f" "number?"
     (invoke-unit unit54-2)))
 (let ()
   (define-unit unit55-1
@@ -590,7 +609,7 @@
     (export)
     (link [((S : sig9)) unit53]
           [() unit55-1 S]))
-  (test-contract-error "(unit unit55-1)" "f" "not a number"
+  (test-contract-error "(unit unit55-1)" "f" "number?"
     (invoke-unit unit55-2)))
 
 (module m1 racket
@@ -628,26 +647,29 @@
 (require (prefix-in m2: 'm2))
 
 (m2:z)
-(test-contract-error "m2" "U@" "not a symbol" (m2:w))
-(test-contract-error "m1" "U@" "not a string" (m2:v))
+(test-contract-error "m2" "U@" "symbol?" (m2:w))
+(test-contract-error "m1" "U@" "string?" (m2:v))
 
 (test-syntax-error "no y in sig1"
+                   "identifier not member of signature"
   (unit/c (import (sig1 [y number?]))
           (export)))
 (test-syntax-error "two xs for sig1"
+                   "duplicate identifier found"
   (unit/c (import)
           (export (sig1 [x string?] [x number?]))))
 (test-syntax-error "no sig called faux^, so import description matching fails"
+                   "unit/c: unknown signature"
   (unit/c (import faux^) (export)))
 
-(test-contract-error "(definition bad-export@)" "bad-export@" "unit must export sig1"
+(test-contract-error "(definition bad-export@)" "bad-export@" "unit must export signature sig1"
   (let ()
     (define/contract bad-export@
       (unit/c (import) (export sig1))
       (unit (import) (export)))
     bad-export@))
 
-(test-contract-error "(definition bad-import@)" "bad-import@" "contract must import sig1"
+(test-contract-error "(definition bad-import@)" "bad-import@" "contract does not list import sig1"
   (let ()
     (define/contract bad-import@
       (unit/c (import) (export))
@@ -702,7 +724,7 @@
 
 (require (prefix-in m4: 'm4))
 
-(test-contract-error "m4" "f" "not an x"
+(test-contract-error "m4" "f" " x?"
   (m4:f 3))
 
 (module m4:f racket
@@ -720,12 +742,12 @@
 
 (require (prefix-in m4: 'm4:f))
 
-(test-contract-error "m4:f" "f:f" "not an f:x"
+(test-contract-error "m4:f" "f:f" "x?"
   (m4:f:f 3))
 
 (require (prefix-in m3: 'm3))
 
-(test-contract-error top-level "build-toys" "not a integer"
+(test-contract-error top-level "build-toys" "integer?"
   (let ()
     (define-values/invoke-unit/infer m3:simple-factory@)
     (build-toys #f)))
@@ -753,7 +775,7 @@
 
 (m5:f 0)
 
-(test-contract-error top-level "U@" "not an x"
+(test-contract-error top-level "U@" " x?"
   (m5:f 3))
 
 (let ()
@@ -774,7 +796,7 @@
   (define-values/invoke-unit/infer V@)
   
   (f 0)
-  (test-contract-error top-level "f" "not an x"
+  (test-contract-error top-level "f" "zero?"
     (f 3)))
 
 (let ()
@@ -795,7 +817,7 @@
   (define-values/invoke-unit/infer V@)
   
   (f 0)
-  (test-contract-error "(unit V@)" "f" "not an x"
+  (test-contract-error "(unit V@)" "f" "zero?"
     (f 3)))
 
 (let ()
@@ -813,11 +835,11 @@
     (import) (export) (link U@ V@))
   (define-values/invoke-unit/infer U@)
   y
-  (test-contract-error top-level "U@" "not a number"
+  (test-contract-error top-level "U@" "number?"
     (x #t))
-  (test-contract-error "(unit U@)" "U@" "not a number"
+  (test-contract-error "(unit U@)" "U@" "number?"
     (x 3))
-  (test-contract-error "(unit U@)" "U@" "not a number"
+  (test-contract-error "(unit U@)" "U@" "number?"
     (invoke-unit W@)))
 
 (let ()
@@ -831,16 +853,16 @@
   (define-unit V@
     (import foo^)
     (export)
-    (test-contract-error top-level "U@" "not an x"
+    (test-contract-error top-level "U@" " x?"
       (f 2))
-    (test-contract-error "(unit U@)" "U@" "not an number"
+    (test-contract-error "(unit U@)" "U@" " number?"
       (f 3)))
   (define-compound-unit/infer W@
     (import) (export) (link U@ V@))
   (define-values/invoke-unit/infer U@)
-  (test-contract-error top-level "U@" "not an x"
+  (test-contract-error top-level "U@" " x?"
     (f 4))
-  (test-contract-error "(unit U@)" "U@" "not a number"
+  (test-contract-error "(unit U@)" "U@" "number?"
     (f 3))
   (invoke-unit W@))
 
@@ -860,7 +882,7 @@
   (define-values/invoke-unit/infer foo@)
   
   (f 0)
-  (test-contract-error top-level "f" "not an x"
+  (test-contract-error top-level "f" " x?"
     (f 4))
   ;; This is a weird one.  The definition for foo@ has two conflicting
   ;; contracts.  Who gets blamed?  Still the top-level, since foo@ can't
@@ -869,7 +891,7 @@
   ;; just be an "overriding" contract, but a) that won't really work and
   ;; b) what about other units that might link with foo@, that expect
   ;; the stronger contract?
-  (test-contract-error top-level "x?" "not a number"
+  (test-contract-error top-level "x?" "number?"
     (f #t)))
 
 (let ()
@@ -881,9 +903,9 @@
     (struct student (name id)))
   (define-values/invoke-unit/infer student@)
   (student "foo" 3)
-  (test-contract-error top-level "student" "not a string"
+  (test-contract-error top-level "student" "string?"
     (student 4 3))
-  (test-contract-error top-level "student-id" "not a student"
+  (test-contract-error top-level "student-id" "student?"
     (student-id 'a)))
 
 ;; Test that prefixing doesn't cause issues.
@@ -911,4 +933,164 @@
   (define-values/invoke-unit c@ (import) (export s^))
   (new-make-t))
 
-(displayln "tests passed")
+
+(let ()
+  (define-signature s^ ((contracted [n number?])))
+  (define-unit s0@
+    (import)
+    (export s^)
+    (define n 0))
+
+  (define-unit s1@
+    (import)
+    (export s^)
+    (define n 1))
+
+  (define-unit/contract a0@
+    (import)
+    (export)
+    #:invoke/contract (-> integer? integer?)
+    (lambda (n) (add1 n)))
+
+  (define-unit/contract a1@
+    (import)
+    (export)
+    (init-depend)
+    #:invoke/contract (-> integer? integer?)
+    (lambda (n) "bad"))
+
+  ((invoke-unit a0@) 1)
+  (test-contract-error "(unit a1@)" "a1@" " integer?" ((invoke-unit a1@) 1))
+
+  (define-unit t@
+    (import s^)
+    (export)
+    (if (zero? n) "zero" n))
+
+  (define c@/c (unit/c (import) (export) number?))
+  (define/contract c0@ c@/c
+    (compound-unit (import) (export) (link [((S : s^)) s0@] [() t@ S])))
+  (define/contract c1@ c@/c
+    (compound-unit (import) (export) (link [((S : s^)) s1@] [() t@ S])))
+  (test-contract-error "(definition c0@)" "c0@" "number?" (invoke-unit c0@))
+  (invoke-unit c1@))
+
+;; tests for values case of unit/c contracts
+
+
+(let ()
+  ;; first order
+  (define c1 (unit/c (import) (export) (values integer?)))
+  (define c2 (unit/c (import) (export) (values integer? string?)))
+
+  (define/contract u1 c1 (unit (import) (export) 5))
+  (define/contract u2 c1 (unit (import) (export) "bad"))
+  (define/contract u3 c1 (unit (import) (export) (values 1 2)))
+  (define/contract u4 c2 (unit (import) (export) (values 1 "two")))
+  (define/contract u5 c2 (unit (import) (export) (values 1 2)))
+  (define/contract u6 c2 (unit (import) (export) "bad"))
+
+  ;; passing
+  (invoke-unit u1)
+  (invoke-unit u4)
+
+  ;; failing
+  (test-contract-error "(definition u2)" "u2" "promised: integer?" (invoke-unit u2))
+  (test-contract-error "(definition u5)" "u5" "promised: string?" (invoke-unit u5)) 
+  ;; wrong number of values
+  (test-contract-error "(definition u3)" "u3" "expected 1 values" (invoke-unit u3))
+  (test-contract-error "(definition u6)" "u6" "expected 2 values" (invoke-unit u6))
+
+  ;; higher order
+  (define c3 (unit/c (import) (export) (values (-> integer? string?))))
+  (define c4 (unit/c (import) (export) (values (-> integer? integer?) (-> string? string?))))
+
+  (define/contract u7 c3 (unit (import) (export) (λ (n) "ok")))
+  (define/contract u8 c3 (unit (import) (export) (λ (n) 'bad)))
+  (define/contract u9 c4 (unit (import) (export) (values (λ (n) n) (λ (s) s))))
+  (define/contract u10 c4 (unit (import) (export) (values (λ (n) "bad") (λ (s) 'bad))))
+
+  (define-values (f1) (invoke-unit u7))
+  (define-values (f2) (invoke-unit u8))
+  (define-values (f3 f4) (invoke-unit u9))
+  (define-values (f5 f6) (invoke-unit u10))
+
+  ;; ok
+  (f1 1)
+  (f3 3)
+  (f4 "ok")
+  ;; errors
+  (test-contract-error "top-level" "u7" "expected: integer?" (f1 "bad"))
+  (test-contract-error "top-level" "u8" "expected: integer?" (f2 "bad"))
+  (test-contract-error "(definition u8)" "u8" "promised: string?" (f2 5))
+  (test-contract-error "top-level" "u9" "expected: integer?" (f3 "bad"))
+  (test-contract-error "top-level" "u9" "expected: string?" (f4 5))
+  (test-contract-error "top-level" "u10" "expected: integer?" (f5 "bad"))
+  (test-contract-error "(definition u10)" "u10" "promised: integer?" (f5 5))
+  (test-contract-error "(definition u10)" "u10" "promised: string?" (f6 "bad"))
+  (test-contract-error "top-level" "u10" "expected: string?" (f6 6)))
+
+
+
+;; tests for init-depends in unit contracts
+(let ()
+  (define-signature a^ ())
+  (define-signature b^ ())
+  (define-signature c^ ())
+
+  (define/contract u@
+    (unit/c (import a^ b^) (export) (init-depend a^ b^))
+    (unit (import a^ b^) (export) (init-depend a^ b^)))
+
+  (define/contract v@
+    (unit/c (import a^ b^) (export) (init-depend a^ b^))
+    (unit (import a^) (export) (init-depend a^)))
+
+  (test-contract-error
+   "(definition w@)" "w@" "contract does not list initialization dependency a^"
+   (let ()
+     (define/contract w@
+       (unit/c (import a^) (export))
+       (unit (import a^) (export) (init-depend a^)))
+     w@))
+
+  ;; make sure that extended dependencies are checked correctly
+  (define-signature a-sub^ extends a^ ())
+  (define/contract x@
+    (unit/c (import a-sub^) (export) (init-depend a-sub^))
+    (unit (import a^) (export) (init-depend a^)))
+
+  ;; make sure tags are checked correctly for init-depends
+  (test-contract-error
+   "(definition y@)" "y@" "contract does not list initialization dependency a^ with tag A"
+   (let ()
+     (define/contract y@
+       (unit/c (import (tag A a^) a^) (export) (init-depend a^))
+       (unit (import (tag A a^) a^) (export) (init-depend (tag A a^))))
+     y@))
+
+  (test-syntax-error
+   "unit/c: initialization dependency on unknown import"
+   (let ()
+     (define-signature a^ ())
+     (define-signature a-sub^ extends a^ ())
+     (unit/c (import a^) (export) (init-depend a-sub^))))
+  (test-syntax-error
+   "unit/c: initialization dependency on unknown import"
+   (let ()
+     (define-signature a^ ())
+     (unit/c (import) (export) (init-depend a^))))
+
+  (test-syntax-error
+   "unit/c: unknown signature"
+   (unit/c (import x^) (export) (init-depend)))
+
+  (test-syntax-error
+   "unit/c: unknown signature"
+   (unit/c (import) (export) (init-depend x^)))
+
+  (test-syntax-error
+   "unit/c: unknown signature"
+   (unit/c (import) (export x^) (init-depend)))
+
+  (void))
