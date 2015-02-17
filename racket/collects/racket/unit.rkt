@@ -1899,14 +1899,17 @@
                            (build-unit-from-context sig))
                      "missing unit name and signature"))
 
+(define-for-syntax no-invoke-contract (gensym))
 (define-for-syntax (build-unit/contract stx)
   (syntax-parse stx
-                [(:import-clause/contract :export-clause/contract dep:dep-clause . body)
+                [(:import-clause/contract :export-clause/contract dep:dep-clause :body-clause/contract . bexps)
+                 (define splicing-body-contract
+                   (if (eq? (syntax-e #'b) no-invoke-contract) #'() #'(b)))
                  (let-values ([(exp isigs esigs deps) 
                                (build-unit
                                 (check-unit-syntax
                                  (syntax/loc stx
-                                   ((import i.s ...) (export e.s ...) dep . body))))])
+                                   ((import i.s ...) (export e.s ...) dep . bexps))))])
                    (with-syntax ([name (syntax-local-infer-name (error-syntax))]
                                  [(import-tagged-sig-id ...)
                                   (map (λ (i s)
@@ -1922,17 +1925,27 @@
                                    [unit-contract
                                     (unit/c/core
                                      #'name
-                                     (syntax/loc stx
+                                     (quasisyntax/loc stx
                                        ((import (import-tagged-sig-id [i.x i.c] ...) ...)
-                                        (export (export-tagged-sig-id [e.x e.c] ...) ...))))])
+                                        (export (export-tagged-sig-id [e.x e.c] ...) ...)
+                                        dep
+                                        #,@splicing-body-contract)))])
                        (values 
                         (syntax/loc stx
                           (contract unit-contract new-unit '(unit name) (current-contract-region) (quote name) (quote-srcloc name)))
                         isigs esigs deps))))]
-                [(ic:import-clause/contract ec:export-clause/contract . body)
-                 (build-unit/contract 
-                  (syntax/loc stx
-                    (ic ec (init-depend) . body)))]))
+                [(ic:import-clause/contract ec:export-clause/contract dep:dep-clause . bexps)
+                 (build-unit/contract
+                  (quasisyntax/loc stx
+                    (ic ec dep #:invoke/contract #,no-invoke-contract . bexps)))]
+                [(ic:import-clause/contract ec:export-clause/contract bc:body-clause/contract . bexps)
+                 (build-unit/contract
+                  (quasisyntax/loc stx
+                    (ic ec (init-depend) #,@(syntax->list #'bc) . bexps)))]
+                [(ic:import-clause/contract ec:export-clause/contract . bexps)
+                 (build-unit/contract
+                  (quasisyntax/loc stx
+                    (ic ec (init-depend) #:invoke/contract #,no-invoke-contract . bexps)))]))
 
 (define-syntax/err-param (define-unit/contract stx)
   (build-define-unit/contracted stx (λ (stx)

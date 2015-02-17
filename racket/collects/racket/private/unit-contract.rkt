@@ -68,10 +68,18 @@
 
 (define-for-syntax contract-imports (contract-imports/exports #t))
 (define-for-syntax contract-exports (contract-imports/exports #f))
+;; This is copied from the unit implementation, but can't be required
+;; from there since unit.rkt also requires this file
+(define-for-syntax (tagged-sigid->tagged-siginfo x)
+  (cons (car x)
+        (signature-siginfo (lookup-signature (cdr x)))))
 
 (define-for-syntax (unit/c/core name stx)
   (syntax-parse stx
-    [(:import-clause/c :export-clause/c)
+    [(:import-clause/c
+      :export-clause/c
+      (~optional d:dep-clause #:defaults ([(d.s 1) null]))
+      b:body-clause/c)
      (begin
        (define-values (isig tagged-import-sigs import-tagged-infos 
                             import-tagged-sigids import-sigs)
@@ -80,7 +88,14 @@
        (define-values (esig tagged-export-sigs export-tagged-infos 
                             export-tagged-sigids export-sigs)
          (process-unit-export #'(e.s ...)))
-       
+
+       (define deps (syntax->list #'(d.s ...)))
+       (define dep-tagged-siginfos
+         (map tagged-sigid->tagged-siginfo
+              (map check-tagged-id deps)))
+
+       (define body-contract (attribute b.apply-invoke-ctcs))
+
        (define contract-table
          (make-bound-identifier-mapping))
        
@@ -102,11 +117,8 @@
                [c (in-list (syntax->list cs))])
               (bound-identifier-mapping-put! contract-table x c)))
        
-       (check-duplicate-sigs import-tagged-infos isig null null)
-       
+       (check-duplicate-sigs import-tagged-infos isig dep-tagged-siginfos deps)
        (check-duplicate-subs export-tagged-infos esig)
-       
-       (check-unit-ie-sigs import-sigs export-sigs)
        
        (for-each process-sig
                  isig
@@ -119,7 +131,13 @@
                  (syntax->list #'((e.x ...) ...))
                  (syntax->list #'((e.c ...) ...)))
        
-       (with-syntax ([(isig ...) isig]
+       (with-syntax ([((dept . depr) ...)
+                      (map
+                       (lambda (tinfo)
+                         (cons (car tinfo)
+                               (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
+                       dep-tagged-siginfos)]
+                     [(isig ...) isig]
                      [(esig ...) esig]
                      [((import-key ...) ...)
                       (map tagged-info->keys import-tagged-infos)]
@@ -145,7 +163,10 @@
                           (list (cons 'esig
                                       (map list (list 'e.x ...)
                                            (build-compound-type-name 'e.c ...)))
-                                ...)))
+                                ...))
+                    (cons 'init-depend
+                          (list 'd.s ...))
+                    #,@(attribute b.name))
               #:projection
               (λ (blame)
                 (λ (unit-tmp)
@@ -157,6 +178,7 @@
                    (vector-immutable 
                     (cons 'export-name 
                           (vector-immutable export-key ...)) ...)
+                   (list (cons 'dept depr) ...)
                    blame)
                   (make-unit
                    '#,name
@@ -164,16 +186,18 @@
                                            (vector-immutable import-key ...)) ...)
                    (vector-immutable (cons 'export-name 
                                            (vector-immutable export-key ...)) ...)
-                   (unit-deps unit-tmp)
+                   (list (cons 'dept depr) ...)
                    (λ ()
                      (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
                        (values (lambda (import-table)
-                                 (unit-fn #,(contract-imports
-                                             #'import-table
-                                             import-tagged-infos
-                                             import-sigs
-                                             contract-table
-                                             #'blame)))
+                                 #,(body-contract
+                                    #`(unit-fn #,(contract-imports
+                                                  #'import-table
+                                                  import-tagged-infos
+                                                  import-sigs
+                                                  contract-table
+                                                  #'blame))
+                                    #'blame))
                                #,(contract-exports 
                                   #'export-table
                                   export-tagged-infos
@@ -190,6 +214,7 @@
                  (vector-immutable 
                   (cons 'export-name 
                         (vector-immutable export-key ...)) ...)
+                 (list (cons 'dept depr) ...)
                  #f)))))))]))
 
 (define-syntax/err-param (unit/c stx)
@@ -198,7 +223,7 @@
      (let ([name (syntax-local-infer-name stx)])
        (unit/c/core name #'sstx))]))
 
-(define (unit/c-first-order-check val expected-imports expected-exports blame)
+(define (unit/c-first-order-check val expected-imports expected-exports expected-deps blame)
   (let/ec return
     (define (failed str . args)
       (if blame
@@ -224,12 +249,53 @@
                  [r (hash-ref t v0 #f)])
             (when (not r)
               (let ([sub-name (car (vector-ref super-sig i))])
-                (if import?
-                    (failed "contract does not list import ~a" sub-name)
-                    (failed "unit must export signature ~a" sub-name)))))
+                (define tag-part (vector-ref (cdr (vector-ref super-sig i)) 0))
+                (define tag (and (pair? tag-part) (car tag-part)))
+                (failed
+                 (string-append
+                  (if import?
+                      (format "contract does not list import ~a" sub-name)
+                      (format "unit must export signature ~a" sub-name))
+                  (if tag
+                      (format " with tag ~a" tag)
+                      ""))))))
           (loop (sub1 i)))))
+    (define (check-dependencies expected given imports)
+      (define (lookup dep lst)
+        (member dep lst (lambda (p1 p2)
+                          (and (eq? (car p1) (car p2))
+                               (eq? (cdr p1) (cdr p2))))))
+      (define (normalize-deps deps)
+        (map (lambda (dep) (if (car dep) dep (cdr dep))) deps))
+      (define t (for*/hash ([i (in-vector imports)]
+                            [v (in-value (cdr i))]
+                            [im (in-value (vector-ref v 0))]
+                            #:when (member im (normalize-deps expected))
+                            [vj (in-vector v)])
+                  (values vj #t)))
+      ;; use the imports to get the name and tag of dependency
+      (define (get-name dep-tag)
+        (define tag-table
+          (for/hash ([e (in-vector imports)])
+            (define name (car e))
+            (define v (vector-ref (cdr e) 0))
+            (define tag (if (pair? v) (cdr v) v))
+            (values tag name)))
+        (hash-ref tag-table dep-tag #f))
+     (for ([dep (in-list (normalize-deps given))])
+       (unless (hash-ref t dep #f)
+         (define tag (and (pair? dep) (car dep)))
+         (define sig-tag (or (and (pair? dep) (cdr dep)) dep))
+         (failed
+               (string-append
+                (format "contract does not list initialization dependency ~a"
+                        (get-name sig-tag))
+                (if tag
+                    (format " with tag ~a" tag)
+                    ""))))))
     (unless (unit? val)
       (failed "not a unit"))
     (check-sig-subset expected-imports (unit-import-sigs val) #t)
     (check-sig-subset (unit-export-sigs val) expected-exports #f)
+    (check-dependencies expected-deps (unit-deps val) expected-imports)
     #t))
