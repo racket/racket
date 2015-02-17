@@ -4,7 +4,8 @@
          racket/private/unit-runtime)
 
 ;; check-unit
-(test-runtime-error exn:fail:contract? "check-unit: not a unit"
+(test-runtime-error exn:fail:contract?
+                    "result of unit expression was not a unit"
   (check-unit 1 'check-unit))
 
 (test (void)
@@ -27,7 +28,8 @@
                 'check-helper
                 #f))
 
-(test-runtime-error exn:fail:contract? "check-helper: missing signature"
+(test-runtime-error exn:fail:contract?
+                    "expects a unit with an export for tag t with signature c, which the given unit does not supply"
   (check-helper sub-vector
                 #((c . #((t . r4) (t . r1) (t . r2) (t . r3))))
                 'check-helper
@@ -44,12 +46,11 @@
                     #((a . #((t . r5) (t . r2) (t . r3))))
                     'check-helper #f))
 
-(test-runtime-error exn:fail:contract? "check-helper: ambiguous signature"
+(test-runtime-error exn:fail:contract?
+                    "expects a unit with an export for tag t with signature c, which the given unit supplies multiple times"
       (check-helper sub-vector2 
                     #((c . #((t . r2) (t . r3))))
                     'check-helper #f))
 
 ;; check-deps
 ;;UNTESTED
-
-(displayln "tests passed")
