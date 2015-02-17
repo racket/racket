@@ -88,7 +88,7 @@ plain-as-is:
 	$(PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 win32-as-is:
-	$(MAKE) base
+	$(MAKE) win32-base
 	$(WIN32_PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 # ------------------------------------------------------------
