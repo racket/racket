@@ -759,7 +759,7 @@ stream, but plain lists can be used as streams, and functions such as
 }
 
 @defproc[(stream-empty? [s stream?]) boolean?]{
-  Returns @racket[#f] if @racket[s] has no elements, @racket[#f]
+  Returns @racket[#t] if @racket[s] has no elements, @racket[#f]
   otherwise.
 }
 
