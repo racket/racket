@@ -634,6 +634,14 @@
 (define (put-impure-port url put-data [strings '()])
   (method-impure-port 'put url put-data strings))
 
+;; options-pure-port : url [x list (str)] -> in-port
+(define (options-pure-port url [strings '()])
+  (method-pure-port 'options url #f strings))
+
+;; options-impure-port : url [x list (str)] -> in-port
+(define (options-impure-port url [strings '()])
+  (method-impure-port 'options url #f strings))
+
 ;; method-impure-port : symbol x url x list (str) -> in-port
 (define (method-impure-port method url data strings)
   (let ([scheme (url-scheme url)])
@@ -662,7 +670,7 @@
 (define (http://method-impure-port method url data strings)
   (let* ([method (case method
                    [(get) "GET"] [(post) "POST"] [(head) "HEAD"]
-                   [(put) "PUT"] [(delete) "DELETE"]
+                   [(put) "PUT"] [(delete) "DELETE"] [(options) "OPTIONS"] 
                    [else (url-error "unsupported method: ~a" method)])]
          [proxy (assoc (url-scheme url) (current-proxy-servers))]
          [hc (make-ports url proxy)]
@@ -717,6 +725,8 @@
  (delete-impure-port (->* (url?) ((listof string?)) input-port?))
  (put-pure-port (->* (url? (or/c false/c bytes?)) ((listof string?)) input-port?))
  (put-impure-port (->* (url? bytes?) ((listof string?)) input-port?))
+ (options-pure-port (->* (url?) ((listof string?)) input-port?))
+ (options-impure-port (->* (url?) ((listof string?)) input-port?))
  (display-pure-port (input-port? . -> . void?))
  (purify-port (input-port? . -> . string?))
  (get-pure-port/headers (->* (url?)
