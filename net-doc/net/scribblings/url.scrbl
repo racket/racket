@@ -239,9 +239,12 @@ Internally, @racket['recommended] mode uses
 @defproc[(delete-pure-port [URL url?]
                            [header (listof string?) null])
          input-port?]
+@defproc[(options-pure-port [URL url?]
+                            [header (listof string?) null])
+         input-port?]
 )]{
 
-Initiates a GET/HEAD/DELETE request for @racket[URL] and returns a
+Initiates a GET/HEAD/DELETE/OPTIONS request for @racket[URL] and returns a
 @tech{pure port} corresponding to the body of the response. The
 optional list of strings can be used to send header lines to the
 server.
@@ -269,7 +272,9 @@ in the context with @racket[ssl-set-verify!].
 
 The @racket["file"] scheme for URLs is handled only by
 @racket[get-pure-port], which uses @racket[open-input-file], does not
-handle exceptions, and ignores the optional strings.}
+handle exceptions, and ignores the optional strings.
+
+@history[#:changed "6.1.1.8" @elem{Added @racket[options-pure-port].}]}
 
 @deftogether[(
 @defproc[(get-impure-port [URL url?]
@@ -281,11 +286,16 @@ handle exceptions, and ignores the optional strings.}
 @defproc[(delete-impure-port [URL url?]
                              [header (listof string?) null])
          input-port?]
+@defproc[(options-impure-port [URL url?]
+                              [header (listof string?) null])
+         input-port?]
 )]{
 
 Like @racket[get-pure-port], etc., but the resulting @tech{impure
 port} contains both the returned headers and the body. The
-@racket["file"] URL scheme is not handled by these functions.}
+@racket["file"] URL scheme is not handled by these functions.
+
+@history[#:changed "6.1.1.8" @elem{Added @racket[options-impure-port].}]}
 
 @deftogether[(
 @defproc[(post-pure-port [URL url?]
