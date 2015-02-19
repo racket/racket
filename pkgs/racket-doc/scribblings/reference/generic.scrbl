@@ -245,21 +245,34 @@ specified @racket[method-id]s with the corresponding @racket[method-ctc]s.
 
 }
 
-@defform[(impersonate-generics gen-id val-expr [method-id method-proc] ...)
-         #:contracts ([method-proc (any/c . -> . any/c)])]{
+@defform[(impersonate-generics gen-id val-expr
+           [method-id method-proc-expr] ...
+           maybe-properties)
+         #:grammar ([maybe-properties code:blank
+                                      (code:line #:properties props-expr)])
+         #:contracts ([method-proc-expr (any/c . -> . any/c)]
+                      [props-expr (list/c impersonator-property? any/c ... ...)])]{
 
 Creates an @tech{impersonator} of @racket[val-expr], which must be a structure
 that implements the @tech{generic interface} @racket[gen-id].  The impersonator
-applies the specified @racket[method-proc]s to the structure's implementation
+applies the results of the @racket[method-proc-expr]s to the structure's implementation
 of the corresponding @racket[method-id]s, and replaces the method
 implementation with the result.
 
-}
+A @racket[props-expr] can provide properties to attach to the
+impersonator. The result of @racket[props-expr] bust be an list with
+an even number of elements, where the first element of the list is an
+impersonator property, the second element is its value, and so on.
 
-@defform[(chaperone-generics gen-id val-expr [method-id method-proc] ...)
-         #:contracts ([method-proc (any/c . -> . any/c)])]{
+@history[#:changed "6.1.1.8" @elem{Added @racket[#:properties].}]}
 
-Creates a @tech{chaperone} of @racket[val-expr], which must be a structure
+
+@defform[(chaperone-generics gen-id val-expr
+           [method-id method-proc-expr] ...
+           maybe-properties)]{
+
+Like @racket[impersonate-generics], but
+creates a @tech{chaperone} of @racket[val-expr], which must be a structure
 that implements the @tech{generic interface} @racket[gen-id].  The chaperone
 applies the specified @racket[method-proc]s to the structure's implementation
 of the corresponding @racket[method-id]s, and replaces the method
@@ -267,13 +280,14 @@ implementation with the result, which must be a chaperone of the original.
 
 }
 
-@defform[(redirect-generics mode gen-id val-expr [method-id method-proc] ...)
-         #:contracts ([method-proc (any/c . -> . any/c)])]{
+@defform[(redirect-generics mode gen-id val-expr
+            [method-id method-proc-expr] ...
+            maybe-properties)]{
 
-Creates an @tech{impersonator} of @racket[val-expr], like
-@racket[impersonate-generics], if @racket[mode] evaluates to @racket[#f].
-Creates a @tech{chaperone} of @racket[val-expr], like
-@racket[chaperone-generics], otherwise.
+Like @racket[impersonate-generics], but
+creates an @tech{impersonator} of @racket[val-expr]
+if @racket[mode] evaluates to @racket[#f], or creates
+a @tech{chaperone} of @racket[val-expr] otherwise.
 
 }
 
