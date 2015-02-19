@@ -191,8 +191,7 @@
 (define (impersonate-stream s first-proc rest-proc . props)
   (impersonate-generics
    gen:stream
-   ; the struct-info param is a hack, see PR 14970
-   (apply impersonate-struct s struct-info (λ (a b) (values a b)) props)
+   s
    [stream-first
     (λ (stream-first)
       (impersonate-procedure stream-first
@@ -200,13 +199,13 @@
    [stream-rest
     (λ (stream-rest)
       (impersonate-procedure stream-rest
-                             (λ (s) (values (λ (v) (rest-proc v)) s))))]))
+                             (λ (s) (values (λ (v) (rest-proc v)) s))))]
+   #:properties props))
 
 (define (chaperone-stream s first-proc rest-proc . props)
   (chaperone-generics
    gen:stream
-   ; the struct-info param is a hack, see PR 14970
-   (apply chaperone-struct s struct-info (λ (a b) (values a b)) props)
+   s
    [stream-first
     (λ (stream-first)
       (chaperone-procedure stream-first
@@ -214,7 +213,8 @@
    [stream-rest
     (λ (stream-rest)
       (chaperone-procedure stream-rest
-                           (λ (s) (values (λ (v) (rest-proc v)) s))))]))
+                           (λ (s) (values (λ (v) (rest-proc v)) s))))]
+   #:properties props))
 
 ;; Stream contracts ----------------------------------------------------------------------------------
 

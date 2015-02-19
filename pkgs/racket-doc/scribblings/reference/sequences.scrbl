@@ -962,7 +962,9 @@ lists are checked immediately, as if @racket[c] had been used with
 If a contract is applied to a stream, and that stream is subsequently used as
 the tail of another stream (as the second parameter to @racket[stream-cons]),
 the new elements will not be checked with the contract, but the tail's elements
-will still be enforced.}
+will still be enforced.
+
+@history[#:added "6.1.1.8"]}
 
 @close-eval[sequence-evaluator]
 
