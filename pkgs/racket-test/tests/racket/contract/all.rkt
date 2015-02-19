@@ -215,3 +215,5 @@
          (cond
            [(zero? failures) "all passed"]
            [else (format "~a failed" failures)]))
+(unless (zero? failures)
+  (exit 1))
