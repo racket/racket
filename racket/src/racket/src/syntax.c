@@ -110,7 +110,7 @@ static void register_traversers(void);
 
 XFORM_NONGCING static int is_armed(Scheme_Object *v);
 static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone);
-static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks);
+static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks, Scheme_Object *replace_at);
 
 XFORM_NONGCING static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b);
 static Scheme_Object *remove_at(Scheme_Object *l, Scheme_Object *p);
@@ -2021,6 +2021,9 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
       scheme_hash_set(ht, sym, l);
     }
   } else {
+    /* Order matters: the new bindings should hide any existing bindings for the same name */
+    /* REMOVEME: FIXME: need to remove mappings from the hash table that are replaced here;
+       that can happen due to an import at the top level, for example */
     p = scheme_make_raw_pair(bind, SCHEME_CDR(l));
     SCHEME_CDR(l) = p;
   }
@@ -2304,7 +2307,7 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
             pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
             if (SCHEME_VEC_SIZE(pes) == 3) {
               if (SCHEME_TRUEP(SCHEME_VEC_ELS(pes)[0])) {
-                unmarshal_module_context_additions(NULL, pes, binding_marks);
+                unmarshal_module_context_additions(NULL, pes, binding_marks, l);
                 retry = 1;
               }
             } else {
@@ -2367,7 +2370,7 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
                   /* Need unmarshal --- but only if the mark set is relevant */
                   if (mark_subset(binding_marks, marks)) {
                     /* unmarshal and note that we must restart */
-                    unmarshal_module_context_additions(stx, pes, binding_marks);
+                    unmarshal_module_context_additions(stx, pes, binding_marks, l);
                     invalid = 1;
                     /* Shouldn't encounter these on a second pass: */
                     STX_ASSERT(!check_subset);
@@ -2984,7 +2987,8 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
                                               Scheme_Object *unmarshal_info,
                                               Scheme_Object *src_phase, /* nominal import phase */
                                               Scheme_Object *context,
-                                              int save_unmarshal)
+                                              int save_unmarshal,
+                                              Scheme_Object *replace_at)
 {
   Scheme_Object *phase, *pes;
   Scheme_Mark_Set *marks;
@@ -3009,8 +3013,12 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
   SCHEME_VEC_ELS(pes)[1] = (Scheme_Object *)pt;
   SCHEME_VEC_ELS(pes)[2] = src_phase;
   SCHEME_VEC_ELS(pes)[3] = unmarshal_info;
- 
-  add_binding(NULL, phase, marks, pes);
+
+  if (replace_at) {
+    SCHEME_BINDING_VAL(SCHEME_CAR(replace_at)) = pes;
+  } else {
+    add_binding(NULL, phase, marks, pes);
+  }
 }
 
 void scheme_save_module_context_unmarshal(Scheme_Object *mc, Scheme_Object *info)
@@ -3038,7 +3046,7 @@ XFORM_NONGCING static Scheme_Hash_Table *extract_export_registry(Scheme_Object *
   return NULL;
 }
 
-static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks)
+static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks, Scheme_Object *replace_at)
 {
   Scheme_Object *req_modidx, *modidx, *unmarshal_info, *context, *src_phase, *pt_phase, *bind_phase;
   Scheme_Hash_Table *export_registry;
@@ -3077,7 +3085,8 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
 
   scheme_do_module_context_unmarshal(modidx, req_modidx, context,
                                      bind_phase, pt_phase, src_phase,
-                                     unmarshal_info, export_registry);
+                                     unmarshal_info, export_registry,
+                                     replace_at);
 }
 
 Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr)

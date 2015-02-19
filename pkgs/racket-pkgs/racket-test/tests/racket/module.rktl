@@ -575,7 +575,7 @@
       (test 5 eval 'five ns)
       (eval p-code ns)
       (eval '(require 'p) ns)
-      (test #f eval 'same? ns)
+      ; (test #f eval 'same? ns)
       (let ([n-ns (eval '(module->namespace ''n) ns)])
         (test 5 eval '(lambda (x) x) n-ns)))))
 
@@ -1124,6 +1124,12 @@
 ;; the enclosing module work, even though the identifier is missing
 ;; a module context.
 
+#|
+
+I think this was a bad idea. It's trying to make generated identifiers
+"just work", but the hack to provide this behavior only covered the
+case of module-leve bindings; it doesn't cover local bindings.
+
 (let ()
   (define (mk mode wrap?)
     `(module m racket
@@ -1157,6 +1163,8 @@
          [wrap? '(#t #f)])
     (parameterize ([current-namespace (make-base-namespace)])
       (eval (mk m wrap?)))))
+
+|#
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that module caching doesn't cause submodules

@@ -4728,8 +4728,10 @@ static Scheme_Object *do_load_handler(void *data)
 
     /* ... end special support for module loading ... */
 
-    if (!as_module && genv->stx_context)
-      obj = scheme_stx_add_module_context(obj, genv->stx_context);
+    if (!as_module && genv->stx_context) {
+      /* REMOVEME: FIXME: Should be add_renames_unless_module()? */
+      obj = scheme_stx_add_module_frame_context(obj, genv->stx_context);
+    }
 
     last_val = _scheme_apply_multi_with_prompt(scheme_get_param(config, MZCONFIG_EVAL_HANDLER),
                                                1, &obj);

@@ -830,7 +830,8 @@ static Scheme_Object *sys_wraps_phase(intptr_t p)
                                            scheme_false, /* unmarshal info */
                                            scheme_make_integer(p),
                                            NULL,
-                                           1);
+                                           1,
+                                           NULL);
 
   w = scheme_datum_to_syntax(kernel_symbol, scheme_false, scheme_false, 0, 0);
   w = scheme_stx_add_module_context(w, rn);
@@ -2798,7 +2799,8 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
                                              scheme_false, /* unmarshal info */ 
                                              src_phase_index,
                                              orig_src,
-                                             1);
+                                             1,
+                                             NULL);
   } else
     shared_box = NULL;
 
@@ -2835,7 +2837,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
           7 : an identifier for the import that can be shadowed
           8 : source phase
       */
-      id = scheme_datum_to_syntax(exs[i], scheme_false, mark_src, 0, 0);
+      id = scheme_datum_to_syntax(exs[i], scheme_false, orig_src, 0, 0);
       vec = scheme_make_vector(9, NULL);
       nml = scheme_make_pair(idx, scheme_null);
 
@@ -7144,6 +7146,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   /* For each provide in iim, add a module rename to fm */
   if (ii) {
     orig_ii = scheme_stx_add_module_context(orig_ii, rn_set);
+    m->ii_src = orig_ii;
     saw_mb = add_simple_require_renames(orig_ii, rn_set, menv, NULL, iim, iidx, scheme_make_integer(0),
                                         NULL, 1, 0);
     mb_ctx = scheme_datum_to_syntax(scheme_false, scheme_false, orig_ii, 0, 0);
@@ -7549,6 +7552,12 @@ static int check_already_required(Scheme_Hash_Table *required,
   }
 
   return 0;
+}
+
+static int check_already_defined(Scheme_Object *name, Scheme_Env *genv)
+{
+  return (scheme_lookup_in_table(genv->toplevel, (const char *)name)
+          || scheme_lookup_in_table(genv->syntax, (const char *)name));
 }
 
 static void propagate_imports(Module_Begin_Expand_State *bxs,
@@ -8585,7 +8594,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
               if (SCHEME_SYMBOLP(binding)) {
                 scheme_wrong_syntax(who, orig_name, e, "out-of-context identifier for definition");
                 return NULL;
-              } else if (SAME_OBJ(SCHEME_VEC_ELS(binding)[0], self_modidx)) {
+              } else if (SAME_OBJ(SCHEME_VEC_ELS(binding)[0], self_modidx)
+                         && check_already_defined(SCHEME_VEC_ELS(binding)[1], env->genv)) {
                 scheme_wrong_syntax(who, orig_name, e, "duplicate definition for identifier");
                 return NULL;
               } else if (check_already_required(required, name, phase, binding)) {
@@ -8683,7 +8693,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                 if (SCHEME_SYMBOLP(binding)) {
                   scheme_wrong_syntax(who, orig_name, e, "out-of-context identifier for definition");
                   return NULL;
-                } else if (SAME_OBJ(SCHEME_VEC_ELS(binding)[0], self_modidx)) {
+                } else if (SAME_OBJ(SCHEME_VEC_ELS(binding)[0], self_modidx)
+                           && check_already_defined(SCHEME_VEC_ELS(binding)[1], env->genv)) {
                   scheme_wrong_syntax(who, orig_name, e, 
                                       "duplicate definition for identifier");
                   return NULL;
@@ -11527,7 +11538,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
       }
 
       if (shared_rename)
-        scheme_extend_module_context_with_shared(rn, idx, pt, scheme_false, src_phase_index, mark_src, 1);
+        scheme_extend_module_context_with_shared(rn, idx, pt, scheme_false, src_phase_index, mark_src, 1, NULL);
 
       if (save_marshal_info) {
         Scheme_Object *info, *a;
@@ -11567,7 +11578,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *req_modidx,
                                         Scheme_Object *context,
                                         Scheme_Object *bind_phase, Scheme_Object *pt_phase, Scheme_Object *src_phase,
-                                        Scheme_Object *info, Scheme_Hash_Table *export_registry)
+                                        Scheme_Object *info, Scheme_Hash_Table *export_registry,
+                                        Scheme_Object *replace_at)
 {
   Scheme_Object *exns, *prefix, *name, *marks, *bdg;
   Scheme_Module_Exports *me;
@@ -11653,7 +11665,8 @@ void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *re
     if (pt) {
       if (!pt->src_modidx && me->src_modidx)
         pt->src_modidx = me->src_modidx;
-      scheme_extend_module_context_with_shared(bind_phase, req_modidx, pt, scheme_false, src_phase, context, 0);
+      scheme_extend_module_context_with_shared(bind_phase, req_modidx, pt, scheme_false, src_phase, context, 0,
+                                               replace_at);
     }
   } else {
     if (!SCHEME_NULLP(marks) || SCHEME_TRUEP(bdg))
