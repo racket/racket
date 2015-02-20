@@ -112,7 +112,7 @@
             (string-append* `("[" ,@(add-between body ",") "]")))))))
   (define manual-refs (make-hash))
   (define idx -1)
-  (define l
+  (define l-all
     (for/list ([i (if as-empty?
                       null
                       (get-index-entries sec ri))] 
@@ -155,7 +155,9 @@
                                      "internal error: unexpected tooltip"))]
                            [else body])])
                (values (compact-url href) (compact-body body)))]
-            [else (error 'make-script "unexpected value rendered: ~e" e)])))
+            [else
+             (log-error "search script: unrecognized index-entry shape: ~e" e)
+             (values #f #f)])))
       (define (lib->name lib)
         (quote-string (let loop ([lib lib])
                         (match lib
@@ -168,9 +170,11 @@
              (string-append* `("[" ,@(add-between libs ",") "]")))]
           [(module-path-index-desc? desc) "\"module\""]
           [else "false"]))
-      (string-append "[" (quote-string text) ","
-                         (quote-string href) ","
-                         html "," from-libs "]")))
+      (and href
+           (string-append "[" (quote-string text) ","
+                          (quote-string href) ","
+                          html "," from-libs "]"))))
+  (define l (filter values l-all))
 
   (define user (if user-dir? "user_" ""))
 
