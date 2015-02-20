@@ -3084,6 +3084,33 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 
       menv->rename_set_ready = 1;
     }
+
+    {
+      Scheme_Hash_Table *binding_names;
+      Scheme_Bucket_Table *ht;
+      Scheme_Bucket **bs;
+      int i, j;
+      
+      binding_names = menv->binding_names;
+      if (!binding_names) {
+        binding_names = scheme_make_hash_table(SCHEME_hash_ptr);
+        menv->binding_names = binding_names;
+      }
+      
+      for (j = 0; j < 2; j++) {
+        if (!j)
+          ht = menv->toplevel;
+        else
+          ht = menv->syntax;
+
+        bs = ht->buckets;
+        for (i = ht->size; i--; ) {
+          Scheme_Bucket *b = bs[i];
+          if (b && b->val)
+            scheme_hash_set(binding_names, (Scheme_Object *)b->key, scheme_true);
+        }
+      }
+    }
   }
 }
 
@@ -6956,6 +6983,11 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     /* "Punch a hole" in the enclosing context by removing all
        module contexts that are present on the `module` form: */
     fm = scheme_stx_remove_multi_marks(disarmed_form);
+    if (env->marks)
+      fm = scheme_stx_adjust_frame_expression_marks(fm,
+                                                    env->marks,
+                                                    scheme_env_phase(env->genv),
+                                                    SCHEME_STX_REMOVE);
     ctx_form = fm;
     fm = SCHEME_STX_CDR(fm);
     nm = SCHEME_STX_CAR(fm);

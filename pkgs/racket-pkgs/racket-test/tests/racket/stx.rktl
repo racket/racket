@@ -1230,7 +1230,6 @@
                     (printf "~a ~a\n" a b)))
            (eval '(require 'mm))
            (eval '(current-namespace (module->namespace ''mm)))
-
            (eval '(define$ c 7))
            (test '(1 2 7) eval '(list a b c))
            (eval '(define$ d 8))
