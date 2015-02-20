@@ -1240,6 +1240,9 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; layers of lexical binding
 
+#|
+ This test is supposed to fail, now: 
+
 (test '(1 2) 'macro-nested-lexical
       (let ()
         (define-syntax (m stx)
@@ -1267,6 +1270,7 @@
   (provide @!$get))
 (require '@!$m)
 (test '(10 20 #t) '@!$get @!$get)
+|#
 
 (unless building-flat-tests?
   (test '(12)
@@ -1608,7 +1612,7 @@
   (let ([a-b-stx (parameterize ([current-namespace (make-base-namespace)])
                    (eval '(define-syntax-rule (b e)
                             (begin e)))
-                   (expand #'(b 1)))])
+                   (expand '(b 1)))])
     (test #f free-identifier=? #'begin (datum->syntax a-b-stx 'begin))
     (test #t free-identifier=? #'begin (syntax-case a-b-stx ()
                                          [(b . _) (datum->syntax #'b 'begin)]))))

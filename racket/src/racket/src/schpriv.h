@@ -1151,7 +1151,7 @@ Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Ob
 Scheme_Object *scheme_stx_add_module_expression_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc);
 
-Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr);
+Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, Scheme_Object *orig_src);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
 Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc);
@@ -3075,6 +3075,7 @@ int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
 #define SCHEME_NO_CERT_CHECKS 2048
 #define SCHEME_REFERENCING 4096
 #define SCHEME_OUT_OF_CONTEXT_LOCAL 8192
+#define SCHEME_STOP_AT_FREE_EQ 16384
 
 Scheme_Hash_Table *scheme_map_constants_to_globals(void);
 const char *scheme_look_for_primitive(void *code);

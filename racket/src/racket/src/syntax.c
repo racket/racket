@@ -2798,7 +2798,12 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
   multi_marks = scheme_null;
   if (intro_multi_mark)
     multi_marks = scheme_make_pair(intro_multi_mark, multi_marks);
+
+  /* Having both a multi mark and a plain mark means that the
+     multi-mark can be stripped away to remove access to bindings,
+     while the non-multi mark can track expansion history. */
   multi_marks = scheme_make_pair(scheme_new_multi_mark(), multi_marks);
+  multi_marks = scheme_make_pair(scheme_new_mark(100), multi_marks);
 
   if (!shift_or_shifts)
     shift_or_shifts = scheme_null;
@@ -2835,14 +2840,15 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
 
 Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc)
 {
-  Scheme_Object *multi_marks = SCHEME_VEC_ELS(mc)[0];
+  Scheme_Object *multi_marks = SCHEME_VEC_ELS(mc)[0], *mark;
   Scheme_Object *phase = SCHEME_VEC_ELS(mc)[1];
   Scheme_Mark_Set *marks = empty_mark_set;
 
   while (!SCHEME_NULLP(multi_marks)) {
-    marks = mark_set_set(marks, 
-                         extract_single_mark(SCHEME_CAR(multi_marks), phase), 
-                         scheme_true);
+    mark = SCHEME_CAR(multi_marks);
+    if (!SCHEME_MARKP(mark))
+      mark = extract_single_mark(mark, phase);
+    marks = mark_set_set(marks, mark, scheme_true);
     multi_marks = SCHEME_CDR(multi_marks);
   }
 
@@ -3089,23 +3095,29 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
                                      replace_at);
 }
 
-Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr)
+Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, Scheme_Object *orig_src)
 {
-  Scheme_Object *plain, *o, *for_intro, *vec;
+  Scheme_Object *plain, *o, *for_intro, *for_expr, *vec;
 
   plain = scheme_datum_to_syntax(scheme_true, scheme_false, scheme_false, 0, 0);
 
-  o = scheme_stx_add_module_context(plain, mc);
+  if (orig_src)
+    o = scheme_datum_to_syntax(scheme_true, scheme_false, orig_src, 0, 0);
+  else
+    o = scheme_stx_add_module_context(plain, mc);
 
   if (!track_expr)
     return o;
 
-  if (SCHEME_TRUEP(SCHEME_VEC_ELS(mc)[4])) {
-    /* Keep track of intro mark separately: */
+  if (SCHEME_TRUEP(SCHEME_VEC_ELS(mc)[4])
+      || SCHEME_TRUEP(SCHEME_VEC_ELS(mc)[5])) {
+    /* Keep track of expression & intro mark separately: */
     for_intro = scheme_stx_introduce_to_module_context(plain, mc);
-    vec = scheme_make_vector(2, NULL);
+    for_expr = scheme_stx_add_module_expression_context(plain, mc);
+    vec = scheme_make_vector(3, NULL);
     SCHEME_VEC_ELS(vec)[0] = o;
     SCHEME_VEC_ELS(vec)[1] = for_intro;
+    SCHEME_VEC_ELS(vec)[2] = for_expr;
     return scheme_datum_to_syntax(vec, scheme_false, scheme_false, 0, 0);
   } else
     return o;
@@ -3119,6 +3131,8 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
 
   if (SCHEME_VECTORP(stx->val)) {
     intro_mark = SCHEME_VEC_ELS(stx->val)[1];
+    if (SCHEME_VEC_SIZE(stx->val) > 2)
+      expr_mark = SCHEME_VEC_ELS(stx->val)[2];
     stx = (Scheme_Stx *)(SCHEME_VEC_ELS(stx->val)[0]);
   } else
     intro_mark = NULL;
@@ -3133,7 +3147,22 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
     phase = SCHEME_CDR(SCHEME_CAR(a));
   }
 
-  if (mark_set_count(stx->marks->single_marks) == 1) {
+  if (SCHEME_TRUEP(expr_mark)
+      && mark_set_count(((Scheme_Stx *)expr_mark)->marks->single_marks) == 1) {
+    Scheme_Object *key, *val;
+    intptr_t i;
+    i = mark_set_next(((Scheme_Stx *)expr_mark)->marks->single_marks, -1);
+    mark_set_index(((Scheme_Stx *)expr_mark)->marks->single_marks, i, &key, &val);
+    expr_mark = key;
+
+    i = mark_set_next(stx->marks->single_marks, -1);
+    while (i != -1) {
+      mark_set_index(stx->marks->single_marks, i, &key, &val);
+      if (!SAME_OBJ(key, expr_mark))
+        multi_marks = scheme_make_pair(key, multi_marks);
+      i = mark_set_next(stx->marks->single_marks, i);
+    }
+  } else if (mark_set_count(stx->marks->single_marks) == 1) {
     Scheme_Object *key, *val;
     intptr_t i;
     i = mark_set_next(stx->marks->single_marks, -1);
@@ -4132,7 +4161,8 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
 /*                           datum->syntax                                */
 /*========================================================================*/
 
-#define return_NULL return NULL
+#define return_NULL abort()
+// return NULL
 
 Scheme_Mark_Set *list_to_mark_set(Scheme_Object *l, Scheme_Unmarshal_Tables *ut)
 {
@@ -4182,6 +4212,9 @@ static Scheme_Hash_Table *vector_to_multi_mark(Scheme_Object *mht, Scheme_Unmars
   len = SCHEME_VEC_SIZE(mht);
   if (len & 1) return_NULL;
 
+  /* A multi-mark might refer back to itself via free-id=? info: */
+  scheme_hash_set(ut->rns, mht, (Scheme_Object *)multi_mark);
+
   for (i = 0; i < len; i += 2) {
     if (!SCHEME_PHASEP(SCHEME_VEC_ELS(mht)[i]))
       return_NULL;
@@ -4194,7 +4227,6 @@ static Scheme_Hash_Table *vector_to_multi_mark(Scheme_Object *mht, Scheme_Unmars
     ((Scheme_Mark *)mark)->owner_multi_mark = mm;
   }
       
-  scheme_hash_set(ut->rns, mht, (Scheme_Object *)multi_mark);
   return multi_mark;
 }
 
@@ -4327,6 +4359,7 @@ static Scheme_Object *unmarshal_free_id_info(Scheme_Object *p, Scheme_Unmarshal_
   p = SCHEME_CAR(p);
   o = scheme_make_stx(SCHEME_CAR(p), NULL, NULL);
   p = datum_to_wraps(SCHEME_CDR(p), ut);
+  if (!p) return_NULL;
 
   ((Scheme_Stx *)o)->marks = (Scheme_Mark_Table *)SCHEME_CAR(p);
   STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)o)->marks), scheme_mark_table_type));
@@ -4384,6 +4417,7 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
             /* has `free-id=?` info */
             b = SCHEME_BOX_VAL(b);
             free_id = unmarshal_free_id_info(SCHEME_CDR(b), ut);
+            if (!free_id) return_NULL;
             b = SCHEME_CAR(b);
           } else
             free_id = NULL;

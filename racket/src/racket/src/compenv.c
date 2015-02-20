@@ -1162,7 +1162,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   pre_cache = ((Scheme_Stx *)find_id)->u.cached_binding;
 
   binding = scheme_stx_lookup_w_nominal(find_id, scheme_env_phase(env->genv),
-                                        0,
+                                        (flags & SCHEME_STOP_AT_FREE_EQ),
                                         NULL, &ambiguous, NULL,
                                         &rename_insp,
                                         NULL, NULL, NULL, NULL);

@@ -2144,7 +2144,8 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
 			      (SCHEME_NULL_FOR_UNBOUND
 			       + SCHEME_RESOLVE_MODIDS
 			       + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
-			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
+			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST
+                               + (!recur ? SCHEME_STOP_AT_FREE_EQ : 0)),
 			      scheme_current_thread->current_local_modidx, 
 			      &menv, NULL,
                               NULL, NULL);

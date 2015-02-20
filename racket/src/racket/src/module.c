@@ -125,7 +125,6 @@ typedef struct Module_Begin_Expand_State {
   Scheme_Hash_Table *modidx_cache;
   Scheme_Object *redef_modname;
   Scheme_Object *end_statementss; /* list of lists */
-  Scheme_Object *rn_stx;
 } Module_Begin_Expand_State;
 
 static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_Env *env, 
@@ -2783,7 +2782,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
                                          int skip_binding_step)
 {
   int i, saw_mb, numvals;
-  Scheme_Object **exs, **exss, **exsns, *midx, *info, *vec, *nml, *mark_src, *shared_box, *id, *key, *modname;
+  Scheme_Object **exs, **exss, **exsns, *midx, *info, *vec, *nml, *shared_box, *id, *key, *modname;
   int *exets;
   int with_shared = 1;
 
@@ -2803,8 +2802,6 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
                                              NULL);
   } else
     shared_box = NULL;
-
-  mark_src = scheme_module_context_to_stx(rn, 0);
 
   exs = pt->provides;
   exsns = pt->provide_src_names;
@@ -3065,7 +3062,7 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
           }
         }
 	
-	rns = scheme_module_context_to_stx(rns, 1);
+	rns = scheme_module_context_to_stx(rns, 1, NULL);
 	m->rn_stx = rns;
       } else if (SCHEME_PAIRP(m->rn_stx)) {
 	/* Delayed shift: */
@@ -6942,7 +6939,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                                 Scheme_Object *super_phase_shift)
 {
   Scheme_Object *fm, *disarmed_form;
-  Scheme_Object *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set, *mb_ctx, *ctx_form;
+  Scheme_Object *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set, *mb_ctx, *ctx_form, *rn_stx;
   Scheme_Module *iim;
   Scheme_Env *menv, *top_env;
   Scheme_Comp_Env *benv;
@@ -7191,6 +7188,10 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     /* REMOVEME: FIXME: there must be a `#%module-begin' in the enclosing module, right? */
     saw_mb = 1;
   }
+
+  /* For `module->namespace`: */
+  rn_stx = scheme_module_context_to_stx(rn_set, 1, mb_ctx);
+  m->rn_stx = rn_stx;
 
   {
     Scheme_Object *frame_marks;
@@ -7883,7 +7884,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   Scheme_Hash_Table *tables, *all_defs_out, *all_provided, *all_reprovided, *modidx_cache;
   Scheme_Module_Export_Info **exp_infos, *exp_info;
   Scheme_Module_Phase_Exports *pt;
-  Scheme_Object *form, *redef_modname, *rn_set, *observer, **exis, *body_lists, *expanded_l, *rn_stx;
+  Scheme_Object *form, *redef_modname, *rn_set, *observer, **exis, *body_lists, *expanded_l;
   Scheme_Env *genv;
   Module_Begin_Expand_State *bxs;
   Scheme_Expand_Info crec;
@@ -7931,8 +7932,6 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   if (env->genv->module->super_bxs_info) {
     *all_simple_renames = 0;
   }
-  rn_stx = scheme_module_context_to_stx(rn_set, 1);
-  env->genv->module->rn_stx = rn_stx;
 
   bxs = scheme_malloc(sizeof(Module_Begin_Expand_State));
   bxs->tables = tables;
@@ -7948,7 +7947,6 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   bxs->modidx_cache = modidx_cache;
   bxs->redef_modname = redef_modname;
   bxs->end_statementss = scheme_null;
-  bxs->rn_stx = rn_stx;
 
   if (env->genv->module->super_bxs_info) {
     /* initialize imports that are available for export from the enclosing module's
