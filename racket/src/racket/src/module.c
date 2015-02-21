@@ -6978,8 +6978,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     ctx_form = disarmed_form;
   } else {
     /* "Punch a hole" in the enclosing context by removing marks that
-       can reach module bindings (but preserve some module
-       context): */
+       can reach module bindings (but preserve some module context): */
     fm = scheme_stx_remove_module_binding_marks(disarmed_form);
     if (env->marks)
       fm = scheme_stx_adjust_frame_expression_marks(fm,
@@ -8618,7 +8617,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
 	    /* Remember the original: */
 	    all_rt_defs = scheme_make_pair(name, all_rt_defs);
-	    
+
             binding = scheme_stx_lookup_exact(name, scheme_make_integer(phase));
 
             if (!SCHEME_FALSEP(binding)) {
