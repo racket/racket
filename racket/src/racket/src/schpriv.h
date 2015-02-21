@@ -1118,7 +1118,8 @@ Scheme_Object *scheme_stx_adjust_frame_expression_marks(Scheme_Object *o, Scheme
 
 Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark, Scheme_Object *expr_mark);
 
-Scheme_Object *scheme_stx_remove_multi_marks(Scheme_Object *o);
+Scheme_Object *scheme_stx_remove_module_context_marks(Scheme_Object *o);
+Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o);
 
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,

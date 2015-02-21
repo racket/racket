@@ -49,7 +49,8 @@ typedef struct Scheme_Mark {
 } Scheme_Mark;
 
 #define SCHEME_MARK_FLAGS(mark) MZ_OPT_HASH_KEY(&(mark)->iso)
-#define SCHEME_MARK_NONORIGINAL 0x1
+#define SCHEME_MARK_NONORIGINAL    0x1
+#define SCHEME_MARK_MODULE_CONTEXT 0x2
 
 typedef struct Scheme_Propagate_Table {
   Scheme_Mark_Table mt;
@@ -539,6 +540,17 @@ Scheme_Object *scheme_new_nonoriginal_mark(int kind)
   return m;
 }
 
+static Scheme_Object *new_module_context_mark(int kind)
+{
+  Scheme_Object *m;
+
+  m = scheme_new_mark(kind);
+
+  SCHEME_MARK_FLAGS((Scheme_Mark*)m) |= SCHEME_MARK_MODULE_CONTEXT;
+
+  return m;
+}
+
 Scheme_Object *scheme_new_multi_mark()
 {
   /* Maps a phase to a mark, where each mark is created on demand: */
@@ -958,7 +970,7 @@ Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark, Scheme_Object *expr_
   return scheme_make_pair(mark, expr_mark);
 }
 
-Scheme_Object *scheme_stx_remove_multi_marks(Scheme_Object *o)
+Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o)
 {
   Scheme_Object *l = ((Scheme_Stx *)o)->marks->multi_marks;
 
@@ -971,6 +983,25 @@ Scheme_Object *scheme_stx_remove_multi_marks(Scheme_Object *o)
   }
 
   return o;
+}
+
+Scheme_Object *scheme_stx_remove_module_context_marks(Scheme_Object *o)
+{
+  Scheme_Mark_Set *marks = ((Scheme_Stx *)o)->marks->single_marks;
+  intptr_t i;
+  Scheme_Object *key, *val;
+
+  i = mark_set_next(marks, -1);
+  while (i != -1) {
+    mark_set_index(marks, i, &key, &val);
+
+    if (SCHEME_MARK_FLAGS((Scheme_Mark *)key) & SCHEME_MARK_MODULE_CONTEXT)
+      o = scheme_stx_remove_mark(o, key, scheme_make_integer(0));
+
+    i = mark_set_next(marks, i);
+  }
+
+  return scheme_stx_remove_module_binding_marks(o);
 }
 
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase)
@@ -2803,7 +2834,7 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
      multi-mark can be stripped away to remove access to bindings,
      while the non-multi mark can track expansion history. */
   multi_marks = scheme_make_pair(scheme_new_multi_mark(), multi_marks);
-  multi_marks = scheme_make_pair(scheme_new_mark(100), multi_marks);
+  multi_marks = scheme_make_pair(new_module_context_mark(100), multi_marks);
 
   if (!shift_or_shifts)
     shift_or_shifts = scheme_null;
@@ -3851,11 +3882,15 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
     }
 
     if (SCHEME_MARK_FLAGS((Scheme_Mark*)m) & SCHEME_MARK_NONORIGINAL)
-      r = scheme_make_pair(scheme_true, r);
+      r = scheme_make_pair(scheme_make_integer(1), r);
+    else if (SCHEME_MARK_FLAGS((Scheme_Mark*)m) & SCHEME_MARK_MODULE_CONTEXT)
+      r = scheme_make_pair(scheme_make_integer(2), r);
 
     v = r;
   } else if (SCHEME_MARK_FLAGS((Scheme_Mark*)m) & SCHEME_MARK_NONORIGINAL)
-    v = scheme_true;
+    v = scheme_make_integer(1);
+  else if (SCHEME_MARK_FLAGS((Scheme_Mark*)m) & SCHEME_MARK_MODULE_CONTEXT)
+    v = scheme_make_integer(2);
   else
     v = scheme_false;
 
@@ -4382,12 +4417,17 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
   if (!SCHEME_BOXP(box)) return_NULL;
   c = SCHEME_BOX_VAL(box);
 
-  /* Content as #t or (cons #t ...) is a non-original mark */
-  if (SAME_OBJ(c, scheme_true))
+  /* Content as 1 or (cons 1 ...) is a non-original mark */
+  if (SAME_OBJ(c, scheme_make_integer(1)))
     m = scheme_new_nonoriginal_mark(0);
-  else if (SCHEME_PAIRP(c) && SAME_OBJ(scheme_true, SCHEME_CAR(c))) {
+  else if (SAME_OBJ(c, scheme_make_integer(2)))
+    m = new_module_context_mark(0);
+  else if (SCHEME_PAIRP(c) && SAME_OBJ(scheme_make_integer(1), SCHEME_CAR(c))) {
     c = SCHEME_CDR(c);
     m = scheme_new_nonoriginal_mark(0);
+  } else if (SCHEME_PAIRP(c) && SAME_OBJ(scheme_make_integer(2), SCHEME_CAR(c))) {
+    c = SCHEME_CDR(c);
+    m = new_module_context_mark(0);
   } else
     m = scheme_new_mark(0);
   scheme_hash_set(ut->rns, box, m);
@@ -4395,6 +4435,7 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
      cycles among marks are ok. */
 
   while (SCHEME_PAIRP(c)) {
+    if (!SCHEME_PAIRP(SCHEME_CAR(c))) return_NULL;
     marks = list_to_mark_set(SCHEME_CAR(SCHEME_CAR(c)), ut);
     l = scheme_make_pair(scheme_make_pair((Scheme_Object *)marks,
                                           SCHEME_CDR(SCHEME_CAR(c))),

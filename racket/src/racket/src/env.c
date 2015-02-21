@@ -2413,7 +2413,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 
   if (!binder) {
 #if 1
-    sym = scheme_stx_remove_multi_marks(sym);
+    sym = scheme_stx_remove_module_context_marks(sym);
 #else
     // REMOVEME: intermediate attempt at removing source module context:
     Scheme_Mark_Set *bind_marks;

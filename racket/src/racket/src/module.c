@@ -6977,9 +6977,10 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     ii = NULL;
     ctx_form = disarmed_form;
   } else {
-    /* "Punch a hole" in the enclosing context by removing all
-       module contexts that are present on the `module` form: */
-    fm = scheme_stx_remove_multi_marks(disarmed_form);
+    /* "Punch a hole" in the enclosing context by removing marks that
+       can reach module bindings (but preserve some module
+       context): */
+    fm = scheme_stx_remove_module_binding_marks(disarmed_form);
     if (env->marks)
       fm = scheme_stx_adjust_frame_expression_marks(fm,
                                                     env->marks,
