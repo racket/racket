@@ -53,9 +53,9 @@ typedef struct Scheme_Mark {
 #define SCHEME_MARK_MODULE_CONTEXT 0x2
 
 typedef struct Scheme_Propagate_Table {
-  Scheme_Mark_Table mt;
+  Scheme_Mark_Table mt; /* multi_marks can start with #f => remove all at first */
   Scheme_Mark_Table *prev; /* points to old mark table */
-  Scheme_Object *phase_shift; /* number of (box <n>); latter converts only <n> to #f */
+  Scheme_Object *phase_shift; /* number or (box <n>); latter converts only <n> to #f */
 } Scheme_Propagate_Table;
 
 THREAD_LOCAL_DECL(static mzlonglong mark_counter);
@@ -695,6 +695,9 @@ Scheme_Object *adjust_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Sc
 {
   Scheme_Object *l;
 
+  if (SCHEME_FALSEP(m)) /* => remove all multi marks */
+    return scheme_null;
+
   for (l = multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SAME_OBJ(m, SCHEME_CAR(SCHEME_CAR(l)))
         && SAME_OBJ(phase, SCHEME_CDR(SCHEME_CAR(l)))) {
@@ -740,8 +743,22 @@ static Scheme_Mark_Set *combine_mark(Scheme_Mark_Set *marks, Scheme_Object *m, i
 Scheme_Object *combine_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Scheme_Object *phase, int mode)
 {
   Scheme_Object *l;
+  int add_remove_back;
+  
+  if (SCHEME_FALSEP(m)) { /* => remove all multi marks */
+    if (SCHEME_PAIRP(multi_marks)
+        && SCHEME_FALSEP(SCHEME_CAR(multi_marks))
+        && SCHEME_NULLP(SCHEME_CDR(multi_marks)))
+      return multi_marks;
+    return scheme_make_pair(scheme_false, scheme_null);
+  }
 
-  for (l = multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+  /* Skip over a "remove all multi-marks" */
+  l = multi_marks;
+  if (SCHEME_PAIRP(l) && SCHEME_FALSEP(SCHEME_CAR(l)))
+    l = SCHEME_CDR(l);
+
+  for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SAME_OBJ(m, SCHEME_VEC_ELS(SCHEME_CAR(l))[0])
         && SAME_OBJ(phase, SCHEME_VEC_ELS(SCHEME_CAR(l))[1])) {
       int prev_mode = SCHEME_INT_VAL(SCHEME_VEC_ELS(SCHEME_CAR(l))[2]);
@@ -764,12 +781,28 @@ Scheme_Object *combine_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, S
     }
   }
 
+  /* If multi_marks starts with "remove all multi marks", keep it at the front: */
+  if (SCHEME_PAIRP(multi_marks) && SCHEME_FALSEP(SCHEME_CAR(multi_marks))) {
+    if (mode == SCHEME_STX_REMOVE)
+      return multi_marks;
+    else if (mode == SCHEME_STX_FLIP)
+      mode = SCHEME_STX_ADD;
+    multi_marks = SCHEME_CDR(multi_marks);
+    add_remove_back = 1;
+  } else
+    add_remove_back = 0;
+
   l = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(l)[0] = m;
   SCHEME_VEC_ELS(l)[1] = phase;
   SCHEME_VEC_ELS(l)[2] = scheme_make_integer(mode);
 
-  return scheme_make_pair(l, multi_marks);
+  multi_marks = scheme_make_pair(l, multi_marks);
+
+  if (add_remove_back)
+    multi_marks = scheme_make_pair(scheme_false, multi_marks);
+  
+  return multi_marks;
 }
 
 static Scheme_Object *remove_at(Scheme_Object *l, Scheme_Object *p)
@@ -807,6 +840,7 @@ typedef Scheme_Object *(do_mark_list_t)(Scheme_Object *multi_marks, Scheme_Objec
 
 static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object *m, Scheme_Object *phase, int mode, 
                                            do_mark_t do_mark, do_mark_list_t do_mark_list, Scheme_Mark_Table *prev)
+/* `m` is #f => remove all multi-marks */
 {
   Scheme_Object *l;
   Scheme_Mark_Set *marks;
@@ -818,7 +852,7 @@ static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object 
     m = SCHEME_CAR(((Scheme_Mark *)m)->owner_multi_mark);
   }
 
-  if (SCHEME_MULTI_MARKP(m)) {
+  if (SCHEME_MULTI_MARKP(m) || SCHEME_FALSEP(m)) {
     l = do_mark_list(mt->multi_marks, m, phase, mode);
     if (SAME_OBJ(l, mt->multi_marks))
       return mt;
@@ -839,6 +873,7 @@ static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object 
 int props_zeroed, props_oned;
 
 Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode)
+/* `m` is #f => remove all multi-marks */
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Mark_Table *marks;
@@ -972,17 +1007,8 @@ Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark, Scheme_Object *expr_
 
 Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o)
 {
-  Scheme_Object *l = ((Scheme_Stx *)o)->marks->multi_marks;
-
-  while (!SCHEME_NULLP(l)) {
-    o = scheme_stx_remove_mark(o,
-                               extract_single_mark(SCHEME_CAR(SCHEME_CAR(l)),
-                                                   scheme_make_integer(0)),
-                               scheme_make_integer(0));
-    l = SCHEME_CDR(l);
-  }
-
-  return o;
+  /* Removing #f means "remove all multi marks" */
+  return scheme_stx_adjust_mark(o, scheme_false, scheme_make_integer(0), SCHEME_STX_REMOVE);
 }
 
 Scheme_Object *scheme_stx_remove_module_context_marks(Scheme_Object *o)
@@ -1090,6 +1116,7 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
 {
   Scheme_Mark_Table *mt2;
   Scheme_Object *l, *key, *val;
+  int add_false_back;
 
   if (SAME_OBJ(mt, empty_mark_table)) {
     STX_ASSERT(!prev);
@@ -1101,12 +1128,23 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
 
   mt2 = clone_mark_table(mt, prev);
 
-  val = scheme_null;
-  for (l = mt->multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+  l = mt->multi_marks;
+  if (SCHEME_PAIRP(l) && SCHEME_FALSEP(SCHEME_CAR(l))) {
+    l = SCHEME_CDR(l);
+    add_false_back = 1;
+  } else
+    add_false_back = 0;
+    
+  val = scheme_null;    
+  for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     key = shift_mm(SCHEME_CAR(l), shift);
     if (key)
       val = scheme_make_pair(key, val);
   }
+
+  if (add_false_back)
+    val = scheme_make_pair(scheme_false, val);
+
   mt2->multi_marks = val;
 
   if (prev) {
@@ -1437,7 +1475,16 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
     flag |= SCHEME_STX_MUTATE;
   o = val;
 
-  for (key = to_propagate->multi_marks; !SCHEME_NULLP(key); key = SCHEME_CDR(key)) {
+  key = to_propagate->multi_marks;
+  if (SCHEME_PAIRP(key) && SCHEME_FALSEP(SCHEME_CAR(key))) {
+    /* remove all multi-marks: */
+    key = SCHEME_CDR(key);
+    val = scheme_stx_adjust_mark(o, scheme_false, scheme_false, flag | SCHEME_STX_REMOVE);
+    if (!SAME_OBJ(o, val))
+      flag |= SCHEME_STX_MUTATE;
+    o = val;
+  }
+  for (; !SCHEME_NULLP(key); key = SCHEME_CDR(key)) {
     val = SCHEME_CAR(key);
     STX_ASSERT(SCHEME_MULTI_MARKP(SCHEME_VEC_ELS(val)[0]));
     val = scheme_stx_adjust_mark(o, SCHEME_VEC_ELS(val)[0], SCHEME_VEC_ELS(val)[1], 
