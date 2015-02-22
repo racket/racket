@@ -57,6 +57,11 @@
 # define MAX_FIXNUM_SQRT 46339
 #endif
 
+/* read only globals */
+READ_ONLY Scheme_Object *scheme_fixnum_p_proc;
+READ_ONLY Scheme_Object *scheme_flonum_p_proc;
+READ_ONLY Scheme_Object *scheme_extflonum_p_proc;
+
 /* locals */
 static Scheme_Object *number_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *complex_p (int argc, Scheme_Object *argv[]);
@@ -504,7 +509,9 @@ scheme_init_number (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("exact-positive-integer?", p, env);
 
+  REGISTER_SO(scheme_fixnum_p_proc);
   p = scheme_make_immed_prim(fixnum_p, "fixnum?", 1, 1);
+  scheme_fixnum_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("fixnum?", p, env);
@@ -514,7 +521,9 @@ scheme_init_number (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("inexact-real?", p, env);
 
+  REGISTER_SO(scheme_flonum_p_proc);
   p = scheme_make_folding_prim(flonum_p, "flonum?", 1, 1, 1);
+  scheme_flonum_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("flonum?", p, env);
@@ -1036,7 +1045,9 @@ void scheme_init_extfl_number(Scheme_Env *env)
   Scheme_Object *p;
   int flags;
 
+  REGISTER_SO(scheme_extflonum_p_proc);
   p = scheme_make_folding_prim(extflonum_p, "extflonum?", 1, 1, 1);
+  scheme_extflonum_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("extflonum?", p, env);

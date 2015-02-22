@@ -119,6 +119,7 @@ static void optimize_info_used_top(Optimize_Info *info);
 static Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info);
 static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred);
 static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta);
+static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand, int delta);
 
 static void optimize_mutated(Optimize_Info *info, int pos);
 static void optimize_produces_local_type(Optimize_Info *info, int pos, int ct);
@@ -1697,7 +1698,7 @@ int scheme_check_leaf_rator(Scheme_Object *le, int *_flags)
 #endif
 
 Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int argc,
-				   Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
+                                   Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
                                    int *_flags, int context, int optimized_rator, int id_offset)
 /* Zero or one of app, app2 and app3 should be non-NULL.
    If app, we're inlining a general application. If app2, we're inlining an
@@ -2383,6 +2384,19 @@ int scheme_expr_produces_local_type(Scheme_Object *expr)
   return expr_produces_local_type(expr, 10);
 }
 
+static Scheme_Object *local_type_to_predicate(int t)
+{
+  switch (t) {
+  case SCHEME_LOCAL_TYPE_FLONUM:
+    return scheme_flonum_p_proc;
+  case SCHEME_LOCAL_TYPE_FIXNUM:
+    return scheme_fixnum_p_proc;
+  case SCHEME_LOCAL_TYPE_EXTFLONUM:
+    return scheme_extflonum_p_proc;
+  }
+  return NULL;
+}
+
 static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
 {
   if (SCHEME_PRIMP(rator)) {
@@ -2407,6 +2421,13 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
              && (SAME_OBJ(rator, scheme_box_proc)
                  || SAME_OBJ(rator, scheme_box_immutable_proc)))
       return scheme_box_p_proc;
+    
+    {
+      Scheme_Object *p;
+      p = local_type_to_predicate(produces_local_type(rator, argc));
+      if (p)
+        return p;
+    }
   }
 
   return NULL;
@@ -2426,12 +2447,20 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
   switch (SCHEME_TYPE(expr)) {
   case scheme_local_type:
     {
+      Scheme_Object *p;
       int pos = SCHEME_LOCAL_POS(expr);
       pos -= delta;
       if (pos < 0)
         return NULL;
-      if (!optimize_is_mutated(info, pos))
-        return optimize_get_predicate(pos, info);
+      if (!optimize_is_mutated(info, pos)){
+        p = optimize_get_predicate(pos, info);
+        if (p)
+          return p;
+
+        p = local_type_to_predicate(optimize_is_local_type_valued(info, pos));
+        if (p)
+          return p;
+      }
     }
     break;
   case scheme_application2_type:
@@ -2497,10 +2526,29 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
   case scheme_box_type:
     return scheme_box_p_proc;
     break;
+  default:
+    if (SCHEME_FLOATP(expr))
+      return scheme_flonum_p_proc;
+#ifdef MZ_LONG_DOUBLE
+    if (SCHEME_LONG_DBLP(expr))
+      return scheme_extflonum_p_proc;
+#endif
+    if (SCHEME_INTP(expr)
+        && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(expr)))
+      return scheme_fixnum_p_proc;
   }
 
   if (rator)
     return rator_implies_predicate(rator, argc);
+
+  {
+    /* These tests are slower, so put them at the end */  
+    int flags, sub_context = 0;
+    if (lookup_constant_proc(info, expr, delta)
+        || optimize_for_inline(info, expr, 1, NULL, NULL, NULL, &flags, sub_context, 1, delta)){
+      return scheme_procedure_p_proc;
+    }
+  }
 
   return NULL;
 }
@@ -2831,37 +2879,6 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
   return NULL;
 }
 
-static Scheme_Object *check_known2_pred(Optimize_Info *info, Scheme_App2_Rec *app,
-                                        Scheme_Object *rand, int id_offset)
-/* Simplify `(pred x)' where `x' is known to match a predicate */
-{
-  if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
-    if (relevant_predicate(app->rator)) {
-      Scheme_Object *pred;
-      int pos = SCHEME_LOCAL_POS(rand);
-
-      if (pos >= id_offset) {
-        pos -= id_offset;
-
-        if (optimize_is_mutated(info, pos))
-          return NULL;
-
-        pred = optimize_get_predicate(pos, info);
-        if (pred) {
-          if (SAME_OBJ(pred, app->rator))
-            return scheme_true;
-          else {
-            /* Relies on relevant predicates being disjoint */
-            return scheme_false;
-          }
-        }
-      }
-    }
-  }
-
-  return NULL;
-}
-
 static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app,
                          Scheme_Object *rand, int id_offset,
                          const char *who, Scheme_Object *expect_pred, Scheme_Object *unsafe)
@@ -2870,70 +2887,46 @@ static void check_known2(Optimize_Info *info, Scheme_App2_Rec *app,
    If the rand has alredy a different type, mark that this will generate an error. */
 {
   if (IS_NAMED_PRIM(app->rator, who)) {
-    if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
-      Scheme_Object *pred;
-      int pos = SCHEME_LOCAL_POS(rand);
+    Scheme_Object *pred;
       
-      if (pos >= id_offset) {
-        pos -= id_offset;
-        if (optimize_is_mutated(info, pos))
-          return;
-
-        pred = optimize_get_predicate(pos, info);
-        if (pred) {
-          if (SAME_OBJ(pred, expect_pred))
-            app->rator = unsafe;
-          else
-            info->escapes = 1;
-        } else
-          add_type(info, pos, expect_pred);
+    pred = expr_implies_predicate(rand, info, id_offset, 5); 
+    if (pred) {
+      if (SAME_OBJ(pred, expect_pred))
+        app->rator = unsafe;
+      else
+        info->escapes = 1;
+    } else {
+      if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
+        int pos = SCHEME_LOCAL_POS(rand);
+        if (pos >= id_offset) {
+          pos -= id_offset;
+          if (!optimize_is_mutated(info, pos))
+            add_type(info, pos, expect_pred);
+        }
       }
     }
   }
 }
 
-static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *arg_rator,
-                                           int argc,
-                                           Scheme_App2_Rec *arg_app2,
-                                           Scheme_App3_Rec *arg_app3,
-                                           Scheme_App_Rec *arg_app,
+static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *rand,
                                            Optimize_Info *info, int id_offset)
 /* Change (pair? (list X complex-Y Z)) => (begin complex-Y #t), etc.
-   So much more could be done with type inference, but we're checking some
-   known predicates against the results of some known constructors, because
-   it's especially nice to avoid the constructions. */
+   It's especially nice to avoid the constructions. */
 {
   int matches;
   Scheme_Object *pred;
 
-  if (!SCHEME_PRIMP(arg_rator))
-    return NULL;
-
   if (!relevant_predicate(rator))
     return NULL;
 
-  if (arg_app2)
-    pred = expr_implies_predicate((Scheme_Object *)arg_app2, info, id_offset, 1);
-  else if (arg_app3)
-    pred = expr_implies_predicate((Scheme_Object *)arg_app3, info, id_offset, 1);
-  else
-    pred = expr_implies_predicate((Scheme_Object *)arg_app, info, id_offset, 1);
+  pred = expr_implies_predicate(rand, info, id_offset, 5);
 
   if (!pred)
     return NULL;
 
   matches = SAME_OBJ(rator, pred);
 
-  if (arg_app2)
-    return make_discarding_sequence(arg_app2->rand, (matches ? scheme_true : scheme_false), info, id_offset);
-  else if (arg_app3)
-    return make_discarding_sequence(arg_app3->rand1,
-                                    make_discarding_sequence(arg_app3->rand2,
-                                                             (matches ? scheme_true : scheme_false),
-                                                             info, id_offset),
-                                    info, id_offset);
-  else
-    return make_discarding_app_sequence(arg_app, -1, (matches ? scheme_true : scheme_false), info, id_offset);
+  return make_discarding_sequence(rand, (matches ? scheme_true : scheme_false), info, id_offset);
 }
 
 static Scheme_Object *make_optimize_prim_application2(Scheme_Object *prim, Scheme_Object *rand,
@@ -3086,9 +3079,6 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             return replace_tail_inside(alt, inside, app->rand);
           }
         }
-        alt = try_reduce_predicate(app->rator, app2->rator, 1, app2, NULL, NULL, info, id_offset);
-        if (alt)
-          return replace_tail_inside(alt, inside, app->rand);
         break;
       }
     case scheme_application3_type:
@@ -3124,9 +3114,6 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             return replace_tail_inside(alt, inside, app->rand);
           }
         }
-        alt = try_reduce_predicate(app->rator, app3->rator, 2, NULL, app3, NULL, info, id_offset);
-        if (alt)
-          return replace_tail_inside(alt, inside, app->rand);
         break;
       }
     case scheme_application_type:
@@ -3158,49 +3145,22 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             return replace_tail_inside(alt, inside, app->rand);
           }
         }
-        alt = try_reduce_predicate(app->rator, appr->args[0], appr->num_args, NULL, NULL, appr, info, id_offset);
-        if (alt)
-          return replace_tail_inside(alt, inside, app->rand);
         break;
       }
-    default:
-      if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
-          && (SCHEME_LOCAL_POS(rand) >= id_offset)) {
-        int pos = SCHEME_LOCAL_POS(rand) - id_offset;
-
-        if (!optimize_is_mutated(info, pos)) {
-          int t;
-          t = optimize_is_local_type_valued(info, pos);
-          if ((t == SCHEME_LOCAL_TYPE_FLONUM && IS_NAMED_PRIM(app->rator, "flonum?"))
-              ||(t == SCHEME_LOCAL_TYPE_FIXNUM && IS_NAMED_PRIM(app->rator, "fixnum?"))
-              ||(t == SCHEME_LOCAL_TYPE_EXTFLONUM && IS_NAMED_PRIM(app->rator, "extflonum?"))) {
-            return replace_tail_inside(scheme_true, inside, app->rand);
-          }
-        }
-      }
-
-      if (SAME_OBJ(scheme_procedure_p_proc, app->rator)) {
-        int flags, sub_context = 0;
-        if (lookup_constant_proc(info, rand, id_offset)
-            || optimize_for_inline(info, rand, 1, NULL, NULL, NULL, &flags, sub_context, 1, id_offset)) {
-          info->preserves_marks = 1;
-          info->single_result = 1;
-          return replace_tail_inside(scheme_true, inside, app->rand);
-        }
-      }
-
-      alt = check_known2_pred(info, app, rand, id_offset);
-      if (alt)
-        return replace_tail_inside(alt, inside, app->rand);
-
-      check_known2(info, app, rand, id_offset, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
-      check_known2(info, app, rand, id_offset, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
-      check_known2(info, app, rand, id_offset, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
-      check_known2(info, app, rand, id_offset, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
-      /* It's not clear that these are useful, since a chaperone check is needed anyway: */
-      check_known2(info, app, rand, id_offset, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
-      check_known2(info, app, rand, id_offset, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
     }
+
+    alt = try_reduce_predicate(app->rator, rand, info, id_offset);
+    if (alt)
+      return replace_tail_inside(alt, inside, app->rand);
+
+    check_known2(info, app, rand, id_offset, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
+    check_known2(info, app, rand, id_offset, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
+    check_known2(info, app, rand, id_offset, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
+    check_known2(info, app, rand, id_offset, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
+    /* It's not clear that these are useful, since a chaperone check is needed anyway: */
+    check_known2(info, app, rand, id_offset, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
+    check_known2(info, app, rand, id_offset, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
+
   } else {
     if (SAME_OBJ(scheme_struct_type_p_proc, app->rator)) {
       Scheme_Object *c;
@@ -3869,9 +3829,8 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta)
 
 static int relevant_predicate(Scheme_Object *pred)
 {
-  /* Relevant predicates need to be disjoint for check_known2_pred()
-     and try_reduce_predicate(), and they need to recognize non-#f
-     values for optimize_branch(). */
+  /* Relevant predicates need to be disjoint for try_reduce_predicate(),
+     and they need to recognize non-#f values for optimize_branch(). */
 
   return (SAME_OBJ(pred, scheme_pair_p_proc)
           || SAME_OBJ(pred, scheme_null_p_proc)
@@ -3879,7 +3838,11 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_box_p_proc)
           || SAME_OBJ(pred, scheme_vector_p_proc)
           || SAME_OBJ(pred, scheme_procedure_p_proc)
-          || SAME_OBJ(pred, scheme_syntax_p_proc));
+          || SAME_OBJ(pred, scheme_syntax_p_proc)
+          || SAME_OBJ(pred, scheme_fixnum_p_proc)
+          || SAME_OBJ(pred, scheme_flonum_p_proc)
+          || SAME_OBJ(pred, scheme_extflonum_p_proc)
+          );
 }
 
 static void add_types(Scheme_Object *t, Optimize_Info *info, int fuel)

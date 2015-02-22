@@ -2104,10 +2104,18 @@
                 (letrec ([f (lambda (x) (f x))])
                   f))))
 
-(test-comp '(procedure? add1)
-           #t)
-(test-comp '(procedure? (lambda (x) x))
-           #t)
+(test-comp #t
+           '(procedure? add1))
+(test-comp '(lambda () #t)
+           '(lambda () (procedure? add1)))
+(test-comp #t
+           '(procedure? (lambda (x) x)))
+(test-comp '(lambda () #t)
+           '(lambda () (procedure? (lambda (x) x))))
+(test-comp #f
+           '(pair? (lambda (x) x)))
+(test-comp '(lambda () #f)
+           '(lambda () (pair? (lambda (x) x))))
 (test-comp '(let ([f (lambda (x) x)])
               (if (procedure? f)
                   (list f)
@@ -2134,6 +2142,15 @@
                          [(x y) (f (+ x y))])])
 	      (f 10))
 	   '10)
+
+(test-comp '(lambda (x) #f)
+           '(lambda (x) (pair? (if x car cdr))))
+(test-comp '(lambda (x) #t)
+           '(lambda (x) (procedure? (if x car cdr))))
+(test-comp '(lambda (x) #t)
+           '(lambda (x) (fixnum? (if x 2 3))))
+(test-comp '(lambda (x) #f)
+           '(lambda (x) (procedure? (if x 2 3))))
 
 (test-comp '(procedure-arity-includes? integer? 1)
            #t)
