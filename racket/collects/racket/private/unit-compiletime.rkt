@@ -118,7 +118,7 @@
 ;; (make-unit-info identifier (listof (cons symbol identifier)) (listof (cons symbol identifier)) identifier boolean)
 (define-struct/proc unit-info (unit-id import-sig-ids export-sig-ids deps orig-binder contracted?)
   (lambda (struct stx) 
-    (with-syntax ((u (unit-info-unit-id struct)))
+    (with-syntax ((u (syntax-local-introduce (unit-info-unit-id struct))))
       (syntax-case stx (set!)
         ((set! x y)
          (if (unit-info-contracted? struct)

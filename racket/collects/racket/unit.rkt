@@ -2138,7 +2138,7 @@
                          sub-ins))
                        ((unit-id ...) (map 
                                        (lambda (u stx)
-                                         (quasisyntax/loc stx #,(unit-info-unit-id u)))
+                                         (quasisyntax/loc stx #,(syntax-local-introduce (unit-info-unit-id u))))
                                        units (syntax->list #'(u ...)))))
            (build-compound-unit #`((import ...)
                                    #,exports
