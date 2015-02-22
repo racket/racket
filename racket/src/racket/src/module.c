@@ -7651,7 +7651,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
             v = scheme_stx_add_shift(v, phase_shift);
           SCHEME_VEC_ELS(vec)[6] = v;
 
-          SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
+          SCHEME_VEC_ELS(vec)[7] = v; /* can be shadowed */
 
           SCHEME_VEC_ELS(vec)[8] = SCHEME_VEC_ELS(super_vec)[8];
 
@@ -7699,7 +7699,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
         if (!SAME_OBJ(phase_shift, scheme_make_integer(0)))
           name = scheme_stx_add_shift(name, phase_shift);
         SCHEME_VEC_ELS(vec)[6] = name;
-        SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
+        SCHEME_VEC_ELS(vec)[7] = name; /* can be shadowed */
         SCHEME_VEC_ELS(vec)[8] = phase;
 
         v = require_binding_to_key(binding, SCHEME_STX_VAL(name));
