@@ -1,6 +1,6 @@
 #lang racket/base
 
-(provide true false false?
+(provide true false true? false?
          boolean=?
          symbol=?
          implies nand nor xor)
@@ -9,6 +9,7 @@
 (define true #t)
 (define false #f)
 
+(define (true? v) (if v #t #f))
 (define (false? v) (eq? v #f))
 
 (define (boolean=? x y)

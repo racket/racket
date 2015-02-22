@@ -18,6 +18,10 @@
 (check-false (false? #t))
 (check-false (false? "11"))
 
+(check-false (true? #f))
+(check-true (true? #t))
+(check-true (true? "11"))
+
 (for ([x (in-list '(#f #t))])
   (for ([y (in-list '(#f #t))])
     (check-equal? (implies x y)
