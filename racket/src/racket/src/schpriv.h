@@ -431,6 +431,9 @@ void scheme_done_os_thread();
 /*                                constants                               */
 /*========================================================================*/
 
+extern Scheme_Object *scheme_fixnum_p_proc;
+extern Scheme_Object *scheme_flonum_p_proc;
+extern Scheme_Object *scheme_extflonum_p_proc;
 extern Scheme_Object *scheme_apply_proc;
 extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
@@ -450,6 +453,7 @@ extern Scheme_Object *scheme_unsafe_mcdr_proc;
 extern Scheme_Object *scheme_unsafe_unbox_proc;
 extern Scheme_Object *scheme_cons_proc;
 extern Scheme_Object *scheme_mcons_proc;
+extern Scheme_Object *scheme_list_p_proc;
 extern Scheme_Object *scheme_list_proc;
 extern Scheme_Object *scheme_list_star_proc;
 extern Scheme_Object *scheme_vector_proc;
