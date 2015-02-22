@@ -310,6 +310,30 @@ is in your PATH (so that a suitable `gcc', `ar', etc., are found) for
 the [comp] of your choice and the [platform] used to compile.
 
 ========================================================================
+ Cross-compiling for iOS
+========================================================================
+
+To compile the Racket runtime system as a Framework for iOS, use (all
+on one line)
+
+  configure --host=[arch]-apple-darwin
+            --enable-ios="[sdk]"
+            --enable-racket=racket
+
+where [arch] is one of
+
+ - armv7, armv7s, or aarch64: to run on iOS
+ - i386 or x86_64: to run on the simulator
+
+The [sdk] argument is a path to an iOS SDK, but if it is "iPhoneOS" or
+"iPhoneSimulator", then the corresponding SDK is located in the
+standard place within the XCode application. For example, "iPhoneOS"
+becomes the path (all on one line)
+
+  /Applications/Xcode.app/Contents/Developer/Platforms/
+    iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+
+========================================================================
  CGC versus 3m
 ========================================================================
 

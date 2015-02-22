@@ -123,7 +123,7 @@ END_XFORM_SKIP;
 #ifdef OS_X
 static long get_segment_offset()
 {
-# ifdef __x86_64__
+# if defined(__x86_64__) || defined(__arm64__)
   const struct segment_command_64 *seg;
 # else
   const struct segment_command *seg;

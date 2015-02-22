@@ -805,27 +805,25 @@
 
 # if defined(OS_X) || defined(XONX)
 
-#ifdef XONX
-# ifdef __POWERPC__
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-darwin"
+# if defined(XONX)
+#  define SPLS_MAC "darwin"
+# elif defined(TARGET_OS_IPHONE)
+#  define SPLS_MAC "ios"
 # else
-#  ifdef __x86_64__
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-darwin"
-#  else
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-darwin"
-#  endif
+#  define SPLS_MAC "macosx"
 # endif
-#else
-# ifdef __POWERPC__
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-macosx"
+
+# if defined(__POWERPC__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-"SPLS_MAC
+# elif defined(__arm__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-"SPLS_MAC
+# elif defined(__arm64__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm64-"SPLS_MAC
+# elif defined(__x86_64__)
+#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-"SPLS_MAC
 # else
-#  ifdef __x86_64__
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-macosx"
-#  else
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-macosx"
-#  endif
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-"SPLS_MAC
 # endif
-#endif
 
 # include "uconfig.h"
 
@@ -870,7 +868,10 @@
 #  define OS_X 1
 #endif
 
-#if defined(__POWERPC__)
+#if defined(__arm__)
+# define MZ_USE_JIT_ARM
+#elif defined(__arm64__)
+#elif defined(__POWERPC__)
 # define MZ_USE_JIT_PPC
 #else
 # if defined(__x86_64__)
