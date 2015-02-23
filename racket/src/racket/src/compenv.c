@@ -1169,9 +1169,9 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 #if 0
   // REMOVEME
-  if (!strcmp("define$", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+  if (!strcmp("#%plain-module-begin", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%s\n", scheme_write_to_string(binding, NULL));
-    scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
+    scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 0);
   }
 #endif
 

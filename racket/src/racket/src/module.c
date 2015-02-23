@@ -6946,7 +6946,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Module *m;
   Scheme_Object *mbval, *orig_ii;
   Scheme_Object *this_empty_self_modidx;
-  int saw_mb, check_mb = 0;
+  int saw_mb, check_mb = 0, shift_back = 0;
   Scheme_Object *restore_confusing_name = NULL;
   LOG_EXPAND_DECLS;
 
@@ -7185,6 +7185,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     shift = (Scheme_Object *)m->super_bxs_info[1];
     fm = scheme_stx_add_shift(fm, shift);
     mb_ctx = scheme_stx_add_shift(ctx_form, shift);
+    shift_back = 1;
     /* REMOVEME: FIXME: there must be a `#%module-begin' in the enclosing module, right? */
     saw_mb = 1;
   }
@@ -7290,8 +7291,14 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     fm = (Scheme_Object *)m;
   } else {
     Scheme_Object *hints, *formname, *ps;
+    Scheme_Object *shift;
 
     fm = scheme_expand_expr(fm, benv, rec, drec);
+
+    if (shift_back) {
+      shift = (Scheme_Object *)m->super_bxs_info[5];
+      fm = scheme_stx_add_shift(fm, scheme_bin_minus(scheme_make_integer(0), shift));
+    }
 
     m->ii_src = NULL;
     m->super_bxs_info = NULL;
