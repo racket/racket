@@ -252,7 +252,7 @@ interface @racket[(class->interface object%)], and is transparent
             public pubment public-final override override-final overment augment augride
             augment-final private abstract inherit inherit/super inherit/inner
             rename-super rename-inner begin lambda case-lambda let-values letrec-values
-            define-values #%plain-lambda)
+            define-values #%plain-lambda chaperone-procedure)
 (class* superclass-expr (interface-expr ...)
   class-clause
   ...)
@@ -314,7 +314,9 @@ interface @racket[(class->interface object%)], and is transparent
   (let-values ([(id) method-procedure] ...+) 
     id)
   (letrec-values ([(id) method-procedure] ...+) 
-    id)])]{
+    id)
+  (chaperone-procedure method-procedure wrapper-proc
+                       . other-args)])]{
 
 Produces a class value.
 
@@ -2072,6 +2074,18 @@ behaves as if its class had been wrapped with the equivalent
 @defproc[(instanceof/c [class-contract contract?]) contract?]{
 Produces a contract for an object, where the object is an
 instance of a class that conforms to @racket[class-contract].
+}
+
+@defproc[(make-object/c [method-names (listof symbol?)]
+                        [method-contracts (listof contract?)]
+                        [field-names (listof symbol?)]
+                        [field-contracts (listof contract?)])
+         contract?]{
+Produces a contract for an object, similar to @racket[object/c].
+
+This function provides an alternative method to construct
+@racket[object/c] contracts in order to allow library writers
+to create variants or extensions of object contracts at runtime.
 }
 
 @defform/subs[

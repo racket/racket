@@ -62,6 +62,7 @@
            (struct-out exn:fail:object)
            make-primitive-class
            class/c ->m ->*m ->dm case->m object/c instanceof/c
+           make-object/c
            
            ;; "keywords":
            private public override augment
@@ -632,6 +633,20 @@
                  stx)
                 stx
                 (syntax-local-introduce #'let-))))]
+          [(-#%app -chaperone-procedure expr . rst)
+           (and (free-identifier=? (syntax -#%app)
+                                   (quote-syntax #%plain-app))
+                (or (free-identifier=? (syntax -chaperone-procedure)
+                                       (quote-syntax chaperone-procedure))
+                    (free-identifier=? (syntax -chaperone-procedure)
+                                       (quote-syntax chaperone-procedure))))
+           (with-syntax ([expr (loop #'expr #t name locals)])
+             (syntax-track-origin
+              (rearm
+               (syntax/loc stx (-#%app -chaperone-procedure expr . rst))
+               stx)
+              stx
+              (syntax-local-introduce #'-#%app)))]
           [_else 
            (if can-expand?
                (loop (expand stx locals) #f name locals)
