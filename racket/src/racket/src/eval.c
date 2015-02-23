@@ -5739,7 +5739,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 	pf->a[i] = (Scheme_Object *)ls;
 	/* Rest of a left zeroed, to be filled in lazily by quote-syntax evaluation */
       } else {
-	/* No shift, so fill in stxes immediately */
+        /* No shift, so fill in stxes immediately */
 	i++;
 	for (j = 0; j < rp->num_stxes; j++) {
 	  pf->a[i + j] = rp->stxes[j];

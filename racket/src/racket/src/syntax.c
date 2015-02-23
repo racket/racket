@@ -1469,9 +1469,11 @@ static Scheme_Object *propagate_shifts(Scheme_Object *result, Scheme_Object *shi
       result = clone_stx(result);
       stx = (Scheme_Stx *)result;
     }
-    if ((STX_KEY(stx) & STX_SUBSTX_FLAG))
+    if ((STX_KEY(stx) & STX_SUBSTX_FLAG)) {
       stx->shifts = shifts;
-    else
+      if (!stx->u.to_propagate)
+        stx->u.to_propagate = empty_propagate_table;
+    } else
       stx->shifts = SCHEME_VEC_ELS(shifts)[0];
     return result;
   }
@@ -1519,7 +1521,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
     Scheme_Mark_Table *to_propagate;
     Scheme_Object *false_insp, *shifts;
     int add_taint;
-    
+
     to_propagate = stx->u.to_propagate;
     false_insp = stx->taints;
     if (false_insp && SCHEME_VOIDP(false_insp)) {
@@ -1841,7 +1843,7 @@ static Scheme_Object *do_add_taint_armings_to_stx(Scheme_Object *o, Scheme_Objec
   
   if (STX_KEY(stx) & STX_SUBSTX_FLAG)
     STX_KEY(stx) |= STX_ARMED_FLAG;
-  
+
   return o;
 }
 
@@ -3698,20 +3700,26 @@ static Scheme_Object *drop_export_registries(Scheme_Object *shifts)
 
   for (l = shifts; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
-    vec = scheme_make_vector(5, NULL);
-    SCHEME_VEC_ELS(vec)[0] = SCHEME_VEC_ELS(a)[0];
-    SCHEME_VEC_ELS(vec)[1] = SCHEME_VEC_ELS(a)[1];
-    SCHEME_VEC_ELS(vec)[2] = scheme_false;
-    SCHEME_VEC_ELS(vec)[3] = scheme_false;
-    SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(a)[4];
+    if (SCHEME_TRUEP(SCHEME_VEC_ELS(a)[0])
+        || SCHEME_TRUEP(SCHEME_VEC_ELS(a)[1])) {
+      vec = scheme_make_vector(5, NULL);
+      SCHEME_VEC_ELS(vec)[0] = SCHEME_VEC_ELS(a)[0];
+      SCHEME_VEC_ELS(vec)[1] = SCHEME_VEC_ELS(a)[1];
+      SCHEME_VEC_ELS(vec)[2] = scheme_false;
+      SCHEME_VEC_ELS(vec)[3] = scheme_false;
+      SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(a)[4];
 
-    p = scheme_make_pair(vec, scheme_null);
-    if (last)
-      SCHEME_CDR(last) = p;
-    else
-      first = p;
-    last = p;
+      p = scheme_make_pair(vec, scheme_null);
+      if (last)
+        SCHEME_CDR(last) = p;
+      else
+        first = p;
+      last = p;
+    }
   }
+
+  if (!first)
+    return scheme_null;
 
   return first;
 }
