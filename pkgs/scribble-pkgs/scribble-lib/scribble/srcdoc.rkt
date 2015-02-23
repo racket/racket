@@ -68,8 +68,7 @@
                  (map syntax-local-introduce (reverse requires))]
                 [(expr ...) (map syntax-local-introduce (reverse doc-exprs))]
                 [doc-body
-                 (map (lambda (s) (syntax-local-introduce
-                                   (syntax-shift-phase-level s #f)))
+                 (map syntax-local-introduce
                       (reverse doc-body))])
     ;; This module will be required `for-template':
     (if delayed?
