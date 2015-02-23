@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/cmdline
+#lang racket/base
+(require racket/cmdline
          raco/command-name
          compiler/cm
          compiler/compiler
