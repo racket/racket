@@ -691,7 +691,6 @@ path/s is either such a string or a list of them.
 "pkgs/deinprogramm/deinprogramm/quickcheck/quickcheck.scm" drdr:command-line #f
 "pkgs/deinprogramm/deinprogramm/quickcheck/random.scm" drdr:command-line #f
 "pkgs/distributed-places-pkgs" responsible (mflatt)
-"pkgs/distro-build-pkgs" responsible (mflatt)
 "pkgs/draw-pkgs" responsible (mflatt)
 "pkgs/drracket-pkgs" responsible (robby)
 "pkgs/drracket-pkgs/drracket/gui-debugger" responsible (gmarceau mflatt)
@@ -721,15 +720,9 @@ path/s is either such a string or a list of them.
 "pkgs/drracket-pkgs/drracket-test/tests/jpr" responsible (mflatt)
 "pkgs/ds-store-pkgs" responsible (mflatt)
 "pkgs/eli-tester" responsible (eli)
-"pkgs/eopl" responsible (dvanhorn)
 "pkgs/errortrace-pkgs" responsible (mflatt)
 "pkgs/errortrace-pkgs/errortrace-test/tests/errortrace/alert.rkt" responsible (eli)
-"pkgs/frtime" responsible (jay gcooper)
-"pkgs/frtime/tests/time.rkt" drdr:random #t
 "pkgs/future-visualizer-pkgs" responsible (jamesswaine)
-"pkgs/games" responsible (mflatt robby)
-"pkgs/games/chat-noir" responsible (robby matthias)
-"pkgs/games/paint-by-numbers/raw-problems/build-solution-sets.rkt" drdr:command-line (raco "test" "-m" "--fresh-user" *)
 "pkgs/gui-pkg-manager-pkgs" responsible (mflatt)
 "pkgs/gui-pkgs" responsible (mflatt)
 "pkgs/gui-pkgs/gui-doc/mrlib" responsible (robby)
@@ -839,7 +832,6 @@ path/s is either such a string or a list of them.
 "pkgs/macro-debugger-pkgs" responsible (ryanc)
 "pkgs/main-distribution" responsible (eli jay matthias mflatt robby)
 "pkgs/main-distribution-test" responsible (eli jay matthias mflatt robby)
-"pkgs/make" responsible (mflatt)
 "pkgs/math-pkgs" responsible (ntoronto)
 "pkgs/math-pkgs/math-test/math/tests/bigfloat-custodian.rkt" drdr:random #t
 "pkgs/math-pkgs/math-test/math/tests/matrix-tests.rkt" drdr:timeout 120
@@ -857,7 +849,6 @@ path/s is either such a string or a list of them.
 "pkgs/pconvert-lib" responsible (robby)
 "pkgs/pict-pkgs" responsible (mflatt robby)
 "pkgs/pict-snip-pkgs" responsible (robby)
-"pkgs/picturing-programs" responsible (sbloch)
 "pkgs/plai" responsible (jay)
 "pkgs/plai/tests/test-random-mutator.rkt" responsible (jay robby)
 "pkgs/planet-pkgs" responsible (robby mflatt)
@@ -868,13 +859,9 @@ path/s is either such a string or a list of them.
 "pkgs/plot-pkgs/plot-test/plot/tests/extreme-bounds-tests.rkt" drdr:timeout 150
 "pkgs/plt-services" responsible (eli mflatt)
 "pkgs/plt-services/meta" responsible (eli)
-"pkgs/plt-services/meta/drdr" responsible (jay)
-"pkgs/plt-services/meta/drdr2" responsible (jay)
 "pkgs/plt-services/meta/images/taking-screenshots/racket-widget.scm" drdr:command-line #f
 "pkgs/plt-services/meta/pkg-index" responsible (jay)
 "pkgs/plt-services/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
-"pkgs/plt-web-pkgs" responsible (mflatt samth)
-"pkgs/preprocessor" responsible (eli)
 "pkgs/profile-pkgs" responsible (eli samth stamourv)
 "pkgs/r5rs-pkgs" responsible (mflatt)
 "pkgs/r6rs-pkgs" responsible (mflatt)
@@ -1137,7 +1124,6 @@ path/s is either such a string or a list of them.
 "pkgs/redex-pkgs/redex-examples/redex/examples/racket-machine/randomized-tests.rkt" drdr:timeout 300
 "pkgs/redex-pkgs/redex-test/redex/tests/run-tests.rkt" drdr:timeout 360
 "pkgs/redex-pkgs/redex-test/redex/tests/ryr-test.rkt" drdr:timeout 200 drdr:random #t
-"pkgs/remote-shell-pkgs" responsible (mflatt)
 "pkgs/sandbox-lib" responsible (eli)
 "pkgs/scheme-lib" responsible (mflatt)
 "pkgs/scheme-lib/scheme/match.rkt" responsible (samth)
@@ -1150,7 +1136,6 @@ path/s is either such a string or a list of them.
 "pkgs/shell-completion" responsible (samth sstrickl stamourv)
 "pkgs/shell-completion/racket-completion.bash" drdr:command-line #f
 "pkgs/shell-completion/racket-completion.zsh" responsible (eli)
-"pkgs/slatex" responsible (sstrickl)
 "pkgs/slideshow-pkgs" responsible (mflatt robby)
 "pkgs/slideshow-pkgs/slideshow-exe/slideshow/examples/interlocking-components.scm" drdr:command-line #f
 "pkgs/snip-pkgs" responsible (mflatt)
@@ -1163,7 +1148,6 @@ path/s is either such a string or a list of them.
 "pkgs/srfi-pkgs/srfi-lib/srfi/78/check-reference.scm" drdr:command-line #f
 "pkgs/srfi-pkgs/srfi-lib/srfi/78/examples-78.scm" drdr:command-line #f
 "pkgs/string-constants-pkgs" responsible (robby)
-"pkgs/swindle" responsible (eli)
 "pkgs/syntax-color-pkgs" responsible (mflatt)
 "pkgs/trace" responsible (mflatt robby)
 "pkgs/typed-racket-pkgs" responsible (samth stamourv asumu endobson)
@@ -1174,7 +1158,7 @@ path/s is either such a string or a list of them.
 "pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/optimizer/run.rkt" drdr:timeout 1200
 "pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/run.rkt" drdr:timeout 1800
 "pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/tr-random-testing.rkt" drdr:timeout 300 drdr:random #t
-"pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/with-tr-contracts.rkt" drdr:timeout 600
+"pkgs/typed-racket-pkgs/typed-racket-test/tests/typed-racket/with-tr-contracts.rkt" drdr:timeout 1000
 "pkgs/unstable-2d" responsible (robby)
 "pkgs/unstable-contract-lib" responsible (robby ryanc)
 "pkgs/unstable-debug-lib" responsible (samth)

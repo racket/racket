@@ -40,26 +40,28 @@
       (parameterize ([current-pkg-catalogs (list (string->url catalog))])
         (define details (for/hash ([(name ht) (get-all-pkg-details-from-catalogs)])
                           (values name (select-info-version ht))))
-        ;; set packages:
-        (db:set-pkgs! catalog (for/list ([(name ht) (in-hash details)])
-                                (db:pkg name
-                                        catalog
-                                        (hash-ref ht 'author "")
-                                        (hash-ref ht 'source "")
-                                        (hash-ref ht 'checksum "")
-                                        (hash-ref ht 'description ""))))
-        ;; Add available module and dependency info:
-        (for/list ([(name ht) (in-hash details)])
-          (define checksum (hash-ref ht 'checksum ""))
-          (define mods (hash-ref ht 'modules #f))
-          (when mods
-            (db:set-pkg-modules! name catalog checksum mods))
-          (define tags (hash-ref ht 'tags #f))
-          (when tags
-            (db:set-pkg-tags! name catalog tags))
-          (define deps (hash-ref ht 'dependencies #f))
-          (when deps
-            (db:set-pkg-dependencies! name catalog checksum deps)))
+        (db:call-with-pkgs-transaction
+         (lambda ()
+           ;; set packages:
+           (db:set-pkgs! catalog (for/list ([(name ht) (in-hash details)])
+                                   (db:pkg name
+                                           catalog
+                                           (hash-ref ht 'author "")
+                                           (hash-ref ht 'source "")
+                                           (hash-ref ht 'checksum "")
+                                           (hash-ref ht 'description ""))))
+           ;; Add available module and dependency info:
+           (for/list ([(name ht) (in-hash details)])
+             (define checksum (hash-ref ht 'checksum ""))
+             (define mods (hash-ref ht 'modules #f))
+             (when mods
+               (db:set-pkg-modules! name catalog checksum mods))
+             (define tags (hash-ref ht 'tags #f))
+             (when tags
+               (db:set-pkg-tags! name catalog tags))
+             (define deps (hash-ref ht 'dependencies #f))
+             (when deps
+               (db:set-pkg-dependencies! name catalog checksum deps)))))
         (when consult-packages?
           ;; If module information isn't available for a package, download
           ;; the package to fill in that information:
@@ -76,6 +78,7 @@
                                          name
                                          (hash-ref ht 'checksum #f)
                                          #f)))
-            (db:set-pkg-modules! name catalog checksum modules)
-            (db:set-pkg-dependencies! name catalog checksum deps)))))))
-
+            (db:call-with-pkgs-transaction
+             (lambda ()
+               (db:set-pkg-modules! name catalog checksum modules)
+               (db:set-pkg-dependencies! name catalog checksum deps)))))))))

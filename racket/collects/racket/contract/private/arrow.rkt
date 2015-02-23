@@ -420,7 +420,21 @@
        (if (and (null? req-kwd) (null? opt-kwd))
            (λ (kwds kwd-args . args)
              (raise-blame-error (blame-swap blame) val
-                                '(expected: "no keywords")))
+                                (list 'expected:
+                                      "no keywords"
+                                      'given:
+                                      (apply
+                                       string-append
+                                       (let loop ([kwds kwds])
+                                         (cond
+                                           [(null? kwds) '()]
+                                           [(null? (cdr kwds))
+                                            (list "#:" (keyword->string (car kwds)))]
+                                           [else
+                                            (list* "#:"
+                                                   (keyword->string (car kwds))
+                                                   " "
+                                                   (loop (cdr kwds)))]))))))
            (λ (kwds kwd-args . args)
              (with-continuation-mark
               contract-continuation-mark-key blame
@@ -836,6 +850,8 @@
                     (values #'() leftover)]
                    [(rng #:post . rst)
                     (values #'() leftover)]
+                   [(rng #:post/desc . rst)
+                    (values #'() leftover)]
                    [(rng)
                     (values #'() leftover)]
                    [((raw-optional-dom ...) . leftover)
@@ -847,11 +863,13 @@
                    [(#:rest rest-expr . leftover)
                     (values #'rest-expr #'leftover)]
                    [_ (values #f leftover)])]
-                [(pre leftover)
+                [(pre pre/desc leftover)
                  (syntax-case leftover ()
                    [(#:pre pre-expr . leftover)
-                    (values #'pre-expr #'leftover)]
-                   [_ (values #f leftover)])]
+                    (values #'pre-expr #f #'leftover)]
+                   [(#:pre/desc pre-expr . leftover)
+                    (values #f #'pre-expr #'leftover)]
+                   [_ (values #f #f leftover)])]
                 [(rng leftover)
                  (syntax-case leftover (any values)
                    [(any) (values #f #'())]
@@ -865,22 +883,33 @@
                       (values #'(rng) #'leftover))]
                    [_
                     (raise-syntax-error #f "expected a range contract" stx leftover)])]
-                [(post leftover)
+                [(post post/desc leftover)
                  (syntax-case leftover ()
                    [(#:post post-expr . leftover)
-                    (values #'post-expr #'leftover)]
+                    (values #'post-expr #f #'leftover)]
+                   [(#:post/desc post-expr . leftover)
+                    (values #f #'post-expr #'leftover)]
                    [else
-                    (values #f leftover)])])
+                    (values #f #f leftover)])])
     (syntax-case leftover ()
-      [() (values raw-optional-doms rst pre rng post)]
+      [() (values raw-optional-doms rst pre pre/desc rng post post/desc)]
       [x (raise-syntax-error #f "expected the end of the contract" stx #'x)])))
 
 ;; ->*/proc/main : syntax -> (values syntax[contract-record] syntax[args/lambda-body] syntax[names])
 (define-for-syntax (->*/proc/main stx)
   (syntax-case* stx (->* any) module-or-top-identifier=?
     [(->* (raw-mandatory-dom ...) . rst)
-     (let-values ([(raw-optional-doms rest-ctc pre rng-ctc post)
+     (let-values ([(raw-optional-doms rest-ctc raw-pre pre/desc rng-ctc raw-post post/desc)
                    (parse-leftover->* stx #'rst)])
+       (define pre (cond
+                     [raw-pre raw-pre]
+                     [pre/desc
+                      #`(convert-pre-post/desc-to-boolean #t #,pre/desc)]
+                     [else #f]))
+       (define post (cond
+                      [raw-post raw-post]
+                      [post/desc #`(convert-pre-post/desc-to-boolean #f #,post/desc)]
+                      [else #f]))
        (with-syntax ([((mandatory-dom ...) ((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...))
                       (split-doms stx '->* #'(raw-mandatory-dom ...))]
                      [((optional-dom ...) ((optional-dom-kwd optional-dom-kwd-ctc) ...))
@@ -961,6 +990,21 @@
                          (map list (syntax->list #'(optional-dom-kwd ...))
                               (syntax->list #'(optional-dom-kwd-proj ...)))
                          (if rng-ctc (syntax->list #'(rng-proj ...)) #f)))))))))))]))
+
+(define (convert-pre-post/desc-to-boolean pre? b)
+  (cond
+    [(not b) #f]
+    [(or (not b)
+         (string? b)
+         (and (list? b)
+              (andmap string? b)))
+     #f]
+    [(equal? b #t) #t]
+    [else
+     (error '->* "expected #:~a to return (or/c boolean? string? (listof string?)), got ~e"
+            (if pre? "pre" "post")
+            b)]))
+         
 
 (define-syntax (->* stx) #`(syntax-parameterize ((making-a-method #f)) #,(->*/proc/main stx)))
 
@@ -1683,12 +1727,14 @@
     [else
      passes?]))
 
-(define (bad-number-of-results blame val rng-len args [case-context #f])
+(define (bad-number-of-results blame val rng-len args [case-context #f]
+                               #:missing-party [missing-party #f])
   (define num-values (length args))
   (define blame-case (if case-context 
                          (blame-add-context blame (format "the ~a case of" (n->th (+ case-context 1))))
                          blame))
   (raise-blame-error (blame-add-range-context blame-case)
+                     #:missing-party missing-party
                      val 
                      "expected ~a value~a, returned ~a value~a"
                      rng-len (if (= rng-len 1) "" "s")

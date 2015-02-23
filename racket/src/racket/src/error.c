@@ -122,6 +122,8 @@ static Scheme_Object *srcloc_to_string(int argc, Scheme_Object **argv);
 static Scheme_Object *log_message(int argc, Scheme_Object *argv[]);
 static Scheme_Object *log_level_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *log_max_level(int argc, Scheme_Object *argv[]);
+static Scheme_Object *log_all_levels(int argc, Scheme_Object *argv[]);
+static Scheme_Object *log_level_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_logger(int argc, Scheme_Object *argv[]);
 static Scheme_Object *logger_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_logger(int argc, Scheme_Object *argv[]);
@@ -389,8 +391,8 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	      tlen = 1;
 	    } else {
 	      mzchar mc;
+              mc = c;
 	      tlen = scheme_utf8_encode_all(&mc, 1, (unsigned char *)buf);
-	      c = (int)mc;
 	    }
 	    t = buf;
 	  }
@@ -723,10 +725,13 @@ void scheme_init_error(Scheme_Env *env)
   GLOBAL_PARAMETER("error-print-context-length",  error_print_context_length, MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH,  env);
   GLOBAL_PARAMETER("error-print-source-location", error_print_srcloc,         MZCONFIG_ERROR_PRINT_SRCLOC,          env);
 
-  /* logging */
   GLOBAL_NONCM_PRIM("exit",              scheme_do_exit,  0, 1, env);
+
+  /* logging */
   GLOBAL_NONCM_PRIM("log-level?",        log_level_p,     2, 3, env);
   GLOBAL_NONCM_PRIM("log-max-level",     log_max_level,   1, 2, env);
+  GLOBAL_NONCM_PRIM("log-all-levels",    log_all_levels,  1, 1, env);
+  GLOBAL_NONCM_PRIM("log-level-evt",     log_level_evt,   1, 1, env);
   GLOBAL_NONCM_PRIM("make-logger",       make_logger,     0, -1, env);
   GLOBAL_NONCM_PRIM("make-log-receiver", make_log_reader, 2, -1, env);
 
@@ -1035,7 +1040,7 @@ void scheme_log(Scheme_Logger *logger, int level, int flags,
   intptr_t len;
 
   if (logger) {
-    if (logger->local_timestamp == *logger->timestamp)
+    if (logger->local_timestamp == SCHEME_INT_VAL(logger->root_timestamp[0]))
       if (logger->want_level < level)
         return;
   }
@@ -1058,7 +1063,7 @@ void scheme_log_w_data(Scheme_Logger *logger, int level, int flags,
   intptr_t len;
 
   if (logger) {
-    if (logger->local_timestamp == *logger->timestamp)
+    if (logger->local_timestamp == SCHEME_INT_VAL(logger->root_timestamp[0]))
       if (logger->want_level < level)
         return;
   }
@@ -1080,7 +1085,7 @@ int scheme_log_level_p(Scheme_Logger *logger, int level)
     logger = (Scheme_Logger *)scheme_get_param(config, MZCONFIG_LOGGER);
   }
 
-  if (logger->local_timestamp < *logger->timestamp)
+  if (logger->local_timestamp < SCHEME_INT_VAL(logger->root_timestamp[0]))
     update_want_level(logger, NULL);
 
   return (logger->want_level >= level);
@@ -2985,7 +2990,7 @@ static int is_arity_list(Scheme_Object *l)
   while (!SCHEME_NULLP(l)) {
     a = SCHEME_CAR(l);
     if (!scheme_nonneg_exact_p(a)
-        && !scheme_nonneg_exact_p(a))
+        && !is_arity_at_least(a))
       return 0;
     l = SCHEME_CDR(l);
   }
@@ -3162,7 +3167,7 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
       l = scheme_get_stack_trace(scheme_struct_ref(argv[1], 1));
       while (!SCHEME_NULLP(l)) {
 	if (!max_cnt) {
-	  scheme_write_byte_string("...\n", 4, port);
+	  scheme_write_byte_string("\n   ...", 7, port);
 	  break;
 	} else {
 	  Scheme_Object *name, *loc;
@@ -3399,6 +3404,31 @@ static Scheme_Object *default_yield_handler(int argc, Scheme_Object **argv)
 
 /***********************************************************************/
 
+static Scheme_Object *level_number_to_symbol(int level)
+{
+  switch (level) {
+  case 0:
+    return scheme_false;
+    break;
+  case SCHEME_LOG_FATAL:
+    return fatal_symbol;
+    break;
+  case SCHEME_LOG_ERROR:
+    return error_symbol;
+    break;
+  case SCHEME_LOG_WARNING:
+    return warning_symbol;
+    break;
+  case SCHEME_LOG_INFO:
+    return info_symbol;
+    break;
+  case SCHEME_LOG_DEBUG:
+  default:
+    return debug_symbol;
+    break;
+  }
+}
+
 static int extract_spec_level(Scheme_Object *level_spec, Scheme_Object *name)
 {
   if (!level_spec) return 0;
@@ -3491,7 +3521,7 @@ void update_want_level(Scheme_Logger *logger, Scheme_Object *name)
 
   if (!name) {
     logger->want_level = want_level;
-    logger->local_timestamp = *logger->timestamp;
+    logger->local_timestamp = SCHEME_INT_VAL(logger->root_timestamp[0]);
   } else {
 #   define WANT_NAME_LEVEL_CACHE_SIZE 8
     int i;
@@ -3511,7 +3541,7 @@ void update_want_level(Scheme_Logger *logger, Scheme_Object *name)
     if (i < 0) {
       /* find an out-of-date slot? */
       for (i = SCHEME_VEC_SIZE(b); (i -= 3) >= 0; ) {
-        if (SCHEME_INT_VAL(SCHEME_VEC_ELS(b)[i+1]) < *logger->timestamp)
+        if (SCHEME_INT_VAL(SCHEME_VEC_ELS(b)[i+1]) < SCHEME_INT_VAL(logger->root_timestamp[0]))
           break;
       }
       if (i < 0) {
@@ -3524,7 +3554,7 @@ void update_want_level(Scheme_Logger *logger, Scheme_Object *name)
     }
 
     SCHEME_VEC_ELS(b)[i] = name;
-    SCHEME_VEC_ELS(b)[i+1] = scheme_make_integer(*logger->timestamp);
+    SCHEME_VEC_ELS(b)[i+1] = scheme_make_integer(SCHEME_INT_VAL(logger->root_timestamp[0]));
     SCHEME_VEC_ELS(b)[i+2] = scheme_make_integer(want_level);
   }
 }
@@ -3537,7 +3567,7 @@ static int get_want_level(Scheme_Logger *logger, Scheme_Object *name)
         int i;
         for (i = SCHEME_VEC_SIZE(logger->want_name_level_cache); (i -= 3) >= 0; ) {
           if (SAME_OBJ(name, SCHEME_VEC_ELS(logger->want_name_level_cache)[i])) {
-            if (SCHEME_INT_VAL(SCHEME_VEC_ELS(logger->want_name_level_cache)[i+1]) == *logger->timestamp) {
+            if (SCHEME_INT_VAL(SCHEME_VEC_ELS(logger->want_name_level_cache)[i+1]) == SCHEME_INT_VAL(logger->root_timestamp[0])) {
               return SCHEME_INT_VAL(SCHEME_VEC_ELS(logger->want_name_level_cache)[i+2]);
             }
           }
@@ -3546,11 +3576,56 @@ static int get_want_level(Scheme_Logger *logger, Scheme_Object *name)
       update_want_level(logger, name);
     }
   } else {
-    if (logger->local_timestamp < *logger->timestamp)
+    if (logger->local_timestamp < SCHEME_INT_VAL(logger->root_timestamp[0]))
       update_want_level(logger, NULL);
 
     return logger->want_level;
   }
+}
+
+Scheme_Object *extract_all_levels(Scheme_Logger *logger)
+{
+  Scheme_Hash_Table *names;
+  Scheme_Log_Reader *lr;
+  Scheme_Object *queue, *b, *name, *result = scheme_null, *l;
+  int level, default_level;
+  Scheme_Logger *parent = logger;
+
+  names = scheme_make_hash_table(SCHEME_hash_ptr);
+
+  default_level = get_want_level(logger, scheme_void);
+
+  while (parent) {
+    queue = parent->readers;
+    while (queue) {
+      b = SCHEME_CAR(queue);
+      b = SCHEME_CAR(b);
+      lr = (Scheme_Log_Reader *)SCHEME_BOX_VAL(b);
+      if (lr) {
+        for (l = lr->level; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+          l = SCHEME_CDR(l);
+          name = SCHEME_CAR(l);
+          if (!SCHEME_SYM_WEIRDP(name) && !scheme_hash_get(names, name)) {
+            level = get_want_level(logger, name);
+            scheme_hash_set(names, name, scheme_true);
+            if (level != default_level) {
+              result = scheme_make_pair(level_number_to_symbol(level), 
+                                        scheme_make_pair(name, result));
+            }
+          }
+          SCHEME_USE_FUEL(1);
+        }
+      }
+      queue = SCHEME_CDR(queue);
+    }
+    parent = parent->parent;
+    SCHEME_USE_FUEL(1);
+  }
+
+  result = scheme_make_pair(level_number_to_symbol(default_level),
+                            scheme_make_pair(scheme_false, result));
+
+  return result;
 }
 
 #ifdef USE_WINDOWS_EVENT_LOG
@@ -3563,32 +3638,13 @@ static mzRegisterEventSourceProc mzRegisterEventSource;
 static mzReportEventProc mzReportEvent;
 #endif
 
-
-
 static Scheme_Object *make_log_message(int level, Scheme_Object *name, int prefix_msg,
                                        char *buffer, intptr_t len, Scheme_Object *data) {
   Scheme_Object *msg;
   Scheme_Object *v;
   
   msg = scheme_make_vector(4, NULL);
-  switch (level) {
-  case SCHEME_LOG_FATAL:
-    v = fatal_symbol;
-    break;
-  case SCHEME_LOG_ERROR:
-    v = error_symbol;
-    break;
-  case SCHEME_LOG_WARNING:
-    v = warning_symbol;
-    break;
-  case SCHEME_LOG_INFO:
-    v = info_symbol;
-    break;
-  case SCHEME_LOG_DEBUG:
-  default:
-    v = debug_symbol;
-    break;
-  }
+  v = level_number_to_symbol(level);
   SCHEME_VEC_ELS(msg)[0] = v;
           
   if (name && prefix_msg) {
@@ -3630,7 +3686,7 @@ void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object
     logger = (Scheme_Logger *)scheme_get_param(config, MZCONFIG_LOGGER);
   }
 
-  if (logger->local_timestamp < *logger->timestamp)
+  if (logger->local_timestamp < SCHEME_INT_VAL(logger->root_timestamp[0]))
     update_want_level(logger, NULL);
 
   if (logger->want_level < level)
@@ -3792,7 +3848,7 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t
 void scheme_log_abort(char *buffer)
 {
   Scheme_Logger logger;
-  intptr_t ts;
+  Scheme_Object *ts[2];
 
   memset(&logger, 0, sizeof(logger));
 
@@ -3800,9 +3856,10 @@ void scheme_log_abort(char *buffer)
   logger.parent = NULL;
   logger.want_level = SCHEME_LOG_FATAL;
 
-  ts = 0;
-  logger.timestamp = &ts;
-  logger.local_timestamp = ts;
+  ts[0] = scheme_make_integer(0);
+  ts[1] = NULL;
+  logger.root_timestamp = ts;
+  logger.local_timestamp = 0;
   logger.syslog_level = init_syslog_level;
   logger.stderr_level = init_stderr_level;
 
@@ -3965,21 +4022,38 @@ log_max_level(int argc, Scheme_Object *argv[])
     name = argv[1];
   }
   
-  switch (get_want_level(logger, name)) {
-  case 0:
-    return scheme_false;
-  case SCHEME_LOG_FATAL:
-    return fatal_symbol;
-  case SCHEME_LOG_ERROR:
-    return error_symbol;
-  case SCHEME_LOG_WARNING:
-    return warning_symbol;
-  case SCHEME_LOG_INFO:
-    return info_symbol;
-  default:
-  case SCHEME_LOG_DEBUG:
-    return debug_symbol;
+  return level_number_to_symbol(get_want_level(logger, name));
+}
+
+static Scheme_Object *
+log_all_levels(int argc, Scheme_Object *argv[])
+{
+  Scheme_Logger *logger;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
+    scheme_wrong_contract("log-all-levels", "logger?", 0, argc, argv);
+  logger = (Scheme_Logger *)argv[0];
+  
+  return extract_all_levels(logger);
+}
+
+static Scheme_Object *
+log_level_evt(int argc, Scheme_Object *argv[])
+{
+  Scheme_Logger *logger;
+  Scheme_Object *sema;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
+    scheme_wrong_contract("log-level-evt", "logger?", 0, argc, argv);
+  logger = (Scheme_Logger *)argv[0];
+
+  sema = logger->root_timestamp[1];
+  if (!sema) {
+    sema = scheme_make_sema(0);
+    logger->root_timestamp[1] = sema;
   }
+    
+  return scheme_make_sema_repost(sema);
 }
 
 static Scheme_Object *get_levels_and_names(const char *who, int i, int argc, Scheme_Object **argv,
@@ -4058,12 +4132,12 @@ Scheme_Logger *scheme_make_logger(Scheme_Logger *parent, Scheme_Object *name)
   logger->so.type = scheme_logger_type;
   logger->parent = parent;
   if (parent) {
-    logger->timestamp = parent->timestamp;
+    logger->root_timestamp = parent->root_timestamp;
   } else {
-    intptr_t *timestamp;
-    timestamp = MALLOC_ONE_ATOMIC(intptr_t);
-    *timestamp = 1;
-    logger->timestamp = timestamp;
+    Scheme_Object **root_timestamp;
+    root_timestamp = MALLOC_N(Scheme_Object*, 2);
+    root_timestamp[0] = scheme_make_integer(1);
+    logger->root_timestamp = root_timestamp;
   }
   logger->name = name;
 
@@ -4129,7 +4203,11 @@ make_log_reader(int argc, Scheme_Object *argv[])
                                             sema),
                            logger->readers);
   logger->readers = q;
-  *logger->timestamp += 1;
+  logger->root_timestamp[0] = scheme_make_integer(SCHEME_INT_VAL(logger->root_timestamp[0]) + 1);
+  if (logger->root_timestamp[1]) {
+    scheme_post_sema_all(logger->root_timestamp[1]);
+    logger->root_timestamp[1] = NULL;
+  }
 
   return (Scheme_Object *)lr;
 }

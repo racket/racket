@@ -607,13 +607,14 @@
    (eq? buffer-mode 'block)))
 
 (define relocate-input-port
-  (lambda (p line col pos [close? #t])
-    (transplant-to-relocate transplant-input-port p line col pos close?)))
+  (lambda (p line col pos [close? #t] #:name [name (object-name p)])
+    (transplant-to-relocate transplant-input-port p line col pos close? name)))
 
 (define transplant-input-port
-  (lambda (p location-proc pos [close? #t] [count-lines!-proc void])
+  (lambda (p location-proc pos [close? #t] [count-lines!-proc void]
+             #:name [name (object-name p)])
     (make-input-port
-     (object-name p)
+     name
      p ;; redirect `read' to `p'
      ;; Here's the long way to redirect:
      #;

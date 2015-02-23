@@ -1,2 +1,0 @@
-#lang racket
-5

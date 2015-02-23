@@ -124,6 +124,10 @@ static void unregister_mach_thread() {
 # define ARCH_thread_state_t ppc_thread_state_t
 # define ARCH_THREAD_STATE PPC_THREAD_STATE
 # define ARCH_THREAD_STATE_COUNT PPC_THREAD_STATE_COUNT
+#elif defined(__arm__) || defined(__arm64__)
+# define ARCH_thread_state_t arm_thread_state_t
+# define ARCH_THREAD_STATE ARM_THREAD_STATE
+# define ARCH_THREAD_STATE_COUNT ARM_THREAD_STATE_COUNT
 #elif defined(__x86_64__)
 # define ARCH_thread_state_t x86_thread_state64_t
 # define ARCH_THREAD_STATE x86_THREAD_STATE64
@@ -181,6 +185,8 @@ static void *os_alloc_pages(size_t len)
 
   retval = vm_allocate(task_self, (vm_address_t*)&r, len, TRUE);
   if(retval != KERN_SUCCESS) {
+    if (retval == KERN_NO_SPACE)
+      return NULL;
     GCPRINT(GCOUTF, "Couldn't allocate memory: %s\n", mach_error_string(retval));
     abort();
   }

@@ -75,7 +75,7 @@ struct {
 } jit_cpu;
 #endif
 
-struct {
+static struct {
     /* prevent using thumb instructions that set flags? */
     _ui		no_set_flags	: 1;
 } jit_flags;

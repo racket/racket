@@ -15,20 +15,19 @@
       /* Since pf hasn't been marked, we don't need a GC_resolve(): */
       int *use_bits = PREFIX_TO_USE_BITS(pf);
       uintptr_t map;
+      int mark_stxes;
 
       if (!pf->next_final) {
         /* We're the first to look at this prefix... */
-        if (pf->num_stxes) {
-          /* Mark all syntax-object references */
-          for (i = pf->num_stxes+1; i--;) {
-            gcMARK2(pf->a[i+pf->num_toplevels], gc);
-          }
-        }
         /* Add it to the chain of prefixes to finish after
            all other marking: */
         pf->next_final = scheme_prefix_finalize;
         scheme_prefix_finalize = pf;
+#ifdef MZ_GC_BACKTRACE
+        pf->backpointer = (Scheme_Object *)c;
+#endif
       }
+      mark_stxes = 0;
 
       /* Mark just the elements of the prefix that are (newly) used: */
       if ((uintptr_t)data->tl_map & 0x1) {
@@ -37,9 +36,11 @@
           if (map & (1 << i)) {
             if (!(use_bits[0] & (1 << i))) {
               if ((i < pf->num_toplevels) || !pf->num_stxes)
-                gcMARK2(pf->a[i], gc);
+                gcMARK2(pf->a[i], gc); /* top level */
+              else if (i == pf->num_toplevels)
+                mark_stxes = 1; /* any syntax object */
               else
-                gcMARK2(pf->a[i + pf->num_stxes + 1], gc);
+                gcMARK2(pf->a[i + pf->num_stxes], gc); /* lifted */
             }
           }
         }
@@ -54,13 +55,21 @@
               if (!(use_bits[i] & (1 << j))) {
                 pos = (i * 32) + j;
                 if ((pos < pf->num_toplevels) || !pf->num_stxes)
-                  gcMARK2(pf->a[pos], gc);
+                  gcMARK2(pf->a[pos], gc);  /* top level */
+                else if (pos == pf->num_toplevels)
+                  mark_stxes = 1;  /* any syntax object */
                 else
-                  gcMARK2(pf->a[pos + pf->num_stxes + 1], gc);
+                  gcMARK2(pf->a[pos + pf->num_stxes], gc); /* lifted */
               }
             }
           }
           use_bits[i] |= map;
+        }
+      }
+      if (mark_stxes) {
+        /* Mark all syntax-object references */
+        for (i = pf->num_stxes+1; i--;) {
+          gcMARK2(pf->a[i+pf->num_toplevels], gc);
         }
       }
     }

@@ -3,7 +3,7 @@
          racket/contract/combinator
          "private/generic.rkt"
          "private/generic-methods.rkt"
-         (for-syntax racket/base racket/local racket/syntax syntax/stx))
+         (for-syntax racket/base racket/syntax syntax/stx))
 
 ;; Convenience layer on top of racket/private/generic.
 ;; To avoid circular dependencies, racket/private/generic cannot use
@@ -169,7 +169,7 @@
 
 (define-syntax (redirect-generics/derived stx)
   (syntax-case stx ()
-    [(_ orig mode gen-name val-expr [method-name proc-expr] ...)
+    [(_ orig mode gen-name val-expr [method-name proc-expr] ... props-expr)
      (parameterize ([current-syntax-context #'orig])
        (define gen-id #'gen-name)
        (unless (identifier? gen-id)
@@ -192,26 +192,42 @@
                                    (case i
                                      [(method-index) (proc-expr x)]
                                      ...
-                                     [else x]))))]))
+                                     [else x]))
+                                 props-expr))]))
 
 (define-syntax (redirect-generics stx)
   (syntax-case stx ()
     [(_ mode gen-name val-expr [id expr] ...)
-     #`(redirect-generics/derived #,stx mode gen-name val-expr [id expr] ...)]))
+     #`(redirect-generics/derived #,stx mode gen-name val-expr [id expr] ... null)]
+    [(_ mode gen-name val-expr [id expr] ... #:properties props-expr)
+     #`(redirect-generics/derived #,stx mode gen-name val-expr [id expr] ... props-expr)]))
 
 (define-syntax (chaperone-generics stx)
   (syntax-case stx ()
     [(_ gen-name val-expr [id expr] ...)
-     #`(redirect-generics/derived #,stx #t gen-name val-expr [id expr] ...)]))
+     #`(redirect-generics/derived #,stx #t gen-name val-expr [id expr] ... null)]
+    [(_ gen-name val-expr [id expr] ... #:properties props-expr)
+     #`(redirect-generics/derived #,stx #t gen-name val-expr [id expr] ... props-expr)]))
 
 (define-syntax (impersonate-generics stx)
   (syntax-case stx ()
     [(_ gen-name val-expr [id expr] ...)
-     #`(redirect-generics/derived #,stx #f gen-name val-expr [id expr] ...)]))
+     #`(redirect-generics/derived #,stx #f gen-name val-expr [id expr] ... null)]
+    [(_ gen-name val-expr [id expr] ... #:properties props-expr)
+     #`(redirect-generics/derived #,stx #f gen-name val-expr [id expr] ... props-expr)]))
 
-(define (redirect-generics-proc name chaperoning? pred ref x proc)
+(define (redirect-generics-proc name chaperoning? pred ref x proc props)
   (unless (pred x)
-    (raise-argument-error name (format "a structure implementing ~a" name) x))
+    (raise-argument-error name (format "~a?" name) x))
+  (unless (and (list? props)
+               (let loop ([props props])
+                 (cond
+                  [(null? props) #t]
+                  [(null? (cdr props)) #f]
+                  [(impersonator-property? (car props))
+                   (loop (cddr props))]
+                  [else #f])))
+    (raise-argument-error name "(list/c impersonator-property? any/c ... ...)" props))
   (define-values (redirect-struct redirect-vector)
     (if chaperoning?
         (values chaperone-struct chaperone-vector)
@@ -220,7 +236,7 @@
     (proc i method))
   (define (struct-proc x vec)
     (redirect-vector vec vec-proc vec-proc))
-  (redirect-struct x ref struct-proc))
+  (apply redirect-struct x ref struct-proc props))
 
 (define-syntax-rule (define-generics-contract ctc-name gen-name)
   (define-syntax (ctc-name stx)

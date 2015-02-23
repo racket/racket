@@ -20,6 +20,7 @@
          send/error
          send/report
          send/msg
+         send/log
          recv/req
          worker/die
          work-queue<%>
@@ -89,14 +90,22 @@
                                   id (exn-message x))
                          (exit 1))])
         (DEBUG_COMM (eprintf "CSENDING ~v ~v\n" id msg))
-        (write msg in) (flush-output in)))
+        (write (convert-paths msg) in)
+        (flush-output in)))
     (define/public (recv/msg)
       (with-handlers ([exn:fail?
                        (lambda (x)
-                         (eprintf "While receiving message from parallel-do worker ~a ~a\n"
-                                  id (exn-message x))
+                         (eprintf (string-append
+                                   "While receiving message from parallel-do worker ~a ~a\n"
+                                   "  input continues: ~s\n")
+                                  id (exn-message x)
+                                  (let ([bstr (make-bytes 32)])
+                                    (define n (peek-bytes-avail!* bstr 0 #f out))
+                                    (if (number? n)
+                                        (subbytes bstr 0 n)
+                                        n)))
                          (exit 1))])
-        (define r (read out))
+        (define r (deconvert-paths (read out)))
         (DEBUG_COMM (eprintf "CRECEIVNG ~v ~v\n" id r))
         r))
     (define/public (read-all) (port->string out))
@@ -351,6 +360,7 @@
 (define-syntax-parameter-error send/success)
 (define-syntax-parameter-error send/error)
 (define-syntax-parameter-error send/report)
+(define-syntax-parameter-error send/log)
 (define-syntax-parameter-error recv/req)
 (define-syntax-parameter-error worker/die)
 
@@ -373,10 +383,11 @@
                                      [recv/req (make-rename-transformer #'recv/reqp)]
                                      [worker/die (make-rename-transformer #'die-k)])
                  ;; message handler:
-                 (lambda (msg send/successp send/errorp send/reportp)
+                 (lambda (msg send/successp send/errorp send/reportp send/logp)
                    (syntax-parameterize ([send/success (make-rename-transformer #'send/successp)]
                                          [send/error (make-rename-transformer #'send/errorp)]
-                                         [send/report (make-rename-transformer #'send/reportp)])
+                                         [send/report (make-rename-transformer #'send/reportp)]
+                                         [send/log (make-rename-transformer #'send/logp)])
                      (match msg
                        [work work-body ...]
                        ...))))))])))))
@@ -388,12 +399,12 @@
   (define (raw-send msg)
     (cond 
      [ch (place-channel-put ch msg)]
-     [else (write msg orig-out)
+     [else (write (convert-paths msg) orig-out)
            (flush-output orig-out)]))
   (define (raw-recv)
     (cond 
      [ch (place-channel-get ch)]
-     [else (read orig-in)]))
+     [else (deconvert-paths (read orig-in))]))
   (define (pdo-send msg)
     (with-handlers ([exn:fail?
                      (lambda (x)
@@ -429,6 +440,8 @@
                           (send/resp (list 'ERROR message)))
                         (define (send/reportp message)
                           (send/resp (list 'REPORT message)))
+                        (define (send/logp level message data)
+                          (send/resp (list 'LOG level message data)))
                         ((with-handlers* ([exn:fail? (lambda (x) 
                                                        (define sp (open-output-string))
                                                        (parameterize ([current-error-port sp])
@@ -440,7 +453,7 @@
                              (let ([msg (pdo-recv)])
                                (match msg
                                  [(list 'DIE) void]
-                                 [_ (msg-proc msg send/successp send/errorp send/reportp)
+                                 [_ (msg-proc msg send/successp send/errorp send/reportp send/logp)
                                     (lambda () (loop (add1 i)))]))))))))))))
 
 (define-syntax (lambda-worker stx)
@@ -463,3 +476,20 @@
            (define module-path (path->string (resolved-module-path-name (variable-reference->resolved-module-path (#%variable-reference)))))
            (parallel-do-event-loop module-path 'name initalmsg wq worker-count)
            (queue/results wq)))]))
+
+
+(struct path-wrapper (bstr) #:prefab)
+
+(define (convert-paths msg)
+  (cond
+   [(path? msg) (path-wrapper (path->bytes msg))]
+   [(pair? msg) (cons (convert-paths (car msg))
+                      (convert-paths (cdr msg)))]
+   [else msg]))
+
+(define (deconvert-paths msg)
+  (cond
+   [(path-wrapper? msg) (bytes->path (path-wrapper-bstr msg))]
+   [(pair? msg) (cons (deconvert-paths (car msg))
+                      (deconvert-paths (cdr msg)))]
+   [else msg]))

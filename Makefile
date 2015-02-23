@@ -21,7 +21,7 @@
 
 # Packages (separated by spaces) to link in development mode or
 # to include in a distribution:
-PKGS = main-distribution plt-services
+PKGS = main-distribution main-distribution-test
 
 # ------------------------------------------------------------
 # In-place build
@@ -29,10 +29,12 @@ PKGS = main-distribution plt-services
 PLAIN_RACKET = racket/bin/racket
 WIN32_PLAIN_RACKET = racket\racket
 
+PLAIN_RACO = racket/bin/racket -N raco -l- raco
+WIN32_PLAIN_RACO = racket\racket -N raco -l- raco
+
+
 MACOSX_CHECK_ARGS = -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
 MACOSX_CHECK = $(PLAIN_RACKET) -G build/config $(MACOSX_CHECK_ARGS)
-
-LINK_MODE = --save
 
 CPUS = 
 
@@ -45,33 +47,49 @@ cpus-in-place:
 	$(MAKE) -j $(CPUS) plain-in-place JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
 
 # Explicitly propagate variables for non-GNU `make's:
-PKG_LINK_COPY_ARGS = PKGS="$(PKGS)" LINK_MODE="$(LINK_MODE)"
 LIBSETUP = -N raco -l- raco setup
+
+# Update before install to avoid needless work on the initial build,
+# and use `--no-setup` plus an explicit `raco setup` for the same reason.
+UPDATE_PKGS_ARGS = --all --auto --no-setup --scope installation
+INSTALL_PKGS_ARGS = $(JOB_OPTIONS) --no-setup --pkgs \
+                    --skip-installed --scope installation --deps search-auto \
+                    $(REQUIRED_PKGS) $(PKGS)
+ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 plain-in-place:
 	$(MAKE) base
-	if $(MACOSX_CHECK) ; then $(MAKE) native-from-git ; fi
-	$(MAKE) pkg-links $(PKG_LINK_COPY_ARGS)
-	$(PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
-
-# For Windows: set up the following collections first, so that native
-# libraries are in place for use by a full setup:
-LIB_PRE_COLLECTS = racket db com
+	$(MAKE) pkgs-catalog
+	$(PLAIN_RACO) pkg update $(UPDATE_PKGS_ARGS)
+	$(PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
+	$(PLAIN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
+	$(PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-base
-	$(MAKE) win32-pkg-links $(PKG_LINK_COPY_ARGS)
-	$(WIN32_PLAIN_RACKET) $(LIBSETUP) -nxiID $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) $(LIB_PRE_COLLECTS)
-	$(WIN32_PLAIN_RACKET) $(LIBSETUP) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	$(MAKE) win32-pkgs-catalog
+	$(WIN32_PLAIN_RACO) pkg update $(UPDATE_PKGS_ARGS)
+	$(WIN32_PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
+	$(WIN32_PLAIN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
+	$(WIN32_PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
-again:
-	$(MAKE) LINK_MODE="--restore"
+# Rebuild without consulting catalogs or package sources:
 
-IN_PLACE_COPY_ARGS = JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
+as-is:
+	if [ "$(CPUS)" = "" ] ; \
+         then $(MAKE) plain-as-is PKGS="$(PKGS)" ; \
+         else $(MAKE) cpus-as-is CPUS="$(CPUS)" PKGS="$(PKGS)" ; fi
 
-win32-again:
-	$(MAKE) LINK_MODE="--restore" $(IN_PLACE_COPY_ARGS)
+cpus-as-is:
+	$(MAKE) -j $(CPUS) plain-as-is JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
 
+plain-as-is:
+	$(MAKE) base
+	$(PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+
+win32-as-is:
+	$(MAKE) win32-base
+	$(WIN32_PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 # ------------------------------------------------------------
 # Unix-style build (Unix and Mac OS X, only)
@@ -79,7 +97,8 @@ win32-again:
 PREFIX = 
 
 CONFIG_PREFIX_ARGS = --prefix="$(PREFIX)" --enable-macprefix
-UNIX_RACO_ARGS = $(JOB_OPTIONS) --catalog build/local/catalog --auto -i
+UNIX_CATALOG = build/local/catalog
+UNIX_RACO_ARGS = $(JOB_OPTIONS) --catalog $(UNIX_CATALOG) --auto -i
 UNIX_BASE_ARGS = SELF_FLAGS_qq="" SKIP_DESTDIR_FIX="skip"
 
 unix-style:
@@ -93,7 +112,7 @@ cpus-unix-style:
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
 	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' $(UNIX_BASE_ARGS)
-	$(MAKE) local-catalog-maybe-native RACKET="$(DESTDIR)$(PREFIX)/bin/racket"
+	$(MAKE) local-catalog
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
 	cd racket/src/build; $(MAKE) fix-paths
 
@@ -103,10 +122,11 @@ error-need-prefix:
 	: ================================================================
 	exit 1
 
-local-catalog-maybe-native:
-	if $(RACKET) $(MACOSX_CHECK_ARGS) ; \
-         then $(MAKE) local-catalog ; \
-         else $(MAKE) local-source-catalog ; fi
+LOC_CATALOG = build/local/pkgs-catalog
+
+local-catalog:
+	"$(DESTDIR)$(PREFIX)/bin/racket" -l- pkg/dirs-catalog --check-metadata $(LOC_CATALOG) pkgs
+	"$(DESTDIR)$(PREFIX)/bin/raco" pkg catalog-copy --force --from-config $(LOC_CATALOG) $(UNIX_CATALOG)
 
 # ------------------------------------------------------------
 # Base build
@@ -156,12 +176,8 @@ racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 # end in "_q" or "_qq", don't use any quote marks on the right-hand
 # side of its definition.
 
-# Catalog for sources and native packages; use "local" to bootstrap
-# from package directories (in the same directory as this makefile)
-# plus the GitHub repository of raw native libraries. Otherwise, it's
-# a catalog URL (spaces allowed), and the catalog is copied to ensure
-# consistency across queries:
-SRC_CATALOG = local
+# Catalog for package sources:
+SRC_CATALOG = http://pkgs.racket-lang.org/
 
 # A URL embedded in documentation for remote searches, where a Racket
 # version and search key are added as query fields to the URL, and ""
@@ -297,14 +313,16 @@ WIN32_BUNDLE_RACO = bundle\racket\racket $(BUNDLE_RACO_FLAGS)
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
 
-LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir native-pkgs
+PKGS_CATALOG = -U -G build/config -l- pkg/dirs-catalog --link --check-metadata
+PKGS_CONFIG = -U -G build/config racket/src/pkgs-config.rkt
 
-pkg-links:
-	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(PKGS) $(REQUIRED_PKGS)
+pkgs-catalog:
+	$(PLAIN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs
+	$(PLAIN_RACKET) $(PKGS_CONFIG)
+	$(PLAIN_RACKET) racket/src/pkgs-check.rkt racket/share/pkgs-catalog
 
-win32-pkg-links:
-	IF NOT EXIST native-pkgs\racket-win32-i386 $(MAKE) complain-no-submodule
-	$(MAKE) pkg-links PLAIN_RACKET="$(WIN32_PLAIN_RACKET)" LINK_MODE="$(LINK_MODE)" PKGS="$(PKGS)"
+win32-pkgs-catalog:
+	$(MAKE) pkgs-catalog PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 
 # ------------------------------------------------------------
 # On a server platform (for an installer build):
@@ -315,6 +333,14 @@ win32-pkg-links:
 server:
 	$(MAKE) base
 	$(MAKE) server-from-base
+
+server-from-base:
+	$(MAKE) build/site.rkt
+	$(MAKE) stamp
+	$(MAKE) build-from-catalog
+	$(MAKE) origin-collects
+	$(MAKE) built-catalog
+	$(MAKE) built-catalog-server
 
 build/site.rkt:
 	mkdir -p build
@@ -334,86 +360,13 @@ stamp-from-git:
 stamp-from-date:
 	date +"%Y%m%d" > build/stamp.txt
 
-local-from-base:
-	$(MAKE) build/site.rkt
-	$(MAKE) stamp
-	if [ "$(SRC_CATALOG)" = 'local' ] ; \
-          then $(MAKE) build-from-local ; \
-          else $(MAKE) build-from-catalog ; fi
-
-server-from-base:
-	$(MAKE) local-from-base
-	$(MAKE) origin-collects
-	$(MAKE) built-catalog
-	$(MAKE) built-catalog-server
-
-# Boostrap mode: make packages from local directories:
-build-from-local:
-	$(MAKE) local-catalog
-	$(MAKE) local-build
-
-# Set up a local catalog (useful on its own):
-local-catalog:
-	$(MAKE) native-from-git
-	$(MAKE) native-catalog
-	$(MAKE) local-source-catalog
-
-# Get pre-built native libraries from the repo:
-native-from-git:
-	if [ ! -d native-pkgs/racket-win32-i386 ]; then $(MAKE) complain-no-submodule ; fi
-complain-no-submodule:
-	: ================================================================
-	: Native packages are not in the expected subdirectory. Probably,
-	: you need to use 'git submodule init' and 'git submodule update' to get
-	: the submodule for native packages.
-	: ================================================================
-	exit 1
-
-# Create packages and a catalog for all native libraries:
-PACK_NATIVE = --native --pack build/native/pkgs \
-              ++catalog build/native/catalog \
-	      ++catalog build/local/catalog
-native-catalog:
-	$(RACKET) racket/src/pack-all.rkt --mods $(PACK_NATIVE) native-pkgs
-
-# Create a catalog for all packages in this directory:
-local-source-catalog:
-	$(RACKET) racket/src/pack-all.rkt --mods ++catalog build/local/catalog pkgs
-
-# Clear out a package build in "build/user", and then install
-# packages:
-local-build:
-	$(MAKE) fresh-user
-	$(MAKE) packages-from-local
-
-fresh-user:
-	rm -rf build/user
-
-set-server-config:
-	$(RACKET) -l distro-build/set-server-config build/user/config/config.rktd $(CONFIG_MODE_q) "" "" "$(DOC_SEARCH)" ""
-
-server-cache-config:
-	$(RACO) pkg config -i --set download-cache-dir build/cache
-	$(RACO) pkg config -i --set download-cache-max-files 1023
-	$(RACO) pkg config -i --set download-cache-max-bytes 671088640
-
-# Install packages from the source copies in this directory. The
-# packages are installed in user scope, but we set the add-on
-# directory to "build/user", so that we don't affect the actual
-# current user's installation (and to a large degree we're insulated
-# from it):
-packages-from-local:
-	$(RACO) pkg install $(LOCAL_USER_AUTO) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
-	$(MAKE) set-server-config
-	$(RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/local/catalog
-	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(LOCAL_USER_AUTO)
-	$(RACO) setup --avoid-main $(JOB_OPTIONS)
-
-# Install packages from a source catalog (as an alternative to
-# `build-from-local'), where the source catalog is specified as
-# `SRC_CATALOG':
+# Created a copy of `SRC_CATALOG', so that we snapshot checksums, and
+# start building from it. The packages are installed in user scope,
+# but we set the add-on directory to "build/user", so that we don't
+# affect the actual current user's installation (and to a large degree
+# we're insulated from it):
 build-from-catalog:
-	$(MAKE) fresh-user
+	rm -rf build/user
 	rm -rf build/catalog-copy
 	$(RACO) pkg catalog-copy "$(SRC_CATALOG)" build/catalog-copy
 	$(MAKE) server-cache-config
@@ -422,7 +375,14 @@ build-from-catalog:
 	$(RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/catalog-copy
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
-	rm -rf build/native
+
+server-cache-config:
+	$(RACO) pkg config -i --set download-cache-dir build/cache
+	$(RACO) pkg config -i --set download-cache-max-files 1023
+	$(RACO) pkg config -i --set download-cache-max-bytes 671088640
+
+set-server-config:
+	$(RACKET) -l distro-build/set-server-config build/user/config/config.rktd $(CONFIG_MODE_q) "" "" "$(DOC_SEARCH)" ""
 
 # Although a client will build its own "collects", pack up the
 # server's version to be used by each client, so that every client has
@@ -432,14 +392,12 @@ origin-collects:
 	$(RACKET) -l distro-build/pack-collects
 
 # Now that we've built packages from local sources, create "built"
-# versions of the packages from the installation into "build/user";
-# packages that exist in "build/native" are not repacked:
+# versions of the packages from the installation into "build/user":
 built-catalog:
 	$(RACKET) -l distro-build/pack-built build/pkgs.rktd
 
 # Run a catalog server to provide pre-built packages, as well
-# as the copy of the server's "collects" tree; also serves
-# the "build/native" directory, if it exists:
+# as the copy of the server's "collects" tree:
 built-catalog-server:
 	if [ -d ".git" ]; then git update-server-info ; fi
 	$(RACKET) -l distro-build/serve-catalog $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT) $(SERVE_DURING_CMD_qq)

@@ -1,2 +1,0 @@
-  > (syntax-e #'(+ 1 2))                            
-  '(#<syntax:1:0 +> #<syntax:1:0 1> #<syntax:1:0 2>)

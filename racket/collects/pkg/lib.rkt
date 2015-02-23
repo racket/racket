@@ -13,6 +13,7 @@
          "private/catalog.rkt"
          "private/remove.rkt"
          "private/install.rkt"
+         "private/new.rkt"
          "private/stage.rkt"
          "private/show.rkt"
          "private/config.rkt"
@@ -24,7 +25,8 @@
          "private/catalog-update.rkt"
          "private/catalog-archive.rkt"
          "private/suggestions.rkt"
-         "private/archive.rkt")
+         "private/archive.rkt"
+         "private/trash.rkt")
   
 (define dep-behavior/c
   (or/c #f 'fail 'force 'search-ask 'search-auto))
@@ -32,6 +34,12 @@
 (define package-scope/c
   (or/c 'installation 'user
         (and/c path? complete-path?)))
+
+(define pkg-desc/opt
+  (let ([pkg-desc (lambda (source type name checksum auto?
+                             #:path [path #f])
+                    (pkg-desc source type name checksum auto? path))])
+    pkg-desc))
 
 (provide
  (all-from-out "path.rkt")
@@ -55,19 +63,29 @@
    (parameter/c (or/c #f real?))]
   [current-pkg-download-cache-max-bytes
    (parameter/c (or/c #f real?))]
+  [current-pkg-trash-max-packages
+   (parameter/c (or/c #f real?))]
+  [current-pkg-trash-max-seconds
+   (parameter/c (or/c #f real?))]
   [pkg-directory
-   (-> string? (or/c path-string? #f))]
-  [pkg-desc 
-   (-> string? 
-       (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'github 'name) 
-       (or/c string? #f)
-       (or/c string? #f)
-       boolean?
-       pkg-desc?)]
+   (->* (string?)
+        (#:cache (or/c #f (and/c hash? (not/c immutable?))))
+        (or/c path-string? #f))]
+  [rename
+   pkg-desc/opt pkg-desc
+   (->* (string?
+         (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'github 'clone 'name)
+         (or/c string? #f)
+         (or/c string? #f)
+         boolean?)
+        (#:path (or/c #f path-string?))
+        pkg-desc?)]
   [pkg-config
    (->* (boolean? (listof string?))
         (#:from-command-line? boolean?)
         void?)]
+  [pkg-new
+   (-> path-string? void?)]
   [pkg-create
    (->* ((or/c 'zip 'tgz 'plt 'MANIFEST)
          path-string?)
@@ -85,28 +103,38 @@
                         #:update-deps? boolean?
                         #:update-implies? boolean?
                         #:quiet? boolean?
+                        #:use-trash? boolean?
                         #:from-command-line? boolean?
                         #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
                         #:strict-doc-conflicts? boolean?
+                        #:skip-uninstalled? boolean?
                         #:use-cache? boolean?
                         #:strip (or/c #f 'source 'binary 'binary-lib)
                         #:force-strip? boolean?
-                        #:link-dirs? boolean?)
+                        #:link-dirs? boolean?
+                        #:infer-clone-from-dir? boolean?
+                        #:lookup-for-clone? boolean?
+                        #:multi-clone-behavior (or/c 'fail 'force 'convert 'ask)
+                        #:pull-behavior (or/c 'ff-only 'rebase 'try))
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-remove
    (->* ((listof string?))
         (#:auto? boolean?
                  #:force? boolean?
                  #:quiet? boolean?
+                 #:use-trash? boolean?
                  #:from-command-line? boolean?
                  #:demote? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-show
-   (->* (string?)
+   (->* (string? (or/c #f (listof string?)))
         (#:directory? boolean?
-                      #:auto? boolean?)
+                      #:long? boolean?
+                      #:auto? boolean?
+                      #:full-checksum? boolean?
+                      #:rx? boolean?)
         void?)]
   [pkg-install
    (->* ((listof pkg-desc?))
@@ -120,10 +148,13 @@
                         #:use-cache? boolean?
                         #:skip-installed? boolean?
                         #:quiet? boolean?
+                        #:use-trash? boolean?
                         #:from-command-line? boolean?
                         #:strip (or/c #f 'source 'binary 'binary-lib)
                         #:force-strip? boolean?
-                        #:link-dirs? boolean?)
+                        #:link-dirs? boolean?
+                        #:multi-clone-behavior (or/c 'fail 'force 'convert 'ask)
+                        #:pull-behavior (or/c 'ff-only 'rebase 'try))
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-migrate
    (->* (string?)
@@ -168,6 +199,11 @@
                          #:quiet? boolean?
                          #:package-exn-handler (string? exn:fail? . -> . any))
         void?)]
+  [pkg-empty-trash
+   (->* ()
+        (#:list? boolean?
+                 #:quiet? boolean?)
+        void)]
   [default-pkg-scope
    (-> package-scope/c)]
   [installed-pkg-names
@@ -218,7 +254,9 @@
         (#:extract-info (-> (or/c #f
                                   ((symbol?) ((-> any)) . ->* . any))
                             any/c)
-                        #:namespace namespace?)
+                        #:namespace namespace?
+                        #:use-cache? boolean?
+                        #:quiet? boolean?)
         (values (or/c #f string?)
                 (listof module-path?)
                 any/c))]

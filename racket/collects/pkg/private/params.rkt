@@ -27,3 +27,8 @@
 (define current-pkg-download-cache-max-bytes
   (make-parameter #f))
 
+(define current-pkg-trash-max-packages
+  (make-parameter #f))
+(define current-pkg-trash-max-seconds
+  (make-parameter #f))
+

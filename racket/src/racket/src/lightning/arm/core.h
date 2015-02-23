@@ -53,8 +53,19 @@ jit_v_order[JIT_V_NUM] = {
 
 #define jit_no_set_flags()		jit_flags.no_set_flags
 
+#if TARGET_OS_IPHONE
+# define USE_SEPARATE_DIV_AND_MOD
+#endif
+
+#ifdef USE_SEPARATE_DIV_AND_MOD
+extern int __divsi3(int, int);
+extern int __udivsi3(int, int);
+extern int __modsi3(int, int);
+extern int __umodsi3(int, int);
+#else
 extern int	__aeabi_idivmod(int, int);
 extern unsigned	__aeabi_uidivmod(unsigned, unsigned);
+#endif
 
 #define jit_nop(n)			arm_nop(_jitp, n)
 __jit_inline void
@@ -855,8 +866,18 @@ arm_divmod(jit_state_t _jitp, int div, int sign,
     jit_movr_i(_R0, r1);
     jit_movr_i(_R1, r2);
   }
+#ifdef USE_SEPARATE_DIV_AND_MOD
+  if (div) {
+    if (sign) p = __divsi3;
+    else p = __udivsi3;
+  } else {
+    if (sign) p = __modsi3;
+    else p = __umodsi3;
+  }
+#else
   if (sign)		p = __aeabi_idivmod;
   else		p = __aeabi_uidivmod;
+#endif
   {
     jit_movi_i(JIT_FTMP, (int)p);
     if (jit_thumb_p())
@@ -864,10 +885,14 @@ arm_divmod(jit_state_t _jitp, int div, int sign,
     else
       _BLX(JIT_FTMP);
   }
+#ifdef USE_SEPARATE_DIV_AND_MOD
+  jit_movr_i(r0, _R0);
+#else
   if (div)
     jit_movr_i(r0, _R0);
   else
     jit_movr_i(r0, _R1);
+#endif
   if (jit_thumb_p())
     T1_POP(l);
   else

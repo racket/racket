@@ -222,7 +222,7 @@ static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, siz
     /* attempt to allocate from OS */
     size_t extra = (alignment ? (alignment + CACHE_SEED_PAGES * APAGE_SIZE) : 0);
     r = os_alloc_pages(len + extra);
-    if(r == (void *)-1) { return NULL; }
+    if(!r) { return NULL; }
 
     if (alignment) {
       /* We allocated too large so we can choose the alignment. */

@@ -49,9 +49,12 @@
          contract-continuation-mark-key
          
          (struct-out wrapped-extra-arg-arrow)
-         custom-write-property-proc)
+         contract-custom-write-property-proc
+         (rename-out [contract-custom-write-property-proc custom-write-property-proc])
+         
+         set-some-basic-contracts!)
 
-(define (custom-write-property-proc stct port display?)
+(define (contract-custom-write-property-proc stct port display?)
   (write-string "#<" port)
   (cond
     [(flat-contract-struct? stct) (write-string "flat-" port)]
@@ -209,18 +212,38 @@
   (let ()
     (struct name-default ())
     (values (name-default) name-default?)))
+
+;; these two definitions work around a cyclic
+;; dependency. When we coerce a value to a contract,
+;; we want to use (listof any/c) for list?, but
+;; the files are not set up for that, so we just
+;; bang it in here and use it only after it's been banged in.
+(define listof-any #f)
+(define consc-anyany #f)
+(define list/c-empty #f)
+(define (set-some-basic-contracts! l p mt)
+  (set! listof-any l)
+  (set! consc-anyany p)
+  (set! list/c-empty mt))
+
 (define (coerce-contract/f x [name name-default])
   (define (coerce-simple-value x)
     (cond
       [(contract-struct? x) #f] ;; this has to come first, since some of these are procedure?.
       [(and (procedure? x) (procedure-arity-includes? x 1))
-       (make-predicate-contract (if (name-default? name)
-                                    (or (object-name x) '???)
-                                    name)
-                                x
-                                #f
-                                (memq x the-known-good-contracts))]
-      [(or (symbol? x) (boolean? x) (char? x) (null? x) (keyword? x))
+       (cond
+         [(eq? x null?) list/c-empty]
+         [(and (eq? x list?) listof-any) listof-any]
+         [(and (eq? x pair?) consc-anyany) consc-anyany]
+         [else
+          (make-predicate-contract (if (name-default? name)
+                                       (or (object-name x) '???)
+                                       name)
+                                   x
+                                   #f
+                                   (memq x the-known-good-contracts))])]
+      [(null? x) list/c-empty]
+      [(or (symbol? x) (boolean? x) (char? x) (keyword? x))
        (make-eq-contract x
                          (if (name-default? name)
                              (if (or (null? x)
@@ -228,7 +251,7 @@
                                  `',x
                                  x)
                              name))]
-      [(or (bytes? x) (string? x))
+      [(or (bytes? x) (string? x) (equal? +nan.0 x) (equal? +nan.f x))
        (make-equal-contract x (if (name-default? name) x name))]
       [(number? x)
        (make-=-contract x (if (name-default? name) x name))]
@@ -367,7 +390,7 @@
 ;
 
 (define-struct eq-contract (val name)
-  #:property prop:custom-write custom-write-property-proc
+  #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (eq? (eq-contract-val ctc) x)))
@@ -387,7 +410,7 @@
    #:list-contract? (λ (c) (null? (eq-contract-val c)))))
 
 (define-struct equal-contract (val name)
-  #:property prop:custom-write custom-write-property-proc
+  #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (equal? (equal-contract-val ctc) x)))
@@ -406,7 +429,7 @@
      (λ (fuel) (λ () v)))))
 
 (define-struct =-contract (val name)
-  #:property prop:custom-write custom-write-property-proc
+  #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order (λ (ctc) (λ (x) (and (number? x) (= (=-contract-val ctc) x))))
@@ -422,10 +445,39 @@
    #:generate
    (λ (ctc) 
      (define v (=-contract-val ctc))
-     (λ (fuel) (λ () v)))))
+     (λ (fuel)
+       (cond
+         [(zero? v)
+          ;; zero has a whole bunch of different numbers that
+          ;; it could be, so just pick one of them at random
+          (λ ()
+            (oneof '(0
+                     -0.0 0.0 0.0f0 -0.0f0
+                     0.0+0.0i 0.0f0+0.0f0i 0+0.0i 0.0+0i)))]
+         [else
+          (λ ()
+            (case (random 10)
+              [(0)
+               (define inf/nan '(+inf.0 -inf.0 +inf.f -inf.f +nan.0 +nan.f))
+               ;; try the inexact/exact variant (if there is one)
+               (cond
+                 [(exact? v)
+                  (define iv (exact->inexact v))
+                  (if (= iv v) iv v)]
+                 [(and (inexact? v) (not (memv v inf/nan)))
+                  (define ev (inexact->exact v))
+                  (if (= ev v) ev v)]
+                 [else v])]
+              [(1)
+               ;; try to add an inexact imaginary part
+               (define c (+ v 0+0.0i))
+               (if (= c v) c v)]
+              [else
+               ;; otherwise, just stick with the original number (80% of the time)
+               v]))])))))
 
 (define-struct regexp/c (reg name)
-  #:property prop:custom-write custom-write-property-proc
+  #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:first-order
@@ -443,7 +495,7 @@
 ;; sane? : boolean -- indicates if we know that the predicate is well behaved
 ;; (for now, basically amounts to trusting primitive procedures)
 (define-struct predicate-contract (name pred generate sane?)
-  #:property prop:custom-write custom-write-property-proc
+  #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:stronger

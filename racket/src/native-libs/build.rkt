@@ -436,7 +436,8 @@
                                   (if (and m32? mac?)
                                       (list "ABI=32")
                                       null)))]
-    [("mpfr") (config #:configure '("--enable-shared" "--disable-static")
+    [("mpfr") (config #:configure (append (if win? '("--enable-thread-safe") null)
+                                          '("--enable-shared" "--disable-static"))
                       #:depends '("gmp")
                       #:env path-flags)]
     [("jpeg") (config)]

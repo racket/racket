@@ -219,6 +219,7 @@ static Scheme_Object *find_system_path(int argc, Scheme_Object **argv);
 static Scheme_Object *current_directory(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_user_directory(int argc, Scheme_Object *argv[]);
 #endif
+static Scheme_Object *current_force_delete_perms(int argc, Scheme_Object *argv[]);
 
 static int has_null(const char *s, intptr_t l);
 static void raise_null_error(const char *name, Scheme_Object *path, const char *mod);
@@ -564,6 +565,11 @@ void scheme_init_file(Scheme_Env *env)
 						       MZCONFIG_CURRENT_USER_DIRECTORY),
 			     env);
 #endif
+  scheme_add_global_constant("current-force-delete-permissions",
+			     scheme_register_parameter(current_force_delete_perms,
+						       "current-force-delete-permissions",
+						       MZCONFIG_FORCE_DELETE_PERMS),
+			     env);
 
 #ifndef NO_FILE_SYSTEM_UTILS
   scheme_add_global_constant("current-library-collection-paths",
@@ -2221,6 +2227,7 @@ typedef struct mz_REPARSE_DATA_BUFFER {
 } mz_REPARSE_DATA_BUFFER;
 
 #define mzFILE_FLAG_OPEN_REPARSE_POINT 0x200000
+#define mzFSCTL_GET_REPARSE_POINT 0x900A8
 
 static char *UNC_readlink(const char *fn)
 {
@@ -2234,7 +2241,7 @@ static char *UNC_readlink(const char *fn)
 
   if (!DeviceIoControlProc) return NULL;
 
-  h = CreateFileW(WIDE_PATH(fn), GENERIC_READ,
+  h = CreateFileW(WIDE_PATH(fn), FILE_READ_ATTRIBUTES,
 		  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
 		  OPEN_EXISTING,
 		  FILE_FLAG_BACKUP_SEMANTICS | mzFILE_FLAG_OPEN_REPARSE_POINT,
@@ -2247,7 +2254,7 @@ static char *UNC_readlink(const char *fn)
 
   while (1) {
     buffer = (char *)scheme_malloc_atomic(size);
-    if (DeviceIoControlProc(h, FSCTL_GET_REPARSE_POINT, NULL, 0, buffer, size,
+    if (DeviceIoControlProc(h, mzFSCTL_GET_REPARSE_POINT, NULL, 0, buffer, size,
 			    &got, NULL))
       break;
     else if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
@@ -2269,12 +2276,49 @@ static char *UNC_readlink(const char *fn)
     return NULL;
   }
 
-  off = rp->u.SymbolicLinkReparseBuffer.PrintNameOffset;
-  len = rp->u.SymbolicLinkReparseBuffer.PrintNameLength;
+  if (rp->ReparseTag == IO_REPARSE_TAG_SYMLINK) {
+    off = rp->u.SymbolicLinkReparseBuffer.SubstituteNameOffset;
+    len = rp->u.SymbolicLinkReparseBuffer.SubstituteNameLength;
+    if (!len) {
+      off = rp->u.SymbolicLinkReparseBuffer.PrintNameOffset;
+      len = rp->u.SymbolicLinkReparseBuffer.PrintNameLength;
+    }
+  } else {
+    off = rp->u.MountPointReparseBuffer.SubstituteNameOffset;
+    len = rp->u.MountPointReparseBuffer.SubstituteNameLength;
+    if (!len) {
+      off = rp->u.MountPointReparseBuffer.PrintNameOffset;
+      len = rp->u.MountPointReparseBuffer.PrintNameLength;
+    }
+  }
+
   lk = (wchar_t *)scheme_malloc_atomic(len + 2);
 
-  memcpy(lk, (char *)rp->u.SymbolicLinkReparseBuffer.PathBuffer + off, len);
+  if (rp->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+    memcpy(lk, (char *)rp->u.SymbolicLinkReparseBuffer.PathBuffer + off, len);
+  else
+    memcpy(lk, (char *)rp->u.MountPointReparseBuffer.PathBuffer + off, len);
+  
   lk[len>>1] = 0;
+
+  if ((lk[0] == '\\') && (lk[1] == '?') && (lk[2] == '?') && (lk[3] == '\\')) {
+    /* "?\\" is a prefix that means "unparsed", or something like that */
+    memmove(lk, lk+4, len - 8);
+    len -= 8;
+    lk[len>>1] = 0;
+
+    if ((lk[0] == 'U') && (lk[1] == 'N') && (lk[2] == 'C') && (lk[3] == '\\')) {
+      /* "UNC\" is a further prefix that means "UNC"; replace "UNC" with "\" */
+      memmove(lk, lk+2, len - 4);
+      lk[0] = '\\';
+      len -= 4;
+      lk[len>>1] = 0;
+    }
+  }
+
+  /* Make sure it's not empty, because that would form a bad path: */
+  if (!lk[0])
+    return NULL;
 
   return NARROW_PATH(lk);
 }
@@ -2426,6 +2470,15 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, int *islink,
     len -= 5;
     drive_end -= 5;
     copy[len] = 0;
+  }
+  /* If we ended up with "X:[/]", then add a "." at the end so that we get information
+     for the drive, not the current directory of the drive: */
+  if (is_drive_letter(copy[0]) && (copy[1] == ':')
+      && (!copy[2]
+	  || (IS_A_DOS_SEP(copy[2]) && !copy[3]))) {
+    copy[2] = '\\';
+    copy[3] = '.';
+    copy[4] = 0;
   }
 
   if (!GetFileAttributesExW(WIDE_PATH(copy), GetFileExInfoStandard, &fd)) {
@@ -4125,28 +4178,60 @@ static char *filename_for_error(Scheme_Object *p)
                             0);
 }
 
+#ifdef DOS_FILE_SYSTEM
+static int enable_write_permission(char *fn)
+{
+  int len;
+  int flags;
+
+  if (SCHEME_FALSEP(scheme_get_param(scheme_current_config(), MZCONFIG_FORCE_DELETE_PERMS)))
+    return 0;
+
+  len = strlen(fn);
+  return UNC_stat(fn, len, &flags, NULL, NULL, NULL, NULL, NULL, MZ_UNC_WRITE);
+}
+#endif
+
 static Scheme_Object *delete_file(int argc, Scheme_Object **argv)
 {
   int errid;
+  const char *fn;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_contract("delete-file", "path-string?", 0, argc, argv);
 
+  fn = scheme_expand_string_filename(argv[0],
+                                     "delete-file",
+                                     NULL,
+                                     SCHEME_GUARD_FILE_DELETE);
+
+#ifdef DOS_FILE_SYSTEM
+  if (DeleteFileW(MSC_WIDE_PATH(fn)))
+    return scheme_void;
+  errid = GetLastError();
+  if (errid == ERROR_ACCESS_DENIED) {
+    /* Maybe it's just that the file has no write permission. Provide a more
+       Unix-like experience by attempting to change the file's permission. */
+    if (enable_write_permission(fn)) {
+      if (DeleteFileW(MSC_WIDE_PATH(fn)))
+        return scheme_void;
+      errid = GetLastError();
+    }
+  }
+#else
   while (1) {
-    if (!MSC_W_IZE(unlink)(MSC_WIDE_PATH(scheme_expand_string_filename(argv[0],
-								       "delete-file",
-								       NULL,
-								       SCHEME_GUARD_FILE_DELETE))))
+    if (!MSC_W_IZE(unlink)(MSC_WIDE_PATH(fn)))
       return scheme_void;
     else if (errno != EINTR)
       break;
   }
   errid = errno;
-  
+#endif
+
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, 
 		   "delete-file: cannot delete file\n"
                    "  path: %q\n"
-                   "  system error: %e",
+                   "  system error: %E",
 		   filename_for_error(argv[0]),
 		   errid);
 
@@ -5691,7 +5776,7 @@ static Scheme_Object *delete_directory(int argc, Scheme_Object *argv[])
   return scheme_false;
 #else
 # ifdef DOS_FILE_SYSTEM
-  int tried_cwd = 0;
+  int tried_cwd = 0, tried_perm = 0;
 # endif
   char *filename;
 
@@ -5713,6 +5798,10 @@ static Scheme_Object *delete_directory(int argc, Scheme_Object *argv[])
       tcd = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY);
       scheme_os_setcwd(SCHEME_PATH_VAL(tcd), 0);
       tried_cwd = 1;
+    } else if ((errno == EACCES) && !tried_perm) {
+      /* Maybe the directory doesn't have write permission. */
+      (void)enable_write_permission(filename);
+      tried_perm = 1;
     }
 # endif
     else if (errno != EINTR)
@@ -6260,6 +6349,13 @@ static Scheme_Object *current_user_directory(int argc, Scheme_Object **argv)
 }
 
 #endif
+
+static Scheme_Object *current_force_delete_perms(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-force-delete-permissions",
+                             scheme_make_integer(MZCONFIG_FORCE_DELETE_PERMS),
+                             argc, argv, -1, NULL, NULL, 1);
+}
 
 static Scheme_Object *check_link_key_val(Scheme_Object *key, Scheme_Object *val)
 {

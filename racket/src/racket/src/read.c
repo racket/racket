@@ -3283,14 +3283,19 @@ read_string(int is_byte, Scheme_Object *port,
 	  }
 	}
       }
+    } else if (is_byte && (ch > 255)) {
+      if (err_ok)
+	scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
+			"read: out-of-range character in byte string: %c",
+                        ch);
+      return NULL;
     }
 
     if (ch < 0) {
       if (err_ok)
 	scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
-			"read: out-of-range character in %s%s",
-			is_byte ? "byte " : "",
-			"string");
+			"read: out-of-range character in %sstring",
+			is_byte ? "byte " : "");
       return NULL;
     }
 
@@ -5488,7 +5493,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 {
   Scheme_Hash_Table *directory = NULL;
   Scheme_Object *result;
-  intptr_t size, shared_size, got, offset = 0, directory_count = 0;
+  intptr_t size, shared_size, got, offset, directory_count = 0;
   CPort *rp;
   intptr_t symtabsize;
   Scheme_Object **symtab;
@@ -5521,7 +5526,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
                           "  expected version: %s",
                           (buf[0] ? buf : "???"), MZSCHEME_VERSION);
     }
-    offset += size + 1;
     
     mode = scheme_get_byte(port);
     if (mode == 'D') {
@@ -5545,10 +5549,8 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 
       /* Module hash code */
       got = scheme_get_bytes(port, 20, hash_code, 0);
-      offset += 20;
 
       symtabsize = read_simple_number_from_port(port);
-      offset += 4;
   
       /* Load table mapping symtab indices to stream positions: */
 
@@ -5567,8 +5569,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
         scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
                         "read (compiled): ill-formed code (bad table count: %" PRIdPTR " != %" PRIdPTR ")",
                         got, (all_short ? 2 : 4) * (symtabsize - 1));
-      offset += got;
-
       {
         /* This loop runs top to bottom, since sizeof(long) may be larger
            than the decoded integers (but it's never shorter) */
@@ -5599,8 +5599,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
                         shared_size, size);
       }
 
-      offset += 8;
-
       rp = MALLOC_ONE_RT(CPort);
       SET_REQUIRED_TAG(rp->type = scheme_rt_compact_port);
       {
@@ -5614,6 +5612,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
         scheme_tell_all(port, NULL, NULL, &base);
         rp->base = base;
       }
+      offset = SCHEME_INT_VAL(scheme_file_position(1, &port));
       rp->orig_port = port;
       rp->size = size;
       if ((got = scheme_get_bytes(port, size, (char *)rp->start, 0)) != size)
@@ -5665,7 +5664,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       } else {
         scheme_reserve_file_descriptor();
         rp->pos = shared_size; /* skip shared part */
-        delay_info->file_offset = offset + 2 + 1; /* +2 is for #~; +1 is ???? */
+        delay_info->file_offset = offset;
         delay_info->size = shared_size;
         delay_info->symtab_size = rp->symtab_size;
         delay_info->symtab = rp->symtab;

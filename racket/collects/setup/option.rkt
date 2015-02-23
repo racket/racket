@@ -65,6 +65,7 @@
 (define-flag-param make-user #t)
 (define-flag-param make-planet #t)
 (define-flag-param avoid-main-installation #f)
+(define-flag-param force-user-docs #f)
 (define-flag-param make-tidy #f)
 (define-flag-param make-doc-index #f)
 (define-flag-param check-dependencies #t)

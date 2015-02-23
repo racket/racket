@@ -93,9 +93,6 @@ scheme_pop_kill_action
 scheme_set_can_break
 scheme_push_break_enable
 scheme_pop_break_enable
-scheme_with_stack_freeze
-scheme_frozen_run_some
-scheme_is_in_frozen_stack
 scheme_abort_continuation_no_dws
 scheme_call_with_composable_no_dws
 scheme_set_on_atomic_timeout
@@ -639,6 +636,7 @@ scheme_get_seconds
 scheme_get_milliseconds
 scheme_get_inexact_milliseconds
 scheme_get_process_milliseconds
+scheme_get_process_children_milliseconds
 scheme_get_thread_milliseconds
 scheme_banner
 scheme_version

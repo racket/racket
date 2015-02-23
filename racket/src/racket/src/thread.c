@@ -177,6 +177,8 @@ THREAD_LOCAL_DECL(static int thread_swap_count);
 THREAD_LOCAL_DECL(int scheme_did_gc_count);
 THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
 
+THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
+
 SHARED_OK static int init_load_on_demand = 1;
 
 #ifdef RUNSTACK_IS_GLOBAL
@@ -447,6 +449,8 @@ static int can_break_param(Scheme_Thread *p);
 static int post_system_idle();
 
 static Scheme_Object *current_stats(int argc, Scheme_Object *args[]);
+
+static void log_peak_memory_use();
 
 SHARED_OK static Scheme_Object **config_map;
 
@@ -1603,9 +1607,6 @@ static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[])
                                  NULL);
   }
 
-  /* Init extractors: */
-  scheme_add_custodian_extractor(0, NULL);
-
   /* Count children: */
   kids = 0;
   for (c = CUSTODIAN_FAM(m->children); c; c = CUSTODIAN_FAM(c->sibling)) {
@@ -1817,6 +1818,8 @@ void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt)
      will have terminated everything else anyway. For a
      polite exit, other threads can run. */
 
+  log_peak_memory_use();
+
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {  
@@ -1837,7 +1840,13 @@ void scheme_set_atexit(Scheme_At_Exit_Proc p)
 
 void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
 {
-  if (!cust_closers) {
+#if defined(MZ_USE_PLACES)
+# define RUNNING_IN_ORIGINAL_PLACE (scheme_current_place_id == 0)
+#else
+# define RUNNING_IN_ORIGINAL_PLACE 1
+#endif
+
+  if (!cust_closers && RUNNING_IN_ORIGINAL_PLACE) {
     if (replacement_at_exit) {
       replacement_at_exit(do_run_atexit_closers_on_all);
     } else {
@@ -2583,13 +2592,15 @@ Scheme_Object **scheme_alloc_runstack(intptr_t len)
 #ifdef MZ_PRECISE_GC
   intptr_t sz;
   void **p;
-  sz = sizeof(Scheme_Object*) * (len + 4);
+  sz = sizeof(Scheme_Object*) * (len + 5);
   p = (void **)GC_malloc_tagged_allow_interior(sz);
   *(Scheme_Type *)(void *)p = scheme_rt_runstack;
   ((intptr_t *)(void *)p)[1] = gcBYTES_TO_WORDS(sz);
   ((intptr_t *)(void *)p)[2] = 0;
   ((intptr_t *)(void *)p)[3] = len;
-  return (Scheme_Object **)(p + 4);
+# define MZ_RUNSTACK_OVERFLOW_CANARY 0xFF77FF77
+  ((intptr_t *)(void *)p)[4] = MZ_RUNSTACK_OVERFLOW_CANARY;
+  return (Scheme_Object **)(p + 5);
 #else
   return (Scheme_Object **)scheme_malloc_allow_interior(sizeof(Scheme_Object*) * len);
 #endif
@@ -2602,14 +2613,25 @@ void scheme_set_runstack_limits(Scheme_Object **rs, intptr_t len, intptr_t start
    writing and scanning pages that could be skipped for a minor
    GC. For CGC, we have to just clear out the unused part. */
 {
+  scheme_check_runstack_edge(rs);
 #ifdef MZ_PRECISE_GC
-  if (((intptr_t *)(void *)rs)[-2] != start)
-    ((intptr_t *)(void *)rs)[-2] = start;
-  if (((intptr_t *)(void *)rs)[-1] != end)
-    ((intptr_t *)(void *)rs)[-1] = end;
+  if (((intptr_t *)(void *)rs)[-3] != start)
+    ((intptr_t *)(void *)rs)[-3] = start;
+  if (((intptr_t *)(void *)rs)[-2] != end)
+    ((intptr_t *)(void *)rs)[-2] = end;
 #else
   memset(rs, 0, start * sizeof(Scheme_Object *));
   memset(rs + end, 0, (len - end) * sizeof(Scheme_Object *));
+#endif
+}
+
+void scheme_check_runstack_edge(Scheme_Object **rs)
+{
+#ifdef MZ_PRECISE_GC
+  if (((intptr_t *)rs)[-1] != MZ_RUNSTACK_OVERFLOW_CANARY) {
+    scheme_log_abort("internal error: runstack overflow detected");
+    abort();
+  }
 #endif
 }
 
@@ -6856,11 +6878,41 @@ Scheme_Object *scheme_make_evt_set(int argc, Scheme_Object **argv)
   return (Scheme_Object *)make_evt_set("internal-make-evt-set", argc, argv, 0, 1);
 }
 
+static Scheme_Object *get_members(Scheme_Object *skip_nacks)
+{
+  if (!skip_nacks)
+    return scheme_null;
+  else if (scheme_list_length(skip_nacks) > 5) {
+    Scheme_Hash_Tree *ht;
+    ht = scheme_make_hash_tree(0);
+    for (; SCHEME_PAIRP(skip_nacks); skip_nacks = SCHEME_CDR(skip_nacks)) {
+      ht = scheme_hash_tree_set(ht, SCHEME_CAR(skip_nacks), scheme_true);
+    }
+    return (Scheme_Object *)ht;
+  } else
+    return skip_nacks;
+}
+
+XFORM_NONGCING static int is_member(Scheme_Object *a, Scheme_Object *l)
+{
+  if (SCHEME_HASHTRP(l)) {
+    if (scheme_eq_hash_tree_get((Scheme_Hash_Tree *)l, a))
+      return 1;
+  } else {
+    for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      if (SAME_OBJ(a, SCHEME_CAR(l)))
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
 static void post_syncing_nacks(Syncing *syncing, int as_escape)
 /* Also removes channel-syncers. Can be called multiple times. */
 {
   int i, c;
-  Scheme_Object *l, *syncs = NULL;
+  Scheme_Object *l, *syncs = NULL, *skip_nacks = NULL;
   Syncing *next;
 
   do {
@@ -6903,8 +6955,17 @@ static void post_syncing_nacks(Syncing *syncing, int as_escape)
           if ((i + 1) != syncing->result) {
             l = syncing->nackss[i];
             if (l) {
+              if (!skip_nacks) {
+                if (syncing->result) {
+                  /* Skip any nacks from the chosen event. If the
+                     list of nacks is long, convert to a hash tree. */
+                  skip_nacks = get_members(syncing->nackss[syncing->result-1]);
+                } else
+                  skip_nacks = scheme_null;
+              }
               for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-                scheme_post_sema_all(SCHEME_CAR(l));
+                if (!is_member(SCHEME_CAR(l), skip_nacks))
+                  scheme_post_sema_all(SCHEME_CAR(l));
               }
             }
             syncing->nackss[i] = NULL;
@@ -7912,6 +7973,8 @@ static void make_initial_config(Scheme_Thread *p)
     init_param(cells, paramz, MZCONFIG_CURRENT_ENV_VARS, ev);
   }
 
+  init_param(cells, paramz, MZCONFIG_FORCE_DELETE_PERMS, scheme_true);
+
   {
     Scheme_Object *rs;
     rs = scheme_make_random_state(scheme_get_milliseconds());
@@ -8907,6 +8970,10 @@ static void get_ready_for_GC()
   start_this_gc_real_time = scheme_get_inexact_milliseconds();
   start_this_gc_time = scheme_get_process_milliseconds();
 
+#ifndef MZ_PRECISE_GC
+  max_gc_pre_used_bytes = GC_get_memory_use();
+#endif
+
 #ifdef MZ_USE_FUTURES
   scheme_future_block_until_gc();
 #endif
@@ -8968,6 +9035,12 @@ static void get_ready_for_GC()
     data = scheme_gmp_tls_load(scheme_current_thread->gmp_tls);
     scheme_current_thread->gmp_tls_data = data;
   }
+
+#ifdef MZ_PRECISE_GC
+# ifdef MZ_USE_JIT
+  scheme_clean_native_symtab();
+# endif
+#endif
 
   scheme_did_gc_count++;
 }
@@ -9066,6 +9139,12 @@ static void inform_GC(int master_gc, int major_gc,
                       intptr_t post_child_places_used)
 {
   Scheme_Logger *logger;
+
+  if (!master_gc 
+      && (pre_used > max_gc_pre_used_bytes)
+      && (max_gc_pre_used_bytes >= 0))
+    max_gc_pre_used_bytes = pre_used;
+
   logger = scheme_get_gc_logger();
   if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
     /* Don't use scheme_log(), because it wants to allocate a buffer
@@ -9132,6 +9211,33 @@ static void inform_GC(int master_gc, int major_gc,
   }
 #endif
 }
+
+static void log_peak_memory_use()
+{
+  Scheme_Logger *logger;
+  if (max_gc_pre_used_bytes > 0) {
+    logger = scheme_get_gc_logger();
+    if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
+      char buf[256], nums[128], *num;
+      intptr_t buflen;
+      memset(nums, 0, sizeof(nums));
+      num = gc_num(nums, max_gc_pre_used_bytes);
+      sprintf(buf,
+              "" PLACE_ID_FORMAT "atexit peak was %sK",
+#ifdef MZ_USE_PLACES
+              scheme_current_place_id,
+#endif
+              num);
+      buflen = strlen(buf);
+      scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, scheme_false);
+      /* Setting to a negative value ensures that we log the peak only once: */
+      max_gc_pre_used_bytes = -1;
+    }
+  }
+}
+
+#else
+ static void log_peak_memory_use() {}
 #endif
 
 /*========================================================================*/
@@ -9252,6 +9358,8 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
     
     switch (SCHEME_VEC_SIZE(v)) {
     default:
+    case 12:
+      set_perf_vector(v, ov, 11, scheme_make_integer(max_gc_pre_used_bytes));
     case 11:
       set_perf_vector(v, ov, 10, scheme_make_integer(scheme_jit_malloced));
     case 10:

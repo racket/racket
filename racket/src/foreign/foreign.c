@@ -267,6 +267,9 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
 #   ifdef __ANDROID__
     if (!name) handle = RTLD_DEFAULT; else
 #   endif /* __ANDROID__ */
+#   ifdef __CYGWIN32__
+    if (!name) { handle = RTLD_DEFAULT; null_ok = 1; } else
+#   endif /* __CYGWIN32__ */
     handle = dlopen(name, RTLD_NOW | (as_global ? RTLD_GLOBAL : RTLD_LOCAL));
 #   endif /* WINDOWS_DYNAMIC_LOAD */
     if (handle == NULL && !null_ok) {

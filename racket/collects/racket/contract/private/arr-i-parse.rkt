@@ -49,8 +49,11 @@ code does the parsing and validation of the syntax.
 
 ;; vars : (listof identifier?)
 ;; exp  : syntax[expr]
-;; str  : (or/c #f syntax[expr])
-(struct pre/post (vars str exp quoted-dep-src-code) #:transparent)
+;; kind : (or/c syntax[expr] 'desc 'bool)
+;;         syntax => #:pre/name, where the syntax object holds the literal string
+;;         'desc => #:pre/desc or #:post/desc
+;;         'bool => #:pre or #:post
+(struct pre/post (vars kind exp quoted-dep-src-code) #:transparent)
 
 (define (parse-->i stx)
   (if (identifier? stx)
@@ -247,8 +250,8 @@ code does the parsing and validation of the syntax.
           [else
            (let ([new-visited (cons var visited)])
              (for ([neighbor (in-list (free-identifier-mapping-get neighbors var))])
-               (loop neighbor new-visited)
-               (free-identifier-mapping-put! safe var #t)))])))))
+               (loop neighbor new-visited))
+             (free-identifier-mapping-put! safe var #t))])))))
 
 ;; trim-at : identifier? (listof identifier?) -> (listof identifier?)
 ;; returns the shortest prefix of vars that ends with var
@@ -260,39 +263,6 @@ code does the parsing and validation of the syntax.
               (if (free-identifier=? fst var)
                   (list fst)
                   (cons fst (loop (cdr vars)))))])))
-
-(define (compute-quoted-src-expression stx)
-  (define max-depth 4)
-  (define max-width 5)
-  (let loop ([stx stx]
-             [depth max-depth])
-    (cond
-      [(zero? depth) '...]
-      [else
-       (define lst (syntax->list stx))
-       (cond
-         [lst 
-          (if (<= (length lst) max-width)
-              (for/list ([ele (in-list lst)])
-                (loop ele (- depth 1)))
-              (append (for/list ([ele (in-list lst)]
-                                 [i (in-range (- max-width 1))])
-                        (loop ele (+ depth 1)))
-                      '(...)))]
-         [else
-          (define ele (syntax-e stx))
-          (cond
-            [(or (symbol? ele)
-                 (boolean? ele)
-                 (char? ele)
-                 (number? ele))
-             ele]
-            [(string? ele)
-             (if (< (string-length ele) max-width)
-                 ele
-                 '...)]
-            [else
-             '...])])])))
 
 (define (parse-doms stx optional? doms)
   (let loop ([doms doms])
@@ -408,6 +378,8 @@ code does the parsing and validation of the syntax.
                     (values '() leftover)]
                    [(dep-range #:post . stuff)
                     (values '() leftover)]
+                   [(dep-range #:post/desc . stuff)
+                    (values '() leftover)]
                    [(dep-range #:post/name . stuff)
                     (values '() leftover)]
                    [((opts ...) . rest)
@@ -445,27 +417,38 @@ code does the parsing and validation of the syntax.
                  (let loop ([leftover leftover]
                             [conditions '()])
                    (syntax-case leftover ()
-                     [(#:pre (id ...) pre-cond . pre-leftover)
+                     [(kwd (id ...) pre-cond . pre-leftover)
+                      (or (equal? (syntax-e #'kwd) '#:pre)
+                          (equal? (syntax-e #'kwd) '#:pre/desc))
                       (begin
                         (syntax-case #'pre-leftover ()
                           [() (raise-syntax-error 
                                #f
-                               (string-append
-                                "expected #:pre to be followed by at least three subterms"
-                                " (a sequence of identifiers, the pre-condition, and the"
-                                " range contract), but found only two")
+                               (format
+                                (string-append
+                                 "expected ~a to be followed by at least three subterms"
+                                 " (a sequence of identifiers, the pre-condition, and the"
+                                 " range contract), but found only two")
+                                (syntax-e #'kwd))
                                stx
                                (car (syntax->list leftover)))]
                           [x (void)])
                         (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
                         (loop #'pre-leftover 
-                              (cons (pre/post (syntax->list #'(id ...)) #f #'pre-cond
+                              (cons (pre/post (syntax->list #'(id ...)) 
+                                              (if (equal? '#:pre/desc (syntax-e #'kwd))
+                                                  'desc
+                                                  'bool)
+                                              #'pre-cond
                                               (compute-quoted-src-expression #'pre-cond))
                                     conditions)))]
-                     [(#:pre . rest)
+                     [(kwd . rest)
+                      (or (equal? (syntax-e #'kwd) '#:pre)
+                          (equal? (syntax-e #'kwd) '#:pre/desc))
                       (raise-syntax-error
                        #f
-                       "expected a sequence of identifiers and an expression to follow #:pre"
+                       (format "expected a sequence of identifiers and an expression to follow ~a"
+                               (syntax-e #'kwd))
                        stx
                        (car (syntax->list leftover)))]
                      [(#:pre/name (id ...) str pre-cond . pre-leftover)
@@ -488,7 +471,9 @@ code does the parsing and validation of the syntax.
                            stx
                            #'str))
                         (loop #'pre-leftover
-                              (cons (pre/post (syntax->list #'(id ...)) (syntax-e #'str) #'pre-cond
+                              (cons (pre/post (syntax->list #'(id ...)) 
+                                              (syntax-e #'str)
+                                              #'pre-cond
                                               (compute-quoted-src-expression #'pre-cond))
                                     conditions)))]
                      [(#:pre/name . rest)
@@ -514,25 +499,43 @@ code does the parsing and validation of the syntax.
                  (let loop ([leftover leftover]
                             [post-conds '()])
                    (syntax-case leftover ()
-                     [(#:post (id ...) post-cond . leftover)
+                     [(kwd (id ...) post-cond . leftover)
+                      (or (equal? (syntax-e #'kwd) '#:post/desc)
+                          (equal? (syntax-e #'kwd) '#:post))
                       (begin
                         (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
                         (syntax-case range (any)
                           [any (raise-syntax-error
-                                #f "cannot have a #:post with any as the range" stx #'post-cond)]
+                                #f
+                                (format "cannot have a ~a with any as the range"
+                                        (syntax-e #'kwd))
+                                stx #'post-cond)]
                           [_ (void)])
                         (loop #'leftover
-                              (cons (pre/post (syntax->list #'(id ...)) #f #'post-cond
+                              (cons (pre/post (syntax->list #'(id ...))
+                                              (if (equal? (syntax-e #'kwd) '#:post/desc)
+                                                  'desc
+                                                  'bool)
+                                              #'post-cond
                                               (compute-quoted-src-expression #'post-cond))
                                     post-conds)))]
-                     [(#:post a b . stuff)
+                     [(kwd a b . stuff)
+                      (or (equal? (syntax-e #'kwd) '#:post/desc)
+                          (equal? (syntax-e #'kwd) '#:post))
                       (begin
                         (raise-syntax-error
-                         #f "expected a sequence of variables to follow #:post" stx #'a))]
-                     [(#:post a)
+                         #f
+                         (format "expected a sequence of variables to follow ~a"
+                                 (syntax-e #'kwd))
+                         stx #'a))]
+                     [(kwd a)
+                      (or (equal? (syntax-e #'kwd) '#:post/desc)
+                          (equal? (syntax-e #'kwd) '#:post))
                       (begin
                         (raise-syntax-error 
-                         #f "expected a sequence of variables and an expression to follow #:post"
+                         #f 
+                         (format "expected a sequence of variables and an expression to follow ~a"
+                                 (syntax-e #'kwd))
                          stx #'a))]
                      [(#:post/name (id ...) str post-cond . leftover)
                       (begin
@@ -599,7 +602,6 @@ code does the parsing and validation of the syntax.
 (provide
  parse-->i
  ->i-valid-app-shapes
- compute-quoted-src-expression
  (struct-out istx)
  (struct-out arg/res)
  (struct-out arg)

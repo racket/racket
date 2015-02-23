@@ -5,7 +5,9 @@
          '#%place-struct
          racket/fixnum
          racket/flonum
-         racket/vector)
+         racket/vector
+         (only-in ffi/unsafe cpointer?)
+         racket/tcp)
 
 (provide th-dynamic-place
          ;th-dynamic-place*
@@ -24,7 +26,7 @@
          )
 
 
-(define-struct TH-place (th ch cust)
+(define-struct TH-place (th ch cust cust-box result-box)
   #:property prop:evt (lambda (x) (TH-place-channel-in (TH-place-ch x))))
 (define th-place? TH-place?)
 (define th-place TH-place)
@@ -47,21 +49,41 @@
     (raise-argument-error 'dynamic-place "symbol?" 1 mod funcname))
   (define-values (pch cch) (th-place-channel))
   (define cust (make-custodian-from-main))
+  (define cust-box (make-custodian-box cust #t))
+  (define result-box (box 0))
+  (define plumber (make-plumber))
+  (define done? #f)
   (define th (thread
               (lambda ()
                 (with-continuation-mark
                     parameterization-key
                     orig-paramz
                   (parameterize ([current-namespace (make-base-namespace)]
-                                 [current-custodian cust])
-                    ((dynamic-require mod funcname) cch))))))
-  (TH-place th pch cust))
+                                 [current-custodian cust]
+                                 [exit-handler (lambda (v)
+                                                 (plumber-flush-all plumber)
+                                                 (set-box! result-box (if (byte? v) v 0))
+                                                 (custodian-shutdown-all cust))]
+                                 [current-plumber plumber])
+                    (dynamic-wind
+                     void
+                     (lambda ()
+                       ((dynamic-require mod funcname) cch)
+                       (plumber-flush-all plumber)
+                       (set! done? #t))
+                     (lambda ()
+                       (unless done?
+                         (set-box! result-box 1)))))))))
+  (parameterize ([current-custodian cust])
+    ;; When main thread ends, all threads, etc., should end:
+    (thread (lambda () (thread-wait th) (custodian-shutdown-all cust))))
+  (TH-place th pch cust cust-box result-box))
 
 (define (th-place-sleep n) (sleep n))
-(define (th-place-wait pl) (thread-wait (TH-place-th pl)) 0)
-(define (th-place-kill pl) (custodian-shutdown-all (TH-place-cust pl)))
+(define (th-place-wait pl) (sync (TH-place-cust-box pl)) (unbox (TH-place-result-box pl)))
+(define (th-place-kill pl) (set-box! (TH-place-result-box pl) 1) (custodian-shutdown-all (TH-place-cust pl)))
 (define (th-place-break pl kind) (break-thread (TH-place-th pl) kind))
-(define (th-place-dead-evt pl) (thread-dead-evt (TH-place-th pl)))
+(define (th-place-dead-evt pl) (wrap-evt (TH-place-cust-box pl) (lambda (v) pl)))
 (define (th-place-channel)
   (define-values (as ar) (make-th-async-channel))
   (define-values (bs br) (make-th-async-channel))
@@ -82,7 +104,7 @@
     new-o)
   (define (dcw o)
     (cond
-      [(ormap (lambda (x) (x o)) (list number? char? boolean? null? void? string? symbol? TH-place-channel?)) o]
+      [(ormap (lambda (x) (x o)) (list number? char? boolean? null? void? string? symbol? keyword? TH-place-channel?)) o]
       [(hash-ref ht o #f)
        => values]
       [(cond
@@ -114,6 +136,12 @@
            [else ; (hash-eqv? o)
             (for/fold ([nh (hasheqv)]) ([p (in-hash-pairs o)])
               (hash-set nh (dcw (car p)) (dcw (cdr p))))])))]
+      [(and (port? o)
+            (or (file-stream-port? o)
+                (tcp-port? o)))
+       o]
+      [(cpointer? o) o]
+      [(tcp-listener? o) o]
       [(and (struct? o)
             (prefab-struct-key o))
        =>
@@ -151,7 +179,7 @@
 (define (th-place-message-allowed? x)
   (define (dcw o)
     (cond
-      [(ormap (lambda (x) (x o)) (list number? char? boolean? null? void? string? symbol? TH-place-channel?
+      [(ormap (lambda (x) (x o)) (list number? char? boolean? null? void? string? symbol? keyword? TH-place-channel?
                                        path? bytes? fxvector? flvector? TH-place?)) #t]
       [(pair? o) (and (dcw (car o)) (dcw (cdr o)))]
       [(vector? o) 
@@ -166,7 +194,10 @@
           (error "Must be a prefab struct"))
         (for/fold ([nh #t]) ([p (cdr (vector->list (struct->vector o)))])
           (and nh (dcw p)))]
-      [else (raise-mismatch-error 'place-channel-put "cannot transmit a message containing value: " o)]))
+      [(port? o) (or (file-stream-port? o) (tcp-port? o))]
+      [(cpointer? o) #t]
+      [(tcp-listener? o) #t]
+      [else #f]))
 
   (dcw x)
   #t)

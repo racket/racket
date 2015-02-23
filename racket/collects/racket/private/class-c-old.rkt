@@ -1274,7 +1274,7 @@
 (define (instanceof/c-proj ctc)
   (define proj (contract-projection (base-instanceof/c-class-ctc ctc)))
   (λ (blame)
-    (define p (proj blame))
+    (define p (proj (blame-add-context blame #f)))
     (λ (val)
       (unless (object? val)
         (raise-blame-error blame val '(expected: "an object" given: "~e") val))

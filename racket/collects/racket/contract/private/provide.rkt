@@ -924,6 +924,7 @@
                          (let ([struct-name
                                 (λ (constructor-args ...)
                                   (chaperone-struct (#,constructor-id constructor-args ...)
+                                                    struct:struct-name
                                                     struct-info
                                                     (λ (struct-type skipped?)
                                                       (values -struct:struct-name skipped?))))])

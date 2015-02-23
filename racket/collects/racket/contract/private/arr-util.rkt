@@ -3,7 +3,56 @@
 (require "application-arity-checking.rkt")
 (provide split-doms
          sort-keywords
-         valid-app-shapes-from-man/opts)
+         valid-app-shapes-from-man/opts
+         compute-quoted-src-expression)
+
+(define (compute-quoted-src-expression stx)
+  (define max-depth 4)
+  (define max-width 5)
+  (define max-str/kwd/sym-length 30)
+  (define number-bound 1000000)
+  
+  (define (simple? ele)
+    (or (and (symbol? ele)
+             (< (string-length (symbol->string ele))
+                max-str/kwd/sym-length))
+        (and (keyword? ele)
+             (< (string-length (keyword->string ele))
+                max-str/kwd/sym-length))
+        (boolean? ele)
+        (char? ele)
+        (null? ele)
+        (and (string? ele)
+             (< (string-length ele) max-str/kwd/sym-length))
+        (and (number? ele)
+             (simple-rational? (real-part ele))
+             (simple-rational? (imag-part ele)))))
+  
+  (define (simple-rational? ele)
+    (or (inexact? ele)
+        (<= (- number-bound) (numerator ele) number-bound)
+        (<= (denominator ele) number-bound)))
+  
+  (let loop ([stx stx]
+             [depth max-depth])
+    (cond
+      [(zero? depth)
+       (define ele (syntax-e stx))
+       (if (simple? ele) ele '...)]
+      [else
+       (define lst (syntax->list stx))
+       (cond
+         [lst
+          (if (<= (length lst) max-width)
+              (for/list ([ele (in-list lst)])
+                (loop ele (- depth 1)))
+              (append (for/list ([ele (in-list lst)]
+                                 [i (in-range (- max-width 1))])
+                        (loop ele (+ depth 1)))
+                      '(...)))]
+         [else
+          (define ele (syntax-e stx))
+          (if (simple? ele) ele '...)])])))
 
 ;; split-doms : syntax identifier syntax -> syntax
 ;; given a sequence of keywords interpersed with other
@@ -61,11 +110,6 @@
     (cond
       [(null? pairs) null]
       [else (insert (car pairs) (loop (cdr pairs)))])))
-
-
-
-
- 
 
 (define (valid-app-shapes-from-man/opts min-arg-length num-of-opts rest? man-kwds opt-kwds)
   (define opt+man-dom-lengths

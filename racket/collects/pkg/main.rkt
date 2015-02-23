@@ -38,10 +38,11 @@
          (string->symbol (format "~a ~a" (short-program+command-name) cmd))
          args))
 
-
 ;; Selects scope from `given-scope' through `user' arguments, or infers
 ;; a scope from `pkgs' if non-#f, and then calls `thunk'.
-(define (call-with-package-scope who given-scope scope-dir installation user pkgs pkgs-type thunk)
+(define (call-with-package-scope who given-scope scope-dir installation user pkgs
+                                 pkgs-type clone-type-can-be-name? given-name
+                                 thunk)
   (define scope
     (case given-scope
       [(installation user) given-scope]
@@ -63,21 +64,33 @@
                     (with-pkg-lock/read-only
                      (define-values (pkg scope)
                        (for/fold ([prev-pkg #f] [prev-scope #f]) ([pkg (in-list pkgs)])
-                         (define-values (pkg-name pkg-type)
-                           (package-source->name+type pkg pkgs-type
-                                                      #:must-infer-name? #t
-                                                      #:complain
-                                                      (lambda (s msg)
-                                                        ((current-pkg-error) 
-                                                         (~a "~a\n"
-                                                             "  given: ~a")
-                                                         msg s))))
+                         (define-values (pkg-name pkg-type/unused)
+                           (cond
+                            [given-name (values given-name #f)]
+                            [(and (eq? pkgs-type 'clone)
+                                  clone-type-can-be-name?
+                                  (let-values ([(pkg-name pkg-type) 
+                                                (package-source->name+type pkg #f)])
+                                    (and (eq? pkg-type 'name)
+                                         pkg-name)))
+                             => (lambda (name)
+                                  (values name #f))]
+                            [else
+                             (package-source->name+type pkg pkgs-type
+                                                        #:must-infer-name? #t
+                                                        #:complain
+                                                        (lambda (s msg)
+                                                          ((current-pkg-error) 
+                                                           (~a "~a\n"
+                                                               "  given: ~a")
+                                                           msg s)))]))
                          (define scope (find-pkg-installation-scope pkg-name))
                          (cond
-                          [(not prev-pkg) (values pkg scope)]
+                          [(or (not prev-pkg) (not prev-scope)) (values pkg scope)]
+                          [(not scope) (values prev-pkg prev-scope)]
                           [(equal? scope prev-scope) (values prev-pkg prev-scope)]
                           [else
-                           ((current-pkg-error) 
+                           ((current-pkg-error)
                             (~a "given packages are installed in different scopes\n"
                                 "  package: ~a\n"
                                 "  scope: ~a\n"
@@ -102,37 +115,67 @@
    [(regexp-match? #rx"^[a-zA-Z]*://" s) (string->url s)]
    [else (path->url (path->complete-path s))]))
 
+(define (clone-to-package-name clone cmd)
+  ;; Use directory name as sole package name, if possible
+  (define-values (base name dir?) (split-path clone))
+  (cond
+   [(and (path? name)
+         (let-values ([(pkg-name pkg-type) 
+                       (package-source->name+type (path-element->string name) #f)])
+           (eq? pkg-type 'name)))
+    (define pkg (path-element->string name))
+    (printf (~a "Inferred package name from given `--clone' path\n"
+                "  package: ~a\n"
+                "  given path: ~a\n")
+            pkg
+            name)
+    (list pkg)]
+   [else
+    ((pkg-error cmd)
+     (~a "cannot extract a valid package name from the `--clone' path\n"
+         "  given path: ~a")
+     clone)]))
+
 (splicing-let ()
   (define-syntax (make-commands stx)
     (syntax-case stx ()
       [(_ #:scope-flags (scope-flags ...)
           #:job-flags (job-flags ...)
+          #:trash-flags (trash-flags ...)
           #:catalog-flags (catalog-flags ...)
           #:install-type-flags (install-type-flags ...)
           #:install-dep-flags (install-dep-flags ...)
           #:install-dep-desc (install-dep-desc ...)
           #:install-force-flags (install-force-flags ...)
+          #:install-clone-flags (install-clone-flags ...)
           #:update-deps-flags (update-deps-flags ...)
           #:install-copy-flags (install-copy-flags ...)
-          #:install-copy-defns (install-copy-defns ...))
+          #:install-copy-defns (install-copy-defns ...)
+          #:install-copy-checks (install-copy-checks ...))
        (with-syntax ([([scope-flags ...]
                        [job-flags ...]
+                       [trash-flags ...]
                        [catalog-flags ...]
                        [install-type-flags ...]
                        [(install-dep-flags ... (dep-desc ...))]
                        [install-force-flags ...]
+                       [install-clone-flags ...]
                        [update-deps-flags ...]
                        [install-copy-flags ...]
-                       [install-copy-defns ...])
+                       [install-copy-defns ...]
+                       [install-copy-checks ...])
                       (syntax-local-introduce #'([scope-flags ...]
                                                  [job-flags ...]
+                                                 [trash-flags ...]
                                                  [catalog-flags ...]
                                                  [install-type-flags ...]
                                                  [install-dep-flags ...]
                                                  [install-force-flags ...]
+                                                 [install-clone-flags ...]
                                                  [update-deps-flags ...]
                                                  [install-copy-flags ...]
-                                                 [install-copy-defns ...]))])
+                                                 [install-copy-defns ...]
+                                                 [install-copy-checks ...]))])
          #`(commands
             "This tool is used for managing installed packages."
             "pkg-~a-command"
@@ -159,54 +202,82 @@
              [#:bool skip-installed () ("Skip a <pkg-source> if already installed")]
              [#:bool pkgs () ("Install only the specified packages, even when none are provided")]
              install-force-flags ...
+             install-clone-flags ...
              job-flags ...
+             trash-flags ...
              [#:bool fail-fast () ("Break `raco setup' when it discovers an error")]
              #:args pkg-source
              install-copy-defns ...
-             (call-with-package-scope
-              'install
-              scope scope-dir installation user #f a-type
-              (lambda ()
-                (when (and name (> (length pkg-source) 1))
-                  ((current-pkg-error) (format "the --name flag only makes sense with a single package source")))
-                (unless (or (not name) (package-source->name name))
-                  ((current-pkg-error) (format "~e is an invalid package name" name)))
-                ;; if no sources were supplied, and `--pkgs` was not
-                ;; explicitly specified, install the current directory
-                ;; as a linked directory
-                (define-values (sources a-type*)
-                  (if (and (not pkgs) (null? pkg-source))
-                      (values (list (path->string (current-directory)))
-                              'link)
-                      (values pkg-source a-type)))
-                (define setup-collects
-                  (with-pkg-lock
-                   (parameterize ([current-pkg-catalogs (and catalog
-                                                             (list (catalog->url catalog)))])
-                     (pkg-install #:from-command-line? #t
-                                  #:dep-behavior (if auto 'search-auto deps)
-                                  #:all-platforms? all-platforms
-                                  #:force? force
-                                  #:ignore-checksums? ignore-checksums
-                                  #:strict-doc-conflicts? strict-doc-conflicts
-                                  #:use-cache? (not no-cache)
-                                  #:skip-installed? skip-installed
-                                  #:update-deps? update-deps
-                                  #:update-implies? (not ignore-implies)
-                                  #:strip (or (and source 'source)
-                                              (and binary 'binary)
-                                              (and binary-lib 'binary-lib))
-                                  #:force-strip? force
-                                  #:link-dirs? link-dirs?
-                                  (for/list ([p (in-list sources)])
-                                    (pkg-desc p a-type* name checksum #f))))))
-                (setup "installed" no-setup fail-fast setup-collects jobs)))]
+             (let ([pkg-source
+                    ;; Implement special rules for an empty list of package sources
+                    (cond
+                     [(not (null? pkg-source))
+                      pkg-source]
+                     [clone
+                      (clone-to-package-name clone 'install)]
+                     [else
+                      pkg-source])])
+               (call-with-package-scope
+                'install
+                scope scope-dir installation user #f a-type #f name
+                (lambda ()
+                  install-copy-checks ...
+                  (when (and name (> (length pkg-source) 1))
+                    ((current-pkg-error) (format "the --name flag only makes sense with a single package source")))
+                  (unless (or (not name) (package-source->name name))
+                    ((current-pkg-error) (format "~e is an invalid package name" name)))
+                  ;; if no sources were supplied, and `--pkgs` was not
+                  ;; explicitly specified, install the current directory
+                  ;; as a linked directory
+                  (define-values (sources a-type*)
+                    (if (and (not pkgs) (null? pkg-source))
+                        (begin
+                          (printf "Linking current directory as a package\n")
+                          (values (list (path->string (current-directory)))
+                                  'link))
+                        (values pkg-source a-type)))
+                  (define setup-collects
+                    (with-pkg-lock
+                        (parameterize ([current-pkg-catalogs (and catalog
+                                                                  (list (catalog->url catalog)))])
+                          (pkg-install #:from-command-line? #t
+                                       #:dep-behavior (or (and auto 'search-auto)
+                                                          deps
+                                                          (cond
+                                                           [batch 'fail]                                                           
+                                                           [else 'search-ask]))
+                                       #:all-platforms? all-platforms
+                                       #:force? force
+                                       #:ignore-checksums? ignore-checksums
+                                       #:strict-doc-conflicts? strict-doc-conflicts
+                                       #:use-cache? (not no-cache)
+                                       #:skip-installed? skip-installed
+                                       #:update-deps? update-deps
+                                       #:update-implies? (not ignore-implies)
+                                       #:strip (or (and source 'source)
+                                                   (and binary 'binary)
+                                                   (and binary-lib 'binary-lib))
+                                       #:force-strip? force
+                                       #:multi-clone-behavior (or multi-clone 
+                                                                  (if batch
+                                                                      'fail
+                                                                      'ask))
+                                       #:pull-behavior pull
+                                       #:link-dirs? link-dirs?
+                                       #:use-trash? (not no-trash)
+                                       (for/list ([p (in-list sources)])
+                                         (pkg-desc p a-type* name checksum #f
+                                                   #:path (and (eq? a-type* 'clone)
+                                                               (path->complete-path clone))))))))
+                  (setup "installed" no-setup fail-fast setup-collects jobs))))]
             ;; ----------------------------------------
             [update
              "Update packages"
              #:once-each
              [#:bool all ("-a") ("Update all packages if no <pkg-source> is given")]
-             [#:bool lookup () "For each name <pkg-source>, look up in catalog"]
+             [#:bool lookup ()
+                     ("When <pkg-source> is a name, get source from a catalog instead of"
+                      "  using the currently installed source; unclones or combines with `--clone'")]
              #:once-each
              install-type-flags ...
              #:once-any
@@ -222,44 +293,82 @@
              scope-flags ...
              #:once-each
              catalog-flags ...
+             [#:bool skip-uninstalled () ("Skip a given <pkg-source> if not installed")]
              install-force-flags ...
+             install-clone-flags ...
              job-flags ...
+             trash-flags ...
              #:args pkg-source
              install-copy-defns ...
-             (call-with-package-scope
-              'update
-              scope scope-dir installation user pkg-source #f
-              (lambda ()
-                (define setup-collects
-                  (with-pkg-lock
-                   (parameterize ([current-pkg-catalogs (and catalog
-                                                             (list (catalog->url catalog)))])
-                     (pkg-update (for/list ([pkg-source (in-list pkg-source)])
-                                   (cond
-                                    [lookup
-                                     (pkg-desc pkg-source a-type name checksum #f)]
-                                    [else
-                                     (define-values (pkg-name pkg-type) 
-                                       (package-source->name+type pkg-source a-type))
-                                     (if (eq? pkg-type 'name)
-                                         pkg-name
-                                         (pkg-desc pkg-source a-type name checksum #f))]))
-                                 #:from-command-line? #t
-                                 #:all? all
-                                 #:dep-behavior (if auto 'search-auto deps)
-                                 #:all-platforms? all-platforms
-                                 #:force? force
-                                 #:ignore-checksums? ignore-checksums
-                                 #:strict-doc-conflicts? strict-doc-conflicts
-                                 #:use-cache? (not no-cache)
-                                 #:update-deps? (or update-deps auto)
-                                 #:update-implies? (not ignore-implies)
-                                 #:strip (or (and source 'source)
-                                             (and binary 'binary)
-                                             (and binary-lib 'binary-lib))
-                                 #:force-strip? force
-                                 #:link-dirs? link-dirs?))))
-                (setup "updated" no-setup #f setup-collects jobs)))]
+             (let ([pkg-source
+                    ;; Implement special rules for an empty list of package sources
+                    (cond
+                     [(or (not (null? pkg-source))
+                          all) ; --all has is own treatment of an empty list
+                      pkg-source]
+                     [clone
+                      (clone-to-package-name clone 'update)]
+                     [else
+                      ;; In a package directory?
+                      (define pkg (path->pkg (current-directory)))
+                      (if pkg
+                          (begin
+                            (printf "Updating current directory's package: ~a\n"
+                                    pkg)
+                            (list pkg))
+                          null)])])
+               (call-with-package-scope
+                'update
+                scope scope-dir installation user pkg-source a-type #t name
+                (lambda ()
+                  install-copy-checks ...
+                  (define clone-path (and (eq? a-type 'clone)
+                                          (path->complete-path clone)))
+                  (define setup-collects
+                    (with-pkg-lock
+                        (parameterize ([current-pkg-catalogs (and catalog
+                                                                  (list (catalog->url catalog)))])
+                          (pkg-update (for/list ([pkg-source (in-list pkg-source)])
+                                        (cond
+                                         [lookup
+                                          (pkg-desc pkg-source a-type name checksum #f
+                                                    #:path clone-path)]
+                                         [else
+                                          (define-values (pkg-name pkg-type) 
+                                            (package-source->name+type pkg-source a-type))
+                                          (if (eq? pkg-type 'name)
+                                              pkg-name
+                                              (pkg-desc pkg-source a-type name checksum #f
+                                                        #:path clone-path))]))
+                                      #:from-command-line? #t
+                                      #:all? all
+                                      #:dep-behavior (or (and auto 'search-auto)
+                                                         deps
+                                                         (cond
+                                                          [batch 'fail]
+                                                          [else 'search-ask]))
+                                      #:all-platforms? all-platforms
+                                      #:force? force
+                                      #:ignore-checksums? ignore-checksums
+                                      #:strict-doc-conflicts? strict-doc-conflicts
+                                      #:use-cache? (not no-cache)
+                                      #:skip-uninstalled? skip-uninstalled
+                                      #:update-deps? (or update-deps auto)
+                                      #:update-implies? (not ignore-implies)
+                                      #:strip (or (and source 'source)
+                                                  (and binary 'binary)
+                                                  (and binary-lib 'binary-lib))
+                                      #:force-strip? force
+                                      #:lookup-for-clone? lookup
+                                      #:multi-clone-behavior (or multi-clone
+                                                                 (if batch
+                                                                     'fail
+                                                                     'ask))
+                                      #:pull-behavior pull
+                                      #:link-dirs? link-dirs?
+                                      #:infer-clone-from-dir? (not (or link static-link copy))
+                                      #:use-trash? (not no-trash)))))
+                  (setup "updated" no-setup #f setup-collects jobs))))]
             ;; ----------------------------------------
             [remove
              "Remove packages"
@@ -271,10 +380,11 @@
              scope-flags ...
              #:once-each
              job-flags ...
+             trash-flags ...
              #:args pkg
              (call-with-package-scope
               'remove
-              scope scope-dir installation user pkg 'name
+              scope scope-dir installation user pkg 'name #f #f
               (lambda ()
                 (define setup-collects
                   (with-pkg-lock
@@ -282,18 +392,30 @@
                                #:from-command-line? #t
                                #:demote? demote
                                #:auto? auto
-                               #:force? force)))
+                               #:force? force
+                               #:use-trash? (not no-trash))))
                 (setup "removed" no-setup #f setup-collects jobs)))]
+            ;; ----------------------------------------
+            [new
+             "Populate a new directory with the stubs of a package"
+             #:args (pkg)
+             (parameterize ([current-pkg-error (pkg-error 'new)])
+               (pkg-new pkg))]
             ;; ----------------------------------------
             [show
              "Show information about installed packages"
+             #:usage-help
+             "Set the COLUMNS environment variable to configure the output without `-l'."
              #:once-each
              [#:bool all ("-a") "Show auto-installed packages, too"]
+             [#:bool long ("-l") "Show full column content"]
+             [#:bool full-checksum () "Show the full checksum"]
+             [#:bool rx () "Treat <pkgs> as regular expressions"]
              [#:bool dir ("-d") "Show the directory where the package is installed"]
              #:once-any
              scope-flags ...
              [(#:str vers #f) version ("-v") "Show user-specific for installation <vers>"]
-             #:args ()
+             #:args pkg
              (define only-mode (case scope
                                  [(installation user) scope]
                                  [else
@@ -302,6 +424,7 @@
                                    [installation 'installation]
                                    [user 'user]
                                    [else (if version 'user #f)])]))
+             (define pkgs* (if (pair? pkg) pkg #f))
              (for ([mode (if only-mode
                              (list only-mode)
                              (append (let ([main (find-pkgs-dir)])
@@ -322,15 +445,18 @@
                                 [current-pkg-error (pkg-error 'show)]
                                 [current-pkg-scope-version (or version (get-installation-name))])
                    (with-pkg-lock/read-only
-                    (pkg-show (if only-mode "" " ")
+                    (pkg-show (if only-mode "" " ") pkgs*
                               #:auto? all
+                              #:long? long
+                              #:rx? rx
+                              #:full-checksum? full-checksum
                               #:directory? dir)))))]
             ;; ----------------------------------------
             [migrate
              "Install packages installed for other version/name"
              #:once-each
              [install-dep-flags ...
-                                (dep-desc ... 
+                                (dep-desc ...
                                           "where the default is `search-auto'")]
              #:once-any
              [#:bool source () ("Strip built elements of the package before installing")]
@@ -345,7 +471,7 @@
              #:args (from-version)
              (call-with-package-scope
               'migrate
-              scope scope-dir installation user #f #f
+              scope scope-dir installation user #f #f #f #f
               (lambda ()
                 (define setup-collects
                   (with-pkg-lock
@@ -413,7 +539,7 @@
              (lambda (accum . key+vals)
                (call-with-package-scope
                 'config
-                scope scope-dir installation user #f #f
+                scope scope-dir installation user #f #f #f #f
                 (lambda ()
                   (if set
                       (with-pkg-lock
@@ -503,7 +629,21 @@
                                  (cons pkg pkgs)
                                  #:include-deps? include-deps
                                  #:exclude (exclude-list)
-                                 #:relative-sources? relative))]))]))
+                                 #:relative-sources? relative))]
+            ;; ----------------------------------------
+            [empty-trash
+             "Delete old package installations from the trash directory"
+             #:once-any
+             scope-flags ...
+             #:once-each
+             [#:bool list ("-l") "Show trash content without emptying"]
+             #:args ()
+             (call-with-package-scope
+              'empty-trash
+              scope scope-dir installation user #f #f #f #f
+              (lambda ()
+                (pkg-empty-trash #:list? list
+                                 #:quiet? #f)))]))]))
   (make-commands
    #:scope-flags
    ([(#:sym scope [installation user] #f) scope ()
@@ -514,20 +654,21 @@
     [#:bool user ("-u") "Shorthand for `--scope user'"]
     [(#:str dir #f) scope-dir () "Select package scope <dir>"])
    #:job-flags
-   ([#:bool no-setup () ("Don't run `raco setup' after changing packages (usually"
-                         "not a good idea)")]
-    [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"])
+   ([#:bool no-setup () ("Don't `raco setup' after changing packages (usually a bad idea)")]
+    [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
+    [#:bool batch () ("Disable interactive mode and all prompts")])
+   #:trash-flags
+   ([#:bool no-trash () ("Delete uninstalled/updated, instead of moving to a trash folder")])
    #:catalog-flags
    ([(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"])
    #:install-type-flags
    ([(#:sym type [file dir file-url dir-url git github name] #f) type ("-t") 
-     ("Type of <pkg-source>;"
-      "valid <types>s are: file, dir, file-url, dir-url, git, github, or name;"
-      "if not specified, the type is inferred syntactically")]
-    [(#:str name #f) name ("-n") ("Name of package, instead of inferred"
-                                  "(makes sense only when a single <pkg-source> is given)")]
-    [(#:str checksum #f) checksum () ("Checksum of package, either expected or selected"
-                                      "(makes sense only when a single <pkg-source> is given)")])
+     ("Specify type of <pkg-source>, instead of inferred;"
+      "valid <types>s are: file, dir, file-url, dir-url, git, github, or name")]
+    [(#:str name #f) name ("-n") ("Specify name of package, instead of inferred;"
+                                  "makes sense only when a single <pkg-source> is given")]
+    [(#:str checksum #f) checksum () ("Checksum of package, either expected or selected;"
+                                      "makes sense only when a single <pkg-source> is given")])
    #:install-dep-flags
    ([(#:sym mode [fail force search-ask search-auto] #f) deps ()
      ("Specify the behavior for uninstalled dependencies, with"
@@ -538,14 +679,20 @@
       "              and asks for permission to auto-install"
       "  search-auto: like `search-ask', but does not ask for permission")])
    #:install-dep-desc
-   ("where the default is `search-ask' if <pkg-source> is a package name"
-    "or `fail' otherwise")
+   ("where the default is `search-ask' in interactive mode, `fail' otherwise")
    #:install-force-flags
    ([#:bool all-platforms () "Follow package dependencies for all platforms"]
     [#:bool force () "Ignore conflicts"]
     [#:bool ignore-checksums () "Ignore checksums"]
     [#:bool strict-doc-conflicts () "Report doc-name conflicts, even for user scope"]
     [#:bool no-cache () "Disable download cache"])
+   #:install-clone-flags
+   ([(#:sym mode [fail force convert ask] #f) multi-clone ()
+     ("Specify treatment of multiple clones of a repository;"
+      "<mode>s: convert, ask (interactive default), fail (other default), or force")]
+    [(#:sym mode [ff-only try rebase] 'ff-only) pull ()
+     ("Specify `git pull' mode for repository clonse;"
+      "<mode>s: ff-only (the default), try, or rebase")])
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"]
     [#:bool ignore-implies () "When updating, treat `implies' like other dependencies"])
@@ -553,12 +700,29 @@
    ([#:bool link () ("Link a directory package source in place (default for a directory)")]
     [#:bool static-link () ("Link in place, promising collections do not change")]
     [#:bool copy () ("Treat directory sources the same as other sources")]
+    [(#:str dir #f) clone () ("Clone Git and GitHub package sources to <dir> and link")]
     [#:bool source () ("Strip packages' built elements before installing; implies --copy")]
     [#:bool binary () ("Strip packages' source elements before installing; implies --copy")]
     [#:bool binary-lib () ("Strip source & documentation before installing; implies --copy")])
    #:install-copy-defns
    [(define link-dirs? (not (or copy source binary binary-lib)))
-    (define a-type (or (and link 'link) 
-                       (and static-link 'static-link)
-                       (and (eq? type 'dir) link-dirs? 'link)
-                       type))]))
+    (define link-type (or (and link 'link) 
+                          (and static-link 'static-link)
+                          (and (eq? type 'dir) link-dirs? 'link)
+                          (and clone 'clone)))
+    (define a-type (or link-type type))]
+   #:install-copy-checks
+   [(when (and type
+               link-type
+               (not (memq type
+                          (case link-type
+                            [(clone) '(git github)]
+                            [else '(dir)]))))
+      ((current-pkg-error) (format "-t/--type value must be ~a with --~a"
+                                   (cond
+                                    [clone "`git' or `github'"]
+                                    [else "`dir'"])
+                                   (cond
+                                    [link "link"]
+                                    [static-link "static-link"]
+                                    [clone "clone"]))))]))

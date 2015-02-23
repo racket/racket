@@ -3454,7 +3454,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       (void)jit_bgei_i(refslow, JIT_R2, scheme_complex_type);
       /* set V1 if inexact */
       ref3 = jit_blti_i(jit_forward(), JIT_R2, scheme_float_type);
-      jit_movi_i(JIT_V1, 1);
+      jit_movi_i(JIT_V1, JIT_R2);
       mz_patch_branch(ref3);
       mz_patch_branch(ref);
       CHECK_LIMIT();
@@ -3466,6 +3466,9 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       (void)jit_bgei_i(refslow, JIT_R2, scheme_complex_type);
       ref3 = jit_blti_i(jit_forward(), JIT_R2, scheme_float_type);
       (void)jit_bnei_i(refslow, JIT_V1, 1); /* need to coerce other to inexact */
+      /* we have two inexacts, but maybe float vs. double */
+      (void)jit_bner_i(refslow, JIT_V1, JIT_R2);
+      /* jump to fast path for inexacts... */
       ref4 = jit_jmpi(jit_forward());
       mz_patch_branch(ref3);
       mz_patch_branch(ref);

@@ -351,7 +351,7 @@
          [else (set! keys (cons (cons key val) keys))]))
      (let loop ([t (disarm orig)])
        (define (next rest . args) (apply setkey! args) (loop rest))
-       (define (rearm e) (syntax-rearm e orig))
+       (define (rearm e) (syntax-rearm e orig #t))
        (syntax-case* t
            (type: expr: bind: 1st-arg: prev-arg: pre: post: keywords: =>)
            id=?
@@ -1303,18 +1303,20 @@
 ;; ----------------------------------------------------------------------------
 ;; Struct wrappers
 
-(define (compute-offsets types alignment)
+(define (compute-offsets types alignment declared)
   (let ([alignment (if (memq alignment '(#f 1 2 4 8 16))
                        alignment
                        #f)])
-    (let loop ([ts types] [cur 0] [r '()])
+    (let loop ([ts types] [ds declared] [cur 0] [r '()])
       (if (null? ts)
           (reverse r)
           (let* ([algn (if alignment 
                            (min alignment (ctype-alignof (car ts)))
                            (ctype-alignof (car ts)))]
-                 [pos  (+ cur (modulo (- (modulo cur algn)) algn))])
+                 [pos (or (car ds)
+                          (+ cur (modulo (- (modulo cur algn)) algn)))])
             (loop (cdr ts)
+                  (cdr ds)
                   (+ pos (ctype-sizeof (car ts)))
                   (cons pos r)))))))
 
@@ -1325,7 +1327,7 @@
                        type . types)
   (let* ([types   (cons type types)]
          [stype   (make-cstruct-type types #f alignment)]
-         [offsets (compute-offsets types alignment)]
+         [offsets (compute-offsets types alignment (map (lambda (x) #f) types))]
          [len     (length types)])
     (make-ctype stype
       (lambda (vals)
@@ -1363,7 +1365,7 @@
 ;; type.
 (provide define-cstruct)
 (define-syntax (define-cstruct stx)
-  (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx 
+  (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx slot-offsets-stx
                        alignment-stx malloc-mode-stx property-stxes property-binding-stxes
                        no-equal?)
     (define name
@@ -1389,6 +1391,7 @@
          [struct-string        (format "~a?" name)]
          [(slot ...)           slot-names-stx]
          [(slot-type ...)      slot-types-stx]
+         [(slot-offset ...)    slot-offsets-stx]
          [TYPE                 (id name)]
          [cpointer:TYPE        (id "cpointer:"name)]
          [struct:cpointer:TYPE (if (null? property-stxes)
@@ -1496,7 +1499,7 @@
                 (define-values (stype ...)  (values slot-type ...))
                 (define types (list stype ...))
                 (define alignment-v alignment)
-                (define offsets (compute-offsets types alignment-v))
+                (define offsets (compute-offsets types alignment-v (list slot-offset ...)))
                 (define-values (offset ...) (apply values offsets))
                 (define all-tags (cons TYPE-tag super-tags))
                 (define _TYPE*
@@ -1596,9 +1599,9 @@
            (if (list? what) (apply string-append what) what)
            stx xs))
   (syntax-case stx ()
-    [(_ type ([slot slot-type] ...) . more)
+    [(_ type (slot-def ...) . more)
      (or (stx-pair? #'type)
-         (stx-pair? #'(slot ...)))
+         (stx-pair? #'(slot-def ...)))
      (let-values ([(_TYPE _SUPER)
                    (syntax-case #'type ()
                      [(t s) (values #'t #'s)]
@@ -1627,7 +1630,7 @@
                        [(#:malloc-mode m . rest) 
                         (not malloc-mode)
                         (loop #'rest alignment #'m properties property-bindings no-equal?)]
-                       [(#:alignment m . rest) 
+                       [(#:malloc-mode m . rest) 
                         (err "multiple specifications of #:malloc-mode" (head))]
                        [(#:property) (err "missing property expression for #:property" (head))]
                        [(#:property prop) (err "missing value expression for #:property" (head))]
@@ -1656,28 +1659,32 @@
               _TYPE))
        (unless (regexp-match? #rx"^_." (symbol->string (syntax-e _TYPE)))
          (err "cstruct name must begin with a `_'" _TYPE))
-       (for ([s (in-list (syntax->list #'(slot ...)))])
-         (unless (identifier? s)
-           (err "bad field name, expecting an identifier" s)))
-       (if _SUPER
-         (make-syntax _TYPE #t
-                      #`(#,(datum->syntax _TYPE 'super _TYPE) slot ...)
-                      #`(#,_SUPER slot-type ...)
-                      alignment
-                      malloc-mode
-                      properties
-                      property-bindings
-                      no-equal?)
-         (make-syntax _TYPE #f #'(slot ...) #`(slot-type ...) 
-                      alignment malloc-mode properties property-bindings no-equal?)))]
+       
+       (with-syntax ([(#(slot slot-type slot-offset) ...) 
+                      (for/list ([slot-def (in-list (syntax->list #'(slot-def ...)))])
+                        (define (check-slot name type offset)
+                          (unless (identifier? name)
+                            (err "bad field name, expecting an identifier" name))
+                          (vector name type offset))
+                        (syntax-case slot-def ()
+                          [(slot slot-type) (check-slot #'slot #'slot-type #f)]
+                          [(slot slot-type #:offset slot-offset) (check-slot #'slot #'slot-type #'slot-offset)]
+                          [_ (err "bad field specification, expecting `[name ctype]' or `[name ctype #:offset offset]'" #'slot-def)]))])
+         (if _SUPER
+             (make-syntax _TYPE #t
+                          #`(#,(datum->syntax _TYPE 'super _TYPE) slot ...)
+                          #`(#,_SUPER slot-type ...)
+                          #'(0 slot-offset ...)
+                          alignment
+                          malloc-mode
+                          properties
+                          property-bindings
+                          no-equal?)
+             (make-syntax _TYPE #f #'(slot ...) #`(slot-type ...) #`(slot-offset ...)
+                          alignment malloc-mode properties property-bindings no-equal?))))]
     [(_ type () . more)
      (identifier? #'type)
      (err "must have either a supertype or at least one field")]
-    ;; specific errors for bad slot specs, leave the rest for a generic error
-    [(_ type (bad ...) . more)
-     (err "bad field specification, expecting `[name ctype]'"
-          (ormap (lambda (s) (syntax-case s () [[n ct] #t] [_ s]))
-                 (syntax->list #'(bad ...))))]
     [(_ type bad . more)
      (err "bad field specification, expecting a sequence of `[name ctype]'"
           #'bad)]))

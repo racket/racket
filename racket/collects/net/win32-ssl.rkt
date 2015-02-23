@@ -287,7 +287,8 @@
                                                        0 #f ; mappers
                                                        0 #f ; algs
                                                        (case protocol
-                                                         [(sslv2-or-v3 sslv3) (bitwise-ior SP_PROT_SSL2 SP_PROT_SSL3)]
+                                                         [(auto sslv2-or-v3)
+                                                          (bitwise-ior SP_PROT_TLS1)]
                                                          [(sslv2) SP_PROT_SSL2]
                                                          [(sslv3) SP_PROT_SSL3]
                                                          [(tls) SP_PROT_TLS1])

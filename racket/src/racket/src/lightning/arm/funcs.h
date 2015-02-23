@@ -42,7 +42,13 @@
 
 #define jit_notify_freed_code() /* empty */
 
-extern void __clear_cache(void*, void*);
+#if TARGET_OS_IPHONE
+void sys_icache_invalidate(void *start, size_t len);
+# define CLEAR_ICACHE(s, e) sys_icache_invalidate(s, ((char *)e) - ((char *)s));
+#else
+extern void _clear_cache(void*, void*);
+# define CLEAR_ICACHE(s, e) __clear_cache(s, e)
+#endif
 
 __jit_inline void
 jit_flush_code(void *start, void *end)
@@ -54,10 +60,10 @@ jit_flush_code(void *start, void *end)
     void *e;
     e = (void *)(((uintptr_t)start + 4096) & ~4095);
     if (e < end) {
-      __clear_cache(start, e);
+      CLEAR_ICACHE(start, e);
       start = e;
     } else {
-      __clear_cache(start, end);
+      CLEAR_ICACHE(start, end);
       break;
     }
   }

@@ -1350,7 +1350,9 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       if (tl_use_map) {
         int p2 = ((p < num_toplevels) 
                   ? p
-                  : (num_stxes ? (p - num_stxes - 1) : p));
+                  : (p - num_stxes));
+        if (num_stxes && (p >= num_toplevels) && (p < (num_toplevels + num_stxes + 1)))
+          scheme_ill_formed_code(port);
         if ((uintptr_t)tl_use_map & 0x1) {
           if (p2 > 31)
             scheme_ill_formed_code(port);
@@ -1731,6 +1733,20 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 	  || (p != num_toplevels)
 	  || (i >= num_stxes))
 	scheme_ill_formed_code(port);
+
+      if (tl_use_map) {
+        if ((uintptr_t)tl_use_map & 0x1) {
+          if (p > 31)
+            scheme_ill_formed_code(port);
+          if (!((uintptr_t)tl_use_map & (1 << (p + 1))))
+            scheme_ill_formed_code(port);
+        } else {
+          if (p >= (*(int *)tl_use_map * 32))
+            scheme_ill_formed_code(port);
+          if (!(((int *)tl_use_map)[1 + (p / 32)] & (1 << (p & 31))))
+            scheme_ill_formed_code(port);
+        }
+      }
 
       result = validate_join_const(result, expected_results);
     }

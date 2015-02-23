@@ -3,7 +3,7 @@
          "blame.rkt"
          "misc.rkt"
          "guts.rkt"
-         (for-syntax "arr-i-parse.rkt" racket/base))
+         (for-syntax "arr-util.rkt" racket/base))
 (provide parametric->/c)
 
 (define-syntax (parametric->/c stx)

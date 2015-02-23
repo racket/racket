@@ -1917,7 +1917,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
   mark = scheme_new_mark(6);
 
   if (SCHEME_RPAIRP(data))
-    form = scheme_parse_lifted_require(form, phase, mark, SCHEME_CAR(data));
+    form = scheme_parse_lifted_require(form, phase, mark, SCHEME_CAR(data), &orig_form);
   else {
     form = scheme_toplevel_require_for_expand(form, phase, env, mark);
     need_prepare = 1;

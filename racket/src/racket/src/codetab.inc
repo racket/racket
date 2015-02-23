@@ -29,12 +29,12 @@ extern MZ_DLLIMPORT int GC_is_marked(void *);
 
    The second "pointer" is used as an array of bits, where each bit
    indicates whether the corresponding pointer is the start of a
-   mapped range. The bits are shfted up by 1 an dthe low bit is always
+   mapped range. The bits are shfted up by 1 and the low bit is always
    set to 1, so that the GC doesn't think it's a pointer.
 
    The third "pointer" is similar to the first, but it represents the
-   GC status of the reference, andthe bit is only used at a ramge
-   start.
+   GC status of the reference for CGC, and the bit is only used at a
+   range start.
 
    Then there are KEY_COUNT "key" pointers for the content of the
    node.  Note that KEY_COUNT is smaller than the number of bits
@@ -225,10 +225,6 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
   /* GCABLE flag indicates whether to check for GC later */
   if (gc_able)
     ((uintptr_t *)t1)[NODE_GCABLE_OFFSET] |= m;
-#else
-  /* GCABLE flag indicates whether it's been GCed: */
-  if (!value)
-    ((uintptr_t *)t1)[NODE_GCABLE_OFFSET] |= m;
 #endif
 
   /* Fill in start and end: */
@@ -269,15 +265,6 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
 
   --during_set;
 
-#ifdef MZ_PRECISE_GC
-  if (!value) {
-    /* Prune empty branches in the tree. Only do this if this
-       object is mapped deeply enough in the tree, otherwise
-       we end up scanning the whole tree. */
-    do_clear_symbols(the_tree, start, 0, 0, 0);
-  }
-#endif
-
 #ifdef MZ_USE_PLACES
   if (!gc_able) {
     mzrt_mutex_unlock(shared_codetab_lock);      
@@ -285,8 +272,9 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
 #endif
 }
 
+#ifndef MZ_PRECISE_GC
+
 static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t addr, int clearing)
-  /* If MZ_PRECISE_GC, then offset and addr are not used. */
 {
   int i, m, j;
   void *val, **subt;
@@ -299,34 +287,19 @@ static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t add
     if (((uintptr_t *)t)[NODE_STARTS_OFFSET] & m) {
       clearing = 0;
       if (((uintptr_t *)t)[NODE_GCABLE_OFFSET] & m) {
-	/* GCable pointer starts here */
-#ifndef MZ_PRECISE_GC
-	/* Conservative GC: GCable flag means use GC_is_marked */
+	/* GCable flag means use GC_is_marked */
 	void *p = (void *)(addr + ((uintptr_t)i << offset));
 	if (!GC_is_marked(p))
 	  clearing = 1;
-#else
-	/* Precise GC: GCable flag means it's gone */
-	clearing = 1;
-#endif
 	if (clearing) {
 	  /* Collected... */
 	  ((uintptr_t *)t)[NODE_STARTS_OFFSET] -= m;
 	  ((uintptr_t *)t)[NODE_GCABLE_OFFSET] -= m;
 	}
-      } else {
-#ifdef MZ_PRECISE_GC
-	return 0;
-#endif
       }
     }
 
-#ifdef MZ_PRECISE_GC
-    if (!clearing)
-      val = NULL;
-    else
-#endif
-      val = t[i + NODE_HEADER_SIZE];
+    val = t[i + NODE_HEADER_SIZE];
 
     if (val) {
       if (!*(Scheme_Type *)val) {
@@ -345,12 +318,6 @@ static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t add
 	    t[i + NODE_HEADER_SIZE] = NULL;
 	  }
 	}
-#ifdef MZ_PRECISE_GC
-	if (!clearing) {
-	  /* Finished clearing the one item, so return. */
-	  return 0;
-	}
-#endif
       } else if (clearing)
 	t[i + NODE_HEADER_SIZE] = NULL;
     }
@@ -359,13 +326,50 @@ static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t add
   return clearing;
 }
 
-#ifndef MZ_PRECISE_GC
-
 static void clear_symbols_for_collected()
 {
   if (codetab_tree) {
     do_clear_symbols(codetab_tree, 0, (JIT_WORD_SIZE * 8) - LOG_KEY_SIZE, 0, 0); 
   }
+}
+
+#else
+
+static void check_clear_symbols(void **t)
+{
+  int i, j;
+  void *val, **subt;
+
+#ifdef MZ_PRECISE_GC
+  if (((uintptr_t *)t)[NODE_GCABLE_OFFSET] != 0x1)
+    printf("Found GCed\n");
+#endif
+
+  for (i = 0; i < KEY_COUNT; i++) {
+    val = t[i + NODE_HEADER_SIZE];
+
+    if (val) {
+      if (!*(Scheme_Type *)val) {
+	subt = (void **)val;
+	check_clear_symbols(subt);
+        /* If the branch is empty, then drop it. */
+        for (j = 0; j < KEY_COUNT; j++) {
+          if (subt[j + NODE_HEADER_SIZE])
+            break;
+        }
+        if (j == KEY_COUNT) {
+          t[i+NODE_HEADER_SIZE] = NULL;
+          // should_have_cleared();
+        }
+      }
+    }
+  }
+}
+
+static void clear_symbols_for_collected()
+{
+  if (!during_set && codetab_tree)
+    check_clear_symbols(codetab_tree);
 }
 
 #endif

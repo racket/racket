@@ -104,15 +104,15 @@
   
   (syntax-case stx ()
     [(_ elt
-      clause ...)
+        #:ambiguous amb-handler
+        clause ...)
      (let* ([clauses (syntax-e #'(clause ...))]
             [else-clauses (filter else? clauses)]
             [amb-clauses  (filter amb?  clauses)]
             [rest         (filter (λ (x) (not (or (else? x) (amb? x)))) clauses)]
             [else (extract-clause "else" else-clauses else-clause->body 
                                   #'(error 'prefix-case "element ~e was not a prefix" e))]
-            [amb  (extract-clause "ambiguous" amb-clauses amb-clause->body 
-                                  #'(λ (opts) (error 'prefix-case "element matches more than one option: ~s" opts)))])
+            [amb  (extract-clause "ambiguous" amb-clauses amb-clause->body #'amb-handler)])
        (with-syntax ([else-clause else]
                      [amb-clause amb]
                      [((option result) ...) rest])
@@ -121,4 +121,11 @@
                            [exn:unknown-command?
                             (λ (e) else-clause)])
              (((get-prefix-dispatcher (list (list option (λ () result)) ...))
-               elt)))))]))
+               elt)))))]
+    [(_ elt clause ...) (syntax/loc stx
+                          (prefix-case elt
+                                       #:ambiguous (λ (opts)
+                                                     (error 'prefix-case
+                                                            "element matches more than one option: ~s"
+                                                            opts))
+                                       clause ...))]))

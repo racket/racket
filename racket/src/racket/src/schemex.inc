@@ -102,9 +102,6 @@
   scheme_extension_table->scheme_set_can_break = scheme_set_can_break;
   scheme_extension_table->scheme_push_break_enable = scheme_push_break_enable;
   scheme_extension_table->scheme_pop_break_enable = scheme_pop_break_enable;
-  scheme_extension_table->scheme_with_stack_freeze = scheme_with_stack_freeze;
-  scheme_extension_table->scheme_frozen_run_some = scheme_frozen_run_some;
-  scheme_extension_table->scheme_is_in_frozen_stack = scheme_is_in_frozen_stack;
   scheme_extension_table->scheme_abort_continuation_no_dws = scheme_abort_continuation_no_dws;
   scheme_extension_table->scheme_call_with_composable_no_dws = scheme_call_with_composable_no_dws;
   scheme_extension_table->scheme_set_on_atomic_timeout = scheme_set_on_atomic_timeout;
@@ -705,6 +702,7 @@
   scheme_extension_table->scheme_get_milliseconds = scheme_get_milliseconds;
   scheme_extension_table->scheme_get_inexact_milliseconds = scheme_get_inexact_milliseconds;
   scheme_extension_table->scheme_get_process_milliseconds = scheme_get_process_milliseconds;
+  scheme_extension_table->scheme_get_process_children_milliseconds = scheme_get_process_children_milliseconds;
   scheme_extension_table->scheme_get_thread_milliseconds = scheme_get_thread_milliseconds;
   scheme_extension_table->scheme_banner = scheme_banner;
   scheme_extension_table->scheme_version = scheme_version;

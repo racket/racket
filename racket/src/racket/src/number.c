@@ -1012,7 +1012,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
-                                                            | SCHEME_PRIM_WANTS_FLONUM_FIRST
+                                                            | SCHEME_PRIM_WANTS_FLONUM_BOTH
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_add_global_constant("flexpt", p, env);
 
@@ -1277,7 +1277,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
-                                                            | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
+                                                            | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
   scheme_add_global_constant("extflexpt", p, env);
 }
@@ -1406,7 +1406,8 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                              2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_OMITABLE
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("unsafe-fxvector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_fxvector_set, "unsafe-fxvector-set!",
@@ -3557,10 +3558,8 @@ scheme_expt(int argc, Scheme_Object *argv[])
     if ((d == 0.0)
 #ifdef NAN_EQUALS_ANYTHING
 	&& !MZ_IS_NAN(d)
-#else
-        && 1
 #endif
-	) {
+	&& 1) {
       if (SCHEME_REALP(e)) {
 	int norm = 0;
 
@@ -3577,7 +3576,10 @@ scheme_expt(int argc, Scheme_Object *argv[])
 	if (!norm) {
 	  int isnonneg, iseven, negz;
 #ifdef MZ_USE_SINGLE_FLOATS
-	  int sgl = !SCHEME_DBLP(n) && !SCHEME_DBLP(e);
+          int sgl = !SCHEME_DBLP(n) && !SCHEME_DBLP(e);
+# define SELECT_EXPT_PRECISION(f, d) (sgl ? f : d)
+#else
+# define SELECT_EXPT_PRECISION(f, d) d
 #endif
 
 	  if (scheme_is_integer(e)) {
@@ -3589,37 +3591,40 @@ scheme_expt(int argc, Scheme_Object *argv[])
 	  isnonneg = !scheme_is_negative(e);
 	  negz = scheme_minus_zero_p(d);
 
-	  if (isnonneg) {
-	    if (iseven || !negz) {
-#ifdef MZ_USE_SINGLE_FLOATS
-	      if (sgl)
-		return scheme_zerof;
-#endif
-	      return scheme_zerod;
-	    } else {
-#ifdef MZ_USE_SINGLE_FLOATS
-	      if (sgl)
-		return scheme_nzerof;
-#endif
-	      return scheme_nzerod;
-	    }
-	  } else {
-	    if (iseven || !negz) {
-#ifdef MZ_USE_SINGLE_FLOATS
-	      if (sgl)
-		return scheme_single_inf_object;
-#endif
-	      return scheme_inf_object;
-	    } else {
-#ifdef MZ_USE_SINGLE_FLOATS
-	      if (sgl)
-		return scheme_single_minus_inf_object;
-#endif
-	      return scheme_minus_inf_object;
-	    }
-	  }
+          if (isnonneg) {
+            if (iseven || !negz)
+              return SELECT_EXPT_PRECISION(scheme_zerof, scheme_zerod);
+            else
+              return SELECT_EXPT_PRECISION(scheme_nzerof, scheme_nzerod);
+          } else {
+            if (iseven || !negz)
+              return SELECT_EXPT_PRECISION(scheme_single_inf_object,
+                                           scheme_inf_object);
+            else
+              return SELECT_EXPT_PRECISION(scheme_single_minus_inf_object,
+                                           scheme_minus_inf_object);
+          }
 	}
       }
+    } else if ((d < 0.0) && (d > -1.0)) {
+      /* If `e` is a positive bignum, then the result should be zero,
+         but we won't get that result if conversion produces infinity */
+      if (SCHEME_BIGNUMP(e) && SCHEME_BIGPOS(e)) {
+#ifdef MZ_USE_SINGLE_FLOATS
+        int sgl = !SCHEME_DBLP(n);
+#endif
+        if (SCHEME_FALSEP(scheme_odd_p(1, &e)))
+          return SELECT_EXPT_PRECISION(scheme_zerof, scheme_zerod);
+        else
+          return SELECT_EXPT_PRECISION(scheme_nzerof, scheme_nzerod);
+      }
+    }
+
+    if ((d < 0.0) && SCHEME_RATIONALP(e)) {
+      /* The inexact approximation of a rational number might be an integer.
+         Make sure we stay on the complex track: */
+      return scheme_complex_power(scheme_real_to_complex(n),
+                                  scheme_real_to_complex(e));
     }
   }
 
@@ -3944,17 +3949,13 @@ scheme_inexact_to_exact (int argc, Scheme_Object *argv[])
   if (SCHEME_INTP(o))
     return o;
   t = _SCHEME_TYPE(o);
-  if (t == scheme_double_type
-#ifdef MZ_USE_SINGLE_FLOATS
-      || t == scheme_float_type
-#endif
-      ) {
-    double d = SCHEME_FLOAT_VAL(o);
+  if (t == scheme_double_type) {
+    double d = SCHEME_DBL_VAL(o);
 
     /* Try simple case: */
     Scheme_Object *i = scheme_make_integer((intptr_t)d);
     if ((double)SCHEME_INT_VAL(i) == d) {
-# ifdef NAN_EQUALS_ANYTHING
+#ifdef NAN_EQUALS_ANYTHING
       if (!MZ_IS_NAN(d))
 #endif
 	return i;
@@ -3962,6 +3963,22 @@ scheme_inexact_to_exact (int argc, Scheme_Object *argv[])
 
     return scheme_rational_from_double(d);
   }
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (t == scheme_float_type) {
+    float d = SCHEME_FLT_VAL(o);
+
+    /* Try simple case: */
+    Scheme_Object *i = scheme_make_integer((intptr_t)d);
+    if ((double)SCHEME_INT_VAL(i) == d) {
+# ifdef NAN_EQUALS_ANYTHING
+      if (!MZ_IS_NAN(d))
+# endif
+	return i;
+    }
+
+    return scheme_rational_from_float(d);
+  }
+#endif
   if (t == scheme_bignum_type)
     return o;
   if (t == scheme_rational_type)
@@ -4058,13 +4075,6 @@ extfl_to_inexact (int argc, Scheme_Object *argv[])
   return NULL;
 #endif
 }
-
-#ifdef MZ_USE_SINGLE_FLOATS
-int scheme_check_float(const char *where, float f, const char *dest)
-{
-  return scheme_check_double(where, f, dest);
-}
-#endif
 
 GEN_BIN_PROT(bin_bitwise_and);
 GEN_BIN_PROT(bin_bitwise_or);

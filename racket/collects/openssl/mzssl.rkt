@@ -29,6 +29,7 @@ TO DO:
          ffi/unsafe/atomic
          ffi/unsafe/alloc
          ffi/file
+         racket/list
          racket/port
          racket/tcp
          racket/string
@@ -41,7 +42,7 @@ TO DO:
  ["private/macosx.rkt" (load-macosx-keychain)])
 
 (define protocol-symbol/c
-  (or/c 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))
+  (or/c 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))
 
 (define curve-nid-alist
   '((sect163k1 . 721)
@@ -193,6 +194,8 @@ TO DO:
    (c-> ssl-port? void?)]
   [ssl-port?
    (c-> any/c boolean?)])
+ ssl-max-client-protocol
+ ssl-max-server-protocol
  supported-client-protocols
  supported-server-protocols)
 
@@ -267,6 +270,8 @@ TO DO:
 (define-ssl SSL_CTX_ctrl (_fun _SSL_CTX* _int _long _pointer -> _long))
 (define (SSL_CTX_set_mode ctx m)
   (SSL_CTX_ctrl ctx SSL_CTRL_MODE m #f))
+(define (SSL_CTX_set_options ctx opts)
+  (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS opts #f))
 
 (define-ssl SSL_CTX_set_verify (_fun _SSL_CTX* _int _pointer -> _void))
 (define-ssl SSL_CTX_use_certificate_chain_file (_fun _SSL_CTX* _bytes -> _int))
@@ -394,6 +399,12 @@ TO DO:
 (define SSL_CTRL_SET_TLSEXT_HOSTNAME 55)
 (define SSL_CTRL_SET_TMP_DH 3)
 (define SSL_CTRL_SET_TMP_ECDH 4)
+
+(define SSL_OP_NO_SSLv2    #x01000000)
+(define SSL_OP_NO_SSLv3    #x02000000)
+(define SSL_OP_NO_TLSv1    #x04000000)
+(define SSL_OP_NO_TLSv1_2  #x08000000)
+(define SSL_OP_NO_TLSv1_1  #x10000000)
 
 (define SSL_OP_SINGLE_ECDH_USE #x00080000)
 (define SSL_OP_SINGLE_DH_USE #x00100000)
@@ -529,12 +540,12 @@ TO DO:
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Contexts, certificates, etc.
 
-(define default-encrypt 'sslv2-or-v3)
+(define default-encrypt 'auto)
 
 (define (encrypt->method who e client?)
   (define f
     (case e
-      [(sslv2-or-v3)
+      [(auto sslv2-or-v3)
        (if client? SSLv23_client_method SSLv23_server_method)]
       [(sslv2)
        (if client? SSLv2_client_method SSLv2_server_method)]
@@ -562,32 +573,50 @@ TO DO:
    [(cadr l) (cons (car l) (filter-available (cddr l)))]
    [else (filter-available (cddr l))]))
 
+;; Keep symbols in best-last order for ssl-max-{client,server}-protocol.
 (define (supported-client-protocols)
   (filter-available
-   (list 'sslv2-or-v3 SSLv23_client_method
+   (list 'auto SSLv23_client_method
+         'sslv2-or-v3 SSLv23_client_method
          'sslv2 SSLv2_client_method
          'sslv3 SSLv3_client_method
          'tls TLSv1_client_method
          'tls11 TLSv1_1_client_method
          'tls12 TLSv1_2_client_method)))
-
 (define (supported-server-protocols)
   (filter-available
-   (list 'sslv2-or-v3 SSLv23_server_method
+   (list 'auto SSLv23_server_method
+         'sslv2-or-v3 SSLv23_server_method
          'sslv2 SSLv2_server_method
          'sslv3 SSLv3_server_method
          'tls TLSv1_server_method
          'tls11 TLSv1_1_server_method
          'tls12 TLSv1_2_server_method)))
 
+(define (ssl-max-client-protocol)
+  (let ([protocols (supported-client-protocols)])
+    (and (pair? protocols) (last protocols))))
+
+(define (ssl-max-server-protocol)
+  (let ([protocols (supported-server-protocols)])
+    (and (pair? protocols) (last protocols))))
+
 (define (make-context who protocol-symbol client?)
-  (let ([meth (encrypt->method who protocol-symbol client?)])
+  (define ctx (make-raw-context who protocol-symbol client?))
+  ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f))
+
+(define (make-raw-context who protocol-symbol client?)
+  (define meth (encrypt->method who protocol-symbol client?))
+  (define ctx
     (atomically ;; connect SSL_CTX_new to subsequent check-valid (ERR_get_error)
      (let ([ctx (SSL_CTX_new meth)])
        (check-valid ctx who "context creation")
-       (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
-                                          SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
-       ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f)))))
+       ctx)))
+  (unless (memq protocol-symbol '(sslv2 sslv3))
+    (SSL_CTX_set_options ctx (bitwise-ior SSL_OP_NO_SSLv2 SSL_OP_NO_SSLv3)))
+  (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
+                                     SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
+  ctx)
 
 (define (ssl-make-client-context [protocol-symbol default-encrypt])
   (make-context 'ssl-make-client-context protocol-symbol #t))
@@ -599,9 +628,7 @@ TO DO:
                      #:need-unsealed? [need-unsealed? #f])
   (if (ssl-context? context-or-encrypt-method)
       (extract-ctx who need-unsealed? context-or-encrypt-method)
-      (let ([ctx (SSL_CTX_new (encrypt->method who context-or-encrypt-method client?))])
-        (SSL_CTX_set_mode ctx SSL_MODE_ENABLE_PARTIAL_WRITE)
-        ctx)))
+      (make-raw-context who context-or-encrypt-method client?)))
 
 (define (get-context/listener who ssl-context-or-listener [fail? #t]
                               #:need-unsealed? [need-unsealed? #f])
@@ -862,7 +889,7 @@ TO DO:
   (let ([locs (ssl-default-verify-sources)])
     (define (reset)
       (let* ([now (current-seconds)]
-             [ctx (ssl-make-secure-client-context 'tls)])
+             [ctx (ssl-make-secure-client-context default-encrypt)])
         (set! context-cache (list (make-weak-box ctx) locs now))
         ctx))
     (let* ([cached context-cache]

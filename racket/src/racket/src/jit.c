@@ -1329,10 +1329,12 @@ static Scheme_Native_Closure_Data *create_native_case_lambda(Scheme_Case_Lambda 
     o = c->array[i];
     if (SCHEME_PROCP(o))
       o = (Scheme_Object *)((Scheme_Closure *)o)->code;
-    data = (Scheme_Closure_Data *)o;
+    data = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
+    memcpy(data, o, sizeof(Scheme_Closure_Data));
     ensure_closure_native(data, ndata);
     if (data->u.native_code->max_let_depth > max_let_depth)
       max_let_depth = data->u.native_code->max_let_depth;
+    c->array[i] = (Scheme_Object *)data;
   }
   ndata->max_let_depth = max_let_depth;
   ndata->closure_size = -(count + 1); /* Indicates case-lambda */
@@ -3714,9 +3716,10 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
 #endif
   }
   
-  /* Add a couple of extra slots to computed let-depth, in case
-     we haven't quite computed right for inlined uses, etc. */
-  max_depth = WORDS_TO_BYTES(data->max_let_depth + gdata.max_extra + 2);
+  /* Add a couple of extra slots to computed let-depth, as needed
+     by various inlined operations. */
+# define JIT_RUNSTACK_RESERVE 4
+  max_depth = WORDS_TO_BYTES(data->max_let_depth + gdata.max_extra + JIT_RUNSTACK_RESERVE);
   if (gdata.max_tail_depth > max_depth)
     max_depth = gdata.max_tail_depth;
 
@@ -3805,7 +3808,7 @@ static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *dat
   ndata->arity_code = sjc.on_demand_jit_arity_code;
   ndata->u2.orig_code = data;
   ndata->closure_size = data->closure_size;
-  ndata->max_let_depth = 0x4 | (case_lam ? 0x2 : 0) | (clear_code_after_jit ? 0x1 : 0);
+  ndata->max_let_depth = (JIT_RUNSTACK_RESERVE * sizeof(void*)) | (case_lam ? 0x2 : 0) | (clear_code_after_jit ? 0x1 : 0);
   ndata->tl_map = data->tl_map;
 
 #if 0

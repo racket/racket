@@ -581,6 +581,19 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       && SCHEME_CHAPERONEP(obj1)
       && (!(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)obj1) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
           || (eql->for_chaperone > 1))) {
+    /* `obj1` and `obj2` are not eq, otherwise is_fast_equal()
+       would have returned true */
+    if (SCHEME_CHAPERONEP(obj2)) {
+      /* for immutable hashes, it's ok for the two objects to not be eq,
+         as long as the interpositions are the same and the underlying
+         values are `{impersonator,chaperone}-of?`: */
+      if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj1)->val), scheme_hash_tree_type)
+          && SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj2)->val), scheme_hash_tree_type)
+          /* eq redirects means redirects were propagated: */
+          && SAME_OBJ(((Scheme_Chaperone *)obj1)->redirects,
+                      ((Scheme_Chaperone *)obj2)->redirects))
+        obj2 = ((Scheme_Chaperone *)obj2)->prev;
+    }
     obj1 = ((Scheme_Chaperone *)obj1)->prev;
     goto top_after_next;
   }

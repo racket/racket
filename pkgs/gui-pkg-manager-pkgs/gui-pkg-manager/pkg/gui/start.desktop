@@ -1,7 +1,0 @@
-[Desktop Entry]
-Name=Racket Package Manager
-GenericName=Graphical package manager for Racket
-Comment=Racket Package Manager helps users install, update, and uninstall Racket packages.
-Terminal=false
-Type=Application
-Categories=Utility;PackageManager;

@@ -76,7 +76,7 @@
 #define SCHEME_PRIM_IS_UNSAFE_NONALLOCATE   4096
 #define SCHEME_PRIM_ALWAYS_ESCAPES          8192
 
-#define SCHEME_PRIM_OPT_TYPE_SHIFT           13
+#define SCHEME_PRIM_OPT_TYPE_SHIFT           14
 #define SCHEME_PRIM_OPT_TYPE_MASK            (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_PRIM_OPT_TYPE_SHIFT)
 #define SCHEME_PRIM_OPT_TYPE(x) ((x & SCHEME_PRIM_OPT_TYPE_MASK) >> SCHEME_PRIM_OPT_TYPE_SHIFT)
 
@@ -647,11 +647,15 @@ void scheme_block_child_signals(int block);
 void scheme_check_child_done(void);
 int scheme_extract_child_status(int status);
 #endif
+#ifdef WINDOWS_GET_PROCESS_TIMES
+extern volatile uintptr_t scheme_process_children_msecs;
+#endif
 
 void scheme_prepare_this_thread_for_GC(Scheme_Thread *t);
 
 Scheme_Object **scheme_alloc_runstack(intptr_t len);
 void scheme_set_runstack_limits(Scheme_Object **rs, intptr_t len, intptr_t start, intptr_t end);
+void scheme_check_runstack_edge(Scheme_Object **rs);
 
 void scheme_alloc_list_stack(Scheme_Thread *p);
 void scheme_clean_list_stack(Scheme_Thread *p);
@@ -2370,6 +2374,9 @@ typedef struct Scheme_Prefix
   Scheme_Object so; /* scheme_prefix_type */
   int num_slots, num_toplevels, num_stxes;
   struct Scheme_Prefix *next_final; /* for special GC handling */
+#ifdef MZ_GC_BACKTRACE
+  Scheme_Object *backpointer;
+#endif
   Scheme_Object *a[mzFLEX_ARRAY_DECL]; /* array of objects */
   /* followed by an array of `int's for tl_map uses */
 } Scheme_Prefix;
@@ -2809,7 +2816,8 @@ Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path,
 Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
                                            intptr_t phase,
                                            Scheme_Object *mark,
-                                           void *data);
+                                           void *data,
+                                           Scheme_Object **_ref_expr);
 
 void scheme_add_local_syntax(int cnt, Scheme_Comp_Env *env);
 void scheme_set_local_syntax(int pos, Scheme_Object *name, Scheme_Object *val,
@@ -3706,7 +3714,8 @@ struct Scheme_Logger {
   Scheme_Logger *parent;
   int want_level;
   Scheme_Object *want_name_level_cache; /* vector */
-  intptr_t *timestamp, local_timestamp; /* determines when want_level is up-to-date */
+  Scheme_Object **root_timestamp;
+  intptr_t local_timestamp; /* determines when want_level is up-to-date */
   Scheme_Object *syslog_level; /* (list* <level-int> <name-sym> ... <level-int>) */
   Scheme_Object *stderr_level;
   Scheme_Object *propagate_level; /* can be NULL */
@@ -4142,7 +4151,7 @@ typedef struct Scheme_Place_Async_Channel {
   intptr_t delta;
   intptr_t wr_ref, rd_ref; /* ref counts on readers and writers */
 #if defined(MZ_USE_PLACES)
-  mzrt_mutex *lock;
+  mzrt_mutex *lock; /* no allocation while this lock is held */
 #endif
   Scheme_Object **msgs;
   void **msg_memory;
@@ -4183,7 +4192,7 @@ typedef struct Scheme_Place {
 typedef struct Scheme_Place_Object {
   Scheme_Object so;
 #if defined(MZ_USE_PLACES)
-  mzrt_mutex *lock;
+  mzrt_mutex *lock; /* no allocation or place-channel locks while this lock is held */
   mzrt_sema *pause;
 #endif
   char die;

@@ -47,10 +47,10 @@ HOOK_SHARED_OK void (*scheme_set_external_stack_val)(void *);
    stack copy to account for pointers to the interior of collectable
    objects. */     
 
-extern MZ_DLLIMPORT void GC_push_all_stack(void *, void *);
-extern MZ_DLLIMPORT void GC_flush_mark_stack(void);
-extern MZ_DLLIMPORT void (*GC_push_last_roots)(void);
-extern MZ_DLLIMPORT void (*GC_push_last_roots_again)(void);
+extern MZGC_DLLIMPORT void GC_push_all_stack(void *, void *);
+extern MZGC_DLLIMPORT void GC_flush_mark_stack(void);
+extern MZGC_DLLIMPORT void (*GC_push_last_roots)(void);
+extern MZGC_DLLIMPORT void (*GC_push_last_roots_again)(void);
 /* GC_push_last_roots_again is called after marking eager
    finalizations (once at each stage). We rely on the fact that no
    copied stack will be referenced by (or affected the ordering of)
@@ -60,8 +60,8 @@ extern MZ_DLLIMPORT void (*GC_push_last_roots_again)(void);
 # define GC_is_marked(p) GC_base(p)
 # define GC_did_mark_stack_overflow() 0
 #else
-extern MZ_DLLIMPORT int GC_is_marked(void *);
-extern MZ_DLLIMPORT int GC_did_mark_stack_overflow(void);
+extern MZGC_DLLIMPORT int GC_is_marked(void *);
+extern MZGC_DLLIMPORT int GC_did_mark_stack_overflow(void);
 #endif
 
 #define get_copy(s_c) (((CopiedStack *)s_c)->_stack_copy)
@@ -673,11 +673,12 @@ void scheme_reset_jmpup_buf(Scheme_Jumpup_Buf *b)
    is fragile, because it's not well defined whether the compiler
    will generate frame-pointer setup; use mzsj86g.S, instead. */
 
-#ifdef __MINGW32__
-# if __OPTIMIZE__ > 0
-#  define NEED_STACK_FRAME_SETUP
-# endif
+#if (__OPTIMIZE__ > 0) || defined(MZ_XFORM)
+# define NEED_STACK_FRAME_SETUP
 #endif
+
+MZ_DO_NOT_INLINE(int scheme_mz_setjmp(mz_pre_jmp_buf b));
+MZ_DO_NOT_INLINE(void scheme_mz_longjmp(mz_pre_jmp_buf b, int v));
 
 int scheme_mz_setjmp(mz_pre_jmp_buf b)
 {

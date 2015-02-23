@@ -1341,7 +1341,7 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   l = cons(scheme_false, l);
 
   if (m->lang_info)
-    l = cons(m->lang_info, l);
+    l = cons(scheme_protect_quote(m->lang_info), l);
   else
     l = cons(scheme_false, l);
 

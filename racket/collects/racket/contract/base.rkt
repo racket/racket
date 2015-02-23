@@ -38,6 +38,8 @@
              
              -> ->*)
  (rename-out [->2 ->] [->*2 ->*])
+ dynamic->*
+ 
  (all-from-out "private/arr-i.rkt"
                "private/box.rkt"
                "private/hash.rkt"

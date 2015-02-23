@@ -55,7 +55,7 @@
 (define (http-conn-open! hc host-bs #:ssl? [ssl? #f] #:port [port (if ssl? 443 80)])
   (http-conn-close! hc)
   (define host (->string host-bs))
-  (define ssl-version (if (boolean? ssl?) 'sslv2-or-v3 ssl?))
+  (define ssl-version (if (boolean? ssl?) 'auto ssl?))
 
   (define-values (from to)
     (cond [ssl?
@@ -223,6 +223,7 @@
   hc)
 
 (define (http-conn-recv! hc
+                         #:method [method-bss #"GET"]
                          #:content-decode [decodes '(gzip)]
                          #:close? [iclose? #f])
   (define status (http-conn-status! hc))
@@ -232,8 +233,13 @@
         (regexp-member #rx#"^(?i:Connection: +close)$" headers)))
   (when close?
     (http-conn-abandon! hc))
+  (define head?
+    (or (equal? method-bss #"HEAD")
+        (equal? method-bss "HEAD")
+        (equal? method-bss 'HEAD)))
   (define raw-response-port
     (cond
+      [head? (open-input-bytes #"")]
       [(regexp-member #rx#"^(?i:Transfer-Encoding: +chunked)$" headers)
        (http-conn-response-port/chunked! hc #:close? #t)]
       [(ormap (λ (h)
@@ -250,6 +256,7 @@
        (http-conn-response-port/rest! hc)]))
   (define decoded-response-port
     (cond
+      [head? raw-response-port]
       [(and (memq 'gzip decodes) (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers))
        (define-values (in out) (make-pipe PIPE-SIZE))
        (define gunzip-t
@@ -280,6 +287,7 @@
                    #:content-decode decodes
                    #:data data)
   (http-conn-recv! hc 
+                   #:method method-bss
                    #:content-decode decodes
                    #:close? close?))
 
@@ -342,7 +350,8 @@
         http-conn?)]
   [http-conn-recv!
    (->* (http-conn-live?)
-        (#:content-decode (listof symbol?) 
+        (#:content-decode (listof symbol?)
+                          #:method (or/c bytes? string? symbol?)
                           #:close? boolean?)
         (values bytes? (listof bytes?) input-port?))]
   [http-conn-sendrecv!

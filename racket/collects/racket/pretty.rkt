@@ -913,7 +913,11 @@
                                   qd
                                   (to-quoted out qd obj)))])
                     (write-custom wr* obj pport depth display? width qd #f)))))]
-	    [(struct? obj)
+	    [(hide? obj)
+             (wr* pport (hide-val obj) depth display? qd)]
+	    [(unquoted? obj)
+             (orig-write (unquoted-val obj) pport)]
+            [(struct? obj)
 	     (if (and print-struct?
 		      (not (and depth
 				(zero? depth))))
@@ -959,8 +963,6 @@
                               pair? car cdr "(" ")" qd))))
 		 (parameterize ([print-hash-table #f])
 		   ((if display? orig-display orig-write) obj pport)))]
-            [(hide? obj)
-             (wr* pport (hide-val obj) depth display? qd)]
 	    [(boolean? obj)
 	     (out (if long-bools?
                       (if obj "#true" "#false")
@@ -973,7 +975,7 @@
 		       number->decimal-string
 		       number->string)
 		   obj))]
-	    [(and (pretty-print-.-symbol-without-bars)
+            [(and (pretty-print-.-symbol-without-bars)
 		  (eq? obj '|.|))
 	     (out ".")]
             [(and qd (or (symbol? obj)
@@ -981,8 +983,6 @@
              (unless (eq? obj struct-ellipses)
                (to-quoted out qd obj))
              (orig-write obj pport)]
-            [(unquoted? obj)
-             (orig-write (unquoted-val obj) pport)]
 	    [else
 	     ((if display? orig-display orig-write) obj pport)]))
        (unless (hide? obj)

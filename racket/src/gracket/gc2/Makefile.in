@@ -99,7 +99,7 @@ GRACKETMZOBJS_la =
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@ $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@)
 
 ../gracket@MMM@@MINGW@: grmain.@LTO@ ../../racket/gc2/libracket3m.dll.a ../gres.o
-	$(GRACKETLINKER) -mwindows $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../gres.o ../../racket/gc2/libracket3m.dll.a $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@) -l delayimp
+	$(GRACKETLINKER) -mwindows $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../gres.o ../../racket/gc2/libracket3m.dll.a $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@) -l delayimp -static-libgcc
 
 MZFW = ../../racket/Racket.framework/Versions/$(FWVERSION)_3m/Racket
 MRAPPSKEL = ../GRacket@MMM@.app/Contents/Info.plist

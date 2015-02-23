@@ -1451,6 +1451,7 @@ Optional Features:
   --enable-sdk=<path>     use Mac OS X 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS X 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS X 10.6 SDK directory
+  --enable-ios=<path>     use iOS SDK directory
   --enable-sysroot=<path> use sysroot directory (e.g., for Android)
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X
   --enable-libfw          install Mac OS X frameworks to /Library/Frameworks
@@ -2710,6 +2711,11 @@ if test "${enable_sdk+set}" = set; then :
   enableval=$enable_sdk;
 fi
 
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
 # Check whether --enable-xonx was given.
 if test "${enable_xonx+set}" = set; then :
   enableval=$enable_xonx;
@@ -3052,16 +3058,28 @@ if test "${enable_sdk}" != "" ; then
    if test "${enable_sdk6}" != "" ; then
      echo "ERROR: cannot specify both --enable-sdk and --enable-sdk6"
    fi
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk and --enable-ios"
+   fi
    echo "=== Using Mac OS X 10.4 SDK directory ${enable_sdk}"
 fi
 if test "${enable_sdk5}" != "" ; then
    if test "${enable_sdk6}" != "" ; then
      echo "ERROR: cannot specify both --enable-sdk5 and --enable-sdk6"
    fi
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk5 and --enable-ios"
+   fi
    echo "=== Using Mac OS X 10.5 SDK directory ${enable_sdk}"
 fi
 if test "${enable_sdk6}" != "" ; then
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk6 and --enable-ios"
+   fi
    echo "=== Using Mac OS X 10.6 SDK directory ${enable_sdk6}"
+fi
+if test "${enable_ios}" != "" ; then
+   echo "=== Using ios SDK directory ${enable_ios}"
 fi
 
 if test "${enable_sysroot}" != "" ; then
@@ -3220,6 +3238,34 @@ if test "${enable_sysroot}" != "" ; then
    LDFLAGS="--sysroot=${enable_sysroot} ${LDFLAGS}"
    SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
    SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+fi
+
+if test "${enable_ios}" != "" ; then
+  case "$host_cpu" in
+    aarch64)
+     IOS_ARCH=arm64
+     ;;
+    *)
+     IOS_ARCH=$host_cpu
+     ;;
+  esac
+  case "${enable_ios}" in
+    iPhoneOS|iPhoneSimulator)
+     ios_sdk=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
+     ;;
+    *)
+     ios_sdk="${enable_ios}"
+     ;;
+  esac
+  IOS_PHONE_VERS="6.0"
+  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1"
+  CPPFLAGS="$CPPFLAGS -DTARGET_OS_IPHONE=1"
+  PREFLAGS="$PREFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
+  CPPFLAGS="$CPPFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
+  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"
+  SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+  SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+  SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
 fi
 
 if test "${enable_oskit}" = "no" ; then
@@ -4489,6 +4535,11 @@ case "$host_os" in
     enable_pthread_by_default=yes
     try_kqueue_syscall=yes
     ;;
+  bitrig*)
+    LIBS="$LIBS -Wl,--export-dynamic"
+    enable_pthread_by_default=yes
+    try_kqueue_syscall=yes
+    ;;
   dragonfly*)
     LIBS="$LIBS -Wl,--export-dynamic"
     enable_pthread_by_default=yes
@@ -4563,7 +4614,7 @@ case "$host_os" in
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
-    CONFIG_PATH="lib"
+    CONFIG_PATH="etc"
     skip_iconv_check=yes
     check_for_mprotect=no
 
@@ -4584,7 +4635,6 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     esac
     ;;
   cygwin*)
-    enable_cgcdefault="yes"
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"

@@ -932,7 +932,7 @@ void GC_check_master_gc_request() {
 
   if (mgc) {
     /* check for GC needed due to GC_report_unsent_message_delta(): */
-    if ((mgc->gen0.current_size + mgc->pending_msg_size) >= mgc->gen0.max_size) {
+    if ((mgc->gen0.current_size + mgc->pending_msg_size) >= (mgc->gen0.max_size + mgc->prev_pending_msg_size)) {
       NewGC *gc = GC_get_GC();
 
       if (!postmaster_and_master_gc(gc))
@@ -2156,6 +2156,13 @@ static void *get_backtrace(mpage *page, void *ptr, int *kind)
 
 #define three_arg_no_op(a, b, c) /* */
 
+void GC_set_backpointer_object(void *p)
+{
+#ifdef MZ_GC_BACKTRACE
+  set_backtrace_source(GC_get_GC(), p, PAGE_TAGGED);
+#endif
+}
+
 /*****************************************************************************/
 /* Routines dealing with various runtime execution stacks                    */
 /*                                                                           */
@@ -2201,18 +2208,22 @@ static inline void *get_stack_base(NewGC *gc) {
 #define GC_X_variable_stack GC_mark2_variable_stack
 #define gcX2(a, gc) gcMARK2(*a, gc)
 #define X_source(stk, p) set_backtrace_source(gc, (stk ? stk : p), BT_STACK)
+#define X_source_resolve2(stack_mem, gc) stack_mem = GC_resolve2(stack_mem, gc) 
 #include "var_stack.c"
 #undef GC_X_variable_stack
 #undef gcX2
 #undef X_source
+#undef X_source_resolve2
 
 #define GC_X_variable_stack GC_fixup2_variable_stack
 #define gcX2(a, gc) gcFIXUP2(*a, gc)
 #define X_source(stk, p) /* */
+#define X_source_resolve2(stack_mem, gc) /* */
 #include "var_stack.c"
 #undef GC_X_variable_stack
 #undef gcX2
 #undef X_source
+#undef X_source_resolve2
 
 void GC_mark_variable_stack(void **var_stack,
                             intptr_t delta,
@@ -2279,18 +2290,20 @@ inline static void mark_finalizer_structs(NewGC *gc)
 {
   Fnl *fnl;
 
-  for(fnl = GC_resolve2(gc->finalizers, gc); fnl; fnl = GC_resolve2(fnl->next, gc)) { 
-    set_backtrace_source(gc, fnl, BT_FINALIZER);
-    gcMARK2(fnl->data, gc); 
+  for(fnl = gc->finalizers; fnl; fnl = fnl->next) { 
     set_backtrace_source(gc, &gc->finalizers, BT_ROOT);
     gcMARK2(fnl, gc);
+    fnl = GC_resolve2(fnl, gc);
+    set_backtrace_source(gc, fnl, BT_FINALIZER);
+    gcMARK2(fnl->data, gc);
   }
-  for(fnl = GC_resolve2(gc->run_queue, gc); fnl; fnl = GC_resolve2(fnl->next, gc)) {
+  for(fnl = GC_resolve2(gc->run_queue, gc); fnl; fnl = fnl->next) {
+    set_backtrace_source(gc, &gc->run_queue, BT_ROOT);
+    gcMARK2(fnl, gc);
+    fnl = GC_resolve2(fnl, gc);
     set_backtrace_source(gc, fnl, BT_FINALIZER);
     gcMARK2(fnl->data, gc);
     gcMARK2(fnl->p, gc);
-    set_backtrace_source(gc, &gc->run_queue, BT_ROOT);
-    gcMARK2(fnl, gc);
   }
 }  
 
@@ -2299,12 +2312,14 @@ inline static void repair_finalizer_structs(NewGC *gc)
   Fnl *fnl;
 
   /* repair the base parts of the list */
-  gcFIXUP2(gc->finalizers, gc); gcFIXUP2(gc->run_queue, gc);
+  gcFIXUP2(gc->finalizers, gc);
+  gcFIXUP2(gc->run_queue, gc);
   /* then repair the stuff inside them */
   for(fnl = gc->finalizers; fnl; fnl = fnl->next) {
     gcFIXUP2(fnl->data, gc);
     gcFIXUP2(fnl->p, gc);
     gcFIXUP2(fnl->next, gc);
+    /* prev, left, and right are reset by reset_finalizer_tree() */
   }
   for(fnl = gc->run_queue; fnl; fnl = fnl->next) {
     gcFIXUP2(fnl->data, gc);
@@ -2328,10 +2343,19 @@ inline static void check_finalizers(NewGC *gc, int level)
                work->eager_level, work, work->p));
       set_backtrace_source(gc, work, BT_FINALIZER);
       gcMARK2(work->p, gc);
-      if(prev) prev->next = next;
-      if(!prev) gc->finalizers = next;
-      if(gc->last_in_queue) gc->last_in_queue = gc->last_in_queue->next = work;
-      if(!gc->last_in_queue) gc->run_queue = gc->last_in_queue = work;
+      if (prev)
+        prev->next = next;
+      else
+        gc->finalizers = next;
+      if (next)
+        next->prev = work->prev;
+      work->prev = NULL; /* queue is singly-linked */
+      work->left = NULL;
+      work->right = NULL;
+      if (gc->last_in_queue)
+        gc->last_in_queue = gc->last_in_queue->next = work;
+      else
+        gc->run_queue = gc->last_in_queue = work;
       work->next = NULL;
       --gc->num_fnls;
 
@@ -2748,6 +2772,8 @@ static void collect_master(Log_Master_Info *lmi) {
     printf("END MASTER COLLECTION\n");
     GCVERBOSEprintf(gc, "END MASTER COLLECTION\n");
 #endif
+
+    MASTERGC->prev_pending_msg_size = MASTERGC->pending_msg_size;
 
     {
       int i = 0;
@@ -3662,6 +3688,7 @@ const char *trace_source_kind(int kind)
 # include "backtrace.c"
 #else
 # define reset_object_traces() /* */
+# define clear_object_traces() /* */
 # define register_traced_object(p) /* */
 # define print_traced_objects(x, q, z) /* */
 #endif
@@ -3851,6 +3878,8 @@ void GC_dump_with_traces(int flags,
   if (flags & GC_DUMP_SHOW_TRACE) {
     print_traced_objects(path_length_limit, get_type_name, print_tagged_value);
   }
+
+  clear_object_traces();
 
   if (for_each_found)
     --gc->avoid_collection;
@@ -4050,6 +4079,13 @@ mpage *allocate_compact_target(NewGC *gc, mpage *work)
 /* Compact when 1/4 of the space between objects is unused: */
 #define should_compact_page(lsize,tsize) (lsize < (tsize - PREFIX_SIZE - (APAGE_SIZE >> 2)))
 
+/* We don't currently have a way to update backreferences for compaction: */
+#if MZ_GC_BACKTRACE
+# define NO_BACKTRACE_AND(v) (0 && (v))
+#else
+# define NO_BACKTRACE_AND(v) v
+#endif
+
 inline static void do_heap_compact(NewGC *gc)
 {
   int i;
@@ -4073,8 +4109,9 @@ inline static void do_heap_compact(NewGC *gc)
     while(work) {
       if(work->marked_on && !work->has_new) {
         /* then determine if we actually want to do compaction */
-        if( tic_tock ? should_compact_page(gcWORDS_TO_BYTES(work->live_size),work->size) :
-          mmu_should_compact_page(gc->mmu, work->mmu_src_block)) {
+        if(NO_BACKTRACE_AND(tic_tock
+                            ? should_compact_page(gcWORDS_TO_BYTES(work->live_size),work->size)
+                            : mmu_should_compact_page(gc->mmu, work->mmu_src_block))) {
           void **start = PAGE_START_VSS(work);
           void **end = PAGE_END_VSS(work);
           void **newplace;
@@ -5083,10 +5120,12 @@ static void dump_stack_pos(void *a)
 # define GC_X_variable_stack GC_do_dump_variable_stack
 # define gcX2(a, gc) dump_stack_pos(a)
 # define X_source(stk, p) /* */
+# define X_source_resolve2(stk, p) /* */
 # include "var_stack.c"
 # undef GC_X_variable_stack
 # undef gcX
 # undef X_source
+# undef X_source_resolve2
 
 void GC_dump_variable_stack(void **var_stack,
     intptr_t delta,

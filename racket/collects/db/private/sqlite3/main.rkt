@@ -35,10 +35,11 @@
                                      ((read/write) SQLITE_OPEN_READWRITE)
                                      ((create)
                                       (+ SQLITE_OPEN_READWRITE SQLITE_OPEN_CREATE))))])
-      (handle-status* 'sqlite3-connect open-status db)
+      (handle-status* 'sqlite3-connect open-status db (list path mode) #f)
       (let ([c
              (new connection%
                   (db db)
+                  (db-spec (list path mode))
                   (busy-retry-limit busy-retry-limit)
                   (busy-retry-delay busy-retry-delay))])
         (when debug? (send c debug #t))

@@ -1,6 +1,7 @@
 #lang racket/base
 (require setup/dirs
          racket/file
+         racket/path
          racket/match
          racket/format
          net/url
@@ -25,6 +26,13 @@
   (or (current-pkg-download-cache-max-bytes)
       (read-pkg-cfg/def 'download-cache-max-bytes)))
 
+(define (get-trash-max-packages)
+  (or (current-pkg-trash-max-packages)
+      (read-pkg-cfg/def 'trash-max-packages)))
+(define (get-trash-max-seconds)
+  (or (current-pkg-trash-max-seconds)
+      (read-pkg-cfg/def 'trash-max-seconds)))
+
 (define (read-pkg-cfg/def k)
   ;; Lock is held for the current scope, but if
   ;; the key is not found in the current scope,
@@ -41,6 +49,8 @@
                                        "download-cache")]
       ['download-cache-max-files 1024]
       ['download-cache-max-bytes (* 64 1024 1024)]
+      ['trash-max-packages 512]
+      ['trash-max-seconds (* 60 60 24 2)] ; 2 days
       [_ #f]))
   (define c (read-pkg-file-hash (pkg-config-file)))
   (define v (hash-ref c k 'none))
@@ -58,11 +68,21 @@
     (match k
       ['catalogs
        (if (member #f v)
-           ;; Replace #f with default URLs:
+           ;; Replace #f with default URLs, relative path
+           ;; with absolute path:
            (apply append (for/list ([i (in-list v)])
-                           (if (not i)
-                               (get-default)
-                               (list i))))
+                           (cond
+                            [(not i) (get-default)]
+                            [(regexp-match? #rx"^[a-z]+://" i)
+                             (list i)]
+                            [else
+                             ;; If it doesn't look like a URL, then treat it as
+                             ;; a path (potentially relative to the configuration file):
+                             (list
+                              (url->string
+                               (path->url
+                                (simple-form-path
+                                 (path->complete-path i (path->complete-path (pkg-dir #t)))))))])))
            v)]
       [_ v])]))
 
@@ -102,7 +122,9 @@
                        "download-cache-max-files"
                        "download-cache-max-bytes"
                        "download-cache-dir"
-                       "doc-open-url")))
+                       "doc-open-url"
+                       "trash-max-packages"
+                       "trash-max-seconds")))
         (pkg-error (~a "missing value for config key\n"
                        "  config key: ~a")
                    key)]
@@ -111,7 +133,10 @@
                         "name"
                         "download-cache-max-files"
                         "download-cache-max-bytes"
-                        "download-cache-dir"))
+                        "download-cache-dir"
+                        "doc-open-url"
+                        "trash-max-packages"
+                        "trash-max-seconds"))
                val
                another-val
                more-vals)
@@ -144,7 +169,9 @@
                                                   (path->string
                                                    (path->complete-path val))))]
        [(list (and key (or "download-cache-max-files"
-                           "download-cache-max-bytes"))
+                           "download-cache-max-bytes"
+                           "trash-max-packages"
+                           "trash-max-seconds"))
               val)
         (unless (real? (string->number val))
           (pkg-error (~a "invalid value for config key\n"
@@ -176,7 +203,9 @@
              (printf "~a~a\n" indent (read-pkg-cfg/def 'installation-name))]
             [(or "download-cache-dir"
                  "download-cache-max-files"
-                 "download-cache-max-bytes")
+                 "download-cache-max-bytes"
+                 "trash-max-packages"
+                 "trash-max-seconds")
              (printf "~a~a\n" indent (read-pkg-cfg/def (string->symbol key)))]
             ["doc-open-url"
              (printf "~a~a\n" indent (or (read-pkg-cfg/def 'doc-open-url) ""))]
@@ -196,7 +225,9 @@
                               "default-scope"
                               "download-cache-dir"
                               "download-cache-max-files"
-                              "download-cache-max-bytes"))])
+                              "download-cache-max-bytes"
+                              "trash-max-packages"
+                              "trash-max-seconds"))])
           (printf "~a:\n" key)
           (show (list key) "  "))]
        [_ (show key+vals "")])]))

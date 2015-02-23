@@ -767,6 +767,8 @@ thread_val {
   gcMARK2(pr->ku.k.p3, gc);
   gcMARK2(pr->ku.k.p4, gc);
   gcMARK2(pr->ku.k.p5, gc);
+
+  gcMARK2(pr->self_for_proc_chaperone, gc);
   
   gcMARK2(pr->list_stack, gc);
   
@@ -802,8 +804,8 @@ runstack_val {
   intptr_t *s = (intptr_t *)p;
  mark:
   void **a, **b;
-  a = (void **)s + 4 + s[2];
-  b = (void **)s + 4 + s[3];
+  a = (void **)s + 5 + s[2];
+  b = (void **)s + 5 + s[3];
   while (a < b) {
     gcMARK2(*a, gc);
     a++;
@@ -812,14 +814,14 @@ runstack_val {
  fixup:
   /* Zero out the part that we didn't mark, in case it becomes
      live later. */
-  a = (void **)s + 4;
-  b = (void **)s + 4 + s[2];
+  a = (void **)s + 5;
+  b = (void **)s + 5 + s[2];
   while (a < b) {
     *a = RUNSTACK_ZERO_VAL;
     a++;
   }
-  a = (void **)s + 4 + s[3];
-  b = (void **)s + 4 + (s[1] - 4);
+  a = (void **)s + 5 + s[3];
+  b = (void **)s + 5 + (s[1] - 5);
   while (a < b) {
     *a = RUNSTACK_ZERO_VAL;
     a++;
@@ -989,7 +991,7 @@ prefix_val {
  size:
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
-                    + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
+                    + ((((pf->num_slots - pf->num_stxes) + 31) / 32) 
                        * sizeof(int))));
 }
 
@@ -1209,7 +1211,7 @@ mark_logger {
   gcMARK2(l->name, gc);
   gcMARK2(l->parent, gc);
   gcMARK2(l->want_name_level_cache, gc);
-  gcMARK2(l->timestamp, gc);
+  gcMARK2(l->root_timestamp, gc);
   gcMARK2(l->syslog_level, gc);
   gcMARK2(l->stderr_level, gc);
   gcMARK2(l->propagate_level, gc);

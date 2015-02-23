@@ -181,6 +181,7 @@ For SQLite, use symbol instead of SQLSTATE string.
 (provide error/internal
          error/internal*
          error/not-connected
+         error/disconnect-in-lock
          error/no-support
          error/need-password
          error/comm
@@ -222,6 +223,9 @@ For SQLite, use symbol instead of SQLSTATE string.
 
 (define (error/not-connected fsym)
   (error fsym "not connected"))
+
+(define (error/disconnect-in-lock fsym)
+  (error fsym "disconnected during operation;\n possibly due to custodian shutdown"))
 
 ;; ----
 

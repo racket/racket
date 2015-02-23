@@ -14,6 +14,7 @@
          (prefix-in arrow: "arrow.rkt"))
 
 (provide ->2 ->*2
+         dynamic->*
          (for-syntax ->2-handled?
                      ->*2-handled?
                      ->-valid-app-shapes
@@ -56,13 +57,15 @@
     (5 0 () () #f 1))) ;   74
 
 (define-syntax (generate-popular-key-ids stx)
-  #`(define-for-syntax #,(datum->syntax stx 'popular-key-ids)
-      (list #,@(map (λ (x y) #`(list (quote-syntax #,x) (quote-syntax #,y)))
-                    (generate-temporaries (for/list ([e (in-list popular-keys)])
-                                            'popular-plus-one-key-id))
-                    (generate-temporaries (for/list ([e (in-list popular-keys)])
-                                            'popular-chaperone-key-id))))))
-(generate-popular-key-ids)
+  (syntax-case stx ()
+    [(_ popular-key-ids)
+     #`(define-for-syntax popular-key-ids
+         (list #,@(map (λ (x y) #`(list (quote-syntax #,x) (quote-syntax #,y)))
+                       (generate-temporaries (for/list ([e (in-list popular-keys)])
+                                               'popular-plus-one-key-id))
+                       (generate-temporaries (for/list ([e (in-list popular-keys)])
+                                               'popular-chaperone-key-id)))))]))
+(generate-popular-key-ids popular-key-ids)
 
 (define-for-syntax (build-plus-one-arity-function+chaperone-constructor
                     stx
@@ -70,12 +73,12 @@
                     optional-args
                     mandatory-kwds
                     optional-kwds
-                    pre
+                    pre pre/desc
                     rest
                     rngs
-                    post)
-  (define key (and (not pre)
-                   (not post)
+                    post post/desc)
+  (define key (and (not pre) (not pre/desc)
+                   (not post) (not post/desc)
                    (list (length regular-args)
                          (length optional-args)
                          (map syntax-e mandatory-kwds)
@@ -97,70 +100,77 @@
               optional-args
               mandatory-kwds
               optional-kwds
-              pre
+              pre pre/desc
               rest
               rngs
-              post)
+              post post/desc)
              (build-chaperone-constructor/real
               '() ;; this-args 
               regular-args
               optional-args
               mandatory-kwds
               optional-kwds
-              pre
+              pre pre/desc
               rest
               rngs
-              post))]))
+              post post/desc))]))
 
 (define-syntax (build-populars stx)
-  #`(begin
-      #,@(for/list ([ids (in-list popular-key-ids)]
-                    [key (in-list popular-keys)])
-           (define plus-one-id (list-ref ids 0))
-           (define chaperone-id (list-ref ids 1))
-           (define-values (regular-arg-count
-                           optional-arg-count
-                           mandatory-kwds
-                           optional-kwds
-                           rest
-                           rngs)
-             (apply values key))
-           (define mans (for/list ([x (in-range regular-arg-count)])
-                          (string->symbol (format "man~a" x))))
-           (define opts (for/list ([x (in-range optional-arg-count)])
-                          (string->symbol (format "opt~a" x))))
-           (define rng-vars (and rngs (for/list ([x (in-range rngs)])
-                                        (string->symbol (format "rng~a" x)))))
-           #`(begin
-               (define #,(syntax-local-introduce plus-one-id)
-                 #,(build-plus-one-arity-function/real
-                    mans opts
-                    mandatory-kwds
-                    optional-kwds
-                    #f
-                    rest
-                    rng-vars
-                    #f))
-               (define #,(syntax-local-introduce chaperone-id)
-                 #,(build-chaperone-constructor/real
-                    '() ;; this arg
-                    mans opts
-                    mandatory-kwds
-                    optional-kwds
-                    #f
-                    rest
-                    rng-vars
-                    #f))))))
+  (syntax-case stx ()
+    [(_ popular-chaperone-key-table)
+     #`(begin
+         #,@(for/list ([ids (in-list popular-key-ids)]
+                       [key (in-list popular-keys)])
+              (define plus-one-id (list-ref ids 0))
+              (define chaperone-id (list-ref ids 1))
+              (define-values (regular-arg-count
+                              optional-arg-count
+                              mandatory-kwds
+                              optional-kwds
+                              rest
+                              rngs)
+                (apply values key))
+              (define mans (for/list ([x (in-range regular-arg-count)])
+                             (string->symbol (format "man~a" x))))
+              (define opts (for/list ([x (in-range optional-arg-count)])
+                             (string->symbol (format "opt~a" x))))
+              (define rng-vars (and rngs (for/list ([x (in-range rngs)])
+                                           (string->symbol (format "rng~a" x)))))
+              #`(begin
+                  (define #,(syntax-local-introduce plus-one-id)
+                    #,(build-plus-one-arity-function/real
+                       mans opts
+                       mandatory-kwds
+                       optional-kwds
+                       #f #f
+                       rest
+                       rng-vars
+                       #f #f))
+                  (define #,(syntax-local-introduce chaperone-id)
+                    #,(build-chaperone-constructor/real
+                       '() ;; this arg
+                       mans opts
+                       mandatory-kwds
+                       optional-kwds
+                       #f #f
+                       rest
+                       rng-vars
+                       #f #f))))
+         (define popular-chaperone-key-table
+           (make-hash
+            (list #,@(for/list ([id (in-list popular-key-ids)]
+                                [key (in-list popular-keys)])
+                       #`(cons '#,key #,(list-ref id 1)))))))]))
 
 (define-for-syntax (build-plus-one-arity-function/real
                     regular-args
                     optional-args
                     mandatory-kwds
                     optional-kwds
-                    pre
+                    pre pre/desc
                     rest
                     rngs
-                    post)
+                    post post/desc)
   (with-syntax ([(regb ...) (generate-temporaries regular-args)]
                 [(optb ...) (generate-temporaries optional-args)]
                 [(kb ...) (generate-temporaries mandatory-kwds)]
@@ -184,11 +194,11 @@
                     [(the-call ...) #'(f ((regb arg-x) neg-party) ... kwd-arg-exps ...)]
                     [(pre-check ...)
                      (if pre 
-                         (list #`(check-pre-condition blame neg-party f #,pre))
+                         (list #`(check-pre-cond  #,pre blame neg-party f))
                          (list))]
                     [(post-check ...)
                      (if post
-                         (list #`(check-post-condition blame neg-party f #,post))
+                         (list #`(check-post-cond #,post blame neg-party f))
                          (list))]
                     [(restb) (generate-temporaries '(rest-args))])
         (define body-proc
@@ -271,7 +281,7 @@
                             minimum-arg-count rbs rest-ctc)
   (make-keyword-procedure
    (λ (actual-kwds actual-kwd-args neg-party . regular-args)
-     (check-arg-count minimum-arg-count rbs regular-args f blame neg-party rest-ctc)
+     (check-arg-count minimum-arg-count (length rbs) regular-args f blame neg-party rest-ctc)
      (check-keywords original-mandatory-kwds original-optional-kwds actual-kwds f blame neg-party)
      (keyword-apply
       f
@@ -323,25 +333,38 @@
            (cons (((car rbs) (car regular-args)) neg-party)
                  (loop (cdr regular-args) (cdr rbs)))]))))))
 
-(build-populars)
+(build-populars popular-chaperone-key-table)
+(define (lookup-popular-chaperone-key regular-arg-count
+                                      optional-arg-count
+                                      mandatory-kwds
+                                      optional-kwds
+                                      rest
+                                      rngs)
+  (define key (list regular-arg-count
+                    optional-arg-count
+                    mandatory-kwds
+                    optional-kwds
+                    rest
+                    rngs))
+  (hash-ref popular-chaperone-key-table key #f))
 
-(define (check-arg-count minimum-arg-count rbs regular-args val blame neg-party rest-ctc)
+(define (check-arg-count minimum-arg-count len-rbs regular-args val blame neg-party rest-ctc)
   (define actual-count (length regular-args))
   (cond
     [(< actual-count minimum-arg-count)
      (raise-blame-error (blame-swap blame) #:missing-party neg-party val
                         '(expected: "~a~a arguments")
-                        (if (= (length rbs) minimum-arg-count)
+                        (if (= len-rbs minimum-arg-count)
                             ""
                             "at least ")
                         minimum-arg-count)]
-    [(and (not rest-ctc) (< (length rbs) actual-count))
+    [(and (not rest-ctc) (< len-rbs actual-count))
      (raise-blame-error (blame-swap blame) #:missing-party neg-party val
                         '(expected: "~a~a arguments")
-                        (if (= (length rbs) minimum-arg-count)
+                        (if (= len-rbs minimum-arg-count)
                             ""
                             "at most ")
-                        (+ minimum-arg-count (length rbs)))]))
+                        len-rbs)]))
 
 (define (check-keywords mandatory-kwds optional-kwds kwds val blame neg-party)
   (let loop ([mandatory-kwds mandatory-kwds]
@@ -388,19 +411,6 @@
                                 kwd)]
             [(keyword<? opt-kwd kwd)
              (loop mandatory-kwds (cdr optional-kwds) kwds)])])])))
-
-                   
-(define (check-pre-condition blame neg-party val thunk)
-  (unless (thunk)
-    (raise-blame-error
-     (blame-swap blame) #:missing-party neg-party val
-     "#:pre condition failure")))
-
-(define (check-post-condition blame neg-party val thunk)
-  (unless (thunk)
-    (raise-blame-error
-     blame #:missing-party neg-party val
-     "#:post condition failure")))
 
 (define-for-syntax (parse-arrow-args stx args this->)
   (let loop ([args args]
@@ -478,7 +488,7 @@
            [rng (add-pos-obligations (list #'rng))]))
        (define-values (plus-one-arity-function chaperone-constructor)
          (build-plus-one-arity-function+chaperone-constructor 
-          stx regular-args '() kwds '() #f #f rngs #f))
+          stx regular-args '() kwds '() #f #f #f rngs #f #f))
        (syntax-property
         #`(let #,let-bindings
             #,(quasisyntax/loc stx
@@ -498,7 +508,7 @@
                 '())))]))
 
 ;; not quite the same as split-doms in arr-util.rkt, but similar idea.
-(define-for-syntax (:split-doms stx name raw-doms)
+(define-for-syntax (:split-doms stx name raw-doms this->*)
   (let loop ([raw-doms raw-doms]
              [doms '()]
              [kwd-doms '()]
@@ -514,7 +524,10 @@
          (loop #'rest
                doms
                (cons #'(kwd x) kwd-doms)
-               (cons #`[x arg] let-bindings)))]
+               (cons #`[x #,(syntax-property #'arg 
+                                             'racket/contract:negative-position 
+                                             this->*)]
+                     let-bindings)))]
       [(kwd arg . rest)
        (and (keyword? (syntax-e #'kwd))
             (keyword? (syntax-e #'arg)))
@@ -533,22 +546,25 @@
          (loop #'rest 
                (cons #'t doms) 
                kwd-doms
-               (cons #`[t x] let-bindings)))])))
+               (cons #`[t #,(syntax-property #'x
+                                             'racket/contract:negative-position 
+                                             this->*)]
+                     let-bindings)))])))
 
-(define-for-syntax (parse->*2 stx)
+(define-for-syntax (parse->*2 stx this->*)
   (syntax-case stx ()
     [(_ (raw-mandatory-dom ...) . other)
      (let ()
-       (define-values (raw-optional-doms rest-ctc pre rng-ctcs post)
+       (define-values (raw-optional-doms rest-ctc pre pre/desc rng-ctcs post post/desc)
          (arrow:parse-leftover->* stx #'other))
        (with-syntax ([(man-dom
                        man-dom-kwds
                        man-lets)
-                      (:split-doms stx '->* #'(raw-mandatory-dom ...))]
+                      (:split-doms stx '->* #'(raw-mandatory-dom ...) this->*)]
                      [(opt-dom
                        opt-dom-kwds
                        opt-lets)
-                      (:split-doms stx '->* raw-optional-doms)])
+                      (:split-doms stx '->* raw-optional-doms this->*)])
          (values
           #'man-dom
           #'man-dom-kwds
@@ -556,13 +572,14 @@
           #'opt-dom
           #'opt-dom-kwds
           #'opt-lets
-          rest-ctc pre rng-ctcs post)))]))
+          rest-ctc pre pre/desc rng-ctcs post post/desc)))]))
 
 (define-for-syntax (->*-valid-app-shapes stx)
+  (define this->* (gensym 'this->*))
   (define-values (man-dom man-dom-kwds man-lets
                           opt-dom opt-dom-kwds opt-lets
-                          rest-ctc pre rng-ctcs post)
-    (parse->*2 stx))
+                          rest-ctc pre pre/desc rng-ctcs post post/desc)
+    (parse->*2 stx this->*))
   (with-syntax ([((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
                 [((optional-dom-kwd optional-dom-kwd-ctc) ...) opt-dom-kwds])
     (valid-app-shapes-from-man/opts (length (syntax->list man-dom))
@@ -574,10 +591,11 @@
 (define-syntax (->*2 stx)
   (cond
     [(->*2-handled? stx)
+     (define this->* (gensym 'this->*))
      (define-values (man-dom man-dom-kwds man-lets
                              opt-dom opt-dom-kwds opt-lets
-                             rest-ctc pre rng-ctcs post)
-       (parse->*2 stx))
+                             rest-ctc pre pre/desc rng-ctcs post post/desc)
+       (parse->*2 stx this->*))
      (with-syntax ([(mandatory-dom ...) man-dom]
                    [((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
                    [(mandatory-let-bindings ...) man-lets]
@@ -587,11 +605,11 @@
                    [(pre-x post-x) (generate-temporaries '(pre-cond post-cond))])
        (with-syntax ([((kwd dom opt?) ...) #'((mandatory-dom-kwd mandatory-dom-kwd-ctc #f) ...
                                               (optional-dom-kwd optional-dom-kwd-ctc #t) ...)]
-                     [(pre-let-binding ...) (if pre
-                                                (list #`[pre-x (λ () #,pre)])
-                                                (list))]
-                     [(post-let-binding ...) (if post
-                                                 (list #`[post-x (λ () #,post)])
+                     [(pre-let-binding ...) (if (or pre pre/desc)
+                                               (list #`[pre-x (λ () #,(or pre pre/desc))])
+                                               (list))]
+                     [(post-let-binding ...) (if (or post post/desc)
+                                                 (list #`[post-x (λ () #,(or post post/desc))])
                                                  (list))])
          (define-values (plus-one-arity-function chaperone-constructor)
            (build-plus-one-arity-function+chaperone-constructor
@@ -601,28 +619,40 @@
             (syntax->list #'(mandatory-dom-kwd ...))
             (syntax->list #'(optional-dom-kwd ...))
             (and pre #'pre-x)
+            (and pre/desc #'pre-x)
             rest-ctc
             rng-ctcs
-            (and post #'post-x)))
-         #`(let (mandatory-let-bindings ...
-                 optional-let-bindings ... 
-                 pre-let-binding ...
-                 post-let-binding ...)
-             (build--> '->*
-                       (list mandatory-dom ...)
-                       (list optional-dom ...)
-                       '(mandatory-dom-kwd ...)
-                       (list mandatory-dom-kwd-ctc ...)
-                       '(optional-dom-kwd ...)
-                       (list optional-dom-kwd-ctc ...)
-                       #,rest-ctc
-                       #,(and pre #t)
-                       #,(if rng-ctcs
-                             #`(list #,@rng-ctcs)
-                             #'#f)
-                       #,(and post #t)
-                       #,plus-one-arity-function 
-                       #,chaperone-constructor))))]
+            (and post #'post-x)
+            (and post/desc #'post-x)))
+         (syntax-property
+          #`(let (mandatory-let-bindings ...
+                  optional-let-bindings ... 
+                  pre-let-binding ...
+                  post-let-binding ...)
+              (build--> '->*
+                        (list mandatory-dom ...)
+                        (list optional-dom ...)
+                        '(mandatory-dom-kwd ...)
+                        (list mandatory-dom-kwd-ctc ...)
+                        '(optional-dom-kwd ...)
+                        (list optional-dom-kwd-ctc ...)
+                        #,rest-ctc
+                        #,(and pre #t)
+                        #,(if rng-ctcs
+                              #`(list #,@(for/list ([rng-ctc (in-list (syntax->list rng-ctcs))])
+                                           (syntax-property rng-ctc
+                                                            'racket/contract:positive-position
+                                                            this->*)))
+                              #'#f)
+                        #,(and post #t)
+                        #,plus-one-arity-function 
+                        #,chaperone-constructor))
+          
+          'racket/contract:contract
+          (vector this->*
+                  ;; the -> in the original input to this guy
+                  (list (car (syntax-e stx)))
+                  '()))))]
     [else
      (syntax-case stx ()
        [(_ args ...)
@@ -693,6 +723,164 @@
                            plus-one-arity-function
                            chaperone-constructor)))
 
+(define (dynamic->* #:mandatory-domain-contracts [mandatory-domain-contracts '()]
+                    #:optional-domain-contracts [optional-domain-contracts '()]
+                    #:mandatory-keywords [unsorted-mandatory-keywords '()]
+                    #:mandatory-keyword-contracts [unsorted-mandatory-keyword-contracts '()]
+                    #:optional-keywords [unsorted-optional-keywords '()]
+                    #:optional-keyword-contracts [unsorted-optional-keyword-contracts '()]
+                    #:rest-contract [rest-contract #f]
+                    #:range-contracts range-contracts)
+  
+  ;; leave these out for now
+  (define pre-cond #f)
+  (define post-cond #f)
+  
+  (define-syntax-rule (check-list e) (check-list/proc e 'e))
+  (define (check-list/proc e name)
+    (unless (list? e)
+      (raise-argument-error 
+       'dynamic->*
+       (format "list? in the #:~a argument" name)
+       e)))
+  (define (check-list/kwds e name)
+    (unless (andmap keyword? e)
+      (raise-argument-error 
+       'dynamic->*
+       (format "(listof keyword?) in the #:~a argument" name)
+       e)))
+  (define (check-same-length l1 l2 name)
+    (unless (= (length l1) (length l2))
+      (error 'dynamic->*
+             (string-append
+              "expected the length of the #:~a-keywords argument"
+              " to be the same as the length of the #:~a-keyword-contracts argument")
+             name name)))
+  (check-list mandatory-domain-contracts)
+  (check-list optional-domain-contracts)
+  (check-list unsorted-mandatory-keywords)
+  (check-list/kwds unsorted-mandatory-keywords 'mandatory-keywords)
+  (check-list unsorted-mandatory-keyword-contracts)
+  (check-same-length unsorted-mandatory-keywords unsorted-mandatory-keyword-contracts 'mandatory)
+  (check-list unsorted-optional-keywords)
+  (check-list/kwds unsorted-optional-keywords 'optional-keywords)
+  (check-list unsorted-optional-keyword-contracts)
+  (check-same-length unsorted-optional-keywords unsorted-optional-keyword-contracts 'optional)
+  (unless (or (not range-contracts)
+              (list? range-contracts))
+    (raise-argument-error 'dynamic->*
+                          "(or/c (listof contract?) #f) in the #:range-contracts argument"
+                          range-contracts))
+  
+  (define (sort-kwds unsorted-keywords unsorted-keyword-contracts)
+    (define sorted
+      (sort (map cons unsorted-keywords unsorted-keyword-contracts)
+            keyword<?
+            #:key car))
+    (values (map car sorted) (map cdr sorted)))
+  (define-values (mandatory-keywords mandatory-keyword-contracts)
+    (sort-kwds unsorted-mandatory-keywords unsorted-mandatory-keyword-contracts))
+  (define-values (optional-keywords optional-keyword-contracts)
+    (sort-kwds unsorted-optional-keywords unsorted-optional-keyword-contracts))
+  
+  (define-syntax-rule 
+    (define-next next args)
+    (define (next n) 
+      (let loop ([n n][_args args])
+        (cond
+          [(zero? n) (set! args _args) '()]
+          [(null? _args) (error 'plug-one-arity-function-dynamic->* "internal error")]
+          [else (cons (car _args) (loop (- n 1) (cdr _args)))]))))
+  
+  (define (plus-one-arity-function blame f . args)
+    (make-keyword-procedure
+     (λ (kwds kwd-args . regular-args)
+       (error 'plus-one-arity-function "not implemented for dynamic->*"))))
+  
+  (define min-arity (length mandatory-domain-contracts))
+  (define optionals (length optional-domain-contracts))
+  (define rng-len (and range-contracts (length range-contracts)))
+  (define max-arity (if rest-contract #f (+ min-arity optionals)))
+
+  (define build-chaperone-constructor
+    (or (lookup-popular-chaperone-key min-arity
+                                      optionals
+                                      mandatory-keywords
+                                      optional-keywords
+                                      (and rest-contract #t)
+                                      rng-len)
+        (λ (blame f neg-party . args)
+          (define-next next args)
+          (define mandatory-dom-projs (next min-arity))
+          (define optional-dom-projs (next optionals))
+          (define rest-proj (if rest-contract
+                                (car (next 1))
+                                #f))
+          (define mandatory-dom-kwd-projs (next (length mandatory-keyword-contracts)))
+          (define optional-dom-kwd-projs (next (length optional-keyword-contracts)))
+          (define rng-projs (and rng-len (next rng-len)))
+          (define mandatory+optional-dom-projs (append mandatory-dom-projs optional-dom-projs))
+          (define kwd-table
+            (make-hash
+             (for/list ([kwd (in-list (append mandatory-keywords optional-keywords))]
+                        [kwd-proj (in-list (append mandatory-dom-kwd-projs optional-dom-kwd-projs))])
+               (cons kwd kwd-proj))))
+          (define complete-blame (blame-add-missing-party blame neg-party))
+          
+          (define interposition-proc
+            (make-keyword-procedure
+             (λ (kwds kwd-args . args)
+               
+               (check-arg-count min-arity max-arity args f blame neg-party rest-contract)
+               (check-keywords mandatory-keywords optional-keywords kwds f blame neg-party)
+               
+               (define kwd-results
+                 (for/list ([kwd (in-list kwds)]
+                            [kwd-arg (in-list kwd-args)])
+                   (((hash-ref kwd-table kwd) kwd-arg) neg-party)))
+               (define regular-arg-results
+                 (let loop ([args args]
+                            [projs mandatory+optional-dom-projs])
+                   (cond
+                     [(and (null? projs) (null? args)) '()]
+                     [(null? projs)
+                      ((rest-proj args) neg-party)]
+                     [(null? args) (error 'cant-happen::dynamic->*)]
+                     [else (cons (((car projs) (car args)) neg-party)
+                                 (loop (cdr args) (cdr projs)))])))
+               (define (result-checker . results)
+                 (unless (= rng-len (length results))
+                   (arrow:bad-number-of-results complete-blame f rng-len results))
+                 (apply 
+                  values
+                  (for/list ([res (in-list results)]
+                             [neg-party-proj (in-list rng-projs)])
+                    ((neg-party-proj res) neg-party))))
+               (define args-dealt-with
+                 (if (null? kwds)
+                     regular-arg-results
+                     (cons kwd-results regular-arg-results)))
+               (apply
+                values
+                (if range-contracts
+                    (cons result-checker args-dealt-with)
+                    args-dealt-with)))))
+          
+          (arrow:arity-checking-wrapper f complete-blame 
+                                        interposition-proc interposition-proc
+                                        min-arity max-arity
+                                        min-arity max-arity 
+                                        mandatory-keywords optional-keywords))))
+  
+  (build--> 'dynamic->*
+            mandatory-domain-contracts optional-domain-contracts 
+            mandatory-keywords mandatory-keyword-contracts
+            optional-keywords optional-keyword-contracts
+            rest-contract
+            pre-cond range-contracts post-cond
+            plus-one-arity-function
+            build-chaperone-constructor))
+
 ;; min-arity : nat
 ;; doms : (listof contract?)[len >= min-arity]
 ;;        includes optional arguments in list @ end
@@ -728,19 +916,19 @@
               addl-available
               (λ ()
                 (for/list ([c (in-list (base->-rngs ctc))])
-                  (generate/choose c fuel))))
+                  (contract-random-generate/choose c fuel))))
              '()))
        (cond
          [(for/and ([rng-gen (in-list rngs-gens)])
             rng-gen)
-          (define env (generate-env))
+          (define env (contract-random-generate-get-current-environment))
           (λ ()
             (procedure-reduce-arity
              (λ args
                ; stash the arguments for use by other generators
                (for ([ctc (in-list dom-ctcs)]
                      [arg (in-list args)])
-                 (env-stash env ctc arg))
+                 (contract-random-generate-stash env ctc arg))
                ; exercise the arguments
                (for ([arg (in-list args)]
                      [dom-exer (in-list dom-exers)])
@@ -769,11 +957,11 @@
      (λ (fuel)
        (define gens 
          (for/list ([dom-ctc (in-list dom-ctcs)])
-           (generate/choose dom-ctc fuel)))
+           (contract-random-generate/choose dom-ctc fuel)))
        (define kwd-gens
          (for/list ([kwd-info (in-list dom-kwd-infos)])
-           (generate/choose (kwd-info-ctc kwd-info) fuel)))
-       (define env (generate-env))
+           (contract-random-generate/choose (kwd-info-ctc kwd-info) fuel)))
+       (define env (contract-random-generate-get-current-environment))
        (cond
          [(and (andmap values gens)
                (andmap values kwd-gens))
@@ -792,7 +980,7 @@
                 (when rng-ctcs
                   (for ([res-ctc (in-list rng-ctcs)]
                         [result (in-list results)])
-                    (env-stash env res-ctc result))))))
+                    (contract-random-generate-stash env res-ctc result))))))
            (or rng-ctcs '()))]
          [else
           (values void '())]))]

@@ -31,11 +31,10 @@ The result is a Windows-style build, but without MzCOM. If you are using
 a variant of MinGW without "libdelayimp.a", get the implementation of
 "delayimp.c" from MinGW-w64 and compile it to "libdelayimp.a".
 
-To compile with Cygwin tools, follow the Unix instructions below, and be
-sure to configure with `--enable-shared'.  The result is a Unix-style
-build, not a Windows-style build (e.g., Racket's `system-type' procedure
-returns 'unix, not 'windows, and `racket/gui' uses Gtk instead of
-Win32).
+To compile with Cygwin tools, follow the Unix instructions below.  The
+result is a Unix-style build, not a Windows-style build (e.g.,
+Racket's `system-type' procedure returns 'unix, not 'windows, and
+`racket/gui' uses Gtk instead of Win32).
 
 Beware that MinGW/Cygwin builds different from the MSVC build when
 SSE-based floating-point math is enabled in the C compiler. In that
@@ -228,11 +227,12 @@ Detailed instructions:
     can find the installation directories.  At this stage, in case you
     are packaging an installation instead of installing directly, you
     can redirect the installation by setting the "DESTDIR" environment
-    variable.  For example, `make DESTDIR=/tmp/racket-build install'
-    places the installation into "/tmp/racket-build" instead of the
-    location originally specified with `--prefix'.  The resulting
-    installation will not work, however, until it is moved to the
-    location originally specified with `--prefix'.
+    variable to an absolute path for the packaging area. For example,
+    `make DESTDIR=/tmp/racket-build install' places the installation
+    into "/tmp/racket-build" instead of the location originally
+    specified with `--prefix'.  The resulting installation will not
+    work, however, until it is moved to the location originally
+    specified with `--prefix'.
 
     Finally, the `make install' step compiles ".zo" bytecode files for
     installed Racket source, generates launcher programs like
@@ -308,6 +308,30 @@ of Android (such as 14), and
 
 is in your PATH (so that a suitable `gcc', `ar', etc., are found) for
 the [comp] of your choice and the [platform] used to compile.
+
+========================================================================
+ Cross-compiling for iOS
+========================================================================
+
+To compile the Racket runtime system as a Framework for iOS, use (all
+on one line)
+
+  configure --host=[arch]-apple-darwin
+            --enable-ios="[sdk]"
+            --enable-racket=racket
+
+where [arch] is one of
+
+ - armv7, armv7s, or aarch64: to run on iOS
+ - i386 or x86_64: to run on the simulator
+
+The [sdk] argument is a path to an iOS SDK, but if it is "iPhoneOS" or
+"iPhoneSimulator", then the corresponding SDK is located in the
+standard place within the XCode application. For example, "iPhoneOS"
+becomes the path (all on one line)
+
+  /Applications/Xcode.app/Contents/Developer/Platforms/
+    iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
 
 ========================================================================
  CGC versus 3m
@@ -435,5 +459,5 @@ Modifying Racket
 
 If you modify Racket and change any primitive syntax or the collection
 of built-in identifiers, be sure to turn off USE_COMPILED_STARTUP in
-"schminc.h".  Otherwise, Racket won't start.  See "schminc.h" for
+"schminc.h"; otherwise, Racket won't start.  See "schminc.h" for
 details.

@@ -1,5 +1,0 @@
-<machine initial="red">
- <action state="red"    next="green" />
- <action state="green"  next="yellow" />
- <action state="yellow" next="red" />
-</machine>

@@ -10,7 +10,8 @@
          "collects.rkt"
          "params.rkt"
          "print.rkt"
-         "get-info.rkt")
+         "get-info.rkt"
+         "trash.rkt")
 
 (provide remove-package
          pkg-remove)
@@ -24,9 +25,13 @@
         (printf/flush "Demoting ~a to auto-installed\n" pkg-name))
       (update-pkg-db! pkg-name (update-auto pi #t)))))
 
-(define ((remove-package quiet?) pkg-name)
+(define ((remove-package for-install? quiet? use-trash?) pkg-name)
   (unless quiet?
-    (printf/flush "Removing ~a\n" pkg-name))
+    (printf/flush "~a ~a\n"
+                  (if for-install?
+                      "Uninstalling to prepare re-install of"
+                      "Removing")
+                  pkg-name))
   (define db (read-pkg-db))
   (define pi (package-info pkg-name #:db db))
   (match-define (pkg-info orig-pkg checksum _) pi)
@@ -36,7 +41,7 @@
   (define user? (not (or (eq? scope 'installation)
                          (path? scope))))
   (match orig-pkg
-    [`(,(or 'link 'static-link) ,_)
+    [`(,(or 'link 'static-link 'clone) ,_ . ,_)
      (links pkg-dir
             #:remove? #t
             #:user? user?
@@ -48,8 +53,14 @@
             #:user? user?
             #:file (scope->links-file scope)
             #:root? (not (sc-pkg-info? pi)))
-     (delete-directory/files pkg-dir)]))
-
+     (cond
+      [(and use-trash?
+            (select-trash-dest pkg-name))
+       => (lambda (trash-dest)
+            (printf/flush "Moving ~a to trash: ~a\n" pkg-name trash-dest)
+            (rename-file-or-directory pkg-dir trash-dest))]
+      [else
+       (delete-directory/files pkg-dir)])]))
       
 
 (define (pkg-remove given-pkgs
@@ -57,6 +68,7 @@
                     #:force? [force? #f]
                     #:auto? [auto? #f]
                     #:quiet? [quiet? #f]
+                    #:use-trash? [use-trash? #f]
                     #:from-command-line? [from-command-line? #f])
   (define db (read-pkg-db))
   (define all-pkgs
@@ -134,7 +146,7 @@
      (set->list (set-subtract (list->set in-pkgs)
                               (list->set remove-pkgs)))))
 
-  (for-each (remove-package quiet?)
+  (for-each (remove-package #f quiet? use-trash?)
             remove-pkgs)
 
   (cond

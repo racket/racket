@@ -2014,6 +2014,27 @@ int scheme_check_double(const char *where, double d, const char *dest)
   return 1;
 }
 
+#ifdef MZ_USE_SINGLE_FLOATS
+int scheme_check_float(const char *where, float f, const char *dest)
+{
+  if (MZ_IS_INFINITY(f)
+      || MZ_IS_NAN(f)) {
+    if (where) {
+      char buf[32];
+      sprintf(buf, "no %s representation", dest);
+      scheme_contract_error(where,
+                            buf,
+                            "number", 1, scheme_make_float(f),
+                            NULL);
+    }
+    return 0;
+  }
+
+  return 1;
+}
+#endif
+
+
 #ifdef MZ_LONG_DOUBLE
 int scheme_check_long_double(const char *where, long_double d, const char *dest)
 {

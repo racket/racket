@@ -839,6 +839,8 @@ Conventions:
                         #'pattern
                         #'#s(internal-rest-pattern rest-x rest-cx rest-pr))])
           #'(parse:S x cx pattern pr es k))]
+       [#s(hpat:action attrs action subpattern)
+        #'(parse:A x cx action pr es (parse:H x cx rest-x rest-cx rest-pr subpattern pr es k))]
        [#s(hpat:optional (a ...) pattern defaults)
         (with-syntax ([(#s(attr id _ _) ...) #'(a ...)])
           #`(let ([success

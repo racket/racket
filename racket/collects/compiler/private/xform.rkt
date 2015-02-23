@@ -886,8 +886,8 @@
                ;; they either take one argument or no pointer arguments.
                ;; So we can ignore them:
                
-               
                __get_errno_ptr ; QNX preprocesses errno to __get_errno_ptr
+               __getreent ; Cygwin
 
                strlen cos cosl sin sinl exp expl pow powl log logl sqrt sqrtl atan2 atan2l
                isnan isinf fpclass _fpclass __fpclassify __fpclassifyf __fpclassifyl

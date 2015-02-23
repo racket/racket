@@ -5330,10 +5330,17 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type)
   return key;
 }
 
-static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutables) {
-  char *immutable_array = NULL;
+static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutables, int *_min_cnt)
+/* If `_min_cnt` is not NULL, then mutability positions can determine a minimum
+   argument count that is bigger than `icnt`. */
+{
+  char *immutable_array = NULL, *a2;
 
-  if (icnt > 0) {
+  if (_min_cnt)
+    *_min_cnt = icnt;
+  
+  if ((icnt > 0) || _min_cnt) {
+    int sz = (icnt ? icnt : 1);
     immutable_array = (char *)scheme_malloc_atomic(icnt);
     memset(immutable_array, 1, icnt);
 
@@ -5341,7 +5348,7 @@ static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutab
       int i;
       int len;
       len = SCHEME_VEC_SIZE(mutables);
-      if (len > icnt)
+      if ((len > icnt) && !_min_cnt)
         return NULL;
 
       for (i = 0; i < len; i++) {
@@ -5350,21 +5357,34 @@ static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutab
         a = SCHEME_VEC_ELS(mutables)[i];
         if (!SCHEME_INTP(a)
             || (SCHEME_INT_VAL(a) < 0)
-            || (SCHEME_INT_VAL(a) >= icnt))
+            || ((SCHEME_INT_VAL(a) >= icnt)
+                && !_min_cnt))
           return NULL;
         a_val = SCHEME_INT_VAL(a);
+        if (_min_cnt && (a_val >= *_min_cnt)) {
+          *_min_cnt = a_val+1;
+        }
+        if (a_val >= sz) {
+          a2 = (char *)scheme_malloc_atomic(a_val * 2);
+          memset(a2, 1, a_val * 2);
+          memcpy(a2, immutable_array, sz);
+          sz = a_val * 2;
+          immutable_array = a2;
+        }
         immutable_array[a_val] = 0;
       }
     }
   }
+  
   return immutable_array;
 }
 
-Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_count)
+Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int min_field_count)
 {
   Scheme_Struct_Type *parent = NULL;
   Scheme_Object *a, *uninit_val, *mutables, *name;
-  int ucnt, icnt;
+  intptr_t ucnt, icnt;
+  int inferred_size = 0;
   char *immutable_array = NULL;
 
   if (SCHEME_SYMBOLP(key))
@@ -5373,9 +5393,8 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
   if (scheme_proper_list_length(key) < 0)
     return NULL;
 
-  if (field_count > MAX_STRUCT_FIELD_COUNT)
-    field_count = MAX_STRUCT_FIELD_COUNT;
-
+  if (min_field_count > MAX_STRUCT_FIELD_COUNT)
+    min_field_count = MAX_STRUCT_FIELD_COUNT;
 
   {
     Scheme_Struct_Type *stype = NULL;
@@ -5422,11 +5441,12 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
     if (!SCHEME_INTP(a)) {
       if (SCHEME_NULLP(SCHEME_CDR(key))) {
         /* For last one, size can be inferred */
-        icnt = field_count - ucnt - (parent
-                                     ? parent->num_slots
-                                     : 0);
+        icnt = min_field_count - ucnt - (parent
+                                         ? parent->num_slots
+                                         : 0);
         if (icnt < 0)
           icnt = 0;
+        inferred_size = 1;
       } else
         return NULL;
     } else {
@@ -5446,7 +5466,16 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
       return NULL;
     name = a;
 
-    immutable_array = mutability_data_to_immutability_data(icnt + ucnt, mutables);
+    if ((icnt + ucnt) || (mutables && SCHEME_VEC_SIZE(mutables))) {
+      int min_cnt;
+      immutable_array = mutability_data_to_immutability_data(icnt + ucnt,
+                                                             mutables,
+                                                             inferred_size ? &min_cnt : NULL);
+      if (!immutable_array)
+        return NULL;
+      if (inferred_size && (min_cnt > icnt + ucnt))
+        icnt = min_cnt - ucnt;
+    }
 
     if (parent && (icnt + parent->num_slots > MAX_STRUCT_FIELD_COUNT))
       return NULL;
@@ -5800,7 +5829,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
   const char *kind;
   Scheme_Hash_Tree *props = NULL, *red_props = NULL, *empty_red_props = NULL, *setter_positions = NULL;
   intptr_t field_pos;
-  int empty_si_chaperone = 0, *empty_redirects = NULL, has_redirect = 0;
+  int empty_si_chaperone = 0, *empty_redirects = NULL, has_redirect = 0, witnessed = 0;
 
   if (argc == 1) return argv[0];
 
@@ -5823,14 +5852,33 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
   else
     inspector = NULL;
 
-  for (i = 1; i < argc; i++) {
+  i = 1;
+
+  if ((i < argc) && (SCHEME_STRUCT_TYPEP(argv[i])
+                     || (SCHEME_NP_CHAPERONEP(argv[i])
+                         && SCHEME_STRUCT_TYPEP(SCHEME_CHAPERONE_VAL(argv[i]))))) {
+    if (!SCHEME_STRUCTP(val) || !scheme_is_struct_instance((SCHEME_NP_CHAPERONEP(argv[i])
+                                                            ? SCHEME_CHAPERONE_VAL(argv[i])
+                                                            : argv[i]),
+                                                           val)) {
+      scheme_contract_error(name,
+                            "given value is not an instance of the given structure type",
+                            "struct type", 1, argv[i],
+                            "value", 1, argv[0],
+                            NULL);
+      return NULL;
+    }
+    i++;
+    witnessed = 1;
+  }
+
+  for (; i < argc; i++) {
     proc = argv[i];
 
     if ((i > 1) && SAME_TYPE(SCHEME_TYPE(proc), scheme_chaperone_property_type)) {
       props = scheme_parse_chaperone_props(name, i, argc, argv);
       break;
     }
-    
 
     a[0] = proc;
     if (SCHEME_CHAPERONEP(proc)) proc = SCHEME_CHAPERONE_VAL(proc);
@@ -5840,21 +5888,29 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
         offset = stype->num_slots;
       else
         offset = 0;
+      witnessed = 1;
     } else if (SCHEME_TRUEP(struct_getter_p(1, a))) {
       kind = "accessor";
       offset = 0;
+      witnessed = 1;
     } else if (SCHEME_TRUEP(struct_prop_getter_p(1, a))) {
       kind = "struct-type property accessor";
       offset = -1;
+      witnessed = 1;
     } else if (!is_impersonator && SAME_OBJ(proc, struct_info_proc)) {
       kind = "struct-info";
       offset = -2;
     } else {
-      scheme_wrong_contract(name, 
-                            "(or/c struct-accessor-procedure?\n"
-			    "      struct-mutator-procedure?\n"
-                            "      struct-type-property-accessor-procedure?\n"
-			    "      (one-of/c struct-info))",
+#define CHAP_PROC_CONTRACT_STR(extra)                      \
+      ("(or/c " extra "struct-accessor-procedure?\n"      \
+       "      struct-mutator-procedure?\n"                 \
+       "      struct-type-property-accessor-procedure?\n"  \
+       "      (one-of/c struct-info))")
+      
+      scheme_wrong_contract(name,
+                            ((i == 1)
+                             ? CHAP_PROC_CONTRACT_STR("struct-type?\n      ")
+                             : CHAP_PROC_CONTRACT_STR("")),
                             i, argc, argv);
       return NULL;
     }
@@ -6046,6 +6102,18 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
 
   if (!has_redirect && !props)
     return argv[0];
+
+  if (!witnessed) {
+    scheme_contract_error(name,
+                          (is_impersonator
+                           ? "cannot impersonate value as a structure without a witness"
+                           : "cannot chaperone value as a structure without a witness"),
+                          "explanation", 0, ("a structure type, accessor, or mutator acts as a witness\n"
+                                             "   that the given value's representation can be chaperoned or impersonated"),
+                          "given value", 1, argv[0],
+                          NULL);
+    return NULL;
+  }
   
   if (!redirects) {
     /* a non-structure chaperone */

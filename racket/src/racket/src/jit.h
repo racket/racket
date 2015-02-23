@@ -635,7 +635,7 @@ void *scheme_jit_get_threadlocal_table();
 static void *top;
 static void *cr_tmp;
 # define CHECK_RUNSTACK_OVERFLOW_NOCL() \
-     jit_sti_l(&cr_tmp, JIT_R0); jit_ldi_l(JIT_R0, &scheme_current_runstack_start); \
+  jit_sti_l(&cr_tmp, JIT_R0); jit_movi_l(JIT_R0, __LINE__); jit_ldi_l(JIT_R0, &scheme_current_runstack_start); \
   top = (_jit.x.pc); (void)jit_bltr_ul(top, JIT_RUNSTACK, JIT_R0); jit_ldi_l(JIT_R0, &cr_tmp)
 # define CHECK_RUNSTACK_OVERFLOW() \
      CHECK_LIMIT(); CHECK_RUNSTACK_OVERFLOW_NOCL()
@@ -1471,7 +1471,7 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
                               Scheme_Closure_Data *direct_data);
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
 				  int multi_ok, int result_ignored, int nontail_self, int pop_and_jump, 
-                                  int is_inlined, int unboxed_args);
+                                  int is_inlined, int unboxed_args, jit_insn *reftop);
 int scheme_generate_finish_tail_call(mz_jit_state *jitter, int direct_native);
 int scheme_generate_finish_apply(mz_jit_state *jitter);
 int scheme_generate_finish_multi_apply(mz_jit_state *jitter);

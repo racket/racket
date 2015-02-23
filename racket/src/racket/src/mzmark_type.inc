@@ -1860,6 +1860,8 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pr->ku.k.p3, gc);
   gcMARK2(pr->ku.k.p4, gc);
   gcMARK2(pr->ku.k.p5, gc);
+
+  gcMARK2(pr->self_for_proc_chaperone, gc);
   
   gcMARK2(pr->list_stack, gc);
   
@@ -1975,6 +1977,8 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pr->ku.k.p3, gc);
   gcFIXUP2(pr->ku.k.p4, gc);
   gcFIXUP2(pr->ku.k.p5, gc);
+
+  gcFIXUP2(pr->self_for_proc_chaperone, gc);
   
   gcFIXUP2(pr->list_stack, gc);
   
@@ -2019,8 +2023,8 @@ static int runstack_val_SIZE(void *p, struct NewGC *gc) {
 static int runstack_val_MARK(void *p, struct NewGC *gc) {
   intptr_t *s = (intptr_t *)p;
   void **a, **b;
-  a = (void **)s + 4 + s[2];
-  b = (void **)s + 4 + s[3];
+  a = (void **)s + 5 + s[2];
+  b = (void **)s + 5 + s[3];
   while (a < b) {
     gcMARK2(*a, gc);
     a++;
@@ -2032,8 +2036,8 @@ static int runstack_val_MARK(void *p, struct NewGC *gc) {
 static int runstack_val_FIXUP(void *p, struct NewGC *gc) {
   intptr_t *s = (intptr_t *)p;
   void **a, **b;
-  a = (void **)s + 4 + s[2];
-  b = (void **)s + 4 + s[3];
+  a = (void **)s + 5 + s[2];
+  b = (void **)s + 5 + s[3];
   while (a < b) {
     gcFIXUP2(*a, gc);
     a++;
@@ -2041,14 +2045,14 @@ static int runstack_val_FIXUP(void *p, struct NewGC *gc) {
 
   /* Zero out the part that we didn't mark, in case it becomes
      live later. */
-  a = (void **)s + 4;
-  b = (void **)s + 4 + s[2];
+  a = (void **)s + 5;
+  b = (void **)s + 5 + s[2];
   while (a < b) {
     *a = RUNSTACK_ZERO_VAL;
     a++;
   }
-  a = (void **)s + 4 + s[3];
-  b = (void **)s + 4 + (s[1] - 4);
+  a = (void **)s + 5 + s[3];
+  b = (void **)s + 5 + (s[1] - 5);
   while (a < b) {
     *a = RUNSTACK_ZERO_VAL;
     a++;
@@ -2447,7 +2451,7 @@ static int prefix_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
-                    + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
+                    + ((((pf->num_slots - pf->num_stxes) + 31) / 32) 
                        * sizeof(int))));
 }
 
@@ -2459,7 +2463,7 @@ static int prefix_val_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
-                    + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
+                    + ((((pf->num_slots - pf->num_stxes) + 31) / 32) 
                        * sizeof(int))));
 }
 
@@ -2471,7 +2475,7 @@ static int prefix_val_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
-                    + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
+                    + ((((pf->num_slots - pf->num_stxes) + 31) / 32) 
                        * sizeof(int))));
 }
 
@@ -3007,7 +3011,7 @@ static int mark_logger_MARK(void *p, struct NewGC *gc) {
   gcMARK2(l->name, gc);
   gcMARK2(l->parent, gc);
   gcMARK2(l->want_name_level_cache, gc);
-  gcMARK2(l->timestamp, gc);
+  gcMARK2(l->root_timestamp, gc);
   gcMARK2(l->syslog_level, gc);
   gcMARK2(l->stderr_level, gc);
   gcMARK2(l->propagate_level, gc);
@@ -3021,7 +3025,7 @@ static int mark_logger_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(l->name, gc);
   gcFIXUP2(l->parent, gc);
   gcFIXUP2(l->want_name_level_cache, gc);
-  gcFIXUP2(l->timestamp, gc);
+  gcFIXUP2(l->root_timestamp, gc);
   gcFIXUP2(l->syslog_level, gc);
   gcFIXUP2(l->stderr_level, gc);
   gcFIXUP2(l->propagate_level, gc);

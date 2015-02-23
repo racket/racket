@@ -31,7 +31,9 @@
    (except for the garbage collector, which is in `gc', `sgc', or
    `gc2', depending on which one you're using). */
 
-#define __MINGW32_DELAY_LOAD__ 1
+#ifdef __MINGW32__
+# define __MINGW32_DELAY_LOAD__ 1
+#endif
 #include "scheme.h"
 
 /*========================================================================*/

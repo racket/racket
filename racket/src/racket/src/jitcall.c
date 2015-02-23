@@ -642,7 +642,7 @@ static int generate_direct_prim_non_tail_call(mz_jit_state *jitter, int num_rand
 static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok, int result_ignored, 
                                GC_CAN_IGNORE jit_insn *reftop)
   /* If num_rands < 0, original argc is in V1, and we should
-     pop argc arguments off runstack before pushing more.
+     pop argc arguments off runstack before pushing more (unless num_rands == -3).
      This function is called with short jumps enabled. */
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2, *refloop;
@@ -657,15 +657,14 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
   /* Get new argc: */
   (void)mz_tl_ldi_p(JIT_R1, tl_scheme_current_thread);
   jit_ldxi_l(JIT_R2, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_num_rands);
-  if (num_rands >= 0) {
-    jit_movi_l(JIT_V1, 0);
-  }
-  /* Thread is in R1. New argc is in R2. Old argc to cancel is in V1. */
+  /* Thread is in R1. New argc is in R2. Old argc to cancel may be in V1. */
 
   /* Enough room on runstack? */
   mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK_START);
   jit_subr_ul(JIT_R0, JIT_RUNSTACK, JIT_R0); /* R0 is space left (in bytes) */
-  jit_subr_l(JIT_R2, JIT_R2, JIT_V1);
+  if ((num_rands < 0) && (num_rands != -3)) {
+    jit_subr_l(JIT_R2, JIT_R2, JIT_V1);
+  }
   jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
   ref = jit_bltr_ul(jit_forward(), JIT_R0, JIT_R2);
   CHECK_LIMIT();
@@ -695,6 +694,8 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
      Put procedure and argc in place, then jump to apply: */
   mz_patch_branch(ref2);
   jit_ldxi_p(JIT_V1, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_rator);
+  (void)jit_movi_p(JIT_R0, NULL);
+  jit_stxi_p(&((Scheme_Thread *)0x0)->ku.apply.tail_rator, JIT_R1, JIT_R0);
   jit_ldxi_l(JIT_R0, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_num_rands);
   __END_SHORT_JUMPS__(1);
   (void)jit_jmpi(reftop);
@@ -753,7 +754,7 @@ static int generate_ignored_result_check(mz_jit_state *jitter)
 
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
 				  int multi_ok, int result_ignored, int nontail_self, int pop_and_jump, 
-                                  int is_inlined, int unboxed_args)
+                                  int is_inlined, int unboxed_args, jit_insn *reftop)
 {
   /* Non-tail call.
      Proc is in V1, args are at RUNSTACK.
@@ -762,21 +763,24 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
       where R2 is set before jumping to the old FP, and R1 holds
       return address back here, and V1 and R0 must be preserved; 
       num_rands >= 0 in this case, and the "slow path" returns NULL.
-     If num_rands < 0, then argc is in R0, and need to pop runstack before returning.
-     If num_rands == -1, skip prolog. */
+     If num_rands < 0, then argc is in R0, and
+      if num_rands != -3, need to pop runstack before returning.
+     If num_rands == -1 or -3, skip prolog. */
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref4, *ref5, *ref6, *ref7, *ref8, *ref9;
-  GC_CAN_IGNORE jit_insn *ref10, *reftop = NULL, *refagain;
+  GC_CAN_IGNORE jit_insn *ref10, *refagain;
   GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 #ifndef FUEL_AUTODECEREMENTS
   GC_CAN_IGNORE jit_insn *ref11;
 #endif
 
+  CHECK_RUNSTACK_OVERFLOW();
+
   __START_SHORT_JUMPS__(1);
 
   if (pop_and_jump) {
-    if (num_rands != -1) {
+    if ((num_rands != -1) && (num_rands != -3)) {
       mz_prolog(JIT_R1);
-    } else {
+    } else if (!reftop) {
       reftop = jit_get_ip();
     }
   }
@@ -827,7 +831,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     GC_CAN_IGNORE jit_insn *refxr;
 #endif
     if (num_rands < 0) {
-      /* We need to save argc to manually pop the
+      /* We need to save argc to clear and manually pop the
          runstack. So move V1 to R2 and move R0 to V1: */
       jit_movr_p(JIT_R2, JIT_V1);
       jit_movr_p(JIT_V1, JIT_R0);
@@ -915,7 +919,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     __START_INNER_TINY__(1);
     refc = jit_blei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
     __END_INNER_TINY__(1);
-    if (num_rands < 0) { 
+    if ((num_rands < 0) && (num_rands != -3)) {
       /* At this point, argc must be in V1 */
       jit_lshi_l(JIT_R1, JIT_V1, JIT_LOG_WORD_SIZE);
       jit_addr_p(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R1);
@@ -940,7 +944,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   generate_clear_previous_args(jitter, num_rands);
   CHECK_LIMIT();
   if (pop_and_jump) {
-    /* Expects argc in V1 if num_rands < 0: */
+    /* Expects argc in V1 if num_rands < 0 and num_rands != -3: */
     generate_retry_call(jitter, num_rands, multi_ok, result_ignored, reftop);
   }
   CHECK_LIMIT();
@@ -1003,7 +1007,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     generate_clear_previous_args(jitter, num_rands);
     CHECK_LIMIT();
     if (pop_and_jump) {
-      /* Expects argc in V1 if num_rands < 0: */
+      /* Expects argc in V1 if num_rands < 0 and num_rands != -3: */
       generate_retry_call(jitter, num_rands, multi_ok, result_ignored, reftop);
     }
     CHECK_LIMIT();
@@ -1094,7 +1098,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     }
   }
   /* Note: same return code is above for faster common-case return */
-  if (num_rands < 0) { 
+  if ((num_rands < 0) && (num_rands != -3)) {
     /* At this point, argc must be in V1 */
     jit_lshi_l(JIT_R1, JIT_V1, JIT_LOG_WORD_SIZE);
     jit_addr_p(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R1);
@@ -1452,7 +1456,7 @@ static int do_generate_shared_call(mz_jit_state *jitter, void *_data)
     else
       ok = scheme_generate_non_tail_call(jitter, data->num_rands, data->direct_native, 1, 
                                          data->multi_ok, data->result_ignored, data->nontail_self, 
-                                         1, 0, data->unboxed_args);
+                                         1, 0, data->unboxed_args, NULL);
 
     scheme_jit_register_sub_func(jitter, code, scheme_false);
 
@@ -2157,7 +2161,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
           generate_nontail_self_setup(jitter);
         }
 	scheme_generate_non_tail_call(jitter, num_rands, direct_native, jitter->need_set_rs, 
-                                      multi_ok, result_ignored, nontail_self, 0, 1, 0);
+                                      multi_ok, result_ignored, nontail_self, 0, 1, 0, NULL);
       }
     }
   } else {

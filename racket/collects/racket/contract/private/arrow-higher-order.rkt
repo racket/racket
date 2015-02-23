@@ -12,17 +12,20 @@
          (prefix-in arrow: "arrow.rkt"))
 
 (provide (for-syntax build-chaperone-constructor/real)
-         ->-proj)
+         ->-proj
+         check-pre-cond
+         check-post-cond
+         pre-post/desc-result->string)
 
 (define-for-syntax (build-chaperone-constructor/real this-args
                                                      mandatory-dom-projs 
                                                      optional-dom-projs
                                                      mandatory-dom-kwds
                                                      optional-dom-kwds
-                                                     pre
+                                                     pre pre/desc
                                                      rest
                                                      rngs
-                                                     post)
+                                                     post post/desc)
   (define (nvars n sym) (generate-temporaries (for/list ([i (in-range n)]) sym)))
   (with-syntax ([(mandatory-dom-proj ...) (generate-temporaries mandatory-dom-projs)]
                 [(optional-dom-proj ...) (generate-temporaries optional-dom-projs)]
@@ -48,10 +51,11 @@
            (map list 
                 optional-dom-kwds
                 (syntax->list #'(optional-dom-kwd-proj ...)))
-           pre
+           pre pre/desc
            (if rest (car (syntax->list #'(rest-proj ...))) #f)
            (if rngs (syntax->list #'(rng-proj ...)) #f)
-           post))))
+           post post/desc))))
+
 
 (define (check-pre-cond pre blame neg-party val)
   (unless (pre)
@@ -65,24 +69,72 @@
                        #:missing-party neg-party
                        val "#:post condition")))
 
+(define (check-pre-cond/desc post blame neg-party val)
+  (handle-pre-post/desc-string #t post blame neg-party val))
+(define (check-post-cond/desc post blame neg-party val)
+  (handle-pre-post/desc-string #f post blame neg-party val))
+(define (handle-pre-post/desc-string pre? thunk blame neg-party val)
+  (define condition-result (thunk))
+  (cond
+    [(equal? condition-result #t) 
+     (void)]
+    [else
+     (define msg
+       (pre-post/desc-result->string condition-result pre? '->*))
+     (raise-blame-error (if pre? (blame-swap blame) blame)
+                        #:missing-party neg-party
+                        val "~a" msg)]))
+
+(define (pre-post/desc-result->string condition-result pre? who)
+  (cond
+    [(equal? condition-result #f)
+     (if pre?
+         "#:pre condition"
+         "#:post condition")]
+    [(string? condition-result)
+     condition-result]
+    [(and (list? condition-result)
+          (andmap string? condition-result))
+     (apply
+      string-append
+      (let loop ([s condition-result])
+        (cond
+          [(null? s) '()]
+          [(null? (cdr s)) s]
+          [else (list* (car s)
+                       "\n " 
+                       (loop (cdr s)))])))]
+    [else
+     (error
+      who
+      "expected #:~a/desc to produce (or/c boolean? string? (listof string?)), got ~e"
+      (if pre? "pre" "post")
+      condition-result)]))
+
 (define-for-syntax (create-chaperone blame val  
                                      this-args
                                      doms opt-doms
                                      req-kwds opt-kwds
-                                     pre
+                                     pre pre/desc
                                      dom-rest
                                      rngs
-                                     post)
+                                     post post/desc)
   (with-syntax ([blame blame]
                 [val val])
     (with-syntax ([(pre ...) 
-                   (if pre
-                       (list #`(check-pre-cond #,pre blame neg-party val))
-                       null)]
+                   (cond
+                     [pre
+                      (list #`(check-pre-cond #,pre blame neg-party val))]
+                     [pre/desc
+                      (list #`(check-pre-cond/desc #,pre/desc blame neg-party val))]
+                     [else null])]
                   [(post ...)
-                   (if post
-                       (list #`(check-post-cond #,post  blame neg-party val))
-                       null)])
+                   (cond
+                     [post
+                      (list #`(check-post-cond #,post blame neg-party val))]
+                     [post/desc
+                      (list #`(check-post-cond/desc #,post/desc blame neg-party val))]
+                     [else null])])
       (with-syntax ([(this-param ...) this-args]
                     [(dom-ctc ...) doms]
                     [(dom-x ...) (generate-temporaries doms)]
@@ -117,7 +169,8 @@
                                         post ...
                                         rng-results))]
                                     [args
-                                     (arrow:bad-number-of-results blame val rng-len args)]))))
+                                     (arrow:bad-number-of-results blame val rng-len args
+                                                                  #:missing-party neg-party)]))))
                            null)])
           (let* ([min-method-arity (length doms)]
                  [max-method-arity (+ min-method-arity (length opt-doms))]
@@ -286,7 +339,7 @@
                                                            #,(if dom-rest #f max-arity)
                                                            '(req-kwd ...)
                                                            '(opt-kwd ...))))])))))))))))
-  
+
 (define (maybe-cons-kwd c x r neg-party)
   (if (eq? arrow:unspecified-dom x)
       r

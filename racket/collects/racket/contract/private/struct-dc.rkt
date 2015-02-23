@@ -214,7 +214,7 @@
             (cond
               [(invariant? subc) #f]
               [(indep? subc)
-               (define sgen (generate/choose (indep-ctc subc) fuel))
+               (define sgen (contract-random-generate/choose (indep-ctc subc) fuel))
                (cond
                  [sgen (loop (cdr subcs) (cons sgen gens))]
                  [else #f])]
@@ -313,13 +313,14 @@
                     [dep-args '()])
            (cond
              [(null? subcontracts)
-              (apply chaperone-struct
-                     (apply impersonate-struct
-                            v
-                            impersonate-args)
-                     (if invariant
-                         (add-invariant-checks blame invariant chaperone-args)
-                         chaperone-args))]
+              (define (app* f v l) (if (null? l) v (apply f v l)))
+              (app* chaperone-struct
+                    (app* impersonate-struct
+                          v
+                          impersonate-args)
+                    (if invariant
+                        (add-invariant-checks blame invariant chaperone-args)
+                        chaperone-args))]
              [else
               (define subcontract (car subcontracts)) ;; (or/c subcontract? invariant?)
               (define proj (car projs))
@@ -348,15 +349,13 @@
                                                     (reverse (invariant-fields subcontract))))
                    (values chaperone-args impersonate-args)]
                   [(immutable? subcontract)
-                   (define projd
-                     (with-continuation-mark
-                      contract-continuation-mark-key blame
-                      (proj (sel v))))
+                   (define (chk fld v) (with-continuation-mark
+                                           contract-continuation-mark-key blame
+                                         (proj v)))
+                   (chk #f (sel v)) ;; check the field contract immediately
                    (values (if (flat-contract? (indep-ctc subcontract))
                                chaperone-args
-                               (list* sel
-                                      (λ (fld v) projd)
-                                      chaperone-args))
+                               (list* sel chk chaperone-args))
                            impersonate-args)]
                   [(lazy-immutable? subcontract)
                    (values (list* sel
@@ -396,15 +395,13 @@
                    (define proj (dep-ctc-blame-proj blame))
                    (cond
                      [(dep-immutable? subcontract)
-                      (define projd (proj (sel v)))
+                      (define (chk fld v) (with-continuation-mark
+                                              contract-continuation-mark-key blame
+                                            (proj v)))
+                      (chk #f (sel v)) ;; check the field contract immediately
                       (values (if (flat-contract? dep-ctc)
                                   chaperone-args
-                                  (list* sel
-                                         (λ (fld v)
-                                           (with-continuation-mark
-                                            contract-continuation-mark-key blame
-                                            projd))
-                                         chaperone-args))
+                                  (list* sel chk chaperone-args))
                               impersonate-args)]
                      [(dep-lazy-immutable? subcontract)
                       (values (list* sel
@@ -670,7 +667,7 @@
 
 (define (struct/dc-exercise stct)
   (λ (fuel)
-    (define env (generate-env))
+    (define env (contract-random-generate-get-current-environment))
     (values
      (λ (val) 
        ;; need to extract the fields and do it in 
@@ -1349,12 +1346,10 @@
                                     (cache-λ (strct #,sub-val)
                                              #,this-body-code)])
                                proc-name)
-                           #`(let ([answer (let ([#,sub-val 
-                                                  (#,sel-id
-                                                   #,(opt/info-val opt/info))])
-                                             #,this-body-code)])
-                               (let ([proc-name (λ (strct fld) answer)])
-                                 proc-name))))))
+                           #`(let ([proc-name (λ (strct #,sub-val) #,this-body-code)])
+                               ;; check the field contract immediately
+                               (proc-name #f (#,sel-id #,(opt/info-val opt/info)))
+                               proc-name)))))
 
               (define this-fo-code 
                 (and (and (optres-flat this-optres)

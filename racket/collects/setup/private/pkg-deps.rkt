@@ -12,7 +12,8 @@
          racket/path
          setup/dirs
          setup/doc-db
-         version/utils)
+         version/utils
+         compiler/private/dep)
 
 (provide check-package-dependencies)
 
@@ -46,6 +47,8 @@
   (define pkg-versions (make-hash)) ; save declared versions
   (define path-cache (make-hash))
   (define metadata-ns (make-base-namespace))
+  (define pkg-dir-cache (make-hash))
+  (define missing-pkgs (make-hash))
 
   (hash-set! pkg-internal-deps "racket" (list (set) (set)))
   (hash-set! pkg-external-deps "racket" (set))
@@ -88,7 +91,7 @@
   (define (check-module-declaration mod pkg)
     (let ([already-pkg (hash-ref mod-pkg mod #f)])
       (when already-pkg
-        (setup-fprintf* (current-error-port) #f 
+        (setup-fprintf* (current-error-port) #f
                         (string-append
                          "module provided by multiple packages:\n"
                          "  module: ~s\n"
@@ -104,29 +107,39 @@
 
   ;; ----------------------------------------
   ;; Get a package's info, returning its deps and implies:
-  (define (get-immediate-pkg-info! pkg)
-    (define dir (pkg-directory pkg))
-    (unless dir 
-      (error 'check-dependencies "package not installed: ~s" pkg))
+  (define (get-immediate-pkg-info! pkg dep-of)
+    (define dir (pkg-directory pkg #:cache pkg-dir-cache))
+    (unless dir
+      (unless (hash-ref missing-pkgs pkg #f)
+        (hash-set! missing-pkgs pkg #t)
+        (setup-fprintf* (current-error-port) #f
+                        "package not installed: ~s~a"
+                        pkg
+                        (if dep-of
+                            (format "\n  dependency of: ~a" dep-of)
+                            ""))))
     ;; Get package information:
     (define-values (checksum mods deps+build-deps+vers)
-      (get-pkg-content (pkg-desc (if (path? dir) (path->string dir) dir) 'dir pkg #f #f)
-                       #:namespace metadata-ns
-                       #:extract-info (lambda (i)
-                                        (cons
-                                         (if (and i
-                                                  (or (i 'deps (lambda () #f))
-                                                      (i 'build-deps (lambda () #f))))
-                                             (cons
-                                              (extract-pkg-dependencies i
-                                                                        #:build-deps? #f
-                                                                        #:filter? #t
-                                                                        #:versions? #t)
-                                              (extract-pkg-dependencies i
-                                                                        #:filter? #t
-                                                                        #:versions? #t))
-                                             #f)
-                                         (and i (i 'version (lambda () #f)))))))
+      (cond
+       [dir
+        (get-pkg-content (pkg-desc (if (path? dir) (path->string dir) dir) 'dir pkg #f #f)
+                         #:namespace metadata-ns
+                         #:extract-info (lambda (i)
+                                          (cons
+                                           (if (and i
+                                                    (or (i 'deps (lambda () #f))
+                                                        (i 'build-deps (lambda () #f))))
+                                               (cons
+                                                (extract-pkg-dependencies i
+                                                                          #:build-deps? #f
+                                                                          #:filter? #t
+                                                                          #:versions? #t)
+                                                (extract-pkg-dependencies i
+                                                                          #:filter? #t
+                                                                          #:versions? #t))
+                                               #f)
+                                           (and i (i 'version (lambda () #f))))))]
+       [else (values #f null (cons (cons null null) #f))]))
     (define vers (cdr deps+build-deps+vers))
     (define deps+build-deps (car deps+build-deps+vers))
     (unless (or deps+build-deps must-declare-deps?)
@@ -144,7 +157,7 @@
                                                     (map car (car deps+build-deps))))
                              (set)))
     (define implies 
-      (list->set (let ([i (get-info/full dir #:namespace metadata-ns)])
+      (list->set (let ([i (and dir (get-info/full dir #:namespace metadata-ns))])
                    (if i
                        (i 'implies (lambda () null))
                        null))))
@@ -186,19 +199,19 @@
   ;; ----------------------------------------
   ;; Flatten package dependencies, record mod->pkg mappings,
   ;; return representative package name (of a recursive set)
-  (define (register-pkg! pkg ancestors)
+  (define (register-pkg! pkg ancestors dep-of)
     (cond
      [(hash-ref pkg-reps pkg #f)
       => (lambda (rep-pkg) rep-pkg)]
      [else
       (when verbose?
         (setup-printf #f " checking dependencies of ~s" pkg))
-      (define-values (deps implies) (get-immediate-pkg-info! pkg))
+      (define-values (deps implies) (get-immediate-pkg-info! pkg dep-of))
       ;; Recur on all dependencies
       (define new-ancestors (hash-set ancestors pkg #t))
       (define rep-pkg
         (for/fold ([rep-pkg pkg]) ([dep (in-list deps)])
-          (define dep-rep-pkg (register-pkg! dep ancestors))
+          (define dep-rep-pkg (register-pkg! dep ancestors pkg))
           (cond
            [(not (set-member? implies dep))
             ;; not implied, so doesn't add external dependencies
@@ -225,7 +238,7 @@
   (define (init-pkg-internals! pkg)
     (unless (hash-ref pkg-internal-deps pkg #f)
       ;; register modules and compute externally visible dependencies
-      (register-pkg! pkg (hash))
+      (register-pkg! pkg (hash) #f)
       ;; combine flattened external dependencies to determine internal dependencies
       (define (flatten imm-deps)
         (for/fold ([deps (set)]) ([dep (in-set imm-deps)])
@@ -315,8 +328,14 @@
   ;; ----------------------------------------
   (define doc-pkgs (make-hash))
   (define doc-reported (make-hash))
+  (define doc-all-registered? #f)
   (define (check-doc! pkg dep dest-dir)
     (define-values (base name dir?) (split-path dep))
+    (when (and all-pkgs-lazily?
+               (not doc-all-registered?)
+               (not (hash-ref doc-pkgs base #f)))
+      (set! doc-all-registered? #t)
+      (register-all-docs!))
     (define src-pkg (hash-ref doc-pkgs base #f))
     (when src-pkg
       (unless (check-dep! pkg src-pkg 'build)
@@ -421,6 +440,17 @@
            [else
             (hash-set! doc-pkgs (path->directory-path dest-dir) pkg)])))))
 
+  (define (register-all-docs!)
+    (define pkg-cache (make-hash))
+    (define dirs (find-relevant-directories '(scribblings)))
+    (for ([dir (in-list dirs)])
+      (define-values (pkg subpath scope) (path->pkg+subpath+scope dir #:cache pkg-cache))
+      (when pkg
+        (define main? (not (eq? scope 'user)))
+        (register-or-check-docs #f pkg dir main?))))
+  
+  ;; ----------------------------------------
+
   ;; For each collection, set up package info:
   (for ([path (in-list paths)]
         [coll-main? (in-list coll-main?s)])
@@ -433,7 +463,9 @@
   (for ([path (in-list paths)]
         [coll-path (in-list coll-paths)]
         [coll-mode (in-list coll-modes)]
-        [coll-main? (in-list coll-main?s)])
+        [coll-main? (in-list coll-main?s)]
+        ;; coll-path is #f for PLaneT packages
+        #:when coll-path)
     (when verbose?
       (setup-printf #f " checking ~a" path))
     (define dirs (find-compiled-directories path))
@@ -458,10 +490,10 @@
             ;; Treat everything in ".dep" as 'build mode...
             (define deps (cddr (call-with-input-file* (build-path dir f) read)))
             (for ([dep (in-list deps)])
-              (when (and (pair? dep)
-                         (eq? 'collects (car dep)))
-                (define path-strs (map bytes->string/utf-8 (cdr dep)))
-                (define mod `(lib ,(string-join path-strs "/")))
+              (when (and (not (external-dep? dep))
+                         (not (indirect-dep? dep))
+                         (collects-relative-dep? dep))
+                (define mod (dep->module-path dep))
                 (check-mod! mod 'build pkg f dir)))))
         ;; Treat all (direct) documentation links as 'build mode:
         (register-or-check-docs #t pkg path coll-main?))))
@@ -531,10 +563,15 @@
   ;; Report result summary and (optionally) repair:
   (define all-ok? (and (zero? (hash-count missing))
                        (zero? (hash-count dup-mods))
-                       (zero? (hash-count bad-version-dependencies))))
+                       (zero? (hash-count bad-version-dependencies))
+                       (zero? (hash-count missing-pkgs))))
   (unless all-ok?
     (setup-fprintf (current-error-port) #f
                    "--- summary of package problems ---")
+    (for ([(pkg) (in-hash-keys missing-pkgs)])
+      (setup-fprintf* (current-error-port) #f
+                      "package not installed: ~a"
+                      pkg))
     (for ([(pkg deps) (in-hash bad-version-dependencies)])
       (setup-fprintf* (current-error-port) #f
                       (string-append
@@ -579,7 +616,7 @@
                 (for/list ([k (in-list pkgs)])
                   (format "\n   ~s" k)))))
       (when fix?
-        (define info-path (build-path (pkg-directory pkg) "info.rkt"))
+        (define info-path (build-path (pkg-directory pkg #:cache pkg-dir-cache) "info.rkt"))
         (setup-printf #f "repairing ~s..." info-path)
         (fix-info-deps-definition info-path 'deps (car pkgss))
         (fix-info-deps-definition info-path 'build-deps (cadr pkgss))))

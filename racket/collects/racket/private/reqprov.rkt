@@ -241,166 +241,170 @@
   ;; require
   
   (define-syntax (require stx)
-    (unless (memq (syntax-local-context) '(module module-begin top-level))
-      (raise-syntax-error #f
-                          "not at module level or top level"
-                          stx))
-    (parameterize ([current-require-module-path #f])
-      (letrec ([mode-wrap
-                (lambda (mode base)
-                  (cond
-                   [(eq? mode 0) base]
-                   [else #`(for-meta #,mode #,base)]))]
-               [simple-path? (lambda (p)
-                               (syntax-case p (lib quote)
-                                 [(lib . _)
-                                  (check-lib-form p)]
-                                 [(quote . _)
-                                  (check-lib-form p)]
-                                 [_
-                                  (or (identifier? p)
-                                      (and (string? (syntax-e p))
-                                           (module-path? (syntax-e p))))]))]
-               [transform-simple
-                (lambda (in base-mode)
-                  (syntax-case in (lib file planet submod prefix-in except-in quote)
-                    ;; Detect simple cases first:
-                    [_ 
-                     (string? (syntax-e in))
-                     (begin
-                       (unless (module-path? (syntax-e in))
-                         (raise-syntax-error
-                          #f
-                          "bad module-path string"
-                          stx
-                          in))
-                       (list (mode-wrap base-mode in)))]
-                    [_
-                     (and (identifier? in)
-                          (module-path? (syntax-e #'in)))
-                     (list (mode-wrap base-mode in))]
-                    [(quote . s)
-                     (check-lib-form in)
-                     (list (mode-wrap base-mode (xlate-path in)))]
-                    [(lib . s)
-                     (check-lib-form in)
-                     (list (mode-wrap base-mode (xlate-path in)))]
-                    [(file . s)
-                     (check-lib-form in)
-                     (list (mode-wrap base-mode (xlate-path in)))]
-                    [(planet . s)
-                     (check-lib-form in)
-                     (list (mode-wrap base-mode (xlate-path in)))]
-                    [(submod . s)
-                     (check-lib-form in)
-                     (list (mode-wrap base-mode (xlate-path in)))]
-                    [(prefix-in pfx path)
-                     (simple-path? #'path)
-                     (list (mode-wrap
-                            base-mode
-                            (datum->syntax
-                             #'path
-                             (syntax-e
-                              (quasisyntax
-                               (prefix pfx #,(xlate-path #'path))))
-                             in
-                             in)))]
-                    [(except-in path id ...)
-                     (and (simple-path? #'path)
-                          ;; check that it's well-formed...
-                          (call-with-values (lambda () (expand-import in))
-                            (lambda (a b) #t)))
-                     (list (mode-wrap
-                            base-mode
-                            (datum->syntax
-                             #'path
-                             (syntax-e
-                              (quasisyntax/loc in
-                                (all-except #,(xlate-path #'path) id ...))))))]
-                    ;; General case:
-                    [_ (let-values ([(imports sources) (expand-import in)])
-                         ;; TODO: collapse back to simple cases when possible
-                         (append
-                          (map (lambda (import)
-                                 #`(just-meta
-                                    #,(import-orig-mode import)
-                                    #,(mode-wrap (phase+ base-mode (import-req-mode import))
-                                                 #`(rename #,(import-src-mod-path import)
-                                                           #,(import-local-id import)
-                                                           #,(import-src-sym import)))))
-                               imports)
-                          (map (lambda (src)
-                                 (mode-wrap (phase+ base-mode (import-source-mode src))
-                                            #`(only #,(import-source-mod-path-stx src))))
-                               sources)))]))]
-               [transform-one
-                (lambda (in)
-                  ;; Recognize `for-syntax', etc. for simple cases:
-                  (syntax-case in (for-meta)
-                    [(for-meta n elem ...)
-                     (or (exact-integer? (syntax-e #'n))
-                         (not (syntax-e #'n)))
-                     (apply append
-                            (map (lambda (in)
-                                   (transform-simple in (syntax-e #'n)))
-                                 (syntax->list #'(elem ...))))]
-                    [(for-something elem ...)
-                     (and (identifier? #'for-something)
-                          (ormap (lambda (i) (free-identifier=? i #'for-something))
-                                 (list #'for-syntax #'for-template #'for-label)))
-                     (apply append
-                            (map (lambda (in)
-                                   (transform-simple in
-                                                     (cond
-                                                      [(free-identifier=? #'for-something #'for-syntax)
-                                                       1]
-                                                      [(free-identifier=? #'for-something #'for-template)
-                                                       -1]
-                                                      [(free-identifier=? #'for-something #'for-label)
-                                                       #f])))
-                                 (syntax->list #'(elem ...))))]
-                    [_ (transform-simple in 0 #| run phase |#)]))])
-        (syntax-case stx ()
-          [(_ in)
-           (with-syntax ([(new-in ...) (transform-one #'in)])
-             (syntax/loc stx
-               (#%require new-in ...)))]
-          [(_ in ...)
-           ;; Prefetch on simple module paths:
-           (let ([prefetches
-                  (let loop ([in (syntax->list #'(in ...))])
-                    (cond
-                     [(null? in) null]
-                     [(let ([a (syntax->datum (car in))])
-                        (and (module-path? a) a))
-                      => (lambda (a)
-                           (cons a (loop (cdr in))))]
-                     [else
-                      (let ([a (syntax->list (car in))])
-                        (if (and a
-                                 (let ([i (car a)])
-                                   (and (identifier? i)
-                                        (or (free-identifier=? #'for-something #'for-syntax)
-                                            (free-identifier=? #'for-something #'for-template)
-                                            (free-identifier=? #'for-something #'for-label)))))
-                            (loop (append (cdr a) (cdr in)))
-                            (loop (cdr in))))]))])
-             (unless (null? prefetches)
-               (log-message (current-logger)
-                            'info 
-                            'module-prefetch
-                            (format "module-prefetch: ~s in: ~s"
-                                    prefetches
-                                    (current-load-relative-directory))
-                            (list prefetches (current-load-relative-directory))
-                            #f))
-             (with-syntax ([(req-in ...)
-                            (map (lambda (in)
-                                   (with-syntax ([in in])
-                                     (syntax/loc stx (require in))))
-                                 (syntax->list #'(in ...)))])
-             (syntax/loc stx
-               (begin req-in ...))))]))))
+    (case (syntax-local-context)
+      [(module-begin)
+       (quasisyntax/loc stx (begin #,stx))]
+      [(module top-level)
+       (parameterize ([current-require-module-path #f])
+         (letrec ([mode-wrap
+                   (lambda (mode base)
+                     (cond
+                      [(eq? mode 0) base]
+                      [else #`(for-meta #,mode #,base)]))]
+                  [simple-path? (lambda (p)
+                                  (syntax-case p (lib quote)
+                                    [(lib . _)
+                                     (check-lib-form p)]
+                                    [(quote . _)
+                                     (check-lib-form p)]
+                                    [_
+                                     (or (identifier? p)
+                                         (and (string? (syntax-e p))
+                                              (module-path? (syntax-e p))))]))]
+                  [transform-simple
+                   (lambda (in base-mode)
+                     (syntax-case in (lib file planet submod prefix-in except-in quote)
+                       ;; Detect simple cases first:
+                       [_ 
+                        (string? (syntax-e in))
+                        (begin
+                          (unless (module-path? (syntax-e in))
+                            (raise-syntax-error
+                             #f
+                             "bad module-path string"
+                             stx
+                             in))
+                          (list (mode-wrap base-mode in)))]
+                       [_
+                        (and (identifier? in)
+                             (module-path? (syntax-e #'in)))
+                        (list (mode-wrap base-mode in))]
+                       [(quote . s)
+                        (check-lib-form in)
+                        (list (mode-wrap base-mode (xlate-path in)))]
+                       [(lib . s)
+                        (check-lib-form in)
+                        (list (mode-wrap base-mode (xlate-path in)))]
+                       [(file . s)
+                        (check-lib-form in)
+                        (list (mode-wrap base-mode (xlate-path in)))]
+                       [(planet . s)
+                        (check-lib-form in)
+                        (list (mode-wrap base-mode (xlate-path in)))]
+                       [(submod . s)
+                        (check-lib-form in)
+                        (list (mode-wrap base-mode (xlate-path in)))]
+                       [(prefix-in pfx path)
+                        (simple-path? #'path)
+                        (list (mode-wrap
+                               base-mode
+                               (datum->syntax
+                                #'path
+                                (syntax-e
+                                 (quasisyntax
+                                  (prefix pfx #,(xlate-path #'path))))
+                                in
+                                in)))]
+                       [(except-in path id ...)
+                        (and (simple-path? #'path)
+                             ;; check that it's well-formed...
+                             (call-with-values (lambda () (expand-import in))
+                               (lambda (a b) #t)))
+                        (list (mode-wrap
+                               base-mode
+                               (datum->syntax
+                                #'path
+                                (syntax-e
+                                 (quasisyntax/loc in
+                                   (all-except #,(xlate-path #'path) id ...))))))]
+                       ;; General case:
+                       [_ (let-values ([(imports sources) (expand-import in)])
+                            ;; TODO: collapse back to simple cases when possible
+                            (append
+                             (map (lambda (import)
+                                    #`(just-meta
+                                       #,(import-orig-mode import)
+                                       #,(mode-wrap (phase+ base-mode (import-req-mode import))
+                                                    #`(rename #,(import-src-mod-path import)
+                                                              #,(import-local-id import)
+                                                              #,(import-src-sym import)))))
+                                  imports)
+                             (map (lambda (src)
+                                    (mode-wrap (phase+ base-mode (import-source-mode src))
+                                               #`(only #,(import-source-mod-path-stx src))))
+                                  sources)))]))]
+                  [transform-one
+                   (lambda (in)
+                     ;; Recognize `for-syntax', etc. for simple cases:
+                     (syntax-case in (for-meta)
+                       [(for-meta n elem ...)
+                        (or (exact-integer? (syntax-e #'n))
+                            (not (syntax-e #'n)))
+                        (apply append
+                               (map (lambda (in)
+                                      (transform-simple in (syntax-e #'n)))
+                                    (syntax->list #'(elem ...))))]
+                       [(for-something elem ...)
+                        (and (identifier? #'for-something)
+                             (ormap (lambda (i) (free-identifier=? i #'for-something))
+                                    (list #'for-syntax #'for-template #'for-label)))
+                        (apply append
+                               (map (lambda (in)
+                                      (transform-simple in
+                                                        (cond
+                                                         [(free-identifier=? #'for-something #'for-syntax)
+                                                          1]
+                                                         [(free-identifier=? #'for-something #'for-template)
+                                                          -1]
+                                                         [(free-identifier=? #'for-something #'for-label)
+                                                          #f])))
+                                    (syntax->list #'(elem ...))))]
+                       [_ (transform-simple in 0 #| run phase |#)]))])
+           (syntax-case stx ()
+             [(_ in)
+              (with-syntax ([(new-in ...) (transform-one #'in)])
+                (syntax/loc stx
+                  (#%require new-in ...)))]
+             [(_ in ...)
+              ;; Prefetch on simple module paths:
+              (let ([prefetches
+                     (let loop ([in (syntax->list #'(in ...))])
+                       (cond
+                        [(null? in) null]
+                        [(let ([a (syntax->datum (car in))])
+                           (and (module-path? a) a))
+                         => (lambda (a)
+                              (cons a (loop (cdr in))))]
+                        [else
+                         (let ([a (syntax->list (car in))])
+                           (if (and a
+                                    (let ([i (car a)])
+                                      (and (identifier? i)
+                                           (or (free-identifier=? #'for-something #'for-syntax)
+                                               (free-identifier=? #'for-something #'for-template)
+                                               (free-identifier=? #'for-something #'for-label)))))
+                               (loop (append (cdr a) (cdr in)))
+                               (loop (cdr in))))]))])
+                (unless (null? prefetches)
+                  (log-message (current-logger)
+                               'info 
+                               'module-prefetch
+                               (format "module-prefetch: ~s in: ~s"
+                                       prefetches
+                                       (current-load-relative-directory))
+                               (list prefetches (current-load-relative-directory))
+                               #f))
+                (with-syntax ([(req-in ...)
+                               (map (lambda (in)
+                                      (with-syntax ([in in])
+                                        (syntax/loc stx (require in))))
+                                    (syntax->list #'(in ...)))])
+                  (syntax/loc stx
+                    (begin req-in ...))))])))]
+      [else
+       (raise-syntax-error #f
+                           "not at module level or top level"
+                           stx)]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; require transformers
@@ -677,22 +681,25 @@
   ;; provide
   
   (define-syntax (provide stx)
-    (unless (memq (syntax-local-context) '(module module-begin))
-      (raise-syntax-error #f
-                          "not at module level"
-                          stx))
-    
-    (syntax-case stx ()
-      [(_ out ...)
-       (with-syntax ([(out ...)
-                      (map (lambda (o) (pre-expand-export o null))
-                           (syntax->list #'(out ...)))])
-         (syntax-property
-          (quasisyntax/loc stx 
-            (#%provide #,(syntax-property
-                          #`(expand (provide-trampoline out ...))
-                          'certify-mode 'transparent)))
-          'certify-mode 'transparent))]))
+    (case (syntax-local-context)
+      [(module-begin)
+       (quasisyntax/loc stx (begin #,stx))]
+      [(module)
+       (syntax-case stx ()
+         [(_ out ...)
+          (with-syntax ([(out ...)
+                         (map (lambda (o) (pre-expand-export o null))
+                              (syntax->list #'(out ...)))])
+            (syntax-property
+             (quasisyntax/loc stx 
+               (#%provide #,(syntax-property
+                             #`(expand (provide-trampoline out ...))
+                             'certify-mode 'transparent)))
+             'certify-mode 'transparent))])]
+      [else
+       (raise-syntax-error #f
+                           "not at module level"
+                           stx)]))
   
   (define-syntax (provide-trampoline stx)
     (syntax-case stx ()
@@ -1076,7 +1083,7 @@
               (map (lambda (e)
                      (make-export
                       (export-local-id e)
-                      (string->symbol (format "~s~s"
+                      (string->symbol (format "~a~a"
                                               (syntax-e #'pfx)
                                               (export-out-sym e)))
                       (export-mode e)

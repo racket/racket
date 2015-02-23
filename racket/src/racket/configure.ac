@@ -60,6 +60,7 @@ AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled 
 AC_ARG_ENABLE(sdk,     [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-sdk5=<path>    use Mac OS X 10.5 SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-sdk6=<path>    use Mac OS X 10.6 SDK directory])
+AC_ARG_ENABLE(sdk,     [  --enable-ios=<path>     use iOS SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-sysroot=<path> use sysroot directory (e.g., for Android)])
 AC_ARG_ENABLE(xonx,    [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X])
 AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
@@ -335,16 +336,28 @@ if test "${enable_sdk}" != "" ; then
    if test "${enable_sdk6}" != "" ; then
      echo "ERROR: cannot specify both --enable-sdk and --enable-sdk6"
    fi
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk and --enable-ios"
+   fi
    echo "=== Using Mac OS X 10.4 SDK directory ${enable_sdk}"
 fi
 if test "${enable_sdk5}" != "" ; then
    if test "${enable_sdk6}" != "" ; then
      echo "ERROR: cannot specify both --enable-sdk5 and --enable-sdk6"
    fi
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk5 and --enable-ios"
+   fi
    echo "=== Using Mac OS X 10.5 SDK directory ${enable_sdk}"
 fi
 if test "${enable_sdk6}" != "" ; then
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk6 and --enable-ios"
+   fi
    echo "=== Using Mac OS X 10.6 SDK directory ${enable_sdk6}"
+fi
+if test "${enable_ios}" != "" ; then
+   echo "=== Using ios SDK directory ${enable_ios}"
 fi
 
 if test "${enable_sysroot}" != "" ; then
@@ -499,6 +512,34 @@ if test "${enable_sysroot}" != "" ; then
    SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
 fi
 
+if test "${enable_ios}" != "" ; then
+  case "$host_cpu" in
+    aarch64)
+     IOS_ARCH=arm64
+     ;;
+    *)
+     IOS_ARCH=$host_cpu
+     ;;
+  esac
+  case "${enable_ios}" in
+    iPhoneOS|iPhoneSimulator)
+     ios_sdk=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
+     ;;
+    *)
+     ios_sdk="${enable_ios}"
+     ;;
+  esac
+  IOS_PHONE_VERS="6.0"
+  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1"
+  CPPFLAGS="$CPPFLAGS -DTARGET_OS_IPHONE=1"
+  PREFLAGS="$PREFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
+  CPPFLAGS="$CPPFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
+  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"
+  SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+  SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+  SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+fi
+    
 if test "${enable_oskit}" = "no" ; then
   AC_PROG_CC
   AC_PROG_CPP
@@ -625,6 +666,11 @@ case "$host_os" in
     enable_pthread_by_default=yes
     try_kqueue_syscall=yes
     ;;
+  bitrig*)
+    LIBS="$LIBS -Wl,--export-dynamic"
+    enable_pthread_by_default=yes
+    try_kqueue_syscall=yes
+    ;;
   dragonfly*)
     LIBS="$LIBS -Wl,--export-dynamic"
     enable_pthread_by_default=yes
@@ -699,7 +745,7 @@ case "$host_os" in
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
-    CONFIG_PATH="lib"
+    CONFIG_PATH="etc"
     skip_iconv_check=yes
     check_for_mprotect=no
     AC_DEFINE(HAVE_STDINT_H,1,[Have stdint.h])
@@ -718,7 +764,6 @@ case "$host_os" in
     esac
     ;;    
   cygwin*)
-    enable_cgcdefault="yes"
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"
@@ -770,7 +815,7 @@ case "$host_os" in
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
     fi
-    
+
     case "$host_cpu" in
       i386|x86_64)
        enable_parallel_by_default=yes

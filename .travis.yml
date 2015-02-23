@@ -1,34 +1,54 @@
 language: c
-os:
-  - linux
-  - osx
-env:
-  - PATH=./racket/bin:$PATH
-compiler:
-  - gcc
-  - clang
+matrix:
+  include:
+    # osx, defaults, gcc and clang
+    - os: osx
+      compiler: gcc
+      env: PATH=./racket/bin:$PATH
+    - os: osx
+      compiler: clang
+      env: PATH=./racket/bin:$PATH
+    # linux, defaults, gcc and clang
+    - os: linux
+      compiler: gcc
+      env: PATH=./racket/bin:$PATH
+    - os: linux
+      compiler: clang
+      env: PATH=./racket/bin:$PATH
+    # linux, no places, no futures, no extflonum, gcc
+    - os: linux
+      compiler: gcc
+      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-places --disable-futures --disable-extflonum"
+    # linux, no jit, gcc
+    - os: linux
+      compiler: gcc
+      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit"
+    # linux, no jit, no places, no futures, no extflonum, gcc
+    - os: linux
+      compiler: gcc
+      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places --disable-futures --disable-extflonum"
 # Just run tests for the core
 script:
-  - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test"
-  - racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
-  - racket pkgs/racket-pkgs/racket-test/tests/racket/contract/all.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/json/json.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/file/main.rkt
-  - raco test pkgs/net-pkgs/net-test/tests/net/head.rkt
-  - raco test pkgs/net-pkgs/net-test/tests/net/uri-codec.rkt
-  - raco test pkgs/net-pkgs/net-test/tests/net/url.rkt
-  - raco test pkgs/net-pkgs/net-test/tests/net/url-port.rkt
-  - raco test pkgs/net-pkgs/net-test/tests/net/encoders.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/openssl/basic.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/openssl/https.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/match/plt-match-tests.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/zo-path.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/xml/test.rkt
-  - raco test pkgs/db-pkgs/db-test/tests/db/all-tests.rkt
+  - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
+  - raco test -l tests/racket/test
+  - racket -l tests/racket/contract/all
+  - raco test -l tests/json/json
+  - raco test -l tests/file/main
+  - raco test -l tests/net/head
+  - raco test -l tests/net/uri-codec
+  - raco test -l tests/net/url
+  - raco test -l tests/net/url-port
+  - raco test -l tests/net/encoders
+  - raco test -l tests/openssl/basic
+  - raco test -l tests/openssl/https
+  - raco test -l tests/match/plt-match-tests
+  - raco test -l tests/zo-path
+  - raco test -l tests/xml/test
+  - raco test -l tests/db/all-tests
 notifications:
   irc: "chat.freenode.net#racket-dev"
-  email: 
-    recipients: 
+  email:
+    recipients:
       - samth@racket-lang.org
       - robby@racket-lang.org
     on_success: change

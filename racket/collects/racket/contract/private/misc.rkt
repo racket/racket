@@ -1,7 +1,9 @@
 #lang racket/base
 
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     "arr-util.rkt")
          racket/promise
+         syntax/location
          (only-in "../../private/promise.rkt" prop:force promise-forcer)
          "prop.rkt"
          "blame.rkt"
@@ -20,7 +22,7 @@
          string-len/c
          false/c
          printable/c
-         listof list*of non-empty-listof cons/c list/c
+         listof list*of non-empty-listof cons/c list/c cons/dc
          promise/c
          syntax/c
          
@@ -179,7 +181,65 @@
   (cond
     [(and/c-check-nonneg ctc real?) => values]
     [(and/c-check-nonneg ctc rational?) => values]
-    [else (λ (fuel) #f)]))
+    [(null? (base-and/c-ctcs ctc)) => (λ (fuel) #f)]
+    [else
+     (define flat (filter flat-contract? (base-and/c-ctcs ctc)))
+     (define ho (filter (λ (x) (not (flat-contract? x))) (base-and/c-ctcs ctc)))
+     (cond
+       [(null? ho)
+        (λ (fuel)
+          (define candidates
+            (let loop ([sub-contracts-after (cdr (base-and/c-ctcs ctc))]
+                       [sub-contract (car (base-and/c-ctcs ctc))]
+                       [sub-contracts-before '()]
+                       [candidates '()])
+              (define sub-gen (contract-random-generate/choose sub-contract fuel))
+              (define new-candidates
+                (cond
+                  [sub-gen
+                   (cons (cons sub-gen (append (reverse sub-contracts-before) sub-contracts-after))
+                         candidates)]
+                  [else candidates]))
+              (cond
+                [(null? sub-contracts-after) new-candidates]
+                [else (loop (cdr sub-contracts-after)
+                            (car sub-contracts-after)
+                            (cons sub-contract sub-contracts-before)
+                            new-candidates)])))
+          (cond
+            [(null? candidates) #f]
+            [else
+             (λ ()
+               (let loop ([attempts 10])
+                 (cond
+                   [(zero? attempts) contract-random-generate-fail]
+                   [else
+                    (define which (oneof candidates))
+                    (define val ((car which)))
+                    (cond
+                      [(andmap (λ (p?) (p? val)) (cdr which))
+                       val]
+                      [else
+                       (loop (- attempts 1))])])))]))]
+       [(null? (cdr ho))
+        (λ (fuel)
+          (define ho-gen (contract-random-generate/choose (car ho) fuel))
+          (cond
+            [ho-gen 
+             (λ ()
+               (let loop ([attempts 10])
+                 (cond
+                   [(zero? attempts) contract-random-generate-fail]
+                   [else
+                    (define val (ho-gen))
+                    (cond
+                      [(andmap (λ (p?) (p? val)) flat)
+                       val]
+                      [else
+                       (loop (- attempts 1))])])))]
+            [else #f]))]
+       [else
+        (λ (fuel) #f)])]))
 
 (define (and/c-check-nonneg ctc pred)
   (define sub-contracts (base-and/c-ctcs ctc))
@@ -235,8 +295,19 @@
    #:stronger and-stronger?
    #:generate and/c-generate?))
 
+(define-syntax (and/c stx)
+  (syntax-case stx (pair? listof)
+    [(_ pair? (listof e))
+     #'(non-empty-listof e)]
+    [(_ (listof e) pair?)
+     #'(non-empty-listof e)]
+    [(_ . args)
+     #'(real-and/c . args)]
+    [x
+     (identifier? #'x)
+     #'real-and/c]))
 
-(define/subexpression-pos-prop (and/c . raw-fs)
+(define/subexpression-pos-prop (real-and/c . raw-fs)
   (let ([contracts (coerce-contracts 'and/c raw-fs)])
     (cond
       [(null? contracts) any/c]
@@ -370,7 +441,9 @@
   (check-two-args 'between/c x y real? real?))
 (define/final-prop (between/c x y)
   (check-between/c x y)
-  (make-between/c-s x y))
+  (if (= x y)
+      (coerce-contract 'between/c x)
+      (make-between/c-s x y)))
 
 (define (make-</c->/c-contract-property name </> -/+ less/greater)
   (build-flat-contract-property
@@ -444,13 +517,38 @@
                           (format "~a" (object-name pred2?))
                           1
                           arg1 arg2)))
+(struct integer-in-ctc (start end)
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:name (λ (ctc) 
+            `(integer-in ,(integer-in-ctc-start ctc)
+                         ,(integer-in-ctc-end ctc)))
+   #:first-order (λ (ctc)
+                   (define start (integer-in-ctc-start ctc))
+                   (define end (integer-in-ctc-end ctc))
+                   (λ (x) (and (exact-integer? x)
+                               (<= start x end))))
+   #:stronger (λ (this that)
+                (define this-start (integer-in-ctc-start this))
+                (define this-end (integer-in-ctc-end that))
+                (cond
+                  [(integer-in-ctc? that)
+                   (define that-start (integer-in-ctc-start that))
+                   (define that-end (integer-in-ctc-end that))
+                   (<= that-start this-start this-end that-end)]
+                  [else #f]))
+   #:generate (λ (ctc)
+                (define start (integer-in-ctc-start ctc))
+                (define end (integer-in-ctc-end ctc))
+                (λ (fuel)
+                  (λ ()
+                    (+ start (random (min 4294967087 (+ (- end start) 1)))))))))
+
 (define/final-prop (integer-in start end)
   (check-two-args 'integer-in start end exact-integer? exact-integer?)
-  (flat-named-contract 
-   `(integer-in ,start ,end)
-   (λ (x)
-     (and (exact-integer? x)
-          (<= start x end)))))
+  (if (= start end)
+      (and/c start exact?)
+      (integer-in-ctc start end)))
 
 (define/final-prop (real-in start end)
   (check-two-args 'real-in start end real? real?)
@@ -465,7 +563,7 @@
 
 (define (listof-generate ctc)
   (λ (fuel)
-    (define eg (generate/choose (listof-ctc-elem-c ctc) fuel))
+    (define eg (contract-random-generate/choose (listof-ctc-elem-c ctc) fuel))
     (if eg
         (λ ()
           (let loop ([so-far (cond
@@ -490,14 +588,15 @@
     [else
      (define elem-ctc (listof-ctc-elem-c ctc))
      (λ (fuel)
-       (define env (generate-env))
+       (define env (contract-random-generate-get-current-environment))
        (values
         (λ (lst)
-          (env-stash env elem-ctc 
-                     (oneof
-                      (if (im-listof-ctc? ctc)
-                          (improper-list->list lst)
-                          lst))))
+          (contract-random-generate-stash
+           env elem-ctc 
+           (oneof
+            (if (im-listof-ctc? ctc)
+                (improper-list->list lst)
+                lst))))
         (list elem-ctc)))]))
 
 (define (improper-list->list l)
@@ -788,7 +887,7 @@
       (λ (neg-party)
         (unless (pair? v)
           (raise-not-cons-blame-error blame #:missing-party neg-party v))
-        (combine v 
+        (combine v
                  ((car-p (car v)) neg-party)
                  ((cdr-p (cdr v)) neg-party))))))
 
@@ -816,9 +915,13 @@
 (define (cons/c-name ctc)
   (define ctc-car (the-cons/c-hd-ctc ctc))
   (define ctc-cdr (the-cons/c-tl-ctc ctc))
-  (build-compound-type-name 'cons/c ctc-car ctc-cdr))
+  (cond
+    [(and (any/c? ctc-car) (any/c? ctc-cdr))
+     'pair?]
+    [else
+     (build-compound-type-name 'cons/c ctc-car ctc-cdr)]))
 
-(define (cons/c-stronger? this that) 
+(define (cons/c-stronger? this that)
   (define this-hd (the-cons/c-hd-ctc this))
   (define this-tl (the-cons/c-tl-ctc this))
   (cond
@@ -842,8 +945,8 @@
   (define ctc-car (the-cons/c-hd-ctc ctc))
   (define ctc-cdr (the-cons/c-tl-ctc ctc))
   (λ (fuel)
-    (define car-gen (generate/choose ctc-car fuel))
-    (define cdr-gen (generate/choose ctc-cdr fuel))
+    (define car-gen (contract-random-generate/choose ctc-car fuel))
+    (define cdr-gen (contract-random-generate/choose ctc-cdr fuel))
     (and car-gen
          cdr-gen
          (λ () (cons (car-gen) (cdr-gen))))))
@@ -898,6 +1001,171 @@
     [else
      (impersonator-cons/c ctc-car ctc-cdr)]))
 
+(define (cons/dc-val-first-projection ctc)
+  (define undep-proj (get/build-val-first-projection (the-cons/dc-undep ctc)))
+  (define dep-proc (the-cons/dc-dep ctc))
+  (define forwards? (the-cons/dc-forwards? ctc))
+  (λ (blame)
+    (define car-blame (blame-add-car-context blame))
+    (define cdr-blame (blame-add-cdr-context blame))
+    (define undep-proj+blame (undep-proj (if forwards? car-blame cdr-blame)))
+    (define undep-proj+indy-blame
+      (undep-proj (blame-replace-negative
+                   (if forwards? cdr-blame car-blame)
+                   (the-cons/dc-here ctc))))
+    (λ (val)
+      (cond
+        [(pair? val)
+         (λ (neg-party)
+           (define-values (orig-undep orig-dep)
+             (if forwards?
+                 (values (car val) (cdr val))
+                 (values (cdr val) (car val))))
+           (define new-undep ((undep-proj+blame orig-undep) neg-party))
+           (define new-dep-ctc (coerce-contract
+                                'cons/dc
+                                (dep-proc ((undep-proj+indy-blame orig-undep) neg-party))))
+           (define new-dep ((((get/build-val-first-projection new-dep-ctc)
+                              (if forwards? cdr-blame car-blame))
+                             orig-dep)
+                            neg-party))
+           (if forwards?
+               (cons new-undep new-dep)
+               (cons new-dep new-undep)))]
+        [else
+         (λ (neg-party)
+           (raise-not-cons-blame-error blame val #:missing-party neg-party))]))))
+
+(define (cons/dc-name ctc)
+  (define info (the-cons/dc-name-info ctc))
+  (if (the-cons/dc-forwards? ctc)
+      `(cons/dc [,(vector-ref info 0) ,(contract-name (the-cons/dc-undep ctc))]
+                [,(vector-ref info 1) (,(vector-ref info 0))
+                                      ,(vector-ref info 2)])
+      `(cons/dc [,(vector-ref info 0) (,(vector-ref info 1))
+                                      ,(vector-ref info 2)]
+                [,(vector-ref info 1) ,(contract-name (the-cons/dc-undep ctc))])))
+(define (cons/dc-first-order ctc)
+  (λ (val)
+    (and (pair? val)
+         (contract-first-order-passes?
+          (the-cons/dc-undep ctc)
+          (if (the-cons/dc-forwards? ctc) (car val) (cdr val))))))
+
+(define (cons/dc-stronger? this that) #f)
+
+(define (cons/dc-generate ctc)
+  (define undep-ctc (the-cons/dc-undep ctc))
+  (define dep-mk-ctc (the-cons/dc-dep ctc))
+  (define forwards? (the-cons/dc-forwards? ctc))
+  (λ (fuel)
+    (define undep-gen (contract-random-generate/choose undep-ctc fuel))
+    (define pair-gens
+      (for*/list ([i (in-range 5)]
+                  [v (in-value (undep-gen))]
+                  [g (in-value (contract-random-generate/choose (dep-mk-ctc v) fuel))]
+                  #:when g)
+        (if forwards?
+            (λ () (cons v (g)))
+            (λ () (cons (g) v)))))
+    (define howmany (length pair-gens))
+    (and (not (zero? howmany))
+         (λ ()
+           ((list-ref pair-gens (random howmany)))))))
+
+(struct the-cons/dc (forwards? undep dep here name-info))
+
+(struct flat-cons/dc the-cons/dc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:val-first-projection cons/dc-val-first-projection
+   #:name cons/dc-name
+   #:first-order cons/dc-first-order
+   #:stronger cons/dc-stronger?
+   #:generate cons/dc-generate))
+
+(struct chaperone-cons/dc the-cons/dc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:val-first-projection cons/dc-val-first-projection
+   #:name cons/dc-name
+   #:first-order cons/dc-first-order
+   #:stronger cons/dc-stronger?
+   #:generate cons/dc-generate))
+
+(struct impersonator-cons/dc the-cons/dc ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:contract
+  (build-contract-property
+   #:val-first-projection cons/dc-val-first-projection
+   #:name cons/dc-name
+   #:first-order cons/dc-first-order
+   #:stronger cons/dc-stronger?
+   #:generate cons/dc-generate))
+
+(define-syntax (cons/dc stx)
+  (define (kwds->constructor stx)
+    (syntax-case stx ()
+      [() #'chaperone-cons/dc]
+      [(#:chaperone) #'chaperone-cons/dc]
+      [(#:flat) #'flat-cons/dc]
+      [(#:impersonator) #'impersonator-cons/dc]
+      [(x . y) (raise-syntax-error
+                'cons/dc
+                "expected a keyword, either #:chaperone, #:flat, or #:impersonator"
+                stx
+                #'x)]))
+  (define this-one (gensym 'ctc))
+  (syntax-property
+   (syntax-case stx ()
+     [(_ [hd e1] [tl (hd2) e2] . kwds)
+      (begin
+        (unless (free-identifier=? #'hd2 #'hd)
+          (raise-syntax-error 'cons/dc
+                              "expected matching identifiers"
+                              stx
+                              #'hd
+                              (list #'hd2)))
+        #`(#,(kwds->constructor #'kwds)
+           #t
+           (coerce-contract 'cons/dc #,(syntax-property
+                                        #'e1
+                                        'racket/contract:positive-position
+                                        this-one))
+           (λ (hd2) #,(syntax-property
+                       #'e2
+                       'racket/contract:positive-position
+                       this-one))
+           (quote-module-name)
+           '#(hd tl #,(compute-quoted-src-expression #'e2))))]
+     [(_ [hd (tl2) e1] [tl e2] . kwds)
+      (begin
+        (unless (free-identifier=? #'tl2 #'tl)
+          (raise-syntax-error 'cons/dc
+                              "expected matching identifiers"
+                              stx
+                              #'tl
+                              (list #'tl2)))
+        #`(#,(kwds->constructor #'kwds)
+           #f
+           (coerce-contract 'cons/dc #,(syntax-property
+                                        #'e2
+                                        'racket/contract:positive-position
+                                        this-one))
+           (λ (tl2) #,(syntax-property
+                       #'e1
+                       'racket/contract:positive-position
+                       this-one))
+           (quote-module-name)
+           '#(hd tl #,(compute-quoted-src-expression #'e1))))])
+   'racket/contract:contract
+   (vector this-one
+           (list (car (syntax-e stx)))
+           '())))
+
+
 (define (raise-not-cons-blame-error blame val #:missing-party [missing-party #f])
   (raise-blame-error
    blame
@@ -916,8 +1184,11 @@
      (higher-order-list/c ctc-args)]))
 
 (define (list/c-name-proc c) 
-  (apply build-compound-type-name
-         'list/c (generic-list/c-args c)))
+  (define args (generic-list/c-args c))
+  (cond
+    [(null? args) ''()]
+    [else (apply build-compound-type-name 'list/c args)]))
+
 (define ((list/c-first-order c) x)
   (and (list? x)
        (= (length x) (length (generic-list/c-args c)))
@@ -929,7 +1200,7 @@
   (define elem-ctcs (generic-list/c-args ctc))
   (λ (fuel)
     (define gens (for/list ([elem-ctc (in-list elem-ctcs)])
-                   (generate/choose elem-ctc fuel)))
+                   (contract-random-generate/choose elem-ctc fuel)))
     (cond
       [(andmap values gens)
        (λ ()
@@ -992,14 +1263,8 @@
                  val)]
               [else
                (λ (neg-party)
-                 (raise-blame-error
-                  blame #:missing-party neg-party 
-                  val
-                  '(expected: "a list of ~a elements" given: "~a element~a\n  complete list: ~e")
-                  expected-length 
-                  actual-length
-                  (if (= actual-length 1) "" "s")
-                  val))])]
+                 (expected-a-list-of-len val actual-length expected-length blame 
+                                         #:missing-party neg-party))])]
            [else
             (λ (neg-party)
               (raise-blame-error blame #:missing-party neg-party
@@ -1015,14 +1280,7 @@
          (let* ([args (generic-list/c-args c)]
                 [expected (length args)]
                 [actual (length x)])
-           (unless (= actual expected)
-             (raise-blame-error
-              blame x
-              '(expected: "a list of ~a elements" given: "~a element~a\n  complete list: ~e")
-              expected 
-              actual
-              (if (= actual 1) "" "s")
-              x))
+           (expected-a-list-of-len x actual expected blame)
            (for ([arg/c (in-list args)] [v (in-list x)] [i (in-naturals 1)])
              (((contract-projection arg/c) 
                (add-list-context blame i))
@@ -1040,14 +1298,7 @@
     (λ (x)
       (unless (list? x) (expected-a-list x blame))
       (define actual (length x))
-      (unless (= actual expected)
-        (raise-blame-error
-         blame x
-         '(expected: "a list of ~a elements" given: "~a element~a\n complete list: ~e")
-         expected
-         actual
-         (if (= actual 1) "" "s")
-         x))
+      (expected-a-list-of-len x actual expected blame #:missing-party #f)
       (for/list ([item (in-list x)]
                  [proj (in-list projs)])
         (proj item)))))
@@ -1058,13 +1309,23 @@
 
 (define (expected-a-list-of-len x actual expected blame #:missing-party [missing-party #f])
   (unless (= actual expected)
-    (raise-blame-error
-     blame #:missing-party missing-party x
-     '(expected: "a list of ~a elements" given: "~a element~a\n complete list: ~e")
-     expected
-     actual
-     (if (= actual 1) "" "s")
-     x)))
+    (cond
+      [(null? x)
+       (raise-blame-error
+        blame #:missing-party missing-party x
+        '(expected: "a list of ~a element~a" given: "~e")
+        expected
+        (if (= expected 1) "" "s")
+        x)]
+      [else
+       (raise-blame-error
+        blame #:missing-party missing-party x
+        '(expected: "a list of ~a element~a" given: "~a element~a\n  complete list: ~e")
+        expected
+        (if (= expected 1) "" "s")
+        actual
+        (if (= actual 1) "" "s")
+        x)])))
 
 (define (list/c-chaperone/other-val-first-projection c)
   (define projs (map get/build-val-first-projection (generic-list/c-args c)))
@@ -1316,18 +1577,19 @@
 (define any/c-neg-party-fn (λ (val) (λ (neg-party) val)))
 
 (define (random-any/c env fuel)
+  (define env-hash (contract-random-generate-env-hash env))
   (cond
-    [(zero? (hash-count env))
+    [(zero? (hash-count env-hash))
      (rand-choice
       [1/3 (any/c-simple-value)]
-      [1/3 (any/c-procedure env fuel)]
-      [else (any/c-from-predicate-generator env fuel)])]
+      [1/3 (any/c-procedure env-hash fuel)]
+      [else (any/c-from-predicate-generator env-hash fuel)])]
     [else
      (rand-choice
-      [1/4 (oneof (hash-ref env (oneof (hash-keys env))))]
+      [1/4 (oneof (hash-ref env-hash (oneof (hash-keys env-hash))))]
       [1/4 (any/c-simple-value)]
-      [1/4 (any/c-procedure env fuel)]
-      [else (any/c-from-predicate-generator env fuel)])]))
+      [1/4 (any/c-procedure env-hash fuel)]
+      [else (any/c-from-predicate-generator env-hash fuel)])]))
 
 (define (any/c-simple-value)
   (oneof '(0 #f "" () #() -1 1 #t elephant)))
@@ -1357,7 +1619,7 @@
    #:name (λ (ctc) 'any/c)
    #:generate (λ (ctc) 
                 (λ (fuel) 
-                  (define env (generate-env))
+                  (define env (contract-random-generate-get-current-environment))
                   (λ () (random-any/c env fuel))))
    #:first-order get-any?))
 
@@ -1886,3 +2148,10 @@
      [(2) "nd"]
      [(3) "rd"]
      [else "th"])))
+
+;; this is a hack to work around cyclic linking issues;
+;; see definition of set-some-basic-contracts!
+(set-some-basic-contracts!
+ (listof any/c)
+ (cons/c any/c any/c)
+ (list/c))

@@ -2157,7 +2157,7 @@ int scheme_any_string_has_null(Scheme_Object *o)
 /* Environment Variables                                               */
 /***********************************************************************/
 
-#ifdef OS_X
+#if defined(OS_X) && !TARGET_OS_IPHONE
 # include <crt_externs.h>
 # define GET_ENVIRON_ARRAY *_NSGetEnviron()
 #endif
@@ -4140,38 +4140,68 @@ static Scheme_Object *string_foldcase (int argc, Scheme_Object *argv[])
 #define MZ_JAMO_SYLLABLE_START           0xAC00
 #define MZ_JAMO_SYLLABLE_END             (MZ_JAMO_SYLLABLE_START + 11171)
 
-static mzchar get_composition(mzchar a, mzchar b)
+XFORM_NONGCING static mzchar get_composition(mzchar a, mzchar b)
 {
-  uintptr_t key = (a << 16) | b;
-  int pos = (COMPOSE_TABLE_SIZE >> 1), new_pos;
-  int below_len = pos;
-  int above_len = (COMPOSE_TABLE_SIZE - pos - 1);
-  
-  if (a > 0xFFFF) return 0;
+  if ((a > 0xFFFF) || (b > 0xFFFF)) {
+    /* Look in long-composes table. */
+    mzlonglong key = ((((mzlonglong)a & 0x1F0000) << 21)
+                      | (((mzlonglong)a & 0xFFFF) << 16)
+                      | (((mzlonglong)b & 0x1F0000) << 16)
+                      | ((mzlonglong)b & 0xFFFF));
+    int pos = (LONG_COMPOSE_TABLE_SIZE >> 1), new_pos;
+    int below_len = pos;
+    int above_len = (LONG_COMPOSE_TABLE_SIZE - pos - 1);
 
-  /* Binary search: */
-  while (key != utable_compose_pairs[pos]) {
-    if (key > utable_compose_pairs[pos]) {
-      if (!above_len)
-	return 0;
-      new_pos = pos + (above_len >> 1) + 1;
-      below_len = (new_pos - pos - 1);
-      above_len = (above_len - below_len - 1);
-      pos = new_pos;
-    } else if (key < utable_compose_pairs[pos]) {
-      if (!below_len)
-	return 0;
-      new_pos = pos - ((below_len >> 1) + 1);
-      above_len = (pos - new_pos - 1);
-      below_len = (below_len - above_len - 1);
-      pos = new_pos;
+    /* Binary search: */
+    while (key != utable_canon_compose_long_pairs[pos]) {
+      if (key > utable_canon_compose_long_pairs[pos]) {
+        if (!above_len)
+          return 0;
+        new_pos = pos + (above_len >> 1) + 1;
+        below_len = (new_pos - pos - 1);
+        above_len = (above_len - below_len - 1);
+        pos = new_pos;
+      } else if (key < utable_canon_compose_long_pairs[pos]) {
+        if (!below_len)
+          return 0;
+        new_pos = pos - ((below_len >> 1) + 1);
+        above_len = (pos - new_pos - 1);
+        below_len = (below_len - above_len - 1);
+        pos = new_pos;
+      }
     }
-  }
+    
+    return utable_canon_compose_long_result[pos];
+  } else {
+    uintptr_t key = (a << 16) | b;
+    int pos = (COMPOSE_TABLE_SIZE >> 1), new_pos;
+    int below_len = pos;
+    int above_len = (COMPOSE_TABLE_SIZE - pos - 1);
 
-  return utable_compose_result[pos];
+    /* Binary search: */
+    while (key != utable_compose_pairs[pos]) {
+      if (key > utable_compose_pairs[pos]) {
+        if (!above_len)
+          return 0;
+        new_pos = pos + (above_len >> 1) + 1;
+        below_len = (new_pos - pos - 1);
+        above_len = (above_len - below_len - 1);
+        pos = new_pos;
+      } else if (key < utable_compose_pairs[pos]) {
+        if (!below_len)
+          return 0;
+        new_pos = pos - ((below_len >> 1) + 1);
+        above_len = (pos - new_pos - 1);
+        below_len = (below_len - above_len - 1);
+        pos = new_pos;
+      }
+    }
+    
+    return utable_compose_result[pos];
+  }
 }
 
-mzchar get_canon_decomposition(mzchar key, mzchar *b)
+XFORM_NONGCING mzchar get_canon_decomposition(mzchar key, mzchar *b)
 {
   int pos = (DECOMPOSE_TABLE_SIZE >> 1), new_pos;
   int below_len = pos;
@@ -4209,7 +4239,7 @@ mzchar get_canon_decomposition(mzchar key, mzchar *b)
   }
 }
 
-int get_kompat_decomposition(mzchar key, unsigned short **chars)
+XFORM_NONGCING int get_kompat_decomposition(mzchar key, unsigned short **chars)
 {
   int pos = (KOMPAT_DECOMPOSE_TABLE_SIZE >> 1), new_pos;
   int below_len = pos;

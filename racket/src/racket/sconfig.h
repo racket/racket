@@ -1,4 +1,4 @@
-/* 
+/*
    Configuration for compiling Racket
 
    If you want to set all the flags externally (on the command line
@@ -6,8 +6,8 @@
    FLAGS_ALREADY_SET, and this file will be ignored.
 
    The best flag settings are already provided for some auto-detected
-   architecture/system/compilers. Otherwise, the default settings 
-   are generic Unix.  Send other architecture/system/compiler-specific 
+   architecture/system/compilers. Otherwise, the default settings
+   are generic Unix.  Send other architecture/system/compiler-specific
    info to "racket@racket-lang.org".
 */
 
@@ -312,10 +312,10 @@
 
 #endif
 
-  /************** x86/OpenBSD with gcc ****************/
+  /************** OpenBSD with gcc ****************/
               /* Thanks to Bengt Kleberg */
 
-#if defined(__OpenBSD__)
+#if defined(__OpenBSD__) && !defined(__Bitrig__)
 
 # if defined(__x86_64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-openbsd"
@@ -327,6 +327,13 @@
 #  else
 #   define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips64-openbsd"
 #  endif
+# elif defined(__powerpc__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-openbsd"
+# elif defined(__sparc64__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc64-openbsd"
+/* ARMv7 is a WIP platform on OpenBSD, probably broken here and there */
+# elif defined(__arm__) || defined(__thumb__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-openbsd"
 # elif defined(__hppa__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "hppa-openbsd"
 # else
@@ -343,9 +350,7 @@
 # undef UNIX_STACK_MAXIMUM
 # define UNIX_STACK_MAXIMUM 4194304
 
-#ifndef __ELF__
 # define UNDERSCORE_DYNLOAD_SYMBOL_PREFIX
-#endif
 
 # define USE_DLOPEN_GLOBAL_BY_DEFAULT
 
@@ -355,29 +360,91 @@
 
 # define SIGSET_IS_SIGNAL
 
-# define REGISTER_POOR_MACHINE
-
 # define USE_TM_GMTOFF_FIELD
 # define USE_TM_ZONE_FIELD
 
-#if defined(__x86_64__)
-# define MZ_USE_JIT_X86_64
-# define MZ_JIT_USE_MPROTECT
-# define MZ_TRY_EXTFLONUMS
-#elif defined(__i386__)
-# define MZ_USE_JIT_I386
-# define MZ_JIT_USE_MPROTECT
-# define MZ_TRY_EXTFLONUMS
-#endif
+# define USE_MAP_ANON
+
+# if defined(__x86_64__)
+#  define MZ_USE_JIT_X86_64
+#  define MZ_JIT_USE_MPROTECT
+#  define MZ_TRY_EXTFLONUMS
+# elif defined(__i386__)
+#  define MZ_USE_JIT_I386
+#  define MZ_JIT_USE_MPROTECT
+#  define MZ_TRY_EXTFLONUMS
+#  define REGISTER_POOR_MACHINE
+# elif defined(__powerpc__)
+#  define MZ_USE_JIT_PPC
+# elif defined(__sparc64__)
+#  define FLUSH_SPARC_REGISTER_WINDOWS
+# elif defined(__arm__)
+#  define MZ_USE_JIT_ARM
+#  define FFI_CALLBACK_NEED_INT_CLEAR
+# endif
 
 # define FLAGS_ALREADY_SET
 
 #endif
 
-  /************** x86/FreeBSD with gcc ****************/
+  /************** Bitrig with clang ****************/
+/*
+   Bitrig and OpenBSD are pretty similar in some aspects. If you are modifying
+   any of the next values, please test also the same changes on OpenBSD.
+*/
+
+#if defined(__Bitrig__)
+
+# if defined(__x86_64__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-bitrig"
+# elif defined(__arm__) || defined(__thumb__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-bitrig"
+# else
+#  error Unported platform.
+# endif
+
+# include "uconfig.h"
+# undef HAS_STANDARD_IOB
+# define HAS_BSD_IOB
+# undef UNIX_FIND_STACK_BOUNDS
+# define PTHREAD_STACKSEG_FIND_STACK_BOUNDS
+
+/* Default UNIX_STACK_MAXIMUM is too big for a non-root user. */
+# undef UNIX_STACK_MAXIMUM
+# define UNIX_STACK_MAXIMUM 4194304
+
+# define UNDERSCORE_DYNLOAD_SYMBOL_PREFIX
+
+# define USE_DLOPEN_GLOBAL_BY_DEFAULT
+
+# define USE_IEEE_FP_PREDS
+
+# define USE_DYNAMIC_FDSET_SIZE
+
+# define SIGSET_IS_SIGNAL
+
+# define USE_TM_GMTOFF_FIELD
+# define USE_TM_ZONE_FIELD
+
+# define USE_MAP_ANON
+
+# if defined(__x86_64__)
+#  define MZ_USE_JIT_X86_64
+#  define MZ_JIT_USE_MPROTECT
+#  define MZ_TRY_EXTFLONUMS
+# elif defined(__arm__)
+#  define MZ_USE_JIT_ARM
+#  define FFI_CALLBACK_NEED_INT_CLEAR
+# endif
+
+# define FLAGS_ALREADY_SET
+
+#endif
+
+  /************** FreeBSD with gcc ****************/
 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
- 
+
 # if defined(__i386__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-freebsd"
 #  define REGISTER_POOR_MACHINE
@@ -589,9 +656,6 @@
 
 # define DO_STACK_CHECK
 # define WINDOWS_FIND_STACK_BOUNDS
-/* Default stack size is 1MB, but we try to read
-   the actual size from the executable on startup: */
-# define WINDOWS_DEFAULT_STACK_SIZE 1048576
 
 # if !defined(_WIN64) || (_MSC_VER >= 1600)
 #  define USE_MZ_SETJMP
@@ -731,10 +795,6 @@
 
 # define REGISTER_POOR_MACHINE
 
-# ifndef AS_MSVC_EXTENSION
-#  define LINK_EXTENSIONS_BY_TABLE
-# endif
-
 # define MZ_USE_JIT_I386
 
 # define FLAGS_ALREADY_SET
@@ -745,27 +805,25 @@
 
 # if defined(OS_X) || defined(XONX)
 
-#ifdef XONX 
-# ifdef __POWERPC__
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-darwin"
+# if defined(XONX)
+#  define SPLS_MAC "darwin"
+# elif TARGET_OS_IPHONE
+#  define SPLS_MAC "ios"
 # else
-#  ifdef __x86_64__
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-darwin"
-#  else
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-darwin"
-#  endif
+#  define SPLS_MAC "macosx"
 # endif
-#else
-# ifdef __POWERPC__
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-macosx"
+
+# if defined(__POWERPC__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-"SPLS_MAC
+# elif defined(__arm__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-"SPLS_MAC
+# elif defined(__arm64__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm64-"SPLS_MAC
+# elif defined(__x86_64__)
+#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-"SPLS_MAC
 # else
-#  ifdef __x86_64__
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-macosx"
-#  else
-#   define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-macosx"
-#  endif
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-"SPLS_MAC
 # endif
-#endif
 
 # include "uconfig.h"
 
@@ -810,7 +868,10 @@
 #  define OS_X 1
 #endif
 
-#if defined(__POWERPC__)
+#if defined(__arm__)
+# define MZ_USE_JIT_ARM
+#elif defined(__arm64__)
+#elif defined(__POWERPC__)
 # define MZ_USE_JIT_PPC
 #else
 # if defined(__x86_64__)
@@ -895,7 +956,7 @@
   /************ Dragonfly *************/
 
 #if defined(__DragonFly__)
- 
+
 # if defined(__i386__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-dragonfly"
 #  define REGISTER_POOR_MACHINE
@@ -966,7 +1027,7 @@
   /* SYSTEM_TYPE_NAME must be a string; this will be converted into
      a symbol for the result of (system-type) */
 
-  /* SCHEME_PLATFORM_LIBRARY_SUBPATH must be a string; if it is 
+  /* SCHEME_PLATFORM_LIBRARY_SUBPATH must be a string; if it is
      undefined, it is automatically generated into a file named
      "schsys.h" into the same directory as .o files and #included
      by string.c. This string is returned by (system-library-subpath) */
@@ -983,9 +1044,9 @@
      it defaults to 1000000 */
 
  /* USE_FTIME uses ftime instead of gettimeofday; only for TIME_SYNTAX */
- 
+
  /* USE_PLAIN_TIME uses time; only for TIME_SYNTAX */
- 
+
  /* USE_MACTIME uses the Mac toolbox to implement time functions. */
 
  /* USE_WIN32_TIME uses the Win32 API to implement time functions. */
@@ -1009,7 +1070,7 @@
 
  /* USE_TIMEZONE_VAR gets timezone offset from a timezone global.
     USE_TOD_FOR_TIMEZONE gets timezone offset via gettimeofday.
-    USE_TIMEZONE_VAR_W_DLS is similar, but adds 1 hour when daylight 
+    USE_TIMEZONE_VAR_W_DLS is similar, but adds 1 hour when daylight
      savings is in effect.
     USE_TIMEZONE_AND_ALTZONE_VAR is similar, but uses altzone when
      daylight savings is in effect.
@@ -1019,23 +1080,22 @@
  /* USE_TZNAME_VAR gets the timezone name from a tzname global.
     USE_TM_ZONE_FIELD gets the timezone name from a tm_zone field
      of the tm struct. */
- 
 
   /*******************/
  /*   Filesystem    */
 /*******************/
 
  /* UNIX_FILE_SYSTEM indicates that filenames are as in Unix, with
-    forward slash separators, ".." as the parent directory, "/" 
+    forward slash separators, ".." as the parent directory, "/"
     as the root directory, and case-sensitivity */
 
- /* DOS_FILE_SYSTEM indicates that filenames are as in DOS, with 
-    slash or backward slash separators, ".." as the parent directory, 
+ /* DOS_FILE_SYSTEM indicates that filenames are as in DOS, with
+    slash or backward slash separators, ".." as the parent directory,
     "X:\", "X:/", "\", or "/" as a root directory (for some letter X),
     and case insensitivity */
 
  /* MAC_FILE_SYSTEM indicates that filenames are as on the Macintosh,
-    with colon separators, "" as the parent directory, a volume name 
+    with colon separators, "" as the parent directory, a volume name
     (followed by a colon) as a root directory, and case insensitivity. */
 
  /* EXPAND_FILENAME_TILDE expands ~ in a filename with a user's home
@@ -1058,7 +1118,7 @@
  /* DIRENT_NO_NAMLEN specifies that dirent entries do not have a
      d_namlen field; this is used only when NO_READDIR is not
      specified. */
-     
+
  /* MKDIR_NO_MODE_FLAG specifies that mkdir() takes only one argument,
      instead of a directory name and mode flags. */
 
@@ -1144,10 +1204,10 @@
     an AF_UNSPEC address to disconnect a UDP socket. */
 
  /* UDP_DISCONNECT_EADRNOTAVAIL_OK means that a disconnecting call
-    to connect() might return EADDRNOTAVAIL instead of 
+    to connect() might return EADDRNOTAVAIL instead of
     EAFNOSUPPORT. */
 
- /* MZ_BINARY is combinaed with other flags in all calls to open();
+ /* MZ_BINARY is combined with other flags in all calls to open();
     it can be defined to O_BINARY in Cygwin, for example. */
 
  /* MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT uses IPV6_V6ONLY for IPv6
@@ -1161,7 +1221,6 @@
     option doesn't work, then the IPv6 addresses are silently ignored
     when creating the listener (but only where there is at least once
     IPv4 address). */
-
 
   /***********************/
  /* Threads & Signals  */
@@ -1184,7 +1243,7 @@
  /* USE_PTHREAD_THREAD_TIMER uses a background pthread to implement
     tread pre-emption. */
 
- /* SIGSET_IS_SIGNAL uses signal() in place of sigset() for Unix. This 
+ /* SIGSET_IS_SIGNAL uses signal() in place of sigset() for Unix. This
     flag is often paired with SIGSET_NEEDS_REINSTALL for traditional
     Unix systems. */
 
@@ -1193,7 +1252,7 @@
     (when this flags is not defined) is that a signal handler is NOT
     reset to SIG_DFL after a handler is called to handle a signal. */
 
- /* DONT_IGNORE_FPE_SIGNAL stops Racket from ignoring floating-point 
+ /* DONT_IGNORE_FPE_SIGNAL stops Racket from ignoring floating-point
     exception signals. */
 
  /* DONT_IGNORE_PIPE_SIGNAL stops Racket from ignoring SIGPIPE
@@ -1301,7 +1360,7 @@
  /* NAN_EQUALS_ANYTHING indicates that the compiler is broken and
     equality comparisons with +nan.0 always return #t. Currently
     used for MSVC++ */
-    
+
  /* ZERO_MINUS_ZERO_IS_POS_ZERO indicates that something (compiler?
     machine? fp flags?) is broken so that 0.0 - 0.0 = 0.0 instead of
     -0.0. This flag doesn't fix Racket completely, since (- 0.0) is
@@ -1312,22 +1371,22 @@
     by < or <=. Probably the compiler implements < as !>. */
 
  /* USE_EXPLICT_FP_FORM_CHECK circumvents bugs in strtod() under Linux,
-    SunOS/Solaris, and HP/UX by explicit pre-checking the form of the 
+    SunOS/Solaris, and HP/UX by explicit pre-checking the form of the
     number and looking for values that are obviously +inf.0 or -inf.0 */
 
  /* POW_HANDLES_CASES_CORRECTLY indicates that the pow() library procedure
     handles all +/-inf.0, +/-0.0, or +nan.0 cases according to C99. This
     might save time on redundant checking before Racket calls pow(). */
-    
+
  /* ATAN2_DOESNT_WORK_WITH_INFINITIES indicates that atan2(+/-inf, +/-inf)
-    is not the same as atan2(1, 1). */ 
-    
+    is not the same as atan2(1, 1). */
+
  /* ATAN2_DOESNT_WORK_WITH_NAN indicates that atan2(+nan.0, _) and
-    atan2(_, +nan.0) don't produce +nan.0. */ 
-    
+    atan2(_, +nan.0) don't produce +nan.0. */
+
  /* SQRT_NAN_IS_WRONG indicates that (sqrt +nan.0) must be forced to +nan.0
     (i.e., the C library function is bad). */
-    
+
  /* COMPUTE_NEG_INEXACT_TO_EXACT_AS_POS computes inexact->exact of some
     negative inexact number x by computing the result for -x and negating
     it. Use this if (inexact->exact -0.1) is wrong. */
@@ -1359,7 +1418,7 @@
  /* NO_LONG_LONG_TYPE indicates that long long is not supported */
 
   /***********************/
- /* Stack Maniuplations */
+ /* Stack Manipulations */
 /***********************/
 
  /* DO_STACK_CHECK checks for stack overflow during execution.
@@ -1404,9 +1463,9 @@
 /***********************/
 
  /* UNIX_DYNAMIC_LOAD implements dynamic extensions under Unix
-     using dlopen(); you may have to add the -ldl flag in the LIBS 
-     Makefile variable. The library doesn't exist under Linux without 
-     ELF, so it won't work. If you get linker errors about dlopen(), etc., 
+     using dlopen(); you may have to add the -ldl flag in the LIBS
+     Makefile variable. The library doesn't exist under Linux without
+     ELF, so it won't work. If you get linker errors about dlopen(), etc.,
      this flag and the -ldl linker flag are the things to adjust.
     SHL_DYNAMIC_LOAD implement HP/UX dynamic loading.
     WINDOWS_DYNAMIC_LOAD implements dynamic extensions under Windows
@@ -1416,7 +1475,7 @@
     Use only one or none of these. */
 
  /* UNDERSCORE_DYNLOAD_SYMBOL_PREFIX with UNIX_DYNAMIC_LOAD means that
-    an extra underscore ("_") must be placed in front of the name passed 
+    an extra underscore ("_") must be placed in front of the name passed
     to dlopen(). */
 
  /* USE_DLOPEN_GLOBAL_BY_DEFAULT opens shared libraries in "global"
@@ -1450,10 +1509,10 @@
  /*     Heap Images     */
 /***********************/
 
- /* UNIX_IMAGE_DUMPS turns on image save and restore for Unix systems. 
-     This will only work if the final application is statically linked. 
-     (As an exception, the dynamic-linking library itself can be 
-     dynamically linked. This works because loading an extension in 
+ /* UNIX_IMAGE_DUMPS turns on image save and restore for Unix systems.
+     This will only work if the final application is statically linked.
+     (As an exception, the dynamic-linking library itself can be
+     dynamically linked. This works because loading an extension in
      Racket automatically turns off image saving.) */
 
   /*****************************/
@@ -1461,16 +1520,16 @@
 /*****************************/
 
  /* MACINTOSH_EVENTS enables specific support for Mac Classic */
- 
- /* MAC_MZ_GUI_ENABLED activates the windowed I/O code (use under classic) 
+
+ /* MAC_MZ_GUI_ENABLED activates the windowed I/O code (use under classic)
      (should maybe use MACINTOSH_SIOUX instead?) */
 
- /* MAC_CLASSIC_PROCESS_CONTROL swaps the UNIX process commands for the 
+ /* MAC_CLASSIC_PROCESS_CONTROL swaps the UNIX process commands for the
     mac family (use under classic) */
 
  /* OS_X enables specific support for Mac OS X, e.g. the location of the
     prefs directory */
- 
+
  /* MACINTOSH_GIVE_TIME lets background processes run when checking for
      a user break */
 
@@ -1511,7 +1570,7 @@
  /* NO_INLINE_KEYWORD indicates that the C compiler doesn't recognize
     C's `inline' keyword. */
 
- /* NO_USER_BREAK_HANDLER turns off handling of SIGINT, SIGTERM, and 
+ /* NO_USER_BREAK_HANDLER turns off handling of SIGINT, SIGTERM, and
     SIGHUP in main.c */
 
  /* NO_SIGTERM_HANDLER turns off handling of SIGTERM in main.c */
@@ -1526,10 +1585,10 @@
 
  /* UNISTD_INCLUDE if there's a <unistd.h> file (mainly for Unix). */
 
- /* SELECT_INCLUDE if there's a <sys/select.h> file (mainly for Unix) 
+ /* SELECT_INCLUDE if there's a <sys/select.h> file (mainly for Unix)
      to be used with FILES_HAVE_FDS. */
 
- /* BSTRING_INCLUDE if there's a <bstring.h> file (mainly for Unix) 
+ /* BSTRING_INCLUDE if there's a <bstring.h> file (mainly for Unix)
      to be used with FILES_HAVE_FDS. */
 
  /* NO_SYS_INCLUDE_SUBDIR if include files should all be <XXX.h>; no
@@ -1548,7 +1607,7 @@
  /* NO_SLEEP means that there is no sleep() function. Used only in
     standalone Racket. */
 
- /* NO_USLEEP means that there is no usleep() function. Used only in 
+ /* NO_USLEEP means that there is no usleep() function. Used only in
     standalone Racket. Used only if NO_SLEEP is undefined. */
 
  /* NO_STRERROR_AVAILABLE means that strerror() is not available. */

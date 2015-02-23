@@ -543,6 +543,7 @@ static uintptr_t adjust_stack_base(uintptr_t bnd) {
 #ifdef WINDOWS_FIND_STACK_BOUNDS
 intptr_t find_exe_stack_size()
 {
+# define WINDOWS_DEFAULT_STACK_SIZE 1048576
   intptr_t sz = WINDOWS_DEFAULT_STACK_SIZE;
   wchar_t *fn;
   DWORD len = 1024;
@@ -580,7 +581,6 @@ intptr_t find_exe_stack_size()
 		/* Skip to PE32[+] header's stack reservation value: */
 		if (SetFilePointer(fd, pos + 20 + 4 + 72, NULL, FILE_BEGIN)
 		    != INVALID_SET_FILE_POINTER) {
-		  mzlonglong lsz;
 		  if (kind == 0x10b) {
 		    /* PE32: 32-bit stack size: */
 		    int ssz;
@@ -795,6 +795,8 @@ void *scheme_enlarge_runstack(intptr_t size, void *(*k)())
     v = k();
     escape = 0;
     p = scheme_current_thread; /* might have changed! */
+
+    scheme_check_runstack_edge(MZ_RUNSTACK_START);
 
     if (cont_count == scheme_cont_capture_count) {
       if (!p->spare_runstack || (p->runstack_size > p->spare_runstack_size)) {
@@ -1379,6 +1381,8 @@ static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, S
 
 static Scheme_Object *do_eval_k_readjust_mark(void)
 {
+  Scheme_Thread *p = scheme_current_thread;
+  p->self_for_proc_chaperone = p->ku.k.p3;
   MZ_CONT_MARK_POS -= 2; /* undo increment in do_eval_stack_overflow() */
   return do_eval_k();
 }
@@ -1406,6 +1410,9 @@ static Scheme_Object *do_eval_stack_overflow(Scheme_Object *obj, int num_rands, 
   } else
     p->ku.k.p2 = (void *)rands;
   p->ku.k.i2 = get_value;
+
+  p->ku.k.p3 = p->self_for_proc_chaperone;
+  p->self_for_proc_chaperone = NULL;
 
   /* In case we got here via scheme_force_value_same_mark(), in case
      overflow handling causes the thread to sleep, and in case another
@@ -1474,6 +1481,10 @@ static Scheme_Prompt *lookup_cont_prompt(Scheme_Cont *c,
 {
   Scheme_Prompt *prompt;
   Scheme_Object *pt;
+
+  if (!c->runstack_copied)
+    /* This continuation is the same as another... */
+    c = c->buf_ptr->buf.cont;
 
   pt = c->prompt_tag;
   if (SCHEME_NP_CHAPERONEP(pt))
@@ -1612,10 +1623,17 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
 
   c = (Scheme_Cont *)obj;
   
+  /* Shortcut: if the target continuation is an extension of the current
+     continuation, and if no prompt is in the way, then escape directly. */
   if (can_ec
       && c->escape_cont
-      && scheme_escape_continuation_ok(c->escape_cont))
-    scheme_escape_to_continuation(c->escape_cont, num_rands, rands, (Scheme_Object *)c);
+      && scheme_escape_continuation_ok(c->escape_cont)) {
+    prompt = lookup_cont_prompt(c, &prompt_mc, &prompt_pos, LOOKUP_NO_PROMPT);
+    if (!prompt || (prompt->id
+                    && (prompt->id == c->prompt_id)
+                    && !prompt_mc))
+      scheme_escape_to_continuation(c->escape_cont, num_rands, rands, (Scheme_Object *)c);
+  }
       
   if (num_rands != 1) {
     GC_CAN_IGNORE Scheme_Object **vals;
@@ -2434,7 +2452,11 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
   data = (Scheme_Closure_Data *)code;
   
 #ifdef MZ_USE_JIT
-  if (data->u.native_code) {
+  if (data->u.native_code
+      /* If the union points to a another Scheme_Closure_Data*, then it's not actually
+         a pointer to native code. We must have a closure referenced frmo non-JITted code
+         where the closure is also referenced by JITted code. */
+      && !SAME_TYPE(SCHEME_TYPE(data->u.native_code), scheme_unclosed_procedure_type)) {
     Scheme_Object *nc;
 
     nc = scheme_make_native_closure(data->u.native_code);
@@ -5702,7 +5724,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     }
     i += rp->num_lifts;
 
-    tl_map_len = ((rp->num_toplevels + rp->num_lifts) + 31) / 32;
+    tl_map_len = ((rp->num_toplevels + rp->num_lifts + (rp->num_stxes ? 1 : 0)) + 31) / 32;
 
     pf = scheme_malloc_tagged(sizeof(Scheme_Prefix) 
                               + ((i-mzFLEX_DELTA) * sizeof(Scheme_Object *))
@@ -5808,7 +5830,7 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
       /* If not marked, only references are through closures: */
       if (!GC_is_marked2(pf, gc)) {
         /* Clear slots that are not use in map */
-        maxpos = (pf->num_slots - pf->num_stxes - (pf->num_stxes ? 1 : 0));
+        maxpos = (pf->num_slots - pf->num_stxes);
         use_bits = PREFIX_TO_USE_BITS(pf);
         for (i = (maxpos + 31) / 32; i--; ) {
           int j;
@@ -5817,18 +5839,28 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
               int pos;
               pos = (i * 32) + j;
               if (pos < pf->num_toplevels)
-                pf->a[pos] = NULL;
+                pf->a[pos] = NULL; /* top level */
               else if (pos < maxpos) {
-                if (pf->num_stxes)
-                  pf->a[pos + pf->num_stxes + 1] = NULL;
-                else
-                  pf->a[pos] = NULL;
+                if (pf->num_stxes) {
+                  if (pos == pf->num_toplevels) {
+                    /* any syntax object */
+                    int k;
+                    for (k = pf->num_stxes+1; k--;) {
+                      pf->a[k + pf->num_toplevels] = NULL;
+                    }
+                  } else
+                    pf->a[pos + pf->num_stxes] = NULL; /* lifted */
+                } else
+                  pf->a[pos] = NULL; /* lifted */
               }
             }
           }
           use_bits[i] = 0;
         }
         /* Should mark/copy pf, but not trigger or require mark propagation: */
+#ifdef MZ_GC_BACKTRACE
+        GC_set_backpointer_object(pf->backpointer);
+#endif
         gcMARK(pf);
         pf = (Scheme_Prefix *)GC_resolve2(pf, gc);
         GC_retract_only_mark_stack_entry(pf, gc);
@@ -5837,7 +5869,7 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
 
       /* Clear use map */
       use_bits = PREFIX_TO_USE_BITS(pf);
-      maxpos = (pf->num_slots - pf->num_stxes - (pf->num_stxes ? 1 : 0));
+      maxpos = (pf->num_slots - pf->num_stxes);
       for (i = (maxpos + 31) / 32; i--; )
         use_bits[i] = 0;
 

@@ -42,7 +42,10 @@
                     (let* ([r (cdr exploded)]
                            ;; note: use "/"s, to get paths as in `require's
                            [r (map (lambda (p) (list #"/" p)) r)]
-                           [r (apply bytes-append (cdr (apply append r)))])
+                           [r (apply bytes-append (let ([l (apply append r)])
+                                                    (if (pair? l)
+                                                        (cdr l)
+                                                        null)))])
                       (string-append prefix (bytes->string/locale r))))))
         (if (procedure? default) (default path) default)))
   path->relative-string)
@@ -53,7 +56,9 @@
       (make-path->relative-string
        (list (cons find-collects-dir      "<collects>/")
              (cons find-user-collects-dir "<user>/")
-             (cons find-planet-dir        "<planet>/"))))
+             (cons find-planet-dir        "<planet>/")
+             (cons find-doc-dir           "<doc>/")
+             (cons find-user-doc-dir      "<user-doc>/"))))
     (define (make-default cache default)
       (lambda (x)        
         (define-values (pkg sub) (if (complete-path? x)

@@ -25,36 +25,64 @@
          "params.rkt"
          "get-info.rkt"
          "mod-paths.rkt"
-         "addl-installs.rkt")
+         "addl-installs.rkt"
+         "repo-path.rkt"
+         "orig-pkg.rkt"
+         "git.rkt")
 
 (provide (struct-out install-info)
          remote-package-checksum
          stage-package/info
-         pkg-stage)
+         pkg-stage
+         package-url->checksum
+         github-client_secret
+         github-client_id)
 
-(struct install-info (name orig-pkg directory clean? checksum module-paths additional-installs))
+(struct install-info (name orig-pkg directory git-directory clean? checksum module-paths additional-installs))
 
-(define (remote-package-checksum pkg download-printf pkg-name #:type [type #f])
-  (match pkg
-    [`(catalog ,pkg-name)
-     (hash-ref (package-catalog-lookup pkg-name #f download-printf) 'checksum)]
-    [`(url ,pkg-url-str)
-     (package-url->checksum pkg-url-str
-                            #:type type
-                            #:download-printf download-printf
-                            #:pkg-name pkg-name)]))
+(define (remote-package-checksum pkg download-printf pkg-name
+                                 #:type [type #f]
+                                 #:catalog-lookup-cache [catalog-lookup-cache #f]
+                                 #:remote-checksum-cache [remote-checksum-cache #f])
+  (cond
+   [(and remote-checksum-cache
+         (hash-ref remote-checksum-cache pkg #f))
+    => (lambda (checksum) checksum)]
+   [else
+    (define checksum
+      (match pkg
+        [`(catalog ,pkg-name . ,_)
+         (hash-ref (package-catalog-lookup pkg-name #f catalog-lookup-cache
+                                           download-printf)
+                   'checksum)]
+        [`(url ,pkg-url-str)
+         (package-url->checksum pkg-url-str
+                                #:type type
+                                #:download-printf download-printf
+                                #:pkg-name pkg-name)]
+        [`(clone ,_ ,pkg-url-str)
+         (package-url->checksum pkg-url-str
+                                #:type 'clone
+                                #:download-printf download-printf
+                                #:pkg-name pkg-name)]))
+    (when remote-checksum-cache
+      (hash-set! remote-checksum-cache pkg checksum))
+    checksum]))
 
 ;; Downloads a package (if needed) and unpacks it (if needed) into a  
 ;; temporary directory.
 (define (stage-package/info pkg
                             given-type
                             given-pkg-name
+                            #:at-dir given-at-dir
                             #:given-checksum [given-checksum #f]
                             #:cached-url [cached-url #f]
                             #:use-cache? use-cache?
                             check-sums?
                             download-printf
                             metadata-ns
+                            #:catalog-lookup-cache [catalog-lookup-cache #f]
+                            #:remote-checksum-cache [remote-checksum-cache #f]
                             #:strip [strip-mode #f]
                             #:force-strip? [force-strip? #f]
                             #:in-place? [in-place? #f]
@@ -70,11 +98,11 @@
                                                'dir)
                                            'file))
                                    #:must-infer-name? (not given-pkg-name)
-                                   #:complain complain-about-source)
+                                   #:complain (complain-about-source given-pkg-name))
         (package-source->name+type pkg given-type
                                    #:link-dirs? link-dirs?
                                    #:must-infer-name? (not given-pkg-name)
-                                   #:complain complain-about-source)))
+                                   #:complain (complain-about-source given-pkg-name))))
   (define pkg-name (or given-pkg-name inferred-pkg-name))
   (when (and type (not pkg-name))
     (pkg-error (~a "could not infer package name from source\n"
@@ -85,13 +113,116 @@
          (not (regexp-match? #rx"^git(?:hub)?://" pkg)))
     ;; Add "git://github.com/"
     (stage-package/info (string-append "git://github.com/" pkg) type 
-                        pkg-name 
+                        pkg-name
+                        #:at-dir given-at-dir
                         #:given-checksum given-checksum
                         #:use-cache? use-cache?
                         check-sums? download-printf
                         metadata-ns
                         #:strip strip-mode
                         #:force-strip? force-strip?)]
+   [(eq? type 'clone)
+    (define pkg-url (string->url pkg))
+    (define-values (host port repo branch path)
+      (split-git-or-hub-url pkg-url))
+    (define pkg-no-query (real-git-url pkg-url host port repo))
+    (define clone-dir (or given-at-dir
+                          (current-directory)))
+    
+    (define (status s) (download-printf "~a\n" s))
+
+    (define orig-pkg (desc->orig-pkg 'clone pkg given-at-dir))
+
+    (define checksum
+      (or given-checksum
+          (remote-package-checksum orig-pkg download-printf pkg-name
+                                   #:catalog-lookup-cache catalog-lookup-cache
+                                   #:remote-checksum-cache remote-checksum-cache)))
+
+    ;; If the clone directory already exists, and if it already has
+    ;; the target commit, then we use that directory. It may have
+    ;; changes to package metadata (even uncommitted changes) that
+    ;; we'd prefer to use
+    (define working-dir
+      (and (directory-exists? clone-dir)
+           (or (not checksum)
+               (let ([o (open-output-bytes)])
+                 (and (parameterize ([current-directory clone-dir]
+                                     [current-error-port (open-output-bytes)]
+                                     [current-output-port o])
+                        (git "log" "--pretty=%H" #:fail-mode 'status))
+                      (regexp-match (~a "(?m:^" (regexp-quote checksum) ")")
+                                    (get-output-bytes o)))))
+           (if (null? path)
+               clone-dir
+               (apply build-path clone-dir path))))
+
+    (define tmp-dir (and (not working-dir)
+                         (make-temporary-file
+                          (string-append "~a-" pkg-name)
+                          'directory)))
+
+    (define staged? #f)
+    (dynamic-wind
+     void
+     (λ ()
+       (unless (and (directory-exists? clone-dir)
+                    (directory-exists? (build-path clone-dir ".git")))
+         (download-printf "Cloning remote repository ~a\n to ~a\n"
+                          pkg-no-query
+                          clone-dir)
+         (make-directory* clone-dir)
+         (parameterize ([current-directory clone-dir])
+           (git #:status status "clone" "-b" branch pkg-no-query ".")))
+
+       (unless working-dir
+         (parameterize ([current-directory clone-dir])
+           (download-printf "Fetching from remote repository ~a\n"
+                            pkg-no-query)
+           (git #:status status "fetch" pkg-no-query branch)))
+
+       (cond
+        [tmp-dir
+         ;; Make a clone of the [to-be-]linked checkout so that
+         ;; we can check dependencies, etc., before changing
+         ;; the checkout. By using `--shared` for the clone, all
+         ;; the commits that we've fetched will be available to
+         ;; checkout (even though they may be unreachable at this
+         ;; point, since we haven't merged the fetched commits).
+         (download-printf "Cloning repository locally for staging\n")
+         (git #:status status "clone" "--shared" clone-dir tmp-dir)
+         (parameterize ([current-directory tmp-dir])
+           (git #:status status "checkout" (or checksum branch)))
+         (lift-git-directory-content tmp-dir path)]
+        [else
+         (download-printf "Using clone directory directly for metadata\n")])
+
+       (begin0
+        (update-install-info-checksum
+         (update-install-info-orig-pkg
+          (update-install-info-git-dir
+           (stage-package/info (or working-dir tmp-dir)
+                               'dir
+                               pkg-name
+                               #:at-dir given-at-dir
+                               #:given-checksum checksum
+                               #:cached-url pkg-url
+                               #:use-cache? use-cache?
+                               check-sums?
+                               download-printf
+                               metadata-ns
+                               #:strip strip-mode
+                               #:force-strip? force-strip?
+                               #:in-place? #t
+                               #:in-place-clean? (not working-dir))
+           (apply build-path clone-dir path))
+          orig-pkg)
+         checksum)
+        (set! staged? #t)))
+     (λ ()
+       (unless staged?
+         (when tmp-dir
+           (delete-directory/files tmp-dir)))))]
    [(or (eq? type 'file-url)
         (eq? type 'dir-url)
         (eq? type 'github)
@@ -100,14 +231,16 @@
     (define pkg-url (string->url pkg-url-str))
     (define scheme (url-scheme pkg-url))
 
-    (define orig-pkg `(url ,pkg-url-str))
+    (define orig-pkg (desc->orig-pkg type pkg-url-str #f))
     (define found-checksum
       ;; If a checksum is given, use that. In the case of a non-github
       ;; source, we could try to get the checksum from the source, and
       ;; then check whether it matches the expected one, but we choose
       ;; to avoid an extra trip to the server.
       (or given-checksum
-          (remote-package-checksum orig-pkg download-printf pkg-name)))
+          (remote-package-checksum orig-pkg download-printf pkg-name
+                                   #:catalog-lookup-cache catalog-lookup-cache
+                                   #:remote-checksum-cache remote-checksum-cache)))
     (when check-sums?
       (check-checksum given-checksum found-checksum "unexpected" pkg #f))
     (define checksum (or found-checksum given-checksum))
@@ -119,7 +252,7 @@
              (~a "cannot use empty checksum for Git repostory package source\n"
                  "  source: ~a")
              pkg))
-          (define-values (host repo branch path) (split-git-url pkg-url))
+          (define-values (host port repo branch path) (split-git-url pkg-url))
           (define tmp-dir
             (make-temporary-file
              (string-append
@@ -131,21 +264,16 @@
           (dynamic-wind
            void
            (λ ()
-             (download-repo! pkg-url host repo tmp-dir checksum 
+             (download-repo! pkg-url host port repo tmp-dir checksum 
                              #:use-cache? use-cache?
                              #:download-printf download-printf)
-             (unless (null? path)
-               (unless (directory-exists? (apply build-path tmp-dir path))
-                 (pkg-error
-                  (~a "specified directory is not in Git respository\n"
-                      "  path: ~a")
-                  (apply build-path path)))
-               (lift-directory-content tmp-dir path))
+             (lift-git-directory-content tmp-dir path)
 
              (begin0
               (stage-package/info tmp-dir
                                   'dir
                                   pkg-name
+                                  #:at-dir given-at-dir
                                   #:given-checksum checksum
                                   #:cached-url pkg-url
                                   #:use-cache? use-cache?
@@ -218,6 +346,7 @@
                          (stage-package/info tmp-dir
                                              'dir
                                              pkg-name
+                                             #:at-dir given-at-dir
                                              #:given-checksum checksum
                                              #:cached-url new-url
                                              #:use-cache? use-cache?
@@ -308,6 +437,7 @@
                   (stage-package/info package-path
                                       download-type
                                       pkg-name
+                                      #:at-dir given-at-dir
                                       #:given-checksum checksum
                                       #:cached-url pkg-url
                                       #:use-cache? use-cache?
@@ -410,6 +540,7 @@
               (stage-package/info pkg-dir
                                   'dir
                                   pkg-name
+                                  #:at-dir given-at-dir
                                   #:given-checksum checksum
                                   #:cached-url cached-url
                                   #:use-cache? use-cache?
@@ -440,15 +571,13 @@
        [(or (eq? type 'link)
             (eq? type 'static-link))
         (install-info pkg-name
-                      `(,type ,(path->string
-                                (find-relative-path (pkg-installed-dir)
-                                                    (simple-form-path pkg-path)
-                                                    #:more-than-root? #t)))
+                      (desc->orig-pkg type pkg-path #f)
                       pkg-path
-                      #f
+                      #f ; no git-dir
+                      #f ; no clean?
                       given-checksum ; if a checksum is provided, just use it
-                      (directory->module-paths pkg pkg-name metadata-ns)
-                      (directory->additional-installs pkg pkg-name metadata-ns))]
+                      (directory->module-paths pkg-path pkg-name metadata-ns)
+                      (directory->additional-installs pkg-path pkg-name metadata-ns))]
        [else
         (define pkg-dir
           (if in-place?
@@ -473,33 +602,49 @@
         (install-info pkg-name
                       `(dir ,(simple-form-path* pkg-path))
                       pkg-dir
+                      #f ; no git-dir
                       (or (not in-place?) in-place-clean?) 
                       given-checksum ; if a checksum is provided, just use it
                       (directory->module-paths pkg-dir pkg-name metadata-ns)
                       (directory->additional-installs pkg-dir pkg-name metadata-ns))]))]
    [(eq? type 'name)
-    (define catalog-info (package-catalog-lookup pkg #f download-printf))
+    (define catalog-info (package-catalog-lookup pkg #f catalog-lookup-cache
+                                                 download-printf))
     (log-pkg-debug "catalog response: ~s" catalog-info)
     (define source (hash-ref catalog-info 'source))
     (define checksum (hash-ref catalog-info 'checksum))
     (define info (stage-package/info source
                                      #f
                                      pkg-name
+                                     #:at-dir given-at-dir
                                      #:given-checksum checksum
                                      #:use-cache? use-cache?
                                      check-sums?
                                      download-printf
                                      metadata-ns
+                                     #:catalog-lookup-cache catalog-lookup-cache
+                                     #:remote-checksum-cache remote-checksum-cache
                                      #:strip strip-mode
                                      #:force-strip? force-strip?))
     (when check-sums?
       (check-checksum given-checksum checksum "unexpected" pkg #f)
       (check-checksum checksum (install-info-checksum info) "incorrect" pkg #f))
-    (update-install-info-orig-pkg
-     (update-install-info-checksum
-      info
-      checksum)
-     `(catalog ,pkg))]
+    (define-values (new-name new-type)  (package-source->name+type source #f))
+    (define repo-url (and (or (eq? new-type 'git)
+                              (eq? new-type 'github))
+                          source))
+    (case new-type
+      [(link static-link clone)
+       ;; The `source` must have been something like a `file://`
+       ;; URL that embeds a special installation type. In that case,
+       ;; we don't try to keep track of the catalog reference.
+       info]
+      [else
+       (update-install-info-orig-pkg
+        (update-install-info-checksum
+         info
+         checksum)
+        (desc->orig-pkg 'name pkg #f #:repo-url repo-url))])]
    [else
     (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
 
@@ -513,6 +658,7 @@
   (define i (stage-package/info (pkg-desc-source desc)
                                 (pkg-desc-type desc)
                                 (pkg-desc-name desc)
+                                #:at-dir (pkg-desc-extra-path desc)
                                 #:given-checksum (pkg-desc-checksum desc)
                                 #:use-cache? use-cache?
                                 #t
@@ -535,19 +681,27 @@
                                #:pkg-name [pkg-name "package"])
   (define pkg-url
     (string->url pkg-url-str))
-  (define type (or given-type
-                   (let-values ([(name type) (package-source->name+type pkg-url-str given-type)])
-                     type)))
+  (define type (if (eq? given-type 'clone)
+                   (if (equal? "github" (url-scheme (string->url pkg-url-str)))
+                       'github
+                       'git)
+                   (or given-type
+                       (let-values ([(name type) (package-source->name+type pkg-url-str given-type)])
+                         type))))
   (case type
     [(git)
-     (define-values (host repo branch path)
+     (define-values (host port repo branch path)
        (split-git-url pkg-url))
-     ;; supplying `#:dest-dir #f` means that we just resolve `branch`
+     (download-printf "Querying Git references for ~a at ~a\n" pkg-name pkg-url-str)
+     ;; Supplying `#:dest-dir #f` means that we just resolve `branch`
      ;; to an ID:
-     (git-checkout host repo
+     (git-checkout host #:port port repo
                    #:dest-dir #f
                    #:ref branch
-                   #:status-printf download-printf
+                   #:status-printf (lambda (fmt . args)
+                                     (define (strip-ending-newline s)
+                                       (regexp-replace #rx"\n$" s ""))
+                                     (log-pkg-debug (strip-ending-newline (apply format fmt args))))
                    #:transport (string->symbol (url-scheme pkg-url)))]
     [(github)
      (match-define (list* user repo branch path)
@@ -565,7 +719,7 @@
                                  (cons 'client_secret (github-client_secret)))
                            empty))
                #f))
-        (download-printf "Querying GitHub ~a\n" kind)
+        (download-printf "Querying GitHub ~a for ~a\n" kind pkg-name)
         (log-pkg-debug "Querying GitHub at ~a" (url->string api-u))
         (define api-bs
           (call/input-url+200
@@ -624,6 +778,8 @@
      (cond
       [(equal? "git" (url-scheme as-url))
        str]
+      [(equal? "github" (url-scheme as-url))
+       str]
       [else
        (define p (reverse (url-path as-url)))
        (define skip (if (equal? "" (path/param-path (car p)))
@@ -651,35 +807,23 @@
   (struct-copy install-info if
                [checksum op]))
 
+(define (update-install-info-git-dir if dir)
+  (struct-copy install-info if
+               [git-directory dir]))
+
 ;; ----------------------------------------
 
 (define github-client_id (make-parameter #f))
 (define github-client_secret (make-parameter #f))
 
-(define (split-github-url pkg-url)
-  (if (equal? (url-scheme pkg-url) "github")
-      ;; github://
-      (map path/param-path (url-path/no-slash pkg-url))
-      ;; git://
-      (let* ([paths (map path/param-path (url-path/no-slash pkg-url))])
-        (list* (car paths)
-               (regexp-replace* #rx"[.]git$" (cadr paths) "")
-               (or (url-fragment pkg-url) "master")
-               (extract-git-path pkg-url)))))
-
-(define (extract-git-path pkg-url)
-  (let ([a (assoc 'path (url-query pkg-url))])
-    (or (and a (cdr a) (string-split (cdr a) "/"))
-        null)))
-
-;; returns: (values host repo branch path)
-(define (split-git-url pkg-url)
-  (values (url-host pkg-url)
-          (string-join (map (compose ~a path/param-path)
-                            (url-path/no-slash pkg-url))
-                       "/")
-          (or (url-fragment pkg-url) "master")
-          (extract-git-path pkg-url)))
+(define (lift-git-directory-content tmp-dir path)
+  (unless (null? path)
+    (unless (directory-exists? (apply build-path tmp-dir path))
+      (pkg-error
+       (~a "specified directory is not in Git respository\n"
+           "  path: ~a")
+       (apply build-path path)))
+    (lift-directory-content tmp-dir path)))
 
 ;; ----------------------------------------
 

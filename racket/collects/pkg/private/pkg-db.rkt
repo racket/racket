@@ -75,8 +75,16 @@
           (and (hash-ref (read-pkgs-db (current-pkg-scope)) pkg-name #f)
                (current-pkg-scope)))]))
 
-(define (package-info pkg-name [fail? #t] #:db [given-db #f])
-  (define db (or given-db (read-pkg-db)))
+(define (package-info pkg-name [fail? #t]
+                      #:db [given-db #f]
+                      #:cache [cache #f])
+  (define db (or given-db
+                 (and cache
+                      (hash-ref cache (current-pkg-scope) #f))
+                 (let ([db (read-pkg-db)])
+                   (when cache
+                     (hash-set! cache (current-pkg-scope) db))
+                   db)))
   (define pi (hash-ref db pkg-name #f))
   (cond
     [pi
@@ -155,27 +163,31 @@
                               'installation
                               d)))))))
 
-(define (pkg-directory pkg-name)
+(define (pkg-directory pkg-name #:cache [cache #f])
   ;; Warning: takes locks individually.
-  (pkg-directory** pkg-name 
+  (pkg-directory** pkg-name
+                   #:cache cache
                    (lambda (f)
                      (with-pkg-lock/read-only
                       (f)))))
 
-(define (pkg-directory** pkg-name [call-with-pkg-lock (lambda (f) (f))])
+(define (pkg-directory** pkg-name [call-with-pkg-lock (lambda (f) (f))]
+                         #:cache [cache #f])
   (for/or ([scope (in-list (get-scope-list))])
     (parameterize ([current-pkg-scope scope])
       (call-with-pkg-lock
        (lambda ()
-         (pkg-directory* pkg-name))))))
+         (pkg-directory* pkg-name #:cache cache))))))
 
-(define (pkg-directory* pkg-name #:db [db #f])
-  (define info (package-info pkg-name #f #:db db))
+(define (pkg-directory* pkg-name
+                        #:db [db #f]
+                        #:cache [cache #f])
+  (define info (package-info pkg-name #f #:db db #:cache cache))
   (and info
        (let ()
          (match-define (pkg-info orig-pkg checksum _) info)
          (match orig-pkg
-           [`(,(or 'link 'static-link) ,orig-pkg-dir)
+           [`(,(or 'link 'static-link 'clone) ,orig-pkg-dir . ,_)
             (path->complete-path orig-pkg-dir (pkg-installed-dir))]
            [_
             (build-path (pkg-installed-dir) 

@@ -161,10 +161,10 @@ static void set_cache(void *p, Scheme_Object *last)
 
 Scheme_Object *scheme_native_stack_trace(void)
 {
-  void *p, *q;
+  void *p, *q, *cache_frame_p;
   uintptr_t stack_end, real_stack_end, stack_start, halfway;
   Scheme_Object *name, *last = NULL, *first = NULL, *tail;
-  int prev_had_name = 0;
+  int cache_had_name = 0;
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_context_t cx;
   unw_cursor_t c;
@@ -208,12 +208,12 @@ Scheme_Object *scheme_native_stack_trace(void)
   p = gs();
 #endif
 
-  halfway = STK_DIFF(stack_end, (uintptr_t)p) / 2;
+  halfway = STK_DIFF(stack_end, (uintptr_t)stack_start) / 2;
   if (halfway < CACHE_STACK_MIN_TRIGGER)
     halfway = stack_end;
   else {
 #ifdef STACK_GROWS_DOWN
-    halfway += (uintptr_t)p;
+    halfway += (uintptr_t)stack_start;
 #else
     halfway += stack_end;
 #endif
@@ -288,11 +288,17 @@ Scheme_Object *scheme_native_stack_trace(void)
 	else
 	  first = name;
 	last = name;
+	if (shift_cache_to_next) {
+	  stack_cache_stack[stack_cache_stack_pos].cache = last;
+	  shift_cache_to_next = 0;
+	}
       }
 
       if (cache_sp) {
 	if (STK_COMP((uintptr_t)halfway, (uintptr_t)cache_sp)) {
 	  set_cache(cache_sp, last);
+	  if (!name)
+	    shift_cache_to_next = 1;
 	  halfway = stack_end;
 	  unsuccess = -100000; /* if we got halfway, no need to bail out later */
 	}
@@ -306,6 +312,9 @@ Scheme_Object *scheme_native_stack_trace(void)
       }
     }
 
+    if (shift_cache_to_next)
+      stack_cache_stack[stack_cache_stack_pos].cache = tail;
+
     if (last)
       SCHEME_CDR(last) = tail;
     else
@@ -318,13 +327,14 @@ Scheme_Object *scheme_native_stack_trace(void)
   }
 #endif
 
+  cache_frame_p = NULL;
+
   while (unsuccess < UNKNOWN_FRAME_LIMIT) {
 #ifdef MZ_USE_DWARF_LIBUNWIND
-    if (use_unw) {
+    if (use_unw)
       q = (void *)unw_get_ip(&c);
-    } else {
+    else
       q = NULL;
-    }
 #endif
 
     if (!use_unw) {
@@ -405,6 +415,21 @@ Scheme_Object *scheme_native_stack_trace(void)
         name = NULL;
     }
 
+#ifdef MZ_USE_DWARF_LIBUNWIND
+    if (use_unw) {
+      if (manual_unw) {
+	cache_frame_p = (void **)unw_get_frame_pointer(&c);
+	if (!(STK_COMP((uintptr_t)cache_frame_p, stack_end)
+	      && STK_COMP(stack_start, (uintptr_t)cache_frame_p)))
+	  break;
+	cache_had_name = name && (last || !SCHEME_NULLP(name));
+      } else {
+	cache_frame_p = NULL;
+	cache_had_name = 0;
+      }
+    }
+#endif
+
     if (name && !SCHEME_NULLP(name)) { /* null is used to help unwind without a true name */
       name = scheme_make_pair(name, scheme_null);
       if (last)
@@ -431,16 +456,17 @@ Scheme_Object *scheme_native_stack_trace(void)
        might not be used (depending on how the C compiler optimized the
        code); any frame whose procedure has a name is JITted code, so
        it will use the return address from the stack. */
-    if (STK_COMP((uintptr_t)halfway, (uintptr_t)p)
-	&& prev_had_name) {
-      set_cache(p, last);
+    if (STK_COMP((uintptr_t)halfway, (uintptr_t)cache_frame_p)
+	&& cache_had_name) {
+      set_cache(cache_frame_p, last);
       if (!added_list_elem)
 	shift_cache_to_next = 1;
       halfway = stack_end;
-      unsuccess = -100000; /* if we got halfway, no need to bail out later */
+      unsuccess = -8 * UNKNOWN_FRAME_LIMIT; /* if we got halfway, less likely to bail out later */
     }
 
-    prev_had_name = !!name;
+    if (!use_unw)
+      cache_had_name = !!name;
     
 #ifdef MZ_USE_DWARF_LIBUNWIND
     if (use_unw) {
@@ -478,11 +504,12 @@ Scheme_Object *scheme_native_stack_trace(void)
       if (STK_COMP((uintptr_t)q, (uintptr_t)p))
         break;
       p = q;
+      cache_frame_p = p;
     }
   }
 
   if (shift_cache_to_next)
-    stack_cache_stack[stack_cache_stack_pos].cache = scheme_null;
+    stack_cache_stack[stack_cache_stack_pos].cache = tail;
 
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_destroy_local(&c);
@@ -587,8 +614,8 @@ void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b)
 
 void scheme_clean_native_symtab(void)
 {
-#ifndef MZ_PRECISE_GC
   clear_symbols_for_collected();
+#ifndef MZ_PRECISE_GC
   jit_notify_freed_code();
 #endif
 }

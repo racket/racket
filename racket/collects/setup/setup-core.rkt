@@ -37,6 +37,8 @@
          "private/elf.rkt"
          "private/pkg-deps.rkt"
          "collection-name.rkt"
+         "private/format-error.rkt"
+         compiler/private/dep
          (only-in pkg/lib pkg-directory
                   pkg-single-collection))
 
@@ -150,12 +152,13 @@
     (when (fail-fast)
       (break-thread original-thread)))
   (define (handle-error cc desc exn out err type)
-      (if (verbose)
-          ((error-display-handler)
-           (format "~a\n" (exn->string exn))
-           exn)
-          (eprintf "~a\n" (exn->string exn)))
-      (append-error cc desc exn out err type))
+    (define long? #t) ; possibly better: (define long? (verbose))
+    (cond
+     [(exn? exn)
+      (format-error exn #:long? long?)]
+     [(and (pair? exn) (string? (car exn)) (string? (cdr exn)))
+      (eprintf "~a\n" ((if long? car cdr) exn))])
+    (append-error cc desc exn out err type))
   (define (record-error cc desc go fail-k)
     (with-handlers ([exn:fail?
                      (lambda (x)
@@ -173,8 +176,12 @@
                                                           [(path? cc)
                                                            (path->relative-string/setup cc #:cache pkg-path-cache)]
                                                           [else cc]))
-        (unless (null? x) (for ([str (in-list (regexp-split #rx"\n" (exn->string x)))])
-                            (setup-fprintf port #f "  ~a" str)))
+        (let ([msg (if (exn? x)
+                       (format-error x #:long? #f #:to-string? #t #:cache pkg-path-cache)
+                       ;; `x` is a pair of long and short strings:
+                       (cdr x))])
+          (unless (null? x) (for ([str (in-list (regexp-split #rx"\n" msg))])
+                              (setup-fprintf port #f "  ~a" str))))
         (unless (zero? (string-length out)) (eprintf "STDOUT:\n~a=====\n" out))
         (unless (zero? (string-length err)) (eprintf "STDERR:\n~a=====\n" err)))))
 
@@ -257,7 +264,8 @@
 
   (define pkg-path-cache (make-hash))
 
-  (define getinfo (make-getinfo (make-base-namespace)))
+  (define info-ns (make-base-namespace))
+  (define getinfo (make-getinfo info-ns))
 
   (define (make-cc* collection parent path omit-root info-root 
                     info-path info-path-mode shadowing-policy 
@@ -680,9 +688,9 @@
           (with-input-from-file path read)))
       (when (and (pair? deps) (list? deps))
         (for ([s (in-list (cddr deps))])
-          (unless (and (pair? s) (eq? 'ext (car s)))
-            (define new-s (main-collects-relative->path s))
-            (when (path-string? new-s) (hash-set! dependencies new-s #t))))))
+          (unless (external-dep? s)
+              (define new-s (dep->path s))
+              (when (path-string? new-s) (hash-set! dependencies new-s #t))))))
     (delete-file path))
 
   (define (delete-files-in-directory path printout dependencies)
@@ -1118,11 +1126,11 @@
                              [(abs)
                               (and (complete-path? p)
                                    (match c
-                                     [(list 'planet (? string? a) (? string? p))
+                                     [(list 'planet (? string? a) (? string? pk))
                                       ;; Check that the package is installed and maps to `p`:
-                                      (and (get-installed-package a p d e)
+                                      (and (get-installed-package a pk d e)
                                            (let ([bp (resolve-planet-path
-                                                      `(planet "bogus.rkt" (,a ,p ,d ,e)))])
+                                                      `(planet "bogus.rkt" (,a ,pk ,d ,e)))])
                                              (and (path? bp)
                                                   (let-values ([(base name dir?) (split-path bp)])
                                                     (and (path? base)
@@ -1161,8 +1169,9 @@
     (for ([cc ccs-to-compile])
       (define domain
         (with-handlers ([exn:fail? (lambda (x) (lambda () null))])
-          (dynamic-require (build-path (cc-path cc) "info.rkt")
-                           '#%info-domain)))
+          (parameterize ([current-namespace info-ns])
+            (dynamic-require (build-path (cc-path cc) "info.rkt")
+                             '#%info-domain))))
       ;; Get the table for this cc's info-domain cache:
       (define t (get-info-ht (cc-info-root cc)
                              (cc-info-path cc)
@@ -1260,7 +1269,7 @@
               (parallel-workers)
               name-str
               (if no-specific-collections? #f (map cc-path ccs-to-compile))
-              latex-dest auto-start-doc? (make-user)
+              latex-dest auto-start-doc? (make-user) (force-user-docs)
               (make-tidy) (avoid-main-installation)
               (lambda (what go alt) (record-error what "building docs" go alt))
               setup-printf))
@@ -1623,9 +1632,8 @@
                                  #t)
                                 (unless already?
                                   (hash-set! dests dest #t)
-                                  (delete-directory/files dest #:must-exist? #f)
-                                  (let-values ([(base name dir?) (split-path dest)])
-                                    (when (path? base) (make-directory* base)))
+                                  (delete-directory/files/hard dest)
+				  (make-parent-directory* dest)
                                   (if (file-exists? src)
                                       (if (cc-main? cc)
                                           (copy-file src dest)
@@ -1700,6 +1708,7 @@
         lib-key))
 
     (define (tidy-libs user? target-dir lib-dir installed-libs ccs-to-compile)
+      (clean-previous-delete-failures lib-dir path->relative-string/*)
       (define receipt-path (build-path lib-dir receipt-file))
       (define ht (read-receipt-hash receipt-path))
       (define ht2 (for/fold ([ht (hash)]) ([(k v) (in-hash ht)])
@@ -1727,7 +1736,7 @@
                                 (directory-exists? lib-path))
                         (setup-printf "deleting" (string-append what " ~a")
                                       (path->relative-string/* lib-path))
-                        (delete-directory/files lib-path))
+                        (delete-directory/files/hard lib-path))
                       ht])))
       (unless (equal? ht ht2)
         (setup-printf "updating" (format "~a list" what))
@@ -1802,6 +1811,47 @@
                          (lambda (info) #t)
                          void
                          copy-file))
+
+  (define setup-delete-prefix #"raco-setup-delete-")
+
+  (define (delete-directory/files/hard dest)
+    (cond
+     [(and (eq? 'windows (system-type))
+           (file-exists? dest))
+      ;; To handle DLLs that may be opened, try moving and then
+      ;; deleting. The delete may well fail, but at least the
+      ;; file will be out of the way for another try.
+      (define-values (base name dir?) (split-path dest))
+      (define delete-dest (build-path base
+                                      (bytes->path-element
+                                       (bytes-append
+                                        setup-delete-prefix
+                                        (path-element->bytes name)))))
+      (rename-file-or-directory dest delete-dest #t)
+      (try-delete-file delete-dest)]
+     [else
+      (delete-directory/files dest #:must-exist? #f)]))
+
+  (define (try-delete-file f)
+    (with-handlers ([exn:fail:filesystem?
+                     (lambda (exn)
+                       (setup-printf
+                        "WARNING"
+                        "error deleteing file: ~a"
+                        (exn-message exn)))])
+      (delete-file f)))
+
+  (define (clean-previous-delete-failures lib-dir path->relative-string/*)
+    (when (and (eq? 'windows (system-type))
+	       (directory-exists? lib-dir))
+      (for ([f (in-list (directory-list lib-dir))])
+        (define bstr (path-element->bytes f))
+        (when (equal? (subbytes bstr 0 (min (bytes-length setup-delete-prefix)
+                                            (bytes-length bstr)))
+                      setup-delete-prefix)
+          (define p (build-path lib-dir f))
+          (setup-printf "deleting" (path->relative-string/* p))
+          (try-delete-file (build-path lib-dir f))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;       Package-dependency checking         ;;

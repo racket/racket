@@ -1411,13 +1411,15 @@ static Scheme_Object *print_k(void)
     pp->print_escape = save;
     return scheme_void;
   } else {
-    return print(o, 
-		 p->ku.k.i1, 
-		 p->ku.k.i2, 
-		 ht,
-                 mt,
-		 pp) 
-      ? scheme_true : scheme_false;
+    int r;
+    r = print(o,
+              p->ku.k.i1,
+              p->ku.k.i2,
+              ht,
+              mt,
+              pp);
+    pp->print_escape = save;
+    return r ? scheme_true : scheme_false;
   }
 }
 #endif
