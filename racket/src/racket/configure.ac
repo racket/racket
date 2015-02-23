@@ -530,8 +530,8 @@ if test "${enable_ios}" != "" ; then
      ;;
   esac
   IOS_PHONE_VERS="6.0"
-  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE"
-  CPPFLAGS="$CPPFLAGS -DTARGET_OS_IPHONE"
+  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1"
+  CPPFLAGS="$CPPFLAGS -DTARGET_OS_IPHONE=1"
   PREFLAGS="$PREFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
   CPPFLAGS="$CPPFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
   LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"

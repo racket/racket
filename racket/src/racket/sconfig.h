@@ -807,7 +807,7 @@
 
 # if defined(XONX)
 #  define SPLS_MAC "darwin"
-# elif defined(TARGET_OS_IPHONE)
+# elif TARGET_OS_IPHONE
 #  define SPLS_MAC "ios"
 # else
 #  define SPLS_MAC "macosx"
