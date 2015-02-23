@@ -24,7 +24,7 @@
                                                                    (syntax-e y)))))
                        "duplicate keyword for argument"
            #:fail-when (invalid-option-placement
-                        (map list (attribute arg.name) (attribute arg.default)))
+                        (attribute arg.name) (attribute arg.default))
                        "default-value expression missing")
   (pattern (arg:formal ... . rest:id)
            #:attr params #'(arg.name ... rest)
@@ -36,7 +36,7 @@
                                                                    (syntax-e y)))))
                        "duplicate keyword for argument"
            #:fail-when (invalid-option-placement
-                        (map list (attribute arg.name) (attribute arg.default)))
+                        (attribute arg.name) (attribute arg.default))
                        "default-value expression missing"))
 
 (define-splicing-syntax-class formal
@@ -50,18 +50,26 @@
            #:attr default #f)
   (pattern (~seq kw:keyword [name:id default])))
 
-(define (invalid-option-placement optional-list)
-  (define iop
-    (for/fold ([status 'required])
-              ([i optional-list]
-               #:break (syntax? status))
-      (cond [(eq? status 'required)
-             (cond [(not i)    'optional]
-                   [else       'required])]
-            [else
-             (cond [(not i)    'optional]
-                   [else       (car i)])])))
-  (if (syntax? iop) iop #f))
+;; invalid-option-placement : (Listof Id) (Listof Syntax/#f) -> Id/#f
+;; Checks for mandatory argument after optional argument; if found, returns
+;; identifier of mandatory argument.
+(define (invalid-option-placement names defaults)
+  ;; find-mandatory : (Listof Id) (Listof Syntax/#f) -> Id/#f
+  ;; Finds first name w/o corresponding default.
+  (define (find-mandatory names defaults)
+    (for/first ([name (in-list names)]
+                [default (in-list defaults)]
+                #:when (not default))
+      name))
+  ;; Skip through mandatory args until first optional found, then search
+  ;; for another mandatory.
+  (let loop ([names names] [defaults defaults])
+    (cond [(or (null? names) (null? defaults))
+           #f]
+          [(eq? (car defaults) #f) ;; mandatory
+           (loop (cdr names) (cdr defaults))]
+          [else ;; found optional
+           (find-mandatory (cdr names) (cdr defaults))])))
 
 ;; Copied from unstable/list
 ;; check-duplicate : (listof X)
