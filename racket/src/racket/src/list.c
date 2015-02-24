@@ -2027,6 +2027,21 @@ Scheme_Hash_Table *scheme_make_hash_table_equal()
   return t;
 }
 
+static int compare_equal_modidx_eq(void *v1, void *v2)
+{
+  return !scheme_equal_modix_eq((Scheme_Object *)v1, (Scheme_Object *)v2);
+}
+
+Scheme_Hash_Table *scheme_make_hash_table_equal_modix_eq()
+{
+  Scheme_Hash_Table *t;
+
+  t = scheme_make_hash_table_equal();
+  t->compare = compare_equal_modidx_eq;
+
+  return t;
+}
+
 Scheme_Hash_Table *scheme_make_hash_table_eqv()
 {
   Scheme_Hash_Table *t;

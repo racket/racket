@@ -1170,6 +1170,12 @@ static Scheme_Object *do_stx_add_shift(Scheme_Object *o, Scheme_Object *shift, i
     can_mutate = 1;
   }
 
+  /* Drop useless shift: */
+  if (SAME_OBJ(SCHEME_VEC_ELS(shift)[0], SCHEME_VEC_ELS(shift)[1])
+      && SCHEME_FALSEP(SCHEME_VEC_ELS(shift)[2])
+      && SCHEME_FALSEP(SCHEME_VEC_ELS(shift)[3]))
+    return (Scheme_Object *)stx;
+
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
     /* Keep track of shifts that need to be propagated */
     vec = scheme_make_vector(3, NULL);
@@ -3708,8 +3714,7 @@ static Scheme_Object *drop_export_registries(Scheme_Object *shifts)
 
   for (l = shifts; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
-    if (SCHEME_TRUEP(SCHEME_VEC_ELS(a)[0])
-        || SCHEME_TRUEP(SCHEME_VEC_ELS(a)[1])) {
+    if (!SAME_OBJ(SCHEME_VEC_ELS(a)[0], SCHEME_VEC_ELS(a)[1])) {
       vec = scheme_make_vector(5, NULL);
       SCHEME_VEC_ELS(vec)[0] = SCHEME_VEC_ELS(a)[0];
       SCHEME_VEC_ELS(vec)[1] = SCHEME_VEC_ELS(a)[1];
@@ -3786,7 +3791,9 @@ static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
 
   ht = mt->intern_map;
   if (!ht) {
-    ht = scheme_make_hash_table_equal();
+    /* We need to compare a modidx using `eq?`, because shifting
+       is based on `eq`ness. */
+    ht = scheme_make_hash_table_equal_modix_eq();
     mt->intern_map = ht;
   }
 

@@ -4063,6 +4063,9 @@ Scheme_Object *scheme_hash_tree_copy(Scheme_Object *v);
 
 void scheme_set_root_param(int p, Scheme_Object *v);
 
+int scheme_equal_modix_eq(Scheme_Object *obj1, Scheme_Object *obj2);
+Scheme_Hash_Table *scheme_make_hash_table_equal_modix_eq();
+
 Scheme_Object *scheme_intern_exact_parallel_symbol(const char *name, uintptr_t len);
 Scheme_Object *scheme_symbol_append(Scheme_Object *s1, Scheme_Object *s2);
 Scheme_Object *scheme_copy_list(Scheme_Object *l);

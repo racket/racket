@@ -60,6 +60,7 @@ typedef struct Equal_Info {
   Scheme_Object *next, *next_next;
   Scheme_Object *insp;
   intptr_t for_chaperone; /* 3 => for impersonator */
+  intptr_t eq_for_modidx;
 } Equal_Info;
 
 static int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql);
@@ -161,19 +162,25 @@ eqv_prim (int argc, Scheme_Object *argv[])
   return (scheme_eqv(argv[0], argv[1]) ? scheme_true : scheme_false);
 }
 
+XFORM_NONGCING static void init_equal_info(Equal_Info *eql)
+{
+  eql->depth = 1;
+  eql->car_depth = 1;
+  eql->ht = NULL;
+  eql->recur = NULL;
+  eql->next = NULL;
+  eql->next_next = NULL;
+  eql->insp = NULL;
+  eql->for_chaperone = 0;
+  eql->eq_for_modidx = 0;
+}
+
 static Scheme_Object *
 equal_prim (int argc, Scheme_Object *argv[])
 {
   Equal_Info eql;
 
-  eql.depth = 1;
-  eql.car_depth = 1;
-  eql.ht = NULL;
-  eql.recur = NULL;
-  eql.next = NULL;
-  eql.next_next = NULL;
-  eql.insp = NULL;
-  eql.for_chaperone = 0;
+  init_equal_info(&eql);
 
   return (is_equal(argv[0], argv[1], &eql) ? scheme_true : scheme_false);
 }
@@ -185,14 +192,8 @@ equalish_prim (int argc, Scheme_Object *argv[])
 
   scheme_check_proc_arity("equal?/recur", 2, 2, argc, argv);
 
-  eql.depth = 1;
-  eql.car_depth = 1;
-  eql.ht = NULL;
-  eql.recur = NULL;
-  eql.next = NULL;
+  init_equal_info(&eql);
   eql.next_next = argv[2];
-  eql.insp = NULL;
-  eql.for_chaperone = 0;
 
   return (is_equal(argv[0], argv[1], &eql) ? scheme_true : scheme_false);
 }
@@ -424,14 +425,7 @@ int is_slow_equal (Scheme_Object *obj1, Scheme_Object *obj2)
 {
   Equal_Info eql;
 
-  eql.depth = 1;
-  eql.car_depth = 1;
-  eql.ht = NULL;
-  eql.recur = NULL;
-  eql.next_next = NULL;
-  eql.next = NULL;
-  eql.insp = NULL;
-  eql.for_chaperone = 0;
+  init_equal_info(&eql);
 
   return is_equal(obj1, obj2, &eql);
 }
@@ -445,6 +439,16 @@ int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2)
     return v;
 
   return is_slow_equal(obj1, obj2);
+}
+
+int scheme_equal_modix_eq (Scheme_Object *obj1, Scheme_Object *obj2)
+{
+  Equal_Info eql;
+
+  init_equal_info(&eql);
+  eql.eq_for_modidx = 1;
+
+  return is_equal(obj1, obj2, &eql);
 }
 
 static Scheme_Object *union_find(Scheme_Object *obj1, Scheme_Hash_Table *ht)
@@ -846,14 +850,17 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       }
     case scheme_module_index_type:
       {
-        Scheme_Modidx *midx1, *midx2;
+        if (!eql->eq_for_modidx) {
+          Scheme_Modidx *midx1, *midx2;
 #   include "mzeqchk.inc"
-        midx1 = (Scheme_Modidx *)obj1;
-        midx2 = (Scheme_Modidx *)obj2;
-        if (is_equal(midx1->path, midx2->path, eql)) {
-          obj1 = midx1->base;
-          obj2 = midx2->base;
-          goto top;
+          midx1 = (Scheme_Modidx *)obj1;
+          midx2 = (Scheme_Modidx *)obj2;
+          if (is_equal(midx1->path, midx2->path, eql)) {
+            obj1 = midx1->base;
+            obj2 = midx2->base;
+            goto top;
+          } else
+            return 0;
         } else
           return 0;
       }
@@ -984,13 +991,7 @@ int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2)
 {
   Equal_Info eql;
 
-  eql.depth = 1;
-  eql.car_depth = 1;
-  eql.ht = NULL;
-  eql.recur = NULL;
-  eql.next = NULL;
-  eql.next_next = NULL;
-  eql.insp = NULL;
+  init_equal_info(&eql);
   eql.for_chaperone = 1;
 
   return is_equal(obj1, obj2, &eql);
@@ -1000,13 +1001,7 @@ int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2)
 {
   Equal_Info eql;
 
-  eql.depth = 1;
-  eql.car_depth = 1;
-  eql.ht = NULL;
-  eql.recur = NULL;
-  eql.next = NULL;
-  eql.next_next = NULL;
-  eql.insp = NULL;
+  init_equal_info(&eql);
   eql.for_chaperone = 3;
 
   return is_equal(obj1, obj2, &eql);
