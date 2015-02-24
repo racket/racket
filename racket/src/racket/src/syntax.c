@@ -3701,7 +3701,7 @@ static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks)
 
 static Scheme_Object *drop_export_registries(Scheme_Object *shifts)
 {
-  Scheme_Object *l, *a, *vec,*p, *first = scheme_null, *last = NULL;
+  Scheme_Object *l, *a, *vec, *p, *first = scheme_null, *last = NULL;
 
   if (SCHEME_VECTORP(shifts))
     shifts = SCHEME_VEC_ELS(shifts)[0];
@@ -3725,9 +3725,6 @@ static Scheme_Object *drop_export_registries(Scheme_Object *shifts)
       last = p;
     }
   }
-
-  if (!first)
-    return scheme_null;
 
   return first;
 }

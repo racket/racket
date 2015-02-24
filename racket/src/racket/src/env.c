@@ -922,6 +922,7 @@ Scheme_Env *make_empty_inited_env(int toplevel_size)
   hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
   reg->loaded = hash_table;
   hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
+  MZ_OPT_HASH_KEY(&(hash_table->iso)) |= 0x1; /* print (for debugging) as opqaue */
   reg->exports = hash_table;
 
   env->label_env = NULL;

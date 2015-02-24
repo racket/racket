@@ -6631,6 +6631,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
       ht = scheme_make_hash_table(SCHEME_hash_ptr);
       env->module_pre_registry->loaded = ht;
       ht = scheme_make_hash_table(SCHEME_hash_ptr);
+      MZ_OPT_HASH_KEY(&(ht->iso)) |= 0x1; /* print (for debugging) as opqaue */
       env->module_pre_registry->exports = ht;
     }
     scheme_hash_set(env->module_pre_registry->loaded, m->modname, (Scheme_Object *)m);

@@ -2426,12 +2426,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
       closed = 1;
     }
-  else if (compact && SCHEME_HASHTP(obj))
-    {
-      /* since previous case didn't catch this table, it has a 0x1 flag
-         and should be marshalled as #t */
-      print_compact(pp, CPT_TRUE);
-    }
   else if (SAME_OBJ(obj, scheme_true))
     {
       if (compact)
@@ -2979,21 +2973,42 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_utf8_string(pp, ">", 0, 1);
       }
     }
-  else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_module_index_type)) 
+  else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_module_index_type))
     {
       Scheme_Object *idx;
 
-      idx = get_symtab_idx(mt, obj);
-      if (idx) {
-        print_symtab_ref(pp, idx);
+      if (compact) {
+        idx = get_symtab_idx(mt, obj);
+        if (idx) {
+          print_symtab_ref(pp, idx);
+        } else {
+          print_compact(pp, CPT_MODULE_INDEX);
+          print(((Scheme_Modidx *)obj)->path, notdisplay, 1, ht, mt, pp);
+          print(((Scheme_Modidx *)obj)->base, notdisplay, 1, ht, mt, pp);
+          if (SCHEME_FALSEP(((Scheme_Modidx *)obj)->path)
+              && SCHEME_FALSEP(((Scheme_Modidx *)obj)->base))
+            print(scheme_modidx_submodule(obj), notdisplay, 1, ht, mt, pp);
+          symtab_set(pp, mt, obj);
+        }
       } else {
-	print_compact(pp, CPT_MODULE_INDEX);
-	print(((Scheme_Modidx *)obj)->path, notdisplay, 1, ht, mt, pp);
-	print(((Scheme_Modidx *)obj)->base, notdisplay, 1, ht, mt, pp);
-        if (SCHEME_FALSEP(((Scheme_Modidx *)obj)->path)
-            && SCHEME_FALSEP(((Scheme_Modidx *)obj)->base))
-          print(scheme_modidx_submodule(obj), notdisplay, 1, ht, mt, pp);
-        symtab_set(pp, mt, obj);
+        /* Enable this output form by removing `compact &&` above */
+        Scheme_Object *l = scheme_null;
+        Scheme_Modidx *modidx = (Scheme_Modidx *)obj;
+        print_utf8_string(pp, "#<module-path-index:", 0, 20);
+        while (SCHEME_TRUEP(modidx->path)) {
+          l = scheme_make_pair(modidx->path, l);
+          if (SCHEME_FALSEP(modidx->base))
+            break;
+          modidx = (Scheme_Modidx *)modidx->base;
+        }
+        if (SCHEME_FALSEP(modidx->path)) {
+          /* use hash code as identity of ending "self": */
+          l = scheme_make_pair(scheme_make_integer_value_from_unsigned(scheme_hash_key(modidx)),
+                               l);
+        }
+        l = scheme_reverse(l);
+        print(l, 1, 0, ht, mt, pp);
+        print_utf8_string(pp, ">", 0, 1);
       }
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_module_variable_type))
