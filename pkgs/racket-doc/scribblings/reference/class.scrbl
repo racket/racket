@@ -2008,6 +2008,8 @@ As with the external contracts, when a method or field name is specified
    checked on any access and/or mutation of the field that occurs in
    such subclasses.}
 
+@history[#:changed "6.1.1.8"
+         "opaque @racket[class/c] now ignores local member names"]
 ]}
 
 @defform[(absent absent-spec ...)]{

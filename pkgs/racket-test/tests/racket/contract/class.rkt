@@ -123,7 +123,7 @@
               'pos
               'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-method-3
    '(let ()
       (define-local-member-name n)
@@ -132,7 +132,7 @@
                 'pos
                 'neg)))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-method-4
    '(contract
      (class/c #:opaque [m (-> any/c number? number?)])
@@ -230,7 +230,7 @@
               'pos
               'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-field-2
    '(contract (class/c #:opaque (field [m number?]))
               (let ()
@@ -489,7 +489,7 @@
               'pos
               'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-opaque-super-3
    '(contract (class/c #:opaque)
               (class (let ()

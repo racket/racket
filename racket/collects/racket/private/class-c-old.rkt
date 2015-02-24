@@ -62,9 +62,8 @@
   (when (class/c-opaque? ctc)
     (for ([m (in-hash-keys method-ht)])
       (unless (memq m (class/c-methods ctc))
-        (if (symbol-interned? m)
-            (fail "method ~a not specified in contract" m)
-            (fail "some local member not specified in contract")))))
+        (when (symbol-interned? m)
+          (fail "method ~a not specified in contract" m)))))
   
   (define field-ht (class-field-ht cls))
   (for ([f (class/c-fields ctc)])
@@ -77,9 +76,8 @@
   (when (class/c-opaque? ctc)
     (for ([f (in-hash-keys field-ht)])
       (unless (memq f (class/c-fields ctc))
-        (if (symbol-interned? f)
-            (fail "field ~a not specified in contract" f)
-            (fail "some local member field not specified in contract")))))
+        (when (symbol-interned? f)
+          (fail "field ~a not specified in contract" f)))))
   #t)
 
 (define (internal-class/c-check-first-order internal-ctc cls fail)
