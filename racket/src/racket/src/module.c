@@ -7130,7 +7130,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   /* load the module for the initial require */
   if (iidx) {
     iim = module_load(_module_resolve(iidx, m->ii_src, NULL, 1), menv, NULL); 
-    start_module(iim, find_env(menv, 0), 0, iidx, 1, 0, menv->phase, scheme_null, 0);
+    start_module(iim, find_env(menv, SCHEME_INT_VAL(super_phase_shift)), 0, iidx, 1, 0, menv->phase, scheme_null, 0);
   } else
     iim = NULL;
 
