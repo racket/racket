@@ -7959,6 +7959,8 @@ static void flush_definitions(Scheme_Env *genv)
     t->with_home = 1;
     genv->toplevel = t;
   }
+
+  genv->binding_names = NULL;
 }
 
 static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env *env, 

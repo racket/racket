@@ -1169,7 +1169,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 #if 0
   // REMOVEME
-  if (!strcmp("line-break", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+  if (!strcmp("defproc*", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%p\n", find_id);
     scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 0);
   }
@@ -1805,6 +1805,9 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
 
     id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
     id = scheme_stx_add_mark(id, scheme_new_mark(6), scheme_env_phase(env->genv));
+
+    if (env->genv->stx_context)
+      id = scheme_stx_introduce_to_module_context(id, env->genv->stx_context);
 
     rev_ids = scheme_make_pair(id, rev_ids);
   }

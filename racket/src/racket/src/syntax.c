@@ -254,9 +254,6 @@ void scheme_init_stx(Scheme_Env *env)
   protected_symbol = scheme_intern_symbol("protected");
   nominal_id_symbol = scheme_intern_symbol("nominal-id");
 
-  REGISTER_SO(last_phase_shift);
-  REGISTER_SO(nominal_ipair_cache);
-
   REGISTER_SO(empty_srcloc);
   empty_srcloc = MALLOC_ONE_RT(Scheme_Stx_Srcloc);
 #ifdef MZTAG_REQUIRED
@@ -269,11 +266,6 @@ void scheme_init_stx(Scheme_Env *env)
 }
 
 void scheme_init_stx_places(int initial_main_os_thread) {
-  if (!initial_main_os_thread) {
-    REGISTER_SO(last_phase_shift);
-    REGISTER_SO(nominal_ipair_cache);
-  }
-
   REGISTER_SO(taint_intern_table);
   taint_intern_table = scheme_make_weak_equal_table();
 }
@@ -1265,6 +1257,7 @@ Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
 void scheme_clear_shift_cache(void)
 {
   last_phase_shift = NULL;
+  nominal_ipair_cache = NULL;
 }
 
 Scheme_Object *scheme_stx_shift(Scheme_Object *stx, 
@@ -2031,6 +2024,13 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
   } else {
     ht = (Scheme_Hash_Table *)SCHEME_CAR(l);
   }
+  
+  STX_ASSERT(SCHEME_STXP(val)
+             || SCHEME_FALSEP(val)
+             || SCHEME_MODIDXP(val)
+             || SCHEME_PAIRP(val)
+             || SCHEME_VECTORP(val)
+             || SCHEME_SYMBOLP(val));
 
   if (SCHEME_STXP(val))
     val = scheme_make_mutable_pair(scheme_false, scheme_make_pair(val, phase));
@@ -2380,7 +2380,7 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
     result_best_so_far = NULL;
 
     i = mark_set_next(marks, -1);
-    while (i != -1) {
+    while ((i != -1) && !invalid) {
       mark_set_index(marks, i, &key, &val);
 
       mark = (Scheme_Mark *)key;
@@ -2392,7 +2392,7 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
           else
             l = SCHEME_CDR(mark->bindings);
 
-          while (l && !SCHEME_NULLP(l)) {
+          while (l && !SCHEME_NULLP(l) && !invalid) {
             binding_marks = SCHEME_BINDING_MARKS(SCHEME_CAR(l));
           
             if (j) {
@@ -2437,6 +2437,12 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
                 best_so_far = binding_marks;
                 mark_best_so_far = mark;
                 result_best_so_far = SCHEME_BINDING_VAL(SCHEME_CAR(l));
+                STX_ASSERT(SCHEME_FALSEP(result_best_so_far)
+                           || SCHEME_MODIDXP(result_best_so_far)
+                           || SCHEME_PAIRP(result_best_so_far)
+                           || SCHEME_VECTORP(result_best_so_far)
+                           || SCHEME_SYMBOLP(result_best_so_far)
+                           || SCHEME_MPAIRP(result_best_so_far));
                 if (_exact_match) *_exact_match = (mark_set_count(binding_marks) == mark_set_count(marks));
               }
             }
@@ -2975,6 +2981,8 @@ Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Ob
 Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc)
 {
   Scheme_Object *multi_mark;
+
+  STX_ASSERT(SCHEME_VECTORP(mc));
 
   multi_mark = SCHEME_VEC_ELS(mc)[4];
   if (SCHEME_FALSEP(multi_mark))
