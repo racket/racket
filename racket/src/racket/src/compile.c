@@ -712,7 +712,7 @@ Scheme_Object *scheme_clone_vector(Scheme_Object *data, int skip, int set_type)
   return naya;
 }
 
-static Scheme_Object *revert_expression_marks(Scheme_Object *o, Scheme_Comp_Env *env)
+Scheme_Object *scheme_revert_expression_marks(Scheme_Object *o, Scheme_Comp_Env *env)
 {
   /* When forcing expansion of `#%module-begin`, we can end up with an extra
      layer that hides marks from the module context: */
@@ -752,7 +752,7 @@ void scheme_define_parse(Scheme_Object *form,
   rest = SCHEME_STX_CDR(rest);
   *_stk_val = SCHEME_STX_CAR(rest);
   
-  vars = revert_expression_marks(vars, env);
+  vars = scheme_revert_expression_marks(vars, env);
 
   *var = vars;
 
@@ -3276,7 +3276,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
       
   scheme_define_parse(form, &names, &code, 1, env, 0);
 
-  code = revert_expression_marks(code, env);
+  code = scheme_revert_expression_marks(code, env);
 
   scheme_prepare_exp_env(env->genv);
   scheme_prepare_compile_env(env->genv->exp_env);
@@ -3322,7 +3322,7 @@ define_syntaxes_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Ex
 
   scheme_define_parse(form, &names, &code, 1, env, 0);
 
-  code = revert_expression_marks(code, env);
+  code = scheme_revert_expression_marks(code, env);
 
   SCHEME_EXPAND_OBSERVE_PREPARE_ENV(erec[drec].observer);
 

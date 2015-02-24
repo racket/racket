@@ -1286,6 +1286,8 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, struct Scheme_Marsh
 
 void scheme_stx_debug_print(Scheme_Object *stx, Scheme_Object *phase, int level);
 
+Scheme_Object *scheme_revert_expression_marks(Scheme_Object *o, struct Scheme_Comp_Env *env);
+
 /*========================================================================*/
 /*                   syntax run-time structures                           */
 /*========================================================================*/
@@ -2817,7 +2819,8 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
                                            intptr_t phase,
                                            Scheme_Object *mark,
                                            void *data,
-                                           Scheme_Object **_ref_expr);
+                                           Scheme_Object **_ref_expr,
+                                           struct Scheme_Comp_Env *cenv);
 
 void scheme_add_local_syntax(int cnt, Scheme_Comp_Env *env);
 void scheme_set_local_syntax(int pos, Scheme_Object *name, Scheme_Object *val,

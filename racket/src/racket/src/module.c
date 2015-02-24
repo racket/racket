@@ -7881,7 +7881,8 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
                                            intptr_t phase,
                                            Scheme_Object *mark,
                                            void *data,
-                                           Scheme_Object **_ref_expr)
+                                           Scheme_Object **_ref_expr,
+                                           Scheme_Comp_Env *cenv)
 {
   Scheme_Object *e;
   Scheme_Object *base_modidx = (Scheme_Object *)((void **)data)[1];
@@ -7899,6 +7900,8 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
   }
 
   e = make_require_form(module_path, phase, mark, env->phase);
+  e = scheme_revert_expression_marks(e, cenv);
+  e = introduce_to_module_context(e, rns);
 
   parse_requires(e, env->phase, base_modidx, env, for_m,
                  rns,

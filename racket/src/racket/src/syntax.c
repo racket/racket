@@ -2194,11 +2194,19 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                         skip_marshal);
 }
 
-static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_marks)
+static void print_indent(int indent)
+{
+  while (indent--) {
+    printf("#");
+  }
+}
+
+static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_marks, int indent)
 {
   intptr_t i;
   Scheme_Object *key, *val;
 
+  print_indent(indent);
   printf("  ");
 
   i = mark_set_next(marks, -1);
@@ -2219,7 +2227,7 @@ static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_m
 }
 
 
-static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level)
+static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int indent, Scheme_Object *seen)
 {
   int full_imports = 0;
   Scheme_Hash_Table *ht;
@@ -2229,10 +2237,19 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level)
   Scheme_Mark_Set *marks;
   Scheme_Module_Phase_Exports *pt;
 
+  for (l = seen; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    if (SAME_OBJ((Scheme_Object *)stx, SCHEME_CAR(seen))) {
+      print_indent(indent);
+      printf(" [cycle]\n");
+      return;
+    }
+  }
+
   marks = extract_mark_set(stx, phase);
-  
+
+  print_indent(indent);
   printf(" At phase %s:\n", scheme_write_to_string(phase, NULL));
-  print_marks(marks, NULL);
+  print_marks(marks, NULL, indent);
 
   if (!level)
     return;
@@ -2247,14 +2264,25 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level)
       for (j = ht->size; j--; ) {
 	if (ht->vals[j]
             && ((level > 1) || SAME_OBJ(ht->keys[j], stx->val))) {
+          print_indent(indent);
           printf("  %s =", scheme_write_to_string(ht->keys[j], NULL));
           l = ht->vals[j];
           while (l && !SCHEME_NULLP(l)) {
-            if (SCHEME_SYMBOLP(SCHEME_BINDING_VAL(SCHEME_CAR(l))))
+            val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
+            if (SCHEME_SYMBOLP(val))
               printf(" local\n");
             else
-              printf(" %s\n", scheme_write_to_string(SCHEME_BINDING_VAL(SCHEME_CAR(l)), 0));
-            print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks);
+              printf(" %s\n", scheme_write_to_string(val, 0));
+            print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
+
+            if (SCHEME_MPAIRP(val)) {
+              print_indent(indent);
+              printf("  == free-identifier=? =>\n");
+              print_at((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)), SCHEME_CDR(SCHEME_CDR(val)),
+                       level, indent+2,
+                       scheme_make_pair((Scheme_Object *)stx, seen));
+            }
+
             l = SCHEME_CDR(l);
           }
         }
@@ -2262,14 +2290,17 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level)
           
       l = SCHEME_CDR(mark->bindings);
       while (l && !SCHEME_NULLP(l)) {
+        print_indent(indent);
         printf("  ...\n");
-        print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks);
+        print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
         
         pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
         if (SCHEME_VEC_SIZE(pes) == 3) {
+          print_indent(indent);
           printf("    [unmarshal %s]\n",
                  (SCHEME_FALSEP(SCHEME_VEC_ELS(pes)[0]) ? "done" : "pending"));
         } else {
+          print_indent(indent);
           printf("    %s\n", scheme_write_to_string(scheme_module_resolve(SCHEME_VEC_ELS(pes)[0], 0), NULL));
           
           pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(pes)[1];
@@ -2281,12 +2312,15 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level)
           if (full_imports) {
             for (j = ht->size; j--; ) {
               if (ht->vals[j]) {
+                print_indent(indent);
                 printf("    %s\n", scheme_write_to_string(ht->keys[j], NULL));
               }
             }
           } else {
-            if (scheme_hash_get(ht, stx->val))
+            if (scheme_hash_get(ht, stx->val)) {
+              print_indent(indent);
               printf("      has %s\n", scheme_write_to_string(stx->val, NULL));
+            }
           }
         }
         l = SCHEME_CDR(l);
@@ -2304,7 +2338,7 @@ void scheme_stx_debug_print(Scheme_Object *_stx, Scheme_Object *phase, int level
   STX_ASSERT(SCHEME_STXP(_stx));
 
   printf("%s:\n", scheme_write_to_string(stx->val, NULL));
-  print_at(stx, phase, level);
+  print_at(stx, phase, level, 0, scheme_null);
 }
 
 static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *mapped)

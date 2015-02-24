@@ -1890,14 +1890,16 @@ scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, 
 }
 
 Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *orig_form,
-                                         intptr_t phase, Scheme_Object *local_mark, Scheme_Comp_Env *env)
+                                         intptr_t phase, Scheme_Object *local_mark, Scheme_Comp_Env *cenv)
 {
   Scheme_Object *mark, *data, *pr;
   Scheme_Object *req_form;
   int need_prepare = 0;
+  Scheme_Comp_Env *env;
 
   data = NULL;
 
+  env = cenv;
   while (env) {
     if (COMPILE_DATA(env)->lifts
         && SCHEME_TRUEP(SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[5])) {
@@ -1920,7 +1922,7 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
   mark = scheme_new_mark(6);
 
   if (SCHEME_RPAIRP(data))
-    form = scheme_parse_lifted_require(form, phase, mark, SCHEME_CAR(data), &orig_form);
+    form = scheme_parse_lifted_require(form, phase, mark, SCHEME_CAR(data), &orig_form, cenv);
   else {
     form = scheme_toplevel_require_for_expand(form, phase, env, mark);
     need_prepare = 1;
