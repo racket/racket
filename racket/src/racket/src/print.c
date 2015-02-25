@@ -3003,7 +3003,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         }
         if (SCHEME_FALSEP(modidx->path)) {
           /* use hash code as identity of ending "self": */
-          l = scheme_make_pair(scheme_make_integer_value_from_unsigned(scheme_hash_key(modidx)),
+          uintptr_t key;
+          key = scheme_hash_key((Scheme_Object *)modidx);
+          l = scheme_make_pair(scheme_make_integer_value_from_unsigned(key),
                                l);
         }
         l = scheme_reverse(l);

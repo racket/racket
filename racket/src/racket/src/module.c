@@ -7522,11 +7522,12 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
     if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7])
         && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[7], id, phase)) {
       /* can override; construct overriding `binding` */
-      binding = scheme_make_vector(3, NULL);
+      binding = scheme_make_vector(4, NULL);
       vec = scheme_module_resolve(modidx, 0);
       SCHEME_VEC_ELS(binding)[0] = vec;
       SCHEME_VEC_ELS(binding)[1] = exname;
       SCHEME_VEC_ELS(binding)[2] = scheme_make_integer(exet);
+      SCHEME_VEC_ELS(binding)[3] = SCHEME_STX_VAL(id);
     } else {
       /* error: already imported */
       srcs = scheme_null;
