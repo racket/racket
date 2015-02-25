@@ -1169,9 +1169,10 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 #if 0
   // REMOVEME
-  if (!strcmp("defproc*", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+  if (!strcmp("struct:distribution", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%p\n", find_id);
-    scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 0);
+    scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
+    printf("%s\n", scheme_write_to_string(binding, NULL));
   }
 #endif
 
@@ -1534,11 +1535,8 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   return (Scheme_Object *)b;
 }
 
-static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
+static Scheme_Hash_Table *get_binding_names_table(Scheme_Env *env)
 {
-  int i;
-  char onstack[50], *buf;
-  intptr_t len;
   Scheme_Hash_Table *binding_names;
 
   binding_names = env->binding_names;
@@ -1546,6 +1544,18 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
     binding_names = scheme_make_hash_table(SCHEME_hash_ptr);
     env->binding_names = binding_names;
   }
+
+  return binding_names;
+}
+
+static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
+{
+  int i;
+  char onstack[50], *buf;
+  intptr_t len;
+  Scheme_Hash_Table *binding_names;
+
+  binding_names = get_binding_names_table(env);
 
   if (!scheme_hash_get(binding_names, sym)) {
     /* First declaration gets a plain symbol: */
@@ -1595,14 +1605,15 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
                        ? env->module->self_modidx
                        : scheme_false))
           && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase)) {
-        return SCHEME_VEC_ELS(binding)[1];
+        sym = SCHEME_VEC_ELS(binding)[1];
+        /* Make sure name is in binding_names: */
+        scheme_hash_set(get_binding_names_table(env), sym, scheme_true);
+        return sym;
       }
       /* Since the binding didn't match, we'll "shadow" the binding
          by replacing it below. */
     }
   }
-
-  env = scheme_find_env_at_phase(env, phase);
 
   sym = select_binding_name(SCHEME_STX_VAL(id), env);
 
