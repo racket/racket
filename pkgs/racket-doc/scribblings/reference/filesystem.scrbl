@@ -994,7 +994,7 @@ If @racket[start-path] does not refer to an existing file or
 directory, then @racket[predicate] will be called exactly once with
 @racket[start-path] as the argument.
 
-The @racket[find-files] procedure raises and exception if it encounters 
+The @racket[find-files] procedure raises an exception if it encounters
 a directory for which @racket[directory-list] fails.}
 
 @defproc[(pathlist-closure [path-list (listof path-string?)]
