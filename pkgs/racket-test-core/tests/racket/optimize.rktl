@@ -2145,6 +2145,53 @@
               (define foo integer?)
               (display #t)))
 
+(test-comp '(lambda ()
+              (let ([is3 (lambda () 3)])
+                (letrec ([g (lambda () 3)]
+                         [is0 (lambda () 0)])
+                  g)))
+           '(lambda ()
+              (let ([is3 (lambda () 3)])
+                (letrec ([g (lambda () (is3))]
+                         [is0 (lambda () 0)])
+                  g))))
+
+(test-comp '(lambda (f)
+              (let ([x (f)])
+                (letrec ([g (lambda () (list x #t))]
+                         [dummy (lambda () 0)])
+                  g)))
+           '(lambda (f)
+              (let ([x (f)])
+                (letrec ([g (lambda () (list x (procedure? x)))]
+                         [dummy (lambda () 0)])
+                  g)))
+           #f)
+
+(test-comp '(lambda (f)
+              (let ([x (f)])
+                (car x)
+                (letrec ([g (lambda () (list x #t))]
+                         [dummy (lambda () 0)])
+                  g)))
+           '(lambda (f)
+              (let ([x (f)])
+                (car x)
+                (letrec ([g (lambda () (list x (pair? x)))]
+                         [dummy (lambda () 0)])
+                  g))))
+
+(test-comp '(lambda (f)
+              (let ([x (f)])
+                (letrec ([g (lambda () (car x) (list x #t))]
+                         [dummy (lambda () 0)])
+                  g)))
+           '(lambda (f)
+              (let ([x (f)])
+                (letrec ([g (lambda () (car x) (list x (pair? x)))]
+                         [dummy (lambda () 0)])
+                  g))))
+
 (test-comp '(module m racket/base
               (void 10))
            '(module m racket/base))
@@ -2188,7 +2235,7 @@
                 (define inlinable-function (lambda (x) (list 1 x 3))))
               (require 'in)
               (lambda () (display (procedure? inlinable-function)) (procedure? inlinable-function))))
-      
+
 (let ([try-equiv
        (lambda (extras)
          (lambda (a b)
