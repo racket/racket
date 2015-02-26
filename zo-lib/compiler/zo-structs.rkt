@@ -73,7 +73,7 @@
 
 (define-form-struct wrap ())
 (define-form-struct wrapped ([datum any/c] 
-                             [wraps (listof wrap?)] 
+                             [wraps any/c]
                              [tamper-status (or/c 'clean 'armed 'tainted)]))
 
 ;; In stxs of prefix:
