@@ -244,25 +244,29 @@
 (define-syntax (expand-ssp-body stx)
   (syntax-case stx ()
     [(_ (sp-id ...) (temp-id ...) (orig-id ...) body)
-     (let ([body (local-expand #'(letrec-syntaxes/trans ([(sp-id) (syntax-local-value (quote-syntax temp-id))]
-                                                         ...)
-                                    (force-expand body))
-                               (syntax-local-context)
-                               null ;; `force-expand' actually determines stopping places
-                               #f)])
-       ;; Extract expanded body out of `body':
-       (syntax-case body (quote)
-         [(ls _ _ (quote body))
-          (let ([body #'body])
-            (syntax-case body ( begin
-                                define-values
-                                define-syntaxes
-                                begin-for-syntax
-                                module
-                                module*
-                                #%require
-                                #%provide
-                                #%declare )
+     (let ([ctx (syntax-local-make-definition-context #f #f)])
+       (for ([sp-id (in-list (syntax->list #'(sp-id ...)))]
+             [temp-id (in-list (syntax->list #'(temp-id ...)))])
+         (syntax-local-bind-syntaxes (list sp-id)
+                                     #`(syntax-local-value (quote-syntax #,temp-id))
+                                     ctx))
+       (let ([body (local-expand #'(force-expand body)
+                                 (syntax-local-context)
+                                 null ;; `force-expand' actually determines stopping places
+                                 ctx)])
+         (let ([body
+                ;; Extract expanded body out of `body':
+                (syntax-case body (quote)
+                  [(quote body) #'body])])
+           (syntax-case body ( begin
+                               define-values
+                               define-syntaxes
+                               begin-for-syntax
+                               module
+                               module*
+                               #%require
+                               #%provide
+                               #%declare )
               [(begin expr ...)
                (syntax/loc body
                  (begin (expand-ssp-body (sp-id ...) (temp-id ...) (orig-id ...) expr) ...))]
@@ -284,7 +288,7 @@
               [(#%declare . _) body]
               [expr (syntax/loc body
                       (letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))] ...)
-                        expr))]))]))]))
+                        expr))]))))]))
 
 (define-syntax (letrec-syntaxes/trans stx)
   (syntax-case stx ()

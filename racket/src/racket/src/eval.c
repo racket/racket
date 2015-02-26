@@ -4925,6 +4925,8 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
         update_intdef_chain(argv[3]);
 	stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[3]))[0];
 	renaming = SCHEME_PTR2_VAL(argv[3]);
+        if (SCHEME_BOXP(renaming)) /* box means "don't add" */
+          renaming = NULL;
 	if (!scheme_is_sub_env(stx_env, env))
 	  bad_sub_env = 1;
 	env = stx_env;
@@ -4946,13 +4948,17 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
           rl = argv[3];
           update_intdef_chain(SCHEME_CAR(rl));
           env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(SCHEME_CAR(rl)))[0];
-          if (SCHEME_NULLP(SCHEME_CDR(rl)))
+          if (SCHEME_NULLP(SCHEME_CDR(rl))) {
             renaming = SCHEME_PTR2_VAL(SCHEME_CAR(rl));
-          else {
+            if (SCHEME_BOXP(renaming))
+              renaming = NULL;
+          } else {
             /* reverse and extract: */
             renaming = scheme_null;
             while (!SCHEME_NULLP(rl)) {
-              renaming = cons(SCHEME_PTR2_VAL(SCHEME_CAR(rl)), renaming);
+              l = SCHEME_PTR2_VAL(SCHEME_CAR(rl));
+              if (!SCHEME_BOXP(l))
+                renaming = cons(l, renaming);
               rl = SCHEME_CDR(rl);
             }
           }
@@ -5525,9 +5531,13 @@ enable_break(int argc, Scheme_Object *argv[])
   }
 }
 
-static Scheme_Object *flip_mark_at_phase(Scheme_Object *a, Scheme_Object *m_p)
+static Scheme_Object *flip_mark_at_phase_and_revert_expr(Scheme_Object *a, Scheme_Object *m_p)
 {
-  return scheme_stx_flip_mark(a, SCHEME_CAR(m_p), SCHEME_CDR(m_p));
+  Scheme_Comp_Env *env = (Scheme_Comp_Env *)SCHEME_CDR(m_p);
+
+  a = scheme_revert_expression_marks(a, env);
+  
+  return scheme_stx_flip_mark(a, SCHEME_CAR(m_p), scheme_env_phase(env->genv));
 }
 
 static Scheme_Object *add_mark_at_phase(Scheme_Object *a, Scheme_Object *m_p)
@@ -5579,6 +5589,7 @@ local_eval(int argc, Scheme_Object **argv)
   stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[2]))[0];
   init_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[2]))[3];
   rib = SCHEME_PTR2_VAL(argv[2]);
+  if (SCHEME_BOXP(rib)) rib = SCHEME_BOX_VAL(rib);
 
   if (!scheme_is_sub_env(stx_env, env)) {
     scheme_contract_error("syntax-local-bind-syntaxes",
@@ -5592,9 +5603,9 @@ local_eval(int argc, Scheme_Object **argv)
 
   /* Mark names */
   if (scheme_current_thread->current_local_mark)
-    names = scheme_named_map_1(NULL, flip_mark_at_phase, names,
-                               scheme_make_pair(scheme_current_thread->current_local_mark,
-                                                scheme_env_phase(env->genv)));
+    names = scheme_named_map_1(NULL, flip_mark_at_phase_and_revert_expr, names,
+                               scheme_make_raw_pair(scheme_current_thread->current_local_mark,
+                                                    (Scheme_Object *)env));
 
   SCHEME_EXPAND_OBSERVE_RENAME_LIST(observer,names);
 

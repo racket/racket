@@ -773,7 +773,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("syntax-local-name", local_exp_time_name, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-context", local_context, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-phase-level", local_phase_level, 0, 0, env);
-  GLOBAL_PRIM_W_ARITY("syntax-local-make-definition-context", local_make_intdef_context, 0, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-make-definition-context", local_make_intdef_context, 0, 2, env);
   GLOBAL_PRIM_W_ARITY("internal-definition-context-seal", intdef_context_seal, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("internal-definition-context?", intdef_context_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("identifier-remove-from-definition-context", id_intdef_remove, 2, 2, env);
@@ -2310,6 +2310,8 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   d[3] = env;
 
   rib = scheme_new_mark(1);
+  if ((argc > 1) && SCHEME_FALSEP(argv[1]))
+    rib = scheme_box(rib); /* box means "don't add context" for `local-expand` */
 
   c = scheme_alloc_object();
   c->type = scheme_intdef_context_type;
@@ -2339,7 +2341,7 @@ static Scheme_Object *intdef_context_seal(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 id_intdef_remove(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *l, *res, *skips;
+  Scheme_Object *l, *res, *mark, *phase;
 
   if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
     scheme_wrong_contract("identifier-remove-from-definition-context", 
@@ -2363,12 +2365,13 @@ id_intdef_remove(int argc, Scheme_Object *argv[])
     l = scheme_make_pair(l, scheme_null);
 
   res = argv[0];
-  skips = scheme_null;
+  
+  phase = scheme_env_phase((Scheme_Env *)((Scheme_Object **)SCHEME_PTR1_VAL(SCHEME_CAR(l)))[0]);
 
   while (SCHEME_PAIRP(l)) {
-    res = scheme_stx_remove_mark(res, SCHEME_PTR2_VAL(SCHEME_CAR(l)), 
-                                 scheme_env_phase((Scheme_Env *)((Scheme_Object **)SCHEME_PTR1_VAL(SCHEME_CAR(l)))[0]));
-    skips = scheme_make_pair(SCHEME_PTR2_VAL(SCHEME_CAR(l)), skips);
+    mark = SCHEME_PTR2_VAL(SCHEME_CAR(l));
+    if (SCHEME_BOXP(mark)) mark = SCHEME_BOX_VAL(mark);
+    res = scheme_stx_remove_mark(res, mark, phase);
     l = SCHEME_CDR(l);
   }
   

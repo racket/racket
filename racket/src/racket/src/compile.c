@@ -716,10 +716,11 @@ Scheme_Object *scheme_revert_expression_marks(Scheme_Object *o, Scheme_Comp_Env 
 {
   /* When forcing expansion of `#%module-begin`, we can end up with an extra
      layer that hides marks from the module context: */
-  if (!env->marks
-      && (env->flags & SCHEME_CAPTURE_WITHOUT_RENAME)
-      && env->next)
+  while (!env->marks
+         && (env->flags & SCHEME_CAPTURE_WITHOUT_RENAME)
+         && env->next) {
     env = env->next;
+  }
   
   if (env->marks)
     return scheme_stx_adjust_frame_expression_marks(o,
