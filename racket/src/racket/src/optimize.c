@@ -1704,12 +1704,12 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
    application with a single argument and if app3, we're inlining an
    application with two arguments.
    If not app, app2, or app3, just return a known procedure, if any,
-   and do not check arity. */
-/* id_offset can be non 0 only when app, app2 and app3 are NULL */ 
+   and do not check arity.
+   The id_offset can be non 0 only when app, app2 and app3 are NULL and optimized_rator is 1. */
 {
   int offset = 0, single_use = 0, psize = 0;
   Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
-  int nested_count = 0, outside_nested = 0, already_opt = optimized_rator, nonleaf, noapp;
+  int outside_nested = 0, already_opt = optimized_rator, nonleaf, noapp;
 
   noapp = !app && !app2 && !app3;
   if (id_offset && !noapp)
@@ -1719,18 +1719,30 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   /* Move inside `let' bindings, so we can convert ((let (....) proc) arg ...)
      to (let (....) (proc arg ...)) */
-  if (optimized_rator)
-    extract_tail_inside(&le, &prev, &nested_count);
-  
+  if (already_opt)
+    extract_tail_inside(&le, &prev, &id_offset);
 
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
     /* Found a `((lambda' */
     single_use = 1;
   }
 
-  if (!optimized_rator && SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
+  if (SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
     /* Check for inlining: */
     int pos = SCHEME_LOCAL_POS(le);
+
+    if (already_opt) {
+      if (pos >= id_offset)
+        le = optimize_reverse(info, pos - id_offset, 0, 0);
+      else
+        le = NULL;
+      if (!le)
+        return NULL;
+      already_opt = 0;
+      id_offset = 0;
+      pos = SCHEME_LOCAL_POS(le);
+    }
+
     le = optimize_info_lookup(info, pos - id_offset, &offset, &single_use, 0, 0, &psize, NULL);
     outside_nested = 1;
     already_opt = 1;
@@ -1827,8 +1839,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
     if ((data->num_params == argc)
         || ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
-            && (argc + 1 >= data->num_params))
-        || noapp) {
+            && (argc + 1 >= data->num_params))) {
       int threshold, is_leaf = 0;
 
       if (!already_opt) {
@@ -1847,8 +1858,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       /* Do we have enough fuel? */
       if ((sz >= 0) && (single_use || (sz <= threshold))) {
         Optimize_Info *sub_info;
-        if (nested_count) {
-          sub_info = optimize_info_add_frame(info, nested_count, nested_count, 0);
+        if (id_offset) {
+          sub_info = optimize_info_add_frame(info, id_offset, id_offset, 0);
           /* We only go into `let` and `begin` only for an optimized rator, so
              the virtual clock was already incremented as needed. */
           /* We could propagate bound values in sub_info, but relevant inlining
@@ -1859,7 +1870,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
 	/* If optimize_clone succeeds, inlining succeeds. */
         le = optimize_clone(single_use, data->code, sub_info,
-                            offset + (outside_nested ? nested_count : 0),
+                            offset + (outside_nested ? id_offset : 0),
                             data->num_params);
 
 	if (le) {
@@ -1874,8 +1885,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 		     threshold,
 		     scheme_optimize_context_to_string(info->context));
           le = apply_inlined(le, data, sub_info, argc, app, app2, app3, context,
-                             nested_count, orig_le, prev);
-          if (nested_count)
+                             id_offset, orig_le, prev);
+          if (id_offset)
             optimize_info_done(sub_info, NULL);
           return le;
 	} else {
@@ -3171,7 +3182,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       if (SAME_OBJ(scheme_procedure_p_proc, app->rator)) {
         int flags, sub_context = 0;
         if (lookup_constant_proc(info, rand, id_offset)
-            || optimize_for_inline(info, rand, 1, NULL, NULL, NULL, &flags, sub_context, 0, id_offset)) {
+            || optimize_for_inline(info, rand, 1, NULL, NULL, NULL, &flags, sub_context, 1, id_offset)) {
           info->preserves_marks = 1;
           info->single_result = 1;
           return replace_tail_inside(scheme_true, inside, app->rand);
