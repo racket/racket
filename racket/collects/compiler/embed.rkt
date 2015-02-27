@@ -567,9 +567,15 @@
                                 working))
                     (define (get-one-submodule-code m)
                       (define name (cadr (module-compiled-name m)))
-                      (define mpi (module-path-index-join `(submod "." ,name) #f))
+                      (define mp `(submod "." ,name))
+                      (define mpi (module-path-index-join mp #f))
                       (get-one-code (resolve-module-path-index mpi filename)
-                                    (collapse-module-path-index mpi filename)
+                                    (if (is-lib-path? module-path)
+                                        ;; Preserve `lib`-ness of module reference:
+                                        (collapse-module-path-index
+                                         (module-path-index-join mp module-path))
+                                        ;; Ok to collapse based on filename:
+                                        (collapse-module-path-index mpi filename))
                                     m))
                     ;; Add code for pre submodules:
                     (for-each get-one-submodule-code pre-submods)
