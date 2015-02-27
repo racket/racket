@@ -2367,12 +2367,12 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
 #ifndef DOS_FILE_SYSTEM
 static int sch_unix_putenv(const char *var, const char *val, const intptr_t varlen, const intptr_t vallen) {
   char *buffer;
-  intptr_t total_length;
+  intptr_t total_length, r;
   total_length = varlen + vallen + 2;
 
   if (val) {
 #ifdef MZ_PRECISE_GC
-    /* Can't put moveable string into array. */
+    /* Can't put movable string into environ array */
     buffer = malloc(total_length);
 #else
     buffer = (char *)scheme_malloc_atomic(total_length);
@@ -2385,27 +2385,38 @@ static int sch_unix_putenv(const char *var, const char *val, const intptr_t varl
     buffer = NULL;
   }
 
-#ifdef MZ_PRECISE_GC
-  {
-    /* Free old, if in table: */
-    char *oldbuffer;
-    oldbuffer = (char *)putenv_str_table_get(var);
-    if (oldbuffer)
-      free(oldbuffer);
-  }
-#endif
-
-  /* if precise the buffer needs to be remembered so it can be freed */
-  /* if not precise the buffer needs to be rooted so it doesn't get collected prematurely */
-  putenv_str_table_put_name(var, buffer);
-
   if (buffer)
-    return putenv(buffer);
+    r = putenv(buffer);
   else {
     /* on some platforms, unsetenv() returns void */
     unsetenv(var);
-    return 0;
+    r = 0;
   }
+
+  if (!r) {
+#ifdef MZ_PRECISE_GC
+    char *oldbuffer;
+
+    /* Will free old, if in table: */
+    oldbuffer = (char *)putenv_str_table_get(var);
+#endif
+
+    /* If precise GC, the buffer needs to be remembered so it can be freed;
+       otherwise, the buffer needs to be referenced so it doesn't get GCed */
+    putenv_str_table_put_name(var, buffer);
+
+#ifdef MZ_PRECISE_GC
+    if (oldbuffer)
+      free(oldbuffer);
+#endif
+  } else {
+#ifdef MZ_PRECISE_GC
+    if (buffer)
+      free(buffer);
+#endif
+  }
+
+  return r;
 }
 #endif
 
