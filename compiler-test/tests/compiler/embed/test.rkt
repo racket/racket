@@ -5,7 +5,8 @@
 	 racket/system
          racket/port
          launcher
-         compiler/distribute)
+         compiler/distribute
+         (only-in pkg/lib installed-pkg-names))
 
 (define (test expect f/label . args)
   (define r (apply (if (procedure? f/label)
@@ -385,8 +386,7 @@
                (path->string (build-path (collection-path "tests" "compiler" "embed") prog)))
       (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
 
-      ;; Or, it's found if we set the collection path and the config path (where the latter
-      ;; finds links for packages):
+      ;; Or, it's found if we set the collection path:
       (printf ">>set coll path\n")
       (system* mzc 
                (if mred? "--gui-exe" "--exe")
@@ -428,10 +428,11 @@
     (check-collection-path "embed-me6.rkt" "mzlib/etc.rkt"
                            ;; "mzlib" is found via the "collects" path
                            ;; if it is accessible via the default
-                           ;; collection-links configuration:
-                           (file-exists? (build-path
-                                          (find-collects-dir)
-                                          "../share/pkgs/compatibility-lib/mzlib/etc.rkt")))
+                           ;; collection-links configuration, which is
+                           ;; essentially the same as being in installation
+                           ;; scope:
+                           (member "compatibility-lib"
+                                   (installed-pkg-names #:scope 'installation)))
   
     (void)))
 
