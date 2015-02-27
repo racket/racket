@@ -178,10 +178,7 @@
   (cond
    [(symbol? modidx) modidx]
    [else 
-    (collapse-module-path-index modidx (build-path
-                                        (or (current-load-relative-directory)
-                                            (current-directory))
-                                        "here.rkt"))]))
+    (collapse-module-path-index modidx)]))
 
 (define (decompile-module mod-form orig-stack stx-ht mod-name)
   (match mod-form
