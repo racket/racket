@@ -923,15 +923,9 @@ Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *ma
   if (SCHEME_PAIRP(mark)) {
     if (!SCHEME_FALSEP(SCHEME_CDR(mark)))
       o = scheme_stx_adjust_mark(o, SCHEME_CDR(mark), phase, mode);
-    mark = SCHEME_CAR(mark);
   }
 
-  if (SCHEME_FALSEP(mark))
-    return o;
-  else if (SCHEME_MARKP(mark) || SCHEME_MULTI_MARKP(mark))
-    return scheme_stx_adjust_mark(o, mark, phase, mode);
-  else
-    return scheme_stx_adjust_marks(o, (Scheme_Mark_Set *)mark, phase, mode);
+  return scheme_stx_adjust_frame_bind_marks(o, mark, phase, mode);
 }
 
 Scheme_Object *scheme_stx_adjust_frame_bind_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)

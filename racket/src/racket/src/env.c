@@ -777,7 +777,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("internal-definition-context-seal", intdef_context_seal, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("internal-definition-context?", intdef_context_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("identifier-remove-from-definition-context", id_intdef_remove, 2, 2, env);
-  GLOBAL_PRIM_W_ARITY("syntax-local-get-shadower", local_get_shadower, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-get-shadower", local_get_shadower, 1, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-introduce", local_introduce, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("make-syntax-introducer", make_introducer, 0, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-make-delta-introducer", local_make_delta_introduce, 1, 1, env);
@@ -2403,6 +2403,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env, *bind_env;
   Scheme_Object *sym, *binder;
+  int for_binding;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -2413,30 +2414,23 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   if (!(SCHEME_STXP(sym) && SCHEME_SYMBOLP(SCHEME_STX_VAL(sym))))
     scheme_wrong_contract("syntax-local-get-shadower", "identifier?", 0, argc, argv);
 
+  for_binding = ((argc > 1) && SCHEME_TRUEP(argv[1]));
+
   binder = scheme_find_local_binder(sym, env, &bind_env);
 
-  if (!binder) {
-#if 1
+  if (!binder)
     sym = scheme_stx_remove_module_context_marks(sym);
-#else
-    // REMOVEME: intermediate attempt at removing source module context:
-    Scheme_Mark_Set *bind_marks;
-    int ph = scheme_current_thread->current_local_env->genv->phase;
-    binder = scheme_stx_lookup_w_nominal(sym, scheme_make_integer(ph),
-                                         0, 0,
-                                         NULL, NULL, &bind_marks,
-                                         NULL, NULL, NULL, NULL, NULL);
-
-    if (!SCHEME_FALSEP(binder))
-      sym = scheme_stx_adjust_marks(sym, bind_marks, scheme_env_phase(env->genv),
-                                    SCHEME_STX_REMOVE);
-#endif
-  }
 
   while (env != bind_env) {
-    if (env->marks)
-      sym = scheme_stx_adjust_frame_marks(sym, env->marks, scheme_env_phase(env->genv),
-                                          SCHEME_STX_ADD);
+    if (env->marks) {
+      if (for_binding)
+        sym = scheme_stx_adjust_frame_bind_marks(sym, env->marks, scheme_env_phase(env->genv),
+                                                 SCHEME_STX_ADD);
+      else
+        sym = scheme_stx_adjust_frame_marks(sym, env->marks, scheme_env_phase(env->genv),
+                                            SCHEME_STX_ADD);
+    }
+      
     env = env->next;
   }
 
