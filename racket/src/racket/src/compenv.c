@@ -1557,7 +1557,7 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
 
   binding_names = get_binding_names_table(env);
 
-  if (!scheme_hash_get(binding_names, sym)) {
+  if (!scheme_eq_hash_get(binding_names, sym)) {
     /* First declaration gets a plain symbol: */
     scheme_hash_set(binding_names, sym, scheme_true);
     return sym;
@@ -1575,7 +1575,7 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
     sprintf(buf XFORM_OK_PLUS len, ".%d", i);
     sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
-    if (!scheme_hash_get(binding_names, sym)) {
+    if (!scheme_eq_hash_get(binding_names, sym)) {
       scheme_hash_set(binding_names, sym, scheme_true);
       return sym;
     }
@@ -1592,7 +1592,7 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
   phase = scheme_env_phase(env);
 
   binding = scheme_stx_lookup_w_nominal(id, phase, 
-                                        0,
+                                        1,
                                         &exact_match, NULL, NULL,
                                         NULL,
                                         NULL, NULL, NULL, NULL);
