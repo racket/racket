@@ -2821,7 +2821,7 @@ Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase)
   int exact;
   Scheme_Object *b;
 
-  b = scheme_stx_lookup_w_nominal(o, phase, 0, &exact, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+  b = scheme_stx_lookup_w_nominal(o, phase, 1, &exact, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
   if (!exact)
     return scheme_false;
