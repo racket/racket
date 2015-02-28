@@ -2429,6 +2429,8 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 
   if (binder)
     sym = scheme_stx_binding_union(sym, binder, scheme_env_phase(env->genv));
+  else if (env->genv->module && env->genv->module->ii_src)
+    sym = scheme_stx_binding_union(sym, env->genv->module->ii_src, scheme_env_phase(env->genv));
 
   /* Add additional marks only up to the binder (if any): */
   while (env != bind_env) {
