@@ -48,26 +48,7 @@ THREAD_LOCAL_DECL(static int env_uid_counter);
 #define ONE_ARBITRARY_USE 0x8
 /* See also SCHEME_USE_COUNT_MASK */
 
-typedef struct Compile_Data {
-  int num_const;
-  Scheme_Object **const_binders;
-  Scheme_Object **const_bindings;
-  Scheme_Object **const_vals;
-  int *sealed; /* NULL => already sealed */
-  int *use;
-  Scheme_Object *lifts;
-  int min_use, any_use;
-} Compile_Data;
-
-typedef struct Scheme_Full_Comp_Env {
-  Scheme_Comp_Env base;
-  Compile_Data data;
-} Scheme_Full_Comp_Env;
-
 static void init_compile_data(Scheme_Comp_Env *env);
-
-/* Precise GC WARNING: this macro produces unaligned pointers: */
-#define COMPILE_DATA(e) (&((Scheme_Full_Comp_Env *)e)->data)
 
 #define SCHEME_NON_SIMPLE_FRAME (SCHEME_NO_RENAME | SCHEME_CAPTURE_WITHOUT_RENAME \
                                  | SCHEME_FOR_STOPS | SCHEME_CAPTURE_LIFTED)
@@ -265,7 +246,6 @@ void scheme_init_expand_observe(Scheme_Env *env)
 
 static void init_compile_data(Scheme_Comp_Env *env)
 {
-  Compile_Data *data;
   int i, c, *use;
 
   c = env->num_bindings;
@@ -274,14 +254,12 @@ static void init_compile_data(Scheme_Comp_Env *env)
   else
     use = NULL;
 
-  data = COMPILE_DATA(env);
-
-  data->use = use;
+  env->use = use;
   for (i = 0; i < c; i++) {
     use[i] = 0;
   }
 
-  data->min_use = c;
+  env->min_use = c;
 }
 
 Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Scheme_Object *marks, Scheme_Comp_Env *base)
@@ -291,7 +269,7 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Schem
   
   count = num_bindings;
 
-  frame = (Scheme_Comp_Env *)MALLOC_ONE_RT(Scheme_Full_Comp_Env);
+  frame = (Scheme_Comp_Env *)MALLOC_ONE_RT(Scheme_Comp_Env);
 #ifdef MZTAG_REQUIRED
   frame->type = scheme_rt_comp_env;
 #endif
@@ -334,7 +312,7 @@ Scheme_Comp_Env *scheme_new_comp_env(Scheme_Env *genv, Scheme_Object *insp, Sche
   if (!insp)
     insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
-  e = (Scheme_Comp_Env *)MALLOC_ONE_RT(Scheme_Full_Comp_Env);
+  e = (Scheme_Comp_Env *)MALLOC_ONE_RT(Scheme_Comp_Env);
 #ifdef MZTAG_REQUIRED
   e->type = scheme_rt_comp_env;
 #endif
@@ -387,16 +365,12 @@ int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env)
 
 int scheme_used_ever(Scheme_Comp_Env *env, int which)
 {
-  Compile_Data *data = COMPILE_DATA(env);
-
-  return !!data->use[which];
+  return !!env->use[which];
 }
 
 int scheme_is_env_variable_boxed(Scheme_Comp_Env *env, int which)
 {
-  Compile_Data *data = COMPILE_DATA(env);
-
-  return !!(data->use[which] & WAS_SET_BANGED);
+  return !!(env->use[which] & WAS_SET_BANGED);
 }
 
 void
@@ -450,14 +424,14 @@ void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc 
   SCHEME_VEC_ELS(vec)[6] = scheme_null; /* accumulated requires */
   SCHEME_VEC_ELS(vec)[7] = provides;
 
-  COMPILE_DATA(env)->lifts = vec;
+  env->lifts = vec;
 }
 
 void scheme_propagate_require_lift_capture(Scheme_Comp_Env *orig_env, Scheme_Comp_Env *env)
 {
   while (orig_env) {
-    if ((COMPILE_DATA(orig_env)->lifts)
-        && SCHEME_TRUEP(SCHEME_VEC_ELS(COMPILE_DATA(orig_env)->lifts)[5]))
+    if ((orig_env->lifts)
+        && SCHEME_TRUEP(SCHEME_VEC_ELS(orig_env->lifts)[5]))
       break;
     orig_env = orig_env->next;
   }
@@ -477,28 +451,28 @@ void scheme_propagate_require_lift_capture(Scheme_Comp_Env *orig_env, Scheme_Com
     SCHEME_VEC_ELS(vec)[6] = scheme_null;
     SCHEME_VEC_ELS(vec)[7] = scheme_false;
 
-    COMPILE_DATA(env)->lifts = vec;
+    env->lifts = vec;
   }
 }
 
 Scheme_Object *scheme_frame_get_lifts(Scheme_Comp_Env *env)
 {
-  return scheme_reverse(SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[0]);
+  return scheme_reverse(SCHEME_VEC_ELS(env->lifts)[0]);
 }
 
 Scheme_Object *scheme_frame_get_end_statement_lifts(Scheme_Comp_Env *env)
 {
-  return SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3];
+  return SCHEME_VEC_ELS(env->lifts)[3];
 }
 
 Scheme_Object *scheme_frame_get_require_lifts(Scheme_Comp_Env *env)
 {
-  return SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[6];
+  return SCHEME_VEC_ELS(env->lifts)[6];
 }
 
 Scheme_Object *scheme_frame_get_provide_lifts(Scheme_Comp_Env *env)
 {
-  return SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[7];
+  return SCHEME_VEC_ELS(env->lifts)[7];
 }
 
 void scheme_add_local_syntax(int cnt, Scheme_Comp_Env *env)
@@ -510,10 +484,10 @@ void scheme_add_local_syntax(int cnt, Scheme_Comp_Env *env)
     bs = MALLOC_N(Scheme_Object *, cnt);
     vs = MALLOC_N(Scheme_Object *, cnt);
 
-    COMPILE_DATA(env)->num_const = cnt;
-    COMPILE_DATA(env)->const_binders = ns;
-    COMPILE_DATA(env)->const_bindings = bs;
-    COMPILE_DATA(env)->const_vals = vs;
+    env->num_const = cnt;
+    env->const_binders = ns;
+    env->const_bindings = bs;
+    env->const_vals = vs;
 
   }
 }
@@ -538,10 +512,10 @@ void scheme_set_local_syntax(int pos,
       scheme_add_local_binding(name, scheme_env_phase(env->genv), binding);
     }
     
-    COMPILE_DATA(env)->const_binders[pos] = name;
-    COMPILE_DATA(env)->const_bindings[pos] = binding;
+    env->const_binders[pos] = name;
+    env->const_bindings[pos] = binding;
   }
-  COMPILE_DATA(env)->const_vals[pos] = val;
+  env->const_vals[pos] = val;
   env->skip_table = NULL;
 }
 
@@ -926,7 +900,7 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
 {
   int cnt, u;
 
-  u = COMPILE_DATA(frame)->use[i];
+  u = frame->use[i];
 
   // flags -= (flags & SCHEME_APP_POS);
 
@@ -943,10 +917,10 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
   u -= (u & SCHEME_USE_COUNT_MASK);
   u |= (cnt << SCHEME_USE_COUNT_SHIFT);
   
-  COMPILE_DATA(frame)->use[i] = u;
-  if (i < COMPILE_DATA(frame)->min_use)
-    COMPILE_DATA(frame)->min_use = i;
-  COMPILE_DATA(frame)->any_use = 1;
+  frame->use[i] = u;
+  if (i < frame->min_use)
+    frame->min_use = i;
+  frame->any_use = 1;
 
   return (Scheme_Local *)scheme_make_local(scheme_local_type, p + i, 0);
 }
@@ -1055,8 +1029,8 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
 	scheme_hash_set(table, frame->bindings[i], scheme_true);
       }
     }
-    for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-      scheme_hash_set(table, COMPILE_DATA(frame)->const_bindings[i], scheme_true);
+    for (i = frame->num_const; i--; ) {
+      scheme_hash_set(table, frame->const_bindings[i], scheme_true);
     }
   }
 
@@ -1095,11 +1069,11 @@ void scheme_dump_env(Scheme_Comp_Env *env)
              scheme_write_to_string((Scheme_Object *)((Scheme_Stx *)frame->binders[i])->marks, NULL));
     }
     
-    for (i = COMPILE_DATA(frame)->num_const; i--; ) {
+    for (i = frame->num_const; i--; ) {
       printf("  %s -> %s [c]\n  %s\n",
-             scheme_write_to_string(COMPILE_DATA(frame)->const_binders[i], NULL),
-             scheme_write_to_string(COMPILE_DATA(frame)->const_bindings[i], NULL),
-             scheme_write_to_string((Scheme_Object *)((Scheme_Stx *)COMPILE_DATA(frame)->const_binders[i])->marks, NULL));
+             scheme_write_to_string(frame->const_binders[i], NULL),
+             scheme_write_to_string(frame->const_bindings[i], NULL),
+             scheme_write_to_string((Scheme_Object *)((Scheme_Stx *)frame->const_binders[i])->marks, NULL));
     }
   }
 }
@@ -1246,12 +1220,12 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
           }
         }
         
-        for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-          if (SAME_OBJ(binding, COMPILE_DATA(frame)->const_bindings[i])) {
-            if (_local_binder) *_local_binder = COMPILE_DATA(frame)->const_binders[i];
+        for (i = frame->num_const; i--; ) {
+          if (SAME_OBJ(binding, frame->const_bindings[i])) {
+            if (_local_binder) *_local_binder = frame->const_binders[i];
             check_taint(find_id);
             
-            val = COMPILE_DATA(frame)->const_vals[i];
+            val = frame->const_vals[i];
             
             if (!val) {
               scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
@@ -1297,14 +1271,14 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     for (frame = env; frame->next != NULL; frame = frame->next) {
       if (frame->flags & SCHEME_FOR_STOPS) {
         int i;
-        for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-          if (same_binding(COMPILE_DATA(frame)->const_bindings[i], binding)
+        for (i = frame->num_const; i--; ) {
+          if (same_binding(frame->const_bindings[i], binding)
               && (SCHEME_TRUEP(binding)
-                  || SAME_OBJ(SCHEME_STX_VAL(COMPILE_DATA(frame)->const_binders[i]),
+                  || SAME_OBJ(SCHEME_STX_VAL(frame->const_binders[i]),
                               SCHEME_STX_VAL(find_id)))) {
             check_taint(find_id);
             
-            return COMPILE_DATA(frame)->const_vals[i];
+            return frame->const_vals[i];
           }
         }
         /* ignore any further stop frames: */
@@ -1708,15 +1682,15 @@ int scheme_env_check_reset_any_use(Scheme_Comp_Env *frame)
 {
   int any_use;
 
-  any_use = COMPILE_DATA(frame)->any_use;
-  COMPILE_DATA(frame)->any_use = 0;
+  any_use = frame->any_use;
+  frame->any_use = 0;
 
   return any_use;
 }
 
 int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos)
 {
-  return COMPILE_DATA(frame)->min_use < pos;
+  return frame->min_use < pos;
 }
 
 int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count)
@@ -1724,7 +1698,7 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count)
   int *v, i;
   
   v = MALLOC_N_ATOMIC(int, count);
-  memcpy(v, COMPILE_DATA(frame)->use + start, sizeof(int) * count);
+  memcpy(v, frame->use + start, sizeof(int) * count);
 
   for (i = count; i--; ) {
     int old;
@@ -1789,12 +1763,12 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
                           "not currently transforming",
                           NULL);
 
-  while (env && !COMPILE_DATA(env)->lifts) {
+  while (env && !env->lifts) {
     env = env->next;
   }
 
   if (env)
-    if (SCHEME_FALSEP(SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[0]))
+    if (SCHEME_FALSEP(SCHEME_VEC_ELS(env->lifts)[0]))
       env = NULL;
 
   if (!env)
@@ -1824,7 +1798,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
   }
   ids = scheme_reverse(rev_ids);
 
-  vec = COMPILE_DATA(env)->lifts;
+  vec = env->lifts;
   cp = *(Scheme_Lift_Capture_Proc *)SCHEME_VEC_ELS(vec)[1];
   data = SCHEME_VEC_ELS(vec)[2];
 
@@ -1852,21 +1826,21 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
 Scheme_Object *
 scheme_local_lift_context(Scheme_Comp_Env *env)
 {
-  while (env && !COMPILE_DATA(env)->lifts) {
+  while (env && !env->lifts) {
     env = env->next;
   }
 
   if (!env)
     return scheme_false;
   
-  return SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[4];
+  return SCHEME_VEC_ELS(env->lifts)[4];
 }
 
 Scheme_Comp_Env *scheme_get_module_lift_env(Scheme_Comp_Env *env)
 {
   while (env) {
-    if ((COMPILE_DATA(env)->lifts)
-        && SCHEME_TRUEP(SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3]))
+    if ((env->lifts)
+        && SCHEME_TRUEP(SCHEME_VEC_ELS(env->lifts)[3]))
       break;
     env = env->next;
   }
@@ -1892,8 +1866,8 @@ scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, 
     expr = scheme_stx_flip_mark(expr, local_mark, scheme_env_phase(env->genv));
   orig_expr = expr;
 
-  pr = scheme_make_pair(expr, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3]);
-  SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3] = pr;
+  pr = scheme_make_pair(expr, SCHEME_VEC_ELS(env->lifts)[3]);
+  SCHEME_VEC_ELS(env->lifts)[3] = pr;
 
   SCHEME_EXPAND_OBSERVE_LIFT_STATEMENT(scheme_get_expand_observe(), orig_expr);
   
@@ -1912,9 +1886,9 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
 
   env = cenv;
   while (env) {
-    if (COMPILE_DATA(env)->lifts
-        && SCHEME_TRUEP(SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[5])) {
-      data = SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[5];
+    if (env->lifts
+        && SCHEME_TRUEP(SCHEME_VEC_ELS(env->lifts)[5])) {
+      data = SCHEME_VEC_ELS(env->lifts)[5];
       if (SCHEME_RPAIRP(data)
           && !SCHEME_CAR(data)) {
         env = (Scheme_Comp_Env *)SCHEME_CDR(data);
@@ -1939,8 +1913,8 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
     need_prepare = 1;
   }
   
-  pr = scheme_make_pair(form, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[6]);
-  SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[6] = pr;
+  pr = scheme_make_pair(form, SCHEME_VEC_ELS(env->lifts)[6]);
+  SCHEME_VEC_ELS(env->lifts)[6] = pr;
 
   req_form = form;
 
@@ -1962,8 +1936,8 @@ Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *loc
   Scheme_Object *pr;
 
   while (env) {
-    if (COMPILE_DATA(env)->lifts
-        && SCHEME_TRUEP(SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[7])) {
+    if (env->lifts
+        && SCHEME_TRUEP(SCHEME_VEC_ELS(env->lifts)[7])) {
       break;
     } else
       env = env->next;
@@ -1984,8 +1958,8 @@ Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *loc
 
   SCHEME_EXPAND_OBSERVE_LIFT_PROVIDE(scheme_get_expand_observe(), form);
 
-  pr = scheme_make_pair(form, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[7]);
-  SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[7] = pr;
+  pr = scheme_make_pair(form, SCHEME_VEC_ELS(env->lifts)[7]);
+  SCHEME_VEC_ELS(env->lifts)[7] = pr;
 
   return scheme_void;
 }
@@ -1994,7 +1968,7 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
                                              Scheme_Object **_id, int *_use_map)
 {
   Scheme_Object *id = NULL, *v;
-  Scheme_Full_Comp_Env inlined_e;
+  Scheme_Comp_Env inlined_e;
 
   scheme_prepare_env_stx_context(genv);
   scheme_prepare_compile_env(genv);
@@ -2002,12 +1976,12 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
   id = scheme_datum_to_syntax(sym, scheme_false, scheme_false, 0, 0);
   id = scheme_stx_add_module_context(id, genv->stx_context);
 
-  inlined_e.base.num_bindings = 0;
-  inlined_e.base.next = NULL;
-  inlined_e.base.genv = genv;
-  inlined_e.base.flags = SCHEME_TOPLEVEL_FRAME;
-  init_compile_data((Scheme_Comp_Env *)&inlined_e);
-  inlined_e.base.prefix = NULL;
+  inlined_e.num_bindings = 0;
+  inlined_e.next = NULL;
+  inlined_e.genv = genv;
+  inlined_e.flags = SCHEME_TOPLEVEL_FRAME;
+  init_compile_data(&inlined_e);
+  inlined_e.prefix = NULL;
 
   v = scheme_compile_lookup(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, 
                             NULL,
@@ -2046,8 +2020,8 @@ Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
       }
     }
 
-    for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-      id = COMPILE_DATA(frame)->const_binders[i];
+    for (i = frame->num_const; i--; ) {
+      id = frame->const_binders[i];
       if (id && scheme_stx_could_bind(id, sym, scheme_env_phase(env->genv))) {
         prop = scheme_stx_property(id, unshadowable_symbol, NULL);
         if (SCHEME_FALSEP(prop)) {

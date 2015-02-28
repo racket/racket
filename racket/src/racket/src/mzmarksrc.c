@@ -1245,30 +1245,28 @@ START compenv;
 
 mark_comp_env {
  mark:
-  Scheme_Full_Comp_Env *e = (Scheme_Full_Comp_Env *)p;
+  Scheme_Comp_Env *e = (Scheme_Comp_Env *)p;
 
-  gcMARK2(e->base.genv, gc);
-  gcMARK2(e->base.insp, gc);
-  gcMARK2(e->base.prefix, gc);
-  gcMARK2(e->base.next, gc);
-  gcMARK2(e->base.marks, gc);
-  gcMARK2(e->base.binders, gc);
-  gcMARK2(e->base.bindings, gc);
-  gcMARK2(e->base.renames, gc);
-  gcMARK2(e->base.dup_check, gc);
-  gcMARK2(e->base.intdef_name, gc);
-  gcMARK2(e->base.in_modidx, gc);
-  gcMARK2(e->base.skip_table, gc);
+  gcMARK2(e->genv, gc);
+  gcMARK2(e->insp, gc);
+  gcMARK2(e->prefix, gc);
+  gcMARK2(e->next, gc);
+  gcMARK2(e->marks, gc);
+  gcMARK2(e->binders, gc);
+  gcMARK2(e->bindings, gc);
+  gcMARK2(e->dup_check, gc);
+  gcMARK2(e->intdef_name, gc);
+  gcMARK2(e->in_modidx, gc);
+  gcMARK2(e->skip_table, gc);
   
-  gcMARK2(e->data.const_binders, gc);
-  gcMARK2(e->data.const_bindings, gc);
-  gcMARK2(e->data.const_vals, gc);
-  gcMARK2(e->data.sealed, gc);
-  gcMARK2(e->data.use, gc);
-  gcMARK2(e->data.lifts, gc);
+  gcMARK2(e->const_binders, gc);
+  gcMARK2(e->const_bindings, gc);
+  gcMARK2(e->const_vals, gc);
+  gcMARK2(e->use, gc);
+  gcMARK2(e->lifts, gc);
 
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Full_Comp_Env));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Comp_Env));
 }
 
 END compenv;

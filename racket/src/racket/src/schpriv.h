@@ -2493,17 +2493,26 @@ typedef struct Scheme_Comp_Env
 {
   MZTAG_IF_REQUIRED
   short flags;          /* used for expanding/compiling */
-  mzshort num_bindings; /* number of `values' slots */
   Scheme_Env *genv;     /* top-level environment */
   Scheme_Object *insp;  /* code inspector for checking protected */
   Comp_Prefix *prefix;  /* stack base info: globals and stxes */
 
   Scheme_Object *marks; /* can be NULL, a mark, a mark set, or (cons mark-set nobind-mark) */
 
+  /* local bindings; */
+  mzshort num_bindings; /* number of `values' slots */
   struct Scheme_Object **binders; /* identifiers */
   struct Scheme_Object **bindings; /* symbols */
+  int *use;
+  int min_use, any_use;
+  
+  /* compile-time local bindings: */
+  int num_const;
+  Scheme_Object **const_binders;
+  Scheme_Object **const_bindings;
+  Scheme_Object **const_vals;
 
-  struct Scheme_Object *renames; /* an stx lexical rename or a list of them */
+  Scheme_Object *lifts;
 
   mzshort rename_var_count;      /* number of non-NULL `values' when `renames' was computed */
   mzshort rename_rstart;         /* leftover rstart from previous round; see env.c */
