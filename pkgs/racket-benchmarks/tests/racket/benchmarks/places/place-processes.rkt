@@ -9,7 +9,8 @@
          racket/serialize
          (for-syntax syntax/parse
                      racket/base
-                     racket/file))
+                     racket/file
+                     syntax/strip-context))
 
 (provide
   dynamic-place
@@ -117,7 +118,7 @@
               new-result)))]))
 
 (define-syntax (place/base stx)
-  (syntax-case stx ()
+  (syntax-case (replace-context #'here stx) ()
     [(_ module-name (name ch) body ...)
      #'(module module-name racket/base
          (require "place-processes.rkt")
