@@ -1194,6 +1194,8 @@ int scheme_stx_in_plain_module_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_content(Scheme_Object *o);
 Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist);
 
+int scheme_stx_could_bind(Scheme_Object *bind_id, Scheme_Object *ref_id, Scheme_Object *phase);
+
 int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase);
 int scheme_stx_module_eq_x(Scheme_Object *a, Scheme_Object *b, intptr_t b_phase);
 int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
@@ -1229,6 +1231,8 @@ int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase
 int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
 int scheme_stx_env_bound_eq2(Scheme_Object *a, Scheme_Object *b,
                              Scheme_Object *a_phase, Scheme_Object *b_phase);
+
+Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source);
 

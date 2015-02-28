@@ -244,8 +244,7 @@
                (syntax-local-introduce 
                 (syntax-local-get-shadower
                  (add-prefix
-                  (delta-introduce id))
-                 #t)))
+                  (delta-introduce id)))))
              syntax-local-introduce
              (list (map cons vars vars)
                    (map 

@@ -3328,6 +3328,18 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
 /*                           stx comparison                               */
 /*========================================================================*/
 
+int scheme_stx_could_bind(Scheme_Object *bind_id, Scheme_Object *ref_id, Scheme_Object *phase)
+{
+  Scheme_Stx *bind = (Scheme_Stx *)bind_id;
+  Scheme_Stx *ref = (Scheme_Stx *)ref_id;
+  
+  if (!SAME_OBJ(ref->val, bind->val))
+    return 0;
+
+  return mark_subset(extract_mark_set(bind, phase),
+                     extract_mark_set(ref, phase));
+}
+
 int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b, 
                           Scheme_Object *a_phase, Scheme_Object *b_phase)
 {
@@ -5447,6 +5459,30 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
   a[2] = phase;
 
   return scheme_make_prim_closure_w_arity(delta_introducer, 3, a, "delta-introducer", 1, 2);
+}
+
+Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Scheme_Object *phase)
+{
+  Scheme_Mark_Set *current, *m2;
+  Scheme_Object *key, *val;
+  intptr_t i;
+  int flags = 0;
+
+  current = extract_mark_set((Scheme_Stx *)o, phase);
+  m2 = extract_mark_set((Scheme_Stx *)b, phase);
+
+  i = mark_set_next(m2, -1);
+  while (i != -1) {
+    mark_set_index(m2, i, &key, &val);
+    if (!mark_set_get(current, key)) {
+      o = scheme_stx_adjust_mark(o, key, phase, flags | SCHEME_STX_ADD);
+      flags |= SCHEME_STX_MUTATE;
+    }
+    
+    i = mark_set_next(m2, i);
+  }
+
+  return o;
 }
 
 static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)

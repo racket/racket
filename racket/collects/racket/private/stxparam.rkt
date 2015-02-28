@@ -31,8 +31,7 @@
 				    stx
 				    id))
 				 (syntax-local-get-shadower 
-				  (syntax-local-introduce (syntax-parameter-target sp))
-                                  #t)))
+				  (syntax-local-introduce (syntax-parameter-target sp)))))
 			     ids)])
 	   (let ([dup (check-duplicate-identifier ids)])
 	     (when dup

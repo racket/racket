@@ -2036,7 +2036,7 @@ Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
     for (i = frame->num_bindings; i--; ) {
       id = frame->binders[i];
       if (id) {
-	if (scheme_stx_module_eq2(sym, id, scheme_env_phase(env->genv))) {
+	if (scheme_stx_could_bind(id, sym, scheme_env_phase(env->genv))) {
           prop = scheme_stx_property(id, unshadowable_symbol, NULL);
           if (SCHEME_FALSEP(prop)) {
             if (_at_env) *_at_env = frame;
@@ -2048,7 +2048,7 @@ Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
 
     for (i = COMPILE_DATA(frame)->num_const; i--; ) {
       id = COMPILE_DATA(frame)->const_binders[i];
-      if (id && scheme_stx_module_eq2(sym, id, scheme_env_phase(env->genv))) {
+      if (id && scheme_stx_could_bind(id, sym, scheme_env_phase(env->genv))) {
         prop = scheme_stx_property(id, unshadowable_symbol, NULL);
         if (SCHEME_FALSEP(prop)) {
           if (_at_env) *_at_env = frame;
