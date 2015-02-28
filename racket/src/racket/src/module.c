@@ -7746,7 +7746,7 @@ Scheme_Object *reverse_and_introduce_module_context(Scheme_Object *fm, Scheme_Ob
 
 static Scheme_Object *stx_sym(Scheme_Object *name, Scheme_Object *_genv)
 {
-  name = scheme_stx_lookup(name, scheme_env_phase((Scheme_Env *)_genv));
+  name = scheme_stx_lookup_exact(name, scheme_env_phase((Scheme_Env *)_genv));
   return SCHEME_VEC_ELS(name)[1];
 }
 
