@@ -2422,6 +2422,9 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     }
   }
 
+  if (env->genv->module && env->genv->module->ii_src)
+    sym2 = scheme_stx_binding_union(sym2, env->genv->module->ii_src, scheme_env_phase(env->genv));
+
   /* Try to find a binder: */
   binder = scheme_find_local_binder(sym2, env, &bind_env);
 
@@ -2433,13 +2436,11 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     sym = scheme_stx_binding_union(sym, env->genv->module->ii_src, scheme_env_phase(env->genv));
 
   /* Add additional marks only up to the binder (if any): */
-  while (env != bind_env) {
-    if (env->marks) {
-      sym = scheme_stx_adjust_frame_bind_marks(sym, env->marks, scheme_env_phase(env->genv),
+  for (env2 = env; env2 != bind_env; env2 = env2->next) {
+    if (env2->marks) {
+      sym = scheme_stx_adjust_frame_bind_marks(sym, env2->marks, scheme_env_phase(env2->genv),
                                                SCHEME_STX_ADD);
     }
-      
-    env = env->next;
   }
 
   return sym;

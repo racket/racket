@@ -55,10 +55,10 @@ residual.rkt.
 
 (define-syntax-parameter fail-handler
   (lambda (stx)
-    (wrong-syntax stx "internal error: used out of context")))
+    (wrong-syntax stx "internal error: fail-handler used out of context")))
 (define-syntax-parameter cut-prompt
   (lambda (stx)
-    (wrong-syntax stx "internal error: used out of context")))
+    (wrong-syntax stx "internal error: cut-prompt used out of context")))
 
 (define-syntax-rule (wrap-user-code e)
   (with ([fail-handler #f]

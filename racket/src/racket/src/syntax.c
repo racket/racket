@@ -805,8 +805,8 @@ static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object 
 
   if (SCHEME_MARKP(m) && ((Scheme_Mark *)m)->owner_multi_mark) {
     if (!SCHEME_FALSEP(phase))
-      phase = scheme_bin_minus(SCHEME_CDR(((Scheme_Mark *)m)->owner_multi_mark),
-                               phase);
+      phase = scheme_bin_minus(phase,
+                               SCHEME_CDR(((Scheme_Mark *)m)->owner_multi_mark));
     m = SCHEME_CAR(((Scheme_Mark *)m)->owner_multi_mark);
   }
 
@@ -964,7 +964,7 @@ Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o)
     o = scheme_stx_remove_mark(o,
                                extract_single_mark(SCHEME_CAR(SCHEME_CAR(l)),
                                                    scheme_make_integer(0)),
-                               scheme_make_integer(0));
+                               SCHEME_CDR(SCHEME_CAR(l)));
     l = SCHEME_CDR(l);
   }
 
@@ -2209,7 +2209,9 @@ static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_m
     
     printf(" %s", scheme_write_to_string(scheme_mark_printed_form(key), NULL));
     if (((Scheme_Mark *)key)->owner_multi_mark)
-      printf("/%" PRIdPTR, scheme_hash_key(SCHEME_CAR(((Scheme_Mark *)key)->owner_multi_mark)));
+      printf("/%" PRIdPTR "@%" PRIdPTR,
+             scheme_hash_key(SCHEME_CAR(((Scheme_Mark *)key)->owner_multi_mark)),
+             SCHEME_INT_VAL(SCHEME_CDR(((Scheme_Mark *)key)->owner_multi_mark)));
 
     i = mark_set_next(marks, i);
   }
