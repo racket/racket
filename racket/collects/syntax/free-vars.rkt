@@ -50,14 +50,14 @@
                       (variable-reference->module-declaration-inspector
                        (#%variable-reference))])
   ;; It would be nicers to have a functional mapping:
-  (define bindings (make-bound-identifier-mapping))
+  (define bindings (make-free-identifier-mapping))
   (merge
    (let free-vars ([e e])
      (kernel-syntax-case (syntax-disarm e code-insp) #f
        [id 
         (identifier? #'id) 
         (if (and (eq? 'lexical (identifier-binding #'id))
-                 (not (bound-identifier-mapping-get bindings #'id (lambda () #f))))
+                 (not (free-identifier-mapping-get bindings #'id (lambda () #f))))
             (list #'id)
             null)]
        [(#%top . id) null]
@@ -66,14 +66,14 @@
        [(#%plain-lambda formals expr ...)
         (let ([ids (formals->ids #'formals)])
           (for ([id (in-list ids)])
-            (bound-identifier-mapping-put! bindings id #t))
+            (free-identifier-mapping-put! bindings id #t))
           (begin0
            (map free-vars (syntax->list #'(expr ...)))
            ;; Since every binding should be distinct, it shouldn't
            ;; matter whether we map them back to #f, but just in case
            ;; we get a weird expression...
            (for ([id (in-list ids)])
-             (bound-identifier-mapping-put! bindings id #f))))]
+             (free-identifier-mapping-put! bindings id #f))))]
        [(case-lambda [formals expr ...] ...)
         (map free-vars (syntax->list
                         #'((#%plain-lambda formals expr ...) ...)))]
