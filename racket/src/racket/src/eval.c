@@ -4033,6 +4033,7 @@ static void *compile_k(void)
     rec.comp = 1;
     rec.dont_mark_local_use = 0;
     rec.resolve_module_ids = !writeable && !genv->module;
+    rec.substitute_bindings = 1;
     rec.value_name = scheme_false;
     rec.observer = NULL;
     rec.pre_unwrapped = 0;
@@ -4524,12 +4525,13 @@ static void *expand_k(void)
   /* Loop for lifted expressions: */
   while (1) {
     erec1.comp = 0;
-    erec1.depth = depth;
+    erec1.depth = ((depth == -3) ? -2 : depth);
     erec1.value_name = scheme_false;
     erec1.observer = observer;
     erec1.pre_unwrapped = 0;
     erec1.env_already = 0;
     erec1.comp_flags = comp_flags;
+    erec1.substitute_bindings = (depth != -3);
 
     if (catch_lifts_key) {
       Scheme_Object *data;
@@ -4584,7 +4586,8 @@ static Scheme_Object *r_expand(Scheme_Object *obj, Scheme_Comp_Env *env,
 			       int depth, int rename, int just_to_top, 
 			       Scheme_Object *catch_lifts_key, int eb,
 			       int as_local)
-  /* as_local < 0 => catch lifts to let */
+  /* as_local < 0 => catch lifts to let;
+     depth = -3 => depth = -2, and no substituion of references with bindings */
 {
   Scheme_Thread *p = scheme_current_thread;
 
@@ -4878,7 +4881,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   Scheme_Comp_Env *env, *orig_env, **ip;
   Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l, *exp_expr = NULL;
   int cnt, pos, kind, is_modstar;
-  int bad_sub_env = 0, bad_intdef = 0;
+  int bad_sub_env = 0, bad_intdef = 0, keep_ref_ids = 0;
   Scheme_Object *observer, *catch_lifts_key = NULL;
 
   env = scheme_current_thread->current_local_env;
@@ -5049,6 +5052,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
       scheme_add_core_stop_form(pos++, scheme_intern_symbol("#%variable-reference"), env);
       scheme_add_core_stop_form(pos++, scheme_intern_symbol("#%expression"), env);
       scheme_add_core_stop_form(pos++, quote_symbol, env);
+      keep_ref_ids = 1;
     }
   }
 
@@ -5136,8 +5140,9 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     l = xl;
   } else {
     /* Expand the expression. depth = -2 means expand all the way, but
-       preserve letrec-syntax. */
-    l = r_expand(l, env, -2, 0, 0, catch_lifts_key, 0, catch_lifts ? catch_lifts : 1);
+       preserve letrec-syntax, while -3 is -2 but also avoid replacing reference ids
+       with binding ids. */
+    l = r_expand(l, env, (keep_ref_ids ? -3 : -2), 0, 0, catch_lifts_key, 0, catch_lifts ? catch_lifts : 1);
   }
 
   SCHEME_EXPAND_OBSERVE_LOCAL_POST(observer, l);
@@ -5630,6 +5635,7 @@ local_eval(int argc, Scheme_Object **argv)
     rec.observer = observer;
     rec.pre_unwrapped = 0;
     rec.env_already = 0;
+    rec.substitute_bindings = 1;
     rec.comp_flags = get_comp_flags(NULL);
     
     /* Evaluate and bind syntaxes */

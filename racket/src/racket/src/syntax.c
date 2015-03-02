@@ -2266,7 +2266,7 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
           while (l && !SCHEME_NULLP(l)) {
             val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
             if (SCHEME_SYMBOLP(val))
-              printf(" local\n");
+              printf(" local @ %s\n", scheme_write_to_string(mark, 0));
             else
               printf(" %s\n", scheme_write_to_string(val, 0));
             print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);

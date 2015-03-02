@@ -136,6 +136,7 @@ void scheme_init_expand_recs(Scheme_Expand_Info *src, int drec,
     dest[i].value_name = scheme_false;
     dest[i].observer = src[drec].observer;
     dest[i].pre_unwrapped = 0;
+    dest[i].substitute_bindings = src[drec].substitute_bindings;
     dest[i].testing_constantness = 0;
     dest[i].env_already = 0;
     dest[i].comp_flags = src[drec].comp_flags;
@@ -157,6 +158,7 @@ void scheme_init_lambda_rec(Scheme_Compile_Info *src, int drec,
   lam[dlrec].comp = 1;
   lam[dlrec].dont_mark_local_use = src[drec].dont_mark_local_use;
   lam[dlrec].resolve_module_ids = src[drec].resolve_module_ids;
+  lam[dlrec].substitute_bindings = src[dlrec].substitute_bindings;
   lam[dlrec].value_name = scheme_false;
   lam[dlrec].observer = src[drec].observer;
   lam[dlrec].pre_unwrapped = 0;
@@ -1095,6 +1097,20 @@ static int same_binding(Scheme_Object *a, Scheme_Object *b)
     return scheme_equal(a, b);
 }
 
+static void set_binder(Scheme_Object **_binder, Scheme_Object *ref, Scheme_Object *bind)
+{
+  if (SAME_OBJ(SCHEME_STX_VAL(ref), SCHEME_STX_VAL(bind)))
+    ref = scheme_datum_to_syntax(SCHEME_STX_VAL(ref), ref, bind, 0, 2);
+  else {
+    /* rename transformer => treat like an expansion */
+    ref = scheme_stx_track(scheme_datum_to_syntax(SCHEME_STX_VAL(bind), ref, bind, 0, 2),
+                           ref,
+                           ref);
+ }
+
+  *_binder = ref;
+}
+
 /*********************************************************************/
 /* 
 
@@ -1121,7 +1137,7 @@ Scheme_Object *
 scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 		      Scheme_Object *in_modidx,
 		      Scheme_Env **_menv, int *_protected,
-                      Scheme_Object **_local_binder,
+                      Scheme_Object **_binder,
                       Scheme_Object **_inline_variant)
 {
   Scheme_Comp_Env *frame;
@@ -1131,7 +1147,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   Scheme_Object *rename_insp = NULL, *mod_constant = NULL, *shape, **pre_cache;
   Scheme_Env *genv;
 
-  if (_local_binder) *_local_binder = NULL;
+  if (_binder) *_binder = NULL;
 
   pre_cache = ((Scheme_Stx *)find_id)->u.cached_binding;
 
@@ -1211,7 +1227,8 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
         for (i = frame->num_bindings; i--; ) {
           if (frame->bindings[i] && SAME_OBJ(binding, frame->bindings[i])) {
             /* Found a lambda-, let-, etc. bound variable: */
-            if (_local_binder) *_local_binder = frame->binders[i];
+            if (_binder)
+              set_binder(_binder, find_id, frame->binders[i]);
             check_taint(find_id);
             if (flags & SCHEME_DONT_MARK_USE)
               return scheme_make_local(scheme_local_type, p+i, 0);
@@ -1222,7 +1239,8 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
         
         for (i = frame->num_const; i--; ) {
           if (SAME_OBJ(binding, frame->const_bindings[i])) {
-            if (_local_binder) *_local_binder = frame->const_binders[i];
+            if (_binder)
+              set_binder(_binder, find_id, frame->const_binders[i]);
             check_taint(find_id);
             
             val = frame->const_vals[i];
@@ -1258,9 +1276,11 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       p += frame->num_bindings;
     }
     
-    if (!(flags & SCHEME_OUT_OF_CONTEXT_OK))
+    if (!(flags & SCHEME_OUT_OF_CONTEXT_OK)) {
+      scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
       scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
                           "identifier used out of context");
+    }
     
     if (flags & SCHEME_OUT_OF_CONTEXT_LOCAL)
       return scheme_make_local(scheme_local_type, 0, 0);

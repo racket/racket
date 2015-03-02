@@ -1270,7 +1270,7 @@ static Scheme_Object *
 set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
   Scheme_Env *menv = NULL;
-  Scheme_Object *name, *var, *fn, *rhs, *find_name, *form;
+  Scheme_Object *name, *var, *fn, *rhs, *find_name, *form, *binding_id;
   int l;
 
   SCHEME_EXPAND_OBSERVE_PRIM_SET(erec[drec].observer);
@@ -1295,7 +1295,7 @@ set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *e
     var = scheme_compile_lookup(find_name, env, SCHEME_SETTING, 
 				env->in_modidx, 
 				&menv, NULL,
-                                NULL, NULL);
+                                &binding_id, NULL);
 
     SCHEME_EXPAND_OBSERVE_RESOLVE(erec[drec].observer, find_name);
 
@@ -1324,6 +1324,8 @@ set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *e
       } else
         break;
     } else {
+      if (binding_id)
+        find_name = binding_id;
       break;
     }
   }
@@ -1361,7 +1363,7 @@ static Scheme_Object *
 ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
   Scheme_Env *menv = NULL;
-  Scheme_Object *var, *name, *rest, *dummy;
+  Scheme_Object *var, *name, *rest, *dummy, *bind_id;
   int l, ok;
 
   if (rec[drec].comp)
@@ -1427,7 +1429,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
                                      : 0),
                                   env->in_modidx, 
                                   &menv, NULL,
-                                  NULL, NULL);
+                                  &bind_id, NULL);
 
       if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
           || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
@@ -1459,6 +1461,10 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
     SCHEME_PTR2_VAL(o) = (Scheme_Object *)dummy;
     return o;
   } else {
+    if (bind_id) {
+      form = SCHEME_STX_CAR(form);
+      return scheme_make_pair(form, scheme_make_pair(bind_id, scheme_null));
+    }
     return NULL;
   }
 }
@@ -3248,6 +3254,7 @@ static void prep_exp_env_compile_rec(Scheme_Compile_Info *rec, int drec)
   rec[0].comp = 1;
   rec[0].dont_mark_local_use = 0;
   rec[0].resolve_module_ids = 0;
+  rec[0].substitute_bindings = 1;
   rec[0].value_name = NULL;
   rec[0].observer = NULL;
   rec[0].pre_unwrapped = 0;
@@ -3552,6 +3559,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   mrec.comp = 1;
   mrec.dont_mark_local_use = 0;
   mrec.resolve_module_ids = 1;
+  mrec.substitute_bindings = 1;
   mrec.value_name = NULL;
   mrec.observer = NULL;
   mrec.pre_unwrapped = 0;
@@ -4473,7 +4481,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     normal = app_expander;
   } else if (!SCHEME_STX_PAIRP(form)) {
     if (SCHEME_STX_SYMBOLP(form)) {
-      Scheme_Object *find_name = form, *inline_variant;
+      Scheme_Object *find_name = form, *inline_variant, *bind_id;
       int protected = 0;
 
       while (1) {
@@ -4498,7 +4506,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                                        : 0),
 				    env->in_modidx, 
 				    &menv, &protected,
-                                    NULL, &inline_variant);
+                                    &bind_id, &inline_variant);
 
         SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer,find_name);
 
@@ -4570,6 +4578,8 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	    return var;
 	} else {
           SCHEME_EXPAND_OBSERVE_VARIABLE(rec[drec].observer, form, find_name);
+          if (bind_id && rec[drec].substitute_bindings)
+            find_name = bind_id;
 	  if (protected) {
 	    /* Add a property to indicate that the name is protected */
 	    find_name = scheme_stx_property(find_name, protected_symbol, scheme_true);

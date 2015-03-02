@@ -2550,6 +2550,7 @@ typedef struct Scheme_Compile_Expand_Info
   char resolve_module_ids;
   char pre_unwrapped;
   char testing_constantness;
+  char substitute_bindings;
   int depth;
   int env_already;
 } Scheme_Compile_Expand_Info;

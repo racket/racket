@@ -8059,6 +8059,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
     crec.comp = 1;
     crec.dont_mark_local_use = 0;
     crec.resolve_module_ids = 0;
+    crec.substitute_bindings = 1;
     crec.value_name = scheme_false;
     crec.observer = NULL;
     crec.pre_unwrapped = 0;
@@ -8622,6 +8623,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	erec1.value_name = scheme_false;
         erec1.observer = observer;
         erec1.pre_unwrapped = 0;
+        erec1.substitute_bindings = 1;
         erec1.env_already = 0;
         erec1.comp_flags = rec[drec].comp_flags;
 	e = scheme_expand_expr(e, xenv, &erec1, 0);	
@@ -8854,6 +8856,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  mrec.comp = 1;
 	  mrec.dont_mark_local_use = 0;
 	  mrec.resolve_module_ids = 0;
+          mrec.substitute_bindings = 1;
 	  mrec.value_name = NULL;
           mrec.observer = NULL;
           mrec.pre_unwrapped = 0;
@@ -8866,6 +8869,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             erec1.value_name = boundname;
             erec1.observer = observer;
             erec1.pre_unwrapped = 0;
+            erec1.substitute_bindings = 1;
             erec1.env_already = 0;
             erec1.comp_flags = rec[drec].comp_flags;
           }
