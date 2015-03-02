@@ -140,7 +140,7 @@
                  (unless (module-path? p)
                    (error 'runtime-path "not a module path: ~.s" p))
                  (let ([base (and vr
-                                  (variable-reference->resolved-module-path vr))])
+                                  (variable-reference->module-path-index vr))])
                    (if (and (pair? p)
                             (eq? (car p) 'submod)
                             (path? (cadr p)))
