@@ -320,7 +320,7 @@
 ;; Check tracking of (formerly) primitive expanders
 
 (test '(let) (tree-map syntax-e) (syntax-property (expand #'(let ([x 10]) x)) 'origin))
-(test '(let*-values let*) (tree-map syntax-e) (syntax-property (expand #'(let* ([x 10]) x)) 'origin))
+(test '((let*) let*-values let*) (tree-map syntax-e) (syntax-property (expand #'(let* ([x 10]) x)) 'origin))
 (test '(let) (tree-map syntax-e) (syntax-property (expand #'(let loop ([x 10]) x)) 'origin))
 (test '(letrec) (tree-map syntax-e) (syntax-property (expand #'(letrec ([x 10]) x)) 'origin))
 (test '(let*-values) (tree-map syntax-e) (syntax-property (expand #'(let*-values ([(x) 10]) x)) 'origin))
@@ -759,7 +759,7 @@
                                     (= 1 (length o))
                                     (andmap identifier? db)
                                     (identifier? (car o))
-                                    (ormap (lambda (db) (bound-identifier=? db (car o))) db)))
+                                    (ormap (lambda (db) (free-identifier=? db (car o))) db)))
                           db o))))])))])
   (check-expr #'(let () (letrec-syntaxes+values ([(x) (lambda (stx) #'(quote y))]) () x)))
   (check-expr #'(let () (letrec-syntaxes+values ([(x) (lambda (stx) #'(quote y))]) () (list x))))
@@ -1276,17 +1276,16 @@
 (test '(10 20 #t) '@!$get @!$get)
 |#
 
-(unless building-flat-tests?
-  (test '(12)
-        eval
-        (expand
-         #'(let ([b 12])
-             (let-syntax ([goo (lambda (stx)
-                                 #`(let ()
-                                     (define #,(syntax-local-introduce #'b) 1)
-                                     (define z (list b))
-                                     z))])
-               (goo))))))
+(test '(1)
+      eval
+      (expand
+       #'(let ([b 12])
+           (let-syntax ([goo (lambda (stx)
+                               #`(let ()
+                                   (define #,(syntax-local-introduce #'b) 1)
+                                   (define z (list b))
+                                   z))])
+             (goo)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test lazy unmarshaling of renamings and module-name resolution
@@ -1324,7 +1323,6 @@
                         (parameterize ([read-accept-compiled #t])
                           (read (open-input-bytes (get-output-bytes p))))))]
             [x-id (parameterize ([current-namespace (make-base-namespace)])
-                    (printf "here\n")
                     (eval a-code)
                     (eval '(require 'a))
                     (eval '#'x))])
@@ -1335,7 +1333,10 @@
         (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
         (eval '(require 'a))
         (test #t eval '(free-identifier=? (f) #'x))
-        (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
+        ;; bindings from multiple namespace make `x` ambigious:
+        (test #f eval `(free-identifier=? (f) (quote-syntax ,x-id)))
+        ;; avoid ambigutity:
+        (test #t free-identifier=? (eval '(f)) x-id)
         (parameterize ([current-namespace (make-base-namespace)])
           (eval '(module a racket/base
                    (provide y)

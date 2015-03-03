@@ -2490,13 +2490,14 @@ static Scheme_Object *
 local_get_shadower(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env, *env2, *bind_env;
-  Scheme_Object *sym, *binder, *sym2;
+  Scheme_Object *sym, *binder, *sym2, *orig_sym;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
     not_currently_transforming("syntax-local-get-shadower");
 
   sym = argv[0];
+  orig_sym = sym;
 
   if (!(SCHEME_STXP(sym) && SCHEME_SYMBOLP(SCHEME_STX_VAL(sym))))
     scheme_wrong_contract("syntax-local-get-shadower", "identifier?", 0, argc, argv);
@@ -2532,6 +2533,9 @@ local_get_shadower(int argc, Scheme_Object *argv[])
                                                SCHEME_STX_ADD);
     }
   }
+
+  if (!scheme_stx_is_clean(orig_sym))
+    sym = scheme_stx_taint(sym);
 
   return sym;
 }

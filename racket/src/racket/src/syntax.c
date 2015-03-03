@@ -303,19 +303,24 @@ Scheme_Object *clone_stx(Scheme_Object *to)
   Scheme_Object *taints, *shifts;
   Scheme_Mark_Table *marks;
   Scheme_Mark_Table *to_propagate;
+  int armed;
 
   taints = stx->taints;
   marks = stx->marks;
   shifts = stx->shifts;
   to_propagate = stx->u.to_propagate;
+  armed = (STX_KEY(stx) & STX_ARMED_FLAG);
 
   stx = (Scheme_Stx *)scheme_make_stx(stx->val, 
                                       stx->srcloc,
                                       stx->props);
 
   stx->marks = marks;
-  if (STX_KEY(stx) & STX_SUBSTX_FLAG)
+  if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
     stx->u.to_propagate = to_propagate;
+    if (armed)
+      STX_KEY(stx) |= STX_ARMED_FLAG;
+  }
   stx->taints = taints;
   stx->shifts = shifts;
 
@@ -874,6 +879,7 @@ Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme
     stx->marks = marks;
     stx->u.to_propagate = to_propagate;
   } else {
+    int armed = (STX_KEY(stx) & STX_ARMED_FLAG);
     taints = stx->taints;
     shifts = stx->shifts;
     stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
@@ -881,6 +887,8 @@ Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme
     stx->u.to_propagate = to_propagate;
     stx->taints = taints;
     stx->shifts = shifts;
+    if (armed)
+      STX_KEY(stx) |= STX_ARMED_FLAG;
   }
 
   return (Scheme_Object *)stx;
@@ -2339,11 +2347,6 @@ void scheme_stx_debug_print(Scheme_Object *_stx, Scheme_Object *phase, int level
 
   printf("%s:\n", scheme_write_to_string(stx->val, NULL));
   print_at(stx, phase, level, 0, scheme_null);
-}
-
-static Scheme_Object *syntax_debug_print(int argc, Scheme_Object **argv)
-{
-  return scheme_void;
 }
 
 static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *mapped)
@@ -5417,6 +5420,21 @@ static Scheme_Object *extract_phase(const char *who, int pos, int argc, Scheme_O
   }
 
   return phase;
+}
+
+static Scheme_Object *syntax_debug_print(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *phase;
+
+  if (!SCHEME_STXP(argv[0]))
+    scheme_wrong_type("syntax-debug-print", "syntax?", 0, argc, argv);
+
+  phase = extract_phase("syntax-debug-print", 1, argc, argv,
+                        scheme_make_integer(0), 0);
+
+  scheme_stx_debug_print(argv[0], phase, 0);
+
+  return scheme_void;
 }
 
 Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)

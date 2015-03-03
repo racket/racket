@@ -3819,6 +3819,12 @@ do_letrec_syntaxes(const char *where,
     }
   }
 
+  if (mark) {
+    bindings = scheme_stx_add_mark(bindings, mark, scheme_env_phase(stx_env->genv));
+    var_bindings = scheme_stx_add_mark(var_bindings, mark, scheme_env_phase(stx_env->genv));
+    body = scheme_stx_add_mark(body, mark, scheme_env_phase(stx_env->genv));
+  }
+
   if (names_to_disappear) {
     for (v = bindings; SCHEME_STX_PAIRP(v); v = SCHEME_STX_CDR(v)) {
       Scheme_Object *a, *names;
@@ -3827,17 +3833,10 @@ do_letrec_syntaxes(const char *where,
       names = SCHEME_STX_CAR(a);
       while (!SCHEME_STX_NULLP(names)) {
         a = SCHEME_STX_CAR(names);
-        if (names_to_disappear)
-          names_to_disappear = cons(a, names_to_disappear);
+        names_to_disappear = cons(a, names_to_disappear);
         names = SCHEME_STX_CDR(names);
       }
     }
-  }
-  
-  if (mark) {
-    bindings = scheme_stx_add_mark(bindings, mark, scheme_env_phase(stx_env->genv));
-    var_bindings = scheme_stx_add_mark(var_bindings, mark, scheme_env_phase(stx_env->genv));
-    body = scheme_stx_add_mark(body, mark, scheme_env_phase(stx_env->genv));
   }
 
   SCHEME_EXPAND_OBSERVE_LETREC_SYNTAXES_RENAMES(rec[drec].observer, bindings, var_bindings, body);
