@@ -963,6 +963,8 @@ int scheme_is_subinspector(Scheme_Object *i, Scheme_Object *sup)
 
   if (SCHEME_FALSEP(i))
     return 1;
+  if (SCHEME_FALSEP(sup))
+    return 0;
 
   ins = (Scheme_Inspector *)i;
   superior = (Scheme_Inspector *)sup;
