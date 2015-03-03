@@ -2319,7 +2319,6 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->weak_self_link, gc);
 
   gcMARK2(e->binding_names, gc);
-  gcMARK2(e->interned_names, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -2365,7 +2364,6 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->weak_self_link, gc);
 
   gcFIXUP2(e->binding_names, gc);
-  gcFIXUP2(e->interned_names, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -2657,6 +2655,10 @@ static int module_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(m->self_modidx, gc);
 
+  gcMARK2(m->binding_names, gc);
+  gcMARK2(m->et_binding_names, gc);
+  gcMARK2(m->other_binding_names, gc);
+
   gcMARK2(m->insp, gc);
 
   gcMARK2(m->lang_info, gc);
@@ -2706,6 +2708,10 @@ static int module_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(m->exp_infos, gc);
 
   gcFIXUP2(m->self_modidx, gc);
+
+  gcFIXUP2(m->binding_names, gc);
+  gcFIXUP2(m->et_binding_names, gc);
+  gcFIXUP2(m->other_binding_names, gc);
 
   gcFIXUP2(m->insp, gc);
 

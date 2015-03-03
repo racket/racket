@@ -1184,6 +1184,48 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   return (Scheme_Object *)rp;
 }
 
+static Scheme_Object *ht_to_vector(Scheme_Object *ht)
+/* recurs for values in hash table; we assume that such nesting is shallow */
+{
+  intptr_t i, j, c;
+  Scheme_Object *k, *val, *vec;
+  
+  if (!ht)
+    return scheme_false;
+
+  if (SCHEME_HASHTRP(ht))
+    c = ((Scheme_Hash_Tree *)ht)->count;
+  else
+    c = ((Scheme_Hash_Table *)ht)->count;
+
+  vec = scheme_make_vector(2 * c, NULL);
+  j = 0;
+  
+  if (SCHEME_HASHTRP(ht)) {
+    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)ht;
+    for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
+      scheme_hash_tree_index(t, i, &k, &val);
+      if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
+        val = ht_to_vector(val);
+      SCHEME_VEC_ELS(vec)[j++] = k;
+      SCHEME_VEC_ELS(vec)[j++] = val;
+    }
+  } else {
+    Scheme_Hash_Table *t = (Scheme_Hash_Table *)ht;
+    for (i = t->size; i--; ) {
+      if (t->vals[i]) {
+        val = t->vals[i];
+        if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
+          val = ht_to_vector(val);
+        SCHEME_VEC_ELS(vec)[j++] = t->keys[i];
+        SCHEME_VEC_ELS(vec)[j++] = val;
+      }
+    }
+  }
+
+  return vec;
+}
+
 static Scheme_Object *write_module(Scheme_Object *obj)
 {
   Scheme_Module *m = (Scheme_Module *)obj;
@@ -1361,7 +1403,11 @@ static Scheme_Object *write_module(Scheme_Object *obj)
 
   l = cons((m->phaseless ? scheme_true : scheme_false), l);
 
+  l = cons(ht_to_vector(m->other_binding_names), l);
+  l = cons(ht_to_vector(m->et_binding_names), l);
+  l = cons(ht_to_vector(m->binding_names), l);
   l = cons(m->me->src_modidx, l);
+  
   l = cons(scheme_resolved_module_path_value(m->modsrc), l);
   l = cons(scheme_resolved_module_path_value(m->modname), l);
 
@@ -1394,7 +1440,7 @@ static int check_requires_ok(Scheme_Object *l)
 static Scheme_Object *read_module(Scheme_Object *obj)
 {
   Scheme_Module *m;
-  Scheme_Object *ie, *nie, **bodies;
+  Scheme_Object *ie, *nie, **bodies, *bns;
   Scheme_Object *esp, *esn, *esph, *es, *esnom, *e, *nve, *ne, **v;
   Scheme_Module_Exports *me;
   Scheme_Module_Phase_Exports *pt;
@@ -1438,6 +1484,30 @@ static Scheme_Object *read_module(Scheme_Object *obj)
     return_NULL();
   ((Scheme_Modidx *)me->src_modidx)->resolved = m->modname;
   m->self_modidx = me->src_modidx;
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  bns = SCHEME_CAR(obj);
+  if (!SCHEME_FALSEP(bns)) {
+    if (!SCHEME_VECTORP(bns)) return_NULL();
+    m->binding_names = bns;
+  }
+  obj = SCHEME_CDR(obj);
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  bns = SCHEME_CAR(obj);
+  if (!SCHEME_FALSEP(bns)) {
+    if (!SCHEME_VECTORP(bns)) return_NULL();
+    m->et_binding_names = bns;
+  }
+  obj = SCHEME_CDR(obj);
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  bns = SCHEME_CAR(obj);
+  if (!SCHEME_FALSEP(bns)) {
+    if (!SCHEME_VECTORP(bns)) return_NULL();
+    m->other_binding_names = bns;
+  }
+  obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return_NULL();
   m->phaseless = (SCHEME_TRUEP(SCHEME_CAR(obj)) ? scheme_true : NULL);

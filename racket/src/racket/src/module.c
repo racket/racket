@@ -3086,33 +3086,6 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 
       menv->rename_set_ready = 1;
     }
-
-    {
-      Scheme_Hash_Table *binding_names;
-      Scheme_Bucket_Table *ht;
-      Scheme_Bucket **bs;
-      int i, j;
-      
-      binding_names = menv->binding_names;
-      if (!binding_names) {
-        binding_names = scheme_make_hash_table(SCHEME_hash_ptr);
-        menv->binding_names = binding_names;
-      }
-      
-      for (j = 0; j < 2; j++) {
-        if (!j)
-          ht = menv->toplevel;
-        else
-          ht = menv->syntax;
-
-        bs = ht->buckets;
-        for (i = ht->size; i--; ) {
-          Scheme_Bucket *b = bs[i];
-          if (b && b->val)
-            scheme_hash_set(binding_names, (Scheme_Object *)b->key, scheme_true);
-        }
-      }
-    }
   }
 }
 
@@ -3160,6 +3133,8 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
   }
 
   scheme_prep_namespace_rename(menv);
+
+  menv->interactive_bindings = 1;
 
   return (Scheme_Object *)menv;
 }
@@ -5375,6 +5350,8 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
       env2 = menv->label_env;
       if (env2)
         env2->module = m;
+
+      menv->interactive_bindings = 1;
     }
 
     menv->access_insp = m->insp;
@@ -5387,7 +5364,7 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
     menv->et_require_names = scheme_null;
     menv->tt_require_names = scheme_null;
     menv->dt_require_names = scheme_null;
-
+    
     if (env->label_env != env) {
       setup_accessible_table(m);
 
@@ -6651,6 +6628,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
 
   /* Replacing an already-running or already-syntaxing module? */
   if (old_menv) {
+    old_menv->interactive_bindings = 1;
     start_module(m, env, 1, NULL, 
                  ((m->num_phases > 1) ? old_menv->running[1] : 0), 
                  old_menv->running[0], 
@@ -6928,6 +6906,30 @@ static Scheme_Object *extract_root_module_name(Scheme_Module *m)
   }
 
   return root_module_name;
+}
+
+static void add_binding_names_from_environment(Scheme_Module *m, Scheme_Env *benv)
+{
+  if (benv->binding_names) {
+    int c;
+
+    if (SCHEME_HASHTP(benv->binding_names))
+      c = ((Scheme_Hash_Table *)benv->binding_names)->count;
+    else
+      c = ((Scheme_Hash_Tree *)benv->binding_names)->count;
+
+    if (c) {
+      Scheme_Hash_Table *ht;
+
+      ht = (Scheme_Hash_Table *)m->other_binding_names;
+      if (!ht) {
+        ht = scheme_make_hash_table_equal();
+        m->other_binding_names = (Scheme_Object *)ht;
+      }
+
+      scheme_hash_set(ht, scheme_env_phase(benv), benv->binding_names);
+    }
+  }
 }
 
 #if 0
@@ -7271,6 +7273,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   if (rec[drec].comp) {
     Scheme_Object *dummy, *pv;
+    Scheme_Env *bnenv;
 
     dummy = scheme_make_environment_dummy(env);
     m->dummy = dummy;
@@ -7288,6 +7291,20 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
     m->ii_src = NULL;
     m->super_bxs_info = NULL;
+
+    bnenv = menv;
+    m->binding_names = bnenv->binding_names;
+    if (bnenv->exp_env) {
+      bnenv = bnenv->exp_env;
+      m->et_binding_names = bnenv->binding_names;
+      for (bnenv = bnenv->exp_env; bnenv; bnenv = bnenv->exp_env) {
+        add_binding_names_from_environment(m, bnenv);
+      }
+      bnenv = menv;
+    }
+    for (bnenv = bnenv->template_env; bnenv; bnenv = bnenv->template_env) {
+      add_binding_names_from_environment(m, bnenv);
+    }
 
     pv = scheme_stx_property(form, scheme_intern_symbol("module-language"), NULL);
     if (pv && SCHEME_TRUEP(pv)) {
@@ -8249,7 +8266,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       }
     }
 
-    if (*all_simple_renames) {
+    /* REMOVEME: FIXME: need to sort out the right shortcut */
+    if (0 && *all_simple_renames) {
       env->genv->module->rn_stx = scheme_true;
     }
   }
@@ -11645,7 +11663,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
               ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
               done = 0;
             } else {
-              scheme_shadow(orig_env, SCHEME_STX_VAL(iname), 1);
+              scheme_shadow(orig_env, SCHEME_STX_VAL(iname), val, 1);
               done = 1;
             }
           } else

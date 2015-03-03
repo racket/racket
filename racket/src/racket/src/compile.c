@@ -5208,7 +5208,6 @@ int scheme_check_top_identifier_bound(Scheme_Object *c, Scheme_Env *genv, int di
         reason = "unbound identifier in module";
       else
         reason = "unbound identifier in module (in phase %d)";
-      scheme_stx_debug_print(c, scheme_env_phase(genv), 1); // REMOVEME
       scheme_unbound_syntax(scheme_expand_stx_string, NULL, c, reason, genv->phase);
     }
   }

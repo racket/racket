@@ -2442,6 +2442,7 @@ static AVLNode *avl_replace(AVLNode *s, AVLNode *orig, AVLNode *naya)
 }
 
 Scheme_Hash_Tree *scheme_make_hash_tree(int kind)
+/* kind: 0 = `eq?`, 1 = `equal?`, 2 = `eqv?` */
 {
   Scheme_Hash_Tree *tree;
 

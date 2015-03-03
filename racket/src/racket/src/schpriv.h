@@ -3201,7 +3201,8 @@ void scheme_define_parse(Scheme_Object *form,
 			 Scheme_Comp_Env *env,
                          int no_toplevel_check);
 
-void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo);
+void scheme_shadow(Scheme_Env *env, Scheme_Object *n, Scheme_Object *val, int as_var);
+void scheme_binding_names_from_module(Scheme_Env *menv);
 
 int scheme_prefix_depth(Resolve_Prefix *rp);
 Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
@@ -3360,8 +3361,10 @@ struct Scheme_Env {
 
   Scheme_Object *weak_self_link; /* for Scheme_Bucket_With_Home */
 
-  Scheme_Hash_Table *binding_names; /* symbols that are already mapped in this namespace */
-  Scheme_Hash_Table *interned_names; /* maps marks+sym -> symbol; result is in `binding_names` */
+  /* The `binding_names` table can be an immutable or mutable hash table: */
+  Scheme_Object *binding_names; /* maps symbols to identifiers */
+  short binding_names_need_shift; /* => binding names are from module, and need a shift */
+  short interactive_bindings; /* => module namespace is interactive and shadowing is needed */
 
   int id_counter;
 };
@@ -3415,6 +3418,15 @@ typedef struct Scheme_Module
   Scheme_Module_Export_Info **exp_infos; /* array `num_phases' long */
 
   Scheme_Object *self_modidx;
+
+  /* These tables are unshifted, so they are relative to self_modidx
+     and must be shifted as they are installed into an environment.
+     The tables can be immutable or immutable hash tables, or they can
+     be a vectors that should be converted to an immutable hash
+     table. */
+  Scheme_Object *binding_names; /* maps symbols to identifiers */
+  Scheme_Object *et_binding_names; /* maps symbols to identifiers */
+  Scheme_Object *other_binding_names; /* maps phases to maps symbols to identifiers */
 
   Scheme_Object *insp; /* declaration-time inspector, for module instantiation
                           and enabling access to protected imports */

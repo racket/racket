@@ -951,7 +951,6 @@ namespace_val {
   gcMARK2(e->weak_self_link, gc);
 
   gcMARK2(e->binding_names, gc);
-  gcMARK2(e->interned_names, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -1074,6 +1073,10 @@ module_val {
   gcMARK2(m->exp_infos, gc);
 
   gcMARK2(m->self_modidx, gc);
+
+  gcMARK2(m->binding_names, gc);
+  gcMARK2(m->et_binding_names, gc);
+  gcMARK2(m->other_binding_names, gc);
 
   gcMARK2(m->insp, gc);
 

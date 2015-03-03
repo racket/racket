@@ -1533,16 +1533,40 @@ static Scheme_Hash_Table *get_binding_names_table(Scheme_Env *env)
 {
   Scheme_Hash_Table *binding_names;
 
-  binding_names = env->binding_names;
+  scheme_binding_names_from_module(env);
+
+  if (env->binding_names
+      && SCHEME_HASHTRP(env->binding_names)) {
+    /* convert to a mutable hash table */
+    binding_names = (Scheme_Hash_Table *)scheme_hash_tree_copy(env->binding_names);
+    env->binding_names = (Scheme_Object *)binding_names;
+    if (env->binding_names_need_shift) {
+      int i;
+      for (i = binding_names->size; i--; ) {
+        if (binding_names->vals[i]) {
+          Scheme_Object *id;
+          id = binding_names->vals[i];
+          id = scheme_stx_shift(id, scheme_make_integer(env->phase - env->mod_phase),
+                                env->module->self_modidx, env->link_midx,
+                                env->module_registry->exports,
+                                NULL);
+          binding_names->vals[i] = id;
+        }
+      }
+    }
+  }
+
+  binding_names = (Scheme_Hash_Table *)env->binding_names;
   if (!binding_names) {
     binding_names = scheme_make_hash_table(SCHEME_hash_ptr);
-    env->binding_names = binding_names;
+    env->binding_names = (Scheme_Object *)binding_names;
+    env->binding_names_need_shift = 0;
   }
 
   return binding_names;
 }
 
-static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
+static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, Scheme_Object *id)
 {
   int i;
   char onstack[50], *buf;
@@ -1553,7 +1577,7 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
 
   if (!scheme_eq_hash_get(binding_names, sym)) {
     /* First declaration gets a plain symbol: */
-    scheme_hash_set(binding_names, sym, scheme_true);
+    scheme_hash_set(binding_names, sym, id);
     return sym;
   }
 
@@ -1570,7 +1594,7 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env)
     sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
     if (!scheme_eq_hash_get(binding_names, sym)) {
-      scheme_hash_set(binding_names, sym, scheme_true);
+      scheme_hash_set(binding_names, sym, id);
       return sym;
     }
 
@@ -1600,8 +1624,8 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
                        : scheme_false))
           && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase)) {
         sym = SCHEME_VEC_ELS(binding)[1];
-        /* Make sure name is in binding_names: */
-        scheme_hash_set(get_binding_names_table(env), sym, scheme_true);
+        /* Make sure name is in binding_names and with a specific `id`: */
+        scheme_hash_set(get_binding_names_table(env), sym, id);
         return sym;
       }
       /* Since the binding didn't match, we'll "shadow" the binding
@@ -1609,7 +1633,7 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
     }
   }
 
-  sym = select_binding_name(SCHEME_STX_VAL(id), env);
+  sym = select_binding_name(SCHEME_STX_VAL(id), env, id);
 
   scheme_add_module_binding(id, phase,
                             (env->module ? env->module->self_modidx : scheme_false),

@@ -2004,14 +2004,14 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 	  SCHEME_PTR_VAL(macro) = values[i];
 
 	  scheme_set_global_bucket("define-syntaxes", b, macro, 1);
-	  scheme_shadow(dm_env, (Scheme_Object *)b->key, 0);
+	  scheme_shadow(dm_env, (Scheme_Object *)b->key, macro, 0);
 	} else {
 	  Scheme_Prefix *toplevels;
 	  toplevels = (Scheme_Prefix *)MZ_RUNSTACK[SCHEME_TOPLEVEL_DEPTH(var)];
 	  b = (Scheme_Bucket *)toplevels->a[SCHEME_TOPLEVEL_POS(var)];
 	
 	  scheme_set_global_bucket("define-values", b, values[i], 1);
-	  scheme_shadow(scheme_get_bucket_home(b), (Scheme_Object *)b->key, 1);
+	  scheme_shadow(scheme_get_bucket_home(b), (Scheme_Object *)b->key, values[i], 1);
 
 	  if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_SEAL) {
             if (is_st)
@@ -2039,14 +2039,14 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
       SCHEME_PTR_VAL(macro) = vals;
       
       scheme_set_global_bucket("define-syntaxes", b, macro, 1);
-      scheme_shadow(dm_env, (Scheme_Object *)b->key, 0);
+      scheme_shadow(dm_env, (Scheme_Object *)b->key, macro, 0);
     } else {
       Scheme_Prefix *toplevels;
       toplevels = (Scheme_Prefix *)MZ_RUNSTACK[SCHEME_TOPLEVEL_DEPTH(var)];
       b = (Scheme_Bucket *)toplevels->a[SCHEME_TOPLEVEL_POS(var)];
 
       scheme_set_global_bucket("define-values", b, vals, 1);
-      scheme_shadow(scheme_get_bucket_home(b), (Scheme_Object *)b->key, 1);
+      scheme_shadow(scheme_get_bucket_home(b), (Scheme_Object *)b->key, vals, 1);
       
       if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_SEAL) {
         int flags = GLOB_IS_IMMUTATED;

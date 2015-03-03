@@ -103,6 +103,8 @@ static Scheme_Object *syntax_disarm(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_rearm(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_taint(int argc, Scheme_Object **argv);
 
+static Scheme_Object *syntax_debug_print(int argc, Scheme_Object **argv);
+
 static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp, int need_clone);
 
 #ifdef MZ_PRECISE_GC
@@ -239,7 +241,9 @@ void scheme_init_stx(Scheme_Env *env)
   GLOBAL_IMMED_PRIM("syntax-arm"                 , syntax_arm                , 1, 3, env);
   GLOBAL_IMMED_PRIM("syntax-disarm"              , syntax_disarm             , 2, 2, env);
   GLOBAL_IMMED_PRIM("syntax-rearm"               , syntax_rearm              , 2, 3, env);
-  GLOBAL_IMMED_PRIM("syntax-taint"               , syntax_taint              , 1,1, env);
+  GLOBAL_IMMED_PRIM("syntax-taint"               , syntax_taint              , 1, 1, env);
+
+  GLOBAL_IMMED_PRIM("syntax-debug-print"         , syntax_debug_print        , 1, 2, env);
 
   REGISTER_SO(source_symbol);
   REGISTER_SO(share_symbol);
@@ -2266,7 +2270,7 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
           while (l && !SCHEME_NULLP(l)) {
             val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
             if (SCHEME_SYMBOLP(val))
-              printf(" local @ %s\n", scheme_write_to_string(mark, 0));
+              printf(" local @ %s\n", scheme_write_to_string((Scheme_Object*)mark, 0));
             else
               printf(" %s\n", scheme_write_to_string(val, 0));
             print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
@@ -2335,6 +2339,11 @@ void scheme_stx_debug_print(Scheme_Object *_stx, Scheme_Object *phase, int level
 
   printf("%s:\n", scheme_write_to_string(stx->val, NULL));
   print_at(stx, phase, level, 0, scheme_null);
+}
+
+static Scheme_Object *syntax_debug_print(int argc, Scheme_Object **argv)
+{
+  return scheme_void;
 }
 
 static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *mapped)

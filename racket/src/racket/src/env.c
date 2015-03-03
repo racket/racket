@@ -1474,56 +1474,143 @@ scheme_add_global_keyword_symbol(Scheme_Object *name, Scheme_Object *obj,
   scheme_do_add_global_symbol(env, name, obj, 0, 0);
 }
 
-void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
+static Scheme_Object *vector_to_ht(Scheme_Object *vec, int kind)
 {
-  if (!env) return;
+  Scheme_Hash_Tree *ht;
+  Scheme_Object *key, *val;
+  intptr_t i;
 
-  if (env->stx_context) {
-    scheme_extend_module_context(env->stx_context,
-                                 NULL,
-                                 (env->module
-                                  ? env->module->self_modidx
-                                  : scheme_false),
-                                 n, n,
-                                 (env->module
-                                  ? env->module->self_modidx
-                                  : scheme_false),
-                                 n,
-                                 env->mod_phase,
-                                 NULL,
-                                 NULL, 
-                                 0);
+  ht = scheme_make_hash_tree(kind);
+
+  i = SCHEME_VEC_SIZE(vec);
+  if (i & 1) return (Scheme_Object *)ht; /* defend against bad bytecode */
+  
+  while (i -= 2) {
+    key = SCHEME_VEC_ELS(vec)[i];
+    val = SCHEME_VEC_ELS(vec)[i+1];
+
+    /* defend against bad bytecode here, too: */
+    if (kind) {
+      if (!SCHEME_INTP(key)
+          || !SCHEME_VECTORP(val))
+        key = NULL;
+    } else {
+      if (!SCHEME_SYMBOLP(key)
+          || !SCHEME_STXP(val)
+          || !SCHEME_SYMBOLP(SCHEME_STX_VAL(val)))
+        key = NULL;
+    }
+    
+    if (key) {
+      if (kind)
+        val = vector_to_ht(val, 0);
+      ht = scheme_hash_tree_set(ht, key, val);
+    }
   }
 
-  if (stxtoo) {
-    if (!env->module || env->stx_context) {
-      if (!env->shadowed_syntax) {
-	Scheme_Hash_Table *ht;
-	ht = scheme_make_hash_table(SCHEME_hash_ptr);
-	env->shadowed_syntax = ht;
-      }
-      
-      scheme_hash_set(env->shadowed_syntax, n, scheme_true);
+  return (Scheme_Object *)ht;
+}
+
+void scheme_binding_names_from_module(Scheme_Env *menv)
+{
+  Scheme_Module *m;
+  Scheme_Object *binding_names;
+  
+  if (menv->binding_names
+      || !menv->module
+      || menv->binding_names_need_shift)
+    return;
+
+  m = menv->module;
+
+  if (menv->phase == 0) {
+    binding_names = m->binding_names;
+    if (binding_names && SCHEME_VECTORP(binding_names)) {
+      binding_names = vector_to_ht(binding_names, 0);
+      m->binding_names = binding_names;
     }
+  } else if (menv->phase == 1) {
+    binding_names = m->et_binding_names;
+    if (binding_names && SCHEME_VECTORP(binding_names)) {
+      binding_names = vector_to_ht(binding_names, 0);
+      m->et_binding_names = binding_names;
+    }
+  } else if (m->other_binding_names) {
+    binding_names = m->other_binding_names;
+    if (binding_names && SCHEME_VECTORP(binding_names)) {
+      binding_names = vector_to_ht(binding_names, 1);
+      m->other_binding_names = binding_names;
+    }
+    if (SCHEME_HASHTP(binding_names))
+      binding_names = scheme_hash_get((Scheme_Hash_Table *)binding_names, scheme_env_phase(menv));
+    else
+      binding_names = scheme_hash_tree_get((Scheme_Hash_Tree *)binding_names, scheme_env_phase(menv));
+  } else
+    binding_names = NULL;
+  
+  menv->binding_names = binding_names;
+  menv->binding_names_need_shift = 1;
+}
+
+void scheme_shadow(Scheme_Env *env, Scheme_Object *n, Scheme_Object *val, int as_var)
+{
+  Scheme_Object *id;
+
+  if (!as_var)
+    val = SCHEME_PTR_VAL(val); /* remove "is a compile-time binding" wrapper */
+
+  if (!env
+      || (env->module
+          && !env->interactive_bindings
+          && !scheme_is_binding_rename_transformer(val)))
+    return;
+
+  if (as_var) {
+    if (!env->shadowed_syntax) {
+      Scheme_Hash_Table *ht;
+      ht = scheme_make_hash_table(SCHEME_hash_ptr);
+      env->shadowed_syntax = ht;
+    }
+      
+    scheme_hash_set(env->shadowed_syntax, n, scheme_true);
   } else {
     if (env->shadowed_syntax)
       scheme_hash_set(env->shadowed_syntax, n, NULL);
-
-    if (env->stx_context) {
-      /* If the syntax binding is a rename transformer, need to install 
-         a mapping. */
-      Scheme_Object *v;
-      v = scheme_lookup_in_table(env->syntax, (const char *)n);
-      if (v) {
-        v = SCHEME_PTR_VAL(v);
-        if (scheme_is_binding_rename_transformer(v)) {
-          n = scheme_datum_to_syntax(n, scheme_false, scheme_false, 0, 0);
-          n = scheme_stx_add_module_context(n, env->stx_context);
-          scheme_add_binding_copy(n, scheme_rename_transformer_id(v), scheme_env_phase(env));
-        }
-      }
-    }
   }
+
+  scheme_binding_names_from_module(env);
+
+  if (env->binding_names) {
+    if (SCHEME_HASHTP(env->binding_names))
+      id = scheme_eq_hash_get((Scheme_Hash_Table *)env->binding_names, n);
+    else
+      id = scheme_eq_hash_tree_get((Scheme_Hash_Tree *)env->binding_names, n);
+    if (id && !SCHEME_STXP(id))
+      id = NULL;
+  } else
+    id = NULL;
+
+  if (!id)
+    return;
+
+  if (env->binding_names_need_shift) {
+    id = scheme_stx_shift(id, scheme_make_integer(env->phase - env->mod_phase),
+                          env->module->self_modidx, env->link_midx,
+                          env->module_registry->exports,
+                          NULL);
+  }
+
+  scheme_add_module_binding(id, scheme_env_phase(env),
+                            (env->module
+                             ? env->module->self_modidx
+                             : scheme_false),
+                            n,
+                            scheme_env_phase(env));
+
+  /* If the binding is a rename transformer, also install 
+     a mapping */
+  if (scheme_is_binding_rename_transformer(val))
+    scheme_add_binding_copy(id, scheme_rename_transformer_id(val), scheme_env_phase(env));
 }
 
 /********** Auxilliary tables **********/
@@ -1821,7 +1908,8 @@ namespace_set_variable_value(int argc, Scheme_Object *argv[])
   scheme_set_global_bucket("namespace-set-variable-value!", bucket, argv[1], 1);
   
   if ((argc > 2) && SCHEME_TRUEP(argv[2])) {
-    scheme_shadow(env, argv[0], 1);
+    /* REMOVEME: FIXME: may need to add binding_names mapping */
+    scheme_shadow(env, argv[0], argv[1], 1);
   }
 
   return scheme_void;
@@ -2434,6 +2522,8 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     sym = scheme_stx_binding_union(sym, binder, scheme_env_phase(env->genv));
   else if (env->genv->module && env->genv->module->ii_src)
     sym = scheme_stx_binding_union(sym, env->genv->module->ii_src, scheme_env_phase(env->genv));
+  else if (env->genv->stx_context)
+    sym = scheme_stx_add_module_context(sym, env->genv->stx_context);
 
   /* Add additional marks only up to the binder (if any): */
   for (env2 = env; env2 != bind_env; env2 = env2->next) {
