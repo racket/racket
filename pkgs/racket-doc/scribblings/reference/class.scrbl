@@ -1785,7 +1785,8 @@ A class contract can be specified to be @emph{opaque} with the @racket[#:opaque]
 keyword. An opaque class contract will only accept a class that defines
 exactly the external methods and fields specified by the contract. A contract error
 is raised if the contracted class contains any methods or fields that are
-not specified.
+not specified. Methods or fields with local member names (i.e., defined with
+@racket[define-local-member-name]) are ignored for this check.
 
 The external contracts are as follows:
 
@@ -2009,7 +2010,10 @@ As with the external contracts, when a method or field name is specified
    such subclasses.}
 
 @history[#:changed "6.1.1.8"
-         "opaque @racket[class/c] now ignores local member names"]
+         @string-append{Opaque @racket[class/c] now ignores local member names.
+                        This is backwards incompatible, but only affects uses of
+                        opaque @racket[class/c] contracts applied to classes
+                        with methods or fields with local names.}]
 ]}
 
 @defform[(absent absent-spec ...)]{
