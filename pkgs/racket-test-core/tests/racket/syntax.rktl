@@ -1290,7 +1290,7 @@
 (syntax-test #'#%top)
 (syntax-test #'(#%top 1))
 (syntax-test #'(let ([#%top 5])
-		 x))
+		 an-identifier-that-is-never-defined))
 (err/rt-test (#%top . lambda) exn:fail:contract:variable?)
 (define x 5)
 (test 5 '#%top (#%top . x))
