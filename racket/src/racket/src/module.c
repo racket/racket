@@ -7917,7 +7917,7 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
     *_ref_expr = e;
   }
 
-  e = make_require_form(module_path, phase, mark, env->phase);
+  e = make_require_form(module_path, phase - env->phase, mark, env->phase);
   e = scheme_revert_expression_marks(e, cenv);
   e = introduce_to_module_context(e, rns);
 
