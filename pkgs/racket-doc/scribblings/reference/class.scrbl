@@ -1737,7 +1737,8 @@ resulting trait are the same as for @racket[trait-sum], otherwise the
 
 ([maybe-opaque
   (code:line)
-  (code:line #:opaque)]
+  (code:line #:opaque)
+  (code:line #:opaque #:ignore-local-member-names)]
 
  [member-spec
   method-spec
@@ -1785,7 +1786,9 @@ A class contract can be specified to be @emph{opaque} with the @racket[#:opaque]
 keyword. An opaque class contract will only accept a class that defines
 exactly the external methods and fields specified by the contract. A contract error
 is raised if the contracted class contains any methods or fields that are
-not specified.
+not specified. Methods or fields with local member names (i.e., defined with
+@racket[define-local-member-name]) are ignored for this check if
+@racket[#:ignore-local-member-names] is provided.
 
 The external contracts are as follows:
 
@@ -2008,6 +2011,9 @@ As with the external contracts, when a method or field name is specified
    checked on any access and/or mutation of the field that occurs in
    such subclasses.}
 
+@history[#:changed "6.1.1.8"
+         @string-append{Opaque class/c now optionally ignores local
+                        member names if an additional keyword is supplied.}]
 ]}
 
 @defform[(absent absent-spec ...)]{
