@@ -123,7 +123,7 @@
               'pos
               'neg))
   
-  (test/spec-passed
+  (test/pos-blame
    'class/c-first-order-opaque-method-3
    '(let ()
       (define-local-member-name n)
@@ -131,11 +131,30 @@
                 (class object% (super-new) (define/public (m x) 3) (define/public (n) 4))
                 'pos
                 'neg)))
-  
+
   (test/spec-passed
+   'class/c-first-order-opaque-method-3-ignore
+   '(let ()
+      (define-local-member-name n)
+      (contract (class/c #:opaque #:ignore-local-member-names [m (-> any/c number? number?)])
+                (class object% (super-new) (define/public (m x) 3) (define/public (n) 4))
+                'pos
+                'neg)))
+
+  (test/pos-blame
    'class/c-first-order-opaque-method-4
    '(contract
      (class/c #:opaque [m (-> any/c number? number?)])
+     (let ()
+       (define-local-member-name n)
+       (class object% (super-new) (define/public (m x) 3) (define/public (n) 4)))
+     'pos
+     'neg))
+
+  (test/spec-passed
+   'class/c-first-order-opaque-method-4-ignore
+   '(contract
+     (class/c #:opaque #:ignore-local-member-names [m (-> any/c number? number?)])
      (let ()
        (define-local-member-name n)
        (class object% (super-new) (define/public (m x) 3) (define/public (n) 4)))
@@ -230,9 +249,18 @@
               'pos
               'neg))
   
-  (test/spec-passed
-   'class/c-first-order-opaque-field-2
+  (test/pos-blame
+   'class/c-first-order-opaque-field-3
    '(contract (class/c #:opaque (field [m number?]))
+              (let ()
+                (define-local-member-name n)
+                (class object% (super-new) (field [m 5] [n 3])))
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'class/c-first-order-opaque-field-3-ignore
+   '(contract (class/c #:opaque #:ignore-local-member-names (field [m number?]))
               (let ()
                 (define-local-member-name n)
                 (class object% (super-new) (field [m 5] [n 3])))
@@ -489,9 +517,19 @@
               'pos
               'neg))
   
-  (test/spec-passed
+  (test/pos-blame
    'class/c-first-order-opaque-super-3
    '(contract (class/c #:opaque)
+              (class (let ()
+                       (define-local-member-name m)
+                       (class object% (super-new) (define/public (m) 3)))
+                (super-new))
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'class/c-first-order-opaque-super-3-ignore
+   '(contract (class/c #:opaque #:ignore-local-member-names)
               (class (let ()
                        (define-local-member-name m)
                        (class object% (super-new) (define/public (m) 3)))

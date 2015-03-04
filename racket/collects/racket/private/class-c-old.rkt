@@ -37,6 +37,7 @@
   (syntax-parameterize ([making-a-method #'this-param] [method-contract? #t]) (->d . stx)))
 
 (define (class/c-check-first-order ctc cls fail)
+  (define opaque? (class/c-opaque? ctc))
   (unless (class? cls)
     (fail '(expected: "a class" given: "~v") cls))
   (define method-ht (class-method-ht cls))
@@ -55,28 +56,28 @@
             [else m/l])))
       (unless (contract-first-order-passes? c meth-proc)
         (fail "public method ~a doesn't match contract" m))))
-  (unless (class/c-opaque? ctc)
+  (unless opaque? 
     (for ([m (class/c-absents ctc)])
       (when (hash-ref method-ht m #f)
         (fail "class already contains public method ~a" m))))
-  (when (class/c-opaque? ctc)
+  (when opaque?
     (for ([m (in-hash-keys method-ht)])
       (unless (memq m (class/c-methods ctc))
-        (when (symbol-interned? m)
+        (when (or (not (symbol? opaque?)) (symbol-interned? m))
           (fail "method ~a not specified in contract" m)))))
   
   (define field-ht (class-field-ht cls))
   (for ([f (class/c-fields ctc)])
     (unless (hash-ref field-ht f #f)
       (fail "no public field ~a" f)))
-  (unless (class/c-opaque? ctc)
+  (unless opaque?
     (for ([f (class/c-absent-fields ctc)])
       (when (hash-ref field-ht f #f)
         (fail "class already contains public field ~a" f))))
-  (when (class/c-opaque? ctc)
+  (when opaque?
     (for ([f (in-hash-keys field-ht)])
       (unless (memq f (class/c-fields ctc))
-        (when (symbol-interned? f)
+        (when (or (not (symbol? opaque?)) (symbol-interned? f))
           (fail "field ~a not specified in contract" f)))))
   #t)
 
@@ -860,7 +861,7 @@
       (check-one-stronger internal-class/c-augrides internal-class/c-augride-contracts
                           this-internal that-internal)
       
-      (if (class/c-opaque? this) (class/c-opaque? that) #t)
+      (equal? (class/c-opaque? this) (class/c-opaque? that))
       (all-included? (class/c-absent-fields that) (class/c-absent-fields this))
       (all-included? (class/c-absents that) (class/c-absents this)))]
     [else #f]))
@@ -1127,6 +1128,8 @@
 (define-syntax (class/c stx)
 
   (define-splicing-syntax-class opaque-keyword
+    (pattern (~seq #:opaque #:ignore-local-member-names)
+             #:with opaque? #''ignore-local-member-names)
     (pattern (~seq #:opaque) #:with opaque? #'#t)
     (pattern (~seq) #:with opaque? #'#f))
 
