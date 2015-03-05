@@ -826,14 +826,12 @@ define_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
     rec[drec].value_name = SCHEME_STX_SYM(var);
   }
 
-#if 0
-  // REMOVEME
+  /* module and top-level use of `define` defer expression-mark handling to here: */
   if (env->marks)
     val = scheme_stx_adjust_frame_expression_marks(val,
                                                    env->marks,
                                                    scheme_env_phase(env->genv),
                                                    SCHEME_STX_ADD);
-#endif
 
   env = scheme_no_defines(env);
 
@@ -860,6 +858,13 @@ define_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_In
   SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(erec[drec].observer);
 
   scheme_define_parse(form, &var, &val, 0, env, 0);
+
+  /* module and top-level use of `define` defer expression-mark handling to here: */
+  if (env->marks)
+    val = scheme_stx_adjust_frame_expression_marks(val,
+                                                   env->marks,
+                                                   scheme_env_phase(env->genv),
+                                                   SCHEME_STX_ADD);
 
   env = scheme_no_defines(env);
 
