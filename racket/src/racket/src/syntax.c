@@ -52,6 +52,8 @@ typedef struct Scheme_Mark {
 #define SCHEME_MARK_NONORIGINAL    0x1
 #define SCHEME_MARK_MODULE_CONTEXT 0x2
 
+READ_ONLY static Scheme_Object *root_mark;
+
 typedef struct Scheme_Propagate_Table {
   Scheme_Mark_Table mt;
   Scheme_Mark_Table *prev; /* points to old mark table */
@@ -120,6 +122,8 @@ static Scheme_Object *remove_at(Scheme_Object *l, Scheme_Object *p);
 
 static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
 
+static Scheme_Object *new_module_context_mark(int kind);
+
 #define CONS scheme_make_pair
 #define ICONS scheme_make_pair
 
@@ -135,6 +139,8 @@ static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unm
 
 #define SCHEME_MULTI_MARKP(o) SCHEME_HASHTP(o)
 #define SCHEME_MARKP(x) (SAME_TYPE(SCHEME_TYPE(x), scheme_mark_type))
+
+#define SCHEME_TL_MULTI_MARKP(o) (MZ_OPT_HASH_KEY(&(((Scheme_Hash_Table *)o)->iso)) & 0x2)
 
 XFORM_NONGCING static int prefab_p(Scheme_Object *o)
 {
@@ -267,6 +273,9 @@ void scheme_init_stx(Scheme_Env *env)
   empty_srcloc->line = -1;
   empty_srcloc->col = -1;
   empty_srcloc->pos = -1;
+
+  REGISTER_SO(root_mark);
+  root_mark = new_module_context_mark(0);
 }
 
 void scheme_init_stx_places(int initial_main_os_thread) {
@@ -516,6 +525,11 @@ void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *con
 
 /******************** marks ********************/
 
+Scheme_Object *scheme_stx_root_mark()
+{
+  return root_mark;
+}
+
 Scheme_Object *scheme_new_mark(int kind)
 {
   Scheme_Mark *m;
@@ -552,10 +566,17 @@ static Scheme_Object *new_module_context_mark(int kind)
   return m;
 }
 
-Scheme_Object *scheme_new_multi_mark()
+static Scheme_Object *new_multi_mark(int top_level)
 {
+  Scheme_Hash_Table *multi_mark;
+
   /* Maps a phase to a mark, where each mark is created on demand: */
-  return (Scheme_Object *)scheme_make_hash_table_eqv();
+  multi_mark = scheme_make_hash_table_eqv();
+
+  if (top_level)
+    MZ_OPT_HASH_KEY(&(multi_mark->iso)) |= 0x2;
+
+  return (Scheme_Object *)multi_mark;
 }
 
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
@@ -696,6 +717,27 @@ Scheme_Object *adjust_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Sc
 {
   Scheme_Object *l;
 
+  if (!SCHEME_NULLP(multi_marks)) {
+    l = SCHEME_CAR(SCHEME_CAR(multi_marks));
+
+    if (SCHEME_TL_MULTI_MARKP(m) && !SCHEME_TL_MULTI_MARKP(l)) {
+      /* a top-level mark has no effect if non-top-level marks are present */
+      return multi_marks;
+    } else if (!SAME_OBJ(m, l) && SCHEME_TL_MULTI_MARKP(l)) {
+      /* change all top-level contexts to `m`: */
+      l = multi_marks;
+      multi_marks = scheme_null;
+      for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+        multi_marks = scheme_make_pair(scheme_make_pair(m,
+                                                        SCHEME_CDR(SCHEME_CAR(l))),
+                                       multi_marks);
+      }
+    }
+  }
+
+  if (mode == SCHEME_STX_TL_SWAP)
+    return multi_marks;
+  
   for (l = multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SAME_OBJ(m, SCHEME_CAR(SCHEME_CAR(l)))
         && SAME_OBJ(phase, SCHEME_CDR(SCHEME_CAR(l)))) {
@@ -738,9 +780,54 @@ static Scheme_Mark_Set *combine_mark(Scheme_Mark_Set *marks, Scheme_Object *m, i
     return mark_set_set(marks, m, scheme_make_integer(mode));
 }
 
+static Scheme_Object *make_vector3(Scheme_Object *a, Scheme_Object *b, Scheme_Object *c)
+{
+  Scheme_Object *vec;
+  
+  vec = scheme_make_vector(3, NULL);
+  SCHEME_VEC_ELS(vec)[0] = a;
+  SCHEME_VEC_ELS(vec)[1] = b;
+  SCHEME_VEC_ELS(vec)[2] = c;
+
+  return vec;
+}
+
 Scheme_Object *combine_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Scheme_Object *phase, int mode)
 {
   Scheme_Object *l;
+  
+  if (!SCHEME_NULLP(multi_marks)) {
+    l = SCHEME_VEC_ELS(SCHEME_CAR(multi_marks))[0];
+
+    if (SCHEME_TL_MULTI_MARKP(m) && !SCHEME_TL_MULTI_MARKP(l)) {
+      /* a top-level action has no effect if non-top-level actions are present */
+      return multi_marks;
+    } else if (!SAME_OBJ(m, l) && SCHEME_TL_MULTI_MARKP(l)) {
+      /* change all top-level actions to `m` actions: */
+      l = multi_marks;
+      multi_marks = scheme_null;
+      for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+        if (SCHEME_INT_VAL(SCHEME_VEC_ELS(SCHEME_CAR(l))[2]) != SCHEME_STX_TL_SWAP)
+          multi_marks = scheme_make_pair(make_vector3(m,
+                                                      SCHEME_VEC_ELS(SCHEME_CAR(l))[1],
+                                                      SCHEME_VEC_ELS(SCHEME_CAR(l))[2]),
+                                         multi_marks);
+      }
+    }
+  }
+
+  if (mode == SCHEME_STX_TL_SWAP) {
+    if (SCHEME_NULLP(multi_marks)) {
+      /* propagate swap to others: */
+      return scheme_make_pair(make_vector3(m, phase, scheme_make_integer(mode)),
+                              multi_marks);
+    } else
+      return multi_marks;
+  } else if (SCHEME_PAIRP(multi_marks)
+             && (SCHEME_INT_VAL(SCHEME_VEC_ELS(SCHEME_CAR(multi_marks))[2]) == SCHEME_STX_TL_SWAP)) {
+    /* drop swap action, since it's implicit in whatever we action add */
+    multi_marks = scheme_null;
+  }
 
   for (l = multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SAME_OBJ(m, SCHEME_VEC_ELS(SCHEME_CAR(l))[0])
@@ -765,12 +852,8 @@ Scheme_Object *combine_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, S
     }
   }
 
-  l = scheme_make_vector(3, NULL);
-  SCHEME_VEC_ELS(l)[0] = m;
-  SCHEME_VEC_ELS(l)[1] = phase;
-  SCHEME_VEC_ELS(l)[2] = scheme_make_integer(mode);
-
-  return scheme_make_pair(l, multi_marks);
+  return scheme_make_pair(make_vector3(m, phase, scheme_make_integer(mode)),
+                          multi_marks);
 }
 
 static Scheme_Object *remove_at(Scheme_Object *l, Scheme_Object *p)
@@ -932,11 +1015,7 @@ Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks,
 
 Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
 {
-  if (SCHEME_PAIRP(mark)) {
-    if (!SCHEME_FALSEP(SCHEME_CDR(mark)))
-      o = scheme_stx_adjust_mark(o, SCHEME_CDR(mark), phase, mode);
-  }
-
+  o = scheme_stx_adjust_frame_expression_marks(o, mark, phase, mode);
   return scheme_stx_adjust_frame_bind_marks(o, mark, phase, mode);
 }
 
@@ -957,7 +1036,8 @@ Scheme_Object *scheme_stx_adjust_frame_expression_marks(Scheme_Object *o, Scheme
 {
   if (SCHEME_PAIRP(mark)) {
     mark = SCHEME_CDR(mark);
-    return scheme_stx_adjust_mark(o, mark, phase, mode);
+    if (!SCHEME_FALSEP(mark))
+      return scheme_stx_adjust_mark(o, mark, phase, mode);
   }
 
   return o;
@@ -970,11 +1050,12 @@ Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark, Scheme_Object *expr_
 
 Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o)
 {
-  Scheme_Object *l = ((Scheme_Stx *)o)->marks->multi_marks;
+  Scheme_Object *l = ((Scheme_Stx *)o)->marks->multi_marks, *multi_mark;
 
   while (!SCHEME_NULLP(l)) {
+    multi_mark = SCHEME_CAR(SCHEME_CAR(l));
     o = scheme_stx_remove_mark(o,
-                               extract_single_mark(SCHEME_CAR(SCHEME_CAR(l)),
+                               extract_single_mark(multi_mark,
                                                    scheme_make_integer(0)),
                                SCHEME_CDR(SCHEME_CAR(l)));
     l = SCHEME_CDR(l);
@@ -2020,6 +2101,8 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
 
   if (mark_set_count(marks)) {
     mark = extract_max_mark_and_increment_timestamps(marks);
+    if (SAME_OBJ((Scheme_Object*)mark, root_mark))
+      scheme_signal_error("internal error: cannot bind with only a root mark");
   } else {
     scheme_signal_error("internal error: cannot bind identifier with an empty context");
     return;
@@ -2220,11 +2303,14 @@ static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_m
     mark_set_index(marks, i, &key, &val);
     
     printf(" %s", scheme_write_to_string(scheme_mark_printed_form(key), NULL));
-    if (((Scheme_Mark *)key)->owner_multi_mark)
-      printf("/%" PRIdPTR "@%" PRIdPTR,
+    if (((Scheme_Mark *)key)->owner_multi_mark) {
+      int tl;
+      tl = SCHEME_TL_MULTI_MARKP(SCHEME_CAR(((Scheme_Mark *)key)->owner_multi_mark));
+      printf("/%" PRIdPTR "%s@%" PRIdPTR,
              scheme_hash_key(SCHEME_CAR(((Scheme_Mark *)key)->owner_multi_mark)),
+             (tl ? "tl" : ""),
              SCHEME_INT_VAL(SCHEME_CDR(((Scheme_Mark *)key)->owner_multi_mark)));
-
+    }
     i = mark_set_next(marks, i);
   }
 
@@ -2870,27 +2956,30 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
 
 /******************** module-import bindings ********************/
 
-Scheme_Object *scheme_make_top_level_module_context(Scheme_Object *phase)
-{
-  return scheme_make_module_context(scheme_false, NULL, scheme_new_multi_mark());
-}
-
 Scheme_Object *scheme_make_module_context(Scheme_Object *insp, 
                                           Scheme_Object *shift_or_shifts,
-                                          Scheme_Object *intro_multi_mark)
+                                          int top_level)
 {
   Scheme_Object *vec;
-  Scheme_Object *multi_marks, *expr_mark;
+  Scheme_Object *body_marks, *expr_mark;
+  Scheme_Object *intro_multi_mark;
 
-  multi_marks = scheme_null;
-  if (intro_multi_mark)
-    multi_marks = scheme_make_pair(intro_multi_mark, multi_marks);
+  /* The `intro_multi_mark` is the home for all bindings in a given context.
+     It is added to any form that emerges into a module context via
+     macro expansion.
+     In the case of top-level forms, this context is sometimes stripped away
+     and replaced with a new top-level context. */
+  intro_multi_mark = new_multi_mark(top_level);
+  body_marks = scheme_make_pair(intro_multi_mark, scheme_null);
 
-  /* Having both a multi mark and a plain mark means that the
-     multi-mark can be stripped away to remove access to bindings,
-     while the non-multi mark can track expansion history. */
-  multi_marks = scheme_make_pair(scheme_new_multi_mark(), multi_marks);
-  multi_marks = scheme_make_pair(new_module_context_mark(100), multi_marks);
+  /* An additional mark identifies the original module home of an
+     identifier (i.e., not added to things that are macro-introduced
+     into the module context). The root mark serves to unify all
+     top-level contexts. */
+  if (top_level)
+    body_marks = scheme_make_pair(root_mark, body_marks);
+  else
+    body_marks = scheme_make_pair(new_module_context_mark(100), body_marks);
 
   if (!shift_or_shifts)
     shift_or_shifts = scheme_null;
@@ -2900,9 +2989,7 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
   expr_mark = scheme_new_mark(50);
 
   /* A module context consists of
-       - A set of multi-marks that corresponds to the module body;
-         the set includes base mark and potentially a mark
-         that applies to anything introduced into the module
+       - A set of marks that correspond to the module body
        - A phase
        - An inspector
        - A list of module-index shifts
@@ -2915,7 +3002,7 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
   */
 
   vec = scheme_make_vector(6, NULL);
-  SCHEME_VEC_ELS(vec)[0] = multi_marks;
+  SCHEME_VEC_ELS(vec)[0] = body_marks;
   SCHEME_VEC_ELS(vec)[1] = scheme_make_integer(0);
   SCHEME_VEC_ELS(vec)[2] = insp;
   SCHEME_VEC_ELS(vec)[3] = shift_or_shifts;
@@ -2927,16 +3014,16 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
 
 Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc)
 {
-  Scheme_Object *multi_marks = SCHEME_VEC_ELS(mc)[0], *mark;
+  Scheme_Object *body_marks = SCHEME_VEC_ELS(mc)[0], *mark;
   Scheme_Object *phase = SCHEME_VEC_ELS(mc)[1];
   Scheme_Mark_Set *marks = empty_mark_set;
 
-  while (!SCHEME_NULLP(multi_marks)) {
-    mark = SCHEME_CAR(multi_marks);
+  while (!SCHEME_NULLP(body_marks)) {
+    mark = SCHEME_CAR(body_marks);
     if (!SCHEME_MARKP(mark))
       mark = extract_single_mark(mark, phase);
     marks = mark_set_set(marks, mark, scheme_true);
-    multi_marks = SCHEME_CDR(multi_marks);
+    body_marks = SCHEME_CDR(body_marks);
   }
 
   return marks;
@@ -3000,13 +3087,13 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
 
 Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc)
 {
-  Scheme_Object *multi_marks = SCHEME_VEC_ELS(mc)[0];
+  Scheme_Object *body_marks = SCHEME_VEC_ELS(mc)[0];
 
-  while (!SCHEME_NULLP(multi_marks)) {
+  while (!SCHEME_NULLP(body_marks)) {
     stx = scheme_stx_add_mark(stx,
-                              SCHEME_CAR(multi_marks),
+                              SCHEME_CAR(body_marks),
                               scheme_make_integer(0));
-    multi_marks = SCHEME_CDR(multi_marks);
+    body_marks = SCHEME_CDR(body_marks);
   }
 
   stx = scheme_stx_add_shifts(stx, SCHEME_VEC_ELS(mc)[3]);
@@ -3033,10 +3120,19 @@ Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme
   STX_ASSERT(SCHEME_VECTORP(mc));
 
   multi_mark = SCHEME_VEC_ELS(mc)[4];
-  if (SCHEME_FALSEP(multi_mark))
-    scheme_signal_error("internal error: cannot introduce to a module context without an introduction mark");
-  
+
   return scheme_stx_add_mark(stx, multi_mark, scheme_make_integer(0));
+}
+
+Scheme_Object *scheme_stx_unintroduce_from_module_context(Scheme_Object *stx, Scheme_Object *mc)
+{
+  Scheme_Object *multi_mark;
+
+  STX_ASSERT(SCHEME_VECTORP(mc));
+
+  multi_mark = SCHEME_VEC_ELS(mc)[4];
+  
+  return scheme_stx_remove_mark(stx, multi_mark, scheme_make_integer(0));
 }
 
 Scheme_Object *scheme_stx_add_module_expression_context(Scheme_Object *stx, Scheme_Object *mc)
@@ -3047,6 +3143,26 @@ Scheme_Object *scheme_stx_add_module_expression_context(Scheme_Object *stx, Sche
     return scheme_stx_add_mark(stx, expr_mark, SCHEME_VEC_ELS(mc)[1]);
   else
     return stx;
+}
+
+Scheme_Object *scheme_stx_swap_toplevel_context(Scheme_Object *stx, Scheme_Object *mc)
+{
+  Scheme_Object *body_marks = SCHEME_VEC_ELS(mc)[0], *bm;
+
+  stx = scheme_stx_remove_mark(stx, root_mark, scheme_make_integer(0));
+  
+  while (!SCHEME_NULLP(body_marks)) {
+    bm = SCHEME_CAR(body_marks);
+    stx = scheme_stx_adjust_mark(stx,
+                                 bm,
+                                 scheme_make_integer(0),
+                                 (SCHEME_MULTI_MARKP(bm)
+                                  ? SCHEME_STX_TL_SWAP
+                                  : SCHEME_STX_ADD));
+    body_marks = SCHEME_CDR(body_marks);
+  }
+
+  return stx;
 }
 
 void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-set> <phase> <inspector> ...) */
@@ -3327,6 +3443,13 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
     v = rp->stxes[i];
   }
 
+  if (SCHEME_PAIRP(shift)) {
+    v = scheme_stx_swap_toplevel_context(v, SCHEME_CAR(shift));
+    shift = SCHEME_CDR(shift);
+    if (SCHEME_FALSEP(shift))
+      return v;
+  }
+  
   v = scheme_stx_add_shift(v, shift);
 
   shift = SCHEME_VEC_ELS(shift)[3];
@@ -3803,7 +3926,7 @@ static Scheme_Object *multi_mark_to_vector(Scheme_Object *multi_mark, Scheme_Mar
   if (vec)
     return vec;
 
-  vec = scheme_make_vector(2 * marks->count, NULL);
+  vec = scheme_make_vector((2 * marks->count) + (SCHEME_TL_MULTI_MARKP(marks) ? 1 : 0), scheme_void);
   j = 0;
   for (i = marks->size; i--; ) {
     if (marks->vals[i]) {
@@ -4270,8 +4393,7 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
 /*                           datum->syntax                                */
 /*========================================================================*/
 
-#define return_NULL abort()
-// return NULL
+#define return_NULL abort(); // return NULL
 
 Scheme_Mark_Set *list_to_mark_set(Scheme_Object *l, Scheme_Unmarshal_Tables *ut)
 {
@@ -4319,7 +4441,11 @@ static Scheme_Hash_Table *vector_to_multi_mark(Scheme_Object *mht, Scheme_Unmars
   multi_mark = scheme_make_hash_table(SCHEME_hash_ptr);
 
   len = SCHEME_VEC_SIZE(mht);
-  if (len & 1) return_NULL;
+  if (len & 1) {
+    multi_mark = (Scheme_Hash_Table *)new_multi_mark(1);
+    len--;
+  } else
+    multi_mark = (Scheme_Hash_Table *)new_multi_mark(0);
 
   /* A multi-mark might refer back to itself via free-id=? info: */
   scheme_hash_set(ut->rns, mht, (Scheme_Object *)multi_mark);
@@ -4327,11 +4453,12 @@ static Scheme_Hash_Table *vector_to_multi_mark(Scheme_Object *mht, Scheme_Unmars
   for (i = 0; i < len; i += 2) {
     if (!SCHEME_PHASEP(SCHEME_VEC_ELS(mht)[i]))
       return_NULL;
-    mark = mark_unmarshal_content(SCHEME_VEC_ELS(mht)[i+1], ut);
+    mark = SCHEME_VEC_ELS(mht)[i+1];
+    mark = mark_unmarshal_content(mark, ut);
     if (!mark) return_NULL;
-    scheme_hash_set(multi_mark, SCHEME_VEC_ELS(mht)[i], mark);
     if (((Scheme_Mark *)mark)->owner_multi_mark)
       return_NULL;
+    scheme_hash_set(multi_mark, SCHEME_VEC_ELS(mht)[i], mark);
     mm = scheme_make_pair((Scheme_Object *)multi_mark, SCHEME_VEC_ELS(mht)[i]);
     ((Scheme_Mark *)mark)->owner_multi_mark = mm;
   }
@@ -4483,6 +4610,9 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
   Scheme_Hash_Table *ht;
   Scheme_Mark_Set *marks;
   intptr_t i, len;
+
+  if (SAME_OBJ(box, root_mark))
+    return root_mark;
 
   r = scheme_hash_get(ut->rns, box);
   if (r)

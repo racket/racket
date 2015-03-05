@@ -875,19 +875,19 @@ void scheme_prepare_env_stx_context(Scheme_Env *env)
 
   if (env->stx_context) return;
 
-  if (env->module) {
-    insp = env->access_insp;
-    if (!insp)
-      insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+  insp = env->access_insp;
+  if (!insp)
+    insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
+  if (env->module) {
     shift = scheme_make_shift(scheme_make_integer(0),
                               NULL, NULL,
                               env->module_registry->exports,
                               insp);
 
-    mc = scheme_make_module_context(insp, shift, scheme_new_multi_mark());
+    mc = scheme_make_module_context(insp, shift, 0);
   } else
-    mc = scheme_make_top_level_module_context(scheme_env_phase(env));
+    mc = scheme_make_module_context(insp, NULL, 1);
 
   env->stx_context = mc;
 }
@@ -1794,8 +1794,7 @@ namespace_identifier(int argc, Scheme_Object *argv[])
   obj = argv[0];
   obj = scheme_datum_to_syntax(obj, scheme_false, scheme_false, 1, 0);
 
-  if (genv->stx_context)
-    obj = scheme_stx_add_module_context(obj, genv->stx_context);
+  obj = scheme_stx_add_module_context(obj, genv->stx_context);
 
   return obj;
 }

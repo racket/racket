@@ -826,11 +826,14 @@ define_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
     rec[drec].value_name = SCHEME_STX_SYM(var);
   }
 
+#if 0
+  // REMOVEME
   if (env->marks)
     val = scheme_stx_adjust_frame_expression_marks(val,
                                                    env->marks,
                                                    scheme_env_phase(env->genv),
                                                    SCHEME_STX_ADD);
+#endif
 
   env = scheme_no_defines(env);
 

@@ -821,7 +821,7 @@ static Scheme_Object *sys_wraps_phase(intptr_t p)
 {
   Scheme_Object *rn, *w;
 
-  rn = scheme_make_module_context(NULL, NULL, NULL);
+  rn = scheme_make_module_context(NULL, NULL, 0);
   rn = scheme_module_context_at_phase(rn, scheme_make_integer(p), 0);
 
   /* Add a module mapping for all kernel provides: */
@@ -6991,7 +6991,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   } else {
     /* "Punch a hole" in the enclosing context by removing marks that
        can reach module bindings (but preserve some module context): */
-    fm = scheme_stx_remove_module_binding_marks(disarmed_form);
+    fm = disarmed_form;
+    fm = scheme_stx_remove_mark(fm, scheme_stx_root_mark(), scheme_env_phase(env->genv));
+    fm = scheme_stx_remove_module_binding_marks(fm);
     if (env->marks)
       fm = scheme_stx_adjust_frame_expression_marks(fm,
                                                     env->marks,
@@ -12308,12 +12310,10 @@ static void check_dup_require(Scheme_Object *id, Scheme_Object *self_modidx,
   }
 }
 
-static Scheme_Object *
-do_require_execute(Scheme_Env *env, Scheme_Object *form)
+static Scheme_Object *check_require_form(Scheme_Env *env, Scheme_Object *form)
 {
   Scheme_Hash_Table *ht;
-  Scheme_Object *rn_set, *modidx;
-  Scheme_Object *rest, *insp;
+  Scheme_Object *rest, *modidx;
   Scheme_Env *tmp_env;
 
   if (env->module)
@@ -12321,7 +12321,8 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
   else
     modidx = scheme_false;
 
-  /* Don't check for dups if we import from less that two sources: */
+  /* Don't check for dups if we import from less that two sources,
+     since dup checking for a single source happens at that source: */
   rest = SCHEME_STX_CDR(form);
   if (SCHEME_STX_NULLP(rest)) {
     rest = NULL;
@@ -12335,12 +12336,6 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
   scheme_prepare_exp_env(env);
   scheme_prepare_template_env(env);
 
-  insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
-
-  rn_set = env->stx_context;
-  if (rn_set)
-    form = revert_expression_marks_via_context(form, rn_set, env->phase);
-  
   if (rest) {
     /* Parse into dummy environment, first, then parse
        into top-level if that works without error. We need those two
@@ -12353,6 +12348,9 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
     scheme_prepare_exp_env(tmp_env);
     scheme_prepare_template_env(tmp_env);
 
+    /* add a mark to form so that it doesn't collide with anything: */
+    form = scheme_stx_add_mark(form, scheme_new_mark(37), scheme_env_phase(env));
+
     parse_requires(form, tmp_env->phase, modidx, tmp_env, NULL,
                    tmp_env->stx_context,
                    check_dup_require, ht,
@@ -12363,8 +12361,23 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
                    NULL);
   }
 
+  return modidx;
+}
+
+static Scheme_Object *
+do_require_execute(Scheme_Env *env, Scheme_Object *form)
+{
+  Scheme_Object *modidx;
+
+  /* Check for collisions again, in case there's a difference between
+     compile and run times: */
+  modidx = check_require_form(env, form);
+
+  /* Use the current top-level context: */
+  form = scheme_stx_swap_toplevel_context(form, env->stx_context);
+
   parse_requires(form, env->phase, modidx, env, NULL,
-                 rn_set,
+                 env->stx_context,
                  NULL, NULL,
                  NULL,
                  !env->module, 0, 0, 
@@ -12392,41 +12405,18 @@ scheme_top_level_require_jit(Scheme_Object *data)
 static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env, 
 				 Scheme_Compile_Expand_Info *rec, int drec)
 {
-  Scheme_Hash_Table *ht;
-  Scheme_Object *rn_set, *dummy, *modidx, *data, *insp;
-  Scheme_Env *genv;
+  Scheme_Object *dummy, *data;
 
   if (!scheme_is_toplevel(env))
     scheme_wrong_syntax(NULL, NULL, form, "not at top-level or in module body");
 
   /* If we get here, it must be a top-level require. */
-
-  /* Hash table is for checking duplicate names in require list: */
-  ht = scheme_make_hash_table_equal();
-
-  insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
-
-  rn_set = scheme_make_module_context(insp, NULL, NULL);
-
-  genv = env->genv;
-  scheme_prepare_exp_env(genv);
-  scheme_prepare_template_env(genv);
-
-  if (genv->module)
-    modidx = genv->module->self_modidx;
-  else
-    modidx = scheme_false;
-
-  parse_requires(form, genv->phase, modidx, genv, NULL,
-                 rn_set,
-                 check_dup_require, ht,
-                 NULL, 
-                 0, 0, 0, 
-                 1, 0,
-                 NULL, NULL, NULL,
-                 NULL);
+  
+  (void)check_require_form(env->genv, form);
 
   if (rec && rec[drec].comp) {
+    form = scheme_revert_expression_marks(form, env);
+    
     /* Dummy lets us access a top-level environment: */
     dummy = scheme_make_environment_dummy(env);
     

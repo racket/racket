@@ -1100,15 +1100,16 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase);
 
+XFORM_NONGCING Scheme_Object *scheme_stx_root_mark();
 Scheme_Object *scheme_new_mark(int kind);
 Scheme_Object *scheme_new_nonoriginal_mark(int kind);
-Scheme_Object *scheme_new_multi_mark(void);
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
 Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 
 #define SCHEME_STX_ADD      0
 #define SCHEME_STX_REMOVE   1
 #define SCHEME_STX_FLIP     2
+#define SCHEME_STX_TL_SWAP  4
 #define SCHEME_STX_MUTATE   16 /* or'ed */
 #define SCHEME_STX_PROPONLY 32 /* or'ed, internal */
 Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode);
@@ -1122,6 +1123,7 @@ Scheme_Object *scheme_stx_adjust_frame_expression_marks(Scheme_Object *o, Scheme
 
 Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark, Scheme_Object *expr_mark);
 
+Scheme_Object *scheme_stx_remove_toplevel_context_marks(Scheme_Object *o);
 Scheme_Object *scheme_stx_remove_module_context_marks(Scheme_Object *o);
 Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o);
 
@@ -1144,17 +1146,16 @@ int scheme_get_introducer_mode(const char *who, int which, int argc, Scheme_Obje
 
 struct Scheme_Module_Phase_Exports; /* forward declaration */
 
-Scheme_Object *scheme_make_top_level_module_context(Scheme_Object *phase);
-
 Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
                                           Scheme_Object *shift_or_shifts,
-                                          Scheme_Object *intro_multi_mark);
+                                          int top_level);
 Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *phase, int for_expr);
 
 Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_add_module_expression_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc);
+Scheme_Object *scheme_stx_swap_toplevel_context(Scheme_Object *stx, Scheme_Object *mc);
 
 Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, Scheme_Object *orig_src);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);

@@ -2944,19 +2944,25 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	cannot_print(pp, notdisplay, obj, ht, compact);
       }
     }
-  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_mark_type))
+  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_mark_type)
+           && (compact || !pp->print_unreadable))
     {
-      if (compact || !pp->print_unreadable) {
+      if (compact) {
         Scheme_Object *idx;
 
-        idx = get_symtab_idx(mt, obj);
-        if (idx) {
-          print_symtab_ref(pp, idx);
+        idx = scheme_stx_root_mark();
+        if (SAME_OBJ(idx, obj)) {
+          print_compact(pp, CPT_ROOT_MARK);
         } else {
-          print_compact(pp, CPT_MARK);
-          print_symtab_set(pp, mt, obj);
           idx = get_symtab_idx(mt, obj);
-          print(scheme_mark_marshal_content(obj, mt), notdisplay, 1, ht, mt, pp);
+          if (idx) {
+            print_symtab_ref(pp, idx);
+          } else {
+            print_compact(pp, CPT_MARK);
+            print_symtab_set(pp, mt, obj);
+            idx = get_symtab_idx(mt, obj);
+            print(scheme_mark_marshal_content(obj, mt), notdisplay, 1, ht, mt, pp);
+          }
         }
       } else {
 	print_utf8_string(pp, "#<mark:", 0, 7);

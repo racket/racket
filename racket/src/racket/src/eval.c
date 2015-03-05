@@ -2379,7 +2379,8 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env)
 
   dummy = SCHEME_VEC_ELS(form)[3];
 
-  rhs_env = scheme_new_comp_env(scheme_get_env(NULL), NULL, NULL, SCHEME_TOPLEVEL_FRAME);
+  rhs_env = scheme_new_comp_env(scheme_get_env(NULL), NULL, NULL,
+                                SCHEME_TOPLEVEL_FRAME);
 
   if (!dm_env)
     dm_env = scheme_environment_from_dummy(dummy);
@@ -3895,36 +3896,41 @@ Scheme_Object **scheme_current_argument_stack()
 
 static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env *genv)
 {
+  int needs_context;
+  
   scheme_prepare_env_stx_context(genv);
 
-  if (genv->stx_context) {
-    if (SCHEME_STX_PAIRP(form)) {
-      Scheme_Object *a, *d, *module_stx;
+  needs_context = scheme_stx_has_empty_wraps(form, scheme_env_phase(genv));
+  
+  if (SCHEME_STX_PAIRP(form)) {
+    Scheme_Object *a, *d, *module_stx;
       
-      a = SCHEME_STX_CAR(form);
-      if (SCHEME_STX_SYMBOLP(a)) {
-        if (SCHEME_TRUEP(scheme_stx_lookup(a, scheme_env_phase(genv)))) {
-          return form;
-        } else {
-          a = scheme_stx_add_module_frame_context(a, genv->stx_context);
-          module_stx = scheme_datum_to_syntax(module_symbol,
-                                              scheme_false, 
-                                              scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
-                                              0, 0);
-          if (scheme_stx_module_eq(a, module_stx, genv->phase)) {
-            /* Don't add renames to the whole module; let the 
-               module's language take over. */
-            d = SCHEME_STX_CDR(form);
-            a = scheme_make_pair(a, d);
-            form = scheme_datum_to_syntax(a, form, form, 0, 1);
-            return form;
-          }
-	}
+    a = SCHEME_STX_CAR(form);
+    if (SCHEME_STX_SYMBOLP(a)) {
+      needs_context = scheme_stx_has_empty_wraps(a, scheme_env_phase(genv));
+      if (needs_context)
+        a = scheme_stx_add_module_frame_context(a, genv->stx_context);
+      else
+        a = scheme_stx_swap_toplevel_context(a, genv->stx_context);
+      module_stx = scheme_datum_to_syntax(module_symbol,
+                                          scheme_false, 
+                                          scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
+                                          0, 0);
+      if (scheme_stx_module_eq(a, module_stx, genv->phase)) {
+        /* Don't add context to the whole module, since the 
+           `module` form will just discard it: */
+        d = SCHEME_STX_CDR(form);
+        a = scheme_make_pair(a, d);
+        form = scheme_datum_to_syntax(a, form, form, 0, 1);
+        return form;
       }
     }
+  } 
 
+  if (needs_context)
     form = scheme_stx_add_module_frame_context(form, genv->stx_context);
-  }
+  else
+    form = scheme_stx_swap_toplevel_context(form, genv->stx_context);
 
   return form;
 }
@@ -4040,7 +4046,9 @@ static void *compile_k(void)
     rec.env_already = 0;
     rec.comp_flags = comp_flags;
 
-    cenv = scheme_new_comp_env(genv, insp, frame_marks, SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME);
+    cenv = scheme_new_comp_env(genv, insp, frame_marks,
+                               SCHEME_TOPLEVEL_FRAME
+                               | SCHEME_KEEP_MARKS_FRAME);
 
     if (for_eval) {
       /* Need to look for top-level `begin', and if we
@@ -4605,7 +4613,8 @@ static Scheme_Object *r_expand(Scheme_Object *obj, Scheme_Comp_Env *env,
 Scheme_Object *scheme_expand(Scheme_Object *obj, Scheme_Env *env)
 {
   return r_expand(obj, scheme_new_expand_env(env, NULL, scheme_true,
-                                             SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME), 
+                                             SCHEME_TOPLEVEL_FRAME
+                                             | SCHEME_KEEP_MARKS_FRAME),
 		  -1, 1, 0, scheme_false, -1, 0);
 }
 
@@ -4780,7 +4789,8 @@ static Scheme_Object *expand(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
-                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME),
+                                                 SCHEME_TOPLEVEL_FRAME
+                                                 | SCHEME_KEEP_MARKS_FRAME),
 		  -1, 1, 0, scheme_false, 0, 0);
 }
 
@@ -4794,7 +4804,8 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
   
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
-                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME),
+                                                 SCHEME_TOPLEVEL_FRAME
+                                                 | SCHEME_KEEP_MARKS_FRAME),
 		  -1, -1, 0, scheme_false, 0, 0);
 }
 
@@ -5227,7 +5238,8 @@ expand_once(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
-                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME), 
+                                                 SCHEME_TOPLEVEL_FRAME
+                                                 | SCHEME_KEEP_MARKS_FRAME), 
 		  1, 1, 0, scheme_false, 0, 0);
 }
 
@@ -5242,7 +5254,8 @@ expand_stx_once(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
-                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME),
+                                                 SCHEME_TOPLEVEL_FRAME
+                                                 | SCHEME_KEEP_MARKS_FRAME),
 		  1, -1, 0, scheme_false, 0, 0);
 }
 
@@ -5254,7 +5267,8 @@ expand_to_top_form(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true, 
-                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME),
+                                                 SCHEME_TOPLEVEL_FRAME
+                                                 | SCHEME_KEEP_MARKS_FRAME),
 		  1, 1, 1, scheme_false, 0, 0);
 }
 
@@ -5269,7 +5283,8 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
-                                                 SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME),
+                                                 SCHEME_TOPLEVEL_FRAME
+                                                 | SCHEME_KEEP_MARKS_FRAME),
 		  1, -1, 1, scheme_false, 0, 0);
 }
 
@@ -5769,6 +5784,11 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
                             src_modidx, now_modidx, 
                             genv ? genv->module_registry->exports : NULL,
                             insp);
+      if (genv && !genv->module) {
+        /* introduce the syntax object to this namespace: */
+        if (!v) v = scheme_false;
+        v = scheme_make_pair(genv->stx_context, v);
+      }
       if (v || (rp->delay_info_rpair && SCHEME_CDR(rp->delay_info_rpair))) {
 	/* Put lazy-shift info in pf->a[i]: */
         Scheme_Object **ls;

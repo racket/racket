@@ -906,7 +906,7 @@ typedef struct {
 
 typedef struct Scheme_Hash_Table
 {
-  Scheme_Inclhash_Object iso; /* 0x1 flag => print as opaque (e.g., exports table) */
+  Scheme_Inclhash_Object iso; /* 0x1 flag => print as opaque (e.g., exports table); 0x2 => misc (e.g., top-level multi_marks) */
   intptr_t size; /* power of 2 */
   intptr_t count;
   Scheme_Object **keys;
