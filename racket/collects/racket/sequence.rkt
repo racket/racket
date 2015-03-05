@@ -183,7 +183,12 @@
                       (list '#:min-count min-count)
                       '())
                   ctcs))
-   #:first-order sequence?
+   #:first-order 
+   (λ (val)
+     (and (sequence? val)
+          (if (vector? val) (= n-cs 1) #t)
+          (if (list? val)   (= n-cs 1) #t)
+          (if (hash? val)   (= n-cs 2) #t)))
    #:projection
    (λ (orig-blame)
      (define blame (blame-add-context orig-blame "an element of"))
