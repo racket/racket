@@ -2463,6 +2463,20 @@ This procedure is similar in spirit to
 ]}
 
 
+@defproc[(object-or-false=? [a (or/c object? #f)] [b (or/c object? #f)]) boolean?]{
+
+Like @racket[object=?], but accepts @racket[#f] for either argument and
+returns @racket[#t] if both arguments are @racket[#f].
+
+@defexamples[#:eval class-ctc-eval
+   (object-or-false=? #f (new object%))
+   (object-or-false=? (new object%) #f)
+   (object-or-false=? #f #f)
+   ]
+
+@history[#:added "6.1.1.8"]}
+
+
 @defproc[(object->vector [object object?] [opaque-v any/c #f]) vector?]{
 
 Returns a vector representing @racket[object] that shows its
