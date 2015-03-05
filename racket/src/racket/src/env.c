@@ -1240,32 +1240,6 @@ Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *
   return r;
 }
 
-void scheme_clean_dead_env(Scheme_Env *env)
-{
-  Scheme_Object *modchain, *next;
-
-  if (env->exp_env) {
-    env->exp_env->template_env = NULL;
-    scheme_clean_dead_env(env->exp_env);
-    env->exp_env = NULL;
-  }
-  if (env->template_env) {
-    env->template_env->exp_env = NULL;
-    scheme_clean_dead_env(env->template_env);
-    env->template_env = NULL;
-  }
-
-  env->modvars = NULL;
-  
-  modchain = env->modchain;
-  env->modchain = NULL;
-  while (modchain && !SCHEME_VECTORP(modchain)) {
-    next = SCHEME_VEC_ELS(modchain)[1];
-    SCHEME_VEC_ELS(modchain)[1] = scheme_void;
-    modchain = next;
-  }
-}
-
 Scheme_Object *scheme_get_home_weak_link(Scheme_Env *e)
 {
   if (!e->weak_self_link) {

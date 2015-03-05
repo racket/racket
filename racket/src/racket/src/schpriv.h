@@ -3563,8 +3563,6 @@ Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *
 
 Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Object *modchain, int clone);
 
-void scheme_clean_dead_env(Scheme_Env *env);
-
 Scheme_Module *scheme_extract_compiled_module(Scheme_Object *o);
 
 int scheme_is_kernel_modname(Scheme_Object *modname);

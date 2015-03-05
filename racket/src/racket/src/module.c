@@ -8192,7 +8192,7 @@ static void flush_definitions(Scheme_Env *genv)
 static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env *env, 
 				      Scheme_Compile_Expand_Info *rec, int drec)
 {
-  int num_phases, *_num_phases, i, exicount, *all_simple_renames, can_clean, has_submodules;
+  int num_phases, *_num_phases, i, exicount, *all_simple_renames, has_submodules;
   Scheme_Hash_Tree *all_defs;
   Scheme_Hash_Table *tables, *all_defs_out, *all_provided, *all_reprovided, *modidx_cache;
   Scheme_Module_Export_Info **exp_infos, *exp_info;
@@ -8379,17 +8379,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
     genv = genv->exp_env;
   }
 
-  if (rec[drec].comp || (rec[drec].depth != -2))
-    can_clean = 1;
-  else
-    can_clean = 0;
-
   has_submodules = (!SCHEME_NULLP(bxs->saved_submodules)
                     || (env->genv->module->submodule_path
                         && !SCHEME_NULLP(env->genv->module->submodule_path)));
-
-  if (can_clean && !has_submodules)
-    scheme_clean_dead_env(env->genv);
 
   if (!rec[drec].comp) {
     Scheme_Module_Phase_Exports *rt = env->genv->module->me->rt;
@@ -8564,9 +8556,6 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
     if (!rec[drec].comp) {
       (void)fixup_expanded(expanded_l, expanded_modules, 0, MODULE_MODFORM_KIND);
     }
-
-    if (can_clean)
-      scheme_clean_dead_env(env->genv);
   }
 
   /* Return module or expanded code: */
