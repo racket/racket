@@ -1215,7 +1215,6 @@
                     (printf "~a ~a\n" a b)))
            (eval '(require 'mm))
            (eval '(current-namespace (module->namespace ''mm)))
-
            (eval '(define$ c 7))
            (test '(1 2 7) eval '(list a b c))
            (eval '(define$ d 8))
@@ -1238,7 +1237,7 @@
            (test '(1 2 7) eval '(list a b c))
            (eval '(define$ d 8))
            (test '(1 2 7 8) eval '(list a b c d))))])
-  (go-once eval)
+  #;(go-once eval)
   (go-once (lambda (e) (eval (expand e)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1325,17 +1324,21 @@
             [x-id (parameterize ([current-namespace (make-base-namespace)])
                     (eval a-code)
                     (eval '(require 'a))
-                    (eval '#'x))])
+                    (eval '#'x))]
+            [x-mod-id (parameterize ([current-namespace (make-base-namespace)])
+                        (eval a-code)
+                        (eval '(require 'a))
+                        (parameterize ([current-namespace (module->namespace ''a)])
+                          (eval '#'x)))])
         (eval (b-code))
         (eval '(require 'b))
         (set! load-ok? #f)
         (test #f eval '(free-identifier=? (f) #'x))
-        (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
+        (test #f eval `(free-identifier=? (f) (quote-syntax ,x-id)))
+        (test #t eval `(free-identifier=? (f) (quote-syntax ,x-mod-id)))
         (eval '(require 'a))
         (test #t eval '(free-identifier=? (f) #'x))
-        ;; bindings from multiple namespace make `x` ambigious:
-        (test #f eval `(free-identifier=? (f) (quote-syntax ,x-id)))
-        ;; avoid ambigutity:
+        (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
         (test #t free-identifier=? (eval '(f)) x-id)
         (parameterize ([current-namespace (make-base-namespace)])
           (eval '(module a racket/base
@@ -1346,7 +1349,8 @@
           (eval '(require 'b))
           (set! load-ok? #f)
           (test #t eval '(free-identifier=? (f) #'x))
-          (test #f eval `(free-identifier=? (f) (quote-syntax ,x-id))))))))
+          (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
+          (test #f eval `(free-identifier=? (f) (quote-syntax ,x-mod-id))))))))
 
 (test #t free-identifier=? #'lambda #'lambda 0 1)
 (test #f free-identifier=? #'lambda #'lambda 0 4)
