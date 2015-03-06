@@ -3897,22 +3897,14 @@ Scheme_Object **scheme_current_argument_stack()
 
 static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env *genv)
 {
-  int needs_context;
-  
   scheme_prepare_env_stx_context(genv);
 
-  needs_context = scheme_stx_has_empty_wraps(form, scheme_env_phase(genv));
-  
   if (SCHEME_STX_PAIRP(form)) {
     Scheme_Object *a, *d, *module_stx;
       
     a = SCHEME_STX_CAR(form);
     if (SCHEME_STX_SYMBOLP(a)) {
-      needs_context = scheme_stx_has_empty_wraps(a, scheme_env_phase(genv));
-      if (needs_context)
-        a = scheme_stx_add_module_frame_context(a, genv->stx_context);
-      else
-        a = scheme_stx_swap_toplevel_context(a, genv->stx_context);
+      a = scheme_stx_push_module_context(a, genv->stx_context);
       module_stx = scheme_datum_to_syntax(module_symbol,
                                           scheme_false, 
                                           scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
@@ -3928,10 +3920,7 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
     }
   } 
 
-  if (needs_context)
-    form = scheme_stx_add_module_frame_context(form, genv->stx_context);
-  else
-    form = scheme_stx_swap_toplevel_context(form, genv->stx_context);
+  form = scheme_stx_push_module_context(form, genv->stx_context);
 
   return form;
 }
@@ -4032,7 +4021,10 @@ static void *compile_k(void)
   else
     frame_marks = NULL;
 
-  form = scheme_stx_introduce_to_module_context(form, genv->stx_context);
+  /* For the top-level environment, we "push_introduce" instead of "introduce"
+     to avoid ambiguous binding, especially since push_prefix
+     "push"es. */
+  form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
 
   while (1) {
     scheme_prepare_compile_env(genv);
@@ -4065,7 +4057,7 @@ static void *compile_k(void)
                                             1);
 	if (SAME_OBJ(gval, scheme_begin_syntax)) {
 	  if (scheme_stx_proper_list_length(form) > 1){
-            form = scheme_stx_introduce_to_module_context(form, genv->stx_context);
+            form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
 	    form = SCHEME_STX_CDR(form);
 	    tl_queue = scheme_append(scheme_flatten_syntax_list(form, NULL),
 				     tl_queue);
@@ -4080,8 +4072,8 @@ static void *compile_k(void)
 	  o = scheme_frame_get_lifts(cenv);
 	  if (!SCHEME_NULLP(o)
               || !SCHEME_NULLP(rl)) {
-            o = scheme_named_map_1(NULL, scheme_stx_introduce_to_module_context, o, genv->stx_context);
-            rl = scheme_named_map_1(NULL, scheme_stx_introduce_to_module_context, rl, genv->stx_context);
+            o = scheme_named_map_1(NULL, scheme_stx_push_introduce_module_context, o, genv->stx_context);
+            rl = scheme_named_map_1(NULL, scheme_stx_push_introduce_module_context, rl, genv->stx_context);
 	    tl_queue = scheme_make_pair(form, tl_queue);
 	    tl_queue = scheme_append(o, tl_queue);
 	    tl_queue = scheme_append(rl, tl_queue);
@@ -5569,12 +5561,9 @@ static Scheme_Object *add_mark_at_phase(Scheme_Object *a, Scheme_Object *m_p)
   return scheme_stx_add_mark(a, SCHEME_CAR(m_p), SCHEME_CDR(m_p));
 }
 
-static Scheme_Object *revert_expr_marks(Scheme_Object *a, Scheme_Object *m_p)
+static Scheme_Object *revert_expr_marks(Scheme_Object *a, Scheme_Object *env)
 {
-  return scheme_stx_adjust_frame_expression_marks(a,
-                                                  SCHEME_CAR(m_p),
-                                                  SCHEME_CDR(m_p),
-                                                  SCHEME_STX_REMOVE);
+  return scheme_revert_expression_marks(a, (Scheme_Comp_Env *)env);
 }
 
 static Scheme_Object *
@@ -5637,11 +5626,7 @@ local_eval(int argc, Scheme_Object **argv)
   cnt = 0;
   for (l = names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
-    if (init_env->marks)
-      a = scheme_stx_adjust_frame_expression_marks(a,
-                                                   init_env->marks,
-                                                   scheme_env_phase(init_env->genv),
-                                                   SCHEME_STX_REMOVE);
+    a = scheme_revert_expression_marks(a, init_env);
     scheme_set_local_syntax(cnt++, a, scheme_false, stx_env, 0);
   }
 	  
@@ -5668,9 +5653,7 @@ local_eval(int argc, Scheme_Object **argv)
     expr = scheme_stx_add_mark(expr, rib, scheme_env_phase(stx_env->genv));
     rn_names = scheme_named_map_1(NULL, add_mark_at_phase, names,
                                   scheme_make_pair(rib, scheme_env_phase(stx_env->genv)));
-    if (init_env->marks)
-      rn_names = scheme_named_map_1(NULL, revert_expr_marks, rn_names,
-                                    scheme_make_pair(init_env->marks, scheme_env_phase(init_env->genv)));
+    rn_names = scheme_named_map_1(NULL, revert_expr_marks, rn_names, (Scheme_Object *)init_env);
     scheme_bind_syntaxes("local syntax definition", rn_names, expr,
 			 stx_env->genv->exp_env, stx_env->insp, &rec, 0,
 			 stx_env, stx_env,

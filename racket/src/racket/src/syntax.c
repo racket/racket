@@ -118,7 +118,8 @@ static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone);
 static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks, Scheme_Object *replace_at);
 
 XFORM_NONGCING static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b);
-static Scheme_Object *remove_at(Scheme_Object *l, Scheme_Object *p);
+static Scheme_Object *remove_at_mark_list(Scheme_Object *l, Scheme_Object *p);
+static Scheme_Object *add_to_mark_list(Scheme_Object *l, Scheme_Object *p);
 
 static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
 
@@ -141,6 +142,15 @@ static Scheme_Object *new_module_context_mark(int kind);
 #define SCHEME_MARKP(x) (SAME_TYPE(SCHEME_TYPE(x), scheme_mark_type))
 
 #define SCHEME_TL_MULTI_MARKP(o) (MZ_OPT_HASH_KEY(&(((Scheme_Hash_Table *)o)->iso)) & 0x2)
+
+/* Represent fallback as vectors, either of size 2 (for normal marks)
+   or size 4 (for propagtation marks): */
+#define SCHEME_FALLBACKP(o) SCHEME_VECTORP(o)
+#define SCHEME_FALLBACK_QUADP(o) (SCHEME_VEC_SIZE(o) == 4)
+#define SCHEME_FALLBACK_FIRST(o) (SCHEME_VEC_ELS(o)[0])
+#define SCHEME_FALLBACK_REST(o) (SCHEME_VEC_ELS(o)[1])
+#define SCHEME_FALLBACK_MARK(o) (SCHEME_VEC_ELS(o)[2])
+#define SCHEME_FALLBACK_PHASE(o) (SCHEME_VEC_ELS(o)[3])
 
 XFORM_NONGCING static int prefab_p(Scheme_Object *o)
 {
@@ -644,6 +654,23 @@ static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b)
   return (mark_set_count(a) == mark_set_count(b)) && mark_subset(a, b);
 }
 
+static Scheme_Object *make_fallback_pair(Scheme_Object *a, Scheme_Object *b)
+{
+  a = scheme_make_vector(2, a);
+  SCHEME_VEC_ELS(a)[1] = b;
+  return a;
+}
+
+static Scheme_Object *make_fallback_quad(Scheme_Object *a, Scheme_Object *b,
+                                         Scheme_Object *c, Scheme_Object *d)
+{
+  a = scheme_make_vector(4, a);
+  SCHEME_VEC_ELS(a)[1] = b;
+  SCHEME_VEC_ELS(a)[2] = c;
+  SCHEME_VEC_ELS(a)[3] = d;
+  return a;
+}
+
 Scheme_Object *extract_single_mark(Scheme_Object *multi_mark, Scheme_Object *phase)
 {
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)multi_mark;
@@ -660,40 +687,50 @@ Scheme_Object *extract_single_mark(Scheme_Object *multi_mark, Scheme_Object *pha
   return m;
 }
 
-static Scheme_Mark_Set *extract_mark_set(Scheme_Stx *stx, Scheme_Object *phase)
+static Scheme_Object *extract_single_mark_from_shifted(Scheme_Object *multi_mark_and_phase, Scheme_Object *phase)
 {
-  Scheme_Mark_Table *mt = stx->marks;
-  Scheme_Mark_Set *marks;
-  Scheme_Object *multi_marks, *ph, *m;
-
-  marks = mt->single_marks;
-
-  for (multi_marks = mt->multi_marks;
-       !SCHEME_NULLP(multi_marks);
-       multi_marks= SCHEME_CDR(multi_marks)) {
-    ph = SCHEME_CDR(SCHEME_CAR(multi_marks));
-    if (SCHEME_FALSEP(phase)) {
-      if (!SCHEME_BOXP(ph)) {
-        /* number phase shift, so look for #f */
-        ph = scheme_false;
-      } else {
-        /* phase shift of some <n> to #f, so look for <n> */
-        ph = SCHEME_BOX_VAL(ph); 
-      }
-    } else if (SCHEME_BOXP(ph)) {
-      /* we want a number phase, but this is shifted to #f */
-      ph = NULL;
-    } else
-      ph = scheme_bin_minus(phase, ph);
-
-    if (ph) {
-      m = extract_single_mark(SCHEME_CAR(SCHEME_CAR(multi_marks)), ph);
-      
-      marks = mark_set_set(marks, m, scheme_true);
+  Scheme_Object *ph;
+    
+  ph = SCHEME_CDR(multi_mark_and_phase);
+  if (SCHEME_FALSEP(phase)) {
+    if (!SCHEME_BOXP(ph)) {
+      /* number phase shift, so look for #f */
+      ph = scheme_false;
+    } else {
+      /* phase shift of some <n> to #f, so look for <n> */
+      ph = SCHEME_BOX_VAL(ph); 
     }
+  } else if (SCHEME_BOXP(ph)) {
+    /* we want a number phase, but this is shifted to #f */
+    return NULL;
+  } else
+    ph = scheme_bin_minus(phase, ph);
+  
+  return extract_single_mark(SCHEME_CAR(multi_mark_and_phase), ph);
+}
+
+static Scheme_Mark_Set *extract_mark_set_from_mark_list(Scheme_Mark_Set *marks,
+                                                        Scheme_Object *multi_marks,
+                                                        Scheme_Object *phase)
+{
+  Scheme_Object *m;
+
+  if (SCHEME_FALLBACKP(multi_marks))
+    multi_marks = SCHEME_FALLBACK_FIRST(multi_marks);
+  
+  for (; !SCHEME_NULLP(multi_marks); multi_marks= SCHEME_CDR(multi_marks)) {
+    m = extract_single_mark_from_shifted(SCHEME_CAR(multi_marks), phase);
+    if (m)
+      marks = mark_set_set(marks, m, scheme_true);
   }
 
   return marks;
+}
+
+static Scheme_Mark_Set *extract_mark_set(Scheme_Stx *stx, Scheme_Object *phase)
+{
+   Scheme_Mark_Table *mt = stx->marks;
+   return extract_mark_set_from_mark_list(mt->single_marks, mt->multi_marks, phase);
 }
 
 static Scheme_Mark_Set *adjust_mark(Scheme_Mark_Set *marks, Scheme_Object *m, int mode)
@@ -717,43 +754,36 @@ Scheme_Object *adjust_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Sc
 {
   Scheme_Object *l;
 
-  if (!SCHEME_NULLP(multi_marks)) {
-    l = SCHEME_CAR(SCHEME_CAR(multi_marks));
-
-    if (SCHEME_TL_MULTI_MARKP(m) && !SCHEME_TL_MULTI_MARKP(l)) {
-      /* a top-level mark has no effect if non-top-level marks are present */
-      return multi_marks;
-    } else if (!SAME_OBJ(m, l) && SCHEME_TL_MULTI_MARKP(l)) {
-      /* change all top-level contexts to `m`: */
-      l = multi_marks;
-      multi_marks = scheme_null;
-      for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-        multi_marks = scheme_make_pair(scheme_make_pair(m,
-                                                        SCHEME_CDR(SCHEME_CAR(l))),
-                                       multi_marks);
-      }
-    }
-  }
-
-  if (mode == SCHEME_STX_TL_SWAP)
-    return multi_marks;
+  l = multi_marks;
+  if (SCHEME_FALLBACKP(l))
+    l = SCHEME_FALLBACK_FIRST(l);
   
-  for (l = multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+  for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SAME_OBJ(m, SCHEME_CAR(SCHEME_CAR(l)))
         && SAME_OBJ(phase, SCHEME_CDR(SCHEME_CAR(l)))) {
-      if (mode == SCHEME_STX_ADD)
+      if ((mode == SCHEME_STX_ADD) || (mode == SCHEME_STX_PUSH))
         return multi_marks;
       break;
     }
+    if (SAME_OBJ(m, SCHEME_CAR(SCHEME_CAR(l)))
+        && (mode == SCHEME_STX_PUSH))
+      printf("hmm....\n");
+  }
+
+  if (mode == SCHEME_STX_PUSH) {
+    if (!SCHEME_NULLP(multi_marks))
+      return make_fallback_pair(scheme_make_pair(scheme_make_pair(m, phase),
+                                                 scheme_null),
+                                multi_marks);
   }
 
   if ((mode == SCHEME_STX_REMOVE) && SCHEME_NULLP(l))
     return multi_marks;
   else if ((mode == SCHEME_STX_REMOVE) 
            || ((mode == SCHEME_STX_FLIP && !SCHEME_NULLP(l)))) {
-    return remove_at(multi_marks, l);
+    return remove_at_mark_list(multi_marks, l);
   } else
-    return scheme_make_pair(scheme_make_pair(m, phase), multi_marks);
+    return add_to_mark_list(scheme_make_pair(m, phase), multi_marks);
 }
 
 static Scheme_Mark_Set *combine_mark(Scheme_Mark_Set *marks, Scheme_Object *m, int mode)
@@ -795,77 +825,89 @@ static Scheme_Object *make_vector3(Scheme_Object *a, Scheme_Object *b, Scheme_Ob
 Scheme_Object *combine_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Scheme_Object *phase, int mode)
 {
   Scheme_Object *l;
-  
-  if (!SCHEME_NULLP(multi_marks)) {
-    l = SCHEME_VEC_ELS(SCHEME_CAR(multi_marks))[0];
 
-    if (SCHEME_TL_MULTI_MARKP(m) && !SCHEME_TL_MULTI_MARKP(l)) {
-      /* a top-level action has no effect if non-top-level actions are present */
+  l = multi_marks;
+  if (SCHEME_FALLBACKP(l)) {
+    if ((mode == SCHEME_STX_PUSH)
+        && SAME_OBJ(SCHEME_FALLBACK_MARK(l), m)
+        && SAME_OBJ(SCHEME_FALLBACK_PHASE(l), phase))
       return multi_marks;
-    } else if (!SAME_OBJ(m, l) && SCHEME_TL_MULTI_MARKP(l)) {
-      /* change all top-level actions to `m` actions: */
-      l = multi_marks;
-      multi_marks = scheme_null;
-      for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-        if (SCHEME_INT_VAL(SCHEME_VEC_ELS(SCHEME_CAR(l))[2]) != SCHEME_STX_TL_SWAP)
-          multi_marks = scheme_make_pair(make_vector3(m,
-                                                      SCHEME_VEC_ELS(SCHEME_CAR(l))[1],
-                                                      SCHEME_VEC_ELS(SCHEME_CAR(l))[2]),
-                                         multi_marks);
-      }
-    }
+    l = SCHEME_FALLBACK_FIRST(l);
   }
 
-  if (mode == SCHEME_STX_TL_SWAP) {
-    if (SCHEME_NULLP(multi_marks)) {
-      /* propagate swap to others: */
-      return scheme_make_pair(make_vector3(m, phase, scheme_make_integer(mode)),
-                              multi_marks);
-    } else
-      return multi_marks;
-  } else if (SCHEME_PAIRP(multi_marks)
-             && (SCHEME_INT_VAL(SCHEME_VEC_ELS(SCHEME_CAR(multi_marks))[2]) == SCHEME_STX_TL_SWAP)) {
-    /* drop swap action, since it's implicit in whatever we action add */
-    multi_marks = scheme_null;
-  }
-
-  for (l = multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+  for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SAME_OBJ(m, SCHEME_VEC_ELS(SCHEME_CAR(l))[0])
         && SAME_OBJ(phase, SCHEME_VEC_ELS(SCHEME_CAR(l))[1])) {
       int prev_mode = SCHEME_INT_VAL(SCHEME_VEC_ELS(SCHEME_CAR(l))[2]);
-      if (mode == SCHEME_STX_FLIP) {
+      if (mode == SCHEME_STX_PUSH) {
+        if (prev_mode == SCHEME_STX_ADD)
+          return multi_marks;
+        break;
+      } else if (mode == SCHEME_STX_FLIP) {
         if (prev_mode == SCHEME_STX_FLIP)
-          return remove_at(multi_marks, l);
+          return remove_at_mark_list(multi_marks, l);
         else {
           if (prev_mode == SCHEME_STX_ADD)
             mode = SCHEME_STX_REMOVE;
           else
             mode = SCHEME_STX_ADD;
-          multi_marks = remove_at(multi_marks, l);
+          multi_marks = remove_at_mark_list(multi_marks, l);
           break;
         }
       } else if (mode != prev_mode) {
-        multi_marks = remove_at(multi_marks, l);
+        multi_marks = remove_at_mark_list(multi_marks, l);
         break;
       } else
         return multi_marks;
     }
   }
 
-  return scheme_make_pair(make_vector3(m, phase, scheme_make_integer(mode)),
-                          multi_marks);
+  if (mode == SCHEME_STX_PUSH)
+    return make_fallback_quad(scheme_null, multi_marks, m, phase);
+  else
+    return add_to_mark_list(make_vector3(m, phase, scheme_make_integer(mode)),
+                            multi_marks);
 }
 
-static Scheme_Object *remove_at(Scheme_Object *l, Scheme_Object *p)
+static Scheme_Object *reconstruct_fallback(Scheme_Object *fb, Scheme_Object *r)
 {
+  if (fb) {
+    if (SCHEME_FALLBACK_QUADP(fb))
+      return make_fallback_quad(r,
+                                SCHEME_FALLBACK_REST(fb),
+                                SCHEME_FALLBACK_MARK(fb),
+                                SCHEME_FALLBACK_PHASE(fb));
+    else
+      return make_fallback_pair(r, SCHEME_FALLBACK_REST(fb));
+  } else
+    return r;
+}
+
+static Scheme_Object *remove_at_mark_list(Scheme_Object *l, Scheme_Object *p)
+{
+  Scheme_Object *fb;
   Scheme_Object *r = SCHEME_CDR(p);
+
+  if (SCHEME_FALLBACKP(l)) {
+    fb = l;
+    l = SCHEME_FALLBACK_FIRST(fb);
+  } else
+    fb = NULL;
 
   while (!SAME_OBJ(l, p)) {
     r = scheme_make_pair(SCHEME_CAR(l), r);
     l = SCHEME_CDR(l);
   }
 
-  return r;
+  return reconstruct_fallback(fb, r);
+}
+
+static Scheme_Object *add_to_mark_list(Scheme_Object *p, Scheme_Object *l)
+{
+  if (SCHEME_FALLBACKP(l))
+    return reconstruct_fallback(l, scheme_make_pair(p, SCHEME_FALLBACK_FIRST(l)));
+  else
+    return scheme_make_pair(p, l);
 }
 
 static Scheme_Mark_Table *clone_mark_table(Scheme_Mark_Table *mt, Scheme_Mark_Table *prev)
@@ -918,9 +960,6 @@ static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object 
     return mt;
   }
 }
-
-
-int props_zeroed, props_oned;
 
 Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode)
 {
@@ -1065,6 +1104,9 @@ Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o)
 {
   Scheme_Object *l = ((Scheme_Stx *)o)->marks->multi_marks, *multi_mark;
 
+  if (SCHEME_FALLBACKP(l))
+    l = SCHEME_FALLBACK_FIRST(l);
+  
   while (!SCHEME_NULLP(l)) {
     multi_mark = SCHEME_CAR(SCHEME_CAR(l));
     o = scheme_stx_remove_mark(o,
@@ -1188,17 +1230,25 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
     return mt;
   }
 
-  if (SCHEME_NULLP(mt->multi_marks) && !prev)
+  if ((SCHEME_NULLP(mt->multi_marks)
+       || (SCHEME_FALLBACKP(mt->multi_marks)
+           && SCHEME_NULLP(SCHEME_FALLBACK_FIRST(mt->multi_marks))))
+      && !prev)
     return mt;
 
   mt2 = clone_mark_table(mt, prev);
 
   val = scheme_null;
-  for (l = mt->multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+  l = mt->multi_marks;
+  if (SCHEME_FALLBACKP(l))
+    l = SCHEME_FALLBACK_FIRST(l);
+  for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     key = shift_mm(SCHEME_CAR(l), shift);
     if (key)
       val = scheme_make_pair(key, val);
   }
+  if (SCHEME_FALLBACKP(mt->multi_marks))
+    val = reconstruct_fallback(mt->multi_marks, val);
   mt2->multi_marks = val;
 
   if (prev) {
@@ -1490,7 +1540,7 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
                                       Scheme_Mark_Table *parent_marks, int flag)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
-  Scheme_Object *key, *val;
+  Scheme_Object *key, *val, *fb;
 
   if (!to_propagate || (to_propagate == empty_propagate_table))
     return o;
@@ -1536,14 +1586,47 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
     flag |= SCHEME_STX_MUTATE;
   o = val;
 
-  for (key = to_propagate->multi_marks; !SCHEME_NULLP(key); key = SCHEME_CDR(key)) {
-    val = SCHEME_CAR(key);
-    STX_ASSERT(SCHEME_MULTI_MARKP(SCHEME_VEC_ELS(val)[0]));
-    val = scheme_stx_adjust_mark(o, SCHEME_VEC_ELS(val)[0], SCHEME_VEC_ELS(val)[1], 
-                                 SCHEME_INT_VAL(SCHEME_VEC_ELS(val)[2]) | flag);
-    if (!SAME_OBJ(o, val))
-      flag |= SCHEME_STX_MUTATE;
-    o = val;
+  fb = to_propagate->multi_marks;
+  if (SCHEME_FALLBACKP(fb)) {
+    /* reverse the fallback list: */
+    key = scheme_null;
+    while (SCHEME_FALLBACKP(fb)) {
+      key = make_fallback_quad(SCHEME_FALLBACK_FIRST(fb),
+                               key,
+                               SCHEME_FALLBACK_MARK(fb),
+                               SCHEME_FALLBACK_PHASE(fb));
+      fb = SCHEME_FALLBACK_REST(fb);
+    }
+    key = make_fallback_pair(fb, key);
+  }
+  
+  while (fb) {
+    if (SCHEME_FALLBACKP(fb)) {
+      if (SCHEME_FALLBACK_QUADP(fb)) {
+        val = scheme_stx_adjust_mark(o, SCHEME_FALLBACK_MARK(fb), SCHEME_FALLBACK_PHASE(fb),
+                                     SCHEME_STX_PUSH | flag);
+        if (!SAME_OBJ(o, val))
+          flag |= SCHEME_STX_MUTATE;
+        o = val;
+      }
+      key = SCHEME_FALLBACK_FIRST(fb);
+    } else
+      key = fb;
+    
+    for (; !SCHEME_NULLP(key); key = SCHEME_CDR(key)) {
+      val = SCHEME_CAR(key);
+      STX_ASSERT(SCHEME_MULTI_MARKP(SCHEME_VEC_ELS(val)[0]));
+      val = scheme_stx_adjust_mark(o, SCHEME_VEC_ELS(val)[0], SCHEME_VEC_ELS(val)[1], 
+                                   SCHEME_INT_VAL(SCHEME_VEC_ELS(val)[2]) | flag);
+      if (!SAME_OBJ(o, val))
+        flag |= SCHEME_STX_MUTATE;
+      o = val;
+    }
+
+    if (SCHEME_FALLBACKP(fb))
+      fb = SCHEME_FALLBACK_REST(fb);
+    else
+      fb = NULL;
   }
   
   if ((flag & SCHEME_STX_PROPONLY) && !(flag & SCHEME_STX_MUTATE)) {
@@ -2343,6 +2426,9 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
   Scheme_Mark *mark;
   Scheme_Mark_Set *marks;
   Scheme_Module_Phase_Exports *pt;
+  Scheme_Object *multi_marks;
+
+  /* REMOVEME: FIXME: protect against stack overflow */
 
   for (l = seen; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SAME_OBJ((Scheme_Object *)stx, SCHEME_CAR(seen))) {
@@ -2352,89 +2438,99 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
     }
   }
 
-  marks = extract_mark_set(stx, phase);
+  multi_marks = stx->marks->multi_marks;
 
-  print_indent(indent);
-  printf(" At phase %s:\n", scheme_write_to_string(phase, NULL));
-  print_marks(marks, NULL, indent);
+  /* Loop for top-level fallbacks: */
+  while (1) {
+    marks = extract_mark_set_from_mark_list(stx->marks->single_marks, multi_marks, phase);
+    
+    print_indent(indent);
+    printf(" At phase %s:\n", scheme_write_to_string(phase, NULL));
+    print_marks(marks, NULL, indent);
 
-  if (!level)
-    return;
+    if (level) {
+      i = mark_set_next(marks, -1);
+      while (i != -1) {
+        mark_set_index(marks, i, &key, &val);
 
-  i = mark_set_next(marks, -1);
-  while (i != -1) {
-    mark_set_index(marks, i, &key, &val);
-
-    mark = (Scheme_Mark *)key;
-    if (mark->bindings) {
-      ht = (Scheme_Hash_Table *)SCHEME_CAR(mark->bindings);
-      for (j = ht->size; j--; ) {
-	if (ht->vals[j]
-            && ((level > 1) || SAME_OBJ(ht->keys[j], stx->val))) {
-          print_indent(indent);
-          printf("  %s =", scheme_write_to_string(ht->keys[j], NULL));
-          l = ht->vals[j];
-          while (l && !SCHEME_NULLP(l)) {
-            val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
-            if (SCHEME_SYMBOLP(val))
-              printf(" local @ %s\n", scheme_write_to_string((Scheme_Object*)mark, 0));
-            else
-              printf(" %s\n", scheme_write_to_string(val, 0));
-            print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
-
-            if (SCHEME_MPAIRP(val)) {
+        mark = (Scheme_Mark *)key;
+        if (mark->bindings) {
+          ht = (Scheme_Hash_Table *)SCHEME_CAR(mark->bindings);
+          for (j = ht->size; j--; ) {
+            if (ht->vals[j]
+                && ((level > 1) || SAME_OBJ(ht->keys[j], stx->val))) {
               print_indent(indent);
-              printf("  == free-identifier=? =>\n");
-              print_at((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)), SCHEME_CDR(SCHEME_CDR(val)),
-                       level, indent+2,
-                       scheme_make_pair((Scheme_Object *)stx, seen));
-            }
+              printf("  %s =", scheme_write_to_string(ht->keys[j], NULL));
+              l = ht->vals[j];
+              while (l && !SCHEME_NULLP(l)) {
+                val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
+                if (SCHEME_SYMBOLP(val))
+                  printf(" local @ %s\n", scheme_write_to_string((Scheme_Object*)mark, 0));
+                else
+                  printf(" %s\n", scheme_write_to_string(val, 0));
+                print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
 
+                if (SCHEME_MPAIRP(val)) {
+                  print_indent(indent);
+                  printf("  == free-identifier=? =>\n");
+                  print_at((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)), SCHEME_CDR(SCHEME_CDR(val)),
+                           level, indent+2,
+                           scheme_make_pair((Scheme_Object *)stx, seen));
+                }
+
+                l = SCHEME_CDR(l);
+              }
+            }
+          }
+          
+          l = SCHEME_CDR(mark->bindings);
+          while (l && !SCHEME_NULLP(l)) {
+            print_indent(indent);
+            printf("  ...\n");
+            print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
+        
+            pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
+            if (SCHEME_VEC_SIZE(pes) == 3) {
+              print_indent(indent);
+              printf("    [unmarshal %s]\n",
+                     (SCHEME_FALSEP(SCHEME_VEC_ELS(pes)[0]) ? "done" : "pending"));
+            } else {
+              print_indent(indent);
+              printf("    %s\n", scheme_write_to_string(scheme_module_resolve(SCHEME_VEC_ELS(pes)[0], 0), NULL));
+          
+              pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(pes)[1];
+              if (!pt->ht)
+                scheme_populate_pt_ht(pt);
+
+              ht = pt->ht;
+          
+              if (full_imports) {
+                for (j = ht->size; j--; ) {
+                  if (ht->vals[j]) {
+                    print_indent(indent);
+                    printf("    %s\n", scheme_write_to_string(ht->keys[j], NULL));
+                  }
+                }
+              } else {
+                if (scheme_hash_get(ht, stx->val)) {
+                  print_indent(indent);
+                  printf("      has %s\n", scheme_write_to_string(stx->val, NULL));
+                }
+              }
+            }
             l = SCHEME_CDR(l);
           }
         }
-      }
-          
-      l = SCHEME_CDR(mark->bindings);
-      while (l && !SCHEME_NULLP(l)) {
-        print_indent(indent);
-        printf("  ...\n");
-        print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
-        
-        pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
-        if (SCHEME_VEC_SIZE(pes) == 3) {
-          print_indent(indent);
-          printf("    [unmarshal %s]\n",
-                 (SCHEME_FALSEP(SCHEME_VEC_ELS(pes)[0]) ? "done" : "pending"));
-        } else {
-          print_indent(indent);
-          printf("    %s\n", scheme_write_to_string(scheme_module_resolve(SCHEME_VEC_ELS(pes)[0], 0), NULL));
-          
-          pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(pes)[1];
-          if (!pt->ht)
-            scheme_populate_pt_ht(pt);
-
-          ht = pt->ht;
-          
-          if (full_imports) {
-            for (j = ht->size; j--; ) {
-              if (ht->vals[j]) {
-                print_indent(indent);
-                printf("    %s\n", scheme_write_to_string(ht->keys[j], NULL));
-              }
-            }
-          } else {
-            if (scheme_hash_get(ht, stx->val)) {
-              print_indent(indent);
-              printf("      has %s\n", scheme_write_to_string(stx->val, NULL));
-            }
-          }
-        }
-        l = SCHEME_CDR(l);
+    
+        i = mark_set_next(marks, i);
       }
     }
-    
-    i = mark_set_next(marks, i);
+
+    if (SCHEME_FALLBACKP(multi_marks)) {
+      multi_marks = SCHEME_FALLBACK_REST(multi_marks);
+      printf(" -- fallback --\n");
+    } else
+      break;
   }
 }
 
@@ -2621,21 +2717,29 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
                                                   Scheme_Mark_Set **_binding_marks)
 {
   Scheme_Mark_Set *marks, *best_set;
+  Scheme_Object *multi_marks;
 
-  marks = extract_mark_set(stx, phase);
+  multi_marks = stx->marks->multi_marks;
 
-  best_set = (Scheme_Mark_Set *)do_stx_lookup(stx, marks,
-                                              NULL, 
-                                              NULL, NULL);
-  if (!best_set)
-    return NULL;
+  /* Loop for top-level fallbacks: */
+  while (1) {
+    marks = extract_mark_set_from_mark_list(stx->marks->single_marks, multi_marks, phase);
 
-  if (_binding_marks) *_binding_marks = best_set;
-
-  /* Find again, this time checking to ensure no ambiguity: */
-  return (Scheme_Object **)do_stx_lookup(stx, marks,
-                                         best_set,
-                                         _exact_match, _ambiguous);
+    best_set = (Scheme_Mark_Set *)do_stx_lookup(stx, marks,
+                                                NULL, 
+                                                NULL, NULL);
+    if (best_set) {
+      if (_binding_marks) *_binding_marks = best_set;
+      
+      /* Find again, this time checking to ensure no ambiguity: */
+      return (Scheme_Object **)do_stx_lookup(stx, marks,
+                                             best_set,
+                                             _exact_match, _ambiguous);
+    } else if (SCHEME_FALLBACKP(multi_marks))
+      multi_marks = SCHEME_FALLBACK_REST(multi_marks);
+    else
+      return NULL; 
+  }
 }
 
 static Scheme_Object *apply_accumulated_shifts(Scheme_Object *result, Scheme_Object *prev_shifts, 
@@ -2974,7 +3078,7 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
                                           int top_level)
 {
   Scheme_Object *vec;
-  Scheme_Object *body_marks, *expr_mark;
+  Scheme_Object *body_marks;
   Scheme_Object *intro_multi_mark;
 
   /* The `intro_multi_mark` is the home for all bindings in a given context.
@@ -3000,16 +3104,15 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
     shift_or_shifts = scheme_make_pair(shift_or_shifts, scheme_null);
 
   /* A module context consists of
-       - A set of marks that correspond to the module body
-       - A phase
+       - A list of marks, multi-marks, and (cons multi-mark phase) that
+         corresponds to the module body
+       - A phase used for extracting marks (not a shift for the intro mark)
        - An inspector
        - A list of module-index shifts
-       - A mark that is specific to introduction
-       - A mark that corresponds to expressions in the module
-         body at a given phase; the expression mark effectively
-         draws a line between bindings and uses, where the mark
-         does not apply to bindings or compile-time relative to the
-         phase
+       - A multi-mark for binding/introduction (included in body marks)
+       - A list of marks that correspond to macro uses;
+         this marks must be stripped away from a definition
+         context
   */
 
   vec = scheme_make_vector(6, NULL);
@@ -3031,9 +3134,14 @@ Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc)
 
   while (!SCHEME_NULLP(body_marks)) {
     mark = SCHEME_CAR(body_marks);
-    if (!SCHEME_MARKP(mark))
-      mark = extract_single_mark(mark, phase);
-    marks = mark_set_set(marks, mark, scheme_true);
+    if (!SCHEME_MARKP(mark)) {
+      if (SCHEME_PAIRP(mark))
+        mark = extract_single_mark_from_shifted(mark, phase);
+      else
+        mark = extract_single_mark(mark, phase);
+    }
+    if (mark)
+      marks = mark_set_set(marks, mark, scheme_true);
     body_marks = SCHEME_CDR(body_marks);
   }
 
@@ -3042,7 +3150,7 @@ Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc)
 
 Scheme_Object *scheme_module_context_frame_marks(Scheme_Object *mc)
 {
-  return scheme_module_context_marks(mc);
+  return (Scheme_Object *)scheme_module_context_marks(mc);
 }
 
 void scheme_module_context_add_expr_mark(Scheme_Object *mc, Scheme_Object *expr_mark)
@@ -3079,6 +3187,8 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
 {
   Scheme_Object *vec;
 
+  /* Clones the module context, but with a different convenience phase */
+
   if (SAME_OBJ(SCHEME_VEC_ELS(mc)[1], phase))
     return mc;
 
@@ -3088,25 +3198,58 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
   SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(mc)[2];
   SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(mc)[3];
   SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(mc)[4];
+  /* Any expression from the from another phase don't apply here. This
+     list only matters for module contexts that are attached to environments,
+     anyway: */
   SCHEME_VEC_ELS(vec)[5] = scheme_null;
 
   return vec;
 }
 
-Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc)
+static Scheme_Object *add_module_context_except(Scheme_Object *stx, Scheme_Object *mc, Scheme_Object *skip)
 {
-  Scheme_Object *body_marks = SCHEME_VEC_ELS(mc)[0];
+  Scheme_Object *body_marks = SCHEME_VEC_ELS(mc)[0], *mark;
+  Scheme_Object *phase = SCHEME_VEC_ELS(mc)[1];
 
   while (!SCHEME_NULLP(body_marks)) {
-    stx = scheme_stx_add_mark(stx,
-                              SCHEME_CAR(body_marks),
-                              scheme_make_integer(0));
+    mark = SCHEME_CAR(body_marks);
+    if (skip && SAME_OBJ(mark, skip))
+      mark = NULL;
+    else if (!SCHEME_MARKP(mark)) {
+      if (SCHEME_PAIRP(mark))
+        mark = extract_single_mark_from_shifted(mark, phase);
+      else
+        mark = extract_single_mark(mark, phase);
+    }
+    if (mark)
+      stx = scheme_stx_add_mark(stx, mark, phase);
     body_marks = SCHEME_CDR(body_marks);
   }
 
   stx = scheme_stx_add_shifts(stx, SCHEME_VEC_ELS(mc)[3]);
 
   return stx;
+}
+
+Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc)
+{
+  return add_module_context_except(stx, mc, NULL);
+}
+
+Scheme_Object *scheme_stx_push_module_context(Scheme_Object *stx, Scheme_Object *mc)
+{
+  Scheme_Object *intro_multi_mark = SCHEME_VEC_ELS(mc)[4];
+
+  stx = add_module_context_except(stx, mc, intro_multi_mark);
+
+  return scheme_stx_adjust_mark(stx, intro_multi_mark, scheme_make_integer(0), SCHEME_STX_PUSH);
+}
+
+Scheme_Object *scheme_stx_push_introduce_module_context(Scheme_Object *stx, Scheme_Object *mc)
+{
+  Scheme_Object *intro_multi_mark = SCHEME_VEC_ELS(mc)[4];
+
+  return scheme_stx_adjust_mark(stx, intro_multi_mark, scheme_make_integer(0), SCHEME_STX_PUSH);
 }
 
 Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Object *mc)
@@ -3132,26 +3275,6 @@ Scheme_Object *scheme_stx_adjust_module_expression_context(Scheme_Object *stx, S
   while (!SCHEME_NULLP(expr_marks)) {
     stx = scheme_stx_adjust_mark(stx, SCHEME_CAR(expr_marks), SCHEME_VEC_ELS(mc)[1], mode);
     expr_marks = SCHEME_CDR(expr_marks);
-  }
-
-  return stx;
-}
-
-Scheme_Object *scheme_stx_swap_toplevel_context(Scheme_Object *stx, Scheme_Object *mc)
-{
-  Scheme_Object *body_marks = SCHEME_VEC_ELS(mc)[0], *bm;
-
-  stx = scheme_stx_remove_mark(stx, root_mark, scheme_make_integer(0));
-  
-  while (!SCHEME_NULLP(body_marks)) {
-    bm = SCHEME_CAR(body_marks);
-    stx = scheme_stx_adjust_mark(stx,
-                                 bm,
-                                 scheme_make_integer(0),
-                                 (SCHEME_MULTI_MARKP(bm)
-                                  ? SCHEME_STX_TL_SWAP
-                                  : SCHEME_STX_ADD));
-    body_marks = SCHEME_CDR(body_marks);
   }
 
   return stx;
@@ -3296,7 +3419,7 @@ Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, S
 {
   Scheme_Object *plain, *o, *for_intro, *for_expr, *vec;
 
-  plain = scheme_datum_to_syntax(scheme_true, scheme_false, scheme_false, 0, 0);
+  plain = scheme_datum_to_syntax(scheme_false, scheme_false, scheme_false, 0, 0);
 
   if (orig_src)
     o = scheme_datum_to_syntax(scheme_true, scheme_false, orig_src, 0, 0);
@@ -3306,9 +3429,9 @@ Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, S
   if (!track_expr)
     return o;
 
-  /* Keep track of expression & intro mark separately: */
+  /* Keep track of macro-use marks & intro mark separately: */
   for_intro = scheme_stx_introduce_to_module_context(plain, mc);
-  for_expr = scheme_stx_add_module_expression_context(plain, mc);
+  for_expr = scheme_stx_adjust_module_expression_context(plain, mc, SCHEME_STX_ADD);
   vec = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(vec)[0] = o;
   SCHEME_VEC_ELS(vec)[1] = for_intro;
@@ -3319,65 +3442,63 @@ Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, S
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
 {
   Scheme_Stx *stx = (Scheme_Stx *)_stx;
-  Scheme_Object *vec, *shifts, *a, *multi_marks, *phase = scheme_make_integer(0);
-  Scheme_Object *expr_mark = scheme_false, *intro_mark;
+  Scheme_Object *vec, *shifts, *a, *body_marks, *phase = scheme_make_integer(0);
+  Scheme_Object *expr_marks = scheme_null, *intro_multi_mark = NULL;
 
   if (SCHEME_VECTORP(stx->val)) {
-    intro_mark = SCHEME_VEC_ELS(stx->val)[1];
-    if (SCHEME_VEC_SIZE(stx->val) > 2)
-      expr_mark = SCHEME_VEC_ELS(stx->val)[2];
-    expr_marks = NULL;
-    body_mark = NULL;
+    intro_multi_mark = SCHEME_VEC_ELS(stx->val)[1];
+    expr_marks = SCHEME_VEC_ELS(stx->val)[2];
+    stx = (Scheme_Stx *)SCHEME_VEC_ELS(stx->val)[0];
   }
 
   shifts = stx->shifts;
   if (SCHEME_VECTORP(shifts))
     shifts = SCHEME_VEC_ELS(shifts)[0];
 
-  multi_marks = scheme_null;
-  for (a = stx->marks->multi_marks; !SCHEME_NULLP(a); a = SCHEME_CDR(a)) {
-    multi_marks = scheme_make_pair(SCHEME_CAR(SCHEME_CAR(a)), multi_marks);
-    phase = SCHEME_CDR(SCHEME_CAR(a));
+  phase = scheme_make_integer(0);
+
+  body_marks = scheme_null;
+  a = stx->marks->multi_marks;
+  if (SCHEME_FALLBACKP(a))
+    a = SCHEME_FALLBACK_FIRST(a);
+  for (; !SCHEME_NULLP(a); a = SCHEME_CDR(a)) {
+    if (SAME_OBJ(phase, SCHEME_CDR(SCHEME_CAR(a))))
+      body_marks = scheme_make_pair(SCHEME_CAR(SCHEME_CAR(a)), body_marks);
+    else
+      body_marks = scheme_make_pair(SCHEME_CAR(a), body_marks);
   }
 
-  if (SCHEME_TRUEP(expr_mark)
-      && mark_set_count(((Scheme_Stx *)expr_mark)->marks->single_marks) == 1) {
+  if (SCHEME_STXP(expr_marks)) {
+    Scheme_Stx *istx = (Scheme_Stx *)expr_marks;
     Scheme_Object *key, *val;
     intptr_t i;
-    i = mark_set_next(((Scheme_Stx *)expr_mark)->marks->single_marks, -1);
-    mark_set_index(((Scheme_Stx *)expr_mark)->marks->single_marks, i, &key, &val);
-    expr_mark = key;
 
-    i = mark_set_next(stx->marks->single_marks, -1);
-    while (i != -1) {
-      mark_set_index(stx->marks->single_marks, i, &key, &val);
-      if (!SAME_OBJ(key, expr_mark))
-        multi_marks = scheme_make_pair(key, multi_marks);
-      i = mark_set_next(stx->marks->single_marks, i);
+    expr_marks = scheme_null;
+    i = -1;
+    while ((i = mark_set_next(istx->marks->single_marks, i)) != -1) {
+      mark_set_index(istx->marks->single_marks, i, &key, &val);
+      expr_marks = scheme_make_pair(key, expr_marks);
     }
-  } else if (mark_set_count(stx->marks->single_marks) == 1) {
-    Scheme_Object *key, *val;
-    intptr_t i;
-    i = mark_set_next(stx->marks->single_marks, -1);
-    mark_set_index(stx->marks->single_marks, i, &key, &val);
-    expr_mark = key;
   }
 
-  if (intro_mark) {
-    stx = (Scheme_Stx *)intro_mark;
-    if (SCHEME_PAIRP(stx->marks->multi_marks)) {
-      intro_mark = SCHEME_CAR(SCHEME_CAR(stx->marks->multi_marks));
-    } else
-      intro_mark = scheme_false;
-  } else
-    intro_mark = scheme_false;
+  if (intro_multi_mark) {
+    stx = (Scheme_Stx *)intro_multi_mark;
+    if (!SCHEME_FALLBACKP(stx->marks->multi_marks)
+        && SCHEME_PAIRP(stx->marks->multi_marks)) {
+      intro_multi_mark = SCHEME_CAR(SCHEME_CAR(stx->marks->multi_marks));
+    }
+  }
+  if (!intro_multi_mark) {
+    /* This won't happen for a well-formed representation */
+    intro_multi_mark = new_multi_mark(0);
+  }
   
   vec = scheme_make_vector(6, NULL);
-  SCHEME_VEC_ELS(vec)[0] = multi_marks;
+  SCHEME_VEC_ELS(vec)[0] = body_marks;
   SCHEME_VEC_ELS(vec)[1] = phase;
   SCHEME_VEC_ELS(vec)[2] = scheme_false; /* not sure this is right */
   SCHEME_VEC_ELS(vec)[3] = shifts;
-  SCHEME_VEC_ELS(vec)[4] = intro_mark;
+  SCHEME_VEC_ELS(vec)[4] = intro_multi_mark;
   SCHEME_VEC_ELS(vec)[5] = expr_marks;
 
   return vec;
@@ -3432,7 +3553,7 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
   }
 
   if (SCHEME_PAIRP(shift)) {
-    v = scheme_stx_swap_toplevel_context(v, SCHEME_CAR(shift));
+    v = scheme_stx_push_module_context(v, SCHEME_CAR(shift));
     shift = SCHEME_CDR(shift);
     if (SCHEME_FALSEP(shift))
       return v;
@@ -3825,6 +3946,33 @@ static Scheme_Object *intern_tails(Scheme_Object *l, Scheme_Hash_Table *ht)
   return result;
 }
 
+static Scheme_Object *intern_fallback_tails(Scheme_Object *l, Scheme_Hash_Table *ht)
+{
+  Scheme_Object *r, *result;
+
+  r = scheme_null;
+  do {
+    if (!SCHEME_FALLBACKP(l))
+      result = l;
+    else
+      result = scheme_hash_get(ht, l);
+    if (!result) {
+      r = scheme_make_pair(SCHEME_FALLBACK_FIRST(l), r);
+      l = SCHEME_FALLBACK_REST(l);
+    }
+  } while (!result);
+
+  while (!SCHEME_NULLP(r)) {
+    result = make_fallback_pair(SCHEME_CAR(r), result);
+    l = make_fallback_pair(SCHEME_CAR(r), l);
+    result = scheme_make_marshal_shared(result);
+    scheme_hash_set(ht, l, result);
+    r = SCHEME_CDR(r);
+  }
+
+  return result;
+}
+
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
 #endif
@@ -3930,23 +4078,52 @@ static Scheme_Object *multi_mark_to_vector(Scheme_Object *multi_mark, Scheme_Mar
   return vec;
 }
 
-static Scheme_Object *multi_marks_to_list(Scheme_Object *l, Scheme_Marshal_Tables *mt)
+static Scheme_Object *marshal_multi_marks(Scheme_Object *multi_marks, Scheme_Marshal_Tables *mt, Scheme_Hash_Table *ht)
 {
-  Scheme_Object *p, *first = scheme_null, *last = NULL;
+  Scheme_Object *l, *p, *first, *last;
+  Scheme_Object *fb_first = scheme_null, *fb_last = NULL;
 
-  while (!SCHEME_NULLP(l)) {
-    p = scheme_make_pair(scheme_make_pair(multi_mark_to_vector(SCHEME_CAR(SCHEME_CAR(l)), mt),
-                                          SCHEME_CDR(SCHEME_CAR(l))),
-                         scheme_null);
-    if (last)
-      SCHEME_CDR(last) = p;
+  while (1) {
+    l = multi_marks;
+    if (SCHEME_FALLBACKP(l))
+      l = SCHEME_FALLBACK_FIRST(l);
+
+    first = scheme_null;
+    last = NULL;
+    
+    while (!SCHEME_NULLP(l)) {
+      p = scheme_make_pair(scheme_make_pair(multi_mark_to_vector(SCHEME_CAR(SCHEME_CAR(l)), mt),
+                                            SCHEME_CDR(SCHEME_CAR(l))),
+                           scheme_null);
+      if (last)
+        SCHEME_CDR(last) = p;
+      else
+        first = p;
+      last = p;
+      l = SCHEME_CDR(l);
+    }
+
+    first = intern_tails(first, ht);
+
+    if (SCHEME_FALLBACKP(multi_marks))
+      first = make_fallback_pair(first, scheme_false);
+    
+    if (fb_last)
+      SCHEME_FALLBACK_REST(fb_last) = first;
     else
-      first = p;
-    last = p;
-    l = SCHEME_CDR(l);
+      fb_first = first;
+    fb_last = first;
+
+    if (SCHEME_FALLBACKP(multi_marks))
+      multi_marks = SCHEME_FALLBACK_REST(multi_marks);
+    else
+      break;
   }
 
-  return first;
+  if (SCHEME_FALLBACKP(fb_first))
+    fb_first = intern_fallback_tails(fb_first, ht);
+
+  return fb_first;
 }
 
 static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
@@ -3964,7 +4141,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
 
   shifts = intern_tails(drop_export_registries(stx->shifts), ht);
   singles = intern_tails(marks_to_sorted_list(stx->marks->single_marks), ht);
-  multi = intern_tails(multi_marks_to_list(stx->marks->multi_marks, mt), ht);
+  multi = marshal_multi_marks(stx->marks->multi_marks, mt, ht);
 
   vec = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(vec)[0] = shifts;
@@ -4458,17 +4635,30 @@ Scheme_Object *unmarshal_multi_marks(Scheme_Object *multi_marks,
                                      Scheme_Unmarshal_Tables *ut)
 {
   Scheme_Hash_Table *multi_mark;
-  Scheme_Object *l;
+  Scheme_Object *l, *mm_l;
 
-  for (l = multi_marks; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    if (SCHEME_VECTORP(SCHEME_CAR(SCHEME_CAR(l)))) {
-      multi_mark = vector_to_multi_mark(SCHEME_CAR(SCHEME_CAR(l)), ut);
-      if (!multi_mark) return_NULL;
-      SCHEME_CAR(SCHEME_CAR(l)) = (Scheme_Object *)multi_mark;
-    } else {
-      /* rest of list must be converted already, too */
-      break;
+  mm_l = multi_marks;
+
+  while (1) {
+    l = mm_l;
+    if (SCHEME_FALLBACKP(l))
+      l = SCHEME_FALLBACK_FIRST(l);
+
+    for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      if (SCHEME_VECTORP(SCHEME_CAR(SCHEME_CAR(l)))) {
+        multi_mark = vector_to_multi_mark(SCHEME_CAR(SCHEME_CAR(l)), ut);
+        if (!multi_mark) return_NULL;
+        SCHEME_CAR(SCHEME_CAR(l)) = (Scheme_Object *)multi_mark;
+      } else {
+        /* rest of list must be converted already, too */
+        break;
+      }
     }
+
+    if (SCHEME_FALLBACKP(mm_l))
+      mm_l = SCHEME_FALLBACK_REST(mm_l);
+    else
+      break;
   }
 
   return multi_marks;

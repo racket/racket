@@ -6992,13 +6992,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     /* "Punch a hole" in the enclosing context by removing marks that
        can reach module bindings (but preserve some module context): */
     fm = disarmed_form;
+    fm = scheme_revert_expression_marks(fm, env);
     fm = scheme_stx_remove_mark(fm, scheme_stx_root_mark(), scheme_env_phase(env->genv));
     fm = scheme_stx_remove_module_binding_marks(fm);
-    if (env->marks)
-      fm = scheme_stx_adjust_frame_expression_marks(fm,
-                                                    env->marks,
-                                                    scheme_env_phase(env->genv),
-                                                    SCHEME_STX_REMOVE);
     ctx_form = fm;
     fm = SCHEME_STX_CDR(fm);
     nm = SCHEME_STX_CAR(fm);
@@ -12365,7 +12361,7 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
   modidx = check_require_form(env, form);
 
   /* Use the current top-level context: */
-  form = scheme_stx_swap_toplevel_context(form, env->stx_context);
+  form = scheme_stx_push_module_context(form, env->stx_context);
 
   parse_requires(form, env->phase, modidx, env, NULL,
                  env->stx_context,

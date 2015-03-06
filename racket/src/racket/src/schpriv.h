@@ -1051,7 +1051,7 @@ typedef struct Scheme_Mark_Set Scheme_Mark_Set;
 typedef struct Scheme_Mark_Table {
   Scheme_Object so; /* scheme_mark_table_type or scheme_propagate_table_type */
   Scheme_Mark_Set *single_marks;
-  Scheme_Object *multi_marks; /* list of (cons multi_mark phase-shift) */
+  Scheme_Object *multi_marks; /* list of (cons multi-mark phase-shift) or fallback chain */
 } Scheme_Mark_Table;
 
 typedef struct Scheme_Stx {
@@ -1109,7 +1109,7 @@ Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 #define SCHEME_STX_ADD      0
 #define SCHEME_STX_REMOVE   1
 #define SCHEME_STX_FLIP     2
-#define SCHEME_STX_TL_SWAP  4
+#define SCHEME_STX_PUSH     4
 #define SCHEME_STX_MUTATE   16 /* or'ed */
 #define SCHEME_STX_PROPONLY 32 /* or'ed, internal */
 Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode);
@@ -1160,7 +1160,8 @@ Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *
 Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_adjust_module_expression_context(Scheme_Object *stx, Scheme_Object *mc, int mode);
 Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc);
-Scheme_Object *scheme_stx_swap_toplevel_context(Scheme_Object *stx, Scheme_Object *mc);
+Scheme_Object *scheme_stx_push_module_context(Scheme_Object *stx, Scheme_Object *mc);
+Scheme_Object *scheme_stx_push_introduce_module_context(Scheme_Object *stx, Scheme_Object *mc);
 
 Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, Scheme_Object *orig_src);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
