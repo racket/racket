@@ -73,6 +73,9 @@
      [("-c" "--clean") "Delete existing compiled files; implies -nxiIFDK"
       (add-flags (append '((clean #t))
                          disable-action-flags))]
+     [("--fast-clean") "Like --clean, but non-bootstrapping (can fail)"
+      (add-flags (append '((clean #t))
+                         disable-action-flags))]
      [("-n" "--no-zo") "Do not create \".zo\" files"
       (add-flags '((make-zo #f)))]
      [("--trust-zos") "Trust existing \".zo\"s (use only with prepackaged \".zo\"s)"

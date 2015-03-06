@@ -723,14 +723,19 @@ Scheme_Object *scheme_revert_expression_marks(Scheme_Object *o, Scheme_Comp_Env 
                                                     env->genv->stx_context,
                                                     SCHEME_STX_REMOVE);
   } else {
-    while (env->flags & (SCHEME_FOR_INTDEF | SCHEME_INTDEF_FRAME | SCHEME_INTDEF_SHADOW)) {
+    while (1) {
       if (env->marks) {
         o = scheme_stx_adjust_frame_expression_marks(o,
                                                      env->marks,
                                                      scheme_env_phase(env->genv),
                                                      SCHEME_STX_REMOVE);
       }
-      env = env->next;
+      if (env->flags & (SCHEME_FOR_INTDEF | SCHEME_INTDEF_FRAME | SCHEME_INTDEF_SHADOW)) {
+        env = env->next;
+        if (!env)
+          break;
+      } else
+        break;
     }
   }
   
@@ -1227,7 +1232,7 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 				env->in_modidx, 
 				&menv, NULL,
                                 NULL, NULL);
-    
+
     if (SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)) {
       /* Redirect to a macro? */
       if (scheme_is_set_transformer(SCHEME_PTR_VAL(var))) {

@@ -550,12 +550,13 @@ scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark, Scheme_Co
 
 void scheme_add_compilation_frame_expr_mark(Scheme_Comp_Env *env, Scheme_Object *expr_mark)
 {
-  if (!(env->flags & (SCHEME_INTDEF_FRAME | SCHEME_FOR_INTDEF))) {
+  while (env->flags & SCHEME_USE_MARKS_TO_NEXT) {
+    env = env->next;
+  }
+
+  if (env->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME)) {
     scheme_module_context_add_expr_mark(env->genv->stx_context, expr_mark);
   } else {
-    while (env->flags & SCHEME_USE_MARKS_TO_NEXT) {
-      env = env->next;
-    }
     expr_mark = scheme_add_frame_expression_mark(env->marks, expr_mark);
     env->marks = expr_mark;
   }
