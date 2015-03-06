@@ -2481,6 +2481,8 @@ local_introduce(int argc, Scheme_Object *argv[])
 
   if (scheme_current_thread->current_local_mark)
     s = scheme_stx_flip_mark(s, scheme_current_thread->current_local_mark, scheme_env_phase(env->genv));
+  if (scheme_current_thread->current_local_use_mark)
+    s = scheme_stx_flip_mark(s, scheme_current_thread->current_local_use_mark, scheme_env_phase(env->genv));
 
   return s;
 }

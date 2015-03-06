@@ -1168,6 +1168,7 @@ static Scheme_Prompt *allocate_prompt(Scheme_Prompt **cached_prompt) {
 static void save_dynamic_state(Scheme_Thread *thread, Scheme_Dynamic_State *state) {
     state->current_local_env = thread->current_local_env;
     state->mark              = thread->current_local_mark;
+    state->use_mark          = thread->current_local_use_mark;
     state->name              = thread->current_local_name;
     state->modidx            = thread->current_local_modidx;
     state->menv              = thread->current_local_menv;
@@ -1176,18 +1177,21 @@ static void save_dynamic_state(Scheme_Thread *thread, Scheme_Dynamic_State *stat
 static void restore_dynamic_state(Scheme_Dynamic_State *state, Scheme_Thread *thread) {
     thread->current_local_env     = state->current_local_env;
     thread->current_local_mark    = state->mark;
+    thread->current_local_use_mark = state->use_mark;
     thread->current_local_name    = state->name;
     thread->current_local_modidx  = state->modidx;
     thread->current_local_menv    = state->menv;
 }
 
-void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env, Scheme_Object *mark, 
+void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env,
+                              Scheme_Object *mark, Scheme_Object *use_mark,
                               Scheme_Object *name, 
                               Scheme_Env *menv,
                               Scheme_Object *modidx)
 {
   state->current_local_env = env;
   state->mark              = mark;
+  state->use_mark          = use_mark;
   state->name              = name;
   state->modidx            = modidx;
   state->menv              = menv;
@@ -1889,7 +1893,8 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 		   Scheme_Object *rator, Scheme_Object *code,
 		   Scheme_Comp_Env *env, Scheme_Object *boundname,
                    Scheme_Compile_Expand_Info *rec, int drec,
-		   int for_set)
+		   int for_set,
+                   int mark_macro_use)
 {
   Scheme_Object *orig_code = code;
 
@@ -1926,7 +1931,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     return code;
   } else {
-    Scheme_Object *mark, *rands_vec[1], *track_code, *pre_code;
+    Scheme_Object *mark, *use_mark, *rands_vec[1], *track_code, *pre_code;
 
     if (scheme_is_set_transformer(rator))
       rator = scheme_set_transformer_proc(rator);
@@ -1947,6 +1952,13 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
     mark = scheme_new_nonoriginal_mark(3);
     code = scheme_stx_flip_mark(code, mark, scheme_true);
 
+    if (mark_macro_use) {
+      use_mark = scheme_new_mark(30);
+      scheme_add_compilation_frame_expr_mark(env, use_mark);
+      code = scheme_stx_add_mark(code, use_mark, scheme_true);
+    } else
+      use_mark = NULL;
+    
     code = scheme_stx_taint_disarm(code, NULL);
 
     pre_code = code;
@@ -1964,7 +1976,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
       scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
 
-      scheme_set_dynamic_state(&dyn_state, env, mark, boundname, 
+      scheme_set_dynamic_state(&dyn_state, env, mark, use_mark, boundname, 
                                menv, menv ? menv->link_midx : env->genv->link_midx);
 
       rands_vec[0] = code;

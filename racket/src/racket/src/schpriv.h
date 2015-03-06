@@ -1117,11 +1117,16 @@ Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Ob
 Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
 Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
 Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode);
+
+Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc);
+Scheme_Object *scheme_module_context_frame_marks(Scheme_Object *mc);
+void scheme_module_context_add_expr_mark(Scheme_Object *mc, Scheme_Object *expr_mark);
 Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
 Scheme_Object *scheme_stx_adjust_frame_bind_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
 Scheme_Object *scheme_stx_adjust_frame_expression_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
 
-Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark, Scheme_Object *expr_mark);
+Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark);
+Scheme_Object *scheme_add_frame_expression_mark(Scheme_Object *frame_marks, Scheme_Object *expr_mark);
 
 Scheme_Object *scheme_stx_remove_toplevel_context_marks(Scheme_Object *o);
 Scheme_Object *scheme_stx_remove_module_context_marks(Scheme_Object *o);
@@ -1153,15 +1158,13 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
 
 Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Object *mc);
-Scheme_Object *scheme_stx_add_module_expression_context(Scheme_Object *stx, Scheme_Object *mc);
+Scheme_Object *scheme_stx_adjust_module_expression_context(Scheme_Object *stx, Scheme_Object *mc, int mode);
 Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_swap_toplevel_context(Scheme_Object *stx, Scheme_Object *mc);
 
 Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, Scheme_Object *orig_src);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
-Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc);
-Scheme_Object *scheme_module_context_frame_marks(Scheme_Object *mc);
 Scheme_Object *scheme_module_context_expression_frame_marks(Scheme_Object *mc);
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc);
 
@@ -1586,12 +1589,14 @@ void scheme_flush_stack_copy_cache(void);
 typedef struct Scheme_Dynamic_State {
     struct Scheme_Comp_Env * volatile current_local_env;
     Scheme_Object * volatile mark;
+    Scheme_Object * volatile use_mark;
     Scheme_Object * volatile name;
     Scheme_Object * volatile modidx;
     Scheme_Env    * volatile menv;
 } Scheme_Dynamic_State;
 
-void scheme_set_dynamic_state(Scheme_Dynamic_State *state, struct Scheme_Comp_Env *env, Scheme_Object *mark, 
+void scheme_set_dynamic_state(Scheme_Dynamic_State *state, struct Scheme_Comp_Env *env,
+                              Scheme_Object *mark, Scheme_Object *use_mark,
                               Scheme_Object *name, 
                               Scheme_Env *menv,
                               Scheme_Object *modidx);
@@ -2784,19 +2789,23 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 					    Scheme_Compile_Expand_Info *erec, int drec,
 					    Scheme_Object **current_val,
 					    Scheme_Object *ctx,
-                                            int keep_name);
+                                            int keep_name,
+                                            int use_mark);
 
 Scheme_Object *scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 				  Scheme_Object *f, Scheme_Object *code,
 				  Scheme_Comp_Env *env, Scheme_Object *boundname,
                                   Scheme_Compile_Expand_Info *rec, int drec,
-                                  int for_set);
+                                  int for_set,
+                                  int mark_macro_use);
 
 Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, 
                                               Scheme_Object *mark,
 					      Scheme_Comp_Env *env);
 void scheme_add_compilation_binding(int index, Scheme_Object *val,
 				    Scheme_Comp_Env *frame);
+void scheme_add_compilation_frame_expr_mark(Scheme_Comp_Env *frame,
+                                            Scheme_Object *expr_mark);
 Scheme_Comp_Env *scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark,
 					      Scheme_Comp_Env *env, int flags);
 Scheme_Comp_Env *scheme_require_renames(Scheme_Comp_Env *env);
@@ -2980,12 +2989,11 @@ int scheme_expr_produces_local_type(Scheme_Object *expr);
 Scheme_Object *scheme_make_compiled_syntax(Scheme_Syntax *syntax,
 					   Scheme_Syntax_Expander *exp);
 
-Scheme_Object *scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env, 
-                                          Scheme_Compile_Expand_Info *rec, int drec, 
-                                          int app_position);
-
 Scheme_Object *scheme_compile_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				   Scheme_Compile_Info *rec, int drec);
+Scheme_Object *scheme_compile_expr_mark_use(Scheme_Object *form, Scheme_Comp_Env *env,
+                                            Scheme_Compile_Info *rec, int drec,
+                                            int mark_macro_use);
 Scheme_Object *scheme_compile_sequence(Scheme_Object *forms, Scheme_Comp_Env *env,
 			      Scheme_Compile_Info *rec, int drec);
 Scheme_Object *scheme_compile_list(Scheme_Object *form, Scheme_Comp_Env *env,
@@ -3109,6 +3117,9 @@ const char *scheme_look_for_primitive(void *code);
 
 Scheme_Object *scheme_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				  Scheme_Expand_Info *erec, int drec);
+Scheme_Object *scheme_expand_expr_mark_use(Scheme_Object *form, Scheme_Comp_Env *env,
+                                           Scheme_Expand_Info *erec, int drec,
+                                           int mark_macro_use);
 Scheme_Object *scheme_expand_list(Scheme_Object *form, Scheme_Comp_Env *env,
 				  Scheme_Expand_Info *erec, int drec);
 Scheme_Object *scheme_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,

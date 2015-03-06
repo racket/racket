@@ -739,6 +739,7 @@ thread_val {
   
   gcMARK2(pr->current_local_env, gc);
   gcMARK2(pr->current_local_mark, gc);
+  gcMARK2(pr->current_local_use_mark, gc);
   gcMARK2(pr->current_local_name, gc);
   gcMARK2(pr->current_local_modidx, gc);
   gcMARK2(pr->current_local_menv, gc);

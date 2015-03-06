@@ -548,6 +548,16 @@ scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark, Scheme_Co
   return frame;
 }
 
+void scheme_add_compilation_frame_expr_mark(Scheme_Comp_Env *env, Scheme_Object *expr_mark)
+{
+  if (!(env->flags & (SCHEME_INTDEF_FRAME | SCHEME_FOR_INTDEF))) {
+    scheme_module_context_add_expr_mark(env->genv->stx_context, expr_mark);
+  } else {
+    expr_mark = scheme_add_frame_expression_mark(env->marks, expr_mark);
+    env->marks = expr_mark;
+  }
+}
+
 Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env)
 {
   if (scheme_is_toplevel(env)
@@ -1159,7 +1169,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 #if 0
   // REMOVEME
-  if (!strcmp("err:mz:lambda", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+  if (!strcmp("~info", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%p\n", find_id);
     scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
     printf("%s\n", scheme_write_to_string(binding, NULL));

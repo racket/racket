@@ -1832,6 +1832,7 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   
   gcMARK2(pr->current_local_env, gc);
   gcMARK2(pr->current_local_mark, gc);
+  gcMARK2(pr->current_local_use_mark, gc);
   gcMARK2(pr->current_local_name, gc);
   gcMARK2(pr->current_local_modidx, gc);
   gcMARK2(pr->current_local_menv, gc);
@@ -1949,6 +1950,7 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   
   gcFIXUP2(pr->current_local_env, gc);
   gcFIXUP2(pr->current_local_mark, gc);
+  gcFIXUP2(pr->current_local_use_mark, gc);
   gcFIXUP2(pr->current_local_name, gc);
   gcFIXUP2(pr->current_local_modidx, gc);
   gcFIXUP2(pr->current_local_menv, gc);

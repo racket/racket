@@ -1169,6 +1169,7 @@ typedef struct Scheme_Thread {
 
   struct Scheme_Comp_Env *current_local_env;
   Scheme_Object *current_local_mark;
+  Scheme_Object *current_local_use_mark;
   Scheme_Object *current_local_name;
   Scheme_Object *current_local_modidx;
   Scheme_Env *current_local_menv;

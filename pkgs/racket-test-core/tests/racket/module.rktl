@@ -382,6 +382,60 @@
 (define expand-test-use-toplevel? #f)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check line between macro definition and use:
+
+(module local-binding-produces-identity racket/base
+  (provide proc)
+  
+  (define proc
+    (let ()
+      (define-syntax identity
+        (syntax-rules ()
+          [(_ misc-id)
+           (lambda (x)
+             (let ([misc-id 'other])
+               x))]))
+      
+      (identity x))))
+
+(test 77 (dynamic-require ''local-binding-produces-identity 'proc) 77)
+
+(module module-binding-produces-identity racket/base
+  (define-syntax identity
+    (syntax-rules ()
+      [(_ misc-id)
+       (lambda (x)
+         (let ([misc-id 'other])
+           x))]))
+  (identity x))
+
+(test 79
+      (let ([proc #f])
+        (parameterize ([current-print (lambda (v) (set! proc v))])
+          (dynamic-require ''module-binding-produces-identity #f))
+        proc)
+      79)
+
+(module macro-introduced-binding-produces-identity racket/base
+  (define-syntax-rule (gen)
+    (begin
+      (define-syntax identity
+        (syntax-rules ()
+          [(_ misc-id)
+           (lambda (x)
+             (let ([misc-id 'other])
+               x))]))
+      (identity x)))
+  (gen))
+
+(test 78
+      (let ([proc #f])
+        (parameterize ([current-print (lambda (v) (set! proc v))])
+          (dynamic-require ''macro-introduced-binding-produces-identity #f))
+        proc)
+      78)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (let ([f1 (make-temporary-file)]
       [f2 (make-temporary-file)]

@@ -2398,7 +2398,8 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env)
     scheme_push_continuation_frame(&cframe);
     scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
 
-    scheme_set_dynamic_state(&dyn_state, rhs_env, NULL, scheme_false, dm_env, dm_env->link_midx);
+    scheme_set_dynamic_state(&dyn_state, rhs_env, NULL, NULL, scheme_false,
+                             dm_env, dm_env->link_midx);
 
     if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_syntaxes_type)) {
       (void)define_execute_with_dynamic_state(form, 4, 1, rp, dm_env, &dyn_state);
@@ -4060,6 +4061,7 @@ static void *compile_k(void)
 	form = scheme_check_immediate_macro(form,
 					    cenv, &rec, 0,
 					    &gval, NULL,
+                                            1,
                                             1);
 	if (SAME_OBJ(gval, scheme_begin_syntax)) {
 	  if (scheme_stx_proper_list_length(form) > 1){
@@ -4554,7 +4556,7 @@ static void *expand_k(void)
 
     if (just_to_top) {
       Scheme_Object *gval;
-      obj = scheme_check_immediate_macro(obj, env, &erec1, 0, &gval, NULL, 1);
+      obj = scheme_check_immediate_macro(obj, env, &erec1, 0, &gval, NULL, 1, 0);
     } else
       obj = scheme_expand_expr(obj, env, &erec1, 0);
 
@@ -4892,7 +4894,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   Scheme_Comp_Env *env, *orig_env, **ip;
   Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l, *exp_expr = NULL;
   int cnt, pos, kind, is_modstar;
-  int bad_sub_env = 0, bad_intdef = 0, keep_ref_ids = 0;
+  int bad_sub_env = 0, bad_intdef = 0, keep_ref_ids = 0, use_mark = 0;
   Scheme_Object *observer, *catch_lifts_key = NULL;
 
   env = scheme_current_thread->current_local_env;
@@ -4914,9 +4916,11 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     kind = 0; /* expression */
   else if (!for_stx && SAME_OBJ(argv[1], module_symbol))
     kind = SCHEME_MODULE_BEGIN_FRAME; /* name is backwards compared to symbol! */
-  else if (!for_stx && SAME_OBJ(argv[1], module_begin_symbol))
+  else if (!for_stx && SAME_OBJ(argv[1], module_begin_symbol)) {
+    use_mark = 1;
     kind = SCHEME_MODULE_FRAME; /* name is backwards compared to symbol! */
-  else if (SAME_OBJ(argv[1], top_level_symbol)) {
+  } else if (SAME_OBJ(argv[1], top_level_symbol)) {
+    use_mark = 1;
     kind = SCHEME_TOPLEVEL_FRAME;
     if (catch_lifts < 0) catch_lifts = 0;
   } else if (SAME_OBJ(argv[1], expression_symbol))
@@ -5132,7 +5136,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
       drec[0].comp_flags = comp_flags;
     }
 
-    xl = scheme_check_immediate_macro(l, env, drec, 0, &gval, NULL, 1);
+    xl = scheme_check_immediate_macro(l, env, drec, 0, &gval, NULL, 1, use_mark);
 
     if (SAME_OBJ(xl, l) && !for_expr) {
       SCHEME_EXPAND_OBSERVE_LOCAL_POST(observer, xl);

@@ -2945,7 +2945,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       }
     }
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_mark_type)
-           && (compact || !pp->print_unreadable))
+           && (compact || pp->print_unreadable))
     {
       if (compact) {
         Scheme_Object *idx;
