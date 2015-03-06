@@ -1192,6 +1192,8 @@ static Scheme_Object *ht_to_vector(Scheme_Object *ht)
   
   if (!ht)
     return scheme_false;
+  if (SCHEME_VECTORP(ht))
+    return ht;
 
   if (SCHEME_HASHTRP(ht))
     c = ((Scheme_Hash_Tree *)ht)->count;

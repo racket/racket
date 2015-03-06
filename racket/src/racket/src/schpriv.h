@@ -2809,7 +2809,6 @@ void scheme_add_compilation_frame_expr_mark(Scheme_Comp_Env *frame,
                                             Scheme_Object *expr_mark);
 Scheme_Comp_Env *scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark,
 					      Scheme_Comp_Env *env, int flags);
-Scheme_Comp_Env *scheme_require_renames(Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_compile_lookup(Scheme_Object *symbol, Scheme_Comp_Env *env, int flags, 
 				     Scheme_Object *in_modidx, 
@@ -3086,7 +3085,7 @@ int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
 #define SCHEME_MODULE_BEGIN_FRAME 4
 #define SCHEME_LAMBDA_FRAME 8
 #define SCHEME_INTDEF_FRAME 16
-#define SCHEME_NO_RENAME 32
+#define SCHEME_USE_MARKS_TO_NEXT 32
 #define SCHEME_CAPTURE_WITHOUT_RENAME 64
 #define SCHEME_FOR_STOPS 128
 #define SCHEME_FOR_INTDEF 256

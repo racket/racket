@@ -5824,7 +5824,7 @@ Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Sche
 
 static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *phase;
+  Scheme_Object *phase, *a, *b;
 
   if (!SCHEME_STX_IDP(argv[0]))
     scheme_wrong_contract("bound-identifier=?", "identifier?", 0, argc, argv);
@@ -5833,7 +5833,16 @@ static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)
 
   phase = extract_phase("bound-identifier=?", 2, argc, argv, scheme_make_integer(0), 0);
 
-  return (scheme_stx_env_bound_eq2(argv[0], argv[1], phase, phase)
+  a = argv[0];
+  b = argv[1];
+
+  if (scheme_current_thread->current_local_env) {
+    /* Remove any marks that would be dropped for a binding: */
+    a = scheme_revert_expression_marks(a, scheme_current_thread->current_local_env);
+    b = scheme_revert_expression_marks(b, scheme_current_thread->current_local_env);
+  }
+  
+  return (scheme_stx_env_bound_eq2(a, b, phase, phase)
 	  ? scheme_true
 	  : scheme_false);
 }

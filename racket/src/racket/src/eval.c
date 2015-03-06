@@ -4483,13 +4483,14 @@ static void *expand_k(void)
   Scheme_Object *obj, *observer, *catch_lifts_key;
   Scheme_Comp_Env *env, **ip;
   Scheme_Expand_Info erec1;
-  int depth, rename, just_to_top, as_local, comp_flags;
+  int depth, rename, just_to_top, as_local, comp_flags, use_mark;
 
   obj = (Scheme_Object *)p->ku.k.p1;
   env = (Scheme_Comp_Env *)p->ku.k.p2;
   depth = p->ku.k.i1;
   rename = p->ku.k.i2;
-  just_to_top = p->ku.k.i3;
+  just_to_top = p->ku.k.i3 & 1;
+  use_mark = p->ku.k.i3 & 2;
   catch_lifts_key = p->ku.k.p4;
   as_local = p->ku.k.i4; /* < 0 => catch lifts to let */
 
@@ -4550,7 +4551,7 @@ static void *expand_k(void)
       Scheme_Object *gval;
       obj = scheme_check_immediate_macro(obj, env, &erec1, 0, &gval, NULL, 1, 0);
     } else
-      obj = scheme_expand_expr(obj, env, &erec1, 0);
+      obj = scheme_expand_expr_mark_use(obj, env, &erec1, 0, use_mark);
 
     if (catch_lifts_key) {
       Scheme_Object *l, *rl;
@@ -4587,7 +4588,7 @@ static void *expand_k(void)
 static Scheme_Object *r_expand(Scheme_Object *obj, Scheme_Comp_Env *env, 
 			       int depth, int rename, int just_to_top, 
 			       Scheme_Object *catch_lifts_key, int eb,
-			       int as_local)
+			       int as_local, int use_mark)
   /* as_local < 0 => catch lifts to let;
      depth = -3 => depth = -2, and no substituion of references with bindings */
 {
@@ -4597,7 +4598,7 @@ static Scheme_Object *r_expand(Scheme_Object *obj, Scheme_Comp_Env *env,
   p->ku.k.p2 = env;
   p->ku.k.i1 = depth;
   p->ku.k.i2 = rename;
-  p->ku.k.i3 = just_to_top;
+  p->ku.k.i3 = ((just_to_top ? 1 : 0) | (use_mark ? 2 : 0));
   p->ku.k.p4 = catch_lifts_key;
   p->ku.k.i4 = as_local;
 
@@ -4609,7 +4610,7 @@ Scheme_Object *scheme_expand(Scheme_Object *obj, Scheme_Env *env)
   return r_expand(obj, scheme_new_expand_env(env, NULL, scheme_true,
                                              SCHEME_TOPLEVEL_FRAME
                                              | SCHEME_KEEP_MARKS_FRAME),
-		  -1, 1, 0, scheme_false, -1, 0);
+		  -1, 1, 0, scheme_false, -1, 0, 0);
 }
 
 Scheme_Object *scheme_tail_eval_expr(Scheme_Object *obj)
@@ -4785,7 +4786,7 @@ static Scheme_Object *expand(int argc, Scheme_Object **argv)
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
                                                  | SCHEME_KEEP_MARKS_FRAME),
-		  -1, 1, 0, scheme_false, 0, 0);
+		  -1, 1, 0, scheme_false, 0, 0, 0);
 }
 
 static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
@@ -4800,7 +4801,7 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
                                                  | SCHEME_KEEP_MARKS_FRAME),
-		  -1, -1, 0, scheme_false, 0, 0);
+		  -1, -1, 0, scheme_false, 0, 0, 0);
 }
 
 Scheme_Object *scheme_generate_lifts_key(void)
@@ -4917,9 +4918,10 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     if (catch_lifts < 0) catch_lifts = 0;
   } else if (SAME_OBJ(argv[1], expression_symbol))
     kind = 0;
-  else if (scheme_proper_list_length(argv[1]) > 0)
-    kind = SCHEME_INTDEF_FRAME;
-  else  {
+  else if (scheme_proper_list_length(argv[1]) > 0) {
+    use_mark = 1;
+    kind = SCHEME_INTDEF_FRAME | SCHEME_USE_MARKS_TO_NEXT;
+  } else  {
     scheme_wrong_contract(name,
                           (for_stx
                            ? "(or/c 'expression 'top-level (and/c pair? list?))"
@@ -5003,7 +5005,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   } else
     ip = NULL;
 
-  if (kind == SCHEME_INTDEF_FRAME)
+  if (kind & SCHEME_INTDEF_FRAME)
     env->intdef_name = argv[1];
   env->in_modidx = scheme_current_thread->current_local_modidx;
 
@@ -5149,7 +5151,8 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     /* Expand the expression. depth = -2 means expand all the way, but
        preserve letrec-syntax, while -3 is -2 but also avoid replacing reference ids
        with binding ids. */
-    l = r_expand(l, env, (keep_ref_ids ? -3 : -2), 0, 0, catch_lifts_key, 0, catch_lifts ? catch_lifts : 1);
+    l = r_expand(l, env, (keep_ref_ids ? -3 : -2), 0, 0, catch_lifts_key, 0,
+                 catch_lifts ? catch_lifts : 1, use_mark);
   }
 
   SCHEME_EXPAND_OBSERVE_LOCAL_POST(observer, l);
@@ -5236,7 +5239,7 @@ expand_once(int argc, Scheme_Object **argv)
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
                                                  | SCHEME_KEEP_MARKS_FRAME), 
-		  1, 1, 0, scheme_false, 0, 0);
+		  1, 1, 0, scheme_false, 0, 0, 0);
 }
 
 static Scheme_Object *
@@ -5252,7 +5255,7 @@ expand_stx_once(int argc, Scheme_Object **argv)
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
                                                  | SCHEME_KEEP_MARKS_FRAME),
-		  1, -1, 0, scheme_false, 0, 0);
+		  1, -1, 0, scheme_false, 0, 0, 0);
 }
 
 static Scheme_Object *
@@ -5265,7 +5268,7 @@ expand_to_top_form(int argc, Scheme_Object **argv)
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true, 
                                                  SCHEME_TOPLEVEL_FRAME
                                                  | SCHEME_KEEP_MARKS_FRAME),
-		  1, 1, 1, scheme_false, 0, 0);
+		  1, 1, 1, scheme_false, 0, 0, 0);
 }
 
 static Scheme_Object *
@@ -5281,7 +5284,7 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
                                                  | SCHEME_KEEP_MARKS_FRAME),
-		  1, -1, 1, scheme_false, 0, 0);
+		  1, -1, 1, scheme_false, 0, 0, 0);
 }
 
 static Scheme_Object *do_eval_string_all(Scheme_Object *port, const char *str, Scheme_Env *env, 
@@ -5552,7 +5555,7 @@ static Scheme_Object *flip_mark_at_phase_and_revert_expr(Scheme_Object *a, Schem
   Scheme_Comp_Env *env = (Scheme_Comp_Env *)SCHEME_CDR(m_p);
 
   a = scheme_revert_expression_marks(a, env);
-  
+
   return scheme_stx_flip_mark(a, SCHEME_CAR(m_p), scheme_env_phase(env->genv));
 }
 
@@ -5611,14 +5614,14 @@ local_eval(int argc, Scheme_Object **argv)
   }
 
   old_stx_env = stx_env;
-  stx_env = scheme_new_compilation_frame(0, SCHEME_FOR_INTDEF, rib, stx_env);
+  stx_env = scheme_new_compilation_frame(0, SCHEME_FOR_INTDEF | SCHEME_USE_MARKS_TO_NEXT, rib, stx_env);
   scheme_add_local_syntax(cnt, stx_env);
 
   /* Mark names */
   if (scheme_current_thread->current_local_mark)
     names = scheme_named_map_1(NULL, flip_mark_at_phase_and_revert_expr, names,
                                scheme_make_raw_pair(scheme_current_thread->current_local_mark,
-                                                    (Scheme_Object *)env));
+                                                    (Scheme_Object *)stx_env));
 
   SCHEME_EXPAND_OBSERVE_RENAME_LIST(observer,names);
 

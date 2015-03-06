@@ -379,7 +379,9 @@
                       [() 10]))))))
   (eval (syntax-case m ()
           [(md m r/b (m-b cr mod))
-           #`(md m r/b (m-b (begin 10 mod)))])))
+           (with-syntax ([begin (datum->syntax #'m-b 'begin)]
+                         [ten (datum->syntax #'m-b 10)])
+             #`(md m r/b (m-b (begin ten mod))))])))
 
 (parameterize ([current-namespace (make-base-namespace)])
   (eval

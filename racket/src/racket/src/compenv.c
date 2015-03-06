@@ -50,7 +50,7 @@ THREAD_LOCAL_DECL(static int env_uid_counter);
 
 static void init_compile_data(Scheme_Comp_Env *env);
 
-#define SCHEME_NON_SIMPLE_FRAME (SCHEME_NO_RENAME | SCHEME_CAPTURE_WITHOUT_RENAME \
+#define SCHEME_NON_SIMPLE_FRAME (SCHEME_CAPTURE_WITHOUT_RENAME \
                                  | SCHEME_FOR_STOPS | SCHEME_CAPTURE_LIFTED)
 
 static void init_scheme_local();
@@ -287,7 +287,7 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Schem
   }
 
   frame->num_bindings = num_bindings;
-  frame->flags = flags | (base->flags & SCHEME_NO_RENAME);
+  frame->flags = flags;
   frame->next = base;
   frame->genv = base->genv;
   frame->insp = base->insp;
@@ -553,6 +553,9 @@ void scheme_add_compilation_frame_expr_mark(Scheme_Comp_Env *env, Scheme_Object 
   if (!(env->flags & (SCHEME_INTDEF_FRAME | SCHEME_FOR_INTDEF))) {
     scheme_module_context_add_expr_mark(env->genv->stx_context, expr_mark);
   } else {
+    while (env->flags & SCHEME_USE_MARKS_TO_NEXT) {
+      env = env->next;
+    }
     expr_mark = scheme_add_frame_expression_mark(env->marks, expr_mark);
     env->marks = expr_mark;
   }
@@ -567,16 +570,6 @@ Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env)
     return scheme_new_compilation_frame(0, 0, NULL, env);
   else
     return env;
-}
-
-Scheme_Comp_Env *scheme_require_renames(Scheme_Comp_Env *env)
-{
-  if (env->flags & SCHEME_NO_RENAME) {
-    env = scheme_new_compilation_frame(0, 0, NULL, env);
-    env->flags -= SCHEME_NO_RENAME;
-  }
-
-  return env;
 }
 
 int scheme_is_toplevel(Scheme_Comp_Env *env)

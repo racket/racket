@@ -723,12 +723,13 @@ Scheme_Object *scheme_revert_expression_marks(Scheme_Object *o, Scheme_Comp_Env 
                                                     env->genv->stx_context,
                                                     SCHEME_STX_REMOVE);
   } else {
-    while (env->flags & (SCHEME_FOR_INTDEF | SCHEME_INTDEF_FRAME)) {
-      if (env->marks)
+    while (env->flags & (SCHEME_FOR_INTDEF | SCHEME_INTDEF_FRAME | SCHEME_INTDEF_SHADOW)) {
+      if (env->marks) {
         o = scheme_stx_adjust_frame_expression_marks(o,
                                                      env->marks,
                                                      scheme_env_phase(env->genv),
                                                      SCHEME_STX_REMOVE);
+      }
       env = env->next;
     }
   }
@@ -3909,7 +3910,7 @@ do_letrec_syntaxes(const char *where,
   }
 
   if (!var_env) {
-    var_env = scheme_require_renames(stx_env);
+    var_env = stx_env;
     if (rec[drec].comp) {
       v = scheme_check_name_property(forms, rec[drec].value_name);
       rec[drec].value_name = v;
