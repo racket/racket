@@ -58,6 +58,7 @@ typedef struct Scheme_Propagate_Table {
   Scheme_Mark_Table mt;
   Scheme_Mark_Table *prev; /* points to old mark table */
   Scheme_Object *phase_shift; /* number of (box <n>); latter converts only <n> to #f */
+  int tentative_conversion;
 } Scheme_Propagate_Table;
 
 THREAD_LOCAL_DECL(static mzlonglong mark_counter);
@@ -120,10 +121,15 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
 XFORM_NONGCING static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b);
 static Scheme_Object *remove_at_mark_list(Scheme_Object *l, Scheme_Object *p);
 static Scheme_Object *add_to_mark_list(Scheme_Object *l, Scheme_Object *p);
+static Scheme_Mark_Table *clone_mark_table(Scheme_Mark_Table *mt, Scheme_Mark_Table *prev);
 
 static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
 
 static Scheme_Object *new_module_context_mark(int kind);
+
+static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks);
+static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_marks, int indent,
+                        char *pre, char *post);
 
 #define CONS scheme_make_pair
 #define ICONS scheme_make_pair
@@ -202,12 +208,14 @@ void scheme_init_stx(Scheme_Env *env)
   empty_mark_table = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
   empty_mark_table->so.type = scheme_mark_table_type;
   empty_mark_table->single_marks = empty_mark_set;
+  empty_mark_table->tentative_marks = empty_mark_set;
   empty_mark_table->multi_marks = scheme_null;
   empty_propagate_table = (Scheme_Mark_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
   memcpy(empty_propagate_table, empty_mark_table, sizeof(Scheme_Mark_Table));
   empty_propagate_table->so.type = scheme_propagate_table_type;
   ((Scheme_Propagate_Table *)empty_propagate_table)->phase_shift = scheme_make_integer(0);
   ((Scheme_Propagate_Table *)empty_propagate_table)->prev = NULL;
+  ((Scheme_Propagate_Table *)empty_propagate_table)->tentative_conversion = 0;
 
   REGISTER_SO(scheme_syntax_p_proc);
   o = scheme_make_folding_prim(syntax_p, "syntax?", 1, 1, 1);
@@ -786,6 +794,11 @@ Scheme_Object *adjust_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Sc
     return add_to_mark_list(scheme_make_pair(m, phase), multi_marks);
 }
 
+static Scheme_Mark_Table *adjust_tentative(Scheme_Mark_Table *mt, int mode, Scheme_Mark_Table *prev)
+{
+  return mt;
+}
+
 static Scheme_Mark_Set *combine_mark(Scheme_Mark_Set *marks, Scheme_Object *m, int mode)
 {
   Scheme_Object *old_mode;
@@ -808,6 +821,17 @@ static Scheme_Mark_Set *combine_mark(Scheme_Mark_Set *marks, Scheme_Object *m, i
       return mark_set_set(marks, m, scheme_make_integer(mode));
   } else
     return mark_set_set(marks, m, scheme_make_integer(mode));
+}
+
+static Scheme_Mark_Table *combine_tentative(Scheme_Mark_Table *mt, int mode, Scheme_Mark_Table *prev)
+{
+  if (((Scheme_Propagate_Table *)mt)->tentative_conversion)
+    return mt;
+
+  mt = clone_mark_table(mt, prev);
+  ((Scheme_Propagate_Table *)mt)->tentative_conversion = mode;
+  
+  return mt;
 }
 
 static Scheme_Object *make_vector3(Scheme_Object *a, Scheme_Object *b, Scheme_Object *c)
@@ -930,9 +954,25 @@ static Scheme_Mark_Table *clone_mark_table(Scheme_Mark_Table *mt, Scheme_Mark_Ta
 
 typedef Scheme_Mark_Set *(*do_mark_t)(Scheme_Mark_Set *marks, Scheme_Object *m, int mode);
 typedef Scheme_Object *(do_mark_list_t)(Scheme_Object *multi_marks, Scheme_Object *m, Scheme_Object *phase, int mode);
+typedef Scheme_Mark_Table *(*do_tentative_t)(Scheme_Mark_Table *mt, int mode, Scheme_Mark_Table *prev);
+
+Scheme_Mark_Set *add_all(Scheme_Mark_Set *marks, Scheme_Mark_Set *to_marks, do_mark_t do_mark)
+{
+  intptr_t i;
+  Scheme_Object *key, *val;
+
+  i = -1;
+  while ((i = mark_set_next(marks, i)) != -1) {
+    mark_set_index(marks, i, &key, &val);
+    to_marks = do_mark(to_marks, key, SCHEME_INT_VAL(val));
+  }
+
+  return to_marks;
+}
 
 static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object *m, Scheme_Object *phase, int mode, 
-                                           do_mark_t do_mark, do_mark_list_t do_mark_list, Scheme_Mark_Table *prev)
+                                           do_mark_t do_mark, do_mark_list_t do_mark_list, do_tentative_t do_tentative,
+                                           Scheme_Mark_Table *prev)
 {
   Scheme_Object *l;
   Scheme_Mark_Set *marks;
@@ -945,11 +985,38 @@ static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object 
   }
 
   if (SCHEME_MULTI_MARKP(m)) {
+    STX_ASSERT(!(mode & SCHEME_STX_TENTATIVE));
     l = do_mark_list(mt->multi_marks, m, phase, mode);
     if (SAME_OBJ(l, mt->multi_marks))
       return mt;
     mt = clone_mark_table(mt, prev);
     mt->multi_marks = l;
+    return mt;
+  } else if (mode == SCHEME_STX_T_COMMIT) {
+    mt = do_tentative(mt, mode, prev);
+    if (SAME_OBJ(mt->tentative_marks, empty_mark_set))
+      return mt;
+    marks = add_all(mt->tentative_marks, mt->single_marks, do_mark);
+    if (SAME_OBJ(marks, mt->single_marks))
+      return mt;
+    mt = clone_mark_table(mt, prev);
+    mt->single_marks = marks;
+    mt->tentative_marks = empty_mark_set;
+    return mt;
+  } else if (mode == SCHEME_STX_T_ABANDON) {
+    mt = do_tentative(mt, mode, prev);
+    if (SAME_OBJ(mt->tentative_marks, empty_mark_set)) 
+      return mt;
+    mt = clone_mark_table(mt, prev);
+    mt->tentative_marks = empty_mark_set;
+    return mt;
+  } else if (mode & SCHEME_STX_TENTATIVE) {
+    mode -= SCHEME_STX_TENTATIVE;
+    marks = do_mark(mt->tentative_marks, m, mode);
+    if (SAME_OBJ(marks, mt->tentative_marks))
+      return mt;
+    mt = clone_mark_table(mt, prev);
+    mt->tentative_marks = marks;
     return mt;
   } else {
     marks = do_mark(mt->single_marks, m, mode);
@@ -981,7 +1048,9 @@ Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme
     marks = stx->marks;
     mode -= SCHEME_STX_PROPONLY;
   } else {
-    marks = do_mark_at_phase(stx->marks, m, phase, mode, adjust_mark, adjust_mark_list, NULL);
+    marks = do_mark_at_phase(stx->marks, m, phase, mode,
+                             adjust_mark, adjust_mark_list, adjust_tentative,
+                             NULL);
     if ((stx->marks == marks)
         && !(STX_KEY(stx) & STX_SUBSTX_FLAG)) {
       return (Scheme_Object *)stx;
@@ -990,7 +1059,9 @@ Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
     to_propagate = (stx->u.to_propagate ? stx->u.to_propagate : empty_propagate_table);
-    to_propagate = do_mark_at_phase(to_propagate, m, phase, mode, combine_mark, combine_mark_list, stx->marks);
+    to_propagate = do_mark_at_phase(to_propagate, m, phase, mode,
+                                    combine_mark, combine_mark_list, combine_tentative,
+                                    stx->marks);
     if ((stx->u.to_propagate == to_propagate)
         && (stx->marks == marks))
       return (Scheme_Object *)stx;
@@ -1050,6 +1121,16 @@ Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks,
   }
 
   return o;
+}
+
+Scheme_Object *scheme_stx_commit_tentative(Scheme_Object *o)
+{
+  return scheme_stx_adjust_mark(o, scheme_false, scheme_true, SCHEME_STX_T_COMMIT);
+}
+
+Scheme_Object *scheme_stx_abandon_tentative(Scheme_Object *o)
+{
+  return scheme_stx_adjust_mark(o, scheme_false, scheme_true, SCHEME_STX_T_ABANDON);
 }
 
 Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
@@ -1528,8 +1609,12 @@ XFORM_NONGCING static int equiv_mark_tables(Scheme_Mark_Table *a, Scheme_Mark_Ta
   if (a == b)
     return 1;
 
-  if (!mark_set_count(a->single_marks)
-      && !mark_set_count(b->single_marks)
+  if ((SAME_OBJ(a->single_marks, b->single_marks)
+       || (!mark_set_count(a->single_marks)
+           && !mark_set_count(b->single_marks)))
+      && (SAME_OBJ(a->tentative_marks, b->tentative_marks)
+          || (!mark_set_count(a->tentative_marks)
+              && !mark_set_count(b->tentative_marks)))
       && SAME_OBJ(a->multi_marks, b->multi_marks))
     return 1;
 
@@ -1541,6 +1626,7 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *key, *val, *fb;
+  int conversion;
 
   if (!to_propagate || (to_propagate == empty_propagate_table))
     return o;
@@ -1581,7 +1667,21 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
     o = val;
   }
 
+  conversion = ((Scheme_Propagate_Table *)to_propagate)->tentative_conversion;
+  if (conversion) {
+    val = scheme_stx_adjust_mark(o, scheme_false, scheme_true, conversion | flag);
+    if (!SAME_OBJ(o, val))
+      flag |= SCHEME_STX_MUTATE;
+    o = val;
+  }
+
   val = propagate_mark_set(to_propagate->single_marks, o, scheme_true, flag);
+  if (!SAME_OBJ(o, val))
+    flag |= SCHEME_STX_MUTATE;
+  o = val;
+
+  val = propagate_mark_set(to_propagate->tentative_marks, o, scheme_true,
+                           SCHEME_STX_TENTATIVE | flag);
   if (!SAME_OBJ(o, val))
     flag |= SCHEME_STX_MUTATE;
   o = val;
@@ -2386,17 +2486,18 @@ static void print_indent(int indent)
   }
 }
 
-static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_marks, int indent)
+static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_marks, int indent,
+                        char *pre, char *post)
 {
-  intptr_t i;
-  Scheme_Object *key, *val;
+  Scheme_Object *key, *l;
 
   print_indent(indent);
-  printf("  ");
+  printf("  %s", pre);
 
-  i = mark_set_next(marks, -1);
-  while (i != -1) {
-    mark_set_index(marks, i, &key, &val);
+  l = scheme_reverse(marks_to_sorted_list(marks));
+  
+  for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    key = SCHEME_CAR(l);
     
     printf(" %s", scheme_write_to_string(scheme_mark_printed_form(key), NULL));
     if (((Scheme_Mark *)key)->owner_multi_mark) {
@@ -2407,13 +2508,12 @@ static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_m
              (tl ? "tl" : ""),
              SCHEME_INT_VAL(SCHEME_CDR(((Scheme_Mark *)key)->owner_multi_mark)));
     }
-    i = mark_set_next(marks, i);
   }
 
   if (check_against_marks && mark_subset(marks, check_against_marks))
     printf(" [match]");
 
-  printf("\n");
+  printf("%s\n", post);
 }
 
 
@@ -2446,7 +2546,9 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
     
     print_indent(indent);
     printf(" At phase %s:\n", scheme_write_to_string(phase, NULL));
-    print_marks(marks, NULL, indent);
+    print_marks(marks, NULL, indent, "", "");
+    if (mark_set_count(stx->marks->tentative_marks))
+      print_marks(stx->marks->tentative_marks, NULL, indent, "[", "]");
 
     if (level) {
       i = mark_set_next(marks, -1);
@@ -2465,10 +2567,12 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
               while (l && !SCHEME_NULLP(l)) {
                 val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
                 if (SCHEME_SYMBOLP(val))
-                  printf(" local @ %s\n", scheme_write_to_string((Scheme_Object*)mark, 0));
+                  printf(" local %s @ %s\n",
+                         scheme_write_to_string(val, 0),
+                         scheme_write_to_string((Scheme_Object*)mark, 0));
                 else
                   printf(" %s\n", scheme_write_to_string(val, 0));
-                print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
+                print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent, "", "");
 
                 if (SCHEME_MPAIRP(val)) {
                   print_indent(indent);
@@ -2487,7 +2591,7 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
           while (l && !SCHEME_NULLP(l)) {
             print_indent(indent);
             printf("  ...\n");
-            print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
+            print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent, "", "");
         
             pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
             if (SCHEME_VEC_SIZE(pes) == 3) {
@@ -4129,7 +4233,7 @@ static Scheme_Object *marshal_multi_marks(Scheme_Object *multi_marks, Scheme_Mar
 static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Table *ht;
-  Scheme_Object *shifts, *singles, *multi, *v, *vec;
+  Scheme_Object *shifts, *singles, *tentatives, *multi, *v, *vec;
 
   ht = mt->intern_map;
   if (!ht) {
@@ -4141,12 +4245,15 @@ static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
 
   shifts = intern_tails(drop_export_registries(stx->shifts), ht);
   singles = intern_tails(marks_to_sorted_list(stx->marks->single_marks), ht);
+  tentatives = intern_tails(marks_to_sorted_list(stx->marks->single_marks), ht);
   multi = marshal_multi_marks(stx->marks->multi_marks, mt, ht);
 
-  vec = scheme_make_vector(3, NULL);
+  vec = scheme_make_vector((SCHEME_NULLP(tentatives) ? 3 : 4), NULL);
   SCHEME_VEC_ELS(vec)[0] = shifts;
   SCHEME_VEC_ELS(vec)[1] = singles;
   SCHEME_VEC_ELS(vec)[2] = multi;
+  if (!SCHEME_NULLP(tentatives))
+    SCHEME_VEC_ELS(vec)[3] = tentatives;
 
   v = scheme_hash_get(ht, vec);
   if (!v) {
@@ -4676,8 +4783,8 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
   if (l) return l;
 
   if (!SCHEME_VECTORP(w)
-      || ((SCHEME_VEC_SIZE(w) != 3)
-          && (SCHEME_VEC_SIZE(w) != 4)))
+      || ((SCHEME_VEC_SIZE(w) != 4)
+          && (SCHEME_VEC_SIZE(w) != 3)))
     return_NULL;
 
   mt = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
@@ -4686,6 +4793,13 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
   marks = list_to_mark_set(SCHEME_VEC_ELS(w)[1], ut);
   if (!marks) return NULL;
   mt->single_marks = marks;
+
+  if (SCHEME_VEC_SIZE(w) > 3) {
+    marks = list_to_mark_set(SCHEME_VEC_ELS(w)[3], ut);
+    if (!marks) return NULL;
+  } else
+    marks = empty_mark_set;
+  mt->tentative_marks = marks;
 
   l = unmarshal_multi_marks(SCHEME_VEC_ELS(w)[2], ut);
   if (!l) return NULL;

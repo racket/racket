@@ -8401,9 +8401,7 @@ static Scheme_Object *get_higher_phase_lifts(Module_Begin_Expand_State *bxs,
 
 static Scheme_Object *revert_expression_marks_via_context(Scheme_Object *o, Scheme_Object *rn_set, intptr_t phase)
 {
-  return scheme_stx_adjust_module_expression_context(o,
-                                                     rn_set,
-                                                     SCHEME_STX_REMOVE);
+  return scheme_stx_abandon_tentative(o);
 }
 
 static Scheme_Object *do_module_begin_k(void)

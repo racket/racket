@@ -553,7 +553,7 @@ void scheme_add_compilation_frame_expr_mark(Scheme_Comp_Env *env, Scheme_Object 
   while (env->flags & SCHEME_USE_MARKS_TO_NEXT) {
     env = env->next;
   }
-
+  
   if (env->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME)) {
     scheme_module_context_add_expr_mark(env->genv->stx_context, expr_mark);
   } else {
@@ -1163,7 +1163,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 #if 0
   // REMOVEME
-  if (!strcmp("datum->syntax", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
+  if (!strcmp("-ref", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
     printf("%p\n", find_id);
     scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
     printf("%s\n", scheme_write_to_string(binding, NULL));
@@ -1281,7 +1281,21 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     }
     
     if (!(flags & SCHEME_OUT_OF_CONTEXT_OK)) {
-      scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
+#if 0
+      for (frame = env; frame->next != NULL; frame = frame->next) {
+        int i;
+        for (i = frame->num_bindings; i--; ) {
+          if (frame->bindings[i])
+            printf("%s\n", scheme_write_to_string(frame->bindings[i], 0));
+        }
+        
+        for (i = frame->num_const; i--; ) {
+          if (frame->const_bindings[i])
+            printf("%s\n", scheme_write_to_string(frame->const_bindings[i], 0));
+        }
+      }
+#endif
+      
       scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
                           "identifier used out of context");
     }

@@ -2418,6 +2418,7 @@ mark_mark_table {
  mark:
   Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
   gcMARK2(m->single_marks, gc);
+  gcMARK2(m->tentative_marks, gc);
   gcMARK2(m->multi_marks, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
