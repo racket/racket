@@ -453,6 +453,7 @@ extern Scheme_Object *scheme_unsafe_mcdr_proc;
 extern Scheme_Object *scheme_unsafe_unbox_proc;
 extern Scheme_Object *scheme_cons_proc;
 extern Scheme_Object *scheme_mcons_proc;
+extern Scheme_Object *scheme_list_p_proc;
 extern Scheme_Object *scheme_list_proc;
 extern Scheme_Object *scheme_list_star_proc;
 extern Scheme_Object *scheme_vector_proc;

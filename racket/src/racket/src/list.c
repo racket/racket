@@ -33,6 +33,7 @@ READ_ONLY Scheme_Object *scheme_pair_p_proc;
 READ_ONLY Scheme_Object *scheme_mpair_p_proc;
 READ_ONLY Scheme_Object *scheme_cons_proc;
 READ_ONLY Scheme_Object *scheme_mcons_proc;
+READ_ONLY Scheme_Object *scheme_list_p_proc;
 READ_ONLY Scheme_Object *scheme_list_proc;
 READ_ONLY Scheme_Object *scheme_list_star_proc;
 READ_ONLY Scheme_Object *scheme_box_proc;
@@ -249,7 +250,9 @@ scheme_init_list (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant ("null?", p, env);
 
+  REGISTER_SO(scheme_list_p_proc);
   p = scheme_make_folding_prim(list_p_prim, "list?", 1, 1, 1);
+  scheme_list_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant ("list?", p, env);

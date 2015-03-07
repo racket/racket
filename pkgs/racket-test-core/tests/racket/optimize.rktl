@@ -1237,6 +1237,14 @@
            '(lambda (w z) #t)
            #f)
 
+(test-comp '(lambda (w z) (list? (begin (random) null)))
+           '(lambda (w z) (random) #t))
+(test-comp '(lambda (w z) (list? (begin (random) (void))))
+           '(lambda (w z) (random) #f))
+(test-comp '(lambda (w z) (list? (cons w z)))
+           '(lambda (w z) #t)
+           #f)
+
 (test-comp '(lambda (w z)
               (let ([x (list* w z)]
                     [y (list* z w)])

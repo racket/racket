@@ -2916,7 +2916,8 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
   int matches;
   Scheme_Object *pred;
 
-  if (!relevant_predicate(rator))
+  if (!relevant_predicate(rator)
+      && (!SAME_OBJ(rator, scheme_list_p_proc)))
     return NULL;
 
   pred = expr_implies_predicate(rand, info, id_offset, 5);
@@ -2925,6 +2926,16 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
     return NULL;
 
   matches = SAME_OBJ(rator, pred);
+
+  if (SAME_OBJ(rator, scheme_list_p_proc)) {
+    if (SAME_OBJ(pred, scheme_pair_p_proc)) {
+      /* a pair may be a list or not */
+      return NULL;
+    } else {
+      /* otherwise, only null is a list */
+      matches = SAME_OBJ(scheme_null_p_proc, pred);
+    }
+  }
 
   return make_discarding_sequence(rand, (matches ? scheme_true : scheme_false), info, id_offset);
 }
@@ -3830,7 +3841,8 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta)
 static int relevant_predicate(Scheme_Object *pred)
 {
   /* Relevant predicates need to be disjoint for try_reduce_predicate(),
-     and they need to recognize non-#f values for optimize_branch(). */
+     and they need to recognize non-#f values for optimize_branch().
+     list? is recognized in try_reduce_predicate as a special case*/
 
   return (SAME_OBJ(pred, scheme_pair_p_proc)
           || SAME_OBJ(pred, scheme_null_p_proc)
