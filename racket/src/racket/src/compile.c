@@ -398,8 +398,6 @@ static Scheme_Object *lambda_check(Scheme_Object *form)
 {
   form = scheme_stx_taint_disarm(form, NULL);
 
-  form = scheme_stx_commit_tentative(form);
-
   if (SCHEME_STX_PAIRP(form)
       && SCHEME_STX_PAIRP(SCHEME_STX_CDR(form))) {
     Scheme_Object *rest;
@@ -720,7 +718,28 @@ Scheme_Object *scheme_clone_vector(Scheme_Object *data, int skip, int set_type)
 
 Scheme_Object *scheme_revert_expression_marks(Scheme_Object *o, Scheme_Comp_Env *env)
 {
-  return scheme_stx_abandon_tentative(o);
+  if (env->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME)) {
+    o = scheme_stx_adjust_module_expression_context(o,
+                                                    env->genv->stx_context,
+                                                    SCHEME_STX_REMOVE);
+  } else {
+    while (1) {
+      if (env->marks) {
+        o = scheme_stx_adjust_frame_expression_marks(o,
+                                                     env->marks,
+                                                     scheme_env_phase(env->genv),
+                                                     SCHEME_STX_REMOVE);
+      }
+      if (env->flags & (SCHEME_FOR_INTDEF | SCHEME_INTDEF_FRAME | SCHEME_INTDEF_SHADOW)) {
+        env = env->next;
+        if (!env)
+          break;
+      } else
+        break;
+    }
+  }
+  
+  return o;
 }
 
 void scheme_define_parse(Scheme_Object *form, 
@@ -957,8 +976,6 @@ if_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
 
   form = scheme_stx_taint_disarm(form, NULL);
 
-  form = scheme_stx_commit_tentative(form);
-
   len = check_form(form, form);
   check_if_len(form, len);
 
@@ -1032,8 +1049,6 @@ if_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
 
-  form = scheme_stx_commit_tentative(form);
-
   len = check_form(form, form);
 
   check_if_len(form, len);
@@ -1091,8 +1106,7 @@ with_cont_mark_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
   int len;
 
   form = scheme_stx_taint_disarm(form, NULL);
-  form = scheme_stx_commit_tentative(form);
- 
+
   len = check_form(form, form);
 
   if (len != 4)
@@ -1140,7 +1154,6 @@ with_cont_mark_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Exp
   SCHEME_EXPAND_OBSERVE_PRIM_WCM(erec[drec].observer);
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
-  form = scheme_stx_commit_tentative(form);
 
   len = check_form(form, form);
   if (len != 4)
@@ -1192,7 +1205,6 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
   int l, set_undef;
 
   form = scheme_stx_taint_disarm(form, NULL);
-  form = scheme_stx_commit_tentative(form);
 
   l = check_form(form, form);
   if (l != 3)
@@ -1277,7 +1289,6 @@ set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *e
   SCHEME_EXPAND_OBSERVE_PRIM_SET(erec[drec].observer);
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
-  form = scheme_stx_commit_tentative(form);
 
   l = check_form(form, form);
   if (l != 3)
@@ -1372,8 +1383,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
     env->prefix->non_phaseless = 1;
 
   form = scheme_stx_taint_disarm(form, NULL);
-  form = scheme_stx_commit_tentative(form);
- 
+
   l = check_form(form, form);
 
   /* retaining `dummy' ensures that the environment stays
@@ -1564,8 +1574,7 @@ case_lambda_syntax (Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Compile_Info *recs;
 
   form = scheme_stx_taint_disarm(form, NULL);
-  form = scheme_stx_commit_tentative(form);
- 
+  
   form = SCHEME_STX_CDR(form);
 
   name = scheme_build_closure_name(orig_form, rec, drec);
@@ -1681,8 +1690,7 @@ case_lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand
   SCHEME_EXPAND_OBSERVE_PRIM_CASE_LAMBDA(erec[drec].observer);
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
-  form = scheme_stx_commit_tentative(form);
- 
+
   first = SCHEME_STX_CAR(form);
   first = cons(first, scheme_null);
   last = first;
@@ -2124,7 +2132,6 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   Scheme_Let_Header *head;
 
   form = scheme_stx_taint_disarm(form, NULL);
-  form = scheme_stx_commit_tentative(form);
 
   if (rec_env_already == 2) {
     l = detect_traditional_letrec(form, origenv);
@@ -2187,11 +2194,11 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
 	scheme_wrong_syntax(NULL, clause, form, NULL);
       
       names = SCHEME_STX_CAR(clause);
-
+      
       num_names = scheme_stx_proper_list_length(names);
       if (num_names < 0)
 	scheme_wrong_syntax(NULL, names, form, NULL);
-      
+     
       num_bindings += num_names;
  
       l = SCHEME_STX_CDR(l);
@@ -2496,8 +2503,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
      expanded into `let' plus `letrec'. */
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
-  form = scheme_stx_commit_tentative(form);
- 
+
   if (rec_env_already == 2) {
     v = detect_traditional_letrec(form, origenv);
     if (!SAME_OBJ(v, form)) {
@@ -2785,9 +2791,7 @@ do_begin_syntax(char *name,
   Scheme_Object *forms, *body;
 
   form = scheme_stx_taint_disarm(form, NULL);
-  if (zero)
-    form = scheme_stx_commit_tentative(form);
- 
+
   forms = SCHEME_STX_CDR(form);
   
   if (SCHEME_STX_NULLP(forms)) {
@@ -2996,9 +3000,7 @@ do_begin_expand(char *name,
   Scheme_Object *form;
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
-  if (zero)
-    form = scheme_stx_commit_tentative(form);
- 
+
   check_form(form, form);
 
   form_name = SCHEME_STX_CAR(form);
@@ -3135,7 +3137,6 @@ single_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
   Scheme_Object *expr, *form_name, *form;
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
-  form = scheme_stx_commit_tentative(form);
 
   expr = check_single(form, top_only ? env : NULL);
   expr = scheme_expand_expr(expr, env, erec, drec);
@@ -3218,7 +3219,7 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
 #if 1
   stx = SCHEME_STX_CDR(form);
   stx = SCHEME_STX_CAR(stx);
-
+  
   /* Remove marks for all enclosing local binding contexts. */
   for (frame = env; frame; frame = frame->next) {
     if (frame->marks) {
@@ -3689,9 +3690,6 @@ do_letrec_syntaxes(const char *where,
   forms = scheme_stx_taint_disarm(orig_forms, NULL);
 
   env_already = rec[drec].env_already;
-
-  if (!env_already)
-    forms = scheme_stx_commit_tentative(forms);
 
   form = SCHEME_STX_CDR(forms);
   if (!SCHEME_STX_PAIRP(form))
@@ -4271,7 +4269,6 @@ static Scheme_Object *compile_application(Scheme_Object *form, Scheme_Comp_Env *
   int len;
 
   form = scheme_stx_taint_disarm(form, NULL);
-  form = scheme_stx_commit_tentative(form);
 
   len = scheme_stx_proper_list_length(form);
 
@@ -4908,7 +4905,6 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
   int tsc;
 
   forms = scheme_stx_taint_disarm(orig_form, NULL);
-  forms = scheme_stx_commit_tentative(forms);
 
   tsc = rec[drec].pre_unwrapped;
   rec[drec].pre_unwrapped = 0;

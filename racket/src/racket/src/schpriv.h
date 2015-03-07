@@ -1051,7 +1051,6 @@ typedef struct Scheme_Mark_Set Scheme_Mark_Set;
 typedef struct Scheme_Mark_Table {
   Scheme_Object so; /* scheme_mark_table_type or scheme_propagate_table_type */
   Scheme_Mark_Set *single_marks;
-  Scheme_Mark_Set *tentative_marks;
   Scheme_Object *multi_marks; /* list of (cons multi-mark phase-shift) or fallback chain */
 } Scheme_Mark_Table;
 
@@ -1107,24 +1106,17 @@ Scheme_Object *scheme_new_nonoriginal_mark(int kind);
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
 Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 
-#define SCHEME_STX_ADD         0
-#define SCHEME_STX_REMOVE      1
-#define SCHEME_STX_FLIP        2
-#define SCHEME_STX_PUSH        3
-#define SCHEME_STX_T_COMMIT    4
-#define SCHEME_STX_T_ABANDON   5
-#define SCHEME_STX_MODE_MASK  0xF
-#define SCHEME_STX_TENTATIVE  16 /* or'ed */
-#define SCHEME_STX_MUTATE     32 /* or'ed */
-#define SCHEME_STX_PROPONLY   64 /* or'ed, internal */
+#define SCHEME_STX_ADD      0
+#define SCHEME_STX_REMOVE   1
+#define SCHEME_STX_FLIP     2
+#define SCHEME_STX_PUSH     4
+#define SCHEME_STX_MUTATE   16 /* or'ed */
+#define SCHEME_STX_PROPONLY 32 /* or'ed, internal */
 Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode);
 Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
 Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
 Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
 Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode);
-
-Scheme_Object *scheme_stx_commit_tentative(Scheme_Object *o);
-Scheme_Object *scheme_stx_abandon_tentative(Scheme_Object *o);
 
 Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc);
 Scheme_Object *scheme_module_context_frame_marks(Scheme_Object *mc);
