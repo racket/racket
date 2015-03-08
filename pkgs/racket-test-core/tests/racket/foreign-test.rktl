@@ -929,6 +929,10 @@
 
 (require (only-in 'mod-cstruct-serialize))
 
+;; ----------------------------------------
+
+(define-cpointer-type _foo)
+(test 'foo? object-name foo?)
 
 ;; ----------------------------------------
 

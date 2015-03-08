@@ -1294,10 +1294,12 @@
                      [_TYPE/null (id "_" name "/null")])
          #'(define-values (_TYPE _TYPE/null TYPE? TYPE-tag)
              (let ([TYPE-tag 'TYPE])
+               ;; Make the predicate function have the right inferred name
+               (define (TYPE? x)
+                 (and (cpointer? x) (cpointer-has-tag? x TYPE-tag)))
                (values (_cpointer      TYPE-tag ptr-type scheme->c c->scheme)
                        (_cpointer/null TYPE-tag ptr-type scheme->c c->scheme)
-                       (lambda (x)
-                         (and (cpointer? x) (cpointer-has-tag? x TYPE-tag)))
+                       TYPE?
                        TYPE-tag)))))]))
 
 ;; ----------------------------------------------------------------------------
