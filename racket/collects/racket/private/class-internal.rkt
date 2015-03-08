@@ -380,12 +380,16 @@
                                          'expression
                                          null)])
                        (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #'rhs def-ctx)
-                       (cons #'(define-syntaxes (id ...) rhs) (loop (cdr l)))))]
+                       (with-syntax ([(id ...) (map identifier->binding-identifier
+                                                    (syntax->list #'(id ...)))])
+                         (cons (syntax/loc e (define-syntaxes (id ...) rhs))
+                               (loop (cdr l))))))]
                   [(define-values (id ...) rhs)
                    (andmap identifier? (syntax->list #'(id ...)))
-                   (begin
-                     (map bind-local-id (syntax->list #'(id ...)))
-                     (cons e (loop (cdr l))))]
+                   (let ([ids (map bind-local-id (syntax->list #'(id ...)))])
+                     (with-syntax ([(id ...) ids])
+                       (cons (datum->syntax e (list #'define-values #'(id ...) #'rhs) e e)
+                             (loop (cdr l)))))]
                   [_else 
                    (cons e (loop (cdr l)))]))))))
     
@@ -421,9 +425,9 @@
                       (if alone
                           (map (lambda (i)
                                  (if (identifier? i)
-                                     (alone i)
-                                     (cons (stx-car i)
-                                           (stx-car (stx-cdr i)))))
+                                     (alone (identifier->binding-identifier i))
+                                     (cons (identifier->binding-identifier (stx-car i))
+                                           (identifier->binding-identifier (stx-car (stx-cdr i))))))
                                l)
                           l)))
                   l)))
@@ -440,8 +444,8 @@
                     (cons (list a a) (stx-cdr i))
                     i))]))
     
-    (define (norm-init/field-iid norm) (stx-car (stx-car norm)))
-    (define (norm-init/field-eid norm) (stx-car (stx-cdr (stx-car norm))))
+    (define (norm-init/field-iid norm) (identifier->binding-identifier (stx-car (stx-car norm))))
+    (define (norm-init/field-eid norm) (identifier->binding-identifier (stx-car (stx-cdr (stx-car norm)))))
     
     ;; expands an expression enough that we can check whether it has
     ;; the right form for a method; must use local syntax definitions
@@ -684,13 +688,15 @@
                                       (unless (eq? id id2)
                                         (set! any-localized? #t))
                                       id2))]
-               [bind-local-id (lambda (id)
-                                (let ([l (localize/set-flag id)])
+               [bind-local-id (lambda (orig-id)
+                                (let ([l (localize/set-flag orig-id)]
+                                      [id (identifier->binding-identifier orig-id)])
                                   (syntax-local-bind-syntaxes (list id) #f def-ctx)
                                   (bound-identifier-mapping-put!
                                    localized-map
                                    id
-                                   l)))]
+                                   l)
+                                  id))]
                [lookup-localize (lambda (id)
                                   (bound-identifier-mapping-get
                                    localized-map
@@ -710,7 +716,7 @@
                                   (if (syntax? s)
                                       (syntax-e s)
                                       s)))])
-            
+
             ;; ------ Basic syntax checks -----
             (for-each (lambda (stx)
                         (syntax-case stx (-init -init-rest -field -init-field -inherit-field
@@ -1302,8 +1308,7 @@
                                                      (generate-temporaries (map car inherit/inners)))]
                           [all-inherits (append inherits inherit/supers inherit/inners)]
                           [definify (lambda (l)
-                                      (map bind-local-id l)
-                                      l)])
+                                      (map bind-local-id l))])
 
                       ;; ---- set up field and method mappings ----
                       (with-syntax ([(rename-super-orig ...) (definify (map car rename-supers))]

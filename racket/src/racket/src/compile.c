@@ -3222,7 +3222,11 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
   
   /* Remove marks for all enclosing local binding contexts. */
   for (frame = env; frame; frame = frame->next) {
-    if (frame->marks) {
+    if (frame->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME))
+      stx = scheme_stx_adjust_module_expression_context(stx,
+                                                        env->genv->stx_context,
+                                                        SCHEME_STX_REMOVE);
+    else if (frame->marks) {
       if (frame->flags & SCHEME_KEEP_MARKS_FRAME)
         stx = scheme_stx_adjust_frame_expression_marks(stx, frame->marks,
                                                        scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
@@ -5227,6 +5231,8 @@ int scheme_check_top_identifier_bound(Scheme_Object *c, Scheme_Env *genv, int di
         reason = "unbound identifier in module";
       else
         reason = "unbound identifier in module (in phase %d)";
+      scheme_stx_debug_print(c, scheme_env_phase(genv), 1); // REMOVEME
+      printf("%s\n", scheme_write_to_string(binding, 0)); // REMOVEME
       scheme_unbound_syntax(scheme_expand_stx_string, NULL, c, reason, genv->phase);
     }
   }

@@ -2519,7 +2519,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   binder = scheme_find_local_binder(sym2, env, &bind_env);
 
   sym = scheme_stx_remove_module_context_marks(sym);
-
+  
   if (binder)
     sym = scheme_stx_binding_union(sym, binder, scheme_env_phase(env->genv));
   else if (env->genv->module && env->genv->module->ii_src)

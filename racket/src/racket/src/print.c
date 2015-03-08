@@ -2979,7 +2979,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_utf8_string(pp, ">", 0, 1);
       }
     }
-  else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_module_index_type))
+  else if (/*compact && REMOVEME*/SAME_TYPE(SCHEME_TYPE(obj), scheme_module_index_type))
     {
       Scheme_Object *idx;
 

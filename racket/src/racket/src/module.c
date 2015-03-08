@@ -8763,6 +8763,14 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             non_phaseless |= NON_PHASELESS_FORM;
             non_phaseless_form = val;
           }
+
+          if (!rec[drec].comp) {
+            /* Reconstruct to remove marks that don't belong on the binding names in the expansion: */
+            e = scheme_datum_to_syntax(scheme_make_pair(fst, scheme_make_pair(vars,
+                                                                              scheme_make_pair(val,
+                                                                                               scheme_null))),
+                                       e, e, 0, 2);
+          }
           
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  kind = DEFN_MODFORM_KIND;

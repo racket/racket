@@ -928,6 +928,7 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
 {
   char buffer[100], *str;
   Scheme_Object *r;
+  Scheme_Thread *p;
 
   if (argc)
     r = argv[0];
@@ -937,6 +938,18 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
   if (r && !SCHEME_SYMBOLP(r) && !SCHEME_CHAR_STRINGP(r))
     scheme_wrong_contract("gensym", "(or/c symbol? string?)", 0, argc, argv);
 
+  if (!r) {
+    /* Generate a name using an enclosing module name during compilation, if available */
+    p = scheme_current_thread;
+    if (p->current_local_env && p->current_local_env->genv->module) {
+      r = SCHEME_PTR_VAL(p->current_local_env->genv->module->modname);
+      if (SCHEME_PAIRP(r))
+        r = SCHEME_CAR(r);
+      if (!SCHEME_SYMBOLP(r))
+        r = NULL;
+    }
+  }
+  
   if (r) {
     char buf[64];
     if (SCHEME_CHAR_STRINGP(r)) {

@@ -1059,12 +1059,16 @@
                                               'expression
                                               null)])
                             (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #'rhs def-ctx)
-                            (list #'(define-syntaxes (id ...) rhs)))]
+                            (with-syntax ([(id ...) (map identifier->binding-identifier
+                                                    (syntax->list #'(id ...)))])
+                              (list #'(define-syntaxes (id ...) rhs))))]
                          [(define-values (id ...) rhs)
                           (andmap identifier? (syntax->list #'(id ...)))
                           (begin
                             (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #f def-ctx)
-                            (list defn-or-expr))]
+                            (with-syntax ([(id ...) (map identifier->binding-identifier
+                                                         (syntax->list #'(id ...)))])
+                              (list #'(define-values (id ...) rhs))))]
                          [else (list defn-or-expr)])))
                    defns&exprs)))]
               ;; Get all the defined names, sorting out variable definitions
@@ -1102,7 +1106,7 @@
          (for-each
           (lambda (name loc ctc)
             (let ([v (bound-identifier-mapping-get defined-names-table
-                                                   name
+                                                   (identifier->binding-identifier name)
                                                    (lambda () #f))])
               (unless v
                 (raise-stx-err (format "undefined export ~a" (syntax-e name))))

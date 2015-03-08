@@ -96,6 +96,7 @@ static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_binding_symbol(int argc, Scheme_Object **argv);
+static Scheme_Object *id_to_binding_id(int argc, Scheme_Object **argv);
 static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv);
 static Scheme_Object *identifier_prune_to_module(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv);
@@ -124,6 +125,8 @@ static Scheme_Object *add_to_mark_list(Scheme_Object *l, Scheme_Object *p);
 static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
 
 static Scheme_Object *new_module_context_mark(int kind);
+
+static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks);
 
 #define CONS scheme_make_pair
 #define ICONS scheme_make_pair
@@ -250,6 +253,8 @@ void scheme_init_stx(Scheme_Env *env)
   GLOBAL_IMMED_PRIM("identifier-prune-to-source-module", identifier_prune_to_module, 1, 1, env);
 
   GLOBAL_IMMED_PRIM("identifier-binding-symbol"        , module_binding_symbol     , 1, 2, env);
+
+  GLOBAL_IMMED_PRIM("identifier->binding-identifier"   , id_to_binding_id          , 1, 1, env);
 
   GLOBAL_NONCM_PRIM("syntax-source-module"             , syntax_src_module         , 1, 2, env);
 
@@ -2388,15 +2393,15 @@ static void print_indent(int indent)
 
 static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_marks, int indent)
 {
-  intptr_t i;
-  Scheme_Object *key, *val;
+  Scheme_Object *key, *l;
 
   print_indent(indent);
   printf("  ");
 
-  i = mark_set_next(marks, -1);
-  while (i != -1) {
-    mark_set_index(marks, i, &key, &val);
+  l = scheme_reverse(marks_to_sorted_list(marks));
+
+  for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+    key = SCHEME_CAR(l);
     
     printf(" %s", scheme_write_to_string(scheme_mark_printed_form(key), NULL));
     if (((Scheme_Mark *)key)->owner_multi_mark) {
@@ -2407,7 +2412,6 @@ static void print_marks(Scheme_Mark_Set *marks, Scheme_Mark_Set *check_against_m
              (tl ? "tl" : ""),
              SCHEME_INT_VAL(SCHEME_CDR(((Scheme_Mark *)key)->owner_multi_mark)));
     }
-    i = mark_set_next(marks, i);
   }
 
   if (check_against_marks && mark_subset(marks, check_against_marks))
@@ -5824,7 +5828,7 @@ Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Sche
 
 static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *phase, *a, *b;
+  Scheme_Object *phase;
 
   if (!SCHEME_STX_IDP(argv[0]))
     scheme_wrong_contract("bound-identifier=?", "identifier?", 0, argc, argv);
@@ -5833,16 +5837,7 @@ static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)
 
   phase = extract_phase("bound-identifier=?", 2, argc, argv, scheme_make_integer(0), 0);
 
-  a = argv[0];
-  b = argv[1];
-
-  if (scheme_current_thread->current_local_env) {
-    /* Remove any marks that would be dropped for a binding: */
-    a = scheme_revert_expression_marks(a, scheme_current_thread->current_local_env);
-    b = scheme_revert_expression_marks(b, scheme_current_thread->current_local_env);
-  }
-  
-  return (scheme_stx_env_bound_eq2(a, b, phase, phase)
+  return (scheme_stx_env_bound_eq2(argv[0], argv[1], phase, phase)
 	  ? scheme_true
 	  : scheme_false);
 }
@@ -5983,6 +5978,19 @@ static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv)
 static Scheme_Object *module_binding_symbol(int argc, Scheme_Object **argv)
 {
   return do_module_binding("identifier-binding-symbol", argc, argv, scheme_make_integer(0), 1);
+}
+
+static Scheme_Object *id_to_binding_id(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *a = argv[0];
+
+  if (!SCHEME_STXP(a) || !SCHEME_STX_SYMBOLP(a))
+    scheme_wrong_contract("identifier->binding-identifier", "identifier?", 0, argc, argv);
+
+  if (scheme_current_thread->current_local_env)
+    return scheme_revert_expression_marks(a, scheme_current_thread->current_local_env);
+  else
+    return a;
 }
 
 static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv)

@@ -70,14 +70,18 @@
                                (map (lambda (d)
                                       (syntax-case d (define-values)
                                         [(define-values ids rhs)
-                                         (list #'(ids rhs))]
+                                         (with-syntax ([ids (map identifier->binding-identifier
+                                                                 (syntax->list #'ids))])
+                                           (list #'(ids rhs)))]
                                         [_ null]))
                                     defs))]
              [sbindings (apply append
                                (map (lambda (d)
                                       (syntax-case d (define-syntaxes)
                                         [(define-syntaxes ids rhs)
-                                         (list #'(ids rhs))]
+                                         (with-syntax ([ids (map identifier->binding-identifier
+                                                                 (syntax->list #'ids))])
+                                           (list #'(ids rhs)))]
                                         [_ null]))
                                     defs))])
          (let ([dup (check-duplicate-identifier ids)])
