@@ -55,10 +55,74 @@
     (match top
       [(struct compilation-top (max-let-depth prefix form))
        (let-values ([(globs defns) (decompile-prefix prefix stx-ht)])
-         `(begin
+         (expose-module-path-indexes
+          `(begin
             ,@defns
-            ,(decompile-form form globs '(#%globals) (make-hasheq) stx-ht)))]
+            ,(decompile-form form globs '(#%globals) (make-hasheq) stx-ht))))]
       [else (error 'decompile "unrecognized: ~e" top)])))
+
+(define (expose-module-path-indexes e)
+  ;; This is a nearly general replace-in-graph function. (It seems like a lot
+  ;; of work to expose module path index content and sharing, though.)
+  (define ht (make-hasheq))
+  (define mconses null)
+  (define (x-mcons a b)
+    (define m (mcons a b))
+    (set! mconses (cons (cons m (cons a b)) mconses))
+    m)
+  (define main
+    (let loop ([e e])
+      (cond
+       [(hash-ref ht e #f)]
+       [(module-path-index? e)
+        (define ph (make-placeholder #f))
+        (hash-set! ht e ph)
+        (define-values (name base) (module-path-index-split e))
+        (placeholder-set! ph (x-mcons '#%modidx
+                                      (x-mcons (loop name)
+                                               (x-mcons (loop base)
+                                                        null))))
+        ph]
+       [(pair? e)
+        (define ph (make-placeholder #f))
+        (hash-set! ht e ph)
+        (placeholder-set! ph (cons (loop (car e))
+                                   (loop (cdr e))))
+        ph]
+       [(mpair? e)
+        (define m (mcons #f #f))
+        (hash-set! ht e m)
+        (set! mconses (cons (cons m (cons (loop (mcar e))
+                                          (loop (mcdr e))))
+                            mconses))
+        m]
+       [(box? e)
+        (define ph (make-placeholder #f))
+        (hash-set! ht e ph)
+        (placeholder-set! ph (box (loop (unbox e))))
+        ph]
+       [(vector? e)
+        (define ph (make-placeholder #f))
+        (hash-set! ht e ph)
+        (placeholder-set! ph
+                          (for/vector #:length (vector-length e) ([i (in-vector e)])
+                                      (loop i)))
+        ph]
+       [(hash? e)
+        (define ph (make-placeholder #f))
+        (hash-set! ht e ph)
+        (placeholder-set! ph
+                          (make-hash-placeholder
+                           (for/list ([(k v) (in-hash e)])
+                             (cons (loop k) (loop v)))))
+        ph]
+       [else
+        e])))
+  (define l (make-reader-graph (cons main mconses)))
+  (for ([i (in-list (cdr l))])
+    (set-mcar! (car i) (cadr i))
+    (set-mcdr! (car i) (cddr i)))
+  (car l))
 
 (define (decompile-prefix a-prefix stx-ht)
   (match a-prefix
@@ -153,16 +217,26 @@
 (define (decompile-module mod-form orig-stack stx-ht mod-name)
   (match mod-form
     [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies unexported 
-                       max-let-depth dummy lang-info internal-context flags pre-submodules post-submodules))
+                       max-let-depth dummy lang-info 
+                       internal-context binding-names
+                       flags pre-submodules post-submodules))
      (let-values ([(globs defns) (decompile-prefix prefix stx-ht)]
                   [(stack) (append '(#%modvars) orig-stack)]
                   [(closed) (make-hasheq)])
        `(,mod-name ,(if (symbol? name) name (last name)) ....
+           (quote self ,self-modidx)
            (quote internal-context 
                   ,(if (stx? internal-context)
                        `(#%decode-syntax 
                          ,(decompile-stx (stx-encoded internal-context) stx-ht))
                        internal-context))
+           (quote bindings ,(for/hash ([(phase ht) (in-hash binding-names)])
+                              (values phase
+                                      (for/hash ([(sym id) (in-hash ht)])
+                                        (values sym
+                                                `(#%decode-syntax 
+                                                  ,(decompile-stx (stx-encoded id) stx-ht)))))))
+           (quote language-info ,lang-info)
            ,@(if (null? flags) '() (list `(quote ,flags)))
            ,@(let ([l (apply
                        append

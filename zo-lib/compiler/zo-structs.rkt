@@ -121,11 +121,11 @@
 
 (define-form-struct (mod form) ([name (or/c symbol? (listof symbol?))]
                                 [srcname symbol?]
-                                [self-modidx module-path-index?] 
-                                [prefix prefix?] 
+                                [self-modidx module-path-index?]
+                                [prefix prefix?]
                                 [provides (listof (list/c (or/c exact-integer? #f)
                                                           (listof provided?)
-                                                          (listof provided?)))] 
+                                                          (listof provided?)))]
                                 [requires (listof (cons/c (or/c exact-integer? #f)
                                                           (listof module-path-index?)))]
                                 [body (listof (or/c form? any/c))]
@@ -138,6 +138,8 @@
                                 [dummy toplevel?]
                                 [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
                                 [internal-context (or/c #f #t stx? (vectorof stx?))]
+                                [binding-names (hash/c exact-integer?
+                                                       (hash/c symbol? stx?))]
                                 [flags (listof (or/c 'cross-phase))]
                                 [pre-submodules (listof mod?)]
                                 [post-submodules (listof mod?)]))

@@ -999,7 +999,9 @@
 (define (convert-module mod-form)
   (match mod-form
     [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies unexported 
-                       max-let-depth dummy lang-info internal-context flags pre-submodules post-submodules))
+                       max-let-depth dummy lang-info
+                       internal-context binding-names
+                       flags pre-submodules post-submodules))
      (let* ([lookup-req (lambda (phase)
                           (let ([a (assq phase requires)])
                             (if a
@@ -1096,6 +1098,7 @@
             [l (cons (map convert-module post-submodules) l)]
             [l (cons (map convert-module pre-submodules) l)]
             [l (cons (if (memq 'cross-phase flags) #t #f) l)]
+            [l (append (pack-binding-names binding-names) l)]
             [l (cons self-modidx l)]
             [l (cons srcname l)]
             [l (cons (if (pair? name) (car name) name) l)]
@@ -1107,6 +1110,15 @@
             (λ ()
               (encode-wrapped w))))
 
+(define (pack-binding-names binding-names)
+  (define (ht-to-vector ht)
+    (list->vector (apply append (hash-map ht list))))
+  (list (ht-to-vector (hash-ref binding-names 0 #f))
+        (ht-to-vector (hash-ref binding-names 1 #f))
+        (apply append
+               (for/list ([(phase ht) (in-hash binding-names)]
+                          #:unless (or (= phase 0) (= phase 1)))
+                 (list phase (ht-to-vector ht))))))
 
 (define (out-lam expr out)  
   (match expr

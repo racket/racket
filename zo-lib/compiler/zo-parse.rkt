@@ -248,7 +248,9 @@
 (define (read-module v)
   (match v
     [`(,submod-path 
-       ,name ,srcname ,self-modidx ,cross-phase?
+       ,name ,srcname ,self-modidx
+       ,rt-binding-names ,et-binding-names ,other-binding-names
+       ,cross-phase?
        ,pre-submods ,post-submods
        ,lang-info ,functional? ,et-functional?
        ,rename ,max-let-depth ,dummy
@@ -334,14 +336,40 @@
                     dummy
                     lang-info
                     rename
+                    (assemble-binding-names rt-binding-names
+                                            et-binding-names
+                                            other-binding-names)
                     (if cross-phase? '(cross-phase) '())
                     (map read-module pre-submods)
                     (map read-module post-submods))]))]))
 (define (read-module-wrap v)
   v)
 
+
 (define (read-inline-variant v)
   (make-inline-variant (car v) (cdr v)))
+
+(define (assemble-binding-names rt-binding-names
+                                et-binding-names
+                                other-binding-names)
+  (define (vector-to-ht vec)
+    (define sz (vector-length vec))
+    (let loop ([i 0] [ht #hasheq()])
+      (cond
+       [(= i sz) ht]
+       [else (loop (+ i 2)
+                   (hash-set ht (vector-ref vec i) (vector-ref vec (add1 i))))])))
+  (for/hash ([(phase vec) (let* ([ht (if other-binding-names
+                                         (vector-to-ht other-binding-names)
+                                         #hash())]
+                                 [ht (if rt-binding-names
+                                         (hash-set ht 0 rt-binding-names)
+                                         ht)]
+                                 [ht (if et-binding-names
+                                         (hash-set ht 0 et-binding-names)
+                                         ht)])
+                            ht)])
+    (values phase (vector-to-ht vec))))
 
 ;; ----------------------------------------
 ;; Unmarshal dispatch for various types
