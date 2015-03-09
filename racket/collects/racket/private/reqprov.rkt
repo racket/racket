@@ -683,15 +683,16 @@
       [(module)
        (syntax-case stx ()
          [(_ out ...)
-          (with-syntax ([(out ...)
-                         (map (lambda (o) (pre-expand-export o null))
-                              (syntax->list #'(out ...)))])
-            (syntax-property
-             (quasisyntax/loc stx 
-               (#%provide #,(syntax-property
-                             #`(expand (provide-trampoline out ...))
-                             'certify-mode 'transparent)))
-             'certify-mode 'transparent))])]
+          (with-provide-disappeared-uses
+            (with-syntax ([(out ...)
+                           (map (lambda (o) (pre-expand-export o null))
+                                (syntax->list #'(out ...)))])
+              (syntax-property
+               (quasisyntax/loc stx
+                 (#%provide #,(syntax-property
+                               #`(expand (provide-trampoline out ...))
+                               'certify-mode 'transparent)))
+               'certify-mode 'transparent)))])]]
       [else
        (raise-syntax-error #f
                            "not at module level"

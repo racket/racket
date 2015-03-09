@@ -3,12 +3,20 @@
              "private/stx.rkt"
              "private/define-struct.rkt"
              "private/small-scheme.rkt"
-             "private/define.rkt")
+             "private/more-scheme.rkt"
+             "private/define.rkt"
+             (for-syntax '#%kernel
+                         "private/stxcase-scheme.rkt"
+                         "private/stx.rkt"
+                         "private/define-struct.rkt"
+                         "private/small-scheme.rkt"
+                         "private/define.rkt"))
   
   (#%provide expand-export pre-expand-export 
              syntax-local-provide-certifier 
              make-provide-transformer prop:provide-transformer provide-transformer?
              make-provide-pre-transformer prop:provide-pre-transformer provide-pre-transformer?
+             with-provide-disappeared-uses provide-record-disappeared-use
              ;; the export struct type:
              export struct:export make-export export?
              export-local-id export-out-sym export-orig-stx export-protect? export-mode)
@@ -60,6 +68,21 @@
   (define orig-insp (variable-reference->module-declaration-inspector
                      (#%variable-reference)))
 
+  (define provide-disappeared-uses (make-parameter #f))
+  (define-syntax (with-provide-disappeared-uses stx)
+    (syntax-case stx ()
+      ([_ expr]
+       #'(let-values ([(v ids) (parameterize ([provide-disappeared-uses '()])
+                                 (let ([v expr])
+                                   (values v (provide-disappeared-uses))))])
+           (syntax-property v 'disappeared-use
+             (append ids (or (syntax-property v 'disappeared-use) null)))))))
+
+  (define (provide-record-disappeared-use id)
+    (let ([old (provide-disappeared-uses)])
+      (when old
+        (provide-disappeared-uses (cons id old)))))
+
   (define (pre-expand-export stx modes)
     (if (identifier? stx)
         stx
@@ -70,6 +93,7 @@
              (let ([t (syntax-local-value #'id (lambda () #f))])
                (if (provide-pre-transformer? t)
                    (let ([v (((provide-pre-transformer-get-proc t) t) disarmed-stx modes)])
+                     (provide-record-disappeared-use (syntax-local-introduce #'id))
                      (unless (syntax? v)
                        (raise-syntax-error
                         #f
@@ -96,6 +120,7 @@
              (let ([t (syntax-local-value #'id (lambda () #f))])
                (if (provide-transformer? t)
                    (let ([v (((provide-transformer-get-proc t) t) disarmed-stx modes)])
+                     (provide-record-disappeared-use (syntax-local-introduce #'id))
                      (unless (and (list? v)
                                   (andmap export? v))
                        (raise-syntax-error
