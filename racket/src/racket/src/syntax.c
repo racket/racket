@@ -656,7 +656,7 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 	for (; SCHEME_PAIRP(oe); oe = SCHEME_CDR(oe)) {
 	  a = SCHEME_CAR(SCHEME_CAR(oe));
 	  if (!SAME_OBJ(a, source_symbol) && !SAME_OBJ(a, share_symbol)) {
-	    if (!SAME_OBJ(a, origin_symbol)) {
+	    if (!origin || !SAME_OBJ(a, origin_symbol)) {
 	      p = ICONS(SCHEME_CAR(oe), scheme_null);
 	    } else {
 	      p = ICONS(ICONS(a, ICONS(origin, 
@@ -675,7 +675,7 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 
 	oe = first;
       } 
-      if (add) {
+      if (add && origin) {
 	oe = ICONS(ICONS(origin_symbol, 
 			 ICONS(origin, scheme_null)),
 		  oe);
@@ -686,10 +686,14 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
     oe = NULL;
   }
 
-  if (!oe)
-    oe = ICONS(ICONS(origin_symbol, 
-		     ICONS(origin, scheme_null)),
-	      scheme_null);
+  if (!oe) {
+    if (origin)
+      oe = ICONS(ICONS(origin_symbol, 
+                       ICONS(origin, scheme_null)),
+                 scheme_null);
+    else
+      oe = scheme_null;
+  }
 
   /* Merge ne and oe (ne takes precedence). */
   

@@ -55,17 +55,17 @@
                   (if (and (eq? new-mp #'mp)
                            (eq? (car d) 'submod))
                       stx
-                      (datum->syntax
-                       stx
-                       (list* kw new-mp #'rest)
-                       stx
-                       stx)))])]
+                      (syntax-track/form (datum->syntax
+                                          stx
+                                          (list* kw new-mp #'rest)
+                                          stx)
+                                         stx)))])]
             [(eq? (car d) kw) stx]
-            [else (datum->syntax
-                   stx
-                   (cons kw (cdr d))
-                   stx
-                   stx)]))
+            [else (syntax-track/form (datum->syntax
+                                      stx
+                                      (cons kw (cdr d))
+                                      stx)
+                                     stx)]))
          stx)))
   
   (define-for-syntax (check-lib-form stx)
@@ -298,12 +298,13 @@
                         (simple-path? #'path)
                         (list (mode-wrap
                                base-mode
-                               (datum->syntax
-                                #'path
-                                (syntax-e
-                                 (quasisyntax
-                                  (prefix pfx #,(xlate-path #'path))))
-                                in
+                               (syntax-track/form
+                                (datum->syntax
+                                 #'path
+                                 (syntax-e
+                                  (quasisyntax
+                                   (prefix pfx #,(xlate-path #'path))))
+                                 in)
                                 in)))]
                        [(except-in path id ...)
                         (and (simple-path? #'path)
@@ -312,27 +313,32 @@
                                (lambda (a b) #t)))
                         (list (mode-wrap
                                base-mode
-                               (datum->syntax
-                                #'path
-                                (syntax-e
-                                 (quasisyntax/loc in
-                                   (all-except #,(xlate-path #'path) id ...))))))]
+                               (syntax-track/form
+                                (datum->syntax
+                                 #'path
+                                 (syntax-e
+                                  (quasisyntax/loc in
+                                    (all-except #,(xlate-path #'path) id ...))))
+                                in)))]
                        ;; General case:
                        [_ (let-values ([(imports sources) (expand-import in)])
                             ;; TODO: collapse back to simple cases when possible
-                            (append
-                             (map (lambda (import)
-                                    #`(just-meta
-                                       #,(import-orig-mode import)
-                                       #,(mode-wrap (phase+ base-mode (import-req-mode import))
-                                                    #`(rename #,(import-src-mod-path import)
-                                                              #,(import-local-id import)
-                                                              #,(import-src-sym import)))))
-                                  imports)
-                             (map (lambda (src)
-                                    (mode-wrap (phase+ base-mode (import-source-mode src))
-                                               #`(only #,(import-source-mod-path-stx src))))
-                                  sources)))]))]
+                            (cons/syntax-track/form
+                             #'(just-meta 0)
+                             in
+                             (append
+                              (map (lambda (import)
+                                     #`(just-meta
+                                        #,(import-orig-mode import)
+                                        #,(mode-wrap (phase+ base-mode (import-req-mode import))
+                                                     #`(rename #,(import-src-mod-path import)
+                                                               #,(import-local-id import)
+                                                               #,(import-src-sym import)))))
+                                   imports)
+                              (map (lambda (src)
+                                     (mode-wrap (phase+ base-mode (import-source-mode src))
+                                                #`(only #,(import-source-mod-path-stx src))))
+                                   sources))))]))]
                   [transform-one
                    (lambda (in)
                      ;; Recognize `for-syntax', etc. for simple cases:
@@ -340,25 +346,31 @@
                        [(for-meta n elem ...)
                         (or (exact-integer? (syntax-e #'n))
                             (not (syntax-e #'n)))
-                        (apply append
-                               (map (lambda (in)
-                                      (transform-simple in (syntax-e #'n)))
-                                    (syntax->list #'(elem ...))))]
+                        (cons/syntax-track/form
+                         #'(for-meta n)
+                         in
+                         (apply append
+                                (map (lambda (in)
+                                       (transform-simple in (syntax-e #'n)))
+                                     (syntax->list #'(elem ...)))))]
                        [(for-something elem ...)
                         (and (identifier? #'for-something)
                              (ormap (lambda (i) (free-identifier=? i #'for-something))
                                     (list #'for-syntax #'for-template #'for-label)))
-                        (apply append
-                               (map (lambda (in)
-                                      (transform-simple in
-                                                        (cond
-                                                         [(free-identifier=? #'for-something #'for-syntax)
-                                                          1]
-                                                         [(free-identifier=? #'for-something #'for-template)
-                                                          -1]
-                                                         [(free-identifier=? #'for-something #'for-label)
-                                                          #f])))
-                                    (syntax->list #'(elem ...))))]
+                        (cons/syntax-track/form
+                         #'(for-something)
+                         in
+                         (apply append
+                                (map (lambda (in)
+                                       (transform-simple in
+                                                         (cond
+                                                          [(free-identifier=? #'for-something #'for-syntax)
+                                                           1]
+                                                          [(free-identifier=? #'for-something #'for-template)
+                                                           -1]
+                                                          [(free-identifier=? #'for-something #'for-label)
+                                                           #f])))
+                                     (syntax->list #'(elem ...)))))]
                        [_ (transform-simple in 0 #| run phase |#)]))])
            (syntax-case stx ()
              [(_ in)
@@ -401,6 +413,15 @@
                            "not at module level or top level"
                            stx)]))
 
+  (define-for-syntax (syntax-track/form stx orig)
+    (syntax-track-origin stx orig (syntax-local-introduce (car (syntax-e orig)))))
+
+  (define-for-syntax (cons/syntax-track/form stx orig l)
+    ;; Add `stx` as a dummy require if needed to track `orig`
+    (if (pair? l)
+        (cons (syntax-track/form (car l) orig)
+              (cdr l))
+        (cons (syntax-track/form stx orig) l)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; require transformers
@@ -721,11 +742,32 @@
                           exports)))])
          (syntax-case stx ()
            [(_ out ...)
-            (with-syntax ([(new-out ...)
-                           (apply append
-                                  (map transform-simple (syntax->list #'(out ...))))])
-              (syntax/loc stx
-                (begin new-out ...)))]))]))
+            (let ([outs (syntax->list #'(out ...))])
+              (with-syntax ([(new-out ...) (apply append (map transform-simple outs))])
+                (copy-disappeared-uses
+                 outs
+                 (syntax/loc stx
+                   (begin new-out ...)))))]))]))
+
+  (define-for-syntax (copy-disappeared-uses outs r)
+    (cond
+     [(null? outs) r]
+     [else
+      (let ([p (syntax-property (car outs) 'disappeared-use)]
+            [name (if (identifier? (car outs))
+                      #f
+                      (syntax-local-introduce (car (syntax-e (car outs)))))]
+            [combine (lambda (b a)
+                       (if a
+                           (if b
+                               (cons a b)
+                               a)
+                           b))])
+        (syntax-property r 'disappeared-use
+                         (combine p
+                                  (combine
+                                   name
+                                   (syntax-property r 'disappeared-use)))))]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; provide transformers

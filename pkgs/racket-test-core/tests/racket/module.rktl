@@ -1354,5 +1354,41 @@
 (test #t syntax? (expand-syntax (expand lifted-require-of-submodule)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check addition of 'disappeared-use by `provide`
+
+(require (rename-in racket/base [lib racket-base:lib]))
+
+(let ()
+  (define (find-disappeared stx id)
+    (let loop ([s stx])
+      (cond
+       [(syntax? s)
+        (define p (cons (syntax-property s 'disappeared-use)
+                        (syntax-property s 'origin)))
+        (or (let loop ([p p])
+              (cond
+               [(identifier? p) (and (free-identifier=? p id)
+                                     (eq? (syntax-e p) (syntax-e id)))]
+               [(pair? p) (or (loop (car p))
+                              (loop (cdr p)))]
+               [else #f]))
+            (loop (syntax-e s)))]
+       [(pair? s)
+        (or (loop (car s))
+            (loop (cdr s)))]
+       [else #f])))
+  (let ([form (expand `(module m racket/base
+                        (provide (struct-out s))
+                        (struct s ())))])
+    (test #t find-disappeared form #'struct-out))
+  (let ([form (expand `(module m racket/base
+                        (require (only-in racket/base car))))])
+    (test #t find-disappeared form #'only-in))
+  (let ([form (expand `(module m racket/base
+                        (require (rename-in racket/base [lib racket-base:lib])
+                                 (racket-base:lib "racket/base"))))])
+    (test #t find-disappeared form #'racket-base:lib)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

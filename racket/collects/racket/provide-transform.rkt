@@ -75,7 +75,9 @@
                         #f
                         "result from provide pre-transformer is not a syntax object"
                         stx))
-                     v)
+                     (syntax-property v
+                                      'disappeared-use
+                                      (syntax-local-introduce #'id)))
                    stx))]
             [_ stx]))))
 
