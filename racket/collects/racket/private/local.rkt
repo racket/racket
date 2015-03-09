@@ -70,7 +70,7 @@
                                (map (lambda (d)
                                       (syntax-case d (define-values)
                                         [(define-values ids rhs)
-                                         (with-syntax ([ids (map identifier->binding-identifier
+                                         (with-syntax ([ids (map syntax-local-identifier-as-binding
                                                                  (syntax->list #'ids))])
                                            (list #'(ids rhs)))]
                                         [_ null]))
@@ -79,7 +79,7 @@
                                (map (lambda (d)
                                       (syntax-case d (define-syntaxes)
                                         [(define-syntaxes ids rhs)
-                                         (with-syntax ([ids (map identifier->binding-identifier
+                                         (with-syntax ([ids (map syntax-local-identifier-as-binding
                                                                  (syntax->list #'ids))])
                                            (list #'(ids rhs)))]
                                         [_ null]))

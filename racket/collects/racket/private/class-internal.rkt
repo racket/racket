@@ -380,7 +380,7 @@
                                          'expression
                                          null)])
                        (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #'rhs def-ctx)
-                       (with-syntax ([(id ...) (map identifier->binding-identifier
+                       (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
                                                     (syntax->list #'(id ...)))])
                          (cons (syntax/loc e (define-syntaxes (id ...) rhs))
                                (loop (cdr l))))))]
@@ -425,9 +425,9 @@
                       (if alone
                           (map (lambda (i)
                                  (if (identifier? i)
-                                     (alone (identifier->binding-identifier i))
-                                     (cons (identifier->binding-identifier (stx-car i))
-                                           (identifier->binding-identifier (stx-car (stx-cdr i))))))
+                                     (alone (syntax-local-identifier-as-binding i))
+                                     (cons (syntax-local-identifier-as-binding (stx-car i))
+                                           (syntax-local-identifier-as-binding (stx-car (stx-cdr i))))))
                                l)
                           l)))
                   l)))
@@ -444,8 +444,8 @@
                     (cons (list a a) (stx-cdr i))
                     i))]))
     
-    (define (norm-init/field-iid norm) (identifier->binding-identifier (stx-car (stx-car norm))))
-    (define (norm-init/field-eid norm) (identifier->binding-identifier (stx-car (stx-cdr (stx-car norm)))))
+    (define (norm-init/field-iid norm) (syntax-local-identifier-as-binding (stx-car (stx-car norm))))
+    (define (norm-init/field-eid norm) (syntax-local-identifier-as-binding (stx-car (stx-cdr (stx-car norm)))))
     
     ;; expands an expression enough that we can check whether it has
     ;; the right form for a method; must use local syntax definitions
@@ -690,7 +690,7 @@
                                       id2))]
                [bind-local-id (lambda (orig-id)
                                 (let ([l (localize/set-flag orig-id)]
-                                      [id (identifier->binding-identifier orig-id)])
+                                      [id (syntax-local-identifier-as-binding orig-id)])
                                   (syntax-local-bind-syntaxes (list id) #f def-ctx)
                                   (bound-identifier-mapping-put!
                                    localized-map

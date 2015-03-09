@@ -96,7 +96,6 @@ static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_binding_symbol(int argc, Scheme_Object **argv);
-static Scheme_Object *id_to_binding_id(int argc, Scheme_Object **argv);
 static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv);
 static Scheme_Object *identifier_prune_to_module(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv);
@@ -253,8 +252,6 @@ void scheme_init_stx(Scheme_Env *env)
   GLOBAL_IMMED_PRIM("identifier-prune-to-source-module", identifier_prune_to_module, 1, 1, env);
 
   GLOBAL_IMMED_PRIM("identifier-binding-symbol"        , module_binding_symbol     , 1, 2, env);
-
-  GLOBAL_IMMED_PRIM("identifier->binding-identifier"   , id_to_binding_id          , 1, 1, env);
 
   GLOBAL_NONCM_PRIM("syntax-source-module"             , syntax_src_module         , 1, 2, env);
 
@@ -5978,19 +5975,6 @@ static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv)
 static Scheme_Object *module_binding_symbol(int argc, Scheme_Object **argv)
 {
   return do_module_binding("identifier-binding-symbol", argc, argv, scheme_make_integer(0), 1);
-}
-
-static Scheme_Object *id_to_binding_id(int argc, Scheme_Object **argv)
-{
-  Scheme_Object *a = argv[0];
-
-  if (!SCHEME_STXP(a) || !SCHEME_STX_SYMBOLP(a))
-    scheme_wrong_contract("identifier->binding-identifier", "identifier?", 0, argc, argv);
-
-  if (scheme_current_thread->current_local_env)
-    return scheme_revert_expression_marks(a, scheme_current_thread->current_local_env);
-  else
-    return a;
 }
 
 static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv)

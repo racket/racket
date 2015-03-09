@@ -244,7 +244,7 @@
         (for-each (lambda (clause)
                     (syntax-case clause (define-values field)
                       [(define-values (id) rhs)
-                       (bound-identifier-mapping-put! boundmap (identifier->binding-identifier #'id) #'rhs)]
+                       (bound-identifier-mapping-put! boundmap (syntax-local-identifier-as-binding #'id) #'rhs)]
                       [(field [id expr] ...)
                        (for-each (lambda (id expr)
                                    (bound-identifier-mapping-put! boundmap (internal-name id) expr))
@@ -258,7 +258,7 @@
       (bound-identifier=? (internal-name a) (internal-name b)))
 
     (define (internal-name decl)
-      (identifier->binding-identifier
+      (syntax-local-identifier-as-binding
        (if (identifier? decl)
            decl
            (stx-car decl))))

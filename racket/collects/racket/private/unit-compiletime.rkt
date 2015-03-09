@@ -169,12 +169,12 @@
 (define (check-bound-id-subset i1 i2)
   (let ((ht (make-bound-identifier-mapping)))
     (for-each (lambda (id)
-                (bound-identifier-mapping-put! ht (identifier->binding-identifier id) #t))
+                (bound-identifier-mapping-put! ht (syntax-local-identifier-as-binding id) #t))
               i2)
     (for-each
      (lambda (id)
        (check-id id)
-       (unless (bound-identifier-mapping-get ht (identifier->binding-identifier id) (lambda () #f))
+       (unless (bound-identifier-mapping-get ht (syntax-local-identifier-as-binding id) (lambda () #f))
          (raise-stx-err "listed identifier not present in signature specification" id)))
      i1)))
 
@@ -188,7 +188,7 @@
     (for-each
      (lambda (int ext)
        (check-id int)
-       (let ([ext (identifier->binding-identifier ext)])
+       (let ([ext (syntax-local-identifier-as-binding ext)])
          (when (bound-identifier-mapping-get ht ext (lambda () #f))
            (raise-stx-err "duplicate renamings" ext))
          (bound-identifier-mapping-put! ht ext int)))
@@ -196,7 +196,7 @@
      (syntax->list externals))
     (map-sig
      (lambda (id)
-       (bound-identifier-mapping-get ht (identifier->binding-identifier id) (lambda () id)))
+       (bound-identifier-mapping-get ht (syntax-local-identifier-as-binding id) (lambda () id)))
      (lambda (x) x)
      sig)))
 

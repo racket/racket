@@ -117,6 +117,7 @@ static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_provide(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_introducer(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_make_delta_introduce(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_binding_id(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_set_transformer(int argc, Scheme_Object *argv[]);
 static Scheme_Object *set_transformer_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *set_transformer_proc(int argc, Scheme_Object *argv[]);
@@ -781,6 +782,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("syntax-local-introduce", local_introduce, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("make-syntax-introducer", make_introducer, 0, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-make-delta-introducer", local_make_delta_introduce, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-identifier-as-binding", local_binding_id, 1, 1, env);
 
   GLOBAL_PRIM_W_ARITY("syntax-local-module-exports", local_module_exports, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-module-defined-identifiers", local_module_definitions, 0, 0, env);
@@ -2712,6 +2714,19 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
     }
   }
 #endif
+}
+
+static Scheme_Object *local_binding_id(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *a = argv[0];
+
+  if (!SCHEME_STXP(a) || !SCHEME_STX_SYMBOLP(a))
+    scheme_wrong_contract("syntax-local-identifier-as-binding", "identifier?", 0, argc, argv);
+
+  if (scheme_current_thread->current_local_env)
+    return scheme_revert_expression_marks(a, scheme_current_thread->current_local_env);
+  else
+    return a;
 }
 
 Scheme_Object *scheme_get_local_inspector()
