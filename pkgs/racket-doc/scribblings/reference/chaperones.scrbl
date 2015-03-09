@@ -595,9 +595,19 @@ otherwise the result is a value for which the original structure is an
 impersonator (so the original structure is an @racket[impersonator-of?] and
 @racket[equal?] to the result value). The result value must have the
 same @racket[prop:impersonator-of] and @racket[prop:equal+hash] property
-values as the original structure, and the property values must be
+values as the original structure, if any, and the property values must be
 inherited from the same structure type (which ensures some consistency
-between @racket[impersonator-of?] and @racket[equal?]).}
+between @racket[impersonator-of?] and @racket[equal?]).
+
+@tech{Impersonator property} predicates and accessors applied to a
+structure with the @racket[prop:impersonator-of] property first check
+for the property on the immediate structure, and if it is not found,
+the value produced by the @racket[prop:impersonator-of] procedure is
+checked (recursively).
+
+@history[#:changed "6.1.1.8" @elem{Made @tech{impersonator property}
+                                   predicates and accessors sensitive
+                                   to @racket[prop:impersonator-of].}]}
 
 @; ------------------------------------------------------------
 @section{Chaperone Constructors}

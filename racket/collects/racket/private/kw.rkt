@@ -1708,6 +1708,8 @@
                               [(okp? n-proc)
                                (values
                                 (if is-impersonator?
+                                    ;; Can't use `impersonate-struct` here (due to the immutable field);
+                                    ;; create a new structure, but preserve properties
                                     ((if (okm? n-proc)
                                          make-optional-keyword-method-impersonator
                                          make-optional-keyword-procedure-impersonator)

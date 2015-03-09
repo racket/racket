@@ -69,7 +69,6 @@ static int vector_equal (Scheme_Object *vec1, Scheme_Object *orig_vec1,
 static int struct_equal (Scheme_Object *s1, Scheme_Object *orig_s1, 
                          Scheme_Object *s2, Scheme_Object *orig_s2, 
                          Equal_Info *eql);
-static Scheme_Object *apply_impersonator_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj);
 
 void scheme_init_true_false(void)
 {
@@ -699,13 +698,13 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
         else
           procs1 = scheme_struct_type_property_ref(scheme_impersonator_of_property, (Scheme_Object *)st1);
         if (procs1)
-          procs1 = apply_impersonator_of(eql->for_chaperone, procs1, obj1);
+          procs1 = scheme_apply_impersonator_of(eql->for_chaperone, procs1, obj1);
         if (eql->for_chaperone)
           procs2 = NULL;
         else {
           procs2 = scheme_struct_type_property_ref(scheme_impersonator_of_property, (Scheme_Object *)st2);
           if (procs2)
-            procs2 = apply_impersonator_of(eql->for_chaperone, procs2, obj2);
+            procs2 = scheme_apply_impersonator_of(eql->for_chaperone, procs2, obj2);
         }
 
         if (procs1 || procs2) {
@@ -997,7 +996,7 @@ int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2)
   return is_equal(obj1, obj2, &eql);
 }
 
-static Scheme_Object *apply_impersonator_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj)
+Scheme_Object *scheme_apply_impersonator_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj)
 {
   Scheme_Object *a[1], *v, *oprocs;
 
