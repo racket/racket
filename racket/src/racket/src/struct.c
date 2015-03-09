@@ -1022,9 +1022,11 @@ static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *p
          be via `prop:impersonator-of`: */
       Scheme_Object *procs;
       procs = scheme_struct_type_property_ref(scheme_impersonator_of_property, v);
-      if (procs)
+      if (procs) {
         v = scheme_apply_impersonator_of(0, procs, v);
-      else
+        if (!v)
+          return scheme_false;
+      } else
         return scheme_false;
     } else
       break;
@@ -1179,6 +1181,8 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
         procs = scheme_struct_type_property_ref(scheme_impersonator_of_property, arg);
         if (procs) {
           arg = scheme_apply_impersonator_of(0, procs, arg);
+          if (!arg)
+            return NULL;
           /* loop to try again */
         } else {
           /* an impersonator property lives at the impersonator/chaperone level, only: */
