@@ -1031,6 +1031,8 @@ Scheme_Object *scheme_chaperone_not_undefined(Scheme_Object *orig_val);
 
 int scheme_is_noninterposing_chaperone(Scheme_Object *obj);
 
+Scheme_Object *scheme_apply_impersonator_of(int for_chaperone, Scheme_Object *procs, Scheme_Object *obj);
+
 /*========================================================================*/
 /*                         syntax objects                                 */
 /*========================================================================*/
@@ -3615,8 +3617,6 @@ void scheme_install_initial_module_set(Scheme_Env *env);
 Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *home);
 
 Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Object *modchain, int clone);
-
-void scheme_clean_dead_env(Scheme_Env *env);
 
 Scheme_Module *scheme_extract_compiled_module(Scheme_Object *o);
 

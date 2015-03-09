@@ -1005,16 +1005,31 @@ static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *p
   Scheme_Chaperone *px;
 
   v = args[0];
-  if (SCHEME_CHAPERONEP(v)) {
-    /* Check for property at chaperone level: */
-    px = (Scheme_Chaperone *)v;
-    if (px->props)
-      v = scheme_hash_tree_get(px->props, prop);
-    else
-      v = NULL;
-    if (v)
-      return scheme_true;
-    v = px->val;
+
+  while (1) {
+    if (SCHEME_CHAPERONEP(v)) {
+      /* Check for property at chaperone level: */
+      px = (Scheme_Chaperone *)v;
+      if (px->props)
+        v = scheme_hash_tree_get(px->props, prop);
+      else
+        v = NULL;
+      if (v)
+        return scheme_true;
+      v = px->val;
+    }
+
+    if (SAME_TYPE(SCHEME_TYPE(prop), scheme_chaperone_property_type)) {
+      /* An impersonator property must be at the chaperone level, but can
+         be via `prop:impersonator-of`: */
+      Scheme_Object *procs;
+      procs = scheme_struct_type_property_ref(scheme_impersonator_of_property, v);
+      if (procs)
+        v = scheme_apply_impersonator_of(0, procs, v);
+      else
+        return scheme_false;
+    } else
+      break;
   }
 
   if (SCHEME_STRUCTP(v))
@@ -1161,7 +1176,19 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
         }
       }
     } else {
-      return do_prop_accessor(prop, arg);
+      if (SAME_TYPE(SCHEME_TYPE(prop), scheme_chaperone_property_type)) {
+        Scheme_Object *procs;
+        procs = scheme_struct_type_property_ref(scheme_impersonator_of_property, arg);
+        if (procs) {
+          arg = scheme_apply_impersonator_of(0, procs, arg);
+          /* loop to try again */
+        } else {
+          /* an impersonator property lives at the impersonator/chaperone level, only: */
+          return NULL;
+        }
+      } else {
+        return do_prop_accessor(prop, arg);
+      }
     }
   }
 }
@@ -1171,7 +1198,8 @@ static Scheme_Object *prop_accessor(int argc, Scheme_Object **args, Scheme_Objec
   Scheme_Object *v;
 
   v = args[0];
-  if (SCHEME_CHAPERONEP(v))
+  if (SCHEME_CHAPERONEP(v)
+      || SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(prim)[0]), scheme_chaperone_property_type))
     v = do_chaperone_prop_accessor(((Scheme_Primitive_Proc *)prim)->name, SCHEME_PRIM_CLOSURE_ELS(prim)[0],
                                    v, v);
   else

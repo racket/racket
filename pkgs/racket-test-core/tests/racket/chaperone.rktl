@@ -299,6 +299,15 @@
                              (lambda (kws kw-args self . args)
                                (keyword-apply b kws kw-args args)))))
 
+(define (check-proc-prop f mk)
+  (let-values ([(prop:blue blue? blue-ref) (make-impersonator-property 'blue)])
+    (define f1 (chaperone-procedure f #f prop:blue "blue"))
+    (test #t blue? f1)
+    (test "blue" blue-ref f1)
+    (define f2 (mk f1))
+    (test #t blue? f2)
+    (test "blue" blue-ref f2)))
+
 ;; Single argument, no post filter:
 (as-chaperone-or-impersonator
  ([chaperone-procedure impersonate-procedure
@@ -306,15 +315,18 @@
                        impersonate-procedure**])
  (let* ([f (lambda (x) (list x x))]
         [in #f]
-        [f2 (chaperone-procedure 
-             f 
-             (lambda (x) 
-               (set! in x)
-               x))])
+        [mk (lambda (f)
+              (chaperone-procedure 
+               f 
+               (lambda (x) 
+                 (set! in x)
+                 x)))]
+        [f2 (mk f)])
    (test '(110 110) f 110)
    (test #f values in)
    (test '(111 111) f2 111)
-   (test 111 values in)))
+   (test 111 values in)
+   (check-proc-prop f mk)))
 
 ;; Multiple arguments, no post filter:
 (as-chaperone-or-impersonator
@@ -323,15 +335,18 @@
                        impersonate-procedure**])
  (let* ([f (lambda (x y) (list x y))]
         [in #f]
-        [f2 (chaperone-procedure 
-             f 
-             (lambda (x y) 
-               (set! in (vector x y))
-               (values x y)))])
+        [mk (lambda (f)
+              (chaperone-procedure 
+               f 
+               (lambda (x y) 
+                 (set! in (vector x y))
+                 (values x y))))]
+        [f2 (mk f)])
    (test '(1100 1101) f 1100 1101)
    (test #f values in)
    (test '(1110 1111) f2 1110 1111)
-   (test (vector 1110 1111) values in)))
+   (test (vector 1110 1111) values in)
+   (check-proc-prop f mk)))
 
 ;; Single argument, post filter on single value:
 (as-chaperone-or-impersonator
@@ -341,20 +356,23 @@
  (let* ([f (lambda (x) (list x x))]
         [in #f]
         [out #f]
-        [f2 (chaperone-procedure 
-             f 
-             (lambda (x) 
-               (set! in x)
-               (values (lambda (y)
-                         (set! out y)
-                         y)
-                       x)))])
+        [mk (lambda (f)
+              (chaperone-procedure 
+               f 
+               (lambda (x) 
+                 (set! in x)
+                 (values (lambda (y)
+                           (set! out y)
+                           y)
+                         x))))]
+        [f2 (mk f)])
    (test '(10 10) f 10)
    (test #f values in)
    (test #f values out)
    (test '(11 11) f2 11)
    (test 11 values in)
-   (test '(11 11) values out)))
+   (test '(11 11) values out)
+   (check-proc-prop f mk)))
 
 ;; Multiple arguments, post filter on multiple values:
 (as-chaperone-or-impersonator
@@ -364,20 +382,23 @@
  (let* ([f (lambda (x y z) (values y (list x z)))]
         [in #f]
         [out #f]
-        [f2 (chaperone-procedure 
-             f 
-             (lambda (x y z)
-               (set! in (vector x y z))
-               (values (lambda (y z)
-                         (set! out (vector y z))
-                         (values y z))
-                       x y z)))])
+        [mk (lambda (f)
+              (chaperone-procedure 
+               f 
+               (lambda (x y z)
+                 (set! in (vector x y z))
+                 (values (lambda (y z)
+                           (set! out (vector y z))
+                           (values y z))
+                         x y z))))]
+        [f2 (mk f)])
    (test-values '(b (a c)) (lambda () (f 'a 'b 'c)))
    (test #f values in)
    (test #f values out)
    (test-values '(b (a c)) (lambda () (f2 'a 'b 'c)))
    (test (vector 'a 'b 'c) values in)
-   (test (vector 'b '(a c)) values out)))
+   (test (vector 'b '(a c)) values out)
+   (check-proc-prop f mk)))
 
 ;; Optional keyword arguments:
 (as-chaperone-or-impersonator
@@ -386,16 +407,18 @@
                        impersonate-procedure**/kw])
  (let* ([f (lambda (x #:a [a 'a] #:b [b 'b]) (list x a b))]
         [in #f]
-        [f2 (chaperone-procedure
-             f
-             (lambda (x #:a [a 'nope] #:b [b 'nope])
-               (if (and (eq? a 'nope) (eq? b 'nope))
-                   x
-                   (values
-                    (append 
-                     (if (eq? a 'nope) null (list a))
-                     (if (eq? b 'nope) null (list b)))
-                    x))))])
+        [mk (lambda (f)
+              (chaperone-procedure
+               f
+               (lambda (x #:a [a 'nope] #:b [b 'nope])
+                 (if (and (eq? a 'nope) (eq? b 'nope))
+                     x
+                     (values
+                      (append 
+                       (if (eq? a 'nope) null (list a))
+                       (if (eq? b 'nope) null (list b)))
+                      x)))))]
+        [f2 (mk f)])
    (test '(1 a b) f 1)
    (test '(1 a b) f2 1)
    (test '(1 2 b) f 1 #:a 2)
@@ -406,7 +429,8 @@
    (test '(1 2 3) f2 1 #:a 2 #:b 3)
    (test 1 procedure-arity f2)
    (test 'f object-name f2)
-   (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2)))))
+   (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2)))
+   (check-proc-prop f mk)))
 
 ;; Optional keyword arguments with result chaperone:
 (as-chaperone-or-impersonator
@@ -416,18 +440,20 @@
  (let* ([f (lambda (x #:a [a 'a] #:b [b 'b]) (list x a b))]
         [in #f]
         [out #f]
-        [f2 (chaperone-procedure
-             f
-             (lambda (x #:a [a 'nope] #:b [b 'nope])
-               (set! in (list x a b))
-               (if (and (eq? a 'nope) (eq? b 'nope))
-                   x
-                   (values
-                    (lambda (z) (set! out z) z)
-                    (append 
-                     (if (eq? a 'nope) null (list a))
-                     (if (eq? b 'nope) null (list b)))
-                    x))))])
+        [mk (lambda (f)
+              (chaperone-procedure
+               f
+               (lambda (x #:a [a 'nope] #:b [b 'nope])
+                 (set! in (list x a b))
+                 (if (and (eq? a 'nope) (eq? b 'nope))
+                     x
+                     (values
+                      (lambda (z) (set! out z) z)
+                      (append 
+                       (if (eq? a 'nope) null (list a))
+                       (if (eq? b 'nope) null (list b)))
+                      x)))))]
+        [f2 (mk f)])
    (test '(1 a b) f 1)
    (test '(#f #f) list in out)
    (test '(1 a b) f2 1)
@@ -441,7 +467,8 @@
    (test '(1 2 3) f2 1 #:a 2 #:b 3)
    (test 1 procedure-arity f2)
    (test 'f object-name f2)
-   (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2)))))
+   (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2)))
+   (check-proc-prop f mk)))
 
 ;; Required keyword arguments:
 (as-chaperone-or-impersonator
@@ -450,16 +477,18 @@
                        impersonate-procedure**/kw])
  (let* ([f (lambda (x #:a [a 'a] #:b b) (list x a b))]
         [in #f]
-        [f2 (chaperone-procedure
-             f
-             (lambda (x #:a [a 'nope] #:b [b 'nope])
-               (if (and (eq? a 'nope) (eq? b 'nope))
-                   x
-                   (values
-                    (append 
-                     (if (eq? a 'nope) null (list a))
-                     (if (eq? b 'nope) null (list b)))
-                    x))))])
+        [mk (lambda (f)
+              (chaperone-procedure
+               f
+               (lambda (x #:a [a 'nope] #:b [b 'nope])
+                 (if (and (eq? a 'nope) (eq? b 'nope))
+                     x
+                     (values
+                      (append 
+                       (if (eq? a 'nope) null (list a))
+                       (if (eq? b 'nope) null (list b)))
+                      x)))))]
+        [f2 (mk f)])
    (err/rt-test (f 1))
    (err/rt-test (f2 1))
    (err/rt-test (f 1 #:a 2))
@@ -470,7 +499,8 @@
    (test '(1 2 3) f2 1 #:a 2 #:b 3)
    (test 1 procedure-arity f2)
    (test 'f object-name f2)
-   (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2)))))
+   (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2)))
+   (check-proc-prop f mk)))
 
 ;; Required keyword arguments:
 (as-chaperone-or-impersonator
@@ -480,18 +510,20 @@
  (let* ([f (lambda (x #:a [a 'a] #:b b) (list x a b))]
         [in #f]
         [out #f]
-        [f2 (chaperone-procedure
-             f
-             (lambda (x #:a [a 'nope] #:b [b 'nope])
-               (set! in (list x a b))
-               (if (and (eq? a 'nope) (eq? b 'nope))
-                   x
-                   (values
-                    (lambda (z) (set! out z) z)
-                    (append 
-                     (if (eq? a 'nope) null (list a))
-                     (if (eq? b 'nope) null (list b)))
-                    x))))])
+        [mk (lambda (f)
+              (chaperone-procedure
+               f
+               (lambda (x #:a [a 'nope] #:b [b 'nope])
+                 (set! in (list x a b))
+                 (if (and (eq? a 'nope) (eq? b 'nope))
+                     x
+                     (values
+                      (lambda (z) (set! out z) z)
+                      (append 
+                       (if (eq? a 'nope) null (list a))
+                       (if (eq? b 'nope) null (list b)))
+                      x)))))]
+        [f2 (mk f)])
    (err/rt-test (f 1))
    (err/rt-test (f2 1))
    (err/rt-test (f 1 #:a 2))
@@ -503,7 +535,8 @@
    (test '(1 2 3) f2 1 #:a 2 #:b 3)
    (test 1 procedure-arity f2)
    (test 'f object-name f2)
-   (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2)))))
+   (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2)))
+   (check-proc-prop f mk)))
 
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) (values y y))) 1))
 (err/rt-test ((impersonate-procedure (lambda (x) x) (lambda (y) (values y y))) 1))
@@ -1693,6 +1726,10 @@
 
     (test #t impersonator-of? (make-pre-a 17 1) (chaperone-struct (make-pre-a 17 1) pre-a-y #f prop:blue 'color))
     (test #f impersonator-of? (make-pre-a 17 1) (chaperone-struct a-pre-a pre-a-y #f prop:blue 'color))
+
+    (test #t blue? (make-a (chaperone-struct a1 struct:a prop:blue 'color) 2))
+    (test 'color blue-ref (make-a (chaperone-struct a1 struct:a prop:blue 'color) 2))
+    
     (void)))
 
 ;; ----------------------------------------

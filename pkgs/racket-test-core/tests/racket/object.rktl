@@ -1631,6 +1631,31 @@
 
 )
 
+;; ----------------------------------------
+;; object=?
+
+(let ([c% (class object% (super-new))])
+  (let ([o1 (new c%)]
+        [o2 (new c%)])
+    (test #f object=? o1 o2)
+    (test #t object=? o1 o1)
+    
+    (err/rt-test (object=? o1 #f))
+    (err/rt-test (object=? #f o1))
+    (err/rt-test (object=? 'a o1))
+    (err/rt-test (object=? o1 'a))
+    (err/rt-test (object=? #f #f))
+    
+    (test #f object-or-false=? o1 o2)
+    (test #t object-or-false=? o1 o1)
+    (test #f object-or-false=? o1 #f)
+    (test #f object-or-false=? #f o1)
+    (test #t object-or-false=? #f #f)
+    
+    (err/rt-test (object-or-false=? #f 'a))
+    (err/rt-test (object-or-false=? 'a o1))
+    (err/rt-test (object-or-false=? o1 'a))
+    (err/rt-test (object-or-false=? #f 'a))))
 
 ;; ----------------------------------------
 ;; Implementing printable<%>

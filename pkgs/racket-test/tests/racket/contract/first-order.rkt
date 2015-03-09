@@ -6,7 +6,8 @@
                 (make-basic-contract-namespace 
                  'racket/contract
                  'racket/promise
-                 'racket/class)])
+                 'racket/class
+                 'racket/sequence)])
 
   (contract-eval '(define-contract-struct couple (hd tl)))
   
@@ -203,4 +204,25 @@
   (ctest #t contract-first-order-passes?
          (class/c [m (-> any/c integer? integer?)]) 
          (class* object% ((interface () [m (-> any/c integer? integer?)]))
-           (define/public (m x) x))))
+           (define/public (m x) x)))
+  
+  (ctest #t contract-first-order-passes?
+         (sequence/c any/c)
+         (list 1 2 3))
+  (ctest #t contract-first-order-passes?
+         (sequence/c any/c)
+         (vector 1 2 3))
+  (ctest #f contract-first-order-passes?
+         (sequence/c any/c)
+         (hash 'x 1 'y 2))
+  (ctest #f contract-first-order-passes?
+         (sequence/c any/c any/c)
+         (list 1 2 3))
+  (ctest #f contract-first-order-passes?
+         (sequence/c any/c any/c)
+         (vector 1 2 3))
+  (ctest #t contract-first-order-passes?
+         (sequence/c any/c any/c)
+         (hash 'x 1 'y 2))
+  
+  )

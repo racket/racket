@@ -25,7 +25,8 @@ vice-versa.
 
 @(define sequence-evaluator
    (let ([evaluator (make-base-eval)])
-     (evaluator '(require racket/generic racket/list racket/stream racket/sequence))
+     (evaluator '(require racket/generic racket/list racket/stream racket/sequence
+                          racket/contract))
      evaluator))
 
 @guideintro["sequences"]{sequences}
@@ -613,7 +614,7 @@ each element in the sequence.
   values in the sequence), the @exnraise[exn:fail:contract].}
 
 @; ----------------------------------------------------------------------
-@subsection[#:tag "more-sequences"]{Sequence Combinations}
+@subsection[#:tag "more-sequences"]{Sequence Combinations & Contract}
 
 @note-lib[racket/sequence]
 
@@ -740,6 +741,43 @@ each element in the sequence.
     (for ([text (sequence-add-between '("veni" "vidi" "duci") ", ")])
       (display text))
     ]
+}
+
+@defproc[(sequence/c [#:min-count min-count (or/c #f exact-nonnegative-integer?) #f]
+                     [elem/c contract?] ...)
+         contract?]{
+
+Wraps a @tech{sequence},
+obligating it to produce as many values as there are @racket[elem/c] contracts,
+and obligating each value to satisfy the corresponding @racket[elem/c].  The
+result is not guaranteed to be the same kind of sequence as the original value;
+for instance, a wrapped list is not guaranteed to satisfy @racket[list?].
+
+If @racket[min-count] is a number, the stream is required to have at least that many elements in it.
+
+@defexamples[
+#:eval sequence-evaluator
+(define/contract predicates
+  (sequence/c (-> any/c boolean?))
+  (in-list (list integer?
+                 string->symbol)))
+(for ([P predicates])
+  (printf "~s\n" (P "cat")))
+(define/contract numbers&strings
+  (sequence/c number? string?)
+  (in-dict (list (cons 1 "one")
+                 (cons 2 "two")
+                 (cons 3 'three))))
+(for ([(N S) numbers&strings])
+  (printf "~s: ~a\n" N S))
+(define/contract a-sequence
+  (sequence/c #:min-count 2 char?)
+  "x")
+(for ([x a-sequence]
+      [i (in-naturals)])
+  (printf "~a is ~a\n" i x))
+]
+
 }
 
 @; ======================================================================
