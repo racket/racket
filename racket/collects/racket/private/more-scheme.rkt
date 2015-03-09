@@ -382,6 +382,7 @@
   (#%provide case old-case do
              parameterize parameterize* current-parameterization call-with-parameterization
              parameterize-break current-break-parameterization call-with-break-parameterization
+             (rename break-paramz? break-parameterization?)
              with-handlers with-handlers* call-with-exception-handler
              set!-values
              let/cc fluid-let time
