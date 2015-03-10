@@ -2979,7 +2979,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_utf8_string(pp, ">", 0, 1);
       }
     }
-  else if (/*compact && REMOVEME*/SAME_TYPE(SCHEME_TYPE(obj), scheme_module_index_type))
+  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_module_index_type))
     {
       Scheme_Object *idx;
 
@@ -2997,7 +2997,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           symtab_set(pp, mt, obj);
         }
       } else {
-        /* Enable this output form by removing `compact &&` above */
         Scheme_Object *l = scheme_null;
         Scheme_Modidx *modidx = (Scheme_Modidx *)obj;
         print_utf8_string(pp, "#<module-path-index:", 0, 20);
@@ -3007,7 +3006,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
             break;
           modidx = (Scheme_Modidx *)modidx->base;
         }
-        if (SCHEME_FALSEP(modidx->path)) {
+        if (0 && SCHEME_FALSEP(modidx->path)) {
           /* use hash code as identity of ending "self": */
           uintptr_t key;
           key = scheme_hash_key((Scheme_Object *)modidx);

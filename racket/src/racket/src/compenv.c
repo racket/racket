@@ -1179,16 +1179,16 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 #endif
 
   if (ambiguous) {
-    // REMOVEME
-    scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
     if (SAME_OBJ(scheme_env_phase(env->genv), scheme_make_integer(0)))
       scheme_wrong_syntax(NULL, NULL, find_id,
-                          "identifier's binding is ambiguous");
+                          "identifier's binding is ambiguous%s",
+                          scheme_stx_describe_context(find_id, scheme_make_integer(0), 1));
     else
       scheme_wrong_syntax(NULL, NULL, find_id,
                           "identifier's binding is ambiguous\n"
                           "  at phase: %V",
-                          scheme_env_phase(env->genv));
+                          scheme_env_phase(env->genv),
+                          scheme_stx_describe_context(find_id, scheme_env_phase(env->genv), 1));
     return NULL;
   }
 
@@ -1281,9 +1281,9 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     }
     
     if (!(flags & SCHEME_OUT_OF_CONTEXT_OK)) {
-      scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
       scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
-                          "identifier used out of context");
+                          "identifier used out of context%s",
+                          scheme_stx_describe_context(find_id, scheme_env_phase(env->genv), 1));
     }
     
     if (flags & SCHEME_OUT_OF_CONTEXT_LOCAL)
@@ -1837,7 +1837,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
     id_sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
     id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
-    id = scheme_stx_add_mark(id, scheme_new_mark(6), scheme_env_phase(env->genv));
+    id = scheme_stx_add_mark(id, scheme_new_mark(SCHEME_STX_MACRO_MARK), scheme_env_phase(env->genv));
 
     if (env->genv->stx_context)
       id = scheme_stx_introduce_to_module_context(id, env->genv->stx_context);

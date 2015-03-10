@@ -571,7 +571,7 @@ make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
   forms = SCHEME_STX_CDR(code);
   forms = SCHEME_STX_CDR(forms);
 
-  mark = scheme_new_mark(8);
+  mark = scheme_new_mark(SCHEME_STX_LOCAL_BIND_MARK);
 
   frame = scheme_new_compilation_frame(data->num_params, SCHEME_LAMBDA_FRAME, mark, env);
   params = allparams;
@@ -650,7 +650,7 @@ lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
 
   lambda_check_args(args, form, env);
 
-  mark = scheme_new_mark(8);
+  mark = scheme_new_mark(SCHEME_STX_LOCAL_BIND_MARK);
 
   newenv = scheme_add_compilation_frame(args, mark, env, 0);
 
@@ -1711,7 +1711,7 @@ case_lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand
 
     body = scheme_datum_to_syntax(body, line_form, line_form, 0, 0);
     
-    mark = scheme_new_mark(8);
+    mark = scheme_new_mark(SCHEME_STX_LOCAL_BIND_MARK);
 
     newenv = scheme_add_compilation_frame(args, mark, env, 0);
 
@@ -2209,7 +2209,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   if (rec_env_already)
     mark = NULL;
   else
-    mark = scheme_new_mark(9);
+    mark = scheme_new_mark(SCHEME_STX_LOCAL_BIND_MARK);
 
   names = MALLOC_N(Scheme_Object *, num_bindings);
   if (frame_already)
@@ -2580,7 +2580,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
     if (rec_env_already)
       mark = NULL;
     else
-      mark = scheme_new_mark(9);
+      mark = scheme_new_mark(SCHEME_STX_LOCAL_BIND_MARK);
     env = scheme_add_compilation_frame(vlist, 
                                        mark,
                                        origenv,
@@ -3712,7 +3712,7 @@ do_letrec_syntaxes(const char *where,
     stx_env = origenv;
     mark = NULL;
   } else {
-    mark = scheme_new_mark(10);
+    mark = scheme_new_mark(SCHEME_STX_LOCAL_BIND_MARK);
     stx_env = scheme_new_compilation_frame(0, 0, mark, origenv);
   }
 
@@ -4829,16 +4829,22 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       scheme_wrong_syntax(scheme_compile_stx_string, 
                           orig_unbound_name, form, 
                           "unbound identifier%s;\n"
-                          " also, no %S syntax transformer is bound",
+                          " also, no %S syntax transformer is bound%s",
                           phase,
-                          SCHEME_STX_VAL(stx));
+                          SCHEME_STX_VAL(stx),
+                          scheme_stx_describe_context(orig_unbound_name,
+                                                      scheme_env_phase(env->genv),
+                                                      0));
     } else {
       scheme_wrong_syntax(scheme_compile_stx_string, NULL, form, 
                           "%s is not allowed;\n"
                           " no %S syntax transformer is bound%s",
                           not_allowed,
                           SCHEME_STX_VAL(stx),
-                          phase);
+                          phase,
+                          scheme_stx_describe_context(orig_unbound_name,
+                                                      scheme_env_phase(env->genv),
+                                                      0));
     }
     return NULL;
   }
@@ -5216,24 +5222,32 @@ int scheme_check_top_identifier_bound(Scheme_Object *c, Scheme_Env *genv, int di
   if (disallow_unbound) {
     if (bad || !scheme_lookup_in_table(genv->toplevel, (const char *)symbol)) {
       GC_CAN_IGNORE const char *reason;
+      int need_phase = 0;
+      
       if (genv->phase == 1) {
-        reason = "unbound identifier in module (in phase 1, transformer environment)";
+        reason = "unbound identifier in module (in phase 1, transformer environment)%s";
         /* Check in the run-time environment */
         if (scheme_lookup_in_table(genv->template_env->toplevel, (const char *)SCHEME_STX_SYM(c))) {
           reason = ("unbound identifier in module (in the transformer environment, which does"
-                    " not include the run-time definition)");
+                    " not include the run-time definition)%s");
         } else if (genv->template_env->syntax
                    && scheme_lookup_in_table(genv->template_env->syntax, (const char *)SCHEME_STX_SYM(c))) {
           reason = ("unbound identifier in module (in the transformer environment, which does"
-                    " not include the macro definition that is visible to run-time expressions)");
+                    " not include the macro definition that is visible to run-time expressions)%s");
         }
       } else if (genv->phase == 0)
-        reason = "unbound identifier in module";
+        reason = "unbound identifier in module%s";
+      else {
+        reason = "unbound identifier in module (in phase %d)%s";
+        need_phase = 1;
+      }
+
+      if (need_phase)
+        scheme_unbound_syntax(scheme_expand_stx_string, NULL, c, reason, genv->phase,
+                              scheme_stx_describe_context(c, scheme_env_phase(genv), 0));
       else
-        reason = "unbound identifier in module (in phase %d)";
-      scheme_stx_debug_print(c, scheme_env_phase(genv), 1); // REMOVEME
-      printf("%s\n", scheme_write_to_string(binding, 0)); // REMOVEME
-      scheme_unbound_syntax(scheme_expand_stx_string, NULL, c, reason, genv->phase);
+        scheme_unbound_syntax(scheme_expand_stx_string, NULL, c, reason,
+                              scheme_stx_describe_context(c, scheme_env_phase(genv), 0));
     }
   }
 
@@ -5568,7 +5582,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     }
   }
 
-  rib = scheme_new_mark(11);
+  rib = scheme_new_mark(SCHEME_STX_INTDEF_MARK);
   ctx = scheme_alloc_object();
   ctx->type = scheme_intdef_context_type;
   d = MALLOC_N(void*, 3);
@@ -5675,22 +5689,18 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	int cnt;
 
         if (!SCHEME_NULLP(pre_exprs)) {
-          Scheme_Object *begin_stx, *values_app_stx, *exp_mark;
+          Scheme_Object *begin_stx, *values_app_stx;
 
           pre_exprs = scheme_reverse(pre_exprs);
-
-          exp_mark = scheme_new_mark(12);
 
           begin_stx = scheme_datum_to_syntax(begin_symbol, 
                                              scheme_false, 
                                              scheme_sys_wraps(env), 
                                              0, 0);
-          begin_stx = scheme_stx_add_mark(begin_stx, exp_mark, scheme_env_phase(env->genv));
           values_app_stx = scheme_datum_to_syntax(scheme_make_pair(values_symbol, scheme_null),
                                                   scheme_false, 
                                                   scheme_sys_wraps(env), 
                                                   0, 0);
-          values_app_stx = scheme_stx_add_mark(values_app_stx, exp_mark, scheme_env_phase(env->genv));
 
           while (SCHEME_PAIRP(pre_exprs)) {
             v = scheme_make_pair(scheme_null,

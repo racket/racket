@@ -1104,9 +1104,17 @@ int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase);
 
 XFORM_NONGCING Scheme_Object *scheme_stx_root_mark();
 Scheme_Object *scheme_new_mark(int kind);
-Scheme_Object *scheme_new_nonoriginal_mark(int kind);
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
 Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
+
+#define SCHEME_STX_MODULE_MARK     0
+#define SCHEME_STX_MACRO_MARK      1
+#define SCHEME_STX_LOCAL_BIND_MARK 2
+#define SCHEME_STX_INTDEF_MARK     3
+#define SCHEME_STX_USE_SITE_MARK   4
+
+#define SCHEME_STX_MARK_KIND_SHIFT 3
+#define SCHEME_STX_MARK_KIND_MASK  ((1 << SCHEME_STX_MARK_KIND_SHIFT) - 1)
 
 #define SCHEME_STX_ADD      0
 #define SCHEME_STX_REMOVE   1
@@ -1155,7 +1163,7 @@ struct Scheme_Module_Phase_Exports; /* forward declaration */
 
 Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
                                           Scheme_Object *shift_or_shifts,
-                                          int top_level);
+                                          Scheme_Object *name);
 Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *phase, int for_expr);
 
 Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc);
@@ -1242,6 +1250,8 @@ int scheme_stx_env_bound_eq2(Scheme_Object *a, Scheme_Object *b,
 Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source);
+
+char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int always);
 
 Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
 				   Scheme_Object *key,

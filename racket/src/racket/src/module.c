@@ -821,7 +821,7 @@ static Scheme_Object *sys_wraps_phase(intptr_t p)
 {
   Scheme_Object *rn, *w;
 
-  rn = scheme_make_module_context(NULL, NULL, 0);
+  rn = scheme_make_module_context(NULL, NULL, kernel_symbol);
   rn = scheme_module_context_at_phase(rn, scheme_make_integer(p), 0);
 
   /* Add a module mapping for all kernel provides: */
@@ -6991,6 +6991,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   } else {
     /* "Punch a hole" in the enclosing context by removing marks that
        can reach module bindings (but preserve some module context): */
+    /* REMOVE: FIXME: this doesn't seem quite right, still, because it
+       remove only contexts that happen to be on the immediate `module` form. */
     fm = disarmed_form;
     fm = scheme_revert_expression_marks(fm, env);
     fm = scheme_stx_remove_mark(fm, scheme_stx_root_mark(), scheme_env_phase(env->genv));
@@ -12333,7 +12335,7 @@ static Scheme_Object *check_require_form(Scheme_Env *env, Scheme_Object *form)
     scheme_prepare_template_env(tmp_env);
 
     /* add a mark to form so that it doesn't collide with anything: */
-    form = scheme_stx_add_mark(form, scheme_new_mark(37), scheme_env_phase(env));
+    form = scheme_stx_add_mark(form, scheme_new_mark(SCHEME_STX_MACRO_MARK), scheme_env_phase(env));
 
     parse_requires(form, tmp_env->phase, modidx, tmp_env, NULL,
                    tmp_env->stx_context,

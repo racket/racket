@@ -887,9 +887,9 @@ void scheme_prepare_env_stx_context(Scheme_Env *env)
                               env->module_registry->exports,
                               insp);
 
-    mc = scheme_make_module_context(insp, shift, 0);
+    mc = scheme_make_module_context(insp, shift, env->module->modname);
   } else
-    mc = scheme_make_module_context(insp, NULL, 1);
+    mc = scheme_make_module_context(insp, NULL, scheme_false);
 
   env->stx_context = mc;
 }
@@ -2372,7 +2372,7 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   d[0] = env;
   d[3] = env;
 
-  rib = scheme_new_mark(1);
+  rib = scheme_new_mark(SCHEME_STX_INTDEF_MARK);
   if ((argc > 1) && SCHEME_FALSEP(argv[1]))
     rib = scheme_box(rib); /* box means "don't add context" for `local-expand` */
 
@@ -2557,7 +2557,7 @@ make_introducer(int argc, Scheme_Object *argv[])
   Scheme_Object *mark, **info;
   Scheme_Env *genv;
 
-  mark = scheme_new_mark(2);
+  mark = scheme_new_mark(SCHEME_STX_MACRO_MARK);
   info = MALLOC_N(Scheme_Object*, 2);
 
   info[0] = mark;
