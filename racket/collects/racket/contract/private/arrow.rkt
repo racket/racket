@@ -28,11 +28,6 @@
          procedure-accepts-and-more?
          check-procedure
          check-procedure/more
-         contracted-function?
-         contracted-function-proc
-         contracted-function-ctc
-         contracted-function-blame
-         make-contracted-function
          matches-arity-exactly?
          keywords-match
          bad-number-of-results
@@ -53,11 +48,6 @@
   (if (syntax-parameter-value #'making-a-method)
       (list id)
       null))
-
-(define-struct contracted-function (proc ctc blame)
-  #:property prop:procedure 0
-  #:property prop:contracted 1
-  #:property prop:blame 2)
 
 (define contract-key (gensym 'contract-key))
 

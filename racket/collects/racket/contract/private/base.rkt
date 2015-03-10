@@ -64,35 +64,12 @@
                   ;; name, we'll just put something stupid here 
                   ;; instead of changing the library around.
                   (or pos "false")
-                                  
+                  
                   (if cvfp #f neg)
                   #t))
-    (define new-val
-      (cond
-        [cvfp (((cvfp blame) v) neg)]
-        [else (((contract-projection c) blame) v)]))
     (cond
-      [(and (not (parameter? new-val))  ;; when PR 11221 is fixed, remove this line
-            (procedure? new-val)
-            (object-name v)
-            (not (eq? (object-name v) (object-name new-val))))
-       (define vs-name (object-name v))
-       (cond
-         [(contracted-function? new-val)
-          ;; when PR11222 is fixed, change these things:
-          ;;   - eliminate this cond case
-          ;;   - remove the require of arrow.rkt above
-          ;;   - change (struct-out contracted-function) 
-          ;;     in arrow.rkt to make-contracted-function
-          (make-contracted-function 
-           (procedure-rename (contracted-function-proc new-val) vs-name)
-           (contracted-function-ctc new-val)
-           (if cvfp
-               (blame-add-missing-party blame neg)
-               blame))]
-         [else
-          (procedure-rename new-val vs-name)])]
-      [else new-val])))
+      [cvfp (((cvfp blame) v) neg)]
+      [else (((contract-projection c) blame) v)])))
 
 (define-syntax (invariant-assertion stx)
   (syntax-case stx ()
