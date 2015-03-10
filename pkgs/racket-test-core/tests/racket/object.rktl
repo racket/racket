@@ -1241,9 +1241,8 @@
 (let ([c% (class object%
             (define/public (m . args) this)
             (super-new))])
-  (syntax-test #'(send+ (new c%) (m 5) (m 10)))
-  (syntax-test #'(send+ (new c%) (m . (1 2 3))))
-  (syntax-test #'(send+ (new c%) (m 5) (m . (1 2 3))))
+  (syntax-test #'(send+ (new c%) m 5))
+  (syntax-test #'(send+ (new c%) . 5))
 
   (test #t object? (send+ (new c%) (m 5) (m 15)))
   (test #t object? (send+ (new c%) (m 5) (m . (1 2 3 4)))))
