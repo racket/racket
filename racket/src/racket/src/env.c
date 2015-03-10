@@ -1883,7 +1883,18 @@ namespace_set_variable_value(int argc, Scheme_Object *argv[])
   scheme_set_global_bucket("namespace-set-variable-value!", bucket, argv[1], 1);
   
   if ((argc > 2) && SCHEME_TRUEP(argv[2])) {
-    /* REMOVEME: FIXME: may need to add binding_names mapping */
+    scheme_binding_names_from_module(env);
+    if (!env->binding_names
+        || (SCHEME_HASHTRP(env->binding_names)
+            && !scheme_hash_tree_get((Scheme_Hash_Tree *)env->binding_names, argv[0]))
+        || (SCHEME_HASHTP(env->binding_names)
+            && !scheme_hash_get((Scheme_Hash_Table *)env->binding_names, argv[0]))) {
+      Scheme_Object *id;
+      id = scheme_datum_to_syntax(argv[0], scheme_false, scheme_false, 0, 0);
+      scheme_prepare_env_stx_context(env);
+      id = scheme_stx_add_module_context(id, env->stx_context);
+      (void)scheme_global_binding(id, env);
+    }
     scheme_shadow(env, argv[0], argv[1], 1);
   }
 
@@ -1958,7 +1969,8 @@ namespace_mapped_symbols(int argc, Scheme_Object *argv[])
     }
   }
 
-  scheme_module_context_add_mapped_symbols(env->stx_context, mapped);
+  if (env->stx_context)
+    scheme_module_context_add_mapped_symbols(env->stx_context, mapped);
 
   l = scheme_null;
   for (i = mapped->size; i--; ) {

@@ -284,7 +284,7 @@
 
 (parameterize ([current-namespace (make-base-namespace)])
   (let ([i (make-syntax-introducer)])
-    (namespace-require (i #'racket/list))
+    (namespace-require (i (datum->syntax #f 'racket/list)))
     (let ([e (namespace-syntax-introduce (datum->syntax #f '(cons? #t)))])
       (err/rt-test (eval e))
       (test #f eval (i e)))))
