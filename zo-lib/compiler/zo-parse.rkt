@@ -72,11 +72,6 @@
      ;; XXX Why not leave them as vectors and change the contract?
      (make-prefix i (vector->list tv) (vector->list sv))]))
 
-(define read-free-id-info
-  (match-lambda
-    [(vector mpi0 symbol0 mpi1 symbol1 num0 num1 num2 bool0) ; I have no idea what these mean
-     (make-free-id-info mpi0 symbol0 mpi1 symbol1 num0 num1 num2 bool0)]))
-
 (define (read-unclosed-procedure v)
   (define CLOS_HAS_REST 1)
   (define CLOS_HAS_REF_ARGS 2)
@@ -422,7 +417,6 @@
     (cons 'module-type read-module)
     (cons 'inline-variant-type read-inline-variant)
     (cons 'resolve-prefix-type read-resolve-prefix)
-    (cons 'free-id-info-type read-free-id-info)
     (cons 'define-values-type read-define-values)
     (cons 'define-syntaxes-type read-define-syntax)
     (cons 'begin-for-syntax-type read-begin-for-syntax)
@@ -513,8 +507,9 @@
     [34 prefab]
     [35 let-one-unused]
     [36 mark]
-    [37 shared]
-    [38 62 small-number]
+    [37 root-mark]
+    [38 shared]
+    [39 62 small-number]
     [62 80 small-symbol]
     [80 92 small-marshalled]
     [92 ,(+ 92 small-list-max) small-proper-list]

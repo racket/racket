@@ -288,8 +288,7 @@
 (define module-type-num 26)
 (define inline-variants-type-num 27)
 (define variable-type-num 35)
-(define prefix-type-num 114)
-(define free-id-info-type-num 164)
+(define prefix-type-num 115)
 
 (define-syntax define-enum
   (syntax-rules ()
@@ -336,12 +335,15 @@
   CPT_CLOSURE
   CPT_DELAY_REF ; XXX unused, but appears to be same as CPT_SYMREF
   CPT_PREFAB
-  CPT_LET_ONE_UNUSED)
+  CPT_LET_ONE_UNUSED
+  CPT_MARK
+  CPT_ROOT_MARK
+  CPT_SHARED)
 
-(define CPT_SMALL_NUMBER_START 36)
-(define CPT_SMALL_NUMBER_END 60)
+(define CPT_SMALL_NUMBER_START 39)
+(define CPT_SMALL_NUMBER_END 62)
 
-(define CPT_SMALL_SYMBOL_START 60)
+(define CPT_SMALL_SYMBOL_START 62)
 (define CPT_SMALL_SYMBOL_END 80)
 
 (define CPT_SMALL_MARSHALLED_START 80)
@@ -418,39 +420,7 @@
      (list* path phase src-phase exns prefix)]))
 
 (define (encode-wraps wraps)
-  (for/list ([wrap (in-list wraps)])
-    (match wrap
-      [(struct phase-shift (amt src dest cancel-id))
-       (box (vector amt src dest #f #f cancel-id))]
-      [(struct module-rename (phase kind set-id unmarshals renames mark-renames plus-kern?))
-       (define encoded-kind (eq? kind 'marked))
-       (define encoded-unmarshals (map encode-all-from-module unmarshals))
-       (define encoded-renames (encode-module-bindings renames))
-       (define-values (maybe-unmarshals maybe-renames) (if (null? encoded-unmarshals) 
-                                                           (values encoded-renames mark-renames)
-                                                           (values encoded-unmarshals (cons encoded-renames mark-renames))))
-       (define mod-rename (list* phase encoded-kind set-id maybe-unmarshals maybe-renames))
-       (if plus-kern?
-           (cons #t mod-rename)
-           mod-rename)]
-      [(struct lexical-rename (bool1 bool2 alist))
-       (define len (length alist))
-       (define vec (make-vector (+ (* 2 len) 2))) ; + 2 for booleans at the beginning
-       (vector-set! vec 0 bool1)
-       (vector-set! vec 1 bool2)
-       (for ([(k v) (in-dict alist)]
-             [i (in-naturals)])
-         (vector-set! vec (+ 2 i) k)
-         (vector-set! vec (+ 2 i len) v))
-       vec]
-      [(struct top-level-rename (flag))
-       flag]
-      [(struct mark-barrier (value)) 
-       value]
-      [(struct prune (syms))
-       (box syms)]
-      [(struct wrap-mark (val))
-       (list val)])))
+  #f)
 
 (define (encode-mark-map mm)
   mm
@@ -678,11 +648,6 @@
          out)]
        [(struct global-bucket (name)) 
         (out-marshaled variable-type-num name out)]
-       [(struct free-id-info (mpi0 s0 mpi1 s1 p0 p1 p2 insp?))
-        (out-marshaled
-         free-id-info-type-num
-         (vector mpi0 s0 mpi1 s1 p0 p1 p2 insp?)
-         out)]
        [(? mod?)
         (out-module v out)]
        [(struct def-values (ids rhs))
@@ -1112,13 +1077,14 @@
 
 (define (pack-binding-names binding-names)
   (define (ht-to-vector ht)
-    (list->vector (apply append (hash-map ht list))))
+    (and ht (list->vector (apply append (hash-map ht list)))))
   (list (ht-to-vector (hash-ref binding-names 0 #f))
         (ht-to-vector (hash-ref binding-names 1 #f))
-        (apply append
-               (for/list ([(phase ht) (in-hash binding-names)]
-                          #:unless (or (= phase 0) (= phase 1)))
-                 (list phase (ht-to-vector ht))))))
+        (list->vector
+         (apply append
+                (for/list ([(phase ht) (in-hash binding-names)]
+                           #:unless (or (= phase 0) (= phase 1)))
+                  (list phase (ht-to-vector ht)))))))
 
 (define (out-lam expr out)  
   (match expr

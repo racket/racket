@@ -195,34 +195,6 @@
 ;; Top-level `require'
 (define-form-struct (req form) ([reqs stx?] [dummy toplevel?]))
 
-
-(define-form-struct free-id-info ([path0 module-path-index?]
-                                  [symbol0 symbol?]
-                                  [path1 module-path-index?]
-                                  [symbol1 symbol?]
-                                  [phase0 (or/c exact-integer? #f)]
-                                  [phase1 (or/c exact-integer? #f)]
-                                  [phase2 (or/c exact-integer? #f)]
-                                  [use-current-inspector? boolean?]))
-
-(define-form-struct (lexical-rename wrap) ([has-free-id-renames? boolean?]
-                                           [bool2 boolean?] ; this needs a name
-                                           [alist (listof 
-                                                   (cons/c symbol?
-                                                           (or/c
-                                                            symbol?
-                                                            (cons/c
-                                                             symbol?
-                                                             (or/c
-                                                              (cons/c symbol? (or/c symbol? #f))
-                                                              free-id-info?)))))])) 
-(define-form-struct (phase-shift wrap) ([amt (or/c exact-integer? #f)] 
-                                        [src (or/c module-path-index? #f)] 
-                                        [dest (or/c module-path-index? #f)]
-                                        [cancel-id (or/c exact-integer? #f)]))
-(define-form-struct (wrap-mark wrap) ([val exact-integer?]))
-(define-form-struct (prune wrap) ([sym any/c]))
-
 (define-form-struct all-from-module ([path module-path-index?] 
                                      [phase (or/c exact-integer? #f)] 
                                      [src-phase (or/c exact-integer? #f)]
