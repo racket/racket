@@ -2510,6 +2510,8 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
                       val = SCHEME_CDR(val);
                     val = SCHEME_CAR(val);
                   }
+                  if (SCHEME_MODIDXP(val))
+                    val = apply_modidx_shifts(stx->shifts, val, NULL);
                   bind_desc = scheme_hash_tree_set(bind_desc, module_symbol, val);
                 }
 
@@ -2540,7 +2542,10 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
                                            marks_to_printed_list(SCHEME_BINDING_MARKS(SCHEME_CAR(l))));
 
           pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
-          bind_desc = scheme_hash_tree_set(bind_desc, module_symbol, SCHEME_VEC_ELS(pes)[0]);
+          val = SCHEME_VEC_ELS(pes)[0];
+          if (SCHEME_MODIDXP(val))
+            val = apply_modidx_shifts(stx->shifts, val, NULL);
+          bind_desc = scheme_hash_tree_set(bind_desc, module_symbol, val);
 
           if (SCHEME_VEC_SIZE(pes) == 3) {
             /* unmarshal hasn't happened */
@@ -2638,6 +2643,8 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
     printf(" At phase %s:\n", scheme_write_to_string(phase, NULL));
     print_marks(marks, NULL, indent);
 
+    printf(" Shifts %s:\n", scheme_write_to_string(stx->shifts, NULL));
+
     if (level) {
       i = mark_set_next(marks, -1);
       while (i != -1) {
@@ -2656,8 +2663,11 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
                 val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
                 if (SCHEME_SYMBOLP(val))
                   printf(" local @ %s\n", scheme_write_to_string((Scheme_Object*)mark, 0));
-                else
+                else {
+                  if (0 && SCHEME_MODIDXP(val))
+                    val = apply_modidx_shifts(stx->shifts, val, NULL);
                   printf(" %s\n", scheme_write_to_string(val, 0));
+                }
                 print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
 
                 if (SCHEME_MPAIRP(val)) {
@@ -2777,7 +2787,7 @@ static int context_matches(Scheme_Object *l1, Scheme_Object *l2)
 
 char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int always)
 {
-  Scheme_Object *di, *l, *report, *o, *val;
+  Scheme_Object *di, *l, *report, *o = NULL, *val;
   Scheme_Hash_Tree *dit, *bt;
   int fallback;
 
@@ -3550,9 +3560,10 @@ Scheme_Object *scheme_stx_push_module_context(Scheme_Object *stx, Scheme_Object 
 {
   Scheme_Object *intro_multi_mark = SCHEME_VEC_ELS(mc)[4];
 
+  stx = scheme_stx_adjust_mark(stx, intro_multi_mark, scheme_make_integer(0), SCHEME_STX_PUSH);
   stx = add_module_context_except(stx, mc, intro_multi_mark);
 
-  return scheme_stx_adjust_mark(stx, intro_multi_mark, scheme_make_integer(0), SCHEME_STX_PUSH);
+  return stx;
 }
 
 Scheme_Object *scheme_stx_push_introduce_module_context(Scheme_Object *stx, Scheme_Object *mc)
@@ -3776,6 +3787,15 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
       body_marks = scheme_make_pair(SCHEME_CAR(SCHEME_CAR(a)), body_marks);
     else
       body_marks = scheme_make_pair(SCHEME_CAR(a), body_marks);
+  }
+  {
+    Scheme_Object *key, *val;
+    intptr_t i;
+    i = -1;
+    while ((i = mark_set_next(stx->marks->single_marks, i)) != -1) {
+      mark_set_index(stx->marks->single_marks, i, &key, &val);
+      body_marks = scheme_make_pair(key, body_marks);
+    }
   }
 
   if (SCHEME_STXP(expr_marks)) {
