@@ -242,6 +242,7 @@
                 (toplevel 0 0 #f #f)
                 #f
                 #f
+                #hash()
                 null
                 null
                 null)))])

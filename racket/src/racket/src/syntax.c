@@ -4879,7 +4879,7 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
 /*                           datum->syntax                                */
 /*========================================================================*/
 
-#define return_NULL abort(); // return NULL
+#define return_NULL return NULL
 
 Scheme_Mark_Set *list_to_mark_set(Scheme_Object *l, Scheme_Unmarshal_Tables *ut)
 {
