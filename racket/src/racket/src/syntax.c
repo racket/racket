@@ -827,9 +827,6 @@ Scheme_Object *adjust_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Sc
         return multi_marks;
       break;
     }
-    if (SAME_OBJ(m, SCHEME_CAR(SCHEME_CAR(l)))
-        && (mode == SCHEME_STX_PUSH))
-      printf("hmm....\n");
   }
 
   if (mode == SCHEME_STX_PUSH) {
@@ -1659,7 +1656,7 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
                                SCHEME_FALLBACK_PHASE(fb));
       fb = SCHEME_FALLBACK_REST(fb);
     }
-    key = make_fallback_pair(fb, key);
+    fb = make_fallback_pair(fb, key);
   }
   
   while (fb) {
