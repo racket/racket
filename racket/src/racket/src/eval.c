@@ -4021,10 +4021,12 @@ static void *compile_k(void)
   else
     frame_marks = NULL;
 
-  /* For the top-level environment, we "push_introduce" instead of "introduce"
-     to avoid ambiguous binding, especially since push_prefix
-     "push"es. */
-  form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
+  if (for_eval) {
+    /* For the top-level environment, we "push_introduce" instead of "introduce"
+       to avoid ambiguous binding, especially since push_prefix
+       "push"es. */
+    form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
+  }
 
   while (1) {
     scheme_prepare_compile_env(genv);
