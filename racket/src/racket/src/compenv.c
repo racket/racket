@@ -1952,12 +1952,12 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
                           NULL);
 
   
-  mark = scheme_new_mark(6);
+  mark = scheme_new_mark(SCHEME_STX_MACRO_MARK);
 
   if (SCHEME_RPAIRP(data))
     form = scheme_parse_lifted_require(form, phase, mark, SCHEME_CAR(data), &orig_form, cenv);
   else {
-    form = scheme_toplevel_require_for_expand(form, phase, env, mark);
+    form = scheme_toplevel_require_for_expand(form, phase, cenv, mark);
     need_prepare = 1;
   }
   

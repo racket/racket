@@ -2502,6 +2502,15 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
                 bind_desc = scheme_hash_tree_set(bind_desc, name_symbol, ht->keys[j]);
               
                 val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
+                if (SCHEME_MPAIRP(val)) {
+                  bind_desc = scheme_hash_tree_set(bind_desc, free_symbol,
+                                                   stx_debug_info((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)),
+                                                                  SCHEME_CDR(SCHEME_CDR(val)),
+                                                                  scheme_make_pair((Scheme_Object *)stx, seen),
+                                                                  all_bindings));
+                  val = SCHEME_CAR(val);
+                }
+
                 if (SCHEME_SYMBOLP(val))
                   bind_desc = scheme_hash_tree_set(bind_desc, local_symbol, val);
                 else {
@@ -2517,14 +2526,6 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
 
                 bind_desc = scheme_hash_tree_set(bind_desc, context_symbol,
                                                  marks_to_printed_list(SCHEME_BINDING_MARKS(SCHEME_CAR(l))));
-
-                if (SCHEME_MPAIRP(val)) {
-                  bind_desc = scheme_hash_tree_set(bind_desc, free_symbol,
-                                                   stx_debug_info((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)),
-                                                                  SCHEME_CDR(SCHEME_CDR(val)),
-                                                                  scheme_make_pair((Scheme_Object *)stx, seen),
-                                                                  all_bindings));
-                }
 
                 bindings = scheme_make_pair((Scheme_Object *)bind_desc, bindings);
               }

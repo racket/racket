@@ -12441,6 +12441,8 @@ Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path,
 
   form = make_require_form(module_path, phase, mark, cenv->genv->phase);
 
+  form = scheme_revert_expression_marks(form, cenv);
+
   do_require_execute(cenv->genv, form);
 
   return form;
