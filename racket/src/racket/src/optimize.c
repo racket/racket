@@ -2391,8 +2391,10 @@ static Scheme_Object *local_type_to_predicate(int t)
     return scheme_flonum_p_proc;
   case SCHEME_LOCAL_TYPE_FIXNUM:
     return scheme_fixnum_p_proc;
+#ifdef MZ_LONG_DOUBLE
   case SCHEME_LOCAL_TYPE_EXTFLONUM:
     return scheme_extflonum_p_proc;
+#endif
   }
   return NULL;
 }
