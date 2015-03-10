@@ -2502,6 +2502,9 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 
   if (env->genv->module && env->genv->module->ii_src)
     sym2 = scheme_stx_binding_union(sym2, env->genv->module->ii_src, scheme_env_phase(env->genv));
+  else
+    sym2 = scheme_stx_add_module_context(sym2, env->genv->stx_context);
+  sym2 = scheme_stx_adjust_module_expression_context(sym2, env->genv->stx_context, SCHEME_STX_ADD);
 
   /* Try to find a binder: */
   binder = scheme_find_local_binder(sym2, env, &bind_env);

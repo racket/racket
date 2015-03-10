@@ -19,6 +19,11 @@
 (test 'sub values (splicing-syntax-parameterize ([tHIs (lambda (stx) #'(quote sub))])
                     (inDIRECt)))
 
+(define-syntax-parameter tHaT #f)
+;; Make sure `syntax-parameterize` works at the top level:
+(syntax-parameterize ([tHaT (lambda (stx) #'(quote sub))])
+  (tHaT))
+
 (module check-splicing-stxparam-1 racket/base
   (require (for-syntax racket/base)
            racket/stxparam
