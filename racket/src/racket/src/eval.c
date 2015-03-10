@@ -5774,11 +5774,6 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
                             src_modidx, now_modidx, 
                             genv ? genv->module_registry->exports : NULL,
                             insp);
-      if (genv && !genv->module) {
-        /* introduce the syntax object to this namespace: */
-        if (!v) v = scheme_false;
-        v = scheme_make_pair(genv->stx_context, v);
-      }
       if (v || (rp->delay_info_rpair && SCHEME_CDR(rp->delay_info_rpair))) {
 	/* Put lazy-shift info in pf->a[i]: */
         Scheme_Object **ls;

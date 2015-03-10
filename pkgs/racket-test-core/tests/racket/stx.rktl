@@ -1276,7 +1276,7 @@
 (test '(10 20 #t) '@!$get @!$get)
 |#
 
-(test '(1)
+(test '(12)
       eval
       (expand
        #'(let ([b 12])
@@ -1333,9 +1333,8 @@
         (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
         (eval '(require 'a))
         (test #t eval '(free-identifier=? (f) #'x))
-        ;; bindings from multiple namespace make `x` ambigious:
-        (test #f eval `(free-identifier=? (f) (quote-syntax ,x-id)))
-        ;; avoid ambigutity:
+        ;; check namespace fallbacks:
+        (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
         (test #t free-identifier=? (eval '(f)) x-id)
         (parameterize ([current-namespace (make-base-namespace)])
           (eval '(module a racket/base

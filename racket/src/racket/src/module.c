@@ -12342,7 +12342,7 @@ static Scheme_Object *check_require_form(Scheme_Env *env, Scheme_Object *form)
                    check_dup_require, ht,
                    NULL,
                    0, 0, 0, 
-                   -1, 1,
+                   1, 0,
                    NULL, NULL, NULL,
                    NULL);
   }

@@ -224,17 +224,22 @@
 	     (require 'e 'b)))
     (test '(d b d b c) values l)
     (eval `(require 'f))
-    (let ([finished '(f b e  a d b  d b d b c)])
+    (let ([finished '(f b e  a  d b d b c)])
       (test finished values l)
-      (namespace-attach-module n ''f)
-      (test finished values l)
-      (parameterize ([current-namespace (make-empty-namespace)])
-	(namespace-attach-module n ''f)
-	(test finished values l)
-        (namespace-require 'racket/base)
-	(eval `(require 'a))
-	(eval `(require 'f))
-	(test (list* 'd 'b finished) values l)))))
+      (eval '10) ; triggers `d` and `b`
+      (let ([finished (append '(d b) finished)])
+        (test finished values l)
+        (namespace-attach-module n ''f)
+        (test finished values l)
+        (parameterize ([current-namespace (make-empty-namespace)])
+          (namespace-attach-module n ''f)
+          (test finished values l)
+          (namespace-require 'racket/base)
+          (eval `(require 'a))
+          (eval `(require 'f))
+          (test finished values l)
+          (eval '10)
+          (test (list* 'd 'b finished) values l))))))
 
 (let* ([n (make-base-namespace)]
        [l null]
@@ -1026,7 +1031,8 @@
         (require (for-syntax racket/base))
         (begin-for-syntax
          (require 'm))))
-    (eval '(require 'n)))
+    (eval '(require 'n))
+    (eval '10))
   (test #"1\n1\n" get-output-bytes o))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1057,7 +1063,7 @@
 
 (module avail-y racket/base
   (require 'avail-z)
-  (eval #'(foo 10)))
+  (eval-syntax #'(foo 10)))
 
 (err/rt-test (dynamic-require ''avail-y #f)
              (lambda (exn) (and (exn? exn)

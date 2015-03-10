@@ -3882,13 +3882,6 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
     v = rp->stxes[i];
   }
 
-  if (SCHEME_PAIRP(shift)) {
-    v = scheme_stx_push_module_context(v, SCHEME_CAR(shift));
-    shift = SCHEME_CDR(shift);
-    if (SCHEME_FALSEP(shift))
-      return v;
-  }
-  
   v = scheme_stx_add_shift(v, shift);
 
   shift = SCHEME_VEC_ELS(shift)[3];
