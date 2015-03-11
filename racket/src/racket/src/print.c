@@ -3020,6 +3020,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           l = scheme_make_pair(modidx->path, l);
           if (SCHEME_FALSEP(modidx->base))
             break;
+          else if (SAME_TYPE(SCHEME_TYPE(modidx->base), scheme_resolved_module_path_type)) {
+            l = scheme_make_pair(modidx->base, l);
+            break;
+          }
           modidx = (Scheme_Modidx *)modidx->base;
         }
         if (0 && SCHEME_FALSEP(modidx->path)) {
