@@ -3295,8 +3295,9 @@ typedef struct Scheme_Marshal_Tables {
   Scheme_Hash_Table *rn_saved;    /* maps each original object to generated marshaling */
   Scheme_Object **cdata_map;      /* for delay-load wrappers */
   int cdata_counter;              /* used with cdata_map */
-  intptr_t *shared_offsets;           /* set in second pass */
+  intptr_t *shared_offsets;      /* set in second pass */
   intptr_t sorted_keys_count;
+  intptr_t inspector_counter;    /* for deterministic symbol allocation */
   Scheme_Object **sorted_keys;
 } Scheme_Marshal_Tables;
 

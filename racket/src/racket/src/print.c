@@ -2946,7 +2946,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_inspector_type))
     {
-      /* For use by syntax objects, we map each inspector to a gensym */
+      /* For use by syntax objects, we map each inspector to an uninterned symbol */
       Scheme_Object *sym;
       if (!mt->identity_map) {
         Scheme_Hash_Table *id_map;
@@ -2955,7 +2955,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       }
       sym = scheme_hash_get(mt->identity_map, obj);
       if (!sym) {
-        sym = scheme_gensym(scheme_intern_symbol("insp"));
+        int id = mt->inspector_counter++;
+        char buf[32];
+        sprintf(buf, "insp%d", id);
+        sym = scheme_make_symbol(buf); /* uninterned */
         scheme_hash_set(mt->identity_map, obj, sym);
       }
       closed = print(sym, notdisplay, 1, ht, mt, pp);
