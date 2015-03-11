@@ -1163,7 +1163,9 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
                   started = 1;
 
                   srcmname = srcm->me->rt->provide_srcs[i];
-                  srcmname = scheme_modidx_shift(srcmname, srcm->me->src_modidx, srcm->self_modidx);
+                  srcmname = scheme_modidx_shift(srcmname,
+                                                 srcm->me->src_modidx,
+                                                 srcm->self_modidx);
                   srcmname = scheme_module_resolve(srcmname, 1);
                   srcname = srcm->me->rt->provide_src_names[i];
 
@@ -3076,7 +3078,8 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 	rn_stx = SCHEME_CAR(m->rn_stx);
 	midx = SCHEME_CDR(m->rn_stx);
         
-        rn_stx = scheme_stx_shift(rn_stx, scheme_make_integer(0), midx, m->self_modidx, NULL, menv->access_insp);
+        rn_stx = scheme_stx_shift(rn_stx, scheme_make_integer(0), midx, m->self_modidx,
+                                  NULL, m->prefix->src_insp_desc, menv->access_insp);
 
 	m->rn_stx = rn_stx;
       }
@@ -7116,7 +7119,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     shift = scheme_make_shift(super_phase_shift, 
                               top_env->module->self_modidx, iidx, 
                               menv->module_registry->exports,
-                              env->insp);
+                              m->insp, m->insp);
     
     super_bxs_info = MALLOC_N(void*, 6);
     super_bxs_info[0] = super_bxs;
@@ -7239,7 +7242,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   this_empty_self_modidx = scheme_get_submodule_empty_self_modidx(submodule_path);
 
   /* phase shift to replace self_modidx of previous expansion: */
-  fm = scheme_stx_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL, m->insp);
+  fm = scheme_stx_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL,
+                        m->insp, m->insp);
   
   if (ii)
     fm = scheme_stx_add_module_frame_context(fm, rn_set);
@@ -7370,7 +7374,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     }
 
     /* for future expansion, shift away from self_modidx: */
-    ps = scheme_make_shift(NULL, self_modidx, this_empty_self_modidx, NULL, NULL);
+    ps = scheme_make_shift(NULL, self_modidx, this_empty_self_modidx, NULL, NULL, NULL);
     fm = scheme_stx_add_shift(fm, ps);
 
     /* make self_modidx like the empty modidx */
@@ -8301,7 +8305,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
         scheme_optimize_info_never_inline(oi);
       o = scheme_optimize_expr(o, oi, 0);
 
-      rp = scheme_resolve_prefix(0, env->prefix, 1);
+      rp = scheme_resolve_prefix(0, env->prefix, env->insp);
       ri = scheme_resolve_info_create(rp);
       scheme_resolve_info_enforce_const(ri, rec[drec].comp_flags & COMP_ENFORCE_CONSTS);
 
@@ -8934,8 +8938,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             scheme_optimize_info_never_inline(oi);
 	  m = scheme_optimize_expr(m, oi, 0);
 	  
-	  /* Simplify only in compile mode; it is too slow in expand mode. */
-	  rp = scheme_resolve_prefix(1, eenv->prefix, !erec);
+	  rp = scheme_resolve_prefix(1, eenv->prefix, env->insp);
 	  ri = scheme_resolve_info_create(rp);
           scheme_enable_expression_resolve_lifts(ri);
 	  m = scheme_resolve_expr(m, ri);
@@ -8968,8 +8971,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  eval_exptime(names, count, m, eenv->genv, rhs_env, rp, max_let_depth, 0, 
                        (for_stx ? env->genv->exp_env->toplevel : env->genv->syntax), 
                        phase + 1,
-                       for_stx ? scheme_false : orig_names,
-                       NULL);
+                       for_stx ? scheme_false : orig_names, NULL);
           
 	  if (erec) {
             if (for_stx) {
@@ -11725,7 +11727,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *req_modidx,
                                         Scheme_Object *context,
                                         Scheme_Object *bind_phase, Scheme_Object *pt_phase, Scheme_Object *src_phase,
-                                        Scheme_Object *info, Scheme_Hash_Table *export_registry,
+                                        Scheme_Object *info, Scheme_Hash_Table *export_registry, Scheme_Object *insp_desc,
                                         Scheme_Object *replace_at)
 {
   Scheme_Object *exns, *prefix, *name, *marks, *bdg;
@@ -11812,7 +11814,8 @@ void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *re
     if (pt) {
       if (!pt->src_modidx && me->src_modidx)
         pt->src_modidx = me->src_modidx;
-      scheme_extend_module_context_with_shared(bind_phase, req_modidx, pt, scheme_false, src_phase, context, 0,
+      scheme_extend_module_context_with_shared(scheme_make_pair(bind_phase, insp_desc),
+                                               req_modidx, pt, scheme_false, src_phase, context, 0,
                                                replace_at);
     }
   } else {

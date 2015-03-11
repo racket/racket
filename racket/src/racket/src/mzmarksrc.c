@@ -1001,6 +1001,7 @@ resolve_prefix_val {
   gcMARK2(rp->toplevels, gc);
   gcMARK2(rp->stxes, gc);
   gcMARK2(rp->delay_info_rpair, gc);
+  gcMARK2(rp->src_insp_desc, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));

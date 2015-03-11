@@ -2944,6 +2944,22 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	cannot_print(pp, notdisplay, obj, ht, compact);
       }
     }
+  else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_inspector_type))
+    {
+      /* For use by syntax objects, we map each inspector to a gensym */
+      Scheme_Object *sym;
+      if (!mt->identity_map) {
+        Scheme_Hash_Table *id_map;
+        id_map = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->identity_map = id_map;
+      }
+      sym = scheme_hash_get(mt->identity_map, obj);
+      if (!sym) {
+        sym = scheme_gensym(scheme_intern_symbol("insp"));
+        scheme_hash_set(mt->identity_map, obj, sym);
+      }
+      closed = print(sym, notdisplay, 1, ht, mt, pp);
+    }
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_mark_type)
            && (compact || pp->print_unreadable))
     {

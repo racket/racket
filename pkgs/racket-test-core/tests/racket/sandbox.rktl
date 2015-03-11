@@ -65,18 +65,22 @@
         (let ([m (exn-message (cadr x))])
           (or (regexp-match? re m) (list 'bad-exception-message: m)))
         x)))
-  (define-syntax thunk (syntax-rules () [(thunk b ...) (lambda () b ...)]))
+  (define-syntax thunk (lambda (stx)
+                         (syntax-case stx ()
+                           [(_ loc b ...)
+                            (syntax/loc #'loc
+                              (lambda () b ...))])))
   (define-syntax t
     (syntax-rules (--eval-- --top-- => <= =err> <err=)
       [(t -?-) (void)]
       [(t -?- --eval-- more ...) (t --eval-- more ...)]
       [(t -?- --top--  more ...) (t --top--  more ...)]
-      [(t --eval-- E)         (test #t            run* (thunk (ev `E)))]
-      [(t --top--  E)         (test #t            run* (thunk E))]
-      [(t --eval-- E => R)    (test `(vals: ,R)   run  (thunk (ev `E)))]
-      [(t --top--  E => R)    (test `(vals: ,R)   run  (thunk E))]
-      [(t --eval-- E =err> R) (test #t e-match? R run  (thunk (ev `E)))]
-      [(t --top--  E =err> R) (test #t e-match? R run  (thunk E))]
+      [(t --eval-- E)         (test #t            run* (thunk E (ev `E)))]
+      [(t --top--  E)         (test #t            run* (thunk E E))]
+      [(t --eval-- E => R)    (test `(vals: ,R)   run  (thunk E (ev `E)))]
+      [(t --top--  E => R)    (test `(vals: ,R)   run  (thunk E E))]
+      [(t --eval-- E =err> R) (test #t e-match? R run  (thunk E (ev `E)))]
+      [(t --top--  E =err> R) (test #t e-match? R run  (thunk E E))]
       [(t -?- E => R more ...)    (begin (t -?- E => R) (t -?- more ...))]
       [(t -?- E =err> R more ...) (begin (t -?- E =err> R) (t -?- more ...))]
       [(t -?- R <= E more ...)    (t -?- E => R more ...)]

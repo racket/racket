@@ -3895,7 +3895,7 @@ Scheme_Object **scheme_current_argument_stack()
 /*                  eval/compile/expand starting points                   */
 /*========================================================================*/
 
-static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env *genv)
+static Scheme_Object *add_top_level_context_unless_module(Scheme_Object *form, Scheme_Env *genv)
 {
   scheme_prepare_env_stx_context(genv);
 
@@ -3991,15 +3991,7 @@ static void *compile_k(void)
 
   /* Renamings for requires: */
   if (rename) {
-    form = add_renames_unless_module(form, genv);
-    if (genv->module) {
-      form = scheme_stx_add_shift(form, 
-                                  scheme_make_shift(scheme_make_integer(0),
-                                                    genv->module->me->src_modidx, 
-                                                    genv->module->self_modidx,
-                                                    genv->module_registry->exports,
-                                                    NULL));
-    }
+    form = add_top_level_context_unless_module(form, genv);
   }
 
   tl_queue = scheme_null;
@@ -4139,7 +4131,7 @@ static void *compile_k(void)
         scheme_optimize_info_never_inline(oi);
       o = scheme_optimize_expr(o, oi, 0);
 
-      rp = scheme_resolve_prefix(0, cenv->prefix, 1);
+      rp = scheme_resolve_prefix(0, cenv->prefix, insp);
       ri = scheme_resolve_info_create(rp);
       scheme_resolve_info_enforce_const(ri, enforce_consts);
       scheme_enable_expression_resolve_lifts(ri);
@@ -4461,7 +4453,8 @@ Scheme_Object *scheme_eval_compiled_stx_string(Scheme_Object *expr, Scheme_Env *
       s = scheme_stx_shift(s,
                            scheme_make_integer(shift),
                            orig, modidx, 
-                           env->module_registry->exports, NULL);
+                           env->module_registry->exports,
+                           NULL, NULL);
       SCHEME_VEC_ELS(result)[i] = s;
     }
     
@@ -4509,7 +4502,7 @@ static void *expand_k(void)
 
   if (rename > 0) {
     /* Renamings for requires: */
-    obj = add_renames_unless_module(obj, env->genv);
+    obj = add_top_level_context_unless_module(obj, env->genv);
   }
 
   observer = scheme_get_expand_observe();
@@ -4659,7 +4652,7 @@ eval(int argc, Scheme_Object *argv[])
       genv = (Scheme_Env *)argv[1];
     } else
       genv = scheme_get_env(NULL);
-    form = add_renames_unless_module(form, genv);
+    form = add_top_level_context_unless_module(form, genv);
   }
 
   a[0] = form;
@@ -4736,7 +4729,7 @@ top_introduce_stx(int argc, Scheme_Object **argv)
   if (!SAME_TYPE(SCHEME_TYPE(SCHEME_STX_VAL(form)), scheme_compilation_top_type)) {
     Scheme_Env *genv;
     genv = (Scheme_Env *)scheme_get_param(scheme_current_config(), MZCONFIG_ENV);
-    form = add_renames_unless_module(form, genv);
+    form = add_top_level_context_unless_module(form, genv);
   }
 
   return form;
@@ -4757,7 +4750,7 @@ compile(int argc, Scheme_Object *argv[])
     form = scheme_datum_to_syntax(form, scheme_false, scheme_false, 1, 0);
 
   genv = scheme_get_env(NULL);
-  form = add_renames_unless_module(form, genv);
+  form = add_top_level_context_unless_module(form, genv);
 
   return call_compile_handler(form, 0);
 }
@@ -5732,8 +5725,7 @@ int scheme_prefix_depth(Resolve_Prefix *rp)
 Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp, 
 				   Scheme_Object *src_modidx, Scheme_Object *now_modidx,
 				   int src_phase, int now_phase,
-                                   Scheme_Env *dummy_env,
-                                   Scheme_Object *insp)
+                                   Scheme_Env *dummy_env, Scheme_Object *insp)
 {
   Scheme_Object **rs_save, **rs, *v;
   Scheme_Prefix *pf;
@@ -5775,7 +5767,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
       v = scheme_make_shift(scheme_make_integer(now_phase - src_phase), 
                             src_modidx, now_modidx, 
                             genv ? genv->module_registry->exports : NULL,
-                            insp);
+                            rp->src_insp_desc, insp);
       if (v || (rp->delay_info_rpair && SCHEME_CDR(rp->delay_info_rpair))) {
 	/* Put lazy-shift info in pf->a[i]: */
         Scheme_Object **ls;

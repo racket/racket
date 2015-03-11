@@ -1170,14 +1170,6 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   }
 #endif
 
-#if 0
-  // REMOVEME
-  if (SCHEME_FALSEP(binding) && !strcmp("make-syntax-mapping", SCHEME_SYM_VAL(SCHEME_STX_VAL(find_id)))) {
-    printf("%d %s %s\n", ambiguous, scheme_write_to_string(find_id, NULL), scheme_write_to_string(binding, NULL));
-    scheme_stx_debug_print(find_id, scheme_env_phase(env->genv), 1);
-  }
-#endif
-
   if (ambiguous) {
     if (SAME_OBJ(scheme_env_phase(env->genv), scheme_make_integer(0)))
       scheme_wrong_syntax(NULL, NULL, find_id,
@@ -1553,7 +1545,7 @@ static Scheme_Hash_Table *get_binding_names_table(Scheme_Env *env)
           id = scheme_stx_shift(id, scheme_make_integer(env->phase - env->mod_phase),
                                 env->module->self_modidx, env->link_midx,
                                 env->module_registry->exports,
-                                NULL);
+                                env->module->prefix->src_insp_desc, env->access_insp);
           binding_names->vals[i] = id;
         }
       }
@@ -1641,6 +1633,11 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
 
   scheme_add_module_binding(id, phase,
                             (env->module ? env->module->self_modidx : scheme_false),
+                            (env->module
+                             ? (env->module->prefix
+                                ? env->module->prefix->src_insp_desc
+                                : env->module->insp)
+                             : env->guard_insp),
                             sym,
                             phase);
 

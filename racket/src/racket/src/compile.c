@@ -3598,7 +3598,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
        expression may have syntax objects with a lexical rename that
        is still being extended. 
      For letrec-syntaxes+values, don't simplify because it's too expensive. */
-  rp = scheme_resolve_prefix(eenv->genv->phase, eenv->prefix, 0);
+  rp = scheme_resolve_prefix(eenv->genv->phase, eenv->prefix, insp);
 
   ri = scheme_resolve_info_create(rp);
   a = scheme_resolve_expr(a, ri);

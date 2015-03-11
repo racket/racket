@@ -1109,17 +1109,25 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
   tv = scheme_make_pair(scheme_make_integer(rp->num_lifts), 
                         scheme_make_pair(tv, sv));
 
+  tv = scheme_make_pair(rp->src_insp_desc, tv);
+  
   return tv;
 }
 
 static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
 {
   Resolve_Prefix *rp;
-  Scheme_Object *tv, *sv, **a, *stx, *tl;
+  Scheme_Object *tv, *sv, **a, *stx, *tl, *insp_desc;
   intptr_t i;
 
   if (!SCHEME_PAIRP(obj)) return NULL;
+  insp_desc = SCHEME_CAR(obj);
+  if (!SCHEME_SYMBOLP(insp_desc))
+    return NULL;
+  obj = SCHEME_CDR(obj);
 
+  if (!SCHEME_PAIRP(obj)) return NULL;
+  
   if (!SCHEME_INTP(SCHEME_CAR(obj))) {
     obj = SCHEME_CDR(obj);
   }
@@ -1180,6 +1188,8 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
     a[i] = stx;
   }
   rp->stxes = a;
+
+  rp->src_insp_desc = insp_desc;
 
   return (Scheme_Object *)rp;
 }

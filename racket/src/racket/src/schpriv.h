@@ -1144,14 +1144,15 @@ Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o);
 
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
-                                 Scheme_Hash_Table *export_registry, Scheme_Object *insp);
+                                 Scheme_Hash_Table *export_registry,
+                                 Scheme_Object *src_insp_desc, Scheme_Object *insp);
 Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift);
 Scheme_Object *scheme_stx_add_shifts(Scheme_Object *o, Scheme_Object *shift);
 Scheme_Object *scheme_stx_shift(Scheme_Object *stx,
                                 Scheme_Object *phase_delta,
                                 Scheme_Object *old_midx, Scheme_Object *new_midx,
                                 Scheme_Hash_Table *export_registry,
-                                Scheme_Object *insp);
+                                Scheme_Object *src_insp_desc, Scheme_Object *insp);
 
 Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *relative_to,
                                              Scheme_Object *uid);
@@ -1201,7 +1202,8 @@ void scheme_save_module_context_unmarshal(Scheme_Object *mc, Scheme_Object *info
 void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *req_modidx,
                                         Scheme_Object *context,
                                         Scheme_Object *bind_phase, Scheme_Object *pt_phase, Scheme_Object *src_phase,
-                                        Scheme_Object *info, Scheme_Hash_Table *export_registry,
+                                        Scheme_Object *info,
+                                        Scheme_Hash_Table *export_registry, Scheme_Object *insp,
                                         Scheme_Object *replace_at);
 
 int scheme_stx_in_plain_module_context(Scheme_Object *stx, Scheme_Object *mc);
@@ -1220,7 +1222,8 @@ Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *pha
 
 void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Object *binding_sym);
 void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase, 
-                               Scheme_Object *modidx, Scheme_Object *sym, Scheme_Object *defn_phase);
+                               Scheme_Object *modidx, Scheme_Object *inspector,
+                               Scheme_Object *sym, Scheme_Object *defn_phase);
 void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                          Scheme_Object *modidx, Scheme_Object *defn_name, Scheme_Object *defn_phase,
                                          Scheme_Object *inspector,
@@ -2588,6 +2591,11 @@ typedef struct Resolve_Prefix
   Scheme_Object **toplevels;
   Scheme_Object **stxes; /* simplified */
   Scheme_Object *delay_info_rpair; /* (rcons refcount Scheme_Load_Delay*) */
+  /* An inspector or symbol to identify bindings that are created as
+     part of the module's expansion, so that a suitable inspector can
+     be associated with those bindings (through a syntax-object
+     "shift") when the code is re-loaded. */
+  Scheme_Object *src_insp_desc;
 } Resolve_Prefix;
 
 typedef struct Resolve_Info Resolve_Info;
@@ -2975,7 +2983,7 @@ int scheme_is_compiled_procedure(Scheme_Object *o, int can_be_closed, int can_be
 
 Scheme_Object *scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info);
 
-Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify);
+Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, Scheme_Object *insp_desc);
 Resolve_Prefix *scheme_remap_prefix(Resolve_Prefix *rp, Resolve_Info *ri);
 
 Resolve_Info *scheme_resolve_info_create(Resolve_Prefix *rp);
@@ -3232,8 +3240,7 @@ int scheme_prefix_depth(Resolve_Prefix *rp);
 Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 				   Scheme_Object *src_modix, Scheme_Object *now_modix,
 				   int src_phase, int now_phase,
-                                   Scheme_Env *dummy_env,
-                                   Scheme_Object *insp);
+                                   Scheme_Env *dummy_env, Scheme_Object *insp);
 void scheme_pop_prefix(Scheme_Object **rs);
 Scheme_Object *scheme_suspend_prefix(Scheme_Object **rs);
 Scheme_Object **scheme_resume_prefix(Scheme_Object *v);
@@ -3349,8 +3356,8 @@ struct Scheme_Env {
   Scheme_Module_Registry *module_registry;
   Scheme_Module_Registry *module_pre_registry; /* for expanding submodules */
   Scheme_Object *guard_insp; /* instantiation-time inspector, for granting
-			  protected access */
-  Scheme_Object *access_insp; /* for graining protected access */
+                                protected access */
+  Scheme_Object *access_insp; /* for gaining protected access */
 
   Scheme_Object *stx_context; /* encapsulates marks, shifts, etc. */
 

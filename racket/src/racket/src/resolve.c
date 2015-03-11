@@ -753,7 +753,7 @@ static Scheme_Object *do_define_syntaxes_resolve(Scheme_Object *data, Resolve_In
   names = SCHEME_VEC_ELS(data)[2];
   val = SCHEME_VEC_ELS(data)[3];
 
-  rp = scheme_resolve_prefix(1, cp, 1);
+  rp = scheme_resolve_prefix(1, cp, info->prefix->src_insp_desc);
 
   dummy = scheme_resolve_expr(dummy, info);
 
@@ -800,7 +800,7 @@ static Scheme_Object *begin_for_syntax_resolve(Scheme_Object *data, Resolve_Info
   dummy = SCHEME_VEC_ELS(data)[1];
   l = SCHEME_VEC_ELS(data)[2];
 
-  rp = scheme_resolve_prefix(1, cp, 1);
+  rp = scheme_resolve_prefix(1, cp, info->prefix->src_insp_desc);
 
   dummy = scheme_resolve_expr(dummy, info);
 
@@ -2271,7 +2271,7 @@ module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
     return (Scheme_Object *)m;
   }
 
-  rp = scheme_resolve_prefix(0, m->comp_prefix, 1);
+  rp = scheme_resolve_prefix(0, m->comp_prefix, m->insp);
   m->comp_prefix = NULL;
 
   b = scheme_resolve_expr(m->dummy, old_rslv);
@@ -2494,7 +2494,7 @@ Scheme_Object *scheme_resolve_list(Scheme_Object *expr, Resolve_Info *info)
 /*                    compile-time env for resolve                        */
 /*========================================================================*/
 
-Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
+Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, Scheme_Object *insp_desc)
 {
   Resolve_Prefix *rp;
   Scheme_Object **tls, **stxes, *m;
@@ -2543,6 +2543,8 @@ Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
       }
     }
   }
+
+  rp->src_insp_desc = insp_desc;
 
   return rp;
 }

@@ -143,6 +143,7 @@ static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks);
 #define HAS_CHAPERONE_SUBSTX(obj) (HAS_SUBSTX(obj) || (SCHEME_NP_CHAPERONEP(obj) && HAS_SUBSTX(SCHEME_CHAPERONE_VAL(obj))))
 
 #define SCHEME_INSPECTORP(obj) SAME_TYPE(scheme_inspector_type, SCHEME_TYPE(obj))
+#define SCHEME_INSPECTOR_DESCP(obj) (SCHEME_INSPECTORP(obj) || SCHEME_SYMBOLP(obj))
 #define SCHEME_MODIDXP(l) SAME_TYPE(SCHEME_TYPE(l), scheme_module_index_type)
 #define SCHEME_PHASEP(a) (SCHEME_INTP(a) || SCHEME_BIGNUMP(a) || SCHEME_FALSEP(a))
 
@@ -162,6 +163,10 @@ static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks);
 #define SCHEME_FALLBACK_REST(o) (SCHEME_VEC_ELS(o)[1])
 #define SCHEME_FALLBACK_MARK(o) (SCHEME_VEC_ELS(o)[2])
 #define SCHEME_FALLBACK_PHASE(o) (SCHEME_VEC_ELS(o)[3])
+
+/* Bindings of the form "everything from module" */
+#define PES_UNMARSHAL_DESCP(v) (SCHEME_VEC_SIZE(v) == 4)
+#define PES_BINDINGP(v)        (SCHEME_VEC_SIZE(v) == 5)
 
 XFORM_NONGCING static int prefab_p(Scheme_Object *o)
 {
@@ -270,7 +275,7 @@ void scheme_init_stx(Scheme_Env *env)
   GLOBAL_IMMED_PRIM("syntax-rearm"               , syntax_rearm              , 2, 3, env);
   GLOBAL_IMMED_PRIM("syntax-taint"               , syntax_taint              , 1, 1, env);
 
-  GLOBAL_IMMED_PRIM("syntax-debug-print"          , syntax_debug_info         , 1, 3, env);
+  GLOBAL_IMMED_PRIM("syntax-debug-info"          , syntax_debug_info         , 1, 3, env);
 
   REGISTER_SO(source_symbol);
   REGISTER_SO(share_symbol);
@@ -1365,24 +1370,28 @@ static Scheme_Object *do_stx_add_shift(Scheme_Object *o, Scheme_Object *shift, i
   }
 
   if (SCHEME_VECTORP(shift)
-      && (SCHEME_VEC_ELS(shift)[4] != scheme_make_integer(0))) {
+      && (SCHEME_VEC_SIZE(shift) == 6)
+      && (SCHEME_VEC_ELS(shift)[5] != scheme_make_integer(0))) {
     /* Handle phase shift by itself, first: */
-    stx = (Scheme_Stx *)do_stx_add_shift((Scheme_Object *)stx, SCHEME_VEC_ELS(shift)[4], can_mutate);
+    stx = (Scheme_Stx *)do_stx_add_shift((Scheme_Object *)stx, SCHEME_VEC_ELS(shift)[5], can_mutate);
     /* strip away phase shift: */
-    vec = scheme_make_vector(5, NULL);
+    vec = scheme_make_vector(6, NULL);
     SCHEME_VEC_ELS(vec)[0] = SCHEME_VEC_ELS(shift)[0];
     SCHEME_VEC_ELS(vec)[1] = SCHEME_VEC_ELS(shift)[1];
     SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(shift)[2];
     SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(shift)[3];
-    SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(0);
+    SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(shift)[4];
+    SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(0);
     shift = vec;
     can_mutate = 1;
   }
 
-  /* Drop useless shift: */
+  /* Drop useless shift (identidy modidx shift and no inspector or exports): */
   if (SAME_OBJ(SCHEME_VEC_ELS(shift)[0], SCHEME_VEC_ELS(shift)[1])
-      && SCHEME_FALSEP(SCHEME_VEC_ELS(shift)[2])
-      && SCHEME_FALSEP(SCHEME_VEC_ELS(shift)[3]))
+      && ((SCHEME_VEC_SIZE(shift) <= 3)
+          || SCHEME_FALSEP(SCHEME_VEC_ELS(shift)[3]))
+      && ((SCHEME_VEC_SIZE(shift) <= 4)
+          && SCHEME_FALSEP(SCHEME_VEC_ELS(shift)[4])))
     return (Scheme_Object *)stx;
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
@@ -1436,10 +1445,26 @@ Scheme_Object *scheme_stx_add_shifts(Scheme_Object *o, Scheme_Object *l)
 
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
-                                 Scheme_Hash_Table *export_registry, Scheme_Object *insp)
+                                 Scheme_Hash_Table *export_registry,
+                                 Scheme_Object *src_insp_desc, Scheme_Object *insp)
 {
+  Scheme_Object *exr;
+  
   if (!phase_delta)
     phase_delta = scheme_make_integer(0);
+
+  if (!new_midx) {
+    old_midx = scheme_false;
+    new_midx = scheme_false;
+  }
+  if (!src_insp_desc)
+    src_insp_desc = scheme_false;
+  if (!insp)
+    insp = scheme_false;
+  if (!export_registry)
+    exr = scheme_false;
+  else
+    exr = (Scheme_Object *)export_registry;
 
   if (new_midx || export_registry || insp) {
     Scheme_Object *vec;
@@ -1447,19 +1472,21 @@ Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
     vec = last_phase_shift;
     
     if (vec
-	&& (SCHEME_VEC_ELS(vec)[0] == (new_midx ? old_midx : scheme_false))
-	&& (SCHEME_VEC_ELS(vec)[1] == (new_midx ? new_midx : scheme_false))
-	&& (SCHEME_VEC_ELS(vec)[2] == (export_registry ? (Scheme_Object *)export_registry : scheme_false))
-        && (SCHEME_VEC_ELS(vec)[3] == (insp ? insp : scheme_false))
-        && (SCHEME_VEC_ELS(vec)[4] == phase_delta)) {
+	&& (SCHEME_VEC_ELS(vec)[0] == old_midx)
+        && (SCHEME_VEC_ELS(vec)[1] == new_midx)
+        && (SCHEME_VEC_ELS(vec)[2] == src_insp_desc)
+        && (SCHEME_VEC_ELS(vec)[3] == insp)
+	&& (SCHEME_VEC_ELS(vec)[4] == exr)
+        && (SCHEME_VEC_ELS(vec)[5] == phase_delta)) {
       /* use the old one */
     } else {
-      vec = scheme_make_vector(5, NULL);
-      SCHEME_VEC_ELS(vec)[0] = (new_midx ? old_midx : scheme_false);
-      SCHEME_VEC_ELS(vec)[1] = (new_midx ? new_midx : scheme_false);
-      SCHEME_VEC_ELS(vec)[2] = (export_registry ? (Scheme_Object *)export_registry : scheme_false);
-      SCHEME_VEC_ELS(vec)[3] = (insp ? insp : scheme_false);
-      SCHEME_VEC_ELS(vec)[4] = phase_delta;
+      vec = scheme_make_vector(6, NULL);
+      SCHEME_VEC_ELS(vec)[0] = old_midx;
+      SCHEME_VEC_ELS(vec)[1] = new_midx;
+      SCHEME_VEC_ELS(vec)[2] = src_insp_desc;
+      SCHEME_VEC_ELS(vec)[3] = insp;
+      SCHEME_VEC_ELS(vec)[4] = exr;
+      SCHEME_VEC_ELS(vec)[5] = phase_delta;
       
       last_phase_shift = vec;
     }
@@ -1479,22 +1506,23 @@ Scheme_Object *scheme_stx_shift(Scheme_Object *stx,
                                 Scheme_Object *phase_delta,
                                 Scheme_Object *old_midx, Scheme_Object *new_midx,
                                 Scheme_Hash_Table *export_registry,
-                                Scheme_Object *insp)
+                                Scheme_Object *src_insp_desc, Scheme_Object *insp)
 /* Shifts the modidx on a syntax object in a module as well as the phase of marks. */
 {
   Scheme_Object *s;
 
-  s = scheme_make_shift(phase_delta, old_midx, new_midx, export_registry, insp);
+  s = scheme_make_shift(phase_delta, old_midx, new_midx, export_registry, src_insp_desc, insp);
   if (s)
     stx = scheme_stx_add_shift(stx, s);
 
   return stx;
 }
 
-static Scheme_Object *apply_modidx_shifts(Scheme_Object *shifts, Scheme_Object *modidx, Scheme_Object **_insp)
+static Scheme_Object *apply_modidx_shifts(Scheme_Object *shifts, Scheme_Object *modidx,
+                                          Scheme_Object **_insp, Scheme_Hash_Table **_export_registry)
 {
 #define QUICK_SHIFT_LEN 5
-  Scheme_Object *vec, *dest, *src, *insp;
+  Scheme_Object *vec, *dest, *src, *insp_desc;
   Scheme_Object *quick_a[QUICK_SHIFT_LEN], **a;
   intptr_t i, len;
 
@@ -1502,9 +1530,10 @@ static Scheme_Object *apply_modidx_shifts(Scheme_Object *shifts, Scheme_Object *
   if (SCHEME_VECTORP(shifts))
     shifts = SCHEME_VEC_ELS(shifts)[0];
 
-  /* Skip phase shift, if any: */
-  if (!SCHEME_NULLP(shifts) && SCHEME_PHASE_SHIFTP(SCHEME_CAR(shifts)))
-    shifts = SCHEME_CDR(shifts);
+  if (_insp && *_insp)
+    insp_desc = *_insp;
+  else
+    insp_desc = scheme_false;
 
   /* The `shifts` list is in the reverse order that we want... */
 
@@ -1520,20 +1549,33 @@ static Scheme_Object *apply_modidx_shifts(Scheme_Object *shifts, Scheme_Object *
     shifts = SCHEME_CDR(shifts);
   }
 
+  if (_export_registry)
+    *_export_registry = NULL;
+
   for (i = 0; i < len; i++) {
     vec = a[i];
      
     src = SCHEME_VEC_ELS(vec)[0];
     dest = SCHEME_VEC_ELS(vec)[1];
-    insp = SCHEME_VEC_ELS(vec)[3];
 
-    if (!SCHEME_FALSEP(src))
-      modidx = scheme_modidx_shift(modidx, src, dest);
+    modidx = scheme_modidx_shift(modidx, src, dest);
 
-    if (_insp && SCHEME_TRUEP(insp))
-      *_insp = insp;
+    if (SCHEME_VEC_SIZE(vec) > 2) {
+      if (SCHEME_SYMBOLP(insp_desc)
+          && SAME_OBJ(insp_desc, SCHEME_VEC_ELS(vec)[2])) {
+        if (!SCHEME_FALSEP(SCHEME_VEC_ELS(vec)[3]))
+          insp_desc = SCHEME_VEC_ELS(vec)[3];
+        if (_export_registry
+            && (SCHEME_VEC_SIZE(vec) > 4)
+            && !SCHEME_FALSEP(SCHEME_VEC_ELS(vec)[4]))
+          *_export_registry = (Scheme_Hash_Table *)SCHEME_VEC_ELS(vec)[4];
+      }
+    }
   }
 
+  if (_insp && (!*_insp || !SCHEME_INSPECTORP(*_insp)))
+    *_insp = insp_desc;
+  
   return modidx;
 }
 
@@ -2323,7 +2365,7 @@ void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Obj
 
 static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localname, Scheme_Object *phase,
                                   Scheme_Object *modidx, Scheme_Object *exname, Scheme_Object *defn_phase,
-                                  Scheme_Object *inspector,
+                                  Scheme_Object *insp_desc,
                                   Scheme_Object *nominal_mod, Scheme_Object *nominal_ex,
                                   Scheme_Object *src_phase, 
                                   Scheme_Object *nom_phase,
@@ -2344,7 +2386,7 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
 
  /*
    binding ::= mod_binding
-   .        |  (cons inspector mod_binding)
+   .        |  (cons inspector-desc mod_binding)
    mod_binding ::=  modidx
    .            |   (cons modidx exportname)
    .            |   (cons modidx nominal_modidx)
@@ -2354,6 +2396,8 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
    .                         |  (cons nominal_modix import_phase_plus_nominal_phase)
    import_phase_plus_nominal_phase ::= import-phase-index
    .                                |  (cons import-phase-index nom-phase)
+   inspector-desc = inspector
+   .             | symbol
  */
 
   mod_phase = SCHEME_INT_VAL(defn_phase);
@@ -2402,20 +2446,21 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
     elem = CONS(modidx, elem);
   }
 
-  if (!SCHEME_FALSEP(inspector))
-    elem = CONS(inspector, elem);
+  if (!SCHEME_FALSEP(insp_desc))
+    elem = CONS(insp_desc, elem);
 
   add_binding(localname, phase, marks, elem);
 }
 
 void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase, 
-                               Scheme_Object *modidx, Scheme_Object *sym, Scheme_Object *defn_phase)
+                               Scheme_Object *modidx, Scheme_Object *inspector,
+                               Scheme_Object *sym, Scheme_Object *defn_phase)
 {
   STX_ASSERT(SCHEME_SYMBOLP(((Scheme_Stx *)o)->val));
 
   do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase), SCHEME_STX_VAL(o), phase,
                         modidx, sym, defn_phase,
-                        scheme_false,
+                        inspector,
                         modidx, sym,
                         NULL, NULL,
                         0);
@@ -2512,12 +2557,12 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
                   bind_desc = scheme_hash_tree_set(bind_desc, local_symbol, val);
                 else {
                   if (SCHEME_PAIRP(val)) {
-                    if (SCHEME_INSPECTORP(SCHEME_CAR(val)))
+                    if (SCHEME_INSPECTOR_DESCP(SCHEME_CAR(val)))
                       val = SCHEME_CDR(val);
                     val = SCHEME_CAR(val);
                   }
                   if (SCHEME_MODIDXP(val))
-                    val = apply_modidx_shifts(stx->shifts, val, NULL);
+                    val = apply_modidx_shifts(stx->shifts, val, NULL, NULL);
                   bind_desc = scheme_hash_tree_set(bind_desc, module_symbol, val);
                 }
 
@@ -2542,10 +2587,10 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
           pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
           val = SCHEME_VEC_ELS(pes)[0];
           if (SCHEME_MODIDXP(val))
-            val = apply_modidx_shifts(stx->shifts, val, NULL);
+            val = apply_modidx_shifts(stx->shifts, val, NULL, NULL);
           bind_desc = scheme_hash_tree_set(bind_desc, module_symbol, val);
 
-          if (SCHEME_VEC_SIZE(pes) == 3) {
+          if (PES_UNMARSHAL_DESCP(pes)) {
             /* unmarshal hasn't happened */
           } else {
             pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(pes)[1];
@@ -2641,7 +2686,7 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
     printf(" At phase %s:\n", scheme_write_to_string(phase, NULL));
     print_marks(marks, NULL, indent);
 
-    printf(" Shifts %s:\n", scheme_write_to_string(stx->shifts, NULL));
+    printf("  Shifts %s:\n", scheme_write_to_string(stx->shifts, NULL));
 
     if (level) {
       i = mark_set_next(marks, -1);
@@ -2662,8 +2707,6 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
                 if (SCHEME_SYMBOLP(val))
                   printf(" local @ %s\n", scheme_write_to_string((Scheme_Object*)mark, 0));
                 else {
-                  if (0 && SCHEME_MODIDXP(val))
-                    val = apply_modidx_shifts(stx->shifts, val, NULL);
                   printf(" %s\n", scheme_write_to_string(val, 0));
                 }
                 print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
@@ -2688,7 +2731,7 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
             print_marks(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks, indent);
         
             pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
-            if (SCHEME_VEC_SIZE(pes) == 3) {
+            if (PES_UNMARSHAL_DESCP(pes)) {
               print_indent(indent);
               printf("    [unmarshal %s]\n",
                      (SCHEME_FALSEP(SCHEME_VEC_ELS(pes)[0]) ? "done" : "pending"));
@@ -2899,7 +2942,7 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
           binding_marks = SCHEME_BINDING_MARKS(SCHEME_CAR(l));
           if (mark_subset(binding_marks, marks)) {
             pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
-            if (SCHEME_VEC_SIZE(pes) == 3) {
+            if (PES_UNMARSHAL_DESCP(pes)) {
               if (SCHEME_TRUEP(SCHEME_VEC_ELS(pes)[0])) {
                 unmarshal_module_context_additions(NULL, pes, binding_marks, l);
                 retry = 1;
@@ -2958,7 +3001,7 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
           
             if (j) {
               pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
-              if (SCHEME_VEC_SIZE(pes) == 3) {
+              if (PES_UNMARSHAL_DESCP(pes)) {
                 /* Not a pes; an unmarshal */
                 if (SCHEME_TRUEP(SCHEME_VEC_ELS(pes)[0])) {
                   /* Need unmarshal --- but only if the mark set is relevant */
@@ -3084,10 +3127,10 @@ static Scheme_Object *apply_accumulated_shifts(Scheme_Object *result, Scheme_Obj
         SCHEME_VEC_ELS(result)[1] = stx->val;
     
       for (; !SCHEME_NULLP(prev_shifts); prev_shifts = SCHEME_CDR(prev_shifts)) {
-        o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), SCHEME_VEC_ELS(result)[0], _insp);
+        o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), SCHEME_VEC_ELS(result)[0], _insp, NULL);
         SCHEME_VEC_ELS(result)[0] = o;
         if (nominal_modidx) {
-          o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), *nominal_modidx, NULL);
+          o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), *nominal_modidx, NULL, NULL);
           *nominal_modidx = o;
         }
       }
@@ -3098,6 +3141,9 @@ static Scheme_Object *apply_accumulated_shifts(Scheme_Object *result, Scheme_Obj
     SCHEME_VEC_ELS(result)[1] = stx->val;
     SCHEME_VEC_ELS(result)[2] = phase;
   }
+
+  if (_insp && *_insp && SCHEME_SYMBOLP(*_insp))
+    *_insp = scheme_false; /* wasn't shifted, for some reason */
 
   return result;
 }
@@ -3116,7 +3162,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
    #f */
 {
   Scheme_Stx *stx;
-  Scheme_Object **cached_result, *result, *insp;
+  Scheme_Object **cached_result, *result, *insp_desc;
   Scheme_Object *free_eq_mpair, *prev_shifts = scheme_null, *orig_name;
   Scheme_Hash_Table *free_id_seen = NULL;
 
@@ -3181,7 +3227,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
                                       stx, orig_name, phase);
 
     result = cached_result[0];
-
+    
     /*
       `result` can be:
       - a symbol for a lexical binding,
@@ -3213,18 +3259,18 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
         SCHEME_VEC_ELS(result)[0] = scheme_false;
         /* phase of defn must be binding phase: */
         SCHEME_VEC_ELS(result)[2] = phase;
-        insp = scheme_false;
+        insp_desc = scheme_false;
       } else if (SCHEME_MODIDXP(l)) {
         SCHEME_VEC_ELS(result)[0] = l;
-        insp = scheme_false;
+        insp_desc = scheme_false;
       } else if (SCHEME_PAIRP(l)) {
         /* A list for a module import */
-        if (SCHEME_INSPECTORP(SCHEME_CAR(l))) {
-          insp = SCHEME_CAR(l);
+        if (SCHEME_INSPECTOR_DESCP(SCHEME_CAR(l))) {
+          insp_desc = SCHEME_CAR(l);
           l = SCHEME_CDR(l);
-        } else {
-          insp = scheme_false;
-        }
+        } else
+          insp_desc = scheme_false;
+        
         if (SCHEME_MODIDXP(l)) {
           SCHEME_VEC_ELS(result)[0] = l;
         } else {
@@ -3270,6 +3316,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
         STX_ASSERT(SCHEME_VECTORP(l));
 
         pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(l)[1];
+        insp_desc = SCHEME_VEC_ELS(l)[4];
 
         pos = scheme_hash_get(pt->ht, stx->val);
 
@@ -3309,18 +3356,18 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
         *src_phase = SCHEME_VEC_ELS(result)[2];
       if (nominal_src_phase && !*nominal_src_phase)
         *nominal_src_phase = *src_phase;
-
-      l = apply_modidx_shifts(stx->shifts, SCHEME_VEC_ELS(result)[0], &insp);
+      
+      l = apply_modidx_shifts(stx->shifts, SCHEME_VEC_ELS(result)[0], &insp_desc, NULL);
       SCHEME_VEC_ELS(result)[0] = l;
 
       if (nominal_modidx) {
-        l = apply_modidx_shifts(stx->shifts, *nominal_modidx, NULL);
+        l = apply_modidx_shifts(stx->shifts, *nominal_modidx, NULL, NULL);
         *nominal_modidx = l;
       }
 
       cached_result[0] = result;
     } else
-      insp = scheme_false;
+      insp_desc = scheme_false;
 
     if (free_eq_mpair) {
       free_eq_mpair = scheme_make_mutable_pair(result,
@@ -3329,10 +3376,10 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
     }
 
     cached_result[3] = phase;
-    cached_result[4] = insp;
+    cached_result[4] = insp_desc;
     stx->u.cached_binding = cached_result;
   
-    if (_insp) *_insp = insp;
+    if (_insp) *_insp = insp_desc;
 
     if (!free_eq_mpair || stop_at_free_eq)
       return apply_accumulated_shifts(result, prev_shifts, _insp, nominal_modidx,
@@ -3626,7 +3673,7 @@ void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-s
                         skip_marshal);
 }
 
-void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mark> <phase> <inspector> <shifts>) or <phase> */
+void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mark> <phase> <inspector> <shifts>) or (cons <phase> <inspector-desc>) */
                                               Scheme_Object *modidx,      
                                               Scheme_Module_Phase_Exports *pt, 
                                               Scheme_Object *unmarshal_info,
@@ -3635,13 +3682,16 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
                                               int save_unmarshal,
                                               Scheme_Object *replace_at)
 {
-  Scheme_Object *phase, *pes;
+  Scheme_Object *phase, *pes, *insp_desc;
   Scheme_Mark_Set *marks;
 
-  if (SCHEME_VECTORP(mc))
+  if (SCHEME_VECTORP(mc)) {
     phase = SCHEME_VEC_ELS(mc)[1];
-  else
-    phase = mc;
+    insp_desc = SCHEME_VEC_ELS(mc)[2];
+  } else {
+    phase = SCHEME_CAR(mc);
+    insp_desc = SCHEME_CDR(mc);
+  }
 
   if (context)
     marks = extract_mark_set((Scheme_Stx *)context, phase);
@@ -3653,11 +3703,12 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
   else
     unmarshal_info = scheme_make_pair(pt->phase_index, unmarshal_info);
 
-  pes = scheme_make_vector(4, NULL);
+  pes = scheme_make_vector(5, NULL);
   SCHEME_VEC_ELS(pes)[0] = modidx;
   SCHEME_VEC_ELS(pes)[1] = (Scheme_Object *)pt;
   SCHEME_VEC_ELS(pes)[2] = src_phase;
   SCHEME_VEC_ELS(pes)[3] = unmarshal_info;
+  SCHEME_VEC_ELS(pes)[4] = insp_desc;
 
   if (replace_at) {
     SCHEME_BINDING_VAL(SCHEME_CAR(replace_at)) = pes;
@@ -3671,39 +3722,20 @@ void scheme_save_module_context_unmarshal(Scheme_Object *mc, Scheme_Object *info
   /* TODO */
 }
 
-XFORM_NONGCING static Scheme_Hash_Table *extract_export_registry(Scheme_Object *shifts)
-{
-  Scheme_Object *l, *a;
-
-  l = shifts;
-  if (SCHEME_VECTORP(l))
-    l = SCHEME_VEC_ELS(l)[0];
-  while (!SCHEME_NULLP(l)) {
-    a = SCHEME_CAR(l);
-    if (SCHEME_VECTORP(a)) {
-      a = SCHEME_VEC_ELS(a)[2];
-      if (!SCHEME_FALSEP(a))
-        return (Scheme_Hash_Table *)a;
-    }
-    l = SCHEME_CDR(l);
-  }
-
-  return NULL;
-}
-
 static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks, Scheme_Object *replace_at)
 {
-  Scheme_Object *req_modidx, *modidx, *unmarshal_info, *context, *src_phase, *pt_phase, *bind_phase;
+  Scheme_Object *req_modidx, *modidx, *unmarshal_info, *context, *src_phase, *pt_phase, *bind_phase, *insp;
   Scheme_Hash_Table *export_registry;
 
   req_modidx = SCHEME_VEC_ELS(vec)[0];
+  insp = SCHEME_VEC_ELS(vec)[3];
   
   if (stx) {
-    modidx = apply_modidx_shifts(stx->shifts, req_modidx, NULL);
-    export_registry = extract_export_registry(stx->shifts);
+    modidx = apply_modidx_shifts(stx->shifts, req_modidx, &insp, &export_registry);
   } else {
     modidx = req_modidx;
     export_registry = NULL;
+    insp = scheme_false;
   }
 
   src_phase = SCHEME_VEC_ELS(vec)[1];
@@ -3730,7 +3762,8 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
 
   scheme_do_module_context_unmarshal(modidx, req_modidx, context,
                                      bind_phase, pt_phase, src_phase,
-                                     unmarshal_info, export_registry,
+                                     unmarshal_info,
+                                     export_registry, insp,
                                      replace_at);
 }
 
@@ -4031,18 +4064,15 @@ Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int sou
       /* If src is #f, shift is just for phase; no redirection */
       if (!SCHEME_FALSEP(src)) {
         
-        if (!chain_from) {
+        if (!chain_from)
           srcmod = dest;
-        } else if (!SAME_OBJ(chain_from, dest)) {
-          srcmod = scheme_modidx_shift(dest,
-                                       chain_from,
-                                       srcmod);
-        }
+        else if (!SAME_OBJ(chain_from, dest))
+          srcmod = scheme_modidx_shift(dest, chain_from, srcmod);
         
         chain_from = src;
 
-        if (!export_registry) {
-          er = SCHEME_VEC_ELS(a)[2];
+        if (!export_registry && (SCHEME_VEC_SIZE(a) > 4)) {
+          er = SCHEME_VEC_ELS(a)[4];
           if (SCHEME_TRUEP(er))
             export_registry = (Scheme_Hash_Table *)er;
         }
@@ -4240,6 +4270,19 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist)
 /*                            wraps->datum                                */
 /*========================================================================*/
 
+static Scheme_Object *intern_one(Scheme_Object *v, Scheme_Hash_Table *ht)
+{
+  Scheme_Object *result;
+  
+  result = scheme_hash_get(ht, v);
+  if (!result) {
+    result = scheme_make_marshal_shared(v);
+    scheme_hash_set(ht, v, result);
+  }
+
+  return result;
+}
+
 static Scheme_Object *intern_tails(Scheme_Object *l, Scheme_Hash_Table *ht)
 {
   Scheme_Object *r, *result;
@@ -4342,19 +4385,28 @@ static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks)
 static Scheme_Object *drop_export_registries(Scheme_Object *shifts)
 {
   Scheme_Object *l, *a, *vec, *p, *first = scheme_null, *last = NULL;
+  int same_insp;
 
   if (SCHEME_VECTORP(shifts))
     shifts = SCHEME_VEC_ELS(shifts)[0];
 
   for (l = shifts; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
-    if (!SAME_OBJ(SCHEME_VEC_ELS(a)[0], SCHEME_VEC_ELS(a)[1])) {
-      vec = scheme_make_vector(5, NULL);
+    same_insp = ((SCHEME_VEC_SIZE(a) <= 2)
+                 || SAME_OBJ(SCHEME_VEC_ELS(a)[2], SCHEME_VEC_ELS(a)[3])
+                 || SCHEME_FALSEP(SCHEME_VEC_ELS(a)[3]));
+    if (!SAME_OBJ(SCHEME_VEC_ELS(a)[0], SCHEME_VEC_ELS(a)[1])
+        || !same_insp) {
+      if (same_insp)
+        vec = scheme_make_vector(2, NULL);
+      else
+        vec = scheme_make_vector(4, NULL);
       SCHEME_VEC_ELS(vec)[0] = SCHEME_VEC_ELS(a)[0];
       SCHEME_VEC_ELS(vec)[1] = SCHEME_VEC_ELS(a)[1];
-      SCHEME_VEC_ELS(vec)[2] = scheme_false;
-      SCHEME_VEC_ELS(vec)[3] = scheme_false;
-      SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(a)[4];
+      if (!same_insp) {
+        SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(a)[2];
+        SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(a)[3];
+      }
 
       p = scheme_make_pair(vec, scheme_null);
       if (last)
@@ -4493,7 +4545,7 @@ static Scheme_Object *marshal_free_id_info(Scheme_Object *id_plus_phase, Scheme_
 Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Table *ht;
-  Scheme_Object *v, *l, *r, *l2, *tab, *marks, *free_id_info;
+  Scheme_Object *v, *l, *r, *l2, *tab, *marks;
   intptr_t i, j;
 
   if (!mt->identity_map) {
@@ -4510,8 +4562,7 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
     ht = (Scheme_Hash_Table *)SCHEME_CAR(v);
     l2 = SCHEME_CDR(v);
 
-    /* remove inspector, if any, from each mapping in the hash table,
-       and adjust encoding of `free-identifier=?` equivalences */
+    /* adjust encoding of `free-identifier=?` equivalences */
     tab = scheme_make_vector(2 * ht->count, NULL);
     j = 0;
     for (i = ht->size; i--; ) {
@@ -4524,19 +4575,17 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
             /* has a `free-id=?` equivalence; the marshaled form of a mark's content
                cannot contain a syntax object, so we keep just the syntax object's symbol
                and marks */
-            free_id_info = marshal_free_id_info(SCHEME_CDR(v), mt);
-            v = SCHEME_CAR(v);
-          } else
-            free_id_info = NULL;
-          if (SCHEME_PAIRP(v) && SCHEME_INSPECTORP(SCHEME_CAR(v)))
-            v = SCHEME_CDR(v);
-          if (free_id_info)
-            v = scheme_box(scheme_make_pair(v, free_id_info)); /* a box indicates `free-id=?` info */
+            v = scheme_make_pair(SCHEME_CAR(v), marshal_free_id_info(SCHEME_CDR(v), mt));
+            v = scheme_box(v); /* a box indicates `free-id=?` info */
+          }
+          v = intern_one(v, mt->intern_map);
           marks = intern_tails(marks_to_sorted_list((Scheme_Mark_Set *)SCHEME_CAR(SCHEME_CAR(l))),
                                mt->intern_map);
-          r = scheme_make_pair(scheme_make_pair(marks, v), r);
+          r = scheme_make_pair(intern_one(scheme_make_pair(marks, v), mt->intern_map), r);
           l = SCHEME_CDR(l);
         }
+
+        r = intern_one(r, mt->intern_map);
 
         SCHEME_VEC_ELS(tab)[j++] = ht->keys[i];
         SCHEME_VEC_ELS(tab)[j++] = r;
@@ -4547,19 +4596,23 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
     /* convert marks+pes to mark + unmarshal request */
     for (l = l2; l && !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
       v = SCHEME_CDR(SCHEME_CAR(l));
-      if (SCHEME_VEC_SIZE(v) == 4) {
-        l2 = scheme_make_vector(3, NULL);
+      if (PES_BINDINGP(v)) {
+        l2 = scheme_make_vector(4, NULL);
         SCHEME_VEC_ELS(l2)[0] = SCHEME_VEC_ELS(v)[0];
         SCHEME_VEC_ELS(l2)[1] = SCHEME_VEC_ELS(v)[2];
         SCHEME_VEC_ELS(l2)[2] = SCHEME_VEC_ELS(v)[3];
+        SCHEME_VEC_ELS(l2)[3] = SCHEME_VEC_ELS(v)[4];
         v = l2;
-      } else if (SCHEME_VEC_SIZE(v) == 3) {
+      } else if (PES_UNMARSHAL_DESCP(v)) {
         if (SCHEME_TRUEP(SCHEME_VEC_ELS(v)[0])) {
           /* never unmarshaled, so keep it */
-        } else
+        } else {
+          /* this shouldn't happen, because it should have been
+             replaced on unmarshal, but discard it if we get here */
           v = NULL;
+        }
       } else {
-        abort();
+        STX_ASSERT(0);
       }
       if (v) {
         marks = intern_tails(marks_to_sorted_list((Scheme_Mark_Set *)SCHEME_CAR(SCHEME_CAR(l))),
@@ -5018,68 +5071,75 @@ static Scheme_Object *validate_binding(Scheme_Object *p)
 {
   if (SCHEME_SYMBOLP(p)) {
     /* Ok: local binding */
-  } else if (SAME_TYPE(SCHEME_TYPE(p), scheme_module_index_type)) {
+  } else {
+    if (SCHEME_PAIRP(p) && SCHEME_SYMBOLP(SCHEME_CAR(p))) {
+      /* Inpsector descriptor ok */
+      p = SCHEME_CDR(p);
+    }
+    
+    if (SAME_TYPE(SCHEME_TYPE(p), scheme_module_index_type)) {
     /* Ok */
-  } else if (SCHEME_PAIRP(p)) {
-    Scheme_Object *midx;
+    } else if (SCHEME_PAIRP(p)) {
+      Scheme_Object *midx;
 
-    midx = SCHEME_CAR(p);
-    if (SCHEME_TRUEP(midx)
-        && !SAME_TYPE(SCHEME_TYPE(midx), scheme_module_index_type))
-      return_NULL;
-
-    if (SCHEME_SYMBOLP(SCHEME_CDR(p))) {
-      /* Ok */
-    } else if (SAME_TYPE(SCHEME_TYPE(SCHEME_CDR(p)), scheme_module_index_type)) {
-      /* Ok */
-    } else {
-      Scheme_Object *ap, *bp;
-
-      ap = SCHEME_CDR(p);
-      if (!SCHEME_PAIRP(ap))
+      midx = SCHEME_CAR(p);
+      if (SCHEME_TRUEP(midx)
+          && !SAME_TYPE(SCHEME_TYPE(midx), scheme_module_index_type))
         return_NULL;
 
-      /* mod-phase, maybe */
-      if (SCHEME_INTP(SCHEME_CAR(ap))) {
-        bp = SCHEME_CDR(ap);
-      } else
-        bp = ap;
-            
-      /* exportname */
-      if (!SCHEME_PAIRP(bp))
-        return_NULL;
-      ap = SCHEME_CAR(bp);
-      if (!SCHEME_SYMBOLP(ap))
-        return_NULL;
-            
-      /* nominal_modidx_plus_phase */
-      bp = SCHEME_CDR(bp);
-      if (!SCHEME_PAIRP(bp))
-        return_NULL;
-      ap = SCHEME_CAR(bp);
-      if (SAME_TYPE(SCHEME_TYPE(ap), scheme_module_index_type)) {
+      if (SCHEME_SYMBOLP(SCHEME_CDR(p))) {
         /* Ok */
-      } else if (SCHEME_PAIRP(ap)) {
-        if (!SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(ap)), scheme_module_index_type))
-          return_NULL;
-        ap = SCHEME_CDR(ap);
-        /* import_phase_plus_nominal_phase */
-        if (SCHEME_PAIRP(ap)) {
-          if (!SCHEME_PHASE_SHIFTP(SCHEME_CAR(ap))) return_NULL;
-          if (!SCHEME_PHASE_SHIFTP(SCHEME_CDR(ap))) return_NULL;
-        } else if (!SCHEME_PHASE_SHIFTP(ap))
-          return_NULL;
-      } else
-        return_NULL;
+      } else if (SAME_TYPE(SCHEME_TYPE(SCHEME_CDR(p)), scheme_module_index_type)) {
+        /* Ok */
+      } else {
+        Scheme_Object *ap, *bp;
 
-      /* nominal_exportname */
-      ap = SCHEME_CDR(bp);
-      if (!SCHEME_SYMBOLP(ap))
-        return_NULL;
+        ap = SCHEME_CDR(p);
+        if (!SCHEME_PAIRP(ap))
+          return_NULL;
+
+        /* mod-phase, maybe */
+        if (SCHEME_INTP(SCHEME_CAR(ap))) {
+          bp = SCHEME_CDR(ap);
+        } else
+          bp = ap;
+            
+        /* exportname */
+        if (!SCHEME_PAIRP(bp))
+          return_NULL;
+        ap = SCHEME_CAR(bp);
+        if (!SCHEME_SYMBOLP(ap))
+          return_NULL;
+            
+        /* nominal_modidx_plus_phase */
+        bp = SCHEME_CDR(bp);
+        if (!SCHEME_PAIRP(bp))
+          return_NULL;
+        ap = SCHEME_CAR(bp);
+        if (SAME_TYPE(SCHEME_TYPE(ap), scheme_module_index_type)) {
+          /* Ok */
+        } else if (SCHEME_PAIRP(ap)) {
+          if (!SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(ap)), scheme_module_index_type))
+            return_NULL;
+          ap = SCHEME_CDR(ap);
+          /* import_phase_plus_nominal_phase */
+          if (SCHEME_PAIRP(ap)) {
+            if (!SCHEME_PHASE_SHIFTP(SCHEME_CAR(ap))) return_NULL;
+            if (!SCHEME_PHASE_SHIFTP(SCHEME_CDR(ap))) return_NULL;
+          } else if (!SCHEME_PHASE_SHIFTP(ap))
+            return_NULL;
+        } else
+          return_NULL;
+
+        /* nominal_exportname */
+        ap = SCHEME_CDR(bp);
+        if (!SCHEME_SYMBOLP(ap))
+          return_NULL;
+      }
     }
   }
 
-  return p;
+  return scheme_true;
 }
 
 static Scheme_Object *unmarshal_free_id_info(Scheme_Object *p, Scheme_Unmarshal_Tables *ut)
@@ -5155,8 +5215,7 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
             b = SCHEME_CAR(b);
           } else
             free_id = NULL;
-          b = validate_binding(b);
-          if (b) {
+          if (validate_binding(b)) {
             if (free_id)
               b = scheme_make_mutable_pair(b, free_id);
             r = scheme_make_pair(scheme_make_pair((Scheme_Object *)marks, b),
