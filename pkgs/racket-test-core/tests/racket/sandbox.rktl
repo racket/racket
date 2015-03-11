@@ -463,6 +463,7 @@
         (load/use-compiled ,test-lib) => (void)
         ;; but the module declaration can't execute due to the inspector:
         (require 'list) =err> "access disallowed by code inspector"
+        #t =err> "access disallowed by code inspector" ; flushes delayed compile-time failure
         (delete-file ,test-zo) => (void)
         (delete-file ,test-lib) =err> "`delete' access denied"
         --top--
@@ -481,6 +482,7 @@
         ;; bytecode from test-lib is bad, even when we can read/write to it
         (load/use-compiled ,test-zo)
         (require 'list) =err> "access disallowed by code inspector"
+        #t =err> "access disallowed by code inspector" ; flushes delayed compile-time failure
         ;; bytecode from test2-lib is explicitly allowed
         (load/use-compiled ,test2-lib)
         (require 'list) => (void))

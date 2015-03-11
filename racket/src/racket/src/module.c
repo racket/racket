@@ -5696,9 +5696,11 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
       menv = (Scheme_Env *)v;
       v = menv->available_next[pos];
       menv->available_next[pos] = NULL;
+      BEGIN_ESCAPEABLE(unlock_registry, env);
       start_module(menv->module, menv->instance_env, 0,
                    NULL, 1, 0, base_phase,
                    scheme_null, 1);
+      END_ESCAPEABLE();
     }
 
     if (need_lock)
