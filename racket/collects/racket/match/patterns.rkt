@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require syntax/boundmap
-         racket/contract
+         racket/contract racket/list
          "stxtime.rkt"
          (for-syntax racket/base))
 
@@ -179,6 +179,11 @@
      (merge (map bound-vars (And-ps p)))]
     [(Exact? p) null]
     [else (error 'match "bad pattern: ~a" p)]))
+
+(define (pats->bound-vars parse-id pats)
+  (remove-duplicates
+   (foldr (λ (pat vars) (append (bound-vars (parse-id pat)) vars)) '() pats)
+   bound-identifier=?))
 
 (define current-renaming (make-parameter (make-free-identifier-mapping)))
 

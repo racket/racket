@@ -509,6 +509,10 @@ Like @racket[match-let*], but generalizes @racket[let*-values].}
 Like @racket[match-let], but generalizes @racket[letrec].}
 
 
+@defform[(match-letrec-values ([(pat ...) expr] ...) body ...+)]{
+
+Like @racket[match-let], but generalizes @racket[letrec-values].}
+ 
 @defform[(match-define pat expr)]{
 
 Defines the names bound by @racket[pat] to the values produced by
