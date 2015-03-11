@@ -43,6 +43,7 @@ ROSYM static Scheme_Object *bindings_symbol;
 ROSYM static Scheme_Object *matchp_symbol;
 ROSYM static Scheme_Object *cycle_symbol;
 ROSYM static Scheme_Object *free_symbol;
+ROSYM static Scheme_Object *fallbacks_symbol;
 
 READ_ONLY Scheme_Object *scheme_syntax_p_proc;
 
@@ -309,12 +310,14 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(matchp_symbol);
   REGISTER_SO(cycle_symbol);
   REGISTER_SO(free_symbol);
+  REGISTER_SO(fallbacks_symbol);
   name_symbol = scheme_intern_symbol("name");
   context_symbol = scheme_intern_symbol("context");
   bindings_symbol = scheme_intern_symbol("bindings");
   matchp_symbol = scheme_intern_symbol("match?");
   cycle_symbol = scheme_intern_symbol("cycle");
   free_symbol = scheme_intern_symbol("free-identifier=?");
+  fallbacks_symbol = scheme_intern_symbol("fallbacks");
 
   REGISTER_SO(empty_srcloc);
   empty_srcloc = MALLOC_ONE_RT(Scheme_Stx_Srcloc);
@@ -1391,7 +1394,7 @@ static Scheme_Object *do_stx_add_shift(Scheme_Object *o, Scheme_Object *shift, i
       && ((SCHEME_VEC_SIZE(shift) <= 3)
           || SCHEME_FALSEP(SCHEME_VEC_ELS(shift)[3]))
       && ((SCHEME_VEC_SIZE(shift) <= 4)
-          && SCHEME_FALSEP(SCHEME_VEC_ELS(shift)[4])))
+          || SCHEME_FALSEP(SCHEME_VEC_ELS(shift)[4])))
     return (Scheme_Object *)stx;
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
@@ -2624,7 +2627,14 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
       break;
   }
 
-  return scheme_reverse(descs);
+  if (SCHEME_NULLP(SCHEME_CDR(descs)))
+    return SCHEME_CAR(descs);
+  else {
+    descs = scheme_reverse(descs);
+    return (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)SCHEME_CAR(descs),
+                                                 fallbacks_symbol,
+                                                 SCHEME_CDR(descs));
+  }
 }
 
 static void print_indent(int indent)
@@ -2839,7 +2849,10 @@ char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int 
 
   fallback = 0;
   while (!SCHEME_NULLP(di)) {
-    dit = (Scheme_Hash_Tree *)SCHEME_CAR(di);
+    if (SCHEME_PAIRP(di))
+      dit = (Scheme_Hash_Tree *)SCHEME_CAR(di);
+    else
+      dit = (Scheme_Hash_Tree *)di;
 
     l = scheme_hash_tree_get(dit, bindings_symbol);
     if (l) {
@@ -2894,8 +2907,14 @@ char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int 
         }
       }
     }
-    
-    di = SCHEME_CDR(di);
+
+    if (SCHEME_PAIRP(di))
+      di = SCHEME_CDR(di);
+    else {
+      di = scheme_hash_tree_get(dit, fallbacks_symbol);
+      if (!di)
+        di = scheme_null;
+    }
     fallback++;
   }
 
@@ -3798,6 +3817,7 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
   Scheme_Object *expr_marks = scheme_null, *intro_multi_mark = NULL;
 
   if (SCHEME_VECTORP(stx->val)) {
+    (void)scheme_stx_content((Scheme_Object *)stx); /* propagate */
     intro_multi_mark = SCHEME_VEC_ELS(stx->val)[1];
     expr_marks = SCHEME_VEC_ELS(stx->val)[2];
     stx = (Scheme_Stx *)SCHEME_VEC_ELS(stx->val)[0];
