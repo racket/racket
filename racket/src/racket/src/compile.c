@@ -2128,7 +2128,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   Scheme_Compiled_Let_Value *last = NULL, *lv;
   DupCheckRecord r;
   int rec_env_already = rec[drec].env_already;
-  int rev_bind_order,  post_bind;
+  int rev_bind_order,  post_bind, already_compiled_body;
   Scheme_Let_Header *head;
 
   form = scheme_stx_taint_disarm(form, NULL);
@@ -2433,6 +2433,13 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
     }
   }
 
+  if (SCHEME_STX_PAIRP(forms)
+      && SAME_TYPE(SCHEME_TYPE(SCHEME_STX_VAL(SCHEME_STX_CAR(forms))),
+                   scheme_already_comp_type))
+    already_compiled_body = 1;
+  else
+    already_compiled_body = 0;
+
   recs[num_clauses].value_name = defname ? SCHEME_STX_SYM(defname) : NULL;
   {
     Scheme_Object *cs;
@@ -2479,6 +2486,32 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
           lv->body = (Scheme_Object *)current_head;
         }
         num_group_clauses = 0;
+      }
+    }
+  }
+
+  if (!already_compiled_body) {
+    /* Help the optimizer by removing unused expressions right away */
+    lv = (Scheme_Compiled_Let_Value *)head->body;
+    for (i = 0; i < head->num_clauses; i++, lv = (Scheme_Compiled_Let_Value *)lv->body) {
+      for (j = lv->count; j--; ) {
+        if (lv->flags[j] & SCHEME_WAS_USED)
+          break;
+      }
+      if (j < 0) {
+        if (scheme_omittable_expr(lv->value, lv->count, 10, 0, NULL, NULL, 0, 0, 1)) {
+          if (lv->count == 1) {
+            lv->value = scheme_false;
+          } else {
+            Scheme_Object *app;
+            app = scheme_null;
+            for (k = lv->count; k--; ) {
+              app = scheme_make_pair(scheme_false, app);
+            }
+            app = scheme_make_application(scheme_make_pair(scheme_values_func, app), NULL);
+            lv->value = app;
+          }
+        }
       }
     }
   }
