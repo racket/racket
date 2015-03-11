@@ -222,7 +222,8 @@
            10
            (prefix 0
                    (list 'dummy)
-                   null)
+                   null
+                   'insp0)
            (mod 'unsafe
                 'unsafe
                 (module-path-index-join #f #f)
@@ -232,7 +233,8 @@
                                                -1
                                                0
                                                #f))
-                        null)
+                        null
+                        'insp0)
                 null
                 null
                 null ; body
