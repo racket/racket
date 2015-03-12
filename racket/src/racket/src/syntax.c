@@ -2395,10 +2395,10 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
    .            |   (cons modidx nominal_modidx)
    .            |   (list* modidx exportname nominal_modidx_plus_phase nominal_exportname)
    .            |   (list* modidx mod-phase exportname nominal_modidx_plus_phase nominal_exportname)
-   nominal_modix_plus_phase ::= nominal_modix
+   nominal_modix_plus_phase ::= nominal_modix ; import-phase-level is 0, nom-phase = mod-phase
    .                         |  (cons nominal_modix import_phase_plus_nominal_phase)
-   import_phase_plus_nominal_phase ::= import-phase-index
-   .                                |  (cons import-phase-index nom-phase)
+   import_phase_plus_nominal_phase ::= import-phase-level   ; nom-phase = mod-phase
+   .                                |  (cons import-phase-level nom-phase)
    inspector-desc = inspector
    .             | symbol
  */
@@ -2413,7 +2413,7 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
   if (SAME_OBJ(modidx, nominal_mod)
       && SAME_OBJ(exname, nominal_ex)
       && !mod_phase
-      && same_phase(src_phase, phase)
+      && same_phase(src_phase, scheme_make_integer(0))
       && same_phase(nom_phase, scheme_make_integer(mod_phase))) {
     if (SAME_OBJ(localname, exname))
       elem = modidx;
@@ -2422,7 +2422,7 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
   } else if (SAME_OBJ(exname, nominal_ex)
 	     && SAME_OBJ(localname, exname)
 	     && !mod_phase
-             && same_phase(src_phase, phase)
+             && same_phase(src_phase, scheme_make_integer(0))
              && same_phase(nom_phase, scheme_make_integer(mod_phase))) {
     /* It's common that a sequence of similar mappings shows up,
        e.g., '(#%kernel . mzscheme) */
@@ -2436,7 +2436,7 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
     }
   } else {
     if (same_phase(nom_phase, scheme_make_integer(mod_phase))) {
-      if (same_phase(src_phase, phase))
+      if (same_phase(src_phase, scheme_make_integer(0)))
         elem = nominal_mod;
       else
         elem = CONS(nominal_mod, src_phase);
@@ -3320,8 +3320,10 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
               if (SCHEME_PAIRP(l)) {
                 if (src_phase) *src_phase = SCHEME_CAR(l);
                 if (nominal_src_phase) *nominal_src_phase = SCHEME_CDR(l);
-              } else
+              } else {
                 if (src_phase) *src_phase = l;
+                if (nominal_src_phase) *nominal_src_phase = SCHEME_VEC_ELS(result)[2];
+              }
             } else {
               if (nominal_modidx) *nominal_modidx = l;
             }
@@ -3363,8 +3365,8 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
         if (pt->provide_src_phases)
           SCHEME_VEC_ELS(result)[2] = scheme_make_integer(pt->provide_src_phases[SCHEME_INT_VAL(pos)]);
 
-        if (src_phase) *src_phase = pt->phase_index;
-        if (nominal_src_phase) *nominal_src_phase = SCHEME_VEC_ELS(l)[2];
+        if (src_phase) *src_phase = SCHEME_VEC_ELS(l)[2];
+        if (nominal_src_phase) *nominal_src_phase = pt->phase_index;
       }
 
       if (nominal_name && !*nominal_name)
@@ -3372,9 +3374,9 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
       if (nominal_modidx && !*nominal_modidx)
         *nominal_modidx = SCHEME_VEC_ELS(result)[0];
       if (src_phase && !*src_phase)
-        *src_phase = SCHEME_VEC_ELS(result)[2];
+        *src_phase = scheme_make_integer(0);
       if (nominal_src_phase && !*nominal_src_phase)
-        *nominal_src_phase = *src_phase;
+        *nominal_src_phase = SCHEME_VEC_ELS(result)[2];
       
       l = apply_modidx_shifts(stx->shifts, SCHEME_VEC_ELS(result)[0], &insp_desc, NULL);
       SCHEME_VEC_ELS(result)[0] = l;

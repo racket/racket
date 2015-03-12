@@ -541,6 +541,178 @@
              (eval (read i))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; identifier-binding and (nominal) phase reporting
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module ib-mod-1 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base)))
+  (define extra #f)
+  (provide extra)
+  
+  (define x-1-0 0)
+  (provide x-1-0)
+  
+  (begin-for-syntax
+    (define x-1-1 1)
+    (provide x-1-1)
+    
+    (begin-for-syntax
+      (define x-1-2 2)
+      (provide x-1-2))))
+
+(module ib-mod-2 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           'ib-mod-1)
+  
+  (define x-1-0-b (identifier-binding #'x-1-0))
+  (define x-1-0-b+1 (identifier-transformer-binding (syntax-shift-phase-level #'x-1-0 1)))
+  (define x-1-0-b+f (identifier-label-binding (syntax-shift-phase-level #'x-1-0 #f)))
+  (define x-1-1-b (identifier-transformer-binding #'x-1-1))
+  (define x-1-1-b+f (identifier-label-binding (syntax-shift-phase-level #'x-1-1 #f)))
+  (define x-1-2-b (identifier-binding #'x-1-2 2))
+  (provide x-1-0-b
+           x-1-0-b+1
+           x-1-0-b+f
+           x-1-1-b
+           x-1-1-b+f
+           x-1-2-b))
+
+(module ib-mod-2b racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           (only-in 'ib-mod-1
+                    x-1-1
+                    x-1-0
+                    x-1-2))
+  
+  (define x-1-0-b2 (identifier-binding #'x-1-0))
+  (define x-1-0-b2+1 (identifier-transformer-binding (syntax-shift-phase-level #'x-1-0 1)))
+  (define x-1-0-b2+f (identifier-label-binding (syntax-shift-phase-level #'x-1-0 #f)))
+  (define x-1-1-b2 (identifier-transformer-binding #'x-1-1))
+  (define x-1-2-b2 (identifier-binding #'x-1-2 2))
+  (provide x-1-0-b2
+           x-1-0-b2+1
+           x-1-0-b2+f
+           x-1-1-b2
+           x-1-2-b2))
+
+(module ib-mod-3 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           (for-template 'ib-mod-1))
+  (provide (for-template x-1-0)
+           x-1-1
+           (for-syntax x-1-2)
+           extra2)
+  
+  (define extra2 #f)
+  
+  (define x-1-0-b3 (identifier-template-binding #'x-1-0))
+  (define x-1-1-b3 (identifier-binding #'x-1-1))
+  (define x-1-2-b3 (identifier-transformer-binding #'x-1-2))
+  (provide x-1-0-b3
+           x-1-1-b3
+           x-1-2-b3))
+
+(module ib-mod-4 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           'ib-mod-3)
+  
+  (define x-1-0-b4 (identifier-template-binding #'x-1-0))
+  (define x-1-1-b4 (identifier-binding #'x-1-1))
+  (define x-1-2-b4 (identifier-transformer-binding #'x-1-2))
+  (provide x-1-0-b4
+           x-1-1-b4
+           x-1-2-b4))
+
+(module ib-mod-5 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           (for-syntax 'ib-mod-3))
+  
+  (define x-1-0-b5 (identifier-binding #'x-1-0))
+  (define x-1-1-b5 (identifier-transformer-binding #'x-1-1))
+  (define x-1-2-b5 (identifier-binding #'x-1-2 2))
+  (provide x-1-0-b5
+           x-1-1-b5
+           x-1-2-b5))
+
+(module ib-mod-5b racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           (for-syntax (only-in 'ib-mod-3
+                                x-1-1
+                                x-1-0
+                                x-1-2)))
+  
+  (define x-1-0-b6 (identifier-binding #'x-1-0))
+  (define x-1-1-b6 (identifier-transformer-binding #'x-1-1))
+  (define x-1-2-b6 (identifier-binding #'x-1-2 2))
+  (provide x-1-0-b6
+           x-1-1-b6
+           x-1-2-b6))
+
+(module ib-mod-7 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           (for-label 'ib-mod-1))
+  
+  (define x-1-0-b7 (identifier-label-binding #'x-1-0))
+  (define x-1-1-b7 (identifier-label-binding #'x-1-1))
+  (define x-1-2-b7 (identifier-label-binding #'x-1-2))
+  (provide x-1-0-b7
+           x-1-1-b7
+           x-1-2-b7))
+
+(require 'ib-mod-2
+         'ib-mod-2b
+         'ib-mod-3
+         'ib-mod-4
+         'ib-mod-5
+         'ib-mod-5b
+         'ib-mod-7)
+
+(define (simplify l)
+  (and l
+       (for/list ([v (in-list l)])
+         (if (module-path-index? v)
+             (let-values ([(name base) (module-path-index-split v)])
+               (cadr name))
+             v))))
+
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b+1)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b+f)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b2)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b2+1)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b2+f)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 -1 0) simplify x-1-0-b3)
+(test '(ib-mod-1 x-1-0 ib-mod-3 x-1-0 0 0 -1) simplify x-1-0-b4)
+(test '(ib-mod-1 x-1-0 ib-mod-3 x-1-0 0 1 -1) simplify x-1-0-b5)
+(test '(ib-mod-1 x-1-0 ib-mod-3 x-1-0 0 1 -1) simplify x-1-0-b6)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 #f 0) simplify x-1-0-b7)
+
+(test '(ib-mod-1 x-1-1 ib-mod-1 x-1-1 1 0 1) simplify x-1-1-b)
+(test '#f                                    simplify x-1-1-b+f)
+(test '(ib-mod-1 x-1-1 ib-mod-1 x-1-1 1 0 1) simplify x-1-1-b2)
+(test '(ib-mod-1 x-1-1 ib-mod-1 x-1-1 1 -1 1) simplify x-1-1-b3)
+(test '(ib-mod-1 x-1-1 ib-mod-3 x-1-1 1 0 0) simplify x-1-1-b4)
+(test '(ib-mod-1 x-1-1 ib-mod-3 x-1-1 1 1 0) simplify x-1-1-b5)
+(test '(ib-mod-1 x-1-1 ib-mod-3 x-1-1 1 1 0) simplify x-1-1-b6)
+(test '(ib-mod-1 x-1-1 ib-mod-1 x-1-1 1 #f 1) simplify x-1-1-b7)
+
+(test '(ib-mod-1 x-1-2 ib-mod-1 x-1-2 2 0 2) simplify x-1-2-b)
+(test '(ib-mod-1 x-1-2 ib-mod-1 x-1-2 2 0 2) simplify x-1-2-b2)
+(test '(ib-mod-1 x-1-2 ib-mod-1 x-1-2 2 -1 2) simplify x-1-2-b3)
+(test '(ib-mod-1 x-1-2 ib-mod-3 x-1-2 2 0 1) simplify x-1-2-b4)
+(test '(ib-mod-1 x-1-2 ib-mod-3 x-1-2 2 1 1) simplify x-1-2-b5)
+(test '(ib-mod-1 x-1-2 ib-mod-3 x-1-2 2 1 1) simplify x-1-2-b6)
+(test '(ib-mod-1 x-1-2 ib-mod-1 x-1-2 2 #f 2) simplify x-1-2-b7)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; eval versus eval-syntax, etc.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
