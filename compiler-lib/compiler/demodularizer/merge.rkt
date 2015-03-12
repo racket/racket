@@ -54,12 +54,13 @@
 
 (define (merge-prefix root-prefix mod-prefix)
   (match root-prefix
-    [(struct prefix (root-num-lifts root-toplevels root-stxs))
+    [(struct prefix (root-num-lifts root-toplevels root-stxs root-src-insp-desc))
      (match mod-prefix
-       [(struct prefix (mod-num-lifts mod-toplevels mod-stxs))
+       [(struct prefix (mod-num-lifts mod-toplevels mod-stxs src-insp-desc))
         (make-prefix (+ root-num-lifts mod-num-lifts)
                      (append root-toplevels mod-toplevels)
-                     (append root-stxs mod-stxs))])]))
+                     (append root-stxs mod-stxs)
+                     root-src-insp-desc)])]))
 
 (struct toplevel-offset-rewriter (rewrite-fun meta) #:transparent)
 
@@ -121,7 +122,8 @@
 
 (define (merge-module max-let-depth top-prefix mod-form)
   (match mod-form
-    [(struct mod (name srcname self-modidx mod-prefix provides requires body syntax-bodies
+    [(struct mod (name srcname self-modidx
+                       mod-prefix provides requires body syntax-bodies
                        unexported mod-max-let-depth dummy lang-info
                        internal-context binding-names
                        flags pre-submodules post-submodules))

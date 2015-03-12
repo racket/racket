@@ -126,7 +126,7 @@
 
 (define (decompile-prefix a-prefix stx-ht)
   (match a-prefix
-    [(struct prefix (num-lifts toplevels stxs))
+    [(struct prefix (num-lifts toplevels stxs src-insp-desc))
      (let ([lift-ids (for/list ([i (in-range num-lifts)])
                        (gensym 'lift))]
            [stx-ids (map (lambda (i) (gensym 'stx)) 
@@ -169,12 +169,14 @@
                 (length toplevels)
                 (length stxs)
                 num-lifts)
-               (map (lambda (stx id)
-                      `(define ,id ,(if stx
-                                        `(#%decode-syntax 
-                                          ,(decompile-stx (stx-encoded stx) stx-ht))
-                                        #f)))
-                    stxs stx-ids)))]
+               (cons
+                `(quote inspector ,src-insp-desc)
+                (map (lambda (stx id)
+                       `(define ,id ,(if stx
+                                         `(#%decode-syntax 
+                                           ,(decompile-stx (stx-encoded stx) stx-ht))
+                                         #f)))
+                     stxs stx-ids))))]
     [else (error 'decompile-prefix "huh?: ~e" a-prefix)]))
 
 (define (decompile-stx stx stx-ht)
@@ -216,7 +218,8 @@
 
 (define (decompile-module mod-form orig-stack stx-ht mod-name)
   (match mod-form
-    [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies unexported 
+    [(struct mod (name srcname self-modidx
+                       prefix provides requires body syntax-bodies unexported 
                        max-let-depth dummy lang-info 
                        internal-context binding-names
                        flags pre-submodules post-submodules))

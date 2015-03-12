@@ -68,9 +68,9 @@
 
 (define (read-resolve-prefix v)
   (match v
-    [`(,i ,tv . ,sv)
+    [`(,src-insp-desc ,i ,tv . ,sv)
      ;; XXX Why not leave them as vectors and change the contract?
-     (make-prefix i (vector->list tv) (vector->list sv))]))
+     (make-prefix i (vector->list tv) (vector->list sv) src-insp-desc)]))
 
 (define (read-unclosed-procedure v)
   (define CLOS_HAS_REST 1)

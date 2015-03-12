@@ -639,12 +639,13 @@
         (let ([pos ((out-shared-index out) v #:error? #t)])
           (out-number pos out)
           (out-anything lam out))]
-       [(struct prefix (num-lifts toplevels stxs))
+       [(struct prefix (num-lifts toplevels stxs src-insp-desc))
         (out-marshaled
          prefix-type-num
-         (cons num-lifts
-               (cons (list->vector toplevels)
-                     (list->vector stxs)))
+         (list* src-insp-desc
+                num-lifts
+                (list->vector toplevels)
+                (list->vector stxs))
          out)]
        [(struct global-bucket (name)) 
         (out-marshaled variable-type-num name out)]
@@ -963,7 +964,8 @@
 
 (define (convert-module mod-form)
   (match mod-form
-    [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies unexported 
+    [(struct mod (name srcname self-modidx
+                       prefix provides requires body syntax-bodies unexported 
                        max-let-depth dummy lang-info
                        internal-context binding-names
                        flags pre-submodules post-submodules))

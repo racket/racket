@@ -139,7 +139,8 @@
 
 (define (nodep-module mod-form phase)
   (match mod-form
-    [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies
+    [(struct mod (name srcname self-modidx
+                       prefix provides requires body syntax-bodies
                        unexported max-let-depth dummy lang-info
                        internal-context binding-names
                        flags pre-submodules post-submodules))
@@ -158,7 +159,8 @@
              (append (requires->modlist requires phase)
                      (if (and phase (zero? phase))
                          (begin (log-debug (format "[~S] lang-info : ~S" name lang-info)) ; XXX Seems to always be #f now
-                                (list (make-mod name srcname self-modidx new-prefix provides requires body empty
+                                (list (make-mod name srcname self-modidx
+                                                new-prefix provides requires body empty
                                                 unexported max-let-depth dummy lang-info internal-context #hash()
                                                 empty empty empty)))
                          (begin (log-debug (format "[~S] Dropping module @ ~S" name phase))

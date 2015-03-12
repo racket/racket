@@ -81,7 +81,8 @@
 
 (define-form-struct prefix ([num-lifts exact-nonnegative-integer?] 
                             [toplevels (listof (or/c #f symbol? global-bucket? module-variable?))] 
-                            [stxs list?]))   ; should be (listof stx?) sets up top-level and syntax-object array
+                            [stxs list?]   ; should be (listof stx?) sets up top-level and syntax-object array
+                            [src-inspector-desc symbol?]))
 
 (define-form-struct form ())
 (define-form-struct (expr form) ())
