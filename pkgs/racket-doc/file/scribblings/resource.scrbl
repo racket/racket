@@ -21,8 +21,8 @@
 
 @defproc[(get-resource [section string?]
                        [entry string?]
-                       [value-box (or/f #f (box/c (or/c string? bytes? exact-integer?))) #f]
-                       [file (or/c #f fail-path?) #f]
+                       [value-box (or/c #f (box/c (or/c string? bytes? exact-integer?))) #f]
+                       [file (or/c #f path-string?) #f]
                        [#:type type (or/c 'string 'bytes 'integer) _derived-from-value-box])
          (or/c #f string? bytes? exact-integer? #t)]{
 
