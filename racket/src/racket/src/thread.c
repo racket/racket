@@ -3881,6 +3881,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 	{
 	  GC_CAN_IGNORE struct epoll_event ev;
 	  int already = !SCHEME_FALSEP(SCHEME_VEC_ELS(v)[1]), kr;
+	  memset(&ev, 0, sizeof(ev));
 	  ev.data.fd = fd;
 	  ev.events = EPOLLIN | (already ? EPOLLOUT : 0);
 	  kr = epoll_ctl(scheme_semaphore_fd_kqueue, 
@@ -3917,6 +3918,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 	{
 	  GC_CAN_IGNORE struct epoll_event ev;
 	  int already = !SCHEME_FALSEP(SCHEME_VEC_ELS(v)[0]), kr;
+	  memset(&ev, 0, sizeof(ev));
 	  ev.data.fd = fd;
 	  ev.events = EPOLLOUT | (already ? EPOLLIN : 0);
 	  kr = epoll_ctl(scheme_semaphore_fd_kqueue, 
@@ -3989,6 +3991,7 @@ static int check_fd_semaphores()
   Scheme_Object *v, *s, *key;
   int kr, hit = 0;
   GC_CAN_IGNORE struct epoll_event ev;
+  memset(&ev, 0, sizeof(ev));
 
   if (!scheme_semaphore_fd_mapping || (scheme_semaphore_fd_kqueue < 0))
     return 0;
