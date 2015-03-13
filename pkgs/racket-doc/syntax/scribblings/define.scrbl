@@ -47,4 +47,6 @@ expr]] are allowed, and they are preserved in the expansion.}
   If @racket[err-no-body?] is true, then there must be a right-hand side
   expression or else it is a syntax error. The @racket[err-no-body?] argument
   is true for uses of @racket[normalize-definition].
+
+  @history[#:added "6.1.1.8"]
 }

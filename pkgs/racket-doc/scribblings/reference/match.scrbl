@@ -511,7 +511,10 @@ Like @racket[match-let], but generalizes @racket[letrec].}
 
 @defform[(match-letrec-values ([(pat ...) expr] ...) body ...+)]{
 
-Like @racket[match-let], but generalizes @racket[letrec-values].}
+Like @racket[match-let], but generalizes @racket[letrec-values].
+
+@history[#:added "6.1.1.8"]
+}
  
 @defform[(match-define pat expr)]{
 
