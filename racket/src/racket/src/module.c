@@ -11646,7 +11646,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
             modname = scheme_module_resolve(modidx, 1);
             menv = scheme_module_access(modname, orig_env, 0);
             val = scheme_lookup_in_table(menv->toplevel, (char *)exsns[j]);
-            b = scheme_global_bucket(iname, orig_env);
+            b = scheme_global_bucket(scheme_global_binding(iname, orig_env), orig_env);
             scheme_set_global_bucket(((copy_vars == 2)
                                       ? "namespace-require/constant"
                                       : "namespace-require/copy"),
@@ -11655,7 +11655,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
               ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
               done = 0;
             } else {
-              scheme_shadow(orig_env, SCHEME_STX_VAL(iname), val, 1);
+              scheme_shadow(orig_env, (Scheme_Object *)b->key, val, 1);
               done = 1;
             }
           } else
