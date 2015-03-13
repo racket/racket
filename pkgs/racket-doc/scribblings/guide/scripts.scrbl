@@ -67,7 +67,7 @@ If the name of the script is needed, it is available via
 @racket[(find-system-path 'run-file)], instead of via
 @racket[(current-command-line-arguments)].
 
-Usually, then best way to handle command-line arguments is to parse
+Usually, the best way to handle command-line arguments is to parse
 them using the @racket[command-line] form provided by
 @racketmodname[racket]. The @racket[command-line] form extracts
 command-line arguments from @racket[(current-command-line-arguments)]
