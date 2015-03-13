@@ -4111,7 +4111,7 @@ inline static void do_heap_compact(NewGC *gc)
         /* then determine if we actually want to do compaction */
         if(NO_BACKTRACE_AND(tic_tock
                             ? should_compact_page(gcWORDS_TO_BYTES(work->live_size),work->size)
-                            : mmu_should_compact_page(gc->mmu, work->mmu_src_block))) {
+                            : mmu_should_compact_page(gc->mmu, &work->mmu_src_block))) {
           void **start = PAGE_START_VSS(work);
           void **end = PAGE_END_VSS(work);
           void **newplace;
