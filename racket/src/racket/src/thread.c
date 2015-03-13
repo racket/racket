@@ -1846,15 +1846,17 @@ void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
 # define RUNNING_IN_ORIGINAL_PLACE 1
 #endif
 
-  if (!cust_closers && RUNNING_IN_ORIGINAL_PLACE) {
-    if (replacement_at_exit) {
-      replacement_at_exit(do_run_atexit_closers_on_all);
-    } else {
+  if (!cust_closers) {
+    if (RUNNING_IN_ORIGINAL_PLACE) {
+      if (replacement_at_exit) {
+        replacement_at_exit(do_run_atexit_closers_on_all);
+      } else {
 #ifdef USE_ON_EXIT_FOR_ATEXIT
-      on_exit(do_run_atexit_closers_on_all, NULL);
+        on_exit(do_run_atexit_closers_on_all, NULL);
 #else
-      atexit(do_run_atexit_closers_on_all);
+        atexit(do_run_atexit_closers_on_all);
 #endif
+      }
     }
 
     REGISTER_SO(cust_closers);
