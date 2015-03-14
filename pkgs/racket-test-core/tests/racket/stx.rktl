@@ -540,6 +540,20 @@
            (parameterize ([read-accept-compiled #t])
              (eval (read i))))))
 
+(module x-with-identifier-binding-of-alt racket/base
+  (define x 1)
+  (define-syntax-rule (m id)
+    (begin
+      (define x 5)
+      (define id #'x)))
+  (m x-id)
+  (provide x-id))
+(let ([b (identifier-binding
+          (dynamic-require ''x-with-identifier-binding-of-alt 'x-id))])
+  (test #f eq? 'x (cadr b))
+  (test 'x cadddr b)
+  (test #t equal? (car b) (caddr b)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; identifier-binding and (nominal) phase reporting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -3379,7 +3379,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
       }
 
       if (nominal_name && !*nominal_name)
-        *nominal_name = SCHEME_VEC_ELS(result)[1];
+        *nominal_name = stx->val;
       if (nominal_modidx && !*nominal_modidx)
         *nominal_modidx = SCHEME_VEC_ELS(result)[0];
       if (src_phase && !*src_phase)
