@@ -2810,8 +2810,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 					    Scheme_Compile_Expand_Info *erec, int drec,
 					    Scheme_Object **current_val,
 					    Scheme_Object *ctx,
-                                            int keep_name,
-                                            int use_mark);
+                                            int keep_name);
 
 Scheme_Object *scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 				  Scheme_Object *f, Scheme_Object *code,
@@ -2833,7 +2832,7 @@ Scheme_Comp_Env *scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object
 Scheme_Object *scheme_compile_lookup(Scheme_Object *symbol, Scheme_Comp_Env *env, int flags, 
 				     Scheme_Object *in_modidx, 
 				     Scheme_Env **_menv, int *_protected,
-                                     Scheme_Object **_local_binder,
+                                     Scheme_Object **_local_binder, int *_need_macro_mark,
                                      Scheme_Object **_inline_variant);
 int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env);
 
@@ -3011,13 +3010,6 @@ Scheme_Object *scheme_make_compiled_syntax(Scheme_Syntax *syntax,
 
 Scheme_Object *scheme_compile_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				   Scheme_Compile_Info *rec, int drec);
-Scheme_Object *scheme_compile_expr_mark_use(Scheme_Object *form, Scheme_Comp_Env *env,
-                                            Scheme_Compile_Info *rec, int drec,
-                                            int mark_macro_use);
-Scheme_Object *scheme_compile_sequence(Scheme_Object *forms, Scheme_Comp_Env *env,
-			      Scheme_Compile_Info *rec, int drec);
-Scheme_Object *scheme_compile_list(Scheme_Object *form, Scheme_Comp_Env *env,
-			      Scheme_Compile_Info *rec, int drec);
 
 Scheme_Object *scheme_compile_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
 					       Scheme_Compile_Info *rec, int drec);
@@ -3115,6 +3107,9 @@ int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
 #define SCHEME_NESTED_MODULE_FRAME 4096
 #define SCHEME_KEEP_MARKS_FRAME 8192
 
+#define SCHEME_REC_BINDING_FRAME (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_BEGIN_FRAME \
+                                  | SCHEME_INTDEF_FRAME | SCHEME_FOR_INTDEF)
+
 /* Flags used with scheme_static_distance */
 #define SCHEME_ELIM_CONST 1
 #define SCHEME_APP_POS 2
@@ -3136,11 +3131,6 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void);
 const char *scheme_look_for_primitive(void *code);
 
 Scheme_Object *scheme_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
-				  Scheme_Expand_Info *erec, int drec);
-Scheme_Object *scheme_expand_expr_mark_use(Scheme_Object *form, Scheme_Comp_Env *env,
-                                           Scheme_Expand_Info *erec, int drec,
-                                           int mark_macro_use);
-Scheme_Object *scheme_expand_list(Scheme_Object *form, Scheme_Comp_Env *env,
 				  Scheme_Expand_Info *erec, int drec);
 Scheme_Object *scheme_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
 					      Scheme_Expand_Info *erec, int drec);

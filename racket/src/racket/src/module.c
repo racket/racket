@@ -7253,7 +7253,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);
 
   if (!check_mb) {
-    fm = scheme_check_immediate_macro(fm, benv, rec, drec, &mbval, NULL, 1, 0);
+    fm = scheme_check_immediate_macro(fm, benv, rec, drec, &mbval, NULL, 1);
 
     /* If expansion is not the primitive `#%module-begin', add local one: */
     if (!SAME_OBJ(mbval, modbeg_syntax)) {
@@ -8632,7 +8632,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
         erec1.substitute_bindings = 1;
         erec1.env_already = 0;
         erec1.comp_flags = rec[drec].comp_flags;
-	e = scheme_expand_expr_mark_use(e, xenv, &erec1, 0, 1);
+	e = scheme_expand_expr(e, xenv, &erec1, 0);
       }
 
       lifted_reqs = scheme_frame_get_require_lifts(xenv);
@@ -9246,7 +9246,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	Scheme_Expand_Info erec1;
 	scheme_init_expand_recs(erec, derec, &erec1, 1);
 	erec1.value_name = scheme_false;
-	e = scheme_expand_expr_mark_use(e, nenv, &erec1, 0, 1);
+	e = scheme_expand_expr(e, nenv, &erec1, 0);
         expanded_l = scheme_make_pair(e, expanded_l);        
       }
 
@@ -9254,7 +9254,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	Scheme_Compile_Info crec1;
 	scheme_init_compile_recs(rec, drec, &crec1, 1);
 	crec1.resolve_module_ids = 0;
-	e = scheme_compile_expr_mark_use(e, nenv, &crec1, 0, 1);
+	e = scheme_compile_expr(e, nenv, &crec1, 0);
       }
 
       lifted_reqs = scheme_frame_get_require_lifts(cenv);
@@ -9653,7 +9653,7 @@ static int is_modulestar_stop(Scheme_Comp_Env *env)
                              + (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)),
                             env->in_modidx, 
                             NULL, NULL,
-                            NULL, NULL);
+                            NULL, NULL, NULL);
   return (scheme_get_stop_expander() == p);
 }
 

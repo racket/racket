@@ -1013,7 +1013,7 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
   Scheme_Comp_Env *end_frame, *frame;
   int depth, dj = 0, dp = 0, i;
   Scheme_Hash_Table *table;
-  int stride = 0;
+  int stride = 0, past_binding_frame = 0;
 
   depth = start_frame->skip_depth;
 
@@ -1027,6 +1027,9 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
   table = scheme_make_hash_table(SCHEME_hash_ptr);
   
   for (frame = start_frame; frame != end_frame; frame = frame->next) {
+    if (!(frame->flags & SCHEME_REC_BINDING_FRAME)
+        && frame->marks)
+      past_binding_frame = 1;
     if (frame->flags & SCHEME_LAMBDA_FRAME)
       dj++;
     dp += frame->num_bindings;
@@ -1043,6 +1046,7 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
   scheme_hash_set(table, scheme_make_integer(0), (Scheme_Object *)end_frame);
   scheme_hash_set(table, scheme_make_integer(1), scheme_make_integer(dj));
   scheme_hash_set(table, scheme_make_integer(2), scheme_make_integer(dp));
+  scheme_hash_set(table, scheme_make_integer(3), past_binding_frame ? scheme_true : scheme_false);
 
   start_frame->skip_table = table;
 }
@@ -1141,7 +1145,7 @@ Scheme_Object *
 scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 		      Scheme_Object *in_modidx,
 		      Scheme_Env **_menv, int *_protected,
-                      Scheme_Object **_binder,
+                      Scheme_Object **_binder, int *_need_macro_mark,
                       Scheme_Object **_inline_variant)
 {
   Scheme_Comp_Env *frame;
@@ -1152,6 +1156,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   Scheme_Env *genv;
 
   if (_binder) *_binder = NULL;
+  if (_need_macro_mark) *_need_macro_mark = 1;
 
   pre_cache = ((Scheme_Stx *)find_id)->u.cached_binding;
 
@@ -1198,11 +1203,15 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       while (1) {
         if (frame->skip_table) {
           if (!scheme_hash_get(frame->skip_table, binding)) {
-            /* Skip ahead. 0 maps to frame, 1 maps to j delta, and 2 maps to p delta */
+            /* Skip ahead. 0 maps to frame, 1 maps to j delta, 2 maps to p delta, and 3 maps to binding-frameness */
             val = scheme_hash_get(frame->skip_table, scheme_make_integer(1));
             j += (int)SCHEME_INT_VAL(val);
             val = scheme_hash_get(frame->skip_table, scheme_make_integer(2));
             p += (int)SCHEME_INT_VAL(val);
+            val = scheme_hash_get(frame->skip_table, scheme_make_integer(3));
+            if (SCHEME_TRUEP(val))
+              if (_need_macro_mark)
+                *_need_macro_mark = 0;
             frame = (Scheme_Comp_Env *)scheme_hash_get(frame->skip_table, scheme_make_integer(0));
           } else
             break;
@@ -1212,7 +1221,11 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
         } else
           break;
       }
-    
+
+      if (!(env->flags & SCHEME_REC_BINDING_FRAME) && env->marks)
+        if (_need_macro_mark)
+          *_need_macro_mark = 0;
+
       if (frame->flags & SCHEME_LAMBDA_FRAME)
         j++;
 
@@ -1326,7 +1339,21 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       /* So we can distinguish between unbound identifiers in a module
 	 and references to top-level definitions: */
       module_self_reference = 1;
+
+      if (_need_macro_mark) {
+        for (frame = env; frame->next != NULL; frame = frame->next) {
+          if (!(frame->flags & (SCHEME_TOPLEVEL_FRAME
+                                | SCHEME_MODULE_BEGIN_FRAME))
+              && frame->marks) {
+            *_need_macro_mark = 0;
+            break;
+          }
+        }
+      }
     } else {
+      if (_need_macro_mark)
+        *_need_macro_mark = 0;
+
       genv = scheme_module_access(modname, env->genv, SCHEME_INT_VAL(mod_defn_phase));
 
       if (!genv) {
@@ -2031,7 +2058,7 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
   v = scheme_compile_lookup(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, 
                             NULL,
                             NULL, NULL,
-                            NULL, NULL);
+                            NULL, NULL, NULL);
   if (v) {
     if (!SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type)) {
       *_use_map = -1;

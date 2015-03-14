@@ -2230,7 +2230,8 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
                                + (!recur ? SCHEME_STOP_AT_FREE_EQ : 0)),
 			      scheme_current_thread->current_local_modidx, 
 			      &menv, NULL,
-                              NULL, NULL);
+                              NULL, NULL,
+                              NULL);
 
     SCHEME_EXPAND_OBSERVE_RESOLVE(observer, sym);
 
