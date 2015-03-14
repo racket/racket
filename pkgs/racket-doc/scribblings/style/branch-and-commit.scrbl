@@ -69,7 +69,7 @@ On occasion, you will find that you are spending a significant amount of
  set the mail hook so that git sends a commit message to both you and the
  original author. Furthermore, you should test your changes on the actual
  code base. In some cases it is acceptable to delay such tests, e.g., when
- you will not know for a long time whether the performance implication
+ you will not know for a long time whether the performance implications
  allow a commit to the PLT repository.
 
 @margin-note*{See
