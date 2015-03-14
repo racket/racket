@@ -2027,5 +2027,31 @@
   (test #t syntax? (cdr (syntax-e (eval s)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check interation of bindings across namespaces:
+
+(let ()
+  (define ns1 (make-base-namespace))
+  (define ns2 (make-base-namespace))
+  (eval '(require (only-in racket/base [add1 cons])) ns1)
+  ;; In `ns1`, `cons` refers to `add1`
+  ;; In `ns2`, `cons` refers to `cons`
+  (define cons-id/ns1 (eval '(quote-syntax cons) ns1))
+  (test add1 eval cons-id/ns1 ns2)
+  (eval `(define ,cons-id/ns1 1) ns2)
+  (test 1 eval cons-id/ns1 ns2)
+  (test cons eval 'cons ns2)
+  (test 1 eval (quasiquote (let () (define ,cons-id/ns1 1) ,cons-id/ns1)) ns2))
+
+(module x-id-is-alias-for-plus racket/base
+  (provide x-id)
+  (require (only-in racket/base [+ x]))
+  (define x-id #'x))
+(let ([x-id (dynamic-require ''x-id-is-alias-for-plus 'x-id)])
+  (define ns (make-base-namespace))
+  (eval '(require (only-in racket/base [- x])) ns)
+  (test - eval 'x ns)
+  (test + eval x-id ns))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

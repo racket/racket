@@ -840,7 +840,9 @@ Scheme_Object *adjust_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Sc
   if (mode == SCHEME_STX_PUSH) {
     if (!SCHEME_NULLP(multi_marks))
       return make_fallback_pair(scheme_make_pair(scheme_make_pair(m, phase),
-                                                 scheme_null),
+                                                 (SCHEME_FALLBACKP(multi_marks)
+                                                  ? SCHEME_FALLBACK_FIRST(multi_marks)
+                                                  : multi_marks)),
                                 multi_marks);
   }
 
@@ -3097,7 +3099,7 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
                                                   Scheme_Mark_Set **_binding_marks)
 {
   Scheme_Mark_Set *marks, *best_set;
-  Scheme_Object *multi_marks;
+  Scheme_Object *multi_marks, **result;
 
   multi_marks = stx->marks->multi_marks;
 
@@ -3112,9 +3114,16 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
       if (_binding_marks) *_binding_marks = best_set;
       
       /* Find again, this time checking to ensure no ambiguity: */
-      return (Scheme_Object **)do_stx_lookup(stx, marks,
-                                             best_set,
-                                             _exact_match, _ambiguous);
+      result = (Scheme_Object **)do_stx_lookup(stx, marks,
+                                               best_set,
+                                               _exact_match, _ambiguous);
+
+      if (!result && SCHEME_FALLBACKP(multi_marks)) {
+        if (_ambiguous) *_ambiguous = 0;
+        if (_exact_match) *_exact_match = 0;
+        multi_marks = SCHEME_FALLBACK_REST(multi_marks);
+      } else
+        return result;
     } else if (SCHEME_FALLBACKP(multi_marks))
       multi_marks = SCHEME_FALLBACK_REST(multi_marks);
     else
