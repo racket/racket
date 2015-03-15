@@ -232,8 +232,9 @@
 ;; the first syntax object is used for source locations
 (define-for-syntax (tl-code-for-one-id/new-name id-for-one-id
                                                 stx id reflect-id ctrct/no-prop user-rename-id
-                                                [mangle-for-maker? #f]
-                                                [provide? #t])
+                                                pos-module-source
+                                                mangle-for-maker?
+                                                provide?)
   (define ex-id (or reflect-id id))
   (define id-rename (id-for-one-id user-rename-id reflect-id id mangle-for-maker?))
   (with-syntax ([ctrct (syntax-property 
@@ -261,7 +262,7 @@
                                                                     id-rename
                                                                     (stx->srcloc-expr srcloc-id)
                                                                     'provide/contract
-                                                                    #'pos-module-source)
+                                                                    pos-module-source)
                              #,@(if provide?
                                     (list #`(provide (rename-out [#,id-rename external-name])))
                                     null)))
@@ -1049,12 +1050,19 @@
               a:mangle-id)
           "provide/contract-id"
           (or user-rename-id reflect-id id)))
+       
+       (define pos-module-source-id
+         ;; Avoid context on this identifier, since it will be defined
+         ;; in another module, and the definition may have to pull
+         ;; along all context to support `module->namespace`:
+         (datum->syntax #f 'pos-module-source))
 
        (define (code-for-one-id/new-name stx id reflect-id ctrct/no-prop user-rename-id
                                          [mangle-for-maker? #f]
                                          [provide? #t]) 
          (tl-code-for-one-id/new-name id-for-one-id
                                       stx id reflect-id ctrct/no-prop user-rename-id
+                                      pos-module-source-id
                                       mangle-for-maker?
                                       provide?))
 
@@ -1104,10 +1112,11 @@
               [(struct (a b) ((fld ctc) ...) options ...)
                (add-struct-clause-to-struct-id-mapping #'a #'b #'(fld ...))]
               [_ (void)]))
-          (with-syntax ([(bodies ...) (code-for-each-clause p/c-clauses)])
+          (with-syntax ([(bodies ...) (code-for-each-clause p/c-clauses)]
+                        [pos-module-source-id pos-module-source-id])
             (syntax
              (begin
-               (define pos-module-source (quote-module-name))
+               (define pos-module-source-id (quote-module-name))
                bodies ...)))]))]))
 
 
