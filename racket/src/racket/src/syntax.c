@@ -127,7 +127,13 @@ static void register_traversers(void);
 
 XFORM_NONGCING static int is_armed(Scheme_Object *v);
 static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone);
+
 static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks, Scheme_Object *replace_at);
+XFORM_NONGCING static Scheme_Object *extract_unmarshal_phase(Scheme_Object *unmarshal_info);
+XFORM_NONGCING static Scheme_Object *extract_unmarshal_prefix(Scheme_Object *unmarshal_info);
+XFORM_NONGCING static Scheme_Hash_Tree *extract_unmarshal_excepts(Scheme_Object *unmarshal_info);
+static Scheme_Object *unmarshal_lookup_adjust(Scheme_Object *sym, Scheme_Object *pes);
+static Scheme_Object *unmarshal_key_adjust(Scheme_Object *sym, Scheme_Object *pes);
 
 XFORM_NONGCING static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b);
 static Scheme_Object *remove_at_mark_list(Scheme_Object *l, Scheme_Object *p);
@@ -214,7 +220,7 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(empty_mark_table);
   REGISTER_SO(empty_propagate_table);
   REGISTER_SO(empty_mark_set);
-  empty_hash_tree =scheme_make_hash_tree(0);
+  empty_hash_tree = scheme_make_hash_tree(0);
   empty_mark_set = (Scheme_Mark_Set *)empty_hash_tree;
   empty_mark_table = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
   empty_mark_table->so.type = scheme_mark_table_type;
@@ -2373,8 +2379,7 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
                                   Scheme_Object *insp_desc,
                                   Scheme_Object *nominal_mod, Scheme_Object *nominal_ex,
                                   Scheme_Object *src_phase, 
-                                  Scheme_Object *nom_phase,
-                                  int skip_marshal)
+                                  Scheme_Object *nom_phase)
 {
   Scheme_Object *elem;
   int mod_phase;
@@ -2467,8 +2472,7 @@ void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase,
                         modidx, sym, defn_phase,
                         inspector,
                         modidx, sym,
-                        NULL, NULL,
-                        0);
+                        NULL, NULL);
 }
 
 void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
@@ -2476,16 +2480,14 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                          Scheme_Object *inspector,
                                          Scheme_Object *nominal_mod, Scheme_Object *nominal_name,
                                          Scheme_Object *nominal_import_phase, 
-                                         Scheme_Object *nominal_export_phase,
-                                         int skip_marshal)
+                                         Scheme_Object *nominal_export_phase)
 {
   STX_ASSERT(SCHEME_STXP(o));
   do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase), SCHEME_STX_VAL(o), phase,
                         modidx, defn_name, defn_phase,
                         inspector,
                         nominal_mod, nominal_name,
-                        nominal_import_phase, nominal_export_phase,
-                        skip_marshal);
+                        nominal_import_phase, nominal_export_phase);
 }
 
 static Scheme_Object *marks_to_printed_list(Scheme_Mark_Set *marks)
@@ -2603,7 +2605,7 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
               scheme_populate_pt_ht(pt);
 
             ht = pt->ht;
-            if (scheme_hash_get(ht, stx->val))
+            if (scheme_eq_hash_get(ht, unmarshal_lookup_adjust(stx->val, pes)))
               bind_desc = scheme_hash_tree_set(bind_desc, matchp_symbol, scheme_true);
             else
               bind_desc = scheme_hash_tree_set(bind_desc, matchp_symbol, scheme_false);
@@ -2760,12 +2762,16 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
               if (full_imports) {
                 for (j = ht->size; j--; ) {
                   if (ht->vals[j]) {
-                    print_indent(indent);
-                    printf("    %s\n", scheme_write_to_string(ht->keys[j], NULL));
+                    Scheme_Object *nam;
+                    nam = unmarshal_key_adjust(ht->keys[j], pes);
+                    if (nam) {
+                      print_indent(indent);
+                      printf("    %s\n", scheme_write_to_string(nam, NULL));
+                    }
                   }
                 }
               } else {
-                if (scheme_hash_get(ht, stx->val)) {
+                if (scheme_hash_get(ht, unmarshal_lookup_adjust(stx->val, pes))) {
                   print_indent(indent);
                   printf("      has %s\n", scheme_write_to_string(stx->val, NULL));
                 }
@@ -2974,7 +2980,9 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
                 scheme_populate_pt_ht(pt);
               for (j = pt->ht->size; j--; ) {
                 if (pt->ht->vals[j]) {
-                  scheme_hash_set(mapped, pt->ht->keys[j], scheme_true);
+                  val = unmarshal_key_adjust(pt->ht->keys[j], pes);
+                  if (val)
+                    scheme_hash_set(mapped, val, scheme_true);
                 }
               }
             }
@@ -3044,8 +3052,8 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
                   /* Lookup table (which is created lazily) not yet created, so do that now... */
                   scheme_populate_pt_ht(pt);
                 }
-                
-                if (!scheme_hash_get(pt->ht, stx->val))
+
+                if (!scheme_eq_hash_get(pt->ht, unmarshal_lookup_adjust(stx->val, pes)))
                   binding_marks = NULL;
               }
             }
@@ -3348,7 +3356,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
         pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(l)[1];
         insp_desc = SCHEME_VEC_ELS(l)[4];
 
-        pos = scheme_hash_get(pt->ht, stx->val);
+        pos = scheme_hash_get(pt->ht, unmarshal_lookup_adjust(stx->val, l));
 
         if (pt->provide_srcs) {
           mod = pt->provide_srcs[SCHEME_INT_VAL(pos)];
@@ -3685,8 +3693,7 @@ void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-s
                                   Scheme_Object *nominal_ex,  /* nominal import before local renaming */
                                   intptr_t mod_phase,         /* phase of source defn */
                                   Scheme_Object *src_phase,   /* nominal import phase */
-                                  Scheme_Object *nom_phase,   /* nominal export phase */
-                                  int skip_marshal)           /* 1 => don't save on marshal; reconstructed via unmarshal info*/
+                                  Scheme_Object *nom_phase)   /* nominal export phase */
 {
   Scheme_Mark_Set *marks;
   
@@ -3699,20 +3706,19 @@ void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-s
                         modidx, exname, scheme_make_integer(mod_phase),
                         SCHEME_VEC_ELS(mc)[2],
                         nominal_mod, nominal_ex,
-                        src_phase, nom_phase,
-                        skip_marshal);
+                        src_phase, nom_phase);
 }
 
 void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mark> <phase> <inspector> <shifts>) or (cons <phase> <inspector-desc>) */
                                               Scheme_Object *modidx,      
-                                              Scheme_Module_Phase_Exports *pt, 
-                                              Scheme_Object *unmarshal_info,
+                                              Scheme_Module_Phase_Exports *pt,
+                                              Scheme_Object *prefix, /* a sybmol; not included in `excepts` keys */
+                                              Scheme_Hash_Tree *excepts, /* NULL => empty */
                                               Scheme_Object *src_phase, /* nominal import phase */
                                               Scheme_Object *context,
-                                              int save_unmarshal,
                                               Scheme_Object *replace_at)
 {
-  Scheme_Object *phase, *pes, *insp_desc;
+  Scheme_Object *phase, *pes, *insp_desc, *unmarshal_info;
   Scheme_Mark_Set *marks;
 
   if (SCHEME_VECTORP(mc)) {
@@ -3728,6 +3734,20 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
   else
     marks = scheme_module_context_marks(mc);
 
+  /* unmarshal_info = phase 
+     .              | (cons phase adjusts)
+     adjusts = prefix
+     .       | (cons excepts-ht prefix)
+     .       | excepts-list
+     excepts-ht = (hasheq symbol #t ... ...)
+  */
+  unmarshal_info = prefix;
+  if (excepts) {
+    if (SCHEME_FALSEP(unmarshal_info))
+      unmarshal_info = (Scheme_Object *)excepts;
+    else
+      unmarshal_info = scheme_make_pair((Scheme_Object *)excepts, prefix);
+  }
   if (SCHEME_FALSEP(unmarshal_info))
     unmarshal_info = pt->phase_index;
   else
@@ -3747,9 +3767,102 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
   }
 }
 
-void scheme_save_module_context_unmarshal(Scheme_Object *mc, Scheme_Object *info)
+static Scheme_Object *extract_unmarshal_phase(Scheme_Object *unmarshal_info)
 {
-  /* TODO */
+  if (SCHEME_PAIRP(unmarshal_info))
+    return SCHEME_CAR(unmarshal_info);
+  else
+    return unmarshal_info;
+}
+
+static Scheme_Object *extract_unmarshal_prefix(Scheme_Object *unmarshal_info)
+{
+  if (SCHEME_PAIRP(unmarshal_info)) {
+    unmarshal_info = SCHEME_CDR(unmarshal_info);
+    if (SCHEME_PAIRP(unmarshal_info))
+      return SCHEME_CDR(unmarshal_info);
+    else if (SCHEME_SYMBOLP(unmarshal_info))
+      return unmarshal_info;
+    else
+      return scheme_false;
+  } else
+    return scheme_false;
+}
+
+static Scheme_Hash_Tree *extract_unmarshal_excepts(Scheme_Object *unmarshal_info)
+{
+  if (SCHEME_PAIRP(unmarshal_info)) {
+    unmarshal_info = SCHEME_CDR(unmarshal_info);
+    if (SCHEME_PAIRP(unmarshal_info))
+      return (Scheme_Hash_Tree *)SCHEME_CAR(unmarshal_info);
+    else if (SCHEME_HASHTRP(unmarshal_info))
+      return (Scheme_Hash_Tree *)unmarshal_info;
+    else
+      return NULL;
+  } else
+    return NULL;
+}
+
+static Scheme_Object *unmarshal_lookup_adjust(Scheme_Object *sym, Scheme_Object *pes)
+{
+  Scheme_Hash_Tree *excepts;
+  Scheme_Object *prefix;
+
+  excepts = extract_unmarshal_excepts(SCHEME_VEC_ELS(pes)[3]);
+  prefix = extract_unmarshal_prefix(SCHEME_VEC_ELS(pes)[3]);
+ 
+  if (SCHEME_TRUEP(prefix) && !SCHEME_SYM_WEIRDP(sym)) {
+    int plen = SCHEME_SYM_LEN(prefix);
+    if (SCHEME_SYM_LEN(sym) >= plen) {
+      if (!scheme_strncmp(SCHEME_SYM_VAL(sym), SCHEME_SYM_VAL(prefix), plen)) {
+        char buf[64], *b;
+        int slen = SCHEME_SYM_LEN(sym) - plen;
+        if (slen < 64)
+          b = buf;
+        else
+          b = scheme_malloc_atomic(slen+1);
+        memcpy(b, SCHEME_SYM_VAL(sym) + plen, slen+1);
+        sym = scheme_intern_exact_symbol(b, slen);
+      } else
+        return scheme_false; /* so lookup will fail */
+    } else
+      return scheme_false;
+  }
+
+  if (excepts) {
+    if (scheme_eq_hash_tree_get(excepts, sym))
+      return scheme_false; /* so lookup will fail */
+  }
+
+  return sym;
+}
+
+static Scheme_Object *unmarshal_key_adjust(Scheme_Object *sym, Scheme_Object *pes)
+{
+  Scheme_Hash_Tree *excepts;
+  Scheme_Object *prefix;
+  
+  excepts = extract_unmarshal_excepts(SCHEME_VEC_ELS(pes)[3]);
+  prefix = extract_unmarshal_prefix(SCHEME_VEC_ELS(pes)[3]);
+
+  if (excepts && scheme_eq_hash_tree_get(excepts, sym))
+    return NULL;
+
+  if (SCHEME_TRUEP(prefix)) {
+    int plen = SCHEME_SYM_LEN(prefix);
+    int slen = SCHEME_SYM_LEN(sym) + plen;
+    char buf[64], *b;
+
+    if (slen < 64)
+      b = buf;
+    else
+      b = scheme_malloc_atomic(slen+1);
+    memcpy(b, SCHEME_SYM_VAL(prefix), plen);
+    memcpy(b+plen, SCHEME_SYM_VAL(sym), SCHEME_SYM_LEN(sym)+1);
+    sym = scheme_intern_exact_symbol(b, slen);
+  }
+
+  return sym;
 }
 
 static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks, Scheme_Object *replace_at)
@@ -3770,13 +3883,7 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
 
   src_phase = SCHEME_VEC_ELS(vec)[1];
   unmarshal_info = SCHEME_VEC_ELS(vec)[2];
-  if (SCHEME_PAIRP(unmarshal_info)) {
-    pt_phase = SCHEME_CAR(unmarshal_info);
-    unmarshal_info = SCHEME_CDR(unmarshal_info);
-  } else {
-    pt_phase = unmarshal_info;
-    unmarshal_info = scheme_false;
-  }
+  pt_phase = extract_unmarshal_phase(unmarshal_info);
 
   SCHEME_VEC_ELS(vec)[0] = scheme_false;
   SCHEME_VEC_ELS(vec)[1] = scheme_false;
@@ -3792,14 +3899,15 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
 
   scheme_do_module_context_unmarshal(modidx, req_modidx, context,
                                      bind_phase, pt_phase, src_phase,
-                                     unmarshal_info,
+                                     extract_unmarshal_prefix(unmarshal_info),
+                                     extract_unmarshal_excepts(unmarshal_info),
                                      export_registry, insp,
                                      replace_at);
 }
 
-Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, Scheme_Object *orig_src)
+Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, Scheme_Object *orig_src)
 {
-  Scheme_Object *plain, *o, *for_intro, *for_expr, *vec;
+  Scheme_Object *plain, *o, *for_intro, *vec;
 
   plain = scheme_datum_to_syntax(scheme_false, scheme_false, scheme_false, 0, 0);
 
@@ -3808,16 +3916,11 @@ Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, S
   else
     o = scheme_stx_add_module_context(plain, mc);
 
-  if (!track_expr)
-    return o;
-
-  /* Keep track of macro-use marks & intro mark separately: */
+  /* Keep track of intro mark separately: */
   for_intro = scheme_stx_introduce_to_module_context(plain, mc);
-  for_expr = scheme_stx_adjust_module_expression_context(plain, mc, SCHEME_STX_ADD);
-  vec = scheme_make_vector(3, NULL);
+  vec = scheme_make_vector(2, NULL);
   SCHEME_VEC_ELS(vec)[0] = o;
   SCHEME_VEC_ELS(vec)[1] = for_intro;
-  SCHEME_VEC_ELS(vec)[2] = for_expr;
   return scheme_datum_to_syntax(vec, scheme_false, scheme_false, 0, 0);
 }
 
@@ -3825,12 +3928,11 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
 {
   Scheme_Stx *stx = (Scheme_Stx *)_stx;
   Scheme_Object *vec, *shifts, *a, *body_marks, *phase = scheme_make_integer(0);
-  Scheme_Object *expr_marks = scheme_null, *intro_multi_mark = NULL;
+  Scheme_Object *intro_multi_mark = NULL;
 
-  if (SCHEME_VECTORP(stx->val)) {
+  if (SCHEME_VECTORP(stx->val) && (SCHEME_VEC_SIZE(stx->val) >= 2)) {
     (void)scheme_stx_content((Scheme_Object *)stx); /* propagate */
     intro_multi_mark = SCHEME_VEC_ELS(stx->val)[1];
-    expr_marks = SCHEME_VEC_ELS(stx->val)[2];
     stx = (Scheme_Stx *)SCHEME_VEC_ELS(stx->val)[0];
   }
 
@@ -3860,19 +3962,6 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
     }
   }
 
-  if (SCHEME_STXP(expr_marks)) {
-    Scheme_Stx *istx = (Scheme_Stx *)expr_marks;
-    Scheme_Object *key, *val;
-    intptr_t i;
-
-    expr_marks = scheme_null;
-    i = -1;
-    while ((i = mark_set_next(istx->marks->single_marks, i)) != -1) {
-      mark_set_index(istx->marks->single_marks, i, &key, &val);
-      expr_marks = scheme_make_pair(key, expr_marks);
-    }
-  }
-
   if (intro_multi_mark) {
     stx = (Scheme_Stx *)intro_multi_mark;
     if (!SCHEME_FALLBACKP(stx->marks->multi_marks)
@@ -3891,7 +3980,7 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
   SCHEME_VEC_ELS(vec)[2] = scheme_false; /* not sure this is right */
   SCHEME_VEC_ELS(vec)[3] = shifts;
   SCHEME_VEC_ELS(vec)[4] = intro_multi_mark;
-  SCHEME_VEC_ELS(vec)[5] = expr_marks;
+  SCHEME_VEC_ELS(vec)[5] = scheme_null;
 
   return vec;
 }

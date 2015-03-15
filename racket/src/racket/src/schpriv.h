@@ -1174,7 +1174,7 @@ Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme
 Scheme_Object *scheme_stx_push_module_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_push_introduce_module_context(Scheme_Object *stx, Scheme_Object *mc);
 
-Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, int track_expr, Scheme_Object *orig_src);
+Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, Scheme_Object *orig_src);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
 Scheme_Object *scheme_module_context_expression_frame_marks(Scheme_Object *mc);
@@ -1188,21 +1188,20 @@ void scheme_extend_module_context(Scheme_Object *mc, Scheme_Object *ctx, Scheme_
                                   Scheme_Object *locname, Scheme_Object *exname,
                                   Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
                                   intptr_t mod_phase, Scheme_Object *src_phase_index, 
-                                  Scheme_Object *nom_export_phase,
-                                  int skip_marshal);
+                                  Scheme_Object *nom_export_phase);
 void scheme_extend_module_context_with_shared(Scheme_Object *mc, Scheme_Object *modidx, 
                                               struct Scheme_Module_Phase_Exports *pt, 
-                                              Scheme_Object *unmarshal_info,
+                                              Scheme_Object *prefix,
+                                              Scheme_Hash_Tree *excepts,
                                               Scheme_Object *src_phase_index, 
                                               Scheme_Object *context,
-                                              int save_unmarshal,
                                               Scheme_Object *replace_at);
-void scheme_save_module_context_unmarshal(Scheme_Object *mc, Scheme_Object *info);
 
 void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *req_modidx,
                                         Scheme_Object *context,
                                         Scheme_Object *bind_phase, Scheme_Object *pt_phase, Scheme_Object *src_phase,
-                                        Scheme_Object *info,
+                                        Scheme_Object *prefix,
+                                        Scheme_Hash_Tree *excepts,
                                         Scheme_Hash_Table *export_registry, Scheme_Object *insp,
                                         Scheme_Object *replace_at);
 
@@ -1229,8 +1228,7 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                          Scheme_Object *inspector,
                                          Scheme_Object *nominal_mod, Scheme_Object *nominal_name,
                                          Scheme_Object *nominal_import_phase, 
-                                         Scheme_Object *nominal_export_phase,
-                                         int skip_marshal);
+                                         Scheme_Object *nominal_export_phase);
 void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase);
