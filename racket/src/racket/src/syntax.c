@@ -129,9 +129,11 @@ XFORM_NONGCING static int is_armed(Scheme_Object *v);
 static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone);
 
 static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks, Scheme_Object *replace_at);
+
+static Scheme_Object *make_unmarshal_info(Scheme_Object *phase, Scheme_Object *prefix, Scheme_Object *excepts);
 XFORM_NONGCING static Scheme_Object *extract_unmarshal_phase(Scheme_Object *unmarshal_info);
 XFORM_NONGCING static Scheme_Object *extract_unmarshal_prefix(Scheme_Object *unmarshal_info);
-XFORM_NONGCING static Scheme_Hash_Tree *extract_unmarshal_excepts(Scheme_Object *unmarshal_info);
+static Scheme_Hash_Tree *extract_unmarshal_excepts(Scheme_Object *unmarshal_info);
 static Scheme_Object *unmarshal_lookup_adjust(Scheme_Object *sym, Scheme_Object *pes);
 static Scheme_Object *unmarshal_key_adjust(Scheme_Object *sym, Scheme_Object *pes);
 
@@ -142,6 +144,7 @@ static Scheme_Object *add_to_mark_list(Scheme_Object *l, Scheme_Object *p);
 static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
 
 static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks);
+static void sort_vector_symbols(Scheme_Object *vec);
 
 #define CONS scheme_make_pair
 #define ICONS scheme_make_pair
@@ -3734,25 +3737,8 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
   else
     marks = scheme_module_context_marks(mc);
 
-  /* unmarshal_info = phase 
-     .              | (cons phase adjusts)
-     adjusts = prefix
-     .       | (cons excepts-ht prefix)
-     .       | excepts-list
-     excepts-ht = (hasheq symbol #t ... ...)
-  */
-  unmarshal_info = prefix;
-  if (excepts) {
-    if (SCHEME_FALSEP(unmarshal_info))
-      unmarshal_info = (Scheme_Object *)excepts;
-    else
-      unmarshal_info = scheme_make_pair((Scheme_Object *)excepts, prefix);
-  }
-  if (SCHEME_FALSEP(unmarshal_info))
-    unmarshal_info = pt->phase_index;
-  else
-    unmarshal_info = scheme_make_pair(pt->phase_index, unmarshal_info);
-
+  unmarshal_info = make_unmarshal_info(pt->phase_index, prefix, (Scheme_Object *)excepts);
+  
   pes = scheme_make_vector(5, NULL);
   SCHEME_VEC_ELS(pes)[0] = modidx;
   SCHEME_VEC_ELS(pes)[1] = (Scheme_Object *)pt;
@@ -3765,6 +3751,34 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
   } else {
     add_binding(NULL, phase, marks, pes);
   }
+}
+
+static Scheme_Object *make_unmarshal_info(Scheme_Object *phase,
+                                          Scheme_Object *prefix,
+                                          Scheme_Object *excepts)
+{
+  Scheme_Object *unmarshal_info;
+  
+  /* unmarshal_info = phase 
+     .              | (cons phase adjusts)
+     adjusts = prefix
+     .       | (cons excepts-ht prefix)
+     .       | excepts-list
+     excepts-ht = (hasheq symbol #t ... ...)
+  */
+  unmarshal_info = prefix;
+  if (excepts) {
+    if (SCHEME_FALSEP(unmarshal_info))
+      unmarshal_info = excepts;
+    else
+      unmarshal_info = scheme_make_pair(excepts, prefix);
+  }
+  if (SCHEME_FALSEP(unmarshal_info))
+    unmarshal_info = phase;
+  else
+    unmarshal_info = scheme_make_pair(phase, unmarshal_info);
+
+  return unmarshal_info;
 }
 
 static Scheme_Object *extract_unmarshal_phase(Scheme_Object *unmarshal_info)
@@ -3780,8 +3794,9 @@ static Scheme_Object *extract_unmarshal_prefix(Scheme_Object *unmarshal_info)
   if (SCHEME_PAIRP(unmarshal_info)) {
     unmarshal_info = SCHEME_CDR(unmarshal_info);
     if (SCHEME_PAIRP(unmarshal_info))
-      return SCHEME_CDR(unmarshal_info);
-    else if (SCHEME_SYMBOLP(unmarshal_info))
+      unmarshal_info = SCHEME_CDR(unmarshal_info);
+
+    if (SCHEME_SYMBOLP(unmarshal_info))
       return unmarshal_info;
     else
       return scheme_false;
@@ -3794,13 +3809,49 @@ static Scheme_Hash_Tree *extract_unmarshal_excepts(Scheme_Object *unmarshal_info
   if (SCHEME_PAIRP(unmarshal_info)) {
     unmarshal_info = SCHEME_CDR(unmarshal_info);
     if (SCHEME_PAIRP(unmarshal_info))
-      return (Scheme_Hash_Tree *)SCHEME_CAR(unmarshal_info);
-    else if (SCHEME_HASHTRP(unmarshal_info))
+      unmarshal_info = SCHEME_CAR(unmarshal_info);
+    
+    if (SCHEME_HASHTRP(unmarshal_info))
       return (Scheme_Hash_Tree *)unmarshal_info;
-    else
+    else if (SCHEME_VECTORP(unmarshal_info)) {
+      /* Hash table was converted to a vector in a marshaled unmarshal request */
+      Scheme_Hash_Tree *ht = empty_hash_tree;
+      intptr_t i;
+      for (i = SCHEME_VEC_SIZE(unmarshal_info); i--; ) {
+        if (SCHEME_SYMBOLP(SCHEME_VEC_ELS(unmarshal_info)[i]))
+          ht = scheme_hash_tree_set(ht, SCHEME_VEC_ELS(unmarshal_info)[i], scheme_true);
+      }
+      return ht;
+    } else
       return NULL;
   } else
     return NULL;
+}
+
+static Scheme_Object *unmarshal_excepts_to_vector(Scheme_Object *unmarshal_info)
+{
+  Scheme_Hash_Tree *ht;
+  
+  ht = extract_unmarshal_excepts(unmarshal_info);
+  if (ht) {
+    intptr_t i = -1, j = 0;
+    Scheme_Object *vec, *key, *val;
+
+    vec = scheme_make_vector(ht->count, NULL);
+
+    while ((i = scheme_hash_tree_next(ht, i)) != -1) {
+      scheme_hash_tree_index(ht, i, &key, &val);
+      SCHEME_VEC_ELS(vec)[j++] = key;
+    }
+
+    sort_vector_symbols(vec);
+
+    return make_unmarshal_info(extract_unmarshal_phase(unmarshal_info),
+                               extract_unmarshal_prefix(unmarshal_info),
+                               vec);
+  }
+
+  return unmarshal_info;
 }
 
 static Scheme_Object *unmarshal_lookup_adjust(Scheme_Object *sym, Scheme_Object *pes)
@@ -4505,6 +4556,28 @@ static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks)
   return r;
 }
 
+static int compare_syms(const void *_a, const void *_b)
+{
+  Scheme_Object *a = (Scheme_Object *)_a;
+  Scheme_Object *b = (Scheme_Object *)_b;
+  intptr_t l = SCHEME_SYM_LEN(a), i;
+
+  if (SCHEME_SYM_LEN(b) < l)
+    l = SCHEME_SYM_LEN(b);
+  
+  for (i = 0; i < l; i++) {
+    if (SCHEME_SYM_VAL(a)[i] != SCHEME_SYM_VAL(b)[i])
+      return (SCHEME_SYM_VAL(a)[i] - SCHEME_SYM_VAL(b)[i]);
+  }
+
+  return SCHEME_SYM_LEN(a) - SCHEME_SYM_LEN(b);
+}
+
+static void sort_vector_symbols(Scheme_Object *vec)
+{
+  my_qsort(SCHEME_VEC_ELS(vec), SCHEME_VEC_SIZE(vec), sizeof(Scheme_Object *), compare_syms);
+}
+
 static Scheme_Object *drop_export_registries(Scheme_Object *shifts)
 {
   Scheme_Object *l, *a, *vec, *p, *first = scheme_null, *last = NULL;
@@ -4723,8 +4796,9 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
         l2 = scheme_make_vector(4, NULL);
         SCHEME_VEC_ELS(l2)[0] = SCHEME_VEC_ELS(v)[0];
         SCHEME_VEC_ELS(l2)[1] = SCHEME_VEC_ELS(v)[2];
-        SCHEME_VEC_ELS(l2)[2] = SCHEME_VEC_ELS(v)[3];
         SCHEME_VEC_ELS(l2)[3] = SCHEME_VEC_ELS(v)[4];
+        v = unmarshal_excepts_to_vector(SCHEME_VEC_ELS(v)[3]);
+        SCHEME_VEC_ELS(l2)[2] = v;
         v = l2;
       } else if (PES_UNMARSHAL_DESCP(v)) {
         if (SCHEME_TRUEP(SCHEME_VEC_ELS(v)[0])) {

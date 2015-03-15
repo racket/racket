@@ -11760,8 +11760,10 @@ void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *re
     pt = me->et;
   else if (SAME_OBJ(pt_phase, scheme_false))
     pt = me->dt;
-  else
+  else if (me->other_phases)
     pt = (Scheme_Module_Phase_Exports *)scheme_hash_get(me->other_phases, pt_phase);
+  else
+    pt = NULL;
   
   if (pt) {
     if (!pt->src_modidx && me->src_modidx)
