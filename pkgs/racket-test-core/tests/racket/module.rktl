@@ -1387,7 +1387,21 @@
   (let ([form (expand `(module m racket/base
                         (require (rename-in racket/base [lib racket-base:lib])
                                  (racket-base:lib "racket/base"))))])
-    (test #t find-disappeared form #'racket-base:lib)))
+    (test #t find-disappeared form #'racket-base:lib))
+  ;; Check case where the provide transformer also sets disappeared-use
+  (let ([form (expand `(module m racket/base
+                         (require (for-syntax racket/base racket/provide-transform))
+                           (define-syntax my-out
+                             (make-provide-transformer
+                               (lambda (stx phases) null)
+                               (lambda (stx phases)
+                                 (syntax-case stx ()
+                                   [(head id)
+                                    (syntax-property #'(rename-out)
+                                                     'disappeared-use
+                                                     (syntax-local-introduce #'id))]))))
+                           (provide (my-out map))))])
+    (test #t find-disappeared form #'map)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

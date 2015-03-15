@@ -77,7 +77,8 @@
                         stx))
                      (syntax-property v
                                       'disappeared-use
-                                      (syntax-local-introduce #'id)))
+                                      (cons (syntax-local-introduce #'id)
+                                            (or (syntax-property v 'disappeared-use) null))))
                    stx))]
             [_ stx]))))
 
