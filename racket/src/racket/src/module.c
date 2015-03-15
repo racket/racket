@@ -117,7 +117,7 @@ typedef struct Module_Begin_Expand_State {
   Scheme_Hash_Table *all_reprovided; /* phase -> list of (list modidx syntax except-name ...) */
   Scheme_Hash_Tree *all_defs; /* phase -> list of sxtid */
   Scheme_Hash_Table *all_defs_out; /* phase -> list of (cons protected? (stx-list except-name ...)) */
-  int *all_simple_renames;
+  int *all_simple_bindings; /* can we reconstruct bindings for `module->namespace`? */
   int *_num_phases;
   Scheme_Object *saved_provides; /* list of (cons form phase) */
   Scheme_Object *saved_submodules; /* list of (cons form phase) */
@@ -2969,6 +2969,24 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
   return saw_mb;
 }
 
+static void add_reconstructed_binding(Scheme_Object *name, Scheme_Object *one_rn, Scheme_Object *self_modidx,
+                                      Scheme_Env *env, int phase)
+{
+  Scheme_Hash_Table *binding_names;
+
+  scheme_extend_module_context(one_rn, NULL, self_modidx, name, name, self_modidx, name, phase,
+                               scheme_make_integer(phase), NULL);
+
+  binding_names = (Scheme_Hash_Table *)env->binding_names;
+  if (!binding_names) {
+    binding_names = scheme_make_hash_table(SCHEME_hash_ptr);
+    env->binding_names = (Scheme_Object *)binding_names;
+  }
+  scheme_hash_set(binding_names, name,
+                  scheme_stx_add_module_context(scheme_datum_to_syntax(name, scheme_false, scheme_false, 0, 0),
+                                                one_rn));
+}
+
 void scheme_prep_namespace_rename(Scheme_Env *menv)
 {
   while (menv->mod_phase > 0) {
@@ -2988,37 +3006,15 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 
       if (SAME_OBJ(scheme_true, m->rn_stx)) {
 	/* Reconstruct renames based on defns and requires. This case is
-           used only when it's easy to reconstruct: no renames, no for-syntax
-           definitions, etc. */
+           used only when it's easy to reconstruct: no rename on import,
+           no prefixes or exclusions on import, no definitions within the
+           module that are inaccessible due to scope differences, etc. */
 	int i, j;
 	Scheme_Module *im;
 	Scheme_Object *l, *idx, *one_rn, *shift, *name;
 
 	rns = menv->stx_context;
         one_rn = scheme_module_context_at_phase(rns, scheme_make_integer(0), 0);
-
-	/* Local, provided: */
-	for (i = 0; i < m->me->rt->num_provides; i++) {
-	  if (SCHEME_FALSEP(m->me->rt->provide_srcs[i])) {
-	    name = m->me->rt->provide_src_names[i];
-	    scheme_extend_module_context(one_rn, NULL, m->self_modidx, name, name, m->self_modidx, name, 0, 
-                                        scheme_make_integer(0), NULL);
-	  }
-	}
-        for (j = 0; j < m->num_phases; j++) {
-          Scheme_Module_Export_Info *exp_info = m->exp_infos[j];
-          one_rn = scheme_module_context_at_phase(rns, scheme_make_integer(j), 0);
-          for (i = 0; i < exp_info->num_indirect_provides; i++) {
-            name = exp_info->indirect_provides[i];
-            scheme_extend_module_context(one_rn, NULL, m->self_modidx, name, name, m->self_modidx, name, j, 
-                                        scheme_make_integer(j), NULL);
-          }
-          for (i = 0; i < exp_info->num_indirect_syntax_provides; i++) {
-            name = exp_info->indirect_syntax_provides[i];
-            scheme_extend_module_context(one_rn, NULL, m->self_modidx, name, name, m->self_modidx, name, j, 
-                                        scheme_make_integer(j), NULL);
-          }
-        }
 
 	/* Required: */
         for (i = -4; i < (menv->other_require_names ? menv->other_require_names->size : 0); i++) {
@@ -3058,6 +3054,28 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
               add_simple_require_renames(NULL, rns, menv, NULL, im, idx, shift,
                                          NULL, 0, 0);
             }
+          }
+        }
+
+        /* Local, provided: */
+	for (i = 0; i < m->me->rt->num_provides; i++) {
+	  if (SCHEME_FALSEP(m->me->rt->provide_srcs[i])) {
+	    name = m->me->rt->provide_src_names[i];
+            add_reconstructed_binding(name, one_rn, m->self_modidx, menv, 0);
+	  }
+	}
+        for (j = 0; j < m->num_phases; j++) {
+          Scheme_Module_Export_Info *exp_info = m->exp_infos[j];
+          Scheme_Env *penv;
+          one_rn = scheme_module_context_at_phase(rns, scheme_make_integer(j), 0);
+          penv = scheme_find_env_at_phase(menv, scheme_make_integer(j));
+          for (i = 0; i < exp_info->num_indirect_provides; i++) {
+            name = exp_info->indirect_provides[i];
+            add_reconstructed_binding(name, one_rn, m->self_modidx, penv, j);
+          }
+          for (i = 0; i < exp_info->num_indirect_syntax_provides; i++) {
+            name = exp_info->indirect_syntax_provides[i];
+            add_reconstructed_binding(name, one_rn, m->self_modidx, penv, j);
           }
         }
 	
@@ -6948,7 +6966,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                                 Scheme_Object *super_phase_shift)
 {
   Scheme_Object *fm, *disarmed_form;
-  Scheme_Object *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set, *mb_ctx, *ctx_form, *rn_stx;
+  Scheme_Object *nm, *ii, *iidx, *self_modidx, *rmp, *rn_set, *mb_ctx, *ctx_form;
   Scheme_Module *iim;
   Scheme_Env *menv, *top_env;
   Scheme_Comp_Env *benv;
@@ -7198,10 +7216,6 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     saw_mb = 1;
   }
 
-  /* For `module->namespace`: */
-  rn_stx = scheme_module_context_to_stx(rn_set, mb_ctx);
-  m->rn_stx = rn_stx;
-
   {
     Scheme_Object *frame_marks;
     frame_marks = scheme_module_context_frame_marks(rn_set);
@@ -7287,18 +7301,23 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     m->ii_src = NULL;
     m->super_bxs_info = NULL;
 
-    bnenv = menv;
-    m->binding_names = bnenv->binding_names;
-    if (bnenv->exp_env) {
-      bnenv = bnenv->exp_env;
-      m->et_binding_names = bnenv->binding_names;
-      for (bnenv = bnenv->exp_env; bnenv; bnenv = bnenv->exp_env) {
+    if (SAME_OBJ(m->rn_stx, scheme_true)) {
+      /* We can reconstruct the `binding_names` tables for `module->namespace`,
+         so no need t keep them. */
+    } else {
+      bnenv = menv;
+      m->binding_names = bnenv->binding_names;
+      if (bnenv->exp_env) {
+        bnenv = bnenv->exp_env;
+        m->et_binding_names = bnenv->binding_names;
+        for (bnenv = bnenv->exp_env; bnenv; bnenv = bnenv->exp_env) {
+          add_binding_names_from_environment(m, bnenv);
+        }
+        bnenv = menv;
+      }
+      for (bnenv = bnenv->template_env; bnenv; bnenv = bnenv->template_env) {
         add_binding_names_from_environment(m, bnenv);
       }
-      bnenv = menv;
-    }
-    for (bnenv = bnenv->template_env; bnenv; bnenv = bnenv->template_env) {
-      add_binding_names_from_environment(m, bnenv);
     }
 
     pv = scheme_stx_property(form, scheme_intern_symbol("module-language"), NULL);
@@ -7983,7 +8002,7 @@ static void flush_definitions(Scheme_Env *genv)
 static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env *env, 
 				      Scheme_Compile_Expand_Info *rec, int drec)
 {
-  int num_phases, *_num_phases, i, exicount, *all_simple_renames, has_submodules;
+  int num_phases, *_num_phases, i, exicount, *all_simple_bindings, has_submodules;
   Scheme_Hash_Tree *all_defs;
   Scheme_Hash_Table *tables, *all_defs_out, *all_provided, *all_reprovided, *modidx_cache;
   Scheme_Module_Export_Info **exp_infos, *exp_info;
@@ -8020,6 +8039,13 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 
   rn_set = env->genv->stx_context;
 
+  /* For `module->namespace`: */
+  {
+    Scheme_Object *rn_stx;
+    rn_stx = scheme_module_context_to_stx(rn_set, env->genv->module->ii_src);
+    env->genv->module->rn_stx = rn_stx;
+  }
+
   /* It's possible that #%module-begin expansion introduces
      marked identifiers for definitions. */
   form = introduce_to_module_context(form, rn_set);
@@ -8030,11 +8056,11 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   _num_phases = MALLOC_ONE_ATOMIC(int);
   *_num_phases = 0;
 
-  all_simple_renames = (int *)scheme_malloc_atomic(sizeof(int));
-  *all_simple_renames = 1;
+  all_simple_bindings = (int *)scheme_malloc_atomic(sizeof(int));
+  *all_simple_bindings = 1;
 
   if (env->genv->module->super_bxs_info) {
-    *all_simple_renames = 0;
+    *all_simple_bindings = 0;
   }
 
   bxs = scheme_malloc(sizeof(Module_Begin_Expand_State));
@@ -8043,7 +8069,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   bxs->all_reprovided = all_reprovided;
   bxs->all_defs = all_defs;
   bxs->all_defs_out = all_defs_out;
-  bxs->all_simple_renames = all_simple_renames;
+  bxs->all_simple_bindings = all_simple_bindings;
   bxs->_num_phases = _num_phases;
   bxs->saved_provides = scheme_null;
   bxs->saved_submodules = scheme_null;
@@ -8245,7 +8271,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 
     env->genv->module->exp_infos = exp_infos;
 
-    if (!*all_simple_renames) {
+    if (!*all_simple_bindings) {
       /* No need to keep indirect syntax provides */
       for (i = 0; i < num_phases; i++) {
         exp_infos[i]->indirect_syntax_provides = NULL;
@@ -8253,8 +8279,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       }
     }
 
-    /* REMOVEME: FIXME: need to sort out the right shortcut */
-    if (0 && *all_simple_renames) {
+    if (*all_simple_bindings) {
+      /* We will be able to reconstruct binding for `module->namespace`: */
       env->genv->module->rn_stx = scheme_true;
     }
   }
@@ -8580,7 +8606,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                                   rn_set,
                                   bxs->tables,
                                   bxs->redef_modname, 
-                                  bxs->all_simple_renames,
+                                  bxs->all_simple_bindings,
                                   bxs->submodule_names);
 
   if (SCHEME_PAIRP(bxs->end_statementss)) {
@@ -8641,7 +8667,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       if (!SCHEME_NULLP(fst)) {
 	/* Expansion lifted expressions, so add them to
 	   the front and try again. */
-        *bxs->all_simple_renames = 0;
+        *bxs->all_simple_bindings = 0;
 	fm = SCHEME_STX_CDR(fm);
         e = introduce_to_module_context(e, rn_set);
         fm = scheme_named_map_1(NULL, introduce_to_module_context, fm, rn_set);
@@ -8740,9 +8766,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	    /* Create the bucket, indicating that the name will be defined: */
 	    scheme_add_global_symbol(name, scheme_undefined, env->genv);
 
-	    /* Add a renaming: */
-	    if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name))
-              *bxs->all_simple_renames = 0;
+	    if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name)
+                || !scheme_stx_equal_module_context(orig_name, env->genv->module->rn_stx))
+              *bxs->all_simple_bindings = 0;
 
 	    vars = SCHEME_STX_CDR(vars);
             var_count++;
@@ -8845,8 +8871,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
               /* Generate symbol for this binding: */
               name = scheme_global_binding(name, env->genv);
 
-              if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name))
-                *bxs->all_simple_renames = 0;
+              if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name)
+                  || !scheme_stx_equal_module_context(orig_name, env->genv->module->rn_stx))
+                *bxs->all_simple_bindings = 0;
 
               count++;
             }
@@ -9001,7 +9028,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                          bxs->redef_modname, 
                          0, 0, 
                          1, phase ? 1 : 0,
-                         bxs->all_simple_renames, bxs->modidx_cache,
+                         bxs->all_simple_bindings, bxs->modidx_cache,
                          bxs->submodule_names,
                          &non_phaseless);
 
@@ -9262,7 +9289,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	p = SCHEME_CDR(p);
       } else {
 	/* Lifts - insert them and try again */
-        *bxs->all_simple_renames = 0;
+        *bxs->all_simple_bindings = 0;
         SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observer, scheme_copy_list(l));
         if (erec) {
           e = scheme_make_pair(scheme_make_pair(e, SCHEME_CAR(expanded_l)),
@@ -11430,7 +11457,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 			Scheme_Object *idx, /* from module's idx; may be saved for unmarshalling */
 			Scheme_Env *orig_env, /* env for mark_src or copy_vars */
 			Scheme_Object *rn_set, /* add requires to renames in this set when no mark_src */
-                        Scheme_Object *single_rn, /* instead of rn_set */
+			Scheme_Object *rn_stx, /* module context-as-stx that corresponds to all_simple */
 			Scheme_Object *exns, /* NULL or [syntax] list of [syntax] symbols not to import */
 			Scheme_Hash_Table *onlys, /* NULL or hash table of names to import; the hash table is mutated */
 			Scheme_Object *prefix, /* NULL or prefix symbol */
@@ -11448,7 +11475,6 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
   Scheme_Object *to_phase;
   Scheme_Object **exs, **exsns, **exss;
   int *exets;
-  int has_context;
   Scheme_Object *nominal_modidx, *one_exn, *name, *rn, *ename = orig_ename;
   Scheme_Hash_Table *orig_onlys;
   int k, shared_rename, do_copy_vars;
@@ -11456,16 +11482,11 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
   int can_save_marshal = 1;
 
   if (mark_src) {
-    /* Check whether there's context for this import (which
-       leads to generated local names). */
-    has_context = scheme_stx_in_plain_module_context(mark_src, (rn_set ? rn_set : single_rn));
-    has_context = 1; // REMOVEME
-    if (has_context) {
-      if (all_simple)
-	*all_simple = 0;
-    }
-  } else {
-    has_context = 0; /* computed later */
+    if (all_simple
+        && *all_simple
+        && rn_stx
+        && !scheme_stx_equal_module_context(mark_src, rn_stx))
+      *all_simple = 0;
   }
 
   if (iname || ename || onlys || unpack_kern)
@@ -11530,10 +11551,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
     
       nominal_modidx = idx;
 
-      if (single_rn)
-        rn = single_rn;
-      else
-        rn = scheme_module_context_at_phase(rn_set, to_phase, 0);
+      rn = scheme_module_context_at_phase(rn_set, to_phase, 0);
 
       if (copy_vars)
         do_copy_vars = !orig_env->module && !orig_env->phase && SAME_OBJ(src_phase_index, scheme_make_integer(0)) && (k == -3);
@@ -11569,8 +11587,6 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           if (!name)
             continue;  /* we don't want this one. */
           mark_src = name;
-          has_context = scheme_stx_in_plain_module_context(mark_src, rn);
-          has_context = 1; //REMOVEME
           /* Remove to indicate that it's been imported: */
           scheme_hash_set(onlys, exs[j], NULL);
         } else {
@@ -11618,8 +11634,6 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           iname = scheme_datum_to_syntax(iname, scheme_false, scheme_false, 0, 0);
           iname = scheme_stx_add_module_context(iname, rn); 
         }
-        if (all_simple) // REMOVEME: FIXME
-          *all_simple = 0;
 
         if (ck)
           ck(iname, (orig_env->module ? orig_env->module->self_modidx : NULL),
@@ -12169,7 +12183,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
         idx = resolved_module_path_to_modidx(idx);
 
       add_single_require(m->me, x_just_mode, x_mode, idx, rename_env,
-                         rn_set, NULL,
+                         rn_set, (for_m ? for_m->rn_stx : NULL),
                          exns, onlys, prefix, iname, ename,
                          mark_src, 
                          unpack_kern, copy_vars,

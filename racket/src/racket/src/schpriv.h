@@ -1205,7 +1205,7 @@ void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *re
                                         Scheme_Hash_Table *export_registry, Scheme_Object *insp,
                                         Scheme_Object *replace_at);
 
-int scheme_stx_in_plain_module_context(Scheme_Object *stx, Scheme_Object *mc);
+int scheme_stx_equal_module_context(Scheme_Object *stx, Scheme_Object *mc_as_stx);
 
 Scheme_Object *scheme_stx_content(Scheme_Object *o);
 Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist);

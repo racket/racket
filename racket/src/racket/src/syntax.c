@@ -3985,15 +3985,18 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
   return vec;
 }
 
-int scheme_stx_in_plain_module_context(Scheme_Object *stx, Scheme_Object *mc)
+int scheme_stx_equal_module_context(Scheme_Object *other_stx, Scheme_Object *mc_as_stx)
 {
-  Scheme_Mark_Set *marks;
+  Scheme_Stx *stx = (Scheme_Stx *)mc_as_stx;
   Scheme_Object *phase;
 
-  marks = scheme_module_context_marks(mc);
-  phase = SCHEME_VEC_ELS(mc)[1];
+  if (SCHEME_VECTORP(stx->val) && (SCHEME_VEC_SIZE(stx->val) >= 2))
+    stx = (Scheme_Stx *)SCHEME_VEC_ELS(stx->val)[0];
+  
+  phase = scheme_make_integer(0);
 
-  return marks_equal(extract_mark_set((Scheme_Stx *)stx, phase), marks);
+  return marks_equal(extract_mark_set((Scheme_Stx *)other_stx, phase),
+                     extract_mark_set(stx, phase));
 }
 
 /***********************************************************************/
