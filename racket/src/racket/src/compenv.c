@@ -1393,7 +1393,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   if (_menv && genv->module)
     *_menv = genv;
-  
+
   if (SCHEME_STXP(find_id)) {
     if (flags & SCHEME_NULL_FOR_UNBOUND)
       return NULL;
@@ -1589,7 +1589,7 @@ static Scheme_Hash_Table *get_binding_names_table(Scheme_Env *env)
   return binding_names;
 }
 
-static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, Scheme_Object *id)
+static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, Scheme_Object *id, int allocate)
 {
   int i;
   char onstack[50], *buf;
@@ -1600,7 +1600,8 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, S
 
   if (!scheme_eq_hash_get(binding_names, sym)) {
     /* First declaration gets a plain symbol: */
-    scheme_hash_set(binding_names, sym, id);
+    if (allocate)
+      scheme_hash_set(binding_names, sym, id);
     return sym;
   }
 
@@ -1617,7 +1618,8 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, S
     sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
     if (!scheme_eq_hash_get(binding_names, sym)) {
-      scheme_hash_set(binding_names, sym, id);
+      if (allocate)
+        scheme_hash_set(binding_names, sym, id);
       return sym;
     }
 
@@ -1656,7 +1658,7 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
     }
   }
 
-  sym = select_binding_name(SCHEME_STX_VAL(id), env, id);
+  sym = select_binding_name(SCHEME_STX_VAL(id), env, id, 1);
 
   scheme_add_module_binding(id, phase,
                             (env->module ? env->module->self_modidx : scheme_false),
@@ -1675,9 +1677,10 @@ Scheme_Object *scheme_future_global_binding(Scheme_Object *id, Scheme_Env *env)
 /* The identifier id is being referenced before it has a binding. We
    want to allow it, anyway, perhaps because it's outside of a module
    context or because it's phase-1 code. So, we assume that it's going to
-   get the base symbol name. */
+   get the next available symbol name, but we don't want to allocate that
+   name. */
 {
-  return SCHEME_STX_VAL(id);
+  return select_binding_name(SCHEME_STX_VAL(id), env, id, 0);
 }
 
 int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env)

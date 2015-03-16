@@ -1475,8 +1475,9 @@ static Scheme_Object *vector_to_ht(Scheme_Object *vec, int kind)
         key = NULL;
     } else {
       if (!SCHEME_SYMBOLP(key)
-          || !SCHEME_STXP(val)
-          || !SCHEME_SYMBOLP(SCHEME_STX_VAL(val)))
+          || ((!SCHEME_STXP(val)
+               || !SCHEME_SYMBOLP(SCHEME_STX_VAL(val)))
+              && !SAME_OBJ(val, scheme_true)))
         key = NULL;
     }
     

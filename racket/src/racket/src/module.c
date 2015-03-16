@@ -7469,12 +7469,13 @@ Scheme_Object *scheme_prune_bindings_table(Scheme_Object *binding_names, Scheme_
     Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)binding_names;
     for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
       scheme_hash_tree_index(t, i, &k, &val);
-      if (scheme_stx_could_bind(val,
-                                scheme_datum_to_syntax(k, scheme_false, base_stx, 0, 0),
-                                phase))
-        ht = scheme_hash_tree_set(ht, k, val);
-      else
+      if (!scheme_stx_could_bind(val,
+                                 scheme_datum_to_syntax(k, scheme_false, base_stx, 0, 0),
+                                 phase)) {
         dropped = 1;
+        val = scheme_true;
+      }
+      ht = scheme_hash_tree_set(ht, k, val);
     }
   } else {
     Scheme_Hash_Table *t = (Scheme_Hash_Table *)binding_names;
@@ -7482,12 +7483,13 @@ Scheme_Object *scheme_prune_bindings_table(Scheme_Object *binding_names, Scheme_
       if (t->vals[i]) {
         k = t->keys[i];
         val = t->vals[i];
-        if (scheme_stx_could_bind(val,
-                                  scheme_datum_to_syntax(k, scheme_false, base_stx, 0, 0),
-                                  phase))
-          ht = scheme_hash_tree_set(ht, k, val);
-        else
+        if (!scheme_stx_could_bind(val,
+                                   scheme_datum_to_syntax(k, scheme_false, base_stx, 0, 0),
+                                   phase)) {
           dropped = 1;
+          val = scheme_true;
+        }
+        ht = scheme_hash_tree_set(ht, k, val);
       }
     }
   }
