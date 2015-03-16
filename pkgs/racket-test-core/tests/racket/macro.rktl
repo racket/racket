@@ -858,29 +858,33 @@
 
 ;; ----------------------------------------
 
-(module check-shadower-in-submodule racket/base
-  (require (for-syntax racket/base))
-  
-  (define-syntax (define-2 stx)
-    (syntax-case stx () 
-      [(_ id)
-       (with-syntax ([new-id
-                      ((make-syntax-introducer)
-                       (datum->syntax #f
-                                      (string->symbol
-                                       (format "~a2" (syntax-e #'id)))))])
-         #'(begin
-             (define new-id 5)
-             (define-syntax (id stx)
-               (syntax-local-get-shadower #'new-id))))]))
-  
-  (module* main #f
-    (provide out)
-    (define-2 f)
-    (define f2 6)
-    (define out f)))
+;; This module is now a syntax error due to an
+;; ambiguous binding:
+(syntax-test
+ #'(module check-shadower-in-submodule racket/base
+     (require (for-syntax racket/base))
+     
+     (define-syntax (define-2 stx)
+       (syntax-case stx () 
+         [(_ id)
+          (with-syntax ([new-id
+                         ((make-syntax-introducer)
+                          (datum->syntax #f
+                                         (string->symbol
+                                          (format "~a2" (syntax-e #'id)))))])
+            #'(begin
+                (define new-id 5)
+                (define-syntax (id stx)
+                  (syntax-local-get-shadower #'new-id))))]))
+     
+     (module* main #f
+       (provide out)
+       (define-2 f)
+       (define f2 6)
+       (define out f))))
 
-(test 5 dynamic-require '(submod 'check-shadower-in-submodule main) 'out)
+;; Old answer, no longer correct:
+;; (test 5 dynamic-require '(submod 'check-shadower-in-submodule main) 'out)
 
 ;; ----------------------------------------
 

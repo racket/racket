@@ -4072,7 +4072,8 @@ static void *compile_k(void)
 	    tl_queue = scheme_append(rl, tl_queue);
 	    form = SCHEME_CAR(tl_queue);
 	    tl_queue = SCHEME_CDR(tl_queue);
-	  }
+	  } else
+            form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
 	  break;
 	}
       }

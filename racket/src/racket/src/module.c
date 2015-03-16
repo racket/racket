@@ -7212,8 +7212,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   mb_ctx = scheme_false;
 
   /* For each provide in iim, add a module rename to fm */
+  orig_ii = scheme_stx_add_module_context(orig_ii, rn_set);
   if (ii) {
-    orig_ii = scheme_stx_add_module_context(orig_ii, rn_set);
     saw_mb = add_simple_require_renames(orig_ii, rn_set, menv, NULL, iim, iidx, scheme_make_integer(0),
                                         NULL, 1, 0);
     mb_ctx = scheme_datum_to_syntax(scheme_false, scheme_false, orig_ii, 0, 0);
@@ -7266,9 +7266,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   /* phase shift to replace self_modidx of previous expansion: */
   fm = scheme_stx_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL,
                         m->insp, m->insp);
-  
-  if (ii)
-    fm = scheme_stx_add_module_frame_context(fm, rn_set);
+
+  fm = scheme_stx_add_module_frame_context(fm, rn_set);
 
   SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);
 
