@@ -146,6 +146,17 @@ static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unm
 static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks);
 static void sort_vector_symbols(Scheme_Object *vec);
 
+XFORM_NONGCING static void extract_module_binding_parts(Scheme_Object *l,
+                                                        Scheme_Object *phase,
+                                                        Scheme_Object **_insp_desc,
+                                                        Scheme_Object **_modidx,
+                                                        Scheme_Object **_exportname,
+                                                        Scheme_Object **_nominal_modidx,
+                                                        Scheme_Object **_mod_phase,
+                                                        Scheme_Object **_nominal_name,
+                                                        Scheme_Object **_src_phase,
+                                                        Scheme_Object **_nominal_src_phase);
+
 #define CONS scheme_make_pair
 #define ICONS scheme_make_pair
 
@@ -2289,6 +2300,133 @@ static int mark_timestamps_older(Scheme_Mark_Set *marks, intptr_t timestamp)
 #define SCHEME_BINDING_MARKS(p) ((Scheme_Mark_Set *)SCHEME_CAR(p))
 #define SCHEME_BINDING_VAL(p)   SCHEME_CDR(p)
 
+#define CONV_RETURN_UNLESS(p) if (!p) return
+
+static void check_for_conversion(Scheme_Object *sym,
+                                 Scheme_Mark *mark,
+                                 Scheme_Module_Phase_Exports *pt,
+                                 Scheme_Hash_Table *collapse_table,
+                                 Scheme_Hash_Table *ht,
+                                 Scheme_Mark_Set *marks,
+                                 Scheme_Object *phase,
+                                 Scheme_Object *bind)
+/* Due to `require` macros, importing a whole module can turn into
+   individual imports from the module. Detect when everything that a
+   module exports (at a given phase) is imported as a set of bindings,
+   and collapse them to a pes */
+{
+  Scheme_Hash_Table *mht;
+  Scheme_Object *v, *v2, *cnt;
+  int i;
+
+  mht = (Scheme_Hash_Table *)scheme_hash_get(collapse_table, (Scheme_Object *)mark);
+  if (!mht) {
+    mht = scheme_make_hash_table(SCHEME_hash_ptr);
+    scheme_hash_set(collapse_table, (Scheme_Object *)mark, (Scheme_Object *)mht);
+  }
+  
+  cnt = scheme_hash_get(mht, (Scheme_Object *)pt);
+  if (!cnt)
+    cnt = scheme_make_integer(1);
+  else
+    cnt = scheme_bin_plus(cnt, scheme_make_integer(1));
+  scheme_hash_set(mht, (Scheme_Object *)pt, cnt);
+
+  if (SCHEME_INT_VAL(cnt) == pt->num_provides) {
+    Scheme_Object *modidx, *modidx2, *insp_desc, *insp_desc2, *src_phase;
+    Scheme_Object *exportname, *nominal_modidx, *nominal_modidx2, *mod_phase, *nominal_name;
+    Scheme_Object *nominal_src_phase;
+    Scheme_Object *pes;
+
+    nominal_modidx = NULL;
+
+    extract_module_binding_parts(SCHEME_BINDING_VAL(bind), phase,
+                                 &insp_desc,
+                                 &modidx,
+                                 &exportname,
+                                 &nominal_modidx,
+                                 &mod_phase,
+                                 NULL,
+                                 NULL,
+                                 NULL);
+
+    if (!nominal_modidx)
+      nominal_modidx = modidx;
+
+    /* since we've mapped N identifiers from a source of N identifiers,
+       maybe we mapped all of them. */
+    for (i = pt->num_provides; i--; ) {
+      v2 = scheme_hash_get(ht, pt->provides[i]);
+      CONV_RETURN_UNLESS(v2);
+
+      /* For now, allow only a single binding: */
+      CONV_RETURN_UNLESS(SCHEME_PAIRP(v2) && SCHEME_NULLP(SCHEME_CDR(v2)));
+      v2 = SCHEME_CAR(v2);
+      
+      CONV_RETURN_UNLESS(marks_equal(marks, SCHEME_BINDING_MARKS(v2)));
+      
+      /* Pull apart module bindings to make sure they're consistent: */
+      exportname = pt->provides[i];
+      nominal_modidx2 = NULL;
+      mod_phase = pt->phase_index;
+      nominal_name = exportname;
+      src_phase = scheme_make_integer(0);
+      nominal_src_phase = NULL;
+      mod_phase = pt->phase_index;
+      
+      extract_module_binding_parts(SCHEME_BINDING_VAL(v2), phase,
+                                   &insp_desc2,
+                                   &modidx,
+                                   &exportname,
+                                   &nominal_modidx2,
+                                   &mod_phase,
+                                   &nominal_name,
+                                   &src_phase,
+                                   &nominal_src_phase);
+
+      if (!nominal_modidx2)
+        nominal_modidx2 = modidx;
+      if (!nominal_src_phase)
+        nominal_src_phase = mod_phase;
+
+      CONV_RETURN_UNLESS(SAME_OBJ(insp_desc2, insp_desc));
+      modidx2 = (pt->provide_srcs ? pt->provide_srcs[i] : scheme_false);
+      if (SCHEME_FALSEP(modidx2))
+        modidx2 = nominal_modidx;
+      else if (pt->src_modidx)
+        modidx2 = scheme_modidx_shift(modidx2, pt->src_modidx, nominal_modidx);
+      CONV_RETURN_UNLESS(scheme_equal(modidx, modidx2));
+      CONV_RETURN_UNLESS(SAME_OBJ(exportname, pt->provide_src_names[i]));
+      CONV_RETURN_UNLESS(scheme_equal(nominal_modidx2, nominal_modidx));
+      CONV_RETURN_UNLESS(scheme_eqv(mod_phase, (pt->provide_src_phases
+                                    ? scheme_make_integer(pt->provide_src_phases[i])
+                                    : pt->phase_index)));
+      CONV_RETURN_UNLESS(SAME_OBJ(nominal_name, pt->provides[i]));
+      CONV_RETURN_UNLESS(scheme_eqv(src_phase, phase));
+      CONV_RETURN_UNLESS(scheme_eqv(nominal_src_phase, pt->phase_index));
+    }
+    
+    /* found a match; convert to a pes: */
+    pes = scheme_make_vector(5, NULL);
+    SCHEME_VEC_ELS(pes)[0] = nominal_modidx;
+    SCHEME_VEC_ELS(pes)[1] = (Scheme_Object *)pt;
+    SCHEME_VEC_ELS(pes)[2] = phase;
+    SCHEME_VEC_ELS(pes)[3] = pt->phase_index;
+    SCHEME_VEC_ELS(pes)[4] = insp_desc;
+
+    bind = scheme_make_pair((Scheme_Object *)marks, pes);
+        
+    /* install pes: */
+    v = scheme_make_raw_pair(bind, SCHEME_CDR(mark->bindings));
+    SCHEME_CDR(mark->bindings) = v;
+
+    /* remove per-symbol bindings: */
+    for (i = pt->num_provides; i--; ) {
+      scheme_hash_set(ht, pt->provides[i], NULL);
+    }
+  }
+}
+
 XFORM_NONGCING static void save_old_value(Scheme_Object *mp, Scheme_Object *old_val)
 {
   if (SCHEME_MPAIRP(old_val))
@@ -2298,7 +2436,9 @@ XFORM_NONGCING static void save_old_value(Scheme_Object *mp, Scheme_Object *old_
 }
 
 static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Set *marks,
-                        Scheme_Object *val)
+                        Scheme_Object *val,
+                        Scheme_Module_Phase_Exports *from_pt, /* to detect collapse conversion */
+                        Scheme_Hash_Table *collapse_table) /* to triggere collapse detection */
 /* `val` can be a symbol (local binding), a modidx/pair/#f
    (module/global binding), a shared-binding vector (i.e., a pes), or
    a syntax object (for a `free-identifier=?` equivalence) to be
@@ -2359,6 +2499,9 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
       l = scheme_make_pair(bind, l);
       scheme_hash_set(ht, sym, l);
     }
+    
+    if (from_pt)
+      check_for_conversion(sym, mark, from_pt, collapse_table, ht, marks, phase, bind);
   } else {
     /* Order matters: the new bindings should hide any existing bindings for the same name */
     /* REMOVEME: FIXME: need to remove mappings from the hash table that are replaced here;
@@ -2374,7 +2517,7 @@ void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Obj
 
   STX_ASSERT(SCHEME_SYMBOLP(binding_sym));
 
-  add_binding(stx->val, phase, extract_mark_set(stx, phase), binding_sym);
+  add_binding(stx->val, phase, extract_mark_set(stx, phase), binding_sym, NULL, NULL);
 }
 
 static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localname, Scheme_Object *phase,
@@ -2382,16 +2525,18 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
                                   Scheme_Object *insp_desc,
                                   Scheme_Object *nominal_mod, Scheme_Object *nominal_ex,
                                   Scheme_Object *src_phase, 
-                                  Scheme_Object *nom_phase)
+                                  Scheme_Object *nom_phase,
+                                  Scheme_Module_Phase_Exports *from_pt,
+                                  Scheme_Hash_Table *collapse_table)
 {
   Scheme_Object *elem;
   int mod_phase;
 
   if (SCHEME_FALSEP(modidx)) {
     if (SAME_OBJ(localname, exname))
-      add_binding(localname, phase, marks, scheme_false);
+      add_binding(localname, phase, marks, scheme_false, NULL, NULL);
     else
-      add_binding(localname, phase, marks, scheme_make_pair(scheme_false, exname));
+      add_binding(localname, phase, marks, scheme_make_pair(scheme_false, exname), NULL, NULL);
     return;
   }
 
@@ -2462,7 +2607,67 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
   if (!SCHEME_FALSEP(insp_desc))
     elem = CONS(insp_desc, elem);
 
-  add_binding(localname, phase, marks, elem);
+  add_binding(localname, phase, marks, elem, from_pt, collapse_table);
+}
+
+void extract_module_binding_parts(Scheme_Object *l,
+                                  Scheme_Object *phase,
+                                  Scheme_Object **_insp_desc,      /* required */
+                                  Scheme_Object **_modidx,         /* required */
+                                  Scheme_Object **_exportname,     /* required, maybe unset */
+                                  Scheme_Object **_nominal_modidx, /* maybe unset */
+                                  Scheme_Object **_mod_phase,      /* required, maybe unset */
+                                  Scheme_Object **_nominal_name,   /* maybe unset */
+                                  Scheme_Object **_src_phase,      /* maybe unset */
+                                  Scheme_Object **_nominal_src_phase) /* maybe unset */
+{
+  if (SCHEME_INSPECTOR_DESCP(SCHEME_CAR(l))) {
+    *_insp_desc = SCHEME_CAR(l);
+    l = SCHEME_CDR(l);
+  } else
+    *_insp_desc = scheme_false;
+        
+  if (SCHEME_MODIDXP(l))
+    *_modidx = l;
+  else {
+    *_modidx = SCHEME_CAR(l);
+    l = SCHEME_CDR(l);
+
+    if (SCHEME_SYMBOLP(l)) {
+      /* l is exportname */
+      *_exportname = l;
+    } else if (SCHEME_MODIDXP(l)) {
+      /* l is nominal_modidx */
+      if (_nominal_modidx) *_nominal_modidx = l;
+    } else {
+      if (SCHEME_INTP(SCHEME_CAR(l)) || SCHEME_BIGNUMP(SCHEME_CAR(l))) {
+        /* mod-phase before rest */
+        *_mod_phase = SCHEME_CAR(l);
+        l = SCHEME_CDR(l);
+      }
+      
+      /* l is (list* exportname nominal_modidx_plus_phase nominal_exportname) */
+      *_exportname = SCHEME_CAR(l);
+      l = SCHEME_CDR(l);
+      if (_nominal_name)
+        *_nominal_name = SCHEME_CDR(l);
+      l = SCHEME_CAR(l);
+      /* l is nominal_modidx_plus_phase */
+      if (SCHEME_PAIRP(l)) {
+        if (_nominal_modidx) *_nominal_modidx = SCHEME_CAR(l);
+        l = SCHEME_CDR(l);
+        if (SCHEME_PAIRP(l)) {
+          if (_src_phase) *_src_phase = SCHEME_CAR(l);
+          if (_nominal_src_phase) *_nominal_src_phase = SCHEME_CDR(l);
+        } else {
+          if (_src_phase) *_src_phase = l;
+          if (_nominal_src_phase) *_nominal_src_phase = *_mod_phase;
+        }
+      } else {
+        if (_nominal_modidx) *_nominal_modidx = l;
+      }
+    }
+  }
 }
 
 void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase, 
@@ -2475,6 +2680,7 @@ void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase,
                         modidx, sym, defn_phase,
                         inspector,
                         modidx, sym,
+                        NULL, NULL,
                         NULL, NULL);
 }
 
@@ -2483,14 +2689,17 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                          Scheme_Object *inspector,
                                          Scheme_Object *nominal_mod, Scheme_Object *nominal_name,
                                          Scheme_Object *nominal_import_phase, 
-                                         Scheme_Object *nominal_export_phase)
+                                         Scheme_Object *nominal_export_phase,
+                                         Scheme_Module_Phase_Exports *from_pt,
+                                         Scheme_Hash_Table *collapse_table)
 {
   STX_ASSERT(SCHEME_STXP(o));
   do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase), SCHEME_STX_VAL(o), phase,
                         modidx, defn_name, defn_phase,
                         inspector,
                         nominal_mod, nominal_name,
-                        nominal_import_phase, nominal_export_phase);
+                        nominal_import_phase, nominal_export_phase,
+                        from_pt, collapse_table);
 }
 
 static Scheme_Object *marks_to_printed_list(Scheme_Mark_Set *marks)
@@ -3304,51 +3513,24 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
         insp_desc = scheme_false;
       } else if (SCHEME_PAIRP(l)) {
         /* A list for a module import */
-        if (SCHEME_INSPECTOR_DESCP(SCHEME_CAR(l))) {
-          insp_desc = SCHEME_CAR(l);
-          l = SCHEME_CDR(l);
-        } else
-          insp_desc = scheme_false;
+        Scheme_Object *modidx;
+        Scheme_Object *exportname = SCHEME_VEC_ELS(result)[1];
+        Scheme_Object *mod_phase = SCHEME_VEC_ELS(result)[2];
         
-        if (SCHEME_MODIDXP(l)) {
-          SCHEME_VEC_ELS(result)[0] = l;
-        } else {
-          SCHEME_VEC_ELS(result)[0] = SCHEME_CAR(l);
-          l = SCHEME_CDR(l);
-          if (SCHEME_SYMBOLP(l)) {
-            /* l is exportname */
-            SCHEME_VEC_ELS(result)[1] = l;
-          } else if (SCHEME_MODIDXP(l)) {
-            /* l is nominal_modidx */
-            if (nominal_modidx) *nominal_modidx = l;
-          } else {
-            if (SCHEME_INTP(SCHEME_CAR(l)) || SCHEME_BIGNUMP(SCHEME_CAR(l))) {
-              /* mod-phase before rest */
-              SCHEME_VEC_ELS(result)[2] = SCHEME_CAR(l);
-              l = SCHEME_CDR(l);
-            }
-            /* l is (list* exportname nominal_modidx_plus_phase nominal_exportname) */
-            SCHEME_VEC_ELS(result)[1] = SCHEME_CAR(l);
-            l = SCHEME_CDR(l);
-            if (nominal_name)
-              *nominal_name = SCHEME_CDR(l);
-            l = SCHEME_CAR(l);
-            /* l is nominal_modidx_plus_phase */
-            if (SCHEME_PAIRP(l)) {
-              if (nominal_modidx) *nominal_modidx = SCHEME_CAR(l);
-              l = SCHEME_CDR(l);
-              if (SCHEME_PAIRP(l)) {
-                if (src_phase) *src_phase = SCHEME_CAR(l);
-                if (nominal_src_phase) *nominal_src_phase = SCHEME_CDR(l);
-              } else {
-                if (src_phase) *src_phase = l;
-                if (nominal_src_phase) *nominal_src_phase = SCHEME_VEC_ELS(result)[2];
-              }
-            } else {
-              if (nominal_modidx) *nominal_modidx = l;
-            }
-          }
-        }
+        extract_module_binding_parts(l,
+                                     SCHEME_VEC_ELS(result)[2],
+                                     &insp_desc,
+                                     &modidx,    /* required */
+                                     &exportname,    /* required */
+                                     nominal_modidx,
+                                     &mod_phase, /* required */
+                                     nominal_name,
+                                     src_phase,
+                                     nominal_src_phase);
+        
+        SCHEME_VEC_ELS(result)[0] = modidx;
+        SCHEME_VEC_ELS(result)[1] = exportname;
+        SCHEME_VEC_ELS(result)[2] = mod_phase;
       } else {
         /* A vector for a pes */
         Scheme_Module_Phase_Exports *pt;
@@ -3474,7 +3656,7 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
 
   /* Passing an identifier as the "value" adds to the existing binding,
      instead of replacing it: */
-  add_binding(stx->val, phase, extract_mark_set(stx, phase), from_o);
+  add_binding(stx->val, phase, extract_mark_set(stx, phase), from_o, NULL, NULL);
 }
 
 /******************** module-import bindings ********************/
@@ -3709,7 +3891,8 @@ void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-s
                         modidx, exname, scheme_make_integer(mod_phase),
                         SCHEME_VEC_ELS(mc)[2],
                         nominal_mod, nominal_ex,
-                        src_phase, nom_phase);
+                        src_phase, nom_phase,
+                        NULL, NULL);
 }
 
 void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mark> <phase> <inspector> <shifts>) or (cons <phase> <inspector-desc>) */
@@ -3749,7 +3932,7 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
   if (replace_at) {
     SCHEME_BINDING_VAL(SCHEME_CAR(replace_at)) = pes;
   } else {
-    add_binding(NULL, phase, marks, pes);
+    add_binding(NULL, phase, marks, pes, NULL, NULL);
   }
 }
 

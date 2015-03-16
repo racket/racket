@@ -7000,6 +7000,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   ii = SCHEME_STX_CAR(fm);
   fm = SCHEME_STX_CDR(fm);
 
+  orig_ii = ii;
+
   if (post && SCHEME_FALSEP(SCHEME_STX_VAL(ii))) {
     ii = NULL;
     ctx_form = disarmed_form;
@@ -7019,9 +7021,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     ii = SCHEME_STX_CAR(fm);
     fm = SCHEME_STX_CDR(fm);
     super_phase_shift = scheme_make_integer(0);
+    orig_ii = ii;
   }
 
-  orig_ii = ii;
   if (!SCHEME_STXP(fm))
     fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
 
@@ -7202,7 +7204,6 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   /* For each provide in iim, add a module rename to fm */
   if (ii) {
     orig_ii = scheme_stx_add_module_context(orig_ii, rn_set);
-    m->ii_src = orig_ii;
     saw_mb = add_simple_require_renames(orig_ii, rn_set, menv, NULL, iim, iidx, scheme_make_integer(0),
                                         NULL, 1, 0);
     mb_ctx = scheme_datum_to_syntax(scheme_false, scheme_false, orig_ii, 0, 0);
@@ -7211,10 +7212,13 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     shift = (Scheme_Object *)m->super_bxs_info[1];
     fm = scheme_stx_add_shift(fm, shift);
     mb_ctx = scheme_stx_add_shift(ctx_form, shift);
+    orig_ii = scheme_stx_add_shift(orig_ii, shift);
     shift_back = 1;
     /* REMOVEME: FIXME: there must be a `#%module-begin' in the enclosing module, right? */
     saw_mb = 1;
   }
+
+  m->ii_src = orig_ii;
 
   {
     Scheme_Object *frame_marks;
@@ -7234,7 +7238,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     fm = SCHEME_STX_CAR(fm);
     check_not_tainted(fm);
   } else {
-    fm = scheme_make_pair(scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx /* REMOVEME (orig_ii ? orig_ii : mb_ctx) */, 0, 2), 
+    fm = scheme_make_pair(scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx, 0, 2), 
 			  fm);
     check_mb = 1;
   }
@@ -7350,7 +7354,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     formname = SCHEME_STX_CAR(disarmed_form);
     fm = cons(formname,
 	      cons(nm,
-		   cons((orig_ii ? orig_ii : scheme_false),
+		   cons(orig_ii,
                         cons(fm, scheme_null))));
 
     fm = scheme_datum_to_syntax(fm, form, ctx_form, 0, 2);
@@ -8549,7 +8553,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     /* Put initial requires into the table:
        (This is redundant for the rename set, but we need to fill
        the `all_requires' table, etc.) */
-    if (env->genv->module->ii_src) {
+    if (env->genv->module->ii_src && SCHEME_TRUEP(SCHEME_STX_VAL(env->genv->module->ii_src))) {
       Scheme_Module *iim;
       Scheme_Object *nmidx, *orig_src;
 
@@ -11468,8 +11472,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 			int *all_simple,
 			Check_Func ck, /* NULL or called for each addition */
 			void *data,
-                        Scheme_Object *form, Scheme_Object *err_src, Scheme_Object *cki /* ck args */
-			)
+                        Scheme_Object *form, Scheme_Object *err_src, Scheme_Object *cki, /* ck args */
+			Scheme_Hash_Table *collapse_table) /* hints for collapsing to a shared table */
 {
   int j, var_count;
   Scheme_Object *to_phase;
@@ -11666,6 +11670,9 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           } else
             done = 0;
 
+          if (!pt->src_modidx && me->src_modidx)
+            pt->src_modidx = me->src_modidx;
+
           if (!done && !shared_rename) {
             scheme_add_module_binding_w_nominal(iname, to_phase,
                                                 modidx, exsns[j], (exets
@@ -11674,7 +11681,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
                                                 scheme_module_context_inspector(rn),
                                                 nominal_modidx, exs[j],
                                                 src_phase_index,
-                                                pt->phase_index);
+                                                pt->phase_index,
+                                                pt, collapse_table);
           }
         }
 
@@ -11803,6 +11811,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
   Scheme_Hash_Table *onlys;
   Scheme_Env *env;
   int skip_one, mode_cnt = 0, just_mode_cnt = 0, is_mpi;
+  Scheme_Hash_Table *collapse_table;
 
   if (SAME_TYPE(SCHEME_TYPE(form), scheme_module_index_type)) {
     ll = scheme_make_pair(scheme_false, scheme_make_pair(form, scheme_null));
@@ -11812,6 +11821,8 @@ void parse_requires(Scheme_Object *form, int at_phase,
       scheme_wrong_syntax(NULL, NULL, form, IMPROPER_LIST_FORM);
     is_mpi = 0;
   }
+
+  collapse_table = scheme_make_hash_table(SCHEME_hash_ptr);
   
   for (ll = SCHEME_STX_CDR(ll); !SCHEME_STX_NULLP(ll); ll = SCHEME_STX_CDR(ll)) {
     i = SCHEME_STX_CAR(ll);
@@ -12191,7 +12202,8 @@ void parse_requires(Scheme_Object *form, int at_phase,
                          unpack_kern, copy_vars,
                          all_simple,
                          ck, data,
-                         form, err_src, i);
+                         form, err_src, i,
+                         collapse_table);
 
       if (onlys && onlys->count) {
         /* Something required in `only' wasn't provided by the module */

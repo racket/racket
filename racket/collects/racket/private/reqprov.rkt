@@ -319,7 +319,9 @@
                                    (all-except #,(xlate-path #'path) id ...))))))]
                        ;; General case:
                        [_ (let-values ([(imports sources) (expand-import in)])
-                            ;; TODO: collapse back to simple cases when possible
+                            ;; Note: in case `in` could be expressed as a simple import form,
+                            ;; the core `#%require` form will collapse back to simple form
+                            ;; in many cases.
                             (append
                              (map (lambda (import)
                                     #`(just-meta
