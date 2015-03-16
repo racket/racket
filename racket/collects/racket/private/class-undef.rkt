@@ -33,13 +33,17 @@
 ;; A wrapper macro that runs the `need-undeed-check?` analysis
 ;; and adds a boolean argument to a call to `compose-class`:
 (define-syntax (detect-field-unsafe-undefined stx)
-  (syntax-case stx ()
-    [(_ compose-class arg ... proc final)
-     (let-values ([(exp exp-proc) (syntax-local-expand-expression #'proc)])
-       (with-syntax ([exp-proc exp-proc]
-                     [need-undef? (need-undefined-check? exp)])
-         (syntax/loc stx
-           (compose-class arg ... proc need-undef? final))))]))
+  (cond
+   [(eq? 'expression (syntax-local-context))
+    (syntax-case stx ()
+      [(_ compose-class arg ... proc final)
+       (let-values ([(exp exp-proc) (syntax-local-expand-expression #'proc)])
+         (with-syntax ([exp-proc exp-proc]
+                       [need-undef? (need-undefined-check? exp)])
+           (syntax/loc stx
+             (compose-class arg ... exp-proc need-undef? final))))])]
+   [else
+    #`(#%expression #,stx)]))
 
 ;; Analysis to detect whether any field can be referenced while
 ;; its value is `unsafe-undefined`, based on `declare-...` annotations
