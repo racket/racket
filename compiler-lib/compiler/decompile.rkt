@@ -237,8 +237,10 @@
                               (values phase
                                       (for/hash ([(sym id) (in-hash ht)])
                                         (values sym
-                                                `(#%decode-syntax 
-                                                  ,(decompile-stx (stx-encoded id) stx-ht)))))))
+                                                (if (eq? id #t)
+                                                    #t
+                                                    `(#%decode-syntax 
+                                                      ,(decompile-stx (stx-encoded id) stx-ht))))))))
            (quote language-info ,lang-info)
            ,@(if (null? flags) '() (list `(quote ,flags)))
            ,@(let ([l (apply

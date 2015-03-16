@@ -140,7 +140,7 @@
                                 [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
                                 [internal-context (or/c #f #t stx? (vectorof stx?))]
                                 [binding-names (hash/c exact-integer?
-                                                       (hash/c symbol? stx?))]
+                                                       (hash/c symbol? (or/c #t stx?)))]
                                 [flags (listof (or/c 'cross-phase))]
                                 [pre-submodules (listof mod?)]
                                 [post-submodules (listof mod?)]))
