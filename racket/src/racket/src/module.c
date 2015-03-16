@@ -7296,7 +7296,6 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   if (rec[drec].comp) {
     Scheme_Object *dummy, *pv;
-    Scheme_Env *bnenv;
 
     dummy = scheme_make_environment_dummy(env);
     m->dummy = dummy;
@@ -7314,25 +7313,6 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
     m->ii_src = NULL;
     m->super_bxs_info = NULL;
-
-    if (SAME_OBJ(m->rn_stx, scheme_true)) {
-      /* We can reconstruct the `binding_names` tables for `module->namespace`,
-         so no need t keep them. */
-    } else {
-      bnenv = menv;
-      m->binding_names = bnenv->binding_names;
-      if (bnenv->exp_env) {
-        bnenv = bnenv->exp_env;
-        m->et_binding_names = bnenv->binding_names;
-        for (bnenv = bnenv->exp_env; bnenv; bnenv = bnenv->exp_env) {
-          add_binding_names_from_environment(m, bnenv);
-        }
-        bnenv = menv;
-      }
-      for (bnenv = bnenv->template_env; bnenv; bnenv = bnenv->template_env) {
-        add_binding_names_from_environment(m, bnenv);
-      }
-    }
 
     pv = scheme_stx_property(form, scheme_intern_symbol("module-language"), NULL);
     if (pv && SCHEME_TRUEP(pv)) {
@@ -7469,6 +7449,53 @@ Scheme_Object *scheme_apply_for_syntax_in_env(Scheme_Object *proc, Scheme_Env *e
                                     : NULL)));
 
   return scheme_apply_multi_with_dynamic_state(proc, 0, NULL, &dyn_state);
+}
+
+Scheme_Object *scheme_prune_bindings_table(Scheme_Object *binding_names, Scheme_Object *rn_stx, Scheme_Object *phase)
+{
+  int dropped = 0;
+  intptr_t i;
+  Scheme_Object *k, *val, *base_stx;
+  Scheme_Hash_Tree *ht;
+
+  ht = scheme_make_hash_tree(0);
+
+  base_stx = scheme_stx_add_module_context(scheme_datum_to_syntax(scheme_false, scheme_false, scheme_false, 0, 0),
+                                           scheme_module_context_at_phase(scheme_stx_to_module_context(rn_stx),
+                                                                          phase,
+                                                                          0));
+
+  if (SCHEME_HASHTRP(binding_names)) {
+    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)binding_names;
+    for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
+      scheme_hash_tree_index(t, i, &k, &val);
+      if (scheme_stx_could_bind(val,
+                                scheme_datum_to_syntax(k, scheme_false, base_stx, 0, 0),
+                                phase))
+        ht = scheme_hash_tree_set(ht, k, val);
+      else
+        dropped = 1;
+    }
+  } else {
+    Scheme_Hash_Table *t = (Scheme_Hash_Table *)binding_names;
+    for (i = t->size; i--; ) {
+      if (t->vals[i]) {
+        k = t->keys[i];
+        val = t->vals[i];
+        if (scheme_stx_could_bind(val,
+                                  scheme_datum_to_syntax(k, scheme_false, base_stx, 0, 0),
+                                  phase))
+          ht = scheme_hash_tree_set(ht, k, val);
+        else
+          dropped = 1;
+      }
+    }
+  }
+
+  if (dropped)
+    return (Scheme_Object *)ht;
+  else
+    return binding_names;
 }
 
 /**********************************************************************/
@@ -8296,6 +8323,20 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
     if (*all_simple_bindings && env->genv->module->rn_stx) {
       /* We will be able to reconstruct binding for `module->namespace`: */
       env->genv->module->rn_stx = scheme_true;
+    } else {
+      Scheme_Env *bnenv = env->genv;
+      env->genv->module->binding_names = bnenv->binding_names;
+      if (bnenv->exp_env) {
+        bnenv = bnenv->exp_env;
+        env->genv->module->et_binding_names = bnenv->binding_names;
+        for (bnenv = bnenv->exp_env; bnenv; bnenv = bnenv->exp_env) {
+          add_binding_names_from_environment(env->genv->module, bnenv);
+        }
+        bnenv = env->genv;
+      }
+      for (bnenv = bnenv->template_env; bnenv; bnenv = bnenv->template_env) {
+        add_binding_names_from_environment(env->genv->module, bnenv);
+      }
     }
   }
 
