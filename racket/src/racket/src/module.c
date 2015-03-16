@@ -207,6 +207,7 @@ ROSYM static Scheme_Object *submod_symbol;
 ROSYM static Scheme_Object *module_name_symbol;
 ROSYM static Scheme_Object *nominal_id_symbol;
 ROSYM static Scheme_Object *phaseless_keyword;
+ROSYM static Scheme_Object *empty_namespace_keyword;
 
 READ_ONLY static Scheme_Object *modbeg_syntax;
 
@@ -668,6 +669,12 @@ void scheme_finish_kernel(Scheme_Env *env)
   {
     const char *s = "cross-phase-persistent";
     phaseless_keyword = scheme_intern_exact_keyword(s, strlen(s));
+  }
+
+  REGISTER_SO(empty_namespace_keyword);
+  {
+    const char *s = "empty-namespace";
+    empty_namespace_keyword = scheme_intern_exact_keyword(s, strlen(s));
   }
 }
 
@@ -3098,6 +3105,9 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
       menv->stx_context = rns;
 
       menv->rename_set_ready = 1;
+    } else {
+      /* had #:empty-namespace declaration */
+      scheme_prepare_env_stx_context(menv);
     }
   }
 }
@@ -8283,7 +8293,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       }
     }
 
-    if (*all_simple_bindings) {
+    if (*all_simple_bindings && env->genv->module->rn_stx) {
       /* We will be able to reconstruct binding for `module->namespace`: */
       env->genv->module->rn_stx = scheme_true;
     }
@@ -8468,6 +8478,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   Scheme_Object *lift_ctx;
   Scheme_Object *lifted_reqs = scheme_null, *req_data, *unbounds = scheme_null;
   int maybe_has_lifts = 0, expand_ends = (phase == 0), non_phaseless, requested_phaseless;
+  int requested_empty_namespace;
   Scheme_Object *observer, *vec, *end_statements;
   Scheme_Object *begin_for_syntax_stx, *non_phaseless_form = NULL;
   const char *who = "module";
@@ -8525,6 +8536,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
   non_phaseless = (env->genv->module->phaseless ? 0 : NON_PHASELESS_IMPORT);
   requested_phaseless = 0;
+  requested_empty_namespace = 0;
   env->genv->module->phaseless = NULL;
 
   /* Expand each expression in form up to `begin', `define-values', `define-syntax', 
@@ -9060,6 +9072,10 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                 if (requested_phaseless)
                   scheme_wrong_syntax(who, kw, e, "duplicate declaration");
                 requested_phaseless = 1;
+              } else if (SAME_OBJ(SCHEME_STX_VAL(kw), empty_namespace_keyword)) {
+                if (requested_empty_namespace)
+                  scheme_wrong_syntax(who, kw, e, "duplicate declaration");
+                requested_empty_namespace = 1;
               } else {
                 scheme_wrong_syntax(who, kw, e, "unrecognized keyword");
               }
@@ -9437,6 +9453,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
         scheme_wrong_syntax(who, non_phaseless_form, form, "does not satisfy cross-phase persistent grammar");
     }
   }
+
+  if (requested_empty_namespace)
+    env->genv->module->rn_stx = NULL;
 
   if (rec[drec].comp) {
     body_lists = scheme_make_pair(first, scheme_make_pair(exp_body, body_lists));
