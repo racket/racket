@@ -1141,7 +1141,38 @@ Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks,
   return o;
 }
 
+/* frame-marks = main-marks
+   .           | (vector main-marks expr-marks intdef-marks)
+   main-marks = some-marks
+   expr-marks = some-marks
+   intdef-marks = some-marks
+   some-marks = #f | mark | mark-set */
+
+static Scheme_Object *stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, int which, Scheme_Object *phase, int mode)
+{
+  if (SCHEME_VECTORP(mark)) {
+    mark = SCHEME_VEC_ELS(mark)[which];
+  } else if (which != 0)
+    return o;
+
+  if (SCHEME_FALSEP(mark))
+    return o;
+  else if (SCHEME_MARKP(mark))
+    return scheme_stx_adjust_mark(o, mark, phase, mode);
+  else {
+    STX_ASSERT(SCHEME_MARK_SETP(mark));
+    return scheme_stx_adjust_marks(o, (Scheme_Mark_Set *)mark, phase, mode);
+  }
+}
+
 Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
+{
+  o = scheme_stx_adjust_frame_expression_marks(o, mark, phase, mode);
+  o = scheme_stx_adjust_frame_bind_marks(o, mark, phase, mode);
+  return stx_adjust_frame_marks(o, mark, 2, phase, mode);
+}
+
+Scheme_Object *scheme_stx_adjust_frame_main_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
 {
   o = scheme_stx_adjust_frame_expression_marks(o, mark, phase, mode);
   return scheme_stx_adjust_frame_bind_marks(o, mark, phase, mode);
@@ -1149,28 +1180,12 @@ Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *ma
 
 Scheme_Object *scheme_stx_adjust_frame_bind_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
 {
-  if (SCHEME_PAIRP(mark))
-    mark = SCHEME_CAR(mark);
-
-  if (SCHEME_FALSEP(mark))
-    return o;
-  else if (SCHEME_MARKP(mark) || SCHEME_MULTI_MARKP(mark))
-    return scheme_stx_adjust_mark(o, mark, phase, mode);
-  else
-    return scheme_stx_adjust_marks(o, (Scheme_Mark_Set *)mark, phase, mode);
+  return stx_adjust_frame_marks(o, mark, 0, phase, mode);
 }
 
 Scheme_Object *scheme_stx_adjust_frame_expression_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
 {
-  if (SCHEME_PAIRP(mark)) {
-    mark = SCHEME_CDR(mark);
-    while (!SCHEME_NULLP(mark)) {
-      o = scheme_stx_adjust_mark(o, SCHEME_CAR(mark), phase, mode);
-      mark = SCHEME_CDR(mark);
-    }
-  }
-
-  return o;
+  return stx_adjust_frame_marks(o, mark, 1, phase, mode);
 }
 
 Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark)
@@ -1178,15 +1193,53 @@ Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark)
   return mark;
 }
 
+static Scheme_Object *add_frame_mark(Scheme_Object *frame_marks, Scheme_Object *mark, int pos)
+{
+  Scheme_Object *marks;
+  
+  if (!frame_marks) {
+    if (pos == 0)
+      return mark;
+    else
+      frame_marks = scheme_false;
+  }
+
+  if (SCHEME_VECTORP(frame_marks))
+    marks = SCHEME_VEC_ELS(frame_marks)[pos];
+  else if (pos == 0)
+    marks = frame_marks;
+  else
+    marks = scheme_false;
+
+  if (SCHEME_FALSEP(marks))
+    marks = mark;
+  else {
+    STX_ASSERT(!SCHEME_MULTI_MARKP(marks));
+    if (SCHEME_MARKP(marks))
+      marks = (Scheme_Object *)mark_set_set(empty_mark_set, marks, scheme_true);
+    marks = (Scheme_Object *)mark_set_set((Scheme_Mark_Set *)marks, mark, scheme_true);
+  }
+
+  if (SCHEME_VECTORP(frame_marks))
+    frame_marks = make_vector3(SCHEME_VEC_ELS(frame_marks)[0],
+                               SCHEME_VEC_ELS(frame_marks)[1],
+                               SCHEME_VEC_ELS(frame_marks)[2]);
+  else
+    frame_marks = make_vector3(frame_marks, scheme_false, scheme_false);
+
+  SCHEME_VEC_ELS(frame_marks)[pos] = marks;
+
+  return frame_marks;
+}
+
 Scheme_Object *scheme_add_frame_expression_mark(Scheme_Object *frame_marks, Scheme_Object *expr_mark)
 {
-  if (!frame_marks)
-    frame_marks = scheme_false;
-  if (SCHEME_PAIRP(frame_marks))
-    return scheme_make_pair(SCHEME_CAR(frame_marks),
-                            scheme_make_pair(expr_mark, SCHEME_CDR(frame_marks)));
-  else
-    return scheme_make_pair(frame_marks, scheme_make_pair(expr_mark, scheme_null));
+  return add_frame_mark(frame_marks, expr_mark, 1);
+}
+
+Scheme_Object *scheme_add_frame_intdef_mark(Scheme_Object *frame_marks, Scheme_Object *mark)
+{
+  return add_frame_mark(frame_marks, mark, 2);
 }
 
 Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o)

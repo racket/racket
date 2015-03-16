@@ -503,6 +503,22 @@
   (+ 1 2)
   (module* q #f 10) (module* z #f 11))
 
+
+(module uses-internal-definition-context-around-id racket/base
+  (require (for-syntax racket/base
+                       racket/block))
+  
+  (define-syntax (m stx)
+    (let ([x1 #'x]
+          [x2 (block
+               (define x3 #'x)
+               x3)])
+      #`(let ([#,x2 1]) #,x1)))
+  
+  (define v (m))
+  (provide v))
+(test 1 dynamic-require ''uses-internal-definition-context-around-id 'v)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (module rename-transformer-tests racket/base

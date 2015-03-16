@@ -1134,9 +1134,11 @@ void scheme_module_context_add_expr_mark(Scheme_Object *mc, Scheme_Object *expr_
 Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
 Scheme_Object *scheme_stx_adjust_frame_bind_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
 Scheme_Object *scheme_stx_adjust_frame_expression_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_adjust_frame_main_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
 
 Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark);
 Scheme_Object *scheme_add_frame_expression_mark(Scheme_Object *frame_marks, Scheme_Object *expr_mark);
+Scheme_Object *scheme_add_frame_intdef_mark(Scheme_Object *frame_marks, Scheme_Object *expr_mark);
 
 Scheme_Object *scheme_stx_remove_toplevel_context_marks(Scheme_Object *o);
 Scheme_Object *scheme_stx_remove_module_context_marks(Scheme_Object *o);
@@ -2826,6 +2828,8 @@ void scheme_add_compilation_binding(int index, Scheme_Object *val,
 				    Scheme_Comp_Env *frame);
 void scheme_add_compilation_frame_expr_mark(Scheme_Comp_Env *frame,
                                             Scheme_Object *expr_mark);
+void scheme_add_compilation_frame_intdef_mark(Scheme_Comp_Env *frame,
+                                              Scheme_Object *expr_mark);
 Scheme_Comp_Env *scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark,
 					      Scheme_Comp_Env *env, int flags);
 

@@ -2393,6 +2393,7 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   d[3] = env;
 
   rib = scheme_new_mark(SCHEME_STX_INTDEF_MARK);
+  scheme_add_compilation_frame_intdef_mark(env, rib);
   if ((argc > 1) && SCHEME_FALSEP(argv[1]))
     rib = scheme_box(rib); /* box means "don't add context" for `local-expand` */
 
@@ -2503,8 +2504,8 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   sym2 = sym;
   for (env2 = env; env2; env2 = env2->next) {
     if (env2->marks) {
-      sym2 = scheme_stx_adjust_frame_marks(sym2, env2->marks, scheme_env_phase(env2->genv),
-                                           SCHEME_STX_ADD);
+      sym2 = scheme_stx_adjust_frame_main_marks(sym2, env2->marks, scheme_env_phase(env2->genv),
+                                                SCHEME_STX_ADD);
     }
   }
 

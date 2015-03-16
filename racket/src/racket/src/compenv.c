@@ -562,6 +562,20 @@ void scheme_add_compilation_frame_expr_mark(Scheme_Comp_Env *env, Scheme_Object 
   }
 }
 
+void scheme_add_compilation_frame_intdef_mark(Scheme_Comp_Env *env, Scheme_Object *mark)
+{
+  while (env->flags & SCHEME_USE_MARKS_TO_NEXT) {
+    env = env->next;
+  }
+
+  if (env->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME)) {
+    /* don't treat the mark as local */
+  } else {
+    mark = scheme_add_frame_intdef_mark(env->marks, mark);
+    env->marks = mark;
+  }
+}
+
 Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env)
 {
   if (scheme_is_toplevel(env)
