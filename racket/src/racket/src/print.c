@@ -2907,7 +2907,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 		       notdisplay, 1, ht, mt, pp);
       } else if (pp->print_unreadable) {
 	Scheme_Stx *stx = (Scheme_Stx *)obj;
-	if ((stx->srcloc->line >= 0) || (stx->srcloc->pos >= 0)) {
+	if (stx->srcloc && ((stx->srcloc->line >= 0) || (stx->srcloc->pos >= 0))) {
 	  print_utf8_string(pp, "#<syntax:", 0, 9);
 	  if (stx->srcloc->src && SCHEME_PATHP(stx->srcloc->src)) {
 	    print_utf8_string(pp, SCHEME_BYTE_STR_VAL(stx->srcloc->src), 0, SCHEME_BYTE_STRLEN_VAL(stx->srcloc->src));

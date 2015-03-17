@@ -95,7 +95,8 @@ static void *print_out_pointer(const char *prefix, void *p,
 
 static void print_traced_objects(int path_length_limit,
 				 GC_get_type_name_proc get_type_name,
-				 GC_print_tagged_value_proc print_tagged_value)
+				 GC_print_tagged_value_proc print_tagged_value,
+                                 GC_print_traced_filter_proc print_traced_filter)
 {
   int i, j, k, dp = 0, counter, each;
 # define DITTO_BUFFER_SIZE 16
@@ -110,33 +111,35 @@ static void print_traced_objects(int path_length_limit,
     int limit = path_length_limit;
     int kind = 0;
     p = found_objects[i];
-    p = print_out_pointer("==* ", p, get_type_name, print_tagged_value, &kind);
+    if (print_traced_filter(p)) {
+      p = print_out_pointer("==* ", p, get_type_name, print_tagged_value, &kind);
 
-    j = 0; counter = 0; each = 1;
-    while (p && limit) {
-      for (k = 0; k < DITTO_BUFFER_SIZE; k++) {
-        if (ditto[k] == p) {
-          GCPRINT(GCOUTF, " <- %p: DITTO\n", p);
-          p = NULL;
-          break;
-        }
-      }
-      if (p) {
-        if (j < DITTO_BUFFER_SIZE) {
-          /* Rememebr the 1st 2nd, 4th, 8th, etc. */
-          counter++;
-          if (counter == each) {
-            ditto[(j + dp) % DITTO_BUFFER_SIZE] = p;
-            j++;
-            each *= 2;
-            counter = 0;
+      j = 0; counter = 0; each = 1;
+      while (p && limit) {
+        for (k = 0; k < DITTO_BUFFER_SIZE; k++) {
+          if (ditto[k] == p) {
+            GCPRINT(GCOUTF, " <- %p: DITTO\n", p);
+            p = NULL;
+            break;
           }
         }
-        p = print_out_pointer(" <- ", p, get_type_name, print_tagged_value, &kind);
-        limit--;
+        if (p) {
+          if (j < DITTO_BUFFER_SIZE) {
+            /* Rememebr the 1st 2nd, 4th, 8th, etc. */
+            counter++;
+            if (counter == each) {
+              ditto[(j + dp) % DITTO_BUFFER_SIZE] = p;
+              j++;
+              each *= 2;
+              counter = 0;
+            }
+          }
+          p = print_out_pointer(" <- ", p, get_type_name, print_tagged_value, &kind);
+          limit--;
+        }
       }
+      dp = (j % DITTO_BUFFER_SIZE);
     }
-    dp = (j % DITTO_BUFFER_SIZE);
   }
   GCPRINT(GCOUTF, "End Trace\n");
   --GC_instance->avoid_collection;

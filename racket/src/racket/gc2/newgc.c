@@ -3690,7 +3690,7 @@ const char *trace_source_kind(int kind)
 # define reset_object_traces() /* */
 # define clear_object_traces() /* */
 # define register_traced_object(p) /* */
-# define print_traced_objects(x, q, z) /* */
+# define print_traced_objects(x, q, z, w) /* */
 #endif
 
 #define MAX_DUMP_TAG 256
@@ -3699,6 +3699,7 @@ void GC_dump_with_traces(int flags,
                          GC_get_type_name_proc get_type_name,
                          GC_for_each_found_proc for_each_found,
                          short min_trace_for_tag, short max_trace_for_tag,
+                         GC_print_traced_filter_proc print_traced_filter,
                          GC_print_tagged_value_proc print_tagged_value,
                          int path_length_limit,
                          GC_for_each_struct_proc for_each_struct)
@@ -3876,7 +3877,7 @@ void GC_dump_with_traces(int flags,
   }
 
   if (flags & GC_DUMP_SHOW_TRACE) {
-    print_traced_objects(path_length_limit, get_type_name, print_tagged_value);
+    print_traced_objects(path_length_limit, get_type_name, print_tagged_value, print_traced_filter);
   }
 
   clear_object_traces();
@@ -3887,7 +3888,7 @@ void GC_dump_with_traces(int flags,
 
 void GC_dump(void)
 {
-  GC_dump_with_traces(0, NULL, NULL, 0, -1, NULL, 0, NULL);
+  GC_dump_with_traces(0, NULL, NULL, 0, -1, NULL, NULL, 0, NULL);
 }
 
 #ifdef MZ_GC_BACKTRACE
