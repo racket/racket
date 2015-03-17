@@ -622,7 +622,12 @@
                      [(name : type)        (t-n-e #'type #'name #f)]
                      [(type = expr)        (t-n-e #'type temp   #'expr)]
                      [(name : type = expr) (t-n-e #'type #'name #'expr)]
-                     [type                 (t-n-e #'type temp   #f)])))
+                     [type
+                       (if input-names
+                           (err (string-append
+                                  "Unnamed arguments with no expression are not supported if "
+                                  "explicit argument names are provided"))
+                           (t-n-e #'type temp   #f))])))
                inputs
                (generate-temporaries (map (lambda (x) 'tmp) inputs))))
     ;; when processing the output type, only the post code matters
