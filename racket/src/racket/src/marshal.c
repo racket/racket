@@ -768,56 +768,61 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
   
   if (!ds) {
     mt = scheme_current_thread->current_mt;
-    if (!mt->pass) {
-      int key;
-
-      pos = mt->cdata_counter;
-      if ((!mt->cdata_map || (pos >= 32))
-          && !(pos & (pos - 1))) {
-        /* Need to grow the array */
-        Scheme_Object **a;
-        a = MALLOC_N(Scheme_Object *, (pos ? 2 * pos : 32));
-        memcpy(a, mt->cdata_map, pos * sizeof(Scheme_Object *));
-        mt->cdata_map = a;
-      }
-      mt->cdata_counter++;
-
-      key = pos & 255;
-      MZ_OPT_HASH_KEY(&data->iso) = ((int)MZ_OPT_HASH_KEY(&data->iso) & 0x00FF) | (key << 8);
+    if (mt->pass < 0) {
+      /* nothing to do, yet */
+      ds = scheme_false;
     } else {
-      pos = ((int)MZ_OPT_HASH_KEY(&data->iso) & 0xFF00) >> 8;
+      if (!mt->pass) {
+        int key;
 
-      while (pos < mt->cdata_counter) {
-        ds = mt->cdata_map[pos];
-        if (ds) {
-          ds = SCHEME_PTR_VAL(ds);
-          if (SAME_OBJ(data->code, ds))
-            break;
-          if (SAME_TYPE(scheme_quote_compilation_type, SCHEME_TYPE(ds)))
-            if (SAME_OBJ(data->code, SCHEME_PTR_VAL(ds)))
-              break;
+        pos = mt->cdata_counter;
+        if ((!mt->cdata_map || (pos >= 32))
+            && !(pos & (pos - 1))) {
+          /* Need to grow the array */
+          Scheme_Object **a;
+          a = MALLOC_N(Scheme_Object *, (pos ? 2 * pos : 32));
+          memcpy(a, mt->cdata_map, pos * sizeof(Scheme_Object *));
+          mt->cdata_map = a;
         }
-        pos += 256;
+        mt->cdata_counter++;
+
+        key = pos & 255;
+        MZ_OPT_HASH_KEY(&data->iso) = ((int)MZ_OPT_HASH_KEY(&data->iso) & 0x00FF) | (key << 8);
+      } else {
+        pos = ((int)MZ_OPT_HASH_KEY(&data->iso) & 0xFF00) >> 8;
+
+        while (pos < mt->cdata_counter) {
+          ds = mt->cdata_map[pos];
+          if (ds) {
+            ds = SCHEME_PTR_VAL(ds);
+            if (SAME_OBJ(data->code, ds))
+              break;
+            if (SAME_TYPE(scheme_quote_compilation_type, SCHEME_TYPE(ds)))
+              if (SAME_OBJ(data->code, SCHEME_PTR_VAL(ds)))
+                break;
+          }
+          pos += 256;
+        }
+        if (pos >= mt->cdata_counter) {
+          scheme_signal_error("didn't find delay record");
+        }
       }
-      if (pos >= mt->cdata_counter) {
-        scheme_signal_error("didn't find delay record");
+
+      ds = mt->cdata_map[pos];
+      if (!ds) {
+        if (mt->pass)
+          scheme_signal_error("broken closure-data table\n");
+    
+        code = scheme_protect_quote(data->code);
+    
+        ds = scheme_alloc_small_object();
+        ds->type = scheme_delay_syntax_type;
+        SCHEME_PTR_VAL(ds) = code;
+
+        MZ_OPT_HASH_KEY(&((Scheme_Small_Object *)ds)->iso) |= 1; /* => hash on ds, not contained data */
+
+        mt->cdata_map[pos] = ds;
       }
-    }
-
-    ds = mt->cdata_map[pos];
-    if (!ds) {
-      if (mt->pass)
-        scheme_signal_error("broken closure-data table\n");
-    
-      code = scheme_protect_quote(data->code);
-    
-      ds = scheme_alloc_small_object();
-      ds->type = scheme_delay_syntax_type;
-      SCHEME_PTR_VAL(ds) = code;
-
-      MZ_OPT_HASH_KEY(&((Scheme_Small_Object *)ds)->iso) |= 1; /* => hash on ds, not contained data */
-
-      mt->cdata_map[pos] = ds;
     }
   }
 

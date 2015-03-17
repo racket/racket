@@ -141,6 +141,7 @@ XFORM_NONGCING static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b);
 static Scheme_Object *remove_at_mark_list(Scheme_Object *l, Scheme_Object *p);
 static Scheme_Object *add_to_mark_list(Scheme_Object *l, Scheme_Object *p);
 
+static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt);
 static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
 
 static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks);
@@ -4369,7 +4370,7 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
     /* need to propagate the inspector for dye packs, too */
     (void)set_false_insp((Scheme_Object *)v, shift, &mutate);
   }
-
+  
   return v;
 }
 
@@ -4719,6 +4720,100 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist)
 /*                            wraps->datum                                */
 /*========================================================================*/
 
+static void add_reachable_marks(Scheme_Mark_Set *marks, Scheme_Marshal_Tables *mt)
+{
+  intptr_t i;
+  Scheme_Object *key, *val;
+
+  i = -1;
+  while ((i = mark_set_next(marks, i)) != -1) {
+    mark_set_index(marks, i, &key, &val);
+    if (!scheme_hash_get(mt->reachable_marks, key)) {
+      scheme_hash_set(mt->reachable_marks, key, scheme_true);
+      val = scheme_make_pair(key, mt->reachable_mark_stack);
+      mt->reachable_mark_stack = val;
+    }
+  }
+}
+
+static void add_reachable_multi_marks(Scheme_Object *multi_marks, Scheme_Marshal_Tables *mt)
+{
+  Scheme_Hash_Table *ht;
+  Scheme_Object *mark, *l;
+  int j;
+
+  while (1) {
+    l = multi_marks;
+    if (SCHEME_FALLBACKP(l))
+      l = SCHEME_FALLBACK_FIRST(l);
+    
+    for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      ht = (Scheme_Hash_Table *)SCHEME_CAR(SCHEME_CAR(l));
+      for (j = ht->size; j--; ) {
+        mark = ht->vals[j];
+        if (mark) {
+          if (!SCHEME_VOIDP(ht->keys[j])) {
+            if (!scheme_hash_get(mt->reachable_marks, mark)) {
+              scheme_hash_set(mt->reachable_marks, mark, scheme_true);
+              mark = scheme_make_pair(mark, mt->reachable_mark_stack);
+              mt->reachable_mark_stack = mark;
+            }
+          }
+        }
+      }
+    }
+    
+    if (SCHEME_FALLBACKP(multi_marks))
+      multi_marks = SCHEME_FALLBACK_REST(multi_marks);
+    else
+      break;
+  }
+}
+
+void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
+{
+  Scheme_Mark *mark;
+  Scheme_Object *l, *val;
+  Scheme_Hash_Table *ht;
+  int j;
+  
+  /* For each mark, recur on `free-identifier=?` mappings */
+  while (!SCHEME_NULLP(mt->reachable_mark_stack)) {
+    mark = (Scheme_Mark *)SCHEME_CAR(mt->reachable_mark_stack);
+    mt->reachable_mark_stack = SCHEME_CDR(mt->reachable_mark_stack);
+
+    if (mark->bindings) {
+      ht = (Scheme_Hash_Table *)SCHEME_CAR(mark->bindings);
+      for (j = ht->size; j--; ) {
+        if (ht->vals[j]) {
+          for (l = ht->vals[j]; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+            val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
+            if (SCHEME_MPAIRP(val)) {
+              /* It's a free-id mapping: */
+              (void)wraps_to_datum((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)), mt);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+static int all_marks_reachable(Scheme_Mark_Set *marks, Scheme_Marshal_Tables *mt)
+{
+  intptr_t i;
+  Scheme_Object *key, *val;
+
+  i = -1;
+  while ((i = mark_set_next(marks, i)) != -1) {
+    mark_set_index(marks, i, &key, &val);
+    if (!scheme_hash_get(mt->reachable_marks, key))
+      return 0;
+  }
+
+  return 1;
+}
+
 static Scheme_Object *intern_one(Scheme_Object *v, Scheme_Hash_Table *ht)
 {
   Scheme_Object *result;
@@ -4979,6 +5074,13 @@ static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
   Scheme_Hash_Table *ht;
   Scheme_Object *shifts, *singles, *multi, *v, *vec;
 
+  if (mt->pass < 0) {
+    /* This is the pass to discover reachable marks. */
+    add_reachable_marks(stx->marks->single_marks, mt);
+    add_reachable_multi_marks(stx->marks->multi_marks, mt);
+    return scheme_void;
+  }
+
   ht = mt->intern_map;
   if (!ht) {
     /* We need to compare a modidx using `eq?`, because shifting
@@ -5033,7 +5135,8 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
     ht = (Scheme_Hash_Table *)SCHEME_CAR(v);
     l2 = SCHEME_CDR(v);
 
-    /* adjust encoding of `free-identifier=?` equivalences */
+    /* convert to a vector, pruning unreachable and adjusting
+       encoding of `free-identifier=?` equivalences */
     tab = scheme_make_vector(2 * ht->count, NULL);
     j = 0;
     for (i = ht->size; i--; ) {
@@ -5041,28 +5144,40 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
       if (l) {
         r = scheme_null;
         while (l && !SCHEME_NULLP(l)) {
-          v = SCHEME_BINDING_VAL(SCHEME_CAR(l));
-          if (SCHEME_MPAIRP(v)) {
-            /* has a `free-id=?` equivalence; the marshaled form of a mark's content
-               cannot contain a syntax object, so we keep just the syntax object's symbol
-               and marks */
-            v = scheme_make_pair(SCHEME_CAR(v), marshal_free_id_info(SCHEME_CDR(v), mt));
-            v = scheme_box(v); /* a box indicates `free-id=?` info */
+          marks = (Scheme_Object *)SCHEME_BINDING_MARKS(SCHEME_CAR(l));
+          if (all_marks_reachable((Scheme_Mark_Set *)marks, mt)) {
+            v = SCHEME_BINDING_VAL(SCHEME_CAR(l));
+            if (SCHEME_MPAIRP(v)) {
+              /* has a `free-id=?` equivalence; the marshaled form of a mark's content
+                 cannot contain a syntax object, so we keep just the syntax object's symbol
+                 and marks */
+              v = scheme_make_pair(SCHEME_CAR(v), marshal_free_id_info(SCHEME_CDR(v), mt));
+              v = scheme_box(v); /* a box indicates `free-id=?` info */
+            }
+            v = intern_one(v, mt->intern_map);
+            marks = intern_tails(marks_to_sorted_list((Scheme_Mark_Set *)marks),
+                                 mt->intern_map);
+            r = scheme_make_pair(intern_one(scheme_make_pair(marks, v), mt->intern_map), r);
           }
-          v = intern_one(v, mt->intern_map);
-          marks = intern_tails(marks_to_sorted_list((Scheme_Mark_Set *)SCHEME_CAR(SCHEME_CAR(l))),
-                               mt->intern_map);
-          r = scheme_make_pair(intern_one(scheme_make_pair(marks, v), mt->intern_map), r);
           l = SCHEME_CDR(l);
         }
 
-        r = intern_one(r, mt->intern_map);
-
-        SCHEME_VEC_ELS(tab)[j++] = ht->keys[i];
-        SCHEME_VEC_ELS(tab)[j++] = r;
+        if (SCHEME_NULLP(r)) {
+          /* no reachable bindings */
+        } else {
+          r = intern_one(r, mt->intern_map);
+          
+          SCHEME_VEC_ELS(tab)[j++] = ht->keys[i];
+          SCHEME_VEC_ELS(tab)[j++] = r;
+        }
       }
     }
-    r = tab;
+    if (j < SCHEME_VEC_SIZE(tab)) {
+      /* shrink vector: */
+      r = scheme_make_vector(j, NULL);
+      memcpy(SCHEME_VEC_ELS(r), SCHEME_VEC_ELS(tab), j * sizeof(Scheme_Object *));
+    } else
+      r = tab;
 
     /* convert marks+pes to mark + unmarshal request */
     for (l = l2; l && !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
@@ -5362,12 +5477,12 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
 {
   Scheme_Object *v;
 
-  if (mt)
+  if (mt && (mt->pass >= 0))
     scheme_marshal_push_refs(mt);
 
   v = syntax_to_datum_inner(stx, with_marks, mt);
 
-  if (mt) {
+  if (mt && (mt->pass >= 0)) {
     /* A symbol+wrap combination is likely to be used multiple
        times. This is a relatively minor optimization in .zo size,
        since v is already fairly compact, but it also avoids
@@ -5749,6 +5864,10 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 
   if (SCHEME_STXP(o))
     return o;
+
+  if (SCHEME_MODIDXP(o)) {
+    printf("%s\n", scheme_write_to_string(o, NULL));
+  }
 
 #ifdef DO_STACK_CHECK
   {

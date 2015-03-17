@@ -1408,6 +1408,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
       var = dummy;
     else
       var = scheme_void;
+    bind_id = NULL;
   } else {
     if (l != 2)
       bad_form(form, l);

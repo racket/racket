@@ -1618,7 +1618,7 @@ static void print_symtab_ref(PrintParams *pp, Scheme_Object *idx)
 
 static int add_symtab(Scheme_Marshal_Tables *mt, Scheme_Object *obj)
 {
-  if (!mt->pass) {
+  if (mt->pass < 1) {
     int l;
     l = mt->symtab->count + 1;
     scheme_hash_set(mt->symtab, obj, scheme_make_integer(l));
@@ -1692,30 +1692,34 @@ void scheme_marshal_push_refs(Scheme_Marshal_Tables *mt)
   Scheme_Object *p;
   Scheme_Hash_Table *st_refs;
 
-  p = scheme_make_pair((Scheme_Object *)mt->st_refs,
-                       mt->st_ref_stack);
-  mt->st_ref_stack = p;
-
-  st_refs = scheme_make_hash_table(SCHEME_hash_ptr);
-
-  mt->st_refs = st_refs;
+  if (mt->pass >= 0) {
+    p = scheme_make_pair((Scheme_Object *)mt->st_refs,
+                         mt->st_ref_stack);
+    mt->st_ref_stack = p;
+    
+    st_refs = scheme_make_hash_table(SCHEME_hash_ptr);
+    
+    mt->st_refs = st_refs;
+  }
 }
 
 void scheme_marshal_pop_refs(Scheme_Marshal_Tables *mt, int keep)
 {
   Scheme_Hash_Table *st_refs = mt->st_refs;
 
-  mt->st_refs = (Scheme_Hash_Table *)SCHEME_CAR(mt->st_ref_stack);
-  mt->st_ref_stack = SCHEME_CDR(mt->st_ref_stack);
+  if (mt->pass >= 0) {
+    mt->st_refs = (Scheme_Hash_Table *)SCHEME_CAR(mt->st_ref_stack);
+    mt->st_ref_stack = SCHEME_CDR(mt->st_ref_stack);
   
-  if (keep) {
-    if (!mt->st_refs->count)
-      mt->st_refs = st_refs;
-    else {
-      intptr_t i;
-      for (i = 0; i < st_refs->size; i++) {
-        if (st_refs->vals[i]) {
-          scheme_hash_set(mt->st_refs, st_refs->keys[i], st_refs->vals[i]);
+    if (keep) {
+      if (!mt->st_refs->count)
+        mt->st_refs = st_refs;
+      else {
+        intptr_t i;
+        for (i = 0; i < st_refs->size; i++) {
+          if (st_refs->vals[i]) {
+            scheme_hash_set(mt->st_refs, st_refs->keys[i], st_refs->vals[i]);
+          }
         }
       }
     }
@@ -3252,7 +3256,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       } else  {
         key = SCHEME_PTR_VAL(obj);
 
-        if (!mt->pass) {
+        if (mt->pass < 0) {
+          /* nothing to do, yet */
+        } else if (!mt->pass) {
           if (!mt->delay_map) {
             Scheme_Hash_Table *delay_map;
             delay_map = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -3392,14 +3398,29 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       if (compact)
 	closed = print(v, notdisplay, 1, NULL, mt, pp);
       else {
-        Scheme_Hash_Table *st_refs, *symtab, *tht;
+        Scheme_Hash_Table *st_refs, *symtab, *reachable_marks;
         intptr_t *shared_offsets;
         intptr_t st_len, j, shared_offset, start_offset;
 
         mt = MALLOC_ONE_RT(Scheme_Marshal_Tables);
         SET_REQUIRED_TAG(mt->type = scheme_rt_marshal_info);
-
         scheme_current_thread->current_mt = mt;
+
+        /* "Print" the string once to find out which marks are reachable;
+           dropping unreachable marks drops potentialy large binding tables. */
+        mt->pass = -1;
+        reachable_marks = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->reachable_marks = reachable_marks;
+        mt->reachable_mark_stack = scheme_null;
+        symtab = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->symtab = symtab;
+	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 0, NULL);
+        scheme_iterate_reachable_marks(mt);
+
+        mt = MALLOC_ONE_RT(Scheme_Marshal_Tables);
+        SET_REQUIRED_TAG(mt->type = scheme_rt_marshal_info);
+        scheme_current_thread->current_mt = mt;
+        mt->reachable_marks = reachable_marks;
 
         /* Track which shared values are referenced: */
         st_refs = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -3413,7 +3434,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
            later passes. */
 	symtab = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->symtab = symtab;
-	tht = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->pass = 0;
         scheme_hash_set(symtab, scheme_void, scheme_true); /* indicates registration phase */
 	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 0, NULL);

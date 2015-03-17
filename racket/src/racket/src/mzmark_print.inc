@@ -41,6 +41,8 @@ static int mark_marshal_tables_MARK(void *p, struct NewGC *gc) {
   gcMARK2(mt->symtab, gc);
   gcMARK2(mt->st_refs, gc);
   gcMARK2(mt->st_ref_stack, gc);
+  gcMARK2(mt->reachable_marks, gc);
+  gcMARK2(mt->reachable_mark_stack, gc);
   gcMARK2(mt->intern_map, gc);
   gcMARK2(mt->identity_map, gc);
   gcMARK2(mt->top_map, gc);
@@ -59,6 +61,8 @@ static int mark_marshal_tables_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(mt->symtab, gc);
   gcFIXUP2(mt->st_refs, gc);
   gcFIXUP2(mt->st_ref_stack, gc);
+  gcFIXUP2(mt->reachable_marks, gc);
+  gcFIXUP2(mt->reachable_mark_stack, gc);
   gcFIXUP2(mt->intern_map, gc);
   gcFIXUP2(mt->identity_map, gc);
   gcFIXUP2(mt->top_map, gc);

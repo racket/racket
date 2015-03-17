@@ -1309,10 +1309,12 @@ int scheme_is_predefined_module_p(Scheme_Object *name);
 Scheme_Object *scheme_get_kernel_modidx(void);
 
 Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, struct Scheme_Marshal_Tables *mt);
+void scheme_iterate_reachable_marks(struct Scheme_Marshal_Tables *mt);
 
 void scheme_stx_debug_print(Scheme_Object *stx, Scheme_Object *phase, int level);
 
 Scheme_Object *scheme_revert_expression_marks(Scheme_Object *o, struct Scheme_Comp_Env *env);
+
 
 /*========================================================================*/
 /*                   syntax run-time structures                           */
@@ -3281,6 +3283,8 @@ typedef struct Scheme_Marshal_Tables {
   Scheme_Hash_Table *symtab;
   Scheme_Hash_Table *st_refs;
   Scheme_Object *st_ref_stack;
+  Scheme_Hash_Table *reachable_marks; /* filled on -1 pass */
+  Scheme_Object *reachable_mark_stack; /* used on -1 pass */
   Scheme_Hash_Table *intern_map;  /* filled on first pass */
   Scheme_Hash_Table *identity_map; /* filled on first pass */
   Scheme_Hash_Table *top_map;     /* used on every pass */
