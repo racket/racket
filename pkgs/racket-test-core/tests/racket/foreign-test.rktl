@@ -151,6 +151,9 @@
 ;; Make sure `_box` at least compiles:
 (test #t ctype? (_fun (_box _int) -> _void))
 
+;; Check error message on bad _fun form
+(syntax-test #'(_fun (bool) :: _bool -> _void) #rx"explicit argument names")
+
 (define-cstruct _ic7i ([i1 _int]
                        [c7 _c7_list]
                        [i2 _int]))
