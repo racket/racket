@@ -528,7 +528,7 @@
                        sub)]
                  [(assq k _fun-keywords) (set! ks (cons (cons k v) ks))]
                  [else (err "unknown keyword" sub)]))))))
-  (define ((t-n-e clause) type name expr)
+  (define ((t-n-e clause) type name expr #:name-ok? [name-ok? #t])
     (let ([keys (custom-type->keys type err)])
       (define (getkey key) (cond [(assq key keys) => cdr] [else #f]))
       (define (arg x . no-expr?) ;; can mutate `name'
@@ -558,6 +558,14 @@
                    (err "got a custom type that wants prev arg too early"
                         clause)))])
         x)
+      (unless (or name-ok?
+                  expr
+                  (and keys (or (getkey 'expr)
+                                (getkey 'pre))))
+        (err (string-append
+              "unnamed argument (without an expression) is not allowed when "
+              "argument names are provided before `::'")
+             clause))
       (when keys
         (set! type (getkey 'type))
         (cond [(and (not expr) (getkey 'expr)) => (lambda (x) (set! expr x))])
@@ -622,7 +630,7 @@
                      [(name : type)        (t-n-e #'type #'name #f)]
                      [(type = expr)        (t-n-e #'type temp   #'expr)]
                      [(name : type = expr) (t-n-e #'type #'name #'expr)]
-                     [type                 (t-n-e #'type temp   #f)])))
+                     [type                 (t-n-e #'type temp   #f #:name-ok? (not input-names))])))
                inputs
                (generate-temporaries (map (lambda (x) 'tmp) inputs))))
     ;; when processing the output type, only the post code matters
