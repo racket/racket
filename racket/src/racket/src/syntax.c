@@ -1672,7 +1672,8 @@ static Scheme_Object *syntax_shift_phase(int argc, Scheme_Object **argv)
 
 /******************** lazy propagation ********************/
 
-#if 0
+#define DO_COUNT_PROPAGATES 0
+#if DO_COUNT_PROPAGATES
 # define COUNT_PROPAGATES(x) x
 int stx_shorts, stx_meds, stx_longs, stx_couldas;
 #else
@@ -1702,13 +1703,14 @@ static Scheme_Object *propagate_mark_set(Scheme_Mark_Set *props, Scheme_Object *
   return o;
 }
 
-XFORM_NONGCING static int equiv_mark_tables(Scheme_Mark_Table *a, Scheme_Mark_Table *b)
+static int equiv_mark_tables(Scheme_Mark_Table *a, Scheme_Mark_Table *b)
 {
   if (a == b)
     return 1;
 
-  if (!mark_set_count(a->single_marks)
-      && !mark_set_count(b->single_marks)
+  if (((a->single_marks == b->single_marks)
+       || (!mark_set_count(a->single_marks)
+           && !mark_set_count(b->single_marks)))
       && SAME_OBJ(a->multi_marks, b->multi_marks))
     return 1;
 
@@ -1817,6 +1819,16 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
   if (flag & SCHEME_STX_PROPONLY)
     ((Scheme_Stx *)o)->marks = parent_marks;
 
+#if DO_COUNT_PROPAGATES
+  if (!(flag & SCHEME_STX_PROPONLY)) {
+    if (scheme_equal((Scheme_Object *)parent_marks->single_marks,
+                     (Scheme_Object *)((Scheme_Stx *)o)->marks->single_marks)
+        && scheme_equal(parent_marks->multi_marks,
+                        ((Scheme_Stx *)o)->marks->multi_marks))
+      stx_couldas++;
+  }
+#endif
+  
   return o;
 }
 
@@ -2372,13 +2384,13 @@ static void check_for_conversion(Scheme_Object *sym,
   Scheme_Object *v, *v2, *cnt;
   int i;
 
-  mht = (Scheme_Hash_Table *)scheme_hash_get(collapse_table, (Scheme_Object *)mark);
+  mht = (Scheme_Hash_Table *)scheme_eq_hash_get(collapse_table, (Scheme_Object *)mark);
   if (!mht) {
     mht = scheme_make_hash_table(SCHEME_hash_ptr);
     scheme_hash_set(collapse_table, (Scheme_Object *)mark, (Scheme_Object *)mht);
   }
   
-  cnt = scheme_hash_get(mht, (Scheme_Object *)pt);
+  cnt = scheme_eq_hash_get(mht, (Scheme_Object *)pt);
   if (!cnt)
     cnt = scheme_make_integer(1);
   else
@@ -2409,7 +2421,7 @@ static void check_for_conversion(Scheme_Object *sym,
     /* since we've mapped N identifiers from a source of N identifiers,
        maybe we mapped all of them. */
     for (i = pt->num_provides; i--; ) {
-      v2 = scheme_hash_get(ht, pt->provides[i]);
+      v2 = scheme_eq_hash_get(ht, pt->provides[i]);
       CONV_RETURN_UNLESS(v2);
 
       /* For now, allow only a single binding: */
@@ -2538,7 +2550,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
 
   if (sym) {
     STX_ASSERT(SCHEME_SYMBOLP(sym));
-    l = scheme_hash_get(ht, sym);
+    l = scheme_eq_hash_get(ht, sym);
     if (!l) l = scheme_null;
     for (p = l; !SCHEME_NULLP(p); p = SCHEME_CDR(p)) {
       if (marks_equal(marks, SCHEME_BINDING_MARKS(SCHEME_CAR(p)))) {
@@ -3036,7 +3048,7 @@ static void print_at(Scheme_Stx *stx, Scheme_Object *phase, int level, int inden
                   }
                 }
               } else {
-                if (scheme_hash_get(ht, unmarshal_lookup_adjust(stx->val, pes))) {
+                if (scheme_eq_hash_get(ht, unmarshal_lookup_adjust(stx->val, pes))) {
                   print_indent(indent);
                   printf("      has %s\n", scheme_write_to_string(stx->val, NULL));
                 }
@@ -3285,8 +3297,8 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
       if (mark->bindings) {
         for (j = 0; j < 2; j++) {
           if (!j)
-            l = scheme_hash_get((Scheme_Hash_Table *)SCHEME_CAR(mark->bindings),
-                                stx->val);
+            l = scheme_eq_hash_get((Scheme_Hash_Table *)SCHEME_CAR(mark->bindings),
+                                   stx->val);
           else
             l = SCHEME_CDR(mark->bindings);
 
@@ -3502,7 +3514,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
             /* recur to handle `free-identifier=?` chain */
             if (!free_id_seen)
               free_id_seen = scheme_make_hash_table(SCHEME_hash_ptr);
-            if (scheme_hash_get(free_id_seen, o))
+            if (scheme_eq_hash_get(free_id_seen, o))
               return scheme_false; /* found a cycle */
             scheme_hash_set(free_id_seen, o, scheme_true);
             prev_shifts = scheme_make_pair(stx->shifts, prev_shifts);
@@ -3594,7 +3606,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
         pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(l)[1];
         insp_desc = SCHEME_VEC_ELS(l)[4];
 
-        pos = scheme_hash_get(pt->ht, unmarshal_lookup_adjust(stx->val, l));
+        pos = scheme_eq_hash_get(pt->ht, unmarshal_lookup_adjust(stx->val, l));
 
         if (pt->provide_srcs) {
           mod = pt->provide_srcs[SCHEME_INT_VAL(pos)];
