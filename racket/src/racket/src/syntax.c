@@ -119,14 +119,14 @@ static Scheme_Object *syntax_taint(int argc, Scheme_Object **argv);
 
 static Scheme_Object *syntax_debug_info(int argc, Scheme_Object **argv);
 
-static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp, int need_clone);
+static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp, int *mutate);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
 
 XFORM_NONGCING static int is_armed(Scheme_Object *v);
-static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone);
+static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int *mutate);
 
 static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks, Scheme_Object *replace_at);
 
@@ -200,6 +200,19 @@ XFORM_NONGCING static int prefab_p(Scheme_Object *o)
 }
 
 #define STX_KEY(stx) MZ_OPT_HASH_KEY(&(stx)->iso)
+
+#define MUTATE_STX_OBJ        1
+#define MUTATE_STX_MARK_TABLE 2
+#define MUTATE_STX_PROP_TABLE 4
+
+#if 0
+int stx_alloc_obj, stx_skip_alloc_obj;
+int stx_alloc_mark_table, stx_skip_alloc_mark_table;
+int stx_alloc_prop_table, stx_skip_alloc_prop_table;
+# define COUNT_MUTATE_ALLOCS(x) x
+#else
+# define COUNT_MUTATE_ALLOCS(x) /* empty */
+#endif
 
 /* A `taints' field is one of
     - NULL => clean
@@ -381,13 +394,18 @@ Scheme_Object *scheme_make_stx(Scheme_Object *val,
   return (Scheme_Object *)stx;
 }
 
-Scheme_Object *clone_stx(Scheme_Object *to)
+Scheme_Object *clone_stx(Scheme_Object *to, GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)to;
   Scheme_Object *taints, *shifts;
   Scheme_Mark_Table *marks;
   Scheme_Mark_Table *to_propagate;
   int armed;
+
+  if (mutate && (*mutate & MUTATE_STX_OBJ)) {
+    COUNT_MUTATE_ALLOCS(stx_skip_alloc_obj++);
+    return to;
+  }
 
   taints = stx->taints;
   marks = stx->marks;
@@ -407,6 +425,11 @@ Scheme_Object *clone_stx(Scheme_Object *to)
   }
   stx->taints = taints;
   stx->shifts = shifts;
+
+  if (mutate) {
+    COUNT_MUTATE_ALLOCS(stx_alloc_obj++);
+    *mutate |= MUTATE_STX_OBJ;
+  }
 
   return (Scheme_Object *)stx;
 }
@@ -576,7 +599,7 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
   }
 
   /* Clone nstx, keeping wraps, changing props to ne */
-  nstx = (Scheme_Stx *)clone_stx((Scheme_Object *)nstx);
+  nstx = (Scheme_Stx *)clone_stx((Scheme_Object *)nstx, NULL);
   nstx->props = ne;
 
   return (Scheme_Object *)nstx;
@@ -999,19 +1022,34 @@ static Scheme_Object *add_to_mark_list(Scheme_Object *p, Scheme_Object *l)
     return scheme_make_pair(p, l);
 }
 
-static Scheme_Mark_Table *clone_mark_table(Scheme_Mark_Table *mt, Scheme_Mark_Table *prev)
+static Scheme_Mark_Table *clone_mark_table(Scheme_Mark_Table *mt, Scheme_Mark_Table *prev,
+                                           GC_CAN_IGNORE int *mutate)
 /* If prev is non-NULL, then `mt` is a propagate table */
 {
   Scheme_Mark_Table *mt2;
 
   if (!prev) {
-    mt2 = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
-    memcpy(mt2, mt, sizeof(Scheme_Mark_Table));
+    if (*mutate & MUTATE_STX_MARK_TABLE) {
+      mt2 = mt;
+      COUNT_MUTATE_ALLOCS(stx_skip_alloc_mark_table++);
+    } else {
+      mt2 = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
+      memcpy(mt2, mt, sizeof(Scheme_Mark_Table));
+      *mutate |= MUTATE_STX_MARK_TABLE;
+      COUNT_MUTATE_ALLOCS(stx_alloc_mark_table++);
+    }
   } else {
-    mt2 = (Scheme_Mark_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
-    memcpy(mt2, mt, sizeof(Scheme_Propagate_Table));
-    if (SAME_OBJ(mt, empty_propagate_table))
-      ((Scheme_Propagate_Table *)mt2)->prev = prev;
+    if (*mutate & MUTATE_STX_PROP_TABLE) {
+      mt2 = mt;
+      COUNT_MUTATE_ALLOCS(stx_skip_alloc_prop_table++);
+    } else {
+      mt2 = (Scheme_Mark_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
+      memcpy(mt2, mt, sizeof(Scheme_Propagate_Table));
+      if (SAME_OBJ(mt, empty_propagate_table))
+        ((Scheme_Propagate_Table *)mt2)->prev = prev;
+      *mutate |= MUTATE_STX_PROP_TABLE;
+      COUNT_MUTATE_ALLOCS(stx_alloc_prop_table++);
+    }
   }
 
   return mt2;
@@ -1021,7 +1059,8 @@ typedef Scheme_Mark_Set *(*do_mark_t)(Scheme_Mark_Set *marks, Scheme_Object *m, 
 typedef Scheme_Object *(do_mark_list_t)(Scheme_Object *multi_marks, Scheme_Object *m, Scheme_Object *phase, int mode);
 
 static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object *m, Scheme_Object *phase, int mode, 
-                                           do_mark_t do_mark, do_mark_list_t do_mark_list, Scheme_Mark_Table *prev)
+                                           do_mark_t do_mark, do_mark_list_t do_mark_list, Scheme_Mark_Table *prev,
+                                           GC_CAN_IGNORE int *mutate)
 {
   Scheme_Object *l;
   Scheme_Mark_Set *marks;
@@ -1037,40 +1076,34 @@ static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object 
     l = do_mark_list(mt->multi_marks, m, phase, mode);
     if (SAME_OBJ(l, mt->multi_marks))
       return mt;
-    mt = clone_mark_table(mt, prev);
+    mt = clone_mark_table(mt, prev, mutate);
     mt->multi_marks = l;
     return mt;
   } else {
     marks = do_mark(mt->single_marks, m, mode);
     if (SAME_OBJ(marks, mt->single_marks))
       return mt;
-    mt = clone_mark_table(mt, prev);
+    mt = clone_mark_table(mt, prev, mutate);
     mt->single_marks = marks;
     return mt;
   }
 }
 
-Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode)
+static Scheme_Object *stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode,
+                                      GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Mark_Table *marks;
   Scheme_Mark_Table *to_propagate;
   Scheme_Object *taints, *shifts;
-  int mutate;
 
   STX_ASSERT(SCHEME_STXP(o));
-
-  if (mode & SCHEME_STX_MUTATE) {
-    mode -= SCHEME_STX_MUTATE;
-    mutate = 1;
-  } else
-    mutate = 0;
 
   if (mode & SCHEME_STX_PROPONLY) {
     marks = stx->marks;
     mode -= SCHEME_STX_PROPONLY;
   } else {
-    marks = do_mark_at_phase(stx->marks, m, phase, mode, adjust_mark, adjust_mark_list, NULL);
+    marks = do_mark_at_phase(stx->marks, m, phase, mode, adjust_mark, adjust_mark_list, NULL, mutate);
     if ((stx->marks == marks)
         && !(STX_KEY(stx) & STX_SUBSTX_FLAG)) {
       return (Scheme_Object *)stx;
@@ -1079,14 +1112,14 @@ Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
     to_propagate = (stx->u.to_propagate ? stx->u.to_propagate : empty_propagate_table);
-    to_propagate = do_mark_at_phase(to_propagate, m, phase, mode, combine_mark, combine_mark_list, stx->marks);
+    to_propagate = do_mark_at_phase(to_propagate, m, phase, mode, combine_mark, combine_mark_list, stx->marks, mutate);
     if ((stx->u.to_propagate == to_propagate)
         && (stx->marks == marks))
       return (Scheme_Object *)stx;
   } else
     to_propagate = NULL; /* => cleared binding cache */
 
-  if (mutate) {
+  if (*mutate & MUTATE_STX_OBJ) {
     stx->marks = marks;
     stx->u.to_propagate = to_propagate;
   } else {
@@ -1100,9 +1133,16 @@ Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme
     stx->shifts = shifts;
     if (armed)
       STX_KEY(stx) |= STX_ARMED_FLAG;
+    *mutate |= MUTATE_STX_OBJ;
   }
 
   return (Scheme_Object *)stx;
+}
+
+Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode)
+{
+  int mutate = 0;
+  return stx_adjust_mark(o, m, phase, mode, &mutate);
 }
 
 Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase)
@@ -1120,25 +1160,28 @@ Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m, Scheme_O
   return scheme_stx_adjust_mark(o, m, phase, SCHEME_STX_FLIP);
 }
 
-Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode)
+static Scheme_Object *stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode,
+                                       GC_CAN_IGNORE int *mutate)
 {
   Scheme_Object *key, *val;
   intptr_t i;
-  int flag = 0;
 
   i = mark_set_next(marks, -1);
   while (i != -1) {
     mark_set_index(marks, i, &key, &val);
 
-    val = scheme_stx_adjust_mark(o, key, phase, mode | flag);
-    if (!SAME_OBJ(val, o))
-      flag = SCHEME_STX_MUTATE;
-    o = val;
+    o = stx_adjust_mark(o, key, phase, mode, mutate);
     
     i = mark_set_next(marks, i);
   }
 
   return o;
+}
+
+Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode)
+{
+  int mutate = 0;
+  return stx_adjust_marks(o, marks, phase, mode, &mutate);
 }
 
 /* frame-marks = main-marks
@@ -1362,7 +1405,8 @@ static Scheme_Object *shift_prop_multi_mark(Scheme_Object *p, Scheme_Object *shi
 typedef Scheme_Object *(shift_multi_mark_t)(Scheme_Object *p, Scheme_Object *shift);
 
 static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object *shift, 
-                                           shift_multi_mark_t shift_mm, Scheme_Mark_Table *prev)
+                                           shift_multi_mark_t shift_mm, Scheme_Mark_Table *prev,
+                                           GC_CAN_IGNORE int *mutate)
 {
   Scheme_Mark_Table *mt2;
   Scheme_Object *l, *key, *val;
@@ -1378,7 +1422,7 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
       && !prev)
     return mt;
 
-  mt2 = clone_mark_table(mt, prev);
+  mt2 = clone_mark_table(mt, prev, mutate);
 
   val = scheme_null;
   l = mt->multi_marks;
@@ -1404,7 +1448,8 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
   return mt2;
 }
 
-static Scheme_Object *shift_marks(Scheme_Object *o, Scheme_Object *shift, int can_mutate, int prop_only)
+static Scheme_Object *shift_marks(Scheme_Object *o, Scheme_Object *shift, int prop_only,
+                                  GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Mark_Table *mt, *p_mt;
@@ -1412,10 +1457,11 @@ static Scheme_Object *shift_marks(Scheme_Object *o, Scheme_Object *shift, int ca
   if (prop_only)
     mt = stx->marks;
   else
-    mt = shift_mark_table(stx->marks, shift, shift_multi_mark, NULL);
+    mt = shift_mark_table(stx->marks, shift, shift_multi_mark, NULL, mutate);
   if (STX_KEY(stx) & STX_SUBSTX_FLAG)
     p_mt = shift_mark_table((stx->u.to_propagate ? stx->u.to_propagate : empty_propagate_table),
-                            shift, shift_prop_multi_mark, stx->marks);
+                            shift, shift_prop_multi_mark, stx->marks,
+                            mutate);
   else
     p_mt = NULL;
   
@@ -1424,8 +1470,7 @@ static Scheme_Object *shift_marks(Scheme_Object *o, Scheme_Object *shift, int ca
           || SAME_OBJ(stx->u.to_propagate, p_mt)))
     return (Scheme_Object *)stx;
 
-  if (!can_mutate)
-    stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx);
+  stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx, mutate);
 
   stx->marks = mt;
   if (p_mt)
@@ -1434,7 +1479,7 @@ static Scheme_Object *shift_marks(Scheme_Object *o, Scheme_Object *shift, int ca
   return (Scheme_Object *)stx;
 }
 
-static Scheme_Object *do_stx_add_shift(Scheme_Object *o, Scheme_Object *shift, int can_mutate)
+static Scheme_Object *do_stx_add_shift(Scheme_Object *o, Scheme_Object *shift, GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *vec, *shifts;
@@ -1444,14 +1489,14 @@ static Scheme_Object *do_stx_add_shift(Scheme_Object *o, Scheme_Object *shift, i
   if (SCHEME_PHASE_SHIFTP(shift)) {
     if (SAME_OBJ(shift, scheme_make_integer(0)))
       return (Scheme_Object *)stx;
-    return shift_marks((Scheme_Object *)stx, shift, can_mutate, 0);
+    return shift_marks((Scheme_Object *)stx, shift, 0, mutate);
   }
 
   if (SCHEME_VECTORP(shift)
       && (SCHEME_VEC_SIZE(shift) == 6)
       && (SCHEME_VEC_ELS(shift)[5] != scheme_make_integer(0))) {
     /* Handle phase shift by itself, first: */
-    stx = (Scheme_Stx *)do_stx_add_shift((Scheme_Object *)stx, SCHEME_VEC_ELS(shift)[5], can_mutate);
+    stx = (Scheme_Stx *)do_stx_add_shift((Scheme_Object *)stx, SCHEME_VEC_ELS(shift)[5], mutate);
     /* strip away phase shift: */
     vec = scheme_make_vector(6, NULL);
     SCHEME_VEC_ELS(vec)[0] = SCHEME_VEC_ELS(shift)[0];
@@ -1461,7 +1506,6 @@ static Scheme_Object *do_stx_add_shift(Scheme_Object *o, Scheme_Object *shift, i
     SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(shift)[4];
     SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(0);
     shift = vec;
-    can_mutate = 1;
   }
 
   /* Drop useless shift (identidy modidx shift and no inspector or exports): */
@@ -1494,8 +1538,7 @@ static Scheme_Object *do_stx_add_shift(Scheme_Object *o, Scheme_Object *shift, i
     shifts = scheme_make_pair(shift, stx->shifts);
   }
 
-  if (!can_mutate)
-    stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx);
+  stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx, mutate);
   stx->shifts = shifts;
   
   if ((STX_KEY(stx) & STX_SUBSTX_FLAG) && !stx->u.to_propagate)
@@ -1506,16 +1549,16 @@ static Scheme_Object *do_stx_add_shift(Scheme_Object *o, Scheme_Object *shift, i
 
 Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift)
 {
-  return do_stx_add_shift(o, shift, 0);
+  int mutate = 0;
+  return do_stx_add_shift(o, shift, &mutate);
 }
 
 Scheme_Object *scheme_stx_add_shifts(Scheme_Object *o, Scheme_Object *l)
 {
-  int can_mutate = 0;
+  int mutate = 0;
 
   for (l = scheme_reverse(l); !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    o = do_stx_add_shift(o, SCHEME_CAR(l), can_mutate);
-    can_mutate = 1;
+    o = do_stx_add_shift(o, SCHEME_CAR(l), &mutate);
   }
 
   return o;
@@ -1681,7 +1724,8 @@ int stx_shorts, stx_meds, stx_longs, stx_couldas;
 #endif
 
 static Scheme_Object *propagate_mark_set(Scheme_Mark_Set *props, Scheme_Object *o,
-                                         Scheme_Object *phase, int flag)
+                                         Scheme_Object *phase, int flag,
+                                         GC_CAN_IGNORE int *mutate)
 {
   intptr_t i;
   Scheme_Object *key, *val;
@@ -1692,10 +1736,7 @@ static Scheme_Object *propagate_mark_set(Scheme_Mark_Set *props, Scheme_Object *
 
     STX_ASSERT(!((Scheme_Mark *)key)->owner_multi_mark);
 
-    val = scheme_stx_adjust_mark(o, key, phase, SCHEME_INT_VAL(val) | flag);
-    if (!SAME_OBJ(o, val))
-      flag |= SCHEME_STX_MUTATE;
-    o = val;
+    o = stx_adjust_mark(o, key, phase, SCHEME_INT_VAL(val) | flag, mutate);
     
     i = mark_set_next(props, i);
   }  
@@ -1703,7 +1744,7 @@ static Scheme_Object *propagate_mark_set(Scheme_Mark_Set *props, Scheme_Object *
   return o;
 }
 
-static int equiv_mark_tables(Scheme_Mark_Table *a, Scheme_Mark_Table *b)
+XFORM_NONGCING static int equiv_mark_tables(Scheme_Mark_Table *a, Scheme_Mark_Table *b)
 {
   if (a == b)
     return 1;
@@ -1718,7 +1759,8 @@ static int equiv_mark_tables(Scheme_Mark_Table *a, Scheme_Mark_Table *b)
 }
 
 static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_propagate,
-                                      Scheme_Mark_Table *parent_marks, int flag)
+                                      Scheme_Mark_Table *parent_marks, int flag,
+                                      GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *key, *val, *fb;
@@ -1737,10 +1779,13 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
         || !stx->u.to_propagate
         || SAME_OBJ(stx->u.to_propagate, empty_propagate_table)) {
       /* Yes, child matches the parent in all relevant dimensions */
-      stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx);
+      stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx, mutate);
       stx->marks = parent_marks;
-      if (STX_KEY(stx) & STX_SUBSTX_FLAG)
+      *mutate -= (*mutate & MUTATE_STX_MARK_TABLE);
+      if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
         stx->u.to_propagate = to_propagate;
+        *mutate -= (*mutate & MUTATE_STX_PROP_TABLE);
+      }
       COUNT_PROPAGATES(stx_shorts++);
       return (Scheme_Object *)stx;
     } else {
@@ -1756,16 +1801,10 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
 
   val = ((Scheme_Propagate_Table *)to_propagate)->phase_shift;
   if (!SAME_OBJ(val, scheme_make_integer(0))) {
-    val = shift_marks(o, val, flag & SCHEME_STX_MUTATE, flag & SCHEME_STX_PROPONLY);
-    if (!SAME_OBJ(o, val))
-      flag |= SCHEME_STX_MUTATE;
-    o = val;
+    o = shift_marks(o, val, flag & SCHEME_STX_PROPONLY, mutate);
   }
 
-  val = propagate_mark_set(to_propagate->single_marks, o, scheme_true, flag);
-  if (!SAME_OBJ(o, val))
-    flag |= SCHEME_STX_MUTATE;
-  o = val;
+  o = propagate_mark_set(to_propagate->single_marks, o, scheme_true, flag, mutate);
 
   fb = to_propagate->multi_marks;
   if (SCHEME_FALLBACKP(fb)) {
@@ -1784,11 +1823,8 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
   while (fb) {
     if (SCHEME_FALLBACKP(fb)) {
       if (SCHEME_FALLBACK_QUADP(fb)) {
-        val = scheme_stx_adjust_mark(o, SCHEME_FALLBACK_MARK(fb), SCHEME_FALLBACK_PHASE(fb),
-                                     SCHEME_STX_PUSH | flag);
-        if (!SAME_OBJ(o, val))
-          flag |= SCHEME_STX_MUTATE;
-        o = val;
+        o = stx_adjust_mark(o, SCHEME_FALLBACK_MARK(fb), SCHEME_FALLBACK_PHASE(fb),
+                            SCHEME_STX_PUSH | flag, mutate);
       }
       key = SCHEME_FALLBACK_FIRST(fb);
     } else
@@ -1797,11 +1833,8 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
     for (; !SCHEME_NULLP(key); key = SCHEME_CDR(key)) {
       val = SCHEME_CAR(key);
       STX_ASSERT(SCHEME_MULTI_MARKP(SCHEME_VEC_ELS(val)[0]));
-      val = scheme_stx_adjust_mark(o, SCHEME_VEC_ELS(val)[0], SCHEME_VEC_ELS(val)[1], 
-                                   SCHEME_INT_VAL(SCHEME_VEC_ELS(val)[2]) | flag);
-      if (!SAME_OBJ(o, val))
-        flag |= SCHEME_STX_MUTATE;
-      o = val;
+      o = stx_adjust_mark(o, SCHEME_VEC_ELS(val)[0], SCHEME_VEC_ELS(val)[1], 
+                          SCHEME_INT_VAL(SCHEME_VEC_ELS(val)[2]) | flag, mutate);
     }
 
     if (SCHEME_FALLBACKP(fb))
@@ -1810,14 +1843,11 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
       fb = NULL;
   }
   
-  if ((flag & SCHEME_STX_PROPONLY) && !(flag & SCHEME_STX_MUTATE)) {
-    /* Force clone so that we can set marks to parent marks */
-    o = clone_stx(o);
-    flag |= SCHEME_STX_MUTATE;
-  }
-
-  if (flag & SCHEME_STX_PROPONLY)
+  if (flag & SCHEME_STX_PROPONLY) {
+    o = clone_stx(o, mutate);
     ((Scheme_Stx *)o)->marks = parent_marks;
+    *mutate -= (*mutate & MUTATE_STX_MARK_TABLE);
+  }
 
 #if DO_COUNT_PROPAGATES
   if (!(flag & SCHEME_STX_PROPONLY)) {
@@ -1832,16 +1862,15 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
   return o;
 }
 
-static Scheme_Object *propagate_shifts(Scheme_Object *result, Scheme_Object *shifts, int can_mutate)
+static Scheme_Object *propagate_shifts(Scheme_Object *result, Scheme_Object *shifts, GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)result;
   Scheme_Object *l;
 
   if (SAME_OBJ(stx->shifts, SCHEME_VEC_ELS(shifts)[2])) {
-    if (!can_mutate) {
-      result = clone_stx(result);
-      stx = (Scheme_Stx *)result;
-    }
+    result = clone_stx(result, mutate);
+    stx = (Scheme_Stx *)result;
+
     if ((STX_KEY(stx) & STX_SUBSTX_FLAG)) {
       stx->shifts = shifts;
       if (!stx->u.to_propagate)
@@ -1852,8 +1881,7 @@ static Scheme_Object *propagate_shifts(Scheme_Object *result, Scheme_Object *shi
   }
 
   for (l = scheme_reverse(SCHEME_VEC_ELS(shifts)[1]); !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    result = do_stx_add_shift(result, SCHEME_CAR(l), can_mutate);
-    can_mutate = 1;
+    result = do_stx_add_shift(result, SCHEME_CAR(l), mutate);
   }
 
   return result;
@@ -1865,17 +1893,17 @@ static Scheme_Object *propagate(Scheme_Object *result,
                                 Scheme_Object *shifts,
                                 int add_taint, Scheme_Object *false_insp)
 {
-  Scheme_Object *orig_result = result;
+  int mutate = 0;
 
-  result = propagate_marks(result, to_propagate, parent_marks, 0);
+  result = propagate_marks(result, to_propagate, parent_marks, 0, &mutate);
 
   if (shifts)
-    result = propagate_shifts(result, shifts, !SAME_OBJ(result, orig_result));
+    result = propagate_shifts(result, shifts, &mutate);
 
   if (add_taint)
-    result = add_taint_to_stx(result, SAME_OBJ(result, orig_result));
+    result = add_taint_to_stx(result, &mutate);
   else if (false_insp)
-    result = set_false_insp(result, false_insp, SAME_OBJ(result, orig_result));
+    result = set_false_insp(result, false_insp, &mutate);
 
   return result;
 }
@@ -2030,7 +2058,7 @@ Scheme_Object *scheme_stx_content(Scheme_Object *o)
   raw_stx_content(o);
 
   /* taint */
-  o = add_taint_to_stx(o, 1);
+  o = add_taint_to_stx(o, NULL);
 
   /* return tainted content */
   return raw_stx_content(o);
@@ -2099,15 +2127,14 @@ static int has_taint_arming(Scheme_Object *l, Scheme_Object *t, Scheme_Object *f
   return 0;
 }
 
-static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone)
+static Scheme_Object *add_taint_to_stx(Scheme_Object *o, GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx;
   
   if (is_tainted(o))
     return o;
 
-  if (need_clone)
-    o = clone_stx(o);
+  o = clone_stx(o, mutate);
   stx = (Scheme_Stx *)o;
   stx->taints = scheme_void; /* taint to propagate */
 
@@ -2122,7 +2149,7 @@ static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int need_clone)
   return o;
 }
 
-static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp, int need_clone)
+static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp, GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx;
 
@@ -2137,8 +2164,7 @@ static Scheme_Object *set_false_insp(Scheme_Object *o, Scheme_Object *false_insp
       return o;
   }
 
-  if (need_clone)
-    o = clone_stx(o);
+  o = clone_stx(o, mutate);
   stx = (Scheme_Stx *)o;
   if (stx->taints)
     false_insp = taint_intern(scheme_make_pair(false_insp, SCHEME_CDR(stx->taints)));
@@ -2210,7 +2236,7 @@ static Scheme_Object *do_add_taint_armings_to_stx(Scheme_Object *o, Scheme_Objec
   }
 
   if (need_clone)
-    o = clone_stx(o);
+    o = clone_stx(o, NULL);
   stx = (Scheme_Stx *)o;
   stx->taints = new_taints;
   
@@ -2232,7 +2258,7 @@ static Scheme_Object *add_taint_armings_to_stx(Scheme_Object *o, Scheme_Object *
 
 Scheme_Object *scheme_stx_taint(Scheme_Object *o)
 {
-  return add_taint_to_stx(o, 1);
+  return add_taint_to_stx(o, NULL);
 }
 
 Scheme_Object *scheme_stx_taint_arm(Scheme_Object *o, Scheme_Object *insp)
@@ -2248,7 +2274,7 @@ Scheme_Object *scheme_stx_taint_rearm(Scheme_Object *o, Scheme_Object *copy_from
   if (is_tainted(o) || is_clean(copy_from))
     return o;
   else if (is_tainted(copy_from))
-    return add_taint_to_stx(o, 1);
+    return add_taint_to_stx(o, NULL);
   else
     return add_taint_armings_to_stx(o, ((Scheme_Stx *)copy_from)->taints, 1);
 }
@@ -2291,7 +2317,7 @@ Scheme_Object *scheme_stx_taint_disarm(Scheme_Object *o, Scheme_Object *insp)
   } else
     l2 = scheme_null;
 
-  o = clone_stx(o);
+  o = clone_stx(o, NULL);
 
   if (SCHEME_NULLP(l2)) {
     if (SCHEME_INSPECTORP(false_insp))
@@ -4321,6 +4347,7 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
 {
   Scheme_Object *shift, *v;
   Resolve_Prefix *rp;
+  int mutate = 0;
 
   shift = o[0];
 
@@ -4335,12 +4362,12 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
     v = rp->stxes[i];
   }
 
-  v = scheme_stx_add_shift(v, shift);
+  v = do_stx_add_shift(v, shift, &mutate);
 
   shift = SCHEME_VEC_ELS(shift)[3];
   if (!SCHEME_FALSEP(shift)) {
     /* need to propagate the inspector for dye packs, too */
-    (void)set_false_insp((Scheme_Object *)v, shift, 0);
+    (void)set_false_insp((Scheme_Object *)v, shift, &mutate);
   }
 
   return v;
@@ -5927,8 +5954,10 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
   else
     result = scheme_make_stx(result, stx_src->srcloc, NULL);
 
-  if (tainted)
-    (void)add_taint_to_stx(result, 0);
+  if (tainted) {
+    int mutate = MUTATE_STX_OBJ;
+    (void)add_taint_to_stx(result, &mutate);
+  }
   else if (armed) {
     /* Arm with #f as the inspector; #f is replaced by a
        specific inspector when the encloding code is instanted */
@@ -6209,7 +6238,8 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
   }
 
   if (!SCHEME_FALSEP(argv[0]) && !is_clean(argv[0])) {
-    add_taint_to_stx(src, 0);
+    int mutate = MUTATE_STX_OBJ;
+    add_taint_to_stx(src, &mutate);
   }
 
   return src;
@@ -6419,7 +6449,7 @@ Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
 
   if (val) {
     l = CONS(CONS(key, val), l);
-    stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx);
+    stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx, NULL);
     stx->props = l;
 
     return (Scheme_Object *)stx;
@@ -6484,7 +6514,7 @@ static Scheme_Object *syntax_track_origin(int argc, Scheme_Object **argv)
 Scheme_Object *scheme_transfer_srcloc(Scheme_Object *to, Scheme_Object *from)
 {
   if (!SAME_OBJ(((Scheme_Stx *)from)->srcloc, empty_srcloc)) {
-    to = clone_stx(to);
+    to = clone_stx(to, NULL);
     ((Scheme_Stx *)to)->srcloc = ((Scheme_Stx *)from)->srcloc;
   }
 
@@ -6619,7 +6649,7 @@ Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Sche
   Scheme_Mark_Set *current, *m2;
   Scheme_Object *key, *val;
   intptr_t i;
-  int flags = 0;
+  int mutate = 0;
 
   current = extract_mark_set((Scheme_Stx *)o, phase);
   m2 = extract_mark_set((Scheme_Stx *)b, phase);
@@ -6628,8 +6658,7 @@ Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Sche
   while (i != -1) {
     mark_set_index(m2, i, &key, &val);
     if (!mark_set_get(current, key)) {
-      o = scheme_stx_adjust_mark(o, key, phase, flags | SCHEME_STX_ADD);
-      flags |= SCHEME_STX_MUTATE;
+      o = stx_adjust_mark(o, key, phase, SCHEME_STX_ADD, &mutate);
     }
     
     i = mark_set_next(m2, i);
@@ -6901,7 +6930,7 @@ static Scheme_Object *syntax_taint(int argc, Scheme_Object **argv)
   if (!SCHEME_STXP(argv[0]))
     scheme_wrong_contract("syntax-taint", "syntax?", 0, argc, argv);
 
-  return add_taint_to_stx(argv[0], 1);
+  return add_taint_to_stx(argv[0], NULL);
   
 }
 
