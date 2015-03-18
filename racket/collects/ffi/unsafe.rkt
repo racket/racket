@@ -797,6 +797,10 @@
 ;; Call this with a name (symbol or #f) and a list of symbols, where a symbol can be
 ;; followed by a '= and an integer to have a similar effect of C's enum.
 (define ((_enum name) symbols [basetype _ufixint] #:unknown [unknown _enum])
+  (unless (list? symbols)
+    (raise-argument-error '_enum "list?" symbols))
+  (when (and (procedure? unknown) (not (procedure-arity-includes? unknown 1)))
+    (raise-argument-error '_enum "(if/c procedure? (procedure-arity-includes/c 1) any/c)" unknown))
   (define sym->int '())
   (define int->sym '())
   (define s->c
@@ -810,8 +814,19 @@
                                       (pair? (cddr symbols)))
                                (values (caddr symbols) (cdddr symbols))
                                (values i (cdr symbols)))])
-        (set! sym->int (cons (cons (car symbols) i) sym->int))
-        (set! int->sym (cons (cons i (car symbols)) int->sym))
+        (define sym (car symbols))
+        (unless (symbol? sym)
+          (raise-arguments-error '_enum "key is not a symbol"
+                                 "symbols" symbols
+                                 "key" sym
+                                 "value" i))
+        (unless (exact-nonnegative-integer? i)
+          (raise-arguments-error '_enum "value is not an integer"
+                                 "symbols" symbols
+                                 "key" sym
+                                 "value" i))
+        (set! sym->int (cons (cons sym i) sym->int))
+        (set! int->sym (cons (cons i sym) int->sym))
         (loop (add1 i) rest))))
   (make-ctype basetype
     (lambda (x)
