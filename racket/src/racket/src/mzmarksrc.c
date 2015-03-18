@@ -2420,6 +2420,7 @@ mark_rename_table_set {
   gcMARK2(rns->other_phases, gc);
   gcMARK2(rns->share_marked_names, gc);
   gcMARK2(rns->set_identity, gc);
+  gcMARK2(rns->prior_contexts, gc);
   gcMARK2(rns->insp, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));

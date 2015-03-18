@@ -51,6 +51,7 @@ static int mark_rename_table_set_MARK(void *p, struct NewGC *gc) {
   gcMARK2(rns->other_phases, gc);
   gcMARK2(rns->share_marked_names, gc);
   gcMARK2(rns->set_identity, gc);
+  gcMARK2(rns->prior_contexts, gc);
   gcMARK2(rns->insp, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
@@ -63,6 +64,7 @@ static int mark_rename_table_set_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(rns->other_phases, gc);
   gcFIXUP2(rns->share_marked_names, gc);
   gcFIXUP2(rns->set_identity, gc);
+  gcFIXUP2(rns->prior_contexts, gc);
   gcFIXUP2(rns->insp, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
