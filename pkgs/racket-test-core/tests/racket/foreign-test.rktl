@@ -134,25 +134,32 @@
 (test 21 ctype-sizeof (_array _byte 3 7))
 
 ;; Test enum and bitmask
-(define ([t (_enum '(a b c = 4 d))]
-         [s (_bitmask '(a b c = 14 d))])
+(let ([t (_enum '(a b c = 4 d))]
+      [s (_bitmask '(a b c = 14 d))])
   (define (check t v n)
-    (test n (cast v t _int)))
+    (test #t (λ (x) (equal? x n)) (cast v t _int)))
   (check t 'a 0)
   (check t 'b 1)
   (check t 'c 4)
   (check t 'd 5)
-  (check t 'a 1)
-  (check t 'b 2)
-  (check t 'c 14)
-  (check t 'd 16)
-  (check t '(a b) 3))
+  (check s 'a 1)
+  (check s 'b 2)
+  (check s 'c 14)
+  (check s 'd 16))
 
 ;; Make sure `_box` at least compiles:
 (test #t ctype? (_fun (_box _int) -> _void))
 
 ;; Make sure that _enum works in non first order cases
 (test #t ctype? (let ([enum _enum]) (enum '(x y))))
+;; Make sure that _enum checks its inputs
+(let ([_enum-exn? (lambda (exn)
+                    (and (exn:fail:contract? exn)
+                         (regexp-match? #rx"_enum" (exn-message exn))))])
+  (error-test #'(_enum 1) _enum-exn?)
+  (error-test #'(_enum '(1)) _enum-exn?)
+  (error-test #'(_enum '(x = y)) _enum-exn?)
+  (error-test #'(_enum '(x y) #:unknown (lambda (x y) x)) _enum-exn?))
 
 (define-cstruct _ic7i ([i1 _int]
                        [c7 _c7_list]
