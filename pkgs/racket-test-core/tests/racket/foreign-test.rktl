@@ -151,6 +151,9 @@
 ;; Make sure `_box` at least compiles:
 (test #t ctype? (_fun (_box _int) -> _void))
 
+;; Make sure that _enum works in non first order cases
+(test #t ctype? (let ([enum _enum]) (enum '(x y))))
+
 (define-cstruct _ic7i ([i1 _int]
                        [c7 _c7_list]
                        [i2 _int]))
