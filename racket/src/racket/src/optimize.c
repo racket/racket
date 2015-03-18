@@ -3506,6 +3506,9 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         return app->rand1;
     }
 
+    /* Possible improvement: detect 0 and 1 constants even when general
+       extflonum operations are not supported. */
+#ifdef MZ_LONG_DOUBLE
     z1 = (SCHEME_LONG_DBLP(app->rand1) && long_double_is_zero(SCHEME_LONG_DBL_VAL(app->rand1)));
     z2 = (SCHEME_LONG_DBLP(app->rand2) && long_double_is_zero(SCHEME_LONG_DBL_VAL(app->rand2)));
 
@@ -3526,6 +3529,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       if (SCHEME_LONG_DBLP(app->rand2) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand2)))
         return app->rand1;
     }
+#endif
   } else if (SCHEME_PRIMP(app->rator)
              && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
     /* Recognize combinations of bitwise operations as generating fixnums */
