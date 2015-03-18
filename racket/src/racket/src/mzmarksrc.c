@@ -1521,31 +1521,17 @@ END fun;
 START hash;
 
 hash_tree_val {
- mark:
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
-
-  gcMARK2(ht->root, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
-}
-
-mark_avl_node {
+  int popcount = hamt_popcount(ht->bitmap);
  mark:
-  AVLNode *avl = (AVLNode *)p;
-
-  /* Short-circuit on NULL pointers, which are especially likely */
-  if (avl->left) {
-    gcMARK2(avl->left, gc);
+  int i;
+  for (i = 0; i < popcount; i++) {
+    gcMARK2(ht->els[i].key, gc);
+    gcMARK2(ht->els[i].val, gc);
   }
-  if (avl->right) {
-    gcMARK2(avl->right, gc);
-  }
-  gcMARK2(avl->key, gc);
-  gcMARK2(avl->val, gc);
 
  size:
-  gcBYTES_TO_WORDS(sizeof(AVLNode));
+  gcBYTES_TO_WORDS(HASH_TREE_RECORD_SIZE(popcount));
 }
 
 END hash;

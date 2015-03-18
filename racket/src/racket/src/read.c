@@ -2210,7 +2210,7 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
     }
 
     /* Create `t' to be overwritten, and create `base' to extend. */
-    t = scheme_make_hash_tree(kind);
+    t = scheme_make_hash_tree_placeholder(kind);
     base = scheme_make_hash_tree(kind);
 
     result = (Scheme_Object *)t;
@@ -2225,9 +2225,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
      
       base = scheme_hash_tree_set(base, key, val);
     }
-    
-    t->count = base->count;
-    t->root = base->root;
+
+    scheme_hash_tree_set_placeholder(t, base);
   } else if (SCHEME_HASHTP(obj)) {
     int i;
     Scheme_Object *key, *val, *l = scheme_null, *orig_l;

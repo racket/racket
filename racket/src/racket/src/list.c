@@ -2189,7 +2189,7 @@ Scheme_Object *scheme_hash_eq_p(int argc, Scheme_Object *argv[])
         && (((Scheme_Hash_Table *)o)->compare != compare_eqv))
       return scheme_true;
   } else if (SCHEME_HASHTRP(o)) {
-    if (!(SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)o) & 0x3))
+    if (!(SCHEME_HASHTR_KIND((Scheme_Hash_Tree *)o) & 0x3))
       return scheme_true;
   } else if (SCHEME_BUCKTP(o)) {
     if ((((Scheme_Bucket_Table *)o)->compare != scheme_compare_equal)
@@ -2213,7 +2213,7 @@ Scheme_Object *scheme_hash_eqv_p(int argc, Scheme_Object *argv[])
     if (((Scheme_Hash_Table *)o)->compare == compare_eqv)
       return scheme_true;
   } else if (SCHEME_HASHTRP(o)) {
-    if (SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)o) & 0x2)
+    if (SCHEME_HASHTR_KIND((Scheme_Hash_Tree *)o) & 0x2)
       return scheme_true;
   } else if (SCHEME_BUCKTP(o)) {
     if (((Scheme_Bucket_Table *)o)->compare == compare_eqv)
@@ -2236,7 +2236,7 @@ Scheme_Object *scheme_hash_equal_p(int argc, Scheme_Object *argv[])
     if (((Scheme_Hash_Table *)o)->compare == scheme_compare_equal)
       return scheme_true;
   } else if (SCHEME_HASHTRP(o)) {
-    if (SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)o) & 0x1)
+    if (SCHEME_HASHTR_KIND((Scheme_Hash_Tree *)o) & 0x1)
       return scheme_true;
   } else if (SCHEME_BUCKTP(o)) {
     if (((Scheme_Bucket_Table *)o)->compare == scheme_compare_equal)
@@ -2277,12 +2277,12 @@ int scheme_is_hash_table_eqv(Scheme_Object *o)
 
 int scheme_is_hash_tree_equal(Scheme_Object *o)
 {
-  return SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)o) & 0x1;
+  return SCHEME_HASHTR_KIND((Scheme_Hash_Tree *)o) & 0x1;
 }
 
 int scheme_is_hash_tree_eqv(Scheme_Object *o)
 {
-  return SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)o) & 0x2;
+  return SCHEME_HASHTR_KIND((Scheme_Hash_Tree *)o) & 0x2;
 }
 
 static Scheme_Object *hash_table_put_bang(int argc, Scheme_Object *argv[])
@@ -2396,7 +2396,7 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
         return hash_failed(argc, argv);
     }
   } else if (SCHEME_HASHTRP(v)) {
-    if (!(SCHEME_HASHTR_FLAGS(((Scheme_Hash_Tree *)v)) & 0x3)) {
+    if (!(SCHEME_HASHTR_KIND(((Scheme_Hash_Tree *)v)) & 0x3)) {
       v = scheme_eq_hash_tree_get((Scheme_Hash_Tree *)v, argv[1]);
       if (v)
         return v;
@@ -2534,8 +2534,9 @@ static Scheme_Object *hash_table_clear(int argc, Scheme_Object *argv[])
         v = hash_table_remove_bang(2, a);
       }
     }
-  } else
-    return (Scheme_Object *)scheme_make_hash_tree(SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)v) & 0x3);
+  } else {
+    return (Scheme_Object *)scheme_make_hash_tree(SCHEME_HASHTR_KIND((Scheme_Hash_Tree *)v) & 0x3);
+  }
 }
 
 static void no_post_key(const char *name, Scheme_Object *key, int chap)
@@ -3069,7 +3070,7 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
       else {
         /* mode == 4, hash-clear */
         if (SCHEME_HASHTRP(o)) {
-          o = (Scheme_Object *)scheme_make_hash_tree(SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)o) & 0x3);
+          o = (Scheme_Object *)scheme_make_hash_tree(SCHEME_HASHTR_KIND((Scheme_Hash_Tree *)o) & 0x3);
           while (wraps) {
             o = transfer_chaperone(SCHEME_CAR(wraps), o);
             wraps = SCHEME_CDR(wraps);

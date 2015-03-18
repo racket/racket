@@ -1996,7 +1996,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
       Scheme_Object *key, *val;
       mzlonglong i;
 
-      ht2 = scheme_make_hash_tree(SCHEME_HASHTR_FLAGS(ht) & 0x3);
+      ht2 = scheme_make_hash_tree(SCHEME_HASHTR_KIND(ht) & 0x3);
 
       i = scheme_hash_tree_next(ht, -1);
       while (i != -1) {
@@ -5431,7 +5431,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
     Scheme_Object *key, *val;
     mzlonglong i;
     
-    ht2 = scheme_make_hash_tree(SCHEME_HASHTR_FLAGS(ht) & 0x3);
+    ht2 = scheme_make_hash_tree(SCHEME_HASHTR_KIND(ht) & 0x3);
     
     i = scheme_hash_tree_next(ht, -1);
     while (i != -1) {
@@ -6033,7 +6033,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     else
       ht1 = (Scheme_Hash_Tree *)o;
     
-    ht2 = scheme_make_hash_tree(SCHEME_HASHTR_FLAGS(ht1) & 0x3);
+    ht2 = scheme_make_hash_tree(SCHEME_HASHTR_KIND(ht1) & 0x3);
     
     i = scheme_hash_tree_next(ht1, -1);
     while (i != -1) {

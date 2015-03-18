@@ -289,13 +289,12 @@ enum {
   scheme_rt_runstack,                   /* 261 */
   scheme_rt_sfs_info,                   /* 262 */
   scheme_rt_validate_clearing,          /* 263 */
-  scheme_rt_avl_node,                   /* 264 */
-  scheme_rt_lightweight_cont,           /* 265 */
-  scheme_rt_export_info,                /* 266 */
-  scheme_rt_cont_jmp,                   /* 267 */
-  scheme_rt_letrec_check_frame,         /* 268 */
+  scheme_rt_lightweight_cont,           /* 264 */
+  scheme_rt_export_info,                /* 265 */
+  scheme_rt_cont_jmp,                   /* 266 */
+  scheme_rt_letrec_check_frame,         /* 267 */
 #endif
-  scheme_deferred_expr_type,            /* 269 */
+  scheme_deferred_expr_type,            /* 268 */
 
   _scheme_last_type_
 };
