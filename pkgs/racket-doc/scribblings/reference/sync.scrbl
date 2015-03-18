@@ -3,7 +3,7 @@
 
 @title[#:tag "all-sync" #:style 'toc]{Synchronization}
 
-Racket's synchronization toolbox spans three layers:
+Racket's synchronization toolbox spans four layers:
 
 @itemize[
 
@@ -16,6 +16,9 @@ that compose events); and}
 
 @item{@tech{semaphores} --- a simple and especially cheap primitive
 for synchronization.}
+
+@item{@tech{future semaphores} --- a simple synchronization primitive
+for use with @tech{futures}.}
 
 ]
 
