@@ -794,9 +794,9 @@
 ;; ----------------------------------------------------------------------------
 ;; Utility types
 
-;; Call this with a name (symbol) and a list of symbols, where a symbol can be
+;; Call this with a name (symbol or #f) and a list of symbols, where a symbol can be
 ;; followed by a '= and an integer to have a similar effect of C's enum.
-(define (_enum name symbols [basetype _ufixint] #:unknown [unknown _enum])
+(define ((_enum name) symbols [basetype _ufixint] #:unknown [unknown _enum])
   (define sym->int '())
   (define int->sym '())
   (define s->c
@@ -832,8 +832,8 @@
 (define-syntax (_enum* stx)
   (syntax-case stx ()
     [(_ x ...)
-     (with-syntax ([name (syntax-local-name)]) #'(_enum 'name x ...))]
-    [id (identifier? #'id) #'_enum]))
+     (with-syntax ([name (syntax-local-name)]) #'((_enum 'name) x ...))]
+    [id (identifier? #'id) #'(_enum #f)]))
 
 ;; Call this with a name (symbol) and a list of (symbol int) or symbols like
 ;; the above with '= -- but the numbers have to be specified in some way.  The
