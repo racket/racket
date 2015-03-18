@@ -2254,26 +2254,19 @@ static int wants_local_type_arguments(Scheme_Object *rator, int argpos)
     if (argpos == 0) {
       if (flags & SCHEME_PRIM_WANTS_FLONUM_FIRST)
         return SCHEME_LOCAL_TYPE_FLONUM;
-    } else if (argpos == 1) {
-      if (flags & SCHEME_PRIM_WANTS_FLONUM_SECOND)
-        return SCHEME_LOCAL_TYPE_FLONUM;
-    } else if (argpos == 2) {
-      if (flags & SCHEME_PRIM_WANTS_FLONUM_THIRD)
-        return SCHEME_LOCAL_TYPE_FLONUM;
-    }
-
-#ifdef MZ_LONG_DOUBLE
-    if (argpos == 0) {
       if (flags & SCHEME_PRIM_WANTS_EXTFLONUM_FIRST)
         return SCHEME_LOCAL_TYPE_EXTFLONUM;
     } else if (argpos == 1) {
+      if (flags & SCHEME_PRIM_WANTS_FLONUM_SECOND)
+        return SCHEME_LOCAL_TYPE_FLONUM;
       if (flags & SCHEME_PRIM_WANTS_EXTFLONUM_SECOND)
         return SCHEME_LOCAL_TYPE_EXTFLONUM;
     } else if (argpos == 2) {
+      if (flags & SCHEME_PRIM_WANTS_FLONUM_THIRD)
+        return SCHEME_LOCAL_TYPE_FLONUM;
       if (flags & SCHEME_PRIM_WANTS_EXTFLONUM_THIRD)
         return SCHEME_LOCAL_TYPE_EXTFLONUM;
     }
-#endif
   }
 
   return 0;
@@ -2367,10 +2360,8 @@ static int expr_produces_local_type(Scheme_Object *expr, int fuel)
     default:
       if (SCHEME_FLOATP(expr))
         return SCHEME_LOCAL_TYPE_FLONUM;
-#ifdef MZ_LONG_DOUBLE
       if (SCHEME_LONG_DBLP(expr))
         return SCHEME_LOCAL_TYPE_EXTFLONUM;
-#endif
       if (SCHEME_INTP(expr)
           && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(expr)))
         return SCHEME_LOCAL_TYPE_FIXNUM;
@@ -2529,10 +2520,8 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
   default:
     if (SCHEME_FLOATP(expr))
       return scheme_flonum_p_proc;
-#ifdef MZ_LONG_DOUBLE
     if (SCHEME_LONG_DBLP(expr))
       return scheme_extflonum_p_proc;
-#endif
     if (SCHEME_INTP(expr)
         && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(expr)))
       return scheme_fixnum_p_proc;
@@ -3516,7 +3505,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
         return app->rand1;
     }
-#ifdef MZ_LONG_DOUBLE
+
     z1 = (SCHEME_LONG_DBLP(app->rand1) && long_double_is_zero(SCHEME_LONG_DBL_VAL(app->rand1)));
     z2 = (SCHEME_LONG_DBLP(app->rand2) && long_double_is_zero(SCHEME_LONG_DBL_VAL(app->rand2)));
 
@@ -3537,7 +3526,6 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       if (SCHEME_LONG_DBLP(app->rand2) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand2)))
         return app->rand1;
     }
-#endif
   } else if (SCHEME_PRIMP(app->rator)
              && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
     /* Recognize combinations of bitwise operations as generating fixnums */
