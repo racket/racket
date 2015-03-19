@@ -652,7 +652,7 @@ static Scheme_Object *new_multi_mark(Scheme_Object *debug_name)
   Scheme_Hash_Table *multi_mark;
 
   /* Maps a phase to a mark, where each mark is created on demand: */
-  multi_mark = scheme_make_hash_table_eqv();
+  multi_mark = scheme_make_hash_table(SCHEME_hash_ptr);
 
   if (SCHEME_FALSEP(debug_name))
     MZ_OPT_HASH_KEY(&(multi_mark->iso)) |= 0x2;
@@ -700,7 +700,7 @@ Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
 
   if (((Scheme_Mark *)m)->owner_multi_mark) {
     Scheme_Object *multi_mark = SCHEME_CAR(((Scheme_Mark *)m)->owner_multi_mark);
-    name = scheme_hash_get((Scheme_Hash_Table *)multi_mark, scheme_void);
+    name = scheme_eq_hash_get((Scheme_Hash_Table *)multi_mark, scheme_void);
     if (!name) name = scheme_false;
 
     if (SCHEME_TL_MULTI_MARKP(multi_mark))
@@ -794,8 +794,13 @@ Scheme_Object *extract_single_mark(Scheme_Object *multi_mark, Scheme_Object *pha
 {
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)multi_mark;
   Scheme_Object *m, *mm;
-  
-  m = scheme_hash_get(ht, phase);
+
+  if (SCHEME_TRUEP(phase) && !SCHEME_INTP(phase)) {
+    /* make sure phases are interned (in case of a bignum phase, which should be very rare): */
+    phase = scheme_intern_literal_number(phase);
+  }
+
+  m = scheme_eq_hash_get(ht, phase);
   if (!m) {
     m = scheme_new_mark(SCHEME_STX_MODULE_MARK);
     mm = scheme_make_pair((Scheme_Object *)ht, phase);
@@ -4726,7 +4731,7 @@ static void add_reachable_marks(Scheme_Mark_Set *marks, Scheme_Marshal_Tables *m
   i = -1;
   while ((i = mark_set_next(marks, i)) != -1) {
     mark_set_index(marks, i, &key, &val);
-    if (!scheme_hash_get(mt->reachable_marks, key)) {
+    if (!scheme_eq_hash_get(mt->reachable_marks, key)) {
       scheme_hash_set(mt->reachable_marks, key, scheme_true);
       val = scheme_make_pair(key, mt->reachable_mark_stack);
       mt->reachable_mark_stack = val;
@@ -4751,7 +4756,7 @@ static void add_reachable_multi_marks(Scheme_Object *multi_marks, Scheme_Marshal
         mark = ht->vals[j];
         if (mark) {
           if (!SCHEME_VOIDP(ht->keys[j])) {
-            if (!scheme_hash_get(mt->reachable_marks, mark)) {
+            if (!scheme_eq_hash_get(mt->reachable_marks, mark)) {
               scheme_hash_set(mt->reachable_marks, mark, scheme_true);
               mark = scheme_make_pair(mark, mt->reachable_mark_stack);
               mt->reachable_mark_stack = mark;
@@ -4829,7 +4834,7 @@ static int all_marks_reachable(Scheme_Mark_Set *marks, Scheme_Marshal_Tables *mt
   i = -1;
   while ((i = mark_set_next(marks, i)) != -1) {
     mark_set_index(marks, i, &key, &val);
-    if (!scheme_hash_get(mt->reachable_marks, key))
+    if (!scheme_eq_hash_get(mt->reachable_marks, key))
       return 0;
   }
 
