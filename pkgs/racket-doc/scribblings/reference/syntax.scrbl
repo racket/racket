@@ -2957,7 +2957,11 @@ syntactic forms or languages that supply a more limited kind of
 
 Attaches a @racket['compiler-hint:cross-module-inline]
 @tech{syntax property} to each @racket[form], which is useful when a
-@racket[form] is a function definition. See @racket[define-values].}
+@racket[form] is a function definition. See @racket[define-values].
+
+The @racket[begin-encourage-inline] form is also provided by the
+@racketmodname[(submod racket/performance-hint begin-encourage-inline)] module,
+which has fewer dependencies than @racketmodname[racket/performance-hint].}
 
 @defform*/subs[[(define-inline id expr)
                 (define-inline (head args) body ...+)]

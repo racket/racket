@@ -2,13 +2,12 @@
 
 (require "private/performance-hint.rkt")
 
-;; Note: because of `define-inline''s dependencies, this module is pretty
-;;  heavyweight. If this becomes a problem, we can export a
-;;  `begin-encourage-inline' submodule (that only re-exports
-;;  `begin-encourage-inline'), to make it available without the overhead.
-
 (provide begin-encourage-inline
          define-inline)
+
+(module begin-encourage-inline '#%kernel
+  (#%require "private/performance-hint.rkt")
+  (#%provide begin-encourage-inline))
 
 (require (for-syntax syntax/parse syntax/define
                      racket/syntax racket/base)
