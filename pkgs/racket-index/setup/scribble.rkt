@@ -1496,6 +1496,7 @@
         [ns (namespace-anchor->empty-namespace anchor)])
     (namespace-attach-module ns 'scribble/base-render p)
     (namespace-attach-module ns 'scribble/html-render p)
+    (namespace-attach-module ns 'scribble/latex-render p)
     ;; This is here for de-serialization; we need a better repair than
     ;;  hard-wiring the "manual.rkt" library:
     (namespace-attach-module ns 'scribble/private/manual-class-struct p)
