@@ -2186,7 +2186,7 @@ XFORM_NONGCING static int hamt_index(uintptr_t code, int shift)
 
 XFORM_NONGCING int hamt_popcount(hash_tree_bitmap_t x)
 {
-#if 0
+#if MZ_HAS_BUILTIN_POPCOUNT
   return __builtin_popcount(x);
 #else
   /* http://bits.stephan-brumme.com/countBits.html */
@@ -2256,6 +2256,7 @@ static Scheme_Hash_Tree *hamt_dup(Scheme_Hash_Tree *ht, int popcount)
 }
 
 static Scheme_Hash_Tree *hamt_make1(Scheme_Hash_Tree *ht, int index)
+/* allocates a node that has a single entry, which is another node */
 {
   Scheme_Hash_Tree *new_ht;
 
@@ -2271,6 +2272,8 @@ static Scheme_Hash_Tree *hamt_make1(Scheme_Hash_Tree *ht, int index)
 static Scheme_Hash_Tree *hamt_make2(int shift,
                                     uintptr_t code1, Scheme_Object *key1, Scheme_Object *val1,
                                     uintptr_t code2, Scheme_Object *key2, Scheme_Object *val2)
+/* allocates a subtree (at the level indicated by `shift` for two
+   values, pushing them down to further subtress as needed */
 {
   int index1, index2, pos1, pos2;
   Scheme_Hash_Tree *new_ht;
@@ -2310,6 +2313,8 @@ static Scheme_Hash_Tree *hamt_make2(int shift,
 
 static Scheme_Hash_Tree *hamt_set(Scheme_Hash_Tree *ht, uintptr_t code, int shift,
                                   Scheme_Object *key, Scheme_Object *val, int inc)
+/* updates `ht` (at level `shift`) to replace or add the mapping for `code`,
+   adjusting the overall count by `inc` */
 {
   int index, pos, popcount;
   Scheme_Hash_Tree *new_ht;
@@ -2359,7 +2364,7 @@ static Scheme_Hash_Tree *hamt_set(Scheme_Hash_Tree *ht, uintptr_t code, int shif
 }
 
 static Scheme_Hash_Tree *hamt_contract(Scheme_Hash_Tree *ht, int popcount, int index, int pos)
-/* return a record that's smaller by one */
+/* return a node that's smaller by one by dropping the mapping at `pos` */
 {
   Scheme_Hash_Tree *new_ht;
 
@@ -2379,6 +2384,7 @@ static Scheme_Hash_Tree *hamt_contract(Scheme_Hash_Tree *ht, int popcount, int i
 }
 
 static Scheme_Hash_Tree *hamt_remove(Scheme_Hash_Tree *ht, uintptr_t code, int shift)
+/* remove the mapping for `code`, where `ht` is at the level indicated by `shift` */
 {
   int index, pos, popcount;
   Scheme_Hash_Tree *sub_ht;
@@ -2470,6 +2476,10 @@ int scheme_hash_tree_index(Scheme_Hash_Tree *ht, mzlonglong pos, Scheme_Object *
 
 static Scheme_Object *hamt_linear_search(Scheme_Hash_Tree *tree, int kind, Scheme_Object *key,
                                          GC_CAN_IGNORE int *_i, GC_CAN_IGNORE uintptr_t *_code)
+/* in the case of hash collisions, we put the colliding elements in a
+   tree that uses integers as keys; we have to search through the tree
+   for keys, but the advatange of using a HAMT (instead of a list) is
+   in indexing (as part of the encloding tree) and update */
 {
   int i;
   Scheme_Object *found_key, *found_val;
@@ -2498,6 +2508,7 @@ static Scheme_Object *hamt_linear_search(Scheme_Hash_Tree *tree, int kind, Schem
 }
 
 XFORM_NONGCING static Scheme_Object *hamt_eq_linear_search(Scheme_Hash_Tree *tree, Scheme_Object *key)
+/* specialized for `eq?`, where we know that comparison doesn't trigger a GC */
 {
   int i;
   Scheme_Object *found_key, *found_val;
@@ -2513,6 +2524,7 @@ XFORM_NONGCING static Scheme_Object *hamt_eq_linear_search(Scheme_Hash_Tree *tre
 }
 
 XFORM_NONGCING static uintptr_t hamt_find_free_code(Scheme_Hash_Tree *tree)
+/* for selecting a key when adding to a hash-collision subtree */
 {
   int i, mincount, minpos;
   Scheme_Hash_Tree *subtree;
@@ -2563,6 +2575,9 @@ Scheme_Hash_Tree *scheme_make_hash_tree(int kind)
 }
 
 Scheme_Hash_Tree *scheme_make_hash_tree_placeholder(int kind)
+/* for cyclic immutable hash tables, we need an indirection to form
+   the cycle (since we don't know in advance how large the top record
+   needs to be) */
 {
   Scheme_Hash_Tree *ht, *sub;
 
@@ -2642,6 +2657,7 @@ Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
 }
 
 Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val)
+/* val == NULL => remove */
 {
   uintptr_t h;
   Scheme_Hash_Tree *in_tree;
@@ -2659,6 +2675,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
     if (!val)
       return tree;
     else {
+      /* simple add */
       tree = resolve_placeholder(tree);
       return hamt_set(tree, h, 0, key, val, 1);
     }
@@ -2670,6 +2687,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
     uintptr_t code;
     in_tree = (Scheme_Hash_Tree *)in_tree->els[pos].val;
     if (hamt_linear_search(in_tree, kind, key, &i, &code)) {
+      /* key is part of the current collision */
       if (!val) {
         if (in_tree->count == 2) {
           /* no more hash collision */
@@ -2697,7 +2715,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
         inc = 1;
       }
     }
-    /* update collision tree in main tree: */
+    /* install updated collision tree in main tree: */
     tree = resolve_placeholder(tree);
     return hamt_set(tree, h, 0, NULL, (Scheme_Object *)in_tree, inc);
   } else {
@@ -2711,6 +2729,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
       same = scheme_eqv(key, in_tree->els[pos].key);
 
     if (same) {
+      /* replace */
       tree = resolve_placeholder(tree);
       if (!val) {
         tree = hamt_remove(tree, h, 0);
@@ -2721,6 +2740,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
       } else
         return hamt_set(tree, h, 0, key, val, 0);
     } else {
+      /* add */
       if (!val)
         return tree;
       else {

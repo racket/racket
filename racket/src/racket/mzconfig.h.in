@@ -71,6 +71,9 @@ typedef unsigned long uintptr_t;
 /* To enable 2^16 page size instead of 2^14: */
 #undef MZ_USE_LARGE_PAGE_SIZE
 
+/* When __builtin_popcount() is available: */
+#undef MZ_HAS_BUILTIN_POPCOUNT
+
 /* Enable futures: */
 #undef MZ_USE_FUTURES
 
