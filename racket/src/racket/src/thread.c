@@ -9099,15 +9099,13 @@ static void done_with_GC()
 }
 
 #ifdef MZ_PRECISE_GC
-static char *gc_num(char *nums, intptr_t v)
+static char *gc_unscaled_num(char *nums, intptr_t v)
 /* format a number with commas */
 {
   int i, j, len, clen, c, d;
   for (i = 0; nums[i] || nums[i+1]; i++) {
   }
   i++;
-
-  v /= 1024; /* bytes => kbytes */
 
   sprintf(nums+i, "%" PRIdPTR, v);
   for (len = 0; nums[i+len]; len++) { }
@@ -9127,6 +9125,10 @@ static char *gc_num(char *nums, intptr_t v)
   }
 
   return nums + i;
+}
+static char *gc_num(char *nums, intptr_t v)
+{
+  return gc_unscaled_num(nums, v/1024);  /* bytes => kbytes */
 }
 
 #ifdef MZ_XFORM
@@ -9218,16 +9220,18 @@ static void log_peak_memory_use()
   if (max_gc_pre_used_bytes > 0) {
     logger = scheme_get_gc_logger();
     if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
-      char buf[256], nums[128], *num;
+      char buf[256], nums[128], *num, *num2;
       intptr_t buflen;
       memset(nums, 0, sizeof(nums));
       num = gc_num(nums, max_gc_pre_used_bytes);
+      num2 = gc_unscaled_num(nums, scheme_total_gc_time);
       sprintf(buf,
-              "" PLACE_ID_FORMAT "atexit peak was %sK",
+              "" PLACE_ID_FORMAT "atexit peak was %sK; total %sms",
 #ifdef MZ_USE_PLACES
               scheme_current_place_id,
 #endif
-              num);
+              num,
+              num2);
       buflen = strlen(buf);
       scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, scheme_false);
       /* Setting to a negative value ensures that we log the peak only once: */
