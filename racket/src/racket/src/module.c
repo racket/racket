@@ -3091,14 +3091,20 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
       } else if (SCHEME_PAIRP(m->rn_stx)) {
 	/* Delayed shift: */
 	Scheme_Object *rn_stx, *midx;
-
+        
 	rn_stx = SCHEME_CAR(m->rn_stx);
 	midx = SCHEME_CDR(m->rn_stx);
+
+        rn_stx = scheme_stx_force_delayed(rn_stx);
         
         rn_stx = scheme_stx_shift(rn_stx, scheme_make_integer(0), midx, m->self_modidx,
                                   NULL, m->prefix->src_insp_desc, menv->access_insp);
 
 	m->rn_stx = rn_stx;
+      } else {
+        Scheme_Object *rn_stx;
+        rn_stx = scheme_stx_force_delayed(m->rn_stx);
+        m->rn_stx = rn_stx;
       }
 
       rns = scheme_stx_to_module_context(m->rn_stx);
@@ -6547,8 +6553,6 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
 	  /* Delay the shift: */
 	  Scheme_Object *v;
           v = m->rn_stx;
-          if (SCHEME_PAIRP(v))
-            v = scheme_list_to_vector(v);
 	  v = scheme_make_pair(v, (Scheme_Object *)midx);
 	  m->rn_stx = v;
 	}

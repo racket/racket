@@ -408,6 +408,8 @@ Scheme_Object *clone_stx(Scheme_Object *to, GC_CAN_IGNORE int *mutate)
   Scheme_Mark_Table *to_propagate;
   int armed;
 
+  STX_ASSERT(SCHEME_STXP(to));
+
   if (mutate && (*mutate & MUTATE_STX_OBJ)) {
     COUNT_MUTATE_ALLOCS(stx_skip_alloc_obj++);
     return to;
@@ -3213,17 +3215,19 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
           }
           for (j = ht->size; j--; ) {
             l = ht->vals[j];
-            if (SCHEME_PAIRP(l)) {
-              if (mark_subset(SCHEME_BINDING_MARKS(l), marks))
-                scheme_hash_set(mapped, ht->keys[j], scheme_true);
-            } else {
-              while (!SCHEME_NULLP(l)) {
-                STX_ASSERT(SCHEME_MPAIRP(l));
-                if (mark_subset(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks)) {
+            if (l) {
+              if (SCHEME_PAIRP(l)) {
+                if (mark_subset(SCHEME_BINDING_MARKS(l), marks))
                   scheme_hash_set(mapped, ht->keys[j], scheme_true);
-                  break;
+              } else {
+                while (!SCHEME_NULLP(l)) {
+                  STX_ASSERT(SCHEME_MPAIRP(l));
+                  if (mark_subset(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks)) {
+                    scheme_hash_set(mapped, ht->keys[j], scheme_true);
+                    break;
+                  }
+                  l = SCHEME_CDR(l);
                 }
-                l = SCHEME_CDR(l);
               }
             }
           }
@@ -4375,6 +4379,15 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i)
   }
   
   return v;
+}
+
+Scheme_Object *scheme_stx_force_delayed(Scheme_Object *stx)
+{
+  if (SCHEME_RPAIRP(stx))
+    return scheme_load_delayed_code(SCHEME_INT_VAL(SCHEME_CAR(stx)),
+                                    (struct Scheme_Load_Delay *)SCHEME_CDR(stx));
+  else
+    return stx;
 }
 
 /*========================================================================*/

@@ -1307,6 +1307,8 @@ Scheme_Object *scheme_delayed_shift(Scheme_Object **o, intptr_t i);
 struct Resolve_Prefix;
 void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, intptr_t i);
 
+Scheme_Object *scheme_stx_force_delayed(Scheme_Object *stx);
+
 Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht);
 void scheme_populate_pt_ht(struct Scheme_Module_Phase_Exports * pt);
 

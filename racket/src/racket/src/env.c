@@ -1484,6 +1484,9 @@ static Scheme_Object *vector_to_ht(Scheme_Object *vec, int kind)
     if (key) {
       if (kind)
         val = vector_to_ht(val, 0);
+      else if (!SAME_OBJ(val, scheme_true))
+        val = scheme_stx_force_delayed(val);
+
       ht = scheme_hash_tree_set(ht, key, val);
     }
   }

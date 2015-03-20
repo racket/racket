@@ -1583,10 +1583,11 @@ static Scheme_Hash_Table *get_binding_names_table(Scheme_Env *env)
         if (binding_names->vals[i]) {
           Scheme_Object *id;
           id = binding_names->vals[i];
-          id = scheme_stx_shift(id, scheme_make_integer(env->phase - env->mod_phase),
-                                env->module->self_modidx, env->link_midx,
-                                env->module_registry->exports,
-                                env->module->prefix->src_insp_desc, env->access_insp);
+          if (!SAME_OBJ(id, scheme_true))
+            id = scheme_stx_shift(id, scheme_make_integer(env->phase - env->mod_phase),
+                                  env->module->self_modidx, env->link_midx,
+                                  env->module_registry->exports,
+                                  env->module->prefix->src_insp_desc, env->access_insp);
           binding_names->vals[i] = id;
         }
       }

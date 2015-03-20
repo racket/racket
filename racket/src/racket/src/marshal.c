@@ -1080,6 +1080,20 @@ static Scheme_Object *read_local_unbox(Scheme_Object *obj)
   return do_read_local(scheme_local_unbox_type, obj);
 }
 
+static Scheme_Object *make_delayed_syntax(Scheme_Object *stx)
+{
+  Scheme_Object *ds;
+
+  /* in case it hasn't even been loaded, yet: */
+  stx = scheme_stx_force_delayed(stx);
+  
+  ds = scheme_alloc_small_object();
+  ds->type = scheme_delay_syntax_type;
+  SCHEME_PTR_VAL(ds) = stx;
+
+  return ds;
+}
+
 static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
 {
   Resolve_Prefix *rp = (Resolve_Prefix *)obj;
@@ -1103,9 +1117,7 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
         scheme_load_delayed_syntax(rp, i);
       }
 
-      ds = scheme_alloc_small_object();
-      ds->type = scheme_delay_syntax_type;
-      SCHEME_PTR_VAL(ds) = rp->stxes[i];
+      ds = make_delayed_syntax(rp->stxes[i]);
     } else
       ds = scheme_false;
     SCHEME_VEC_ELS(sv)[i] = ds;
@@ -1207,8 +1219,19 @@ static Scheme_Object *ht_to_vector(Scheme_Object *ht)
   
   if (!ht)
     return scheme_false;
-  if (SCHEME_VECTORP(ht))
+  if (SCHEME_VECTORP(ht)) {
+    /* may need to force delayed syntax: */
+    c = SCHEME_VEC_SIZE(ht);
+    for (i = 0; i < c; i += 2) {
+      val = SCHEME_VEC_ELS(ht)[i+1];
+      if (!SAME_OBJ(scheme_true, val)) {
+        k = scheme_stx_force_delayed(val);
+        if (!SAME_OBJ(k, val))
+          SCHEME_VEC_ELS(ht)[i+1] = k;
+      }
+    }
     return ht;
+  }
 
   if (SCHEME_HASHTRP(ht))
     c = ((Scheme_Hash_Tree *)ht)->count;
@@ -1224,6 +1247,8 @@ static Scheme_Object *ht_to_vector(Scheme_Object *ht)
       scheme_hash_tree_index(t, i, &k, &val);
       if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
         val = ht_to_vector(val);
+      else if (SCHEME_STXP(val))
+        val = make_delayed_syntax(val);
       SCHEME_VEC_ELS(vec)[j++] = k;
       SCHEME_VEC_ELS(vec)[j++] = val;
     }
@@ -1234,6 +1259,8 @@ static Scheme_Object *ht_to_vector(Scheme_Object *ht)
         val = t->vals[i];
         if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
           val = ht_to_vector(val);
+        else if (SCHEME_STXP(val))
+          val = make_delayed_syntax(val);
         SCHEME_VEC_ELS(vec)[j++] = t->keys[i];
         SCHEME_VEC_ELS(vec)[j++] = val;
       }
@@ -1391,8 +1418,8 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   v = m->rn_stx;
   if (!v)
     v = scheme_false;
-  else if (SCHEME_PAIRP(v))
-    v = scheme_list_to_vector(v);
+  else if (!SAME_OBJ(v, scheme_true))
+    v = make_delayed_syntax(v);
   l = cons(v, l);
 
   /* previously recorded "functional?" info: */
