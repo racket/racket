@@ -267,8 +267,6 @@ mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* dat
       stacksize = UNIX_STACK_MAXIMUM;
 #  endif
   }
-#elif defined(OS_X) || defined(linux)
-  stacksize = 8*1024*1024;
 #else
   stacksize = 0;
 #endif

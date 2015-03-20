@@ -1846,15 +1846,17 @@ void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
 # define RUNNING_IN_ORIGINAL_PLACE 1
 #endif
 
-  if (!cust_closers && RUNNING_IN_ORIGINAL_PLACE) {
-    if (replacement_at_exit) {
-      replacement_at_exit(do_run_atexit_closers_on_all);
-    } else {
+  if (!cust_closers) {
+    if (RUNNING_IN_ORIGINAL_PLACE) {
+      if (replacement_at_exit) {
+        replacement_at_exit(do_run_atexit_closers_on_all);
+      } else {
 #ifdef USE_ON_EXIT_FOR_ATEXIT
-      on_exit(do_run_atexit_closers_on_all, NULL);
+        on_exit(do_run_atexit_closers_on_all, NULL);
 #else
-      atexit(do_run_atexit_closers_on_all);
+        atexit(do_run_atexit_closers_on_all);
 #endif
+      }
     }
 
     REGISTER_SO(cust_closers);
@@ -3881,6 +3883,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 	{
 	  GC_CAN_IGNORE struct epoll_event ev;
 	  int already = !SCHEME_FALSEP(SCHEME_VEC_ELS(v)[1]), kr;
+	  memset(&ev, 0, sizeof(ev));
 	  ev.data.fd = fd;
 	  ev.events = EPOLLIN | (already ? EPOLLOUT : 0);
 	  kr = epoll_ctl(scheme_semaphore_fd_kqueue, 
@@ -3917,6 +3920,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 	{
 	  GC_CAN_IGNORE struct epoll_event ev;
 	  int already = !SCHEME_FALSEP(SCHEME_VEC_ELS(v)[0]), kr;
+	  memset(&ev, 0, sizeof(ev));
 	  ev.data.fd = fd;
 	  ev.events = EPOLLOUT | (already ? EPOLLIN : 0);
 	  kr = epoll_ctl(scheme_semaphore_fd_kqueue, 
@@ -3989,6 +3993,7 @@ static int check_fd_semaphores()
   Scheme_Object *v, *s, *key;
   int kr, hit = 0;
   GC_CAN_IGNORE struct epoll_event ev;
+  memset(&ev, 0, sizeof(ev));
 
   if (!scheme_semaphore_fd_mapping || (scheme_semaphore_fd_kqueue < 0))
     return 0;

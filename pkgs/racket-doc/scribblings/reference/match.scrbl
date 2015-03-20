@@ -22,9 +22,11 @@ on regular-expression matching on strings, bytes, and streams.
 
 Finds the first @racket[pat] that matches the result of
 @racket[val-expr], and evaluates the corresponding @racket[body]s with
-bindings introduced by @racket[pat] (if any). The last @racket[body]
+bindings introduced by @racket[pat] (if any). Bindings introduced by
+@racket[pat] are not available in other parts of @racket[pat].
+The last @racket[body]
 in the matching clause is evaluated in tail position with respect to
-the @racket[match] expression.
+the @racket[match] expression. 
 
 To find a match, the @racket[clause]s are tried in order. If no
 @racket[clause] matches, then the @exnraise[exn:misc:match?].
@@ -58,12 +60,13 @@ In more detail, patterns match as follows:
        @racketidfont{...}, @racketidfont{.._},
        @racketidfont{..}@racket[_k], and
        @racketidfont{..}@racket[_k] for non-negative integers
-       @racket[_k]) or @racket[(var _id)] --- matches anything, and binds @racket[id] to the
+       @racket[_k]) or @racket[(var _id)] --- matches anything, and binds @racket[_id] to the
        matching values. If an @racket[_id] is used multiple times
        within a pattern, the corresponding matches must be the same
        according to @racket[(match-equality-test)], except that
        instances of an @racket[_id] in different @racketidfont{or} and
-       @racketidfont{not} sub-patterns are independent.
+       @racketidfont{not} sub-patterns are independent. The binding for @racket[_id] is
+       not available in other parts of the same pattern.
 
        @examples[
        #:eval match-eval
@@ -506,6 +509,13 @@ Like @racket[match-let*], but generalizes @racket[let*-values].}
 Like @racket[match-let], but generalizes @racket[letrec].}
 
 
+@defform[(match-letrec-values ([(pat ...) expr] ...) body ...+)]{
+
+Like @racket[match-let], but generalizes @racket[letrec-values].
+
+@history[#:added "6.1.1.8"]
+}
+ 
 @defform[(match-define pat expr)]{
 
 Defines the names bound by @racket[pat] to the values produced by

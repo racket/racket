@@ -26,10 +26,6 @@
              check-procedure
              check-procedure/more
 
-             contracted-function?
-             contracted-function-proc
-             contracted-function-ctc
-             make-contracted-function 
              contract-key
              
              ;; these two are provided for-syntax

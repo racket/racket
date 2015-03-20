@@ -30,3 +30,23 @@ an expression context. The default value of @racket[check-context?] is
 If @racket[opt-kws?] is @racket[#t], then arguments of the form
 @racket[[id expr]], @racket[keyword id], and @racket[keyword [id
 expr]] are allowed, and they are preserved in the expansion.}
+
+@defproc[(normalize-definition/mk-rhs [defn-stx syntax?]
+                                      [lambda-id-stx identifier?]
+                                      [check-context? boolean?]
+                                      [opt+kws? boolean?]
+                                      [err-no-body? boolean?])
+         (values identifier? (-> syntax? syntax?) syntax?)]{
+
+  The helper for @racket[normalize-definition] that produces three values:
+  the defined identifier, a function that takes the syntax of the body
+  and produces syntax that has the expected binding structure, and
+  finally the right-hand side expression that @racket[normalize-definition]
+  gives to the previous function.
+
+  If @racket[err-no-body?] is true, then there must be a right-hand side
+  expression or else it is a syntax error. The @racket[err-no-body?] argument
+  is true for uses of @racket[normalize-definition].
+
+  @history[#:added "6.1.1.8"]
+}

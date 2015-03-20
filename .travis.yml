@@ -51,5 +51,6 @@ notifications:
     recipients:
       - samth@racket-lang.org
       - robby@racket-lang.org
+      - mflatt@racket-lang.org
     on_success: change
 

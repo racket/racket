@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          racket/generic
          racket/stream
          (for-syntax racket/base))

@@ -132,6 +132,18 @@ _define.ss_: handling all the same function forms as `define'
   `keyword id', and `keyword [id expr]' are allowed, and they are
   preserved in the expansion.
 
+> (normalize-definition/mk-rhs defn-stx lambda-id-stx [check-context? opt+kws? err-no-body?]) -
+
+  the helper for `normalize-definition' that produces three values:
+  the defined identifier, a function that takes the syntax of the body
+  and produces syntax that has the expected binding structure, and
+  finally the right-hand side expression that `normalize-definition'
+  gives to the previous function.
+
+  If `err-no-body?' is true, then there must be a right-hand side
+  expression or else it is a syntax error. This is true for uses of
+  `normalize-definition'.
+
 ======================================================================
 _struct.ss_: generating the same names as `define-struct'
 ======================================================================

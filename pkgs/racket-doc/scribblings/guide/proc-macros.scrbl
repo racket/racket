@@ -386,7 +386,7 @@ The problem is that @racket[check-ids] is defined as a run-time
 expression, but @racket[swap] is trying to use it at compile time. In
 interactive mode, compile time and run time are interleaved, but they
 are not interleaved within the body of a module, and they are not
-interleaved or across modules that are compiled ahead-of-time. To help
+interleaved across modules that are compiled ahead-of-time. To help
 make all of these modes treat code consistently, Racket separates the
 binding spaces for different phases.
 

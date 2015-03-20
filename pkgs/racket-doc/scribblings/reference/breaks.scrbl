@@ -120,7 +120,7 @@ value, breaks are enabled.}
 @defform[(parameterize-break boolean-expr body ...+)]{Evaluates
 @racket[boolean-expr] to determine whether breaks are initially
 enabled while evaluating the @racket[body]s in sequence. The result
-of the @racket[parameter-break] expression is the result of the last
+of the @racket[parameterize-break] expression is the result of the last
 @racket[expr].
 
 Like @racket[parameterize] (see @secref["parameters"]), a fresh
@@ -132,7 +132,7 @@ threads.}
  
 @defproc[(current-break-parameterization) break-parameterization?]{
 Analogous to @racket[(current-parameterization)] (see
-@secref["parameters"]); it returns a break-parameterization
+@secref["parameters"]); it returns a break parameterization
 (effectively, a thread cell) that holds the current continuation's
 break-enable state.}
 
@@ -145,3 +145,9 @@ thunk)] (see @secref["parameters"]), calls @racket[thunk] in a
 continuation whose break-enabled state is in @racket[break-param]. The
 @racket[thunk] is @italic{not} called in tail position with respect to
 the @racket[call-with-break-parameterization] call.}
+
+@defproc[(break-parameterization? [v any/c]) boolean?]{
+Returns @racket[#t] if @racket[v] is a break parameterization as produced by
+@racket[current-break-parameterization], @racket[#f] otherwise.
+
+@history[#:added "6.1.1.8"]}

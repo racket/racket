@@ -10753,7 +10753,7 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
                     Scheme_Comp_Env *cenv, Scheme_Compile_Info *rec, int drec,
                     Scheme_Object **_expanded)
 {
-  Scheme_Object *l, *rebuilt = scheme_null, *protect_stx = NULL;
+  Scheme_Object *l, *rebuilt = scheme_null, *protect_stx = NULL, *rebuild_from = scheme_null;
   int protect_cnt = 0, mode_cnt = 0, expanded = 0;
   Scheme_Object *mode = scheme_make_integer(0), *mode_stx = NULL;
   Scheme_Object *all_x_defs_out, *all_x_defs;
@@ -10778,6 +10778,8 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
         if (SAME_OBJ(protect_symbol, av)) {
           if (protect_cnt)
             scheme_wrong_syntax(NULL, a, e, "nested `protect' not allowed");
+          if (_expanded)
+            rebuild_from = scheme_make_pair(a, rebuild_from);
           protect_stx = a;
           a = SCHEME_STX_CDR(a);
           a = scheme_flatten_syntax_list(a, NULL);
@@ -10878,6 +10880,9 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
         all_x_defs = scheme_hash_tree_get(all_defs, mode);
         if (!all_x_defs) all_x_defs = scheme_null;
         p = expand_provide(p, at_phase, tables, all_defs, cenv, rec, drec);
+
+        if (_expanded)
+          rebuild_from = scheme_make_pair(p, rebuild_from);
 
         /* Check for '(begin datum ...) result: */
         p = scheme_flatten_syntax_list(p, &islist);
@@ -11177,6 +11182,12 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
       a = SCHEME_STX_CAR(e);
       rebuilt = scheme_make_pair(a, scheme_reverse(rebuilt));
       rebuilt = scheme_datum_to_syntax(rebuilt, e, e, 0, 2);
+
+      while (SCHEME_PAIRP(rebuild_from)) {
+        rebuilt = scheme_stx_track(rebuilt, SCHEME_CAR(rebuild_from), NULL);
+        rebuild_from = SCHEME_CDR(rebuild_from);
+      }
+
       *_expanded = rebuilt;
     } else {
       *_expanded = e;

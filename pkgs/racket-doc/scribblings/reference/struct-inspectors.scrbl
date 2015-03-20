@@ -149,13 +149,16 @@ The name (if any) of a procedure is always a symbol. The
 @racket[procedure-rename] function creates a procedure with a specific
 name.
 
-The name of a @tech{structure}, @tech{structure type}, @tech{structure
-type property} is always a symbol. If a @tech{structure} is a
-procedure as implemented by one of its fields (i.e., the
-@racket[prop:procedure] property value for the structure's type is an
-integer), then its name is the implementing procedure's name;
-otherwise, its name matches the name of the @tech{structure type} that
-it instantiates.
+If a @tech{structure}'s type implements the @racket[prop:object-name] property,
+and the value of the @racket[prop:object-name] property is an integer, then the
+corresponding field of the structure is the name of the structure.
+Otherwise, the property value must be a procedure, which is called with the
+structure as argument, and the result is the name of the structure.
+If a @tech{structure} is a procedure as implemented by one of its
+fields (i.e., the @racket[prop:procedure] property value for the structure's
+type is an integer), then its name is the implementing procedure's name.
+Otherwise, its name matches the name of the @tech{structure type} that it
+instantiates.
 
 The name of a @tech{regexp value} is a string or byte string. Passing
 the string or byte string to @racket[regexp], @racket[byte-regexp],
@@ -169,3 +172,22 @@ example).
 
 The name of a @tech{logger} is either a symbol or @racket[#f].}
 
+@defthing[prop:object-name struct-type-property?]{
+
+A @tech{structure type property} that allows structure types to customize
+ the result of @racket[object-name] applied to their instances. The property value can
+ be any of the following:
+
+@itemize[
+ @item{A procedure @racket[_proc] of one argument: In this case, 
+ procedure @racket[_proc] receives the structure as an argument, and the result
+ of @racket[_proc] is the @racket[object-name] of the structure.}
+
+ @item{An exact, non-negative integer between @racket[0] (inclusive) and the
+ number of non-automatic fields in the structure type (exclusive, not counting
+ supertype fields): The integer identifies a field in the structure, and the
+ field must be designated as immutable. The value of the field is used as the
+ @racket[object-name] of the structure.}
+]
+@history[#:added "6.2.0.2"]
+}

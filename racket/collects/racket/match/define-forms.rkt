@@ -10,8 +10,8 @@
                      syntax/parse/lib/function-header))
 
 (begin-for-syntax
- (lazy-require [racket/match/patterns (bound-vars)]
-               [racket/match/gen-match (go parse-id go/one)]))
+ (lazy-require [racket/match/patterns (bound-vars pats->bound-vars)]
+               [racket/match/gen-match (go go/one)]))
 
 (provide define-forms)
 
@@ -19,14 +19,16 @@
                       match match* match-lambda match-lambda*
 		      match-lambda** match-let match-let*
                       match-let-values match-let*-values
-		      match-define match-define-values match-letrec
+		      match-define match-define-values
+                      match-letrec match-letrec-values
 		      match/values match/derived match*/derived
                       define/match)
   (...
    (begin
      (provide match match* match-lambda match-lambda* match-lambda**
 	      match-let match-let* match-let-values match-let*-values
-              match-define match-define-values match-letrec
+              match-define match-define-values
+              match-letrec match-letrec-values
 	      match/values match/derived match*/derived match-define-values
               define/match)
      (define-syntax (match* stx)
@@ -130,6 +132,17 @@
                                  (quasisyntax/loc c (match-define #,p #,e)))
                             body1 body ...))]))
 
+     (define-syntax (match-letrec-values stx)
+       (syntax-parse stx
+         [(_ ((~and cl [(pat ...) exp]) ...) body1 body ...)
+          (quasisyntax/loc stx
+			   (let ()
+                            #,@(for/list ([c (in-syntax #'(cl ...))]
+                                          [p (in-syntax #'((pat ...) ...))]
+                                          [e (in-syntax #'(exp ...))])
+                                 (quasisyntax/loc c (match-define-values #,p #,e)))
+                            body1 body ...))]))
+
      (define-syntax (match-define stx)
        (syntax-parse stx
          [(_ pat rhs:expr)
@@ -137,21 +150,16 @@
             (with-syntax ([vars (bound-vars p)])
               (quasisyntax/loc stx
                 (define-values vars (match*/derived (rhs) #,stx
-				      [(pat) (values . vars)])))))]))
+                                      [(pat) (values . vars)])))))]))
 
      (define-syntax (match-define-values stx)
        (syntax-parse stx
          [(_ (pats ...) rhs:expr)
-          (define bound-vars-list (remove-duplicates
-                                   (foldr (λ (pat vars)
-                                             (append (bound-vars (parse-id pat)) vars))
-                                          '() (syntax->list #'(pats ...)))
-                                   bound-identifier=?))
-          (with-syntax ([(ids ...) (generate-temporaries #'(pats ...))])
-            (quasisyntax/loc stx
-              (define-values #,bound-vars-list
+          (with-syntax ([(ids ...) (pats->bound-vars parse-id (syntax->list #'(pats ...)))])
+            (syntax/loc stx
+              (define-values (ids ...)
                 (match/values rhs
-                  [(pats ...) (values . #,bound-vars-list)]))))]))
+                  [(pats ...) (values ids ...)]))))]))
 
      (define-syntax (define/match stx)
        (syntax-parse stx

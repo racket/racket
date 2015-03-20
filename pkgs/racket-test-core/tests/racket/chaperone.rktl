@@ -1729,7 +1729,10 @@
 
     (test #t blue? (make-a (chaperone-struct a1 struct:a prop:blue 'color) 2))
     (test 'color blue-ref (make-a (chaperone-struct a1 struct:a prop:blue 'color) 2))
-    
+
+    (test #f blue? a1)
+    (err/rt-test (blue-ref a1))
+
     (void)))
 
 ;; ----------------------------------------

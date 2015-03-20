@@ -47,6 +47,7 @@ READ_ONLY Scheme_Object *scheme_display_symbol;
 READ_ONLY Scheme_Object *scheme_write_special_symbol;
 READ_ONLY Scheme_Object *scheme_app_mark_impersonator_property;
 READ_ONLY Scheme_Object *scheme_liberal_def_ctx_type;;
+READ_ONLY Scheme_Object *scheme_object_name_property;
 
 READ_ONLY static Scheme_Object *location_struct;
 READ_ONLY static Scheme_Object *write_property;
@@ -105,6 +106,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
 static Scheme_Object *struct_type_property_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_property_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_object_name_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_impersonator_of_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_write_property_value_ok(int argc, Scheme_Object *argv[]);
@@ -394,6 +396,16 @@ scheme_init_struct (Scheme_Env *env)
     REGISTER_SO(proc_property);
     proc_property = scheme_make_struct_type_property(scheme_intern_symbol("procedure"));
     scheme_add_global_constant("prop:procedure", proc_property, env);
+  }
+
+  {
+    REGISTER_SO(scheme_object_name_property);
+    guard = scheme_make_prim_w_arity(check_object_name_property_value_ok,
+				     "guard-for-prop:object-name",
+				     2, 2);
+    scheme_object_name_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("object-name"),
+                                                                           guard);
+    scheme_add_global_constant("prop:object-name", scheme_object_name_property, env);
   }
 
   {
@@ -1024,9 +1036,11 @@ static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *p
          be via `prop:impersonator-of`: */
       Scheme_Object *procs;
       procs = scheme_struct_type_property_ref(scheme_impersonator_of_property, v);
-      if (procs)
+      if (procs) {
         v = scheme_apply_impersonator_of(0, procs, v);
-      else
+        if (!v)
+          return scheme_false;
+      } else
         return scheme_false;
     } else
       break;
@@ -1181,6 +1195,8 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
         procs = scheme_struct_type_property_ref(scheme_impersonator_of_property, arg);
         if (procs) {
           arg = scheme_apply_impersonator_of(0, procs, arg);
+          if (!arg)
+            return NULL;
           /* loop to try again */
         } else {
           /* an impersonator property lives at the impersonator/chaperone level, only: */
@@ -1643,6 +1659,28 @@ static int is_evt_struct(Scheme_Object *o)
   return 0;
 }
 
+
+/*========================================================================*/
+/*                            object-name structs                         */
+/*========================================================================*/
+/* This is here so it can use check_indirect_property_value_ok */
+
+static int is_proc_1(Scheme_Object *o) { return (SCHEME_PROCP(o) && scheme_check_proc_arity(NULL, 1, -1, 0, &o)); }
+static int is_proc_1_or_2(Scheme_Object *o) { return (SCHEME_PROCP(o) && (scheme_check_proc_arity(NULL, 1, -1, 0, &o)
+                                                                          || scheme_check_proc_arity(NULL, 2, -1, 0, &o))); }
+
+
+
+static Scheme_Object *check_object_name_property_value_ok(int argc, Scheme_Object *argv[])
+/* This is the guard for prop:object-name */
+{
+  return check_indirect_property_value_ok("guard-for-prop:object-name",
+                                          is_proc_1, 1,
+                                          "(or/c (any/c . -> . any) exact-nonnegative-integer?)",
+                                          argc, argv);
+}
+
+
 /*========================================================================*/
 /*                            port structs                                */
 /*========================================================================*/
@@ -1863,10 +1901,6 @@ int scheme_is_set_transformer(Scheme_Object *o)
     return 1;
   return 0;
 }
-
-static int is_proc_1(Scheme_Object *o) { return (SCHEME_PROCP(o) && scheme_check_proc_arity(NULL, 1, -1, 0, &o)); } 
-static int is_proc_1_or_2(Scheme_Object *o) { return (SCHEME_PROCP(o) && (scheme_check_proc_arity(NULL, 1, -1, 0, &o)
-                                                                          || scheme_check_proc_arity(NULL, 2, -1, 0, &o))); }
 
 Scheme_Object *signal_bad_syntax(int argc, Scheme_Object **argv)
 {
