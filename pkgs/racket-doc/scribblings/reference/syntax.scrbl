@@ -2961,7 +2961,10 @@ Attaches a @racket['compiler-hint:cross-module-inline]
 
 The @racket[begin-encourage-inline] form is also provided by the
 @racketmodname[(submod racket/performance-hint begin-encourage-inline)] module,
-which has fewer dependencies than @racketmodname[racket/performance-hint].}
+which has fewer dependencies than @racketmodname[racket/performance-hint].
+
+@history[#:changed "6.2.0.2" @elem{Added @racketmodname[(submod racket/performance-hint begin-encourage-inline)] submodule.}]
+}
 
 @defform*/subs[[(define-inline id expr)
                 (define-inline (head args) body ...+)]
