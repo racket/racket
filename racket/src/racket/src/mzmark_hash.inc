@@ -4,33 +4,31 @@ static int hash_tree_val_SIZE(void *p, struct NewGC *gc) {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
   int popcount = hamt_popcount(ht->bitmap);
   return
-  gcBYTES_TO_WORDS(HASH_TREE_RECORD_SIZE(popcount));
+  gcBYTES_TO_WORDS(HASH_TREE_RECORD_SIZE(SCHEME_HASHTR_KIND(ht), popcount));
 }
 
 static int hash_tree_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
   int popcount = hamt_popcount(ht->bitmap);
   int i;
-  for (i = 0; i < popcount; i++) {
-    gcMARK2(ht->els[i].key, gc);
-    gcMARK2(ht->els[i].val, gc);
+  for (i = ((SCHEME_HASHTR_FLAGS(ht) & HASHTR_HAS_VAL) ? 2 : 1) * popcount; i--; ) {
+    gcMARK2(ht->els[i], gc);
   }
 
   return
-  gcBYTES_TO_WORDS(HASH_TREE_RECORD_SIZE(popcount));
+  gcBYTES_TO_WORDS(HASH_TREE_RECORD_SIZE(SCHEME_HASHTR_KIND(ht), popcount));
 }
 
 static int hash_tree_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
   int popcount = hamt_popcount(ht->bitmap);
   int i;
-  for (i = 0; i < popcount; i++) {
-    gcFIXUP2(ht->els[i].key, gc);
-    gcFIXUP2(ht->els[i].val, gc);
+  for (i = ((SCHEME_HASHTR_FLAGS(ht) & HASHTR_HAS_VAL) ? 2 : 1) * popcount; i--; ) {
+    gcFIXUP2(ht->els[i], gc);
   }
 
   return
-  gcBYTES_TO_WORDS(HASH_TREE_RECORD_SIZE(popcount));
+  gcBYTES_TO_WORDS(HASH_TREE_RECORD_SIZE(SCHEME_HASHTR_KIND(ht), popcount));
 }
 
 #define hash_tree_val_IS_ATOMIC 0

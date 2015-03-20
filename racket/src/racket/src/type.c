@@ -197,6 +197,11 @@ scheme_init_type ()
   set_name(scheme_channel_put_type, "<channel-put>");
   set_name(scheme_hash_table_type, "<hash>");
   set_name(scheme_hash_tree_type, "<hash>");
+  set_name(scheme_eq_hash_tree_type, "<hash>");
+  set_name(scheme_eqv_hash_tree_type, "<hash>");
+  set_name(scheme_hash_tree_indirection_type, "<hash>");
+  set_name(scheme_hash_tree_subtree_type, "<hash-node>");
+  set_name(scheme_hash_tree_collision_type, "<hash-node>");
   set_name(scheme_bucket_table_type, "<hash>");
   set_name(scheme_module_registry_type, "<module-registry>");
   set_name(scheme_case_closure_type, "<procedure>");

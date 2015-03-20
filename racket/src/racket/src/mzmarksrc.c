@@ -1525,13 +1525,12 @@ hash_tree_val {
   int popcount = hamt_popcount(ht->bitmap);
  mark:
   int i;
-  for (i = 0; i < popcount; i++) {
-    gcMARK2(ht->els[i].key, gc);
-    gcMARK2(ht->els[i].val, gc);
+  for (i = ((SCHEME_HASHTR_FLAGS(ht) & HASHTR_HAS_VAL) ? 2 : 1) * popcount; i--; ) {
+    gcMARK2(ht->els[i], gc);
   }
 
  size:
-  gcBYTES_TO_WORDS(HASH_TREE_RECORD_SIZE(popcount));
+  gcBYTES_TO_WORDS(HASH_TREE_RECORD_SIZE(SCHEME_HASHTR_KIND(ht), popcount));
 }
 
 END hash;

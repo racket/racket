@@ -836,22 +836,20 @@ scheme_get_primitive_global(Scheme_Object *var, Scheme_Env *env,
 void scheme_add_bucket_to_table(Scheme_Bucket_Table *table, Scheme_Bucket *b);
 Scheme_Bucket *scheme_bucket_or_null_from_table(Scheme_Bucket_Table *table, const char *key, int add);
 
-typedef struct Scheme_Hash_Tree_Entry {
-  uintptr_t code;
-  Scheme_Object *key; /* NULL => val is a nested tree for hash collisions */
-  Scheme_Object *val; /* NULL => key is a nested tree */
-} Scheme_Hash_Tree_Entry;
-
-typedef unsigned int hash_tree_bitmap_t; /* must be unsigned_int */
+typedef unsigned int hash_tree_bitmap_t; /* must be unsigned int */
 struct Scheme_Hash_Tree {
-  Scheme_Inclhash_Object iso; /* 0x1 flag => equal?-based; 0x2 flag => eqv?-based; 0x3 => placeholder */
+  Scheme_Inclhash_Object iso; /* 0 => keys only; 0x1 => keys and values; 0x3 => keys, values, and codes */
   hash_tree_bitmap_t bitmap;
   intptr_t count;
-  Scheme_Hash_Tree_Entry els[mzFLEX_ARRAY_DECL];
+  Scheme_Object *els[mzFLEX_ARRAY_DECL]; /* keys, then vals (if any), then codes (if any) */
 };
 
 #define SCHEME_HASHTR_FLAGS(tr) MZ_OPT_HASH_KEY(&(tr)->iso)
-#define SCHEME_HASHTR_KIND(tr) (((SCHEME_HASHTR_FLAGS(tr) & 0x3) == 0x3) ? SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)(tr)->els[0].key) : SCHEME_HASHTR_FLAGS(tr))
+#define SCHEME_HASHTR_KIND(tr) (SCHEME_HASHTR_FLAGS(tr) & 0x3)
+
+#define SCHEME_HASHTR_TYPE(tr) (SAME_TYPE(SCHEME_TYPE(tr), scheme_hash_tree_indirection_type) \
+                                ? SCHEME_TYPE(((Scheme_Hash_Tree *)tr)->els[0]) \
+                                : SCHEME_TYPE(tr))
 
 Scheme_Object *scheme_intern_literal_string(Scheme_Object *str);
 Scheme_Object *scheme_intern_literal_number(Scheme_Object *num);
@@ -4133,9 +4131,10 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
                                Scheme_Hash_Tree *t2, Scheme_Object *orig_t2,
                                void *eql);
 Scheme_Object *scheme_hash_tree_copy(Scheme_Object *v);
+Scheme_Hash_Tree *scheme_make_hash_tree_of_type(Scheme_Type stype);
 
 Scheme_Hash_Tree *scheme_make_hash_tree_placeholder(int kind);
-void scheme_hash_tree_set_placeholder(Scheme_Hash_Tree *t, Scheme_Hash_Tree *base);
+void scheme_hash_tree_tie_placeholder(Scheme_Hash_Tree *t, Scheme_Hash_Tree *base);
 int scheme_hash_tree_kind(Scheme_Hash_Tree *t);
 
 void scheme_set_root_param(int p, Scheme_Object *v);

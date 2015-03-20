@@ -254,13 +254,14 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(empty_propagate_table);
   REGISTER_SO(empty_mark_set);
   empty_hash_tree = scheme_make_hash_tree(0);
-  empty_mark_set = (Scheme_Mark_Set *)empty_hash_tree;
+  empty_mark_set = (Scheme_Mark_Set *)scheme_make_hash_tree_set(0);
   empty_mark_table = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
   empty_mark_table->so.type = scheme_mark_table_type;
   empty_mark_table->single_marks = empty_mark_set;
   empty_mark_table->multi_marks = scheme_null;
   empty_propagate_table = (Scheme_Mark_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
   memcpy(empty_propagate_table, empty_mark_table, sizeof(Scheme_Mark_Table));
+  empty_propagate_table->single_marks = (Scheme_Mark_Set *)empty_hash_tree;
   empty_propagate_table->so.type = scheme_propagate_table_type;
   ((Scheme_Propagate_Table *)empty_propagate_table)->phase_shift = scheme_make_integer(0);
   ((Scheme_Propagate_Table *)empty_propagate_table)->prev = NULL;
@@ -2012,7 +2013,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
       Scheme_Object *key, *val;
       mzlonglong i;
 
-      ht2 = scheme_make_hash_tree(SCHEME_HASHTR_KIND(ht) & 0x3);
+      ht2 = scheme_make_hash_tree_of_type(SCHEME_HASHTR_TYPE(ht));
 
       i = scheme_hash_tree_next(ht, -1);
       while (i != -1) {
@@ -5528,7 +5529,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
     Scheme_Object *key, *val;
     mzlonglong i;
     
-    ht2 = scheme_make_hash_tree(SCHEME_HASHTR_KIND(ht) & 0x3);
+    ht2 = scheme_make_hash_tree_of_type(SCHEME_HASHTR_TYPE(ht));
     
     i = scheme_hash_tree_next(ht, -1);
     while (i != -1) {
@@ -6148,7 +6149,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     else
       ht1 = (Scheme_Hash_Tree *)o;
     
-    ht2 = scheme_make_hash_tree(SCHEME_HASHTR_KIND(ht1) & 0x3);
+    ht2 = scheme_make_hash_tree_of_type(SCHEME_HASHTR_TYPE(ht1));
     
     i = scheme_hash_tree_next(ht1, -1);
     while (i != -1) {

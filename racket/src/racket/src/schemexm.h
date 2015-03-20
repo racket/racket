@@ -299,6 +299,7 @@
 #define scheme_clone_hash_table (scheme_extension_table->scheme_clone_hash_table)
 #define scheme_clear_hash_table (scheme_extension_table->scheme_clear_hash_table)
 #define scheme_make_hash_tree (scheme_extension_table->scheme_make_hash_tree)
+#define scheme_make_hash_tree_set (scheme_extension_table->scheme_make_hash_tree_set)
 #define scheme_hash_tree_set (scheme_extension_table->scheme_hash_tree_set)
 #define scheme_hash_tree_get (scheme_extension_table->scheme_hash_tree_get)
 #define scheme_eq_hash_tree_get (scheme_extension_table->scheme_eq_hash_tree_get)
