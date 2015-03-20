@@ -7276,7 +7276,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);
 
   if (!check_mb) {
-    fm = scheme_check_immediate_macro(fm, benv, rec, drec, &mbval, NULL, 1);
+    fm = scheme_check_immediate_macro(fm, benv, rec, drec, &mbval, 1);
 
     /* If expansion is not the primitive `#%module-begin', add local one: */
     if (!SAME_OBJ(mbval, modbeg_syntax)) {

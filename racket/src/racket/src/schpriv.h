@@ -2828,7 +2828,6 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 					    Scheme_Comp_Env *env,
 					    Scheme_Compile_Expand_Info *erec, int drec,
 					    Scheme_Object **current_val,
-					    Scheme_Object *ctx,
                                             int keep_name);
 
 Scheme_Object *scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
@@ -2849,6 +2848,8 @@ void scheme_add_compilation_frame_intdef_mark(Scheme_Comp_Env *frame,
                                               Scheme_Object *expr_mark);
 Scheme_Comp_Env *scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark,
 					      Scheme_Comp_Env *env, int flags);
+
+Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_compile_lookup(Scheme_Object *symbol, Scheme_Comp_Env *env, int flags, 
 				     Scheme_Object *in_modidx, 
@@ -3113,20 +3114,20 @@ int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
 #define SCHEME_INFO_TYPED_VAL_MASK (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_INFO_TYPED_VAL_SHIFT)
 
 /* flags used with scheme_new_frame */
-#define SCHEME_TOPLEVEL_FRAME 1
-#define SCHEME_MODULE_FRAME 2
-#define SCHEME_MODULE_BEGIN_FRAME 4
-#define SCHEME_LAMBDA_FRAME 8
-#define SCHEME_INTDEF_FRAME 16
-#define SCHEME_USE_MARKS_TO_NEXT 32
-#define SCHEME_CAPTURE_WITHOUT_RENAME 64
-#define SCHEME_FOR_STOPS 128
-#define SCHEME_FOR_INTDEF 256
-#define SCHEME_CAPTURE_LIFTED 512
-#define SCHEME_INTDEF_SHADOW 1024
-#define SCHEME_POST_BIND_FRAME 2048
-#define SCHEME_NESTED_MODULE_FRAME 4096
-#define SCHEME_KEEP_MARKS_FRAME 8192
+#define SCHEME_TOPLEVEL_FRAME      (1 << 0)
+#define SCHEME_MODULE_FRAME        (1 << 1)
+#define SCHEME_MODULE_BEGIN_FRAME  (1 << 2)
+#define SCHEME_LAMBDA_FRAME        (1 << 3)
+#define SCHEME_INTDEF_FRAME        (1 << 4)
+#define SCHEME_USE_MARKS_TO_NEXT   (1 << 5)
+#define SCHEME_CAPTURE_WITHOUT_RENAME (1 << 6)
+#define SCHEME_FOR_STOPS           (1 << 7)
+#define SCHEME_FOR_INTDEF          (1 << 8)
+#define SCHEME_CAPTURE_LIFTED      (1 << 9)
+#define SCHEME_INTDEF_SHADOW       (1 << 10)
+#define SCHEME_POST_BIND_FRAME     (1 << 11)
+#define SCHEME_NESTED_MODULE_FRAME (1 << 12)
+#define SCHEME_KEEP_MARKS_FRAME    (1 << 13)
 
 #define SCHEME_REC_BINDING_FRAME (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_BEGIN_FRAME \
                                   | SCHEME_INTDEF_FRAME | SCHEME_FOR_INTDEF)
@@ -3172,8 +3173,6 @@ Scheme_Object *scheme_make_branch(Scheme_Object *test,
 int scheme_is_toplevel(Scheme_Comp_Env *env);
 int scheme_is_nested_module(Scheme_Comp_Env *env);
 Scheme_Comp_Env *scheme_extend_as_toplevel(Scheme_Comp_Env *env);
-
-Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env);
 
 Scheme_Env *scheme_make_empty_env(void);
 void scheme_prepare_exp_env(Scheme_Env *env);
