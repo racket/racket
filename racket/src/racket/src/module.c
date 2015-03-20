@@ -2883,7 +2883,7 @@ static Scheme_Object *get_table(Scheme_Hash_Table *tables, Scheme_Object *phase)
   vec = scheme_hash_get(tables, phase);
   if (!vec) {
     required = scheme_make_hash_table_equal();
-    vec = scheme_make_vector(3, NULL);
+    vec = scheme_make_vector(3, scheme_false);
     SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)required;
     scheme_hash_set(tables, phase, vec);
   }
@@ -8601,9 +8601,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   rn_set = env->genv->stx_context;
 
   vec = get_table(bxs->tables, scheme_make_integer(phase));
-  if (!SCHEME_VEC_ELS(vec)[0])
+  if (SCHEME_FALSEP(SCHEME_VEC_ELS(vec)[0]))
     SCHEME_VEC_ELS(vec)[0] = (Scheme_Object *)env->genv->toplevel;
-  if (!SCHEME_VEC_ELS(vec)[2])
+  if (SCHEME_FALSEP(SCHEME_VEC_ELS(vec)[2]))
     SCHEME_VEC_ELS(vec)[2] = (Scheme_Object *)env->genv->syntax;
   required = (Scheme_Hash_Table *)SCHEME_VEC_ELS(vec)[1];
 
