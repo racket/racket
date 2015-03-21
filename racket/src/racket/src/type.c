@@ -129,6 +129,7 @@ scheme_init_type ()
   set_name(scheme_begin0_sequence_type, "<begin0-code>");
   set_name(scheme_splice_sequence_type, "<splicing-begin-code>");
   set_name(scheme_module_type, "<module-code>");
+  set_name(scheme_inline_variant_type, "<inline-variant-code>");
   set_name(scheme_set_bang_type, "<set!-code>");
   set_name(scheme_boxenv_type, "<boxenv-code>");
   set_name(scheme_require_form_type, "<require-code>");
@@ -222,6 +223,7 @@ scheme_init_type ()
   set_name(scheme_regexp_type, "<regexp>");
   set_name(scheme_mark_table_type, "<mark-table>");
   set_name(scheme_propagate_table_type, "<propagate-table>");
+  set_name(scheme_mark_type, "<mark>");
   set_name(scheme_bucket_type, "<hash-table-bucket>");
   set_name(scheme_prefix_type, "<runtime-prefix>");
   set_name(scheme_resolve_prefix_type, "<resolve-prefix>");
