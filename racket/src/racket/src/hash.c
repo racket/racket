@@ -1326,6 +1326,11 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
     o = ((Scheme_Chaperone *)o)->val;
   
   t = SCHEME_TYPE(o);
+  if (t == scheme_hash_tree_indirection_type) {
+    o = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)o);
+    t = SCHEME_TYPE(o);
+  }
+  
   k += t;
 
   if (hi->depth > (MAX_HASH_DEPTH << 1))
@@ -1547,6 +1552,9 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       return k;
     }
   case scheme_hash_tree_type:
+  case scheme_eq_hash_tree_type:
+  case scheme_eqv_hash_tree_type:
+  case scheme_hash_tree_indirection_type:
     {
       Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)o;
       Scheme_Object *ik, *iv;
@@ -1560,12 +1568,15 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       hi->depth += 2;
       old_depth = hi->depth;
 
+      /* hash tree holds pre-computed hashes for keys, so use those: */
+      vk = scheme_hash_tree_key_hash(ht);
+
       for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
         scheme_hash_tree_index(ht, i, &ik, &iv);
         if (!SAME_OBJ(o, orig_obj))
           iv = scheme_chaperone_hash_traversal_get(orig_obj, ik, &ik);
-        vk = equal_hash_key(ik, 0, hi);
-        MZ_MIX(vk);
+        /* vk = equal_hash_key(ik, 0, hi); */
+        /* MZ_MIX(vk); */
         vk += equal_hash_key(iv, 0, hi);
         MZ_MIX(vk);
         k += vk;  /* can't mix k, because the key order shouldn't matter */
@@ -2041,6 +2052,9 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       return k;
     }
   case scheme_hash_tree_type:
+  case scheme_eq_hash_tree_type:
+  case scheme_eqv_hash_tree_type:
+  case scheme_hash_tree_indirection_type:
     {
       Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)o;
       Scheme_Object *iv, *ik;
@@ -2052,12 +2066,14 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 
       hi->depth += 2;
       old_depth = hi->depth;
+
+      /* hash tree holds pre-computed hashes for keys, so use those: */
+      k += scheme_hash_tree_key_hash(ht);
       
       for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
         scheme_hash_tree_index(ht, i, &ik, &iv);
         if (!SAME_OBJ(o, orig_obj))
           iv = scheme_chaperone_hash_traversal_get(orig_obj, ik, &ik);
-        k += equal_hash_key2(ik, hi);
         k += equal_hash_key2(iv, hi);
         hi->depth = old_depth;
       }
@@ -2260,9 +2276,8 @@ XFORM_NONGCING static void hamt_content_copy(Scheme_Hash_Tree *dest, Scheme_Hash
   }
 }
 
-XFORM_NONGCING static Scheme_Hash_Tree *hamt_assoc(Scheme_Hash_Tree *ht, uintptr_t code, int *_pos)
+XFORM_NONGCING static Scheme_Hash_Tree *hamt_assoc(Scheme_Hash_Tree *ht, uintptr_t code, int *_pos, int shift)
 {
-  int shift = 0;
   int index, pos;
 
   while (1) {
@@ -2514,8 +2529,10 @@ XFORM_NONGCING static void hamt_at_index(Scheme_Hash_Tree *ht, mzlonglong pos,
       } else {
         if (!pos) {
           *_key = ht->els[i];
-          *_val = _mzHAMT_VAL(ht, i, popcount);
-          *_code = _mzHAMT_CODE(ht, i, popcount);
+          if (_val)
+            *_val = _mzHAMT_VAL(ht, i, popcount);
+          if (_code)
+            *_code = _mzHAMT_CODE(ht, i, popcount);
           return;
         }
         --pos;
@@ -2678,6 +2695,11 @@ void scheme_hash_tree_tie_placeholder(Scheme_Hash_Tree *t, Scheme_Hash_Tree *bas
   t->els[0] = (Scheme_Object *)base;
 }
 
+Scheme_Hash_Tree *scheme_hash_tree_resolve_placeholder(Scheme_Hash_Tree *t)
+{
+  return resolve_placeholder(t);
+}
+
 Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
 {
   uintptr_t h;
@@ -2685,7 +2707,7 @@ Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *ke
 
   h = PTR_TO_LONG((Scheme_Object *)key);
 
-  tree = hamt_assoc(resolve_placeholder(tree), h, &pos);
+  tree = hamt_assoc(resolve_placeholder(tree), h, &pos, 0);
   if (!tree)
     return NULL;
 
@@ -2715,7 +2737,7 @@ Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
   else
     h = to_unsigned_hash(scheme_eqv_hash_key(key));
 
-  tree = hamt_assoc(tree, h, &pos);
+  tree = hamt_assoc(tree, h, &pos, 0);
   if (!tree)
     return NULL;
 
@@ -2752,7 +2774,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
   else
     h = to_unsigned_hash(scheme_eqv_hash_key(key));
   
-  in_tree = hamt_assoc(resolve_placeholder(tree), h, &pos);
+  in_tree = hamt_assoc(resolve_placeholder(tree), h, &pos, 0);
   if (!in_tree) {
     if (!val)
       return tree;
@@ -2842,6 +2864,72 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
   }
 }
 
+static int hamt_equal_entries(int stype, void *eql_data,
+                              Scheme_Object *k1, Scheme_Object *v1, 
+                              Scheme_Object *k2, Scheme_Object *v2)
+{
+  if (stype == scheme_eq_hash_tree_type) {
+    if (SAME_OBJ(k1, k2))
+      return scheme_recur_equal(v1, v2, eql_data);
+  } else if (stype == scheme_hash_tree_type) {
+    if (scheme_recur_equal(k1, k2, eql_data))
+      return scheme_recur_equal(v1, v2, eql_data);
+  } else {
+    if (scheme_eqv(k1, k2))
+      return scheme_recur_equal(v1, v2, eql_data);
+  }
+  return 0;
+}
+
+#define HAMT_NONGCING /* empty */
+#define HAMT_SUBSET_OF hamt_subset_of
+#define HAMT_ELEMENT_OF hamt_element_of
+#define HAMT_ELEMENT_OF_COLLISION hamt_element_of_collision
+#define HAMT_EQUAL_ENTRIES hamt_equal_entries
+#define HAMT_IF_VAL(v, n) v
+#define HAMT_USE_FUEL() SCHEME_USE_FUEL()
+#include "hamt_subset.inc"
+
+/* fast variant for eq-based sets (i.e., no separate values in table) */
+#define HAMT_NONGCING XFORM_NONGCING
+#define HAMT_SUBSET_OF hamt_eq_subset_of
+#define HAMT_ELEMENT_OF hamt_eq_element_of
+#define HAMT_ELEMENT_OF_COLLISION hamt_eq_element_of_collision
+#define HAMT_EQUAL_ENTRIES(stype, eql_data, k1, v1, k2, v2) SAME_OBJ(k1, k2)
+#define HAMT_IF_VAL(v, n) n
+#define HAMT_USE_FUEL() /* empty */
+#include "hamt_subset.inc"
+
+static uintptr_t hamt_combine_key_hashes(Scheme_Hash_Tree *ht)
+{
+  int popcount, i;
+  uintptr_t k = 0, code;
+  
+  popcount = hamt_popcount(ht->bitmap);
+  
+  for (i = 0; i < popcount; i++) {
+    if (HASHTR_SUBTREEP(ht->els[i])) {
+      SCHEME_USE_FUEL();
+      code = hamt_combine_key_hashes((Scheme_Hash_Tree *)ht->els[i]);
+    } else if (HASHTR_COLLISIONP(ht->els[i])) {
+      int count = ((Scheme_Hash_Tree *)ht->els[i])->count, j;
+      code = _mzHAMT_CODE(ht, i, popcount);
+      for (j = 0; j < count; j++) {
+        MZ_MIX(code);
+      }
+    } else
+      code = _mzHAMT_CODE(ht, i, popcount);
+  
+    k += code;
+
+    /* Since the keys are always in the same order (we don't go into collision trees),
+       it's ok to mix the total: */
+    MZ_MIX(k);
+  }
+
+  return k;
+}
+
 int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
                                Scheme_Hash_Tree *t2, Scheme_Object *orig_t2,
                                void *eql)
@@ -2849,9 +2937,16 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
   Scheme_Object *k, *v, *v2;
   int i;
 
-  if ((t1->count != t2->count)
-      || ((SCHEME_HASHTR_KIND(t1) & 0x3) != (SCHEME_HASHTR_KIND(t2) & 0x3)))
-    return 0;
+  if (SCHEME_HASHTRP(orig_t1) && SCHEME_HASHTRP(orig_t2)) {
+    t1 = resolve_placeholder(t1);
+    t2 = resolve_placeholder(t2);
+    
+    if ((t1->count != t2->count)
+        || (SCHEME_TYPE(t1) != SCHEME_TYPE(t2)))
+      return 0;
+    
+    return hamt_subset_of(t1, t2, 0, SCHEME_TYPE(t1), eql);
+  }
     
   for (i = scheme_hash_tree_next(t1, -1); i != -1; i = scheme_hash_tree_next(t1, i)) {
     scheme_hash_tree_index(t1, i, &k, &v);
@@ -2873,9 +2968,26 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
   return 1;
 }
 
-int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2)
+int scheme_eq_hash_tree_subset_of(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2)
+/* assumes that `t1` and `t2` are sets, as opposed to maps */
 {
-  return scheme_equal((Scheme_Object *)t1, (Scheme_Object *)t2);
+  t1 = resolve_placeholder(t1);
+  t2 = resolve_placeholder(t2);
+
+  if (t1->count > t2->count)
+    return 0;
+  
+  if ((t1->bitmap & t2->bitmap) != t1->bitmap)
+    return 0;
+
+  return hamt_eq_subset_of(t1, t2, 0, scheme_eq_hash_tree_type, NULL);
+}
+
+intptr_t scheme_hash_tree_key_hash(Scheme_Hash_Tree *ht)
+{
+  ht = resolve_placeholder(ht);
+
+  return (intptr_t)hamt_combine_key_hashes(ht);
 }
 
 /*========================================================================*/

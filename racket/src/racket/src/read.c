@@ -2229,7 +2229,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       base = scheme_hash_tree_set(base, key, val);
     }
 
-    scheme_hash_tree_tie_placeholder(t, base);
+    if (base->count)
+      scheme_hash_tree_tie_placeholder(t, base);
   } else if (SCHEME_HASHTP(obj)) {
     int i;
     Scheme_Object *key, *val, *l = scheme_null, *orig_l;

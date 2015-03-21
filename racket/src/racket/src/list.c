@@ -2399,7 +2399,7 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
         return hash_failed(argc, argv);
     }
   } else if (SCHEME_HASHTRP(v)) {
-    if (SAME_TYPE(scheme_eqv_hash_tree_type, SCHEME_HASHTR_TYPE(v))) {
+    if (SAME_TYPE(scheme_eq_hash_tree_type, SCHEME_HASHTR_TYPE(v))) {
       v = scheme_eq_hash_tree_get((Scheme_Hash_Tree *)v, argv[1]);
       if (v)
         return v;

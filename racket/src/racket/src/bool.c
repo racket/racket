@@ -590,8 +590,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       /* for immutable hashes, it's ok for the two objects to not be eq,
          as long as the interpositions are the same and the underlying
          values are `{impersonator,chaperone}-of?`: */
-      if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj1)->val), scheme_hash_tree_type)
-          && SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj2)->val), scheme_hash_tree_type)
+      if (SCHEME_HASHTRP(((Scheme_Chaperone *)obj1)->val)
+          && SCHEME_HASHTRP(((Scheme_Chaperone *)obj2)->val)
           /* eq redirects means redirects were propagated: */
           && SAME_OBJ(((Scheme_Chaperone *)obj1)->redirects,
                       ((Scheme_Chaperone *)obj2)->redirects))
@@ -609,9 +609,15 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       if (SCHEME_CHAPERONEP(obj1)) {
         obj1 = ((Scheme_Chaperone *)obj1)->val;
         goto top_after_next;
+      } else if (t1 == scheme_hash_tree_indirection_type) {
+        obj1 = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)obj1);
+        goto top_after_next;
       }
       if (SCHEME_CHAPERONEP(obj2)) {
         obj2 = ((Scheme_Chaperone *)obj2)->val;
+        goto top_after_next;
+      } else if (t2 == scheme_hash_tree_indirection_type) {
+        obj2 = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)obj2);
         goto top_after_next;
       }
     }
@@ -819,6 +825,9 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
                                            eql);
       }
     case scheme_hash_tree_type:
+    case scheme_eq_hash_tree_type:
+    case scheme_eqv_hash_tree_type:
+    case scheme_hash_tree_indirection_type:
       {
 #   include "mzeqchk.inc"
         if (union_check(obj1, obj2, eql))

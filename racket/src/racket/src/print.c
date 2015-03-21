@@ -544,7 +544,8 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
 	      || scheme_is_writable_struct(obj)))
       || (pp->print_hash_table
 	  && (SAME_TYPE(t, scheme_hash_table_type)
-              || SAME_TYPE(t, scheme_hash_tree_type)))) {
+              || ((t >= scheme_hash_tree_type)
+                  && (t <= scheme_hash_tree_indirection_type))))) {
     val = scheme_hash_get(ht, obj);
     if (val)
       return SCHEME_INT_VAL(val);

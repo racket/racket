@@ -755,24 +755,8 @@ XFORM_NONGCING static int mark_set_index(Scheme_Mark_Set *s, mzlonglong pos, Sch
 
 XFORM_NONGCING static int mark_subset(Scheme_Mark_Set *sa, Scheme_Mark_Set *sb)
 {
-  Scheme_Hash_Tree *a = (Scheme_Hash_Tree *)sa;
-  Scheme_Hash_Tree *b = (Scheme_Hash_Tree *)sb;
-  intptr_t i;
-  Scheme_Object *key, *val;
-
-  if (a->count > b->count)
-    return 0;
-
-  i = scheme_hash_tree_next(a, -1);
-  while (i != -1) {
-    scheme_hash_tree_index(a, i, &key, &val);
-    if (!scheme_eq_hash_tree_get(b, key))
-      return 0;
-
-    i = scheme_hash_tree_next(a, i);
-  }
-
-  return 1;
+  return scheme_eq_hash_tree_subset_of((Scheme_Hash_Tree *)sa,
+                                       (Scheme_Hash_Tree *)sb);
 }
 
 static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b)
@@ -5980,10 +5964,6 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 
   if (SCHEME_STXP(o))
     return o;
-
-  if (SCHEME_MODIDXP(o)) {
-    printf("%s\n", scheme_write_to_string(o, NULL));
-  }
 
 #ifdef DO_STACK_CHECK
   {

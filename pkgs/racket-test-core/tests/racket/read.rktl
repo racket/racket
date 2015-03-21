@@ -1010,7 +1010,6 @@
         (read (open-input-string
                "!#hash((apple . (red round)) (banana . (yellow long)))"))))
 
-
 (test #hash((apple . (red round))
             (banana . (yellow long)))
       values

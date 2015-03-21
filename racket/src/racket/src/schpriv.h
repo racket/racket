@@ -4135,7 +4135,10 @@ Scheme_Hash_Tree *scheme_make_hash_tree_of_type(Scheme_Type stype);
 
 Scheme_Hash_Tree *scheme_make_hash_tree_placeholder(int kind);
 void scheme_hash_tree_tie_placeholder(Scheme_Hash_Tree *t, Scheme_Hash_Tree *base);
+XFORM_NONGCING Scheme_Hash_Tree *scheme_hash_tree_resolve_placeholder(Scheme_Hash_Tree *t);
 int scheme_hash_tree_kind(Scheme_Hash_Tree *t);
+XFORM_NONGCING int scheme_eq_hash_tree_subset_of(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
+intptr_t scheme_hash_tree_key_hash(Scheme_Hash_Tree *t1);
 
 void scheme_set_root_param(int p, Scheme_Object *v);
 
