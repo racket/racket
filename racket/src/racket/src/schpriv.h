@@ -2561,7 +2561,7 @@ typedef struct Scheme_Comp_Env
 
   Scheme_Object *in_modidx;      /* during lookup/expand in macro */
 
-  Scheme_Hash_Table *skip_table; /* for jumping ahead in the chain */
+  Scheme_Hash_Tree *skip_table; /* for jumping ahead in the chain */
   int skip_depth;                /* depth in simple frames, used to trigger skip_table creation */
 
   struct Scheme_Comp_Env *next;

@@ -50,9 +50,6 @@ THREAD_LOCAL_DECL(static int env_uid_counter);
 
 static void init_compile_data(Scheme_Comp_Env *env);
 
-#define SCHEME_NON_SIMPLE_FRAME (SCHEME_CAPTURE_WITHOUT_RENAME \
-                                 | SCHEME_FOR_STOPS | SCHEME_CAPTURE_LIFTED)
-
 static void init_scheme_local();
 static void init_toplevels();
 
@@ -294,9 +291,7 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Schem
   frame->prefix = base->prefix;
   frame->in_modidx = base->in_modidx;
 
-  if (flags & SCHEME_NON_SIMPLE_FRAME)
-    frame->skip_depth = 0;
-  else if (base->next)
+  if (base->next)
     frame->skip_depth = base->skip_depth + 1;
   else
     frame->skip_depth = 0;
@@ -1022,45 +1017,73 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
 
 /*********************************************************************/
 
+#define IS_SKIPPING_DEPTH(n) (n && !(n & 31))
+
 void create_skip_table(Scheme_Comp_Env *start_frame)
 {
-  Scheme_Comp_Env *end_frame, *frame;
+  Scheme_Comp_Env *end_frame, *frame, *other_frame;
   int depth, dj = 0, dp = 0, i;
-  Scheme_Hash_Table *table;
-  int stride = 0, past_binding_frame = 0;
+  Scheme_Hash_Tree *table;
+  int stride = 0, past_binding_frame = 0, past_stops_frame = 0;
 
-  depth = start_frame->skip_depth;
+  i = start_frame->skip_depth;
+  depth = 0;
+  while (!(i & 1)) {
+    depth = (depth << 1) | 1;
+    i >>= 1;
+  }
 
   /* Find frames to be covered by the skip table. */
   for (end_frame = start_frame->next;
-       end_frame && ((depth & end_frame->skip_depth) != end_frame->skip_depth);
+       end_frame && (depth & end_frame->skip_depth);
        end_frame = end_frame->next) {
     stride++;
   }
 
-  table = scheme_make_hash_table(SCHEME_hash_ptr);
+  table = NULL;
   
+  for (frame = start_frame; frame != end_frame; frame = frame->next) {
+    if (frame->skip_table) {
+      other_frame = (Scheme_Comp_Env *)scheme_eq_hash_tree_get(frame->skip_table, scheme_make_integer(0));
+      if (other_frame == end_frame) {
+        end_frame = frame;
+        table = frame->skip_table;
+        dj = SCHEME_INT_VAL(scheme_eq_hash_tree_get(table, scheme_make_integer(1)));
+        dp = SCHEME_INT_VAL(scheme_eq_hash_tree_get(table, scheme_make_integer(2)));
+        past_binding_frame = SCHEME_TRUEP(scheme_eq_hash_tree_get(table, scheme_make_integer(3)));
+        past_stops_frame = SCHEME_TRUEP(scheme_eq_hash_tree_get(table, scheme_make_integer(4)));
+        break;
+      }
+    }
+  }
+
+  if (!table) {
+    table = scheme_make_hash_tree(0);
+    table = scheme_hash_tree_set(table, scheme_make_integer(0), (Scheme_Object *)end_frame);
+  }
+
   for (frame = start_frame; frame != end_frame; frame = frame->next) {
     if (!(frame->flags & SCHEME_REC_BINDING_FRAME)
         && frame->marks)
       past_binding_frame = 1;
+    if (frame->flags & SCHEME_FOR_STOPS)
+      past_stops_frame = 1;
     if (frame->flags & SCHEME_LAMBDA_FRAME)
       dj++;
     dp += frame->num_bindings;
     for (i = frame->num_bindings; i--; ) {
-      if (frame->bindings[i]) {
-	scheme_hash_set(table, frame->bindings[i], scheme_true);
-      }
+      if (frame->bindings[i])
+	table = scheme_hash_tree_set(table, frame->bindings[i], scheme_true);
     }
     for (i = frame->num_const; i--; ) {
-      scheme_hash_set(table, frame->const_bindings[i], scheme_true);
+      table = scheme_hash_tree_set(table, frame->const_bindings[i], scheme_true);
     }
   }
 
-  scheme_hash_set(table, scheme_make_integer(0), (Scheme_Object *)end_frame);
-  scheme_hash_set(table, scheme_make_integer(1), scheme_make_integer(dj));
-  scheme_hash_set(table, scheme_make_integer(2), scheme_make_integer(dp));
-  scheme_hash_set(table, scheme_make_integer(3), past_binding_frame ? scheme_true : scheme_false);
+  table = scheme_hash_tree_set(table, scheme_make_integer(1), scheme_make_integer(dj));
+  table = scheme_hash_tree_set(table, scheme_make_integer(2), scheme_make_integer(dp));
+  table = scheme_hash_tree_set(table, scheme_make_integer(3), past_binding_frame ? scheme_true : scheme_false);
+  table = scheme_hash_tree_set(table, scheme_make_integer(4), past_stops_frame ? scheme_true : scheme_false);
 
   start_frame->skip_table = table;
 }
@@ -1216,22 +1239,23 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
       while (1) {
         if (frame->skip_table) {
-          if (!scheme_hash_get(frame->skip_table, binding)) {
-            /* Skip ahead. 0 maps to frame, 1 maps to j delta, 2 maps to p delta, and 3 maps to binding-frameness */
-            val = scheme_hash_get(frame->skip_table, scheme_make_integer(1));
+          if (!scheme_eq_hash_tree_get(frame->skip_table, binding)) {
+            /* Skip ahead. 0 maps to frame, 1 maps to j delta, 2 maps to p delta,
+               3 maps to binding-frameness, and 4 maps to stops-or-not (unneeded here) */
+            val = scheme_eq_hash_tree_get(frame->skip_table, scheme_make_integer(1));
             j += (int)SCHEME_INT_VAL(val);
-            val = scheme_hash_get(frame->skip_table, scheme_make_integer(2));
+            val = scheme_eq_hash_tree_get(frame->skip_table, scheme_make_integer(2));
             p += (int)SCHEME_INT_VAL(val);
-            val = scheme_hash_get(frame->skip_table, scheme_make_integer(3));
+            val = scheme_eq_hash_tree_get(frame->skip_table, scheme_make_integer(3));
             if (SCHEME_TRUEP(val))
               if (_need_macro_mark)
                 *_need_macro_mark = 0;
-            frame = (Scheme_Comp_Env *)scheme_hash_get(frame->skip_table, scheme_make_integer(0));
+            frame = (Scheme_Comp_Env *)scheme_eq_hash_tree_get(frame->skip_table, scheme_make_integer(0));
           } else
             break;
-        } else if (frame->skip_depth && !(frame->skip_depth & 0x1F)) {
-          /* We're some multiple of 32 frames deep. Build a skip table and try again. */
+        } else if (IS_SKIPPING_DEPTH(frame->skip_depth)) {
           create_skip_table(frame);
+          /* try again... */
         } else
           break;
       }
@@ -1312,6 +1336,20 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   } else {
     /* First, check for a "stop" */
     for (frame = env; frame->next != NULL; frame = frame->next) {
+      while (1) {
+        if (frame->skip_table) {
+          /* skip if we won't jump over stops: */
+          if (SCHEME_FALSEP(scheme_eq_hash_tree_get(frame->skip_table, scheme_make_integer(4))))
+            frame = (Scheme_Comp_Env *)scheme_eq_hash_tree_get(frame->skip_table, scheme_make_integer(0));
+          else
+            break;
+        } else if (IS_SKIPPING_DEPTH(frame->skip_depth)) {
+          create_skip_table(frame);
+          /* try again */
+        } else
+          break;
+      }
+
       if (frame->flags & SCHEME_FOR_STOPS) {
         int i;
         for (i = frame->num_const; i--; ) {
