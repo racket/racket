@@ -2403,7 +2403,7 @@ static void check_for_conversion(Scheme_Object *sym,
                                  Scheme_Mark *mark,
                                  Scheme_Module_Phase_Exports *pt,
                                  Scheme_Hash_Table *collapse_table,
-                                 Scheme_Hash_Table *ht,
+                                 Scheme_Hash_Tree *ht,
                                  Scheme_Mark_Set *marks,
                                  Scheme_Object *phase,
                                  Scheme_Object *bind)
@@ -2453,7 +2453,7 @@ static void check_for_conversion(Scheme_Object *sym,
     /* since we've mapped N identifiers from a source of N identifiers,
        maybe we mapped all of them. */
     for (i = pt->num_provides; i--; ) {
-      v2 = scheme_eq_hash_get(ht, pt->provides[i]);
+      v2 = scheme_eq_hash_tree_get(ht, pt->provides[i]);
       CONV_RETURN_UNLESS(v2);
 
       /* For now, allow only a single binding: */
@@ -2516,7 +2516,7 @@ static void check_for_conversion(Scheme_Object *sym,
     /* install pes: */
     v = mark->bindings;
     if (!SCHEME_RPAIRP(v)) {
-      STX_ASSERT(SCHEME_HASHTP(v));
+      STX_ASSERT(SCHEME_HASHTRP(v));
       v = scheme_make_raw_pair(v, NULL);
       mark->bindings = v;
     }
@@ -2525,8 +2525,9 @@ static void check_for_conversion(Scheme_Object *sym,
 
     /* remove per-symbol bindings: */
     for (i = pt->num_provides; i--; ) {
-      scheme_hash_set(ht, pt->provides[i], NULL);
+      ht = scheme_hash_tree_set(ht, pt->provides[i], NULL);
     }
+    SCHEME_CAR(mark->bindings) = (Scheme_Object *)ht;
   }
 }
 
@@ -2549,7 +2550,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
    be NULL when `val` is a shared-binding vector */
 
 {
-  Scheme_Hash_Table *ht;
+  Scheme_Hash_Tree *ht;
   Scheme_Mark *mark;
   Scheme_Object *l, *p, *bind;
 
@@ -2582,16 +2583,15 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
       mark->bindings = bind;
       return;
     }
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    ht = empty_hash_tree;
     l = scheme_make_raw_pair((Scheme_Object *)ht, NULL);
     mark->bindings = l;
   } else if (SCHEME_VECTORP(l)) {
     /* convert simple case to more general case */
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
-    scheme_hash_set(ht,
-                    SCHEME_VEC_BINDING_KEY(l),
-                    scheme_make_pair((Scheme_Object *)SCHEME_VEC_BINDING_MARKS(l),
-                                     SCHEME_VEC_BINDING_VAL(l)));
+    ht = scheme_hash_tree_set(empty_hash_tree,
+                              SCHEME_VEC_BINDING_KEY(l),
+                              scheme_make_pair((Scheme_Object *)SCHEME_VEC_BINDING_MARKS(l),
+                                               SCHEME_VEC_BINDING_VAL(l)));
     if (sym) {
       /* more complex case: table of bindings */
       mark->bindings = (Scheme_Object *)ht;
@@ -2602,10 +2602,10 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
     }
   } else if (SCHEME_RPAIRP(l)) {
     /* already in complex form */
-    ht = (Scheme_Hash_Table *)SCHEME_CAR(l);
+    ht = (Scheme_Hash_Tree *)SCHEME_CAR(l);
   } else {
-    STX_ASSERT(SCHEME_HASHTP(l));
-    ht = (Scheme_Hash_Table *)l;
+    STX_ASSERT(SCHEME_HASHTRP(l));
+    ht = (Scheme_Hash_Tree *)l;
     if (!sym) {
       /* need most complex form */
       l = scheme_make_raw_pair((Scheme_Object *)ht, NULL);
@@ -2617,10 +2617,14 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
 
   if (sym) {
     STX_ASSERT(SCHEME_SYMBOLP(sym));
-    l = scheme_eq_hash_get(ht, sym);
-    if (!l)
-      scheme_hash_set(ht, sym, bind);
-    else {
+    l = scheme_eq_hash_tree_get(ht, sym);
+    if (!l) {
+      ht = scheme_hash_tree_set(ht, sym, bind);
+      if (SCHEME_RPAIRP(mark->bindings))
+        SCHEME_CAR(mark->bindings) = (Scheme_Object *)ht;
+      else
+        mark->bindings = (Scheme_Object *)ht;
+    } else {
       if (!SCHEME_MPAIRP(l))
         l = scheme_make_mutable_pair(l, scheme_null);
       for (p = l; !SCHEME_NULLP(p); p = SCHEME_CDR(p)) {
@@ -2633,11 +2637,16 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
       }
       if (SCHEME_NULLP(p)) {
         l = scheme_make_mutable_pair(bind, l);
-        scheme_hash_set(ht, sym, l);
+        ht = scheme_hash_tree_set(ht, sym, l);
       } else if (SCHEME_NULLP(SCHEME_CDR(l))) {
-        scheme_hash_set(ht, sym, SCHEME_CAR(l));
+        ht = scheme_hash_tree_set(ht, sym, SCHEME_CAR(l));
         from_pt = NULL; /* single binding; no benefit from pes conversion */
       }
+
+      if (SCHEME_RPAIRP(mark->bindings))
+        SCHEME_CAR(mark->bindings) = (Scheme_Object *)ht;
+      else
+        mark->bindings = (Scheme_Object *)ht;
 
       if (from_pt)
         check_for_conversion(sym, mark, from_pt, collapse_table, ht, marks, phase, bind);
@@ -2909,7 +2918,7 @@ Scheme_Object *add_bindings_info(Scheme_Object *bindings, Scheme_Object *key, Sc
 static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Scheme_Object *seen, int all_bindings)
 {
   Scheme_Hash_Tree *desc, *bind_desc;
-  Scheme_Hash_Table *ht;
+  Scheme_Hash_Tree *ht;
   Scheme_Object *key, *val, *l, *pes, *descs = scheme_null, *bindings;
   intptr_t i, j;
   Scheme_Mark *mark;
@@ -2952,17 +2961,16 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
         } else {
           l = mark->bindings;
           if (SCHEME_RPAIRP(l))
-            ht = (Scheme_Hash_Table *)SCHEME_CAR(mark->bindings);
+            ht = (Scheme_Hash_Tree *)SCHEME_CAR(mark->bindings);
           else {
-            STX_ASSERT(SCHEME_HASHTP(l));
-            ht = (Scheme_Hash_Table *)l;
+            STX_ASSERT(SCHEME_HASHTRP(l));
+            ht = (Scheme_Hash_Tree *)l;
           }
 
-          for (j = ht->size; j--; ) {
-            if (ht->vals[j]) {
-              l = ht->vals[j];
-              bindings = add_bindings_info(bindings, ht->keys[j], l, stx, all_bindings, seen);
-            }
+          j = -1;
+          while ((j = scheme_hash_tree_next(ht, j)) != -1) {
+            scheme_hash_tree_index(ht, j, &key, &val);
+            bindings = add_bindings_info(bindings, key, val, stx, all_bindings, seen);
           }
 
           l = mark->bindings;
@@ -2993,8 +3001,7 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
             if (!pt->ht)
               scheme_populate_pt_ht(pt);
 
-            ht = pt->ht;
-            if (scheme_eq_hash_get(ht, unmarshal_lookup_adjust(stx->val, pes)))
+            if (scheme_eq_hash_get(pt->ht, unmarshal_lookup_adjust(stx->val, pes)))
               bind_desc = scheme_hash_tree_set(bind_desc, matchp_symbol, scheme_true);
             else
               bind_desc = scheme_hash_tree_set(bind_desc, matchp_symbol, scheme_false);
@@ -3176,7 +3183,7 @@ char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int 
 static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *mapped)
 {
   int retry;
-  Scheme_Hash_Table *ht;
+  Scheme_Hash_Tree *ht;
   Scheme_Object *key, *val, *l, *pes;
   intptr_t i, j;
   Scheme_Mark *mark;
@@ -3197,22 +3204,24 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
         } else {
           /* Check table of symbols */
           if (SCHEME_RPAIRP(mark->bindings))
-            ht = (Scheme_Hash_Table *)SCHEME_CAR(mark->bindings);
+            ht = (Scheme_Hash_Tree *)SCHEME_CAR(mark->bindings);
           else {
-            STX_ASSERT(SCHEME_HASHTP(mark->bindings));
-            ht = (Scheme_Hash_Table *)mark->bindings;
+            STX_ASSERT(SCHEME_HASHTRP(mark->bindings));
+            ht = (Scheme_Hash_Tree *)mark->bindings;
           }
-          for (j = ht->size; j--; ) {
-            l = ht->vals[j];
+          j = -1;
+          while ((j = scheme_hash_tree_next(ht, j)) != -1) {
+            scheme_hash_tree_index(ht, j, &key, &val);
+            l = val;
             if (l) {
               if (SCHEME_PAIRP(l)) {
                 if (mark_subset(SCHEME_BINDING_MARKS(l), marks))
-                  scheme_hash_set(mapped, ht->keys[j], scheme_true);
+                  scheme_hash_set(mapped, key, scheme_true);
               } else {
                 while (!SCHEME_NULLP(l)) {
                   STX_ASSERT(SCHEME_MPAIRP(l));
                   if (mark_subset(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks)) {
-                    scheme_hash_set(mapped, ht->keys[j], scheme_true);
+                    scheme_hash_set(mapped, key, scheme_true);
                     break;
                   }
                   l = SCHEME_CDR(l);
@@ -3288,12 +3297,13 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
               if (!SAME_OBJ(SCHEME_VEC_BINDING_KEY(l), stx->val))
                 l = NULL;
               /* l is NULL or a vector-form binding */
-            } else if (SCHEME_HASHTP(l)) {
-              l = scheme_eq_hash_get((Scheme_Hash_Table *)l, stx->val);
+            } else if (SCHEME_HASHTRP(l)) {
+              l = scheme_eq_hash_tree_get((Scheme_Hash_Tree *)l, stx->val);
               /* l is a pair or mlist */
             } else {
-              l = scheme_eq_hash_get((Scheme_Hash_Table *)SCHEME_CAR(mark->bindings),
-                                     stx->val);
+              STX_ASSERT(SCHEME_RPAIRP(l));
+              l = scheme_eq_hash_tree_get((Scheme_Hash_Tree *)SCHEME_CAR(l),
+                                          stx->val);
               /* l is a pair or mlist */
             }
           } else {
@@ -4778,8 +4788,8 @@ static void add_reachable_multi_marks(Scheme_Object *multi_marks, Scheme_Marshal
 void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
 {
   Scheme_Mark *mark;
-  Scheme_Object *l, *val;
-  Scheme_Hash_Table *ht;
+  Scheme_Object *l, *val, *key;
+  Scheme_Hash_Tree *ht;
   int j;
   
   /* For each mark, recur on `free-identifier=?` mappings */
@@ -4797,28 +4807,28 @@ void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
         }
       } else {
         if (SCHEME_RPAIRP(val))
-          ht = (Scheme_Hash_Table *)SCHEME_CAR(val);
+          ht = (Scheme_Hash_Tree *)SCHEME_CAR(val);
         else {
-          STX_ASSERT(SCHEME_HASHTP(val));
-          ht = (Scheme_Hash_Table *)val;
+          STX_ASSERT(SCHEME_HASHTRP(val));
+          ht = (Scheme_Hash_Tree *)val;
         }
-        for (j = ht->size; j--; ) {
-          if (ht->vals[j]) {
-            l = ht->vals[j];
-            if (SCHEME_PAIRP(l)) {
-              val = SCHEME_BINDING_VAL(l);
+        j = -1;
+        while ((j = scheme_hash_tree_next(ht, j)) != -1) {
+          scheme_hash_tree_index(ht, j, &key, &val);
+          l = val;
+          if (SCHEME_PAIRP(l)) {
+            val = SCHEME_BINDING_VAL(l);
+            if (SCHEME_MPAIRP(val)) {
+              /* It's a free-id mapping: */
+              (void)wraps_to_datum((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)), mt);
+            }
+          } else {
+            STX_ASSERT(SCHEME_MPAIRP(l));
+            for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+              val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
               if (SCHEME_MPAIRP(val)) {
                 /* It's a free-id mapping: */
                 (void)wraps_to_datum((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)), mt);
-              }
-            } else {
-              STX_ASSERT(SCHEME_MPAIRP(l));
-              for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-                val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
-                if (SCHEME_MPAIRP(val)) {
-                  /* It's a free-id mapping: */
-                  (void)wraps_to_datum((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)), mt);
-                }
               }
             }
           }
@@ -5015,16 +5025,21 @@ static Scheme_Object *drop_export_registries(Scheme_Object *shifts)
   return first;
 }
 
+static void init_identity_map(Scheme_Marshal_Tables *mt)
+{
+  Scheme_Hash_Table *id_map;
+  id_map = scheme_make_hash_table(SCHEME_hash_ptr);
+  mt->identity_map = id_map;
+}
+
 static Scheme_Object *multi_mark_to_vector(Scheme_Object *multi_mark, Scheme_Marshal_Tables *mt)
 {
   Scheme_Object *vec;
-  Scheme_Hash_Table *marks = (Scheme_Hash_Table *)multi_mark, *id_map;
+  Scheme_Hash_Table *marks = (Scheme_Hash_Table *)multi_mark;
   intptr_t i, j;
 
-  if (!mt->identity_map) {
-    id_map = scheme_make_hash_table(SCHEME_hash_ptr);
-    mt->identity_map = id_map;
-  }
+  if (!mt->identity_map)
+    init_identity_map(mt);
 
   vec = scheme_hash_get(mt->identity_map, multi_mark);
   if (vec)
@@ -5191,14 +5206,12 @@ static Scheme_Object *marshal_bindings(Scheme_Object *l, Scheme_Marshal_Tables *
 
 Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tables *mt)
 {
-  Scheme_Hash_Table *ht;
-  Scheme_Object *v, *l, *r, *l2, *tab, *marks;
+  Scheme_Hash_Tree *ht;
+  Scheme_Object *v, *l, *r, *l2, *tab, *marks, *key, *val;
   intptr_t i, j;
 
-  if (!mt->identity_map) {
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
-    mt->identity_map = ht;
-  }
+  if (!mt->identity_map)
+    init_identity_map(mt);
 
   v = scheme_hash_get(mt->identity_map, m);
   if (v)
@@ -5214,11 +5227,11 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
       count = 1;
     } else {
       if (SCHEME_RPAIRP(v)) {
-        ht = (Scheme_Hash_Table *)SCHEME_CAR(v);
+        ht = (Scheme_Hash_Tree *)SCHEME_CAR(v);
         l2 = SCHEME_CDR(v);
       } else {
-        STX_ASSERT(SCHEME_HASHTP(v));
-        ht = (Scheme_Hash_Table *)v;
+        STX_ASSERT(SCHEME_HASHTRP(v));
+        ht = (Scheme_Hash_Tree *)v;
         l2 = NULL;
       }
       count = ht->count;
@@ -5240,17 +5253,17 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
         SCHEME_VEC_ELS(tab)[j++] = r;
       }
     } else {
-      for (i = ht->size; i--; ) {
-        l = ht->vals[i];
-        if (l) {
-          r = marshal_bindings(l, mt);
+      i = -1;
+      while ((i = scheme_hash_tree_next(ht, i)) != -1) {
+        scheme_hash_tree_index(ht, i, &key, &val);
+        r = marshal_bindings(val, mt);
 
-          if (SCHEME_NULLP(r)) {
-            /* no reachable bindings */
-          } else {
-            SCHEME_VEC_ELS(tab)[j++] = ht->keys[i];
-            SCHEME_VEC_ELS(tab)[j++] = r;
-          }
+        if (SCHEME_NULLP(r)) {
+          /* no reachable bindings */
+        } else {
+          STX_ASSERT(j < (2 * count));
+          SCHEME_VEC_ELS(tab)[j++] = key;
+          SCHEME_VEC_ELS(tab)[j++] = r;
         }
       }
     }
@@ -5832,7 +5845,7 @@ static Scheme_Object *unmarshal_free_id_info(Scheme_Object *p, Scheme_Unmarshal_
 Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tables *ut)
 {
   Scheme_Object *l = NULL, *l2, *r, *b, *m, *c, *free_id;
-  Scheme_Hash_Table *ht;
+  Scheme_Hash_Tree *ht;
   Scheme_Mark_Set *marks;
   intptr_t i, len;
 
@@ -5878,7 +5891,7 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
      binding, then we could generate the compact vector form of
      bindings. For now, we just build the hash table. */
 
-  ht = scheme_make_hash_table(SCHEME_hash_ptr);
+  ht = empty_hash_tree;
   for (i = 0; i < len; i += 2) {
     l2 = SCHEME_VEC_ELS(c)[i+1];
     r = scheme_null;
@@ -5911,7 +5924,7 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
       l2 = SCHEME_CDR(l2);
     }
 
-    scheme_hash_set(ht, SCHEME_VEC_ELS(c)[i], r);
+    ht = scheme_hash_tree_set(ht, SCHEME_VEC_ELS(c)[i], r);
   }
 
   if (!l)
