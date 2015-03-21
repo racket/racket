@@ -76,9 +76,9 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
         
         if (HASHTR_SUBTREEP(t2->els[pos2])) {
           /* check each element of collision */
-          for (i = t1->count; i--; ) {
+          for (i = ((Scheme_Hash_Tree *)t1->els[pos1])->count; i--; ) {
             uintptr_t code;
-            hamt_at_index(t1, i, &key, HAMT_IF_VAL(&val, NULL), &code);
+            hamt_at_index(((Scheme_Hash_Tree *)t1->els[pos1]), i, &key, HAMT_IF_VAL(&val, NULL), &code);
             if (!HAMT_ELEMENT_OF(key, HAMT_IF_VAL(val, NULL), code,
                                  (Scheme_Hash_Tree *)t2->els[pos2],
                                  shift + mzHAMT_LOG_WORD_SIZE,
@@ -90,8 +90,8 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
           if (_mzHAMT_CODE(t1, pos1, popcount1) != _mzHAMT_CODE(t2, pos2, popcount2))
             return 0;
           /* must check each element of t1 in t2 */
-          for (i = t1->count; i--; ) {
-            hamt_at_index(t1, i, &key, HAMT_IF_VAL(&val, NULL), NULL);
+          for (i = ((Scheme_Hash_Tree *)t1->els[pos1])->count; i--; ) {
+            hamt_at_index((Scheme_Hash_Tree *)t1->els[pos1], i, &key, HAMT_IF_VAL(&val, NULL), NULL);
             if (!HAMT_ELEMENT_OF_COLLISION(key, HAMT_IF_VAL(val, NULL),
                                            (Scheme_Hash_Tree *)t2->els[pos2],
                                            stype, eql_data))
