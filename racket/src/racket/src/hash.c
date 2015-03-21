@@ -2339,7 +2339,7 @@ static Scheme_Hash_Tree *hamt_make1(Scheme_Hash_Tree *ht, int index)
 static Scheme_Hash_Tree *hamt_make2(int kind, int shift,
                                     uintptr_t code1, Scheme_Object *key1, Scheme_Object *val1,
                                     uintptr_t code2, Scheme_Object *key2, Scheme_Object *val2)
-/* allocates a subtree (at the level indicated by `shift` for two
+/* allocates a subtree (at the level indicated by `shift`) for two
    values, pushing them down to further subtress as needed */
 {
   int index1, index2, pos1, pos2;
@@ -2348,6 +2348,8 @@ static Scheme_Hash_Tree *hamt_make2(int kind, int shift,
   index1 = hamt_index(code1, shift);
   index2 = hamt_index(code2, shift);
   if (index1 == index2) {
+    /* since hash codes map to the same index at this level,
+       we need another level */
     new_ht = hamt_make2(kind, shift + mzHAMT_LOG_WORD_SIZE,
                         code1, key1, val1,
                         code2, key2, val2);
@@ -2358,10 +2360,10 @@ static Scheme_Hash_Tree *hamt_make2(int kind, int shift,
     SCHEME_HASHTR_FLAGS(new_ht) = kind;
     new_ht->bitmap = (hamt_bit(index1) | hamt_bit(index2));
     new_ht->count = 2;
-    if (!key1)
-      new_ht->count += (((Scheme_Hash_Tree *)val1)->count - 1);
-    if (!key2)
-      new_ht->count += (((Scheme_Hash_Tree *)val2)->count - 1);      
+    if (HASHTR_COLLISIONP(key1))
+      new_ht->count += (((Scheme_Hash_Tree *)key1)->count - 1);
+    if (HASHTR_COLLISIONP(key2))
+      new_ht->count += (((Scheme_Hash_Tree *)key2)->count - 1);
     if (index1 < index2) {
       pos1 = 0;
       pos2 = 1;
