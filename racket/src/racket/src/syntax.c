@@ -3807,7 +3807,7 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
   SCHEME_VEC_ELS(vec)[2] = insp;
   SCHEME_VEC_ELS(vec)[3] = shift_or_shifts;
   SCHEME_VEC_ELS(vec)[4] = intro_multi_mark;
-  SCHEME_VEC_ELS(vec)[5] = scheme_null;
+  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_mark_set;
 
   return vec;
 }
@@ -3841,22 +3841,24 @@ Scheme_Object *scheme_module_context_frame_marks(Scheme_Object *mc)
 
 void scheme_module_context_add_expr_mark(Scheme_Object *mc, Scheme_Object *expr_mark)
 {
-  Scheme_Object *expr_marks = SCHEME_VEC_ELS(mc)[5];
+  Scheme_Mark_Set *expr_marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
 
-  expr_marks = scheme_make_pair(expr_mark, expr_marks);
+  STX_ASSERT(SCHEME_MARKP(expr_mark));
+
+  expr_marks = mark_set_set(expr_marks, expr_mark, scheme_true);
   
-  SCHEME_VEC_ELS(mc)[5] = expr_marks;
+  SCHEME_VEC_ELS(mc)[5] = (Scheme_Object *)expr_marks;
 }
 
 Scheme_Object *scheme_module_context_expression_frame_marks(Scheme_Object *mc)
 {
-  Scheme_Object *expr_marks;
+  Scheme_Mark_Set *expr_marks;
   
-  expr_marks = SCHEME_VEC_ELS(mc)[5];
-  if (SCHEME_NULLP(expr_marks))
+  expr_marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
+  if (SAME_OBJ(expr_marks, empty_mark_set))
     return NULL;
   else
-    return scheme_make_pair(scheme_false, expr_marks);
+    return make_vector3(scheme_false, (Scheme_Object *)expr_marks, scheme_false);
 }
 
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc)
@@ -3885,9 +3887,9 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
   SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(mc)[3];
   SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(mc)[4];
   /* Any expression from the from another phase don't apply here. This
-     list only matters for module contexts that are attached to environments,
+     set only matters for module contexts that are attached to environments,
      anyway: */
-  SCHEME_VEC_ELS(vec)[5] = scheme_null;
+  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_mark_set;
 
   return vec;
 }
@@ -3957,14 +3959,9 @@ Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme
 
 Scheme_Object *scheme_stx_adjust_module_expression_context(Scheme_Object *stx, Scheme_Object *mc, int mode)
 {
-  Scheme_Object *expr_marks = SCHEME_VEC_ELS(mc)[5];
+  Scheme_Mark_Set *expr_marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
 
-  while (!SCHEME_NULLP(expr_marks)) {
-    stx = scheme_stx_adjust_mark(stx, SCHEME_CAR(expr_marks), SCHEME_VEC_ELS(mc)[1], mode);
-    expr_marks = SCHEME_CDR(expr_marks);
-  }
-
-  return stx;
+  return scheme_stx_adjust_marks(stx, expr_marks, SCHEME_VEC_ELS(mc)[1], mode);
 }
 
 void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-set> <phase> <inspector> ...) */
@@ -4312,7 +4309,7 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
   SCHEME_VEC_ELS(vec)[2] = scheme_false; /* not sure this is right */
   SCHEME_VEC_ELS(vec)[3] = shifts;
   SCHEME_VEC_ELS(vec)[4] = intro_multi_mark;
-  SCHEME_VEC_ELS(vec)[5] = scheme_null;
+  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_mark_set;
 
   return vec;
 }
