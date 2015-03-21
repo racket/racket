@@ -2939,16 +2939,16 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
   Scheme_Object *k, *v, *v2;
   int i;
 
-  if (SCHEME_HASHTRP(orig_t1) && SCHEME_HASHTRP(orig_t2)) {
-    t1 = resolve_placeholder(t1);
-    t2 = resolve_placeholder(t2);
+  t1 = resolve_placeholder(t1);
+  t2 = resolve_placeholder(t2);
     
-    if ((t1->count != t2->count)
-        || (SCHEME_TYPE(t1) != SCHEME_TYPE(t2)))
-      return 0;
-    
+  if ((t1->count != t2->count)
+      || (SCHEME_TYPE(t1) != SCHEME_TYPE(t2)))
+    return 0;
+
+  if (SAME_OBJ((Scheme_Object *)t1, orig_t1)
+      && SAME_OBJ((Scheme_Object *)t2, orig_t2))
     return hamt_subset_of(t1, t2, 0, SCHEME_TYPE(t1), eql);
-  }
     
   for (i = scheme_hash_tree_next(t1, -1); i != -1; i = scheme_hash_tree_next(t1, i)) {
     scheme_hash_tree_index(t1, i, &k, &v);

@@ -57,7 +57,17 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
     if (i & 1) {
       pos2 = hamt_popcount_below(t2->bitmap, index);
       if (SAME_OBJ(t1->els[pos1], t2->els[pos2])) {
-        /* Shared element, subtree, or collision; no need to look further */
+        if (HAMT_IF_VAL(0, 1)
+            || HASHTR_SUBTREEP(t1->els[pos1])
+            || HASHTR_COLLISIONP(t1->els[pos1])) {
+          /* Shared element, subtree, or collision; no need to look further */
+        } else {
+          /* need to compare values */
+          if (!HAMT_EQUAL_ENTRIES(stype, eql_data,
+                                  t1->els[pos1], HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
+                                  t2->els[pos2], HAMT_IF_VAL(_mzHAMT_VAL(t2, pos2, popcount2), NULL)))
+            return 0;
+        }
       } else if (HASHTR_SUBTREEP(t1->els[pos1])) {
         /* Since a subtree always has at least two items with different
            hashes, t2 must have a subtree in the same position */
