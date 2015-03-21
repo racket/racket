@@ -288,7 +288,7 @@
 (define module-type-num 26)
 (define inline-variants-type-num 27)
 (define variable-type-num 35)
-(define prefix-type-num 115)
+(define prefix-type-num 120)
 
 (define-syntax define-enum
   (syntax-rules ()
