@@ -4416,14 +4416,22 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
   return vec;
 }
 
-int scheme_stx_equal_module_context(Scheme_Object *other_stx, Scheme_Object *mc_as_stx)
+int scheme_stx_equal_module_context(Scheme_Object *other_stx, Scheme_Object *mc_or_stx)
 {
-  Scheme_Stx *stx = (Scheme_Stx *)mc_as_stx;
+  Scheme_Stx *stx;
   Scheme_Object *phase;
-
-  if (SCHEME_VECTORP(stx->val) && (SCHEME_VEC_SIZE(stx->val) >= 2))
-    stx = (Scheme_Stx *)SCHEME_VEC_ELS(stx->val)[0];
   
+  if (SCHEME_STXP(mc_or_stx)) {
+    stx = (Scheme_Stx *)mc_or_stx;
+    if (SCHEME_VECTORP(stx->val) && (SCHEME_VEC_SIZE(stx->val) >= 2))
+      stx = (Scheme_Stx *)SCHEME_VEC_ELS(stx->val)[0];
+  } else {
+    Scheme_Object *plain;
+    plain = scheme_datum_to_syntax(scheme_false, scheme_false, scheme_false, 0, 0);
+    mc_or_stx = scheme_stx_add_module_context(plain, mc_or_stx);
+    stx = (Scheme_Stx *)mc_or_stx;
+  }
+
   phase = scheme_make_integer(0);
 
   return marks_equal(extract_mark_set((Scheme_Stx *)other_stx, phase),
