@@ -1074,7 +1074,7 @@ typedef struct Scheme_Stx {
   Scheme_Mark_Table *marks;
   union {
     Scheme_Mark_Table *to_propagate;
-    Scheme_Object **cached_binding; /* array: binding, phase, counter */
+    Scheme_Object *cache;
   } u;
   Scheme_Object *shifts; /* <all-shifts> or (vector <all-shifts> <shifts-to-propagate> <base-shifts>) */
   Scheme_Object *taints; /* taint or taint-arming */

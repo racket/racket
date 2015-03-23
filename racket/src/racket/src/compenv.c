@@ -1189,13 +1189,11 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0, is_constant, ambiguous;
   Scheme_Bucket *b;
   Scheme_Object *binding, *val, *modidx, *modname, *src_find_id, *find_global_id, *mod_defn_phase;
-  Scheme_Object *rename_insp = NULL, *mod_constant = NULL, *shape, **pre_cache;
+  Scheme_Object *rename_insp = NULL, *mod_constant = NULL, *shape;
   Scheme_Env *genv;
 
   if (_binder) *_binder = NULL;
   if (_need_macro_mark) *_need_macro_mark = 1;
-
-  pre_cache = ((Scheme_Stx *)find_id)->u.cached_binding;
 
   binding = scheme_stx_lookup_w_nominal(find_id, scheme_env_phase(env->genv),
                                         (flags & SCHEME_STOP_AT_FREE_EQ),

@@ -234,7 +234,9 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *last_phase_shift_;
   struct Scheme_Object *nominal_ipair_cache_;
   struct Scheme_Bucket_Table *taint_intern_table_;
-  intptr_t binding_cache_timestamp_;
+  struct Binding_Cache_Entry *binding_cache_table_;
+  intptr_t binding_cache_pos_;
+  intptr_t binding_cache_len_;
   struct Scheme_Thread *scheme_current_thread_;
   struct Scheme_Thread *scheme_main_thread_;
   struct Scheme_Thread *scheme_first_thread_;
@@ -624,7 +626,9 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define mark_counter XOA (scheme_get_thread_local_variables()->mark_counter_)
 #define last_phase_shift XOA (scheme_get_thread_local_variables()->last_phase_shift_)
 #define taint_intern_table XOA (scheme_get_thread_local_variables()->taint_intern_table_)
-#define binding_cache_timestamp XOA (scheme_get_thread_local_variables()->binding_cache_timestamp_)
+#define binding_cache_table XOA (scheme_get_thread_local_variables()->binding_cache_table_)
+#define binding_cache_pos XOA (scheme_get_thread_local_variables()->binding_cache_pos_)
+#define binding_cache_len XOA (scheme_get_thread_local_variables()->binding_cache_len_)
 #define scheme_current_thread XOA (scheme_get_thread_local_variables()->scheme_current_thread_)
 #define scheme_main_thread XOA (scheme_get_thread_local_variables()->scheme_main_thread_)
 #define scheme_first_thread XOA (scheme_get_thread_local_variables()->scheme_first_thread_)

@@ -61,7 +61,6 @@ typedef struct Scheme_Mark {
                               or (rcons hash-table (rcons pes-info ... NULL));
                               each hash table maps symbols to (cons mark-set binding)
                               or (mlist (cons mark-set binding) ...) */
-  intptr_t timestamp;
   Scheme_Object *owner_multi_mark; /* (cons <multi-mark> <phase>) */
 } Scheme_Mark;
 
@@ -79,7 +78,9 @@ THREAD_LOCAL_DECL(static mzlonglong mark_counter);
 THREAD_LOCAL_DECL(static Scheme_Object *last_phase_shift);
 THREAD_LOCAL_DECL(static Scheme_Object *nominal_ipair_cache);
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *taint_intern_table);
-THREAD_LOCAL_DECL(static intptr_t binding_cache_timestamp);
+THREAD_LOCAL_DECL(static struct Binding_Cache_Entry *binding_cache_table);
+THREAD_LOCAL_DECL(static intptr_t binding_cache_pos);
+THREAD_LOCAL_DECL(static intptr_t binding_cache_len);
 
 static Scheme_Object *syntax_p(int argc, Scheme_Object **argv);
 
@@ -162,6 +163,11 @@ XFORM_NONGCING static void extract_module_binding_parts(Scheme_Object *l,
                                                         Scheme_Object **_nominal_src_phase);
 
 static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Scheme_Object *seen, int all_bindings);
+
+static void init_binding_cache(void);
+XFORM_NONGCING static void clear_binding_cache(void);
+XFORM_NONGCING static void clear_binding_cache_for(Scheme_Object *sym);
+XFORM_NONGCING static void clear_binding_cache_stx(Scheme_Stx *stx);
 
 #define CONS scheme_make_pair
 #define ICONS scheme_make_pair
@@ -376,6 +382,8 @@ void scheme_init_stx(Scheme_Env *env)
 void scheme_init_stx_places(int initial_main_os_thread) {
   REGISTER_SO(taint_intern_table);
   taint_intern_table = scheme_make_weak_equal_table();
+
+  init_binding_cache();
 }
 
 /*========================================================================*/
@@ -620,6 +628,8 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 
 void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *context)
 {
+  clear_binding_cache_stx((Scheme_Stx *)q_stx);
+
   ((Scheme_Stx *)q_stx)->val = val;
 
   if (context) {
@@ -1623,6 +1633,7 @@ void scheme_clear_shift_cache(void)
 {
   last_phase_shift = NULL;
   nominal_ipair_cache = NULL;
+  clear_binding_cache();
 }
 
 Scheme_Object *scheme_stx_shift(Scheme_Object *stx, 
@@ -2338,28 +2349,22 @@ Scheme_Object *scheme_stx_taint_disarm(Scheme_Object *o, Scheme_Object *insp)
 
 /******************** bindings ********************/
 
-Scheme_Mark *extract_max_mark_and_increment_timestamps(Scheme_Mark_Set *marks)
+XFORM_NONGCING static Scheme_Mark *extract_max_mark(Scheme_Mark_Set *marks)
 {
   intptr_t i;
   Scheme_Object *key, *val;
   Scheme_Mark *mark;
   mzlonglong mark_id_val, id_val;
-  intptr_t timestamp;
-
-  timestamp = ++binding_cache_timestamp;
 
   i = mark_set_next(marks, -1);
   mark_set_index(marks, i, &key, &val);
 
   mark = (Scheme_Mark *)key;
   mark_id_val = mark->id;
-  mark->timestamp = timestamp;
 
   i = mark_set_next(marks, i);
   while (i != -1) {
     mark_set_index(marks, i, &key, &val);
-
-    ((Scheme_Mark *)key)->timestamp = timestamp;
 
     id_val = ((Scheme_Mark *)key)->id;
     if (id_val > mark_id_val) {
@@ -2371,23 +2376,6 @@ Scheme_Mark *extract_max_mark_and_increment_timestamps(Scheme_Mark_Set *marks)
   }
 
   return mark;
-}
-
-static int mark_timestamps_older(Scheme_Mark_Set *marks, intptr_t timestamp)
-{
-  intptr_t i;
-  Scheme_Object *key, *val;
-
-  i = mark_set_next(marks, -1);
-  while (i != -1) {
-    mark_set_index(marks, i, &key, &val);
-
-    if (((Scheme_Mark *)key)->timestamp > timestamp)
-      return 0;
-    i = mark_set_next(marks, i);
-  }
-
-  return 1;
 }
 
 #define SCHEME_BINDING_MARKS(p) ((Scheme_Mark_Set *)SCHEME_CAR(p))
@@ -2557,7 +2545,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
   if (mark_set_count(marks)) {
     /* We add the binding to the maximum-valued mark, because it's
        likely to be in the least number of binding sets so far. */
-    mark = extract_max_mark_and_increment_timestamps(marks);
+    mark = extract_max_mark(marks);
     if (SAME_OBJ((Scheme_Object*)mark, root_mark))
       scheme_signal_error("internal error: cannot bind with only a root mark");
   } else {
@@ -2581,6 +2569,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
       STX_ASSERT(SCHEME_SYMBOLP(sym));
       bind = make_vector3(sym, (Scheme_Object *)marks, val);
       mark->bindings = bind;
+      clear_binding_cache_for(sym);
       return;
     }
     ht = empty_hash_tree;
@@ -2617,6 +2606,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
 
   if (sym) {
     STX_ASSERT(SCHEME_SYMBOLP(sym));
+    clear_binding_cache_for(sym);
     l = scheme_eq_hash_tree_get(ht, sym);
     if (!l) {
       ht = scheme_hash_tree_set(ht, sym, bind);
@@ -2655,6 +2645,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
     /* Order matters: the new bindings should hide any existing bindings for the same name */
     /* REMOVEME: FIXME: need to remove mappings from the hash table that are replaced here;
        that can happen due to an import at the top level, for example */
+    clear_binding_cache();
     p = scheme_make_raw_pair(bind, SCHEME_CDR(l));
     SCHEME_CDR(l) = p;
   }
@@ -3267,13 +3258,13 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
   } while (retry);
 }
 
-static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
-                           Scheme_Mark_Set *check_subset,
-                           int *_exact_match, int *_ambiguous)
+static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
+                                    Scheme_Mark_Set *check_subset,
+                                    int *_exact_match, int *_ambiguous)
 {
   int j, invalid;
   intptr_t i;
-  Scheme_Object *key, *val, *result_best_so_far, **cached_result, *l, *pes;
+  Scheme_Object *key, *val, *result_best_so_far, *l, *pes;
   Scheme_Mark *mark, *mark_best_so_far;
   Scheme_Mark_Set *binding_marks, *best_so_far;
   Scheme_Module_Phase_Exports *pt;
@@ -3401,23 +3392,18 @@ static void *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
   if (!best_so_far)
     return NULL;
 
-  if (check_subset) {
-    cached_result = MALLOC_N(Scheme_Object*, 5);
-    cached_result[0] = result_best_so_far;
-    cached_result[1] = scheme_make_integer(binding_cache_timestamp);
-    cached_result[2] = (Scheme_Object *)best_so_far;
-    
-    return cached_result;
-  } else
-    return best_so_far;
+  if (check_subset)
+    return result_best_so_far;
+  else
+    return (Scheme_Object *)best_so_far;
 }
 
-static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object *phase,
-                                                  int *_exact_match, int *_ambiguous,
-                                                  Scheme_Mark_Set **_binding_marks)
+static Scheme_Object *do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object *phase,
+                                                 int *_exact_match, int *_ambiguous,
+                                                 Scheme_Mark_Set **_binding_marks)
 {
   Scheme_Mark_Set *marks, *best_set;
-  Scheme_Object *multi_marks, **result;
+  Scheme_Object *multi_marks, *result;
 
   multi_marks = stx->marks->multi_marks;
 
@@ -3426,15 +3412,15 @@ static Scheme_Object **do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object
     marks = extract_mark_set_from_mark_list(stx->marks->single_marks, multi_marks, phase);
 
     best_set = (Scheme_Mark_Set *)do_stx_lookup(stx, marks,
-                                                NULL, 
+                                                NULL,
                                                 NULL, NULL);
     if (best_set) {
       if (_binding_marks) *_binding_marks = best_set;
       
       /* Find again, this time checking to ensure no ambiguity: */
-      result = (Scheme_Object **)do_stx_lookup(stx, marks,
-                                               best_set,
-                                               _exact_match, _ambiguous);
+      result = do_stx_lookup(stx, marks,
+                             best_set,
+                             _exact_match, _ambiguous);
 
       if (!result && SCHEME_FALLBACKP(multi_marks)) {
         if (_ambiguous) *_ambiguous = 0;
@@ -3494,6 +3480,85 @@ static Scheme_Object *apply_accumulated_shifts(Scheme_Object *result, Scheme_Obj
   return result;
 }
 
+#define BINDING_CACHE_SIZE 32
+
+typedef struct Binding_Cache_Entry {
+  Scheme_Stx *id;
+  Scheme_Object *phase;
+  Scheme_Object *result;
+  Scheme_Mark_Set *binding_marks;
+  Scheme_Object *insp_desc;
+  Scheme_Object *free_eq;
+} Binding_Cache_Entry;
+
+static void init_binding_cache(void)
+{
+  REGISTER_SO(binding_cache_table);
+  binding_cache_table = MALLOC_N_ATOMIC(Binding_Cache_Entry, BINDING_CACHE_SIZE);
+}
+
+static void clear_binding_cache(void)
+{
+  binding_cache_len = 0;
+}
+
+static void clear_binding_cache_for(Scheme_Object *sym)
+{
+  clear_binding_cache();
+}
+
+static void clear_binding_cache_stx(Scheme_Stx *stx)
+{
+  Binding_Cache_Entry *binding_cache = binding_cache_table;
+  int i;
+
+  for (i = binding_cache_len; i--; ) {
+    if (SAME_OBJ(binding_cache[i].id, stx))
+      binding_cache[i].id = NULL;
+  }
+}
+
+XFORM_NONGCING static int find_in_binding_cache(Scheme_Stx *id, Scheme_Object *phase)
+{
+  Binding_Cache_Entry *binding_cache = binding_cache_table;
+  int i;
+
+  for (i = binding_cache_len; i--; ) {
+    if (SAME_OBJ(binding_cache[i].id, id)
+        && SAME_OBJ(binding_cache[i].phase, phase)){
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+XFORM_NONGCING static void save_in_binding_cache(Scheme_Stx *id, Scheme_Object *phase,
+                                                 Scheme_Object *result,
+                                                 Scheme_Mark_Set *binding_marks, Scheme_Object *insp_desc,
+                                                 Scheme_Object *free_eq)
+{
+  Binding_Cache_Entry *binding_cache = binding_cache_table;
+  int i;
+
+  if (binding_cache_len < BINDING_CACHE_SIZE) {
+    i = binding_cache_len++;
+  } else if (binding_cache_pos < binding_cache_len) {
+    i = binding_cache_pos;
+    binding_cache_pos++;
+  } else {
+    i = 0;
+    binding_cache_pos = 1;
+  }
+
+  binding_cache[i].id = id;
+  binding_cache[i].phase = phase;
+  binding_cache[i].result = result;
+  binding_cache[i].binding_marks = binding_marks;
+  binding_cache[i].insp_desc = insp_desc;
+  binding_cache[i].free_eq = free_eq;
+}
+
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase, 
                                            int stop_at_free_eq,
                                            int *_exact_match, int *_ambiguous,
@@ -3508,9 +3573,11 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
    #f */
 {
   Scheme_Stx *stx;
-  Scheme_Object **cached_result, *result, *insp_desc;
-  Scheme_Object *free_eq_mpair, *prev_shifts = scheme_null, *orig_name;
+  Scheme_Object *result, *insp_desc;
+  Scheme_Mark_Set *binding_marks;
+  Scheme_Object *free_eq, *prev_shifts = scheme_null, *orig_name;
   Scheme_Hash_Table *free_id_seen = NULL;
+  int cache_pos;
 
   STX_ASSERT(SCHEME_STXP(o));
 
@@ -3521,58 +3588,65 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
 
     if (_ambiguous) *_ambiguous = 0;
 
-    if (stx->u.cached_binding && !nominal_name) {
-      Scheme_Mark_Set *marks;
+    if (nominal_name)
+      cache_pos = -1;
+    else
+      cache_pos = find_in_binding_cache(stx, phase);
 
-      marks = (Scheme_Mark_Set *)stx->u.cached_binding[2];
+    if (cache_pos >= 0) {
+      /* must extract from cache before a GC: */
+      GC_CAN_IGNORE Binding_Cache_Entry *binding_cache = binding_cache_table;
 
-      if (SAME_OBJ(stx->u.cached_binding[3], phase)
-          && mark_timestamps_older(marks, SCHEME_INT_VAL(stx->u.cached_binding[1]))) {
-        if (_binding_marks)
-          *_binding_marks = marks;
-        if (_exact_match) {
-          if (mark_set_count(marks) == mark_set_count(extract_mark_set(stx, phase)))
-            *_exact_match = 1;
-          else
-            *_exact_match = 0;
-        }
-        if (_insp) *_insp = stx->u.cached_binding[4];
-        o = stx->u.cached_binding[0];
+      result = binding_cache[cache_pos].result;
+      binding_marks = binding_cache[cache_pos].binding_marks;
+      if (_insp) *_insp = binding_cache[cache_pos].insp_desc;
+      free_eq = binding_cache[cache_pos].free_eq;
 
-        if (SCHEME_MPAIRP(o)) {
-          if (!stop_at_free_eq) {
-            o = SCHEME_CDR(o);
-            phase = SCHEME_CDR(o);
-            o = SCHEME_CAR(o);
-            /* recur to handle `free-identifier=?` chain */
-            if (!free_id_seen)
-              free_id_seen = scheme_make_hash_table(SCHEME_hash_ptr);
-            if (scheme_eq_hash_get(free_id_seen, o))
-              return scheme_false; /* found a cycle */
-            scheme_hash_set(free_id_seen, o, scheme_true);
-            prev_shifts = scheme_make_pair(stx->shifts, prev_shifts);
-            continue;
-          } else
-            return apply_accumulated_shifts(SCHEME_CAR(o), prev_shifts, _insp, NULL,
-                                            stx, orig_name, phase);
-        } else
-          return apply_accumulated_shifts(o, prev_shifts, _insp, NULL,
-                                          stx, orig_name, phase);
+      if (_binding_marks)
+        *_binding_marks = binding_marks;
+      if (_exact_match) {
+        if (binding_marks
+            && (mark_set_count(binding_marks) == mark_set_count(extract_mark_set(stx, phase))))
+          *_exact_match = 1;
+        else
+          *_exact_match = 0;
       }
+      
+      if (free_eq) {
+        if (!stop_at_free_eq) {
+          o = SCHEME_CAR(free_eq);
+          phase = SCHEME_CDR(free_eq);
+          /* recur to handle `free-identifier=?` chain */
+          if (!free_id_seen)
+            free_id_seen = scheme_make_hash_table(SCHEME_hash_ptr);
+          if (scheme_eq_hash_get(free_id_seen, o))
+            return scheme_false; /* found a cycle */
+          scheme_hash_set(free_id_seen, o, scheme_true);
+          prev_shifts = scheme_make_pair(stx->shifts, prev_shifts);
+          continue;
+        } else
+          return apply_accumulated_shifts(result, prev_shifts, _insp, NULL,
+                                          stx, orig_name, phase);
+      } else
+        return apply_accumulated_shifts(result, prev_shifts, _insp, NULL,
+                                        stx, orig_name, phase);
     }
 
-    if (_binding_marks) *_binding_marks = NULL;
+    binding_marks = NULL;
     if (_exact_match) *_exact_match = 0;
 
-    cached_result = do_stx_lookup_nonambigious(stx, phase,
-                                               _exact_match, _ambiguous,
-                                               _binding_marks);
+    result = do_stx_lookup_nonambigious(stx, phase,
+                                        _exact_match, _ambiguous,
+                                        &binding_marks);
 
-    if (!cached_result)
+    if (_binding_marks) *_binding_marks = binding_marks;
+
+    if (!result) {
+      save_in_binding_cache(stx, phase, scheme_false,
+                            NULL, NULL, NULL);
       return apply_accumulated_shifts(scheme_false, scheme_null, NULL, NULL,
                                       stx, orig_name, phase);
-
-    result = cached_result[0];
+    }
     
     /*
       `result` can be:
@@ -3582,10 +3656,10 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
       - a mutable pair of the above plus an identifier for a `free-identifier=?` link
     */
     if (SCHEME_MPAIRP(result)) {
-      free_eq_mpair = result;
+      free_eq = SCHEME_CDR(result);
       result = SCHEME_CAR(result);
     } else
-      free_eq_mpair = NULL;
+      free_eq = NULL;
 
     if (!SCHEME_SYMBOLP(result)) {
       /* Generate a result vector: (vector <modidx> <sym> <phase>) */
@@ -3685,32 +3759,28 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
         l = apply_modidx_shifts(stx->shifts, *nominal_modidx, NULL, NULL);
         *nominal_modidx = l;
       }
-
-      cached_result[0] = result;
     } else
       insp_desc = scheme_false;
 
-    if (free_eq_mpair) {
-      free_eq_mpair = scheme_make_mutable_pair(result,
-                                               SCHEME_CDR(free_eq_mpair));
-      cached_result[0] = free_eq_mpair;
-    }
-
-    cached_result[3] = phase;
-    cached_result[4] = insp_desc;
-    stx->u.cached_binding = cached_result;
+    save_in_binding_cache(stx, phase, result,
+                          binding_marks, insp_desc,
+                          free_eq);
   
     if (_insp) *_insp = insp_desc;
 
-    if (!free_eq_mpair || stop_at_free_eq)
+    if (!free_eq || stop_at_free_eq)
       return apply_accumulated_shifts(result, prev_shifts, _insp, nominal_modidx,
                                       stx, orig_name, phase);
 
     /* Recur for `free-identifier=?` mapping */
-    o = SCHEME_CDR(free_eq_mpair);
-    phase = SCHEME_CDR(o);
-    o = SCHEME_CAR(o);
+    phase = SCHEME_CDR(free_eq);
+    o = SCHEME_CAR(free_eq);
     prev_shifts = scheme_make_pair(stx->shifts, prev_shifts);
+
+    if (!free_id_seen)
+      free_id_seen = scheme_make_hash_table(SCHEME_hash_ptr);
+    if (scheme_eq_hash_get(free_id_seen, o))
+      return scheme_false; /* found a cycle */
   }
 }
 
