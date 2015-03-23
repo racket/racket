@@ -2048,12 +2048,9 @@ Scheme_Hash_Table *scheme_make_hash_table_equal_modix_eq()
 Scheme_Hash_Table *scheme_make_hash_table_eqv()
 {
   Scheme_Hash_Table *t;
-  Scheme_Object *sema;
 
   t = scheme_make_hash_table(SCHEME_hash_ptr);
 
-  sema = scheme_make_sema(1);
-  t->mutex = sema;
   t->compare = compare_eqv;
   t->make_hash_indices = make_hash_indices_for_eqv;
 

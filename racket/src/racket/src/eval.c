@@ -5563,7 +5563,7 @@ static Scheme_Object *revert_expr_marks(Scheme_Object *a, Scheme_Object *env)
 static Scheme_Object *
 local_eval(int argc, Scheme_Object **argv)
 {
-  Scheme_Comp_Env *env, *stx_env, *old_stx_env, *init_env;
+  Scheme_Comp_Env *env, *stx_env, *init_env;
   Scheme_Object *l, *a, *rib, *expr, *names, *rn_names, *observer;
   int cnt = 0, pos;
 
@@ -5604,7 +5604,6 @@ local_eval(int argc, Scheme_Object **argv)
                           NULL);
   }
 
-  old_stx_env = stx_env;
   stx_env = scheme_new_compilation_frame(0, SCHEME_FOR_INTDEF | SCHEME_USE_MARKS_TO_NEXT, rib, stx_env);
   scheme_add_local_syntax(cnt, stx_env);
 

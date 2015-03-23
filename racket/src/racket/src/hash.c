@@ -1187,6 +1187,7 @@ XFORM_NONGCING static uintptr_t long_dbl_hash2_val(long_double d)
 #define MZ_MIX(k) (k += (k << 10), k ^= (k >> 6))
 
 XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t k, int *_done)
+/* must cover eqv hash keys that are just eq hash keys */
 {
   Scheme_Type t;
 
@@ -1712,20 +1713,49 @@ intptr_t scheme_equal_hash_key2(Scheme_Object *o)
   return to_signed_hash(equal_hash_key2(o, &hi));
 }
 
-intptr_t scheme_eqv_hash_key(Scheme_Object *o)
+XFORM_NONGCING static uintptr_t fast_equal_hash_key2(Scheme_Object *o, int *_done)
+/* must cover eqv hash keys that are just eq hash keys */
 {
-  if (!SCHEME_INTP(o) && (SCHEME_NUMBERP(o) || SCHEME_CHARP(o)))
-    return to_signed_hash(scheme_equal_hash_key(o));
-  else
-    return to_signed_hash(PTR_TO_LONG(o));
-}
+  Scheme_Type t;
 
-intptr_t scheme_eqv_hash_key2(Scheme_Object *o)
-{
-  if (!SCHEME_INTP(o) && (SCHEME_NUMBERP(o) || SCHEME_CHARP(o)))
-    return to_signed_hash(scheme_equal_hash_key2(o));
-  else
-    return to_signed_hash(PTR_TO_LONG(o) >> 1);
+  t = SCHEME_TYPE(o);
+
+  *_done = 1;
+
+  switch(t) {
+  case scheme_integer_type:
+    return t - SCHEME_INT_VAL(o);
+#ifdef MZ_USE_SINGLE_FLOATS
+  case scheme_float_type:
+#endif
+  case scheme_double_type:
+    {
+      return dbl_hash2_val(SCHEME_FLOAT_VAL(o));
+    }
+#ifdef MZ_LONG_DOUBLE
+  case scheme_long_double_type:
+    {
+      return long_dbl_hash2_val(SCHEME_LONG_DBL_VAL(o));
+    }
+#endif
+  case scheme_bignum_type:
+    return SCHEME_BIGDIG(o)[0];
+  case scheme_rational_type:
+    return fast_equal_hash_key2(scheme_rational_numerator(o), _done);
+  case scheme_complex_type:
+    {
+      uintptr_t v1, v2;
+      Scheme_Complex *c = (Scheme_Complex *)o;
+      v1 = fast_equal_hash_key2(c->r, _done);
+      v2 = fast_equal_hash_key2(c->i, _done);
+      return v1 + v2;
+    }
+  case scheme_char_type:
+    return t;
+  default:
+    *_done = 0;
+    return 0;
+  }
 }
 
 static Scheme_Object *hash2_recur(int argc, Scheme_Object **argv, Scheme_Object *prim)
@@ -1784,45 +1814,24 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 {
   Scheme_Type t;
   Scheme_Object *orig_obj;
+  uintptr_t r;
+  int done;
 
  top:
   orig_obj = o;
   if (SCHEME_CHAPERONEP(o))
     o = ((Scheme_Chaperone *)o)->val;
 
+  r = fast_equal_hash_key2(o, &done);
+  if (done)
+    return r;
+
   t = SCHEME_TYPE(o);
 
   if (hi->depth > (MAX_HASH_DEPTH << 1))
     return t;
-  
+
   switch(t) {
-  case scheme_integer_type:
-    return t - SCHEME_INT_VAL(o);
-#ifdef MZ_USE_SINGLE_FLOATS
-  case scheme_float_type:
-#endif
-  case scheme_double_type:
-    {
-      return dbl_hash2_val(SCHEME_FLOAT_VAL(o));
-    }
-#ifdef MZ_LONG_DOUBLE
-  case scheme_long_double_type:
-    {
-      return long_dbl_hash2_val(SCHEME_LONG_DBL_VAL(o));
-    }
-#endif
-  case scheme_bignum_type:
-    return SCHEME_BIGDIG(o)[0];
-  case scheme_rational_type:
-    return equal_hash_key2(scheme_rational_numerator(o), hi);
-  case scheme_complex_type:
-    {
-      uintptr_t v1, v2;
-      Scheme_Complex *c = (Scheme_Complex *)o;
-      v1 = equal_hash_key2(c->r, hi);
-      v2 = equal_hash_key2(c->i, hi);
-      return v1 + v2;
-    }
   case scheme_pair_type:
     {
       uintptr_t v1, v2;
@@ -1904,8 +1913,6 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       return k;
     }
 #endif
-  case scheme_char_type:
-    return t;
   case scheme_byte_string_type:
   case scheme_unix_path_type:
   case scheme_windows_path_type:
@@ -2168,6 +2175,24 @@ intptr_t scheme_recur_equal_hash_key(Scheme_Object *o, void *cycle_data)
 intptr_t scheme_recur_equal_hash_key2(Scheme_Object *o, void *cycle_data)
 {
   return to_signed_hash(equal_hash_key2(o, (Hash_Info *)cycle_data));
+}
+
+intptr_t scheme_eqv_hash_key(Scheme_Object *o)
+{
+  if (!SCHEME_INTP(o) && (SCHEME_NUMBERP(o) || SCHEME_CHARP(o))) {
+    int done;
+    return to_signed_hash(fast_equal_hash_key(o, 0, &done));
+  } else
+    return to_signed_hash(PTR_TO_LONG(o));
+}
+
+intptr_t scheme_eqv_hash_key2(Scheme_Object *o)
+{
+  if (!SCHEME_INTP(o) && (SCHEME_NUMBERP(o) || SCHEME_CHARP(o))) {
+    int done;
+    return to_signed_hash(fast_equal_hash_key2(o, &done));
+  } else
+    return to_signed_hash(PTR_TO_LONG(o) >> 1);
 }
 
 /*========================================================================*/
@@ -2545,12 +2570,10 @@ XFORM_NONGCING static void hamt_at_index(Scheme_Hash_Tree *ht, mzlonglong pos,
 
 int scheme_hash_tree_index(Scheme_Hash_Tree *ht, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
 {
-  uintptr_t code;
-
   ht = resolve_placeholder(ht);
 
   if (pos < ht->count) {
-    hamt_at_index(ht, pos, _key, _val, &code);
+    hamt_at_index(ht, pos, _key, _val, NULL);
     return 1;
   } else
     return 0;

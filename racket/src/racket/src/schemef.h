@@ -1141,8 +1141,8 @@ MZ_EXTERN intptr_t scheme_equal_hash_key(Scheme_Object *o);
 MZ_EXTERN intptr_t scheme_equal_hash_key2(Scheme_Object *o);
 MZ_EXTERN intptr_t scheme_recur_equal_hash_key(Scheme_Object *o, void *cycle_data);
 MZ_EXTERN intptr_t scheme_recur_equal_hash_key2(Scheme_Object *o, void *cycle_data);
-MZ_EXTERN intptr_t scheme_eqv_hash_key(Scheme_Object *o);
-MZ_EXTERN intptr_t scheme_eqv_hash_key2(Scheme_Object *o);
+XFORM_NONGCING MZ_EXTERN intptr_t scheme_eqv_hash_key(Scheme_Object *o);
+XFORM_NONGCING MZ_EXTERN intptr_t scheme_eqv_hash_key2(Scheme_Object *o);
 
 MZ_EXTERN void scheme_set_type_equality(Scheme_Type type, 
                                         Scheme_Equal_Proc f,

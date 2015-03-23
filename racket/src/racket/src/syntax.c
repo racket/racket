@@ -3279,14 +3279,13 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
   int j, invalid;
   intptr_t i;
   Scheme_Object *key, *val, *result_best_so_far, *l, *pes;
-  Scheme_Mark *mark, *mark_best_so_far;
+  Scheme_Mark *mark;
   Scheme_Mark_Set *binding_marks, *best_so_far;
   Scheme_Module_Phase_Exports *pt;
 
   do {
     invalid = 0; /* to indicate retry if we unmarshal */
     best_so_far = NULL;
-    mark_best_so_far = NULL;
     result_best_so_far = NULL;
 
     i = mark_set_next(marks, -1);
@@ -3372,7 +3371,6 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
                       && (!check_subset
                           || (mark_set_count(binding_marks) == mark_set_count(check_subset))))) {
                 best_so_far = binding_marks;
-                mark_best_so_far = mark;
                 if (SCHEME_VECTORP(l))
                   result_best_so_far = SCHEME_VEC_BINDING_VAL(l);
                 else if (SCHEME_PAIRP(l))

@@ -4491,7 +4491,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Object *name, *var, *stx, *normal, *can_recycle_stx = NULL, *orig_unbound_name = NULL;
   Scheme_Env *menv = NULL;
   GC_CAN_IGNORE char *not_allowed;
-  int looking_for_top, has_orig_unbound = 0, need_macro_mark = 0;
+  int has_orig_unbound = 0, need_macro_mark = 0;
 
  top:
 
@@ -4551,8 +4551,6 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                           " (extra bindings or marks in the current context)");
     }
   }
-
-  looking_for_top = 0;
 
   if (SCHEME_STX_NULLP(form)) {
     stx = app_symbol;
@@ -4616,7 +4614,6 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	normal = top_expander;
         has_orig_unbound = 1;
 	form = find_name; /* in case it was re-mapped */
-	looking_for_top = 1;
       } else {
 	if (SAME_TYPE(SCHEME_TYPE(var), scheme_syntax_compiler_type)) {
 	  if (var == stop_expander) {

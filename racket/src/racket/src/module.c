@@ -5052,7 +5052,7 @@ static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase,
       reqs = scheme_null;
     if (!SCHEME_NULLP(reqs) && !menv->other_require_names) {
       Scheme_Hash_Table *ht;
-      ht = scheme_make_hash_table_equal();
+      ht = scheme_make_hash_table_eqv();
       menv->other_require_names = ht;
     }
     if (menv->other_require_names)
@@ -7854,10 +7854,9 @@ static Scheme_Object *add_req(Scheme_Object *imods, Scheme_Object *requires)
 static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_ids, Scheme_Object *expr, Scheme_Comp_Env *_env)
 {
   Scheme_Comp_Env *env;
-  Scheme_Object *self_modidx, *rn, *name, *ids, *id, *new_ids = scheme_null;
+  Scheme_Object *rn, *name, *ids, *id, *new_ids = scheme_null;
 
   env = (Scheme_Comp_Env *)SCHEME_VEC_ELS(data)[0];
-  self_modidx = SCHEME_VEC_ELS(data)[1];
   rn = SCHEME_VEC_ELS(data)[2];
 
   for (ids = *_ids; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
@@ -10412,6 +10411,7 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
       name_env = scheme_find_env_at_phase(genv, phase);
 
       count = 0;
+      exvcount = 0;
 
       for (k = 0; k < 2; k++) {
         for (i = provided->size; i--; ) {
