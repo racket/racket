@@ -46,6 +46,7 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
 {
   hash_tree_bitmap_t i;
   int pos1, pos2, index, popcount1, popcount2;
+  Scheme_Object *k1, *k2;
   
   if ((t1->bitmap & t2->bitmap) != t1->bitmap)
     return 0;
@@ -53,57 +54,59 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
   popcount1 = hamt_popcount(t1->bitmap);
   popcount2 = hamt_popcount(t2->bitmap);
 
-  for (i = t1->bitmap, pos1 = 0, index = 0; i; i >>= 1, index++) {
+  for (i = t1->bitmap, pos1 = 0, index = 0; i; ) {
     if (i & 1) {
       pos2 = hamt_popcount_below(t2->bitmap, index);
-      if (SAME_OBJ(t1->els[pos1], t2->els[pos2])) {
+      k1 = t1->els[pos1];
+      k2 = t2->els[pos2];
+      if (SAME_OBJ(k1, k2)) {
         if (HAMT_IF_VAL(0, 1)
-            || HASHTR_SUBTREEP(t1->els[pos1])
-            || HASHTR_COLLISIONP(t1->els[pos1])) {
+            || HASHTR_SUBTREEP(k1)
+            || HASHTR_COLLISIONP(k1)) {
           /* Shared element, subtree, or collision; no need to look further */
         } else {
           /* need to compare values */
           if (!HAMT_EQUAL_ENTRIES(stype, eql_data,
-                                  t1->els[pos1], HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
-                                  t2->els[pos2], HAMT_IF_VAL(_mzHAMT_VAL(t2, pos2, popcount2), NULL)))
+                                  k1, HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
+                                  k2, HAMT_IF_VAL(_mzHAMT_VAL(t2, pos2, popcount2), NULL)))
             return 0;
         }
-      } else if (HASHTR_SUBTREEP(t1->els[pos1])) {
+      } else if (HASHTR_SUBTREEP(k1)) {
         /* Since a subtree always has at least two items with different
            hashes, t2 must have a subtree in the same position */
-        if (HASHTR_SUBTREEP(t2->els[pos2])) {
-          if (!HAMT_SUBSET_OF((Scheme_Hash_Tree *)t1->els[pos1],
-                              (Scheme_Hash_Tree *)t2->els[pos2],
+        if (HASHTR_SUBTREEP(k2)) {
+          if (!HAMT_SUBSET_OF((Scheme_Hash_Tree *)k1,
+                              (Scheme_Hash_Tree *)k2,
                               shift + mzHAMT_LOG_WORD_SIZE,
                               stype, eql_data))
             return 0;
         } else
           return 0;
-      } else if (HASHTR_COLLISIONP(t1->els[pos1])) {
+      } else if (HASHTR_COLLISIONP(k1)) {
         intptr_t i;
         Scheme_Object *key;
         HAMT_IF_VAL(Scheme_Object *val, );
         
-        if (HASHTR_SUBTREEP(t2->els[pos2])) {
+        if (HASHTR_SUBTREEP(k2)) {
           /* check each element of collision */
-          for (i = ((Scheme_Hash_Tree *)t1->els[pos1])->count; i--; ) {
+          for (i = ((Scheme_Hash_Tree *)k1)->count; i--; ) {
             uintptr_t code;
-            hamt_at_index(((Scheme_Hash_Tree *)t1->els[pos1]), i, &key, HAMT_IF_VAL(&val, NULL), &code);
+            hamt_at_index(((Scheme_Hash_Tree *)k1), i, &key, HAMT_IF_VAL(&val, NULL), &code);
             if (!HAMT_ELEMENT_OF(key, HAMT_IF_VAL(val, NULL), code,
-                                 (Scheme_Hash_Tree *)t2->els[pos2],
+                                 (Scheme_Hash_Tree *)k2,
                                  shift + mzHAMT_LOG_WORD_SIZE,
                                  stype, eql_data))
               return 0;
           }
-        } else if (HASHTR_COLLISIONP(t2->els[pos2])) {
+        } else if (HASHTR_COLLISIONP(k2)) {
           /* hash codes of collisions must match */
           if (_mzHAMT_CODE(t1, pos1, popcount1) != _mzHAMT_CODE(t2, pos2, popcount2))
             return 0;
           /* must check each element of t1 in t2 */
-          for (i = ((Scheme_Hash_Tree *)t1->els[pos1])->count; i--; ) {
-            hamt_at_index((Scheme_Hash_Tree *)t1->els[pos1], i, &key, HAMT_IF_VAL(&val, NULL), NULL);
+          for (i = ((Scheme_Hash_Tree *)k1)->count; i--; ) {
+            hamt_at_index((Scheme_Hash_Tree *)k1, i, &key, HAMT_IF_VAL(&val, NULL), NULL);
             if (!HAMT_ELEMENT_OF_COLLISION(key, HAMT_IF_VAL(val, NULL),
-                                           (Scheme_Hash_Tree *)t2->els[pos2],
+                                           (Scheme_Hash_Tree *)k2,
                                            stype, eql_data))
               return 0;
           }
@@ -112,10 +115,10 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
           return 0;
         }
       } else {
-        if (HASHTR_SUBTREEP(t2->els[pos2])) {
-          if (!HAMT_ELEMENT_OF(t1->els[pos1], HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
+        if (HASHTR_SUBTREEP(k2)) {
+          if (!HAMT_ELEMENT_OF(k1, HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
                                _mzHAMT_CODE(t1, pos1, popcount1),
-                               (Scheme_Hash_Tree *)t2->els[pos2],
+                               (Scheme_Hash_Tree *)k2,
                                shift + mzHAMT_LOG_WORD_SIZE,
                                stype, eql_data))
             return 0;
@@ -124,22 +127,30 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
              hash codes much match either way */
           if (_mzHAMT_CODE(t1, pos1, popcount1) != _mzHAMT_CODE(t2, pos2, popcount2))
             return 0;
-          if (HASHTR_COLLISIONP(t2->els[pos2])) {
+          if (HASHTR_COLLISIONP(k2)) {
             /* look for an invidual value in t2: */
-            if (!HAMT_ELEMENT_OF_COLLISION(t1->els[pos1], HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
-                                           (Scheme_Hash_Tree *)t2->els[pos2],
+            if (!HAMT_ELEMENT_OF_COLLISION(k1, HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
+                                           (Scheme_Hash_Tree *)k2,
                                            stype, eql_data))
               return 0;
           } else {
             if (!HAMT_EQUAL_ENTRIES(stype, eql_data,
-                                    t1->els[pos1], HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
-                                    t2->els[pos2], HAMT_IF_VAL(_mzHAMT_VAL(t2, pos2, popcount2), NULL)))
+                                    k1, HAMT_IF_VAL(_mzHAMT_VAL(t1, pos1, popcount1), NULL),
+                                    k2, HAMT_IF_VAL(_mzHAMT_VAL(t2, pos2, popcount2), NULL)))
               return 0;
           }
         }
       }
       pos1++;
       HAMT_USE_FUEL();
+      i >>= 1;
+      index++;
+    } else if (i & 0xFF) {
+      i >>= 1;
+      index++;
+    } else {
+      i >>= 8;
+      index += 8;
     }
   }
 

@@ -2535,6 +2535,14 @@ mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree, mzlonglong pos)
     return pos;
 }
 
+#if REVERSE_HASH_TABLE_ORDER
+# define HAMT_TRAVERSE_INIT(popcount) ((popcount)-1)
+# define HAMT_TRAVERSE_NEXT(i) ((i)-1)
+#else
+# define HAMT_TRAVERSE_INIT(popcount) 0
+# define HAMT_TRAVERSE_NEXT(i) ((i)+1)
+#endif
+
 
 XFORM_NONGCING static void hamt_at_index(Scheme_Hash_Tree *ht, mzlonglong pos,
                                          Scheme_Object **_key, Scheme_Object **_val, uintptr_t *_code)
@@ -2544,13 +2552,14 @@ XFORM_NONGCING static void hamt_at_index(Scheme_Hash_Tree *ht, mzlonglong pos,
 
   while (1) {
     popcount = hamt_popcount(ht->bitmap);
-    for (i = 0; i < popcount; i++) {
+    i = HAMT_TRAVERSE_INIT(popcount);
+    while (1) {
       if (HASHTR_SUBTREEP(ht->els[i])
           || HASHTR_COLLISIONP(ht->els[i])) {
         sub = (Scheme_Hash_Tree *)ht->els[i];
         if (pos < sub->count) {
           ht = sub;
-          break;
+          break; /* to outer loop */
         } else
           pos -= sub->count;
       } else {
@@ -2564,6 +2573,7 @@ XFORM_NONGCING static void hamt_at_index(Scheme_Hash_Tree *ht, mzlonglong pos,
         }
         --pos;
       }
+      i = HAMT_TRAVERSE_NEXT(i);
     }
   }
 }
@@ -3002,9 +3012,6 @@ int scheme_eq_hash_tree_subset_of(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2)
   if (t1->count > t2->count)
     return 0;
   
-  if ((t1->bitmap & t2->bitmap) != t1->bitmap)
-    return 0;
-
   return hamt_eq_subset_of(t1, t2, 0, scheme_eq_hash_tree_type, NULL);
 }
 

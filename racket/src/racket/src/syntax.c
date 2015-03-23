@@ -4141,7 +4141,7 @@ static Scheme_Object *make_unmarshal_info(Scheme_Object *phase,
   return unmarshal_info;
 }
 
-static Scheme_Object *extract_unmarshal_phase(Scheme_Object *unmarshal_info)
+XFORM_NONGCING static Scheme_Object *extract_unmarshal_phase(Scheme_Object *unmarshal_info)
 {
   if (SCHEME_PAIRP(unmarshal_info))
     return SCHEME_CAR(unmarshal_info);
@@ -4149,7 +4149,7 @@ static Scheme_Object *extract_unmarshal_phase(Scheme_Object *unmarshal_info)
     return unmarshal_info;
 }
 
-static Scheme_Object *extract_unmarshal_prefix(Scheme_Object *unmarshal_info)
+XFORM_NONGCING static Scheme_Object *extract_unmarshal_prefix(Scheme_Object *unmarshal_info)
 {
   if (SCHEME_PAIRP(unmarshal_info)) {
     unmarshal_info = SCHEME_CDR(unmarshal_info);
@@ -4164,24 +4164,44 @@ static Scheme_Object *extract_unmarshal_prefix(Scheme_Object *unmarshal_info)
     return scheme_false;
 }
 
+static Scheme_Hash_Tree *unmarshal_vector_to_excepts(Scheme_Object *unmarshal_info,
+                                                     Scheme_Object *ht_target,
+                                                     int ht_to_cdr)
+{
+  Scheme_Hash_Tree *ht = empty_hash_tree;
+  intptr_t i;
+
+  for (i = SCHEME_VEC_SIZE(unmarshal_info); i--; ) {
+    if (SCHEME_SYMBOLP(SCHEME_VEC_ELS(unmarshal_info)[i]))
+      ht = scheme_hash_tree_set(ht, SCHEME_VEC_ELS(unmarshal_info)[i], scheme_true);
+  }
+
+  if (ht_to_cdr)
+    SCHEME_CDR(ht_target) = (Scheme_Object *)ht;
+  else
+    SCHEME_CAR(ht_target) = (Scheme_Object *)ht;
+
+  return ht;
+}
+
 static Scheme_Hash_Tree *extract_unmarshal_excepts(Scheme_Object *unmarshal_info)
 {
   if (SCHEME_PAIRP(unmarshal_info)) {
+    Scheme_Object *ht_target = unmarshal_info;
+    int ht_to_cdr = 1;
+
     unmarshal_info = SCHEME_CDR(unmarshal_info);
-    if (SCHEME_PAIRP(unmarshal_info))
+    if (SCHEME_PAIRP(unmarshal_info)) {
+      ht_target = unmarshal_info;
+      ht_to_cdr = 0;
       unmarshal_info = SCHEME_CAR(unmarshal_info);
-    
+    }
+
     if (SCHEME_HASHTRP(unmarshal_info))
       return (Scheme_Hash_Tree *)unmarshal_info;
     else if (SCHEME_VECTORP(unmarshal_info)) {
       /* Hash table was converted to a vector in a marshaled unmarshal request */
-      Scheme_Hash_Tree *ht = empty_hash_tree;
-      intptr_t i;
-      for (i = SCHEME_VEC_SIZE(unmarshal_info); i--; ) {
-        if (SCHEME_SYMBOLP(SCHEME_VEC_ELS(unmarshal_info)[i]))
-          ht = scheme_hash_tree_set(ht, SCHEME_VEC_ELS(unmarshal_info)[i], scheme_true);
-      }
-      return ht;
+      return unmarshal_vector_to_excepts(unmarshal_info, ht_target, ht_to_cdr);
     } else
       return NULL;
   } else
