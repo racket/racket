@@ -3237,7 +3237,7 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
         }
 
         /* Check list of shared-binding tables */
-        if (SCHEME_MPAIRP(mark->bindings))
+        if (SCHEME_RPAIRP(mark->bindings))
           l = SCHEME_CDR(mark->bindings);
         else
           l = NULL;
