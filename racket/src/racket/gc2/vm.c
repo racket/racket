@@ -28,6 +28,9 @@ enum {
 
 #ifdef USE_BLOCK_CACHE
 # define USE_ALLOC_CACHE
+# define QUEUED_MPROTECT_IS_PROMISCUOUS 1
+#else
+# define QUEUED_MPROTECT_IS_PROMISCUOUS 0
 #endif
 
 struct AllocCacheBlock;

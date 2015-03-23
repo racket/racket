@@ -15,24 +15,14 @@ typedef struct mpage {
   void *addr;
   uintptr_t previous_size; /* for med page, place to search for available block; for jit nursery, allocated size */
   uintptr_t size; /* big page size, med page element size, or nursery starting point */
-/*
-  unsigned char generation    :1;
+  unsigned char generation    :2;
   unsigned char back_pointers :1;
-  unsigned char size_cless    :2;
+  unsigned char size_class    :2;  /* 0 => small; 1 => med; 2 => big; 3 => big marked */
   unsigned char page_type     :3; 
   unsigned char marked_on     :1;
+  unsigned char marked_from   :1;
   unsigned char has_new       :1;
   unsigned char mprotected    :1;
-  unsigned char added         :1;
-*/
-  unsigned char generation    ;
-  unsigned char back_pointers ;
-  unsigned char size_class    ; /* 0 => small; 1 => med; 2 => big; 3 => big marked */
-  unsigned char page_type     ; 
-  unsigned char marked_on     ;
-  unsigned char has_new       ;
-  unsigned char mprotected    ;
-  unsigned char added         ;
   unsigned short live_size;
 #ifdef MZ_GC_BACKTRACE
   void **backtrace;
@@ -49,6 +39,12 @@ typedef struct Gen0 {
   uintptr_t max_size;
   uintptr_t page_alloc_size;
 } Gen0;
+
+typedef struct Gen_Half {
+  struct mpage *curr_alloc_page;
+  struct mpage *pages;
+  struct mpage *old_pages;
+} Gen_Half;
 
 typedef struct MsgMemory {
   struct mpage *pages;
@@ -128,6 +124,7 @@ typedef mpage **PageMap;
 
 typedef struct NewGC {
   Gen0 gen0;
+  Gen_Half gen_half;
   Mark2_Proc  *mark_table;   /* the table of mark procs */
   Fixup2_Proc *fixup_table;  /* the table of repair procs */
   PageMap page_maps;
@@ -168,6 +165,7 @@ typedef struct NewGC {
   unsigned char no_further_modifications     :1;
   unsigned char gc_full                      :1; /* a flag saying if this is a full/major collection */
   unsigned char running_finalizers           :1;
+  unsigned char back_pointers                :1;
 
   /* blame the child */
   unsigned int doing_memory_accounting        :1;
@@ -188,6 +186,7 @@ typedef struct NewGC {
 
   /* These collect information about memory usage, for use in GC_dump. */
   uintptr_t peak_memory_use;
+  uintptr_t peak_pre_memory_use;
   uintptr_t num_minor_collects;
   uintptr_t num_major_collects;
   

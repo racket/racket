@@ -73,8 +73,9 @@ static int fixup_weak_array(void *p, struct NewGC *gc)
 
   data = a->data;
   for (i = a->count; i--; ) {
-    if (data[i])
+    if (data[i]) {
       gcFIXUP2(data[i], gc);
+    }
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Array) 
