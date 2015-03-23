@@ -3298,6 +3298,7 @@ typedef struct Scheme_Marshal_Tables {
   Scheme_Object *st_ref_stack;
   Scheme_Hash_Table *reachable_marks; /* filled on -1 pass */
   Scheme_Object *reachable_mark_stack; /* used on -1 pass */
+  Scheme_Hash_Table *pending_reachable_ids; /* use on -1 pass */
   Scheme_Hash_Table *intern_map;  /* filled on first pass */
   Scheme_Hash_Table *identity_map; /* filled on first pass */
   Scheme_Hash_Table *top_map;     /* used on every pass */

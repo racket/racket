@@ -4892,6 +4892,49 @@ static void add_reachable_multi_marks(Scheme_Object *multi_marks, Scheme_Marshal
   }
 }
 
+static Scheme_Object *any_unreachable_mark(Scheme_Mark_Set *marks, Scheme_Marshal_Tables *mt)
+{
+  intptr_t i;
+  Scheme_Object *key, *val;
+
+  i = -1;
+  while ((i = mark_set_next(marks, i)) != -1) {
+    mark_set_index(marks, i, &key, &val);
+    if (!scheme_eq_hash_get(mt->reachable_marks, key))
+      return key;
+  }
+
+  return NULL;
+}
+
+static void possiblly_reachable_free_id(Scheme_Object *val,
+                                        Scheme_Mark_Set *marks,
+                                        Scheme_Marshal_Tables *mt)
+{
+  Scheme_Stx *free_id = (Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val));
+  Scheme_Object *unreachable_mark, *l;
+  Scheme_Hash_Table *ht;
+
+  unreachable_mark = any_unreachable_mark(marks, mt);
+
+  if (!unreachable_mark) {
+    /* causes the free-id mapping's marks to be reachable: */
+    (void)wraps_to_datum(free_id, mt);
+  } else {
+    /* the mapping will become reachable only if `unreachable_mark` becomes reachable */
+    if (!mt->pending_reachable_ids) {
+      ht = scheme_make_hash_table(SCHEME_hash_ptr);
+      mt->pending_reachable_ids = ht;
+    }
+    l = scheme_eq_hash_get(mt->pending_reachable_ids, unreachable_mark);
+    if (!l) l = scheme_null;
+    scheme_hash_set(mt->pending_reachable_ids, unreachable_mark,
+                    scheme_make_pair(scheme_make_pair((Scheme_Object *)free_id,
+                                                      (Scheme_Object *)marks),
+                                     l));
+  }
+}
+
 void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
 {
   Scheme_Mark *mark;
@@ -4907,10 +4950,10 @@ void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
     if (mark->bindings) {
       val = mark->bindings;
       if (SCHEME_VECTORP(val)) {
-        val = SCHEME_VEC_BINDING_VAL(val);
-        if (SCHEME_MPAIRP(val)) {
+        l = SCHEME_VEC_BINDING_VAL(val);
+        if (SCHEME_MPAIRP(l)) {
           /* It's a free-id mapping: */
-          (void)wraps_to_datum((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)), mt);
+          possiblly_reachable_free_id(l, SCHEME_VEC_BINDING_MARKS(val), mt);
         }
       } else {
         if (SCHEME_RPAIRP(val))
@@ -4927,7 +4970,7 @@ void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
             val = SCHEME_BINDING_VAL(l);
             if (SCHEME_MPAIRP(val)) {
               /* It's a free-id mapping: */
-              (void)wraps_to_datum((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)), mt);
+              possiblly_reachable_free_id(val, SCHEME_BINDING_MARKS(l), mt);
             }
           } else {
             STX_ASSERT(SCHEME_MPAIRP(l));
@@ -4935,29 +4978,27 @@ void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
               val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
               if (SCHEME_MPAIRP(val)) {
                 /* It's a free-id mapping: */
-                (void)wraps_to_datum((Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val)), mt);
+                possiblly_reachable_free_id(val, SCHEME_BINDING_MARKS(SCHEME_CAR(l)), mt);
               }
             }
           }
         }
       }
     }
+
+    /* Check for any free-id mappings whose reachbility depended on `mark`: */
+    if (mt->pending_reachable_ids) {
+      l = scheme_eq_hash_get(mt->pending_reachable_ids, (Scheme_Object *)mark);
+      if (l) {
+        scheme_hash_set(mt->pending_reachable_ids, (Scheme_Object *)mark, NULL);
+        while (!SCHEME_NULLP(l)) {
+          val = SCHEME_CAR(l);
+          possiblly_reachable_free_id(SCHEME_CAR(val), (Scheme_Mark_Set *)SCHEME_CDR(val), mt);
+          l = SCHEME_CDR(l);
+        }
+      }
+    }
   }
-}
-
-static int all_marks_reachable(Scheme_Mark_Set *marks, Scheme_Marshal_Tables *mt)
-{
-  intptr_t i;
-  Scheme_Object *key, *val;
-
-  i = -1;
-  while ((i = mark_set_next(marks, i)) != -1) {
-    mark_set_index(marks, i, &key, &val);
-    if (!scheme_eq_hash_get(mt->reachable_marks, key))
-      return 0;
-  }
-
-  return 1;
 }
 
 static Scheme_Object *intern_one(Scheme_Object *v, Scheme_Hash_Table *ht)
@@ -5281,7 +5322,7 @@ static Scheme_Object *marshal_bindings(Scheme_Object *l, Scheme_Marshal_Tables *
       marks = (Scheme_Object *)SCHEME_BINDING_MARKS(SCHEME_CAR(l));
     }
 
-    if (all_marks_reachable((Scheme_Mark_Set *)marks, mt)) {
+    if (!any_unreachable_mark((Scheme_Mark_Set *)marks, mt)) {
       if (SCHEME_PAIRP(l))
         v = SCHEME_BINDING_VAL(l);
       else

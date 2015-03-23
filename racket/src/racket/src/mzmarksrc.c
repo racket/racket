@@ -1801,6 +1801,7 @@ mark_marshal_tables {
   gcMARK2(mt->st_ref_stack, gc);
   gcMARK2(mt->reachable_marks, gc);
   gcMARK2(mt->reachable_mark_stack, gc);
+  gcMARK2(mt->pending_reachable_ids, gc);
   gcMARK2(mt->intern_map, gc);
   gcMARK2(mt->identity_map, gc);
   gcMARK2(mt->top_map, gc);

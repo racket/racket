@@ -3418,6 +3418,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 0, NULL);
         scheme_iterate_reachable_marks(mt);
 
+        mt->pending_reachable_ids = NULL;
+
         mt = MALLOC_ONE_RT(Scheme_Marshal_Tables);
         SET_REQUIRED_TAG(mt->type = scheme_rt_marshal_info);
         scheme_current_thread->current_mt = mt;
