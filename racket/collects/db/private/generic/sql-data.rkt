@@ -64,7 +64,7 @@
 (define-serializable-struct sql-date (year month day) #:transparent)
 (define-serializable-struct sql-time (hour minute second nanosecond tz) #:transparent)
 (define-serializable-struct sql-timestamp
-  (year month day hour minute second nanosecond tz) 
+  (year month day hour minute second nanosecond tz)
   #:transparent)
 
 ;; Intervals must be "pre-multiplied" rather than carry extra sign field.
@@ -89,7 +89,16 @@
                             [(left-mins secs) (quotient/remainder left-secs 60)]
                             [(left-hours mins) (quotient/remainder left-mins 60)]
                             [(days hours) (quotient/remainder left-hours 24)])
+                (unless (<= MIN-SQL-YEAR years MAX-SQL-YEAR)
+                  (raise-argument-error 'make-sql-interval
+                                        (format "year difference in ~a<=y<=~a"
+                                                MIN-SQL-YEAR MAX-SQL-YEAR)
+                                        years))
                 (values years months days hours mins secs nsecs)))))
+
+;; year must be serialized into 2 signed bytes:
+(define MIN-SQL-YEAR (- #x8000))
+(define MAX-SQL-YEAR #x7fff)
 
 ;; ----
 
