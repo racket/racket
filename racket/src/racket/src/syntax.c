@@ -55,14 +55,22 @@ READ_ONLY Scheme_Mark_Set *empty_mark_set;
 READ_ONLY static Scheme_Stx_Srcloc *empty_srcloc;
 
 typedef struct Scheme_Mark {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso; /* 0x1 => Scheme_Mark_With_Owner */
   mzlonglong id; /* low SCHEME_STX_MARK_KIND_SHIFT bits indicate kind */
   Scheme_Object *bindings; /* NULL, vector for one binding, hash table for multiple bindngs,
                               or (rcons hash-table (rcons pes-info ... NULL));
                               each hash table maps symbols to (cons mark-set binding)
                               or (mlist (cons mark-set binding) ...) */
-  Scheme_Object *owner_multi_mark; /* (cons <multi-mark> <phase>) */
 } Scheme_Mark;
+
+typedef struct Scheme_Mark_With_Owner {
+  Scheme_Mark m;
+  Scheme_Object *owner_multi_mark;
+  Scheme_Object *phase;
+} Scheme_Mark_With_Owner;
+
+#define SCHEME_MARK_FLAGS(m) MZ_OPT_HASH_KEY(&(m)->iso)
+#define SCHEME_MARK_HAS_OWNER(m) (SCHEME_MARK_FLAGS(m) & 0x1)
 
 #define SCHEME_MARK_KIND(m) (((Scheme_Mark *)(m))->id & SCHEME_STX_MARK_KIND_MASK)
 
@@ -653,15 +661,20 @@ Scheme_Object *scheme_stx_root_mark()
 
 Scheme_Object *scheme_new_mark(int kind)
 {
-  Scheme_Mark *m;
   mzlonglong id;
+  Scheme_Object *m;
 
-  m = (Scheme_Mark *)scheme_malloc_small_tagged(sizeof(Scheme_Mark));
-  m->so.type = scheme_mark_type;
+  if (kind == SCHEME_STX_MODULE_MULTI_MARK) {
+    m = scheme_malloc_small_tagged(sizeof(Scheme_Mark_With_Owner));
+    SCHEME_MARK_FLAGS((Scheme_Mark *)m) |= 0x1;
+  } else
+    m = scheme_malloc_small_tagged(sizeof(Scheme_Mark));
+
+  ((Scheme_Mark *)m)->iso.so.type = scheme_mark_type;
   id = ((++mark_counter) << SCHEME_STX_MARK_KIND_SHIFT) | kind;
-  m->id = id;
+  ((Scheme_Mark *)m)->id = id;
 
-  return (Scheme_Object *)m;
+  return m;
 }
 
 static Scheme_Object *new_multi_mark(Scheme_Object *debug_name)
@@ -693,6 +706,7 @@ Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
   
   switch (kind) {
   case SCHEME_STX_MODULE_MARK:
+  case SCHEME_STX_MODULE_MULTI_MARK:
     if (SAME_OBJ(m, root_mark))
       kind_sym = top_symbol;
     else
@@ -715,8 +729,8 @@ Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
     break;
   }
 
-  if (((Scheme_Mark *)m)->owner_multi_mark) {
-    Scheme_Object *multi_mark = SCHEME_CAR(((Scheme_Mark *)m)->owner_multi_mark);
+  if (SCHEME_MARK_HAS_OWNER((Scheme_Mark *)m)) {
+    Scheme_Object *multi_mark = ((Scheme_Mark_With_Owner *)m)->owner_multi_mark;
     name = scheme_eq_hash_get((Scheme_Hash_Table *)multi_mark, scheme_void);
     if (!name) name = scheme_false;
 
@@ -725,7 +739,7 @@ Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
     
     vec = scheme_make_vector(4, NULL);
     SCHEME_VEC_ELS(vec)[2] = name;
-    SCHEME_VEC_ELS(vec)[3] = SCHEME_CDR(((Scheme_Mark *)m)->owner_multi_mark);
+    SCHEME_VEC_ELS(vec)[3] = ((Scheme_Mark_With_Owner *)m)->phase;
   } else {
     vec = scheme_make_vector(2, NULL);
   }
@@ -794,7 +808,7 @@ static Scheme_Object *make_fallback_quad(Scheme_Object *a, Scheme_Object *b,
 Scheme_Object *extract_single_mark(Scheme_Object *multi_mark, Scheme_Object *phase)
 {
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)multi_mark;
-  Scheme_Object *m, *mm;
+  Scheme_Object *m;
 
   if (SCHEME_TRUEP(phase) && !SCHEME_INTP(phase)) {
     /* make sure phases are interned (in case of a bignum phase, which should be very rare): */
@@ -803,9 +817,9 @@ Scheme_Object *extract_single_mark(Scheme_Object *multi_mark, Scheme_Object *pha
 
   m = scheme_eq_hash_get(ht, phase);
   if (!m) {
-    m = scheme_new_mark(SCHEME_STX_MODULE_MARK);
-    mm = scheme_make_pair((Scheme_Object *)ht, phase);
-    ((Scheme_Mark *)m)->owner_multi_mark = mm;
+    m = scheme_new_mark(SCHEME_STX_MODULE_MULTI_MARK);
+    ((Scheme_Mark_With_Owner *)m)->owner_multi_mark = (Scheme_Object *)ht;
+    ((Scheme_Mark_With_Owner *)m)->phase = phase;
     scheme_hash_set(ht, phase, m);
   }
 
@@ -1077,11 +1091,10 @@ static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object 
   Scheme_Object *l;
   Scheme_Mark_Set *marks;
 
-  if (SCHEME_MARKP(m) && ((Scheme_Mark *)m)->owner_multi_mark) {
+  if (SCHEME_MARKP(m) && SCHEME_MARK_HAS_OWNER((Scheme_Mark *)m)) {
     if (!SCHEME_FALSEP(phase))
-      phase = scheme_bin_minus(phase,
-                               SCHEME_CDR(((Scheme_Mark *)m)->owner_multi_mark));
-    m = SCHEME_CAR(((Scheme_Mark *)m)->owner_multi_mark);
+      phase = scheme_bin_minus(phase, ((Scheme_Mark_With_Owner *)m)->phase);
+    m = ((Scheme_Mark_With_Owner *)m)->owner_multi_mark;
   }
 
   if (SCHEME_MULTI_MARKP(m)) {
@@ -1326,7 +1339,8 @@ Scheme_Object *scheme_stx_remove_module_context_marks(Scheme_Object *o)
   while (i != -1) {
     mark_set_index(marks, i, &key, &val);
 
-    if (SCHEME_MARK_KIND(key) == SCHEME_STX_MODULE_MARK)
+    if ((SCHEME_MARK_KIND(key) == SCHEME_STX_MODULE_MARK)
+        || (SCHEME_MARK_KIND(key) == SCHEME_STX_MODULE_MULTI_MARK))
       o = scheme_stx_remove_mark(o, key, scheme_make_integer(0));
 
     i = mark_set_next(marks, i);
@@ -1747,7 +1761,7 @@ static Scheme_Object *propagate_mark_set(Scheme_Mark_Set *props, Scheme_Object *
   while (i != -1) {
     mark_set_index(props, i, &key, &val);
 
-    STX_ASSERT(!((Scheme_Mark *)key)->owner_multi_mark);
+    STX_ASSERT(!SCHEME_MARK_HAS_OWNER((Scheme_Mark *)key));
 
     o = stx_adjust_mark(o, key, phase, SCHEME_INT_VAL(val) | flag, mutate);
     
@@ -5678,8 +5692,7 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
 /*                           datum->syntax                                */
 /*========================================================================*/
 
-#define return_NULL abort()
-// return NULL
+#define return_NULL return NULL
 
 Scheme_Mark_Set *list_to_mark_set(Scheme_Object *l, Scheme_Unmarshal_Tables *ut)
 {
@@ -5717,7 +5730,7 @@ static Scheme_Hash_Table *vector_to_multi_mark(Scheme_Object *mht, Scheme_Unmars
   /* Convert multi-mark vector to hash table */
   intptr_t i, len;
   Scheme_Hash_Table *multi_mark;
-  Scheme_Object *mark, *mm;
+  Scheme_Object *mark;
 
   if (!SCHEME_VECTORP(mht)) return_NULL;
 
@@ -5741,11 +5754,13 @@ static Scheme_Hash_Table *vector_to_multi_mark(Scheme_Object *mht, Scheme_Unmars
     mark = SCHEME_VEC_ELS(mht)[i+1];
     mark = mark_unmarshal_content(mark, ut);
     if (!mark) return_NULL;
-    if (((Scheme_Mark *)mark)->owner_multi_mark)
+    if (!SCHEME_MARK_HAS_OWNER((Scheme_Mark *)mark))
+      return_NULL;
+    if (((Scheme_Mark_With_Owner *)mark)->owner_multi_mark)
       return_NULL;
     scheme_hash_set(multi_mark, SCHEME_VEC_ELS(mht)[i], mark);
-    mm = scheme_make_pair((Scheme_Object *)multi_mark, SCHEME_VEC_ELS(mht)[i]);
-    ((Scheme_Mark *)mark)->owner_multi_mark = mm;
+    ((Scheme_Mark_With_Owner *)mark)->owner_multi_mark = (Scheme_Object *)multi_mark;
+    ((Scheme_Mark_With_Owner *)mark)->phase = SCHEME_VEC_ELS(mht)[i];
   }
       
   return multi_mark;

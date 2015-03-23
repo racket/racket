@@ -1118,11 +1118,12 @@ Scheme_Object *scheme_new_mark(int kind);
 Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
 Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 
-#define SCHEME_STX_MODULE_MARK     0
-#define SCHEME_STX_MACRO_MARK      1
-#define SCHEME_STX_LOCAL_BIND_MARK 2
-#define SCHEME_STX_INTDEF_MARK     3
-#define SCHEME_STX_USE_SITE_MARK   4
+#define SCHEME_STX_MODULE_MARK       0
+#define SCHEME_STX_MODULE_MULTI_MARK 1
+#define SCHEME_STX_MACRO_MARK        2
+#define SCHEME_STX_LOCAL_BIND_MARK   3
+#define SCHEME_STX_INTDEF_MARK       4
+#define SCHEME_STX_USE_SITE_MARK     5
 
 #define SCHEME_STX_MARK_KIND_SHIFT 3
 #define SCHEME_STX_MARK_KIND_MASK  ((1 << SCHEME_STX_MARK_KIND_SHIFT) - 1)

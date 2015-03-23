@@ -24,28 +24,44 @@ static int mark_srcloc_FIXUP(void *p, struct NewGC *gc) {
 
 
 static int mark_mark_SIZE(void *p, struct NewGC *gc) {
+  Scheme_Mark *m = (Scheme_Mark *)p;
+  int for_multi = SCHEME_MARK_HAS_OWNER(m);
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Mark));
+ (for_multi
+  ? gcBYTES_TO_WORDS(sizeof(Scheme_Mark_With_Owner))
+  : gcBYTES_TO_WORDS(sizeof(Scheme_Mark)));
 }
 
 static int mark_mark_MARK(void *p, struct NewGC *gc) {
   Scheme_Mark *m = (Scheme_Mark *)p;
+  int for_multi = SCHEME_MARK_HAS_OWNER(m);
   gcMARK2(m->bindings, gc);
-  gcMARK2(m->owner_multi_mark, gc);
+  if (for_multi) {
+    gcMARK2(((Scheme_Mark_With_Owner *)m)->owner_multi_mark, gc);
+    gcMARK2(((Scheme_Mark_With_Owner *)m)->phase, gc);
+  }
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Mark));
+ (for_multi
+  ? gcBYTES_TO_WORDS(sizeof(Scheme_Mark_With_Owner))
+  : gcBYTES_TO_WORDS(sizeof(Scheme_Mark)));
 }
 
 static int mark_mark_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Mark *m = (Scheme_Mark *)p;
+  int for_multi = SCHEME_MARK_HAS_OWNER(m);
   gcFIXUP2(m->bindings, gc);
-  gcFIXUP2(m->owner_multi_mark, gc);
+  if (for_multi) {
+    gcFIXUP2(((Scheme_Mark_With_Owner *)m)->owner_multi_mark, gc);
+    gcFIXUP2(((Scheme_Mark_With_Owner *)m)->phase, gc);
+  }
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Mark));
+ (for_multi
+  ? gcBYTES_TO_WORDS(sizeof(Scheme_Mark_With_Owner))
+  : gcBYTES_TO_WORDS(sizeof(Scheme_Mark)));
 }
 
 #define mark_mark_IS_ATOMIC 0
-#define mark_mark_IS_CONST_SIZE 1
+#define mark_mark_IS_CONST_SIZE 0
 
 
 static int mark_mark_table_SIZE(void *p, struct NewGC *gc) {

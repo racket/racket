@@ -2394,12 +2394,18 @@ mark_srcloc {
 }
 
 mark_mark {
- mark:
   Scheme_Mark *m = (Scheme_Mark *)p;
+  int for_multi = SCHEME_MARK_HAS_OWNER(m);
+ mark:
   gcMARK2(m->bindings, gc);
-  gcMARK2(m->owner_multi_mark, gc);
+  if (for_multi) {
+    gcMARK2(((Scheme_Mark_With_Owner *)m)->owner_multi_mark, gc);
+    gcMARK2(((Scheme_Mark_With_Owner *)m)->phase, gc);
+  }
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Mark));
+ (for_multi
+  ? gcBYTES_TO_WORDS(sizeof(Scheme_Mark_With_Owner))
+  : gcBYTES_TO_WORDS(sizeof(Scheme_Mark)));
 }
 
 mark_mark_table {
