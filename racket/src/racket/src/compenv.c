@@ -1654,11 +1654,12 @@ static Scheme_Object *find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
         }
         sd = frame->shadower_deltas[i];
         if (!sd) {
-          sd = add_all_context(id, frame);
+          sd = add_all_context(scheme_datum_to_syntax(SCHEME_STX_VAL(id), scheme_false, scheme_false, 0, 0),
+                               frame);
           sd = scheme_stx_binding_subtract(id, sd, scheme_env_phase(env->genv));
           frame->shadower_deltas[i] = sd;
         }
-	if (scheme_stx_could_bind(sym, sd, scheme_env_phase(env->genv))) {
+	if (scheme_stx_could_bind(sd, sym, scheme_env_phase(env->genv))) {
           prop = scheme_stx_property(id, unshadowable_symbol, NULL);
           if (SCHEME_FALSEP(prop)) {
             if (_at_env) *_at_env = frame;
@@ -1674,37 +1675,46 @@ static Scheme_Object *find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
   return NULL;
 }
 
-Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env)
+Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env, int for_reference)
 {
   Scheme_Comp_Env *start_env, *env2, *bind_env;
   Scheme_Object *binder, *sym2, *orig_sym;
 
   orig_sym = sym;
 
-  /* Add all marks in the environment */
-  sym2 = sym;
+  /* Look for a binder */
   start_env = find_first_relevant(sym, env);
   if (start_env->next) {
-    binder = find_local_binder(sym2, start_env, &bind_env);
+    binder = find_local_binder(sym, start_env, &bind_env);
   } else {
     binder = NULL;
     bind_env = start_env;
   }
 
-  sym = scheme_stx_remove_module_context_marks(sym);
+  if (binder && for_reference) {
+    sym = binder;
+  } else {
+    sym = scheme_stx_remove_module_context_marks(sym);
   
-  if (binder)
-    sym = scheme_stx_binding_union(sym, binder, scheme_env_phase(env->genv));
-  else if (env->genv->module && env->genv->module->ii_src)
-    sym = scheme_stx_binding_union(sym, env->genv->module->ii_src, scheme_env_phase(env->genv));
-  else if (env->genv->stx_context)
-    sym = scheme_stx_add_module_context(sym, env->genv->stx_context);
+    if (binder)
+      sym = scheme_stx_binding_union(sym, binder, scheme_env_phase(env->genv));
+    else if (env->genv->module && env->genv->module->ii_src)
+      sym = scheme_stx_binding_union(sym, env->genv->module->ii_src, scheme_env_phase(env->genv));
+    else if (env->genv->stx_context)
+      sym = scheme_stx_add_module_context(sym, env->genv->stx_context);
 
-  /* Add additional marks only up to the binder (if any): */
-  for (env2 = env; env2 != bind_env; env2 = env2->next) {
-    if (env2->marks) {
-      sym = scheme_stx_adjust_frame_bind_marks(sym, env2->marks, scheme_env_phase(env2->genv),
-                                               SCHEME_STX_ADD);
+    if (!for_reference) {
+      /* Add at least one additional mark up to the binder (if any)
+         to avoid ambiguous bindings: */
+      sym2 = sym;
+      for (env2 = env; env2 != bind_env; env2 = env2->next) {
+        if (env2->marks) {
+          sym = scheme_stx_adjust_frame_bind_marks(sym, env2->marks, scheme_env_phase(env2->genv),
+                                                   SCHEME_STX_ADD);
+          if (!SAME_OBJ(sym, sym2))
+            break;
+        }
+      }
     }
   }
 

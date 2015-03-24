@@ -3050,15 +3050,21 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
 void scheme_stx_debug_print(Scheme_Object *_stx, Scheme_Object *phase, int level)
 {
   Scheme_Stx *stx = (Scheme_Stx *)_stx;
+  Scheme_Object *info;
 
   STX_ASSERT(SCHEME_STXP(_stx));
+
+  info = stx_debug_info(stx, phase, scheme_null, level > 1);
+  if (!level) {
+    info = scheme_hash_tree_get((Scheme_Hash_Tree *)info, context_symbol);
+    if (!info) info = scheme_false;
+  }
 
   printf("%s at phase %s:\n",
          scheme_write_to_string(stx->val, NULL),
          scheme_write_to_string(phase, NULL));
   printf("  %s\n",
-         scheme_write_to_string(stx_debug_info(stx, phase, scheme_null, level > 1),
-                                NULL));
+         scheme_write_to_string(info, NULL));
 }
 
 static void fprint_string(Scheme_Object *o, const char *s)

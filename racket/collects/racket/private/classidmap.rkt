@@ -29,7 +29,7 @@
        (list* 'apply id this (reverse (cons args accum)))])))
 
 (define (find the-finder name src)
-  (let ([this-id (syntax-local-value (syntax-local-get-shadower the-finder))])
+  (let ([this-id (syntax-local-value (syntax-local-get-shadower the-finder #t))])
     (datum->syntax this-id name src)))
 
 ;; Check Syntax binding info:
