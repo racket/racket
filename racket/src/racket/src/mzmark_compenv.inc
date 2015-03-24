@@ -15,14 +15,13 @@ static int mark_comp_env_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->marks, gc);
   gcMARK2(e->binders, gc);
   gcMARK2(e->bindings, gc);
+  gcMARK2(e->vals, gc);
+  gcMARK2(e->shadower_deltas, gc);
   gcMARK2(e->dup_check, gc);
   gcMARK2(e->intdef_name, gc);
   gcMARK2(e->in_modidx, gc);
   gcMARK2(e->skip_table, gc);
   
-  gcMARK2(e->const_binders, gc);
-  gcMARK2(e->const_bindings, gc);
-  gcMARK2(e->const_vals, gc);
   gcMARK2(e->use, gc);
   gcMARK2(e->lifts, gc);
 
@@ -40,14 +39,13 @@ static int mark_comp_env_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->marks, gc);
   gcFIXUP2(e->binders, gc);
   gcFIXUP2(e->bindings, gc);
+  gcFIXUP2(e->vals, gc);
+  gcFIXUP2(e->shadower_deltas, gc);
   gcFIXUP2(e->dup_check, gc);
   gcFIXUP2(e->intdef_name, gc);
   gcFIXUP2(e->in_modidx, gc);
   gcFIXUP2(e->skip_table, gc);
   
-  gcFIXUP2(e->const_binders, gc);
-  gcFIXUP2(e->const_bindings, gc);
-  gcFIXUP2(e->const_vals, gc);
   gcFIXUP2(e->use, gc);
   gcFIXUP2(e->lifts, gc);
 

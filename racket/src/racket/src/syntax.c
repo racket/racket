@@ -7049,6 +7049,29 @@ Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Sche
   return o;
 }
 
+Scheme_Object *scheme_stx_binding_subtract(Scheme_Object *o, Scheme_Object *b, Scheme_Object *phase)
+{
+  Scheme_Mark_Set *current, *m2;
+  Scheme_Object *key, *val;
+  intptr_t i;
+  int mutate = 0;
+
+  current = extract_mark_set((Scheme_Stx *)o, phase);
+  m2 = extract_mark_set((Scheme_Stx *)b, phase);
+
+  i = mark_set_next(m2, -1);
+  while (i != -1) {
+    mark_set_index(m2, i, &key, &val);
+    if (mark_set_get(current, key)) {
+      o = stx_adjust_mark(o, key, phase, SCHEME_STX_REMOVE, &mutate);
+    }
+
+    i = mark_set_next(m2, i);
+  }
+
+  return o;
+}
+
 static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)
 {
   Scheme_Object *phase;

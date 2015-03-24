@@ -4457,8 +4457,7 @@ static int same_effective_env(Scheme_Comp_Env *orig, Scheme_Comp_Env *e)
       return 1;
     if ((e && e->flags & SCHEME_FOR_STOPS)
         || (!(e->flags & (~SCHEME_INTDEF_FRAME))
-            && !e->num_bindings
-            && !e->num_const))
+            && !e->num_bindings))
       e = e->next;
     else
       return 0;

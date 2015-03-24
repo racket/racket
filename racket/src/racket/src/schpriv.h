@@ -1265,6 +1265,7 @@ int scheme_stx_env_bound_eq2(Scheme_Object *a, Scheme_Object *b,
                              Scheme_Object *a_phase, Scheme_Object *b_phase);
 
 Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Scheme_Object *phase);
+Scheme_Object *scheme_stx_binding_subtract(Scheme_Object *o, Scheme_Object *b, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source);
 
@@ -2541,17 +2542,13 @@ typedef struct Scheme_Comp_Env
 
   /* local bindings; */
   mzshort num_bindings; /* number of `values' slots */
-  struct Scheme_Object **binders; /* identifiers */
-  struct Scheme_Object **bindings; /* symbols */
+  Scheme_Object **binders; /* identifiers */
+  Scheme_Object **bindings; /* symbols */
+  Scheme_Object **vals; /* compile-time values */
+  Scheme_Object **shadower_deltas;
   int *use;
   int min_use, any_use;
   
-  /* compile-time local bindings: */
-  int num_const;
-  Scheme_Object **const_binders;
-  Scheme_Object **const_bindings;
-  Scheme_Object **const_vals;
-
   Scheme_Object *lifts;
 
   mzshort rename_var_count;      /* number of non-NULL `values' when `renames' was computed */
