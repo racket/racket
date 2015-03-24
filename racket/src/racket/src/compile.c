@@ -724,19 +724,19 @@ Scheme_Object *scheme_clone_vector(Scheme_Object *data, int skip, int set_type)
   return naya;
 }
 
-Scheme_Object *scheme_revert_expression_marks(Scheme_Object *o, Scheme_Comp_Env *env)
+Scheme_Object *scheme_revert_use_site_marks(Scheme_Object *o, Scheme_Comp_Env *env)
 {
   if (env->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME)) {
-    o = scheme_stx_adjust_module_expression_context(o,
-                                                    env->genv->stx_context,
-                                                    SCHEME_STX_REMOVE);
+    o = scheme_stx_adjust_module_use_site_context(o,
+                                                  env->genv->stx_context,
+                                                  SCHEME_STX_REMOVE);
   } else {
     while (1) {
       if (env->marks) {
-        o = scheme_stx_adjust_frame_expression_marks(o,
-                                                     env->marks,
-                                                     scheme_env_phase(env->genv),
-                                                     SCHEME_STX_REMOVE);
+        o = scheme_stx_adjust_frame_use_site_marks(o,
+                                                   env->marks,
+                                                   scheme_env_phase(env->genv),
+                                                   SCHEME_STX_REMOVE);
       }
       if (env->flags & (SCHEME_FOR_INTDEF | SCHEME_INTDEF_FRAME | SCHEME_INTDEF_SHADOW)) {
         env = env->next;
@@ -772,7 +772,7 @@ void scheme_define_parse(Scheme_Object *form,
   rest = SCHEME_STX_CDR(rest);
   *_stk_val = SCHEME_STX_CAR(rest);
 
-  vars = scheme_revert_expression_marks(vars, env);
+  vars = scheme_revert_use_site_marks(vars, env);
 
   *var = vars;
 
@@ -847,10 +847,10 @@ define_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
 
 #if 0
   if (env->marks)
-    val = scheme_stx_adjust_frame_expression_marks(val,
-                                                   env->marks,
-                                                   scheme_env_phase(env->genv),
-                                                   SCHEME_STX_ADD);
+    val = scheme_stx_adjust_frame_use_site_marks(val,
+                                                 env->marks,
+                                                 scheme_env_phase(env->genv),
+                                                 SCHEME_STX_ADD);
 #endif
 
   env = scheme_no_defines(env);
@@ -3275,12 +3275,12 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
   /* Remove marks for all enclosing local binding contexts. */
   for (frame = env; frame; frame = frame->next) {
     if (frame->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME))
-      stx = scheme_stx_adjust_module_expression_context(stx,
-                                                        env->genv->stx_context,
-                                                        SCHEME_STX_REMOVE);
+      stx = scheme_stx_adjust_module_use_site_context(stx,
+                                                      env->genv->stx_context,
+                                                      SCHEME_STX_REMOVE);
     else if (frame->marks) {
       if (frame->flags & SCHEME_KEEP_MARKS_FRAME)
-        stx = scheme_stx_adjust_frame_expression_marks(stx, frame->marks,
+        stx = scheme_stx_adjust_frame_use_site_marks(stx, frame->marks,
                                                        scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
       else
         stx = scheme_stx_adjust_frame_marks(stx, frame->marks,
@@ -3353,7 +3353,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
       
   scheme_define_parse(form, &names, &code, 1, env, 0);
 
-  code = scheme_revert_expression_marks(code, env);
+  code = scheme_revert_use_site_marks(code, env);
 
   scheme_prepare_exp_env(env->genv);
   scheme_prepare_compile_env(env->genv->exp_env);
@@ -3399,7 +3399,7 @@ define_syntaxes_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Ex
 
   scheme_define_parse(form, &names, &code, 1, env, 0);
 
-  code = scheme_revert_expression_marks(code, env);
+  code = scheme_revert_use_site_marks(code, env);
 
   SCHEME_EXPAND_OBSERVE_PREPARE_ENV(erec[drec].observer);
 
@@ -5839,11 +5839,11 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  }
 	  expr = SCHEME_STX_CAR(expr);
           if (!is_val)
-            expr = scheme_revert_expression_marks(expr, env);
+            expr = scheme_revert_use_site_marks(expr, env);
 	  
 	  scheme_add_local_syntax(cnt, new_env);
 
-          names = scheme_revert_expression_marks(names, env);
+          names = scheme_revert_use_site_marks(names, env);
 
 	  /* Initialize environment slots to #f, which means "not syntax". */
 	  cnt = 0;

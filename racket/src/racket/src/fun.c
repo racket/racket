@@ -1954,7 +1954,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     if (mark_macro_use) {
       use_mark = scheme_new_mark(SCHEME_STX_USE_SITE_MARK);
-      scheme_add_compilation_frame_expr_mark(env, use_mark);
+      scheme_add_compilation_frame_use_site_mark(env, use_mark);
       code = scheme_stx_add_mark(code, use_mark, scheme_true);
     } else
       use_mark = NULL;

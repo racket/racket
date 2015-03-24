@@ -829,7 +829,7 @@ static Scheme_Object *sys_wraps_phase(intptr_t p)
   Scheme_Object *rn, *w;
 
   rn = scheme_make_module_context(NULL, NULL, kernel_symbol);
-  rn = scheme_module_context_at_phase(rn, scheme_make_integer(p), 0);
+  rn = scheme_module_context_at_phase(rn, scheme_make_integer(p));
 
   /* Add a module mapping for all kernel provides: */
   scheme_extend_module_context_with_shared(rn, kernel_modidx, 
@@ -2917,7 +2917,7 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
 
   if (im->me->rt
       && (!only_export_phase || SAME_OBJ(only_export_phase, scheme_make_integer(0))))
-    saw_mb = do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, import_shift, 0),  env,
+    saw_mb = do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, import_shift),  env,
                                            get_required_from_tables(tables, import_shift),
                                            orig_src, im, im->me->rt, idx,
                                            import_shift,
@@ -2932,7 +2932,7 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
       phase = scheme_false;
     else
       phase = scheme_bin_plus(scheme_make_integer(1), import_shift);
-    do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, phase, 0), env,
+    do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, phase), env,
                                   get_required_from_tables(tables, phase),
                                   orig_src, im, im->me->et, idx,
                                   import_shift,
@@ -2942,7 +2942,7 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
 
   if (im->me->dt
       && (!only_export_phase || SAME_OBJ(only_export_phase, scheme_false))) {
-    do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, scheme_false, 0), env,
+    do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, scheme_false), env,
                                   get_required_from_tables(tables, scheme_false),
                                   orig_src, im, im->me->dt, idx,
                                   import_shift,
@@ -2962,7 +2962,7 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
             phase = scheme_false;
           else
             phase = scheme_bin_plus(key, import_shift);
-          do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, phase, 0), env,
+          do_add_simple_require_renames(scheme_module_context_at_phase(rn_set, phase), env,
                                         get_required_from_tables(tables, phase),
                                         orig_src, im, (Scheme_Module_Phase_Exports *)val, idx,
                                         import_shift,
@@ -3021,7 +3021,7 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 	Scheme_Object *l, *idx, *one_rn, *shift, *name;
 
 	rns = menv->stx_context;
-        one_rn = scheme_module_context_at_phase(rns, scheme_make_integer(0), 0);
+        one_rn = scheme_module_context_at_phase(rns, scheme_make_integer(0));
 
 	/* Required: */
         for (i = -4; i < (menv->other_require_names ? menv->other_require_names->size : 0); i++) {
@@ -3074,7 +3074,7 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
         for (j = 0; j < m->num_phases; j++) {
           Scheme_Module_Export_Info *exp_info = m->exp_infos[j];
           Scheme_Env *penv;
-          one_rn = scheme_module_context_at_phase(rns, scheme_make_integer(j), 0);
+          one_rn = scheme_module_context_at_phase(rns, scheme_make_integer(j));
           penv = scheme_find_env_at_phase(menv, scheme_make_integer(j));
           for (i = 0; i < exp_info->num_indirect_provides; i++) {
             name = exp_info->indirect_provides[i];
@@ -7025,7 +7025,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     /* REMOVE: FIXME: this doesn't seem quite right, still, because it
        remove only contexts that happen to be on the immediate `module` form. */
     fm = disarmed_form;
-    fm = scheme_revert_expression_marks(fm, env);
+    fm = scheme_revert_use_site_marks(fm, env);
     fm = scheme_stx_remove_mark(fm, scheme_stx_root_mark(), scheme_env_phase(env->genv));
     fm = scheme_stx_remove_module_context_marks(fm);
     ctx_form = fm;
@@ -7465,8 +7465,7 @@ Scheme_Object *scheme_prune_bindings_table(Scheme_Object *binding_names, Scheme_
 
   base_stx = scheme_stx_add_module_context(scheme_datum_to_syntax(scheme_false, scheme_false, scheme_false, 0, 0),
                                            scheme_module_context_at_phase(scheme_stx_to_module_context(rn_stx),
-                                                                          phase,
-                                                                          0));
+                                                                          phase));
 
   if (SCHEME_HASHTRP(binding_names)) {
     Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)binding_names;
@@ -7977,7 +7976,7 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
   }
 
   e = make_require_form(module_path, phase - env->phase, mark, env->phase);
-  e = scheme_revert_expression_marks(e, cenv);
+  e = scheme_revert_use_site_marks(e, cenv);
   e = introduce_to_module_context(e, rns);
 
   parse_requires(e, env->phase, base_modidx, env, for_m,
@@ -8473,11 +8472,11 @@ static Scheme_Object *get_higher_phase_lifts(Module_Begin_Expand_State *bxs,
   return fm;
 }
 
-static Scheme_Object *revert_expression_marks_via_context(Scheme_Object *o, Scheme_Object *rn_set, intptr_t phase)
+static Scheme_Object *revert_use_site_marks_via_context(Scheme_Object *o, Scheme_Object *rn_set, intptr_t phase)
 {
-  return scheme_stx_adjust_module_expression_context(o,
-                                                     rn_set,
-                                                     SCHEME_STX_REMOVE);
+  return scheme_stx_adjust_module_use_site_context(o,
+                                                   rn_set,
+                                                   SCHEME_STX_REMOVE);
 }
 
 static Scheme_Object *do_module_begin_k(void)
@@ -8792,7 +8791,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(observer);
 
-	  /* Create top-level vars; uses revert_expression_marks() on the vars */
+	  /* Create top-level vars; uses revert_use_site_marks() on the vars */
 	  scheme_define_parse(e, &vars, &val, 0, xenv, 1);
 
 	  while (SCHEME_STX_PAIRP(vars)) {
@@ -8864,7 +8863,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  int for_stx;
           int max_let_depth;
 
-          e = revert_expression_marks_via_context(e, rn_set, phase);
+          e = revert_use_site_marks_via_context(e, rn_set, phase);
 
 	  for_stx = scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, fst, phase);
 
@@ -8887,7 +8886,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
           SCHEME_EXPAND_OBSERVE_PREPARE_ENV(observer);
 
-          frame_marks = scheme_module_context_expression_frame_marks(env->genv->exp_env->stx_context);
+          frame_marks = scheme_module_context_use_site_frame_marks(env->genv->exp_env->stx_context);
           
 	  scheme_prepare_exp_env(env->genv);
 	  scheme_prepare_compile_env(env->genv->exp_env);
@@ -9080,7 +9079,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE(observer);
 
-          e = revert_expression_marks_via_context(e, rn_set, phase);
+          e = revert_use_site_marks_via_context(e, rn_set, phase);
 
 	  /* Adds requires to renamings and required modules to requires lists: */
 	  parse_requires(e, phase, self_modidx, env->genv, env->genv->module,
@@ -9142,7 +9141,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
           is_star = scheme_stx_module_eq_x(scheme_modulestar_stx, fst, phase);
 
-          e = revert_expression_marks_via_context(e, rn_set, phase);
+          e = revert_use_site_marks_via_context(e, rn_set, phase);
 
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           if (is_star) {
@@ -11631,7 +11630,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
     
       nominal_modidx = idx;
 
-      rn = scheme_module_context_at_phase(rn_set, to_phase, 0);
+      rn = scheme_module_context_at_phase(rn_set, to_phase);
 
       if (copy_vars)
         do_copy_vars = !orig_env->module && !orig_env->phase && SAME_OBJ(src_phase_index, scheme_make_integer(0)) && (k == -3);
@@ -12435,7 +12434,7 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
   (void)check_require_form(env->genv, form);
 
   if (rec && rec[drec].comp) {
-    form = scheme_revert_expression_marks(form, env);
+    form = scheme_revert_use_site_marks(form, env);
     
     /* Dummy lets us access a top-level environment: */
     dummy = scheme_make_environment_dummy(env);
@@ -12475,7 +12474,7 @@ Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path,
 
   form = make_require_form(module_path, phase, mark, cenv->genv->phase);
 
-  form = scheme_revert_expression_marks(form, cenv);
+  form = scheme_revert_use_site_marks(form, cenv);
 
   do_require_execute(cenv->genv, form);
 

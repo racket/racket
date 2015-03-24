@@ -542,17 +542,17 @@ scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark, Scheme_Co
   return frame;
 }
 
-void scheme_add_compilation_frame_expr_mark(Scheme_Comp_Env *env, Scheme_Object *expr_mark)
+void scheme_add_compilation_frame_use_site_mark(Scheme_Comp_Env *env, Scheme_Object *use_site_mark)
 {
   while (env->flags & SCHEME_USE_MARKS_TO_NEXT) {
     env = env->next;
   }
 
   if (env->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME)) {
-    scheme_module_context_add_expr_mark(env->genv->stx_context, expr_mark);
+    scheme_module_context_add_use_site_mark(env->genv->stx_context, use_site_mark);
   } else {
-    expr_mark = scheme_add_frame_expression_mark(env->marks, expr_mark);
-    env->marks = expr_mark;
+    use_site_mark = scheme_add_frame_use_site_mark(env->marks, use_site_mark);
+    env->marks = use_site_mark;
   }
 }
 
@@ -1632,7 +1632,7 @@ static Scheme_Object *add_all_context(Scheme_Object *id, Scheme_Comp_Env *env)
     id = scheme_stx_binding_union(id, env->genv->module->ii_src, scheme_env_phase(env->genv));
   else
     id = scheme_stx_add_module_context(id, env->genv->stx_context);
-  id = scheme_stx_adjust_module_expression_context(id, env->genv->stx_context, SCHEME_STX_ADD);
+  id = scheme_stx_adjust_module_use_site_context(id, env->genv->stx_context, SCHEME_STX_ADD);
 
   return id;
 }

@@ -1210,9 +1210,9 @@ Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks,
 }
 
 /* frame-marks = main-marks
-   .           | (vector main-marks expr-marks intdef-marks)
+   .           | (vector main-marks use-site-marks intdef-marks)
    main-marks = some-marks
-   expr-marks = some-marks
+   use-site-marks = some-marks
    intdef-marks = some-marks
    some-marks = #f | mark | mark-set */
 
@@ -1235,14 +1235,14 @@ static Scheme_Object *stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *ma
 
 Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
 {
-  o = scheme_stx_adjust_frame_expression_marks(o, mark, phase, mode);
+  o = scheme_stx_adjust_frame_use_site_marks(o, mark, phase, mode);
   o = scheme_stx_adjust_frame_bind_marks(o, mark, phase, mode);
   return stx_adjust_frame_marks(o, mark, 2, phase, mode);
 }
 
 Scheme_Object *scheme_stx_adjust_frame_main_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
 {
-  o = scheme_stx_adjust_frame_expression_marks(o, mark, phase, mode);
+  o = scheme_stx_adjust_frame_use_site_marks(o, mark, phase, mode);
   return scheme_stx_adjust_frame_bind_marks(o, mark, phase, mode);
 }
 
@@ -1251,7 +1251,7 @@ Scheme_Object *scheme_stx_adjust_frame_bind_marks(Scheme_Object *o, Scheme_Objec
   return stx_adjust_frame_marks(o, mark, 0, phase, mode);
 }
 
-Scheme_Object *scheme_stx_adjust_frame_expression_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
+Scheme_Object *scheme_stx_adjust_frame_use_site_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
 {
   return stx_adjust_frame_marks(o, mark, 1, phase, mode);
 }
@@ -1300,9 +1300,9 @@ static Scheme_Object *add_frame_mark(Scheme_Object *frame_marks, Scheme_Object *
   return frame_marks;
 }
 
-Scheme_Object *scheme_add_frame_expression_mark(Scheme_Object *frame_marks, Scheme_Object *expr_mark)
+Scheme_Object *scheme_add_frame_use_site_mark(Scheme_Object *frame_marks, Scheme_Object *use_site_mark)
 {
-  return add_frame_mark(frame_marks, expr_mark, 1);
+  return add_frame_mark(frame_marks, use_site_mark, 1);
 }
 
 Scheme_Object *scheme_add_frame_intdef_mark(Scheme_Object *frame_marks, Scheme_Object *mark)
@@ -3891,7 +3891,6 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
        - A multi-mark for binding/introduction (included in body marks)
        - A list of marks that correspond to macro uses;
          this marks must be stripped away from a definition
-         context
   */
 
   vec = scheme_make_vector(6, NULL);
@@ -3932,26 +3931,26 @@ Scheme_Object *scheme_module_context_frame_marks(Scheme_Object *mc)
   return (Scheme_Object *)scheme_module_context_marks(mc);
 }
 
-void scheme_module_context_add_expr_mark(Scheme_Object *mc, Scheme_Object *expr_mark)
+void scheme_module_context_add_use_site_mark(Scheme_Object *mc, Scheme_Object *use_site_mark)
 {
-  Scheme_Mark_Set *expr_marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
+  Scheme_Mark_Set *use_site_marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
 
-  STX_ASSERT(SCHEME_MARKP(expr_mark));
+  STX_ASSERT(SCHEME_MARKP(use_site_mark));
 
-  expr_marks = mark_set_set(expr_marks, expr_mark, scheme_true);
+  use_site_marks = mark_set_set(use_site_marks, use_site_mark, scheme_true);
   
-  SCHEME_VEC_ELS(mc)[5] = (Scheme_Object *)expr_marks;
+  SCHEME_VEC_ELS(mc)[5] = (Scheme_Object *)use_site_marks;
 }
 
-Scheme_Object *scheme_module_context_expression_frame_marks(Scheme_Object *mc)
+Scheme_Object *scheme_module_context_use_site_frame_marks(Scheme_Object *mc)
 {
-  Scheme_Mark_Set *expr_marks;
+  Scheme_Mark_Set *use_site_marks;
   
-  expr_marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
-  if (SAME_OBJ(expr_marks, empty_mark_set))
+  use_site_marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
+  if (SAME_OBJ(use_site_marks, empty_mark_set))
     return NULL;
   else
-    return make_vector3(scheme_false, (Scheme_Object *)expr_marks, scheme_false);
+    return make_vector3(scheme_false, (Scheme_Object *)use_site_marks, scheme_false);
 }
 
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc)
@@ -3964,7 +3963,7 @@ void scheme_module_context_add_mapped_symbols(Scheme_Object *mc, Scheme_Hash_Tab
   add_marks_mapped_names(scheme_module_context_marks(mc), mapped);
 }
 
-Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *phase, int for_expr)
+Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *phase)
 {
   Scheme_Object *vec;
 
@@ -3979,7 +3978,7 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
   SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(mc)[2];
   SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(mc)[3];
   SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(mc)[4];
-  /* Any expression from the from another phase don't apply here. This
+  /* Any use-site mark from the from another phase don't apply here. This
      set only matters for module contexts that are attached to environments,
      anyway: */
   SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_mark_set;
@@ -4050,11 +4049,11 @@ Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme
   return scheme_stx_add_mark(stx, multi_mark, scheme_make_integer(0));
 }
 
-Scheme_Object *scheme_stx_adjust_module_expression_context(Scheme_Object *stx, Scheme_Object *mc, int mode)
+Scheme_Object *scheme_stx_adjust_module_use_site_context(Scheme_Object *stx, Scheme_Object *mc, int mode)
 {
-  Scheme_Mark_Set *expr_marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
+  Scheme_Mark_Set *marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
 
-  return scheme_stx_adjust_marks(stx, expr_marks, SCHEME_VEC_ELS(mc)[1], mode);
+  return scheme_stx_adjust_marks(stx, marks, SCHEME_VEC_ELS(mc)[1], mode);
 }
 
 void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-set> <phase> <inspector> ...) */

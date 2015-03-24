@@ -5545,7 +5545,7 @@ static Scheme_Object *flip_mark_at_phase_and_revert_expr(Scheme_Object *a, Schem
 {
   Scheme_Comp_Env *env = (Scheme_Comp_Env *)SCHEME_CDR(m_p);
 
-  a = scheme_revert_expression_marks(a, env);
+  a = scheme_revert_use_site_marks(a, env);
 
   return scheme_stx_flip_mark(a, SCHEME_CAR(m_p), scheme_env_phase(env->genv));
 }
@@ -5557,7 +5557,7 @@ static Scheme_Object *add_mark_at_phase(Scheme_Object *a, Scheme_Object *m_p)
 
 static Scheme_Object *revert_expr_marks(Scheme_Object *a, Scheme_Object *env)
 {
-  return scheme_revert_expression_marks(a, (Scheme_Comp_Env *)env);
+  return scheme_revert_use_site_marks(a, (Scheme_Comp_Env *)env);
 }
 
 static Scheme_Object *
@@ -5619,7 +5619,7 @@ local_eval(int argc, Scheme_Object **argv)
   cnt = 0;
   for (l = names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
-    a = scheme_revert_expression_marks(a, init_env);
+    a = scheme_revert_use_site_marks(a, init_env);
     scheme_set_local_syntax(cnt++, a, scheme_false, stx_env, 0);
   }
 	  

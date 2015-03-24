@@ -1065,7 +1065,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
     eenv->instance_env = env->instance_env;
 
     scheme_prepare_env_stx_context(env);
-    mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv), 1);
+    mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv));
     eenv->stx_context = mc;
 
     if (env->disallow_unbound)
@@ -1104,7 +1104,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
     eenv->modchain = modchain;
 
     scheme_prepare_env_stx_context(env);
-    mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv), 1);
+    mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv));
     eenv->stx_context = mc;
 
     env->template_env = eenv;
@@ -2711,7 +2711,7 @@ static Scheme_Object *local_binding_id(int argc, Scheme_Object **argv)
     scheme_wrong_contract("syntax-local-identifier-as-binding", "identifier?", 0, argc, argv);
 
   if (scheme_current_thread->current_local_env)
-    return scheme_revert_expression_marks(a, scheme_current_thread->current_local_env);
+    return scheme_revert_use_site_marks(a, scheme_current_thread->current_local_env);
   else
     return a;
 }
