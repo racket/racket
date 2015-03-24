@@ -187,8 +187,8 @@ identifiers:
 
 In order to prevent evaluation of a file for testing purposes, it
 suffices to create a submodule that does not perform any tests and
-does not trigger the evaluation of the enclosing module. The
-@racket[module*] form is one way to accomplish this:
+does not trigger the evaluation of the enclosing module. So, for
+instance, a file might look like this:
 
 @#reader scribble/comment-reader
  (racketmod
@@ -197,7 +197,7 @@ does not trigger the evaluation of the enclosing module. The
   (/ 1 0)
 
   ;; don't run this file for testing:
-  (module* test racket/base)
+  (module test racket/base)
  )
 
 @section[#:tag "test-config-info"]{Test Configuration by @filepath{info.rkt}}
