@@ -2431,7 +2431,7 @@ static void check_for_conversion(Scheme_Object *sym,
     cnt = scheme_bin_plus(cnt, scheme_make_integer(1));
   scheme_hash_set(mht, (Scheme_Object *)pt, cnt);
 
-  if (SCHEME_INT_VAL(cnt) == pt->num_provides) {
+  if (bind && (SCHEME_INT_VAL(cnt) == pt->num_provides)) {
     Scheme_Object *modidx, *modidx2, *insp_desc, *insp_desc2, *src_phase;
     Scheme_Object *exportname, *nominal_modidx, *nominal_modidx2, *mod_phase, *nominal_name;
     Scheme_Object *nominal_src_phase;
@@ -2459,8 +2459,10 @@ static void check_for_conversion(Scheme_Object *sym,
       CONV_RETURN_UNLESS(v2);
 
       /* For now, allow only a single binding: */
-      CONV_RETURN_UNLESS(SCHEME_PAIRP(v2) && SCHEME_NULLP(SCHEME_CDR(v2)));
-      v2 = SCHEME_CAR(v2);
+      CONV_RETURN_UNLESS(SCHEME_PAIRP(v2)
+                         || (SCHEME_MPAIRP(v2) && SCHEME_NULLP(SCHEME_CDR(v2))));
+      if (SCHEME_MPAIRP(v2))
+        v2 = SCHEME_CAR(v2);
       
       CONV_RETURN_UNLESS(marks_equal(marks, SCHEME_BINDING_MARKS(v2)));
       
@@ -2584,6 +2586,10 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
       bind = make_vector3(sym, (Scheme_Object *)marks, val);
       mark->bindings = bind;
       clear_binding_cache_for(sym);
+      if (from_pt) {
+        /* don't convert, but record addition for potential conversion */
+        check_for_conversion(sym, mark, from_pt, collapse_table, NULL, marks, phase, NULL);
+      }
       return;
     }
     ht = empty_hash_tree;
@@ -2651,10 +2657,9 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
         SCHEME_CAR(mark->bindings) = (Scheme_Object *)ht;
       else
         mark->bindings = (Scheme_Object *)ht;
-
-      if (from_pt)
-        check_for_conversion(sym, mark, from_pt, collapse_table, ht, marks, phase, bind);
     }
+    if (from_pt)
+      check_for_conversion(sym, mark, from_pt, collapse_table, ht, marks, phase, bind);
   } else {
     /* Order matters: the new bindings should hide any existing bindings for the same name */
     /* REMOVEME: FIXME: need to remove mappings from the hash table that are replaced here;
