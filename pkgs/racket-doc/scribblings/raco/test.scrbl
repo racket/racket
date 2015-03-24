@@ -197,9 +197,7 @@ does not trigger the evaluation of the enclosing module. The
   (/ 1 0)
 
   ;; don't run this file for testing:
-  (module* test racket/base
-    ;; no tests!
-    13)
+  (module* test racket/base)
  )
 
 @section[#:tag "test-config-info"]{Test Configuration by @filepath{info.rkt}}
