@@ -3986,7 +3986,8 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
   return vec;
 }
 
-static Scheme_Object *add_module_context_except(Scheme_Object *stx, Scheme_Object *mc, Scheme_Object *skip)
+static Scheme_Object *adjust_module_context_except(Scheme_Object *stx, Scheme_Object *mc, Scheme_Object *skip,
+                                                   int mode)
 {
   Scheme_Object *body_marks = SCHEME_VEC_ELS(mc)[0], *mark;
   Scheme_Object *phase = SCHEME_VEC_ELS(mc)[1];
@@ -4002,18 +4003,19 @@ static Scheme_Object *add_module_context_except(Scheme_Object *stx, Scheme_Objec
         mark = extract_single_mark(mark, phase);
     }
     if (mark)
-      stx = scheme_stx_add_mark(stx, mark, phase);
+      stx = scheme_stx_adjust_mark(stx, mark, phase, mode);
     body_marks = SCHEME_CDR(body_marks);
   }
 
-  stx = scheme_stx_add_shifts(stx, SCHEME_VEC_ELS(mc)[3]);
+  if (mode == SCHEME_STX_ADD)
+    stx = scheme_stx_add_shifts(stx, SCHEME_VEC_ELS(mc)[3]);
 
   return stx;
 }
 
 Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *mc)
 {
-  return add_module_context_except(stx, mc, NULL);
+  return adjust_module_context_except(stx, mc, NULL, SCHEME_STX_ADD);
 }
 
 Scheme_Object *scheme_stx_push_module_context(Scheme_Object *stx, Scheme_Object *mc)
@@ -4021,7 +4023,7 @@ Scheme_Object *scheme_stx_push_module_context(Scheme_Object *stx, Scheme_Object 
   Scheme_Object *intro_multi_mark = SCHEME_VEC_ELS(mc)[4];
 
   stx = scheme_stx_adjust_mark(stx, intro_multi_mark, scheme_make_integer(0), SCHEME_STX_PUSH);
-  stx = add_module_context_except(stx, mc, intro_multi_mark);
+  stx = adjust_module_context_except(stx, mc, intro_multi_mark, SCHEME_STX_ADD);
 
   return stx;
 }
@@ -4051,13 +4053,7 @@ Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme
 
 Scheme_Object *scheme_stx_unintroduce_from_module_context(Scheme_Object *stx, Scheme_Object *mc)
 {
-  Scheme_Object *multi_mark;
-
-  STX_ASSERT(SCHEME_VECTORP(mc));
-
-  multi_mark = SCHEME_VEC_ELS(mc)[4];
-
-  return scheme_stx_remove_mark(stx, multi_mark, scheme_make_integer(0));
+  return adjust_module_context_except(stx, mc, NULL, SCHEME_STX_REMOVE);
 }
 
 Scheme_Object *scheme_stx_adjust_module_use_site_context(Scheme_Object *stx, Scheme_Object *mc, int mode)
