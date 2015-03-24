@@ -4049,6 +4049,17 @@ Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme
   return scheme_stx_add_mark(stx, multi_mark, scheme_make_integer(0));
 }
 
+Scheme_Object *scheme_stx_unintroduce_from_module_context(Scheme_Object *stx, Scheme_Object *mc)
+{
+  Scheme_Object *multi_mark;
+
+  STX_ASSERT(SCHEME_VECTORP(mc));
+
+  multi_mark = SCHEME_VEC_ELS(mc)[4];
+
+  return scheme_stx_remove_mark(stx, multi_mark, scheme_make_integer(0));
+}
+
 Scheme_Object *scheme_stx_adjust_module_use_site_context(Scheme_Object *stx, Scheme_Object *mc, int mode)
 {
   Scheme_Mark_Set *marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];

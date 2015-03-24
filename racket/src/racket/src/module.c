@@ -7020,14 +7020,11 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     ii = NULL;
     ctx_form = disarmed_form;
   } else {
-    /* "Punch a hole" in the enclosing context by removing marks that
-       can reach module bindings (but preserve some module context): */
-    /* REMOVE: FIXME: this doesn't seem quite right, still, because it
-       remove only contexts that happen to be on the immediate `module` form. */
+    /* "Punch a hole" in the enclosing context by removing the
+       immediately enclosing module context: */
     fm = disarmed_form;
     fm = scheme_revert_use_site_marks(fm, env);
-    fm = scheme_stx_remove_mark(fm, scheme_stx_root_mark(), scheme_env_phase(env->genv));
-    fm = scheme_stx_remove_module_context_marks(fm);
+    fm = scheme_stx_unintroduce_from_module_context(fm, env->genv->stx_context);
     ctx_form = fm;
     fm = SCHEME_STX_CDR(fm);
     nm = SCHEME_STX_CAR(fm);

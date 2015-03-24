@@ -1773,7 +1773,9 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, S
 
   /* Use a plain symbol only if the binding has no extra marks: */
   if (SCHEME_SYM_WEIRDP(sym)
-      || scheme_stx_equal_module_context(id, env->stx_context)) {
+      || scheme_stx_equal_module_context(id, ((env->module && env->module->ii_src)
+                                              ? env->module->ii_src
+                                              : env->stx_context))) {
     if (!scheme_eq_hash_get(binding_names, sym)) {
       scheme_hash_set(binding_names, sym, id);
       return sym;

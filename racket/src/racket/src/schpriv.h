@@ -1185,6 +1185,7 @@ Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *
 Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_adjust_module_use_site_context(Scheme_Object *stx, Scheme_Object *mc, int mode);
 Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc);
+Scheme_Object *scheme_stx_unintroduce_from_module_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_push_module_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_push_introduce_module_context(Scheme_Object *stx, Scheme_Object *mc);
 
