@@ -2638,7 +2638,7 @@ XFORM_NONGCING static Scheme_Object *hamt_eq_linear_search(Scheme_Hash_Tree *tre
   return NULL;
 }
 
-XFORM_NONGCING static uintptr_t hamt_find_free_code(Scheme_Hash_Tree *tree)
+XFORM_NONGCING static uintptr_t hamt_find_free_code(Scheme_Hash_Tree *tree, int base, int shift)
 /* for selecting a key when adding to a hash-collision subtree */
 {
   int i, mincount, minpos;
@@ -2646,16 +2646,20 @@ XFORM_NONGCING static uintptr_t hamt_find_free_code(Scheme_Hash_Tree *tree)
   
   for (i = 0; i < mzHAMT_WORD_SIZE; i++) {
     if (!(tree->bitmap & (1 << i)))
-      return i;
+      return (i << shift) + base;
   }
 
   /* first layer is full; pick next layer */
   mincount = -1;
   minpos = mzHAMT_WORD_SIZE;
   for (i = mzHAMT_WORD_SIZE; i--; ) {
-    if (!HASHTR_SUBTREEP(tree->els[i]))
-      return ((i << mzHAMT_LOG_WORD_SIZE) + 1);
-    else {
+    if (!HASHTR_SUBTREEP(tree->els[i])) {
+      uintptr_t code = (i << shift) + base;
+      if (_mzHAMT_CODE(tree, i, mzHAMT_WORD_SIZE) == code)
+        return code + (1 << (shift + mzHAMT_LOG_WORD_SIZE));
+      else
+        return code;
+    } else {
       subtree = (Scheme_Hash_Tree *)tree->els[i];
       if ((mincount < 0)
           || (subtree->count < mincount)) {
@@ -2665,8 +2669,9 @@ XFORM_NONGCING static uintptr_t hamt_find_free_code(Scheme_Hash_Tree *tree)
     }
   }
 
-  return minpos + (hamt_find_free_code((Scheme_Hash_Tree *)tree->els[minpos])
-                   << mzHAMT_LOG_WORD_SIZE);
+  return hamt_find_free_code((Scheme_Hash_Tree *)tree->els[minpos],
+                             (minpos << shift) + base,
+                             shift + mzHAMT_LOG_WORD_SIZE);
 }
 
 static Scheme_Hash_Tree *make_hash_tree(int eql_kind, int val_kind, int popcount)
@@ -2849,7 +2854,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
         return tree;
       else {
         /* more collision */
-        code = hamt_find_free_code(in_tree);
+        code = hamt_find_free_code(in_tree, 0, 0);
         in_tree = hamt_set(in_tree, code, 0, key, val, 1);
         inc = 1;
       }
