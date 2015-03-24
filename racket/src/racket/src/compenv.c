@@ -1074,9 +1074,12 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
     for (i = frame->num_bindings; i--; ) {
       if (frame->bindings[i])
 	table = scheme_hash_tree_set(table, frame->bindings[i], scheme_true);
+      if (frame->binders[i])
+	table = scheme_hash_tree_set(table, SCHEME_STX_VAL(frame->binders[i]), scheme_true);
     }
     for (i = frame->num_const; i--; ) {
       table = scheme_hash_tree_set(table, frame->const_bindings[i], scheme_true);
+      table = scheme_hash_tree_set(table, SCHEME_STX_VAL(frame->const_binders[i]), scheme_true);
     }
   }
 
@@ -1602,6 +1605,129 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   return (Scheme_Object *)b;
 }
 
+static Scheme_Comp_Env *find_first_relevant(Scheme_Object *stx, Scheme_Comp_Env *frame)
+{
+  int i;
+
+  for (; frame->next != NULL; frame = frame->next) {
+    while (1) {
+      if (frame->skip_table) {
+        if (!scheme_eq_hash_tree_get(frame->skip_table, SCHEME_STX_VAL(stx))) {
+          frame = (Scheme_Comp_Env *)scheme_eq_hash_tree_get(frame->skip_table, scheme_make_integer(0));
+        } else
+          break;
+      } else if (IS_SKIPPING_DEPTH(frame->skip_depth)) {
+        create_skip_table(frame);
+        /* try again... */
+      } else
+        break;
+    }
+
+    for (i = frame->num_bindings; i--; ) {
+      if (frame->binders[i] && SAME_OBJ(SCHEME_STX_VAL(stx), SCHEME_STX_VAL(frame->binders[i])))
+        return frame;
+    }
+    for (i = frame->num_const; i--; ) {
+      if (SAME_OBJ(SCHEME_STX_VAL(stx), SCHEME_STX_VAL(frame->const_binders[i])))
+        return frame;
+    }
+  }
+
+  return frame;
+}
+
+static Scheme_Object *find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env, Scheme_Comp_Env **_at_env)
+{
+  Scheme_Comp_Env *frame;
+  Scheme_Object *id, *prop;
+
+  for (frame = env; frame->next != NULL; frame = frame->next) {
+    int i;
+
+    for (i = frame->num_bindings; i--; ) {
+      id = frame->binders[i];
+      if (id) {
+	if (scheme_stx_could_bind(id, sym, scheme_env_phase(env->genv))) {
+          prop = scheme_stx_property(id, unshadowable_symbol, NULL);
+          if (SCHEME_FALSEP(prop)) {
+            if (_at_env) *_at_env = frame;
+            return id;
+          }
+	}
+      }
+    }
+
+    for (i = frame->num_const; i--; ) {
+      id = frame->const_binders[i];
+      if (id && scheme_stx_could_bind(id, sym, scheme_env_phase(env->genv))) {
+        prop = scheme_stx_property(id, unshadowable_symbol, NULL);
+        if (SCHEME_FALSEP(prop)) {
+          if (_at_env) *_at_env = frame;
+          return id;
+        }
+      }
+    }
+  }
+
+  if (_at_env) *_at_env = NULL;
+
+  return NULL;
+}
+
+Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env)
+{
+  Scheme_Comp_Env *start_env, *env2, *bind_env;
+  Scheme_Object *binder, *sym2, *orig_sym;
+
+  orig_sym = sym;
+
+  /* Add all marks in the environment */
+  sym2 = sym;
+  start_env = find_first_relevant(sym, env);
+  if (start_env->next) {
+    for (env2 = start_env; env2; env2 = env2->next) {
+      if (env2->marks) {
+        sym2 = scheme_stx_adjust_frame_main_marks(sym2, env2->marks, scheme_env_phase(env2->genv),
+                                                  SCHEME_STX_ADD);
+      }
+    }
+
+    if (env->genv->module && env->genv->module->ii_src)
+      sym2 = scheme_stx_binding_union(sym2, env->genv->module->ii_src, scheme_env_phase(env->genv));
+    else
+      sym2 = scheme_stx_add_module_context(sym2, env->genv->stx_context);
+    sym2 = scheme_stx_adjust_module_expression_context(sym2, env->genv->stx_context, SCHEME_STX_ADD);
+
+    /* Try to find a binder: */
+    binder = find_local_binder(sym2, start_env, &bind_env);
+  } else {
+    binder = NULL;
+    bind_env = start_env;
+  }
+
+  sym = scheme_stx_remove_module_context_marks(sym);
+  
+  if (binder)
+    sym = scheme_stx_binding_union(sym, binder, scheme_env_phase(env->genv));
+  else if (env->genv->module && env->genv->module->ii_src)
+    sym = scheme_stx_binding_union(sym, env->genv->module->ii_src, scheme_env_phase(env->genv));
+  else if (env->genv->stx_context)
+    sym = scheme_stx_add_module_context(sym, env->genv->stx_context);
+
+  /* Add additional marks only up to the binder (if any): */
+  for (env2 = env; env2 != bind_env; env2 = env2->next) {
+    if (env2->marks) {
+      sym = scheme_stx_adjust_frame_bind_marks(sym, env2->marks, scheme_env_phase(env2->genv),
+                                               SCHEME_STX_ADD);
+    }
+  }
+
+  if (!scheme_stx_is_clean(orig_sym))
+    sym = scheme_stx_taint(sym);
+
+  return sym;
+}
+
 static Scheme_Hash_Table *get_binding_names_table(Scheme_Env *env)
 {
   Scheme_Hash_Table *binding_names;
@@ -2123,44 +2249,6 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
 
   *_id = id;
   return v;
-}
-
-Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env, Scheme_Comp_Env **_at_env)
-{
-  Scheme_Comp_Env *frame;
-  Scheme_Object *id, *prop;
-
-  for (frame = env; frame->next != NULL; frame = frame->next) {
-    int i;
-
-    for (i = frame->num_bindings; i--; ) {
-      id = frame->binders[i];
-      if (id) {
-	if (scheme_stx_could_bind(id, sym, scheme_env_phase(env->genv))) {
-          prop = scheme_stx_property(id, unshadowable_symbol, NULL);
-          if (SCHEME_FALSEP(prop)) {
-            if (_at_env) *_at_env = frame;
-            return id;
-          }
-	}
-      }
-    }
-
-    for (i = frame->num_const; i--; ) {
-      id = frame->const_binders[i];
-      if (id && scheme_stx_could_bind(id, sym, scheme_env_phase(env->genv))) {
-        prop = scheme_stx_property(id, unshadowable_symbol, NULL);
-        if (SCHEME_FALSEP(prop)) {
-          if (_at_env) *_at_env = frame;
-          return id;
-        }
-      }
-    }
-  }
-
-  if (_at_env) *_at_env = NULL;
-
-  return NULL;
 }
 
 /*========================================================================*/

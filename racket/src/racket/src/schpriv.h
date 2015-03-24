@@ -2805,7 +2805,7 @@ Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, Sc
 
 Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *genv, 
                                              Scheme_Object **_id, int *_use_map);
-Scheme_Object *scheme_find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env, Scheme_Comp_Env **_at_env);
+Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env);
 Scheme_Object *scheme_do_local_lift_expr(const char *who, int stx_pos, 
                                          int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_local_lift_context(Scheme_Comp_Env *env);

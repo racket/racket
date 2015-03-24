@@ -2490,58 +2490,18 @@ local_introduce(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 local_get_shadower(int argc, Scheme_Object *argv[])
 {
-  Scheme_Comp_Env *env, *env2, *bind_env;
-  Scheme_Object *sym, *binder, *sym2, *orig_sym;
+  Scheme_Comp_Env *env;
+  Scheme_Object *sym;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
     not_currently_transforming("syntax-local-get-shadower");
 
   sym = argv[0];
-  orig_sym = sym;
-
   if (!(SCHEME_STXP(sym) && SCHEME_SYMBOLP(SCHEME_STX_VAL(sym))))
     scheme_wrong_contract("syntax-local-get-shadower", "identifier?", 0, argc, argv);
 
-  /* Add all marks in the environment */
-  sym2 = sym;
-  for (env2 = env; env2; env2 = env2->next) {
-    if (env2->marks) {
-      sym2 = scheme_stx_adjust_frame_main_marks(sym2, env2->marks, scheme_env_phase(env2->genv),
-                                                SCHEME_STX_ADD);
-    }
-  }
-
-  if (env->genv->module && env->genv->module->ii_src)
-    sym2 = scheme_stx_binding_union(sym2, env->genv->module->ii_src, scheme_env_phase(env->genv));
-  else
-    sym2 = scheme_stx_add_module_context(sym2, env->genv->stx_context);
-  sym2 = scheme_stx_adjust_module_expression_context(sym2, env->genv->stx_context, SCHEME_STX_ADD);
-
-  /* Try to find a binder: */
-  binder = scheme_find_local_binder(sym2, env, &bind_env);
-
-  sym = scheme_stx_remove_module_context_marks(sym);
-  
-  if (binder)
-    sym = scheme_stx_binding_union(sym, binder, scheme_env_phase(env->genv));
-  else if (env->genv->module && env->genv->module->ii_src)
-    sym = scheme_stx_binding_union(sym, env->genv->module->ii_src, scheme_env_phase(env->genv));
-  else if (env->genv->stx_context)
-    sym = scheme_stx_add_module_context(sym, env->genv->stx_context);
-
-  /* Add additional marks only up to the binder (if any): */
-  for (env2 = env; env2 != bind_env; env2 = env2->next) {
-    if (env2->marks) {
-      sym = scheme_stx_adjust_frame_bind_marks(sym, env2->marks, scheme_env_phase(env2->genv),
-                                               SCHEME_STX_ADD);
-    }
-  }
-
-  if (!scheme_stx_is_clean(orig_sym))
-    sym = scheme_stx_taint(sym);
-
-  return sym;
+  return scheme_get_shadower(sym, env);
 }
 
 int scheme_get_introducer_mode(const char *who, int which, int argc, Scheme_Object **argv)
