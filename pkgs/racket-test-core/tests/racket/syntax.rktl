@@ -1528,6 +1528,10 @@
                   x)))
              exn:fail:contract:variable?)
 
+(test 1
+      values
+      (letrec-syntaxes+values () ([(b) 0]) (define x 1) x))
+
 (test 82 'splicing-letrec-syntaxes+values
       (let ()
         (define q 77)

@@ -2139,7 +2139,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   Scheme_Object *first = NULL;
   Scheme_Compiled_Let_Value *last = NULL, *lv;
   DupCheckRecord r;
-  int rec_env_already = rec[drec].env_already;
+  int rec_env_already = rec[drec].env_already, body_block;
   int rev_bind_order,  post_bind, already_compiled_body;
   Scheme_Let_Header *head;
 
@@ -2151,7 +2151,9 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       rec_env_already = 1;
       form = l;
     }
-  }
+    body_block = 1;
+  } else
+    body_block = !rec_env_already;
 
   i = scheme_stx_proper_list_length(form);
   if (i < 3)
@@ -2178,7 +2180,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
     name = scheme_check_name_property(form, rec[drec].value_name);
     rec[drec].value_name = name;
 
-    return compile_sequence(forms, env, rec, drec, !rec_env_already);
+    return compile_sequence(forms, env, rec, drec, body_block);
   }
   
   if (multi) {
@@ -2456,7 +2458,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   {
     Scheme_Object *cs;
     if (mark) forms = scheme_stx_add_mark(forms, mark, scheme_env_phase(env->genv));
-    cs = compile_sequence(forms, env, recs, num_clauses, !rec_env_already);
+    cs = compile_sequence(forms, env, recs, num_clauses, body_block);
     last->body = cs;
   }
 
@@ -2542,7 +2544,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
   Scheme_Comp_Env *use_env, *env;
   Scheme_Expand_Info erec1;
   DupCheckRecord r;
-  int rec_env_already = erec[drec].env_already, forward_ref_boundary;
+  int rec_env_already = erec[drec].env_already, forward_ref_boundary, body_block;
   /* If env_already == 2, then it's not a true `letrec':
      it's from `letrec-values+syntax' and should be
      expanded into `let' plus `letrec'. */
@@ -2555,7 +2557,9 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
       rec_env_already = 1;
       form = v;
     }
-  }
+    body_block = 1;
+  } else
+    body_block = !rec_env_already;
 
   vars = SCHEME_STX_CDR(form);
 
@@ -2751,7 +2755,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
   SCHEME_EXPAND_OBSERVE_NEXT_GROUP(erec[drec].observer);
   scheme_init_expand_recs(erec, drec, &erec1, 1);
   erec1.value_name = erec[drec].value_name;
-  if (env_already)  
+  if (!body_block)
     body = expand_list(body, env, &erec1, 0);
   else
     body = expand_block(body, env, &erec1, 0);
