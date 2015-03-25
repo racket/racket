@@ -7225,7 +7225,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     mb_ctx = scheme_stx_add_shift(ctx_form, shift);
     orig_ii = scheme_stx_add_shift(orig_ii, shift);
     shift_back = 1;
-    /* REMOVEME: FIXME: there must be a `#%module-begin' in the enclosing module, right? */
+    /* there must be a `#%module-begin' in the enclosing module; if it's
+       shadowed, then we want a different error message than the one for 
+       saw_mb == 0 */
     saw_mb = 1;
   }
 
@@ -7390,8 +7392,6 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     else
       ((Scheme_Modidx *)self_modidx)->resolved = ((Scheme_Modidx *)this_empty_self_modidx)->resolved;
   }
-
-  // REMOVEME printf("DONE %s\n", scheme_write_to_string(nm, 0));
 
   if (rec[drec].comp || (rec[drec].depth != -2)) {
     /* rename tables no longer needed; NULL them out */

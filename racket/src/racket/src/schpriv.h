@@ -1331,6 +1331,7 @@ void scheme_stx_debug_print(Scheme_Object *stx, Scheme_Object *phase, int level)
 
 Scheme_Object *scheme_revert_use_site_marks(Scheme_Object *o, struct Scheme_Comp_Env *env);
 
+Scheme_Object *scheme_top_introduce(Scheme_Object *form, Scheme_Env *genv);
 
 /*========================================================================*/
 /*                   syntax run-time structures                           */

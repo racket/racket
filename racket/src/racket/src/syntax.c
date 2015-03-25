@@ -2661,9 +2661,9 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
     if (from_pt)
       check_for_conversion(sym, mark, from_pt, collapse_table, ht, marks, phase, bind);
   } else {
-    /* Order matters: the new bindings should hide any existing bindings for the same name */
-    /* REMOVEME: FIXME: need to remove mappings from the hash table that are replaced here;
-       that can happen due to an import at the top level, for example */
+    /* Order matters: the new bindings should hide any existing bindings for the same name.
+       It seems like we might need to remove mappings from the hash table that are replaced here;
+       currently, though, `require` takes care of removing replaced bindings. */
     clear_binding_cache();
     p = scheme_make_raw_pair(bind, SCHEME_CDR(l));
     SCHEME_CDR(l) = p;
@@ -2925,6 +2925,22 @@ Scheme_Object *add_bindings_info(Scheme_Object *bindings, Scheme_Object *key, Sc
   return bindings;
 }
 
+#ifdef DO_STACK_CHECK
+static Scheme_Object *stx_debug_info_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Stx *stx = (Scheme_Stx *)p->ku.k.p1;
+  Scheme_Object *phase = (Scheme_Object *)p->ku.k.p2;
+  Scheme_Object *seen = (Scheme_Object *)p->ku.k.p3;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+
+  return stx_debug_info(stx, phase, seen, p->ku.k.i1);
+}
+#endif
+
 static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Scheme_Object *seen, int all_bindings)
 {
   Scheme_Hash_Tree *desc, *bind_desc;
@@ -2935,8 +2951,22 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
   Scheme_Mark_Set *marks;
   Scheme_Module_Phase_Exports *pt;
   Scheme_Object *multi_marks;
+  
+#ifdef DO_STACK_CHECK
+      {
+# include "mzstkchk.h"
+	{
+	  Scheme_Thread *p = scheme_current_thread;
+	  
+	  p->ku.k.p1 = (void *)stx;
+	  p->ku.k.p2 = (void *)phase;
+	  p->ku.k.p3 = (void *)seen;
+          p->ku.k.i1 = all_bindings;
 
-  /* REMOVEME: FIXME: protect against stack overflow */
+	  return scheme_handle_stack_overflow(stx_debug_info_k);
+	}
+      }
+#endif
 
   for (l = seen; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SAME_OBJ((Scheme_Object *)stx, SCHEME_CAR(seen))) {

@@ -3895,7 +3895,7 @@ Scheme_Object **scheme_current_argument_stack()
 /*                  eval/compile/expand starting points                   */
 /*========================================================================*/
 
-static Scheme_Object *add_top_level_context_unless_module(Scheme_Object *form, Scheme_Env *genv)
+Scheme_Object *scheme_top_introduce(Scheme_Object *form, Scheme_Env *genv)
 {
   scheme_prepare_env_stx_context(genv);
 
@@ -3991,7 +3991,7 @@ static void *compile_k(void)
 
   /* Renamings for requires: */
   if (rename) {
-    form = add_top_level_context_unless_module(form, genv);
+    form = scheme_top_introduce(form, genv);
   }
 
   tl_queue = scheme_null;
@@ -4501,7 +4501,7 @@ static void *expand_k(void)
 
   if (rename > 0) {
     /* Renamings for requires: */
-    obj = add_top_level_context_unless_module(obj, env->genv);
+    obj = scheme_top_introduce(obj, env->genv);
   }
 
   observer = scheme_get_expand_observe();
@@ -4651,7 +4651,7 @@ eval(int argc, Scheme_Object *argv[])
       genv = (Scheme_Env *)argv[1];
     } else
       genv = scheme_get_env(NULL);
-    form = add_top_level_context_unless_module(form, genv);
+    form = scheme_top_introduce(form, genv);
   }
 
   a[0] = form;
@@ -4728,7 +4728,7 @@ top_introduce_stx(int argc, Scheme_Object **argv)
   if (!SAME_TYPE(SCHEME_TYPE(SCHEME_STX_VAL(form)), scheme_compilation_top_type)) {
     Scheme_Env *genv;
     genv = (Scheme_Env *)scheme_get_param(scheme_current_config(), MZCONFIG_ENV);
-    form = add_top_level_context_unless_module(form, genv);
+    form = scheme_top_introduce(form, genv);
   }
 
   return form;
@@ -4749,7 +4749,7 @@ compile(int argc, Scheme_Object *argv[])
     form = scheme_datum_to_syntax(form, scheme_false, scheme_false, 1, 0);
 
   genv = scheme_get_env(NULL);
-  form = add_top_level_context_unless_module(form, genv);
+  form = scheme_top_introduce(form, genv);
 
   return call_compile_handler(form, 0);
 }
