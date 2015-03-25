@@ -3315,9 +3315,11 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
 
 static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
                                     Scheme_Mark_Set *check_subset,
-                                    int *_exact_match, int *_ambiguous)
+                                    GC_CAN_IGNORE int *_exact_match,
+                                    GC_CAN_IGNORE int *_ambiguous,
+                                    GC_CAN_IGNORE Scheme_Object **_sole_result)
 {
-  int j, invalid;
+  int j, invalid, matches = 0;
   intptr_t i;
   Scheme_Object *key, *val, *result_best_so_far, *l, *pes;
   Scheme_Mark *mark;
@@ -3382,10 +3384,8 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
                     /* unmarshal and note that we must restart */
                     unmarshal_module_context_additions(stx, pes, binding_marks, l);
                     invalid = 1;
-                    /* Shouldn't encounter these on a second pass: */
+                    /* Shouldn't encounter this on a second pass: */
                     STX_ASSERT(!check_subset);
-                    STX_ASSERT(!_ambiguous);
-                    STX_ASSERT(!_exact_match);
                   }
                 }
                 binding_marks = NULL;
@@ -3407,6 +3407,7 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
                 if (_ambiguous) *_ambiguous = 1;
                 return NULL; /* ambiguous */
               }
+              matches++;
               if (!best_so_far
                   || ((mark_set_count(binding_marks) > mark_set_count(best_so_far))
                       && (!check_subset
@@ -3447,12 +3448,18 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
 
   if (check_subset)
     return result_best_so_far;
-  else
+  else {
+    if (matches == 1)
+      *_sole_result = result_best_so_far;
+    else
+      *_sole_result = NULL;
     return (Scheme_Object *)best_so_far;
+  }
 }
 
 static Scheme_Object *do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object *phase,
-                                                 int *_exact_match, int *_ambiguous,
+                                                 GC_CAN_IGNORE int *_exact_match,
+                                                 GC_CAN_IGNORE int *_ambiguous,
                                                  Scheme_Mark_Set **_binding_marks)
 {
   Scheme_Mark_Set *marks, *best_set;
@@ -3466,14 +3473,18 @@ static Scheme_Object *do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object 
 
     best_set = (Scheme_Mark_Set *)do_stx_lookup(stx, marks,
                                                 NULL,
-                                                NULL, NULL);
+                                                _exact_match, _ambiguous,
+                                                &result);
     if (best_set) {
       if (_binding_marks) *_binding_marks = best_set;
-      
-      /* Find again, this time checking to ensure no ambiguity: */
-      result = do_stx_lookup(stx, marks,
-                             best_set,
-                             _exact_match, _ambiguous);
+
+      if (!result) {
+        /* Find again, this time checking to ensure no ambiguity: */
+        result = do_stx_lookup(stx, marks,
+                               best_set,
+                               _exact_match, _ambiguous,
+                               NULL);
+      }
 
       if (!result && SCHEME_FALLBACKP(multi_marks)) {
         if (_ambiguous) *_ambiguous = 0;
@@ -3489,7 +3500,8 @@ static Scheme_Object *do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object 
 }
 
 static Scheme_Object *apply_accumulated_shifts(Scheme_Object *result, Scheme_Object *prev_shifts, 
-                                               Scheme_Object **_insp, Scheme_Object **nominal_modidx,
+                                               GC_CAN_IGNORE Scheme_Object **_insp,
+                                               GC_CAN_IGNORE Scheme_Object **nominal_modidx,
                                                Scheme_Stx *stx, Scheme_Object *orig_name, Scheme_Object *phase)
 /* Adjust result to take the `free-id=?` chain into account: adjust a
    `#f` result to add in the original name, or adjust a module name
@@ -3614,13 +3626,14 @@ XFORM_NONGCING static void save_in_binding_cache(Scheme_Stx *id, Scheme_Object *
 
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase, 
                                            int stop_at_free_eq,
-                                           int *_exact_match, int *_ambiguous,
-                                           Scheme_Mark_Set **_binding_marks,
-                                           Scheme_Object **_insp,             /* access-granting inspector */
-                                           Scheme_Object **nominal_modidx,    /* how it was imported */
-                                           Scheme_Object **nominal_name,      /* imported as name */
-                                           Scheme_Object **src_phase,         /* phase level of import from nominal modidx */ 
-                                           Scheme_Object **nominal_src_phase) /* phase level of export from nominal modidx */
+                                           GC_CAN_IGNORE int *_exact_match,
+                                           GC_CAN_IGNORE int *_ambiguous,
+                                           GC_CAN_IGNORE Scheme_Mark_Set **_binding_marks,
+                                           GC_CAN_IGNORE Scheme_Object **_insp,             /* access-granting inspector */
+                                           GC_CAN_IGNORE Scheme_Object **nominal_modidx,    /* how it was imported */
+                                           GC_CAN_IGNORE Scheme_Object **nominal_name,      /* imported as name */
+                                           GC_CAN_IGNORE Scheme_Object **src_phase,         /* phase level of import from nominal modidx */ 
+                                           GC_CAN_IGNORE Scheme_Object **nominal_src_phase) /* phase level of export from nominal modidx */
 /* Result is either a representation of a local binding (probably a symbol),
    a vector of the form (vector <modidx> <symbol> <defn-phase>), or
    #f */
