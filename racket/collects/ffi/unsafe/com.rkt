@@ -30,6 +30,9 @@
          _HRESULT _LCID
 
          windows-error
+         current-hfun-retry-count
+         current-hfun-retry-delay
+         HRESULT-retry?
 
          IID_NULL IID_IUnknown
          _IUnknown _IUnknown-pointer _IUnknown_vt
@@ -101,15 +104,15 @@
 (define-ole CLSIDFromProgID (_hfun _string/utf-16 _pointer 
                                    -> CLSIDFromProgID (void)))
 
-(define-ole ProgIDFromCLSID (_fun _GUID-pointer (p : (_ptr o _pointer))
-                                  -> (r : _HRESULT)
-                                  -> (cond
-                                      [(zero? r)
-                                       (begin0
-                                        (cast p _pointer _string/utf-16)
-                                        (CoTaskMemFree p))]
-                                      [(= REGDB_E_CLASSNOTREG r) #f]
-                                      [else (windows-error "ProgIDFromCLSID: failed" r)])))
+(define-ole ProgIDFromCLSID (_hfun _GUID-pointer (p : (_ptr o _pointer))
+                                   -> ProgIDFromCLSID
+                                   #:allow [r (= REGDB_E_CLASSNOTREG r)]
+                                   (cond
+                                    [(= REGDB_E_CLASSNOTREG r) #f]
+                                    [else
+                                     (begin0
+                                      (cast p _pointer _string/utf-16)
+                                      (CoTaskMemFree p))])))
 
 (define (progid->clsid progid)
   (unless (string? progid) (raise-type-error 'progid->clsid "string" progid))
@@ -281,12 +284,12 @@
 (define-cstruct _IUnknown ([vt _pointer]))
 
 (define-cstruct _IUnknown_vt
-  ([QueryInterface (_mfun _REFIID (p : (_ptr o _pointer))
-                          -> (r : _HRESULT)
-                          -> (cond
-                              [(= r E_NOINTERFACE) #f]
-                              [(positive? r) (windows-error "QueryInterface: failed" r)]
-                              [else p]))]
+  ([QueryInterface (_hmfun _REFIID (p : (_ptr o _pointer))
+                           -> QueryInterface
+                           #:allow [r (= r E_NOINTERFACE)]
+                           (cond
+                            [(= r E_NOINTERFACE) #f]
+                            [else p]))]
    [AddRef (_mfun -> _ULONG)]
    [Release (_mfun -> _ULONG)]))
 
@@ -329,17 +332,20 @@
    [GetTypeInfo (_hmfun _UINT _LCID (p : (_ptr o _pointer))
                         -> GetTypeInfo (cast p _pointer _ITypeInfo-pointer))
                 #:release-with-function Release]
-   [GetIDsOfNames (_mfun _REFIID (_ptr i _string/utf-16)
-                         (_UINT = 1) _LCID
-                         (p : (_ptr o _DISPID))
-                         -> (r : _HRESULT)
-                         -> (values r p))]
-   [Invoke (_mfun _DISPID _REFIID _LCID _WORD
-                  _DISPPARAMS-pointer/null
-                  _VARIANT-pointer/null
-                  _pointer ; to _EXCEPINFO
-                  _pointer ; to _UINT
-                  -> _HRESULT)]))
+   [GetIDsOfNames (_hmfun _REFIID (_ptr i _string/utf-16)
+                          (_UINT = 1) _LCID
+                          (p : (_ptr o _DISPID))
+                          -> GetIDsOfNames
+                          #:allow [r (not (HRESULT-retry? r))]
+                          (values r p))]
+   [Invoke (_hmfun _DISPID _REFIID _LCID _WORD
+                   _DISPPARAMS-pointer/null
+                   _VARIANT-pointer/null
+                   _pointer ; to _EXCEPINFO
+                   _pointer ; to _UINT
+                   -> Invoke
+                   #:allow [r (not (HRESULT-retry? r))]
+                   r)]))
 
 (define error-index-ptr (malloc 'atomic-interior _UINT))
 
@@ -2286,13 +2292,14 @@
   (string->guid "{00020404-0000-0000-c000-000000000046}"))
 
 (define-com-interface (_IEnumVARIANT _IUnknown)
-  ([Next (_mfun (_ulong = 1)
-		(els : (_ptr o _VARIANT))
-		(got : (_ptr o _ulong))
-		 -> (r : _HRESULT)
-		 -> (if (= got 1)
-			els
-			#f))]
+  ([Next (_hmfun (_ulong = 1)
+                 (els : (_ptr o _VARIANT))
+                 (got : (_ptr o _ulong))
+		 -> Next
+                 #:allow [r (= r 1)] ; 1 => no more elements
+                 (if (and (= r 0) (= got 1))
+                     els
+                     #f))]
    ;; ... more methods ...
    ))
 
@@ -2316,11 +2323,10 @@
 ;; ----------------------------------------
 ;; Initialize
 
-(define-ole CoInitialize (_wfun (_pointer = #f) -> (r : _HRESULT)
-                                -> (cond
-                                    [(= r 0) (void)] ; ok
-                                    [(= r 1) (void)] ; already initialized
-                                    [else (windows-error (format "~a: failed" 'CoInitialize) r)])))
+(define-ole CoInitialize (_hfun (_pointer = #f)
+                                -> CoInitialize
+                                #:allow [r (= r 1)] ; 1 => already initialized
+                                (void)))
 
 (define inited? #f)
 (define (init!)

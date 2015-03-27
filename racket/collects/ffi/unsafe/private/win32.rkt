@@ -28,15 +28,39 @@
 (define-syntax-rule (_wfun type ...)
   (_fun #:abi winapi type ...))
 
-;; for functions that return HRESULTs
+;; for functions that return HRESULTs with
+;;  automatic retires on RPC_E_CALL_REJECTED
+;;  and RPC_E_SERVERCALL_RETRYLATER errors
 (define-syntax _hfun
   (syntax-rules (->)
-    [(_ type ... -> who res)
-     (_wfun type ...
+    [(_ type ... -> who #:allow [r r-ok?] res)
+     (_wfun #:retry (retry [count 0])
+            type ...
             -> (r : _HRESULT)
-            -> (if (positive? r)
-                   (windows-error (format "~a: failed" 'who) r)
-                   res))]))
+            -> (if (or (zero? r) r-ok?)
+                   res
+                   (hfun-result r 'who retry count)))]
+    [(_ type ... -> who res)
+     (_hfun type ... -> who #:allow [r #f] res)]))
+
+(define (hfun-result r who retry count)
+  (cond
+   [(HRESULT-retry? r)
+    (cond
+     [(count . < . (current-hfun-retry-count))
+      (sleep (current-hfun-retry-delay))
+      (retry (add1 count))]
+     [else
+      (windows-error (format "~a: failed after ~a retries" who count) r)])]
+   [else
+    (windows-error (format "~a: failed" who) r)]))
+
+(define (HRESULT-retry? r)
+  (or (= r RPC_E_CALL_REJECTED)
+      (= r RPC_E_SERVERCALL_RETRYLATER)))
+
+(define current-hfun-retry-count (make-parameter 10))
+(define current-hfun-retry-delay (make-parameter 0.5))
 
 (define (bit-and? a b)(not (zero? (bitwise-and a b))))
 
@@ -185,6 +209,8 @@
             (error (format "~a (~x)" str scode))))))
 
 (define E_NOINTERFACE #x80004002)
+(define RPC_E_CALL_REJECTED #x80010001)
+(define RPC_E_SERVERCALL_RETRYLATER #x8001010A)
 
 (define-kernel FormatMessageW (_wfun _DWORD _pointer
                                      _HRESULT _DWORD

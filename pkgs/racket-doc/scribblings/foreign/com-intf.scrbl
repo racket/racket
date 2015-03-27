@@ -135,19 +135,61 @@ Like @racket[_wfun], but adds a @racket[_pointer] type (for the
 ``self'' argument of a method) as the first argument @racket[type-spec].}
 
 
-@defform[(_hfun fun-option ... type-spec ... -> id output-expr)]{
+@defform[(_hfun fun-option ... type-spec ... -> id maybe-allow output-expr)
+         #:grammar
+         ([maybe-allow code:blank
+                       (code:line #:allow [result-id allow?-expr])])]{
 
 Like @racket[_wfun], but for a function that returns an
-@racket[_HRESULT]. If the result is not zero, then an error is raised
-using @racket[windows-error] and using @racket[id] as the name of the
-failed function. Otherwise, @racket[output-expr] (as in a
-@racket[_maybe-racket] for @racket[_fun]) determines the result.}
+@racket[_HRESULT]. The result is bound to @racket[result-id] if
+@racket[#:allow] is specified, otherwise the result is not directly
+accessible.
+
+The @racket[_hfun] form handles the @racket[_HRESULT] value of the
+foreign call as follows:
+
+@itemlist[
+
+ @item{If the result is zero or if @racket[#:allow] is specified and
+       @racket[allow?-expr] produces @racket[#t], then
+       @racket[output-expr] (as in a @racket[_maybe-wrapper] for
+       @racket[_fun]) determines the result.}
+
+ @item{If the result is @cpp{RPC_E_CALL_REJECTED} or
+       @cpp{RPC_E_SERVERCALL_RETRYLATER}, the call is autmatically
+       retried up to @racket[(current-hfun-retry-count)] times with a
+       delay of @racket[(current-hfun-retry-delay)] seconds between
+       each attempt.}
+
+ @item{Otherwise, an error is raised using @racket[windows-error] and
+       using @racket[id] as the name of the failed function.}
+
+]
+
+@history[#:changed "6.2.0.2" @elem{Added @racket[#:allow] and automatic retries.}]}
 
 
 @defform[(_hmfun fun-option ... type-spec ... -> id output-expr)]{
 
 Like @racket[_hfun], but lke @racket[_mfun] in that @racket[_pointer]
 is added for the first argument.}
+
+@deftogether[(
+@defparam[current-hfun-retry-count exact-nonnegative-integer? count]
+@defparam[current-hfun-retry-delay secs (>=/c 0.0)]
+)]{
+
+Parameters that determine the behavior of automatic retries for @racket[_hfun].
+
+@history[#:added "6.2.0.2"]}
+
+
+@defproc[(HRESULT-retry? [r exact-nonnegative-integer?]) boolean?]{
+
+Returns @racket[#t] if @racket[r] is @cpp{RPC_E_CALL_REJECTED}
+or @cpp{RPC_E_SERVERCALL_RETRYLATER}, @racket[#f] otherwise.
+
+@history[#:added "6.2.0.2"]}
 
 
 @deftogether[(
