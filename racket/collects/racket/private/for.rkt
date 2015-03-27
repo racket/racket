@@ -1325,6 +1325,9 @@
            (if d
                (syntax-property r 'disappeared-use d)
                r)))]
+      [(_ [orig-stx . _] for-bind clauses . _)
+       (not (syntax->list #'clauses))
+       (raise-syntax-error #f "bad sequence binding clauses" #'orig-stx #'clauses)]
       [(_ [orig-stx . _] . _)
        (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 
