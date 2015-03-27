@@ -56,6 +56,12 @@ pull updates to local package repositories when checking dependencies.
 For example, @exec{@command{update} --all} pulls updates for all
 linked package repositories.
 
+A @tech{package source} provided with @DFlag{clone} can include a
+branch and/or path into the repository. The branch specification
+affects the branch used for the initial checkout, while a non-empty
+path causes a subdirectory of the checkout to be linked for the
+package.
+
 Suppose that a developer works with a large number of packages and
 develops only a few of them. The intended workflow is as follows:
 
@@ -88,17 +94,43 @@ develops only a few of them. The intended workflow is as follows:
 
   A suitable @nonterm{catalog} might be @url{http://pkgs.racket-lang.org}.}
 
+ @item{If the cloned Git repository is not the one where you want to
+  push and pull updates, use @exec{git} commands to add or change the
+  remote in your clone. For example, the command
+
+  @commandline{git remote set-url origin @nonterm{url}}
+
+  in the clone's directory causes @exec{git pull} and @exec{git push}
+  to pull and push to the given @nonterm{url}.
+
+  Alternatively, use @exec{git} to clone the target @nonterm{url}
+  first, and then supply the local clone's path as @nonterm{dir} in
+
+  @commandline{@command{update} --clone @nonterm{dir} @nonterm{pkg-name}}
+
+  Either way, when @command{update} pulls updates to the clone, it
+  will still pull them from the repository corresponding to
+  @nonterm{pkg-name}'s old source, and not from the @exec{git remote}
+  @nonterm{url}. Usually, that's what package developers want; when
+  they're not actively modifying a package, other developers' updates
+  should be pulled from the package's main repository. In case where
+  @nonterm{url} is the preferred source of updates for
+  @command{update}, use @nonterm{url} in
+
+  @commandline{@command{update} --clone @nonterm{dir} @nonterm{url}}
+
+  Beware, however, that @command{update} may be less able to detect
+  repository sharing among multiple packages (and keep the package
+  installations consistently associated with a particular clone)
+  when an alternative @nonterm{url} is provided.}
+
  @item{Manage changes to each of the developed packages in the usual
   way with @exec{git} tools, but @command-ref{update} is also available
   for updates, including mass updates.}
 
 ]
 
-A @tech{package source} provided with @DFlag{clone} can include a
-branch and/or path into the repository. The branch specification
-affects the branch used for the initial checkout, while a non-empty
-path causes a subdirectory of the checkout to be linked for the
-package.
+@section{Interactions Between @exec{git} and @exec{raco pkg}}
 
 The @exec{git} and @exec{raco pkg} tools interact in specific
 ways:
