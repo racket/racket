@@ -51,11 +51,12 @@
     ;; Custodian shutdown can cause disconnect even in the middle of
     ;; operation (with lock held). So use (A _) around any FFI calls,
     ;; check still connected.
+    ;; Optimization: use faster {start,end}-atomic instead of call-as-atomic;
+    ;; but must not raise exn within (A _)!
     (define-syntax-rule (A e ...)
-      (call-as-atomic
-       (lambda ()
-         (unless -db (error/disconnect-in-lock 'sqlite3))
-         e ...)))
+      (begin (start-atomic)
+             (unless -db (end-atomic) (error/disconnect-in-lock 'sqlite3))
+             (begin0 (let () e ...) (end-atomic))))
 
     (define/private (get-db fsym)
       (or -db (error/not-connected fsym)))
@@ -211,18 +212,18 @@
                      (HANDLE fsym
                        ;; Do not allow break/kill between prepare and
                        ;; entry of stmt in table.
-                       (A (let-values ([(prep-status stmt tail?)
-                                        (sqlite3_prepare_v2 db sql)])
-                            (cond [(not (zero? prep-status))
-                                   (when stmt (sqlite3_finalize stmt))
-                                   (values prep-status #f)]
-                                  [tail?
-                                   (when stmt (sqlite3_finalize stmt))
-                                   (error* fsym "multiple statements given"
-                                           '("given" value) sql)]
-                                  [else
-                                   (when stmt (hash-set! stmt-table stmt #t))
-                                   (values prep-status stmt)]))))])
+                       ((A (let-values ([(prep-status stmt tail?)
+                                         (sqlite3_prepare_v2 db sql)])
+                             (cond [(not (zero? prep-status))
+                                    (when stmt (sqlite3_finalize stmt))
+                                    (lambda () (values prep-status #f))]
+                                   [tail?
+                                    (when stmt (sqlite3_finalize stmt))
+                                    (lambda () ;; escape atomic mode (see A)
+                                      (error fsym "multiple statements given\n  value: ~e" sql))]
+                                   [else
+                                    (when stmt (hash-set! stmt-table stmt #t))
+                                    (lambda () (values prep-status stmt))])))))])
         (when DEBUG?
           (dprintf "  << prepared statement #x~x\n" (cast stmt _pointer _uintptr)))
         (unless stmt (error* fsym "SQL syntax error" '("given" value) sql))
