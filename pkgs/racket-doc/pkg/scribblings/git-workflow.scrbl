@@ -82,7 +82,15 @@ develops only a few of them. The intended workflow is as follows:
   omitted. Put another way, the argument to @DFlag{clone} can be a
   path to @nonterm{pkg-name}:
 
-  @commandline{@command{update} --clone @nonterm{path-to}/@nonterm{pkg-name}}}
+  @commandline{@command{update} --clone @nonterm{path-to}/@nonterm{pkg-name}}
+
+
+As a further convenience, the main Racket source directory is configured under Git to ignore a subdirectory called @exec{extra-pkgs}. This subdirectory is intended to be used as a target for @DFlag{clone} like so:
+  
+  @commandline{@command{update} --clone extra-pkgs/@nonterm{pkg-name}}
+
+This command will create the @exec{extra-pkgs} subdirectory if it doesn't exist.}
+
 
  @item{If a package's current installation is not drawn from a Git
   repository (e.g., it's drawn from a catalog of built packages for a
@@ -94,14 +102,16 @@ develops only a few of them. The intended workflow is as follows:
 
   A suitable @nonterm{catalog} might be @url{http://pkgs.racket-lang.org}.}
 
- @item{If the cloned Git repository is not the one where you want to
-  push and pull updates, use @exec{git} commands to add or change the
-  remote in your clone. For example, the command
+ @item{By default, the newly cloned package will have its central source repository as its Git @exec{origin}. If you want to
+  push and pull updates from a different repository — for instance, your own fork of the package source — then use @exec{git} commands to add or change the
+  @exec{origin} of your clone to this other repo. For example, the command
 
-  @commandline{git remote set-url origin @nonterm{url}}
+  @commandline{git remote set-url origin @nonterm{url of other repo}}
 
   in the clone's directory causes @exec{git pull} and @exec{git push}
-  to pull and push to the given @nonterm{url}.
+  to pull and push to the given @nonterm{url of other repo}.
+
+  @margin-note{You can preserve the clone's connection to its central repo by setting an @exec{upstream} remote, e.g. @exec{git remote add upstream @nonterm{url of central repo}}. This gives you the option to periodically pull in commits from the central repo with @exec{git pull --ff-only upstream master}.}
 
   Alternatively, use @exec{git} to clone the target @nonterm{url}
   first, and then supply the local clone's path as @nonterm{dir} in
