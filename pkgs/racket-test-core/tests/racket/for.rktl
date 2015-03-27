@@ -442,4 +442,7 @@
 (err/rt-test (begin (for/fold ([x 1] [y 2]) ([i (in-range 10)]) 1) 1) #rx".*expected number of values not received.*")
 (test 1 'one (begin (for/fold () () (values)) 1))
 
+;; for/fold syntax checking
+(syntax-test #'(for/fold () bad 1) #rx".*bad sequence binding clauses.*")
+
 (report-errs)
