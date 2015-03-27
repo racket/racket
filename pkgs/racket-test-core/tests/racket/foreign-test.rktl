@@ -395,6 +395,22 @@
         (test 10 ic7i-i1 (union-ref u2 0))
         (test 89 ic7i-i2 (union-ref u2 0))
         (test (map add1 v) ic7i-c7 (union-ref u2 0)))))
+  ;; ---
+  ;; test retries
+  (t  78 'add1_int_int
+      (_fun #:retry (again [count 0]) _int  -> (v : _int) -> 
+            (if (= count 0)
+                (again 76)
+                (+ count v)))
+      1)
+  (t  95 'add1_int_int
+      (_fun #:retry (again [count 0])
+            (a) :: (a : _int = (+ a count))  -> (v : _int) -> 
+            (if (= count 0)
+                (again 92)
+                v))
+      2)
+  
   )
 
 ;; test setting vector elements

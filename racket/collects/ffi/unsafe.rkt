@@ -494,8 +494,9 @@
 
 (provide _fun)
 (define-for-syntax _fun-keywords
-  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f] [#:in-original-place? ,#'#f] 
-    [#:async-apply ,#'#f] [#:save-errno ,#'#f]))
+  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f] [#:in-original-place? ,#'#f]
+    [#:async-apply ,#'#f] [#:save-errno ,#'#f]
+    [#:retry #f]))
 (define-syntax (_fun stx)
   (define (err msg . sub) (apply raise-syntax-error '_fun msg stx sub))
   (define xs     #f)
@@ -676,22 +677,43 @@
                             inputs)]
                [ffi-args
                 (filter-map (lambda (x) (and (car x) (cadr x))) inputs)]
+               [retry-spec
+                (let ([r (kwd-ref '#:retry)])
+                  (when r
+                    (syntax-case r ()
+                      [(retry-id [arg-id arg-val] ...)
+                       (and (identifier? #'retry-id)
+                            (andmap identifier? (syntax->list #'(arg-id ...))))
+                       (let ([dup (check-duplicate-identifier (syntax->list #'(arg-id ...)))])
+                         (when dup
+                           (err "duplicate identifier in retry specification" dup))
+                         r)]
+                      [_
+                       (err "ill-formed retry specification" r)]))
+                  r)]
+               [add-retry
+                (lambda (body)
+                  (if retry-spec
+                      #`(let #,(car (syntax-e retry-spec)) #,(cdr (syntax-e retry-spec))
+                          #,body)
+                      body))]
                ;; the actual wrapper body
                [body (quasisyntax/loc stx
                        (lambda #,input-names
-                         (let* (#,@args
-                                #,@bind
-                                #,@pre)
-                           #,(if (or output-expr
-                                     (cadr output))
-                                 (let ([res (or (cadr output)
-                                                (car (generate-temporaries #'(ret))))])
-                                   #`(let* ([#,res (ffi #,@ffi-args)]
-                                            #,@post)
-                                       #,(or output-expr res)))
-                                 #`(begin0
-                                    (ffi #,@ffi-args)
-                                    (let* (#,@post) (void)))))))]
+                         #,(add-retry
+                            #`(let* (#,@args
+                                     #,@bind
+                                     #,@pre)
+                                #,(if (or output-expr
+                                          (cadr output))
+                                      (let ([res (or (cadr output)
+                                                     (car (generate-temporaries #'(ret))))])
+                                        #`(let* ([#,res (ffi #,@ffi-args)]
+                                                 #,@post)
+                                            #,(or output-expr res)))
+                                      #`(begin0
+                                         (ffi #,@ffi-args)
+                                         (let* (#,@post) (void))))))))]
                ;; if there is a string 'ffi-name property, use it as a name
                [body (let ([n (cond [(syntax-property stx 'ffi-name)
                                      => syntax->datum]

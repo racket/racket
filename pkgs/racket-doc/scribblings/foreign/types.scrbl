@@ -702,17 +702,16 @@ For @tech{callbacks} to Racket functions with the generated type:
                            (code:line #:keep keep-expr)
                            (code:line #:atomic? atomic?-expr)
                            (code:line #:async-apply async-apply-expr)
-                           (code:line #:in-original-place? in-original-place?-expr)]
+                           (code:line #:in-original-place? in-original-place?-expr)
+                           (code:line #:retry (retry-id [arg-id init-expr]))]
                [maybe-args code:blank
-                           (code:line (id ...) ::)
-                           (code:line id ::)
-                           (code:line (id ... . id) ::)]
+                           (code:line formals ::)]
                [type-spec type-expr
                           (id : type-expr)
                           (type-expr = value-expr)
                           (id : type-expr = value-expr)]
                [maybe-wrapper code:blank
-                               (code:line ->> output-expr)])]{
+                              (code:line ->> output-expr)])]{
 
 Creates a new function type.  The @racket[_fun] form is a convenient
 syntax for the @racket[_cprocedure] type constructor. In its simplest
@@ -723,42 +722,106 @@ straightforward function type.
 For example,
 
 @racketblock[
-(_fun _int _string ->> _int)
+(_fun _string _int ->> _int)
 ]
 
-specifies a function that receives an integer and a
-string, and returns an integer.
+specifies a function that receives a string and an integer
+and returns an integer.
+
+See @racket[_cprocedure] for information about the @racket[#:abi],
+@racket[#:save-errno], @racket[#:keep], @racket[#:atomic?],
+@racket[#:async-apply], and @racket[#:in-original-place?] options.
 
 In its full form, the @racket[_fun] syntax provides an IDL-like
-language that can be used to create a wrapper function around the
-primitive foreign function.  These wrappers can implement complex
-foreign interfaces given simple specifications. The full form of each
-of the type specifications can include an optional label and an
-expression. If a @racket[= value-expr] is provided, then the resulting
-function will be a wrapper that calculates the argument for that
-position itself, meaning that it does not expect an argument for that
-position.  The expression can use previous arguments if they were
-labeled with @racket[id :].  In addition, the result of a function
-call need not be the value returned from the foreign call: if the
-optional @racket[output-expr] is specified, or if an expression is
-provided for the output type, then this specifies an expression that
-will be used as a return value.  This expression can use any of the
-previous labels, including a label given for the output which can be
-used to access the actual foreign return value.
+language that creates a wrapper function around the
+primitive foreign function when the type is used for a @tech{callout}.
+These wrappers can implement complex interfaces given simple
+specifications:
+@;
+@itemlist[
 
-In rare cases where complete control over the input arguments is needed, the
-wrapper's argument list can be specified as @racket[maybe-args], in any form
-(including a ``rest'' argument).  Identifiers in this place are related to type
-labels, so if an argument is there is no need to use an expression.
+ @item{The full form of each argument @racket[type-spec] can include
+       an optional label and an expression. A label @racket[id :]
+       makes the argument value accessible to later expressions using
+       @racket[id]. A @racket[= value-expr] expression causes the
+       wrapper function to calculates the argument for that position
+       using @racket[value-expr], implying that the wrapper does not
+       expect to be given an argument for that position.
 
-For example,
+       For example,
 
-@racketblock[
-(_fun (n s) :: (s : _string) (n : _int) ->> _int)
+       @racketblock[
+        (_fun (s : _string) (_int = (string-length s)) ->> _int)
+       ]
+
+       produces a wrapper that takes a single string argument and
+       calls a foreign function that takes a string and an integer;
+       the string's length is provided as the integer argument.}
+
+ @item{If the optional @racket[output-expr] is specified, or if an
+       expression is provided for the output type, then the expression
+       specifies an expression that will be used as a return value for
+       the function call, replacing the foreign function's result. The
+       @racket[output-expr] can use any of the previous labels,
+       including a label given for the output to access the foreign
+       function's return value.
+
+       For example,
+
+       @racketblock[
+        (_fun _string (len : _int) ->> (r : _int) ->> (min r len))
+       ]
+
+       produces a wrapper that returns the minimum of the foreign
+       function's result and the given integer argument.}
+
+ @item{A @racket[#:retry (retry-id [arg-id init-expr] ...)]
+       specification binds @racket[retry-id] for use in an
+       @racket[output-expr] for retrying the foreign call (normally in
+       tail position). The function bound to @racket[retry-id] accepts
+       each @racket[arg-id] as an argument, each @racket[arg-id] can
+       be used in @racket[= value-expr]s, and each @racket[init-expr]s
+       provides the initial value for the corresponding
+       @racket[arg-id].
+
+       For example,
+
+       @racketblock[
+        (_fun #:retry (again [count 0])
+              _string _int ->> (r : _int)
+              ->> (if (and (= r ERR_BUSY)
+                           (< count 5))
+                      (retry (add1 count))
+                      r))
+       ]
+
+       produces a wrapper that calls the foreign function up to five
+       times if it continues to produce a number equal to
+       @racket[ERR_BUSY].}
+
+ @item{In rare cases where complete control over the input arguments
+       is needed, the wrapper's argument list can be specified as
+       @racket[maybe-args] with a @racket[formals] as for
+       @racket[lambda] (including keyword arguments and/or a ``rest''
+       argument). When an argument @racket[type-spec] includes a label
+       that matches an binding identifier in @racket[formals], then
+       the identifier is used as the default value for the argument.
+       All argument @racket[type-spec]s must include either explicit
+       @racket[= value-expr] annotations or an implicit one through a
+       matching label.
+
+       For example,
+
+       @racketblock[
+         (_fun (n s) :: (s : _string) (n : _int) ->> _int)
+       ]
+
+       produces a wrapper that receives an integer and a string, but
+       the foreign function receives the string first.}
+
 ]
 
-specifies a function that receives an integer and a string, but the
-foreign function receives the string first.}
+@history[#:changed "6.2.0.2" @elem{Added the @racket[#:retry] option.}]}
 
 @defproc[(function-ptr [ptr-or-proc (or cpointer? procedure?)]
                        [fun-type ctype?])
