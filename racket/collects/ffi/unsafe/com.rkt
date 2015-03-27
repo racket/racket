@@ -61,6 +61,9 @@
          com-register-event-callback
          com-unregister-event-callback
 
+         com-enumeration-to-list
+         com-enumerate-to-list
+
          com-object-get-iunknown com-iunknown?
          com-object-get-idispatch com-idispatch?
 
@@ -2275,6 +2278,40 @@
 
 (define (com-iunknown? v) (and (IUnknown? v) #t))
 (define (com-idispatch? v) (and (IDispatch? v) #t))
+
+;; ----------------------------------------
+;; Enumerations
+
+(define IID_IEnumVARIANT
+  (string->guid "{00020404-0000-0000-c000-000000000046}"))
+
+(define-com-interface (_IEnumVARIANT _IUnknown)
+  ([Next (_mfun (_ulong = 1)
+		(els : (_ptr o _VARIANT))
+		(got : (_ptr o _ulong))
+		 -> (r : _HRESULT)
+		 -> (if (= got 1)
+			els
+			#f))]
+   ;; ... more methods ...
+   ))
+
+(define (com-enumeration-to-list obj)
+  (define i
+    (QueryInterface (com-object-get-iunknown obj)
+		    IID_IEnumVARIANT
+		    _IEnumVARIANT-pointer))
+  (begin0
+   (let loop ()
+     (define els (Next i))
+     (if (not els)
+         null
+         (cons (variant-to-scheme els)
+               (loop))))
+   (Release i)))
+
+(define (com-enumerate-to-list obj)
+  (com-enumeration-to-list (com-get-property obj "_NewEnum")))
 
 ;; ----------------------------------------
 ;; Initialize

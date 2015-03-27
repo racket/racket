@@ -24,6 +24,9 @@
          com-unregister-event-callback
          com-make-event-executor com-event-executor?
 
+         com-enumeration-to-list
+         com-enumerate-to-list
+
          com-object-get-iunknown com-iunknown?
          com-object-get-idispatch com-idispatch?
 
