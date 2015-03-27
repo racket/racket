@@ -820,7 +820,7 @@
                                  "symbols" symbols
                                  "key" sym
                                  "value" i))
-        (unless (exact-nonnegative-integer? i)
+        (unless (exact-integer? i)
           (raise-arguments-error '_enum "value is not an integer"
                                  "symbols" symbols
                                  "key" sym

@@ -164,6 +164,9 @@
   (error-test #'(_enum '(x = y)) _enum-exn?)
   (error-test #'(_enum '(x y) #:unknown (lambda (x y) x)) _enum-exn?))
 
+(test 5 cast 'foo (_enum '(foo = 5)) _int)
+(test -5 cast 'bar (_enum '(bar = -5)) _int)
+
 (define-cstruct _ic7i ([i1 _int]
                        [c7 _c7_list]
                        [i2 _int]))
