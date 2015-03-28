@@ -306,11 +306,13 @@ void load_delayed()
 {
   (void)SetErrorMode(SEM_FAILCRITICALERRORS);
 
+# ifndef MZ_NO_LIBRACKET_DLL
   /* Order matters: load dependencies first */
-# ifndef MZ_PRECISE_GC
+#  ifndef MZ_PRECISE_GC
   load_delayed_dll(NULL, "libmzgcxxxxxxx.dll");
-# endif
+#  endif
   load_delayed_dll(NULL, "libracket" DLL_3M_SUFFIX "xxxxxxx.dll");
+# endif
   record_dll_path();
 # ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
 #  ifdef __MINGW32__

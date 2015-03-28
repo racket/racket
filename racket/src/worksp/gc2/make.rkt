@@ -8,6 +8,11 @@
   (eprintf "~a\n" s)
   (system s))
 
+;; When `use-libracket-dll?` is #f, "[G]Racket.exe" embeds the content of
+;; "libracket3m.dll". The "libracket3m.dll" DLL is still created for
+;; use by other parts of the build, such as MzCOM.
+(define use-libracket-dll? #t)
+
 (define backtrace-gc? #f)
 (define opt-flags "/O2 /Oy-")
 (define re:only #f)
@@ -202,13 +207,18 @@
 	mz-inc
 	"xsrc/precomp.h"
 	""
-	(string-append "/D LIBMZ_EXPORTS "
-		       (if backtrace-gc?
-			   "/D MZ_GC_BACKTRACE "
-			   ""))
+        (if backtrace-gc?
+            "/D MZ_GC_BACKTRACE "
+            "")
 	"mz.pch"
 	#f))
  srcs)
+
+
+(define main-c-flags
+  (if use-libracket-dll?
+      ""
+      "/D MZ_NO_LIBRACKET_DLL "))
 
 (try "../../racket/main.c"
      (list* "../../racket/main.c"
@@ -218,7 +228,7 @@
      mz-inc
      #f
      ""
-     ""
+     main-c-flags
      #f
      #t)
 
@@ -308,20 +318,21 @@
 				     ""))))
 	(error 'winmake "~a link failed" (if exe? "EXE" "DLL"))))))
 
-(let ([objs (list*
-	     "xsrc/gc2.obj"
-	     "xsrc/mzsj86.obj"
-	     "xsrc/foreign.obj"
-	     (find-build-file "libracket" "gmp.obj")
-	     (find-build-file "racket" "libffi.lib")
-             (append
-              (let ([f (and win64?
-                            (find-build-file "libracket" "mzsj86w64.obj"))])
-                (if (and f (file-exists? f))
-                    (list f)
-                    null))
-              (map (lambda (n) (format "xsrc/~a.obj" n)) srcs)))])
-  (link-dll objs null null dll "" #f))
+(define libracket-objs
+  (list*
+   "xsrc/gc2.obj"
+   "xsrc/mzsj86.obj"
+   "xsrc/foreign.obj"
+   (find-build-file "libracket" "gmp.obj")
+   (find-build-file "racket" "libffi.lib")
+   (append
+    (let ([f (and win64?
+		  (find-build-file "libracket" "mzsj86w64.obj"))])
+      (if (and f (file-exists? f))
+	  (list f)
+	  null))
+    (map (lambda (n) (format "xsrc/~a.obj" n)) srcs))))
+(link-dll libracket-objs null null dll "" #f)
 
 (define (check-rc res rc)
   (unless (and (file-exists? res)
@@ -333,14 +344,26 @@
 
 (check-rc "racket.res" "../racket/racket.rc")
 
-(let ([objs (list
-	     "racket.res"
-	     "xsrc/main.obj"
-	     "../../../lib/msvc/libracket3mxxxxxxx.lib")])
-  (link-dll objs 
-	    '("libracket3mxxxxxxx.dll")
-	    '("delayimp.lib")
-	    exe "" #t))
+(define (link-exe objs libs exe subsystem-flags)
+  (link-dll (append objs (if use-libracket-dll?
+			     (list
+			      "../../../lib/msvc/libracket3mxxxxxxx.lib")
+			     libracket-objs))
+	    (if use-libracket-dll?
+		'("libracket3mxxxxxxx.dll")
+		null)
+            (append libs
+                    (if use-libracket-dll?
+                        '("delayimp.lib")
+                        null))
+	    exe subsystem-flags #t))
+
+(link-exe (list
+           "racket.res"
+           "xsrc/main.obj")
+          null
+          exe
+          "")
 (system- "mt.exe -manifest ../racket/racket.manifest -outputresource:../../../Racket.exe;1")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -358,21 +381,20 @@
      wx-inc
      #f
      ""
-     "/DWIN32 "
+     (string-append
+      "/DWIN32 "
+      main-c-flags)
      #f
      #t)
 
 (check-rc "gracket.res" "../gracket/gracket.rc")
 
-(let ([objs (list
-	     "gracket.res"
-	     "xsrc/grmain.obj"
-	     "../../../lib/msvc/libracket3mxxxxxxx.lib")])
-  (link-dll objs 
-	    '("libracket3mxxxxxxx.dll")
-	    '("advapi32.lib" 
-	      "delayimp.lib") 
-	    "../../../lib/GRacket.exe" " /subsystem:windows" #t))
+(link-exe (list
+           "gracket.res"
+           "xsrc/grmain.obj")
+          '("advapi32.lib")
+          "../../../lib/GRacket.exe"
+          " /subsystem:windows")
 (system- "mt.exe -manifest ../gracket/gracket.manifest -outputresource:../../../lib/GRacket.exe;1")
 
 (system- (format "~a /MT /O2 /DMZ_PRECISE_GC /I../../racket/include /I.. /c ../../racket/dynsrc/mzdyn.c /Fomzdyn3m.obj"
