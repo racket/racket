@@ -2210,7 +2210,7 @@ mpn_set_str (mp_ptr rp, const unsigned char *str, size_t str_len, int base)
 	      res_digit = inp_digit >> (bits_per_indigit - next_bitpos);
 	    }
 
-	  if (!((long)s & 0xFF)) SCHEME_BIGNUM_USE_FUEL(1);
+	  if (!((intptr_t)s & 0xFF)) SCHEME_BIGNUM_USE_FUEL(1);
 	}
 
       if (res_digit != 0)

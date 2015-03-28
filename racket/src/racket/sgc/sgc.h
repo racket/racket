@@ -8,7 +8,8 @@ extern "C" {
 #define GC_PTR void*
 
 #if defined(WIN32) || defined(__CYGWIN32__)
-# if defined(SGC_EXPORTS) || (defined(__CYGWIN32__) && !defined(MZ_USES_SHARED_LIB))
+# if (defined(SGC_EXPORTS) || (defined(__CYGWIN32__) && !defined(MZ_USES_SHARED_LIB)) \
+      || defined(__MINGW32_DELAY_LOAD__))
 #  define SGC_EXTERN __declspec(dllexport)
 # else
 #  define SGC_EXTERN __declspec(dllimport)
