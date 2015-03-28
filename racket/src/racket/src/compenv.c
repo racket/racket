@@ -1762,6 +1762,15 @@ static Scheme_Hash_Table *get_binding_names_table(Scheme_Env *env)
   return binding_names;
 }
 
+static int binding_name_available(Scheme_Hash_Table *binding_names, Scheme_Object *sym,
+                                  Scheme_Object *id, Scheme_Object *phase)
+{
+  sym = scheme_eq_hash_get(binding_names, sym);
+  if (!sym || scheme_stx_bound_eq(sym, id, phase))
+    return 1;
+  return 0;
+}
+
 static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, Scheme_Object *id)
 {
   int i;
@@ -1776,7 +1785,7 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, S
       || scheme_stx_equal_module_context(id, ((env->module && env->module->ii_src)
                                               ? env->module->ii_src
                                               : env->stx_context))) {
-    if (!scheme_eq_hash_get(binding_names, sym)) {
+    if (binding_name_available(binding_names, sym, id, scheme_env_phase(env))) {
       scheme_hash_set(binding_names, sym, id);
       return sym;
     }
@@ -1794,7 +1803,7 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, S
     sprintf(buf XFORM_OK_PLUS len, ".%d", i);
     sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
-    if (!scheme_eq_hash_get(binding_names, sym)) {
+    if (binding_name_available(binding_names, sym, id, scheme_env_phase(env))) {
       scheme_hash_set(binding_names, sym, id);
       return sym;
     }

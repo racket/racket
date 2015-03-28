@@ -290,5 +290,13 @@
       (test #f eval (i e)))))
 
 ;; ----------------------------------------
+;; Check cannot-redefine error
+
+(parameterize ([current-namespace (make-base-empty-namespace)])
+  (namespace-require/constant 'racket/base)
+  (err/rt-test (eval '(define + -)) #rx"cannot change constant"))
+
+
+;; ----------------------------------------
 
 (report-errs)
