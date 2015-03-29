@@ -1021,6 +1021,23 @@ static Scheme_Object *reconstruct_fallback(Scheme_Object *fb, Scheme_Object *r)
     return r;
 }
 
+static Scheme_Object *clone_fallback_chain(Scheme_Object *fb)
+{
+  Scheme_Object *first = NULL, *last = NULL, *p;
+
+  while (SCHEME_FALLBACKP(fb)) {
+    p = reconstruct_fallback(fb, SCHEME_FALLBACK_FIRST(fb));
+    if (last)
+      SCHEME_FALLBACK_REST(last) = p;
+    else
+      first = p;
+    last = p;
+    fb = SCHEME_FALLBACK_REST(fb);
+  }
+
+  return first;
+}
+
 static Scheme_Object *remove_at_mark_list(Scheme_Object *l, Scheme_Object *p)
 {
   Scheme_Object *fb;
@@ -1435,7 +1452,7 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
                                            GC_CAN_IGNORE int *mutate)
 {
   Scheme_Mark_Table *mt2;
-  Scheme_Object *l, *key, *val;
+  Scheme_Object *l, *key, *val, *fbs;
 
   if (SAME_OBJ(mt, empty_mark_table)) {
     STX_ASSERT(!prev);
@@ -1450,18 +1467,48 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
 
   mt2 = clone_mark_table(mt, prev, mutate);
 
-  val = scheme_null;
   l = mt->multi_marks;
-  if (SCHEME_FALLBACKP(l))
-    l = SCHEME_FALLBACK_FIRST(l);
-  for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    key = shift_mm(SCHEME_CAR(l), shift);
-    if (key)
-      val = scheme_make_pair(key, val);
+  if (SCHEME_FALLBACKP(l)) {
+    l = clone_fallback_chain(l);
+    mt2->multi_marks = l;
+    fbs = l;
+  } else
+    fbs = scheme_false;
+  /* loop to cover all fallbacks; fbs is #f for
+     no fallback handling, otherwise it's always
+     a fallback record and the updated list goes
+     in first or rest */
+  while (1) {
+    int was_fb;
+    if (SCHEME_FALLBACKP(l)) {
+      l = SCHEME_FALLBACK_FIRST(l);
+      was_fb = 1;
+    } else
+      was_fb = 0;
+
+    /* Loop through one list of multi marks: */
+    val = scheme_null;
+    for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      key = shift_mm(SCHEME_CAR(l), shift);
+      if (key)
+        val = scheme_make_pair(key, val);
+    }
+
+    if (SCHEME_FALLBACKP(fbs)) {
+      if (was_fb) {
+        SCHEME_FALLBACK_FIRST(fbs) = val;
+        l = SCHEME_FALLBACK_REST(fbs);
+        if (SCHEME_FALLBACKP(l))
+          fbs = l;
+      } else {
+        SCHEME_FALLBACK_REST(fbs) = val;
+        break;
+      }
+    } else {
+      mt2->multi_marks = val;
+      break;
+    }
   }
-  if (SCHEME_FALLBACKP(mt->multi_marks))
-    val = reconstruct_fallback(mt->multi_marks, val);
-  mt2->multi_marks = val;
 
   if (prev) {
     /* record accumulated shift for propagation */
