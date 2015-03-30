@@ -3000,24 +3000,29 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
   Scheme_Object *multi_marks;
   
 #ifdef DO_STACK_CHECK
-      {
+  {
 # include "mzstkchk.h"
-	{
-	  Scheme_Thread *p = scheme_current_thread;
-	  
-	  p->ku.k.p1 = (void *)stx;
-	  p->ku.k.p2 = (void *)phase;
-	  p->ku.k.p3 = (void *)seen;
-          p->ku.k.i1 = all_bindings;
+    {
+      Scheme_Thread *p = scheme_current_thread;
 
-	  return scheme_handle_stack_overflow(stx_debug_info_k);
-	}
-      }
+      p->ku.k.p1 = (void *)stx;
+      p->ku.k.p2 = (void *)phase;
+      p->ku.k.p3 = (void *)seen;
+      p->ku.k.i1 = all_bindings;
+
+      return scheme_handle_stack_overflow(stx_debug_info_k);
+    }
+  }
 #endif
 
-  for (l = seen; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    if (SAME_OBJ((Scheme_Object *)stx, SCHEME_CAR(seen))) {
-      return cycle_symbol;
+  {
+    int up = 0;
+    for (l = seen; !SCHEME_NULLP(l); l = SCHEME_CDR(l), up++) {
+      if (SAME_OBJ((Scheme_Object *)stx, SCHEME_CAR(l))) {
+        return scheme_make_pair(cycle_symbol,
+                                scheme_make_pair(scheme_make_integer(up),
+                                                 scheme_null));
+      }
     }
   }
 
@@ -3028,7 +3033,9 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
     marks = extract_mark_set_from_mark_list(stx->marks->single_marks, multi_marks, phase);
 
     desc = empty_hash_tree;
-    
+
+    if (SCHEME_SYMBOLP(stx->val))
+      desc = scheme_hash_tree_set(desc, name_symbol, stx->val);
     desc = scheme_hash_tree_set(desc, context_symbol, marks_to_printed_list(marks));
 
     /* Describe other bindings */
@@ -3149,6 +3156,20 @@ static void fprint_string(Scheme_Object *o, const char *s)
   (void)scheme_put_byte_string("describe", o, s, 0, strlen(s), 1);
 }
 
+static void fprint_label_string(Scheme_Object *o, int rename_level, Scheme_Object *rename_sym, const char *s)
+{
+  fprint_string(o, "\n  ");
+  if (rename_level) {
+    while (rename_level--) {
+      fprint_string(o, "=");
+    }
+    fprint_string(o, "> ");
+    scheme_write(rename_sym, o);
+    fprint_string(o, " ");
+  }
+  fprint_string(o, s);
+}
+
 static void write_context(Scheme_Object *l, Scheme_Object *o)
 {
   intptr_t col = 2, len;
@@ -3185,16 +3206,13 @@ static int context_matches(Scheme_Object *l1, Scheme_Object *l2)
   return 1;
 }
 
-char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int always)
+static Scheme_Object *describe_bindings(Scheme_Object *o, Scheme_Object *di,
+                                        int rename_level, Scheme_Object *rename_sym,
+                                        int always)
 {
-  Scheme_Object *di, *l, *report, *o = NULL, *val;
+  Scheme_Object *l, *report, *val, *free_id;
   Scheme_Hash_Tree *dit, *bt;
   int fallback;
-
-  if (!stx)
-    return "";
-
-  di = stx_debug_info((Scheme_Stx *)stx, phase, scheme_null, 0);
 
   fallback = 0;
   while (!SCHEME_NULLP(di)) {
@@ -3222,7 +3240,7 @@ char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int 
         if (!o)
           o = scheme_make_byte_string_output_port();
 
-        fprint_string(o, "\n  context");
+        fprint_label_string(o, rename_level, rename_sym, "context");
         if (fallback) {
           fprint_string(o, " at layer ");
           scheme_display(scheme_make_integer(fallback), o);
@@ -3235,9 +3253,9 @@ char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int 
 
           if (context_matches(scheme_hash_tree_get(dit, context_symbol),
                               scheme_hash_tree_get(bt, context_symbol)))
-            fprint_string(o, "\n  matching binding");
+            fprint_label_string(o, rename_level, rename_sym, "matching binding");
           else
-            fprint_string(o, "\n  other binding");
+            fprint_label_string(o, rename_level, rename_sym, "other binding");
           if (fallback) {
             fprint_string(o, " at layer ");
             scheme_display(scheme_make_integer(fallback), o);
@@ -3251,6 +3269,33 @@ char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int 
           scheme_write(val, o);
           fprint_string(o, "\n  ");
           write_context(scheme_hash_tree_get(bt, context_symbol), o);
+
+          free_id = scheme_hash_tree_get(bt, free_symbol);
+          if (free_id) {
+            fprint_string(o, "\n   free-identifier=? to ");
+            if (SCHEME_PAIRP(free_id)
+                && SAME_OBJ(SCHEME_CAR(free_id), cycle_symbol)) {
+              int up = SCHEME_INT_VAL(SCHEME_CAR(SCHEME_CDR(free_id)));
+              if (!up)
+                fprint_string(o, "[cycle to self]");
+              else {
+                fprint_string(o, "[cycle, up ");
+                scheme_write(scheme_make_integer(up), o);
+                fprint_string(o, " levels]");
+              }
+            } else {
+              if (SCHEME_HASHTRP(free_id))
+                val = scheme_hash_tree_get((Scheme_Hash_Tree *)free_id, name_symbol);
+              else
+                val = NULL;
+              if (val) {
+                scheme_write(val, o);
+                o = describe_bindings(o, free_id, rename_level + 1, val, always);
+              } else {
+                fprint_string(o, "[unknown]");
+              }
+            }
+          }
         
           report = SCHEME_CDR(report);
         }
@@ -3267,8 +3312,28 @@ char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int 
     fallback++;
   }
 
-  if (o)
-    return scheme_get_sized_byte_string_output(o, NULL);
+  return o;
+}
+
+char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int always)
+{
+  Scheme_Object *di, *o = NULL;
+  intptr_t len;
+  char *r;
+
+  if (!stx)
+    return "";
+
+  di = stx_debug_info((Scheme_Stx *)stx, phase, scheme_null, 0);
+
+  o = describe_bindings(o, di, 0, NULL, always);
+
+  if (o) {
+    r = scheme_get_sized_byte_string_output(o, &len);
+    /* make sure error buffer is allocated large enough: */
+    scheme_ensure_max_symbol_length(len);
+    return r;
+  }
   else
     return "";
 }

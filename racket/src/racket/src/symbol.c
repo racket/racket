@@ -352,6 +352,17 @@ uintptr_t scheme_get_max_symbol_length() {
   return scheme_max_symbol_length;
 }
 
+void scheme_ensure_max_symbol_length(uintptr_t len)
+{
+#ifdef MZ_USE_PLACES
+  mzrt_ensure_max_cas(&scheme_max_symbol_length, len);
+#else
+  if (len > scheme_max_symbol_length) {
+    scheme_max_symbol_length = len;
+  }
+#endif
+}
+
 
 static Scheme_Object *
 make_a_symbol(const char *name, uintptr_t len, int kind)
@@ -366,15 +377,9 @@ make_a_symbol(const char *name, uintptr_t len, int kind)
   memcpy(sym->s, name, len);
   sym->s[len] = 0;
 
-#ifdef MZ_USE_PLACES
-  mzrt_ensure_max_cas(&scheme_max_symbol_length, len);
-#else
-  if ( len > scheme_max_symbol_length ) {
-    scheme_max_symbol_length = len;
-  }
-#endif
+  scheme_ensure_max_symbol_length(len);
 
-  return (Scheme_Object *) sym;
+  return (Scheme_Object *)sym;
 }
 
 Scheme_Object *

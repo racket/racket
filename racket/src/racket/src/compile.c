@@ -2145,13 +2145,14 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
 
   form = scheme_stx_taint_disarm(form, NULL);
 
-  if (rec_env_already == 2) {
+  if (rec_env_already >= 2) {
+    body_block = (rec_env_already > 2);
     l = detect_traditional_letrec(form, origenv);
     if (!SAME_OBJ(l, form)) {
       rec_env_already = 1;
       form = l;
-    }
-    body_block = 1;
+    } else
+      rec_env_already = 2;
   } else
     body_block = !rec_env_already;
 
@@ -2175,7 +2176,14 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   forms = scheme_datum_to_syntax(forms, form, form, 0, 0);
 
   if (!num_clauses) {
-    env = scheme_no_defines(origenv);
+    if (!body_block)
+      scheme_signal_error("internal error: no local bindings, but body is not in a block");
+
+    /* Even though there are no bindings, we need a mark to
+       indicate a nested binding context */
+    mark = scheme_new_mark(SCHEME_STX_LOCAL_BIND_MARK);
+    env = scheme_new_compilation_frame(0, 0, mark, origenv);
+    forms = scheme_stx_add_mark(forms, mark, scheme_env_phase(env->genv));
 
     name = scheme_check_name_property(form, rec[drec].value_name);
     rec[drec].value_name = name;
@@ -2551,13 +2559,14 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
 
-  if (rec_env_already == 2) {
+  if (rec_env_already >= 2) {
+    body_block = (rec_env_already > 2);
+    rec_env_already = 2;
     v = detect_traditional_letrec(form, origenv);
     if (!SAME_OBJ(v, form)) {
       rec_env_already = 1;
       form = v;
     }
-    body_block = 1;
   } else
     body_block = !rec_env_already;
 
@@ -4014,8 +4023,9 @@ do_letrec_syntaxes(const char *where,
 
     if (!env_already) { /* i.e., not internal defn */
       /* We want non-`letrec' semantics for value bindings (i.e., sort
-         out the bindings into `letrec' and `let'): */
-      rec[drec].env_already = 2;
+         out the bindings into `letrec' and `let'), but also treat the
+         body as a block. */
+      rec[drec].env_already = 3;
     }
     
     if (rec[drec].comp) {

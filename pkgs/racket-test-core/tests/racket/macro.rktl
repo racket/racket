@@ -1153,5 +1153,33 @@
         (chaperone-struct (foo #'x) foo-id (lambda (f x) x)))))
 
 ;; ----------------------------------------
+;; Check that new binding scopes are introduced even for
+;; empty `let` bindings:
+
+(test 1 'empty-let-intro
+      (let ()
+        (define-syntax (m stx)
+          (syntax-case stx ()
+            [(_ def-id id)
+             #`(define-syntax def-id
+                 (make-rename-transformer (quote-syntax #,(syntax-local-introduce
+                                                           (syntax-local-value #'id)))))]))
+        (define-syntax (n stx)
+          (syntax-case stx ()
+            [(_ def-id id)
+             #`(define-syntax def-id (quote-syntax #,(syntax-local-introduce
+                                                      (syntax-local-value #'id))))]))
+
+        (let ()
+          (define x 1)
+          (define-syntax id #'x)
+          (let ()
+            (n id2 id)
+            (define x 2)
+            (let ()
+              (m z id2)
+              z)))))
+
+;; ----------------------------------------
 
 (report-errs)
