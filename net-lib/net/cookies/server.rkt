@@ -34,10 +34,6 @@
                              bytes?)]
                        [cookie->string (-> cookie? string?)]
                        
-                       (struct (exn:fail:cookie exn:fail)
-                         ([message string?]
-                          [continuation-marks continuation-mark-set?]))
-                       
                        #:forall X
                        [cookie-header->alist
                         (case-> (-> bytes? (listof (cons/c bytes? bytes?)))
@@ -81,10 +77,6 @@
                 #:expires (seconds->date clear-cookie-expiration-seconds #f)
                 #:path path
                 #:domain domain)))
-
-;; For failure to parse a cookie on the server side:
-;; FIXME I'm not sure I like raising exns for this.
-(struct exn:fail:cookie exn:fail ()) 
 
 ;; bytes? [(bytes? -> A)] -> (AList A A)
 ;; Given the value from a Cookie: header, produces an alist of name/value

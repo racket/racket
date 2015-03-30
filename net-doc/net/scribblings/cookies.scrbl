@@ -170,14 +170,8 @@ HttpOnly} for more info.)
  @examples[
  #:eval cookies-server-eval
  (clear-cookie-header "rememberUser" #:path "/main")
- (require racket/date)
- (date->string (seconds->date (current-seconds) #f) #t)
  ]
 
-}
-
-@defstruct*[(exn:fail:cookie exn:fail) ()]{
-Raised when a cookie (or component thereof) is malformed or can't be parsed.
 }
 
 @defproc*[([(cookie-header->alist [header bytes?])
@@ -189,10 +183,8 @@ Raised when a cookie (or component thereof) is malformed or can't be parsed.
  alist of all cookie name/value mappings in the header. If a
  @racket[decode] function is given, applies @racket[decode]
  to each key and each value before inserting the new
- key-value pair into the alist. Raises an 
- @racket[exn:fail:cookie] if the header can't be parsed into
- a sequence of name/value pairs (but does not check that the
- byte-string obeys all the cookie formatting requirements).
+ key-value pair into the alist. Invalid cookies will not
+ be present in the alist.
 
  If a key in the header has no value, then @racket[#""], or
  @racket[(decode #"")] if @racket[decode] is present, is
@@ -208,7 +200,6 @@ Raised when a cookie (or component thereof) is malformed or can't be parsed.
                                 bytes->string/utf-8))]
 
 }
-
 
 @defproc[(cookie->string [c cookie?])
          string?]{
