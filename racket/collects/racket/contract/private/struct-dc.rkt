@@ -1429,7 +1429,7 @@
                               #,@(reverse s-chap-code) ;; built the last backwards, so reverse it here
                               stronger-prop-desc
                               (vector free-var ...)))
-                           (struct/dc-error blame #,(opt/info-val opt/info) 'struct-name))))
+                           (struct/dc-error #,(opt/info-blame opt/info) #,(opt/info-val opt/info) 'struct-name))))
              #:lifts
              s-lifts
              #:superlifts
