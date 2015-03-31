@@ -1,7 +1,7 @@
-(module test-harness mzscheme
+(module test-harness racket
   (require syntax/stx)
               
-  (provide (all-defined))
+  (provide (all-defined-out))
 
   (define (lst-bound-id=? x y)
     (andmap bound-identifier=? x y))
@@ -10,18 +10,23 @@
     (cond 
       ((and (syntax? x) (eq? '_ (syntax-e x)))
        #t)
-      ((and (stx-pair? x)
-            (not (syntax-e (stx-car x)))
-            (identifier? (stx-cdr x)))
+      ((and (syntax? x)
+            (vector? (syntax-e x))
+            (= 2 (vector-length (syntax-e x))))
        (and (identifier? y)
-            (not (module-identifier=? (stx-cdr x) y))))
+            (eq? (syntax-e (vector-ref (syntax-e x) 0))
+                 (free-identifier=? (vector-ref (syntax-e x) 1) y))))
       ((and (stx-null? x) (stx-null? y))
        #t)
       ((and (stx-pair? x) (stx-pair? y))
        (and (stx-bound-id=? (stx-car x) (stx-car y))
             (stx-bound-id=? (stx-cdr x) (stx-cdr y))))
       ((and (identifier? x) (identifier? y))
-       (bound-identifier=? x y))
+       (if (bound-identifier=? x y)
+           #t
+           (begin
+             (log-error "Differ:\n  ~s\n  ~s" x y)
+             #f)))
       ((and (syntax? x) (number? (syntax-e x))
             (syntax? y) (number? (syntax-e y)))
        (= (syntax-e x) (syntax-e y)))

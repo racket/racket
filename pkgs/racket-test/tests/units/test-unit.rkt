@@ -3,7 +3,6 @@
 (require (for-syntax racket/private/unit-compiletime
                      racket/private/unit-syntax))
 (require "test-harness.rkt"
-         ;unit
          scheme/unit)
 
 (define-syntax (lookup-sig-mac stx)
@@ -11,15 +10,18 @@
     (syntax-case stx ()
       ((_ id)
        #`#'#,(let ((s (lookup-signature #'id)))
-               (list (map syntax-local-introduce (signature-vars s))
-                     (map (lambda (def)
-                            (cons (map syntax-local-introduce (car def))
-                                  (syntax-local-introduce (cdr def))))
-                          (signature-val-defs s))
-                     (map (lambda (def)
-                          (cons (map syntax-local-introduce (car def))
-                                (syntax-local-introduce (cdr def))))
-                          (signature-stx-defs s))))))))
+               (define (shift-scope member-id)
+                 ((make-syntax-delta-introducer (car (signature-vars s)) member-id)
+                  (datum->syntax #'id (syntax-e member-id))))
+               (list (map shift-scope (signature-vars s))
+                       (map (lambda (def)
+                              (cons (map shift-scope (car def))
+                                    (cdr def)))
+                            (signature-val-defs s))
+                       (map (lambda (def)
+                              (cons (map shift-scope (car def))
+                                    (cdr def)))
+                            (signature-stx-defs s))))))))
 
 (define-signature x-sig (x))
 (define-signature x-sig2 (x))
@@ -65,7 +67,7 @@
 (test-syntax-error "define-signature-form: missing arguments"
   (define-signature-form (a b)))
 (test-syntax-error "define-signature-form: too many arguments"
-  (define-signature-form (a b c) 1 2))
+  (define-signature-form (a b c d) 1 2))
 (test-syntax-error "define-signature-form: dot"
   (define-signature-form (a b) . c))
 (test-syntax-error "define-signature-form: set!"
@@ -154,7 +156,10 @@
   (define s7 (void))
   (define h (void))
   (define-signature super (s1 (define-values (s2 s3) s4) (define-syntaxes (s5 s6) (values #'s7 #'s7))))
-  (test stx-bound-id=? #'((s1 a b f) (((s2 s3) . _) ((c d) . e) ((i) . j)) (((_ _ _ _ _) . _) _ ((g) . #'h)))
+  (test stx-bound-id=?
+        ;; In this pattern, plain identifiers must be bound-id=?, while
+        ;; #(<bool> <id>) checks for an id that is fre-id=? or not depending on <bool>
+        #'((s1 a b f) (((s2 s3) . _) ((c d) . #(#t e)) ((i) . #(#t j))) (((_ _ _ _ _) . _) _ ((g) . (_ #(#t h)))))
         (let ()
           (define-signature x extends super (a b (define-values (c d) e) f
                                                (define-syntaxes (g) #'h)
@@ -166,7 +171,7 @@
   (define-signature super (s1 (define-values (s2 s3) s4) (define-syntaxes (s5 s6) (values #'s7 #'s7))))
   (let ((a 1) (g 2) (j 3) (s1 4) (s2 5))
     (test stx-bound-id=?
-          #'((s1 a b f) (((s2 s3) . _) ((c d) . e) ((i) . j)) (((_ _ _ _ _) . _) _ ((g) . #'h)))
+          #'((s1 a b f) (((s2 s3) . _) ((c d) . #(#t e)) ((i) . #(#t j))) (((_ _ _ _ _) . _) _ ((g) . (_ #(#t h)))))
           (let ()
             (define-signature x extends super (a b (define-values (c d) e) f
                                                  (define-syntaxes (g) #'h)
@@ -177,14 +182,14 @@
   (define h (void))
   (define-signature super (s1 (define-values (s2 s3) s4) (define-syntaxes (s5 s6) (values #'s7 #'s7))))
   (test stx-bound-id=?
-        #'((s1 a b f) (((s2 s3) . _) ((c d) . e) ((i) . j)) (((_ _ _ _ _) . _) _ ((g) . #'h)))
+        #'((s1 a b f) (((s2 s3) . _) ((c d) . #(#t e)) ((i) . #(#t j))) (((_ _ _ _ _) . _) _ ((g) . (_ #(#t h)))))
         (let ()
           (define-signature x extends super (a b (define-values (c d) e) f
                                                (define-syntaxes (g) #'h)
                                                (define-values (i) j)))
           (let ((a 1) (g 2) (j 3))
             (lookup-sig-mac x)))))
-(test stx-bound-id=? #'((a b f) (((c d) . e) ((i) . j)) (((g) . #'h)))
+(test stx-bound-id=? #'((a b f) (((c d) . #(#t e)) ((i) . #(#t j))) (((g) . (_ #(#t h)))))
       (let ((a 1) (g 2) (j 3))
         (define-signature x (a b (define-values (c d) e) f
                                (define-syntaxes (g) #'h)
