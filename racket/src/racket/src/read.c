@@ -5240,6 +5240,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
         ph = scheme_alloc_small_object();
         ph->type = scheme_placeholder_type;
+        SCHEME_PTR_VAL(ph) = scheme_false;
         
         l = read_compact_number(port);
         RANGE_POS_CHECK(l, < port->symtab_size);

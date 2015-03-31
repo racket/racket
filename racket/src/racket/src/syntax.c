@@ -6020,6 +6020,8 @@ Scheme_Object *unmarshal_multi_marks(Scheme_Object *multi_marks,
       l = SCHEME_FALLBACK_FIRST(l);
 
     for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      if (!SCHEME_PAIRP(l)) return_NULL;
+      if (!SCHEME_PAIRP(SCHEME_CAR(l))) return_NULL;
       if (SCHEME_VECTORP(SCHEME_CAR(SCHEME_CAR(l)))) {
         multi_mark = vector_to_multi_mark(SCHEME_CAR(SCHEME_CAR(l)), ut);
         if (!multi_mark) return_NULL;
@@ -6048,7 +6050,12 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
   Scheme_Object *l;
 
   l = scheme_hash_get(ut->rns, w);
-  if (l) return l;
+  if (l) {
+    if (!SCHEME_PAIRP(l)
+        || !SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(l)), scheme_mark_table_type))
+      return NULL;
+    return l;
+  }
 
   if (!SCHEME_VECTORP(w)
       || ((SCHEME_VEC_SIZE(w) != 3)
@@ -6218,6 +6225,7 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
     l2 = SCHEME_VEC_ELS(c)[i+1];
     r = scheme_null;
     while (SCHEME_PAIRP(l2)) {
+      if (!SCHEME_PAIRP(SCHEME_CAR(l2))) return_NULL;
       marks = list_to_mark_set(SCHEME_CAR(SCHEME_CAR(l2)), ut);
       if (!marks) return_NULL;
 
@@ -6378,6 +6386,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
            all nested objects (as indicated by a box
            for stx_wraps). */
         wraps = datum_to_wraps(wraps, ut);
+        if (!wraps) return_NULL;
         do_not_unpack_wraps = 1;
         sub_stx_wraps = (Scheme_Stx *)scheme_box(wraps);
         o = SCHEME_CDR(o);
