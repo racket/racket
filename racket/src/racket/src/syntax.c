@@ -2827,7 +2827,8 @@ void extract_module_binding_parts(Scheme_Object *l,
                                   Scheme_Object **_src_phase,      /* maybe unset */
                                   Scheme_Object **_nominal_src_phase) /* maybe unset */
 {
-  if (SCHEME_INSPECTOR_DESCP(SCHEME_CAR(l))) {
+  if (SCHEME_PAIRP(l)
+      && SCHEME_INSPECTOR_DESCP(SCHEME_CAR(l))) {
     *_insp_desc = SCHEME_CAR(l);
     l = SCHEME_CDR(l);
   } else
