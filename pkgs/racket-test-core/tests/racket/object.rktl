@@ -2114,5 +2114,46 @@
   (void time-print-mixin))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test the class-seal and class-unseal operations
+
+(define (seal cls key init field method)
+  (class-seal cls key init field method
+              (λ (cls) (error "cannot instantiate sealed class"))
+              (λ (cls names) (error "cannot subclass with sealed member"))))
+
+(define (unseal cls key)
+  (class-unseal cls key (λ (cls) (error "no matching seal found"))))
+
+(err/rt-test (new (seal object% 'key null null null)) exn:fail?)
+(err/rt-test (new (seal (seal object% 'key null null null)
+                        'key2 null null null))
+             exn:fail?)
+(err/rt-test (unseal object% 'g123) exn:fail?)
+(err/rt-test (unseal (seal object% (gensym) null null null) 'g123)
+             exn:fail?)
+(err/rt-test (new (unseal (seal (seal object% 'key null null null)
+                                'key2 null null null)
+                          'key))
+             exn:fail?)
+(err/rt-test (let ([c% (seal object% (gensym) null null null)])
+               (new (class c% (super-new))))
+             exn:fail?)
+(test #t class? (let ([c% (seal object% (gensym) null '(x) null)])
+                  (class c% (super-new) (field [x 0]))))
+(test #t class? (let ([c% (seal (seal object% (gensym) null '(x) null)
+                                (gensym) null '(x y) null)])
+                  (class c% (super-new) (field [x 0]))))
+(err/rt-test (let ([c% (seal object% (gensym) null '(x) null)])
+               (new (class c% (super-new) (field [x 0]))))
+             exn:fail?)
+(err/rt-test (let ([c% (seal (seal object% (gensym) null '(x) null)
+                             (gensym) null '(y) null)])
+               (class c% (super-new) (field [z 0])))
+             exn:fail?)
+(err/rt-test (let ([c% (seal object% (gensym) null null null)])
+               (class c% (super-new) (field [x 0])))
+             exn:fail?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

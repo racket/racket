@@ -2701,6 +2701,47 @@ a method that is not supplied by an object.
 
 }
 
+@defproc[(class-seal [class class?]
+                     [key symbol?]
+                     [unsealed-inits (listof symbol?)]
+                     [unsealed-fields (listof symbol?)]
+                     [unsealed-methods (listof symbol?)]
+                     [inst-proc (-> class? any)]
+                     [member-proc (-> class? (listof symbol?) any)])
+         class?]{
+
+Adds a seal to a given class keyed with the symbol @racket[key]. The
+given @racket[unsealed-inits], @racket[unsealed-fields], and
+@racket[unsealed-methods] list corresponding class members that are
+unaffected by sealing.
+
+When a class has any seals, the @racket[inst-proc] procedure is called
+on instantiation (normally, this is used to raise an error on
+instantiation) and the @racket[member-proc] function is called
+(again, this is normally used to raise an error) when a subclass
+attempts to add class members that are not listed in the unsealed lists.
+
+The @racket[inst-proc] is called with the class value on which an
+instantiation was attempted. The @racket[member-proc] is called with
+the class value and the list of initialization argument, field, or
+method names.
+}
+
+@defproc[(class-unseal [class class?]
+                       [key symbol?]
+                       [wrong-key-proc (-> class? any)])
+         class?]{
+
+Removes a seal on a class that has been previously sealed with the
+@racket[class-seal] function and the given @racket[key].
+
+If the unseal removed all of the seals in the class, the class
+value can be instantiated or subclassed freely. If the given
+class value does not contain or any seals or does not contain
+any seals with the given key, the @racket[wrong-key-proc] function
+is called with the class value.
+}
+
 @; ----------------------------------------------------------------------
 
 @include-section["surrogate.scrbl"]
