@@ -1152,10 +1152,6 @@ Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark);
 Scheme_Object *scheme_add_frame_use_site_mark(Scheme_Object *frame_marks, Scheme_Object *use_site_mark);
 Scheme_Object *scheme_add_frame_intdef_mark(Scheme_Object *frame_marks, Scheme_Object *intdef_mark);
 
-Scheme_Object *scheme_stx_remove_toplevel_context_marks(Scheme_Object *o);
-Scheme_Object *scheme_stx_remove_module_context_marks(Scheme_Object *o);
-Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o);
-
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
                                  Scheme_Hash_Table *export_registry,

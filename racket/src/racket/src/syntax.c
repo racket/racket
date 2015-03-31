@@ -1327,45 +1327,6 @@ Scheme_Object *scheme_add_frame_intdef_mark(Scheme_Object *frame_marks, Scheme_O
   return add_frame_mark(frame_marks, mark, 2);
 }
 
-Scheme_Object *scheme_stx_remove_module_binding_marks(Scheme_Object *o)
-{
-  Scheme_Object *l = ((Scheme_Stx *)o)->marks->multi_marks, *multi_mark;
-
-  if (SCHEME_FALLBACKP(l))
-    l = SCHEME_FALLBACK_FIRST(l);
-  
-  while (!SCHEME_NULLP(l)) {
-    multi_mark = SCHEME_CAR(SCHEME_CAR(l));
-    o = scheme_stx_remove_mark(o,
-                               extract_single_mark(multi_mark,
-                                                   scheme_make_integer(0)),
-                               SCHEME_CDR(SCHEME_CAR(l)));
-    l = SCHEME_CDR(l);
-  }
-
-  return o;
-}
-
-Scheme_Object *scheme_stx_remove_module_context_marks(Scheme_Object *o)
-{
-  Scheme_Mark_Set *marks = ((Scheme_Stx *)o)->marks->single_marks;
-  intptr_t i;
-  Scheme_Object *key, *val;
-
-  i = mark_set_next(marks, -1);
-  while (i != -1) {
-    mark_set_index(marks, i, &key, &val);
-
-    if ((SCHEME_MARK_KIND(key) == SCHEME_STX_MODULE_MARK)
-        || (SCHEME_MARK_KIND(key) == SCHEME_STX_MODULE_MULTI_MARK))
-      o = scheme_stx_remove_mark(o, key, scheme_make_integer(0));
-
-    i = mark_set_next(marks, i);
-  }
-
-  return scheme_stx_remove_module_binding_marks(o);
-}
-
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase)
 {
   return (mark_set_count(extract_mark_set((Scheme_Stx *)stx, phase)) == 0);
