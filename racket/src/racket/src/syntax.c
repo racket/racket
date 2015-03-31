@@ -4789,37 +4789,36 @@ int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase
 
 Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source)
 {
-  /* Look for a self-modidx shift: */
-  Scheme_Object *l = ((Scheme_Stx *)stx)->shifts, *a;
-  Scheme_Object *srcmod = scheme_false, *chain_from = NULL;
-  Scheme_Hash_Table *export_registry = NULL;
+  /* Look for the oldest self-modidx that has a shift: */
+  Scheme_Object *l = ((Scheme_Stx *)stx)->shifts, *a, *src;
+  Scheme_Hash_Table *export_registry;
 
   if (SCHEME_VECTORP(l))
     l = SCHEME_VEC_ELS(l)[0];
+
+  l = scheme_reverse(l);
   
   while (!SCHEME_NULLP(l)) {
     a = SCHEME_CAR(l);
     if (SCHEME_VECTORP(a)) {
-      /* Phase shift:  */
-      Scheme_Object *dest, *src, *er;
+      src = SCHEME_VEC_ELS(a)[1];
 
-      src = SCHEME_VEC_ELS(a)[0];
-      dest = SCHEME_VEC_ELS(a)[1];
-
-      /* If src is #f, shift is just for phase; no redirection */
-      if (!SCHEME_FALSEP(src)) {
-        
-        if (!chain_from)
-          srcmod = dest;
-        else if (!SAME_OBJ(chain_from, dest))
-          srcmod = scheme_modidx_shift(dest, chain_from, srcmod);
-        
-        chain_from = src;
-
-        if (!export_registry && (SCHEME_VEC_SIZE(a) > 4)) {
-          er = SCHEME_VEC_ELS(a)[4];
-          if (SCHEME_TRUEP(er))
-            export_registry = (Scheme_Hash_Table *)er;
+      if (SCHEME_MODIDXP(src)) {
+        if (SCHEME_FALSEP(((Scheme_Modidx *)src)->path)) {
+          src = apply_modidx_shifts(((Scheme_Stx *)stx)->shifts, src,
+                                    NULL, &export_registry);
+          if (!SCHEME_FALSEP(((Scheme_Modidx *)src)->path)) {
+            if (resolve) {
+              src = scheme_module_resolve(src, 0);
+              if (export_registry && source) {
+                a = scheme_hash_get(export_registry, src);
+                if (a)
+                  src = ((Scheme_Module_Exports *)a)->modsrc;
+              }
+              src = SCHEME_PTR_VAL(src);
+            }
+            return src;
+          }
         }
       }
     }
@@ -4827,19 +4826,7 @@ Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int sou
     l = SCHEME_CDR(l);
   }
 
-  if (SCHEME_TRUEP(srcmod)) {
-    if (resolve) {
-      srcmod = scheme_module_resolve(srcmod, 0);
-      if (export_registry && source) {
-        a = scheme_hash_get(export_registry, srcmod);
-        if (a)
-          srcmod = ((Scheme_Module_Exports *)a)->modsrc;
-      }
-      srcmod = SCHEME_PTR_VAL(srcmod);
-    }
-  }
-
-  return srcmod;
+  return scheme_false;
 }
 
 /*========================================================================*/
