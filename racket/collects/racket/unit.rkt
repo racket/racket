@@ -1034,7 +1034,7 @@
                            (free-identifier=? id (quote-syntax define-syntaxes)))))]
               [expanded-body
                (let expand-all ((defns&exprs (syntax->list #'(body ...))))
-                 ;; Also lifted from Matthew, to expand the body enough
+                 ;; Expand the body enough
                  (apply
                   append
                   (map
@@ -2028,11 +2028,7 @@
             [units (map lookup-def-unit us)]
             [import-sigs (map process-signature 
                               (syntax->list #'(import ...)))]
-            [sig-introducers (map (lambda (unit u)
-                                    (syntax-local-make-delta-introducer u)
-                                    #;
-                                    (make-syntax-delta-introducer u (unit-info-orig-binder unit)))
-                                  units us)]
+            [sig-introducers (map (lambda (unit u) values) units us)]
             [sub-outs
              (map
               (lambda (outs unit sig-introducer)
@@ -2224,9 +2220,8 @@
 (define-for-syntax (build-invoke-unit/infer units define? exports)
   (define (imps/exps-from-unit u)      
     (let* ([ui (lookup-def-unit u)]
-           [unprocess (let ([i (syntax-local-make-delta-introducer u #;(unit-info-orig-binder ui))])
-                        (lambda (p)
-                          (unprocess-tagged-id (cons (car p) (i (cdr p))))))]
+           [unprocess (lambda (p)
+                        #`(bind-at #,u #,(unprocess-tagged-id (cons (car p) (cdr p)))))]
            [isigs (map unprocess (unit-info-import-sig-ids ui))]
            [esigs (map unprocess (unit-info-export-sig-ids ui))])
       (values isigs esigs)))
@@ -2258,7 +2253,6 @@
         (if (null? units)
             (values imps exps)
             (let-values ([(i e) (imps/exps-from-unit (car units))])
-              (map syntax-local-value i)
               (loop (cdr units) (append i imps) (append e exps))))))
     (define-values (isig tagged-import-sigs import-tagged-infos 
                          import-tagged-sigids import-sigs)
@@ -2315,7 +2309,8 @@
                                              (check-compound/infer-syntax
                                               #'((import isig ...)
                                                  (export esig ...)
-                                                 (link unit ...))))]) u)])
+                                                 (link unit ...))))])
+                                u)])
                (if define?
                    (syntax/loc (error-syntax)
                      (define-values/invoke-unit u

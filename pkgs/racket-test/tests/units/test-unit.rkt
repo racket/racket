@@ -827,7 +827,15 @@
     (test (list 2 123 1) (invoke-unit (compound-unit (import) (export)
                                                      (link (((a : s2)) u2)
                                                            (() u1 a)))))))
-
+(let ([c 50])
+  (define-signature s1 (a (define-values (x y) (values c 2))))
+  (define-signature s2 extends s1 ((define-values (z) (list a x))))
+  (define u1 (unit (import s2) (export) (define c 77) (cons y z)))
+  (define u2 (unit (import) (export s2) (define a 123)))
+  (test (list 2 123 50) (invoke-unit (compound-unit (import) (export)
+                                                   (link (((a : s2)) u2)
+                                                         (() u1 a))))))
+#;
 (let ([c 5])
   (define-signature s1 (a (define-values (x y) (values c 2))))
   (define-signature s2 extends s1 (c (define-values (z) (list a x))))

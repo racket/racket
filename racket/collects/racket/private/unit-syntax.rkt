@@ -5,6 +5,8 @@
   
 (provide (all-defined-out))
 
+(define bind-at #f)
+
 (define error-syntax (make-parameter #f))
 (define raise-stx-err
   (case-lambda
@@ -29,17 +31,20 @@
 ;; check-tagged : (syntax-object -> X) -> syntax-object -> (cons (or symbol #f) X)
 (define (check-tagged check)
   (λ (o)
-    (syntax-case o (tag)
-      ((tag . s)
-       (syntax-case #'s ()
-         ((sym spec) 
-          (begin
-            (unless (symbol? (syntax-e #'sym))
-              (raise-stx-err "tag must be a symbol" #'sym))
-            (cons (syntax-e #'sym) (check #'spec))))
-         (_ (raise-stx-err "expected (tag <identifier> <syntax>)" #'s))))
-      (_ 
-       (cons #f (check o))))))
+    (let loop ([o o])
+      (syntax-case o (bind-at tag)
+        ((bind-at bind o)
+         (loop #'o))
+        ((tag . s)
+         (syntax-case #'s ()
+           ((sym spec) 
+            (begin
+              (unless (symbol? (syntax-e #'sym))
+                (raise-stx-err "tag must be a symbol" #'sym))
+              (cons (syntax-e #'sym) (check #'spec))))
+           (_ (raise-stx-err "expected (tag <identifier> <syntax>)" #'s))))
+        (_ 
+         (cons #f (check o)))))))
 
 ;; check-tagged-:-clause : syntax-object -> (cons identifier identifier)
 ;; ensures that clause matches (a : b) or (a : (tag t b))
@@ -76,7 +81,9 @@
       (unless (stx-pair? s)
         (raise-stx-err (format "bad ~a spec" ie) s))
       (checked-syntax->list s)
-      (syntax-case s (prefix rename)
+      (syntax-case s (prefix rename bind-at)
+        ((bind-at any spec)
+         (check-spec-syntax #'spec import? prim-spec?))
         ((key . x)
          (or (free-identifier=? #'key #'only)
              (free-identifier=? #'key #'except))

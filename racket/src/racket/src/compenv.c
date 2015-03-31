@@ -1694,8 +1694,6 @@ Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env, int
   if (binder && for_reference) {
     sym = binder;
   } else {
-    sym = scheme_stx_remove_module_context_marks(sym);
-  
     if (binder)
       sym = scheme_stx_binding_union(sym, binder, scheme_env_phase(env->genv));
     else if (env->genv->module && env->genv->module->ii_src)

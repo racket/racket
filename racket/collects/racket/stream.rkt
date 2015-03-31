@@ -50,6 +50,9 @@
                      (quote-syntax stream-get-generics)
                      (list (quote-syntax stream-empty?)
                            (quote-syntax stream-first)
+                           (quote-syntax stream-rest))
+                     (list (quote-syntax stream-empty?)
+                           (quote-syntax stream-first)
                            (quote-syntax stream-rest))))
 
 (define-syntax stream

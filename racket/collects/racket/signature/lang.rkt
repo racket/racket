@@ -27,7 +27,8 @@
 
 (define-syntax (module-begin stx)
   (parameterize ((error-syntax stx))
-    (with-syntax ((name (make-name (syntax-property stx 'enclosing-module-name))))
+    (with-syntax ((name (datum->syntax stx
+                                       (make-name (syntax-property stx 'enclosing-module-name)))))
       (syntax-case stx ()
         ((_ . x)
          (with-syntax ((((reqs ...) . (body ...))

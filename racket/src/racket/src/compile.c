@@ -726,25 +726,25 @@ Scheme_Object *scheme_clone_vector(Scheme_Object *data, int skip, int set_type)
 
 Scheme_Object *scheme_revert_use_site_marks(Scheme_Object *o, Scheme_Comp_Env *env)
 {
+  while (1) {
+    if (env->marks) {
+      o = scheme_stx_adjust_frame_use_site_marks(o,
+                                                 env->marks,
+                                                 scheme_env_phase(env->genv),
+                                                 SCHEME_STX_REMOVE);
+    }
+    if (env->flags & (SCHEME_FOR_INTDEF | SCHEME_INTDEF_FRAME | SCHEME_INTDEF_SHADOW)) {
+      env = env->next;
+      if (!env)
+        break;
+    } else
+      break;
+  }
+
   if (env->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME)) {
     o = scheme_stx_adjust_module_use_site_context(o,
                                                   env->genv->stx_context,
                                                   SCHEME_STX_REMOVE);
-  } else {
-    while (1) {
-      if (env->marks) {
-        o = scheme_stx_adjust_frame_use_site_marks(o,
-                                                   env->marks,
-                                                   scheme_env_phase(env->genv),
-                                                   SCHEME_STX_REMOVE);
-      }
-      if (env->flags & (SCHEME_FOR_INTDEF | SCHEME_INTDEF_FRAME | SCHEME_INTDEF_SHADOW)) {
-        env = env->next;
-        if (!env)
-          break;
-      } else
-        break;
-    }
   }
   
   return o;

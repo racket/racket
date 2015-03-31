@@ -177,7 +177,7 @@
        (define gen-info (syntax-local-value gen-id (lambda () #f)))
        (unless (generic-info? gen-info)
          (wrong-syntax gen-id "expected a name for a generic interface"))
-       (define delta (syntax-local-make-delta-introducer gen-id))
+       (define delta (make-method-delta gen-id (generic-info-name gen-info)))
        (define predicate (generic-info-predicate gen-info))
        (define accessor (generic-info-accessor gen-info))
        (define method-ids (syntax->list #'(method-name ...)))
