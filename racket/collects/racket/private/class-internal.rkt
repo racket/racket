@@ -63,6 +63,7 @@
            make-primitive-class
            class/c ->m ->*m ->dm case->m object/c instanceof/c
            dynamic-object/c
+           class-seal class-unseal
            
            ;; "keywords":
            private public override augment
@@ -2147,6 +2148,34 @@ last few projections.
                                 abstract-names)
                         "method names"))
   
+  ;; -- Run class-seal/unseal checkers --
+  (when (has-seals? super)
+    (define seals (get-seals super))
+    (define all-inits init-args)
+    (define all-fields (append public-field-names inherit-field-names))
+    (define all-methods (append rename-super-names
+                                rename-inner-names
+                                pubment-names
+                                public-final-names
+                                public-normal-names
+                                overment-names
+                                override-final-names
+                                override-normal-names
+                                augment-names
+                                augment-final-names
+                                augride-normal-names
+                                inherit-names
+                                abstract-names))
+    (define all-init-checkers
+      (map (λ (sl) (seal-init-checker sl)) seals))
+    (define all-field-checkers
+      (map (λ (sl) (seal-field-checker sl)) seals))
+    (define all-method-checkers
+      (map (λ (sl) (seal-method-checker sl)) seals))
+    (for ([f all-init-checkers]) (f all-inits))
+    (for ([f all-field-checkers]) (f all-fields))
+    (for ([f all-method-checkers]) (f all-methods)))
+
   ;; -- Create new class's name --
   (let* ([name (or name
                    (let ([s (class-name super)])
@@ -2779,7 +2808,7 @@ last few projections.
                                            (values o
                                                    (lambda (o2)
                                                      ((class-fixup c) o o2))))))))
-                          c+ctc))))))))))))
+                          (copy-seals super c+ctc)))))))))))))
 
 ;; (listof interface?) -> (listof symbol?)
 ;; traverse the interfaces and figure out contracted methods
@@ -2924,6 +2953,99 @@ An example
      (object-ref o)]))
 
 
+
+;;--------------------------------------------------------------------
+;;  sealing/unsealing
+;;--------------------------------------------------------------------
+
+;; represents a seal on a class, only for internal use
+;;
+;; sym            - the symbol used to identify the particular seal
+;; inst-checker   - a function to run when a sealed class is instantiated
+;; init-checker   - these three fields respectively are functions to run when
+;; field-checker    a sealed class is subclassed and should error when a sealed
+;; method-checker   member is added in the subclass
+(struct seal (sym inst-checker init-checker field-checker method-checker)
+        #:transparent)
+
+(define-values (prop:seals has-seals? get-seals)
+  (make-impersonator-property 'class-seals))
+
+(define (class-seal cls seal-sym
+                    inits fields methods
+                    inst-proc
+                    member-proc)
+  (unless (class? cls)
+    (raise-argument-error 'class-seal "class?" cls))
+  (unless (symbol? seal-sym)
+    (raise-argument-error 'class-seal "symbol?" seal-sym))
+  (define (check-unsealed-names val)
+    (unless (and (list? val)
+                 (andmap symbol? val))
+      (raise-argument-error 'class-seal "(listof symbol?)" val)))
+  (check-unsealed-names inits)
+  (check-unsealed-names fields)
+  (check-unsealed-names methods)
+  (unless (procedure-arity-includes? inst-proc 1)
+    (raise-argument-error 'class-seal
+                          "(procedure-arity-includes/c 1)" inst-proc))
+  (unless (procedure-arity-includes? member-proc 2)
+    (raise-argument-error 'class-seal
+                          "(procedure-arity-includes/c 2)" member-proc))
+
+  (define new-seal
+    (seal seal-sym
+          inst-proc
+          (make-seal-checker member-proc cls inits)
+          (make-seal-checker member-proc cls fields)
+          (make-seal-checker member-proc cls methods)))
+  (define seals (cons new-seal
+                      (or (and (has-seals? cls) (get-seals cls)) null)))
+  ;; impersonate to avoid the cost of creating a class wrapper
+  (impersonate-struct cls
+                      class-object? #f      ; just here as a witness
+                      set-class-object?! #f ; also need this witness
+                      prop:seals seals))
+
+;; make-seal-checker : procedure? class? (listof symbol?)
+;;                     -> (listof symbol?) -> void?
+;; constructs a checker function parameterized over the user-provided
+;; checker procedure and the list of unsealed names
+(define ((make-seal-checker proc cls unsealed) actual)
+  (define sealed-actuals (remove* unsealed actual))
+  (unless (null? sealed-actuals)
+    (proc cls sealed-actuals)))
+
+(define (class-unseal cls sym wrong-key-proc)
+  (unless (class? cls)
+    (raise-argument-error 'class-seal "class?" cls))
+  (unless (symbol? sym)
+    (raise-argument-error 'class-seal "symbol?" seal-sym))
+
+  (define old-seals (and (has-seals? cls) (get-seals cls)))
+  (define has-seal-with-sym?
+    (and old-seals
+         (for/or ([old-seal (in-list old-seals)])
+           (eq? sym (seal-sym old-seal)))))
+  (unless has-seal-with-sym?
+    (wrong-key-proc cls))
+  (define new-seals
+    (remove sym (get-seals cls)
+            (λ (sym sl) (eq? sym (seal-sym sl)))))
+  (impersonate-struct cls
+                      class-object? #f
+                      set-class-object?! #f
+                      prop:seals new-seals))
+
+;; copy-seals : class? class? -> class?
+;; Copy the seal properties from one class to another
+(define (copy-seals cls1 cls2)
+  (if (has-seals? cls1)
+      (impersonate-struct cls2
+                          class-object? #f
+                          set-class-object?! #f
+                          prop:seals (get-seals cls1))
+      cls2))
 
 ;;--------------------------------------------------------------------
 ;;  interfaces
@@ -3360,7 +3482,7 @@ An example
 
            ;; cache the concrete class
            (hash-set! (class-ictc-classes cls) blame c)
-           c)]))
+           (copy-seals cls c))]))
 
 ;; name method info -> method
 ;; appropriately wraps the method with interface contracts
@@ -3401,6 +3523,12 @@ An example
                "cannot instantiate class with abstract methods"
                "class" class
                "abstract methods" (as-write-list (class-abstract-ids class))))
+  ;; if the class is sealed, run all sealing error procedures
+  ;; usually, only running the first one is necessary since these are
+  ;; expected to be error-reporting procedures.
+  (when (has-seals? class)
+    (for ([seal (in-list (get-seals class))])
+      ((seal-inst-checker seal) class)))
   ;; Generate correct class by concretizing methods w/interface ctcs
   (define concrete-class (fetch-concrete-class class blame))
   (define o ((class-make-object concrete-class)))
@@ -4719,6 +4847,7 @@ An example
          object-interface object-info object->vector
          object-method-arity-includes?
          method-in-interface? interface->method-names class->interface class-info
+         class-seal class-unseal copy-seals
          (struct-out exn:fail:object)
          make-primitive-class 
          (for-syntax localize) 
