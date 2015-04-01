@@ -4750,7 +4750,7 @@ int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase
 
 Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source)
 {
-  /* Look for the oldest self-modidx that has a shift: */
+  /* Look for the oldest "self" modidx that has a resolution: */
   Scheme_Object *l = ((Scheme_Stx *)stx)->shifts, *a, *src;
   Scheme_Hash_Table *export_registry;
 
@@ -4768,7 +4768,8 @@ Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int sou
         if (SCHEME_FALSEP(((Scheme_Modidx *)src)->path)) {
           src = apply_modidx_shifts(((Scheme_Stx *)stx)->shifts, src,
                                     NULL, &export_registry);
-          if (!SCHEME_FALSEP(((Scheme_Modidx *)src)->path)) {
+          if (!SCHEME_FALSEP(((Scheme_Modidx *)src)->path)
+              || !SCHEME_FALSEP(((Scheme_Modidx *)src)->resolved)) {
             if (resolve) {
               src = scheme_module_resolve(src, 0);
               if (export_registry && source) {
