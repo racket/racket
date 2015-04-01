@@ -35,8 +35,6 @@
 READ_ONLY static Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][MAX_CONST_LOCAL_TYPES][MAX_CONST_LOCAL_FLAG_VAL + 1];
 READ_ONLY static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS][SCHEME_TOPLEVEL_FLAGS_MASK + 1];
 
-READ_ONLY static Scheme_Object *unshadowable_symbol;
-
 /* If locked, these are probably sharable: */
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *toplevels_ht);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *locals_ht[2]);
@@ -85,8 +83,6 @@ void scheme_init_compenv_places(void)
 
 void scheme_init_compenv_symbol(void)
 {
-  REGISTER_SO(unshadowable_symbol);
-  unshadowable_symbol = scheme_intern_symbol("unshadowable");
 }
 
 /*========================================================================*/
@@ -1637,10 +1633,10 @@ static Scheme_Object *add_all_context(Scheme_Object *id, Scheme_Comp_Env *env)
   return id;
 }
 
-static Scheme_Object *find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env, Scheme_Comp_Env **_at_env)
+static Scheme_Object *find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env)
 {
   Scheme_Comp_Env *frame;
-  Scheme_Object *id, *prop, **sds, *sd;
+  Scheme_Object *id, **sds, *sd;
 
   for (frame = env; frame->next != NULL; frame = frame->next) {
     int i;
@@ -1659,62 +1655,34 @@ static Scheme_Object *find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
           sd = scheme_stx_binding_subtract(id, sd, scheme_env_phase(env->genv));
           frame->shadower_deltas[i] = sd;
         }
-	if (scheme_stx_could_bind(sd, sym, scheme_env_phase(env->genv))) {
-          prop = scheme_stx_property(id, unshadowable_symbol, NULL);
-          if (SCHEME_FALSEP(prop)) {
-            if (_at_env) *_at_env = frame;
-            return id;
-          }
-	}
+	if (scheme_stx_could_bind(sd, sym, scheme_env_phase(env->genv)))
+          return id;
       }
     }
   }
-
-  if (_at_env) *_at_env = NULL;
 
   return NULL;
 }
 
-Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env, int for_reference)
+Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env)
 {
-  Scheme_Comp_Env *start_env, *env2, *bind_env;
-  Scheme_Object *binder, *sym2, *orig_sym;
+  Scheme_Comp_Env *start_env;
+  Scheme_Object *binder, *orig_sym;
 
   orig_sym = sym;
 
-  /* Look for a binder */
   start_env = find_first_relevant(sym, env);
-  if (start_env->next) {
-    binder = find_local_binder(sym, start_env, &bind_env);
-  } else {
+  if (start_env->next)
+    binder = find_local_binder(sym, start_env);
+  else
     binder = NULL;
-    bind_env = start_env;
-  }
 
-  if (binder && for_reference) {
-    sym = binder;
-  } else {
-    if (binder)
-      sym = scheme_stx_binding_union(sym, binder, scheme_env_phase(env->genv));
-    else if (env->genv->module && env->genv->module->ii_src)
-      sym = scheme_stx_binding_union(sym, env->genv->module->ii_src, scheme_env_phase(env->genv));
-    else if (env->genv->stx_context)
-      sym = scheme_stx_add_module_context(sym, env->genv->stx_context);
-
-    if (!for_reference) {
-      /* Add at least one additional mark up to the binder (if any)
-         to avoid ambiguous bindings: */
-      sym2 = sym;
-      for (env2 = env; env2 != bind_env; env2 = env2->next) {
-        if (env2->marks) {
-          sym = scheme_stx_adjust_frame_bind_marks(sym, env2->marks, scheme_env_phase(env2->genv),
-                                                   SCHEME_STX_ADD);
-          if (!SAME_OBJ(sym, sym2))
-            break;
-        }
-      }
-    }
-  }
+  if (binder)
+    sym = scheme_stx_binding_union(binder, sym, scheme_env_phase(env->genv));
+  else if (env->genv->module && env->genv->module->ii_src)
+    sym = scheme_stx_binding_union(sym, env->genv->module->ii_src, scheme_env_phase(env->genv));
+  else if (env->genv->stx_context)
+    sym = scheme_stx_add_module_context(sym, env->genv->stx_context);
 
   if (!scheme_stx_is_clean(orig_sym))
     sym = scheme_stx_taint(sym);
