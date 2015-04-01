@@ -2633,6 +2633,39 @@
 (test #x100000000 arithmetic-shift #x200000000 -1)
 (test #x200000000 arithmetic-shift #x100000000 1)
 
+(test 0 integer-length -1)
+(test 0 integer-length 0)
+(test 1 integer-length 1)
+
+(test 20 integer-length (- (expt 2 20)))
+(test 21 integer-length (expt 2 20))
+(test 20 integer-length (- (expt 2 20) 1))
+(test 21 integer-length (+ (expt 2 20) 1))
+
+; arguments below are bignum on 32 bit machines
+(test 60 integer-length (- (expt 2 60)))
+(test 61 integer-length (expt 2 60))
+(test 60 integer-length (- (expt 2 60) 1))
+(test 61 integer-length (+ (expt 2 60) 1))
+
+; arguments below are bignum on 64 bit machines
+(test 120 integer-length (- (expt 2 120)))
+(test 121 integer-length (expt 2 120))
+(test 120 integer-length (- (expt 2 120) 1))
+(test 121 integer-length (+ (expt 2 120) 1))
+
+; don't attempt to print numbers that are billions of bits long
+(test (+ (expt 2 30) 1) 'integer-length-vlarge-1
+  (integer-length (expt 2 (expt 2 30))))
+(test (- (expt 2 31) 63) 'integer-length-vlarge-2
+  (integer-length (expt 2 (- (expt 2 31) 64))))
+
+; these will have bignum output on 32 bit machines
+(test (- (expt 2 31) 1) 'integer-length-vlarge-3
+  (integer-length (expt 2 (- (expt 2 31) 2))))
+(test (- (expt 2 31) 0) 'integer-length-overflow
+  (integer-length (expt 2 (- (expt 2 31) 1))))
+
 (test "0" number->string 0)
 (test "1" number->string 1)
 (test "-1" number->string -1)

@@ -3,7 +3,7 @@
 
 (Section 'version)
 
-(require version/utils)
+(require version/utils pkg/lib setup/getinfo)
 
 ;; sanity check
 (unless (and (< (string->number (car (regexp-match #rx"^[0-9]+" (version)))) 49)
@@ -62,5 +62,7 @@
             ["0"             #f]
             ["00"            #f]
             ))
+
+(test (version) (get-info/full (pkg-directory "base")) 'version)
 
 (report-errs)

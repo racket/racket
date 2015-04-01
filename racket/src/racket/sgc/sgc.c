@@ -36,7 +36,9 @@
 #include "sgc.h"
 
 #ifdef _WIN64
-# define SIZEOF_LONG 8
+# ifndef SIXTY_FOUR_BIT_INTEGERS
+#  define SIXTY_FOUR_BIT_INTEGERS
+# endif
 # ifdef _MSC_VER
 #  define inline _inline
 # endif
@@ -1331,7 +1333,7 @@ static int is_sector_segment(void *p)
   intptr_t pageindex = SECTOR_LOOKUP_PAGEPOS(s);
   DECL_SECTOR_PAGETABLES;
 
-  FIND_SECTOR_PAGETABLES(p);
+  FIND_SECTOR_PAGETABLES(s);
   if (!sector_pagetables) return 0;
 
   return (sector_pagetables[pagetableindex]

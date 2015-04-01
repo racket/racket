@@ -881,6 +881,7 @@
                setjmp longjmp _longjmp scheme_longjmp_setjmp scheme_mz_longjmp scheme_jit_longjmp
                scheme_jit_setjmp_prepare
                scheme_get_thread_local_variables pthread_getspecific
+               __builtin_frame_address
 
                ;; The following are functions, but they don't trigger GC, and
                ;; they either take one argument or no pointer arguments.

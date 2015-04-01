@@ -1847,6 +1847,40 @@
            '(lambda (z)
              (list (list (z 2)) (list z))))
 
+(test-comp '(module m racket/base
+             ;; Reference to a ready module-level variable shouldn't
+             ;; prevent let-values splitting
+             (#%plain-module-begin
+              (define z (random))
+              (define (f)
+                (let-values ([(a b) (values (cons 1 z) (cons 2 z))])
+                  (list a b)))))
+           '(module m racket/base
+             ;; Reference to a ready module-level variable shouldn't
+             ;; prevent let-values splitting
+             (#%plain-module-begin
+              (define z (random))
+              (define (f)
+                (list (cons 1 z) (cons 2 z))))))
+
+(test-comp '(module m racket/base
+             ;; Don't reorder references to a mutable variable
+             (#%plain-module-begin
+              (define z (random))
+              (define (f)
+                (let-values ([(a b) (values (cons 1 z) (cons 2 z))])
+                  (list a b)))
+              (set! z 5)))
+           '(module m racket/base
+             ;; Reference to a ready module-level variable shouldn't
+             ;; prevent let-values splitting
+             (#%plain-module-begin
+              (define z (random))
+              (define (f)
+                (list (cons 1 z) (cons 2 z)))
+              (set! z 5)))
+           #f)
+
 (test-comp '(lambda (z)
              ;; It's ok to reorder unsafe operations relative
              ;; to each other:

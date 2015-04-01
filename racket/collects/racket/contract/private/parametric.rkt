@@ -16,6 +16,12 @@
                                "expected an identifier"
                                stx
                                x)))
+       (define dup (check-duplicate-identifier (syntax->list #'(x ...))))
+       (when dup (raise-syntax-error
+                  'parametric->/c 
+                  "duplicate identifier"
+                  stx
+                  dup))
        #`(make-polymorphic-contract opaque/c
                                     '(x ...)
                                     (lambda (x ...) c)

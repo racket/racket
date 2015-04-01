@@ -52,10 +52,10 @@ MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/racket.e
 dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
 	$(PLAIN_CC) $(ALL_CFLAGS) -c $(srcdir)/dynexmpl.c -o dynexmpl.o
 
-../starter@NOT_MINGW@: $(srcdir)/ustart.c
+../starter@NOT_MINGW@@EXE_SUFFIX@: $(srcdir)/ustart.c
 	$(PLAIN_CC) $(ALL_CFLAGS) -o ../starter $(srcdir)/ustart.c
 
-../starter@MINGW@: $(srcdir)/start.c ../mrstarter@EXE_SUFFIX@ sres.o
+../starter@MINGW@@EXE_SUFFIX@: $(srcdir)/start.c ../mrstarter@EXE_SUFFIX@ sres.o
 	$(PLAIN_CC) $(ALL_CFLAGS) -o ../starter $(srcdir)/start.c sres.o
 ../mrstarter@EXE_SUFFIX@:  sres.o
 	$(PLAIN_CC) $(ALL_CFLAGS) -mwindows -DMRSTART -o ../mrstarter $(srcdir)/start.c sres.o

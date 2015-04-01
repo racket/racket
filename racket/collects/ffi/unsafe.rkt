@@ -494,8 +494,9 @@
 
 (provide _fun)
 (define-for-syntax _fun-keywords
-  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f] [#:in-original-place? ,#'#f] 
-    [#:async-apply ,#'#f] [#:save-errno ,#'#f]))
+  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f] [#:in-original-place? ,#'#f]
+    [#:async-apply ,#'#f] [#:save-errno ,#'#f]
+    [#:retry #f]))
 (define-syntax (_fun stx)
   (define (err msg . sub) (apply raise-syntax-error '_fun msg stx sub))
   (define xs     #f)
@@ -676,22 +677,43 @@
                             inputs)]
                [ffi-args
                 (filter-map (lambda (x) (and (car x) (cadr x))) inputs)]
+               [retry-spec
+                (let ([r (kwd-ref '#:retry)])
+                  (when r
+                    (syntax-case r ()
+                      [(retry-id [arg-id arg-val] ...)
+                       (and (identifier? #'retry-id)
+                            (andmap identifier? (syntax->list #'(arg-id ...))))
+                       (let ([dup (check-duplicate-identifier (syntax->list #'(arg-id ...)))])
+                         (when dup
+                           (err "duplicate identifier in retry specification" dup))
+                         r)]
+                      [_
+                       (err "ill-formed retry specification" r)]))
+                  r)]
+               [add-retry
+                (lambda (body)
+                  (if retry-spec
+                      #`(let #,(car (syntax-e retry-spec)) #,(cdr (syntax-e retry-spec))
+                          #,body)
+                      body))]
                ;; the actual wrapper body
                [body (quasisyntax/loc stx
                        (lambda #,input-names
-                         (let* (#,@args
-                                #,@bind
-                                #,@pre)
-                           #,(if (or output-expr
-                                     (cadr output))
-                                 (let ([res (or (cadr output)
-                                                (car (generate-temporaries #'(ret))))])
-                                   #`(let* ([#,res (ffi #,@ffi-args)]
-                                            #,@post)
-                                       #,(or output-expr res)))
-                                 #`(begin0
-                                    (ffi #,@ffi-args)
-                                    (let* (#,@post) (void)))))))]
+                         #,(add-retry
+                            #`(let* (#,@args
+                                     #,@bind
+                                     #,@pre)
+                                #,(if (or output-expr
+                                          (cadr output))
+                                      (let ([res (or (cadr output)
+                                                     (car (generate-temporaries #'(ret))))])
+                                        #`(let* ([#,res (ffi #,@ffi-args)]
+                                                 #,@post)
+                                            #,(or output-expr res)))
+                                      #`(begin0
+                                         (ffi #,@ffi-args)
+                                         (let* (#,@post) (void))))))))]
                ;; if there is a string 'ffi-name property, use it as a name
                [body (let ([n (cond [(syntax-property stx 'ffi-name)
                                      => syntax->datum]
@@ -794,9 +816,13 @@
 ;; ----------------------------------------------------------------------------
 ;; Utility types
 
-;; Call this with a name (symbol) and a list of symbols, where a symbol can be
+;; Call this with a name (symbol or #f) and a list of symbols, where a symbol can be
 ;; followed by a '= and an integer to have a similar effect of C's enum.
-(define (_enum name symbols [basetype _ufixint] #:unknown [unknown _enum])
+(define ((_enum name) symbols [basetype _ufixint] #:unknown [unknown _enum])
+  (unless (list? symbols)
+    (raise-argument-error '_enum "list?" symbols))
+  (when (and (procedure? unknown) (not (procedure-arity-includes? unknown 1)))
+    (raise-argument-error '_enum "(if/c procedure? (procedure-arity-includes/c 1) any/c)" unknown))
   (define sym->int '())
   (define int->sym '())
   (define s->c
@@ -810,8 +836,19 @@
                                       (pair? (cddr symbols)))
                                (values (caddr symbols) (cdddr symbols))
                                (values i (cdr symbols)))])
-        (set! sym->int (cons (cons (car symbols) i) sym->int))
-        (set! int->sym (cons (cons i (car symbols)) int->sym))
+        (define sym (car symbols))
+        (unless (symbol? sym)
+          (raise-arguments-error '_enum "key is not a symbol"
+                                 "symbols" symbols
+                                 "key" sym
+                                 "value" i))
+        (unless (exact-integer? i)
+          (raise-arguments-error '_enum "value is not an integer"
+                                 "symbols" symbols
+                                 "key" sym
+                                 "value" i))
+        (set! sym->int (cons (cons sym i) sym->int))
+        (set! int->sym (cons (cons i sym) int->sym))
         (loop (add1 i) rest))))
   (make-ctype basetype
     (lambda (x)
@@ -832,8 +869,8 @@
 (define-syntax (_enum* stx)
   (syntax-case stx ()
     [(_ x ...)
-     (with-syntax ([name (syntax-local-name)]) #'(_enum 'name x ...))]
-    [id (identifier? #'id) #'_enum]))
+     (with-syntax ([name (syntax-local-name)]) #'((_enum 'name) x ...))]
+    [id (identifier? #'id) #'(_enum #f)]))
 
 ;; Call this with a name (symbol) and a list of (symbol int) or symbols like
 ;; the above with '= -- but the numbers have to be specified in some way.  The

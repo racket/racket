@@ -11,7 +11,7 @@
 
 The @exec{raco test} command requires and runs the (by default)
 @racket[test] submodule associated with each path given on the command
-line. Command-line flag can control which submodule is run, whether to
+line. Command-line flags can control which submodule is run, whether to
 run the main module if no submodule is found, and whether to run tests
 directly, in separate processes (the default), or in separate places.
 The current directory is set to a test file's directory before running
@@ -185,6 +185,20 @@ identifiers:
 
 ]
 
+In order to prevent evaluation of a file for testing purposes, it
+suffices to create a submodule that does not perform any tests and
+does not trigger the evaluation of the enclosing module. So, for
+instance, a file might look like this:
+
+@#reader scribble/comment-reader
+ (racketmod
+  racket
+
+  (/ 1 0)
+
+  ;; don't run this file for testing:
+  (module test racket/base)
+ )
 
 @section[#:tag "test-config-info"]{Test Configuration by @filepath{info.rkt}}
 

@@ -4335,50 +4335,117 @@ integer_length(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
   uintptr_t n;
-  int base;
 
   if (SCHEME_INTP(o)) {
+    /* argument is a fixnum. result guaranteed to be fixnum. */
     intptr_t a = SCHEME_INT_VAL(o);
+    intptr_t result = 0;
 
     if (a < 0)
       a = ~a;
     
     n = a;
-    base = 0;
-  } else if (_SCHEME_TYPE(o) == scheme_bignum_type) {
-    bigdig d;
 
-    if (!SCHEME_BIGPOS(o)) {
-      /* Maybe we could do better... */
-      o = scheme_bignum_not(o);
+    while (n) {
+      n >>= 1;
+      result++;
     }
 
-    base = ((Scheme_Bignum *)o)->len;
-    d = ((Scheme_Bignum *)o)->digits[base - 1];
-    base = (base - 1) * (sizeof(bigdig) * 8);
+    return scheme_make_integer(result);
+  } else if (_SCHEME_TYPE(o) == scheme_bignum_type) {
+    /* argument is a bignum. result _may_ be a bignum. */
+    bigdig d;
+    intptr_t additional = 0, base;
+    intptr_t negative_power_of_two = 1;
+    
+    base = ((Scheme_Bignum *)o)->len - 1;
+    d = ((Scheme_Bignum *)o)->digits[base];
+
+    if (SCHEME_BIGPOS(o)) {
+      negative_power_of_two = 0;
+    } else {
+      /* o is a negative bignum. most of the time, we can compute
+         the answer the same way we'd do it for a positive bignum.
+         unless (abs o) is a power of two, in which case, the answer
+         will be 1 less. we'll test for that situation. */
+      int i;
+      bigdig e;
+
+      /* check the lower bigdigs. they should all be zero. */
+      for (i=0; i<base; i++) {
+        if (0 != ((Scheme_Bignum *)o)->digits[i]) {
+          negative_power_of_two = 0;
+          break;
+        }
+      }
+
+      /* check the final bigdig. it should have a single set bit. */
+      e = d;
+      while (e) {
+        if ((e&1) && (e!=1)) {
+          /* if at any point the bottom bit isn't 1, and we're not
+             finished, then the number wasn't a power of two. */
+          negative_power_of_two = 0;
+          break;
+        }
+        e >>= 1;
+      }
+    }
 
 #ifdef USE_LONG_LONG_FOR_BIGDIG
+    /* check to see if n can hold the value in the 'last' bigdig */
     n = (uintptr_t)d;
     if ((bigdig)n != d) {
-      /* Must have been overflow */
+      /* yup, d (the 'last' bigdig) overflowed n.
+         so we can throw away the bottom half of d, and just tally
+         up those bits right now. the normal execution path will handle
+         the top half. */
       d >>= (sizeof(uintptr_t) * 8);
-      base += (sizeof(uintptr_t) * 8);
+      additional += (sizeof(uintptr_t) * 8);
       n = (uintptr_t)d;
     }
 #else
     n = d;
 #endif
+
+    /* if base is large enough that our later steps risk overflow
+       then perform all the arithmetic using bignums. */
+    if (base >= (((intptr_t)1 << (MAX_SHIFT_TRY - 4))-1)) {
+      /* bignum path */
+      Scheme_Object *result;
+      result = scheme_bin_mult(scheme_make_integer_value(base),
+                               scheme_make_integer(sizeof(bigdig) * 8));
+
+      while (n) {
+        n >>= 1;
+        additional++;
+      }
+
+      additional -= negative_power_of_two;
+
+      return scheme_bin_plus(result, scheme_make_integer(additional));
+    } else {
+      /* We're far enough from overflowing a signed int that we can
+         safely use them to compute the answer. */
+      intptr_t result = base;
+      result *= (sizeof(bigdig) * 8);
+#ifdef USE_LONG_LONG_FOR_BIGDIG
+      result += additional;
+#endif
+
+      while (n) {
+        n >>= 1;
+        result++;
+      }
+
+      result -= negative_power_of_two;
+
+      return scheme_make_integer_value(result);
+    }
   } else {
     scheme_wrong_contract("integer-length", "exact-integer?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
-
-  while (n) {
-    n >>= 1;
-    base++;
-  }
-
-  return scheme_make_integer(base);
 }
 
 intptr_t scheme_integer_length(Scheme_Object *n)
