@@ -20,6 +20,7 @@
   (namespace-require 'racket/extflonum)
   (namespace-require 'racket/fixnum)
   (namespace-require 'racket/unsafe/undefined)
+  #;(namespace-require '(rename '#%kernel k:map map))
   (eval '(define-values (prop:thing thing? thing-ref) 
            (make-struct-type-property 'thing)))
   (eval '(struct rock (x) #:property prop:thing 'yes))
@@ -1245,6 +1246,29 @@
            '(lambda (w z) #t)
            #f)
 
+(test-comp '(lambda (x) (car x) #t)
+           '(lambda (x) (car x) (pair? x)))
+(test-comp '(lambda (x) (cdr x) #t)
+           '(lambda (x) (cdr x) (pair? x)))
+(test-comp '(lambda (x) (cadr x) #t)
+           '(lambda (x) (cadr x) (pair? x)))
+(test-comp '(lambda (x) (vector-ref x 0) #t)
+           '(lambda (x) (vector-ref x 0) (vector? x)))
+(test-comp '(lambda (x) (vector-set! x 0 #t) #t)
+           '(lambda (x) (vector-set! x 0 #t) (vector? x)))
+(test-comp '(lambda (f) (procedure-arity-includes? f 5) #t)
+           '(lambda (f) (procedure-arity-includes? f 5) (procedure? f)))
+(test-comp '(lambda (f l) (f l) #t)
+           '(lambda (f l) (f l) (procedure? f)))
+
+; Test the map primitive instead of the redefined version in private/map.rkt 
+(test-comp '(module ? '#%kernel
+              (display #t)
+              (display (lambda (f l) (map f l) #t)))
+           '(module ? '#%kernel
+              (display (primitive? map))
+              (display (lambda (f l) (map f l) (procedure? f)))))
+
 (test-comp '(lambda (w z)
               (let ([x (list* w z)]
                     [y (list* z w)])
@@ -1344,6 +1368,11 @@
                 (unsafe-cdr (begin (random) w))
                 (begin (random) #t)
                 (begin (random) #f))))
+
+(test-comp '(lambda (w) (car w) #t)
+           '(lambda (w) (car w) (pair? w)))
+(test-comp '(lambda (w) (cadr w) #t)
+           '(lambda (w) (cadr w) (pair? w)))
 
 (test-comp '(lambda (w f)
               (list
