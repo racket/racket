@@ -6987,7 +6987,7 @@ static void add_binding_names_from_environment(Scheme_Module *m, Scheme_Env *ben
 
       ht = (Scheme_Hash_Table *)m->other_binding_names;
       if (!ht) {
-        ht = scheme_make_hash_table_equal();
+        ht = scheme_make_hash_table_eqv();
         m->other_binding_names = (Scheme_Object *)ht;
       }
 
@@ -7219,7 +7219,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       Scheme_Hash_Table *oht;
       oht = m->other_requires;
       if (!oht) {
-        oht = scheme_make_hash_table_equal();
+        oht = scheme_make_hash_table_eqv();
         m->other_requires = oht;
       }
       scheme_hash_set(oht, super_phase_shift, ins);
@@ -8114,10 +8114,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 
   modidx_cache = scheme_make_hash_table_equal();
 
-  all_provided = scheme_make_hash_table_equal();
-  all_reprovided = scheme_make_hash_table_equal();
-  all_defs = scheme_make_hash_tree(1);
-  all_defs_out = scheme_make_hash_table_equal();
+  all_provided = scheme_make_hash_table_eqv();
+  all_reprovided = scheme_make_hash_table_eqv();
+  all_defs = scheme_make_hash_tree(2);
+  all_defs_out = scheme_make_hash_table_eqv();
 
   rn_set = env->genv->stx_context;
 
@@ -9904,7 +9904,7 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
       reprovided = scheme_make_pair(scheme_false, scheme_null);
     else
       reprovided = all_phases;
-    all_reprovided = scheme_make_hash_table_equal();
+    all_reprovided = scheme_make_hash_table_eqv();
     if (mod_for_requires->requires
         && !SCHEME_NULLP(mod_for_requires->requires))
       scheme_hash_set(all_reprovided, scheme_make_integer(0), reprovided);
@@ -9927,7 +9927,7 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
     }
   } else if (all_mods) {
     reprovided = scheme_make_pair(scheme_false, scheme_null);
-    all_reprovided = scheme_make_hash_table_equal();
+    all_reprovided = scheme_make_hash_table_eqv();
     while (SCHEME_PAIRP(all_mods)) {
       scheme_hash_set(all_reprovided, SCHEME_CAR(all_mods), reprovided);
       all_mods = SCHEME_CDR(all_mods);
@@ -10287,7 +10287,7 @@ Scheme_Object *scheme_module_imported_list(Scheme_Env *genv, Scheme_Object *bind
   int v, i;
 
   tables = (Scheme_Hash_Table *)SCHEME_CAR(bindings);
-  all_reprovided = scheme_make_hash_table_equal();
+  all_reprovided = scheme_make_hash_table_eqv();
 
   if (SCHEME_FALSEP(modpath)) {
     if (SAME_OBJ(mode, scheme_true)) {
@@ -10317,7 +10317,7 @@ Scheme_Object *scheme_module_imported_list(Scheme_Env *genv, Scheme_Object *bind
   }
 
   /* Receives result: */
-  all_provided = scheme_make_hash_table_equal();
+  all_provided = scheme_make_hash_table_eqv();
   
   v = compute_reprovides(all_provided,
                          all_reprovided,
@@ -10426,7 +10426,7 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
         pt->phase_index = phase;
         if (!me->other_phases) {
           Scheme_Hash_Table *ht;
-          ht = scheme_make_hash_table_equal();
+          ht = scheme_make_hash_table_eqv();
           me->other_phases = ht;
         }
         scheme_hash_set(me->other_phases, phase, (Scheme_Object *)pt);
@@ -12296,7 +12296,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
           Scheme_Hash_Table *oht;
           oht = main_env->module->other_requires;
           if (!oht) {
-            oht = scheme_make_hash_table_equal();
+            oht = scheme_make_hash_table_eqv();
             main_env->module->other_requires = oht;
           }
           reqs = scheme_hash_get(oht, x_mode);
