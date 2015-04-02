@@ -163,6 +163,8 @@ static int check_is_submodule(Scheme_Object *modname, Scheme_Object *_genv);
 
 static Scheme_Object *sys_wraps_phase(intptr_t p);
 
+static int same_resolved_modidx(Scheme_Object *a, Scheme_Object *b);
+
 static int phaseless_rhs(Scheme_Object *val, int var_count, int phase);
 
 #define cons scheme_make_pair
@@ -2771,18 +2773,55 @@ static Scheme_Object *is_module_path(int argc, Scheme_Object **argv)
           : scheme_false);
 }
 
-static Scheme_Object *require_binding_to_key(Scheme_Object *vec, Scheme_Object *sym)
+static Scheme_Object *require_binding_to_key(Scheme_Hash_Table *required,
+                                             Scheme_Object *binding_vec,
+                                             Scheme_Object *sym)
 {
-  Scheme_Object *vec2;
+  Scheme_Object *vec, *vec2, *modname;
+
+  vec = scheme_hash_get(required, sym);
+  if (vec) {
+    if (SCHEME_FALSEP(vec)) {
+      /* we've split the mapping for this symbol into binding-specific
+         mappings already; fall through */
+    } else {
+      /* the symbol is mapped -- for the same binding? */
+      if (same_resolved_modidx(SCHEME_VEC_ELS(binding_vec)[0],
+                               SCHEME_VEC_ELS(vec)[1])
+          && SAME_OBJ(SCHEME_VEC_ELS(binding_vec)[1],
+                      SCHEME_VEC_ELS(vec)[2])
+          && SAME_OBJ(SCHEME_VEC_ELS(binding_vec)[2],
+                      SCHEME_VEC_ELS(vec)[8])) {
+        /* Yes, this symbol is mapped only for that one binding, so far */
+        return sym;
+      } else {
+        /* need to re-key the existing mapping to a full binding,
+           map the plain symbol to #f, and fall through to generate
+           a full key for the new binding */
+        vec2 = scheme_make_vector(4, NULL);
+        modname = scheme_module_resolve(SCHEME_VEC_ELS(vec)[1], 0);
+        SCHEME_VEC_ELS(vec2)[0] = modname;
+        SCHEME_VEC_ELS(vec2)[1] = SCHEME_VEC_ELS(vec)[2];
+        SCHEME_VEC_ELS(vec2)[2] = SCHEME_VEC_ELS(vec)[8];
+        SCHEME_VEC_ELS(vec2)[3] = sym;
+
+        scheme_hash_set(required, vec2, vec);
+        scheme_hash_set(required, sym, scheme_false);
+      }
+    }
+  } else {
+    /* no binding mapped with this symbol in the key, yet, so we can
+       just use the symbol: */
+    return sym;
+  }
+
+  modname = scheme_module_resolve(SCHEME_VEC_ELS(binding_vec)[0], 0);
 
   vec2 = scheme_make_vector(4, NULL);
-  SCHEME_VEC_ELS(vec2)[1] = SCHEME_VEC_ELS(vec)[1];
-  SCHEME_VEC_ELS(vec2)[2] = SCHEME_VEC_ELS(vec)[2];
+  SCHEME_VEC_ELS(vec2)[0] = modname;
+  SCHEME_VEC_ELS(vec2)[1] = SCHEME_VEC_ELS(binding_vec)[1];
+  SCHEME_VEC_ELS(vec2)[2] = SCHEME_VEC_ELS(binding_vec)[2];
   SCHEME_VEC_ELS(vec2)[3] = sym;
-
-  vec = scheme_module_resolve(SCHEME_VEC_ELS(vec)[0], 0);
-  SCHEME_VEC_ELS(vec2)[0] = vec;
-
 
   return vec2;
 }
@@ -2796,7 +2835,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
                                          int skip_binding_step)
 {
   int i, saw_mb, numvals;
-  Scheme_Object **exs, **exss, **exsns, *midx, *vec, *nml, *id, *key, *modname;
+  Scheme_Object **exs, **exss, **exsns, *midx, *vec, *nml, *id, *key;
   int *exets;
   int with_shared = 1;
 
@@ -2850,13 +2889,9 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
       vec = scheme_make_vector(9, NULL);
       nml = scheme_make_pair(idx, scheme_null);
 
-      /* Same as applying require_binding_to_key() on the new binding of `id` */
-      key = scheme_make_vector(4, NULL);
-      modname = scheme_module_resolve(midx, 0);
-      SCHEME_VEC_ELS(key)[0] = modname;
-      SCHEME_VEC_ELS(key)[1] = exsns[i];
-      SCHEME_VEC_ELS(key)[2] = (exets ? scheme_make_integer(exets[0]) : scheme_make_integer(0));
-      SCHEME_VEC_ELS(key)[3] = exs[i];
+      /* Since all initial exports have different names, we can use the
+         simple form of a key and be consistent with binding_to_key(): */
+      key = exs[i];
 
       SCHEME_VEC_ELS(vec)[0] = nml;
       SCHEME_VEC_ELS(vec)[1] = midx;
@@ -3937,7 +3972,7 @@ Scheme_Object *scheme_make_modidx(Scheme_Object *path,
   return (Scheme_Object *)modidx;
 }
 
-int same_modidx(Scheme_Object *a, Scheme_Object *b)
+static int same_modidx(Scheme_Object *a, Scheme_Object *b)
 {
   if (SAME_TYPE(SCHEME_TYPE(a), scheme_module_index_type))
     a = ((Scheme_Modidx *)a)->path;
@@ -3947,7 +3982,7 @@ int same_modidx(Scheme_Object *a, Scheme_Object *b)
   return scheme_equal(a, b);
 }
 
-int same_resolved_modidx(Scheme_Object *a, Scheme_Object *b)
+static int same_resolved_modidx(Scheme_Object *a, Scheme_Object *b)
 {
   if (SAME_TYPE(SCHEME_TYPE(a), scheme_module_index_type))
     a = scheme_module_resolve(a, 1);
@@ -3957,7 +3992,7 @@ int same_resolved_modidx(Scheme_Object *a, Scheme_Object *b)
   return scheme_equal(a, b);
 }
 
-Scheme_Object *resolved_module_path_to_modidx(Scheme_Object *rmp)
+static Scheme_Object *resolved_module_path_to_modidx(Scheme_Object *rmp)
 {
   Scheme_Object *path;
 
@@ -7541,10 +7576,10 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
                && SAME_OBJ(SCHEME_VEC_ELS(binding)[1], exname)
                && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase)
                && same_resolved_modidx(SCHEME_VEC_ELS(binding)[0], modidx)) {
-      /* import is redunant, but may add new nominal info */
-      binding = require_binding_to_key(binding, SCHEME_STX_VAL(id));
+      /* import is redundant, but may add new nominal info */
+      binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
     } else {
-      binding = require_binding_to_key(binding, SCHEME_STX_VAL(id));
+      binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
       if (scheme_hash_get(required, binding)) {
         /* use error report below */
       } else {
@@ -7555,13 +7590,19 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
   }
 
   if (!binding) {
-    /* generate a key like require_binding_to_key() */
-    binding = scheme_make_vector(4, NULL);
-    vec = scheme_module_resolve(modidx, 0);
-    SCHEME_VEC_ELS(binding)[0] = vec;
-    SCHEME_VEC_ELS(binding)[1] = exname;
-    SCHEME_VEC_ELS(binding)[2] = scheme_make_integer(exet);
-    SCHEME_VEC_ELS(binding)[3] = SCHEME_STX_VAL(id);
+    if (!scheme_hash_get(required, SCHEME_STX_VAL(id))) {
+      /* we can just use a symbol as a key, since it's not mapped
+         so far */
+      binding = SCHEME_STX_VAL(id);
+    } else {
+      /* generate a binding vector: */
+      binding = scheme_make_vector(3, NULL);
+      SCHEME_VEC_ELS(binding)[0] = modidx;
+      SCHEME_VEC_ELS(binding)[1] = exname;
+      SCHEME_VEC_ELS(binding)[2] = scheme_make_integer(exet);
+      /* convert to a general key: */
+      binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
+    }
   }
 
   if (!SAME_OBJ(src_phase_index, scheme_make_integer(0))
@@ -7663,7 +7704,7 @@ static int check_already_required(Scheme_Hash_Table *required,
 {
   Scheme_Object *vec;
 
-  binding = require_binding_to_key(binding, SCHEME_STX_VAL(id));
+  binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
 
   vec = scheme_hash_get(required, binding);
   if (vec) {
@@ -7793,7 +7834,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
         SCHEME_VEC_ELS(vec)[7] = name; /* can be shadowed */
         SCHEME_VEC_ELS(vec)[8] = phase;
 
-        v = require_binding_to_key(binding, SCHEME_STX_VAL(name));
+        v = require_binding_to_key(required, binding, SCHEME_STX_VAL(name));
         scheme_hash_set(required, v, vec);
       }
     }
@@ -9961,7 +10002,7 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
                   b = scheme_stx_lookup(a, tables->keys[k]);
                   if (SCHEME_VECTORP(b)
                       && !SAME_OBJ(SCHEME_VEC_ELS(b)[0], _genv->module->self_modidx))
-                    b = require_binding_to_key(b, SCHEME_STX_VAL(a));
+                    b = require_binding_to_key(required, b, SCHEME_STX_VAL(a));
                   vec = scheme_hash_get(required, b);
                 } else
                   vec = NULL;
@@ -10449,7 +10490,9 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
               /* Skip definition for other round */
             } else if (!defined
                        && SCHEME_VECTORP(binding)
-                       && (v = scheme_hash_get(required, require_binding_to_key(binding, SCHEME_STX_VAL(prnt_name))))) {
+                       && (v = scheme_hash_get(required, require_binding_to_key(required,
+                                                                                binding,
+                                                                                SCHEME_STX_VAL(prnt_name))))) {
               /* Required */
               if (protected) {
                 name = SCHEME_CAR(provided->vals[i]);
