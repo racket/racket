@@ -2826,6 +2826,18 @@ static Scheme_Object *require_binding_to_key(Scheme_Hash_Table *required,
   return vec2;
 }
 
+static int prep_required_id(Scheme_Object *vec)
+{
+  Scheme_Object *id = SCHEME_VEC_ELS(vec)[6];
+
+  if (SCHEME_SYMBOLP(id)) {
+    id = scheme_datum_to_syntax(id, scheme_false, SCHEME_VEC_ELS(vec)[5], 0, 0);
+    SCHEME_VEC_ELS(vec)[6] = id;
+  }
+
+  return 1;
+}
+
 static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
                                          Scheme_Hash_Table *required, Scheme_Object *orig_src,
                                          Scheme_Module *im, Scheme_Module_Phase_Exports *pt,
@@ -2835,7 +2847,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
                                          int skip_binding_step)
 {
   int i, saw_mb, numvals;
-  Scheme_Object **exs, **exss, **exsns, *midx, *vec, *nml, *id, *key;
+  Scheme_Object **exs, **exss, **exsns, *midx, *vec, *nml, *key;
   int *exets;
   int with_shared = 1;
 
@@ -2881,11 +2893,11 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
           3 : variable => #t; syntax => #f
           4 : the exported name as a symbol
           5 : a syntax object for error reporting
-          6 : identifier as imported, where table key is corresponding binding
-          7 : an identifier for the import that can be shadowed
+          6 : identifier as imported, where table key is corresponding binding;
+              a symbol value should be converted to an id using slot 5; see prep_required_id()
+          7 : boolean, true if slot 6 is overrideable
           8 : source phase
       */
-      id = scheme_datum_to_syntax(exs[i], scheme_false, orig_src, 0, 0);
       vec = scheme_make_vector(9, NULL);
       nml = scheme_make_pair(idx, scheme_null);
 
@@ -2899,8 +2911,8 @@ static int do_add_simple_require_renames(Scheme_Object *rn, Scheme_Env *env,
       SCHEME_VEC_ELS(vec)[3] = ((i < numvals) ? scheme_true : scheme_false);
       SCHEME_VEC_ELS(vec)[4] = exs[i];
       SCHEME_VEC_ELS(vec)[5] = orig_src;
-      SCHEME_VEC_ELS(vec)[6] = id;
-      SCHEME_VEC_ELS(vec)[7] = (can_override ? id : scheme_false);
+      SCHEME_VEC_ELS(vec)[6] = exs[i]; /* => id by cmbining with orig_src */
+      SCHEME_VEC_ELS(vec)[7] = (can_override ? scheme_true : scheme_false);
       SCHEME_VEC_ELS(vec)[8] = exets ? scheme_make_integer(exets[i]) : scheme_make_integer(0);
 
       scheme_hash_set(required, key, vec);
@@ -7561,47 +7573,59 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
     syntax = (Scheme_Bucket_Table *)(SCHEME_VEC_ELS(tvec)[2]);
   }
 
-  binding = scheme_stx_lookup_exact(id, phase);
-  if (SCHEME_FALSEP(binding)) {
-    /* not defined */
-    binding = NULL;
+  if (!scheme_hash_get(required, SCHEME_STX_VAL(id))) {
+    /* no mapping so far means that we haven't imported anything
+       with this name so far, and we'll be able to use a symbol a
+       sumbol as a key; see require_binding_to_key() */
+    binding = SCHEME_STX_VAL(id);
   } else {
-    if (!SCHEME_VECTORP(binding)
-        || (SCHEME_VECTORP(binding)
-            && self_modidx
-            && SAME_OBJ(SCHEME_VEC_ELS(binding)[1], self_modidx))) {
-      scheme_wrong_syntax("module", id, form, "imported identifier already defined");
-      return;
-    } else if (SCHEME_VECTORP(binding)
-               && SAME_OBJ(SCHEME_VEC_ELS(binding)[1], exname)
-               && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], scheme_make_integer(exet))
-               && same_resolved_modidx(SCHEME_VEC_ELS(binding)[0], modidx)) {
-      /* import is redundant, but may add new nominal info */
-      binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
+    /* Look for import collisions by checking whether `id` has a binding;
+       if so, then check whether that binding matches an import that
+       we have already. If it has a binding and it's not the same binding,
+       then it's an import conflict. If it's the same bindig, we keep
+       track of all the imports of the binding. */
+    binding = scheme_stx_lookup_exact(id, phase);
+    if (SCHEME_FALSEP(binding)) {
+      /* not defined */
+      binding = NULL;
     } else {
-      binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
-      if (scheme_hash_get(required, binding)) {
-        /* use error report below */
+      if (!SCHEME_VECTORP(binding)
+          || (SCHEME_VECTORP(binding)
+              && self_modidx
+              && SAME_OBJ(SCHEME_VEC_ELS(binding)[1], self_modidx))) {
+        scheme_wrong_syntax("module", id, form, "imported identifier already defined");
+        return;
+      } else if (SCHEME_VECTORP(binding)
+                 && SAME_OBJ(SCHEME_VEC_ELS(binding)[1], exname)
+                 && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], scheme_make_integer(exet))
+                 && same_resolved_modidx(SCHEME_VEC_ELS(binding)[0], modidx)) {
+        /* import is redundant, but may add new nominal info */
+        binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
       } else {
-        /* identifier has a binding in some context, but not within the current module */
-        binding = NULL;
+        binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
+        if (scheme_hash_get(required, binding)) {
+          /* use error report below */
+        } else {
+          /* identifier has a binding in some context, but not within the current module */
+          binding = NULL;
+        }
       }
     }
-  }
 
-  if (!binding) {
-    if (!scheme_hash_get(required, SCHEME_STX_VAL(id))) {
-      /* we can just use a symbol as a key, since it's not mapped
-         so far */
-      binding = SCHEME_STX_VAL(id);
-    } else {
-      /* generate a binding vector: */
-      binding = scheme_make_vector(3, NULL);
-      SCHEME_VEC_ELS(binding)[0] = modidx;
-      SCHEME_VEC_ELS(binding)[1] = exname;
-      SCHEME_VEC_ELS(binding)[2] = scheme_make_integer(exet);
-      /* convert to a general key: */
-      binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
+    if (!binding) {
+      if (!scheme_hash_get(required, SCHEME_STX_VAL(id))) {
+        /* we can just use a symbol as a key, since it's not mapped
+           so far */
+        binding = SCHEME_STX_VAL(id);
+      } else {
+        /* generate a binding vector: */
+        binding = scheme_make_vector(3, NULL);
+        SCHEME_VEC_ELS(binding)[0] = modidx;
+        SCHEME_VEC_ELS(binding)[1] = exname;
+        SCHEME_VEC_ELS(binding)[2] = scheme_make_integer(exet);
+        /* convert to a general key: */
+        binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
+      }
     }
   }
 
@@ -7628,13 +7652,15 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
       nml = scheme_make_pair(nominal_modidx, SCHEME_VEC_ELS(vec)[0]);
       SCHEME_VEC_ELS(vec)[0] = nml;
       if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7])
-          && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[7], id, phase))
+          && prep_required_id(vec)
+          && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[6], id, phase))
         SCHEME_VEC_ELS(vec)[7] = scheme_false;
       return; 
     }
 
     if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7])
-        && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[7], id, phase)) {
+        && prep_required_id(vec)
+        && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[6], id, phase)) {
       /* can override; construct overriding `binding` */
       binding = scheme_make_vector(4, NULL);
       vec = scheme_module_resolve(modidx, 0);
@@ -7709,7 +7735,8 @@ static int check_already_required(Scheme_Hash_Table *required,
   vec = scheme_hash_get(required, binding);
   if (vec) {
     if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7])
-        && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[7], id, scheme_make_integer(phase))) {
+        && prep_required_id(vec)
+        && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[6], id, scheme_make_integer(phase))) {
       scheme_hash_set(required, binding, NULL);
       return 0;
     }
@@ -7778,12 +7805,15 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
           SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(super_vec)[4];
           SCHEME_VEC_ELS(vec)[5] = SCHEME_VEC_ELS(super_vec)[5];
 
+          if (!SAME_OBJ(phase_shift, scheme_make_integer(0)))
+            prep_required_id(super_vec);
+
           v = SCHEME_VEC_ELS(super_vec)[6];
           if (SCHEME_TRUEP(v) && !SAME_OBJ(phase_shift, scheme_make_integer(0)))
             v = scheme_stx_add_shift(v, phase_shift);
           SCHEME_VEC_ELS(vec)[6] = v;
 
-          SCHEME_VEC_ELS(vec)[7] = v; /* can be shadowed */
+          SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
 
           SCHEME_VEC_ELS(vec)[8] = SCHEME_VEC_ELS(super_vec)[8];
 
@@ -7831,7 +7861,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
         if (!SAME_OBJ(phase_shift, scheme_make_integer(0)))
           name = scheme_stx_add_shift(name, phase_shift);
         SCHEME_VEC_ELS(vec)[6] = name;
-        SCHEME_VEC_ELS(vec)[7] = name; /* can be shadowed */
+        SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
         SCHEME_VEC_ELS(vec)[8] = phase;
 
         v = require_binding_to_key(required, binding, SCHEME_STX_VAL(name));
@@ -10057,6 +10087,7 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
 	
               orig_nml = SCHEME_VEC_ELS(required->vals[i])[0];
               outname = SCHEME_VEC_ELS(required->vals[i])[4];
+              prep_required_id(required->vals[i]);
               id = SCHEME_VEC_ELS(required->vals[i])[6];
 
               for (rx = reprovided; !SCHEME_NULLP(rx); rx = SCHEME_CDR(rx)) {
