@@ -7,18 +7,6 @@
 
 ;; Utilities used by various tests of sequences
 
-;; Make `test` and `test-values` naively non-hygienic
-(define-syntax (test stx)
-  (syntax-case stx ()
-    [(_ . rest)
-     (with-syntax ([test (syntax-local-get-shadower #'test)])
-       #'(test . rest))]))
-(define-syntax (test-values stx)
-  (syntax-case stx ()
-    [(_ . rest)
-     (with-syntax ([test-values (syntax-local-get-shadower #'test-values)])
-       #'(test-values . rest))]))
-
 (define-syntax (test-multi-sequence stx)
   (syntax-case stx ()
     [(_ [(v ...) ...] gen)
