@@ -7574,7 +7574,7 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
       return;
     } else if (SCHEME_VECTORP(binding)
                && SAME_OBJ(SCHEME_VEC_ELS(binding)[1], exname)
-               && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase)
+               && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], scheme_make_integer(exet))
                && same_resolved_modidx(SCHEME_VEC_ELS(binding)[0], modidx)) {
       /* import is redundant, but may add new nominal info */
       binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
