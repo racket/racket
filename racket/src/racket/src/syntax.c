@@ -2543,6 +2543,93 @@ static void check_for_conversion(Scheme_Object *sym,
   }
 }
 
+static Scheme_Object *replace_matching_marks(Scheme_Object *l, Scheme_Mark_Set *marks)
+/* Takes a list of mark--value pairs for a binding table and removes
+   any match to `marks` */
+{
+  Scheme_Object *p;
+  int c = 0;
+
+  if (SCHEME_PAIRP(l)) {
+    /* only one item to check */
+    if (marks_equal(marks, SCHEME_BINDING_MARKS(l)))
+      return NULL;
+    else
+      return l;
+  }
+
+  for (p = l; !SCHEME_NULLP(p); p = SCHEME_CDR(p)) {
+    if (marks_equal(marks, SCHEME_BINDING_MARKS(SCHEME_CAR(p)))) {
+      break;
+    }
+    c++;
+  }
+
+  if (SCHEME_NULLP(p))
+    return l;
+
+  p = SCHEME_CDR(p);
+  while (c--) {
+    p = scheme_make_pair(SCHEME_CAR(l), p);
+    l = SCHEME_CDR(l);
+  }
+
+  /* down to one item? */
+  if (SCHEME_NULLP(SCHEME_CDR(p)))
+    return SCHEME_CAR(p);
+
+  /* no items? */
+  if (SCHEME_NULLP(p))
+    return NULL;
+
+  return p;
+}
+
+static void clear_matching_bindings(Scheme_Module_Phase_Exports *pt,
+                                    Scheme_Mark_Set *marks,
+                                    Scheme_Object *l)
+{
+  Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)SCHEME_CAR(l), *new_ht;
+  Scheme_Object *key, *val, *new_val;
+  intptr_t i;
+
+  if (!pt->ht) {
+    /* Lookup table (which is created lazily) not yet created, so do that now... */
+    scheme_populate_pt_ht(pt);
+  }
+
+  new_ht = ht;
+
+  if (ht->count < pt->ht->count) {
+    /* faster to scan per-symbol binding table */
+    i = -1;
+    while ((i = scheme_hash_tree_next(ht, i)) != -1) {
+      scheme_hash_tree_index(ht, i, &key, &val);
+      if (scheme_eq_hash_get(pt->ht, key)) {
+        new_val = replace_matching_marks(val, marks);
+        if (!SAME_OBJ(val, new_val))
+          new_ht = scheme_hash_tree_set(new_ht, key, new_val);
+      }
+    }
+  } else {
+    /* faster to scan export table */
+    for (i = pt->ht->size; i--; ) {
+      if (pt->ht->vals[i]) {
+        key = pt->ht->keys[i];
+        val = scheme_eq_hash_tree_get(new_ht, key);
+        if (val) {
+          new_val = replace_matching_marks(val, marks);
+          if (!SAME_OBJ(val, new_val))
+            new_ht = scheme_hash_tree_set(new_ht, key, new_val);
+        }
+      }
+    }
+  }
+
+  if (!SAME_OBJ(new_ht, ht))
+    SCHEME_CAR(l) = (Scheme_Object *)new_ht;
+}
+
 XFORM_NONGCING static void save_old_value(Scheme_Object *mp, Scheme_Object *old_val)
 {
   if (SCHEME_MPAIRP(old_val))
@@ -2669,12 +2756,15 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
     if (from_pt)
       check_for_conversion(sym, mark, from_pt, collapse_table, ht, marks, phase, bind);
   } else {
-    /* Order matters: the new bindings should hide any existing bindings for the same name.
-       It seems like we might need to remove mappings from the hash table that are replaced here;
-       currently, though, `require` takes care of removing replaced bindings. */
+    /* Order matters: the new bindings should hide any existing bindings for the same name. */
     clear_binding_cache();
     p = scheme_make_raw_pair(bind, SCHEME_CDR(l));
     SCHEME_CDR(l) = p;
+
+    /* Remove any matching mappings form the hash table, since it gets checked first. */
+    clear_matching_bindings((Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(val)[1],
+                            marks,
+                            l);
   }
 }
 

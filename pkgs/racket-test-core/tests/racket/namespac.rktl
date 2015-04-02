@@ -296,6 +296,30 @@
   (namespace-require/constant 'racket/base)
   (err/rt-test (eval '(define + -)) #rx"cannot change constant"))
 
+;; ----------------------------------------
+;; Check that bulk `require` replaces individual bindings
+
+(let ([ns (make-base-empty-namespace)])
+  (parameterize ([current-namespace ns])
+    (namespace-require '(only racket/base)))
+  (eval #`(define #,(datum->syntax #f 'cons) 1) ns)
+  (eval #`(define #,(datum->syntax #f 'extra) 2) ns)
+  (test 1 eval 'cons ns)
+  (eval #`(require #,(datum->syntax #f 'racket/base)) ns)
+  (test cons eval 'cons ns)
+  (test 2 eval 'extra ns))
+
+(let ([ns (make-base-empty-namespace)])
+  (parameterize ([current-namespace ns])
+    ;; To ensure that the namespace ends up with more than
+    ;; `racket/base` individual bindings:
+    (namespace-require/copy 'racket/base))
+  (eval #`(define #,(datum->syntax #f 'cons) 1) ns)
+  (eval #`(define #,(datum->syntax #f 'extra) 2) ns)
+  (test 1 eval 'cons ns)
+  (eval #`(require #,(datum->syntax #f 'racket/base)) ns)
+  (test cons eval 'cons ns)
+  (test 2 eval 'extra ns))
 
 ;; ----------------------------------------
 

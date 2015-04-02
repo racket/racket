@@ -313,7 +313,7 @@ static void parse_requires(Scheme_Object *form, int at_phase,
                            Scheme_Object *rns,
                            Check_Func ck, void *data,
                            Scheme_Object *redef_modname,
-                           int unpack_kern, int copy_vars,
+                           int copy_vars,
                            int eval_exp, int eval_run,
                            int *all_simple,
                            Scheme_Hash_Table *modix_cache,
@@ -1437,7 +1437,7 @@ static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Obj
                  env->stx_context,
                  NULL /* ck */, NULL /* data */,
                  NULL, 
-                 1, copy,
+                 copy,
                  (etonly ? 1 : -1), !etonly,
                  NULL, NULL, NULL,
                  NULL);
@@ -7980,7 +7980,7 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
                  rns,
                  check_require_name, tables,
                  redef_modname, 
-                 0, 0, 
+                 0, 
                  1, phase ? 1 : 0,
                  all_simple, 
                  NULL,
@@ -9083,7 +9083,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                          rn_set,
                          check_require_name, bxs->tables,
                          bxs->redef_modname, 
-                         0, 0, 
+                         0, 
                          1, phase ? 1 : 0,
                          bxs->all_simple_bindings, bxs->modidx_cache,
                          bxs->submodule_names,
@@ -11540,7 +11540,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 			Scheme_Object *iname, /* NULL or symbol for a single import */
 			Scheme_Object *orig_ename, /* NULL or symbol for a single import */
 			Scheme_Object *mark_src, /* default mark_src; if onlys, each is also mark_src */
-			int unpack_kern, int copy_vars,
+			int copy_vars,
 			int *all_simple,
 			Check_Func ck, /* NULL or called for each addition */
 			void *data,
@@ -11565,7 +11565,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
       *all_simple = 0;
   }
 
-  if (iname || ename || onlys || unpack_kern)
+  if (iname || ename || onlys)
     can_save_marshal = 0;
 
   if (onlys)
@@ -11868,7 +11868,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
                     Scheme_Object *rn_set,
                     Check_Func ck, void *data,
                     Scheme_Object *redef_modname,
-                    int unpack_kern, int copy_vars,
+                    int copy_vars,
                     int eval_exp, int eval_run,
                     int *all_simple,
                     Scheme_Hash_Table *modidx_cache,
@@ -12271,7 +12271,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
                          rn_set, (for_m ? for_m->rn_stx : NULL),
                          exns, onlys, prefix, iname, ename,
                          mark_src, 
-                         unpack_kern, copy_vars,
+                         copy_vars,
                          all_simple,
                          ck, data,
                          form, err_src, i,
@@ -12371,7 +12371,7 @@ static Scheme_Object *check_require_form(Scheme_Env *env, Scheme_Object *form)
                    tmp_env->stx_context,
                    check_dup_require, ht,
                    NULL,
-                   0, 0, 
+                   0, 
                    1, 0,
                    NULL, NULL, NULL,
                    NULL);
@@ -12396,7 +12396,7 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
                  env->stx_context,
                  NULL, NULL,
                  NULL,
-                 !env->module, 0, 
+                 0,
                  -1, 1,
                  NULL, NULL, NULL,
                  NULL);
