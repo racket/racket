@@ -2585,13 +2585,18 @@ static Scheme_Object *replace_matching_marks(Scheme_Object *l, Scheme_Mark_Set *
   return p;
 }
 
-static void clear_matching_bindings(Scheme_Module_Phase_Exports *pt,
+static void clear_matching_bindings(Scheme_Object *pes,
                                     Scheme_Mark_Set *marks,
                                     Scheme_Object *l)
 {
+  Scheme_Hash_Tree *excepts;
+  Scheme_Object *prefix;
+  Scheme_Module_Phase_Exports *pt;
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)SCHEME_CAR(l), *new_ht;
   Scheme_Object *key, *val, *new_val;
   intptr_t i;
+
+  pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(pes)[1];
 
   if (!pt->ht) {
     /* Lookup table (which is created lazily) not yet created, so do that now... */
@@ -2600,12 +2605,17 @@ static void clear_matching_bindings(Scheme_Module_Phase_Exports *pt,
 
   new_ht = ht;
 
-  if (ht->count < pt->ht->count) {
+  excepts = extract_unmarshal_excepts(SCHEME_VEC_ELS(pes)[3]);
+  prefix = extract_unmarshal_prefix(SCHEME_VEC_ELS(pes)[3]);
+
+  if ((ht->count < pt->ht->count)
+      || SCHEME_TRUEP(prefix)
+      || excepts) {
     /* faster to scan per-symbol binding table */
     i = -1;
     while ((i = scheme_hash_tree_next(ht, i)) != -1) {
       scheme_hash_tree_index(ht, i, &key, &val);
-      if (scheme_eq_hash_get(pt->ht, key)) {
+      if (scheme_eq_hash_get(pt->ht, unmarshal_lookup_adjust(key, pes))) {
         new_val = replace_matching_marks(val, marks);
         if (!SAME_OBJ(val, new_val))
           new_ht = scheme_hash_tree_set(new_ht, key, new_val);
@@ -2762,9 +2772,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
     SCHEME_CDR(l) = p;
 
     /* Remove any matching mappings form the hash table, since it gets checked first. */
-    clear_matching_bindings((Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(val)[1],
-                            marks,
-                            l);
+    clear_matching_bindings(val, marks, l);
   }
 }
 
