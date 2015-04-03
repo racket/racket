@@ -1855,5 +1855,24 @@
   (test (syntax->datum (eval v)) syntax->datum (eval e)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that expansion of `apply` into the keyword `apply`
+;; doesn't create a confusing inferred name:
+
+(define proc-that-accepts-anything (make-keyword-procedure void))
+(proc-that-accepts-anything #:contract
+                            (apply proc-that-accepts-anything
+                                   null
+                                   #:flat? #t))
+(let-syntax ([x (lambda (stx)
+                  (syntax-property
+                   (datum->syntax stx
+                                  (cons #'proc-that-accepts-anything
+                                        (cdr (syntax-e stx))))
+                   'inferred-name
+                   "non-symbol"))])
+  (proc-that-accepts-anything #:contract
+                              (x #:flag? #t)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

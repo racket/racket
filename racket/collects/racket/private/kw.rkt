@@ -954,7 +954,7 @@
                        [else
                         (cons (car l) (loop (cdr l)))])))])
             (let* ([name (syntax-local-infer-name stx #f)]
-                   [ids (cons (if name
+                   [ids (cons (if (and name (or (identifier? name) (symbol? name)))
                                   (if (syntax? name) name (datum->syntax #f name))
                                   (datum->syntax #f 'procedure))
                               (generate-temporaries exprs))])
