@@ -7785,37 +7785,40 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
           super_key = super_required->keys[j];
           super_vec = super_required->vals[j];
 
-          vec = scheme_make_vector(9, NULL);
+          if (SCHEME_TRUEP(super_vec)) {
+            vec = scheme_make_vector(9, NULL);
 
-          l = SCHEME_VEC_ELS(super_vec)[0];
-          v = scheme_null;
-          while (!SCHEME_NULLP(l)) {
-            v = scheme_make_pair(scheme_modidx_shift(SCHEME_CAR(l), from_idx, to_idx),
-                                 v);
-            l = SCHEME_CDR(l);
-          }
-          v = scheme_reverse(v);
-          SCHEME_VEC_ELS(vec)[0] = v;
+            l = SCHEME_VEC_ELS(super_vec)[0];
+            v = scheme_null;
+            while (!SCHEME_NULLP(l)) {
+              v = scheme_make_pair(scheme_modidx_shift(SCHEME_CAR(l), from_idx, to_idx),
+                                   v);
+              l = SCHEME_CDR(l);
+            }
+            v = scheme_reverse(v);
+            SCHEME_VEC_ELS(vec)[0] = v;
           
-          v = scheme_modidx_shift(SCHEME_VEC_ELS(super_vec)[1], from_idx, to_idx);
-          SCHEME_VEC_ELS(vec)[1] = v;
+            v = scheme_modidx_shift(SCHEME_VEC_ELS(super_vec)[1], from_idx, to_idx);
+            SCHEME_VEC_ELS(vec)[1] = v;
           
-          SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(super_vec)[2];
-          SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(super_vec)[3];
-          SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(super_vec)[4];
-          SCHEME_VEC_ELS(vec)[5] = SCHEME_VEC_ELS(super_vec)[5];
+            SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(super_vec)[2];
+            SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(super_vec)[3];
+            SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(super_vec)[4];
+            SCHEME_VEC_ELS(vec)[5] = SCHEME_VEC_ELS(super_vec)[5];
 
-          if (!SAME_OBJ(phase_shift, scheme_make_integer(0)))
-            prep_required_id(super_vec);
+            if (!SAME_OBJ(phase_shift, scheme_make_integer(0)))
+              prep_required_id(super_vec);
 
-          v = SCHEME_VEC_ELS(super_vec)[6];
-          if (SCHEME_TRUEP(v) && !SAME_OBJ(phase_shift, scheme_make_integer(0)))
-            v = scheme_stx_add_shift(v, phase_shift);
-          SCHEME_VEC_ELS(vec)[6] = v;
+            v = SCHEME_VEC_ELS(super_vec)[6];
+            if (SCHEME_TRUEP(v) && !SAME_OBJ(phase_shift, scheme_make_integer(0)))
+              v = scheme_stx_add_shift(v, phase_shift);
+            SCHEME_VEC_ELS(vec)[6] = v;
 
-          SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
+            SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
 
-          SCHEME_VEC_ELS(vec)[8] = SCHEME_VEC_ELS(super_vec)[8];
+            SCHEME_VEC_ELS(vec)[8] = SCHEME_VEC_ELS(super_vec)[8];
+          } else
+            vec = scheme_false;
 
           scheme_hash_set(required, super_key, vec);
         }
@@ -10081,7 +10084,7 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
           req_phase = tables->keys[k];
 
           for (i = required->size; i--; ) {
-            if (required->vals[i]) {
+            if (required->vals[i] && SCHEME_TRUEP(required->vals[i])) {
               Scheme_Object *nominal_modidx, *outname, *nml, *orig_nml, *id;
               int break_outer = 0;
 	
