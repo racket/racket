@@ -1269,6 +1269,18 @@
               (display (primitive? map))
               (display (lambda (f l) (map f l) (procedure? f)))))
 
+(test-comp '(lambda (w z) (vector? (list->vector w)))
+           '(lambda (w z) (list->vector w) #t))
+(test-comp '(lambda (w z) (vector? (struct->vector w)))
+           '(lambda (w z) (struct->vector w) #t))
+(test-comp '(lambda (w z) (vector? (struct->vector w z)))
+           '(lambda (w z) (struct->vector w z) #t))
+
+(test-comp '(lambda (w z) (vector? (make-vector (w) (z))))
+           '(lambda (w z) (make-vector (w) (z)) #t))
+(test-comp '(lambda (w z) (vector? (make-vector (w))))
+           '(lambda (w z) (make-vector (w)) #t))
+
 (test-comp '(lambda (w z)
               (let ([x (list* w z)]
                     [y (list* z w)])

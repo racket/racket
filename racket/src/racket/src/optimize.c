@@ -2381,11 +2381,10 @@ static Scheme_Object *local_type_to_predicate(int t)
 static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
 {
   if (SCHEME_PRIMP(rator)) {
-    if ((argc == 2)
-        && (SAME_OBJ(rator, scheme_cons_proc)
-            || SAME_OBJ(rator, scheme_unsafe_cons_list_proc)))
+    if ((SAME_OBJ(rator, scheme_cons_proc)
+         || SAME_OBJ(rator, scheme_unsafe_cons_list_proc)))
       return scheme_pair_p_proc;
-    else if ((argc == 2) && SAME_OBJ(rator, scheme_mcons_proc))
+    else if (SAME_OBJ(rator, scheme_mcons_proc))
       return scheme_mpair_p_proc;
     else if (SAME_OBJ(rator, scheme_list_proc)) {
       if (argc >= 1)
@@ -2396,11 +2395,13 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
       if (argc > 2)
         return scheme_pair_p_proc;
     } else if (SAME_OBJ(rator, scheme_vector_proc)
-               || SAME_OBJ(rator, scheme_vector_immutable_proc))
+               || SAME_OBJ(rator, scheme_vector_immutable_proc)
+               || SAME_OBJ(rator, scheme_make_vector_proc)
+               || SAME_OBJ(rator, scheme_list_to_vector_proc)
+               || SAME_OBJ(rator, scheme_struct_to_vector_proc))
       return scheme_vector_p_proc;
-    else if ((argc == 1)
-             && (SAME_OBJ(rator, scheme_box_proc)
-                 || SAME_OBJ(rator, scheme_box_immutable_proc)))
+    else if (SAME_OBJ(rator, scheme_box_proc)
+             || SAME_OBJ(rator, scheme_box_immutable_proc))
       return scheme_box_p_proc;
     
     {
@@ -2807,7 +2808,7 @@ static Scheme_Object *finish_optimize_any_application(Scheme_Object *app, Scheme
 {
   check_known_rator(info, rator, 0);
 
-  if (context & OPT_CONTEXT_BOOLEAN)
+  if ((context & OPT_CONTEXT_BOOLEAN) && !info->escapes)
     if (rator_implies_predicate(rator, argc))
       return make_discarding_sequence(app, scheme_true, info, 0);
 

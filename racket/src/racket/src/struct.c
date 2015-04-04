@@ -48,6 +48,7 @@ READ_ONLY Scheme_Object *scheme_write_special_symbol;
 READ_ONLY Scheme_Object *scheme_app_mark_impersonator_property;
 READ_ONLY Scheme_Object *scheme_liberal_def_ctx_type;;
 READ_ONLY Scheme_Object *scheme_object_name_property;
+READ_ONLY Scheme_Object *scheme_struct_to_vector_proc;
 
 READ_ONLY static Scheme_Object *location_struct;
 READ_ONLY static Scheme_Object *write_property;
@@ -659,11 +660,13 @@ scheme_init_struct (Scheme_Env *env)
 						      "struct-type-make-constructor",
 						      1, 2),
 			     env);
-  scheme_add_global_constant("struct->vector",
-			     scheme_make_prim_w_arity(struct_to_vector,
-						      "struct->vector",
-						      1, 2),
-			     env);
+
+  REGISTER_SO(scheme_struct_to_vector_proc);
+  scheme_struct_to_vector_proc = scheme_make_noncm_prim(struct_to_vector,
+                                                        "struct->vector",
+                                                        1, 2);
+  scheme_add_global_constant("struct->vector", scheme_struct_to_vector_proc, env);
+
   scheme_add_global_constant("prefab-struct-key",
 			     scheme_make_immed_prim(prefab_struct_key,
                                                     "prefab-struct-key",
