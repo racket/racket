@@ -449,6 +449,12 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, opt_info, warn_info,
                                 min_id_depth, id_offset + (resolved ? 1 : 0), no_id))
         return 1;
+    } else if (SAME_OBJ(app->rator, scheme_make_vector_proc)
+               && (vals == 1 || vals == -1)
+               && (SCHEME_INTP(app->rand) 
+                   && (SCHEME_INT_VAL(app->rand) >= 0))
+                   && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand))) {
+      return 1;
     } else if (SCHEME_PRIMP(app->rator)) {
       if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)
           || SAME_OBJ(scheme_values_func, app->rator)) {
@@ -467,6 +473,14 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
           && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, opt_info, warn_info,
                                    min_id_depth, id_offset + (resolved ? 2 : 0), no_id))
         return 1;
+    } else if (SAME_OBJ(app->rator, scheme_make_vector_proc)
+               && (vals == 1 || vals == -1)
+               && (SCHEME_INTP(app->rand1)
+                   && (SCHEME_INT_VAL(app->rand1) >= 0)
+                   && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand1)))
+               && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, opt_info, warn_info,
+                                        min_id_depth, id_offset + (resolved ? 2 : 0), no_id)) {
+      return 1;
     } else if (SCHEME_PRIMP(app->rator)) {
       if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)) {
         note_match(1, vals, warn_info);
@@ -636,6 +650,13 @@ static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info, in
         if (!SAME_OBJ(app->rator, scheme_values_func)) /* `values` is probably here to ensure a single result */
           if (scheme_is_functional_nonfailing_primitive(app->rator, 1, expected_vals))
             return do_make_discarding_sequence(app->rand, scheme_void, info, id_offset, 1, 0);
+            
+        /* (make-vector <num>) => <void> */
+        if (SAME_OBJ(app->rator, scheme_make_vector_proc)
+            && (SCHEME_INTP(app->rand) 
+                && (SCHEME_INT_VAL(app->rand) >= 0))
+                && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand)))
+          return (maybe_omittable ? NULL : scheme_void);
       }
       break;
     case scheme_application3_type:
@@ -650,6 +671,17 @@ static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info, in
                                                                          1, 0),
                                              info, id_offset,
                                              1, 0);
+        
+        /* (make-vector <num> <expr>) => <expr> */
+        if (SAME_OBJ(app->rator, scheme_make_vector_proc)
+            && (SCHEME_INTP(app->rand1) 
+                && (SCHEME_INT_VAL(app->rand1) >= 0))
+                && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand1))) {
+          if (single_valued_noncm_expression(app->rand2, 5))
+            return optimize_ignored(app->rand2, info, id_offset, 1, maybe_omittable, 5);
+          else
+            return ensure_single_value(optimize_ignored(app->rand2, info, id_offset, 1, 0, 5));
+        }
       }
       break;
     case scheme_application_type:
