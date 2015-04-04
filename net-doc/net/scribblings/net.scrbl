@@ -25,9 +25,8 @@
 @include-section["tcp-redirect.scrbl"]
 @include-section["ssl-tcp-unit.scrbl"]
 @include-section["cgi.scrbl"]
-@include-section["cookies.scrbl"]
-@include-section["git-checkout.scrbl"]
 @include-section["cookie.scrbl"]
+@include-section["git-checkout.scrbl"]
 
 @(bibliography
 
@@ -48,20 +47,6 @@
             #:location "RFC"
             #:url "http://www.ietf.org/rfc/rfc0977.txt"
             #:date "1986")
-
- (bib-entry #:key "RFC1034"
-            #:title "Domain Names - Concepts and Facilities"
-            #:author "P. Mockapetris"
-            #:location "RFC"
-            #:url "http://tools.ietf.org/html/rfc1034.html"
-            #:date "1987")
- 
- (bib-entry #:key "RFC1123"
-            #:title "Requirements for Internet Hosts - Application and Support"
-            #:author "R. Braden (editor)"
-            #:location "RFC"
-            #:url "http://tools.ietf.org/html/rfc1123.html"
-            #:date "1989")
 
  (bib-entry #:key "RFC1738"
             #:title "Uniform Resource Locators (URL)"

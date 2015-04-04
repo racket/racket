@@ -8,9 +8,15 @@
 
 @title[#:tag "cookie"]{Cookie: Legacy HTTP Client Storage}
 
-  @deprecated[@racketmodname[net/cookies/server]]{
-    The new @secref["cookies" #:doc '(lib "net/scribblings/net.scrbl")]
-    library implements RFC 6265, which supersedes the obsolete RFC 2109.}
+  @deprecated[@hyperlink["http://pkgs.racket-lang.org/#[net-cookies]"]{the
+               net-cookies package}]{
+    That package
+    (@hyperlink["https://github.com/RenaissanceBug/racket-cookies"]{source on
+               GitHub})
+    implements RFC 6265 @cite["RFC6265"] (which
+    supersedes RFC 2109) and supports creating cookies on the server
+    in an idiom more typical of Racket.
+  }
 
 @defmodule[net/cookie]{The @racketmodname[net/cookie] library provides
 utilities for using cookies as specified in RFC 2109 @cite["RFC2109"].}
