@@ -370,6 +370,7 @@
                     (andmap module-path? (car l)))
            (define dir (cadr l))
            (define (quote? p) (and (pair? p) (eq? (car p) 'quote)))
+           (define (planet? p) (and (pair? p) (eq? (car p) 'planet)))
            (define (submod? p) (and (pair? p) (eq? (car p) 'submod)))
            ;; Add prefetch modules to work queue --- but skip the first one,
            ;; because it's going to be compiled immediately, anyway:
@@ -377,6 +378,10 @@
              (cond
               [(or (quote? p)
                    (and (submod? p) (quote? (cadr p))))
+               ;; skip `quote` module paths
+               prev]
+              [(or (planet? p)
+                   (and (submod? p) (planet? (cadr p))))
                ;; skip `quote` module paths
                prev]
               [else
