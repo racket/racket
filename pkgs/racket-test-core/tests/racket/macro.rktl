@@ -927,7 +927,7 @@
               _
               _
               (#%plain-lambda {one:id}
-                (letrec-syntaxes+values _ _ two:id)))
+                (let-values _ two:id)))
             
             (let ()
               (when (bound-identifier=? #'one #'two)

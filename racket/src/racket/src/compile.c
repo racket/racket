@@ -3753,7 +3753,7 @@ do_letrec_syntaxes(const char *where,
   Scheme_Object *forms, *form, *bindings, *var_bindings, *body, *v, *mark;
   Scheme_Object *names_to_disappear;
   Scheme_Comp_Env *stx_env, *var_env, *rhs_env;
-  int cnt, stx_cnt, var_cnt, i, j, depth, saw_var, env_already;
+  int cnt, stx_cnt, var_cnt, i, j, depth, saw_var, env_already, restore;
   DupCheckRecord r;
 
   forms = scheme_stx_taint_disarm(orig_forms, NULL);
@@ -3796,8 +3796,9 @@ do_letrec_syntaxes(const char *where,
   saw_var = 0;
 
   depth = rec[drec].depth;
+  restore = (depth >= 0);
 
-  if (!rec[drec].comp && (depth <= 0) && (depth > -2))
+  if (!rec[drec].comp && !restore)
     names_to_disappear = scheme_null;
   else
     names_to_disappear = NULL;
@@ -3998,7 +3999,7 @@ do_letrec_syntaxes(const char *where,
         v = expand_list(body, var_env, rec, drec);
       else
         v = expand_block(body, var_env, rec, drec);
-      if ((depth >= 0) || (depth == -2)) {
+      if (restore) {
 	Scheme_Object *formname;
 	formname = SCHEME_STX_CAR(forms);
 	v = cons(formname, cons(bindings, cons(var_bindings, v)));
@@ -4012,7 +4013,7 @@ do_letrec_syntaxes(const char *where,
       else
         v = scheme_stx_taint_rearm(v, orig_forms);
 
-      if (!((depth >= 0) || (depth == -2))) {
+      if (!restore) {
         SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer,v);
       }
     }
@@ -4031,8 +4032,6 @@ do_letrec_syntaxes(const char *where,
     if (rec[drec].comp) {
       v = gen_let_syntax(v, stx_env, "letrec-values", 1, 1, rec, drec, var_env);
     } else {
-      int restore = ((depth >= 0) || (depth == -2));
-
       if (restore && (rec[drec].env_already == 2)) {
         /* don't sort out after all, because we're keeping `letrec-values+syntaxes' */
         rec[drec].env_already = 1;
