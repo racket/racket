@@ -90,6 +90,12 @@
             #:url "http://www.ietf.org/rfc/rfc3986.txt"
             #:date "2005")
 
+ (bib-entry #:key "RFC6265"
+            #:title "HTTP State Management Mechanism"
+            #:author "A. Barth"
+            #:location "RFC"
+            #:url "http://tools.ietf.org/html/rfc6265.html"
+            #:date "2011")
 )
 
 @index-section[]
