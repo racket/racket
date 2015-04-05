@@ -4554,7 +4554,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
         && same_effective_env(SCHEME_PTR2_VAL(var), env)) {
       /* FIXME [Ryan?]: this needs EXPAND_OBSERVE callbacks. */
       form = scheme_stx_track(SCHEME_PTR1_VAL(var), form, form);
-      if (!rec[drec].comp && (rec[drec].depth != -1)) {
+      if (!rec[drec].comp) {
         /* Already fully expanded. */
         return form;
       }
