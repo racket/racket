@@ -1018,6 +1018,8 @@ typedef struct Scheme_Chaperone {
                                                       || (SCHEME_NP_CHAPERONEP(obj) \
                                                           && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(obj))))
 
+#define SCHEME_CHAPERONE_VEC_SIZE(obj) (SCHEME_NP_CHAPERONEP(obj) ? SCHEME_VEC_SIZE(SCHEME_CHAPERONE_VAL(obj)) : SCHEME_VEC_SIZE(obj))
+
 Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i);
 void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v);
 

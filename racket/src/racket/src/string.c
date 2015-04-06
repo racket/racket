@@ -1080,7 +1080,7 @@ void scheme_get_substring_indices(const char *name, Scheme_Object *str,
   intptr_t start, finish;
 
   if (SCHEME_CHAPERONE_VECTORP(str))
-    len = SCHEME_VEC_SIZE(str);
+    len = SCHEME_CHAPERONE_VEC_SIZE(str);
   else if (SCHEME_CHAR_STRINGP(str))
     len = SCHEME_CHAR_STRTAG_VAL(str);
   else
@@ -2850,23 +2850,22 @@ static Scheme_Object *ok_cmdline(int argc, Scheme_Object **argv)
 {
   if (SCHEME_CHAPERONE_VECTORP(argv[0])) {
     Scheme_Object *vec = argv[0], *vec2, *str;
-    int i, size = SCHEME_VEC_SIZE(vec);
-
+    int i, size = SCHEME_CHAPERONE_VEC_SIZE(vec);
 
     if (!size)
       return vec;
-
-    for (i = 0; i < size; i++) {
-      if (!SCHEME_CHAR_STRINGP(SCHEME_VEC_ELS(vec)[i]))
-	return NULL;
-    }
 
     /* Make sure vector and strings are immutable: */
     vec2 = scheme_make_vector(size, NULL);
     if (size)
       SCHEME_SET_VECTOR_IMMUTABLE(vec2);
     for (i = 0; i < size; i++) {
-      str = SCHEME_VEC_ELS(vec)[i];
+      if (SCHEME_VECTORP(vec))
+        str = SCHEME_VEC_ELS(vec)[i];
+      else
+        str = scheme_chaperone_vector_ref(vec, i);
+      if (!SCHEME_CHAR_STRINGP(str))
+        return NULL;
       if (!SCHEME_IMMUTABLE_CHAR_STRINGP(str)) {
 	str = scheme_make_sized_char_string(SCHEME_CHAR_STR_VAL(str), SCHEME_CHAR_STRLEN_VAL(str), 0);
 	SCHEME_SET_CHAR_STRING_IMMUTABLE(str);
