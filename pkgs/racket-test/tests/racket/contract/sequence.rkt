@@ -48,9 +48,30 @@
    #\x)
   
   (test/pos-blame
-   'sequence/c7
+   'sequence/c8
    '(let ([s (sequence->stream (contract (sequence/c #:min-count 2 any/c) "x" 'pos 'neg))])
-      (stream-first (stream-rest s)))))
+      (stream-first (stream-rest s))))
 
-   
-   
+  (test/spec-passed/result
+   'sequence/c9
+   '(contract (sequence/c integer?) (list 1 2 3 4) 'pos 'neg)
+   '(1 2 3 4))
+  
+  (test/spec-passed/result
+   'sequence-stream/c1
+   '(stream? (contract (sequence/c integer?) (stream #f #f #f) 'pos 'neg))
+   #t)
+
+  (test/pos-blame
+   'sequence-stream/c2
+   '(stream-first (contract (sequence/c integer?) (stream #f #f #f) 'pos 'neg)))
+
+  (test/spec-passed/result
+   'sequence-stream/c3
+   '(stream-first (contract (sequence/c integer?) '(1 2 3) 'pos 'neg))
+   1)
+  
+  (test/spec-passed/result
+   'sequence-stream/c4
+   '(stream-first (contract (sequence/c integer?) (in-range 10) 'pos 'neg))
+   0))
