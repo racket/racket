@@ -1732,7 +1732,7 @@ static int binding_name_available(Scheme_Hash_Table *binding_names, Scheme_Objec
                                   Scheme_Object *id, Scheme_Object *phase)
 {
   sym = scheme_eq_hash_get(binding_names, sym);
-  if (!sym || scheme_stx_bound_eq(sym, id, phase))
+  if (!sym || (SCHEME_STXP(sym) && scheme_stx_bound_eq(sym, id, phase)))
     return 1;
   return 0;
 }
