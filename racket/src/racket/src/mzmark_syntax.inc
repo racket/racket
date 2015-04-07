@@ -96,7 +96,7 @@ static int mark_propagate_table_SIZE(void *p, struct NewGC *gc) {
 
 static int mark_propagate_table_MARK(void *p, struct NewGC *gc) {
   Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
-  mark_scope_table_MARK(&m->mt, gc);
+  mark_scope_table_MARK(&m->st, gc);
   gcMARK2(m->prev, gc);
   gcMARK2(m->phase_shift, gc);
   return
@@ -105,7 +105,7 @@ static int mark_propagate_table_MARK(void *p, struct NewGC *gc) {
 
 static int mark_propagate_table_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
-  mark_scope_table_FIXUP(&m->mt, gc);
+  mark_scope_table_FIXUP(&m->st, gc);
   gcFIXUP2(m->prev, gc);
   gcFIXUP2(m->phase_shift, gc);
   return

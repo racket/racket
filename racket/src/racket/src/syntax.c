@@ -57,12 +57,13 @@ READ_ONLY static Scheme_Stx_Srcloc *empty_srcloc;
 typedef struct Scheme_Scope {
   Scheme_Inclhash_Object iso; /* 0x1 => Scheme_Scope_With_Owner */
   mzlonglong id; /* low SCHEME_STX_SCOPE_KIND_SHIFT bits indicate kind */
-  Scheme_Object *bindings; /* NULL, vector for one binding, hash table for multiple bindngs,
+  Scheme_Object *bindings; /* NULL, vector for one binding, hash table for multiple bindings,
                               or (rcons hash-table (rcons pes-info ... NULL));
                               each hash table maps symbols to (cons scope-set binding)
                               or (mlist (cons scope-set binding) ...) */
 } Scheme_Scope;
 
+/* For a scope that is for a particular phase within a set of phase-specific scopes: */
 typedef struct Scheme_Scope_With_Owner {
   Scheme_Scope m;
   Scheme_Object *owner_multi_scope;
@@ -77,7 +78,7 @@ typedef struct Scheme_Scope_With_Owner {
 READ_ONLY static Scheme_Object *root_scope;
 
 typedef struct Scheme_Propagate_Table {
-  Scheme_Scope_Table mt;
+  Scheme_Scope_Table st;
   Scheme_Scope_Table *prev; /* points to old scope table */
   Scheme_Object *phase_shift; /* number of (box <n>); latter converts only <n> to #f */
 } Scheme_Propagate_Table;
@@ -868,8 +869,8 @@ static Scheme_Scope_Set *extract_scope_set_from_scope_list(Scheme_Scope_Set *sco
 
 static Scheme_Scope_Set *extract_scope_set(Scheme_Stx *stx, Scheme_Object *phase)
 {
-   Scheme_Scope_Table *mt = stx->scopes;
-   return extract_scope_set_from_scope_list(mt->simple_scopes, mt->multi_scopes, phase);
+   Scheme_Scope_Table *st = stx->scopes;
+   return extract_scope_set_from_scope_list(st->simple_scopes, st->multi_scopes, phase);
 }
 
 static Scheme_Scope_Set *adjust_scope(Scheme_Scope_Set *scopes, Scheme_Object *m, int mode)
@@ -1065,43 +1066,43 @@ static Scheme_Object *add_to_scope_list(Scheme_Object *p, Scheme_Object *l)
     return scheme_make_pair(p, l);
 }
 
-static Scheme_Scope_Table *clone_scope_table(Scheme_Scope_Table *mt, Scheme_Scope_Table *prev,
+static Scheme_Scope_Table *clone_scope_table(Scheme_Scope_Table *st, Scheme_Scope_Table *prev,
                                              GC_CAN_IGNORE int *mutate)
-/* If prev is non-NULL, then `mt` is a propagate table */
+/* If prev is non-NULL, then `st` is a propagate table */
 {
-  Scheme_Scope_Table *mt2;
+  Scheme_Scope_Table *st2;
 
   if (!prev) {
     if (*mutate & MUTATE_STX_SCOPE_TABLE) {
-      mt2 = mt;
+      st2 = st;
       COUNT_MUTATE_ALLOCS(stx_skip_alloc_scope_table++);
     } else {
-      mt2 = MALLOC_ONE_TAGGED(Scheme_Scope_Table);
-      memcpy(mt2, mt, sizeof(Scheme_Scope_Table));
+      st2 = MALLOC_ONE_TAGGED(Scheme_Scope_Table);
+      memcpy(st2, st, sizeof(Scheme_Scope_Table));
       *mutate |= MUTATE_STX_SCOPE_TABLE;
       COUNT_MUTATE_ALLOCS(stx_alloc_scope_table++);
     }
   } else {
     if (*mutate & MUTATE_STX_PROP_TABLE) {
-      mt2 = mt;
+      st2 = st;
       COUNT_MUTATE_ALLOCS(stx_skip_alloc_prop_table++);
     } else {
-      mt2 = (Scheme_Scope_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
-      memcpy(mt2, mt, sizeof(Scheme_Propagate_Table));
-      if (SAME_OBJ(mt, empty_propagate_table))
-        ((Scheme_Propagate_Table *)mt2)->prev = prev;
+      st2 = (Scheme_Scope_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
+      memcpy(st2, st, sizeof(Scheme_Propagate_Table));
+      if (SAME_OBJ(st, empty_propagate_table))
+        ((Scheme_Propagate_Table *)st2)->prev = prev;
       *mutate |= MUTATE_STX_PROP_TABLE;
       COUNT_MUTATE_ALLOCS(stx_alloc_prop_table++);
     }
   }
 
-  return mt2;
+  return st2;
 }
 
 typedef Scheme_Scope_Set *(*do_scope_t)(Scheme_Scope_Set *scopes, Scheme_Object *m, int mode);
 typedef Scheme_Object *(do_scope_list_t)(Scheme_Object *multi_scopes, Scheme_Object *m, Scheme_Object *phase, int mode);
 
-static Scheme_Scope_Table *do_scope_at_phase(Scheme_Scope_Table *mt, Scheme_Object *m, Scheme_Object *phase, int mode, 
+static Scheme_Scope_Table *do_scope_at_phase(Scheme_Scope_Table *st, Scheme_Object *m, Scheme_Object *phase, int mode, 
                                              do_scope_t do_scope, do_scope_list_t do_scope_list, Scheme_Scope_Table *prev,
                                              GC_CAN_IGNORE int *mutate)
 {
@@ -1115,19 +1116,19 @@ static Scheme_Scope_Table *do_scope_at_phase(Scheme_Scope_Table *mt, Scheme_Obje
   }
 
   if (SCHEME_MULTI_SCOPEP(m)) {
-    l = do_scope_list(mt->multi_scopes, m, phase, mode);
-    if (SAME_OBJ(l, mt->multi_scopes))
-      return mt;
-    mt = clone_scope_table(mt, prev, mutate);
-    mt->multi_scopes = l;
-    return mt;
+    l = do_scope_list(st->multi_scopes, m, phase, mode);
+    if (SAME_OBJ(l, st->multi_scopes))
+      return st;
+    st = clone_scope_table(st, prev, mutate);
+    st->multi_scopes = l;
+    return st;
   } else {
-    scopes = do_scope(mt->simple_scopes, m, mode);
-    if (SAME_OBJ(scopes, mt->simple_scopes))
-      return mt;
-    mt = clone_scope_table(mt, prev, mutate);
-    mt->simple_scopes = scopes;
-    return mt;
+    scopes = do_scope(st->simple_scopes, m, mode);
+    if (SAME_OBJ(scopes, st->simple_scopes))
+      return st;
+    st = clone_scope_table(st, prev, mutate);
+    st->simple_scopes = scopes;
+    return st;
   }
 }
 
@@ -1408,30 +1409,30 @@ static Scheme_Object *shift_prop_multi_scope(Scheme_Object *p, Scheme_Object *sh
 
 typedef Scheme_Object *(shift_multi_scope_t)(Scheme_Object *p, Scheme_Object *shift);
 
-static Scheme_Scope_Table *shift_scope_table(Scheme_Scope_Table *mt, Scheme_Object *shift, 
+static Scheme_Scope_Table *shift_scope_table(Scheme_Scope_Table *st, Scheme_Object *shift, 
                                              shift_multi_scope_t shift_mm, Scheme_Scope_Table *prev,
                                              GC_CAN_IGNORE int *mutate)
 {
-  Scheme_Scope_Table *mt2;
+  Scheme_Scope_Table *st2;
   Scheme_Object *l, *key, *val, *fbs;
 
-  if (SAME_OBJ(mt, empty_scope_table)) {
+  if (SAME_OBJ(st, empty_scope_table)) {
     STX_ASSERT(!prev);
-    return mt;
+    return st;
   }
 
-  if ((SCHEME_NULLP(mt->multi_scopes)
-       || (SCHEME_FALLBACKP(mt->multi_scopes)
-           && SCHEME_NULLP(SCHEME_FALLBACK_FIRST(mt->multi_scopes))))
+  if ((SCHEME_NULLP(st->multi_scopes)
+       || (SCHEME_FALLBACKP(st->multi_scopes)
+           && SCHEME_NULLP(SCHEME_FALLBACK_FIRST(st->multi_scopes))))
       && !prev)
-    return mt;
+    return st;
 
-  mt2 = clone_scope_table(mt, prev, mutate);
+  st2 = clone_scope_table(st, prev, mutate);
 
-  l = mt->multi_scopes;
+  l = st->multi_scopes;
   if (SCHEME_FALLBACKP(l)) {
     l = clone_fallback_chain(l);
-    mt2->multi_scopes = l;
+    st2->multi_scopes = l;
     fbs = l;
   } else
     fbs = scheme_false;
@@ -1466,49 +1467,49 @@ static Scheme_Scope_Table *shift_scope_table(Scheme_Scope_Table *mt, Scheme_Obje
         break;
       }
     } else {
-      mt2->multi_scopes = val;
+      st2->multi_scopes = val;
       break;
     }
   }
 
   if (prev) {
     /* record accumulated shift for propagation */
-    shift = add_shifts(((Scheme_Propagate_Table *)mt)->phase_shift, shift);
+    shift = add_shifts(((Scheme_Propagate_Table *)st)->phase_shift, shift);
     if (!shift)
       shift = scheme_box(scheme_false); /* i.e., the impossible shift */
-    ((Scheme_Propagate_Table *)mt2)->phase_shift = shift;
+    ((Scheme_Propagate_Table *)st2)->phase_shift = shift;
   }
 
-  return mt2;
+  return st2;
 }
 
 static Scheme_Object *shift_scopes(Scheme_Object *o, Scheme_Object *shift, int prop_only,
                                   GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
-  Scheme_Scope_Table *mt, *p_mt;
+  Scheme_Scope_Table *st, *p_st;
 
   if (prop_only)
-    mt = stx->scopes;
+    st = stx->scopes;
   else
-    mt = shift_scope_table(stx->scopes, shift, shift_multi_scope, NULL, mutate);
+    st = shift_scope_table(stx->scopes, shift, shift_multi_scope, NULL, mutate);
   if (STX_KEY(stx) & STX_SUBSTX_FLAG)
-    p_mt = shift_scope_table((stx->u.to_propagate ? stx->u.to_propagate : empty_propagate_table),
+    p_st = shift_scope_table((stx->u.to_propagate ? stx->u.to_propagate : empty_propagate_table),
                             shift, shift_prop_multi_scope, stx->scopes,
                             mutate);
   else
-    p_mt = NULL;
+    p_st = NULL;
   
-  if (SAME_OBJ(stx->scopes, mt)
+  if (SAME_OBJ(stx->scopes, st)
       && (!(STX_KEY(stx) & STX_SUBSTX_FLAG)
-          || SAME_OBJ(stx->u.to_propagate, p_mt)))
+          || SAME_OBJ(stx->u.to_propagate, p_st)))
     return (Scheme_Object *)stx;
 
   stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx, mutate);
 
-  stx->scopes = mt;
-  if (p_mt)
-    stx->u.to_propagate = p_mt;
+  stx->scopes = st;
+  if (p_st)
+    stx->u.to_propagate = p_st;
   
   return (Scheme_Object *)stx;
 }
@@ -6092,7 +6093,7 @@ Scheme_Object *unmarshal_multi_scopes(Scheme_Object *multi_scopes,
 static Scheme_Object *datum_to_wraps(Scheme_Object *w,
                                      Scheme_Unmarshal_Tables *ut)
 {
-  Scheme_Scope_Table *mt;
+  Scheme_Scope_Table *st;
   Scheme_Scope_Set *scopes;
   Scheme_Object *l;
 
@@ -6109,18 +6110,18 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
           && (SCHEME_VEC_SIZE(w) != 4)))
     return_NULL;
 
-  mt = MALLOC_ONE_TAGGED(Scheme_Scope_Table);
-  mt->so.type = scheme_scope_table_type;
+  st = MALLOC_ONE_TAGGED(Scheme_Scope_Table);
+  st->so.type = scheme_scope_table_type;
 
   scopes = list_to_scope_set(SCHEME_VEC_ELS(w)[1], ut);
   if (!scopes) return NULL;
-  mt->simple_scopes = scopes;
+  st->simple_scopes = scopes;
 
   l = unmarshal_multi_scopes(SCHEME_VEC_ELS(w)[2], ut);
   if (!l) return NULL;
-  mt->multi_scopes = l;
+  st->multi_scopes = l;
 
-  l = scheme_make_pair((Scheme_Object *)mt, SCHEME_VEC_ELS(w)[0]);
+  l = scheme_make_pair((Scheme_Object *)st, SCHEME_VEC_ELS(w)[0]);
   scheme_hash_set(ut->rns, w, l);
 
   return l;

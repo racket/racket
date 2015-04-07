@@ -2420,7 +2420,7 @@ mark_scope_table {
 mark_propagate_table {
  mark:
   Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
-  mark_scope_table_MARK(&m->mt, gc);
+  mark_scope_table_MARK(&m->st, gc);
   gcMARK2(m->prev, gc);
   gcMARK2(m->phase_shift, gc);
  size:
