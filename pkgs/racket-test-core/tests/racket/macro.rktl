@@ -249,7 +249,7 @@
 
 (arity-test make-set!-transformer 1 1)
 (arity-test set!-transformer? 1 1)
-(arity-test make-rename-transformer 1 2)
+(arity-test make-rename-transformer 1 1)
 (arity-test rename-transformer? 1 1)
 
 ;; Test inheritance of context when . is used in a pattern
