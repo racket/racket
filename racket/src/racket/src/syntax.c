@@ -111,15 +111,15 @@ static Scheme_Object *syntax_track_origin(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_shift_phase(int argc, Scheme_Object **argv);
 
 static Scheme_Object *bound_eq(int argc, Scheme_Object **argv);
-static Scheme_Object *module_eq(int argc, Scheme_Object **argv);
-static Scheme_Object *module_trans_eq(int argc, Scheme_Object **argv);
-static Scheme_Object *module_templ_eq(int argc, Scheme_Object **argv);
-static Scheme_Object *module_label_eq(int argc, Scheme_Object **argv);
-static Scheme_Object *module_binding(int argc, Scheme_Object **argv);
-static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv);
-static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv);
-static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv);
-static Scheme_Object *module_binding_symbol(int argc, Scheme_Object **argv);
+static Scheme_Object *free_eq(int argc, Scheme_Object **argv);
+static Scheme_Object *free_trans_eq(int argc, Scheme_Object **argv);
+static Scheme_Object *free_templ_eq(int argc, Scheme_Object **argv);
+static Scheme_Object *free_label_eq(int argc, Scheme_Object **argv);
+static Scheme_Object *free_binding(int argc, Scheme_Object **argv);
+static Scheme_Object *free_trans_binding(int argc, Scheme_Object **argv);
+static Scheme_Object *free_templ_binding(int argc, Scheme_Object **argv);
+static Scheme_Object *free_label_binding(int argc, Scheme_Object **argv);
+static Scheme_Object *free_binding_symbol(int argc, Scheme_Object **argv);
 static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv);
 static Scheme_Object *identifier_prune_to_module(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv);
@@ -308,19 +308,19 @@ void scheme_init_stx(Scheme_Env *env)
   GLOBAL_IMMED_PRIM("syntax-shift-phase-level"         , syntax_shift_phase        , 2, 2, env);
 
   GLOBAL_IMMED_PRIM("bound-identifier=?"               , bound_eq                  , 2, 4, env);
-  GLOBAL_IMMED_PRIM("free-identifier=?"                , module_eq                 , 2, 4, env);
-  GLOBAL_IMMED_PRIM("free-transformer-identifier=?"    , module_trans_eq           , 2, 2, env);
-  GLOBAL_IMMED_PRIM("free-template-identifier=?"       , module_templ_eq           , 2, 2, env);
-  GLOBAL_IMMED_PRIM("free-label-identifier=?"          , module_label_eq           , 2, 2, env);
+  GLOBAL_IMMED_PRIM("free-identifier=?"                , free_eq                 , 2, 4, env);
+  GLOBAL_IMMED_PRIM("free-transformer-identifier=?"    , free_trans_eq           , 2, 2, env);
+  GLOBAL_IMMED_PRIM("free-template-identifier=?"       , free_templ_eq           , 2, 2, env);
+  GLOBAL_IMMED_PRIM("free-label-identifier=?"          , free_label_eq           , 2, 2, env);
 
-  GLOBAL_IMMED_PRIM("identifier-binding"               , module_binding            , 1, 2, env);
-  GLOBAL_IMMED_PRIM("identifier-transformer-binding"   , module_trans_binding      , 1, 2, env);
-  GLOBAL_IMMED_PRIM("identifier-template-binding"      , module_templ_binding      , 1, 1, env);
-  GLOBAL_IMMED_PRIM("identifier-label-binding"         , module_label_binding      , 1, 1, env);
+  GLOBAL_IMMED_PRIM("identifier-binding"               , free_binding            , 1, 2, env);
+  GLOBAL_IMMED_PRIM("identifier-transformer-binding"   , free_trans_binding      , 1, 2, env);
+  GLOBAL_IMMED_PRIM("identifier-template-binding"      , free_templ_binding      , 1, 1, env);
+  GLOBAL_IMMED_PRIM("identifier-label-binding"         , free_label_binding      , 1, 1, env);
   GLOBAL_IMMED_PRIM("identifier-prune-lexical-context" , identifier_prune          , 1, 2, env);
   GLOBAL_IMMED_PRIM("identifier-prune-to-source-module", identifier_prune_to_module, 1, 1, env);
 
-  GLOBAL_IMMED_PRIM("identifier-binding-symbol"        , module_binding_symbol     , 1, 2, env);
+  GLOBAL_IMMED_PRIM("identifier-binding-symbol"        , free_binding_symbol     , 1, 2, env);
 
   GLOBAL_NONCM_PRIM("syntax-source-module"             , syntax_src_module         , 1, 2, env);
 
@@ -1066,7 +1066,7 @@ static Scheme_Object *add_to_scope_list(Scheme_Object *p, Scheme_Object *l)
 }
 
 static Scheme_Scope_Table *clone_scope_table(Scheme_Scope_Table *mt, Scheme_Scope_Table *prev,
-                                           GC_CAN_IGNORE int *mutate)
+                                             GC_CAN_IGNORE int *mutate)
 /* If prev is non-NULL, then `mt` is a propagate table */
 {
   Scheme_Scope_Table *mt2;
@@ -1102,8 +1102,8 @@ typedef Scheme_Scope_Set *(*do_scope_t)(Scheme_Scope_Set *scopes, Scheme_Object 
 typedef Scheme_Object *(do_scope_list_t)(Scheme_Object *multi_scopes, Scheme_Object *m, Scheme_Object *phase, int mode);
 
 static Scheme_Scope_Table *do_scope_at_phase(Scheme_Scope_Table *mt, Scheme_Object *m, Scheme_Object *phase, int mode, 
-                                           do_scope_t do_scope, do_scope_list_t do_scope_list, Scheme_Scope_Table *prev,
-                                           GC_CAN_IGNORE int *mutate)
+                                             do_scope_t do_scope, do_scope_list_t do_scope_list, Scheme_Scope_Table *prev,
+                                             GC_CAN_IGNORE int *mutate)
 {
   Scheme_Object *l;
   Scheme_Scope_Set *scopes;
@@ -1132,7 +1132,7 @@ static Scheme_Scope_Table *do_scope_at_phase(Scheme_Scope_Table *mt, Scheme_Obje
 }
 
 static Scheme_Object *stx_adjust_scope(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode,
-                                      GC_CAN_IGNORE int *mutate)
+                                       GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Scope_Table *scopes;
@@ -1409,8 +1409,8 @@ static Scheme_Object *shift_prop_multi_scope(Scheme_Object *p, Scheme_Object *sh
 typedef Scheme_Object *(shift_multi_scope_t)(Scheme_Object *p, Scheme_Object *shift);
 
 static Scheme_Scope_Table *shift_scope_table(Scheme_Scope_Table *mt, Scheme_Object *shift, 
-                                           shift_multi_scope_t shift_mm, Scheme_Scope_Table *prev,
-                                           GC_CAN_IGNORE int *mutate)
+                                             shift_multi_scope_t shift_mm, Scheme_Scope_Table *prev,
+                                             GC_CAN_IGNORE int *mutate)
 {
   Scheme_Scope_Table *mt2;
   Scheme_Object *l, *key, *val, *fbs;
@@ -1759,8 +1759,8 @@ int stx_shorts, stx_meds, stx_longs, stx_couldas;
 #endif
 
 static Scheme_Object *propagate_scope_set(Scheme_Scope_Set *props, Scheme_Object *o,
-                                         Scheme_Object *phase, int flag,
-                                         GC_CAN_IGNORE int *mutate)
+                                          Scheme_Object *phase, int flag,
+                                          GC_CAN_IGNORE int *mutate)
 {
   intptr_t i;
   Scheme_Object *key, *val;
@@ -1794,8 +1794,8 @@ XFORM_NONGCING static int equiv_scope_tables(Scheme_Scope_Table *a, Scheme_Scope
 }
 
 static Scheme_Object *propagate_scopes(Scheme_Object *o, Scheme_Scope_Table *to_propagate,
-                                      Scheme_Scope_Table *parent_scopes, int flag,
-                                      GC_CAN_IGNORE int *mutate)
+                                       Scheme_Scope_Table *parent_scopes, int flag,
+                                       GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *key, *val, *fb;
@@ -4744,8 +4744,8 @@ int scheme_stx_could_bind(Scheme_Object *bind_id, Scheme_Object *ref_id, Scheme_
                      extract_scope_set(ref, phase));
 }
 
-int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b, 
-                          Scheme_Object *a_phase, Scheme_Object *b_phase)
+int scheme_stx_free_eq3(Scheme_Object *a, Scheme_Object *b, 
+                        Scheme_Object *a_phase, Scheme_Object *b_phase)
 {
   Scheme_Object *a_bind, *b_bind;
 
@@ -4799,22 +4799,22 @@ int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b,
   return SAME_OBJ(a_bind, b_bind);
 }
 
-int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase)
+int scheme_stx_free_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase)
 {
-  return scheme_stx_module_eq3(a, b, phase, phase);
+  return scheme_stx_free_eq3(a, b, phase, phase);
 }
 
-int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase)
+int scheme_stx_free_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase)
 {
-  return scheme_stx_module_eq3(a, b, scheme_make_integer(phase), scheme_make_integer(phase));
+  return scheme_stx_free_eq3(a, b, scheme_make_integer(phase), scheme_make_integer(phase));
 }
 
-int scheme_stx_module_eq_x(Scheme_Object *a, Scheme_Object *b, intptr_t b_phase)
+int scheme_stx_free_eq_x(Scheme_Object *a, Scheme_Object *b, intptr_t b_phase)
 {
-  return scheme_stx_module_eq3(a, b, scheme_make_integer(0), scheme_make_integer(b_phase));
+  return scheme_stx_free_eq3(a, b, scheme_make_integer(0), scheme_make_integer(b_phase));
 }
 
-Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase)
+Scheme_Object *scheme_stx_get_free_eq_sym(Scheme_Object *a, Scheme_Object *phase)
 {
   if (SCHEME_STXP(a)) {
     a = scheme_stx_lookup(a, phase);
@@ -7312,7 +7312,7 @@ static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)
 	  : scheme_false);
 }
 
-static Scheme_Object *do_module_eq(const char *who, int delta, int argc, Scheme_Object **argv)
+static Scheme_Object *do_free_eq(const char *who, int delta, int argc, Scheme_Object **argv)
 {
   Scheme_Object *phase, *phase2;
   int v;
@@ -7332,35 +7332,35 @@ static Scheme_Object *do_module_eq(const char *who, int delta, int argc, Scheme_
   else
     phase2 = phase;
 
-  v = scheme_stx_module_eq3(argv[0], argv[1], phase, phase2);
+  v = scheme_stx_free_eq3(argv[0], argv[1], phase, phase2);
 
   return (v
 	  ? scheme_true
 	  : scheme_false);
 }
 
-static Scheme_Object *module_eq(int argc, Scheme_Object **argv)
+static Scheme_Object *free_eq(int argc, Scheme_Object **argv)
 {
-  return do_module_eq("free-identifier=?", 0, argc, argv);
+  return do_free_eq("free-identifier=?", 0, argc, argv);
 }
 
-static Scheme_Object *module_trans_eq(int argc, Scheme_Object **argv)
+static Scheme_Object *free_trans_eq(int argc, Scheme_Object **argv)
 {
-  return do_module_eq("free-transformer-identifier=?", 1, argc, argv);
+  return do_free_eq("free-transformer-identifier=?", 1, argc, argv);
 }
 
-static Scheme_Object *module_templ_eq(int argc, Scheme_Object **argv)
+static Scheme_Object *free_templ_eq(int argc, Scheme_Object **argv)
 {
-  return do_module_eq("free-template-identifier=?", -1, argc, argv);
+  return do_free_eq("free-template-identifier=?", -1, argc, argv);
 }
 
-static Scheme_Object *module_label_eq(int argc, Scheme_Object **argv)
+static Scheme_Object *free_label_eq(int argc, Scheme_Object **argv)
 {
-  return do_module_eq("free-label-identifier=?", MZ_LABEL_PHASE, argc, argv);
+  return do_free_eq("free-label-identifier=?", MZ_LABEL_PHASE, argc, argv);
 }
 
-static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **argv, 
-                                        Scheme_Object *dphase, int get_symbol)
+static Scheme_Object *do_free_binding(char *name, int argc, Scheme_Object **argv, 
+                                      Scheme_Object *dphase, int get_symbol)
 {
   Scheme_Object *a, *m, *nom_mod, *nom_a, *phase;
   Scheme_Object *src_phase_index, *mod_phase, *nominal_src_phase;
@@ -7425,29 +7425,29 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
   }
 }
 
-static Scheme_Object *module_binding(int argc, Scheme_Object **argv)
+static Scheme_Object *free_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-binding", argc, argv, scheme_make_integer(0), 0);
+  return do_free_binding("identifier-binding", argc, argv, scheme_make_integer(0), 0);
 }
 
-static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv)
+static Scheme_Object *free_trans_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-transformer-binding", argc, argv, scheme_make_integer(1), 0);
+  return do_free_binding("identifier-transformer-binding", argc, argv, scheme_make_integer(1), 0);
 }
 
-static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv)
+static Scheme_Object *free_templ_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-template-binding", argc, argv, scheme_make_integer(-1), 0);
+  return do_free_binding("identifier-template-binding", argc, argv, scheme_make_integer(-1), 0);
 }
 
-static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv)
+static Scheme_Object *free_label_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-label-binding", argc, argv, scheme_false, 0);
+  return do_free_binding("identifier-label-binding", argc, argv, scheme_false, 0);
 }
 
-static Scheme_Object *module_binding_symbol(int argc, Scheme_Object **argv)
+static Scheme_Object *free_binding_symbol(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-binding-symbol", argc, argv, scheme_make_integer(0), 1);
+  return do_free_binding("identifier-binding-symbol", argc, argv, scheme_make_integer(0), 1);
 }
 
 static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv)

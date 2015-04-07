@@ -1828,16 +1828,16 @@ cert_with_specials(Scheme_Object *code,
         name = scheme_stx_taint_disarm(code, NULL);
         name = SCHEME_STX_CAR(name);
 	if (SCHEME_STX_SYMBOLP(name)) {
-	  if (scheme_stx_module_eq_x(scheme_begin_stx, name, phase)
-              || scheme_stx_module_eq_x(scheme_module_begin_stx, name, phase)) {
+	  if (scheme_stx_free_eq_x(scheme_begin_stx, name, phase)
+              || scheme_stx_free_eq_x(scheme_module_begin_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
-	  } else if (scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, name, phase)) {
+	  } else if (scheme_stx_free_eq_x(scheme_begin_for_syntax_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
             phase_delta = 1;
-	  } else if (scheme_stx_module_eq_x(scheme_define_values_stx, name, phase)
-		     || scheme_stx_module_eq_x(scheme_define_syntaxes_stx, name, phase)) {
+	  } else if (scheme_stx_free_eq_x(scheme_define_values_stx, name, phase)
+		     || scheme_stx_free_eq_x(scheme_define_syntaxes_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 1;
 	  }

@@ -3909,7 +3909,7 @@ Scheme_Object *scheme_top_introduce(Scheme_Object *form, Scheme_Env *genv)
                                           scheme_false, 
                                           scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
                                           0, 0);
-      if (scheme_stx_module_eq(a, module_stx, genv->phase)) {
+      if (scheme_stx_free_eq(a, module_stx, genv->phase)) {
         /* Don't add context to the whole module, since the 
            `module` form will just discard it: */
         d = SCHEME_STX_CDR(form);
@@ -5008,7 +5008,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     cnt = scheme_stx_proper_list_length(argv[2]);
 
     if (cnt == 1)
-      is_modstar = scheme_stx_module_eq_x(scheme_modulestar_stx, SCHEME_CAR(argv[2]), env->genv->phase);
+      is_modstar = scheme_stx_free_eq_x(scheme_modulestar_stx, SCHEME_CAR(argv[2]), env->genv->phase);
     else
       is_modstar = 0;
 

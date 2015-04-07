@@ -1222,11 +1222,11 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist);
 
 int scheme_stx_could_bind(Scheme_Object *bind_id, Scheme_Object *ref_id, Scheme_Object *phase);
 
-int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase);
-int scheme_stx_module_eq_x(Scheme_Object *a, Scheme_Object *b, intptr_t b_phase);
-int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
-int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b, 
-                          Scheme_Object *a_phase, Scheme_Object *b_phase);
+int scheme_stx_free_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase);
+int scheme_stx_free_eq_x(Scheme_Object *a, Scheme_Object *b, intptr_t b_phase);
+int scheme_stx_free_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
+int scheme_stx_free_eq3(Scheme_Object *a, Scheme_Object *b, 
+                        Scheme_Object *a_phase, Scheme_Object *b_phase);
 Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase);
 
 void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Object *binding_sym);

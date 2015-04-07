@@ -1429,7 +1429,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
       } else {
         var = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_top_stx), scheme_false, scheme_sys_wraps(env), 0, 0);
       }
-      ok = scheme_stx_module_eq(rest, var, env->genv->phase);
+      ok = scheme_stx_free_eq(rest, var, env->genv->phase);
     } else 
       ok = SCHEME_STX_SYMBOLP(name);
 
@@ -2087,7 +2087,7 @@ static Scheme_Object *detect_traditional_letrec(Scheme_Object *form, Scheme_Comp
   
   id = scheme_datum_to_syntax(scheme_intern_symbol("if"), scheme_false, 
                               scheme_sys_wraps(env), 0, 0);
-  if (!scheme_stx_module_eq(v, id, env->genv->phase)) return form;
+  if (!scheme_stx_free_eq(v, id, env->genv->phase)) return form;
 
   /* found `if'; look for `(#%app values)' */
   v = SCHEME_STX_CDR(v2);
@@ -2104,7 +2104,7 @@ static Scheme_Object *detect_traditional_letrec(Scheme_Object *form, Scheme_Comp
   if (!SCHEME_STX_SYMBOLP(v2)) return form;
   id = scheme_datum_to_syntax(app_symbol, scheme_false, 
                               scheme_sys_wraps(env), 0, 0);
-  if (!scheme_stx_module_eq(v2, id, env->genv->phase)) return form;
+  if (!scheme_stx_free_eq(v2, id, env->genv->phase)) return form;
 
   v = SCHEME_STX_CDR(v);
   if (!SCHEME_STX_PAIRP(v)) return form;
@@ -2115,7 +2115,7 @@ static Scheme_Object *detect_traditional_letrec(Scheme_Object *form, Scheme_Comp
   if (!SCHEME_STX_SYMBOLP(v)) return form;
   id = scheme_datum_to_syntax(values_symbol, scheme_false, 
                               scheme_sys_wraps(env), 0, 0);
-  if (!scheme_stx_module_eq(v, id, env->genv->phase)) return form;
+  if (!scheme_stx_free_eq(v, id, env->genv->phase)) return form;
   
   /* pattern matched; drop the first clause */
   v = SCHEME_STX_CDR(form);
@@ -5148,7 +5148,7 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
                                                scheme_false, scheme_sys_wraps(env), 0, 0);
             }
 
-            if (scheme_stx_module_eq(name, cwv_stx, 0)) {
+            if (scheme_stx_free_eq(name, cwv_stx, 0)) {
               Scheme_Object *first, *orig_first;
               orig_first = SCHEME_STX_CAR(at_first);
               first = scheme_check_immediate_macro(orig_first, env, rec, drec, &gval, 0);

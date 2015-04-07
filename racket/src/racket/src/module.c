@@ -8813,7 +8813,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	else
 	  fst = NULL;
 	
-	if (fst && SCHEME_STX_SYMBOLP(fst) && scheme_stx_module_eq_x(scheme_begin_stx, fst, phase)) {
+	if (fst && SCHEME_STX_SYMBOLP(fst) && scheme_stx_free_eq_x(scheme_begin_stx, fst, phase)) {
 	  fm = SCHEME_STX_CDR(fm);
 	  e = introduce_to_module_context(e, rn_set);
           SCHEME_EXPAND_OBSERVE_RENAME_ONE(observer, e);
@@ -8854,7 +8854,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       fst = SCHEME_STX_CAR(e);
 
       if (SCHEME_STX_SYMBOLP(fst)) {
-	if (scheme_stx_module_eq_x(scheme_define_values_stx, fst, phase)) {
+	if (scheme_stx_free_eq_x(scheme_define_values_stx, fst, phase)) {
 	  /************ define-values *************/
 	  Scheme_Object *vars, *val;
           int var_count = 0;
@@ -8920,8 +8920,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  kind = DEFN_MODFORM_KIND;
-        } else if (scheme_stx_module_eq_x(scheme_define_syntaxes_stx, fst, phase)
-                   || scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, fst, phase)) {
+        } else if (scheme_stx_free_eq_x(scheme_define_syntaxes_stx, fst, phase)
+                   || scheme_stx_free_eq_x(scheme_begin_for_syntax_stx, fst, phase)) {
 	  /************ define-syntaxes & begin-for-syntax *************/
 	  /* Define the macro: */
 	  Scheme_Compile_Info mrec, erec1;
@@ -8936,7 +8936,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
           e = revert_use_site_scopes_via_context(e, rn_set, phase);
 
-	  for_stx = scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, fst, phase);
+	  for_stx = scheme_stx_free_eq_x(scheme_begin_for_syntax_stx, fst, phase);
 
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
 
@@ -9145,7 +9145,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           non_phaseless |= NON_PHASELESS_FORM;
           if (!non_phaseless_form)
             non_phaseless_form = e;
-	} else if (scheme_stx_module_eq_x(require_stx, fst, phase)) {
+	} else if (scheme_stx_free_eq_x(require_stx, fst, phase)) {
 	  /************ require *************/
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE(observer);
@@ -9168,14 +9168,14 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  kind = DONE_MODFORM_KIND;
-	} else if (scheme_stx_module_eq_x(provide_stx, fst, phase)) {
+	} else if (scheme_stx_free_eq_x(provide_stx, fst, phase)) {
 	  /************ provide *************/
           /* remember it for pass 3 */
           p = scheme_make_pair(scheme_make_pair(e, scheme_make_integer(phase)),
                                bxs->saved_provides);
           bxs->saved_provides = p;
           kind = PROVIDE_MODFORM_KIND;
-	} else if (scheme_stx_module_eq_x(declare_stx, fst, phase)) {
+	} else if (scheme_stx_free_eq_x(declare_stx, fst, phase)) {
 	  /************ declare *************/
           Scheme_Object *kws, *kw;
           
@@ -9203,14 +9203,14 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             scheme_wrong_syntax(who, NULL, e, IMPROPER_LIST_FORM);
           
           kind = DECLARE_MODFORM_KIND;
-	} else if (scheme_stx_module_eq_x(scheme_module_stx, fst, phase)
-                   || scheme_stx_module_eq_x(scheme_modulestar_stx, fst, phase)) {
+	} else if (scheme_stx_free_eq_x(scheme_module_stx, fst, phase)
+                   || scheme_stx_free_eq_x(scheme_modulestar_stx, fst, phase)) {
 	  /************ module[*] *************/
           /* check outer syntax & name, then expand pre-module or remember for post-module pass */
           Scheme_Object *name = NULL;
           int is_star;
 
-          is_star = scheme_stx_module_eq_x(scheme_modulestar_stx, fst, phase);
+          is_star = scheme_stx_free_eq_x(scheme_modulestar_stx, fst, phase);
 
           e = revert_use_site_scopes_via_context(e, rn_set, phase);
 
@@ -9735,10 +9735,10 @@ static Scheme_Object *fixup_expanded(Scheme_Object *expanded_l,
     e = SCHEME_CAR(p);
     if (SCHEME_STX_PAIRP(e)) {
       fst = SCHEME_STX_CAR(e);
-      if (scheme_stx_module_eq_x(prov_stx, fst, phase)) {
+      if (scheme_stx_free_eq_x(prov_stx, fst, phase)) {
         SCHEME_CAR(p) = SCHEME_CAR(expanded_provides);
         expanded_provides = SCHEME_CDR(expanded_provides);
-      } else if (scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, fst, phase)) {
+      } else if (scheme_stx_free_eq_x(scheme_begin_for_syntax_stx, fst, phase)) {
         l = scheme_flatten_syntax_list(e, NULL);
         l = scheme_copy_list(l);
         expanded_provides = fixup_expanded(SCHEME_CDR(l), expanded_provides, phase + 1, kind);
@@ -9903,7 +9903,7 @@ static void check_already_provided(Scheme_Hash_Table *provided, Scheme_Object *o
 
   v = scheme_hash_get(provided, outname);
   if (v) {
-    if (!scheme_stx_module_eq2(SCHEME_CAR(v), name, phase))
+    if (!scheme_stx_free_eq2(SCHEME_CAR(v), name, phase))
       scheme_wrong_syntax("module", outname, form, "identifier already provided (as a different binding)");
     
     if (protected && SCHEME_FALSEP(SCHEME_CDR(v)))
@@ -10966,7 +10966,7 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
         else {
           rest = SCHEME_CAR(p);
           if (!SCHEME_STX_SYMBOLP(rest)
-              || !scheme_stx_module_eq_x(scheme_begin_stx, rest, at_phase)) {
+              || !scheme_stx_free_eq_x(scheme_begin_stx, rest, at_phase)) {
             p = NULL;
           }
         }
@@ -11410,7 +11410,7 @@ static int expression_starts(Scheme_Object *expr, Scheme_Object *id, int phase)
   if (SCHEME_STX_PAIRP(expr)) {
     expr = SCHEME_STX_CAR(expr);
     if (SCHEME_STX_SYMBOLP(expr)) {
-      if (scheme_stx_module_eq_x(id, expr, phase))
+      if (scheme_stx_free_eq_x(id, expr, phase))
         return 1;
     }
   }
@@ -11427,7 +11427,7 @@ static int expression_starts_app(Scheme_Object *expr, Scheme_Object *id, int pha
     /* would explicit `#%app' be the core one? */
     id = scheme_datum_to_syntax(SCHEME_STX_VAL(app_stx), expr, expr, 0, 0);
     id = scheme_stx_taint_rearm(id, expr);
-    if (scheme_stx_module_eq_x(app_stx, id, phase))
+    if (scheme_stx_free_eq_x(app_stx, id, phase))
       return 1;
   }
 
@@ -11528,7 +11528,7 @@ static int phaseless_constant_expression(Scheme_Object *val, int phase)
     a = SCHEME_STX_VAL(datum_stx);
     val = scheme_stx_taint_rearm(scheme_datum_to_syntax(a, val, val, 0, 0), 
                                  val);
-    if (scheme_stx_module_eq_x(datum_stx, val, phase))
+    if (scheme_stx_free_eq_x(datum_stx, val, phase))
       return 1;
     return 0;
   }
