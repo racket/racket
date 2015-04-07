@@ -200,6 +200,7 @@
           orig-blame seq
           '(expected: "a sequence" given: "~e")
           seq))
+       (define result-seq
        (make-do-sequence
         (lambda ()
           (let*-values ([(more? next) (sequence-generate seq)])
@@ -233,4 +234,8 @@
                     seq)))
                ans)
              (lambda elems #t)
-             (lambda (idx . elems) #t)))))))))
+             (lambda (idx . elems) #t))))))
+       (cond
+         [(list? seq) (sequence->list result-seq)]
+         [(stream? seq) (sequence->stream result-seq)]
+         [else result-seq])))))

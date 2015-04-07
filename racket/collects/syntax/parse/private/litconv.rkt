@@ -4,13 +4,13 @@
                      "sc.rkt"
                      "lib.rkt"
                      "kws.rkt"
-                     racket/syntax
-                     syntax/private/keyword)
+                     racket/syntax)
          syntax/parse/private/residual-ct ;; keep abs. path
          syntax/parse/private/residual    ;; keep abs. path
          (only-in unstable/syntax phase-of-enclosing-module))
 (begin-for-syntax
  (lazy-require
+  [syntax/private/keyword (options-select-value parse-keyword-options)]
   [syntax/parse/private/rep ;; keep abs. path
    (parse-kw-formals
     check-conventions-rules

@@ -34,7 +34,7 @@
     (lambda (stx)
       (let-values ([(here) (quote-syntax here)])
         (if (symbol? (syntax-e stx))
-            (datum->syntax here 'new-apply-proc stx stx)
+            (datum->syntax here 'new-apply-proc stx)
             (let-values ([(l) (syntax->list stx)])
               (let-values ([(app) (if (if l
                                           (ormap (lambda (x) (keyword? (syntax-e x))) l)
@@ -46,7 +46,6 @@
                  stx
                  (cons (datum->syntax here app fst fst)
                        (cdr (syntax-e stx)))
-                 stx
                  stx)))))))
 
   (define-values (new-keyword-apply)

@@ -2043,5 +2043,15 @@
                                     (exn-message x))))))
 
 ;; ----------------------------------------
+;; Make sure that `current-command-line-arguments` works with chaperones:
+
+(test "b"
+      'current-command-line-arguments
+      (parameterize ([current-command-line-arguments
+                      (chaperone-vector (vector "a" "b" "c")
+                                        (lambda (b i v) v) (lambda (b i v) v))])
+        (vector-ref (current-command-line-arguments) 1)))
+
+;; ----------------------------------------
 
 (report-errs)
