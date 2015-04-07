@@ -116,7 +116,6 @@ static Scheme_Object *local_lift_end_statement(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_provide(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_introducer(int argc, Scheme_Object *argv[]);
-static Scheme_Object *local_make_delta_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_binding_id(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_set_transformer(int argc, Scheme_Object *argv[]);
 static Scheme_Object *set_transformer_p(int argc, Scheme_Object *argv[]);
@@ -781,7 +780,6 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("syntax-local-get-shadower", local_get_shadower, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-introduce", local_introduce, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("make-syntax-introducer", make_introducer, 0, 1, env);
-  GLOBAL_PRIM_W_ARITY("syntax-local-make-delta-introducer", local_make_delta_introduce, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-identifier-as-binding", local_binding_id, 1, 1, env);
 
   GLOBAL_PRIM_W_ARITY("syntax-local-module-exports", local_module_exports, 1, 1, env);
@@ -794,7 +792,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("set!-transformer?", set_transformer_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("set!-transformer-procedure", set_transformer_proc, 1, 1, env);
 
-  GLOBAL_PRIM_W_ARITY("make-rename-transformer", make_rename_transformer, 1, 2, env);
+  GLOBAL_PRIM_W_ARITY("make-rename-transformer", make_rename_transformer, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("rename-transformer?", rename_transformer_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("rename-transformer-target", rename_transformer_target, 1, 1, env);
 
@@ -2559,150 +2557,6 @@ make_introducer(int argc, Scheme_Object *argv[])
 					 "syntax-introducer", 1, 2);
 }
 
-static Scheme_Object *
-delta_introducer_proc(void *_i_plus_m, int argc, Scheme_Object *argv[])
-{
-  Scheme_Object *p = (Scheme_Object *)_i_plus_m, *l, *v, *a[2], *mode = NULL;
-  const char *who = "syntax-delta-introducer";
-
-  v = argv[0];
-  if (!SCHEME_STXP(v) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(v))) {
-    scheme_wrong_contract(who, "identifier?", 0, argc, argv);
-  }
-  if (argc > 1) {
-    (void)scheme_get_introducer_mode(who, 1, argc, argv);
-    mode = argv[1];
-  }
-
-  
-  /* Apply mapping functions: */
-  l = SCHEME_CDR(p);
-  while (SCHEME_PAIRP(l)) {
-    a[0] = v;
-    a[1] = mode;
-    v = _scheme_apply(SCHEME_CAR(l), (mode ? 2 : 1), a);
-    l = SCHEME_CDR(l);
-  }
-
-  /* Apply delta-introducing functions: */
-  l = SCHEME_CAR(p);
-  while (SCHEME_PAIRP(l)) {
-    a[0] = v;
-    a[1] = mode;
-    v = _scheme_apply(SCHEME_CAR(l), (mode ? 2 : 1), a);
-    if (!SCHEME_STXP(v) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(v))) {
-      a[0] = v;
-      scheme_wrong_contract(who, "identifier?", -1, -1, a);
-    }
-    l = SCHEME_CDR(l);
-  }
-
-  return v;
-}
-
-static Scheme_Object *
-local_make_delta_introduce(int argc, Scheme_Object *argv[])
-{
-  Scheme_Object *sym, *binding, *a[2], *stx, *introducer;
-  Scheme_Mark_Set *binding_marks;
-  int ambiguous;
-  Scheme_Comp_Env *env;
-
-  env = scheme_current_thread->current_local_env;
-  if (!env)
-    not_currently_transforming("syntax-local-make-delta-introducer");
-
-  if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
-    scheme_wrong_contract("syntax-local-make-delta-introducer", "identifier?", 0, argc, argv);
-
-  sym = argv[0];
-
-  binding = scheme_stx_lookup_w_nominal(sym, scheme_make_integer(env->genv->phase),
-                                        0,
-                                        NULL, &ambiguous, &binding_marks,
-                                        NULL, NULL, NULL, NULL, NULL);
-  if (SCHEME_FALSEP(binding)) {
-    scheme_contract_error("syntax-local-make-delta-introducer",
-                          (ambiguous
-                           ? "identifier binding is ambigious"
-                           : "identifier is not bound"),
-                          "identifier", 1, argv[0],
-                          NULL);
-  }
-
-  stx = scheme_datum_to_syntax(SCHEME_STX_VAL(sym), scheme_false, scheme_false, 0, 0);
-  stx = scheme_stx_adjust_marks(stx, binding_marks, scheme_env_phase(env->genv), SCHEME_STX_ADD);
-
-  a[0] = sym;
-  a[1] = stx;
-
-  introducer = scheme_syntax_make_transfer_intro(2, a);
-
-  return scheme_make_closed_prim_w_arity(delta_introducer_proc, 
-                                         scheme_make_pair(scheme_make_pair(introducer,
-                                                                           scheme_null),
-                                                          scheme_null),
-                                         "syntax-delta-introducer", 1, 2);
-
-  // REMOVEME: figure out rename-identifier behavior
-#if 0
-  while (1) {
-    binder = NULL;
-
-    v = scheme_compile_lookup(sym, env,
-			      (SCHEME_NULL_FOR_UNBOUND
-			       + SCHEME_RESOLVE_MODIDS
-			       + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
-			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
-			      scheme_current_thread->current_local_modidx, 
-			      NULL, NULL,
-                              &binder, NULL);
-    
-    /* Deref globals */
-    if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type))
-      v = (Scheme_Object *)(SCHEME_VAR_BUCKET(v))->val;
-    
-    if (!v || NOT_SAME_TYPE(SCHEME_TYPE(v), scheme_macro_type)) {
-      scheme_contract_error("syntax-local-make-delta-introducer",
-                            (renamed 
-                             ? "not defined as syntax (after renaming)"
-                             : "not defined as syntax"),
-                            "identifier", 1, argv[0],
-                            NULL);
-    }
-
-    if (!binder) {
-      /* Not a local binding. Tell make-syntax-delta-introducer to
-         use module-binding information. */
-      binder = scheme_false;
-    }
-
-    a[0] = sym;
-    a[1] = binder;
-    introducer = scheme_syntax_make_transfer_intro(2, a);
-    introducers = scheme_make_pair(introducer, introducers);
-    
-    v = SCHEME_PTR_VAL(v);
-    if (scheme_is_rename_transformer(v)) {
-      sym = scheme_rename_transformer_id(v);
-
-      v = SCHEME_PTR2_VAL(v);
-      if (!SCHEME_FALSEP(v))
-        mappers = scheme_make_pair(v, mappers);
-
-      renamed = 1;
-      SCHEME_USE_FUEL(1);
-    } else {
-      /* that's the end of the chain */
-      mappers = scheme_reverse(mappers);
-      return scheme_make_closed_prim_w_arity(delta_introducer_proc, 
-                                             scheme_make_pair(introducers, mappers),
-                                             "syntax-delta-introducer", 1, 1);
-    }
-  }
-#endif
-}
-
 static Scheme_Object *local_binding_id(int argc, Scheme_Object **argv)
 {
   Scheme_Object *a = argv[0];
@@ -2941,13 +2795,10 @@ make_rename_transformer(int argc, Scheme_Object *argv[])
   if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
     scheme_wrong_contract("make-rename-transformer", "identifier?", 0, argc, argv);
 
-  if (argc > 1)
-    scheme_check_proc_arity("make-rename-transformer", 1, 1, argc, argv);
-  
   v = scheme_alloc_object();
   v->type = scheme_id_macro_type;
   SCHEME_PTR1_VAL(v) = argv[0];
-  SCHEME_PTR2_VAL(v) = ((argc > 1) ? argv[1] : scheme_false);
+  SCHEME_PTR2_VAL(v) = scheme_false; /* used to be an introducer procedure */
 
   return v;
 }
