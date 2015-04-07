@@ -48,41 +48,41 @@ ROSYM static Scheme_Object *fallbacks_symbol;
 READ_ONLY Scheme_Object *scheme_syntax_p_proc;
 
 READ_ONLY Scheme_Hash_Tree *empty_hash_tree;
-READ_ONLY Scheme_Mark_Table *empty_mark_table;
-READ_ONLY Scheme_Mark_Table *empty_propagate_table;
-READ_ONLY Scheme_Mark_Set *empty_mark_set;
+READ_ONLY Scheme_Scope_Table *empty_scope_table;
+READ_ONLY Scheme_Scope_Table *empty_propagate_table;
+READ_ONLY Scheme_Scope_Set *empty_scope_set;
 
 READ_ONLY static Scheme_Stx_Srcloc *empty_srcloc;
 
-typedef struct Scheme_Mark {
-  Scheme_Inclhash_Object iso; /* 0x1 => Scheme_Mark_With_Owner */
-  mzlonglong id; /* low SCHEME_STX_MARK_KIND_SHIFT bits indicate kind */
+typedef struct Scheme_Scope {
+  Scheme_Inclhash_Object iso; /* 0x1 => Scheme_Scope_With_Owner */
+  mzlonglong id; /* low SCHEME_STX_SCOPE_KIND_SHIFT bits indicate kind */
   Scheme_Object *bindings; /* NULL, vector for one binding, hash table for multiple bindngs,
                               or (rcons hash-table (rcons pes-info ... NULL));
-                              each hash table maps symbols to (cons mark-set binding)
-                              or (mlist (cons mark-set binding) ...) */
-} Scheme_Mark;
+                              each hash table maps symbols to (cons scope-set binding)
+                              or (mlist (cons scope-set binding) ...) */
+} Scheme_Scope;
 
-typedef struct Scheme_Mark_With_Owner {
-  Scheme_Mark m;
-  Scheme_Object *owner_multi_mark;
+typedef struct Scheme_Scope_With_Owner {
+  Scheme_Scope m;
+  Scheme_Object *owner_multi_scope;
   Scheme_Object *phase;
-} Scheme_Mark_With_Owner;
+} Scheme_Scope_With_Owner;
 
-#define SCHEME_MARK_FLAGS(m) MZ_OPT_HASH_KEY(&(m)->iso)
-#define SCHEME_MARK_HAS_OWNER(m) (SCHEME_MARK_FLAGS(m) & 0x1)
+#define SCHEME_SCOPE_FLAGS(m) MZ_OPT_HASH_KEY(&(m)->iso)
+#define SCHEME_SCOPE_HAS_OWNER(m) (SCHEME_SCOPE_FLAGS(m) & 0x1)
 
-#define SCHEME_MARK_KIND(m) (((Scheme_Mark *)(m))->id & SCHEME_STX_MARK_KIND_MASK)
+#define SCHEME_SCOPE_KIND(m) (((Scheme_Scope *)(m))->id & SCHEME_STX_SCOPE_KIND_MASK)
 
-READ_ONLY static Scheme_Object *root_mark;
+READ_ONLY static Scheme_Object *root_scope;
 
 typedef struct Scheme_Propagate_Table {
-  Scheme_Mark_Table mt;
-  Scheme_Mark_Table *prev; /* points to old mark table */
+  Scheme_Scope_Table mt;
+  Scheme_Scope_Table *prev; /* points to old scope table */
   Scheme_Object *phase_shift; /* number of (box <n>); latter converts only <n> to #f */
 } Scheme_Propagate_Table;
 
-THREAD_LOCAL_DECL(static mzlonglong mark_counter);
+THREAD_LOCAL_DECL(static mzlonglong scope_counter);
 THREAD_LOCAL_DECL(static Scheme_Object *last_phase_shift);
 THREAD_LOCAL_DECL(static Scheme_Object *nominal_ipair_cache);
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *taint_intern_table);
@@ -140,7 +140,7 @@ static void register_traversers(void);
 XFORM_NONGCING static int is_armed(Scheme_Object *v);
 static Scheme_Object *add_taint_to_stx(Scheme_Object *o, int *mutate);
 
-static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks, Scheme_Object *replace_at);
+static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Scope_Set *scopes, Scheme_Object *replace_at);
 
 static Scheme_Object *make_unmarshal_info(Scheme_Object *phase, Scheme_Object *prefix, Scheme_Object *excepts);
 XFORM_NONGCING static Scheme_Object *extract_unmarshal_phase(Scheme_Object *unmarshal_info);
@@ -149,14 +149,14 @@ static Scheme_Hash_Tree *extract_unmarshal_excepts(Scheme_Object *unmarshal_info
 static Scheme_Object *unmarshal_lookup_adjust(Scheme_Object *sym, Scheme_Object *pes);
 static Scheme_Object *unmarshal_key_adjust(Scheme_Object *sym, Scheme_Object *pes);
 
-XFORM_NONGCING static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b);
-static Scheme_Object *remove_at_mark_list(Scheme_Object *l, Scheme_Object *p);
-static Scheme_Object *add_to_mark_list(Scheme_Object *l, Scheme_Object *p);
+XFORM_NONGCING static int scopes_equal(Scheme_Scope_Set *a, Scheme_Scope_Set *b);
+static Scheme_Object *remove_at_scope_list(Scheme_Object *l, Scheme_Object *p);
+static Scheme_Object *add_to_scope_list(Scheme_Object *l, Scheme_Object *p);
 
 static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt);
-static Scheme_Object *mark_unmarshal_content(Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
+static Scheme_Object *scope_unmarshal_content(Scheme_Object *c, struct Scheme_Unmarshal_Tables *utx);
 
-static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks);
+static Scheme_Object *scopes_to_sorted_list(Scheme_Scope_Set *scopes);
 static void sort_vector_symbols(Scheme_Object *vec);
 
 XFORM_NONGCING static void extract_module_binding_parts(Scheme_Object *l,
@@ -191,18 +191,18 @@ XFORM_NONGCING static void clear_binding_cache_stx(Scheme_Stx *stx);
 #define SCHEME_PHASE_SHIFTP(a) (SCHEME_PHASEP(a) || (SCHEME_BOXP(a) && SCHEME_PHASEP(SCHEME_BOX_VAL(a))))
 /* #f as a phase shift is an alias for (box 0) */
 
-#define SCHEME_MULTI_MARKP(o) SCHEME_HASHTP(o)
-#define SCHEME_MARKP(x) (SAME_TYPE(SCHEME_TYPE(x), scheme_mark_type))
+#define SCHEME_MULTI_SCOPEP(o) SCHEME_HASHTP(o)
+#define SCHEME_SCOPEP(x) (SAME_TYPE(SCHEME_TYPE(x), scheme_scope_type))
 
-#define SCHEME_TL_MULTI_MARKP(o) (MZ_OPT_HASH_KEY(&(((Scheme_Hash_Table *)o)->iso)) & 0x2)
+#define SCHEME_TL_MULTI_SCOPEP(o) (MZ_OPT_HASH_KEY(&(((Scheme_Hash_Table *)o)->iso)) & 0x2)
 
-/* Represent fallback as vectors, either of size 2 (for normal marks)
-   or size 4 (for propagtation marks): */
+/* Represent fallback as vectors, either of size 2 (for normal scopes)
+   or size 4 (for propagtation scopes): */
 #define SCHEME_FALLBACKP(o) SCHEME_VECTORP(o)
 #define SCHEME_FALLBACK_QUADP(o) (SCHEME_VEC_SIZE(o) == 4)
 #define SCHEME_FALLBACK_FIRST(o) (SCHEME_VEC_ELS(o)[0])
 #define SCHEME_FALLBACK_REST(o) (SCHEME_VEC_ELS(o)[1])
-#define SCHEME_FALLBACK_MARK(o) (SCHEME_VEC_ELS(o)[2])
+#define SCHEME_FALLBACK_SCOPE(o) (SCHEME_VEC_ELS(o)[2])
 #define SCHEME_FALLBACK_PHASE(o) (SCHEME_VEC_ELS(o)[3])
 
 /* Bindings of the form "everything from module" */
@@ -222,12 +222,12 @@ XFORM_NONGCING static int prefab_p(Scheme_Object *o)
 #define STX_KEY(stx) MZ_OPT_HASH_KEY(&(stx)->iso)
 
 #define MUTATE_STX_OBJ        1
-#define MUTATE_STX_MARK_TABLE 2
+#define MUTATE_STX_SCOPE_TABLE 2
 #define MUTATE_STX_PROP_TABLE 4
 
 #if 0
 int stx_alloc_obj, stx_skip_alloc_obj;
-int stx_alloc_mark_table, stx_skip_alloc_mark_table;
+int stx_alloc_scope_table, stx_skip_alloc_scope_table;
 int stx_alloc_prop_table, stx_skip_alloc_prop_table;
 # define COUNT_MUTATE_ALLOCS(x) x
 #else
@@ -264,18 +264,18 @@ void scheme_init_stx(Scheme_Env *env)
 #endif
 
   REGISTER_SO(empty_hash_tree);
-  REGISTER_SO(empty_mark_table);
+  REGISTER_SO(empty_scope_table);
   REGISTER_SO(empty_propagate_table);
-  REGISTER_SO(empty_mark_set);
+  REGISTER_SO(empty_scope_set);
   empty_hash_tree = scheme_make_hash_tree(0);
-  empty_mark_set = (Scheme_Mark_Set *)scheme_make_hash_tree_set(0);
-  empty_mark_table = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
-  empty_mark_table->so.type = scheme_mark_table_type;
-  empty_mark_table->single_marks = empty_mark_set;
-  empty_mark_table->multi_marks = scheme_null;
-  empty_propagate_table = (Scheme_Mark_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
-  memcpy(empty_propagate_table, empty_mark_table, sizeof(Scheme_Mark_Table));
-  empty_propagate_table->single_marks = (Scheme_Mark_Set *)empty_hash_tree;
+  empty_scope_set = (Scheme_Scope_Set *)scheme_make_hash_tree_set(0);
+  empty_scope_table = MALLOC_ONE_TAGGED(Scheme_Scope_Table);
+  empty_scope_table->so.type = scheme_scope_table_type;
+  empty_scope_table->simple_scopes = empty_scope_set;
+  empty_scope_table->multi_scopes = scheme_null;
+  empty_propagate_table = (Scheme_Scope_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
+  memcpy(empty_propagate_table, empty_scope_table, sizeof(Scheme_Scope_Table));
+  empty_propagate_table->simple_scopes = (Scheme_Scope_Set *)empty_hash_tree;
   empty_propagate_table->so.type = scheme_propagate_table_type;
   ((Scheme_Propagate_Table *)empty_propagate_table)->phase_shift = scheme_make_integer(0);
   ((Scheme_Propagate_Table *)empty_propagate_table)->prev = NULL;
@@ -383,8 +383,8 @@ void scheme_init_stx(Scheme_Env *env)
   empty_srcloc->col = -1;
   empty_srcloc->pos = -1;
 
-  REGISTER_SO(root_mark);
-  root_mark = scheme_new_mark(SCHEME_STX_MODULE_MARK);
+  REGISTER_SO(root_scope);
+  root_scope = scheme_new_scope(SCHEME_STX_MODULE_SCOPE);
 }
 
 void scheme_init_stx_places(int initial_main_os_thread) {
@@ -409,7 +409,7 @@ Scheme_Object *scheme_make_stx(Scheme_Object *val,
   STX_KEY(stx) = HAS_SUBSTX(val) ? STX_SUBSTX_FLAG : 0;
   stx->val = val;
   stx->srcloc = srcloc;
-  stx->marks = empty_mark_table;
+  stx->scopes = empty_scope_table;
   stx->u.to_propagate = NULL;
   stx->shifts = scheme_null;
   stx->props = props;
@@ -421,8 +421,8 @@ Scheme_Object *clone_stx(Scheme_Object *to, GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)to;
   Scheme_Object *taints, *shifts;
-  Scheme_Mark_Table *marks;
-  Scheme_Mark_Table *to_propagate;
+  Scheme_Scope_Table *scopes;
+  Scheme_Scope_Table *to_propagate;
   int armed;
 
   STX_ASSERT(SCHEME_STXP(to));
@@ -433,7 +433,7 @@ Scheme_Object *clone_stx(Scheme_Object *to, GC_CAN_IGNORE int *mutate)
   }
 
   taints = stx->taints;
-  marks = stx->marks;
+  scopes = stx->scopes;
   shifts = stx->shifts;
   to_propagate = stx->u.to_propagate;
   armed = (STX_KEY(stx) & STX_ARMED_FLAG);
@@ -442,7 +442,7 @@ Scheme_Object *clone_stx(Scheme_Object *to, GC_CAN_IGNORE int *mutate)
                                       stx->srcloc,
                                       stx->props);
 
-  stx->marks = marks;
+  stx->scopes = scopes;
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
     stx->u.to_propagate = to_propagate;
     if (armed)
@@ -641,10 +641,10 @@ void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *con
   ((Scheme_Stx *)q_stx)->val = val;
 
   if (context) {
-    ((Scheme_Stx *)q_stx)->marks = ((Scheme_Stx *)context)->marks;
+    ((Scheme_Stx *)q_stx)->scopes = ((Scheme_Stx *)context)->scopes;
     ((Scheme_Stx *)q_stx)->shifts = ((Scheme_Stx *)context)->shifts;
   } else {
-    ((Scheme_Stx *)q_stx)->marks = NULL;
+    ((Scheme_Stx *)q_stx)->scopes = NULL;
     ((Scheme_Stx *)q_stx)->shifts = NULL;
   }
 
@@ -652,76 +652,76 @@ void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *con
   ((Scheme_Stx *)q_stx)->taints = NULL;
 }
 
-/******************** marks ********************/
+/******************** scopes ********************/
 
-Scheme_Object *scheme_stx_root_mark()
+Scheme_Object *scheme_stx_root_scope()
 {
-  return root_mark;
+  return root_scope;
 }
 
-Scheme_Object *scheme_new_mark(int kind)
+Scheme_Object *scheme_new_scope(int kind)
 {
   mzlonglong id;
   Scheme_Object *m;
 
-  if (kind == SCHEME_STX_MODULE_MULTI_MARK) {
-    m = scheme_malloc_small_tagged(sizeof(Scheme_Mark_With_Owner));
-    SCHEME_MARK_FLAGS((Scheme_Mark *)m) |= 0x1;
+  if (kind == SCHEME_STX_MODULE_MULTI_SCOPE) {
+    m = scheme_malloc_small_tagged(sizeof(Scheme_Scope_With_Owner));
+    SCHEME_SCOPE_FLAGS((Scheme_Scope *)m) |= 0x1;
   } else
-    m = scheme_malloc_small_tagged(sizeof(Scheme_Mark));
+    m = scheme_malloc_small_tagged(sizeof(Scheme_Scope));
 
-  ((Scheme_Mark *)m)->iso.so.type = scheme_mark_type;
-  id = ((++mark_counter) << SCHEME_STX_MARK_KIND_SHIFT) | kind;
-  ((Scheme_Mark *)m)->id = id;
+  ((Scheme_Scope *)m)->iso.so.type = scheme_scope_type;
+  id = ((++scope_counter) << SCHEME_STX_SCOPE_KIND_SHIFT) | kind;
+  ((Scheme_Scope *)m)->id = id;
 
   return m;
 }
 
-static Scheme_Object *new_multi_mark(Scheme_Object *debug_name)
+static Scheme_Object *new_multi_scope(Scheme_Object *debug_name)
 {
-  Scheme_Hash_Table *multi_mark;
+  Scheme_Hash_Table *multi_scope;
 
-  /* Maps a phase to a mark, where each mark is created on demand: */
-  multi_mark = scheme_make_hash_table(SCHEME_hash_ptr);
+  /* Maps a phase to a scope, where each scope is created on demand: */
+  multi_scope = scheme_make_hash_table(SCHEME_hash_ptr);
 
   if (SCHEME_FALSEP(debug_name))
-    MZ_OPT_HASH_KEY(&(multi_mark->iso)) |= 0x2;
+    MZ_OPT_HASH_KEY(&(multi_scope->iso)) |= 0x2;
 
   if (SAME_TYPE(SCHEME_TYPE(debug_name), scheme_resolved_module_path_type))
     debug_name = scheme_resolved_module_path_value(debug_name);
   if (SCHEME_FALSEP(debug_name))
     debug_name = scheme_gensym(top_symbol);
   
-  scheme_hash_set(multi_mark, scheme_void, debug_name);
+  scheme_hash_set(multi_scope, scheme_void, debug_name);
 
-  return (Scheme_Object *)multi_mark;
+  return (Scheme_Object *)multi_scope;
 }
 
-Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
+Scheme_Object *scheme_scope_printed_form(Scheme_Object *m)
 {
-  int kind = ((Scheme_Mark *)m)->id & SCHEME_STX_MARK_KIND_MASK;
+  int kind = ((Scheme_Scope *)m)->id & SCHEME_STX_SCOPE_KIND_MASK;
   Scheme_Object *num, *kind_sym, *vec, *name;
 
-  num = scheme_make_integer_value_from_long_long(((Scheme_Mark *)m)->id >> SCHEME_STX_MARK_KIND_SHIFT);
+  num = scheme_make_integer_value_from_long_long(((Scheme_Scope *)m)->id >> SCHEME_STX_SCOPE_KIND_SHIFT);
   
   switch (kind) {
-  case SCHEME_STX_MODULE_MARK:
-  case SCHEME_STX_MODULE_MULTI_MARK:
-    if (SAME_OBJ(m, root_mark))
+  case SCHEME_STX_MODULE_SCOPE:
+  case SCHEME_STX_MODULE_MULTI_SCOPE:
+    if (SAME_OBJ(m, root_scope))
       kind_sym = top_symbol;
     else
       kind_sym = module_symbol;
     break;
-  case SCHEME_STX_MACRO_MARK:
+  case SCHEME_STX_MACRO_SCOPE:
     kind_sym = macro_symbol;
     break;
-  case SCHEME_STX_LOCAL_BIND_MARK:
+  case SCHEME_STX_LOCAL_BIND_SCOPE:
     kind_sym = local_symbol;
     break;
-  case SCHEME_STX_INTDEF_MARK:
+  case SCHEME_STX_INTDEF_SCOPE:
     kind_sym = intdef_symbol;
     break;
-  case SCHEME_STX_USE_SITE_MARK:
+  case SCHEME_STX_USE_SITE_SCOPE:
     kind_sym = use_site_symbol;
     break;
   default:
@@ -729,17 +729,17 @@ Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
     break;
   }
 
-  if (SCHEME_MARK_HAS_OWNER((Scheme_Mark *)m)) {
-    Scheme_Object *multi_mark = ((Scheme_Mark_With_Owner *)m)->owner_multi_mark;
-    name = scheme_eq_hash_get((Scheme_Hash_Table *)multi_mark, scheme_void);
+  if (SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)m)) {
+    Scheme_Object *multi_scope = ((Scheme_Scope_With_Owner *)m)->owner_multi_scope;
+    name = scheme_eq_hash_get((Scheme_Hash_Table *)multi_scope, scheme_void);
     if (!name) name = scheme_false;
 
-    if (SCHEME_TL_MULTI_MARKP(multi_mark))
+    if (SCHEME_TL_MULTI_SCOPEP(multi_scope))
       kind_sym = top_symbol;
     
     vec = scheme_make_vector(4, NULL);
     SCHEME_VEC_ELS(vec)[2] = name;
-    SCHEME_VEC_ELS(vec)[3] = ((Scheme_Mark_With_Owner *)m)->phase;
+    SCHEME_VEC_ELS(vec)[3] = ((Scheme_Scope_With_Owner *)m)->phase;
   } else {
     vec = scheme_make_vector(2, NULL);
   }
@@ -750,42 +750,42 @@ Scheme_Object *scheme_mark_printed_form(Scheme_Object *m)
   return vec;
 }
 
-#define SCHEME_MARK_SETP(m) SCHEME_HASHTRP((Scheme_Object *)(m))
+#define SCHEME_SCOPE_SETP(m) SCHEME_HASHTRP((Scheme_Object *)(m))
 
-XFORM_NONGCING static intptr_t mark_set_count(Scheme_Mark_Set *s)
+XFORM_NONGCING static intptr_t scope_set_count(Scheme_Scope_Set *s)
 {
   return ((Scheme_Hash_Tree *)s)->count;
 }
 
-XFORM_NONGCING static Scheme_Object *mark_set_get(Scheme_Mark_Set *s, Scheme_Object *key)
+XFORM_NONGCING static Scheme_Object *scope_set_get(Scheme_Scope_Set *s, Scheme_Object *key)
 {
   return scheme_eq_hash_tree_get((Scheme_Hash_Tree *)s, key);
 }
 
-static Scheme_Mark_Set *mark_set_set(Scheme_Mark_Set *s, Scheme_Object *key, Scheme_Object *val)
+static Scheme_Scope_Set *scope_set_set(Scheme_Scope_Set *s, Scheme_Object *key, Scheme_Object *val)
 {
-  return (Scheme_Mark_Set *)scheme_hash_tree_set((Scheme_Hash_Tree *)s, key, val);
+  return (Scheme_Scope_Set *)scheme_hash_tree_set((Scheme_Hash_Tree *)s, key, val);
 }
 
-XFORM_NONGCING static mzlonglong mark_set_next(Scheme_Mark_Set *s, mzlonglong pos)
+XFORM_NONGCING static mzlonglong scope_set_next(Scheme_Scope_Set *s, mzlonglong pos)
 {
   return scheme_hash_tree_next((Scheme_Hash_Tree *)s, pos);
 }
 
-XFORM_NONGCING static int mark_set_index(Scheme_Mark_Set *s, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
+XFORM_NONGCING static int scope_set_index(Scheme_Scope_Set *s, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
 {
   return scheme_hash_tree_index((Scheme_Hash_Tree *)s, pos, _key, _val);
 }
 
-XFORM_NONGCING static int mark_subset(Scheme_Mark_Set *sa, Scheme_Mark_Set *sb)
+XFORM_NONGCING static int scope_subset(Scheme_Scope_Set *sa, Scheme_Scope_Set *sb)
 {
   return scheme_eq_hash_tree_subset_of((Scheme_Hash_Tree *)sa,
                                        (Scheme_Hash_Tree *)sb);
 }
 
-static int marks_equal(Scheme_Mark_Set *a, Scheme_Mark_Set *b)
+static int scopes_equal(Scheme_Scope_Set *a, Scheme_Scope_Set *b)
 {
-  return (mark_set_count(a) == mark_set_count(b)) && mark_subset(a, b);
+  return (scope_set_count(a) == scope_set_count(b)) && scope_subset(a, b);
 }
 
 static Scheme_Object *make_fallback_pair(Scheme_Object *a, Scheme_Object *b)
@@ -805,9 +805,9 @@ static Scheme_Object *make_fallback_quad(Scheme_Object *a, Scheme_Object *b,
   return a;
 }
 
-Scheme_Object *extract_single_mark(Scheme_Object *multi_mark, Scheme_Object *phase)
+Scheme_Object *extract_simple_scope(Scheme_Object *multi_scope, Scheme_Object *phase)
 {
-  Scheme_Hash_Table *ht = (Scheme_Hash_Table *)multi_mark;
+  Scheme_Hash_Table *ht = (Scheme_Hash_Table *)multi_scope;
   Scheme_Object *m;
 
   if (SCHEME_TRUEP(phase) && !SCHEME_INTP(phase)) {
@@ -817,20 +817,20 @@ Scheme_Object *extract_single_mark(Scheme_Object *multi_mark, Scheme_Object *pha
 
   m = scheme_eq_hash_get(ht, phase);
   if (!m) {
-    m = scheme_new_mark(SCHEME_STX_MODULE_MULTI_MARK);
-    ((Scheme_Mark_With_Owner *)m)->owner_multi_mark = (Scheme_Object *)ht;
-    ((Scheme_Mark_With_Owner *)m)->phase = phase;
+    m = scheme_new_scope(SCHEME_STX_MODULE_MULTI_SCOPE);
+    ((Scheme_Scope_With_Owner *)m)->owner_multi_scope = (Scheme_Object *)ht;
+    ((Scheme_Scope_With_Owner *)m)->phase = phase;
     scheme_hash_set(ht, phase, m);
   }
 
   return m;
 }
 
-static Scheme_Object *extract_single_mark_from_shifted(Scheme_Object *multi_mark_and_phase, Scheme_Object *phase)
+static Scheme_Object *extract_simple_scope_from_shifted(Scheme_Object *multi_scope_and_phase, Scheme_Object *phase)
 {
   Scheme_Object *ph;
     
-  ph = SCHEME_CDR(multi_mark_and_phase);
+  ph = SCHEME_CDR(multi_scope_and_phase);
   if (SCHEME_FALSEP(phase)) {
     if (!SCHEME_BOXP(ph)) {
       /* number phase shift, so look for #f */
@@ -845,55 +845,55 @@ static Scheme_Object *extract_single_mark_from_shifted(Scheme_Object *multi_mark
   } else
     ph = scheme_bin_minus(phase, ph);
   
-  return extract_single_mark(SCHEME_CAR(multi_mark_and_phase), ph);
+  return extract_simple_scope(SCHEME_CAR(multi_scope_and_phase), ph);
 }
 
-static Scheme_Mark_Set *extract_mark_set_from_mark_list(Scheme_Mark_Set *marks,
-                                                        Scheme_Object *multi_marks,
-                                                        Scheme_Object *phase)
+static Scheme_Scope_Set *extract_scope_set_from_scope_list(Scheme_Scope_Set *scopes,
+                                                           Scheme_Object *multi_scopes,
+                                                           Scheme_Object *phase)
 {
   Scheme_Object *m;
 
-  if (SCHEME_FALLBACKP(multi_marks))
-    multi_marks = SCHEME_FALLBACK_FIRST(multi_marks);
+  if (SCHEME_FALLBACKP(multi_scopes))
+    multi_scopes = SCHEME_FALLBACK_FIRST(multi_scopes);
   
-  for (; !SCHEME_NULLP(multi_marks); multi_marks= SCHEME_CDR(multi_marks)) {
-    m = extract_single_mark_from_shifted(SCHEME_CAR(multi_marks), phase);
+  for (; !SCHEME_NULLP(multi_scopes); multi_scopes= SCHEME_CDR(multi_scopes)) {
+    m = extract_simple_scope_from_shifted(SCHEME_CAR(multi_scopes), phase);
     if (m)
-      marks = mark_set_set(marks, m, scheme_true);
+      scopes = scope_set_set(scopes, m, scheme_true);
   }
 
-  return marks;
+  return scopes;
 }
 
-static Scheme_Mark_Set *extract_mark_set(Scheme_Stx *stx, Scheme_Object *phase)
+static Scheme_Scope_Set *extract_scope_set(Scheme_Stx *stx, Scheme_Object *phase)
 {
-   Scheme_Mark_Table *mt = stx->marks;
-   return extract_mark_set_from_mark_list(mt->single_marks, mt->multi_marks, phase);
+   Scheme_Scope_Table *mt = stx->scopes;
+   return extract_scope_set_from_scope_list(mt->simple_scopes, mt->multi_scopes, phase);
 }
 
-static Scheme_Mark_Set *adjust_mark(Scheme_Mark_Set *marks, Scheme_Object *m, int mode)
+static Scheme_Scope_Set *adjust_scope(Scheme_Scope_Set *scopes, Scheme_Object *m, int mode)
 {
-  STX_ASSERT(SAME_TYPE(SCHEME_TYPE(m), scheme_mark_type));
+  STX_ASSERT(SAME_TYPE(SCHEME_TYPE(m), scheme_scope_type));
 
-  if (mark_set_get(marks, m)) {
+  if (scope_set_get(scopes, m)) {
     if ((mode == SCHEME_STX_FLIP) || (mode == SCHEME_STX_REMOVE))
-      return mark_set_set(marks, m, NULL);
+      return scope_set_set(scopes, m, NULL);
     else
-      return marks;
+      return scopes;
   } else {
     if (mode == SCHEME_STX_REMOVE)
-      return marks;
+      return scopes;
     else
-      return mark_set_set(marks, m, scheme_true);
+      return scope_set_set(scopes, m, scheme_true);
   }
 }
 
-Scheme_Object *adjust_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Scheme_Object *phase, int mode)
+Scheme_Object *adjust_scope_list(Scheme_Object *multi_scopes, Scheme_Object *m, Scheme_Object *phase, int mode)
 {
   Scheme_Object *l;
 
-  l = multi_marks;
+  l = multi_scopes;
   if (SCHEME_FALLBACKP(l))
     l = SCHEME_FALLBACK_FIRST(l);
   
@@ -901,51 +901,51 @@ Scheme_Object *adjust_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Sc
     if (SAME_OBJ(m, SCHEME_CAR(SCHEME_CAR(l)))
         && SAME_OBJ(phase, SCHEME_CDR(SCHEME_CAR(l)))) {
       if ((mode == SCHEME_STX_ADD) || (mode == SCHEME_STX_PUSH))
-        return multi_marks;
+        return multi_scopes;
       break;
     }
   }
 
   if (mode == SCHEME_STX_PUSH) {
-    if (!SCHEME_NULLP(multi_marks))
+    if (!SCHEME_NULLP(multi_scopes))
       return make_fallback_pair(scheme_make_pair(scheme_make_pair(m, phase),
-                                                 (SCHEME_FALLBACKP(multi_marks)
-                                                  ? SCHEME_FALLBACK_FIRST(multi_marks)
-                                                  : multi_marks)),
-                                multi_marks);
+                                                 (SCHEME_FALLBACKP(multi_scopes)
+                                                  ? SCHEME_FALLBACK_FIRST(multi_scopes)
+                                                  : multi_scopes)),
+                                multi_scopes);
   }
 
   if ((mode == SCHEME_STX_REMOVE) && SCHEME_NULLP(l))
-    return multi_marks;
+    return multi_scopes;
   else if ((mode == SCHEME_STX_REMOVE) 
            || ((mode == SCHEME_STX_FLIP && !SCHEME_NULLP(l)))) {
-    return remove_at_mark_list(multi_marks, l);
+    return remove_at_scope_list(multi_scopes, l);
   } else
-    return add_to_mark_list(scheme_make_pair(m, phase), multi_marks);
+    return add_to_scope_list(scheme_make_pair(m, phase), multi_scopes);
 }
 
-static Scheme_Mark_Set *combine_mark(Scheme_Mark_Set *marks, Scheme_Object *m, int mode)
+static Scheme_Scope_Set *combine_scope(Scheme_Scope_Set *scopes, Scheme_Object *m, int mode)
 {
   Scheme_Object *old_mode;
 
-  STX_ASSERT(SAME_TYPE(SCHEME_TYPE(m), scheme_mark_type));
+  STX_ASSERT(SAME_TYPE(SCHEME_TYPE(m), scheme_scope_type));
 
-  old_mode = mark_set_get(marks, m);
+  old_mode = scope_set_get(scopes, m);
 
   if (old_mode) {
     if (SCHEME_INT_VAL(old_mode) == mode) {
       if (mode == SCHEME_STX_FLIP)
-        return mark_set_set(marks, m, NULL);
+        return scope_set_set(scopes, m, NULL);
       else
-        return marks;
+        return scopes;
     } else if (mode == SCHEME_STX_FLIP) {
       mode = SCHEME_INT_VAL(old_mode);
       mode = ((mode == SCHEME_STX_REMOVE) ? SCHEME_STX_ADD : SCHEME_STX_REMOVE);
-      return mark_set_set(marks, m, scheme_make_integer(mode));
+      return scope_set_set(scopes, m, scheme_make_integer(mode));
     } else
-      return mark_set_set(marks, m, scheme_make_integer(mode));
+      return scope_set_set(scopes, m, scheme_make_integer(mode));
   } else
-    return mark_set_set(marks, m, scheme_make_integer(mode));
+    return scope_set_set(scopes, m, scheme_make_integer(mode));
 }
 
 static Scheme_Object *make_vector3(Scheme_Object *a, Scheme_Object *b, Scheme_Object *c)
@@ -960,16 +960,16 @@ static Scheme_Object *make_vector3(Scheme_Object *a, Scheme_Object *b, Scheme_Ob
   return vec;
 }
 
-Scheme_Object *combine_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, Scheme_Object *phase, int mode)
+Scheme_Object *combine_scope_list(Scheme_Object *multi_scopes, Scheme_Object *m, Scheme_Object *phase, int mode)
 {
   Scheme_Object *l;
 
-  l = multi_marks;
+  l = multi_scopes;
   if (SCHEME_FALLBACKP(l)) {
     if ((mode == SCHEME_STX_PUSH)
-        && SAME_OBJ(SCHEME_FALLBACK_MARK(l), m)
+        && SAME_OBJ(SCHEME_FALLBACK_SCOPE(l), m)
         && SAME_OBJ(SCHEME_FALLBACK_PHASE(l), phase))
-      return multi_marks;
+      return multi_scopes;
     l = SCHEME_FALLBACK_FIRST(l);
   }
 
@@ -979,32 +979,32 @@ Scheme_Object *combine_mark_list(Scheme_Object *multi_marks, Scheme_Object *m, S
       int prev_mode = SCHEME_INT_VAL(SCHEME_VEC_ELS(SCHEME_CAR(l))[2]);
       if (mode == SCHEME_STX_PUSH) {
         if (prev_mode == SCHEME_STX_ADD)
-          return multi_marks;
+          return multi_scopes;
         break;
       } else if (mode == SCHEME_STX_FLIP) {
         if (prev_mode == SCHEME_STX_FLIP)
-          return remove_at_mark_list(multi_marks, l);
+          return remove_at_scope_list(multi_scopes, l);
         else {
           if (prev_mode == SCHEME_STX_ADD)
             mode = SCHEME_STX_REMOVE;
           else
             mode = SCHEME_STX_ADD;
-          multi_marks = remove_at_mark_list(multi_marks, l);
+          multi_scopes = remove_at_scope_list(multi_scopes, l);
           break;
         }
       } else if (mode != prev_mode) {
-        multi_marks = remove_at_mark_list(multi_marks, l);
+        multi_scopes = remove_at_scope_list(multi_scopes, l);
         break;
       } else
-        return multi_marks;
+        return multi_scopes;
     }
   }
 
   if (mode == SCHEME_STX_PUSH)
-    return make_fallback_quad(scheme_null, multi_marks, m, phase);
+    return make_fallback_quad(scheme_null, multi_scopes, m, phase);
   else
-    return add_to_mark_list(make_vector3(m, phase, scheme_make_integer(mode)),
-                            multi_marks);
+    return add_to_scope_list(make_vector3(m, phase, scheme_make_integer(mode)),
+                            multi_scopes);
 }
 
 static Scheme_Object *reconstruct_fallback(Scheme_Object *fb, Scheme_Object *r)
@@ -1013,7 +1013,7 @@ static Scheme_Object *reconstruct_fallback(Scheme_Object *fb, Scheme_Object *r)
     if (SCHEME_FALLBACK_QUADP(fb))
       return make_fallback_quad(r,
                                 SCHEME_FALLBACK_REST(fb),
-                                SCHEME_FALLBACK_MARK(fb),
+                                SCHEME_FALLBACK_SCOPE(fb),
                                 SCHEME_FALLBACK_PHASE(fb));
     else
       return make_fallback_pair(r, SCHEME_FALLBACK_REST(fb));
@@ -1038,7 +1038,7 @@ static Scheme_Object *clone_fallback_chain(Scheme_Object *fb)
   return first;
 }
 
-static Scheme_Object *remove_at_mark_list(Scheme_Object *l, Scheme_Object *p)
+static Scheme_Object *remove_at_scope_list(Scheme_Object *l, Scheme_Object *p)
 {
   Scheme_Object *fb;
   Scheme_Object *r = SCHEME_CDR(p);
@@ -1057,7 +1057,7 @@ static Scheme_Object *remove_at_mark_list(Scheme_Object *l, Scheme_Object *p)
   return reconstruct_fallback(fb, r);
 }
 
-static Scheme_Object *add_to_mark_list(Scheme_Object *p, Scheme_Object *l)
+static Scheme_Object *add_to_scope_list(Scheme_Object *p, Scheme_Object *l)
 {
   if (SCHEME_FALLBACKP(l))
     return reconstruct_fallback(l, scheme_make_pair(p, SCHEME_FALLBACK_FIRST(l)));
@@ -1065,28 +1065,28 @@ static Scheme_Object *add_to_mark_list(Scheme_Object *p, Scheme_Object *l)
     return scheme_make_pair(p, l);
 }
 
-static Scheme_Mark_Table *clone_mark_table(Scheme_Mark_Table *mt, Scheme_Mark_Table *prev,
+static Scheme_Scope_Table *clone_scope_table(Scheme_Scope_Table *mt, Scheme_Scope_Table *prev,
                                            GC_CAN_IGNORE int *mutate)
 /* If prev is non-NULL, then `mt` is a propagate table */
 {
-  Scheme_Mark_Table *mt2;
+  Scheme_Scope_Table *mt2;
 
   if (!prev) {
-    if (*mutate & MUTATE_STX_MARK_TABLE) {
+    if (*mutate & MUTATE_STX_SCOPE_TABLE) {
       mt2 = mt;
-      COUNT_MUTATE_ALLOCS(stx_skip_alloc_mark_table++);
+      COUNT_MUTATE_ALLOCS(stx_skip_alloc_scope_table++);
     } else {
-      mt2 = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
-      memcpy(mt2, mt, sizeof(Scheme_Mark_Table));
-      *mutate |= MUTATE_STX_MARK_TABLE;
-      COUNT_MUTATE_ALLOCS(stx_alloc_mark_table++);
+      mt2 = MALLOC_ONE_TAGGED(Scheme_Scope_Table);
+      memcpy(mt2, mt, sizeof(Scheme_Scope_Table));
+      *mutate |= MUTATE_STX_SCOPE_TABLE;
+      COUNT_MUTATE_ALLOCS(stx_alloc_scope_table++);
     }
   } else {
     if (*mutate & MUTATE_STX_PROP_TABLE) {
       mt2 = mt;
       COUNT_MUTATE_ALLOCS(stx_skip_alloc_prop_table++);
     } else {
-      mt2 = (Scheme_Mark_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
+      mt2 = (Scheme_Scope_Table *)MALLOC_ONE_TAGGED(Scheme_Propagate_Table);
       memcpy(mt2, mt, sizeof(Scheme_Propagate_Table));
       if (SAME_OBJ(mt, empty_propagate_table))
         ((Scheme_Propagate_Table *)mt2)->prev = prev;
@@ -1098,55 +1098,55 @@ static Scheme_Mark_Table *clone_mark_table(Scheme_Mark_Table *mt, Scheme_Mark_Ta
   return mt2;
 }
 
-typedef Scheme_Mark_Set *(*do_mark_t)(Scheme_Mark_Set *marks, Scheme_Object *m, int mode);
-typedef Scheme_Object *(do_mark_list_t)(Scheme_Object *multi_marks, Scheme_Object *m, Scheme_Object *phase, int mode);
+typedef Scheme_Scope_Set *(*do_scope_t)(Scheme_Scope_Set *scopes, Scheme_Object *m, int mode);
+typedef Scheme_Object *(do_scope_list_t)(Scheme_Object *multi_scopes, Scheme_Object *m, Scheme_Object *phase, int mode);
 
-static Scheme_Mark_Table *do_mark_at_phase(Scheme_Mark_Table *mt, Scheme_Object *m, Scheme_Object *phase, int mode, 
-                                           do_mark_t do_mark, do_mark_list_t do_mark_list, Scheme_Mark_Table *prev,
+static Scheme_Scope_Table *do_scope_at_phase(Scheme_Scope_Table *mt, Scheme_Object *m, Scheme_Object *phase, int mode, 
+                                           do_scope_t do_scope, do_scope_list_t do_scope_list, Scheme_Scope_Table *prev,
                                            GC_CAN_IGNORE int *mutate)
 {
   Scheme_Object *l;
-  Scheme_Mark_Set *marks;
+  Scheme_Scope_Set *scopes;
 
-  if (SCHEME_MARKP(m) && SCHEME_MARK_HAS_OWNER((Scheme_Mark *)m)) {
+  if (SCHEME_SCOPEP(m) && SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)m)) {
     if (!SCHEME_FALSEP(phase))
-      phase = scheme_bin_minus(phase, ((Scheme_Mark_With_Owner *)m)->phase);
-    m = ((Scheme_Mark_With_Owner *)m)->owner_multi_mark;
+      phase = scheme_bin_minus(phase, ((Scheme_Scope_With_Owner *)m)->phase);
+    m = ((Scheme_Scope_With_Owner *)m)->owner_multi_scope;
   }
 
-  if (SCHEME_MULTI_MARKP(m)) {
-    l = do_mark_list(mt->multi_marks, m, phase, mode);
-    if (SAME_OBJ(l, mt->multi_marks))
+  if (SCHEME_MULTI_SCOPEP(m)) {
+    l = do_scope_list(mt->multi_scopes, m, phase, mode);
+    if (SAME_OBJ(l, mt->multi_scopes))
       return mt;
-    mt = clone_mark_table(mt, prev, mutate);
-    mt->multi_marks = l;
+    mt = clone_scope_table(mt, prev, mutate);
+    mt->multi_scopes = l;
     return mt;
   } else {
-    marks = do_mark(mt->single_marks, m, mode);
-    if (SAME_OBJ(marks, mt->single_marks))
+    scopes = do_scope(mt->simple_scopes, m, mode);
+    if (SAME_OBJ(scopes, mt->simple_scopes))
       return mt;
-    mt = clone_mark_table(mt, prev, mutate);
-    mt->single_marks = marks;
+    mt = clone_scope_table(mt, prev, mutate);
+    mt->simple_scopes = scopes;
     return mt;
   }
 }
 
-static Scheme_Object *stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode,
+static Scheme_Object *stx_adjust_scope(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode,
                                       GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
-  Scheme_Mark_Table *marks;
-  Scheme_Mark_Table *to_propagate;
+  Scheme_Scope_Table *scopes;
+  Scheme_Scope_Table *to_propagate;
   Scheme_Object *taints, *shifts;
 
   STX_ASSERT(SCHEME_STXP(o));
 
   if (mode & SCHEME_STX_PROPONLY) {
-    marks = stx->marks;
+    scopes = stx->scopes;
     mode -= SCHEME_STX_PROPONLY;
   } else {
-    marks = do_mark_at_phase(stx->marks, m, phase, mode, adjust_mark, adjust_mark_list, NULL, mutate);
-    if ((stx->marks == marks)
+    scopes = do_scope_at_phase(stx->scopes, m, phase, mode, adjust_scope, adjust_scope_list, NULL, mutate);
+    if ((stx->scopes == scopes)
         && !(STX_KEY(stx) & STX_SUBSTX_FLAG)) {
       return (Scheme_Object *)stx;
     }
@@ -1154,22 +1154,22 @@ static Scheme_Object *stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
     to_propagate = (stx->u.to_propagate ? stx->u.to_propagate : empty_propagate_table);
-    to_propagate = do_mark_at_phase(to_propagate, m, phase, mode, combine_mark, combine_mark_list, stx->marks, mutate);
+    to_propagate = do_scope_at_phase(to_propagate, m, phase, mode, combine_scope, combine_scope_list, stx->scopes, mutate);
     if ((stx->u.to_propagate == to_propagate)
-        && (stx->marks == marks))
+        && (stx->scopes == scopes))
       return (Scheme_Object *)stx;
   } else
     to_propagate = NULL; /* => cleared binding cache */
 
   if (*mutate & MUTATE_STX_OBJ) {
-    stx->marks = marks;
+    stx->scopes = scopes;
     stx->u.to_propagate = to_propagate;
   } else {
     int armed = (STX_KEY(stx) & STX_ARMED_FLAG);
     taints = stx->taints;
     shifts = stx->shifts;
     stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
-    stx->marks = marks;
+    stx->scopes = scopes;
     stx->u.to_propagate = to_propagate;
     stx->taints = taints;
     stx->shifts = shifts;
@@ -1181,155 +1181,155 @@ static Scheme_Object *stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme
   return (Scheme_Object *)stx;
 }
 
-Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode)
+Scheme_Object *scheme_stx_adjust_scope(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode)
 {
   int mutate = 0;
-  return stx_adjust_mark(o, m, phase, mode, &mutate);
+  return stx_adjust_scope(o, m, phase, mode, &mutate);
 }
 
-Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase)
+Scheme_Object *scheme_stx_add_scope(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase)
 {
-  return scheme_stx_adjust_mark(o, m, phase, SCHEME_STX_ADD);
+  return scheme_stx_adjust_scope(o, m, phase, SCHEME_STX_ADD);
 }
 
-Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase)
+Scheme_Object *scheme_stx_remove_scope(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase)
 {
-  return scheme_stx_adjust_mark(o, m, phase, SCHEME_STX_REMOVE);
+  return scheme_stx_adjust_scope(o, m, phase, SCHEME_STX_REMOVE);
 }
 
-Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase)
+Scheme_Object *scheme_stx_flip_scope(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase)
 {
-  return scheme_stx_adjust_mark(o, m, phase, SCHEME_STX_FLIP);
+  return scheme_stx_adjust_scope(o, m, phase, SCHEME_STX_FLIP);
 }
 
-static Scheme_Object *stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode,
+static Scheme_Object *stx_adjust_scopes(Scheme_Object *o, Scheme_Scope_Set *scopes, Scheme_Object *phase, int mode,
                                        GC_CAN_IGNORE int *mutate)
 {
   Scheme_Object *key, *val;
   intptr_t i;
 
-  i = mark_set_next(marks, -1);
+  i = scope_set_next(scopes, -1);
   while (i != -1) {
-    mark_set_index(marks, i, &key, &val);
+    scope_set_index(scopes, i, &key, &val);
 
-    o = stx_adjust_mark(o, key, phase, mode, mutate);
+    o = stx_adjust_scope(o, key, phase, mode, mutate);
     
-    i = mark_set_next(marks, i);
+    i = scope_set_next(scopes, i);
   }
 
   return o;
 }
 
-Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode)
+Scheme_Object *scheme_stx_adjust_scopes(Scheme_Object *o, Scheme_Scope_Set *scopes, Scheme_Object *phase, int mode)
 {
   int mutate = 0;
-  return stx_adjust_marks(o, marks, phase, mode, &mutate);
+  return stx_adjust_scopes(o, scopes, phase, mode, &mutate);
 }
 
-/* frame-marks = main-marks
-   .           | (vector main-marks use-site-marks intdef-marks)
-   main-marks = some-marks
-   use-site-marks = some-marks
-   intdef-marks = some-marks
-   some-marks = #f | mark | mark-set */
+/* frame-scopes = main-scopes
+   .           | (vector main-scopes use-site-scopes intdef-scopes)
+   main-scopes = some-scopes
+   use-site-scopes = some-scopes
+   intdef-scopes = some-scopes
+   some-scopes = #f | scope | scope-set */
 
-static Scheme_Object *stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, int which, Scheme_Object *phase, int mode)
+static Scheme_Object *stx_adjust_frame_scopes(Scheme_Object *o, Scheme_Object *scope, int which, Scheme_Object *phase, int mode)
 {
-  if (SCHEME_VECTORP(mark)) {
-    mark = SCHEME_VEC_ELS(mark)[which];
+  if (SCHEME_VECTORP(scope)) {
+    scope = SCHEME_VEC_ELS(scope)[which];
   } else if (which != 0)
     return o;
 
-  if (SCHEME_FALSEP(mark))
+  if (SCHEME_FALSEP(scope))
     return o;
-  else if (SCHEME_MARKP(mark))
-    return scheme_stx_adjust_mark(o, mark, phase, mode);
+  else if (SCHEME_SCOPEP(scope))
+    return scheme_stx_adjust_scope(o, scope, phase, mode);
   else {
-    STX_ASSERT(SCHEME_MARK_SETP(mark));
-    return scheme_stx_adjust_marks(o, (Scheme_Mark_Set *)mark, phase, mode);
+    STX_ASSERT(SCHEME_SCOPE_SETP(scope));
+    return scheme_stx_adjust_scopes(o, (Scheme_Scope_Set *)scope, phase, mode);
   }
 }
 
-Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
+Scheme_Object *scheme_stx_adjust_frame_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode)
 {
-  o = scheme_stx_adjust_frame_use_site_marks(o, mark, phase, mode);
-  o = scheme_stx_adjust_frame_bind_marks(o, mark, phase, mode);
-  return stx_adjust_frame_marks(o, mark, 2, phase, mode);
+  o = scheme_stx_adjust_frame_use_site_scopes(o, scope, phase, mode);
+  o = scheme_stx_adjust_frame_bind_scopes(o, scope, phase, mode);
+  return stx_adjust_frame_scopes(o, scope, 2, phase, mode);
 }
 
-Scheme_Object *scheme_stx_adjust_frame_main_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
+Scheme_Object *scheme_stx_adjust_frame_main_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode)
 {
-  o = scheme_stx_adjust_frame_use_site_marks(o, mark, phase, mode);
-  return scheme_stx_adjust_frame_bind_marks(o, mark, phase, mode);
+  o = scheme_stx_adjust_frame_use_site_scopes(o, scope, phase, mode);
+  return scheme_stx_adjust_frame_bind_scopes(o, scope, phase, mode);
 }
 
-Scheme_Object *scheme_stx_adjust_frame_bind_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
+Scheme_Object *scheme_stx_adjust_frame_bind_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode)
 {
-  return stx_adjust_frame_marks(o, mark, 0, phase, mode);
+  return stx_adjust_frame_scopes(o, scope, 0, phase, mode);
 }
 
-Scheme_Object *scheme_stx_adjust_frame_use_site_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode)
+Scheme_Object *scheme_stx_adjust_frame_use_site_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode)
 {
-  return stx_adjust_frame_marks(o, mark, 1, phase, mode);
+  return stx_adjust_frame_scopes(o, scope, 1, phase, mode);
 }
 
-Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark)
+Scheme_Object *scheme_make_frame_scopes(Scheme_Object *scope)
 {
-  return mark;
+  return scope;
 }
 
-static Scheme_Object *add_frame_mark(Scheme_Object *frame_marks, Scheme_Object *mark, int pos)
+static Scheme_Object *add_frame_scope(Scheme_Object *frame_scopes, Scheme_Object *scope, int pos)
 {
-  Scheme_Object *marks;
+  Scheme_Object *scopes;
   
-  if (!frame_marks) {
+  if (!frame_scopes) {
     if (pos == 0)
-      return mark;
+      return scope;
     else
-      frame_marks = scheme_false;
+      frame_scopes = scheme_false;
   }
 
-  if (SCHEME_VECTORP(frame_marks))
-    marks = SCHEME_VEC_ELS(frame_marks)[pos];
+  if (SCHEME_VECTORP(frame_scopes))
+    scopes = SCHEME_VEC_ELS(frame_scopes)[pos];
   else if (pos == 0)
-    marks = frame_marks;
+    scopes = frame_scopes;
   else
-    marks = scheme_false;
+    scopes = scheme_false;
 
-  if (SCHEME_FALSEP(marks))
-    marks = mark;
+  if (SCHEME_FALSEP(scopes))
+    scopes = scope;
   else {
-    STX_ASSERT(!SCHEME_MULTI_MARKP(marks));
-    if (SCHEME_MARKP(marks))
-      marks = (Scheme_Object *)mark_set_set(empty_mark_set, marks, scheme_true);
-    marks = (Scheme_Object *)mark_set_set((Scheme_Mark_Set *)marks, mark, scheme_true);
+    STX_ASSERT(!SCHEME_MULTI_SCOPEP(scopes));
+    if (SCHEME_SCOPEP(scopes))
+      scopes = (Scheme_Object *)scope_set_set(empty_scope_set, scopes, scheme_true);
+    scopes = (Scheme_Object *)scope_set_set((Scheme_Scope_Set *)scopes, scope, scheme_true);
   }
 
-  if (SCHEME_VECTORP(frame_marks))
-    frame_marks = make_vector3(SCHEME_VEC_ELS(frame_marks)[0],
-                               SCHEME_VEC_ELS(frame_marks)[1],
-                               SCHEME_VEC_ELS(frame_marks)[2]);
+  if (SCHEME_VECTORP(frame_scopes))
+    frame_scopes = make_vector3(SCHEME_VEC_ELS(frame_scopes)[0],
+                               SCHEME_VEC_ELS(frame_scopes)[1],
+                               SCHEME_VEC_ELS(frame_scopes)[2]);
   else
-    frame_marks = make_vector3(frame_marks, scheme_false, scheme_false);
+    frame_scopes = make_vector3(frame_scopes, scheme_false, scheme_false);
 
-  SCHEME_VEC_ELS(frame_marks)[pos] = marks;
+  SCHEME_VEC_ELS(frame_scopes)[pos] = scopes;
 
-  return frame_marks;
+  return frame_scopes;
 }
 
-Scheme_Object *scheme_add_frame_use_site_mark(Scheme_Object *frame_marks, Scheme_Object *use_site_mark)
+Scheme_Object *scheme_add_frame_use_site_scope(Scheme_Object *frame_scopes, Scheme_Object *use_site_scope)
 {
-  return add_frame_mark(frame_marks, use_site_mark, 1);
+  return add_frame_scope(frame_scopes, use_site_scope, 1);
 }
 
-Scheme_Object *scheme_add_frame_intdef_mark(Scheme_Object *frame_marks, Scheme_Object *mark)
+Scheme_Object *scheme_add_frame_intdef_scope(Scheme_Object *frame_scopes, Scheme_Object *scope)
 {
-  return add_frame_mark(frame_marks, mark, 2);
+  return add_frame_scope(frame_scopes, scope, 2);
 }
 
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase)
 {
-  return (mark_set_count(extract_mark_set((Scheme_Stx *)stx, phase)) == 0);
+  return (scope_set_count(extract_scope_set((Scheme_Stx *)stx, phase)) == 0);
 }
 
 /******************** shifts ********************/
@@ -1374,7 +1374,7 @@ static Scheme_Object *add_shifts(Scheme_Object *old_shift, Scheme_Object *shift)
     return scheme_bin_plus(old_shift, shift);
 }
 
-static Scheme_Object *shift_multi_mark(Scheme_Object *p, Scheme_Object *shift)
+static Scheme_Object *shift_multi_scope(Scheme_Object *p, Scheme_Object *shift)
 {
   shift = add_shifts(SCHEME_CDR(p), shift);
 
@@ -1387,7 +1387,7 @@ static Scheme_Object *shift_multi_mark(Scheme_Object *p, Scheme_Object *shift)
   return scheme_make_pair(SCHEME_CAR(p), shift);
 }
 
-static Scheme_Object *shift_prop_multi_mark(Scheme_Object *p, Scheme_Object *shift)
+static Scheme_Object *shift_prop_multi_scope(Scheme_Object *p, Scheme_Object *shift)
 {
   Scheme_Object *p2;
   
@@ -1406,32 +1406,32 @@ static Scheme_Object *shift_prop_multi_mark(Scheme_Object *p, Scheme_Object *shi
   return p2;
 }
 
-typedef Scheme_Object *(shift_multi_mark_t)(Scheme_Object *p, Scheme_Object *shift);
+typedef Scheme_Object *(shift_multi_scope_t)(Scheme_Object *p, Scheme_Object *shift);
 
-static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object *shift, 
-                                           shift_multi_mark_t shift_mm, Scheme_Mark_Table *prev,
+static Scheme_Scope_Table *shift_scope_table(Scheme_Scope_Table *mt, Scheme_Object *shift, 
+                                           shift_multi_scope_t shift_mm, Scheme_Scope_Table *prev,
                                            GC_CAN_IGNORE int *mutate)
 {
-  Scheme_Mark_Table *mt2;
+  Scheme_Scope_Table *mt2;
   Scheme_Object *l, *key, *val, *fbs;
 
-  if (SAME_OBJ(mt, empty_mark_table)) {
+  if (SAME_OBJ(mt, empty_scope_table)) {
     STX_ASSERT(!prev);
     return mt;
   }
 
-  if ((SCHEME_NULLP(mt->multi_marks)
-       || (SCHEME_FALLBACKP(mt->multi_marks)
-           && SCHEME_NULLP(SCHEME_FALLBACK_FIRST(mt->multi_marks))))
+  if ((SCHEME_NULLP(mt->multi_scopes)
+       || (SCHEME_FALLBACKP(mt->multi_scopes)
+           && SCHEME_NULLP(SCHEME_FALLBACK_FIRST(mt->multi_scopes))))
       && !prev)
     return mt;
 
-  mt2 = clone_mark_table(mt, prev, mutate);
+  mt2 = clone_scope_table(mt, prev, mutate);
 
-  l = mt->multi_marks;
+  l = mt->multi_scopes;
   if (SCHEME_FALLBACKP(l)) {
     l = clone_fallback_chain(l);
-    mt2->multi_marks = l;
+    mt2->multi_scopes = l;
     fbs = l;
   } else
     fbs = scheme_false;
@@ -1447,7 +1447,7 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
     } else
       was_fb = 0;
 
-    /* Loop through one list of multi marks: */
+    /* Loop through one list of multi scopes: */
     val = scheme_null;
     for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
       key = shift_mm(SCHEME_CAR(l), shift);
@@ -1466,7 +1466,7 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
         break;
       }
     } else {
-      mt2->multi_marks = val;
+      mt2->multi_scopes = val;
       break;
     }
   }
@@ -1482,31 +1482,31 @@ static Scheme_Mark_Table *shift_mark_table(Scheme_Mark_Table *mt, Scheme_Object 
   return mt2;
 }
 
-static Scheme_Object *shift_marks(Scheme_Object *o, Scheme_Object *shift, int prop_only,
+static Scheme_Object *shift_scopes(Scheme_Object *o, Scheme_Object *shift, int prop_only,
                                   GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
-  Scheme_Mark_Table *mt, *p_mt;
+  Scheme_Scope_Table *mt, *p_mt;
 
   if (prop_only)
-    mt = stx->marks;
+    mt = stx->scopes;
   else
-    mt = shift_mark_table(stx->marks, shift, shift_multi_mark, NULL, mutate);
+    mt = shift_scope_table(stx->scopes, shift, shift_multi_scope, NULL, mutate);
   if (STX_KEY(stx) & STX_SUBSTX_FLAG)
-    p_mt = shift_mark_table((stx->u.to_propagate ? stx->u.to_propagate : empty_propagate_table),
-                            shift, shift_prop_multi_mark, stx->marks,
+    p_mt = shift_scope_table((stx->u.to_propagate ? stx->u.to_propagate : empty_propagate_table),
+                            shift, shift_prop_multi_scope, stx->scopes,
                             mutate);
   else
     p_mt = NULL;
   
-  if (SAME_OBJ(stx->marks, mt)
+  if (SAME_OBJ(stx->scopes, mt)
       && (!(STX_KEY(stx) & STX_SUBSTX_FLAG)
           || SAME_OBJ(stx->u.to_propagate, p_mt)))
     return (Scheme_Object *)stx;
 
   stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx, mutate);
 
-  stx->marks = mt;
+  stx->scopes = mt;
   if (p_mt)
     stx->u.to_propagate = p_mt;
   
@@ -1523,7 +1523,7 @@ static Scheme_Object *do_stx_add_shift(Scheme_Object *o, Scheme_Object *shift, G
   if (SCHEME_PHASE_SHIFTP(shift)) {
     if (SAME_OBJ(shift, scheme_make_integer(0)))
       return (Scheme_Object *)stx;
-    return shift_marks((Scheme_Object *)stx, shift, 0, mutate);
+    return shift_scopes((Scheme_Object *)stx, shift, 0, mutate);
   }
 
   if (SCHEME_VECTORP(shift)
@@ -1663,7 +1663,7 @@ Scheme_Object *scheme_stx_shift(Scheme_Object *stx,
                                 Scheme_Object *old_midx, Scheme_Object *new_midx,
                                 Scheme_Hash_Table *export_registry,
                                 Scheme_Object *src_insp_desc, Scheme_Object *insp)
-/* Shifts the modidx on a syntax object in a module as well as the phase of marks. */
+/* Shifts the modidx on a syntax object in a module as well as the phase of scopes. */
 {
   Scheme_Object *s;
 
@@ -1758,43 +1758,43 @@ int stx_shorts, stx_meds, stx_longs, stx_couldas;
 # define COUNT_PROPAGATES(x) /* empty */
 #endif
 
-static Scheme_Object *propagate_mark_set(Scheme_Mark_Set *props, Scheme_Object *o,
+static Scheme_Object *propagate_scope_set(Scheme_Scope_Set *props, Scheme_Object *o,
                                          Scheme_Object *phase, int flag,
                                          GC_CAN_IGNORE int *mutate)
 {
   intptr_t i;
   Scheme_Object *key, *val;
 
-  i = mark_set_next(props, -1);
+  i = scope_set_next(props, -1);
   while (i != -1) {
-    mark_set_index(props, i, &key, &val);
+    scope_set_index(props, i, &key, &val);
 
-    STX_ASSERT(!SCHEME_MARK_HAS_OWNER((Scheme_Mark *)key));
+    STX_ASSERT(!SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)key));
 
-    o = stx_adjust_mark(o, key, phase, SCHEME_INT_VAL(val) | flag, mutate);
+    o = stx_adjust_scope(o, key, phase, SCHEME_INT_VAL(val) | flag, mutate);
     
-    i = mark_set_next(props, i);
+    i = scope_set_next(props, i);
   }  
 
   return o;
 }
 
-XFORM_NONGCING static int equiv_mark_tables(Scheme_Mark_Table *a, Scheme_Mark_Table *b)
+XFORM_NONGCING static int equiv_scope_tables(Scheme_Scope_Table *a, Scheme_Scope_Table *b)
 {
   if (a == b)
     return 1;
 
-  if (((a->single_marks == b->single_marks)
-       || (!mark_set_count(a->single_marks)
-           && !mark_set_count(b->single_marks)))
-      && SAME_OBJ(a->multi_marks, b->multi_marks))
+  if (((a->simple_scopes == b->simple_scopes)
+       || (!scope_set_count(a->simple_scopes)
+           && !scope_set_count(b->simple_scopes)))
+      && SAME_OBJ(a->multi_scopes, b->multi_scopes))
     return 1;
 
   return 0;
 }
 
-static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_propagate,
-                                      Scheme_Mark_Table *parent_marks, int flag,
+static Scheme_Object *propagate_scopes(Scheme_Object *o, Scheme_Scope_Table *to_propagate,
+                                      Scheme_Scope_Table *parent_scopes, int flag,
                                       GC_CAN_IGNORE int *mutate)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
@@ -1803,11 +1803,11 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
   if (!to_propagate || (to_propagate == empty_propagate_table))
     return o;
 
-  /* Check whether the child marks currently match the
-     parent's marks before the propagated changes: */
+  /* Check whether the child scopes currently match the
+     parent's scopes before the propagated changes: */
   if (!(flag & SCHEME_STX_PROPONLY)
-      && equiv_mark_tables(((Scheme_Propagate_Table *)to_propagate)->prev, stx->marks)) {
-    /* Yes, so we can take a shortcut: child marks still match parent.
+      && equiv_scope_tables(((Scheme_Propagate_Table *)to_propagate)->prev, stx->scopes)) {
+    /* Yes, so we can take a shortcut: child scopes still match parent.
        Does the child need to propagate, and if so, does it just
        get the parent's propagation? */
     if (!(STX_KEY(stx) & STX_SUBSTX_FLAG)
@@ -1815,8 +1815,8 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
         || SAME_OBJ(stx->u.to_propagate, empty_propagate_table)) {
       /* Yes, child matches the parent in all relevant dimensions */
       stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx, mutate);
-      stx->marks = parent_marks;
-      *mutate -= (*mutate & MUTATE_STX_MARK_TABLE);
+      stx->scopes = parent_scopes;
+      *mutate -= (*mutate & MUTATE_STX_SCOPE_TABLE);
       if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
         stx->u.to_propagate = to_propagate;
         *mutate -= (*mutate & MUTATE_STX_PROP_TABLE);
@@ -1824,8 +1824,8 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
       COUNT_PROPAGATES(stx_shorts++);
       return (Scheme_Object *)stx;
     } else {
-      /* Child marks match parent, so we don't need to reconstruct
-         the mark set, but we need to build a new propagation set
+      /* Child scopes match parent, so we don't need to reconstruct
+         the scope set, but we need to build a new propagation set
          to augment the propagate set already here */
       flag |= SCHEME_STX_PROPONLY;
       COUNT_PROPAGATES(stx_meds++);
@@ -1836,19 +1836,19 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
 
   val = ((Scheme_Propagate_Table *)to_propagate)->phase_shift;
   if (!SAME_OBJ(val, scheme_make_integer(0))) {
-    o = shift_marks(o, val, flag & SCHEME_STX_PROPONLY, mutate);
+    o = shift_scopes(o, val, flag & SCHEME_STX_PROPONLY, mutate);
   }
 
-  o = propagate_mark_set(to_propagate->single_marks, o, scheme_true, flag, mutate);
+  o = propagate_scope_set(to_propagate->simple_scopes, o, scheme_true, flag, mutate);
 
-  fb = to_propagate->multi_marks;
+  fb = to_propagate->multi_scopes;
   if (SCHEME_FALLBACKP(fb)) {
     /* reverse the fallback list: */
     key = scheme_null;
     while (SCHEME_FALLBACKP(fb)) {
       key = make_fallback_quad(SCHEME_FALLBACK_FIRST(fb),
                                key,
-                               SCHEME_FALLBACK_MARK(fb),
+                               SCHEME_FALLBACK_SCOPE(fb),
                                SCHEME_FALLBACK_PHASE(fb));
       fb = SCHEME_FALLBACK_REST(fb);
     }
@@ -1858,7 +1858,7 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
   while (fb) {
     if (SCHEME_FALLBACKP(fb)) {
       if (SCHEME_FALLBACK_QUADP(fb)) {
-        o = stx_adjust_mark(o, SCHEME_FALLBACK_MARK(fb), SCHEME_FALLBACK_PHASE(fb),
+        o = stx_adjust_scope(o, SCHEME_FALLBACK_SCOPE(fb), SCHEME_FALLBACK_PHASE(fb),
                             SCHEME_STX_PUSH | flag, mutate);
       }
       key = SCHEME_FALLBACK_FIRST(fb);
@@ -1867,8 +1867,8 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
     
     for (; !SCHEME_NULLP(key); key = SCHEME_CDR(key)) {
       val = SCHEME_CAR(key);
-      STX_ASSERT(SCHEME_MULTI_MARKP(SCHEME_VEC_ELS(val)[0]));
-      o = stx_adjust_mark(o, SCHEME_VEC_ELS(val)[0], SCHEME_VEC_ELS(val)[1], 
+      STX_ASSERT(SCHEME_MULTI_SCOPEP(SCHEME_VEC_ELS(val)[0]));
+      o = stx_adjust_scope(o, SCHEME_VEC_ELS(val)[0], SCHEME_VEC_ELS(val)[1], 
                           SCHEME_INT_VAL(SCHEME_VEC_ELS(val)[2]) | flag, mutate);
     }
 
@@ -1880,16 +1880,16 @@ static Scheme_Object *propagate_marks(Scheme_Object *o, Scheme_Mark_Table *to_pr
   
   if (flag & SCHEME_STX_PROPONLY) {
     o = clone_stx(o, mutate);
-    ((Scheme_Stx *)o)->marks = parent_marks;
-    *mutate -= (*mutate & MUTATE_STX_MARK_TABLE);
+    ((Scheme_Stx *)o)->scopes = parent_scopes;
+    *mutate -= (*mutate & MUTATE_STX_SCOPE_TABLE);
   }
 
 #if DO_COUNT_PROPAGATES
   if (!(flag & SCHEME_STX_PROPONLY)) {
-    if (scheme_equal((Scheme_Object *)parent_marks->single_marks,
-                     (Scheme_Object *)((Scheme_Stx *)o)->marks->single_marks)
-        && scheme_equal(parent_marks->multi_marks,
-                        ((Scheme_Stx *)o)->marks->multi_marks))
+    if (scheme_equal((Scheme_Object *)parent_scopes->simple_scopes,
+                     (Scheme_Object *)((Scheme_Stx *)o)->scopes->simple_scopes)
+        && scheme_equal(parent_scopes->multi_scopes,
+                        ((Scheme_Stx *)o)->scopes->multi_scopes))
       stx_couldas++;
   }
 #endif
@@ -1923,14 +1923,14 @@ static Scheme_Object *propagate_shifts(Scheme_Object *result, Scheme_Object *shi
 }
 
 static Scheme_Object *propagate(Scheme_Object *result,
-                                Scheme_Mark_Table *to_propagate,
-                                Scheme_Mark_Table *parent_marks,
+                                Scheme_Scope_Table *to_propagate,
+                                Scheme_Scope_Table *parent_scopes,
                                 Scheme_Object *shifts,
                                 int add_taint, Scheme_Object *false_insp)
 {
   int mutate = 0;
 
-  result = propagate_marks(result, to_propagate, parent_marks, 0, &mutate);
+  result = propagate_scopes(result, to_propagate, parent_scopes, 0, &mutate);
 
   if (shifts)
     result = propagate_shifts(result, shifts, &mutate);
@@ -1954,7 +1954,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
 
   if ((STX_KEY(stx) & STX_SUBSTX_FLAG) && stx->u.to_propagate) {
     Scheme_Object *v = stx->val, *result;
-    Scheme_Mark_Table *to_propagate;
+    Scheme_Scope_Table *to_propagate;
     Scheme_Object *false_insp, *shifts;
     int add_taint;
 
@@ -1982,7 +1982,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
       while (SCHEME_PAIRP(v)) {
 	Scheme_Object *p;
         result = SCHEME_CAR(v);
-        result = propagate(result, to_propagate, stx->marks,
+        result = propagate(result, to_propagate, stx->scopes,
                            shifts,
                            add_taint, false_insp);
 	p = scheme_make_pair(result, scheme_null);
@@ -1995,7 +1995,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
       }
       if (!SCHEME_NULLP(v)) {
         result = v;
-        result = propagate(result, to_propagate, stx->marks,
+        result = propagate(result, to_propagate, stx->scopes,
                            shifts,
                            add_taint, false_insp);
 	if (last)
@@ -2006,7 +2006,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
       v = first;
     } else if (SCHEME_BOXP(v)) {
       result = SCHEME_BOX_VAL(v);
-      result = propagate(result, to_propagate, stx->marks,
+      result = propagate(result, to_propagate, stx->scopes,
                          shifts,
                          add_taint, false_insp);
       v = scheme_box(result);
@@ -2018,7 +2018,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
       
       for (i = 0; i < size; i++) {
         result = SCHEME_VEC_ELS(v)[i];
-        result = propagate(result, to_propagate, stx->marks,
+        result = propagate(result, to_propagate, stx->scopes,
                            shifts,
                            add_taint, false_insp);
       	SCHEME_VEC_ELS(v2)[i] = result;
@@ -2035,7 +2035,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
       i = scheme_hash_tree_next(ht, -1);
       while (i != -1) {
         scheme_hash_tree_index(ht, i, &key, &val);
-        val = propagate(val, to_propagate, stx->marks,
+        val = propagate(val, to_propagate, stx->scopes,
                         shifts,
                         add_taint, false_insp);
         ht2 = scheme_hash_tree_set(ht2, key, val);
@@ -2053,7 +2053,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
       size = s->stype->num_slots;
       for (i = 0; i < size; i++) {
         r = s->slots[i];
-        r = propagate(r, to_propagate, stx->marks,
+        r = propagate(r, to_propagate, stx->scopes,
                       shifts,
                       add_taint, false_insp);
         s->slots[i] = r;
@@ -2371,50 +2371,50 @@ Scheme_Object *scheme_stx_taint_disarm(Scheme_Object *o, Scheme_Object *insp)
 
 /******************** bindings ********************/
 
-XFORM_NONGCING static Scheme_Mark *extract_max_mark(Scheme_Mark_Set *marks)
+XFORM_NONGCING static Scheme_Scope *extract_max_scope(Scheme_Scope_Set *scopes)
 {
   intptr_t i;
   Scheme_Object *key, *val;
-  Scheme_Mark *mark;
-  mzlonglong mark_id_val, id_val;
+  Scheme_Scope *scope;
+  mzlonglong scope_id_val, id_val;
 
-  i = mark_set_next(marks, -1);
-  mark_set_index(marks, i, &key, &val);
+  i = scope_set_next(scopes, -1);
+  scope_set_index(scopes, i, &key, &val);
 
-  mark = (Scheme_Mark *)key;
-  mark_id_val = mark->id;
+  scope = (Scheme_Scope *)key;
+  scope_id_val = scope->id;
 
-  i = mark_set_next(marks, i);
+  i = scope_set_next(scopes, i);
   while (i != -1) {
-    mark_set_index(marks, i, &key, &val);
+    scope_set_index(scopes, i, &key, &val);
 
-    id_val = ((Scheme_Mark *)key)->id;
-    if (id_val > mark_id_val) {
-      mark = (Scheme_Mark *)key;
-      mark_id_val = id_val;
+    id_val = ((Scheme_Scope *)key)->id;
+    if (id_val > scope_id_val) {
+      scope = (Scheme_Scope *)key;
+      scope_id_val = id_val;
     }
     
-    i = mark_set_next(marks, i);
+    i = scope_set_next(scopes, i);
   }
 
-  return mark;
+  return scope;
 }
 
-#define SCHEME_BINDING_MARKS(p) ((Scheme_Mark_Set *)SCHEME_CAR(p))
+#define SCHEME_BINDING_SCOPES(p) ((Scheme_Scope_Set *)SCHEME_CAR(p))
 #define SCHEME_BINDING_VAL(p)   SCHEME_CDR(p)
 
 #define SCHEME_VEC_BINDING_KEY(p)   (SCHEME_VEC_ELS(p)[0])
-#define SCHEME_VEC_BINDING_MARKS(p) ((Scheme_Mark_Set *)(SCHEME_VEC_ELS(p)[1]))
+#define SCHEME_VEC_BINDING_SCOPES(p) ((Scheme_Scope_Set *)(SCHEME_VEC_ELS(p)[1]))
 #define SCHEME_VEC_BINDING_VAL(p)   (SCHEME_VEC_ELS(p)[2])
 
 #define CONV_RETURN_UNLESS(p) if (!p) return
 
 static void check_for_conversion(Scheme_Object *sym,
-                                 Scheme_Mark *mark,
+                                 Scheme_Scope *scope,
                                  Scheme_Module_Phase_Exports *pt,
                                  Scheme_Hash_Table *collapse_table,
                                  Scheme_Hash_Tree *ht,
-                                 Scheme_Mark_Set *marks,
+                                 Scheme_Scope_Set *scopes,
                                  Scheme_Object *phase,
                                  Scheme_Object *bind)
 /* Due to `require` macros, importing a whole module can turn into
@@ -2426,10 +2426,10 @@ static void check_for_conversion(Scheme_Object *sym,
   Scheme_Object *v, *v2, *cnt;
   int i;
 
-  mht = (Scheme_Hash_Table *)scheme_eq_hash_get(collapse_table, (Scheme_Object *)mark);
+  mht = (Scheme_Hash_Table *)scheme_eq_hash_get(collapse_table, (Scheme_Object *)scope);
   if (!mht) {
     mht = scheme_make_hash_table(SCHEME_hash_ptr);
-    scheme_hash_set(collapse_table, (Scheme_Object *)mark, (Scheme_Object *)mht);
+    scheme_hash_set(collapse_table, (Scheme_Object *)scope, (Scheme_Object *)mht);
   }
   
   cnt = scheme_eq_hash_get(mht, (Scheme_Object *)pt);
@@ -2472,7 +2472,7 @@ static void check_for_conversion(Scheme_Object *sym,
       if (SCHEME_MPAIRP(v2))
         v2 = SCHEME_CAR(v2);
       
-      CONV_RETURN_UNLESS(marks_equal(marks, SCHEME_BINDING_MARKS(v2)));
+      CONV_RETURN_UNLESS(scopes_equal(scopes, SCHEME_BINDING_SCOPES(v2)));
       
       /* Pull apart module bindings to make sure they're consistent: */
       exportname = pt->provides[i];
@@ -2523,43 +2523,43 @@ static void check_for_conversion(Scheme_Object *sym,
     SCHEME_VEC_ELS(pes)[3] = pt->phase_index;
     SCHEME_VEC_ELS(pes)[4] = insp_desc;
 
-    bind = scheme_make_pair((Scheme_Object *)marks, pes);
+    bind = scheme_make_pair((Scheme_Object *)scopes, pes);
         
     /* install pes: */
-    v = mark->bindings;
+    v = scope->bindings;
     if (!SCHEME_RPAIRP(v)) {
       STX_ASSERT(SCHEME_HASHTRP(v));
       v = scheme_make_raw_pair(v, NULL);
-      mark->bindings = v;
+      scope->bindings = v;
     }
     v = scheme_make_raw_pair(bind, SCHEME_CDR(v));
-    SCHEME_CDR(mark->bindings) = v;
+    SCHEME_CDR(scope->bindings) = v;
 
     /* remove per-symbol bindings: */
     for (i = pt->num_provides; i--; ) {
       ht = scheme_hash_tree_set(ht, pt->provides[i], NULL);
     }
-    SCHEME_CAR(mark->bindings) = (Scheme_Object *)ht;
+    SCHEME_CAR(scope->bindings) = (Scheme_Object *)ht;
   }
 }
 
-static Scheme_Object *replace_matching_marks(Scheme_Object *l, Scheme_Mark_Set *marks)
-/* Takes a list of mark--value pairs for a binding table and removes
-   any match to `marks` */
+static Scheme_Object *replace_matching_scopes(Scheme_Object *l, Scheme_Scope_Set *scopes)
+/* Takes a list of scope--value pairs for a binding table and removes
+   any match to `scopes` */
 {
   Scheme_Object *p;
   int c = 0;
 
   if (SCHEME_PAIRP(l)) {
     /* only one item to check */
-    if (marks_equal(marks, SCHEME_BINDING_MARKS(l)))
+    if (scopes_equal(scopes, SCHEME_BINDING_SCOPES(l)))
       return NULL;
     else
       return l;
   }
 
   for (p = l; !SCHEME_NULLP(p); p = SCHEME_CDR(p)) {
-    if (marks_equal(marks, SCHEME_BINDING_MARKS(SCHEME_CAR(p)))) {
+    if (scopes_equal(scopes, SCHEME_BINDING_SCOPES(SCHEME_CAR(p)))) {
       break;
     }
     c++;
@@ -2586,7 +2586,7 @@ static Scheme_Object *replace_matching_marks(Scheme_Object *l, Scheme_Mark_Set *
 }
 
 static void clear_matching_bindings(Scheme_Object *pes,
-                                    Scheme_Mark_Set *marks,
+                                    Scheme_Scope_Set *scopes,
                                     Scheme_Object *l)
 {
   Scheme_Hash_Tree *excepts;
@@ -2616,7 +2616,7 @@ static void clear_matching_bindings(Scheme_Object *pes,
     while ((i = scheme_hash_tree_next(ht, i)) != -1) {
       scheme_hash_tree_index(ht, i, &key, &val);
       if (scheme_eq_hash_get(pt->ht, unmarshal_lookup_adjust(key, pes))) {
-        new_val = replace_matching_marks(val, marks);
+        new_val = replace_matching_scopes(val, scopes);
         if (!SAME_OBJ(val, new_val))
           new_ht = scheme_hash_tree_set(new_ht, key, new_val);
       }
@@ -2628,7 +2628,7 @@ static void clear_matching_bindings(Scheme_Object *pes,
         key = pt->ht->keys[i];
         val = scheme_eq_hash_tree_get(new_ht, key);
         if (val) {
-          new_val = replace_matching_marks(val, marks);
+          new_val = replace_matching_scopes(val, scopes);
           if (!SAME_OBJ(val, new_val))
             new_ht = scheme_hash_tree_set(new_ht, key, new_val);
         }
@@ -2648,7 +2648,7 @@ XFORM_NONGCING static void save_old_value(Scheme_Object *mp, Scheme_Object *old_
     SCHEME_CAR(mp) = old_val;
 }
 
-static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Set *marks,
+static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Scope_Set *scopes,
                         Scheme_Object *val,
                         Scheme_Module_Phase_Exports *from_pt, /* to detect collapse conversion */
                         Scheme_Hash_Table *collapse_table) /* to triggere collapse detection */
@@ -2660,15 +2660,15 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
 
 {
   Scheme_Hash_Tree *ht;
-  Scheme_Mark *mark;
+  Scheme_Scope *scope;
   Scheme_Object *l, *p, *bind;
 
-  if (mark_set_count(marks)) {
-    /* We add the binding to the maximum-valued mark, because it's
+  if (scope_set_count(scopes)) {
+    /* We add the binding to the maximum-valued scope, because it's
        likely to be in the least number of binding sets so far. */
-    mark = extract_max_mark(marks);
-    if (SAME_OBJ((Scheme_Object*)mark, root_mark))
-      scheme_signal_error("internal error: cannot bind with only a root mark");
+    scope = extract_max_scope(scopes);
+    if (SAME_OBJ((Scheme_Object*)scope, root_scope))
+      scheme_signal_error("internal error: cannot bind with only a root scope");
   } else {
     scheme_signal_error("internal error: cannot bind identifier with an empty context");
     return;
@@ -2683,36 +2683,36 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
   if (SCHEME_STXP(val))
     val = scheme_make_mutable_pair(scheme_false, scheme_make_pair(val, phase));
 
-  l = mark->bindings;
+  l = scope->bindings;
   if (!l) {
     if (sym) {
       /* simple case: a single binding */
       STX_ASSERT(SCHEME_SYMBOLP(sym));
-      bind = make_vector3(sym, (Scheme_Object *)marks, val);
-      mark->bindings = bind;
+      bind = make_vector3(sym, (Scheme_Object *)scopes, val);
+      scope->bindings = bind;
       clear_binding_cache_for(sym);
       if (from_pt) {
         /* don't convert, but record addition for potential conversion */
-        check_for_conversion(sym, mark, from_pt, collapse_table, NULL, marks, phase, NULL);
+        check_for_conversion(sym, scope, from_pt, collapse_table, NULL, scopes, phase, NULL);
       }
       return;
     }
     ht = empty_hash_tree;
     l = scheme_make_raw_pair((Scheme_Object *)ht, NULL);
-    mark->bindings = l;
+    scope->bindings = l;
   } else if (SCHEME_VECTORP(l)) {
     /* convert simple case to more general case */
     ht = scheme_hash_tree_set(empty_hash_tree,
                               SCHEME_VEC_BINDING_KEY(l),
-                              scheme_make_pair((Scheme_Object *)SCHEME_VEC_BINDING_MARKS(l),
+                              scheme_make_pair((Scheme_Object *)SCHEME_VEC_BINDING_SCOPES(l),
                                                SCHEME_VEC_BINDING_VAL(l)));
     if (sym) {
       /* more complex case: table of bindings */
-      mark->bindings = (Scheme_Object *)ht;
+      scope->bindings = (Scheme_Object *)ht;
     } else {
       /* need most complex form */
       l = scheme_make_raw_pair((Scheme_Object *)ht, NULL);
-      mark->bindings = l;
+      scope->bindings = l;
     }
   } else if (SCHEME_RPAIRP(l)) {
     /* already in complex form */
@@ -2723,11 +2723,11 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
     if (!sym) {
       /* need most complex form */
       l = scheme_make_raw_pair((Scheme_Object *)ht, NULL);
-      mark->bindings = l;
+      scope->bindings = l;
     }
   }
 
-  bind = scheme_make_pair((Scheme_Object *)marks, val);
+  bind = scheme_make_pair((Scheme_Object *)scopes, val);
 
   if (sym) {
     STX_ASSERT(SCHEME_SYMBOLP(sym));
@@ -2735,15 +2735,15 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
     l = scheme_eq_hash_tree_get(ht, sym);
     if (!l) {
       ht = scheme_hash_tree_set(ht, sym, bind);
-      if (SCHEME_RPAIRP(mark->bindings))
-        SCHEME_CAR(mark->bindings) = (Scheme_Object *)ht;
+      if (SCHEME_RPAIRP(scope->bindings))
+        SCHEME_CAR(scope->bindings) = (Scheme_Object *)ht;
       else
-        mark->bindings = (Scheme_Object *)ht;
+        scope->bindings = (Scheme_Object *)ht;
     } else {
       if (!SCHEME_MPAIRP(l))
         l = scheme_make_mutable_pair(l, scheme_null);
       for (p = l; !SCHEME_NULLP(p); p = SCHEME_CDR(p)) {
-        if (marks_equal(marks, SCHEME_BINDING_MARKS(SCHEME_CAR(p)))) {
+        if (scopes_equal(scopes, SCHEME_BINDING_SCOPES(SCHEME_CAR(p)))) {
           if (SCHEME_MPAIRP(val))
             save_old_value(val, SCHEME_BINDING_VAL(SCHEME_CAR(p)));
           SCHEME_CAR(p) = bind;
@@ -2758,13 +2758,13 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
         from_pt = NULL; /* single binding; no benefit from pes conversion */
       }
 
-      if (SCHEME_RPAIRP(mark->bindings))
-        SCHEME_CAR(mark->bindings) = (Scheme_Object *)ht;
+      if (SCHEME_RPAIRP(scope->bindings))
+        SCHEME_CAR(scope->bindings) = (Scheme_Object *)ht;
       else
-        mark->bindings = (Scheme_Object *)ht;
+        scope->bindings = (Scheme_Object *)ht;
     }
     if (from_pt)
-      check_for_conversion(sym, mark, from_pt, collapse_table, ht, marks, phase, bind);
+      check_for_conversion(sym, scope, from_pt, collapse_table, ht, scopes, phase, bind);
   } else {
     /* Order matters: the new bindings should hide any existing bindings for the same name. */
     clear_binding_cache();
@@ -2772,7 +2772,7 @@ static void add_binding(Scheme_Object *sym, Scheme_Object *phase, Scheme_Mark_Se
     SCHEME_CDR(l) = p;
 
     /* Remove any matching mappings form the hash table, since it gets checked first. */
-    clear_matching_bindings(val, marks, l);
+    clear_matching_bindings(val, scopes, l);
   }
 }
 
@@ -2782,10 +2782,10 @@ void scheme_add_local_binding(Scheme_Object *o, Scheme_Object *phase, Scheme_Obj
 
   STX_ASSERT(SCHEME_SYMBOLP(binding_sym));
 
-  add_binding(stx->val, phase, extract_mark_set(stx, phase), binding_sym, NULL, NULL);
+  add_binding(stx->val, phase, extract_scope_set(stx, phase), binding_sym, NULL, NULL);
 }
 
-static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localname, Scheme_Object *phase,
+static void do_add_module_binding(Scheme_Scope_Set *scopes, Scheme_Object *localname, Scheme_Object *phase,
                                   Scheme_Object *modidx, Scheme_Object *exname, Scheme_Object *defn_phase,
                                   Scheme_Object *insp_desc,
                                   Scheme_Object *nominal_mod, Scheme_Object *nominal_ex,
@@ -2799,9 +2799,9 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
 
   if (SCHEME_FALSEP(modidx)) {
     if (SAME_OBJ(localname, exname))
-      add_binding(localname, phase, marks, scheme_false, NULL, NULL);
+      add_binding(localname, phase, scopes, scheme_false, NULL, NULL);
     else
-      add_binding(localname, phase, marks, scheme_make_pair(scheme_false, exname), NULL, NULL);
+      add_binding(localname, phase, scopes, scheme_make_pair(scheme_false, exname), NULL, NULL);
     return;
   }
 
@@ -2872,7 +2872,7 @@ static void do_add_module_binding(Scheme_Mark_Set *marks, Scheme_Object *localna
   if (!SCHEME_FALSEP(insp_desc))
     elem = CONS(insp_desc, elem);
 
-  add_binding(localname, phase, marks, elem, from_pt, collapse_table);
+  add_binding(localname, phase, scopes, elem, from_pt, collapse_table);
 }
 
 void extract_module_binding_parts(Scheme_Object *l,
@@ -2942,7 +2942,7 @@ void scheme_add_module_binding(Scheme_Object *o, Scheme_Object *phase,
 {
   STX_ASSERT(SCHEME_SYMBOLP(((Scheme_Stx *)o)->val));
 
-  do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase), SCHEME_STX_VAL(o), phase,
+  do_add_module_binding(extract_scope_set((Scheme_Stx *)o, phase), SCHEME_STX_VAL(o), phase,
                         modidx, sym, defn_phase,
                         inspector,
                         modidx, sym,
@@ -2960,7 +2960,7 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                          Scheme_Hash_Table *collapse_table)
 {
   STX_ASSERT(SCHEME_STXP(o));
-  do_add_module_binding(extract_mark_set((Scheme_Stx *)o, phase), SCHEME_STX_VAL(o), phase,
+  do_add_module_binding(extract_scope_set((Scheme_Stx *)o, phase), SCHEME_STX_VAL(o), phase,
                         modidx, defn_name, defn_phase,
                         inspector,
                         nominal_mod, nominal_name,
@@ -2968,15 +2968,15 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                         from_pt, collapse_table);
 }
 
-static Scheme_Object *marks_to_printed_list(Scheme_Mark_Set *marks)
+static Scheme_Object *scopes_to_printed_list(Scheme_Scope_Set *scopes)
 {
   Scheme_Object *l, *val, *key;
   
-  l = marks_to_sorted_list(marks);
+  l = scopes_to_sorted_list(scopes);
   val = scheme_null;
   for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
     key = SCHEME_CAR(l);
-    val = scheme_make_pair(scheme_mark_printed_form(key), val);
+    val = scheme_make_pair(scheme_scope_printed_form(key), val);
   }
 
   return val;
@@ -3021,7 +3021,7 @@ Scheme_Object *add_bindings_info(Scheme_Object *bindings, Scheme_Object *key, Sc
       }
 
       bind_desc = scheme_hash_tree_set(bind_desc, context_symbol,
-                                       marks_to_printed_list(SCHEME_BINDING_MARKS(SCHEME_CAR(l))));
+                                       scopes_to_printed_list(SCHEME_BINDING_SCOPES(SCHEME_CAR(l))));
 
       bindings = scheme_make_pair((Scheme_Object *)bind_desc, bindings);
     }
@@ -3054,10 +3054,10 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
   Scheme_Hash_Tree *ht;
   Scheme_Object *key, *val, *l, *pes, *descs = scheme_null, *bindings;
   intptr_t i, j;
-  Scheme_Mark *mark;
-  Scheme_Mark_Set *marks;
+  Scheme_Scope *scope;
+  Scheme_Scope_Set *scopes;
   Scheme_Module_Phase_Exports *pt;
-  Scheme_Object *multi_marks;
+  Scheme_Object *multi_scopes;
   
 #ifdef DO_STACK_CHECK
   {
@@ -3086,36 +3086,36 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
     }
   }
 
-  multi_marks = stx->marks->multi_marks;
+  multi_scopes = stx->scopes->multi_scopes;
 
   /* Loop for top-level fallbacks: */
   while (1) {
-    marks = extract_mark_set_from_mark_list(stx->marks->single_marks, multi_marks, phase);
+    scopes = extract_scope_set_from_scope_list(stx->scopes->simple_scopes, multi_scopes, phase);
 
     desc = empty_hash_tree;
 
     if (SCHEME_SYMBOLP(stx->val))
       desc = scheme_hash_tree_set(desc, name_symbol, stx->val);
-    desc = scheme_hash_tree_set(desc, context_symbol, marks_to_printed_list(marks));
+    desc = scheme_hash_tree_set(desc, context_symbol, scopes_to_printed_list(scopes));
 
     /* Describe other bindings */
     bindings = scheme_null;
-    i = mark_set_next(marks, -1);
+    i = scope_set_next(scopes, -1);
     while (i != -1) {
-      mark_set_index(marks, i, &key, &val);
+      scope_set_index(scopes, i, &key, &val);
 
-      mark = (Scheme_Mark *)key;
-      if (mark->bindings) {
-        if (SCHEME_VECTORP(mark->bindings)) {
-          l = scheme_make_pair((Scheme_Object *)SCHEME_VEC_BINDING_MARKS(mark->bindings),
-                               SCHEME_VEC_BINDING_VAL(mark->bindings));
-          bindings = add_bindings_info(bindings, SCHEME_VEC_BINDING_KEY(mark->bindings), l,
+      scope = (Scheme_Scope *)key;
+      if (scope->bindings) {
+        if (SCHEME_VECTORP(scope->bindings)) {
+          l = scheme_make_pair((Scheme_Object *)SCHEME_VEC_BINDING_SCOPES(scope->bindings),
+                               SCHEME_VEC_BINDING_VAL(scope->bindings));
+          bindings = add_bindings_info(bindings, SCHEME_VEC_BINDING_KEY(scope->bindings), l,
                                        stx, all_bindings, seen);
           l = NULL;
         } else {
-          l = mark->bindings;
+          l = scope->bindings;
           if (SCHEME_RPAIRP(l))
-            ht = (Scheme_Hash_Tree *)SCHEME_CAR(mark->bindings);
+            ht = (Scheme_Hash_Tree *)SCHEME_CAR(scope->bindings);
           else {
             STX_ASSERT(SCHEME_HASHTRP(l));
             ht = (Scheme_Hash_Tree *)l;
@@ -3127,7 +3127,7 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
             bindings = add_bindings_info(bindings, key, val, stx, all_bindings, seen);
           }
 
-          l = mark->bindings;
+          l = scope->bindings;
           if (SCHEME_RPAIRP(l))
             l = SCHEME_CDR(l);
           else
@@ -3140,7 +3140,7 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
           bind_desc = empty_hash_tree;
 
           bind_desc = scheme_hash_tree_set(bind_desc, context_symbol,
-                                           marks_to_printed_list(SCHEME_BINDING_MARKS(SCHEME_CAR(l))));
+                                           scopes_to_printed_list(SCHEME_BINDING_SCOPES(SCHEME_CAR(l))));
 
           pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
           val = SCHEME_VEC_ELS(pes)[0];
@@ -3167,7 +3167,7 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
         }
       }
     
-      i = mark_set_next(marks, i);
+      i = scope_set_next(scopes, i);
     }
 
     if (!SCHEME_NULLP(bindings))
@@ -3175,8 +3175,8 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
 
     descs = scheme_make_pair((Scheme_Object *)desc, descs);
     
-    if (SCHEME_FALLBACKP(multi_marks)) {
-      multi_marks = SCHEME_FALLBACK_REST(multi_marks);
+    if (SCHEME_FALLBACKP(multi_scopes)) {
+      multi_scopes = SCHEME_FALLBACK_REST(multi_scopes);
     } else
       break;
   }
@@ -3398,34 +3398,34 @@ char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int 
     return "";
 }
 
-static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *mapped)
+static void add_scopes_mapped_names(Scheme_Scope_Set *scopes, Scheme_Hash_Table *mapped)
 {
   int retry;
   Scheme_Hash_Tree *ht;
   Scheme_Object *key, *val, *l, *pes;
   intptr_t i, j;
-  Scheme_Mark *mark;
-  Scheme_Mark_Set *binding_marks;
+  Scheme_Scope *scope;
+  Scheme_Scope_Set *binding_scopes;
   Scheme_Module_Phase_Exports *pt;
 
   do {
     retry = 0;
-    i = mark_set_next(marks, -1);
+    i = scope_set_next(scopes, -1);
     while (i != -1) {
-      mark_set_index(marks, i, &key, &val);
+      scope_set_index(scopes, i, &key, &val);
       
-      mark = (Scheme_Mark *)key;
-      if (mark->bindings) {
-        if (SCHEME_VECTORP(mark->bindings)) {
-          if (mark_subset(SCHEME_VEC_BINDING_MARKS(mark->bindings), marks))
-            scheme_hash_set(mapped, SCHEME_VEC_BINDING_KEY(mark->bindings), scheme_true);
+      scope = (Scheme_Scope *)key;
+      if (scope->bindings) {
+        if (SCHEME_VECTORP(scope->bindings)) {
+          if (scope_subset(SCHEME_VEC_BINDING_SCOPES(scope->bindings), scopes))
+            scheme_hash_set(mapped, SCHEME_VEC_BINDING_KEY(scope->bindings), scheme_true);
         } else {
           /* Check table of symbols */
-          if (SCHEME_RPAIRP(mark->bindings))
-            ht = (Scheme_Hash_Tree *)SCHEME_CAR(mark->bindings);
+          if (SCHEME_RPAIRP(scope->bindings))
+            ht = (Scheme_Hash_Tree *)SCHEME_CAR(scope->bindings);
           else {
-            STX_ASSERT(SCHEME_HASHTRP(mark->bindings));
-            ht = (Scheme_Hash_Tree *)mark->bindings;
+            STX_ASSERT(SCHEME_HASHTRP(scope->bindings));
+            ht = (Scheme_Hash_Tree *)scope->bindings;
           }
           j = -1;
           while ((j = scheme_hash_tree_next(ht, j)) != -1) {
@@ -3433,12 +3433,12 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
             l = val;
             if (l) {
               if (SCHEME_PAIRP(l)) {
-                if (mark_subset(SCHEME_BINDING_MARKS(l), marks))
+                if (scope_subset(SCHEME_BINDING_SCOPES(l), scopes))
                   scheme_hash_set(mapped, key, scheme_true);
               } else {
                 while (!SCHEME_NULLP(l)) {
                   STX_ASSERT(SCHEME_MPAIRP(l));
-                  if (mark_subset(SCHEME_BINDING_MARKS(SCHEME_CAR(l)), marks)) {
+                  if (scope_subset(SCHEME_BINDING_SCOPES(SCHEME_CAR(l)), scopes)) {
                     scheme_hash_set(mapped, key, scheme_true);
                     break;
                   }
@@ -3450,18 +3450,18 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
         }
 
         /* Check list of shared-binding tables */
-        if (SCHEME_RPAIRP(mark->bindings))
-          l = SCHEME_CDR(mark->bindings);
+        if (SCHEME_RPAIRP(scope->bindings))
+          l = SCHEME_CDR(scope->bindings);
         else
           l = NULL;
         while (l) {
           STX_ASSERT(SCHEME_RPAIRP(l));
-          binding_marks = SCHEME_BINDING_MARKS(SCHEME_CAR(l));
-          if (mark_subset(binding_marks, marks)) {
+          binding_scopes = SCHEME_BINDING_SCOPES(SCHEME_CAR(l));
+          if (scope_subset(binding_scopes, scopes)) {
             pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
             if (PES_UNMARSHAL_DESCP(pes)) {
               if (SCHEME_TRUEP(SCHEME_VEC_ELS(pes)[0])) {
-                unmarshal_module_context_additions(NULL, pes, binding_marks, l);
+                unmarshal_module_context_additions(NULL, pes, binding_scopes, l);
                 retry = 1;
               }
             } else {
@@ -3480,13 +3480,13 @@ static void add_marks_mapped_names(Scheme_Mark_Set *marks, Scheme_Hash_Table *ma
           l = SCHEME_CDR(l);
         }
       }
-      i = mark_set_next(marks, i);
+      i = scope_set_next(scopes, i);
     }
   } while (retry);
 }
 
-static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
-                                    Scheme_Mark_Set *check_subset,
+static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Scope_Set *scopes,
+                                    Scheme_Scope_Set *check_subset,
                                     GC_CAN_IGNORE int *_exact_match,
                                     GC_CAN_IGNORE int *_ambiguous,
                                     GC_CAN_IGNORE Scheme_Object **_sole_result)
@@ -3494,8 +3494,8 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
   int j, invalid, matches = 0;
   intptr_t i;
   Scheme_Object *key, *val, *result_best_so_far, *l, *pes;
-  Scheme_Mark *mark;
-  Scheme_Mark_Set *binding_marks, *best_so_far;
+  Scheme_Scope *scope;
+  Scheme_Scope_Set *binding_scopes, *best_so_far;
   Scheme_Module_Phase_Exports *pt;
 
   do {
@@ -3503,14 +3503,14 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
     best_so_far = NULL;
     result_best_so_far = NULL;
 
-    i = mark_set_next(marks, -1);
+    i = scope_set_next(scopes, -1);
     while ((i != -1) && !invalid) {
-      mark_set_index(marks, i, &key, &val);
+      scope_set_index(scopes, i, &key, &val);
 
-      mark = (Scheme_Mark *)key;
-      if (mark->bindings) {
+      scope = (Scheme_Scope *)key;
+      if (scope->bindings) {
         for (j = 0; j < 2; j++) {
-          l = mark->bindings;
+          l = scope->bindings;
           if (!j) {
             if (SCHEME_VECTORP(l)) {
               if (!SAME_OBJ(SCHEME_VEC_BINDING_KEY(l), stx->val))
@@ -3537,12 +3537,12 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
 
           while (l && !SCHEME_NULLP(l) && !invalid) {
             if (SCHEME_VECTORP(l))
-              binding_marks = SCHEME_VEC_BINDING_MARKS(l);
+              binding_scopes = SCHEME_VEC_BINDING_SCOPES(l);
             else if (SCHEME_PAIRP(l))
-              binding_marks = SCHEME_BINDING_MARKS(l);
+              binding_scopes = SCHEME_BINDING_SCOPES(l);
             else {
               STX_ASSERT(SCHEME_RPAIRP(l) || SCHEME_MPAIRP(l));
-              binding_marks = SCHEME_BINDING_MARKS(SCHEME_CAR(l));
+              binding_scopes = SCHEME_BINDING_SCOPES(SCHEME_CAR(l));
             }
 
             if (j) {
@@ -3551,16 +3551,16 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
               if (PES_UNMARSHAL_DESCP(pes)) {
                 /* Not a pes; an unmarshal */
                 if (SCHEME_TRUEP(SCHEME_VEC_ELS(pes)[0])) {
-                  /* Need unmarshal --- but only if the mark set is relevant */
-                  if (mark_subset(binding_marks, marks)) {
+                  /* Need unmarshal --- but only if the scope set is relevant */
+                  if (scope_subset(binding_scopes, scopes)) {
                     /* unmarshal and note that we must restart */
-                    unmarshal_module_context_additions(stx, pes, binding_marks, l);
+                    unmarshal_module_context_additions(stx, pes, binding_scopes, l);
                     invalid = 1;
                     /* Shouldn't encounter this on a second pass: */
                     STX_ASSERT(!check_subset);
                   }
                 }
-                binding_marks = NULL;
+                binding_scopes = NULL;
               } else {
                 /* Check for id in pes */
                 pt = (Scheme_Module_Phase_Exports *)SCHEME_VEC_ELS(pes)[1];
@@ -3570,21 +3570,21 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
                 }
 
                 if (!scheme_eq_hash_get(pt->ht, unmarshal_lookup_adjust(stx->val, pes)))
-                  binding_marks = NULL;
+                  binding_scopes = NULL;
               }
             }
           
-            if (binding_marks && mark_subset(binding_marks, marks)) {
-              if (check_subset && !mark_subset(binding_marks, check_subset)) {
+            if (binding_scopes && scope_subset(binding_scopes, scopes)) {
+              if (check_subset && !scope_subset(binding_scopes, check_subset)) {
                 if (_ambiguous) *_ambiguous = 1;
                 return NULL; /* ambiguous */
               }
               matches++;
               if (!best_so_far
-                  || ((mark_set_count(binding_marks) > mark_set_count(best_so_far))
+                  || ((scope_set_count(binding_scopes) > scope_set_count(best_so_far))
                       && (!check_subset
-                          || (mark_set_count(binding_marks) == mark_set_count(check_subset))))) {
-                best_so_far = binding_marks;
+                          || (scope_set_count(binding_scopes) == scope_set_count(check_subset))))) {
+                best_so_far = binding_scopes;
                 if (SCHEME_VECTORP(l))
                   result_best_so_far = SCHEME_VEC_BINDING_VAL(l);
                 else if (SCHEME_PAIRP(l))
@@ -3599,7 +3599,7 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
                            || SCHEME_VECTORP(result_best_so_far)
                            || SCHEME_SYMBOLP(result_best_so_far)
                            || SCHEME_MPAIRP(result_best_so_far));
-                if (_exact_match) *_exact_match = (mark_set_count(binding_marks) == mark_set_count(marks));
+                if (_exact_match) *_exact_match = (scope_set_count(binding_scopes) == scope_set_count(scopes));
               }
             }
 
@@ -3611,7 +3611,7 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
         }
       }
     
-      i = mark_set_next(marks, i);
+      i = scope_set_next(scopes, i);
     }
   } while (invalid);
 
@@ -3632,40 +3632,40 @@ static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Mark_Set *marks,
 static Scheme_Object *do_stx_lookup_nonambigious(Scheme_Stx *stx, Scheme_Object *phase,
                                                  GC_CAN_IGNORE int *_exact_match,
                                                  GC_CAN_IGNORE int *_ambiguous,
-                                                 Scheme_Mark_Set **_binding_marks)
+                                                 Scheme_Scope_Set **_binding_scopes)
 {
-  Scheme_Mark_Set *marks, *best_set;
-  Scheme_Object *multi_marks, *result;
+  Scheme_Scope_Set *scopes, *best_set;
+  Scheme_Object *multi_scopes, *result;
 
-  multi_marks = stx->marks->multi_marks;
+  multi_scopes = stx->scopes->multi_scopes;
 
   /* Loop for top-level fallbacks: */
   while (1) {
-    marks = extract_mark_set_from_mark_list(stx->marks->single_marks, multi_marks, phase);
+    scopes = extract_scope_set_from_scope_list(stx->scopes->simple_scopes, multi_scopes, phase);
 
-    best_set = (Scheme_Mark_Set *)do_stx_lookup(stx, marks,
+    best_set = (Scheme_Scope_Set *)do_stx_lookup(stx, scopes,
                                                 NULL,
                                                 _exact_match, _ambiguous,
                                                 &result);
     if (best_set) {
-      if (_binding_marks) *_binding_marks = best_set;
+      if (_binding_scopes) *_binding_scopes = best_set;
 
       if (!result) {
         /* Find again, this time checking to ensure no ambiguity: */
-        result = do_stx_lookup(stx, marks,
+        result = do_stx_lookup(stx, scopes,
                                best_set,
                                _exact_match, _ambiguous,
                                NULL);
       }
 
-      if (!result && SCHEME_FALLBACKP(multi_marks)) {
+      if (!result && SCHEME_FALLBACKP(multi_scopes)) {
         if (_ambiguous) *_ambiguous = 0;
         if (_exact_match) *_exact_match = 0;
-        multi_marks = SCHEME_FALLBACK_REST(multi_marks);
+        multi_scopes = SCHEME_FALLBACK_REST(multi_scopes);
       } else
         return result;
-    } else if (SCHEME_FALLBACKP(multi_marks))
-      multi_marks = SCHEME_FALLBACK_REST(multi_marks);
+    } else if (SCHEME_FALLBACKP(multi_scopes))
+      multi_scopes = SCHEME_FALLBACK_REST(multi_scopes);
     else
       return NULL; 
   }
@@ -3723,7 +3723,7 @@ typedef struct Binding_Cache_Entry {
   Scheme_Stx *id;
   Scheme_Object *phase;
   Scheme_Object *result;
-  Scheme_Mark_Set *binding_marks;
+  Scheme_Scope_Set *binding_scopes;
   Scheme_Object *insp_desc;
   Scheme_Object *free_eq;
 } Binding_Cache_Entry;
@@ -3772,7 +3772,7 @@ XFORM_NONGCING static int find_in_binding_cache(Scheme_Stx *id, Scheme_Object *p
 
 XFORM_NONGCING static void save_in_binding_cache(Scheme_Stx *id, Scheme_Object *phase,
                                                  Scheme_Object *result,
-                                                 Scheme_Mark_Set *binding_marks, Scheme_Object *insp_desc,
+                                                 Scheme_Scope_Set *binding_scopes, Scheme_Object *insp_desc,
                                                  Scheme_Object *free_eq)
 {
   Binding_Cache_Entry *binding_cache = binding_cache_table;
@@ -3791,7 +3791,7 @@ XFORM_NONGCING static void save_in_binding_cache(Scheme_Stx *id, Scheme_Object *
   binding_cache[i].id = id;
   binding_cache[i].phase = phase;
   binding_cache[i].result = result;
-  binding_cache[i].binding_marks = binding_marks;
+  binding_cache[i].binding_scopes = binding_scopes;
   binding_cache[i].insp_desc = insp_desc;
   binding_cache[i].free_eq = free_eq;
 }
@@ -3800,7 +3800,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
                                            int stop_at_free_eq,
                                            GC_CAN_IGNORE int *_exact_match,
                                            GC_CAN_IGNORE int *_ambiguous,
-                                           GC_CAN_IGNORE Scheme_Mark_Set **_binding_marks,
+                                           GC_CAN_IGNORE Scheme_Scope_Set **_binding_scopes,
                                            GC_CAN_IGNORE Scheme_Object **_insp,             /* access-granting inspector */
                                            GC_CAN_IGNORE Scheme_Object **nominal_modidx,    /* how it was imported */
                                            GC_CAN_IGNORE Scheme_Object **nominal_name,      /* imported as name */
@@ -3812,7 +3812,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
 {
   Scheme_Stx *stx;
   Scheme_Object *result, *insp_desc;
-  Scheme_Mark_Set *binding_marks;
+  Scheme_Scope_Set *binding_scopes;
   Scheme_Object *free_eq, *prev_shifts = scheme_null, *orig_name;
   Scheme_Hash_Table *free_id_seen = NULL;
   int cache_pos;
@@ -3836,15 +3836,15 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
       GC_CAN_IGNORE Binding_Cache_Entry *binding_cache = binding_cache_table;
 
       result = binding_cache[cache_pos].result;
-      binding_marks = binding_cache[cache_pos].binding_marks;
+      binding_scopes = binding_cache[cache_pos].binding_scopes;
       if (_insp) *_insp = binding_cache[cache_pos].insp_desc;
       free_eq = binding_cache[cache_pos].free_eq;
 
-      if (_binding_marks)
-        *_binding_marks = binding_marks;
+      if (_binding_scopes)
+        *_binding_scopes = binding_scopes;
       if (_exact_match) {
-        if (binding_marks
-            && (mark_set_count(binding_marks) == mark_set_count(extract_mark_set(stx, phase))))
+        if (binding_scopes
+            && (scope_set_count(binding_scopes) == scope_set_count(extract_scope_set(stx, phase))))
           *_exact_match = 1;
         else
           *_exact_match = 0;
@@ -3870,14 +3870,14 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
                                         stx, orig_name, phase);
     }
 
-    binding_marks = NULL;
+    binding_scopes = NULL;
     if (_exact_match) *_exact_match = 0;
 
     result = do_stx_lookup_nonambigious(stx, phase,
                                         _exact_match, _ambiguous,
-                                        &binding_marks);
+                                        &binding_scopes);
 
-    if (_binding_marks) *_binding_marks = binding_marks;
+    if (_binding_scopes) *_binding_scopes = binding_scopes;
 
     if (!result) {
       save_in_binding_cache(stx, phase, scheme_false,
@@ -4001,7 +4001,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
       insp_desc = scheme_false;
 
     save_in_binding_cache(stx, phase, result,
-                          binding_marks, insp_desc,
+                          binding_scopes, insp_desc,
                           free_eq);
   
     if (_insp) *_insp = insp_desc;
@@ -4062,7 +4062,7 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
 
   /* Passing an identifier as the "value" adds to the existing binding,
      instead of replacing it: */
-  add_binding(stx->val, phase, extract_mark_set(stx, phase), from_o, NULL, NULL);
+  add_binding(stx->val, phase, extract_scope_set(stx, phase), from_o, NULL, NULL);
 }
 
 /******************** module-import bindings ********************/
@@ -4072,25 +4072,25 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
                                           Scheme_Object *debug_name)
 {
   Scheme_Object *vec;
-  Scheme_Object *body_marks;
-  Scheme_Object *intro_multi_mark;
+  Scheme_Object *body_scopes;
+  Scheme_Object *intro_multi_scope;
 
-  /* The `intro_multi_mark` is the home for all bindings in a given context.
+  /* The `intro_multi_scope` is the home for all bindings in a given context.
      It is added to any form that emerges into a module context via
      macro expansion.
      In the case of top-level forms, this context is sometimes stripped away
      and replaced with a new top-level context. */
-  intro_multi_mark = new_multi_mark(debug_name);
-  body_marks = scheme_make_pair(intro_multi_mark, scheme_null);
+  intro_multi_scope = new_multi_scope(debug_name);
+  body_scopes = scheme_make_pair(intro_multi_scope, scheme_null);
 
-  /* An additional mark identifies the original module home of an
+  /* An additional scope identifies the original module home of an
      identifier (i.e., not added to things that are macro-introduced
-     into the module context). The root mark serves to unify all
+     into the module context). The root scope serves to unify all
      top-level contexts. */
   if (SCHEME_FALSEP(debug_name))
-    body_marks = scheme_make_pair(root_mark, body_marks);
+    body_scopes = scheme_make_pair(root_scope, body_scopes);
   else
-    body_marks = scheme_make_pair(scheme_new_mark(SCHEME_STX_MODULE_MARK), body_marks);
+    body_scopes = scheme_make_pair(scheme_new_scope(SCHEME_STX_MODULE_SCOPE), body_scopes);
 
   if (!shift_or_shifts)
     shift_or_shifts = scheme_null;
@@ -4098,74 +4098,74 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
     shift_or_shifts = scheme_make_pair(shift_or_shifts, scheme_null);
 
   /* A module context consists of
-       - A list of marks, multi-marks, and (cons multi-mark phase) that
+       - A list of scopes, multi-scopes, and (cons multi-scope phase) that
          corresponds to the module body
-       - A phase used for extracting marks (not a shift for the intro mark)
+       - A phase used for extracting scopes (not a shift for the intro scope)
        - An inspector
        - A list of module-index shifts
-       - A multi-mark for binding/introduction (included in body marks)
-       - A list of marks that correspond to macro uses;
-         this marks must be stripped away from a definition
+       - A multi-scope for binding/introduction (included in body scopes)
+       - A list of scopes that correspond to macro uses;
+         this scopes must be stripped away from a definition
   */
 
   vec = scheme_make_vector(6, NULL);
-  SCHEME_VEC_ELS(vec)[0] = body_marks;
+  SCHEME_VEC_ELS(vec)[0] = body_scopes;
   SCHEME_VEC_ELS(vec)[1] = scheme_make_integer(0);
   SCHEME_VEC_ELS(vec)[2] = insp;
   SCHEME_VEC_ELS(vec)[3] = shift_or_shifts;
-  SCHEME_VEC_ELS(vec)[4] = intro_multi_mark;
-  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_mark_set;
+  SCHEME_VEC_ELS(vec)[4] = intro_multi_scope;
+  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_scope_set;
 
   return vec;
 }
 
-Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc)
+Scheme_Scope_Set *scheme_module_context_scopes(Scheme_Object *mc)
 {
-  Scheme_Object *body_marks = SCHEME_VEC_ELS(mc)[0], *mark;
+  Scheme_Object *body_scopes = SCHEME_VEC_ELS(mc)[0], *scope;
   Scheme_Object *phase = SCHEME_VEC_ELS(mc)[1];
-  Scheme_Mark_Set *marks = empty_mark_set;
+  Scheme_Scope_Set *scopes = empty_scope_set;
 
-  while (!SCHEME_NULLP(body_marks)) {
-    mark = SCHEME_CAR(body_marks);
-    if (!SCHEME_MARKP(mark)) {
-      if (SCHEME_PAIRP(mark))
-        mark = extract_single_mark_from_shifted(mark, phase);
+  while (!SCHEME_NULLP(body_scopes)) {
+    scope = SCHEME_CAR(body_scopes);
+    if (!SCHEME_SCOPEP(scope)) {
+      if (SCHEME_PAIRP(scope))
+        scope = extract_simple_scope_from_shifted(scope, phase);
       else
-        mark = extract_single_mark(mark, phase);
+        scope = extract_simple_scope(scope, phase);
     }
-    if (mark)
-      marks = mark_set_set(marks, mark, scheme_true);
-    body_marks = SCHEME_CDR(body_marks);
+    if (scope)
+      scopes = scope_set_set(scopes, scope, scheme_true);
+    body_scopes = SCHEME_CDR(body_scopes);
   }
 
-  return marks;
+  return scopes;
 }
 
-Scheme_Object *scheme_module_context_frame_marks(Scheme_Object *mc)
+Scheme_Object *scheme_module_context_frame_scopes(Scheme_Object *mc)
 {
-  return (Scheme_Object *)scheme_module_context_marks(mc);
+  return (Scheme_Object *)scheme_module_context_scopes(mc);
 }
 
-void scheme_module_context_add_use_site_mark(Scheme_Object *mc, Scheme_Object *use_site_mark)
+void scheme_module_context_add_use_site_scope(Scheme_Object *mc, Scheme_Object *use_site_scope)
 {
-  Scheme_Mark_Set *use_site_marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
+  Scheme_Scope_Set *use_site_scopes = (Scheme_Scope_Set *)SCHEME_VEC_ELS(mc)[5];
 
-  STX_ASSERT(SCHEME_MARKP(use_site_mark));
+  STX_ASSERT(SCHEME_SCOPEP(use_site_scope));
 
-  use_site_marks = mark_set_set(use_site_marks, use_site_mark, scheme_true);
+  use_site_scopes = scope_set_set(use_site_scopes, use_site_scope, scheme_true);
   
-  SCHEME_VEC_ELS(mc)[5] = (Scheme_Object *)use_site_marks;
+  SCHEME_VEC_ELS(mc)[5] = (Scheme_Object *)use_site_scopes;
 }
 
-Scheme_Object *scheme_module_context_use_site_frame_marks(Scheme_Object *mc)
+Scheme_Object *scheme_module_context_use_site_frame_scopes(Scheme_Object *mc)
 {
-  Scheme_Mark_Set *use_site_marks;
+  Scheme_Scope_Set *use_site_scopes;
   
-  use_site_marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
-  if (SAME_OBJ(use_site_marks, empty_mark_set))
+  use_site_scopes = (Scheme_Scope_Set *)SCHEME_VEC_ELS(mc)[5];
+  if (SAME_OBJ(use_site_scopes, empty_scope_set))
     return NULL;
   else
-    return make_vector3(scheme_false, (Scheme_Object *)use_site_marks, scheme_false);
+    return make_vector3(scheme_false, (Scheme_Object *)use_site_scopes, scheme_false);
 }
 
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc)
@@ -4175,7 +4175,7 @@ Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc)
 
 void scheme_module_context_add_mapped_symbols(Scheme_Object *mc, Scheme_Hash_Table *mapped)
 {
-  add_marks_mapped_names(scheme_module_context_marks(mc), mapped);
+  add_scopes_mapped_names(scheme_module_context_scopes(mc), mapped);
 }
 
 Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *phase)
@@ -4193,10 +4193,10 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
   SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(mc)[2];
   SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(mc)[3];
   SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(mc)[4];
-  /* Any use-site mark from the from another phase don't apply here. This
+  /* Any use-site scope from the from another phase don't apply here. This
      set only matters for module contexts that are attached to environments,
      anyway: */
-  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_mark_set;
+  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_scope_set;
 
   return vec;
 }
@@ -4204,22 +4204,22 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
 static Scheme_Object *adjust_module_context_except(Scheme_Object *stx, Scheme_Object *mc, Scheme_Object *skip,
                                                    int mode)
 {
-  Scheme_Object *body_marks = SCHEME_VEC_ELS(mc)[0], *mark;
+  Scheme_Object *body_scopes = SCHEME_VEC_ELS(mc)[0], *scope;
   Scheme_Object *phase = SCHEME_VEC_ELS(mc)[1];
 
-  while (!SCHEME_NULLP(body_marks)) {
-    mark = SCHEME_CAR(body_marks);
-    if (skip && SAME_OBJ(mark, skip))
-      mark = NULL;
-    else if (!SCHEME_MARKP(mark)) {
-      if (SCHEME_PAIRP(mark))
-        mark = extract_single_mark_from_shifted(mark, phase);
+  while (!SCHEME_NULLP(body_scopes)) {
+    scope = SCHEME_CAR(body_scopes);
+    if (skip && SAME_OBJ(scope, skip))
+      scope = NULL;
+    else if (!SCHEME_SCOPEP(scope)) {
+      if (SCHEME_PAIRP(scope))
+        scope = extract_simple_scope_from_shifted(scope, phase);
       else
-        mark = extract_single_mark(mark, phase);
+        scope = extract_simple_scope(scope, phase);
     }
-    if (mark)
-      stx = scheme_stx_adjust_mark(stx, mark, phase, mode);
-    body_marks = SCHEME_CDR(body_marks);
+    if (scope)
+      stx = scheme_stx_adjust_scope(stx, scope, phase, mode);
+    body_scopes = SCHEME_CDR(body_scopes);
   }
 
   if (mode == SCHEME_STX_ADD)
@@ -4235,19 +4235,19 @@ Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *
 
 Scheme_Object *scheme_stx_push_module_context(Scheme_Object *stx, Scheme_Object *mc)
 {
-  Scheme_Object *intro_multi_mark = SCHEME_VEC_ELS(mc)[4];
+  Scheme_Object *intro_multi_scope = SCHEME_VEC_ELS(mc)[4];
 
-  stx = scheme_stx_adjust_mark(stx, intro_multi_mark, scheme_make_integer(0), SCHEME_STX_PUSH);
-  stx = adjust_module_context_except(stx, mc, intro_multi_mark, SCHEME_STX_ADD);
+  stx = scheme_stx_adjust_scope(stx, intro_multi_scope, scheme_make_integer(0), SCHEME_STX_PUSH);
+  stx = adjust_module_context_except(stx, mc, intro_multi_scope, SCHEME_STX_ADD);
 
   return stx;
 }
 
 Scheme_Object *scheme_stx_push_introduce_module_context(Scheme_Object *stx, Scheme_Object *mc)
 {
-  Scheme_Object *intro_multi_mark = SCHEME_VEC_ELS(mc)[4];
+  Scheme_Object *intro_multi_scope = SCHEME_VEC_ELS(mc)[4];
 
-  return scheme_stx_adjust_mark(stx, intro_multi_mark, scheme_make_integer(0), SCHEME_STX_PUSH);
+  return scheme_stx_adjust_scope(stx, intro_multi_scope, scheme_make_integer(0), SCHEME_STX_PUSH);
 }
 
 Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Object *mc)
@@ -4257,13 +4257,13 @@ Scheme_Object *scheme_stx_add_module_frame_context(Scheme_Object *stx, Scheme_Ob
 
 Scheme_Object *scheme_stx_introduce_to_module_context(Scheme_Object *stx, Scheme_Object *mc)
 {
-  Scheme_Object *multi_mark;
+  Scheme_Object *multi_scope;
 
   STX_ASSERT(SCHEME_VECTORP(mc));
 
-  multi_mark = SCHEME_VEC_ELS(mc)[4];
+  multi_scope = SCHEME_VEC_ELS(mc)[4];
 
-  return scheme_stx_add_mark(stx, multi_mark, scheme_make_integer(0));
+  return scheme_stx_add_scope(stx, multi_scope, scheme_make_integer(0));
 }
 
 Scheme_Object *scheme_stx_unintroduce_from_module_context(Scheme_Object *stx, Scheme_Object *mc)
@@ -4273,12 +4273,12 @@ Scheme_Object *scheme_stx_unintroduce_from_module_context(Scheme_Object *stx, Sc
 
 Scheme_Object *scheme_stx_adjust_module_use_site_context(Scheme_Object *stx, Scheme_Object *mc, int mode)
 {
-  Scheme_Mark_Set *marks = (Scheme_Mark_Set *)SCHEME_VEC_ELS(mc)[5];
+  Scheme_Scope_Set *scopes = (Scheme_Scope_Set *)SCHEME_VEC_ELS(mc)[5];
 
-  return scheme_stx_adjust_marks(stx, marks, SCHEME_VEC_ELS(mc)[1], mode);
+  return scheme_stx_adjust_scopes(stx, scopes, SCHEME_VEC_ELS(mc)[1], mode);
 }
 
-void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-set> <phase> <inspector> ...) */
+void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <scope-set> <phase> <inspector> ...) */
                                   Scheme_Object *ctx,         /* binding context (as stx) or NULL */
                                   Scheme_Object *modidx,      /* actual source module */
                                   Scheme_Object *localname,   /* name in local context */
@@ -4289,14 +4289,14 @@ void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-s
                                   Scheme_Object *src_phase,   /* nominal import phase */
                                   Scheme_Object *nom_phase)   /* nominal export phase */
 {
-  Scheme_Mark_Set *marks;
+  Scheme_Scope_Set *scopes;
   
   if (ctx)
-    marks = extract_mark_set((Scheme_Stx *)ctx, SCHEME_VEC_ELS(mc)[1]);
+    scopes = extract_scope_set((Scheme_Stx *)ctx, SCHEME_VEC_ELS(mc)[1]);
   else
-    marks = scheme_module_context_marks(mc);
+    scopes = scheme_module_context_scopes(mc);
   
-  do_add_module_binding(marks, localname, SCHEME_VEC_ELS(mc)[1],
+  do_add_module_binding(scopes, localname, SCHEME_VEC_ELS(mc)[1],
                         modidx, exname, scheme_make_integer(mod_phase),
                         SCHEME_VEC_ELS(mc)[2],
                         nominal_mod, nominal_ex,
@@ -4304,7 +4304,7 @@ void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <mark-s
                         NULL, NULL);
 }
 
-void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mark> <phase> <inspector> <shifts>) or (cons <phase> <inspector-desc>) */
+void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <scope> <phase> <inspector> <shifts>) or (cons <phase> <inspector-desc>) */
                                               Scheme_Object *modidx,      
                                               Scheme_Module_Phase_Exports *pt,
                                               Scheme_Object *prefix, /* a sybmol; not included in `excepts` keys */
@@ -4314,7 +4314,7 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
                                               Scheme_Object *replace_at)
 {
   Scheme_Object *phase, *pes, *insp_desc, *unmarshal_info;
-  Scheme_Mark_Set *marks;
+  Scheme_Scope_Set *scopes;
 
   if (SCHEME_VECTORP(mc)) {
     phase = SCHEME_VEC_ELS(mc)[1];
@@ -4325,9 +4325,9 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
   }
 
   if (context)
-    marks = extract_mark_set((Scheme_Stx *)context, phase);
+    scopes = extract_scope_set((Scheme_Stx *)context, phase);
   else
-    marks = scheme_module_context_marks(mc);
+    scopes = scheme_module_context_scopes(mc);
 
   unmarshal_info = make_unmarshal_info(pt->phase_index, prefix, (Scheme_Object *)excepts);
   
@@ -4341,7 +4341,7 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <mar
   if (replace_at) {
     SCHEME_BINDING_VAL(SCHEME_CAR(replace_at)) = pes;
   } else {
-    add_binding(NULL, phase, marks, pes, NULL, NULL);
+    add_binding(NULL, phase, scopes, pes, NULL, NULL);
   }
 }
 
@@ -4528,7 +4528,7 @@ static Scheme_Object *unmarshal_key_adjust(Scheme_Object *sym, Scheme_Object *pe
   return sym;
 }
 
-static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Mark_Set *marks, Scheme_Object *replace_at)
+static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Scope_Set *scopes, Scheme_Object *replace_at)
 {
   Scheme_Object *req_modidx, *modidx, *unmarshal_info, *context, *src_phase, *pt_phase, *bind_phase, *insp;
   Scheme_Hash_Table *export_registry;
@@ -4558,7 +4558,7 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
     bind_phase = scheme_bin_plus(src_phase, pt_phase);
 
   context = scheme_datum_to_syntax(scheme_false, scheme_false, scheme_false, 0, 0);
-  context = scheme_stx_adjust_marks(context, marks, bind_phase, SCHEME_STX_ADD);
+  context = scheme_stx_adjust_scopes(context, scopes, bind_phase, SCHEME_STX_ADD);
 
   scheme_do_module_context_unmarshal(modidx, req_modidx, context,
                                      bind_phase, pt_phase, src_phase,
@@ -4579,7 +4579,7 @@ Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, Scheme_Object *or
   else
     o = scheme_stx_add_module_context(plain, mc);
 
-  /* Keep track of intro mark separately: */
+  /* Keep track of intro scope separately: */
   for_intro = scheme_stx_introduce_to_module_context(plain, mc);
   vec = scheme_make_vector(2, NULL);
   SCHEME_VEC_ELS(vec)[0] = o;
@@ -4590,12 +4590,12 @@ Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, Scheme_Object *or
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
 {
   Scheme_Stx *stx = (Scheme_Stx *)_stx;
-  Scheme_Object *vec, *shifts, *a, *body_marks, *phase = scheme_make_integer(0);
-  Scheme_Object *intro_multi_mark = NULL;
+  Scheme_Object *vec, *shifts, *a, *body_scopes, *phase = scheme_make_integer(0);
+  Scheme_Object *intro_multi_scope = NULL;
 
   if (SCHEME_VECTORP(stx->val) && (SCHEME_VEC_SIZE(stx->val) >= 2)) {
     (void)scheme_stx_content((Scheme_Object *)stx); /* propagate */
-    intro_multi_mark = SCHEME_VEC_ELS(stx->val)[1];
+    intro_multi_scope = SCHEME_VEC_ELS(stx->val)[1];
     stx = (Scheme_Stx *)SCHEME_VEC_ELS(stx->val)[0];
   }
 
@@ -4605,45 +4605,45 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
 
   phase = scheme_make_integer(0);
 
-  body_marks = scheme_null;
-  a = stx->marks->multi_marks;
+  body_scopes = scheme_null;
+  a = stx->scopes->multi_scopes;
   if (SCHEME_FALLBACKP(a))
     a = SCHEME_FALLBACK_FIRST(a);
   for (; !SCHEME_NULLP(a); a = SCHEME_CDR(a)) {
     if (SAME_OBJ(phase, SCHEME_CDR(SCHEME_CAR(a))))
-      body_marks = scheme_make_pair(SCHEME_CAR(SCHEME_CAR(a)), body_marks);
+      body_scopes = scheme_make_pair(SCHEME_CAR(SCHEME_CAR(a)), body_scopes);
     else
-      body_marks = scheme_make_pair(SCHEME_CAR(a), body_marks);
+      body_scopes = scheme_make_pair(SCHEME_CAR(a), body_scopes);
   }
   {
     Scheme_Object *key, *val;
     intptr_t i;
     i = -1;
-    while ((i = mark_set_next(stx->marks->single_marks, i)) != -1) {
-      mark_set_index(stx->marks->single_marks, i, &key, &val);
-      body_marks = scheme_make_pair(key, body_marks);
+    while ((i = scope_set_next(stx->scopes->simple_scopes, i)) != -1) {
+      scope_set_index(stx->scopes->simple_scopes, i, &key, &val);
+      body_scopes = scheme_make_pair(key, body_scopes);
     }
   }
 
-  if (intro_multi_mark) {
-    stx = (Scheme_Stx *)intro_multi_mark;
-    if (!SCHEME_FALLBACKP(stx->marks->multi_marks)
-        && SCHEME_PAIRP(stx->marks->multi_marks)) {
-      intro_multi_mark = SCHEME_CAR(SCHEME_CAR(stx->marks->multi_marks));
+  if (intro_multi_scope) {
+    stx = (Scheme_Stx *)intro_multi_scope;
+    if (!SCHEME_FALLBACKP(stx->scopes->multi_scopes)
+        && SCHEME_PAIRP(stx->scopes->multi_scopes)) {
+      intro_multi_scope = SCHEME_CAR(SCHEME_CAR(stx->scopes->multi_scopes));
     }
   }
-  if (!intro_multi_mark) {
+  if (!intro_multi_scope) {
     /* This won't happen for a well-formed representation */
-    intro_multi_mark = new_multi_mark(scheme_false);
+    intro_multi_scope = new_multi_scope(scheme_false);
   }
   
   vec = scheme_make_vector(6, NULL);
-  SCHEME_VEC_ELS(vec)[0] = body_marks;
+  SCHEME_VEC_ELS(vec)[0] = body_scopes;
   SCHEME_VEC_ELS(vec)[1] = phase;
   SCHEME_VEC_ELS(vec)[2] = scheme_false; /* not sure this is right */
   SCHEME_VEC_ELS(vec)[3] = shifts;
-  SCHEME_VEC_ELS(vec)[4] = intro_multi_mark;
-  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_mark_set;
+  SCHEME_VEC_ELS(vec)[4] = intro_multi_scope;
+  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_scope_set;
 
   return vec;
 }
@@ -4666,8 +4666,8 @@ int scheme_stx_equal_module_context(Scheme_Object *other_stx, Scheme_Object *mc_
 
   phase = scheme_make_integer(0);
 
-  return marks_equal(extract_mark_set((Scheme_Stx *)other_stx, phase),
-                     extract_mark_set(stx, phase));
+  return scopes_equal(extract_scope_set((Scheme_Stx *)other_stx, phase),
+                     extract_scope_set(stx, phase));
 }
 
 /***********************************************************************/
@@ -4740,8 +4740,8 @@ int scheme_stx_could_bind(Scheme_Object *bind_id, Scheme_Object *ref_id, Scheme_
   if (!SAME_OBJ(ref->val, bind->val))
     return 0;
 
-  return mark_subset(extract_mark_set(bind, phase),
-                     extract_mark_set(ref, phase));
+  return scope_subset(extract_scope_set(bind, phase),
+                     extract_scope_set(ref, phase));
 }
 
 int scheme_stx_module_eq3(Scheme_Object *a, Scheme_Object *b, 
@@ -4838,7 +4838,7 @@ int scheme_stx_env_bound_eq2(Scheme_Object *_a, Scheme_Object *_b,
   if (!SAME_OBJ(a->val, b->val))
     return 0;
 
-  return marks_equal(extract_mark_set(a, a_phase), extract_mark_set(b, b_phase));
+  return scopes_equal(extract_scope_set(a, a_phase), extract_scope_set(b, b_phase));
 }
 
 int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase)
@@ -5062,65 +5062,65 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist)
 /*                            wraps->datum                                */
 /*========================================================================*/
 
-static void add_reachable_marks(Scheme_Mark_Set *marks, Scheme_Marshal_Tables *mt)
+static void add_reachable_scopes(Scheme_Scope_Set *scopes, Scheme_Marshal_Tables *mt)
 {
   intptr_t i;
   Scheme_Object *key, *val;
 
   i = -1;
-  while ((i = mark_set_next(marks, i)) != -1) {
-    mark_set_index(marks, i, &key, &val);
-    if (!scheme_eq_hash_get(mt->reachable_marks, key)) {
-      scheme_hash_set(mt->reachable_marks, key, scheme_true);
-      val = scheme_make_pair(key, mt->reachable_mark_stack);
-      mt->reachable_mark_stack = val;
+  while ((i = scope_set_next(scopes, i)) != -1) {
+    scope_set_index(scopes, i, &key, &val);
+    if (!scheme_eq_hash_get(mt->reachable_scopes, key)) {
+      scheme_hash_set(mt->reachable_scopes, key, scheme_true);
+      val = scheme_make_pair(key, mt->reachable_scope_stack);
+      mt->reachable_scope_stack = val;
     }
   }
 }
 
-static void add_reachable_multi_marks(Scheme_Object *multi_marks, Scheme_Marshal_Tables *mt)
+static void add_reachable_multi_scopes(Scheme_Object *multi_scopes, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Table *ht;
-  Scheme_Object *mark, *l;
+  Scheme_Object *scope, *l;
   int j;
 
   while (1) {
-    l = multi_marks;
+    l = multi_scopes;
     if (SCHEME_FALLBACKP(l))
       l = SCHEME_FALLBACK_FIRST(l);
     
     for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
       ht = (Scheme_Hash_Table *)SCHEME_CAR(SCHEME_CAR(l));
       for (j = ht->size; j--; ) {
-        mark = ht->vals[j];
-        if (mark) {
+        scope = ht->vals[j];
+        if (scope) {
           if (!SCHEME_VOIDP(ht->keys[j])) {
-            if (!scheme_eq_hash_get(mt->reachable_marks, mark)) {
-              scheme_hash_set(mt->reachable_marks, mark, scheme_true);
-              mark = scheme_make_pair(mark, mt->reachable_mark_stack);
-              mt->reachable_mark_stack = mark;
+            if (!scheme_eq_hash_get(mt->reachable_scopes, scope)) {
+              scheme_hash_set(mt->reachable_scopes, scope, scheme_true);
+              scope = scheme_make_pair(scope, mt->reachable_scope_stack);
+              mt->reachable_scope_stack = scope;
             }
           }
         }
       }
     }
     
-    if (SCHEME_FALLBACKP(multi_marks))
-      multi_marks = SCHEME_FALLBACK_REST(multi_marks);
+    if (SCHEME_FALLBACKP(multi_scopes))
+      multi_scopes = SCHEME_FALLBACK_REST(multi_scopes);
     else
       break;
   }
 }
 
-static Scheme_Object *any_unreachable_mark(Scheme_Mark_Set *marks, Scheme_Marshal_Tables *mt)
+static Scheme_Object *any_unreachable_scope(Scheme_Scope_Set *scopes, Scheme_Marshal_Tables *mt)
 {
   intptr_t i;
   Scheme_Object *key, *val;
 
   i = -1;
-  while ((i = mark_set_next(marks, i)) != -1) {
-    mark_set_index(marks, i, &key, &val);
-    if (!scheme_eq_hash_get(mt->reachable_marks, key))
+  while ((i = scope_set_next(scopes, i)) != -1) {
+    scope_set_index(scopes, i, &key, &val);
+    if (!scheme_eq_hash_get(mt->reachable_scopes, key))
       return key;
   }
 
@@ -5128,52 +5128,52 @@ static Scheme_Object *any_unreachable_mark(Scheme_Mark_Set *marks, Scheme_Marsha
 }
 
 static void possiblly_reachable_free_id(Scheme_Object *val,
-                                        Scheme_Mark_Set *marks,
+                                        Scheme_Scope_Set *scopes,
                                         Scheme_Marshal_Tables *mt)
 {
   Scheme_Stx *free_id = (Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val));
-  Scheme_Object *unreachable_mark, *l;
+  Scheme_Object *unreachable_scope, *l;
   Scheme_Hash_Table *ht;
 
-  unreachable_mark = any_unreachable_mark(marks, mt);
+  unreachable_scope = any_unreachable_scope(scopes, mt);
 
-  if (!unreachable_mark) {
-    /* causes the free-id mapping's marks to be reachable: */
+  if (!unreachable_scope) {
+    /* causes the free-id mapping's scopes to be reachable: */
     (void)wraps_to_datum(free_id, mt);
   } else {
-    /* the mapping will become reachable only if `unreachable_mark` becomes reachable */
+    /* the mapping will become reachable only if `unreachable_scope` becomes reachable */
     if (!mt->pending_reachable_ids) {
       ht = scheme_make_hash_table(SCHEME_hash_ptr);
       mt->pending_reachable_ids = ht;
     }
-    l = scheme_eq_hash_get(mt->pending_reachable_ids, unreachable_mark);
+    l = scheme_eq_hash_get(mt->pending_reachable_ids, unreachable_scope);
     if (!l) l = scheme_null;
-    scheme_hash_set(mt->pending_reachable_ids, unreachable_mark,
+    scheme_hash_set(mt->pending_reachable_ids, unreachable_scope,
                     scheme_make_pair(scheme_make_pair((Scheme_Object *)free_id,
-                                                      (Scheme_Object *)marks),
+                                                      (Scheme_Object *)scopes),
                                      l));
   }
 }
 
-void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
+void scheme_iterate_reachable_scopes(Scheme_Marshal_Tables *mt)
 {
-  Scheme_Mark *mark;
+  Scheme_Scope *scope;
   Scheme_Object *l, *val, *key;
   Scheme_Hash_Tree *ht;
   int j;
   
-  /* For each mark, recur on `free-identifier=?` mappings */
-  while (!SCHEME_NULLP(mt->reachable_mark_stack)) {
-    mark = (Scheme_Mark *)SCHEME_CAR(mt->reachable_mark_stack);
-    mt->reachable_mark_stack = SCHEME_CDR(mt->reachable_mark_stack);
+  /* For each scope, recur on `free-identifier=?` mappings */
+  while (!SCHEME_NULLP(mt->reachable_scope_stack)) {
+    scope = (Scheme_Scope *)SCHEME_CAR(mt->reachable_scope_stack);
+    mt->reachable_scope_stack = SCHEME_CDR(mt->reachable_scope_stack);
 
-    if (mark->bindings) {
-      val = mark->bindings;
+    if (scope->bindings) {
+      val = scope->bindings;
       if (SCHEME_VECTORP(val)) {
         l = SCHEME_VEC_BINDING_VAL(val);
         if (SCHEME_MPAIRP(l)) {
           /* It's a free-id mapping: */
-          possiblly_reachable_free_id(l, SCHEME_VEC_BINDING_MARKS(val), mt);
+          possiblly_reachable_free_id(l, SCHEME_VEC_BINDING_SCOPES(val), mt);
         }
       } else {
         if (SCHEME_RPAIRP(val))
@@ -5190,7 +5190,7 @@ void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
             val = SCHEME_BINDING_VAL(l);
             if (SCHEME_MPAIRP(val)) {
               /* It's a free-id mapping: */
-              possiblly_reachable_free_id(val, SCHEME_BINDING_MARKS(l), mt);
+              possiblly_reachable_free_id(val, SCHEME_BINDING_SCOPES(l), mt);
             }
           } else {
             STX_ASSERT(SCHEME_MPAIRP(l));
@@ -5198,7 +5198,7 @@ void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
               val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
               if (SCHEME_MPAIRP(val)) {
                 /* It's a free-id mapping: */
-                possiblly_reachable_free_id(val, SCHEME_BINDING_MARKS(SCHEME_CAR(l)), mt);
+                possiblly_reachable_free_id(val, SCHEME_BINDING_SCOPES(SCHEME_CAR(l)), mt);
               }
             }
           }
@@ -5206,14 +5206,14 @@ void scheme_iterate_reachable_marks(Scheme_Marshal_Tables *mt)
       }
     }
 
-    /* Check for any free-id mappings whose reachbility depended on `mark`: */
+    /* Check for any free-id mappings whose reachbility depended on `scope`: */
     if (mt->pending_reachable_ids) {
-      l = scheme_eq_hash_get(mt->pending_reachable_ids, (Scheme_Object *)mark);
+      l = scheme_eq_hash_get(mt->pending_reachable_ids, (Scheme_Object *)scope);
       if (l) {
-        scheme_hash_set(mt->pending_reachable_ids, (Scheme_Object *)mark, NULL);
+        scheme_hash_set(mt->pending_reachable_ids, (Scheme_Object *)scope, NULL);
         while (!SCHEME_NULLP(l)) {
           val = SCHEME_CAR(l);
-          possiblly_reachable_free_id(SCHEME_CAR(val), (Scheme_Mark_Set *)SCHEME_CDR(val), mt);
+          possiblly_reachable_free_id(SCHEME_CAR(val), (Scheme_Scope_Set *)SCHEME_CDR(val), mt);
           l = SCHEME_CDR(l);
         }
       }
@@ -5298,32 +5298,32 @@ END_XFORM_SKIP;
 
 typedef int (*compar_t)(const void *, const void *);
 
-static int compare_marks(const void *a, const void *b)
+static int compare_scopes(const void *a, const void *b)
 {
   if (*(void **)a == *(void **)b)
     return 0;
-  else if ((*(Scheme_Mark **)a)->id > (*(Scheme_Mark **)b)->id)
+  else if ((*(Scheme_Scope **)a)->id > (*(Scheme_Scope **)b)->id)
     return -1;
   else
     return 1;
 }
 
-static Scheme_Object *marks_to_sorted_list(Scheme_Mark_Set *marks)
+static Scheme_Object *scopes_to_sorted_list(Scheme_Scope_Set *scopes)
 {
   Scheme_Object **a, *r, *key, *val;
   intptr_t i, j = 0;
 
-  i = mark_set_count(marks);
+  i = scope_set_count(scopes);
   a = MALLOC_N(Scheme_Object *, i);
 
-  i = mark_set_next(marks, -1);
+  i = scope_set_next(scopes, -1);
   while (i != -1) {
-    mark_set_index(marks, i, &key, &val);
+    scope_set_index(scopes, i, &key, &val);
     a[j++] = key;
-    i = mark_set_next(marks, i);
+    i = scope_set_next(scopes, i);
   }
   
-  my_qsort(a, j, sizeof(Scheme_Object *), compare_marks);
+  my_qsort(a, j, sizeof(Scheme_Object *), compare_scopes);
 
   r = scheme_null;
   for (i = j; i--; ) {
@@ -5400,46 +5400,46 @@ static void init_identity_map(Scheme_Marshal_Tables *mt)
   mt->identity_map = id_map;
 }
 
-static Scheme_Object *multi_mark_to_vector(Scheme_Object *multi_mark, Scheme_Marshal_Tables *mt)
+static Scheme_Object *multi_scope_to_vector(Scheme_Object *multi_scope, Scheme_Marshal_Tables *mt)
 {
   Scheme_Object *vec;
-  Scheme_Hash_Table *marks = (Scheme_Hash_Table *)multi_mark;
+  Scheme_Hash_Table *scopes = (Scheme_Hash_Table *)multi_scope;
   intptr_t i, j;
 
   if (!mt->identity_map)
     init_identity_map(mt);
 
-  vec = scheme_hash_get(mt->identity_map, multi_mark);
+  vec = scheme_hash_get(mt->identity_map, multi_scope);
   if (vec)
     return vec;
 
-  vec = scheme_make_vector((2 * marks->count) - 1, scheme_void);
+  vec = scheme_make_vector((2 * scopes->count) - 1, scheme_void);
   j = 0;
-  for (i = marks->size; i--; ) {
-    if (marks->vals[i]) {
-      if (!SCHEME_VOIDP(marks->keys[i])) {
-        SCHEME_VEC_ELS(vec)[j++] = marks->keys[i]; /* a phase */
-        SCHEME_VEC_ELS(vec)[j++] = marks->vals[i]; /* a mark */
+  for (i = scopes->size; i--; ) {
+    if (scopes->vals[i]) {
+      if (!SCHEME_VOIDP(scopes->keys[i])) {
+        SCHEME_VEC_ELS(vec)[j++] = scopes->keys[i]; /* a phase */
+        SCHEME_VEC_ELS(vec)[j++] = scopes->vals[i]; /* a scope */
       } else {
-        SCHEME_VEC_ELS(vec)[SCHEME_VEC_SIZE(vec)-1] = marks->vals[i]; /* debug name */
+        SCHEME_VEC_ELS(vec)[SCHEME_VEC_SIZE(vec)-1] = scopes->vals[i]; /* debug name */
       }
     }
   }
 
   vec = scheme_make_marshal_shared(vec);
 
-  scheme_hash_set(mt->identity_map, multi_mark, vec);
+  scheme_hash_set(mt->identity_map, multi_scope, vec);
 
   return vec;
 }
 
-static Scheme_Object *marshal_multi_marks(Scheme_Object *multi_marks, Scheme_Marshal_Tables *mt, Scheme_Hash_Table *ht)
+static Scheme_Object *marshal_multi_scopes(Scheme_Object *multi_scopes, Scheme_Marshal_Tables *mt, Scheme_Hash_Table *ht)
 {
   Scheme_Object *l, *p, *first, *last;
   Scheme_Object *fb_first = scheme_null, *fb_last = NULL;
 
   while (1) {
-    l = multi_marks;
+    l = multi_scopes;
     if (SCHEME_FALLBACKP(l))
       l = SCHEME_FALLBACK_FIRST(l);
 
@@ -5447,7 +5447,7 @@ static Scheme_Object *marshal_multi_marks(Scheme_Object *multi_marks, Scheme_Mar
     last = NULL;
     
     while (!SCHEME_NULLP(l)) {
-      p = scheme_make_pair(scheme_make_pair(multi_mark_to_vector(SCHEME_CAR(SCHEME_CAR(l)), mt),
+      p = scheme_make_pair(scheme_make_pair(multi_scope_to_vector(SCHEME_CAR(SCHEME_CAR(l)), mt),
                                             SCHEME_CDR(SCHEME_CAR(l))),
                            scheme_null);
       if (last)
@@ -5460,7 +5460,7 @@ static Scheme_Object *marshal_multi_marks(Scheme_Object *multi_marks, Scheme_Mar
 
     first = intern_tails(first, ht);
 
-    if (SCHEME_FALLBACKP(multi_marks))
+    if (SCHEME_FALLBACKP(multi_scopes))
       first = make_fallback_pair(first, scheme_false);
     
     if (fb_last)
@@ -5469,8 +5469,8 @@ static Scheme_Object *marshal_multi_marks(Scheme_Object *multi_marks, Scheme_Mar
       fb_first = first;
     fb_last = first;
 
-    if (SCHEME_FALLBACKP(multi_marks))
-      multi_marks = SCHEME_FALLBACK_REST(multi_marks);
+    if (SCHEME_FALLBACKP(multi_scopes))
+      multi_scopes = SCHEME_FALLBACK_REST(multi_scopes);
     else
       break;
   }
@@ -5484,12 +5484,12 @@ static Scheme_Object *marshal_multi_marks(Scheme_Object *multi_marks, Scheme_Mar
 static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Table *ht;
-  Scheme_Object *shifts, *singles, *multi, *v, *vec;
+  Scheme_Object *shifts, *simples, *multi, *v, *vec;
 
   if (mt->pass < 0) {
-    /* This is the pass to discover reachable marks. */
-    add_reachable_marks(stx->marks->single_marks, mt);
-    add_reachable_multi_marks(stx->marks->multi_marks, mt);
+    /* This is the pass to discover reachable scopes. */
+    add_reachable_scopes(stx->scopes->simple_scopes, mt);
+    add_reachable_multi_scopes(stx->scopes->multi_scopes, mt);
     return scheme_void;
   }
 
@@ -5502,12 +5502,12 @@ static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
   }
 
   shifts = intern_tails(drop_export_registries(stx->shifts), ht);
-  singles = intern_tails(marks_to_sorted_list(stx->marks->single_marks), ht);
-  multi = marshal_multi_marks(stx->marks->multi_marks, mt, ht);
+  simples = intern_tails(scopes_to_sorted_list(stx->scopes->simple_scopes), ht);
+  multi = marshal_multi_scopes(stx->scopes->multi_scopes, mt, ht);
 
   vec = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(vec)[0] = shifts;
-  SCHEME_VEC_ELS(vec)[1] = singles;
+  SCHEME_VEC_ELS(vec)[1] = simples;
   SCHEME_VEC_ELS(vec)[2] = multi;
 
   v = scheme_hash_get(ht, vec);
@@ -5530,34 +5530,34 @@ static Scheme_Object *marshal_free_id_info(Scheme_Object *id_plus_phase, Scheme_
 static Scheme_Object *marshal_bindings(Scheme_Object *l, Scheme_Marshal_Tables *mt)
 /* l is a pair for one binding, or an mlist of bindings */
 {
-  Scheme_Object *r, *marks, *v;
+  Scheme_Object *r, *scopes, *v;
 
   r = scheme_null;
 
   while (!SCHEME_NULLP(l)) {
     if (SCHEME_PAIRP(l))
-      marks = (Scheme_Object *)SCHEME_BINDING_MARKS(l);
+      scopes = (Scheme_Object *)SCHEME_BINDING_SCOPES(l);
     else {
       STX_ASSERT(SCHEME_MPAIRP(l));
-      marks = (Scheme_Object *)SCHEME_BINDING_MARKS(SCHEME_CAR(l));
+      scopes = (Scheme_Object *)SCHEME_BINDING_SCOPES(SCHEME_CAR(l));
     }
 
-    if (!any_unreachable_mark((Scheme_Mark_Set *)marks, mt)) {
+    if (!any_unreachable_scope((Scheme_Scope_Set *)scopes, mt)) {
       if (SCHEME_PAIRP(l))
         v = SCHEME_BINDING_VAL(l);
       else
         v = SCHEME_BINDING_VAL(SCHEME_CAR(l));
       if (SCHEME_MPAIRP(v)) {
-        /* has a `free-id=?` equivalence; the marshaled form of a mark's content
+        /* has a `free-id=?` equivalence; the marshaled form of a scope's content
            cannot contain a syntax object, so we keep just the syntax object's symbol
-           and marks */
+           and scopes */
         v = scheme_make_pair(SCHEME_CAR(v), marshal_free_id_info(SCHEME_CDR(v), mt));
         v = scheme_box(v); /* a box indicates `free-id=?` info */
       }
       v = intern_one(v, mt->intern_map);
-      marks = intern_tails(marks_to_sorted_list((Scheme_Mark_Set *)marks),
+      scopes = intern_tails(scopes_to_sorted_list((Scheme_Scope_Set *)scopes),
                            mt->intern_map);
-      r = scheme_make_pair(intern_one(scheme_make_pair(marks, v), mt->intern_map), r);
+      r = scheme_make_pair(intern_one(scheme_make_pair(scopes, v), mt->intern_map), r);
     }
 
     if (SCHEME_MPAIRP(l))
@@ -5572,10 +5572,10 @@ static Scheme_Object *marshal_bindings(Scheme_Object *l, Scheme_Marshal_Tables *
   return r;
 }
 
-Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tables *mt)
+Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Tree *ht;
-  Scheme_Object *v, *l, *r, *l2, *tab, *marks, *key, *val;
+  Scheme_Object *v, *l, *r, *l2, *tab, *scopes, *key, *val;
   intptr_t i, j;
 
   if (!mt->identity_map)
@@ -5585,7 +5585,7 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
   if (v)
     return v;
 
-  v = ((Scheme_Mark *)m)->bindings;
+  v = ((Scheme_Scope *)m)->bindings;
   if (v) {
     int count;
 
@@ -5611,7 +5611,7 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
     j = 0;
     if (!ht) {
       STX_ASSERT(SCHEME_VECTORP(v));
-      r = marshal_bindings(scheme_make_pair((Scheme_Object *)SCHEME_VEC_BINDING_MARKS(v),
+      r = marshal_bindings(scheme_make_pair((Scheme_Object *)SCHEME_VEC_BINDING_SCOPES(v),
                                             SCHEME_VEC_BINDING_VAL(v)),
                            mt);
       if (SCHEME_NULLP(r)) {
@@ -5643,7 +5643,7 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
     } else
       r = tab;
 
-    /* convert marks+pes to mark + unmarshal request */
+    /* convert scopes+pes to scope + unmarshal request */
     for (l = l2; l; l = SCHEME_CDR(l)) {
       STX_ASSERT(SCHEME_RPAIRP(l));
       v = SCHEME_CDR(SCHEME_CAR(l));
@@ -5667,15 +5667,15 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
         STX_ASSERT(0);
       }
       if (v) {
-        marks = intern_tails(marks_to_sorted_list((Scheme_Mark_Set *)SCHEME_CAR(SCHEME_CAR(l))),
+        scopes = intern_tails(scopes_to_sorted_list((Scheme_Scope_Set *)SCHEME_CAR(SCHEME_CAR(l))),
                              mt->intern_map);
-        r = scheme_make_pair(scheme_make_pair(marks, v), r);
+        r = scheme_make_pair(scheme_make_pair(scopes, v), r);
       }
     }
 
-    v = scheme_make_pair(scheme_make_integer(SCHEME_MARK_KIND(m)), r);
+    v = scheme_make_pair(scheme_make_integer(SCHEME_SCOPE_KIND(m)), r);
   } else
-    v = scheme_make_integer(SCHEME_MARK_KIND(m));
+    v = scheme_make_integer(SCHEME_SCOPE_KIND(m));
 
   scheme_hash_set(mt->identity_map, m, v);
 
@@ -5702,7 +5702,7 @@ Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, Scheme_Marshal_Tabl
                                  ; where <s-exp> is not a pair, vector, or box
 */
 
-static Scheme_Object *extract_for_common_wrap(Scheme_Object *a, int get_mark, int pair_ok)
+static Scheme_Object *extract_for_common_wrap(Scheme_Object *a, int get_scope, int pair_ok)
 {
   /* We only share wraps for things constucted with pairs and
      atomic (w.r.t. syntax) values. */
@@ -5714,14 +5714,14 @@ static Scheme_Object *extract_for_common_wrap(Scheme_Object *a, int get_mark, in
     if (SCHEME_PAIRP(v)) {
       if (pair_ok && SAME_OBJ(SCHEME_CAR(v), scheme_true)) {
         /* A pair with shared wraps for its elements */
-        if (get_mark)
+        if (get_scope)
           return SCHEME_CDR(a);
         else
           return SCHEME_CDR(v);
       }
     } else if (!SCHEME_NULLP(v) && !SCHEME_BOXP(v) && !SCHEME_VECTORP(v) && !SCHEME_HASHTRP(v) && !prefab_p(v)) {
       /* It's atomic. */
-      if (get_mark)
+      if (get_scope)
         return SCHEME_CDR(a);
       else
         return v;
@@ -5751,7 +5751,7 @@ static void lift_common_wraps(Scheme_Object *l, Scheme_Object *common_wraps, int
 
 #ifdef DO_STACK_CHECK
 static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o, 
-					    int with_marks,
+					    int with_scopes,
 					    Scheme_Marshal_Tables *mt);
 
 static Scheme_Object *syntax_to_datum_k(void)
@@ -5768,7 +5768,7 @@ static Scheme_Object *syntax_to_datum_k(void)
 #endif
 
 static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o, 
-					    int with_marks, /* abs > 1 => marshal; negative => implicitly tainted */
+					    int with_scopes, /* abs > 1 => marshal; negative => implicitly tainted */
 					    Scheme_Marshal_Tables *mt)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
@@ -5781,7 +5781,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
     {
       Scheme_Thread *p = scheme_current_thread;
       p->ku.k.p1 = (void *)o;
-      p->ku.k.i1 = with_marks;
+      p->ku.k.i1 = with_scopes;
       p->ku.k.p3 = (void *)mt;
       return scheme_handle_stack_overflow(syntax_to_datum_k);
     }
@@ -5789,13 +5789,13 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 #endif
   SCHEME_USE_FUEL(1);
 
-  if (with_marks) {
+  if (with_scopes) {
     /* Propagate wraps: */
     scheme_stx_content((Scheme_Object *)stx);
-    if (with_marks > 0) {
+    if (with_scopes > 0) {
       if (is_tainted((Scheme_Object *)stx)) {
         add_taint = 1;
-        with_marks = -with_marks;
+        with_scopes = -with_scopes;
       } else if (is_armed((Scheme_Object *)stx)) {
         add_taint = 2;
       }
@@ -5813,7 +5813,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 
       cnt++;
 
-      a = syntax_to_datum_inner(SCHEME_CAR(v), with_marks, mt);
+      a = syntax_to_datum_inner(SCHEME_CAR(v), with_scopes, mt);
 
       p = CONS(a, scheme_null);
       
@@ -5824,7 +5824,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       last = p;
       v = SCHEME_CDR(v);
 
-      if (with_marks) {
+      if (with_scopes) {
         a = extract_for_common_wrap(a, 1, 1);
         if (!common_wraps) {
           if (a)
@@ -5836,10 +5836,10 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       }
     }
     if (!SCHEME_NULLP(v)) {
-      v = syntax_to_datum_inner(v, with_marks, mt);
+      v = syntax_to_datum_inner(v, with_scopes, mt);
       SCHEME_CDR(last) = v;
 
-      if (with_marks) {
+      if (with_scopes) {
         v = extract_for_common_wrap(v, 1, 0);
         if (v && SAME_OBJ(common_wraps, v)) {
           converted_wraps = wraps_to_datum(stx, mt);
@@ -5851,7 +5851,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
           common_wraps = scheme_false;
       }
 
-      if (((with_marks > 1) || (with_marks < -1)) && SCHEME_FALSEP(common_wraps)) {
+      if (((with_scopes > 1) || (with_scopes < -1)) && SCHEME_FALSEP(common_wraps)) {
 	/* v is likely a pair, and v's car might be a pair,
 	   which means that the datum->syntax part
 	   won't be able to detect that v is a "non-pair"
@@ -5859,7 +5859,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 	   length before the terminal to datum->syntax: */
 	first = scheme_make_pair(scheme_make_integer(cnt), first);
       }
-    } else if (with_marks && SCHEME_TRUEP(common_wraps)) {
+    } else if (with_scopes && SCHEME_TRUEP(common_wraps)) {
       converted_wraps = wraps_to_datum(stx, mt);
       if (SAME_OBJ(common_wraps, converted_wraps))
         lift_common_wraps(first, common_wraps, cnt, 0);
@@ -5867,13 +5867,13 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
         common_wraps = scheme_false;
     }
 
-    if (with_marks && SCHEME_TRUEP(common_wraps)) {
+    if (with_scopes && SCHEME_TRUEP(common_wraps)) {
       first = scheme_make_pair(scheme_true, first);
     }
 
     result = first;
   } else if (SCHEME_BOXP(v)) {
-    v = syntax_to_datum_inner(SCHEME_BOX_VAL(v), with_marks, mt);
+    v = syntax_to_datum_inner(SCHEME_BOX_VAL(v), with_scopes, mt);
     result = scheme_box(v);
     SCHEME_SET_IMMUTABLE(result);
   } else if (SCHEME_VECTORP(v)) {
@@ -5883,7 +5883,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
     r = scheme_make_vector(size, NULL);
     
     for (i = 0; i < size; i++) {
-      a = syntax_to_datum_inner(SCHEME_VEC_ELS(v)[i], with_marks, mt);
+      a = syntax_to_datum_inner(SCHEME_VEC_ELS(v)[i], with_scopes, mt);
       SCHEME_VEC_ELS(r)[i] = a;
     }
 
@@ -5899,7 +5899,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
     i = scheme_hash_tree_next(ht, -1);
     while (i != -1) {
       scheme_hash_tree_index(ht, i, &key, &val);
-      val = syntax_to_datum_inner(val, with_marks, mt);
+      val = syntax_to_datum_inner(val, with_scopes, mt);
       ht2 = scheme_hash_tree_set(ht2, key, val);
       i = scheme_hash_tree_next(ht, i);
     }
@@ -5912,7 +5912,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
     
     s = (Scheme_Structure *)scheme_clone_prefab_struct_instance(s);
     for (i = 0; i < size; i++) {
-      a = syntax_to_datum_inner(s->slots[i], with_marks, mt);
+      a = syntax_to_datum_inner(s->slots[i], with_scopes, mt);
       s->slots[i] = a;
     }
 
@@ -5920,7 +5920,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
   } else
     result = v;
 
-  if ((with_marks > 1) || (with_marks < -1)) {
+  if ((with_scopes > 1) || (with_scopes < -1)) {
     if (!converted_wraps)
       converted_wraps = wraps_to_datum(stx, mt);
     result = CONS(result, converted_wraps);
@@ -5935,7 +5935,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
   return result;
 }
 
-Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
+Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_scopes,
 				      Scheme_Marshal_Tables *mt)
 {
   Scheme_Object *v;
@@ -5943,7 +5943,7 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
   if (mt && (mt->pass >= 0))
     scheme_marshal_push_refs(mt);
 
-  v = syntax_to_datum_inner(stx, with_marks, mt);
+  v = syntax_to_datum_inner(stx, with_scopes, mt);
 
   if (mt && (mt->pass >= 0)) {
     /* A symbol+wrap combination is likely to be used multiple
@@ -5981,85 +5981,85 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
 
 #define return_NULL return NULL
 
-Scheme_Mark_Set *list_to_mark_set(Scheme_Object *l, Scheme_Unmarshal_Tables *ut)
+Scheme_Scope_Set *list_to_scope_set(Scheme_Object *l, Scheme_Unmarshal_Tables *ut)
 {
-  Scheme_Mark_Set *marks = NULL;
-  Scheme_Object *r = scheme_null, *mark;
+  Scheme_Scope_Set *scopes = NULL;
+  Scheme_Object *r = scheme_null, *scope;
 
   while (!SCHEME_NULLP(l)) {
     if (!SCHEME_PAIRP(l)) return_NULL;
-    marks = (Scheme_Mark_Set *)scheme_hash_get(ut->rns, l);
-    if (marks)
+    scopes = (Scheme_Scope_Set *)scheme_hash_get(ut->rns, l);
+    if (scopes)
       break;
     r = scheme_make_pair(l, r);
     l = SCHEME_CDR(l);
   }
 
-  if (!marks) marks = empty_mark_set;
+  if (!scopes) scopes = empty_scope_set;
 
   while (!SCHEME_NULLP(r)) {
     l = SCHEME_CAR(r);
 
-    mark = mark_unmarshal_content(SCHEME_CAR(l), ut);
-    if (!mark) return_NULL;
+    scope = scope_unmarshal_content(SCHEME_CAR(l), ut);
+    if (!scope) return_NULL;
 
-    marks = mark_set_set(marks, mark, scheme_true);
-    scheme_hash_set(ut->rns, l, (Scheme_Object *)marks);
+    scopes = scope_set_set(scopes, scope, scheme_true);
+    scheme_hash_set(ut->rns, l, (Scheme_Object *)scopes);
     
     r = SCHEME_CDR(r);
   }
 
-  return marks;
+  return scopes;
 }
 
-static Scheme_Hash_Table *vector_to_multi_mark(Scheme_Object *mht, Scheme_Unmarshal_Tables *ut)
+static Scheme_Hash_Table *vector_to_multi_scope(Scheme_Object *mht, Scheme_Unmarshal_Tables *ut)
 {
-  /* Convert multi-mark vector to hash table */
+  /* Convert multi-scope vector to hash table */
   intptr_t i, len;
-  Scheme_Hash_Table *multi_mark;
-  Scheme_Object *mark;
+  Scheme_Hash_Table *multi_scope;
+  Scheme_Object *scope;
 
   if (!SCHEME_VECTORP(mht)) return_NULL;
 
-  multi_mark = (Scheme_Hash_Table *)scheme_hash_get(ut->rns, mht);
-  if (multi_mark) return multi_mark;
+  multi_scope = (Scheme_Hash_Table *)scheme_hash_get(ut->rns, mht);
+  if (multi_scope) return multi_scope;
 
-  multi_mark = scheme_make_hash_table(SCHEME_hash_ptr);
+  multi_scope = scheme_make_hash_table(SCHEME_hash_ptr);
 
   len = SCHEME_VEC_SIZE(mht);
   if (!(len & 1)) return_NULL;
   
-  multi_mark = (Scheme_Hash_Table *)new_multi_mark(SCHEME_VEC_ELS(mht)[len-1]);
+  multi_scope = (Scheme_Hash_Table *)new_multi_scope(SCHEME_VEC_ELS(mht)[len-1]);
   len -= 1;
 
-  /* A multi-mark might refer back to itself via free-id=? info: */
-  scheme_hash_set(ut->rns, mht, (Scheme_Object *)multi_mark);
+  /* A multi-scope might refer back to itself via free-id=? info: */
+  scheme_hash_set(ut->rns, mht, (Scheme_Object *)multi_scope);
 
   for (i = 0; i < len; i += 2) {
     if (!SCHEME_PHASEP(SCHEME_VEC_ELS(mht)[i]))
       return_NULL;
-    mark = SCHEME_VEC_ELS(mht)[i+1];
-    mark = mark_unmarshal_content(mark, ut);
-    if (!mark) return_NULL;
-    if (!SCHEME_MARK_HAS_OWNER((Scheme_Mark *)mark))
+    scope = SCHEME_VEC_ELS(mht)[i+1];
+    scope = scope_unmarshal_content(scope, ut);
+    if (!scope) return_NULL;
+    if (!SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)scope))
       return_NULL;
-    if (((Scheme_Mark_With_Owner *)mark)->owner_multi_mark)
+    if (((Scheme_Scope_With_Owner *)scope)->owner_multi_scope)
       return_NULL;
-    scheme_hash_set(multi_mark, SCHEME_VEC_ELS(mht)[i], mark);
-    ((Scheme_Mark_With_Owner *)mark)->owner_multi_mark = (Scheme_Object *)multi_mark;
-    ((Scheme_Mark_With_Owner *)mark)->phase = SCHEME_VEC_ELS(mht)[i];
+    scheme_hash_set(multi_scope, SCHEME_VEC_ELS(mht)[i], scope);
+    ((Scheme_Scope_With_Owner *)scope)->owner_multi_scope = (Scheme_Object *)multi_scope;
+    ((Scheme_Scope_With_Owner *)scope)->phase = SCHEME_VEC_ELS(mht)[i];
   }
       
-  return multi_mark;
+  return multi_scope;
 }
 
-Scheme_Object *unmarshal_multi_marks(Scheme_Object *multi_marks,
+Scheme_Object *unmarshal_multi_scopes(Scheme_Object *multi_scopes,
                                      Scheme_Unmarshal_Tables *ut)
 {
-  Scheme_Hash_Table *multi_mark;
+  Scheme_Hash_Table *multi_scope;
   Scheme_Object *l, *mm_l;
 
-  mm_l = multi_marks;
+  mm_l = multi_scopes;
 
   while (1) {
     l = mm_l;
@@ -6070,9 +6070,9 @@ Scheme_Object *unmarshal_multi_marks(Scheme_Object *multi_marks,
       if (!SCHEME_PAIRP(l)) return_NULL;
       if (!SCHEME_PAIRP(SCHEME_CAR(l))) return_NULL;
       if (SCHEME_VECTORP(SCHEME_CAR(SCHEME_CAR(l)))) {
-        multi_mark = vector_to_multi_mark(SCHEME_CAR(SCHEME_CAR(l)), ut);
-        if (!multi_mark) return_NULL;
-        SCHEME_CAR(SCHEME_CAR(l)) = (Scheme_Object *)multi_mark;
+        multi_scope = vector_to_multi_scope(SCHEME_CAR(SCHEME_CAR(l)), ut);
+        if (!multi_scope) return_NULL;
+        SCHEME_CAR(SCHEME_CAR(l)) = (Scheme_Object *)multi_scope;
       } else {
         /* rest of list must be converted already, too */
         break;
@@ -6085,21 +6085,21 @@ Scheme_Object *unmarshal_multi_marks(Scheme_Object *multi_marks,
       break;
   }
 
-  return multi_marks;
+  return multi_scopes;
 }
 
 
 static Scheme_Object *datum_to_wraps(Scheme_Object *w,
                                      Scheme_Unmarshal_Tables *ut)
 {
-  Scheme_Mark_Table *mt;
-  Scheme_Mark_Set *marks;
+  Scheme_Scope_Table *mt;
+  Scheme_Scope_Set *scopes;
   Scheme_Object *l;
 
   l = scheme_hash_get(ut->rns, w);
   if (l) {
     if (!SCHEME_PAIRP(l)
-        || !SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(l)), scheme_mark_table_type))
+        || !SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(l)), scheme_scope_table_type))
       return NULL;
     return l;
   }
@@ -6109,16 +6109,16 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
           && (SCHEME_VEC_SIZE(w) != 4)))
     return_NULL;
 
-  mt = MALLOC_ONE_TAGGED(Scheme_Mark_Table);
-  mt->so.type = scheme_mark_table_type;
+  mt = MALLOC_ONE_TAGGED(Scheme_Scope_Table);
+  mt->so.type = scheme_scope_table_type;
 
-  marks = list_to_mark_set(SCHEME_VEC_ELS(w)[1], ut);
-  if (!marks) return NULL;
-  mt->single_marks = marks;
+  scopes = list_to_scope_set(SCHEME_VEC_ELS(w)[1], ut);
+  if (!scopes) return NULL;
+  mt->simple_scopes = scopes;
 
-  l = unmarshal_multi_marks(SCHEME_VEC_ELS(w)[2], ut);
+  l = unmarshal_multi_scopes(SCHEME_VEC_ELS(w)[2], ut);
   if (!l) return NULL;
-  mt->multi_marks = l;
+  mt->multi_scopes = l;
 
   l = scheme_make_pair((Scheme_Object *)mt, SCHEME_VEC_ELS(w)[0]);
   scheme_hash_set(ut->rns, w, l);
@@ -6211,22 +6211,22 @@ static Scheme_Object *unmarshal_free_id_info(Scheme_Object *p, Scheme_Unmarshal_
   p = datum_to_wraps(SCHEME_CDR(p), ut);
   if (!p) return_NULL;
 
-  ((Scheme_Stx *)o)->marks = (Scheme_Mark_Table *)SCHEME_CAR(p);
-  STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)o)->marks), scheme_mark_table_type));
+  ((Scheme_Stx *)o)->scopes = (Scheme_Scope_Table *)SCHEME_CAR(p);
+  STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)o)->scopes), scheme_scope_table_type));
   ((Scheme_Stx *)o)->shifts = SCHEME_CDR(p);
 
   return scheme_make_pair(o, phase);
 }
 
-Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tables *ut)
+Scheme_Object *scope_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tables *ut)
 {
   Scheme_Object *l = NULL, *l2, *r, *b, *m, *c, *free_id;
   Scheme_Hash_Tree *ht;
-  Scheme_Mark_Set *marks;
+  Scheme_Scope_Set *scopes;
   intptr_t i, len;
 
-  if (SAME_OBJ(box, root_mark))
-    return root_mark;
+  if (SAME_OBJ(box, root_scope))
+    return root_scope;
 
   r = scheme_hash_get(ut->rns, box);
   if (r)
@@ -6236,23 +6236,23 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
   c = SCHEME_BOX_VAL(box);
 
   if (SCHEME_INTP(c)) {
-    m = scheme_new_mark(SCHEME_INT_VAL(c));
+    m = scheme_new_scope(SCHEME_INT_VAL(c));
     c = NULL;
   } else if (SCHEME_PAIRP(c)) {
-    m = scheme_new_mark(SCHEME_INT_VAL(SCHEME_CAR(c)));
+    m = scheme_new_scope(SCHEME_INT_VAL(SCHEME_CAR(c)));
     c = SCHEME_CDR(c);
   } else
-    m = scheme_new_mark(SCHEME_STX_MACRO_MARK);
+    m = scheme_new_scope(SCHEME_STX_MACRO_SCOPE);
   scheme_hash_set(ut->rns, box, m);
-  /* Since we've created the mark before unmarshaling its content,
-     cycles among marks are ok. */
+  /* Since we've created the scope before unmarshaling its content,
+     cycles among scopes are ok. */
 
   if (!c) return m;
 
   while (SCHEME_PAIRP(c)) {
     if (!SCHEME_PAIRP(SCHEME_CAR(c))) return_NULL;
-    marks = list_to_mark_set(SCHEME_CAR(SCHEME_CAR(c)), ut);
-    l = scheme_make_raw_pair(scheme_make_pair((Scheme_Object *)marks,
+    scopes = list_to_scope_set(SCHEME_CAR(SCHEME_CAR(c)), ut);
+    l = scheme_make_raw_pair(scheme_make_pair((Scheme_Object *)scopes,
                                               SCHEME_CDR(SCHEME_CAR(c))),
                              l);
     c = SCHEME_CDR(c);
@@ -6273,8 +6273,8 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
     r = scheme_null;
     while (SCHEME_PAIRP(l2)) {
       if (!SCHEME_PAIRP(SCHEME_CAR(l2))) return_NULL;
-      marks = list_to_mark_set(SCHEME_CAR(SCHEME_CAR(l2)), ut);
-      if (!marks) return_NULL;
+      scopes = list_to_scope_set(SCHEME_CAR(SCHEME_CAR(l2)), ut);
+      if (!scopes) return_NULL;
 
       b = SCHEME_CDR(SCHEME_CAR(l2));
       if (SCHEME_BOXP(b)) {
@@ -6290,7 +6290,7 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
       if (free_id)
         b = scheme_make_mutable_pair(b, free_id);
 
-      b = scheme_make_pair((Scheme_Object *)marks, b);
+      b = scheme_make_pair((Scheme_Object *)scopes, b);
 
       if (SCHEME_NULLP(r) && SCHEME_NULLP(SCHEME_CDR(l2))) {
         /* leave r as a single binding */
@@ -6309,7 +6309,7 @@ Scheme_Object *mark_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Table
   else
     l = scheme_make_raw_pair((Scheme_Object *)ht, l);
 
-  ((Scheme_Mark *)m)->bindings = l;
+  ((Scheme_Scope *)m)->bindings = l;
 
   return m;
 }
@@ -6579,15 +6579,15 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       if (!wraps)
         return_NULL;
     }
-    ((Scheme_Stx *)result)->marks = (Scheme_Mark_Table *)SCHEME_CAR(wraps);
-    STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)result)->marks), scheme_mark_table_type));
+    ((Scheme_Stx *)result)->scopes = (Scheme_Scope_Table *)SCHEME_CAR(wraps);
+    STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)result)->scopes), scheme_scope_table_type));
     ((Scheme_Stx *)result)->shifts = SCHEME_CDR(wraps);
   } else if (SCHEME_FALSEP((Scheme_Object *)stx_wraps)) {
     /* wraps already nulled */
   } else {
     /* Note: no propagation will be needed for SUBSTX */
-    ((Scheme_Stx *)result)->marks = stx_wraps->marks;
-    STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)result)->marks), scheme_mark_table_type));
+    ((Scheme_Stx *)result)->scopes = stx_wraps->scopes;
+    STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)result)->scopes), scheme_scope_table_type));
     ((Scheme_Stx *)result)->shifts = stx_wraps->shifts;
     if (SCHEME_VECTORP(((Scheme_Stx *)result)->shifts))
       ((Scheme_Stx *)result)->shifts = SCHEME_VEC_ELS(((Scheme_Stx *)result)->shifts)[0];
@@ -6619,7 +6619,7 @@ static Scheme_Object *general_datum_to_syntax(Scheme_Object *o,
                                               Scheme_Object *stx_src,
                                               Scheme_Object *stx_wraps,
                                               int can_graph, int copy_props)
-     /* If stx_wraps is a hash table, then `o' includes marks.
+     /* If stx_wraps is a hash table, then `o' includes scopes.
 	If copy_props > 0, properties are copied from src.
 	If copy_props != 1 or 0, then taint armings are copied from src, too,
           but src must not be tainted. */
@@ -6965,7 +6965,7 @@ static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
 
   if (stx->props) {
     if (SAME_OBJ(stx->props, STX_SRCTAG)) {
-      /* Check for marks... */
+      /* Check for scopes... */
     } else {
       Scheme_Object *e;
 
@@ -6981,15 +6981,15 @@ static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
   } else
     return scheme_false;
 
-  /* Look for any non-original mark: */
-  i = mark_set_next(stx->marks->single_marks, -1);
+  /* Look for any non-original scope: */
+  i = scope_set_next(stx->scopes->simple_scopes, -1);
   while (i != -1) {
-    mark_set_index(stx->marks->single_marks, i, &key, &val);
+    scope_set_index(stx->scopes->simple_scopes, i, &key, &val);
 
-    if (SCHEME_MARK_KIND(key) == SCHEME_STX_MACRO_MARK)
+    if (SCHEME_SCOPE_KIND(key) == SCHEME_STX_MACRO_SCOPE)
       return scheme_false;
     
-    i = mark_set_next(stx->marks->single_marks, i);
+    i = scope_set_next(stx->scopes->simple_scopes, i);
   }
 
   return scheme_true;
@@ -7143,7 +7143,7 @@ static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], S
   taint_p = SCHEME_PRIM_CLOSURE_ELS(p)[1];
   phase = SCHEME_PRIM_CLOSURE_ELS(p)[2];
 
-  r = scheme_stx_adjust_marks(r, (Scheme_Mark_Set *)delta, phase, mode);
+  r = scheme_stx_adjust_scopes(r, (Scheme_Scope_Set *)delta, phase, mode);
 
   if (SCHEME_TRUEP(taint_p))
     r = scheme_stx_taint(r);
@@ -7201,7 +7201,7 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 {
   Scheme_Object *a[3], *key, *val, *src;
   Scheme_Object *phase;
-  Scheme_Mark_Set *delta, *m2;
+  Scheme_Scope_Set *delta, *m2;
   intptr_t i;
 
   if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
@@ -7211,12 +7211,12 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 
   phase = extract_phase("make-syntax-delta-introducer", 2, argc, argv, scheme_make_integer(0), 1);
 
-  delta = extract_mark_set((Scheme_Stx *)argv[0], phase);
+  delta = extract_scope_set((Scheme_Stx *)argv[0], phase);
 
   src = argv[1];
   if (!SCHEME_FALSEP(src)) {
-    m2 = extract_mark_set((Scheme_Stx *)src, phase);
-    if (!mark_subset(m2, delta))
+    m2 = extract_scope_set((Scheme_Stx *)src, phase);
+    if (!scope_subset(m2, delta))
       m2 = NULL;
   } else
     m2 = NULL;
@@ -7230,13 +7230,13 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
   }
 
   if (m2) {
-    i = mark_set_next(m2, -1);
+    i = scope_set_next(m2, -1);
     while (i != -1) {
-      mark_set_index(m2, i, &key, &val);
-      if (mark_set_get(delta, key))
-        delta = mark_set_set(delta, key, NULL);
+      scope_set_index(m2, i, &key, &val);
+      if (scope_set_get(delta, key))
+        delta = scope_set_set(delta, key, NULL);
 
-      i = mark_set_next(m2, i);
+      i = scope_set_next(m2, i);
     }
   }
 
@@ -7252,22 +7252,22 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 
 Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Scheme_Object *phase)
 {
-  Scheme_Mark_Set *current, *m2;
+  Scheme_Scope_Set *current, *m2;
   Scheme_Object *key, *val;
   intptr_t i;
   int mutate = 0;
 
-  current = extract_mark_set((Scheme_Stx *)o, phase);
-  m2 = extract_mark_set((Scheme_Stx *)b, phase);
+  current = extract_scope_set((Scheme_Stx *)o, phase);
+  m2 = extract_scope_set((Scheme_Stx *)b, phase);
 
-  i = mark_set_next(m2, -1);
+  i = scope_set_next(m2, -1);
   while (i != -1) {
-    mark_set_index(m2, i, &key, &val);
-    if (!mark_set_get(current, key)) {
-      o = stx_adjust_mark(o, key, phase, SCHEME_STX_ADD, &mutate);
+    scope_set_index(m2, i, &key, &val);
+    if (!scope_set_get(current, key)) {
+      o = stx_adjust_scope(o, key, phase, SCHEME_STX_ADD, &mutate);
     }
     
-    i = mark_set_next(m2, i);
+    i = scope_set_next(m2, i);
   }
 
   return o;
@@ -7275,22 +7275,22 @@ Scheme_Object *scheme_stx_binding_union(Scheme_Object *o, Scheme_Object *b, Sche
 
 Scheme_Object *scheme_stx_binding_subtract(Scheme_Object *o, Scheme_Object *b, Scheme_Object *phase)
 {
-  Scheme_Mark_Set *current, *m2;
+  Scheme_Scope_Set *current, *m2;
   Scheme_Object *key, *val;
   intptr_t i;
   int mutate = 0;
 
-  current = extract_mark_set((Scheme_Stx *)o, phase);
-  m2 = extract_mark_set((Scheme_Stx *)b, phase);
+  current = extract_scope_set((Scheme_Stx *)o, phase);
+  m2 = extract_scope_set((Scheme_Stx *)b, phase);
 
-  i = mark_set_next(m2, -1);
+  i = scope_set_next(m2, -1);
   while (i != -1) {
-    mark_set_index(m2, i, &key, &val);
-    if (mark_set_get(current, key)) {
-      o = stx_adjust_mark(o, key, phase, SCHEME_STX_REMOVE, &mutate);
+    scope_set_index(m2, i, &key, &val);
+    if (scope_set_get(current, key)) {
+      o = stx_adjust_scope(o, key, phase, SCHEME_STX_REMOVE, &mutate);
     }
 
-    i = mark_set_next(m2, i);
+    i = scope_set_next(m2, i);
   }
 
   return o;
@@ -7594,7 +7594,7 @@ Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht)
 
   v = ((Scheme_Stx *)stx)->taints;
   SCHEME_VEC_ELS(vec)[1] = (v ? v : scheme_null);
-  SCHEME_VEC_ELS(vec)[2] = (Scheme_Object *)((Scheme_Stx *)stx)->marks;
+  SCHEME_VEC_ELS(vec)[2] = (Scheme_Object *)((Scheme_Stx *)stx)->scopes;
   
   return vec;
 }
@@ -7610,8 +7610,8 @@ START_XFORM_SKIP;
 static void register_traversers(void)
 {
   GC_REG_TRAV(scheme_rt_srcloc, mark_srcloc);
-  GC_REG_TRAV(scheme_mark_type, mark_mark);
-  GC_REG_TRAV(scheme_mark_table_type, mark_mark_table);
+  GC_REG_TRAV(scheme_scope_type, mark_scope);
+  GC_REG_TRAV(scheme_scope_table_type, mark_scope_table);
   GC_REG_TRAV(scheme_propagate_table_type, mark_propagate_table);
 }
 

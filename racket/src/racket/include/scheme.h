@@ -906,7 +906,7 @@ typedef struct {
 
 typedef struct Scheme_Hash_Table
 {
-  Scheme_Inclhash_Object iso; /* 0x1 flag => print as opaque (e.g., exports table); 0x2 => misc (e.g., top-level multi_marks) */
+  Scheme_Inclhash_Object iso; /* 0x1 flag => print as opaque (e.g., exports table); 0x2 => misc (e.g., top-level multi_scopes) */
   intptr_t size; /* power of 2 */
   intptr_t count;
   Scheme_Object **keys;
@@ -1168,8 +1168,8 @@ typedef struct Scheme_Thread {
   struct Scheme_Overflow *overflow;
 
   struct Scheme_Comp_Env *current_local_env;
-  Scheme_Object *current_local_mark;
-  Scheme_Object *current_local_use_mark;
+  Scheme_Object *current_local_scope;
+  Scheme_Object *current_local_use_scope;
   Scheme_Object *current_local_name;
   Scheme_Object *current_local_modidx;
   Scheme_Env *current_local_menv;

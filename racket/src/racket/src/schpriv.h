@@ -1061,21 +1061,21 @@ typedef struct Scheme_Stx_Srcloc {
 #define STX_SUBSTX_FLAG   0x1
 #define STX_ARMED_FLAG    0x2
 
-typedef struct Scheme_Mark_Set Scheme_Mark_Set;
+typedef struct Scheme_Scope_Set Scheme_Scope_Set;
 
-typedef struct Scheme_Mark_Table {
-  Scheme_Object so; /* scheme_mark_table_type or scheme_propagate_table_type */
-  Scheme_Mark_Set *single_marks;
-  Scheme_Object *multi_marks; /* list of (cons multi-mark phase-shift) or fallback chain */
-} Scheme_Mark_Table;
+typedef struct Scheme_Scope_Table {
+  Scheme_Object so; /* scheme_scope_table_type or scheme_propagate_table_type */
+  Scheme_Scope_Set *simple_scopes; /* scopes that span all phases */
+  Scheme_Object *multi_scopes; /* list of (cons multi-scope phase-shift) or fallback chain */
+} Scheme_Scope_Table;
 
 typedef struct Scheme_Stx {
   Scheme_Inclhash_Object iso; /* 0x1 and 0x2 of keyex used */
   Scheme_Object *val;
   Scheme_Stx_Srcloc *srcloc;
-  Scheme_Mark_Table *marks;
+  Scheme_Scope_Table *scopes;
   union {
-    Scheme_Mark_Table *to_propagate;
+    Scheme_Scope_Table *to_propagate;
     Scheme_Object *cache;
   } u;
   Scheme_Object *shifts; /* <all-shifts> or (vector <all-shifts> <shifts-to-propagate> <base-shifts>) */
@@ -1103,7 +1103,7 @@ Scheme_Object *scheme_make_stx_w_offset(Scheme_Object *val,
 Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o, Scheme_Object *stx_src,
 				      Scheme_Object *stx_wraps,
 				      int cangraph, int copyprops);
-Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
+Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_scopes,
 				      struct Scheme_Marshal_Tables *mt);
 Scheme_Object *scheme_unmarshal_datum_to_syntax(Scheme_Object *o,
                                                 struct Scheme_Unmarshal_Tables *ut,
@@ -1115,20 +1115,20 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase);
 
-XFORM_NONGCING Scheme_Object *scheme_stx_root_mark();
-Scheme_Object *scheme_new_mark(int kind);
-Scheme_Object *scheme_mark_printed_form(Scheme_Object *m);
-Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
+XFORM_NONGCING Scheme_Object *scheme_stx_root_scope();
+Scheme_Object *scheme_new_scope(int kind);
+Scheme_Object *scheme_scope_printed_form(Scheme_Object *m);
+Scheme_Object *scheme_stx_scope(Scheme_Object *o, Scheme_Object *m, int mode);
 
-#define SCHEME_STX_MODULE_MARK       0
-#define SCHEME_STX_MODULE_MULTI_MARK 1
-#define SCHEME_STX_MACRO_MARK        2
-#define SCHEME_STX_LOCAL_BIND_MARK   3
-#define SCHEME_STX_INTDEF_MARK       4
-#define SCHEME_STX_USE_SITE_MARK     5
+#define SCHEME_STX_MODULE_SCOPE       0
+#define SCHEME_STX_MODULE_MULTI_SCOPE 1
+#define SCHEME_STX_MACRO_SCOPE        2
+#define SCHEME_STX_LOCAL_BIND_SCOPE   3
+#define SCHEME_STX_INTDEF_SCOPE       4
+#define SCHEME_STX_USE_SITE_SCOPE     5
 
-#define SCHEME_STX_MARK_KIND_SHIFT 3
-#define SCHEME_STX_MARK_KIND_MASK  ((1 << SCHEME_STX_MARK_KIND_SHIFT) - 1)
+#define SCHEME_STX_SCOPE_KIND_SHIFT 3
+#define SCHEME_STX_SCOPE_KIND_MASK  ((1 << SCHEME_STX_SCOPE_KIND_SHIFT) - 1)
 
 #define SCHEME_STX_ADD      0
 #define SCHEME_STX_REMOVE   1
@@ -1136,23 +1136,23 @@ Scheme_Object *scheme_stx_mark(Scheme_Object *o, Scheme_Object *m, int mode);
 #define SCHEME_STX_PUSH     4
 #define SCHEME_STX_MUTATE   16 /* or'ed */
 #define SCHEME_STX_PROPONLY 32 /* or'ed, internal */
-Scheme_Object *scheme_stx_adjust_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode);
-Scheme_Object *scheme_stx_add_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
-Scheme_Object *scheme_stx_remove_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
-Scheme_Object *scheme_stx_flip_mark(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
-Scheme_Object *scheme_stx_adjust_marks(Scheme_Object *o, Scheme_Mark_Set *marks, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_adjust_scope(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_add_scope(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
+Scheme_Object *scheme_stx_remove_scope(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
+Scheme_Object *scheme_stx_flip_scope(Scheme_Object *o, Scheme_Object *m, Scheme_Object *phase);
+Scheme_Object *scheme_stx_adjust_scopes(Scheme_Object *o, Scheme_Scope_Set *scopes, Scheme_Object *phase, int mode);
 
-Scheme_Mark_Set *scheme_module_context_marks(Scheme_Object *mc);
-Scheme_Object *scheme_module_context_frame_marks(Scheme_Object *mc);
-void scheme_module_context_add_use_site_mark(Scheme_Object *mc, Scheme_Object *use_site_mark);
-Scheme_Object *scheme_stx_adjust_frame_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
-Scheme_Object *scheme_stx_adjust_frame_bind_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
-Scheme_Object *scheme_stx_adjust_frame_use_site_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
-Scheme_Object *scheme_stx_adjust_frame_main_marks(Scheme_Object *o, Scheme_Object *mark, Scheme_Object *phase, int mode);
+Scheme_Scope_Set *scheme_module_context_scopes(Scheme_Object *mc);
+Scheme_Object *scheme_module_context_frame_scopes(Scheme_Object *mc);
+void scheme_module_context_add_use_site_scope(Scheme_Object *mc, Scheme_Object *use_site_scope);
+Scheme_Object *scheme_stx_adjust_frame_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_adjust_frame_bind_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_adjust_frame_use_site_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode);
+Scheme_Object *scheme_stx_adjust_frame_main_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode);
 
-Scheme_Object *scheme_make_frame_marks(Scheme_Object *mark);
-Scheme_Object *scheme_add_frame_use_site_mark(Scheme_Object *frame_marks, Scheme_Object *use_site_mark);
-Scheme_Object *scheme_add_frame_intdef_mark(Scheme_Object *frame_marks, Scheme_Object *intdef_mark);
+Scheme_Object *scheme_make_frame_scopes(Scheme_Object *scope);
+Scheme_Object *scheme_add_frame_use_site_scope(Scheme_Object *frame_scopes, Scheme_Object *use_site_scope);
+Scheme_Object *scheme_add_frame_intdef_scope(Scheme_Object *frame_scopes, Scheme_Object *intdef_scope);
 
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
@@ -1165,9 +1165,6 @@ Scheme_Object *scheme_stx_shift(Scheme_Object *stx,
                                 Scheme_Object *old_midx, Scheme_Object *new_midx,
                                 Scheme_Hash_Table *export_registry,
                                 Scheme_Object *src_insp_desc, Scheme_Object *insp);
-
-Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *relative_to,
-                                             Scheme_Object *uid);
 
 Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv);
 int scheme_get_introducer_mode(const char *who, int which, int argc, Scheme_Object **argv);
@@ -1190,7 +1187,7 @@ Scheme_Object *scheme_stx_push_introduce_module_context(Scheme_Object *stx, Sche
 Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, Scheme_Object *orig_src);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 
-Scheme_Object *scheme_module_context_use_site_frame_marks(Scheme_Object *mc);
+Scheme_Object *scheme_module_context_use_site_frame_scopes(Scheme_Object *mc);
 Scheme_Object *scheme_module_context_inspector(Scheme_Object *mc);
 
 void scheme_module_context_add_mapped_symbols(Scheme_Object *mc, Scheme_Hash_Table *mapped);
@@ -1251,7 +1248,7 @@ Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase);
 Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                                            int stop_at_free_eq,
                                            int *_exact_match, int *_ambiguous,
-                                           Scheme_Mark_Set **_binding_marks,
+                                           Scheme_Scope_Set **_binding_scopes,
                                            Scheme_Object **insp,              /* access-granting inspector */
                                            Scheme_Object **nominal_modidx,    /* how it was imported */
                                            Scheme_Object **nominal_name,      /* imported as name */
@@ -1322,12 +1319,12 @@ int scheme_is_predefined_module_p(Scheme_Object *name);
 
 Scheme_Object *scheme_get_kernel_modidx(void);
 
-Scheme_Object *scheme_mark_marshal_content(Scheme_Object *m, struct Scheme_Marshal_Tables *mt);
-void scheme_iterate_reachable_marks(struct Scheme_Marshal_Tables *mt);
+Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, struct Scheme_Marshal_Tables *mt);
+void scheme_iterate_reachable_scopes(struct Scheme_Marshal_Tables *mt);
 
 void scheme_stx_debug_print(Scheme_Object *stx, Scheme_Object *phase, int level);
 
-Scheme_Object *scheme_revert_use_site_marks(Scheme_Object *o, struct Scheme_Comp_Env *env);
+Scheme_Object *scheme_revert_use_site_scopes(Scheme_Object *o, struct Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_top_introduce(Scheme_Object *form, Scheme_Env *genv);
 
@@ -1623,15 +1620,15 @@ void scheme_flush_stack_copy_cache(void);
 
 typedef struct Scheme_Dynamic_State {
     struct Scheme_Comp_Env * volatile current_local_env;
-    Scheme_Object * volatile mark;
-    Scheme_Object * volatile use_mark;
+    Scheme_Object * volatile scope;
+    Scheme_Object * volatile use_scope;
     Scheme_Object * volatile name;
     Scheme_Object * volatile modidx;
     Scheme_Env    * volatile menv;
 } Scheme_Dynamic_State;
 
 void scheme_set_dynamic_state(Scheme_Dynamic_State *state, struct Scheme_Comp_Env *env,
-                              Scheme_Object *mark, Scheme_Object *use_mark,
+                              Scheme_Object *scope, Scheme_Object *use_scope,
                               Scheme_Object *name, 
                               Scheme_Env *menv,
                               Scheme_Object *modidx);
@@ -2538,7 +2535,7 @@ typedef struct Scheme_Comp_Env
   Scheme_Object *insp;  /* code inspector for checking protected */
   Comp_Prefix *prefix;  /* stack base info: globals and stxes */
 
-  Scheme_Object *marks; /* can be NULL, a mark, a mark set, or (cons mark-set nobind-mark) */
+  Scheme_Object *scopes; /* can be NULL, a scope, a scope set, or (cons scope-set nobind-scope) */
 
   /* local bindings; */
   mzshort num_bindings; /* number of `values' slots */
@@ -2797,8 +2794,8 @@ Scheme_Object *scheme_make_toplevel(mzshort depth, int position, int resolved, i
 
 #define ASSERT_IS_VARIABLE_BUCKET(b) /* if (((Scheme_Object *)b)->type != scheme_variable_type) abort() */
 
-Scheme_Comp_Env *scheme_new_comp_env(Scheme_Env *genv, Scheme_Object *insp, Scheme_Object *marks, int flags);
-Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, Scheme_Object *marks, int flags);
+Scheme_Comp_Env *scheme_new_comp_env(Scheme_Env *genv, Scheme_Object *insp, Scheme_Object *scopes, int flags);
+Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, Scheme_Object *scopes, int flags);
 
 Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *genv, 
                                              Scheme_Object **_id, int *_use_map);
@@ -2806,12 +2803,12 @@ Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env);
 Scheme_Object *scheme_do_local_lift_expr(const char *who, int stx_pos, 
                                          int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_local_lift_context(Scheme_Comp_Env *env);
-Scheme_Object *scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, 
+Scheme_Object *scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_scope, 
                                                Scheme_Comp_Env *env);
 Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *orig_form,
-                                         intptr_t phase, Scheme_Object *local_mark, 
+                                         intptr_t phase, Scheme_Object *local_scope, 
                                          Scheme_Comp_Env *env);
-Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *local_mark, 
+Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *local_scope, 
                                          Scheme_Comp_Env *env);
 Scheme_Comp_Env *scheme_get_module_lift_env(Scheme_Comp_Env *env);
 
@@ -2831,18 +2828,18 @@ Scheme_Object *scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 				  Scheme_Comp_Env *env, Scheme_Object *boundname,
                                   Scheme_Compile_Expand_Info *rec, int drec,
                                   int for_set,
-                                  int mark_macro_use);
+                                  int scope_macro_use);
 
 Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, 
-                                              Scheme_Object *mark,
+                                              Scheme_Object *scope,
 					      Scheme_Comp_Env *env);
 void scheme_add_compilation_binding(int index, Scheme_Object *val,
 				    Scheme_Comp_Env *frame);
-void scheme_add_compilation_frame_use_site_mark(Scheme_Comp_Env *frame,
-                                            Scheme_Object *use_site_mark);
-void scheme_add_compilation_frame_intdef_mark(Scheme_Comp_Env *frame,
-                                              Scheme_Object *intdef_mark);
-Scheme_Comp_Env *scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *mark,
+void scheme_add_compilation_frame_use_site_scope(Scheme_Comp_Env *frame,
+                                            Scheme_Object *use_site_scope);
+void scheme_add_compilation_frame_intdef_scope(Scheme_Comp_Env *frame,
+                                              Scheme_Object *intdef_scope);
+Scheme_Comp_Env *scheme_add_compilation_frame(Scheme_Object *vals, Scheme_Object *scope,
 					      Scheme_Comp_Env *env, int flags);
 
 Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env);
@@ -2850,7 +2847,7 @@ Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env);
 Scheme_Object *scheme_compile_lookup(Scheme_Object *symbol, Scheme_Comp_Env *env, int flags, 
 				     Scheme_Object *in_modidx, 
 				     Scheme_Env **_menv, int *_protected,
-                                     Scheme_Object **_local_binder, int *_need_macro_mark,
+                                     Scheme_Object **_local_binder, int *_need_macro_scope,
                                      Scheme_Object **_inline_variant);
 int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env);
 
@@ -2875,10 +2872,10 @@ Scheme_Object *scheme_top_level_lifts_key(Scheme_Comp_Env *env);
 Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path, 
                                                   intptr_t phase,
                                                   Scheme_Comp_Env *cenv,
-                                                  Scheme_Object *mark);
+                                                  Scheme_Object *scope);
 Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
                                            intptr_t phase,
-                                           Scheme_Object *mark,
+                                           Scheme_Object *scope,
                                            void *data,
                                            Scheme_Object **_ref_expr,
                                            struct Scheme_Comp_Env *cenv);
@@ -3116,7 +3113,7 @@ void scheme_mark_all_use(Scheme_Comp_Env *frame);
 #define SCHEME_MODULE_BEGIN_FRAME  (1 << 2)
 #define SCHEME_LAMBDA_FRAME        (1 << 3)
 #define SCHEME_INTDEF_FRAME        (1 << 4)
-#define SCHEME_USE_MARKS_TO_NEXT   (1 << 5)
+#define SCHEME_USE_SCOPES_TO_NEXT  (1 << 5)
 #define SCHEME_CAPTURE_WITHOUT_RENAME (1 << 6)
 #define SCHEME_FOR_STOPS           (1 << 7)
 #define SCHEME_FOR_INTDEF          (1 << 8)
@@ -3124,7 +3121,7 @@ void scheme_mark_all_use(Scheme_Comp_Env *frame);
 #define SCHEME_INTDEF_SHADOW       (1 << 10)
 #define SCHEME_POST_BIND_FRAME     (1 << 11)
 #define SCHEME_NESTED_MODULE_FRAME (1 << 12)
-#define SCHEME_KEEP_MARKS_FRAME    (1 << 13)
+#define SCHEME_KEEP_SCOPES_FRAME   (1 << 13)
 
 #define SCHEME_REC_BINDING_FRAME (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_BEGIN_FRAME \
                                   | SCHEME_INTDEF_FRAME | SCHEME_FOR_INTDEF)
@@ -3294,8 +3291,8 @@ typedef struct Scheme_Marshal_Tables {
   Scheme_Hash_Table *symtab;
   Scheme_Hash_Table *st_refs;
   Scheme_Object *st_ref_stack;
-  Scheme_Hash_Table *reachable_marks; /* filled on -1 pass */
-  Scheme_Object *reachable_mark_stack; /* used on -1 pass */
+  Scheme_Hash_Table *reachable_scopes; /* filled on -1 pass */
+  Scheme_Object *reachable_scope_stack; /* used on -1 pass */
   Scheme_Hash_Table *pending_reachable_ids; /* use on -1 pass */
   Scheme_Hash_Table *intern_map;  /* filled on first pass */
   Scheme_Hash_Table *identity_map; /* filled on first pass */
@@ -3370,7 +3367,7 @@ struct Scheme_Env {
                                 protected access */
   Scheme_Object *access_insp; /* for gaining protected access */
 
-  Scheme_Object *stx_context; /* encapsulates marks, shifts, etc. */
+  Scheme_Object *stx_context; /* encapsulates scopes, shifts, etc. */
 
   Scheme_Bucket_Table *syntax;
   struct Scheme_Env *exp_env;

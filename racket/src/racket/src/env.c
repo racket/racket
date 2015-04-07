@@ -2217,9 +2217,9 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
     }
   }
 
-  if (scheme_current_thread->current_local_mark)
-    sym = scheme_stx_flip_mark(sym, scheme_current_thread->current_local_mark,
-                               scheme_env_phase(env->genv));
+  if (scheme_current_thread->current_local_scope)
+    sym = scheme_stx_flip_scope(sym, scheme_current_thread->current_local_scope,
+                                scheme_env_phase(env->genv));
 
   menv = NULL;
 
@@ -2393,8 +2393,8 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   d[0] = env;
   d[3] = env;
 
-  rib = scheme_new_mark(SCHEME_STX_INTDEF_MARK);
-  scheme_add_compilation_frame_intdef_mark(env, rib);
+  rib = scheme_new_scope(SCHEME_STX_INTDEF_SCOPE);
+  scheme_add_compilation_frame_intdef_scope(env, rib);
   if ((argc > 1) && SCHEME_FALSEP(argv[1]))
     rib = scheme_box(rib); /* box means "don't add context" for `local-expand` */
 
@@ -2426,7 +2426,7 @@ static Scheme_Object *intdef_context_seal(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 id_intdef_remove(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *l, *res, *mark, *phase;
+  Scheme_Object *l, *res, *scope, *phase;
 
   if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
     scheme_wrong_contract("identifier-remove-from-definition-context", 
@@ -2454,9 +2454,9 @@ id_intdef_remove(int argc, Scheme_Object *argv[])
   phase = scheme_env_phase((Scheme_Env *)((Scheme_Object **)SCHEME_PTR1_VAL(SCHEME_CAR(l)))[0]);
 
   while (SCHEME_PAIRP(l)) {
-    mark = SCHEME_PTR2_VAL(SCHEME_CAR(l));
-    if (SCHEME_BOXP(mark)) mark = SCHEME_BOX_VAL(mark);
-    res = scheme_stx_remove_mark(res, mark, phase);
+    scope = SCHEME_PTR2_VAL(SCHEME_CAR(l));
+    if (SCHEME_BOXP(scope)) scope = SCHEME_BOX_VAL(scope);
+    res = scheme_stx_remove_scope(res, scope, phase);
     l = SCHEME_CDR(l);
   }
   
@@ -2477,10 +2477,10 @@ local_introduce(int argc, Scheme_Object *argv[])
   if (!SCHEME_STXP(s))
     scheme_wrong_contract("syntax-local-introduce", "syntax?", 0, argc, argv);
 
-  if (scheme_current_thread->current_local_mark)
-    s = scheme_stx_flip_mark(s, scheme_current_thread->current_local_mark, scheme_env_phase(env->genv));
-  if (scheme_current_thread->current_local_use_mark)
-    s = scheme_stx_flip_mark(s, scheme_current_thread->current_local_use_mark, scheme_env_phase(env->genv));
+  if (scheme_current_thread->current_local_scope)
+    s = scheme_stx_flip_scope(s, scheme_current_thread->current_local_scope, scheme_env_phase(env->genv));
+  if (scheme_current_thread->current_local_use_scope)
+    s = scheme_stx_flip_scope(s, scheme_current_thread->current_local_use_scope, scheme_env_phase(env->genv));
 
   return s;
 }
@@ -2533,19 +2533,19 @@ introducer_proc(void *info, int argc, Scheme_Object *argv[])
   if (argc > 1)
     mode = scheme_get_introducer_mode("syntax-introducer", 1, argc, argv);
 
-  return scheme_stx_adjust_mark(s, ((Scheme_Object **)info)[0], ((Scheme_Object **)info)[1], mode);
+  return scheme_stx_adjust_scope(s, ((Scheme_Object **)info)[0], ((Scheme_Object **)info)[1], mode);
 }
 
 static Scheme_Object *
 make_introducer(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *mark, **info;
+  Scheme_Object *scope, **info;
   Scheme_Env *genv;
 
-  mark = scheme_new_mark(SCHEME_STX_MACRO_MARK);
+  scope = scheme_new_scope(SCHEME_STX_MACRO_SCOPE);
   info = MALLOC_N(Scheme_Object*, 2);
 
-  info[0] = mark;
+  info[0] = scope;
   if (scheme_current_thread->current_local_env)
     info[1] = scheme_env_phase(scheme_current_thread->current_local_env->genv);
   else {
@@ -2565,7 +2565,7 @@ static Scheme_Object *local_binding_id(int argc, Scheme_Object **argv)
     scheme_wrong_contract("syntax-local-identifier-as-binding", "identifier?", 0, argc, argv);
 
   if (scheme_current_thread->current_local_env)
-    return scheme_revert_use_site_marks(a, scheme_current_thread->current_local_env);
+    return scheme_revert_use_site_scopes(a, scheme_current_thread->current_local_env);
   else
     return a;
 }
@@ -2703,57 +2703,57 @@ static Scheme_Object *
 local_lift_end_statement(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env;
-  Scheme_Object *local_mark, *expr;
+  Scheme_Object *local_scope, *expr;
 
   expr = argv[0];
   if (!SCHEME_STXP(expr))
     scheme_wrong_contract("syntax-local-lift-module-end-declaration", "syntax?", 0, argc, argv);
 
   env = scheme_current_thread->current_local_env;
-  local_mark = scheme_current_thread->current_local_mark;
+  local_scope = scheme_current_thread->current_local_scope;
 
   if (!env)
     not_currently_transforming("syntax-local-lift-module-end-declaration");
 
-  return scheme_local_lift_end_statement(expr, local_mark, env);
+  return scheme_local_lift_end_statement(expr, local_scope, env);
 }
 
 static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env;
-  Scheme_Object *local_mark;
+  Scheme_Object *local_scope;
   intptr_t phase;
 
   if (!SCHEME_STXP(argv[1]))
     scheme_wrong_contract("syntax-local-lift-require", "syntax?", 1, argc, argv);
 
   env = scheme_current_thread->current_local_env;
-  local_mark = scheme_current_thread->current_local_mark;
+  local_scope = scheme_current_thread->current_local_scope;
 
   if (!env)
     not_currently_transforming("syntax-local-lift-require");
 
   phase = env->genv->phase;
 
-  return scheme_local_lift_require(argv[0], argv[1], phase, local_mark, env);
+  return scheme_local_lift_require(argv[0], argv[1], phase, local_scope, env);
 }
 
 static Scheme_Object *local_lift_provide(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env;
-  Scheme_Object *form, *local_mark;
+  Scheme_Object *form, *local_scope;
 
   form = argv[0];
   if (!SCHEME_STXP(form))
     scheme_wrong_contract("syntax-local-lift-provide", "syntax?", 1, argc, argv);
 
   env = scheme_current_thread->current_local_env;
-  local_mark = scheme_current_thread->current_local_mark;
+  local_scope = scheme_current_thread->current_local_scope;
 
   if (!env)
     not_currently_transforming("syntax-local-lift-provide");
 
-  return scheme_local_lift_provide(form, local_mark, env);
+  return scheme_local_lift_provide(form, local_scope, env);
 }
 
 static Scheme_Object *

@@ -5208,7 +5208,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	return (Scheme_Object *)app;
       }
       break;
-    case CPT_MARK:
+    case CPT_SCOPE:
       {
         Scheme_Object *v2;
 
@@ -5229,8 +5229,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         return v;
       }
       break;
-    case CPT_ROOT_MARK:
-      return scheme_stx_root_mark();
+    case CPT_ROOT_SCOPE:
+      return scheme_stx_root_scope();
     case CPT_SHARED:
       {
         Scheme_Object *ph;

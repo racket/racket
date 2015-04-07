@@ -1831,8 +1831,8 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pr->returned_marks, gc);
   
   gcMARK2(pr->current_local_env, gc);
-  gcMARK2(pr->current_local_mark, gc);
-  gcMARK2(pr->current_local_use_mark, gc);
+  gcMARK2(pr->current_local_scope, gc);
+  gcMARK2(pr->current_local_use_scope, gc);
   gcMARK2(pr->current_local_name, gc);
   gcMARK2(pr->current_local_modidx, gc);
   gcMARK2(pr->current_local_menv, gc);
@@ -1949,8 +1949,8 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pr->returned_marks, gc);
   
   gcFIXUP2(pr->current_local_env, gc);
-  gcFIXUP2(pr->current_local_mark, gc);
-  gcFIXUP2(pr->current_local_use_mark, gc);
+  gcFIXUP2(pr->current_local_scope, gc);
+  gcFIXUP2(pr->current_local_use_scope, gc);
   gcFIXUP2(pr->current_local_name, gc);
   gcFIXUP2(pr->current_local_modidx, gc);
   gcFIXUP2(pr->current_local_menv, gc);
@@ -2581,7 +2581,7 @@ static int stx_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcMARK2(stx->val, gc);
   gcMARK2(stx->srcloc, gc);
-  gcMARK2(stx->marks, gc);
+  gcMARK2(stx->scopes, gc);
   gcMARK2(stx->u.to_propagate, gc);
   gcMARK2(stx->shifts, gc);
   gcMARK2(stx->taints, gc);
@@ -2594,7 +2594,7 @@ static int stx_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcFIXUP2(stx->val, gc);
   gcFIXUP2(stx->srcloc, gc);
-  gcFIXUP2(stx->marks, gc);
+  gcFIXUP2(stx->scopes, gc);
   gcFIXUP2(stx->u.to_propagate, gc);
   gcFIXUP2(stx->shifts, gc);
   gcFIXUP2(stx->taints, gc);

@@ -320,7 +320,7 @@ XFORM_NONGCING static int is_eqv(Scheme_Object *obj1, Scheme_Object *obj2)
       return SCHEME_CHAR_VAL(obj1) == SCHEME_CHAR_VAL(obj2);
     case scheme_symbol_type:
     case scheme_keyword_type:
-    case scheme_mark_type:
+    case scheme_scope_type:
       /* `eqv?` requires `eq?` */
       return 0;
     default:
@@ -872,14 +872,14 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
         } else
           return 0;
       }
-    case scheme_mark_table_type:
+    case scheme_scope_table_type:
       {
-        Scheme_Mark_Table *mt1 = (Scheme_Mark_Table *)obj1;
-        Scheme_Mark_Table *mt2 = (Scheme_Mark_Table *)obj2;
-        if (!is_equal((Scheme_Object *)mt1->single_marks, (Scheme_Object *)mt2->single_marks, eql))
+        Scheme_Scope_Table *mt1 = (Scheme_Scope_Table *)obj1;
+        Scheme_Scope_Table *mt2 = (Scheme_Scope_Table *)obj2;
+        if (!is_equal((Scheme_Object *)mt1->simple_scopes, (Scheme_Object *)mt2->simple_scopes, eql))
           return 0;
-        obj1 = mt1->multi_marks;
-        obj2 = mt2->multi_marks;
+        obj1 = mt1->multi_scopes;
+        obj2 = mt2->multi_scopes;
         goto top;
       }
     default:

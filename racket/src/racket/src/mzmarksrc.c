@@ -738,8 +738,8 @@ thread_val {
   gcMARK2(pr->returned_marks, gc);
   
   gcMARK2(pr->current_local_env, gc);
-  gcMARK2(pr->current_local_mark, gc);
-  gcMARK2(pr->current_local_use_mark, gc);
+  gcMARK2(pr->current_local_scope, gc);
+  gcMARK2(pr->current_local_use_scope, gc);
   gcMARK2(pr->current_local_name, gc);
   gcMARK2(pr->current_local_modidx, gc);
   gcMARK2(pr->current_local_menv, gc);
@@ -1034,7 +1034,7 @@ stx_val {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcMARK2(stx->val, gc);
   gcMARK2(stx->srcloc, gc);
-  gcMARK2(stx->marks, gc);
+  gcMARK2(stx->scopes, gc);
   gcMARK2(stx->u.to_propagate, gc);
   gcMARK2(stx->shifts, gc);
   gcMARK2(stx->taints, gc);
@@ -1256,7 +1256,7 @@ mark_comp_env {
   gcMARK2(e->insp, gc);
   gcMARK2(e->prefix, gc);
   gcMARK2(e->next, gc);
-  gcMARK2(e->marks, gc);
+  gcMARK2(e->scopes, gc);
   gcMARK2(e->binders, gc);
   gcMARK2(e->bindings, gc);
   gcMARK2(e->vals, gc);
@@ -1798,8 +1798,8 @@ mark_marshal_tables {
   gcMARK2(mt->symtab, gc);
   gcMARK2(mt->st_refs, gc);
   gcMARK2(mt->st_ref_stack, gc);
-  gcMARK2(mt->reachable_marks, gc);
-  gcMARK2(mt->reachable_mark_stack, gc);
+  gcMARK2(mt->reachable_scopes, gc);
+  gcMARK2(mt->reachable_scope_stack, gc);
   gcMARK2(mt->pending_reachable_ids, gc);
   gcMARK2(mt->intern_map, gc);
   gcMARK2(mt->identity_map, gc);
@@ -2393,34 +2393,34 @@ mark_srcloc {
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Srcloc));
 }
 
-mark_mark {
-  Scheme_Mark *m = (Scheme_Mark *)p;
-  int for_multi = SCHEME_MARK_HAS_OWNER(m);
+mark_scope {
+  Scheme_Scope *m = (Scheme_Scope *)p;
+  int for_multi = SCHEME_SCOPE_HAS_OWNER(m);
  mark:
   gcMARK2(m->bindings, gc);
   if (for_multi) {
-    gcMARK2(((Scheme_Mark_With_Owner *)m)->owner_multi_mark, gc);
-    gcMARK2(((Scheme_Mark_With_Owner *)m)->phase, gc);
+    gcMARK2(((Scheme_Scope_With_Owner *)m)->owner_multi_scope, gc);
+    gcMARK2(((Scheme_Scope_With_Owner *)m)->phase, gc);
   }
  size:
  (for_multi
-  ? gcBYTES_TO_WORDS(sizeof(Scheme_Mark_With_Owner))
-  : gcBYTES_TO_WORDS(sizeof(Scheme_Mark)));
+  ? gcBYTES_TO_WORDS(sizeof(Scheme_Scope_With_Owner))
+  : gcBYTES_TO_WORDS(sizeof(Scheme_Scope)));
 }
 
-mark_mark_table {
+mark_scope_table {
  mark:
-  Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
-  gcMARK2(m->single_marks, gc);
-  gcMARK2(m->multi_marks, gc);
+  Scheme_Scope_Table *m = (Scheme_Scope_Table *)p;
+  gcMARK2(m->simple_scopes, gc);
+  gcMARK2(m->multi_scopes, gc);
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Scope_Table));
 }
 
 mark_propagate_table {
  mark:
   Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
-  mark_mark_table_MARK(&m->mt, gc);
+  mark_scope_table_MARK(&m->mt, gc);
   gcMARK2(m->prev, gc);
   gcMARK2(m->phase_shift, gc);
  size:

@@ -23,70 +23,70 @@ static int mark_srcloc_FIXUP(void *p, struct NewGC *gc) {
 #define mark_srcloc_IS_CONST_SIZE 1
 
 
-static int mark_mark_SIZE(void *p, struct NewGC *gc) {
-  Scheme_Mark *m = (Scheme_Mark *)p;
-  int for_multi = SCHEME_MARK_HAS_OWNER(m);
+static int mark_scope_SIZE(void *p, struct NewGC *gc) {
+  Scheme_Scope *m = (Scheme_Scope *)p;
+  int for_multi = SCHEME_SCOPE_HAS_OWNER(m);
   return
  (for_multi
-  ? gcBYTES_TO_WORDS(sizeof(Scheme_Mark_With_Owner))
-  : gcBYTES_TO_WORDS(sizeof(Scheme_Mark)));
+  ? gcBYTES_TO_WORDS(sizeof(Scheme_Scope_With_Owner))
+  : gcBYTES_TO_WORDS(sizeof(Scheme_Scope)));
 }
 
-static int mark_mark_MARK(void *p, struct NewGC *gc) {
-  Scheme_Mark *m = (Scheme_Mark *)p;
-  int for_multi = SCHEME_MARK_HAS_OWNER(m);
+static int mark_scope_MARK(void *p, struct NewGC *gc) {
+  Scheme_Scope *m = (Scheme_Scope *)p;
+  int for_multi = SCHEME_SCOPE_HAS_OWNER(m);
   gcMARK2(m->bindings, gc);
   if (for_multi) {
-    gcMARK2(((Scheme_Mark_With_Owner *)m)->owner_multi_mark, gc);
-    gcMARK2(((Scheme_Mark_With_Owner *)m)->phase, gc);
+    gcMARK2(((Scheme_Scope_With_Owner *)m)->owner_multi_scope, gc);
+    gcMARK2(((Scheme_Scope_With_Owner *)m)->phase, gc);
   }
   return
  (for_multi
-  ? gcBYTES_TO_WORDS(sizeof(Scheme_Mark_With_Owner))
-  : gcBYTES_TO_WORDS(sizeof(Scheme_Mark)));
+  ? gcBYTES_TO_WORDS(sizeof(Scheme_Scope_With_Owner))
+  : gcBYTES_TO_WORDS(sizeof(Scheme_Scope)));
 }
 
-static int mark_mark_FIXUP(void *p, struct NewGC *gc) {
-  Scheme_Mark *m = (Scheme_Mark *)p;
-  int for_multi = SCHEME_MARK_HAS_OWNER(m);
+static int mark_scope_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Scope *m = (Scheme_Scope *)p;
+  int for_multi = SCHEME_SCOPE_HAS_OWNER(m);
   gcFIXUP2(m->bindings, gc);
   if (for_multi) {
-    gcFIXUP2(((Scheme_Mark_With_Owner *)m)->owner_multi_mark, gc);
-    gcFIXUP2(((Scheme_Mark_With_Owner *)m)->phase, gc);
+    gcFIXUP2(((Scheme_Scope_With_Owner *)m)->owner_multi_scope, gc);
+    gcFIXUP2(((Scheme_Scope_With_Owner *)m)->phase, gc);
   }
   return
  (for_multi
-  ? gcBYTES_TO_WORDS(sizeof(Scheme_Mark_With_Owner))
-  : gcBYTES_TO_WORDS(sizeof(Scheme_Mark)));
+  ? gcBYTES_TO_WORDS(sizeof(Scheme_Scope_With_Owner))
+  : gcBYTES_TO_WORDS(sizeof(Scheme_Scope)));
 }
 
-#define mark_mark_IS_ATOMIC 0
-#define mark_mark_IS_CONST_SIZE 0
+#define mark_scope_IS_ATOMIC 0
+#define mark_scope_IS_CONST_SIZE 0
 
 
-static int mark_mark_table_SIZE(void *p, struct NewGC *gc) {
+static int mark_scope_table_SIZE(void *p, struct NewGC *gc) {
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Scope_Table));
 }
 
-static int mark_mark_table_MARK(void *p, struct NewGC *gc) {
-  Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
-  gcMARK2(m->single_marks, gc);
-  gcMARK2(m->multi_marks, gc);
+static int mark_scope_table_MARK(void *p, struct NewGC *gc) {
+  Scheme_Scope_Table *m = (Scheme_Scope_Table *)p;
+  gcMARK2(m->simple_scopes, gc);
+  gcMARK2(m->multi_scopes, gc);
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Scope_Table));
 }
 
-static int mark_mark_table_FIXUP(void *p, struct NewGC *gc) {
-  Scheme_Mark_Table *m = (Scheme_Mark_Table *)p;
-  gcFIXUP2(m->single_marks, gc);
-  gcFIXUP2(m->multi_marks, gc);
+static int mark_scope_table_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Scope_Table *m = (Scheme_Scope_Table *)p;
+  gcFIXUP2(m->simple_scopes, gc);
+  gcFIXUP2(m->multi_scopes, gc);
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Mark_Table));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Scope_Table));
 }
 
-#define mark_mark_table_IS_ATOMIC 0
-#define mark_mark_table_IS_CONST_SIZE 1
+#define mark_scope_table_IS_ATOMIC 0
+#define mark_scope_table_IS_CONST_SIZE 1
 
 
 static int mark_propagate_table_SIZE(void *p, struct NewGC *gc) {
@@ -96,7 +96,7 @@ static int mark_propagate_table_SIZE(void *p, struct NewGC *gc) {
 
 static int mark_propagate_table_MARK(void *p, struct NewGC *gc) {
   Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
-  mark_mark_table_MARK(&m->mt, gc);
+  mark_scope_table_MARK(&m->mt, gc);
   gcMARK2(m->prev, gc);
   gcMARK2(m->phase_shift, gc);
   return
@@ -105,7 +105,7 @@ static int mark_propagate_table_MARK(void *p, struct NewGC *gc) {
 
 static int mark_propagate_table_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
-  mark_mark_table_FIXUP(&m->mt, gc);
+  mark_scope_table_FIXUP(&m->mt, gc);
   gcFIXUP2(m->prev, gc);
   gcFIXUP2(m->phase_shift, gc);
   return

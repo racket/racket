@@ -99,7 +99,7 @@ enum {
   scheme_macro_type,                    /* 75 */
   scheme_box_type,                      /* 76 */
   scheme_thread_type,                   /* 77 */
-  scheme_mark_type,                     /* 78 */
+  scheme_scope_type,                    /* 78 */
   scheme_stx_offset_type,               /* 79 */
   scheme_cont_mark_set_type,            /* 80 */
   scheme_sema_type,                     /* 81 */
@@ -138,7 +138,7 @@ enum {
   scheme_multiple_values_type,          /* 114 */
   scheme_placeholder_type,              /* 115 */
   scheme_table_placeholder_type,        /* 116 */
-  scheme_mark_table_type,               /* 117 */
+  scheme_scope_table_type,              /* 117 */
   scheme_propagate_table_type,          /* 118 */
   scheme_svector_type,                  /* 119 */
   scheme_resolve_prefix_type,           /* 120 */

@@ -3963,7 +3963,7 @@ static int get_comp_flags(Scheme_Config *config)
 static void *compile_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *form, *frame_marks;
+  Scheme_Object *form, *frame_scopes;
   int writeable, for_eval, rename, enforce_consts, comp_flags;
   Scheme_Env *genv;
   Scheme_Compile_Info rec, rec2;
@@ -4009,9 +4009,9 @@ static void *compile_k(void)
   scheme_prepare_env_stx_context(genv);
 
   if (genv->stx_context)
-    frame_marks = scheme_module_context_frame_marks(genv->stx_context);
+    frame_scopes = scheme_module_context_frame_scopes(genv->stx_context);
   else
-    frame_marks = NULL;
+    frame_scopes = NULL;
 
   if (for_eval) {
     /* For the top-level environment, we "push_introduce" instead of "introduce"
@@ -4033,9 +4033,9 @@ static void *compile_k(void)
     rec.env_already = 0;
     rec.comp_flags = comp_flags;
 
-    cenv = scheme_new_comp_env(genv, insp, frame_marks,
+    cenv = scheme_new_comp_env(genv, insp, frame_scopes,
                                SCHEME_TOPLEVEL_FRAME
-                               | SCHEME_KEEP_MARKS_FRAME);
+                               | SCHEME_KEEP_SCOPES_FRAME);
 
     if (for_eval) {
       /* Need to look for top-level `begin', and if we
@@ -4603,7 +4603,7 @@ Scheme_Object *scheme_expand(Scheme_Object *obj, Scheme_Env *env)
 {
   return r_expand(obj, scheme_new_expand_env(env, NULL, scheme_true,
                                              SCHEME_TOPLEVEL_FRAME
-                                             | SCHEME_KEEP_MARKS_FRAME),
+                                             | SCHEME_KEEP_SCOPES_FRAME),
 		  -1, 1, 0, scheme_false, -1, 0);
 }
 
@@ -4779,7 +4779,7 @@ static Scheme_Object *expand(int argc, Scheme_Object **argv)
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
-                                                 | SCHEME_KEEP_MARKS_FRAME),
+                                                 | SCHEME_KEEP_SCOPES_FRAME),
 		  -1, 1, 0, scheme_false, 0, 0);
 }
 
@@ -4794,7 +4794,7 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
   
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
-                                                 | SCHEME_KEEP_MARKS_FRAME),
+                                                 | SCHEME_KEEP_SCOPES_FRAME),
 		  -1, -1, 0, scheme_false, 0, 0);
 }
 
@@ -4820,7 +4820,7 @@ scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_ids, Scheme_O
 {
   Scheme_Object *l, *ids, *id;
 
-  /* Registers marked ids: */
+  /* Registers scoped ids: */
   for (ids = *_ids; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
     (void)scheme_global_binding(id, env->genv);
@@ -4840,11 +4840,11 @@ static Scheme_Object *add_intdef_renamings(Scheme_Object *l, Scheme_Object *rena
 
   if (SCHEME_PAIRP(renaming)) {
     while (!SCHEME_NULLP(rl)) {
-      l = scheme_stx_add_mark(l, SCHEME_CAR(rl), phase);
+      l = scheme_stx_add_scope(l, SCHEME_CAR(rl), phase);
       rl = SCHEME_CDR(rl);
     }
   } else {
-    l = scheme_stx_add_mark(l, renaming, phase);
+    l = scheme_stx_add_scope(l, renaming, phase);
   }
 
   return l;
@@ -4879,7 +4879,7 @@ static Scheme_Object *
 do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, int argc, Scheme_Object **argv)
 {
   Scheme_Comp_Env *env, *orig_env, **ip;
-  Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l, *exp_expr = NULL;
+  Scheme_Object *l, *local_scope, *renaming = NULL, *orig_l, *exp_expr = NULL;
   int cnt, pos, kind, is_modstar;
   int bad_sub_env = 0, bad_intdef = 0, keep_ref_ids = 0;
   Scheme_Object *observer, *catch_lifts_key = NULL;
@@ -4911,7 +4911,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   } else if (SAME_OBJ(argv[1], expression_symbol))
     kind = 0;
   else if (scheme_proper_list_length(argv[1]) > 0)
-    kind = SCHEME_INTDEF_FRAME | SCHEME_USE_MARKS_TO_NEXT;
+    kind = SCHEME_INTDEF_FRAME | SCHEME_USE_SCOPES_TO_NEXT;
   else  {
     scheme_wrong_contract(name,
                           (for_stx
@@ -5000,7 +5000,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     env->intdef_name = argv[1];
   env->in_modidx = scheme_current_thread->current_local_modidx;
 
-  local_mark = scheme_current_thread->current_local_mark;
+  local_scope = scheme_current_thread->current_local_scope;
   
   if (for_expr) {
   } else if (SCHEME_TRUEP(argv[2])) {
@@ -5085,10 +5085,10 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     }
   }
 
-  if (local_mark) {
+  if (local_scope) {
     /* Since we have an expression from local context,
-       we need to remove the temporary mark... */
-    l = scheme_stx_flip_mark(l, local_mark, scheme_env_phase(env->genv));
+       we need to remove the temporary scope... */
+    l = scheme_stx_flip_scope(l, local_scope, scheme_env_phase(env->genv));
   }
 
   if (renaming)
@@ -5167,13 +5167,13 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     SCHEME_PTR1_VAL(exp_expr) = l;
     SCHEME_PTR2_VAL(exp_expr) = orig_env;
     exp_expr = scheme_datum_to_syntax(exp_expr, l, scheme_false, 0, 0);
-    if (local_mark)
-      exp_expr = scheme_stx_flip_mark(exp_expr, local_mark, scheme_env_phase(env->genv));
+    if (local_scope)
+      exp_expr = scheme_stx_flip_scope(exp_expr, local_scope, scheme_env_phase(env->genv));
   }
 
-  if (local_mark) {
-    /* Put the temporary mark back: */
-    l = scheme_stx_flip_mark(l, local_mark, scheme_env_phase(env->genv));
+  if (local_scope) {
+    /* Put the temporary scope back: */
+    l = scheme_stx_flip_scope(l, local_scope, scheme_env_phase(env->genv));
   }
 
   if (for_expr) {
@@ -5229,7 +5229,7 @@ expand_once(int argc, Scheme_Object **argv)
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
-                                                 | SCHEME_KEEP_MARKS_FRAME), 
+                                                 | SCHEME_KEEP_SCOPES_FRAME), 
 		  1, 1, 0, scheme_false, 0, 0);
 }
 
@@ -5245,7 +5245,7 @@ expand_stx_once(int argc, Scheme_Object **argv)
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
-                                                 | SCHEME_KEEP_MARKS_FRAME),
+                                                 | SCHEME_KEEP_SCOPES_FRAME),
 		  1, -1, 0, scheme_false, 0, 0);
 }
 
@@ -5258,7 +5258,7 @@ expand_to_top_form(int argc, Scheme_Object **argv)
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true, 
                                                  SCHEME_TOPLEVEL_FRAME
-                                                 | SCHEME_KEEP_MARKS_FRAME),
+                                                 | SCHEME_KEEP_SCOPES_FRAME),
 		  1, 1, 1, scheme_false, 0, 0);
 }
 
@@ -5274,7 +5274,7 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
-                                                 | SCHEME_KEEP_MARKS_FRAME),
+                                                 | SCHEME_KEEP_SCOPES_FRAME),
 		  1, -1, 1, scheme_false, 0, 0);
 }
 
@@ -5541,23 +5541,23 @@ enable_break(int argc, Scheme_Object *argv[])
   }
 }
 
-static Scheme_Object *flip_mark_at_phase_and_revert_expr(Scheme_Object *a, Scheme_Object *m_p)
+static Scheme_Object *flip_scope_at_phase_and_revert_expr(Scheme_Object *a, Scheme_Object *m_p)
 {
   Scheme_Comp_Env *env = (Scheme_Comp_Env *)SCHEME_CDR(m_p);
 
-  a = scheme_revert_use_site_marks(a, env);
+  a = scheme_revert_use_site_scopes(a, env);
 
-  return scheme_stx_flip_mark(a, SCHEME_CAR(m_p), scheme_env_phase(env->genv));
+  return scheme_stx_flip_scope(a, SCHEME_CAR(m_p), scheme_env_phase(env->genv));
 }
 
-static Scheme_Object *add_mark_at_phase(Scheme_Object *a, Scheme_Object *m_p)
+static Scheme_Object *add_scope_at_phase(Scheme_Object *a, Scheme_Object *m_p)
 {
-  return scheme_stx_add_mark(a, SCHEME_CAR(m_p), SCHEME_CDR(m_p));
+  return scheme_stx_add_scope(a, SCHEME_CAR(m_p), SCHEME_CDR(m_p));
 }
 
-static Scheme_Object *revert_expr_marks(Scheme_Object *a, Scheme_Object *env)
+static Scheme_Object *revert_expr_scopes(Scheme_Object *a, Scheme_Object *env)
 {
-  return scheme_revert_use_site_marks(a, (Scheme_Comp_Env *)env);
+  return scheme_revert_use_site_scopes(a, (Scheme_Comp_Env *)env);
 }
 
 static Scheme_Object *
@@ -5604,13 +5604,13 @@ local_eval(int argc, Scheme_Object **argv)
                           NULL);
   }
 
-  stx_env = scheme_new_compilation_frame(0, SCHEME_FOR_INTDEF | SCHEME_USE_MARKS_TO_NEXT, rib, stx_env);
+  stx_env = scheme_new_compilation_frame(0, SCHEME_FOR_INTDEF | SCHEME_USE_SCOPES_TO_NEXT, rib, stx_env);
   scheme_add_local_syntax(cnt, stx_env);
 
-  /* Mark names */
-  if (scheme_current_thread->current_local_mark)
-    names = scheme_named_map_1(NULL, flip_mark_at_phase_and_revert_expr, names,
-                               scheme_make_raw_pair(scheme_current_thread->current_local_mark,
+  /* Scope names */
+  if (scheme_current_thread->current_local_scope)
+    names = scheme_named_map_1(NULL, flip_scope_at_phase_and_revert_expr, names,
+                               scheme_make_raw_pair(scheme_current_thread->current_local_scope,
                                                     (Scheme_Object *)stx_env));
 
   SCHEME_EXPAND_OBSERVE_RENAME_LIST(observer,names);
@@ -5619,7 +5619,7 @@ local_eval(int argc, Scheme_Object **argv)
   cnt = 0;
   for (l = names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
-    a = scheme_revert_use_site_marks(a, init_env);
+    a = scheme_revert_use_site_scopes(a, init_env);
     scheme_set_local_syntax(cnt++, a, scheme_false, stx_env, 0);
   }
 	  
@@ -5636,17 +5636,17 @@ local_eval(int argc, Scheme_Object **argv)
     rec.comp_flags = get_comp_flags(NULL);
     
     /* Evaluate and bind syntaxes */
-    if (scheme_current_thread->current_local_mark)
-      expr = scheme_stx_flip_mark(expr, scheme_current_thread->current_local_mark,
+    if (scheme_current_thread->current_local_scope)
+      expr = scheme_stx_flip_scope(expr, scheme_current_thread->current_local_scope,
                                   scheme_env_phase(env->genv));
 
     scheme_prepare_exp_env(stx_env->genv);
     scheme_prepare_compile_env(stx_env->genv->exp_env);
     pos = 0;
-    expr = scheme_stx_add_mark(expr, rib, scheme_env_phase(stx_env->genv));
-    rn_names = scheme_named_map_1(NULL, add_mark_at_phase, names,
+    expr = scheme_stx_add_scope(expr, rib, scheme_env_phase(stx_env->genv));
+    rn_names = scheme_named_map_1(NULL, add_scope_at_phase, names,
                                   scheme_make_pair(rib, scheme_env_phase(stx_env->genv)));
-    rn_names = scheme_named_map_1(NULL, revert_expr_marks, rn_names, (Scheme_Object *)init_env);
+    rn_names = scheme_named_map_1(NULL, revert_expr_scopes, rn_names, (Scheme_Object *)init_env);
     scheme_bind_syntaxes("local syntax definition", rn_names, expr,
 			 stx_env->genv->exp_env, stx_env->insp, &rec, 0,
 			 stx_env, stx_env,

@@ -305,7 +305,7 @@ typedef void (*Check_Func)(Scheme_Object *id, Scheme_Object *self_modidx,
                            Scheme_Object *nominal_modname, Scheme_Object *nominal_export,
 			   Scheme_Object *modname, Scheme_Object *srcname, int exet,
 			   int isval, void *data, Scheme_Object *e, Scheme_Object *form, 
-                           Scheme_Object *err_src, Scheme_Object *mark_src,
+                           Scheme_Object *err_src, Scheme_Object *scope_src,
                            Scheme_Object *to_phase, Scheme_Object *src_phase_index,
                            Scheme_Object *nominal_export_phase);
 static void parse_requires(Scheme_Object *form, int at_phase,
@@ -7070,7 +7070,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     /* "Punch a hole" in the enclosing context by removing the
        immediately enclosing module context: */
     fm = disarmed_form;
-    fm = scheme_revert_use_site_marks(fm, env);
+    fm = scheme_revert_use_site_scopes(fm, env);
     fm = scheme_stx_unintroduce_from_module_context(fm, env->genv->stx_context);
     ctx_form = fm;
     fm = SCHEME_STX_CDR(fm);
@@ -7281,14 +7281,14 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   m->ii_src = orig_ii;
 
   {
-    Scheme_Object *frame_marks;
-    frame_marks = scheme_module_context_frame_marks(rn_set);
+    Scheme_Object *frame_scopes;
+    frame_scopes = scheme_module_context_frame_scopes(rn_set);
     if (rec[drec].comp)
-      benv = scheme_new_comp_env(menv, env->insp, frame_marks,
-                                 SCHEME_MODULE_FRAME | SCHEME_KEEP_MARKS_FRAME);
+      benv = scheme_new_comp_env(menv, env->insp, frame_scopes,
+                                 SCHEME_MODULE_FRAME | SCHEME_KEEP_SCOPES_FRAME);
     else
-      benv = scheme_new_expand_env(menv, env->insp, frame_marks,
-                                   SCHEME_MODULE_FRAME | SCHEME_KEEP_MARKS_FRAME);
+      benv = scheme_new_expand_env(menv, env->insp, frame_scopes,
+                                   SCHEME_MODULE_FRAME | SCHEME_KEEP_SCOPES_FRAME);
   }
 
   /* If fm isn't a single expression, it certainly needs a
@@ -7554,7 +7554,7 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
                                Scheme_Object *nominal_modidx, Scheme_Object *nominal_name,
 			       Scheme_Object *modidx, Scheme_Object *exname, int exet,
 			       int isval, void *tables, Scheme_Object *e, Scheme_Object *form, 
-                               Scheme_Object *err_src, Scheme_Object *mark_src,
+                               Scheme_Object *err_src, Scheme_Object *scope_src,
                                Scheme_Object *phase, Scheme_Object *src_phase_index,
                                Scheme_Object *nominal_export_phase)
 {
@@ -8009,7 +8009,7 @@ static Scheme_Object *shift_require_phase(Scheme_Object *e, Scheme_Object *phase
 }
 
 static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t phase,
-                                        Scheme_Object *mark, intptr_t mark_phase)
+                                        Scheme_Object *scope, intptr_t scope_phase)
 {
   Scheme_Object *e = module_path;
 
@@ -8019,14 +8019,14 @@ static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t pha
   e = scheme_make_pair(require_stx, scheme_make_pair(e, scheme_null));
   e = scheme_datum_to_syntax(e, scheme_false, scheme_false, 0, 0);
 
-  e = scheme_stx_add_mark(e, mark, scheme_make_integer(mark_phase));
+  e = scheme_stx_add_scope(e, scope, scheme_make_integer(scope_phase));
 
   return e;
 }
 
 Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
                                            intptr_t phase,
-                                           Scheme_Object *mark,
+                                           Scheme_Object *scope,
                                            void *data,
                                            Scheme_Object **_ref_expr,
                                            Scheme_Comp_Env *cenv)
@@ -8046,8 +8046,8 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
     *_ref_expr = e;
   }
 
-  e = make_require_form(module_path, phase - env->phase, mark, env->phase);
-  e = scheme_revert_use_site_marks(e, cenv);
+  e = make_require_form(module_path, phase - env->phase, scope, env->phase);
+  e = scheme_revert_use_site_scopes(e, cenv);
   e = introduce_to_module_context(e, rns);
 
   parse_requires(e, env->phase, base_modidx, env, for_m,
@@ -8162,7 +8162,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   }
 
   /* It's possible that #%module-begin expansion introduces
-     marked identifiers for definitions. */
+     scoped identifiers for definitions. */
   form = introduce_to_module_context(form, rn_set);
 
   observer = rec[drec].observer;
@@ -8543,7 +8543,7 @@ static Scheme_Object *get_higher_phase_lifts(Module_Begin_Expand_State *bxs,
   return fm;
 }
 
-static Scheme_Object *revert_use_site_marks_via_context(Scheme_Object *o, Scheme_Object *rn_set, intptr_t phase)
+static Scheme_Object *revert_use_site_scopes_via_context(Scheme_Object *o, Scheme_Object *rn_set, intptr_t phase)
 {
   return scheme_stx_adjust_module_use_site_context(o,
                                                    rn_set,
@@ -8862,7 +8862,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(observer);
 
-	  /* Create top-level vars; uses revert_use_site_marks() on the vars */
+	  /* Create top-level vars; uses revert_use_site_scopes() on the vars */
 	  scheme_define_parse(e, &vars, &val, 0, xenv, 1);
 
 	  while (SCHEME_STX_PAIRP(vars)) {
@@ -8911,7 +8911,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           }
 
           if (!rec[drec].comp) {
-            /* Reconstruct to remove marks that don't belong on the binding names in the expansion: */
+            /* Reconstruct to remove scopes that don't belong on the binding names in the expansion: */
             e = scheme_datum_to_syntax(scheme_make_pair(fst, scheme_make_pair(vars,
                                                                               scheme_make_pair(val,
                                                                                                scheme_null))),
@@ -8925,7 +8925,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  /************ define-syntaxes & begin-for-syntax *************/
 	  /* Define the macro: */
 	  Scheme_Compile_Info mrec, erec1;
-	  Scheme_Object *names, *orig_names, *l, *code, *m, *vec, *boundname, *frame_marks;
+	  Scheme_Object *names, *orig_names, *l, *code, *m, *vec, *boundname, *frame_scopes;
 	  Resolve_Prefix *rp;
 	  Resolve_Info *ri;
 	  Scheme_Comp_Env *oenv, *eenv;
@@ -8934,7 +8934,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  int for_stx;
           int max_let_depth;
 
-          e = revert_use_site_marks_via_context(e, rn_set, phase);
+          e = revert_use_site_scopes_via_context(e, rn_set, phase);
 
 	  for_stx = scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, fst, phase);
 
@@ -8957,12 +8957,12 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
           SCHEME_EXPAND_OBSERVE_PREPARE_ENV(observer);
 
-          frame_marks = scheme_module_context_use_site_frame_marks(env->genv->exp_env->stx_context);
+          frame_scopes = scheme_module_context_use_site_frame_scopes(env->genv->exp_env->stx_context);
           
 	  scheme_prepare_exp_env(env->genv);
 	  scheme_prepare_compile_env(env->genv->exp_env);
 	  eenv = scheme_new_comp_env(env->genv->exp_env, env->insp,
-                                     frame_marks,
+                                     frame_scopes,
                                      0);
           if (!for_stx)
             scheme_frame_captures_lifts(eenv, NULL, NULL, scheme_false, scheme_false, 
@@ -9150,7 +9150,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE(observer);
 
-          e = revert_use_site_marks_via_context(e, rn_set, phase);
+          e = revert_use_site_scopes_via_context(e, rn_set, phase);
 
 	  /* Adds requires to renamings and required modules to requires lists: */
 	  parse_requires(e, phase, self_modidx, env->genv, env->genv->module,
@@ -9212,7 +9212,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
           is_star = scheme_stx_module_eq_x(scheme_modulestar_stx, fst, phase);
 
-          e = revert_use_site_marks_via_context(e, rn_set, phase);
+          e = revert_use_site_scopes_via_context(e, rn_set, phase);
 
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           if (is_star) {
@@ -9329,10 +9329,10 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   
   if (rec[drec].comp) {
     /* Module and each `begin-for-syntax' group manages its own prefix: */
-    Scheme_Object *frame_marks;
-    frame_marks = scheme_module_context_frame_marks(rn_set);
-    cenv = scheme_new_comp_env(env->genv, env->insp, frame_marks,
-                               SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_MARKS_FRAME);
+    Scheme_Object *frame_scopes;
+    frame_scopes = scheme_module_context_frame_scopes(rn_set);
+    cenv = scheme_new_comp_env(env->genv, env->insp, frame_scopes,
+                               SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_SCOPES_FRAME);
   } else
     cenv = scheme_extend_as_toplevel(env);
 
@@ -11115,7 +11115,7 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
         names = scheme_make_struct_names(base, fields, SCHEME_STRUCT_EXPTIME, &len);
 
         for (i = 0; i < len; i++) {
-          /* Wrap local name with prnt_base in case there are marks that 
+          /* Wrap local name with prnt_base in case there are scopes that 
              trigger "gensym"ing */
           p = scheme_datum_to_syntax(names[i], scheme_false, prnt_base, 0, 0);
           check_already_provided(provided, names[i], p, protect_cnt, e, phase);
@@ -11608,15 +11608,15 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
                         Scheme_Object *only_phase,
                         Scheme_Object *src_phase_index, /* import from phase 0 to src_phase_index */
 			Scheme_Object *idx, /* from module's idx; may be saved for unmarshalling */
-			Scheme_Env *orig_env, /* env for mark_src or copy_vars */
-			Scheme_Object *rn_set, /* add requires to renames in this set when no mark_src */
+			Scheme_Env *orig_env, /* env for scope_src or copy_vars */
+			Scheme_Object *rn_set, /* add requires to renames in this set when no scope_src */
 			Scheme_Object *rn_stx, /* module context-as-stx that corresponds to all_simple */
 			Scheme_Object *exns, /* NULL or [syntax] list of [syntax] symbols not to import */
 			Scheme_Hash_Table *onlys, /* NULL or hash table of names to import; the hash table is mutated */
 			Scheme_Object *prefix, /* NULL or prefix symbol */
 			Scheme_Object *iname, /* NULL or symbol for a single import */
 			Scheme_Object *orig_ename, /* NULL or symbol for a single import */
-			Scheme_Object *mark_src, /* default mark_src; if onlys, each is also mark_src */
+			Scheme_Object *scope_src, /* default scope_src; if onlys, each is also scope_src */
 			int copy_vars,
 			int *all_simple,
 			Check_Func ck, /* NULL or called for each addition */
@@ -11634,11 +11634,11 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
   Scheme_Env *name_env;
   int can_save_marshal = 1;
 
-  if (mark_src) {
+  if (scope_src) {
     if (all_simple
         && *all_simple
         && rn_stx
-        && !scheme_stx_equal_module_context(mark_src, rn_stx))
+        && !scheme_stx_equal_module_context(scope_src, rn_stx))
       *all_simple = 0;
   }
 
@@ -11739,7 +11739,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           name = scheme_hash_get(orig_onlys, exs[j]);
           if (!name)
             continue;  /* we don't want this one. */
-          mark_src = name;
+          scope_src = name;
           /* Remove to indicate that it's been imported: */
           scheme_hash_set(onlys, exs[j], NULL);
         } else {
@@ -11781,8 +11781,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
         if (prefix)
           iname = scheme_symbol_append(prefix, iname);
 
-        if (mark_src)
-          iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
+        if (scope_src)
+          iname = scheme_datum_to_syntax(iname, scheme_false, scope_src, 0, 0);
         else {
           iname = scheme_datum_to_syntax(iname, scheme_false, scheme_false, 0, 0);
           iname = scheme_stx_add_module_context(iname, rn); 
@@ -11792,7 +11792,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           ck(iname, (orig_env->module ? orig_env->module->self_modidx : NULL),
              nominal_modidx, exs[j], modidx, exsns[j], exets ? exets[j] : 0,
              (j < var_count), 
-             data, cki, form, err_src, mark_src, to_phase, src_phase_index, pt->phase_index);
+             data, cki, form, err_src, scope_src, to_phase, src_phase_index, pt->phase_index);
 
         {
           int done;
@@ -11861,7 +11861,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
         scheme_extend_module_context_with_shared(rn, idx, pt,
                                                  (prefix ? prefix : scheme_false),
                                                  excepts,
-                                                 src_phase_index, mark_src,
+                                                 src_phase_index, scope_src,
                                                  NULL);
       }
     }
@@ -11956,7 +11956,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
   Scheme_Object *ll = form, *mode = scheme_make_integer(0), *just_mode = NULL, *x_mode, *x_just_mode;
   Scheme_Module *m;
   Scheme_Object *idxstx, *idx, *name, *i, *exns, *prefix, *iname, *ename, *aa, *aav;
-  Scheme_Object *mark_src, *err_src;
+  Scheme_Object *scope_src, *err_src;
   Scheme_Hash_Table *onlys;
   Scheme_Env *env;
   int skip_one, mode_cnt = 0, just_mode_cnt = 0, is_mpi;
@@ -11986,14 +11986,14 @@ void parse_requires(Scheme_Object *form, int at_phase,
     }
 
     err_src = i;
-    mark_src = i;
+    scope_src = i;
     skip_one = 0;
 
     if (is_mpi) {
       idxstx = i;
       exns = NULL;
       prefix = NULL;
-      mark_src = NULL;
+      scope_src = NULL;
     } else if (SAME_OBJ(for_syntax_symbol, aav)
         || SAME_OBJ(for_template_symbol, aav)
         || SAME_OBJ(for_label_symbol, aav)
@@ -12172,7 +12172,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
 	rest = SCHEME_STX_CDR(rest);
       }
 
-      mark_src = NULL;
+      scope_src = NULL;
       exns = NULL;
       prefix = NULL;
     } else if (aa && SAME_OBJ(rename_symbol, SCHEME_STX_VAL(aa))) {
@@ -12213,7 +12213,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
       if (!SCHEME_STX_SYMBOLP(ename))
 	scheme_wrong_syntax(NULL, i, form, "external name is not an identifier");
 
-      mark_src = iname;
+      scope_src = iname;
 
       iname = SCHEME_STX_VAL(iname);
       
@@ -12347,7 +12347,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
       add_single_require(m->me, x_just_mode, x_mode, idx, rename_env,
                          rn_set, (for_m ? for_m->rn_stx : NULL),
                          exns, onlys, prefix, iname, ename,
-                         mark_src, 
+                         scope_src, 
                          copy_vars,
                          all_simple,
                          ck, data,
@@ -12381,7 +12381,7 @@ static void check_dup_require(Scheme_Object *id, Scheme_Object *self_modidx,
                               Scheme_Object *nominal_modidx, Scheme_Object *nominal_name, 
 			      Scheme_Object *modidx, Scheme_Object *srcname, int exet,
 			      int isval, void *ht, Scheme_Object *e, Scheme_Object *form, 
-                              Scheme_Object *err_src, Scheme_Object *mark_src, 
+                              Scheme_Object *err_src, Scheme_Object *scope_src, 
                               Scheme_Object *to_phase, Scheme_Object *src_phase_index,
                               Scheme_Object *nominal_export_phase)
 {
@@ -12441,8 +12441,8 @@ static Scheme_Object *check_require_form(Scheme_Env *env, Scheme_Object *form)
     scheme_prepare_exp_env(tmp_env);
     scheme_prepare_template_env(tmp_env);
 
-    /* add a mark to form so that it doesn't collide with anything: */
-    form = scheme_stx_add_mark(form, scheme_new_mark(SCHEME_STX_MACRO_MARK), scheme_env_phase(env));
+    /* add a scope to form so that it doesn't collide with anything: */
+    form = scheme_stx_add_scope(form, scheme_new_scope(SCHEME_STX_MACRO_SCOPE), scheme_env_phase(env));
 
     parse_requires(form, tmp_env->phase, modidx, tmp_env, NULL,
                    tmp_env->stx_context,
@@ -12508,7 +12508,7 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
   (void)check_require_form(env->genv, form);
 
   if (rec && rec[drec].comp) {
-    form = scheme_revert_use_site_marks(form, env);
+    form = scheme_revert_use_site_scopes(form, env);
     
     /* Dummy lets us access a top-level environment: */
     dummy = scheme_make_environment_dummy(env);
@@ -12542,13 +12542,13 @@ require_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
 Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path, 
                                                   intptr_t phase,
                                                   Scheme_Comp_Env *cenv,
-                                                  Scheme_Object *mark)
+                                                  Scheme_Object *scope)
 {
   Scheme_Object *form;
 
-  form = make_require_form(module_path, phase, mark, cenv->genv->phase);
+  form = make_require_form(module_path, phase, scope, cenv->genv->phase);
 
-  form = scheme_revert_use_site_marks(form, cenv);
+  form = scheme_revert_use_site_scopes(form, cenv);
 
   do_require_execute(cenv->genv, form);
 

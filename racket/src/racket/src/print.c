@@ -2968,33 +2968,33 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       }
       closed = print(sym, notdisplay, 1, ht, mt, pp);
     }
-  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_mark_type)
+  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_scope_type)
            && (compact || pp->print_unreadable))
     {
       if (compact) {
         Scheme_Object *idx;
 
-        idx = scheme_stx_root_mark();
+        idx = scheme_stx_root_scope();
         if (SAME_OBJ(idx, obj)) {
-          print_compact(pp, CPT_ROOT_MARK);
+          print_compact(pp, CPT_ROOT_SCOPE);
         } else {
           idx = get_symtab_idx(mt, obj);
           if (idx) {
             print_symtab_ref(pp, idx);
           } else {
-            print_compact(pp, CPT_MARK);
+            print_compact(pp, CPT_SCOPE);
             print_symtab_set(pp, mt, obj);
             idx = get_symtab_idx(mt, obj);
-            print(scheme_mark_marshal_content(obj, mt), notdisplay, 1, ht, mt, pp);
+            print(scheme_scope_marshal_content(obj, mt), notdisplay, 1, ht, mt, pp);
           }
         }
       } else {
-	print_utf8_string(pp, "#<mark:", 0, 7);
+	print_utf8_string(pp, "#<scope:", 0, 7);
         {
           intptr_t slen;
           char *str;
           int rel;
-          str = print_to_string(scheme_mark_printed_form(obj),
+          str = print_to_string(scheme_scope_printed_form(obj),
                                 &slen, 1, NULL, 32, NULL, &rel);
           print_utf8_string(pp, str, 0, slen);
           if (rel && !quick_print_buffer)
@@ -3399,7 +3399,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       if (compact)
 	closed = print(v, notdisplay, 1, NULL, mt, pp);
       else {
-        Scheme_Hash_Table *st_refs, *symtab, *reachable_marks;
+        Scheme_Hash_Table *st_refs, *symtab, *reachable_scopes;
         intptr_t *shared_offsets;
         intptr_t st_len, j, shared_offset, start_offset;
 
@@ -3407,23 +3407,23 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         SET_REQUIRED_TAG(mt->type = scheme_rt_marshal_info);
         scheme_current_thread->current_mt = mt;
 
-        /* "Print" the string once to find out which marks are reachable;
-           dropping unreachable marks drops potentialy large binding tables. */
+        /* "Print" the string once to find out which scopes are reachable;
+           dropping unreachable scopes drops potentialy large binding tables. */
         mt->pass = -1;
-        reachable_marks = scheme_make_hash_table(SCHEME_hash_ptr);
-        mt->reachable_marks = reachable_marks;
-        mt->reachable_mark_stack = scheme_null;
+        reachable_scopes = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->reachable_scopes = reachable_scopes;
+        mt->reachable_scope_stack = scheme_null;
         symtab = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->symtab = symtab;
 	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 0, NULL);
-        scheme_iterate_reachable_marks(mt);
+        scheme_iterate_reachable_scopes(mt);
 
         mt->pending_reachable_ids = NULL;
 
         mt = MALLOC_ONE_RT(Scheme_Marshal_Tables);
         SET_REQUIRED_TAG(mt->type = scheme_rt_marshal_info);
         scheme_current_thread->current_mt = mt;
-        mt->reachable_marks = reachable_marks;
+        mt->reachable_scopes = reachable_scopes;
 
         /* Track which shared values are referenced: */
         st_refs = scheme_make_hash_table(SCHEME_hash_ptr);
