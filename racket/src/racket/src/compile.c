@@ -65,6 +65,7 @@ ROSYM static Scheme_Object *values_symbol;
 ROSYM static Scheme_Object *call_with_values_symbol;
 ROSYM static Scheme_Object *inferred_name_symbol;
 ROSYM static Scheme_Object *undefined_error_name_symbol;
+ROSYM static Scheme_Object *local_keyword;
 
 THREAD_LOCAL_DECL(static Scheme_Object *quick_stx);
 
@@ -179,6 +180,8 @@ void scheme_init_compile (Scheme_Env *env)
   REGISTER_SO(inferred_name_symbol);
   REGISTER_SO(undefined_error_name_symbol);
 
+  REGISTER_SO(local_keyword);
+
   scheme_undefined->type = scheme_undefined_type;
   
   lambda_symbol = scheme_intern_symbol("lambda");
@@ -193,6 +196,8 @@ void scheme_init_compile (Scheme_Env *env)
 
   inferred_name_symbol = scheme_intern_symbol("inferred-name");
   undefined_error_name_symbol = scheme_intern_symbol("undefined-error-name");
+
+  local_keyword = scheme_intern_exact_keyword("local", 5);
 
   scheme_define_values_syntax = scheme_make_compiled_syntax(define_values_syntax, 
 							    define_values_expand);
@@ -3265,7 +3270,7 @@ unquote_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
 static Scheme_Object *
 quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
-  int len;
+  int len, local;
   Scheme_Object *stx, *form;
   Scheme_Comp_Env *frame;
 
@@ -3278,45 +3283,61 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
     scheme_compile_rec_done_local(rec, drec);
 
   len = check_form(form, form);
-  if (len != 2)
+  if ((len != 2) && (len != 3))
     bad_form(form, len);
 
-#if 1
-  stx = SCHEME_STX_CDR(form);
-  stx = SCHEME_STX_CAR(stx);
-  
-  /* Remove marks for all enclosing local binding contexts. */
-  for (frame = env; frame; frame = frame->next) {
-    if (frame->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME))
-      stx = scheme_stx_adjust_module_use_site_context(stx,
-                                                      env->genv->stx_context,
-                                                      SCHEME_STX_REMOVE);
-    else if (frame->marks) {
-      if (frame->flags & SCHEME_KEEP_MARKS_FRAME)
-        stx = scheme_stx_adjust_frame_use_site_marks(stx, frame->marks,
-                                                       scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
-      else
-        stx = scheme_stx_adjust_frame_marks(stx, frame->marks,
-                                            scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
+  if (len == 3) {
+    stx = SCHEME_STX_CDR(form);
+    stx = SCHEME_STX_CDR(stx);
+    stx = SCHEME_STX_CAR(stx);
+    if (!SAME_OBJ(SCHEME_STX_VAL(stx), local_keyword)) {
+      scheme_wrong_syntax(NULL, stx, form, "second subform is not `#:local'");
+      return NULL;
     }
-  }
+    local = 1;
+    if (!rec[drec].comp) {
+      /* A `(quote-syntax _ #:local)` counts as a reference at all levels */
+      scheme_mark_all_use(env);
+    }
+  } else
+    local = 0;
 
-  if (rec[drec].comp)
-    return scheme_register_stx_in_prefix(stx, env, rec, drec);
-  else  {
-    form = SCHEME_STX_CAR(form);
-    return scheme_datum_to_syntax(scheme_make_pair(form,
-                                                   scheme_make_pair(stx, scheme_null)),
-                                  orig_form, orig_form, 0, 2);
-  }
-#else
-  if (rec[drec].comp) {
+  if (!local) {
     stx = SCHEME_STX_CDR(form);
     stx = SCHEME_STX_CAR(stx);
-    return scheme_register_stx_in_prefix(stx, env, rec, drec);
-  } else
-    return orig_form;
-#endif
+
+    /* Remove marks for all enclosing local binding contexts. */
+    for (frame = env; frame; frame = frame->next) {
+      if (frame->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME))
+        stx = scheme_stx_adjust_module_use_site_context(stx,
+                                                        env->genv->stx_context,
+                                                        SCHEME_STX_REMOVE);
+      else if (frame->marks) {
+        if (frame->flags & SCHEME_KEEP_MARKS_FRAME)
+          stx = scheme_stx_adjust_frame_use_site_marks(stx, frame->marks,
+                                                       scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
+        else
+          stx = scheme_stx_adjust_frame_marks(stx, frame->marks,
+                                              scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
+      }
+    }
+
+    if (rec[drec].comp)
+      return scheme_register_stx_in_prefix(stx, env, rec, drec);
+    else  {
+      form = SCHEME_STX_CAR(form);
+      return scheme_datum_to_syntax(scheme_make_pair(form,
+                                                     scheme_make_pair(stx, scheme_null)),
+                                    orig_form, orig_form, 0, 2);
+    }
+  } else {
+    if (rec[drec].comp) {
+      stx = SCHEME_STX_CDR(form);
+      stx = SCHEME_STX_CAR(stx);
+      return scheme_register_stx_in_prefix(stx, env, rec, drec);
+    } else
+      return orig_form;
+  }
 }
 
 static Scheme_Object *

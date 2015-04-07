@@ -3087,6 +3087,7 @@ Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Compile_Inf
 int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 int scheme_env_check_reset_any_use(Scheme_Comp_Env *frame);
 int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
+void scheme_mark_all_use(Scheme_Comp_Env *frame);
 
 /* flags reported by scheme_env_get_flags */
 #define SCHEME_WAS_USED                0x1

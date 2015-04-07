@@ -1918,6 +1918,16 @@ int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos)
   return frame->min_use < pos;
 }
 
+void scheme_mark_all_use(Scheme_Comp_Env *frame)
+{
+  /* Mark all variables as used for the purposes of `letrec-syntaxes+values`
+     splitting */
+  while (frame && (frame->min_use > -1)) {
+    frame->min_use = -1;
+    frame = frame->next;
+  }
+}
+
 int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count)
 {
   int *v, i;
