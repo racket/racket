@@ -54,7 +54,7 @@ to @math{4+2n} names:
        @math{m} is the number of @racket[field]s that do not include
        an @racket[#:auto] option.}
 
- @item{@racket[id], a @tech{transformer binding} that encapsulates
+ @item{@racket[id], a @tech{transformer} binding that encapsulates
        information about the structure type declaration. This binding
        is used to define subtypes, and it also works with the
        @racket[shared] and @racket[match] forms. For detailed
@@ -163,8 +163,8 @@ must also be a @tech{prefab} structure type.
   (prefab-point? #s(prefab-point 1 2))
 ]
 
-If @racket[constructor-id] is supplied, then the @tech{transformer
-binding} of @racket[id] records @racket[constructor-id] as the
+If @racket[constructor-id] is supplied, then the @tech{transformer}
+binding of @racket[id] records @racket[constructor-id] as the
 constructor binding; as a result, for example, @racket[struct-out]
 includes @racket[constructor-id] as an export. If
 @racket[constructor-id] is supplied via

@@ -275,21 +275,6 @@ form. See also @racket[module-compiled-language-info],
 @racket[module->language-info], and
 @racketmodname[racket/language-info].
 
-If a @racket[module] form has a single body @racket[form] and if the
-form is a @racket[#%plain-module-begin] form, then the body
-@racket[form] is traversed to find @racket[module] and
-@racket[module*] forms that are either immediate, under
-@racket[begin], or under @racket[begin-for-syntax]. (That is, the 
-body is searched before adding
-any lexical context due to the module's initial @racket[module-path]
-import.) Each such module form is given a @indexed-racket['submodule]
-@tech{syntax property} that whose value is the initial module form.
-Then, when @racket[module] or @racket[module*] is expanded in a
-submodule position, if the form has a @indexed-racket['submodule]
-@tech{syntax property}, the property value is used as the form to
-expand. This protocol avoids the contamination of submodule lexical
-scope when re-expanding @racket[module] forms that contain submodules.
-
 See also @secref["module-eval-model"] and @secref["mod-parse"].
 
 @defexamples[#:eval (syntax-eval)
@@ -300,7 +285,12 @@ See also @secref["module-eval-model"] and @secref["mod-parse"].
     (unless (zero? n)
       (printf "quack\n")
       (quack (sub1 n)))))
-]}
+]
+
+@history[#:changed "6.3" @elem{Dropped the use of @racket['submodule]
+                               @tech{syntax property} values on nested
+                               @racket[module] or @racket[module*]
+                               forms.}]}
 
 
 @defform*[((module* id module-path form ...)
@@ -313,13 +303,20 @@ a module, and for submodules that may @racket[require] the enclosing module.
 
 Instead of a @racket[module-path] after @racket[id], @racket[#f]
 indicates that all bindings from the enclosing module are visible in
-the submodule; @racket[begin-for-syntax] forms that wrap the
-@racket[module*] form shift the @tech{phase level} of the enclosing
-module's bindings relative to the submodule.  When a
-@racket[module*] form has a @racket[module-path], the submodule
-starts with an empty lexical context in the same way as a top-level
-@racket[module] form, and enclosing @racket[begin-for-syntax] forms
-have no effect on the submodule.}
+the submodule. In that case, @racket[begin-for-syntax] forms that wrap
+the @racket[module*] form shift the @tech{phase level} of the
+enclosing module's bindings relative to the submodule. The macro
+expander handles such nesting by shifting the @tech{phase level} of
+the @racket[module*] form so that it's body starts at @tech{phase
+level} 0, expanding, and then reverting the @tech{phase level} shift;
+beware that this process can leave @tech{syntax objects} as
+@racket['origin] @tech{syntax property} values out-of-sync with the
+expanded module.
+
+When a @racket[module*] form has a @racket[module-path], the submodule
+expansion starts by removing the @tech{scopes} of the enclosing
+module, the same as the @racket[module] form. No shifting compensates
+for any @racket[begin-for-syntax] forms that may wrap the submodule.}
 
 
 @defform[(module+ id form ...)]{
@@ -380,7 +377,8 @@ Legal only in a @tech{module begin context}, and handled by the
 
 @defform[(#%declare declaration-keyword ...)
          #:grammar
-         ([declaration-keyword #:cross-phase-persistent])]{
+         ([declaration-keyword #:cross-phase-persistent
+                               #:empty-namespace])]{
 
 Declarations that affect run-time or reflective properties of the
 module:
@@ -392,6 +390,12 @@ module:
        error if the module does not meet the import or syntactic
        constraints of a @tech{cross-phase persistent} module.}
 
+@item{@indexed-racket[#:empty-namespace] --- declares that
+       @racket[module->namespace] for this module should produce a
+       namespace with no bindings; limiting namespace support in this
+       way can reduce the @tech{lexical information} that
+       otherwise must be preserved for the module.}
+
 ]
 
 A @racket[#%declare] form must appear in a @tech{module
@@ -399,7 +403,7 @@ context} or a @tech{module-begin context}. Each
 @racket[declaration-keyword] can be declared at most once within a
 @racket[module] body.
 
-}           
+@history[#:changed "6.3" @elem{Added @racket[#:empty-namespace].}]}           
 
 
 @;------------------------------------------------------------------------
@@ -1033,13 +1037,13 @@ as follows.
  @defsubform[(struct-out id)]{Exports the bindings associated with a
  structure type @racket[id]. Typically, @racket[id] is bound with
  @racket[(struct id ....)]; more generally, @racket[id] must have a
- @tech{transformer binding} of structure-type information at the relevant
+ @tech{transformer} binding of structure-type information at the relevant
  @tech{phase level}; see @secref["structinfo"].  Furthermore, for
  each identifier mentioned in the structure-type information, the
  enclosing module must define or import one identifier that is
  @racket[free-identifier=?]. If the structure-type information
  includes a super-type identifier, and if the identifier has a
- @tech{transformer binding} of structure-type information, the
+ @tech{transformer} binding of structure-type information, the
  accessor and mutator bindings of the super-type are @italic{not}
  included by @racket[struct-out] for export.
 
@@ -1594,7 +1598,7 @@ and finishes the expansion.
 
 @defform/none[id]{
 
-Refers to a module-level or local binding, when @racket[id] is
+Refers to a top-level, module-level, or local binding, when @racket[id] is
 not bound as a transformer (see @secref["expansion"]). At run-time,
 the reference evaluates to the value in the @tech{location} associated with
 the binding.
@@ -1612,12 +1616,13 @@ x
 ((lambda (x) x) 2)
 ]}
 
+
 @defform[(#%top . id)]{
 
-Refers to a module-level or top-level definition. If @racket[id] has a
-local binding in its context, then @racket[(#%top . id)] refers to a
-top-level definition, but a reference to a top-level definition is
-disallowed within a module.
+Equivalent to @racket[id] when @racket[id] is bound to a module-level
+or top-level variable. In a top-level context, @racket[(#%top . id)]
+always refers to a top-level variable, even if @racket[id] is
+@tech{unbound} or otherwise bound.
 
 Within a @racket[module] form, @racket[(#%top . id)] expands to just
 @racket[id]---with the obligation that @racket[id] is defined within
@@ -1633,7 +1638,11 @@ introduces @racketidfont{#%top} identifiers.
 @examples[
 (define x 12)
 (let ([x 5]) (#%top . x))
-]}
+]
+
+@history[#:changed "6.3" @elem{Changed the introduction of
+                               @racket[#%top] in a top-level context
+                               to @tech{unbound} identifiers only.}]}
 
 @;------------------------------------------------------------------------
 @section{Locations: @racket[#%variable-reference]}
@@ -2039,7 +2048,7 @@ and in the @racket[body]s.
 
 @margin-note/ref{See also @racket[splicing-let-syntax].}
 
-Creates a @tech{transformer binding} (see
+Creates a @tech{transformer} binding (see
 @secref["transformer-model"]) of each @racket[id] with the value of
 @racket[trans-expr], which is an expression at @tech{phase level} 1
 relative to the surrounding context. (See @secref["id-model"] for
@@ -2089,9 +2098,7 @@ compile-time bindings, since forms like @racket[letrec-syntax] and
 @tech{internal-definition contexts} expand to it. In a fully expanded
 expression (see @secref["fully-expanded"]), the @racket[trans-id]
 bindings are discarded and the form reduces to a combination of
-@racket[letrec-values] or @racket[let-values], but
-@racket[letrec-syntaxes+values] can appear in the result of
-@racket[local-expand] with an empty stop list.
+@racket[letrec-values] or @racket[let-values].
 
 For variables bound by @racket[letrec-syntaxes+values], the
 @tech{location}-creation rules differ slightly from
@@ -2105,7 +2112,10 @@ not refer to any of the clause's @racket[val-id]s, then
 @tech{locations} for the @racket[val-id]s are created @emph{after} the
 @racket[val-expr] is evaluated. Otherwise, @tech{locations} for all
 @racket[val-id]s in a set are created just before the first
-@racket[val-expr] in the set is evaluated.
+@racket[val-expr] in the set is evaluated. For the purposes
+of forming sets, a @racket[(quote-syntax _datum #:local)] form counts
+as a reference to all bindings in the @racket[letrec-syntaxes+values]
+form
 
 The end result of the @tech{location}-creation rules is that scoping
 and evaluation order are the same as for @racket[letrec-values], but
@@ -2426,7 +2436,7 @@ information, and see also @racket[begin-encourage-inline].}
 @defform*[[(define-syntax id expr)
            (define-syntax (head args) body ...+)]]{
 
-The first form creates a @tech{transformer binding} (see
+The first form creates a @tech{transformer} binding (see
 @secref["transformer-model"]) of @racket[id] with the value of
 @racket[expr], which is an expression at @tech{phase level} 1 relative
 to the surrounding context. (See @secref["id-model"] for information
@@ -2459,7 +2469,7 @@ a @racket[define-syntax] form introduces a local binding.
 
 @defform[(define-syntaxes (id ...) expr)]{
 
-Like @racket[define-syntax], but creates a @tech{transformer binding}
+Like @racket[define-syntax], but creates a @tech{transformer} binding
 for each @racket[id].  The @racket[expr] should produce as many values
 as @racket[id]s, and each value is bound to the corresponding
 @racket[id].
@@ -2559,7 +2569,7 @@ procedure that accepts and returns a syntax object representing a
 This form expands to @racket[define-syntax] with a use of
 @racket[make-require-transformer] (see @secref["require-trans"] for
 more information), and the @tech{syntax object} passed to and from the
-macro transformer is marked via @racket[syntax-local-require-introduce].
+macro transformer is adjusted via @racket[syntax-local-require-introduce].
 
 The second form is a shorthand the same as for @racket[define-syntax]; it
 expands to a definition of the first form where the @racket[proc-expr] is a
@@ -2590,7 +2600,7 @@ procedure that accepts and returns a syntax object representing a
 This form expands to @racket[define-syntax] with a use of
 @racket[make-provide-transformer] (see @secref["provide-trans"] for
 more information), and the @tech{syntax object} passed to and from the
-macro transformer is marked via @racket[syntax-local-provide-introduce].
+macro transformer is adjusted via @racket[syntax-local-provide-introduce].
 
 The second form is a shorthand the same as for @racket[define-syntax]; it
 expands to a definition of the first form where the @racket[expr] is a
@@ -2727,12 +2737,12 @@ Equivalent to @racket[(when (not test-expr) body ...+)].
 
 @defform[(set! id expr)]{
 
-If @racket[id] has a @tech{transformer binding} to an @tech{assignment
+If @racket[id] has a @tech{transformer} binding to an @tech{assignment
 transformer}, as produced by @racket[make-set!-transformer] or as an
 instance of a structure type with the @racket[prop:set!-transformer]
 property, then this form is expanded by calling the assignment
 transformer with the full expressions. If @racket[id] has a
-@tech{transformer binding} to a @tech{rename transformer} as produced
+@tech{transformer} binding to a @tech{rename transformer} as produced
 by @racket[make-rename-transformer] or as an instance of a structure
 type with the @racket[prop:rename-transformer] property, then this
 form is expanded by replacing @racket[id] with the target identifier
@@ -2897,11 +2907,20 @@ escape. An @racket[unquote-splicing] form as an expression is a syntax error.}
 @;------------------------------------------------------------------------
 @section{Syntax Quoting: @racket[quote-syntax]}
 
-@defform[(quote-syntax datum)]{
+@defform*[[(quote-syntax datum)
+           (quote-syntax datum #:local)]]{
 
 Similar to @racket[quote], but produces a @tech{syntax object}
 that preserves the @tech{lexical information} and source-location
 information attached to @racket[datum] at expansion time.
+
+When @racket[#:local] is specified, than all @tech{scopes} in the
+syntax object's @tech{lexical information} is preserved. When
+@racket[#:local] is omitted, then the @tech{scope sets} within
+@racket[datum] are pruned to omit the @tech{scope} for any binding
+form that appears between the @racket[quote-syntax] form and the
+enclosing top-level context, module body, or @tech{phase level}
+crossing, whichever is closer.
 
 Unlike @racket[syntax] (@litchar{#'}), @racket[quote-syntax] does
 not substitute pattern variables bound by @racket[with-syntax],
@@ -2912,8 +2931,14 @@ not substitute pattern variables bound by @racket[with-syntax],
 (quote-syntax (1 2 3))
 (with-syntax ([a #'5])
   (quote-syntax (a b c)))
+(free-identifier? (let ([x 1]) (quote-syntax x))
+                  (quote-syntax x))
+(free-identifier? (let ([x 1]) (quote-syntax x #:local))
+                  (quote-syntax x))
 ]
-}
+
+@history[#:changed "6.3" @elem{Added @tech{scope} pruning and support
+                               for @racket[#:local].}]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "#%top-interaction"]{Interaction Wrapper: @racket[#%top-interaction]}
