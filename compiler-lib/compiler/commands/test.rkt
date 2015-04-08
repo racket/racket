@@ -250,8 +250,8 @@
            
            (values (proc 'exit-code)
                    (and (pair? results)
-                        (exact-positive-integer? (car results))
-                        (exact-positive-integer? (cdr results))
+                        (exact-nonnegative-integer? (car results))
+                        (exact-nonnegative-integer? (cdr results))
                         results))]))
       
       ;; Shut down the place/process (usually a no-op unless it timed out):
