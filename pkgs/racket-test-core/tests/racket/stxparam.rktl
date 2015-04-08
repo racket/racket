@@ -94,6 +94,34 @@
 (test 11 dynamic-require ''check-splicing-stxparam-et 'q)
 
 ;; ----------------------------------------
+;; Check interaction with internal definition contexts,
+;; both at expression and module levels:
+
+(module stxparam-interaction-with-block racket/base
+  (require racket/stxparam
+           racket/block
+           (for-syntax racket/base))
+
+  (define-syntax-parameter x (lambda (stx) #'10))
+
+  (let ()
+    (block
+     (syntax-parameterize ([x (lambda (stx) #'11)])
+       (let ()
+         x))))
+
+  (block
+   (syntax-parameterize ([x (lambda (stx) #'12)])
+     (let ()
+       x))))
+
+(test "11\n12\n"
+      get-output-string
+      (parameterize ([current-output-port (open-output-string)])
+        (dynamic-require ''stxparam-interaction-with-block #f)
+        (current-output-port)))
+
+;; ----------------------------------------
 
 (report-errs)
 

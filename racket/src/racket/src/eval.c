@@ -4009,7 +4009,7 @@ static void *compile_k(void)
   scheme_prepare_env_stx_context(genv);
 
   if (genv->stx_context)
-    frame_scopes = scheme_module_context_frame_scopes(genv->stx_context);
+    frame_scopes = scheme_module_context_frame_scopes(genv->stx_context, NULL);
   else
     frame_scopes = NULL;
 
@@ -4902,9 +4902,9 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   if (for_expr)
     kind = 0; /* expression */
   else if (!for_stx && SAME_OBJ(argv[1], module_symbol))
-    kind = SCHEME_MODULE_BEGIN_FRAME; /* name is backwards compared to symbol! */
+    kind = SCHEME_MODULE_FRAME | SCHEME_USE_SCOPES_TO_NEXT; /* module body */
   else if (!for_stx && SAME_OBJ(argv[1], module_begin_symbol))
-    kind = SCHEME_MODULE_FRAME; /* name is backwards compared to symbol! */
+    kind = SCHEME_MODULE_BEGIN_FRAME; /* just inside module for expanding to `#%module-begin` */
   else if (SAME_OBJ(argv[1], top_level_symbol)) {
     kind = SCHEME_TOPLEVEL_FRAME;
     if (catch_lifts < 0) catch_lifts = 0;

@@ -1255,8 +1255,7 @@ Scheme_Object *scheme_stx_adjust_scopes(Scheme_Object *o, Scheme_Scope_Set *scop
     - bind scopes (normally 0 or 1) are created for the binding context
     - use-site scopes are created for macro expansions that need them
     - intdef scopes are for immediately nested internal-definition contexts;
-      these are like bind scopes, but as a shortcut we can ignore them
-      `syntax-local-get-shadower`
+      they're treated the same as bind scopes
 
    frame-scopes = main-scopes
    .           | (vector bind-scopes use-site-scopes intdef-scopes)
@@ -1287,12 +1286,6 @@ Scheme_Object *scheme_stx_adjust_frame_scopes(Scheme_Object *o, Scheme_Object *s
   o = scheme_stx_adjust_frame_use_site_scopes(o, scope, phase, mode);
   o = scheme_stx_adjust_frame_bind_scopes(o, scope, phase, mode);
   return stx_adjust_frame_scopes(o, scope, 2, phase, mode);
-}
-
-Scheme_Object *scheme_stx_adjust_frame_main_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode)
-{
-  o = scheme_stx_adjust_frame_use_site_scopes(o, scope, phase, mode);
-  return scheme_stx_adjust_frame_bind_scopes(o, scope, phase, mode);
 }
 
 Scheme_Object *scheme_stx_adjust_frame_bind_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode)
@@ -1357,6 +1350,25 @@ Scheme_Object *scheme_add_frame_use_site_scope(Scheme_Object *frame_scopes, Sche
 Scheme_Object *scheme_add_frame_intdef_scope(Scheme_Object *frame_scopes, Scheme_Object *scope)
 {
   return add_frame_scope(frame_scopes, scope, 2);
+}
+
+static Scheme_Object *add_intdef_scopes_of(Scheme_Object *scopes, Scheme_Object *keep_intdef_scopes)
+{
+  if (SCHEME_VECTORP(keep_intdef_scopes)
+      && SCHEME_TRUEP(SCHEME_VEC_ELS(keep_intdef_scopes)[2])) {
+    if (scopes && SCHEME_VECTORP(scopes)) {
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(scopes)[2]))
+        scheme_signal_error("internal error: cannot currently merge intdef scopes");
+      return make_vector3(SCHEME_VEC_ELS(scopes)[0],
+                          SCHEME_VEC_ELS(scopes)[1],
+                          SCHEME_VEC_ELS(keep_intdef_scopes)[2]);
+    } else
+      return make_vector3(scopes ? scopes : scheme_false,
+                          scheme_false,
+                          SCHEME_VEC_ELS(keep_intdef_scopes)[2]);
+  }
+
+  return scopes;
 }
 
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase)
@@ -4204,9 +4216,16 @@ Scheme_Scope_Set *scheme_module_context_scopes(Scheme_Object *mc)
   return scopes;
 }
 
-Scheme_Object *scheme_module_context_frame_scopes(Scheme_Object *mc)
+Scheme_Object *scheme_module_context_frame_scopes(Scheme_Object *mc, Scheme_Object *keep_intdef_scopes)
 {
-  return (Scheme_Object *)scheme_module_context_scopes(mc);
+  Scheme_Object *scopes;
+
+  scopes = (Scheme_Object *)scheme_module_context_scopes(mc);
+
+  if (keep_intdef_scopes)
+    scopes = add_intdef_scopes_of(scopes, keep_intdef_scopes);
+
+  return scopes;
 }
 
 void scheme_module_context_add_use_site_scope(Scheme_Object *mc, Scheme_Object *use_site_scope)

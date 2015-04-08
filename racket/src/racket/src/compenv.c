@@ -334,7 +334,7 @@ Scheme_Comp_Env *scheme_new_expand_env(Scheme_Env *genv, Scheme_Object *insp, Sc
 
   if (SAME_OBJ(scopes, scheme_true)) {
     if (genv->stx_context)
-      scopes = scheme_module_context_frame_scopes(genv->stx_context);
+      scopes = scheme_module_context_frame_scopes(genv->stx_context, NULL);
     else
       scopes = NULL;
   }
@@ -559,11 +559,11 @@ void scheme_add_compilation_frame_intdef_scope(Scheme_Comp_Env *env, Scheme_Obje
   }
 
   if (env->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME)) {
-    /* don't treat the scope as local */
-  } else {
-    scope = scheme_add_frame_intdef_scope(env->scopes, scope);
-    env->scopes = scope;
+    /* we keep intdef scopes, even in this case, for use by get-shadower */
   }
+
+  scope = scheme_add_frame_intdef_scope(env->scopes, scope);
+  env->scopes = scope;
 }
 
 Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env)
@@ -589,12 +589,12 @@ int scheme_is_nested_module(Scheme_Comp_Env *env)
 
 int scheme_is_module_env(Scheme_Comp_Env *env)
 {
-  return !!(env->flags & SCHEME_MODULE_BEGIN_FRAME); /* name is backwards compared to symbol! */
+  return !!(env->flags & SCHEME_MODULE_FRAME);
 }
 
 int scheme_is_module_begin_env(Scheme_Comp_Env *env)
 {
-  return !!(env->flags & SCHEME_MODULE_FRAME); /* name is backwards compared to symbol! */
+  return !!(env->flags & SCHEME_MODULE_BEGIN_FRAME);
 }
 
 Scheme_Comp_Env *scheme_extend_as_toplevel(Scheme_Comp_Env *env)
@@ -1377,7 +1377,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       if (_need_macro_scope) {
         for (frame = env; frame->next != NULL; frame = frame->next) {
           if (!(frame->flags & (SCHEME_TOPLEVEL_FRAME
-                                | SCHEME_MODULE_BEGIN_FRAME))
+                                | SCHEME_MODULE_FRAME))
               && frame->scopes) {
             *_need_macro_scope = 0;
             break;
@@ -1619,8 +1619,8 @@ static Scheme_Object *add_all_context(Scheme_Object *id, Scheme_Comp_Env *env)
 
   for (env2 = env; env2; env2 = env2->next) {
     if (env2->scopes) {
-      id = scheme_stx_adjust_frame_main_scopes(id, env2->scopes, scheme_env_phase(env2->genv),
-                                               SCHEME_STX_ADD);
+      id = scheme_stx_adjust_frame_scopes(id, env2->scopes, scheme_env_phase(env2->genv),
+                                          SCHEME_STX_ADD);
     }
   }
 

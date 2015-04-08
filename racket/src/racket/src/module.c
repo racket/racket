@@ -7282,13 +7282,13 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   {
     Scheme_Object *frame_scopes;
-    frame_scopes = scheme_module_context_frame_scopes(rn_set);
+    frame_scopes = scheme_module_context_frame_scopes(rn_set, NULL);
     if (rec[drec].comp)
       benv = scheme_new_comp_env(menv, env->insp, frame_scopes,
-                                 SCHEME_MODULE_FRAME | SCHEME_KEEP_SCOPES_FRAME);
+                                 SCHEME_MODULE_BEGIN_FRAME | SCHEME_KEEP_SCOPES_FRAME);
     else
       benv = scheme_new_expand_env(menv, env->insp, frame_scopes,
-                                   SCHEME_MODULE_FRAME | SCHEME_KEEP_SCOPES_FRAME);
+                                   SCHEME_MODULE_BEGIN_FRAME | SCHEME_KEEP_SCOPES_FRAME);
   }
 
   /* If fm isn't a single expression, it certainly needs a
@@ -8129,7 +8129,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
 
-  if (!(env->flags & SCHEME_MODULE_FRAME))
+  if (!(env->flags & SCHEME_MODULE_BEGIN_FRAME))
     scheme_wrong_syntax(NULL, NULL, form, "illegal use (not a module body)");
 
   if (scheme_stx_proper_list_length(form) < 0)
@@ -8657,7 +8657,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   /* Expand each expression in form up to `begin', `define-values', `define-syntax', 
      `require', `provide', `#%app', etc. */
   xenv = scheme_new_compilation_frame(0, (SCHEME_CAPTURE_WITHOUT_RENAME
-					  | SCHEME_MODULE_BEGIN_FRAME
+					  | SCHEME_MODULE_FRAME
 					  | SCHEME_FOR_STOPS),
                                       NULL,
 				      env);
@@ -9327,14 +9327,13 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   /* Pass 2 */
   SCHEME_EXPAND_OBSERVE_NEXT_GROUP(observer);
   
-  if (rec[drec].comp) {
+  {
     /* Module and each `begin-for-syntax' group manages its own prefix: */
     Scheme_Object *frame_scopes;
-    frame_scopes = scheme_module_context_frame_scopes(rn_set);
+    frame_scopes = scheme_module_context_frame_scopes(rn_set, xenv->scopes);
     cenv = scheme_new_comp_env(env->genv, env->insp, frame_scopes,
                                SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_SCOPES_FRAME);
-  } else
-    cenv = scheme_extend_as_toplevel(env);
+  }
 
   lift_data = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(lift_data)[0] = (Scheme_Object *)cenv;

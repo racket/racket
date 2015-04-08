@@ -1143,12 +1143,11 @@ Scheme_Object *scheme_stx_flip_scope(Scheme_Object *o, Scheme_Object *m, Scheme_
 Scheme_Object *scheme_stx_adjust_scopes(Scheme_Object *o, Scheme_Scope_Set *scopes, Scheme_Object *phase, int mode);
 
 Scheme_Scope_Set *scheme_module_context_scopes(Scheme_Object *mc);
-Scheme_Object *scheme_module_context_frame_scopes(Scheme_Object *mc);
+Scheme_Object *scheme_module_context_frame_scopes(Scheme_Object *mc, Scheme_Object *keep_intdef_scopes);
 void scheme_module_context_add_use_site_scope(Scheme_Object *mc, Scheme_Object *use_site_scope);
 Scheme_Object *scheme_stx_adjust_frame_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode);
 Scheme_Object *scheme_stx_adjust_frame_bind_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode);
 Scheme_Object *scheme_stx_adjust_frame_use_site_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode);
-Scheme_Object *scheme_stx_adjust_frame_main_scopes(Scheme_Object *o, Scheme_Object *scope, Scheme_Object *phase, int mode);
 
 Scheme_Object *scheme_make_frame_scopes(Scheme_Object *scope);
 Scheme_Object *scheme_add_frame_use_site_scope(Scheme_Object *frame_scopes, Scheme_Object *use_site_scope);
