@@ -96,13 +96,14 @@
     ;; If the tests use `rackunit`, collect result stats:
     (define test-results 
       (test-log #:display? #f #:exit? #f))
+
     ;; Return test results. If we don't get this far, the result
     ;; code of the place determines whether it the test counts as
     ;; successful.
     (place-channel-put pch
                        ;; If the test did not use `rackunit`, claim
                        ;; success:
-                       (if (zero? (car test-results))
+                       (if (zero? (cdr test-results))
                            (cons 0 1)
                            test-results))))
 
