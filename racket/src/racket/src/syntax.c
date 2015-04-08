@@ -77,10 +77,15 @@ typedef struct Scheme_Scope_With_Owner {
 
 READ_ONLY static Scheme_Object *root_scope;
 
+/* For lazy propagation of scope changes: */
 typedef struct Scheme_Propagate_Table {
-  Scheme_Scope_Table st;
-  Scheme_Scope_Table *prev; /* points to old scope table */
-  Scheme_Object *phase_shift; /* number of (box <n>); latter converts only <n> to #f */
+  Scheme_Scope_Table st; /* Maps scopes to actions, instead of just holding a set of scopes;
+                            action compositions can be collased to an action:
+                            SCHEME_STX_ADD + SCHEME_STX_FLIP = SCHEME_STX_REMOVE, etc. */
+  Scheme_Scope_Table *prev; /* points to old scope table as a shortcut;
+                               the old table plus these actions equals
+                               the owning object's current table */
+  Scheme_Object *phase_shift; /* <number> or (box <nnumber>); latter converts only <nnumber> to #f */
 } Scheme_Propagate_Table;
 
 THREAD_LOCAL_DECL(static mzlonglong scope_counter);
@@ -181,6 +186,7 @@ XFORM_NONGCING static void clear_binding_cache_stx(Scheme_Stx *stx);
 #define CONS scheme_make_pair
 #define ICONS scheme_make_pair
 
+/* "substx" means that we need to propagate marks to nested syntax objects */
 #define HAS_SUBSTX(obj) (SCHEME_PAIRP(obj) || SCHEME_VECTORP(obj) || SCHEME_BOXP(obj) || prefab_p(obj) || SCHEME_HASHTRP(obj))
 #define HAS_CHAPERONE_SUBSTX(obj) (HAS_SUBSTX(obj) || (SCHEME_NP_CHAPERONEP(obj) && HAS_SUBSTX(SCHEME_CHAPERONE_VAL(obj))))
 
@@ -197,8 +203,9 @@ XFORM_NONGCING static void clear_binding_cache_stx(Scheme_Stx *stx);
 
 #define SCHEME_TL_MULTI_SCOPEP(o) (MZ_OPT_HASH_KEY(&(((Scheme_Hash_Table *)o)->iso)) & 0x2)
 
-/* Represent fallback as vectors, either of size 2 (for normal scopes)
-   or size 4 (for propagtation scopes): */
+/* Represent fallback as vectors, either of size 2 (for normal scope
+   sets) or size 4 (for sets of propagation instructions, because adding
+   a fallback layer is an action): */
 #define SCHEME_FALLBACKP(o) SCHEME_VECTORP(o)
 #define SCHEME_FALLBACK_QUADP(o) (SCHEME_VEC_SIZE(o) == 4)
 #define SCHEME_FALLBACK_FIRST(o) (SCHEME_VEC_ELS(o)[0])
@@ -252,6 +259,19 @@ int stx_alloc_prop_table, stx_skip_alloc_prop_table;
 #else
 # define STX_ASSERT(x) /* empty */
 #endif
+
+static Scheme_Object *make_vector3(Scheme_Object *a, Scheme_Object *b, Scheme_Object *c)
+{
+  Scheme_Object *vec;
+
+  vec = scheme_make_vector(3, NULL);
+  SCHEME_VEC_ELS(vec)[0] = a;
+  SCHEME_VEC_ELS(vec)[1] = b;
+  SCHEME_VEC_ELS(vec)[2] = c;
+
+  return vec;
+}
+
 /*========================================================================*/
 /*                           initialization                               */
 /*========================================================================*/
@@ -419,6 +439,7 @@ Scheme_Object *scheme_make_stx(Scheme_Object *val,
 }
 
 Scheme_Object *clone_stx(Scheme_Object *to, GC_CAN_IGNORE int *mutate)
+/* the `mutate` argument tracks whether we can mutate `to` */
 {
   Scheme_Stx *stx = (Scheme_Stx *)to;
   Scheme_Object *taints, *shifts;
@@ -657,6 +678,8 @@ void scheme_stx_set(Scheme_Object *q_stx, Scheme_Object *val, Scheme_Object *con
 
 Scheme_Object *scheme_stx_root_scope()
 {
+  /* The root scope is an all-phases scope used by all top-level namespaces
+     (and not by module namespaces): */
   return root_scope;
 }
 
@@ -679,6 +702,8 @@ Scheme_Object *scheme_new_scope(int kind)
 }
 
 static Scheme_Object *new_multi_scope(Scheme_Object *debug_name)
+/* a multi-scope is a set of phase-specific scopes that are
+   always added, removed, or flipped as a group */
 {
   Scheme_Hash_Table *multi_scope;
 
@@ -855,6 +880,9 @@ static Scheme_Scope_Set *extract_scope_set_from_scope_list(Scheme_Scope_Set *sco
 {
   Scheme_Object *m;
 
+  /* Combine scopes that exist at all phases with a specific scope for
+     each set of phase-specific scopes */
+
   if (SCHEME_FALLBACKP(multi_scopes))
     multi_scopes = SCHEME_FALLBACK_FIRST(multi_scopes);
   
@@ -874,6 +902,7 @@ static Scheme_Scope_Set *extract_scope_set(Scheme_Stx *stx, Scheme_Object *phase
 }
 
 static Scheme_Scope_Set *adjust_scope(Scheme_Scope_Set *scopes, Scheme_Object *m, int mode)
+/* operate on a single scope within a set */
 {
   STX_ASSERT(SAME_TYPE(SCHEME_TYPE(m), scheme_scope_type));
 
@@ -891,6 +920,7 @@ static Scheme_Scope_Set *adjust_scope(Scheme_Scope_Set *scopes, Scheme_Object *m
 }
 
 Scheme_Object *adjust_scope_list(Scheme_Object *multi_scopes, Scheme_Object *m, Scheme_Object *phase, int mode)
+/* operate on a set of phase-specific scopes within a set */
 {
   Scheme_Object *l;
 
@@ -926,6 +956,7 @@ Scheme_Object *adjust_scope_list(Scheme_Object *multi_scopes, Scheme_Object *m, 
 }
 
 static Scheme_Scope_Set *combine_scope(Scheme_Scope_Set *scopes, Scheme_Object *m, int mode)
+/* operate on a single scope within a set of propagation instructions */
 {
   Scheme_Object *old_mode;
 
@@ -949,19 +980,8 @@ static Scheme_Scope_Set *combine_scope(Scheme_Scope_Set *scopes, Scheme_Object *
     return scope_set_set(scopes, m, scheme_make_integer(mode));
 }
 
-static Scheme_Object *make_vector3(Scheme_Object *a, Scheme_Object *b, Scheme_Object *c)
-{
-  Scheme_Object *vec;
-  
-  vec = scheme_make_vector(3, NULL);
-  SCHEME_VEC_ELS(vec)[0] = a;
-  SCHEME_VEC_ELS(vec)[1] = b;
-  SCHEME_VEC_ELS(vec)[2] = c;
-
-  return vec;
-}
-
 Scheme_Object *combine_scope_list(Scheme_Object *multi_scopes, Scheme_Object *m, Scheme_Object *phase, int mode)
+/* operate on a set of phase-specific scopes within a set of propagation instructions */
 {
   Scheme_Object *l;
 
@@ -1009,6 +1029,7 @@ Scheme_Object *combine_scope_list(Scheme_Object *multi_scopes, Scheme_Object *m,
 }
 
 static Scheme_Object *reconstruct_fallback(Scheme_Object *fb, Scheme_Object *r)
+/* update actions for first (maybe only) in fallback chain */
 {
   if (fb) {
     if (SCHEME_FALLBACK_QUADP(fb))
@@ -1040,6 +1061,7 @@ static Scheme_Object *clone_fallback_chain(Scheme_Object *fb)
 }
 
 static Scheme_Object *remove_at_scope_list(Scheme_Object *l, Scheme_Object *p)
+/* remove element at `p` within `l` */
 {
   Scheme_Object *fb;
   Scheme_Object *r = SCHEME_CDR(p);
@@ -1105,6 +1127,8 @@ typedef Scheme_Object *(do_scope_list_t)(Scheme_Object *multi_scopes, Scheme_Obj
 static Scheme_Scope_Table *do_scope_at_phase(Scheme_Scope_Table *st, Scheme_Object *m, Scheme_Object *phase, int mode, 
                                              do_scope_t do_scope, do_scope_list_t do_scope_list, Scheme_Scope_Table *prev,
                                              GC_CAN_IGNORE int *mutate)
+/* operate on a scope or set of phase specific scopes,
+   either on a scope set or a set of propagation instructions */
 {
   Scheme_Object *l;
   Scheme_Scope_Set *scopes;
@@ -1160,7 +1184,7 @@ static Scheme_Object *stx_adjust_scope(Scheme_Object *o, Scheme_Object *m, Schem
         && (stx->scopes == scopes))
       return (Scheme_Object *)stx;
   } else
-    to_propagate = NULL; /* => cleared binding cache */
+    to_propagate = NULL; /* => clear cache */
 
   if (*mutate & MUTATE_STX_OBJ) {
     stx->scopes = scopes;
@@ -1227,9 +1251,16 @@ Scheme_Object *scheme_stx_adjust_scopes(Scheme_Object *o, Scheme_Scope_Set *scop
   return stx_adjust_scopes(o, scopes, phase, mode, &mutate);
 }
 
-/* frame-scopes = main-scopes
-   .           | (vector main-scopes use-site-scopes intdef-scopes)
-   main-scopes = some-scopes
+/* For each continuation frame, we need to keep track of various sets of scopes:
+    - bind scopes (normally 0 or 1) are created for the binding context
+    - use-site scopes are created for macro expansions that need them
+    - intdef scopes are for immediately nested internal-definition contexts;
+      these are like bind scopes, but as a shortcut we can ignore them
+      `syntax-local-get-shadower`
+
+   frame-scopes = main-scopes
+   .           | (vector bind-scopes use-site-scopes intdef-scopes)
+   bind-scopes = some-scopes
    use-site-scopes = some-scopes
    intdef-scopes = some-scopes
    some-scopes = #f | scope | scope-set */
@@ -1335,6 +1366,15 @@ int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase)
 
 /******************** shifts ********************/
 
+/* Shifts includes both phase shifts (in the sense of
+   `syntax-shift-phase-level`) and shifting a module reference based
+   on one modix (at compile time, say) to a different one (at run
+   time, say). A modidx kind of shift can also include an inspector
+   substution (e.g., a load-time inspectr to take the place of the
+   compile-time one) and an export registry for restoring lazily load
+   bulk-import bindings (for when all exports of a module are
+   imported, and we go find the imported module on demand). */
+
 XFORM_NONGCING static int same_phase(Scheme_Object *a, Scheme_Object *b)
 {
   return ((SAME_OBJ(a, b) || scheme_eqv(a, b))
@@ -1376,6 +1416,7 @@ static Scheme_Object *add_shifts(Scheme_Object *old_shift, Scheme_Object *shift)
 }
 
 static Scheme_Object *shift_multi_scope(Scheme_Object *p, Scheme_Object *shift)
+/* shift all phase-specific scopes in a set */
 {
   shift = add_shifts(SCHEME_CDR(p), shift);
 
@@ -1389,6 +1430,7 @@ static Scheme_Object *shift_multi_scope(Scheme_Object *p, Scheme_Object *shift)
 }
 
 static Scheme_Object *shift_prop_multi_scope(Scheme_Object *p, Scheme_Object *shift)
+  /* shift all phase-specific scopes in a set of propagation instructions */
 {
   Scheme_Object *p2;
   
@@ -1781,6 +1823,7 @@ static Scheme_Object *propagate_scope_set(Scheme_Scope_Set *props, Scheme_Object
 }
 
 XFORM_NONGCING static int equiv_scope_tables(Scheme_Scope_Table *a, Scheme_Scope_Table *b)
+/* try to cheaply detect equivalent tables to enable shortcuts */
 {
   if (a == b)
     return 1;
@@ -1842,9 +1885,12 @@ static Scheme_Object *propagate_scopes(Scheme_Object *o, Scheme_Scope_Table *to_
 
   o = propagate_scope_set(to_propagate->simple_scopes, o, scheme_true, flag, mutate);
 
+  /* fallbacks here mean that we need to propagate fallback creations,
+     as well as propagating actions at each fallback layer: */
+
   fb = to_propagate->multi_scopes;
   if (SCHEME_FALLBACKP(fb)) {
-    /* reverse the fallback list: */
+    /* reverse the fallback list so we can replay them in the right order: */
     key = scheme_null;
     while (SCHEME_FALLBACKP(fb)) {
       key = make_fallback_quad(SCHEME_FALLBACK_FIRST(fb),
@@ -1855,7 +1901,7 @@ static Scheme_Object *propagate_scopes(Scheme_Object *o, Scheme_Scope_Table *to_
     }
     fb = make_fallback_pair(fb, key);
   }
-  
+
   while (fb) {
     if (SCHEME_FALLBACKP(fb)) {
       if (SCHEME_FALLBACK_QUADP(fb)) {
@@ -2421,7 +2467,7 @@ static void check_for_conversion(Scheme_Object *sym,
 /* Due to `require` macros, importing a whole module can turn into
    individual imports from the module. Detect when everything that a
    module exports (at a given phase) is imported as a set of bindings,
-   and collapse them to a pes */
+   and collapse them to a bulk-import "pes". */
 {
   Scheme_Hash_Table *mht;
   Scheme_Object *v, *v2, *cnt;
@@ -2589,6 +2635,9 @@ static Scheme_Object *replace_matching_scopes(Scheme_Object *l, Scheme_Scope_Set
 static void clear_matching_bindings(Scheme_Object *pes,
                                     Scheme_Scope_Set *scopes,
                                     Scheme_Object *l)
+/* a new bulk import needs to override any individual imports; this
+   should only matter for top-level interactions, since modules only
+   allow shadowing of the initial bulk import */
 {
   Scheme_Hash_Tree *excepts;
   Scheme_Object *prefix;
@@ -2809,6 +2858,9 @@ static void do_add_module_binding(Scheme_Scope_Set *scopes, Scheme_Object *local
   STX_ASSERT(SCHEME_MODIDXP(modidx));
 
  /*
+   This encoding is meant to be progressively less compact for
+   progerssively less-common cases:
+
    binding ::= mod_binding
    .        |  (cons inspector-desc mod_binding)
    mod_binding ::=  modidx
@@ -2886,6 +2938,7 @@ void extract_module_binding_parts(Scheme_Object *l,
                                   Scheme_Object **_nominal_name,   /* maybe unset */
                                   Scheme_Object **_src_phase,      /* maybe unset */
                                   Scheme_Object **_nominal_src_phase) /* maybe unset */
+/* unpack an encodings created by do_add_module_binding() */
 {
   if (SCHEME_PAIRP(l)
       && SCHEME_INSPECTOR_DESCP(SCHEME_CAR(l))) {
@@ -2968,6 +3021,8 @@ void scheme_add_module_binding_w_nominal(Scheme_Object *o, Scheme_Object *phase,
                         nominal_import_phase, nominal_export_phase,
                         from_pt, collapse_table);
 }
+
+/******************** debug-info ********************/
 
 static Scheme_Object *scopes_to_printed_list(Scheme_Scope_Set *scopes)
 {
@@ -3486,11 +3541,15 @@ static void add_scopes_mapped_names(Scheme_Scope_Set *scopes, Scheme_Hash_Table 
   } while (retry);
 }
 
+/******************** lookup ********************/
+
 static Scheme_Object *do_stx_lookup(Scheme_Stx *stx, Scheme_Scope_Set *scopes,
                                     Scheme_Scope_Set *check_subset,
                                     GC_CAN_IGNORE int *_exact_match,
                                     GC_CAN_IGNORE int *_ambiguous,
                                     GC_CAN_IGNORE Scheme_Object **_sole_result)
+/* the core lookup operation: walk through an identifier's marks,
+   and walk through the bindings attached to each of those marks */
 {
   int j, invalid, matches = 0;
   intptr_t i;
@@ -4066,7 +4125,10 @@ void scheme_add_binding_copy(Scheme_Object *o, Scheme_Object *from_o, Scheme_Obj
   add_binding(stx->val, phase, extract_scope_set(stx, phase), from_o, NULL, NULL);
 }
 
-/******************** module-import bindings ********************/
+/******************** module contexts ********************/
+
+/* A module context is a convenience record to track the scopes,
+   inspector, etc. that are related to expanding a `module` form */
 
 Scheme_Object *scheme_make_module_context(Scheme_Object *insp, 
                                           Scheme_Object *shift_or_shifts,
@@ -4313,6 +4375,7 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <sco
                                               Scheme_Object *src_phase, /* nominal import phase */
                                               Scheme_Object *context,
                                               Scheme_Object *replace_at)
+/* create a bulk import */
 {
   Scheme_Object *phase, *pes, *insp_desc, *unmarshal_info;
   Scheme_Scope_Set *scopes;
@@ -4671,7 +4734,7 @@ int scheme_stx_equal_module_context(Scheme_Object *other_stx, Scheme_Object *mc_
                      extract_scope_set(stx, phase));
 }
 
-/***********************************************************************/
+/******************** lazy syntax-object unmarshaling ********************/
 
 void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, intptr_t i)
 {
