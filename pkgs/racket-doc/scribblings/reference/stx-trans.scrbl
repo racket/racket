@@ -734,6 +734,24 @@ transformer} application by the expander for an expression
 within a @racket[module] form, @racket[#f] otherwise.}
 
 
+@defproc[(syntax-local-identifier-as-binding [id-stx identifier?]) identifier?]{
+
+Returns an identifier like @racket[id-stx], but without @tech{use-site
+scopes} that were previously added to the identifier as part of a
+macro expansion in the current definition context.
+
+In a @tech{syntax transformer} that runs in a non-expression context
+and forces the expansion of subforms with @racket[local-expand], use
+@racket[syntax-local-identifier-as-binding] on an identifier from the
+expansion before moving it into a binding position or comparing with
+with @racket[bound-identifier=?]. Otherwise, the results can be
+inconsistent with the way that @racket[define] works in the same
+definition context.
+
+@transform-time[]
+
+@history[#:added "6.3"]}
+
 @defproc[(syntax-local-introduce [stx syntax?]) syntax?]{
 
 Produces a syntax object that is like @racket[stx], except that the
