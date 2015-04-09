@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
+          scribble/core
           (for-label racket/base
                      racket/contract
                      compiler/zo-structs
@@ -18,6 +19,14 @@
 The @racketmodname[compiler/zo-structs] library defines the bytecode
 structures that are produced by @racket[zo-parse] and consumed by
 @racket[decompile] and @racket[zo-marshal].
+
+@nested[#:style 'inset]{
+@elem[#:style (style #f (list (background-color-property "yellow")))]{@bold{Warning:}}
+      The @racketmodname[compiler/zo-structs] library exposes internals
+      of the Racket bytecode abstraction. Unlike other Racket
+      libraries, @racketmodname[compiler/zo-structs] is subject to
+      incompatible changes across Racket versions.}
+
 
 @defstruct+[zo ()]{
   A supertype for all forms that can appear in compiled code.}
@@ -41,7 +50,8 @@ structures that are produced by @racket[zo-parse] and consumed by
             ([num-lifts exact-nonnegative-integer?]
              [toplevels (listof (or/c #f symbol? global-bucket?
                                       module-variable?))]
-             [stxs (listof stx?)])]{
+             [stxs (listof (or stx? #f))]
+             [inspector-desc symbol?])]{
   Represents a ``prefix'' that is pushed onto the stack to initiate
   evaluation.  The prefix is an array, where buckets holding the
   values for @racket[toplevels] are first, then the buckets for the
@@ -63,7 +73,16 @@ structures that are produced by @racket[zo-parse] and consumed by
 
   The variable buckets and syntax objects that are recorded in a prefix
   are accessed by @racket[toplevel] and @racket[topsyntax] expression
-  forms.}
+  forms.
+  
+  When an element of @racket[stxs] is @racket[#f], it coresponds to a
+  syntax object that was optimized away at the last minute. The slot
+  must not be referenced vt a @racket[topsyntax] form.
+
+  The @racket[inspector-desc] field provides an inspector name that
+  is used within syntax-object bindings. At run time, the prefix gets
+  an inspector, and bindings that reference the same inspector name are
+  granted access capabilities through that inspector.}
 
 @defstruct+[(global-bucket zo) ([name symbol?])]{
   Represents a top-level variable, and used only in a @racket[prefix].}
@@ -111,8 +130,8 @@ returns.}
 Represents the shape of an expected import as a structure-type
 binding, constructor, etc.}
 
-@defstruct+[(stx zo) ([encoded wrapped?])]{
-  Wraps a syntax object in a @racket[prefix].}
+@defstruct+[(stx zo) ([content stx-obj?])]{
+  Wraps a syntax object as it appears in a @racket[prefix].}
 
 
 @; --------------------------------------------------
@@ -205,6 +224,8 @@ binding, constructor, etc.}
              [dummy toplevel?]
              [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
              [internal-context (or/c #f #t stx? (vectorof stx?))]
+             [binding-names (hash/c exact-integer?
+                                    (hash/c symbol? (or/c #t stx?)))]
              [flags (listof (or/c 'cross-phase))]
              [pre-submodules (listof mod?)]
              [post-submodules (listof mod?)])]{
@@ -246,6 +267,13 @@ binding, constructor, etc.}
   context is unavailable or empty.  A @racket[#t] value means that the
   context is computed by re-importing all required modules.  A
   syntax-object value embeds an arbitrary lexical context.
+
+  The @racket[binding-names] value provides additional information to
+  @racket[module->namespace] to correlate symbol names for variables
+  and syntax definitions to identifiers that map to those variables. A
+  separate table of names exists for each phase, and a @racket[#t]
+  mapping for a name indicates that it is mapped but inaccessible
+  (because the relevant scopes are inaccessible).
 
   The @racket[flags] field records certain properties of the module.
   The @racket['cross-phase] flag indicates that the module body is
@@ -547,127 +575,201 @@ binding, constructor, etc.}
 @; --------------------------------------------------
 @section{Syntax Objects}
 
-@defstruct+[(wrapped zo)
+@defstruct+[(stx-obj zo)
             ([datum any/c]
-             [wraps (listof wrap?)]
+             [wrap wrap?]
              [tamper-status (or/c 'clean 'armed 'tainted)])]{
-  Represents a syntax object, where @racket[wraps] contain the lexical
+  Represents a syntax object, where @racket[wrap] contains lexical
   information and @racket[tamper-status] is taint information. When the
-  @racket[datum] part is itself compound, its pieces are wrapped, too.}
+  @racket[datum] part is itself compound, its pieces are wrapped
+  as @racket[stx-obj]s, too.
 
-@defstruct+[(wrap zo) ()]{
-  A supertype for lexical-information elements.}
+  The content of @racket[wrap] is typically cyclic, since it includes
+  scopes that contain bindings that refer to scopes.}
 
-@defstruct+[(top-level-rename wrap) ([flag boolean?])]{
-  A top-level renaming.}
+@defstruct+[(wrap zo) ([shifts (listof module-shift?)]
+                       [simple-scopes (listof scope?)]
+                       [multi-scopes (listof (list/c multi-scope? (or/c #f exact-integer?)))])]{
+  Lexical information for a syntax object. The @racket[shifts] field
+  allows binding information to be relative to the enclosing module's
+  run-time path. The @racket[simple-scopes] field records scopes that
+  are attached to the syntax object at all phases, and @racket[multi-scopes]
+  records phase-specific scopes (which are always attached as a group)
+  along with a phase shift for every scope within the group).}
 
-@defstruct+[(mark-barrier wrap) ([value symbol?])]{
-  A mark barrier.}
+@defstruct+[(module-shift zo) ([from (or/c #f module-path-index?)]
+                               [to (or/c #f module-path-index?)]
+                               [from-inspector-desc (or/c #f symbol?)]
+                               [to-inspector-desc (or/c #f symbol?)])]{
 
-@defstruct+[(free-id-info zo)
-            ([path0 module-path-index?]
-             [symbol0 symbol?]
-             [path1 module-path-index?]
-             [symbol1 symbol?]
-             [phase0 (or/c exact-integer? #f)]
-             [phase1 (or/c exact-integer? #f)]
-             [phase2 (or/c exact-integer? #f)]
-             [use-current-inspector? boolean?])]{
-  Information about a free identifier.}
+Records a history of module path index replacements. These replacements
+are applied in reverse order, and a module instantiation typically adds
+one more shift to replace the current ``self'' module path index
+with a run-time module path. The @racket[from] and @racket[to]
+fields should be both @racket[#f] or both non-@racket[#f].
 
-@defstruct+[(lexical-rename wrap)
-            ([has-free-id-info? boolean?]
-             [bool2 boolean?]
-             [alist
-              (listof
-               (cons/c symbol?
-                       (or/c symbol?
-                             (cons/c symbol?
-                                     (or/c (cons/c symbol? (or/c symbol? #f))
-                                           free-id-info?)))))])]{
-  A local-binding mapping from symbols to binding-set names.}
+The @racket[from-inspector-desc] and @racket[to-inspector-desc] fields
+similarly should be both @racket[#f] or both non-@racket[#f]. They
+record a history of code-inspector replacements.}
 
 
-@defstruct+[(phase-shift wrap)
-            ([amt (or/c exact-integer? #f)]
-             [src module-path-index?]
-             [dest module-path-index?]
-             [cancel-id (or/c exact-integer? #f)])]{
-  Shifts module bindings later in the wrap set.}
+@defstruct+[(scope zo) ([name (or/c 'root exact-nonnegative-integer?)]
+                        [kind symbol?]
+                        [bindings (listof (list/c symbol? (listof scope?) binding?)) #;#:mutable]
+                        [bulk-bindings (listof (list/c (listof scope?) all-from-module?)) #;#:mutable]
+                        [multi-owner (or/c #f multi-scope?) #;#:mutable])]{
 
-@defstruct+[(module-rename wrap)
-            ([phase exact-integer?]
-             [kind (or/c 'marked 'normal)]
-             [set-id any/c]
-             [unmarshals (listof make-all-from-module?)]
-             [renames (listof module-binding?)]
-             [mark-renames any/c]
-             [plus-kern? boolean?])]{
-  Represents a set of module and import bindings.}
+Represents a scope. When @racket[name] is @racket['root] then the
+scope represents the unique all-phases scope that is shared among
+non-module namespaces. Otherwise, @racket[name] is intended to be
+distinct for each @racket[scope] instance within a module or top-level
+compilation, but the @racket[eq?]-identity of the @racket[scope]
+instance ultimately determines its identity. The @racket[kind] symbol
+similarly acts as a debugging hint in the same way as for
+@racket[syntax-debug-info].
 
-@defstruct+[(all-from-module zo)
-            ([path module-path-index?]
-             [phase (or/c exact-integer? #f)]
-             [src-phase (or/c exact-integer? #f)]
-             [exceptions (listof symbol?)]
-             [prefix (or/c symbol? #f)]
-             [context (or/c (listof exact-integer?) 
-                            (vector/c (listof exact-integer?) any/c) 
-                            #f)])]{
-  Represents a set of simple imports from one module within a
-  @racket[module-rename].}
+The @racket[bindings] list indicates some bindings that are associated
+with the scope. Each element of the list includes a symbolic name, a
+list of scopes (including the enclosing one), and the binding for the
+combination of name and scope set. A given symbol can appear in
+multiple elements of @racket[bindings], but the combination of the
+symbol and scope set are unique within @racket[bindings] and across
+all scopes. The mapping of a symbol and scope set to a binding is
+recorded with an arbitrary member of the scope set.
 
-@defstruct+[(module-binding zo) ()]{
-  A supertype for module bindings.}
+The @racket[bulk-bindings] field lists bindings of all exports from a
+given module, which is an optimization over including each export in
+@racket[bindings]. Elements of @racket[bindings] take precedence over
+elements of @racket[bulk-bindings], and earlier elements of
+@racket[bulk-bindings] take precedence over later elements.
 
-@defstruct+[(simple-module-binding module-binding)
-            ([path module-path-index?])]{
-  Represents a single identifier import within a
-  @racket[module-rename].}
+If the @racket[scope] represents a scope at a particular phase for a
+group of phase-specific scopes, @racket[mark-owner] refers to the
+group.}
 
-@defstruct+[(phased-module-binding module-binding)
-            ([path module-path-index?]
-             [phase exact-integer?]
-             [export-name any/c]
-             [nominal-path nominal-path?]
-             [nominal-export-name any/c])]{
-  Represents a single identifier import within a
-  @racket[module-rename].}
 
-@defstruct+[(exported-nominal-module-binding module-binding)
-            ([path module-path-index?]
-             [export-name any/c]
-             [nominal-path nominal-path?]
-             [nominal-export-name any/c])]{
-  Represents a single identifier import within a
-  @racket[module-rename].}
+@defstruct+[(multi-scope zo) ([name exact-nonnegative-integer?]
+                              [src-name any/c]
+                              [scopes (listof (list/c (or/c #f exact-integer?) scope?)) #;#:mutable])]{
 
-@defstruct+[(nominal-module-binding module-binding)
-            ([path module-path-index?]
-             [nominal-path nominal-path?])]{
-  Represents a single identifier import within a
-  @racket[module-rename].}
+Represents a set of phase-specific scopes that are added or removed
+from lexical information as a group. As for @racket[scope], the
+@racket[name] field is intended to be distinct for different groups,
+but the @racket[eq?] identity of the @racket[multi-scope] record
+ultimately determines its identity. The @racket[src-name] field
+similarly acts as a debugging hint in the same way as for
+@racket[syntax-debug-info].
 
-@defstruct+[(exported-module-binding module-binding)
-            ([path module-path-index?]
-             [export-name any/c])]{
-  Represents a single identifier import within a
-  @racket[module-rename].}
+Scopes within the group are instantiated at different phases on
+demand. The @racket[scopes] field lists all of the scopes instantiated
+for the group, and the phase at which it is instantiated. Each element
+of @racket[scopes] must have a @racketidfont{multi-owner} field
+value that refers back to the @racket[multi-scope].}
 
-@defstruct+[(nominal-path zo) ()]{
-  A supertype for nominal paths.}
 
-@defstruct+[(simple-nominal-path nominal-path)
-            ([value module-path-index?])]{
-  Represents a simple nominal path.}
+@defstruct+[(binding zo) ()]{
 
-@defstruct+[(imported-nominal-path nominal-path)
-            ([value module-path-index?]
-             [import-phase exact-integer?])]{
-  Represents an imported nominal path.}
+A supertype for all binding representations.}
 
-@defstruct+[(phased-nominal-path nominal-path)
-            ([value module-path-index?]
-             [import-phase (or/c false/c exact-integer?)]
-             [phase exact-integer?])]{
-  Represents a phased nominal path.}
+
+@defstruct+[(module-binding binding) ([encoded any/c])]{
+
+Represents a binding to a module or top-level definition. The
+@racket[encoded] field can be unpacked using
+@racket[decode-module-binding], providing the symbol name for which
+the binding is the target (since @racket[encoded] can be relative to
+that name).}
+
+
+@defstruct+[(decoded-module-binding binding) ([path (or/c #f module-path-index?)]
+                                              [name symbol?]
+                                              [phase exact-integer?]
+                                              [nominal-path (or/c #f module-path-index?)]
+                                              [nominal-export-name symbol?]
+                                              [nominal-phase (or/c #f exact-integer?)]
+                                              [import-phase (or/c #f exact-integer?)]
+                                              [inspector-desc (or/c #f symbol?)])]{
+
+ARepresents a binding to a module or top-level definition---like
+@racket[module-binding], but in normalized form:
+
+@itemlist[
+
+ @item{@racket[path]: the referenced module.}
+
+ @item{@racket[name]: the referenced definition within its module.}
+
+ @item{@racket[phase]: the phase of the referenced definition within
+       its module.}
+
+ @item{@racket[nominal-path]: the module that was explicitly imported
+       into the binding context; this path can be different from
+       @racket[path] when a definition is re-exported.}
+
+ @item{@racket[nominal-export-name]: the name of the binding as
+       exported from @racket[nominal-path], which can be different from
+       @racket[name] due to renaming on export.}
+
+ @item{@racket[nominal-phase]: the phase of the export from
+       @racket[nominal-path], which can be different from @racket[phase]
+       due to re-export from a module that imports at a phase level other
+       than @racket[0].}
+
+ @item{@racket[import-phase]: the phase of the import of
+       @racket[nominal-path], which shifted (if non-@racket[0]) the
+       binding phase relative to the export phase from
+       @racket[nominal-path].}
+
+ @item{@racket[inspector-desc]: a name for an inspector (mapped to a
+       specific inspector at run time) that determines access to the
+       definition.}
+
+]}
+
+@defstruct+[(local-binding binding) ([name symbol?])]{
+
+Represents a local binding (i.e., not at the top level or module level).
+Such bindings rarely appear in bytecode, since @racket[quote-syntax]
+prunes them.}
+
+
+@defstruct+[(free-id=?-binding binding) ([base (and/c binding?
+                                                      (not/c free-id=?-binding?))]
+                                         [id stx-obj?])]{
+
+Represents a binding that includes a @racket[free-identifier=?] alias
+as well as a base binding.}
+
+@defstruct+[(all-from-module zo) ([path module-path-index?] 
+                                  [phase (or/c exact-integer? #f)] 
+                                  [src-phase (or/c exact-integer? #f)]
+                                  [inspector-desc symbol?]
+                                  [exceptions (listof symbol?)]
+                                  [prefix (or/c symbol? #f)])]{
+
+Describes a bulk import as an optimization over individual imports of
+a module's exports:
+
+@itemlist[
+
+ @item{@racket[path]: the imported module.}
+ 
+ @item{@racket[phase]: the phase of the import module's exports.}
+
+ @item{@racket[src-phase]: the phase at which @racket[path] was
+       imported; @racket[src-phase] combined with @racket[phase]
+       determines the phase of the bindings.}
+
+ @item{@racket[inspector-desc]: a name for an inspector (mapped to a
+       specific inspector at run time) that determines access to the
+       definition.}
+
+ @item{@racket[exceptions]: exports of @racket[path] that are omitted
+       from the bulk import.}
+ 
+ @item{@racket[prefix]: a prefix, if any, applied (after
+       @racket[exceptions]) to each of the imported names.}
+
+]}
+
+ 

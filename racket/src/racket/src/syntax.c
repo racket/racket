@@ -308,7 +308,7 @@ void scheme_init_stx(Scheme_Env *env)
   scheme_add_global_constant("syntax?", o, env);
 
   GLOBAL_FOLDING_PRIM("syntax->datum", syntax_to_datum, 1, 1, 1, env);
-  GLOBAL_FOLDING_PRIM("datum->syntax", datum_to_syntax, 2, 5, 1, env);
+  GLOBAL_IMMED_PRIM("datum->syntax", datum_to_syntax, 2, 5, env);
   
   GLOBAL_FOLDING_PRIM_UNARY_INLINED("syntax-e", scheme_checked_syntax_e, 1, 1, 1, env);
 
@@ -2871,11 +2871,11 @@ static void do_add_module_binding(Scheme_Scope_Set *scopes, Scheme_Object *local
 
  /*
    This encoding is meant to be progressively less compact for
-   progerssively less-common cases:
+   progressively less-common cases:
 
    binding ::= mod_binding
    .        |  (cons inspector-desc mod_binding)
-   mod_binding ::=  modidx
+   mod_binding ::=  modidx         ; mod-phase = 0
    .            |   (cons modidx exportname)
    .            |   (cons modidx nominal_modidx)
    .            |   (list* modidx exportname nominal_modidx_plus_phase nominal_exportname)
