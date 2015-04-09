@@ -434,7 +434,9 @@ limited to---the following keys:
    @item{@racket['fallbacks] --- a list of hash tables like the one
          produced by @racket[syntax-debug-info] for cross-namespace binding fallbacks.}
 
-]}
+]
+
+@history[#:added "6.3"]}
 
 @close-eval[stx-eval]
 
