@@ -20,12 +20,12 @@
 ;; ----------------------------------------
 ;;  Structures to represent bytecode
 
-(define-syntax-rule (define-form-struct* id id+par ([field-id field-contract] ...))
+(define-syntax-rule (define-form-struct* id id+par ([field-id field-contract . options] ...))
   (begin
-    (define-struct id+par (field-id ...) #:prefab)
-    #;(provide (struct-out id))
-    (provide/contract
-     [struct id ([field-id field-contract] ...)])))
+    (define-struct id+par ([field-id . options] ...) #:prefab)
+    (provide
+     (contract-out
+      [struct id ([field-id field-contract] ...)]))))
 
 (define-struct zo () #:prefab)
 (provide (struct-out zo))
@@ -58,30 +58,9 @@
                                                          function-shape? 
                                                          struct-shape?)]))
 
-;; Syntax object
-(define ((alist/c k? v?) l)
-  (let loop ([l l])
-    (match l
-      [(list) #t]
-      [(list* (? k?) (? v?) l)
-       (loop l)]
-      [_ #f])))
-
-(define mark-map? 
-  (alist/c number? module-path-index?)
-  #;(hash/c number? module-path-index?))
-
-(define-form-struct wrap ())
-(define-form-struct wrapped ([datum any/c] 
-                             [wraps any/c]
-                             [tamper-status (or/c 'clean 'armed 'tainted)]))
-
-;; In stxs of prefix:
-(define-form-struct stx ([encoded wrapped?]))
-
 (define-form-struct prefix ([num-lifts exact-nonnegative-integer?] 
                             [toplevels (listof (or/c #f symbol? global-bucket? module-variable?))] 
-                            [stxs list?]   ; should be (listof stx?) sets up top-level and syntax-object array
+                            [stxs (listof (or/c #f stx?))] ; #f is unusual, but it can happen when one is optimized away at the last moment
                             [src-inspector-desc symbol?]))
 
 (define-form-struct form ())
@@ -196,55 +175,52 @@
 ;; Top-level `require'
 (define-form-struct (req form) ([reqs stx?] [dummy toplevel?]))
 
+
+;; Syntax objects
+
+(define-form-struct stx ([content stx-obj?]))
+
+(define-form-struct stx-obj ([datum any/c] ; S-expression with `wrapped` components
+                             [wrap any/c] ; shuold be `wrap?`, but encoded form appears initially
+                             [tamper-status (or/c 'clean 'armed 'tainted)]))
+
+(define-form-struct wrap ([shifts (listof module-shift?)]
+                          [simple-scopes (listof scope?)]
+                          [multi-scopes (listof (list/c multi-scope? (or/c #f exact-integer?)))]))
+
+(define-form-struct module-shift ([from (or/c #f module-path-index?)]
+                                  [to (or/c #f module-path-index?)]
+                                  [from-inspector-desc (or/c #f symbol?)]
+                                  [to-inspector-desc (or/c #f symbol?)]))
+
+(define-form-struct scope ([name (or/c 'root exact-nonnegative-integer?)] ; 'root is special; otherwise, just for printing
+                           [kind symbol?]
+                           [bindings (listof (list/c symbol? (listof scope?) binding?)) #:mutable]
+                           [bulk-bindings (listof (list/c (listof scope?) all-from-module?)) #:mutable]
+                           [multi-owner (or/c #f multi-scope?) #:mutable]))
+(define-form-struct multi-scope ([name exact-nonnegative-integer?]
+                                 [src-name any/c] ; debugging info, such as module name
+                                 [scopes (listof (list/c (or/c #f exact-integer?) scope?)) #:mutable]))
+
+(define-form-struct binding ())
+(define-form-struct (free-id=?-binding binding) ([base (and/c binding?
+                                                              (not/c free-id=?-binding?))]
+                                                 [id stx-obj?]))
+(define-form-struct (local-binding binding) ([name symbol?]))
+(define-form-struct (module-binding binding) ([encoded any/c]))
+;; Convert `module-binding` to `decoded-module-binding` with `decode-module-binding`:
+(define-form-struct (decoded-module-binding binding) ([path (or/c #f module-path-index?)]
+                                                      [name symbol?]
+                                                      [phase exact-integer?]
+                                                      [nominal-path (or/c #f module-path-index?)]
+                                                      [nominal-export-name symbol?]
+                                                      [nominal-phase (or/c #f exact-integer?)]
+                                                      [import-phase (or/c #f exact-integer?)]
+                                                      [inspector-desc (or/c #f symbol?)]))
+
 (define-form-struct all-from-module ([path module-path-index?] 
                                      [phase (or/c exact-integer? #f)] 
                                      [src-phase (or/c exact-integer? #f)]
+                                     [inspector-desc symbol?]
                                      [exceptions (listof symbol?)]
-                                     [prefix (or/c symbol? #f)]
-                                     [context (or/c (listof exact-integer?) 
-                                                    (vector/c (listof exact-integer?) any/c))]))
-
-(define-form-struct nominal-path ())
-(define-form-struct (simple-nominal-path nominal-path) ([value module-path-index?]))
-(define-form-struct (imported-nominal-path nominal-path) ([value module-path-index?] 
-                                                          [import-phase exact-integer?]))
-(define-form-struct (phased-nominal-path nominal-path) ([value module-path-index?]
-                                                        [import-phase (or/c false/c exact-integer?)]
-                                                        [phase exact-integer?]))
-
-(define-form-struct module-binding ())
-(define-form-struct (phased-module-binding module-binding) ([path module-path-index?]
-                                                            [phase exact-integer?]
-                                                            [export-name any/c]
-                                                            [nominal-path nominal-path?]
-                                                            [nominal-export-name any/c]))
-(define-form-struct (exported-nominal-module-binding module-binding) ([path module-path-index?]
-                                                                      [export-name any/c]
-                                                                      [nominal-path nominal-path?]
-                                                                      [nominal-export-name any/c]))
-(define-form-struct (nominal-module-binding module-binding) ([path module-path-index?]
-                                                             [nominal-path nominal-path?]))
-(define-form-struct (exported-module-binding module-binding) ([path module-path-index?]
-                                                              [export-name any/c]))
-(define-form-struct (simple-module-binding module-binding) ([path module-path-index?]))
-
-(define-form-struct (module-rename wrap) ([phase (or/c exact-integer? #f)] 
-                                          [kind (or/c 'marked 'normal)] 
-                                          [set-id any/c] 
-                                          [unmarshals (listof all-from-module?)]
-                                          [renames (listof (cons/c symbol? module-binding?))] 
-                                          [mark-renames any/c] 
-                                          [plus-kern? boolean?]))
-
-; XXX better name for 'flag'
-(define-form-struct (top-level-rename wrap) ([flag boolean?]))
-
-; XXX better name for 'value'
-(define-form-struct (mark-barrier wrap) ([value symbol?]))
-
-
-
-
-
-
-
+                                     [prefix (or/c symbol? #f)]))

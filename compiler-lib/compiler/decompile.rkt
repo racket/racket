@@ -116,6 +116,16 @@
                            (for/list ([(k v) (in-hash e)])
                              (cons (loop k) (loop v)))))
         ph]
+       [(prefab-struct-key e)
+        => (lambda (k)
+             (define ph (make-placeholder #f))
+             (hash-set! ht e ph)
+             (placeholder-set! ph
+                               (apply make-prefab-struct
+                                      k
+                                      (map loop
+                                           (cdr (vector->list (struct->vector e))))))
+             ph)]
        [else
         e])))
   (define l (make-reader-graph (cons main mconses)))
@@ -174,7 +184,7 @@
                 (map (lambda (stx id)
                        `(define ,id ,(if stx
                                          `(#%decode-syntax 
-                                           ,(decompile-stx (stx-encoded stx) stx-ht))
+                                           ,(decompile-stx (stx-content stx) stx-ht))
                                          #f)))
                      stxs stx-ids))))]
     [else (error 'decompile-prefix "huh?: ~e" a-prefix)]))
@@ -184,7 +194,7 @@
       (let ([p (mcons #f #f)])
         (hash-set! stx-ht stx p)
         (match stx
-          [(wrapped datum wraps tamper-status)
+          [(stx-obj datum wrap tamper-status)
            (set-mcar! p (case tamper-status
                           [(clean) 'wrap]
                           [(tainted) 'wrap-tainted]
@@ -207,7 +217,7 @@
                           [(box? datum)
                            (box (decompile-stx (unbox datum) stx-ht))]
                           [else datum])
-                         wraps))
+                         wrap))
            p]))))
 
 (define (mpi->string modidx)
@@ -231,7 +241,7 @@
            (quote internal-context 
                   ,(if (stx? internal-context)
                        `(#%decode-syntax 
-                         ,(decompile-stx (stx-encoded internal-context) stx-ht))
+                         ,(decompile-stx (stx-content internal-context) stx-ht))
                        internal-context))
            (quote bindings ,(for/hash ([(phase ht) (in-hash binding-names)])
                               (values phase
@@ -240,7 +250,7 @@
                                                 (if (eq? id #t)
                                                     #t
                                                     `(#%decode-syntax 
-                                                      ,(decompile-stx (stx-encoded id) stx-ht))))))))
+                                                      ,(decompile-stx (stx-content id) stx-ht))))))))
            (quote language-info ,lang-info)
            ,@(if (null? flags) '() (list `(quote ,flags)))
            ,@(let ([l (apply

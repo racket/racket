@@ -17,7 +17,7 @@
      (define-values (reqs new-forms)
        (partition req? (splice-forms form)))
      (define requires
-       (map (compose ->module-path-index wrapped-datum stx-encoded req-reqs) reqs))
+       (map (compose ->module-path-index stx-obj-datum stx-content req-reqs) reqs))
      (make-compilation-top 
       0
       (make-prefix 0 (list #f) empty)

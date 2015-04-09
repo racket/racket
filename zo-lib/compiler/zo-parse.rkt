@@ -7,28 +7,10 @@
          racket/dict
          racket/set)
 
-(provide zo-parse)
+(provide zo-parse
+         decode-module-binding)
 (provide (all-from-out compiler/zo-structs))
 
-#| Unresolved Issues
-
-  The order of indirect-et-provides, indirect-syntax-provides, indirect-provides was changed, is that okay?
- 
-  orig-port of cport struct is never used, is it needed?
-
-  Lines 628, 630 seem to be only for debugging and should probably throw errors
-
-  vector and pair cases of decode-wraps seem to do different things from the corresponding C code
-
-  Line 816: This should be an eqv placeholder (but they don't exist)
-
-  Line 634: Export registry is always matched as false, but might not be
-
-  What are the real differences between the module-binding cases?
-
-  I think parse-module-path-index was only used for debugging, so it is short-circuited now
-
-|#
 ;; ----------------------------------------
 ;; Bytecode unmarshalers for various forms
 
@@ -506,8 +488,8 @@
     [33 delayed]
     [34 prefab]
     [35 let-one-unused]
-    [36 mark]
-    [37 root-mark]
+    [36 scope]
+    [37 root-scope]
     [38 shared]
     [39 62 small-number]
     [62 80 small-symbol]
@@ -520,6 +502,8 @@
     [248 small-application2]
     [249 small-application3]
     [247 255 small-application]))
+
+(define root-scope (scope 'root 'module null null #f))
 
 ;; To accelerate cpt-table lookup, we flatten out the above
 ;; list into a vector:
@@ -607,7 +591,10 @@
 (define-syntax-rule (with-memo mt arg body ...)
   (with-memo* mt arg (λ () body ...)))
 
-(define (decode-stx cp v)
+;; placeholder for a `scope` decoded in a second pass:
+(struct encoded-scope (content) #:prefab)
+
+(define (decode-wrapped cp v)
   (let loop ([v v])
     (let-values ([(tamper-status v encoded-wraps)
                   (match v
@@ -615,9 +602,8 @@
                     [`#((,datum . ,wraps) #f) (values 'armed datum wraps)]
                     [`(,datum . ,wraps) (values 'clean datum wraps)]
                     [else (error 'decode-wraps "bad datum+wrap: ~.s" v)])])
-      (let* ([wraps (decode-wraps cp encoded-wraps)]
-             [wrapped-memo (make-memo)]
-             [add-wrap (lambda (v) (with-memo wrapped-memo v (make-wrapped v wraps tamper-status)))])
+      (let* ([wrapped-memo (make-memo)]
+             [add-wrap (lambda (v) (with-memo wrapped-memo v (make-stx-obj v encoded-wraps tamper-status)))])
         (cond
          [(pair? v)
           (if (eq? #t (car v))
@@ -670,35 +656,6 @@
                  (map loop (struct->list v)))))]
          [else (add-wrap v)])))))
 
-(define (afm-context? v)
-  (or (and (list? v) (andmap exact-integer? v))
-      (and (vector? v) 
-           (= 2 (vector-length v))
-           (list? (vector-ref v 0))
-           (andmap exact-integer? (vector-ref v 0)))))
-
-(define all-from-module-memo (make-memo))
-(define (decode-all-from-module cp afm)
-  (define (phase? v)
-    (or (number? v) (not v)))
-  (with-memo all-from-module-memo afm
-    (match afm
-      [(list* path (? phase? phase) (? phase? src-phase) (list exn ...) prefix)
-       (make-all-from-module
-        (parse-module-path-index cp path)
-        phase src-phase exn prefix null)]
-      [(list* path (? phase? phase) (? afm-context? context) (? phase? src-phase))
-       (make-all-from-module
-        (parse-module-path-index cp path)
-        phase src-phase null #f context)]
-      [(list* path (? phase? phase) (? phase? src-phase))
-       (make-all-from-module
-        (parse-module-path-index cp path)
-        phase src-phase null #f null)])))
-
-(define (decode-wraps cp w)
-  w)
-
 (define (in-vector* v n)
   (make-do-sequence
    (λ ()
@@ -708,49 +665,6 @@
              (λ (i) (>= (vector-length v) (+ i n)))
              (λ _ #t)
              (λ _ #t)))))
-
-(define nominal-path-memo (make-memo))
-(define (decode-nominal-path np)
-  (with-memo nominal-path-memo np
-    (match np
-      [(cons nominal-path (cons import-phase nominal-phase))
-       (make-phased-nominal-path nominal-path import-phase nominal-phase)]
-      [(cons nominal-path import-phase)
-       (make-imported-nominal-path nominal-path import-phase)]
-      [nominal-path
-       (make-simple-nominal-path nominal-path)])))
-
-; XXX Weird test copied from C code. Matthew?
-(define (nom_mod_p p)
-  (and (pair? p) (not (pair? (cdr p))) (not (symbol? (cdr p))))) 
-
-(define rename-v-memo (make-memo))
-(define (decode-rename-v v)
-  (with-memo rename-v-memo v
-    (match v
-      [(list-rest path phase export-name nominal-path nominal-export-name)
-       (make-phased-module-binding path
-                                   phase
-                                   export-name
-                                   (decode-nominal-path nominal-path) 
-                                   nominal-export-name)]
-      [(list-rest path export-name nominal-path nominal-export-name)
-       (make-exported-nominal-module-binding path
-                                             export-name 
-                                             (decode-nominal-path nominal-path)
-                                             nominal-export-name)]
-      [(cons module-path-index (? nom_mod_p nominal-path))
-       (make-nominal-module-binding module-path-index (decode-nominal-path nominal-path))]
-      [(cons module-path-index export-name)
-       (make-exported-module-binding module-path-index export-name)]
-      [module-path-index 
-       (make-simple-module-binding module-path-index)])))
-
-(define renames-memo (make-memo))
-(define (decode-renames renames)
-  (with-memo renames-memo renames
-    (for/list ([(k v) (in-vector* renames 2)])
-      (cons k (decode-rename-v v)))))
 
 (define (parse-module-path-index cp s)
   s)
@@ -934,7 +848,7 @@
         [(marshalled) (read-marshalled (read-compact-number cp) cp)]
         [(stx)
          (let ([v (read-compact cp)])
-           (make-stx (decode-stx cp v)))]
+           (make-stx (decode-wrapped cp v)))]
         [(local local-unbox)
          (let ([c (read-compact-number cp)]
                [unbox? (eq? cpt-tag 'local-unbox)])
@@ -1027,11 +941,13 @@
          (read-compact-svector cp (read-compact-number cp))]
         [(small-svector)
          (read-compact-svector cp (- ch cpt-start))]
-        [(mark)
+        [(scope)
          (let ([pos (read-compact-number cp)])
            (if (zero? pos)
-               (box (read-compact cp))
-               (read-cyclic cp pos 'mark box)))]
+               (encoded-scope (read-compact cp))
+               (read-cyclic cp pos 'scope encoded-scope)))]
+        [(root-scope)
+         root-scope]
         [(shared)
          (let ([pos (read-compact-number cp)])
            (read-cyclic cp pos 'shared))]
@@ -1210,7 +1126,299 @@
   #;(for ([(i v) (in-dict (cport-symtab cp))])
       (printf "~a = ~a\n" i (placeholder-get v)))
   (set-cport-pos! cp shared-size)
-  (make-reader-graph (read-marshalled 'compilation-top-type cp)))
+  
+  (define decoded-except-for-stx
+    (make-reader-graph (read-marshalled 'compilation-top-type cp)))
+  
+  (decode-stxes decoded-except-for-stx))
+
+;; ----------------------------------------
+
+(define (decode-stxes v)
+  ;; Walk `v` to find `stx-obj` instances and decode the `wrap` field.
+  ;; We do this after building a graph from the input, and `decode-wrap`
+  ;; preserves graph structure.
+  (define decode-ht (make-hasheq))
+  (let walk ([p v])
+    (match p
+      [(compilation-top _ pfx c)
+       (struct-copy compilation-top p
+                    [prefix (walk pfx)]
+                    [code (walk c)])]
+      [(prefix _ _ s _)
+       (struct-copy prefix p [stxs (map walk s)])]
+      [(req rs _)
+       (struct-copy req p
+                    [reqs (map walk rs)])]
+      [(? mod?)
+       (struct-copy mod p
+                    [prefix (walk (mod-prefix p))]
+                    [syntax-bodies
+                     (for/list ([e (in-list (mod-syntax-bodies p))])
+                       (cons (car e)
+                             (map walk (cdr e))))]
+                    [internal-context
+                     (walk (mod-internal-context p))]
+                    [binding-names
+                     (for/hash ([(p ht) (in-hash (mod-binding-names p))])
+                       (values p
+                               (for/hash ([(k v) (in-hash ht)])
+                                 (values k (walk v)))))]
+                    [pre-submodules
+                     (map walk (mod-pre-submodules p))]
+                    [post-submodules
+                     (map walk (mod-post-submodules p))])]
+      [(stx c)
+       (struct-copy stx p [content (walk c)])]
+      [(def-syntaxes _ _ pfx _ _)
+       (struct-copy def-syntaxes p
+                    [prefix (walk pfx)])]
+      [(seq-for-syntax _ pfx _ _)
+       (struct-copy seq-for-syntax p
+                    [prefix (walk pfx)])]
+      [(stx-obj d w _)
+       (struct-copy stx-obj p
+                    [datum (walk d)]
+                    [wrap (decode-wrap w decode-ht)])]
+      [(? zo?) p]
+      ;; Generic constructors happen inside the `datum` of `stx-obj`,
+      ;; for example (with no cycles):
+      [(cons a d)
+       (cons (walk a) (walk d))]
+      [(? vector?)
+       (vector->immutable-vector
+        (for/vector #:length (vector-length p) ([e (in-vector p)])
+                    (walk e)))]
+      [(box v)
+       (box-immutable (walk v))]
+      [(? prefab-struct-key)
+       (apply make-prefab-struct
+              (prefab-struct-key p)
+              (cdr (for/list ([e (in-vector (struct->vector p))])
+                     (walk e))))]
+      [(? hash?)
+       (cond
+        [(hash-eq? p)
+         (for/hasheq ([(k v) (in-hash p)])
+           (values k (walk v)))]
+        [(hash-eqv? p)
+         (for/hasheqv ([(k v) (in-hash p)])
+           (values k (walk v)))]
+        [else
+         (for/hash ([(k v) (in-hash p)])
+           (values k (walk v)))])]
+      [_ p])))
+
+;; ----------------------------------------
+
+(define (decode-wrap encoded-wrap ht)
+  (hash-ref! ht
+             encoded-wrap
+             (lambda ()
+               (match encoded-wrap
+                 [(vector shifts simple-scopes multi-scopes)
+                  (make-wrap (decode-map decode-shift shifts ht)
+                             (decode-map decode-scope simple-scopes ht)
+                             (decode-map decode-shifted-multi-scope multi-scopes ht))]
+                 [_ (error 'decode-wrap "bad wrap")]))))
+
+(define (decode-map decode-one l ht)
+  (cond
+   [(null? l) l]
+   [(not (pair? l))
+    (error 'decode-wrap "bad list")]
+   [else (hash-ref! ht l
+                    (lambda ()
+                      (cons (decode-one (car l) ht)
+                            (decode-map decode-one (cdr l) ht))))]))
+
+(define (decode-shift s ht)
+  (hash-ref! ht s
+             (lambda ()
+               (match s
+                 [(vector to from)
+                  (module-shift to from #f #f)]
+                 [(vector to from i-to i-from)
+                  (module-shift to from i-to i-from)]
+                 [_ (error 'decode-wrap "bad shift")]))))
+
+(define (decode-scope s ht)
+  (hash-ref ht s
+            (lambda ()
+              (unless (encoded-scope? s)
+                (error 'decode-wrap "bad scope: ~e" s))
+              (define v (encoded-scope-content s))
+              (define kind
+                (match v
+                  [(? number?) v]
+                  [(cons (? number?) _)
+                   (car v)]
+                  [else (error 'decode-wrap "bad scope")]))
+              (define sc (scope (hash-count ht)
+                                (case kind
+                                  [(0 1) 'module]
+                                  [(2) 'macro]
+                                  [(3) 'local]
+                                  [(4) 'intdef]
+                                  [else 'use-site])
+                                null
+                                null
+                                #f))
+              (hash-set! ht s sc)
+              (unless (number? v)
+                (define-values (bulk-bindings end)
+                  (let loop ([l (cdr v)] [bulk-bindings null])
+                    (cond
+                     [(pair? l)
+                      (loop (cdr l) (cons (list (decode-scope-set (caar l) ht)
+                                                (decode-bulk-import (cdar l) ht))
+                                          bulk-bindings))]
+                     [else (values (reverse bulk-bindings) l)])))
+                (set-scope-bulk-bindings! sc bulk-bindings)
+                (unless (and (vector? end)
+                             (even? (vector-length end)))
+                  (error 'decode-wrap "bad scope"))
+                (define bindings
+                  (let loop ([i 0])
+                    (cond
+                     [(= i (vector-length end)) null]
+                     [else
+                      (append (for/list ([p (in-list (vector-ref end (add1 i)))])
+                                (list (vector-ref end i)
+                                      (decode-scope-set (car p) ht)
+                                      (decode-binding (cdr p) ht)))
+                              (loop (+ i 2)))])))
+                (set-scope-bindings! sc bindings))
+              sc)))
+
+(define (decode-scope-set l ht)
+  (decode-map decode-scope l ht))
+
+(define (decode-binding b ht)
+  (hash-ref! ht b
+             (lambda ()
+               (match b
+                 [(box (cons base-b (cons sym wraps)))
+                  (free-id=?-binding
+                   (decode-binding base-b ht)
+                   (stx-obj sym wraps 'clean))]
+                 [(? symbol?)
+                  (local-binding b)]
+                 [else
+                  ;; Leave it encoded, so that the compactness (or not)
+                  ;; of the encoding is visible; clients decode further
+                  ;; with `decode-module-binding`
+                  (module-binding b)]))))
+
+(define (decode-module-binding b name)
+  (define-values (insp-desc rest-b)
+    (match b
+      [(cons (? symbol?) _)
+       (values (car b) (cdr b))]
+      [else
+       (values #f b)]))
+  (define (decode-nominal-modidx-plus-phase n mod-phase)
+    (match n
+      [(? module-path-index?)
+       (values n mod-phase 0)]
+      [(cons nom-modix (cons import-phase nom-phase))
+       (values nom-modix nom-phase import-phase)]
+      [(cons nom-modix import-phase)
+       (values nom-modix mod-phase import-phase)]
+      [_
+       (error 'decode-module-binding "bad encoding")]))
+  (match rest-b
+    [(and modidx (? module-path-index?))
+     (decoded-module-binding modidx name 0
+                             modidx name 0
+                             0 insp-desc)]
+    [(cons (and modidx (? module-path-index?))
+           (and name (? symbol?)))
+     (decoded-module-binding modidx name 0
+                             modidx name 0
+                             0 insp-desc)]
+    [(cons (and modidx (? module-path-index?))
+           (and nom-modidx (? module-path-index?)))
+     (decoded-module-binding modidx name 0
+                             nom-modidx name 0
+                             0 insp-desc)]
+    [(list* modidx (and name (? symbol?))
+            nominal-modidx-plus-phase nom-name)
+     (define-values (nom-modidx nom-phase import-phase)
+       (decode-nominal-modidx-plus-phase nominal-modidx-plus-phase 0))
+     (decoded-module-binding modidx name 0
+                             nom-modidx nom-name nom-phase
+                             import-phase insp-desc)]
+    [(list* modidx mod-phase (and name (? symbol?))
+            nominal-modidx-plus-phase nom-name)
+     (define-values (nom-modidx nom-phase import-phase)
+       (decode-nominal-modidx-plus-phase nominal-modidx-plus-phase mod-phase))
+     (decoded-module-binding modidx name mod-phase
+                             nom-modidx nom-name nom-phase
+                             import-phase insp-desc)]
+    [_ (error 'decode-module-binding "bad encoding")]))
+
+(define (decode-bulk-import l ht)
+  (hash-ref! ht l
+             (lambda ()
+               (match l
+                 [(vector (and modidx (? module-path-index?))
+                          src-phase
+                          info
+                          (and insp-desc (or #f (? symbol?))))
+                  (define-values (phase prefix excepts)
+                    (match info
+                      [(or #f (? exact-integer?))
+                       (values info #f '#())]
+                      [(cons phase (and prefix (? symbol?)))
+                       (values phase prefix '#())]
+                      [(cons phase (cons excepts prefix))
+                       (values phase prefix excepts)]
+                      [(cons phase excepts)
+                       (values phase #f excepts)]
+                      [_ (error 'decode-wrap "bad bulk import info")]))
+                  (all-from-module modidx
+                                   phase
+                                   src-phase
+                                   insp-desc
+                                   (if excepts
+                                       (vector->list excepts)
+                                       null)
+                                   prefix)]
+                 [_ (error 'decode-wrap "bad bulk import")]))))
+
+(define (decode-shifted-multi-scope sms ht)
+  (unless (pair? sms)
+    (error 'decode-wrap "bad multi-scope pair"))
+  (list (decode-multi-scope (car sms) ht)
+        (cdr sms)))
+
+(define (decode-multi-scope ms ht)
+  (unless (and (vector? ms)
+               (odd? (vector-length ms)))
+    (error 'decode-wrap "bad multi scope"))
+  (hash-ref ht ms
+            (lambda ()
+              (define multi (multi-scope (hash-count ht)
+                                         (vector-ref ms (sub1 (vector-length ms)))
+                                         null))
+              (hash-set! ht ms multi)
+              (define scopes
+                (let loop ([i 0])
+                  (cond
+                   [(= (add1 i) (vector-length ms)) null]
+                   [else
+                    (define s (decode-scope (vector-ref ms (add1 i)) ht))
+                    (when (scope-multi-owner s)
+                      (error 'decode-wrap "bad scope owner: ~e while reading ~e"
+                             (scope-multi-owner s)
+                             multi))
+                    (set-scope-multi-owner! s multi)
+                    (cons (list (vector-ref ms i)
+                                s)
+                          (loop (+ i 2)))])))
+              (set-multi-scope-scopes! multi scopes)
+              multi)))
 
 ;; ----------------------------------------
 

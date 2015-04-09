@@ -28,16 +28,16 @@
 (test
  (roundtrip
     (compilation-top 0 
-                     (prefix 0 empty empty)
+                     (prefix 0 empty empty 'insp0)
                      (list 1 (list 2 3) (list 2 3) 4 5)))
  
  (roundtrip
     (compilation-top 0 
-                     (prefix 1 empty empty)
+                     (prefix 1 empty empty 'insp0)
                      (list (lam 'proc null 0 null #f #(0) '(val/ref) (set 0) 3 1))))
  (roundtrip
     (compilation-top 0 
-                     (prefix 1 empty empty)
+                     (prefix 1 empty empty 'insp0)
                      (list (lam 'proc null 0 null #f #(0) '(val/ref) #f 3 1))))
  
  #;(roundtrip
@@ -94,23 +94,23 @@
 
  (roundtrip 
     (compilation-top 0 
-                     (prefix 0 empty empty)
+                     (prefix 0 empty empty 'insp0)
                      (current-directory)))
  
  (roundtrip 
     (compilation-top 0 
-                     (prefix 0 empty empty)
+                     (prefix 0 empty empty 'insp0)
                      (list (current-directory))))
  
  (roundtrip
     (compilation-top
      0
-     (prefix 0 empty empty)
+     (prefix 0 empty empty 'insp0)
      (cons #hash()
            #hash())))
  
  (roundtrip
     (compilation-top
      0
-     (prefix 0 empty empty)
+     (prefix 0 empty empty 'insp0)
      #hash())))
