@@ -79,7 +79,8 @@
    do (check-same-all base64-encode-stream
                       base64-decode-stream
                       #rx#"^[0-9a-zA-Z+=/]*$"
-                      72)))
+                      72))
+  (test (qp-decode #"=20=") #" ="))
 
 #|
 Use this to compare base64 encode/decode against the unix utilities
