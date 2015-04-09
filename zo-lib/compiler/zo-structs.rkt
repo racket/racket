@@ -205,7 +205,8 @@
 (define-form-struct binding ())
 (define-form-struct (free-id=?-binding binding) ([base (and/c binding?
                                                               (not/c free-id=?-binding?))]
-                                                 [id stx-obj?]))
+                                                 [id stx-obj?]
+                                                 [phase (or/c #f exact-integer?)]))
 (define-form-struct (local-binding binding) ([name symbol?]))
 (define-form-struct (module-binding binding) ([encoded any/c]))
 ;; Convert `module-binding` to `decoded-module-binding` with `decode-module-binding`:

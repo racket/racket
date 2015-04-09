@@ -1307,17 +1307,19 @@
 
 (define (encode-binding b name ht)
   (match b
-    [(free-id=?-binding base id)
+    [(free-id=?-binding base id phase)
      (hash-ref ht b
                (lambda ()
                  (match b
-                   [(free-id=?-binding base id)
+                   [(free-id=?-binding base id phase)
                     (define bx (box #f))
                     (hash-set! ht b bx)
                     (set-box! bx
-                              (cons (encode-binding base name ht)
-                                    (cons (stx-obj-datum id)
-                                          (stx-obj-wrap id))))])))]
+                              (cons
+                               (cons (encode-binding base name ht)
+                                     (cons (stx-obj-datum id)
+                                           (stx-obj-wrap id)))
+                               phase))])))]
     [_
      (hash-ref! ht b
                 (lambda ()

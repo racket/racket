@@ -1298,10 +1298,11 @@
   (hash-ref! ht b
              (lambda ()
                (match b
-                 [(box (cons base-b (cons sym wraps)))
+                 [(box (cons base-b (cons (cons sym wraps) phase)))
                   (free-id=?-binding
                    (decode-binding base-b ht)
-                   (stx-obj sym wraps 'clean))]
+                   (stx-obj sym (decode-wrap wraps ht) 'clean)
+                   phase)]
                  [(? symbol?)
                   (local-binding b)]
                  [else
