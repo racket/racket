@@ -381,5 +381,60 @@ context does not include any bindings.}
 
 For backward compatibility only; returns @racket[new-stx].}
 
+
+@defproc[(syntax-debug-info [stx syntax?]
+                            [phase (or/c exact-integer? #f)]
+                            [all-bindings? any/c #f])
+         hash?]{
+
+Produces a hash table that describes the @tech{lexical information} of
+@racket[stx] (not counting components when @racket[(syntax-e stx)]
+would return a compound value). The result can include---but is not
+limited to---the following keys:
+
+@itemlist[
+
+ @item{@racket['name] --- the result of @racket[(syntax-e stx)], if it is a symbol.}
+
+ @item{@racket['context] --- a list of vectors, where each vector represents a scope
+       attached to @racket[stx].
+
+       Each vector starts with a number that is distinct for every
+       scope. A symbol afterward provides a hint at the scope's
+       origin: @racket['module] for a @racket[module] scope,
+       @racket['macro] for a macro-introduction scope,
+       @racket['use-site] for a macro use-site scope, or
+       @racket['local] for a local binding form. In the case of a
+       @racket['module] scope that corresponds to the inside edge, the
+       module's name and a phase (since an inside-edge scope is
+       generated for each phase) are shown.}
+
+  @item{@racket['bindings] --- a list of bindings, each represented by
+        a hash table. A binding table can include---but is not limited
+        to---the following keys:
+
+        @itemlist[
+
+          @item{@racket['name] --- the symbolic name for the binding.}
+
+          @item{@racket['context] --- the scopes, as a list of vectors,
+                for the binding.}
+
+          @item{@racket['local] --- a symbol representing a @tech{local binding};
+                when this key is present, @racket['module] is absent.}
+
+          @item{@racket['module] --- an encoding of a import from another module;
+                when this key is present, @racket['local] is absent.}
+
+          @item{@racket['free-identifier=?] --- a hash table of debugging information
+                from an identifier for which the binding is an alias.}
+
+          ]}
+
+   @item{@racket['fallbacks] --- a list of hash tables like the one
+         produced by @racket[syntax-debug-info] for cross-namespace binding fallbacks.}
+
+]}
+
 @close-eval[stx-eval]
 
