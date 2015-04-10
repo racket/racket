@@ -77,6 +77,9 @@
                   (loop (read-byte in))
                   ;; Not a LF? Well, ok.
                   (loop next-next)))]
+             [(eof-object? next)
+              (warning "Illegal qp sequence: `='")
+              (display "=" out)]
              [(hex-digit? next)
               (let ([next-next (read-byte in)])
                 (cond [(eof-object? next-next)
