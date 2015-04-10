@@ -19,8 +19,6 @@ expander or while a module is @tech{visit}ed (see
 
 @title[#:tag "stxtrans"]{Syntax Transformers}
 
-@history[#:changed "6.3" @elem{Removed @racket[syntax-local-make-delta-introducer].}]
-
 @defproc[(set!-transformer? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a value created by
@@ -711,6 +709,14 @@ expansion context.
 
 @history[#:changed "6.3" @elem{Simplified to the minimal functionality
                                needed for @racket[syntax-parameterize].}]}
+
+
+@defproc[(syntax-local-make-delta-introducer [id-stx identifier?]) procedure?]{
+
+For (limited) backward compatibility only; raises @racket[exn:fail:supported].
+
+@history[#:changed "6.3" @elem{changed to raise @racket[exn:fail:supported].}]}
+
 
 
 @defproc[(syntax-local-certifier [active? boolean? #f])

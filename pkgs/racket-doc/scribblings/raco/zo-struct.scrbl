@@ -735,10 +735,12 @@ prunes them.}
 
 @defstruct+[(free-id=?-binding binding) ([base (and/c binding?
                                                       (not/c free-id=?-binding?))]
-                                         [id stx-obj?])]{
+                                         [id stx-obj?]
+                                         [phase (or/c #f exact-integer?)])]{
 
 Represents a binding that includes a @racket[free-identifier=?] alias
-as well as a base binding.}
+(to an identifier with a particular phase shift) as well as a base binding.}
+
 
 @defstruct+[(all-from-module zo) ([path module-path-index?] 
                                   [phase (or/c exact-integer? #f)] 
