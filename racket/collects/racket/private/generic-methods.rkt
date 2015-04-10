@@ -209,10 +209,9 @@
            (raise-syntax-error 'define/generic "expected an identifier" #'bind))
          (unless (identifier? #'ref)
            (raise-syntax-error 'define/generic "expected an identifier" #'ref))
-         (define outer-ref-id
-           ((make-syntax-delta-introducer gen-inner-id gen-id) #'ref 'remove))
-         (define delta (lambda (id) id))
+         (define delta
+           (make-method-delta gen-inner-id (generic-info-name gen-val)))
          (define method-id
-           (find-generic-method-original stx gen-id delta gen-val outer-ref-id))
+           (find-generic-method-original stx gen-id delta gen-val #'ref))
          (with-syntax ([method method-id])
            #'(define bind method)))])))
