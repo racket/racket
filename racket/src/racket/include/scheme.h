@@ -63,8 +63,8 @@
 # define MZ_USE_SINGLE_FLOATS
 #endif
 
-/* gcc defines __SSE_MATH__ when SSE floating point is enabled: */
-#ifdef __SSE_MATH__
+/* gcc defines __SSE2_MATH__ when SSE2 floating point is enabled: */
+#ifdef __SSE2_MATH__
 # define C_COMPILER_USES_SSE 1
 #endif
 

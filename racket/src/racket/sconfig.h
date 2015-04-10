@@ -1311,9 +1311,9 @@
     converts (a == a) to TRUE, even if `a' is floating-point. Used
     only when USE_[SCO_]IEEE_FP_PREDS is not defined. */
 
- /* C_COMPILER_USES_SSE indicates that the C compiler generates SSE
+ /* C_COMPILER_USES_SSE indicates that the C compiler generates SSE2
     instructions for `double' arithmetic. This flag is turned on
-    automatically if __SSE_MATH__ is defined (usually by gcc). */
+    automatically if __SSE2_MATH__ is defined (usually by gcc). */
 
  /* MZ_LONG_DOUBLE enables extflonum support. */
 
