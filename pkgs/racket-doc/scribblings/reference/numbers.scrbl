@@ -1116,7 +1116,7 @@ Converts @racket[x] radians to degrees.
 
 Returns @racket[(* z z)].}
 
-@defproc[(sgn [x real?]) (or/c 1 0 -1 1.0 0.0 -1.0)]{
+@defproc[(sgn [x real?]) (or/c 1 0 -1 1.0 0.0 -0.0 -1.0 +nan.0 1.0f0 0.0f0 -0.0f0 -1.0f0 +nan.f)]{
 
 Returns the sign of @racket[x] as either @math{-1}, @math{0}, or
 @math{1}.
