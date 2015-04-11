@@ -1754,7 +1754,46 @@ the regexp matches @racket[(path->string sys-lib-subpath)],
          xref?]{
 
 Like @racket[load-xref], but automatically find all cross-reference files for
-manuals that have been installed with @exec{raco setup}.}
+manuals that have been installed with @exec{raco setup}.
+
+A cached copy of cross-reference information can be used, in which
+case @racket[on-load] is @emph{not} called.}
+
+
+@defproc[(make-collections-xref [#:no-user? no-user? any/c #f]
+                                [#:no-main? no-main? any/c #f]
+                                [#:doc-db db-path (or/c #f path?) #f]
+                                [#:quiet-fail? quiet-fail? any/c #f]
+                                [#:register-shutdown! register-shutdown! ((-> any) . -> . any) void])
+         xref?]{
+
+Like @racket[load-collections-xref], but takes advantage of a
+cross-reference database @racket[db-path], when support is available,
+to delay the loading of cross-reference details until needed.
+
+Cross-reference information is skipped when it is installed in the
+main installation or in a user-specific location, respectively, if
+@racket[no-main?] or @racket[no-user?] is @racket[#t].
+
+If @racket[quiet-fail?] is true, then errors are suppressed while
+loading cross-reference information.
+
+The @racket[register-shutdown!] callback may be called to register a
+function that closes database connections when the result of
+@racket[make-collections-xref] is no longer needed. If
+@racket[register-shutdown!] is not supplied or if a function sent to
+@racket[register-shutdown!] is never called, database connections will
+be closed only though a @tech[#:doc reference-doc]{custodian}.}
+
+
+@defproc[(get-rendered-doc-directories [no-user? any/c]
+                                       [no-main? any/c])
+         (listof path?)]{
+
+Returns a list of directories for all documentation for all installed
+collections, omitting documentation that is installed in the main
+installation or in a user-specific location, respectively, if
+@racket[no-main?] or @racket[no-user?] is @racket[#t].}
 
 @; ------------------------------------------------------------------------
 
