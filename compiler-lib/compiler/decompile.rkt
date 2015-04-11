@@ -112,7 +112,12 @@
         (define ph (make-placeholder #f))
         (hash-set! ht e ph)
         (placeholder-set! ph
-                          (make-hash-placeholder
+                          ((cond
+                            [(hash-eq? ht)
+                             make-hasheq-placeholder]
+                            [(hash-eqv? ht)
+                             make-hasheqv-placeholder]
+                            [else make-hash-placeholder])
                            (for/list ([(k v) (in-hash e)])
                              (cons (loop k) (loop v)))))
         ph]
