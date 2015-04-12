@@ -2260,7 +2260,7 @@ static Scheme_Object *hash_weak_p(int argc, Scheme_Object *argv[])
   else if (SCHEME_HASHTP(o) || SCHEME_HASHTRP(o))
     return scheme_false;
   
-  scheme_wrong_contract("hash-eq?", "hash?", 0, argc, argv);
+  scheme_wrong_contract("hash-weak?", "hash?", 0, argc, argv);
    
   return NULL;
 }
