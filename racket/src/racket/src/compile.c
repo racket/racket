@@ -5913,12 +5913,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	if (!SCHEME_STX_NULLP(result)) {
 	  first = SCHEME_STX_CAR(result);
 	  first = scheme_datum_to_syntax(first, forms, forms, 0, 0);
-          {
-            Scheme_Object *old_first;
-            old_first = first;
-            SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
-            SCHEME_EXPAND_OBSERVE_BLOCK_RENAMES(rec[drec].observer,old_first,first);
-          }
+          SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
           is_last = SCHEME_STX_NULLP(SCHEME_STX_CDR(result));
 	  first = scheme_check_immediate_macro(first, env, rec, drec, &gval, is_last);
 	  more = 1;
