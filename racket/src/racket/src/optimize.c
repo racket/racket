@@ -7229,16 +7229,19 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
         }
       } else if (is_mutated) {
         info->vclock += 1;
-      } else if (context & OPT_CONTEXT_BOOLEAN) {
+      }
+
+      delta = optimize_info_get_shift(info, pos);
+
+      if (context & OPT_CONTEXT_BOOLEAN) {
         Scheme_Object *pred;
-        pred = optimize_get_predicate(pos, info);
+        pred = optimize_get_predicate(pos + delta, info);
         if (pred) {
           /* all predicates recognize non-#f things */
           return scheme_true;
         }
       }
 
-      delta = optimize_info_get_shift(info, pos);
       if (delta)
 	expr = scheme_make_local(scheme_local_type, pos + delta, 0);
 
@@ -8341,6 +8344,7 @@ static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos,
 }
 
 Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info)
+/* pos is in new-frame counts */
 {
   Scheme_Object *pred;
 
