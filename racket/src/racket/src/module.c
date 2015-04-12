@@ -7849,10 +7849,11 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
         v = scheme_make_pair(to_idx, scheme_null);
         SCHEME_VEC_ELS(vec)[0] = v;
         SCHEME_VEC_ELS(vec)[1] = to_idx;
-        binding = scheme_stx_lookup(name, phase);
+        binding = scheme_stx_lookup_stop_at_free_eq(name, phase, NULL);
         if (!SCHEME_VECTORP(binding)
             || !SAME_OBJ(phase, SCHEME_VEC_ELS(binding)[2]))
-          scheme_signal_error("internal error: broken binding of defined id from encloding module");
+          scheme_signal_error("internal error: broken binding of defined id from encloding module: %V at %V = %V",
+                              name, phase, binding);
         v = SCHEME_VEC_ELS(binding)[1];
         SCHEME_VEC_ELS(vec)[2] = v;
         if (scheme_lookup_in_table(super_def_genv->toplevel, (char *)v))

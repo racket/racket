@@ -1587,7 +1587,7 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, Scheme_Object *val, int as
                             (env->module
                              ? env->module->self_modidx
                              : scheme_false),
-                            (env->module
+                            ((env->module && env->module->prefix)
                              ? env->module->prefix->src_insp_desc
                              : env->guard_insp),
                             n,

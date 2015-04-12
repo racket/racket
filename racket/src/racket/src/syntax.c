@@ -4099,6 +4099,11 @@ Scheme_Object *scheme_stx_lookup(Scheme_Object *o, Scheme_Object *phase)
   return scheme_stx_lookup_w_nominal(o, phase, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 }
 
+Scheme_Object *scheme_stx_lookup_stop_at_free_eq(Scheme_Object *o, Scheme_Object *phase, int *_exact_match)
+{
+  return scheme_stx_lookup_w_nominal(o, phase, 1, _exact_match, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+}
+
 Scheme_Object *scheme_stx_lookup_exact(Scheme_Object *o, Scheme_Object *phase)
 {
   int exact;

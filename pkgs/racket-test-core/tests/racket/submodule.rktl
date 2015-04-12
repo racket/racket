@@ -978,5 +978,16 @@
                            (exn-message x)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that submodule binding works ok with rename transformers
+
+(module has-a-rename-transformer-and-submodule racket/base
+  (require (for-syntax racket/base))
+
+  (begin-for-syntax
+    (define kar (make-rename-transformer #'car)))
+
+  (module+ test))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -1785,11 +1785,7 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
 
   phase = scheme_env_phase(env);
 
-  binding = scheme_stx_lookup_w_nominal(id, phase, 
-                                        1,
-                                        &exact_match, NULL, NULL,
-                                        NULL,
-                                        NULL, NULL, NULL, NULL);
+  binding = scheme_stx_lookup_stop_at_free_eq(id, phase, &exact_match);
 
   if (!SCHEME_FALSEP(binding)) {
     if (exact_match) {
