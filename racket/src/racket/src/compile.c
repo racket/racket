@@ -5855,6 +5855,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  int pos;
 
 	  new_env = scheme_new_compilation_frame(0, SCHEME_FOR_INTDEF, NULL, env);
+          new_env->intdef_name = ectx;
 
 	  names = SCHEME_STX_CAR(v);
 	  expr = SCHEME_STX_CDR(v);
@@ -5907,6 +5908,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
 	  /* Remember extended environment */
           env = scheme_new_compilation_frame(0, SCHEME_INTDEF_FRAME, frame_scopes, new_env);
+          env->intdef_name = ectx;
 	}
 
       define_try_again:
