@@ -246,6 +246,11 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 #define GEN0_MAX_SIZE (32 * 1024 * 1024)
 #define GEN0_PAGE_SIZE (1 * 1024 * 1024)
 
+/* Whether to use a little aging, moving gen-0 objects to a
+   gen-1/2 space; by default, enabled when memory use is high
+   enough:  */
+#define AGE_GEN_0_TO_GEN_HALF(gc) ((gc)->memory_in_use > (GEN0_MAX_SIZE * 8))
+
 /* Conservatively force a major GC after a certain number
    of minor GCs. It should be ok to set this value
    arbitraily high. An earlier value of 100, meanwhile,
@@ -3447,7 +3452,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
 
       size = gcWORDS_TO_BYTES(ohead->size);
 
-      if ((page->generation == AGE_GEN_0) && !gc->gc_full) {
+      if (AGE_GEN_0_TO_GEN_HALF(gc) && (page->generation == AGE_GEN_0) && !gc->gc_full) {
         /* move to generation 1/2 */
         work = gc->gen_half.curr_alloc_page;
         if (!work || (work->size + size > GEN0_PAGE_SIZE)) {
@@ -4064,7 +4069,8 @@ static void mark_backpointers(NewGC *gc)
     for (i = 0; i < PAGE_TYPES; i++) {
       for (work = gc->gen1_pages[i]; work; work = work->next) {
         if (work->back_pointers) {
-          if (work->mprotected) { /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS */
+          if (work->mprotected) {
+            /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS && AGE_GEN_0_TO_GEN_HALF(gc) */
             work->mprotected = 0;
             mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
           }
@@ -4105,7 +4111,8 @@ static void mark_backpointers(NewGC *gc)
     for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
       for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
         for (work = gc->med_pages[ty][i]; work; work = work->next) {
-          if (work->mprotected) { /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS */
+          if (work->mprotected) {
+            /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS && AGE_GEN_0_TO_GEN_HALF(gc) */
             work->mprotected = 0;
             mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
           }
