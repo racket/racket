@@ -424,13 +424,13 @@ Floating point, x87, SSE, Extflonums, and the JIT
 
 Pre-processor tests in "sconfig.h" and "scheme.h" attempt to determine
 when the x87 floating-point processor needs to be configured for
-double-precision mode, when JIT can use SSE instructions, and when
-extflonums can be supported because both the JIT and C code use SSE
+double-precision mode, when JIT can use SSE2 instructions, and when
+extflonums can be supported because both the JIT and C code use SSE2
 for double-precision floating-point while `long double' is available
 for extflonums.
 
-In particular, "scheme.h" looks for __SSE_MATH__ to indicate that gcc
-is compiling floating-point operations as SSE, so be sure to include
+In particular, "scheme.h" looks for __SSE2_MATH__ to indicate that gcc
+is compiling floating-point operations as SSE2, so be sure to include
 flags like "-mfpmath=sse" or "-mfpmath=387" in CPPFLAGS, and not just
 CFLAGS. See related configuration options below.
 
@@ -446,12 +446,12 @@ options can be modified by setting flags in "racket/sconfig.h".
 
 Some CPP flags control default settings in "racket/sconfig.h":
 
- * MZ_{USE_,NO_}JIT_SSE - {en,dis}ables use of SSE floating point
+ * MZ_{USE_,NO_}JIT_SSE - {en,dis}ables use of SSE2 floating point
 
  * MZ_USE_DETERMINSTIC_FUEL - disables use of itimer or pthread for
    Racket thread scheduling.
 
- * C_COMPILER_USES_SSE - declares that the C compiler is using SSE
+ * C_COMPILER_USES_SSE - declares that the C compiler is using SSE2
    instructions to implement `double' floating-point operations.
 
 Modifying Racket

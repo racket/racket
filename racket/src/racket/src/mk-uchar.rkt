@@ -158,16 +158,6 @@
 	  [i (bitwise-and c low) ])
       (vector-set! vec i (bitwise-ior #x8000 (vector-ref vec i))))))
 
-(define midletters
-  (call-with-input-file "Unicode/WordBreakProperty.txt"
-    (lambda (i)
-      (let loop ()
-	(let ([re (regexp-match #rx"\n([0-9A-F]+)  *; *MidLetter" i)])
-	  (if re
-	      (cons (string->number (bytes->string/latin-1 (cadr re)) 16)
-		    (loop))
-	      null))))))
-
 (define (string->codes s)
   (let ([m (regexp-match #rx"^[^0-9A-F]*([0-9A-F]+)" s)])
     (if m
@@ -216,13 +206,14 @@
 (define lower-case  (make-hash))
 (define upper-case  (make-hash))
 (define alphabetic  (make-hash))
+(define case-ignorable (make-hash))
 
 (with-input-from-file "Unicode/DerivedCoreProperties.txt"
   (lambda ()
     (let loop ()
       (let ([l (read-line)])
 	(unless (eof-object? l)
-	  (let ([m (regexp-match #rx"^([0-9A-F.]+) *; ((Lower|Upper)case|Alphabetic)" l)])
+	  (let ([m (regexp-match #rx"^([0-9A-F.]+) *; ((Lower|Upper)case|Alphabetic|Case_Ignorable)" l)])
 	    (when m
 	      (let* ([start (string->number (car (regexp-match #rx"^[0-9A-F]+" (car m))) 16)]
 		     [end (let ([m (regexp-match #rx"^[0-9A-F]+[.][.]([0-9A-F]+)" (car m))])
@@ -233,6 +224,7 @@
                          [(string=? (caddr m) "Lowercase") lower-case]
                          [(string=? (caddr m) "Uppercase") upper-case]
                          [(string=? (caddr m) "Alphabetic") alphabetic]
+                         [(string=? (caddr m) "Case_Ignorable") case-ignorable]
                          [else (error "unknown property section")])])
 		(let loop ([i start])
 		  (hash-set! t i #t)
@@ -359,8 +351,7 @@
                        (or (hash-ref special-casings code (lambda () #f))
                            (hash-ref special-case-foldings code (lambda () #f)))
                        ;; case-ignoreable
-                       (or (member code midletters)
-                           (member cat '("Mn" "Me" "Cf" "Lm" "Sk")))
+                       (hash-ref case-ignorable code #f)
                        ;; graphic
                        (or alphabetic?
                            numeric?

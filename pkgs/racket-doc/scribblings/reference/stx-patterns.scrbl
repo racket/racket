@@ -160,6 +160,10 @@ A syntax object matches a @racket[pattern] as follows:
  when its datum is @racket[equal?] to the @racket[quote]d
  @racket[const].}
 
+If @racket[stx-expr] produces a non-@tech{syntax object}, then its
+result is converted to a syntax object using @racket[datum->syntax]
+and the lexical context and source location of the @racket[stx-expr].
+
 If @racket[stx-expr] produces a syntax object that is @tech{tainted}
 or @tech{armed}, then any syntax object bound by a @racket[pattern]
 are @tech{tainted}---unless the binding corresponds to the whole
