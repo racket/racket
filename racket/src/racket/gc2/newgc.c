@@ -283,6 +283,9 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 #define HALF_PAGE_SIZE (1 << (LOG_APAGE_SIZE - 1))
 #define GENERATIONS 1
 
+/* Use a mark stack when recurring this deep or more: */
+#define MAX_RECUR_MARK_DEPTH 5
+
 /* the externals */
 void (*GC_out_of_memory)(void);
 void (*GC_report_out_of_memory)(void);
@@ -2567,6 +2570,14 @@ inline static int pop_ptr(NewGC *gc, void **ptr)
   return 1;
 }
 
+void GC_mark_no_recur(struct NewGC *gc, int enable)
+{
+  if (enable)
+    gc->mark_depth += MAX_RECUR_MARK_DEPTH;
+  else
+    gc->mark_depth -= MAX_RECUR_MARK_DEPTH;
+}
+
 void GC_retract_only_mark_stack_entry(void *pf, struct NewGC *gc)
 {
   void *p2;
@@ -2629,7 +2640,7 @@ inline static void reset_pointer_stack(NewGC *gc)
   gc->mark_stack->top = MARK_STACK_START(gc->mark_stack);
 }
 
-static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, void *p);
+static inline void propagate_marks_worker(NewGC *gc, void *p);
 
 /*****************************************************************************/
 /* MEMORY ACCOUNTING                                                         */
@@ -2743,6 +2754,7 @@ static int designate_modified_gc(NewGC *gc, void *p)
     mmu_write_unprotect_page(gc->mmu, page->addr, real_page_size(page));
     GC_MP_CNT_INC(mp_write_barrier_cnt);
     page->back_pointers = 1;
+    gc->modified_unprotects++;
     return 1;
   } else {
     if (gc->primoridal_gc)
@@ -3329,9 +3341,42 @@ static void promote_marked_gen0_big_page(NewGC *gc, mpage *page) {
 #endif
 }
 
-/* We use two mark routines to handle propagation. Why two? The first is the
-   one that we export out, and it does a metric crapload of work. The second
-   we use internally, and it doesn't do nearly as much. */
+static void mark_recur_or_push_ptr(struct NewGC *gc, void *p)
+{
+  objhead *ohead = OBJPTR_TO_OBJHEAD(p);
+
+  if (gc->mark_depth < MAX_RECUR_MARK_DEPTH) {
+    switch (ohead->type) {
+    case PAGE_TAGGED:
+      {
+        const unsigned short tag = *(unsigned short*)p;
+        Mark2_Proc markproc;
+        ASSERT_TAG(tag);
+        markproc = gc->mark_table[tag];
+        if(((uintptr_t) markproc) >= PAGE_TYPES) {
+          GC_ASSERT(markproc);
+          gc->mark_depth++;
+          markproc(p, gc);
+          --gc->mark_depth;
+        }
+      }
+      return;
+    case PAGE_PAIR:
+      {
+        Scheme_Object *pr = (Scheme_Object *)p;
+        gc->mark_depth++;
+        GC_mark2(SCHEME_CDR(pr), gc);
+        GC_mark2(SCHEME_CAR(pr), gc);
+        --gc->mark_depth;
+      }
+      return;
+    default:
+      break;
+    }
+  }
+
+  push_ptr(gc, p);
+}
 
 /* This is the first mark routine. It's a bit complicated. */
 void GC_mark2(const void *const_p, struct NewGC *gc)
@@ -3403,7 +3448,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       p = OBJHEAD_TO_OBJPTR(info);
       backtrace_new_page_if_needed(gc, page);
       record_backtrace(gc, page, p);
-      push_ptr(gc, p);
+      mark_recur_or_push_ptr(gc, p);
     }
   } 
   /* SMALL_PAGE from gen0 or gen1 */
@@ -3430,7 +3475,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         page->previous_size = PREFIX_SIZE;
         page->live_size += ohead->size;
         record_backtrace(gc, page, p);
-        push_ptr(gc, p);
+        mark_recur_or_push_ptr(gc, p);
       } else {
         GCDEBUG((DEBUGOUTF, "Not marking %p (it's old; %p / %i)\n", p, page, page->previous_size));
       }
@@ -3535,7 +3580,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         /* set forwarding pointer */
         GCDEBUG((DEBUGOUTF,"Marking %p (moved to %p on page %p)\n", p, newp, work));
         *(void**)p = newp;
-        push_ptr(gc, newp);
+        mark_recur_or_push_ptr(gc, newp);
       }
     }
   }
@@ -3548,7 +3593,7 @@ void GC_mark(const void *const_p)
 
 /* this is the second mark routine. It's not quite as complicated. */
 /* this is what actually does mark propagation */
-static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, void *pp)
+static inline void propagate_marks_worker(NewGC *gc, void *pp)
 {
   void **start, **end;
   int alloc_type;
@@ -3585,7 +3630,7 @@ static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, voi
         const unsigned short tag = *(unsigned short*)start;
         Mark2_Proc markproc;
         ASSERT_TAG(tag);
-        markproc = mark_table[tag];
+        markproc = gc->mark_table[tag];
         if(((uintptr_t) markproc) >= PAGE_TYPES) {
           GC_ASSERT(markproc);
           markproc(start, gc);
@@ -3604,16 +3649,16 @@ static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, voi
         ASSERT_TAG(tag);
         end -= INSET_WORDS;
         while(start < end) {
-          GC_ASSERT(mark_table[tag]);
-          start += mark_table[tag](start, gc);
+          GC_ASSERT(gc->mark_table[tag]);
+          start += gc->mark_table[tag](start, gc);
         }
         break;
       }
     case PAGE_PAIR: 
       {
         Scheme_Object *p = (Scheme_Object *)start;
-        GC_mark2(SCHEME_CAR(p), gc);
         GC_mark2(SCHEME_CDR(p), gc);
+        GC_mark2(SCHEME_CAR(p), gc);
       }
       break;
   }
@@ -3622,11 +3667,10 @@ static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, voi
 static void propagate_marks(NewGC *gc) 
 {
   void *p;
-  Mark2_Proc *mark_table = gc->mark_table;
 
   while(pop_ptr(gc, &p)) {
     GCDEBUG((DEBUGOUTF, "Popped pointer %p\n", p));
-    propagate_marks_worker(gc, mark_table, p);
+    propagate_marks_worker(gc, p);
   }
 }
 
@@ -3964,6 +4008,9 @@ void GC_dump_with_traces(int flags,
     GCWARN((GCOUTF,"# of installed finalizers: %i\n", gc->num_fnls));
     GCWARN((GCOUTF,"# of traced ephemerons: %i\n", gc->num_last_seen_ephemerons));
     GCWARN((GCOUTF,"# of immobile boxes: %i\n", num_immobiles));
+    GCWARN((GCOUTF,"# of page-modify unprotects: %" PRIdPTR "\n", gc->modified_unprotects));
+    GCWARN((GCOUTF,"# of old regions scanned during minor GCs: %" PRIdPTR "/%" PRIdPTR "\n",
+            gc->minor_old_traversed, gc->minor_old_traversed + gc->minor_old_skipped));
   }
 
   if (flags & GC_DUMP_SHOW_TRACE) {
@@ -4062,7 +4109,7 @@ static void mark_backpointers(NewGC *gc)
 {
   if (!gc->gc_full) {
     mpage *work;
-    int i, ty;
+    int i, ty, traversed = 0, skipped = 0;
 
     /* if this is not a full collection, then we need to mark any pointers
        that point backwards into generation 0, since they're roots. */
@@ -4100,10 +4147,12 @@ static void mark_backpointers(NewGC *gc)
             }
           }
           work->previous_size = PREFIX_SIZE;
+          traversed++;
         } else {
           GCDEBUG((DEBUGOUTF,"Setting previous_size on %p to %i\n", work,
                    work->size));
           work->previous_size = work->size;
+          skipped++;
         }
       }
     }
@@ -4111,14 +4160,15 @@ static void mark_backpointers(NewGC *gc)
     for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
       for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
         for (work = gc->med_pages[ty][i]; work; work = work->next) {
-          if (work->mprotected) {
-            /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS && AGE_GEN_0_TO_GEN_HALF(gc) */
-            work->mprotected = 0;
-            mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
-          }
           if (work->back_pointers) {
             void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
             void **end = PPTR(NUM(work->addr) + APAGE_SIZE - work->size);
+
+            if (work->mprotected) {
+              /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS && AGE_GEN_0_TO_GEN_HALF(gc) */
+              work->mprotected = 0;
+              mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
+            }
 
             work->marked_from = 1;
 
@@ -4133,10 +4183,16 @@ static void mark_backpointers(NewGC *gc)
                 start += info->size;
               }
             }
+            traversed++;
+          } else {
+            skipped++;
           }
         }
       }
     }
+
+    gc->minor_old_traversed += traversed;
+    gc->minor_old_skipped += skipped;
   }
 }
 

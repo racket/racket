@@ -141,6 +141,8 @@ typedef struct NewGC {
   Fnl *run_queue;
   Fnl *last_in_queue;
 
+  int mark_depth;
+
   struct NewGC *primoridal_gc;
   uintptr_t max_heap_size;
   uintptr_t max_pages_in_heap;
@@ -189,6 +191,10 @@ typedef struct NewGC {
   uintptr_t peak_pre_memory_use;
   uintptr_t num_minor_collects;
   uintptr_t num_major_collects;
+
+  uintptr_t minor_old_traversed;
+  uintptr_t minor_old_skipped;
+  uintptr_t modified_unprotects;
   
   /* THREAD_LOCAL variables that need to be saved off */
   MarkSegment  *saved_mark_stack;
