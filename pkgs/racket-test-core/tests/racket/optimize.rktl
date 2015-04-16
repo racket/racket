@@ -4770,5 +4770,35 @@
   (test '(#t #t) map variable-reference? v))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check correct use of shift in reduction of non-#f variables in Boolean contexts 
+
+; Due to a bad coordinates use, the optimizer confused f-two with unused-pair, 
+; and in a Boolean context reduced f-two to #t. See 16ce8fd90d.
+; The right number of let's is difficult to calculate, so we generate
+; many variations. Before the fix, this test produced an error when n was 16.
+
+(for ([n (in-range 30)])
+  (define many-lets (for/fold ([many-lets '(void)]) ([i (in-range n)])
+                      `(let ([f 0]) ,many-lets)))
+  (test-comp `(let ()
+                (define ignored (lambda () ,many-lets))
+                (let ([f-two (not (zero? (random 1)))]
+                      [unused-pair (cons 0 0)])
+                  (if (let ([f-one #f])
+                        (if f-one f-one f-two))
+                    (displayln (list 'yes f-two ,n))
+                    111111)))
+             `(let ()
+                (define ignored (lambda () ,many-lets))
+                (let ([f-two (not (zero? (random 1)))]
+                      [unused-pair (cons 0 0)])
+                  (if (let ([f-one #f])
+                        (if f-one f-one f-two))
+                    (displayln (list 'yes f-two ,n))
+                    222222)))
+             #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 (report-errs)
