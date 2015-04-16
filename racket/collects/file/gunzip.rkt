@@ -275,6 +275,7 @@
   (define (NEEDBITS n)
     (when (< bk n)
       (READBITS n)))
+  (define past-the-end? #f)
   (define (READBITS n)
     (if (= buf-pos buf-max)
         (begin
@@ -291,6 +292,10 @@
             (if (eof-object? got)
                 ;; Treat an EOF as a -1 "byte":
                 (begin
+                  (if past-the-end?
+                      (error 'inflate "unexpected end of file")
+                      ;; can't read past the end more than once
+                      (set! past-the-end? #t))
                   (bytes-set! buffer buf-pos 255)
                   (set! buf-max (add1 buf-pos)))
                 ;; Got normal bytes:
