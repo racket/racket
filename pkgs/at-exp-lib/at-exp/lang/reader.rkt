@@ -44,4 +44,6 @@
             (try-dynamic-require 'syntax-color/scribble-lexer 'scribble-lexer)]
            [(definitions-text-surrogate)
             'scribble/private/indentation]
+           [(drracket:indentation)
+            (dynamic-require 'scribble/private/indentation 'determine-spaces)]
            [else (fallback)]))))))
