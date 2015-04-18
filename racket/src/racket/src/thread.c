@@ -1626,16 +1626,18 @@ static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[])
   for (i = m->count, j = 0; i--; ) {
     if (m->boxes[i]) {
       o = xCUSTODIAN_FAM(m->boxes[i]);
-      
-      type = SCHEME_TYPE(o);
-      ex = extractors[type];
-      if (ex) {
-	o = ex(o);
-      }
 
       if (o) {
-	hold[j] = o;
-	j++;
+        type = SCHEME_TYPE(o);
+        ex = extractors[type];
+        if (ex) {
+          o = ex(o);
+        }
+
+        if (o) {
+          hold[j] = o;
+          j++;
+        }
       }
     }
   }
