@@ -30,6 +30,7 @@
        'scribble/private/indentation]
       [(drracket:indentation)
        (dynamic-require 'scribble/private/indentation 'determine-spaces)]
+      [(drracket:default-extension) "scrbl"]
       [else (default key defval)])))
 
 ;; Settings that apply to Scribble-renderable docs:
