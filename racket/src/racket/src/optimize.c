@@ -350,16 +350,6 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     }
   }
 
-  if (vtype == scheme_case_lambda_sequence_type) {
-    note_match(1, vals, warn_info);
-    return 1;
-  }
-
-  if (vtype == scheme_compiled_quote_syntax_type) {
-    note_match(1, vals, warn_info);
-    return ((vals == 1) || (vals < 0));
-  }
-
   if (vtype == scheme_branch_type) {
     Scheme_Branch_Rec *b;
     b = (Scheme_Branch_Rec *)o;
