@@ -50,7 +50,7 @@
               sf-ambisonic-b-format = #x41)))
 
 (define str-types '(title copyright software artist comment date album license))
-(define _sf-str-type (_enum (cons "dummy" str-types))) ; begins from 1
+(define _sf-str-type (_enum (cons 'dummy str-types))) ; begins from 1
 (define _sf-error (_enum '(no-error unrecognised-format system malformed-file unsupported-encoding)))
 
 (define _sf-format
