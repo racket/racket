@@ -869,7 +869,7 @@ memory accounting @cite["Wick04"], kill-safe abstractions
              #:title "The Influence of Browsers on Evaluators or, Continuations to Program Web Servers"
              #:location "International Conference on Functional Programming"
              #:date "2000"
-             #:url "http://www-spi.lip6.fr/~queinnec/Papers/webcont.ps.gz")
+             #:url "http://pagesperso-systeme.lip6.fr/Christian.Queinnec/PDF/webcont.pdf")
 
   (bib-entry #:key "Wick04"
              #:author "Adam Wick and Matthew Flatt"
