@@ -51,6 +51,7 @@
    "Shriram Krishnamurthi, "
    "Mario Latendresse, "
    "Guillaume Marceau, "
+   "Gustavo Massaccesi, "
    "Jacob Matthews, "
    "Jay McCarthy, "
    "Mike T. McHenry, "
