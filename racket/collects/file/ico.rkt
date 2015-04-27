@@ -247,7 +247,7 @@
                                                                        (mask->alpha (cvt image) mask))
                                                                    mask
                                                                    #t)))))))))])
-                         (unless ico-ico (printf "no! ~a\n" (ico-desc exe-ico)))
+                         (unless ico-ico (log-error "no icon conversion available to ~a" (ico-desc exe-ico)))
                          (when ico-ico
                            (file-position p (car (ico-data exe-ico)))
                            (display (cdr (ico-data ico-ico)) p)))))
