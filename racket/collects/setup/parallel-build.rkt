@@ -223,9 +223,10 @@
           (match result-type
             [(list 'LOCK fn) (lm/lock lock-mgr fn wrkr) #f]
             [(list 'UNLOCK fn) (lm/unlock lock-mgr fn) #f]
-            [(list 'ERROR msg) (handler id 'error work msg out err) 
-                               (set! results #f)
-                               #t]
+            [(list 'ERROR long-msg short-msg)
+             (handler id 'error work long-msg out err)
+             (set! results #f)
+             #t]
             [(list 'LOG level msg data)
              (when (log-level? pb-logger level)
                (log-message pb-logger level msg (parallel-compile-event id data)))
