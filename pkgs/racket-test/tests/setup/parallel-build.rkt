@@ -10,4 +10,5 @@
 
 (define temporary-directory (make-temporary-file "parallel-build~a" 'directory))
 (check-false (parallel-compile-files (list temporary-directory)))
+(check-false (parallel-compile-files (list (build-path temporary-directory "new-directory" ".."))))
 (delete-directory/files temporary-directory)
