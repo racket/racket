@@ -189,5 +189,5 @@ A @tech{structure type property} that allows structure types to customize
  field must be designated as immutable. The value of the field is used as the
  @racket[object-name] of the structure.}
 ]
-@history[#:added "6.2.0.2"]
-}
+
+@history[#:added "6.2"]}

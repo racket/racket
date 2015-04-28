@@ -75,9 +75,9 @@ value before the outermost @racket[read] returns.
 See @secref["readtables"] for an extended example that uses
 @racket[read/recursive].
 
-@history[#:changed "6.2.0.2" @elem{Adjusted use of @racket[readtable] to
-                                   more consistently apply to the delimiters of
-                                   a built-in form.}]}
+@history[#:changed "6.2" @elem{Adjusted use of @racket[readtable] to
+                               more consistently apply to the delimiters of
+                               a built-in form.}]}
 
 
 @defproc[(read-syntax/recursive [source-name any/c (object-name in)]
@@ -111,9 +111,9 @@ when the input stream starts with a comment (after whitespace).
 See @secref["readtables"] for an extended example that uses
 @racket[read-syntax/recursive].
 
-@history[#:changed "6.2.0.2" @elem{Adjusted use of @racket[readtable]
-                                   in the same way as for
-                                   @racket[read/recursive].}]}
+@history[#:changed "6.2" @elem{Adjusted use of @racket[readtable]
+                               in the same way as for
+                               @racket[read/recursive].}]}
 
 
 @defproc[(read-language [in input-port? (current-input-port)]
