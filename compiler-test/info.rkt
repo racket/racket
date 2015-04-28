@@ -9,6 +9,7 @@
 (define pkg-authors '(mflatt))
 (define build-deps '("compiler-lib"
                      "eli-tester"
+                     "rackunit-lib"
                      "net-lib"
                      "scheme-lib"
                      "compatibility-lib"

@@ -637,7 +637,11 @@
 (module paths racket/base
   (require setup/link
            racket/match
+           setup/collection-name
+           raco/command-name
            racket/list)
+
+  (define test-exe-name (string->symbol (short-program+command-name)))
 
   (struct col (name path) #:transparent)
 
@@ -681,6 +685,8 @@
   ;; This should be in Racket somewhere and return all the collection
   ;; paths, rather than just the first as collection-path does.
   (define (collection-paths c)
+    (when (not (collection-name? c))
+      (error test-exe-name "not a collection name in: ~a" c))
     (match-define (list-rest sc more) (map path->string (explode-path c)))
     (append*
      (for/list ([col (all-collections)]
