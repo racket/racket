@@ -364,7 +364,7 @@ driver of a for-each loop in Visual Basic or PowerShell.
 A call @racket[(com-enumerate-to-list obj)] is equivalent to
 @racket[(com-enumeration-to-list (com-get-property obj "_NewEnum"))].
 
-@history[#:added "6.2.0.2"]}
+@history[#:added "6.2"]}
 
 
 @defproc[(com-enumeration-to-list [obj com-object?]) list?]{
@@ -372,7 +372,7 @@ A call @racket[(com-enumerate-to-list obj)] is equivalent to
 Given a COM object that implements @cpp{IEnumVARIANT}, extracts the
 enumerated values into a list.
 
-@history[#:added "6.2.0.2"]}
+@history[#:added "6.2"]}
 
 
 @; ----------------------------------------

@@ -166,7 +166,7 @@ foreign call as follows:
 
 ]
 
-@history[#:changed "6.2.0.2" @elem{Added @racket[#:allow] and automatic retries.}]}
+@history[#:changed "6.2" @elem{Added @racket[#:allow] and automatic retries.}]}
 
 
 @defform[(_hmfun fun-option ... type-spec ... -> id output-expr)]{
@@ -181,7 +181,7 @@ is added for the first argument.}
 
 Parameters that determine the behavior of automatic retries for @racket[_hfun].
 
-@history[#:added "6.2.0.2"]}
+@history[#:added "6.2"]}
 
 
 @defproc[(HRESULT-retry? [r exact-nonnegative-integer?]) boolean?]{
@@ -189,7 +189,7 @@ Parameters that determine the behavior of automatic retries for @racket[_hfun].
 Returns @racket[#t] if @racket[r] is @cpp{RPC_E_CALL_REJECTED}
 or @cpp{RPC_E_SERVERCALL_RETRYLATER}, @racket[#f] otherwise.
 
-@history[#:added "6.2.0.2"]}
+@history[#:added "6.2"]}
 
 
 @deftogether[(
