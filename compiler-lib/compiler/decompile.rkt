@@ -188,6 +188,11 @@
                   [(stack) (append '(#%modvars) orig-stack)]
                   [(closed) (make-hasheq)])
        `(,mod-name ,(if (symbol? name) name (last name)) ....
+           (quote internal-context 
+                  ,(if (stx? internal-context)
+                       `(#%decode-syntax 
+                         ,(decompile-stx (stx-encoded internal-context) stx-ht))
+                       internal-context))
            ,@(if (null? flags) '() (list `(quote ,flags)))
            ,@(let ([l (apply
                        append
