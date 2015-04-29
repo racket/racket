@@ -14,6 +14,8 @@ before_install:
 - echo $PKG
 - curl -L -o installer.sh http://plt.eecs.northwestern.edu/snapshots/current/installers/min-racket-current-x86_64-linux-precise.sh
 - sh installer.sh --in-place --dest ~/racket/
+- "export DISPLAY=:99.0"
+- "sh -e /etc/init.d/xvfb start"
 
 install:
 - racket -l- pkg/dirs-catalog --link --check-metadata pkgs-catalog .
