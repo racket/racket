@@ -62,4 +62,78 @@
                           ;; 1000 ms should be far more than enough.
                           (or (engine-run 1000 e)
                               (error "computation did not terminate")))))
+  
+  ;; pull-request #821, report correct position of contract violation
+  (check-exn #rx"meth:.*1st"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth AA b c])
+                           (meth 1 2 3))))
+             "1st arg contract violation")
+  (check-exn #rx"meth:.*2nd"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth a AA c])
+                           (meth 1 2 3))))
+             "2nd arg contract violation")
+  (check-exn #rx"meth:.*3rd"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth a b AA])
+                           (meth 1 2 3))))
+             "3rd arg contract violation")
+  (check-exn #rx"optional.*default"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth a b AA [d]])
+                           (meth 1 2 3))))
+             "omitted optional arg")
+  (check-exn #rx"optional.*optarg"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth a b AA [d]])
+                           (meth 1 2 3 "optarg"))))
+             "given optional arg")
+  (check-exn #rx"required keyword"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth a b AA [d] #:reqkw reqkw])
+                           (meth 1 2 3 "optarg"))))
+             "omitted required kw arg")
+    (check-exn #rx"#:reqkw: \"requiredkw"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth a b AA [d] #:reqkw reqkw])
+                           (meth 1 2 3 "optarg" #:reqkw "requiredkw"))))
+             "given required kw arg")
+  (check-exn #rx"#:optkw.*optional.*default"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth a b AA [d] #:optkw [optkw]])
+                           (meth 1 2 3))))
+             "omitted optional kw arg")
+  (check-exn #rx"#:optkw.*optional.*optarg"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth a b AA [d] #:optkw [optkw]])
+                           (meth 1 2 3 #:optkw "optarg"))))
+             "given optional kw arg")
+    (check-exn #rx"argument position: 1st$"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth AA])
+                           (meth 1))))
+             "no other args")
+    (check-exn #rx"argument position: 1st\n"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth AA a])
+                           (meth 1 2))))
+             "other args present")
+      (check-exn #rx"rest args:"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics AA [meth AA . a])
+                           (meth 1 2))))
+             "rest args present")
   )
