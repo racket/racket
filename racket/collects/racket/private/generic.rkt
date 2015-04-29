@@ -251,6 +251,21 @@
                [else (raise-argument-error 'supported-name
                                            'contract-str
                                            self-name)]))
+           ;; Converts 0-based index to an ordinal string
+           ;; 0 => 1st
+           ;; 1 => 2nd
+           (define (pos->ord n)
+             (define n/1base (add1 n))
+             (string-append
+              (number->string n/1base)
+              (case n/1base
+                [(11 12 13) "th"]
+                [else (case (remainder n/1base 10)
+                        [(1) "st"]
+                        [(2) "nd"]
+                        [(3) "rd"]
+                        [else "th"])])))
+
            (define-generic-method
              method-name
              method-signature
@@ -269,9 +284,9 @@
                       (string-append "contract violation:\n"
                                      "expected: ~a\n"
                                      "given: ~v\n"
-                                     "argument (0-base) pos: ~a\n"
+                                     "argument position: ~a\n"
                                      "other arguments...:")
-                      'contract-str bad-arg self-i)
+                      'contract-str bad-arg (pos->ord self-i))
                      other-labels+args ...)])
                  fallback)
              original)
