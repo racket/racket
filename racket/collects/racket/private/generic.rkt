@@ -78,7 +78,7 @@
               i))
           #'(req ...)))
 
-       ;; applies f to (syntax->list stx)
+       ;; interleaves two stx lists
        (define (stx-merge stx)
          (define stx-lst1 (syntax->list (stx-car stx)))
          (define stx-lst2 (syntax->list (car (stx-cdr stx))))
