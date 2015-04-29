@@ -137,6 +137,20 @@
           #'(arg-vals ...) #'(self-i ...)))
        (define/with-syntax ((other-labels+args ...) ...) ; other args interleaved
          (stx-map stx-merge #'((other-arg-labels other-args) ...)))
+       (define/with-syntax (err-fmt-str ...)
+         (stx-map
+          (λ (labels)
+            (if (null? (syntax->list labels))
+                (string-append "contract violation:\n"
+                                     "expected: ~a\n"
+                                     "given: ~v\n"
+                                     "argument position: ~a")
+                (string-append "contract violation:\n"
+                                     "expected: ~a\n"
+                                     "given: ~v\n"
+                                     "argument position: ~a\n"
+                                     "other arguments...:")))
+          #'(other-arg-labels ...)))
        
        (define/with-syntax size n)
        (define/with-syntax [method-index ...] method-indices)
@@ -280,13 +294,7 @@
                    [else
                     (raise-arguments-error
                      'method-name
-                     (format
-                      (string-append "contract violation:\n"
-                                     "expected: ~a\n"
-                                     "given: ~v\n"
-                                     "argument position: ~a\n"
-                                     "other arguments...:")
-                      'contract-str bad-arg (pos->ord self-i))
+                     (format err-fmt-str 'contract-str bad-arg (pos->ord self-i))
                      other-labels+args ...)])
                  fallback)
              original)
