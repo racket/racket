@@ -64,7 +64,7 @@
                               (error "computation did not terminate")))))
   
   ;; pull-request #821, report correct position of contract violation
-  (check-exn #rx"meth:.*1st"
+  (check-exn #rx"meth:.*AA.*1st"
              (lambda () (convert-compile-time-error
                          (let ()
                            (define-generics AA [meth AA b c])
