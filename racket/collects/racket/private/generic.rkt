@@ -65,6 +65,93 @@
        (define defaults-by-type (map generate-methods default-preds))
        (define defaults-by-method (transpose-methods defaults-by-type))
 
+       (define/with-syntax ((req req-kw opt opt-kw rest) ...)
+         (stx-map
+           (λ (sg) (call-with-values (lambda () (parse-method-signature sg)) list))
+           #'(method-signature ...)))
+       ;; (0-based) position of the "self" argument, for error reporting purposes
+       (define/with-syntax (self-i ...)
+         (stx-map
+          (λ (req-ids)
+            (for/first ([(id i) (in-indexed (syntax->list req-ids))]
+                        #:when (free-identifier=? id #'self-name))
+              i))
+          #'(req ...)))
+
+       ;; interleaves two stx lists
+       (define (stx-merge stx)
+         (define stx-lst1 (syntax->list (stx-car stx)))
+         (define stx-lst2 (syntax->list (car (stx-cdr stx))))
+         (apply append (map list stx-lst1 stx-lst2)))
+       ; removes the lst element at (0-based) index pos
+       (define (remove-at lst pos)
+         (let loop ([i 0] [lst lst])
+           (cond [(null? lst) '()]
+                 [else (if (= i pos)
+                           (cdr lst)
+                           (cons (car lst) (loop (add1 i) (cdr lst))))])))
+       (define (stx-drop-last stx)
+         (reverse (cdr (reverse (syntax->list stx)))))
+         
+       (define/with-syntax ((req-name ...) ...) #'(req ...))
+       (define/with-syntax (((reqkw-key reqkw-val) ...) ...) #'(req-kw ...))
+       (define/with-syntax ((opt-name ...) ...) #'(opt ...))
+       (define/with-syntax (((optkw-key optkw-val) ...) ...) #'(opt-kw ...))
+       (define/with-syntax (arg-labels/restargs ...)
+         #'(((symbol->string 'req-name) ... 
+             (string-append (symbol->string 'opt-name) " (optional)") ...
+             (string-append "#:" (keyword->string 'reqkw-key)) ...
+             (string-append "#:" (keyword->string 'optkw-key) " (optional)")  ...
+             "rest args") ...))
+       (define/with-syntax (arg-labels ...) ; drop restargs if none
+         (stx-map
+          (λ (labels rst)
+            (if (syntax->datum rst) labels (stx-drop-last labels)))
+          #'(arg-labels/restargs ...) #'(rest ...)))
+       (define/with-syntax (arg-vals/restargs ...)
+         #`((req-name ... 
+             opt-name ...
+             reqkw-val ...
+             optkw-val ...
+             rest) ...))
+       (define/with-syntax (arg-vals ...) ; drop restargs if none
+         (stx-map
+          (λ (args rst)
+            (if (syntax->datum rst) args (stx-drop-last args)))
+          #'(arg-vals/restargs ...) #'(rest ...)))
+       (define/with-syntax (bad-arg-label ...) ; only the bad arg name
+         (stx-map
+          (λ (args i) (list-ref (stx->list args) (syntax->datum i)))
+          #'(arg-labels ...) #'(self-i ...)))
+       (define/with-syntax (bad-arg ...) ; only the bad arg
+         (stx-map
+          (λ (args i) (list-ref (stx->list args) (syntax->datum i)))
+          #'(arg-vals ...) #'(self-i ...)))
+       (define/with-syntax (other-arg-labels ...) ; other arg labels
+         (stx-map
+          (λ (args i) (remove-at (stx->list args) (syntax->datum i)))
+          #'(arg-labels ...) #'(self-i ...)))
+       (define/with-syntax (other-args ...) ; other args
+         (stx-map
+          (λ (args i) (remove-at (stx->list args) (syntax->datum i)))
+          #'(arg-vals ...) #'(self-i ...)))
+       (define/with-syntax ((other-labels+args ...) ...) ; other args interleaved
+         (stx-map stx-merge #'((other-arg-labels other-args) ...)))
+       (define/with-syntax (err-fmt-str ...)
+         (stx-map
+          (λ (labels)
+            (if (null? (syntax->list labels))
+                (string-append "contract violation:\n"
+                                     "expected: ~a\n"
+                                     "given: ~v\n"
+                                     "argument position: ~a")
+                (string-append "contract violation:\n"
+                                     "expected: ~a\n"
+                                     "given: ~v\n"
+                                     "argument position: ~a\n"
+                                     "other arguments...:")))
+          #'(other-arg-labels ...)))
+       
        (define/with-syntax size n)
        (define/with-syntax [method-index ...] method-indices)
        (define/with-syntax contract-str
@@ -178,6 +265,21 @@
                [else (raise-argument-error 'supported-name
                                            'contract-str
                                            self-name)]))
+           ;; Converts 0-based index to an ordinal string
+           ;; 0 => 1st
+           ;; 1 => 2nd
+           (define (pos->ord n)
+             (define n/1base (add1 n))
+             (string-append
+              (number->string n/1base)
+              (case n/1base
+                [(11 12 13) "th"]
+                [else (case (remainder n/1base 10)
+                        [(1) "st"]
+                        [(2) "nd"]
+                        [(3) "rd"]
+                        [else "th"])])))
+
            (define-generic-method
              method-name
              method-signature
@@ -189,9 +291,11 @@
                     (vector-ref (accessor-name self-name) 'method-index)]
                    [(default-disp-name self-name) default-by-method]
                    ...
-                   [else (raise-argument-error 'method-name
-                                               'contract-str
-                                               self-name)])
+                   [else
+                    (raise-arguments-error
+                     'method-name
+                     (format err-fmt-str 'contract-str bad-arg (pos->ord self-i))
+                     other-labels+args ...)])
                  fallback)
              original)
            ...
