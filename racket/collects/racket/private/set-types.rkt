@@ -459,13 +459,13 @@
 (define custom-set-constant
   (equal-hash-code "hash code for a set based on a hash table"))
 
-(define (((mk-not-impl struct-descrip) method-name) s . args)
+(define (((mk-not-impl meth-descrip struct-descrip) method-name) s . args)
   (raise
    (exn:fail:support
-    (format "~a: method not implemented for ~a ~e" method-name struct-descrip s)
+    (format "~a: ~a operation not available for ~a: ~e" method-name meth-descrip struct-descrip s)
     (current-continuation-marks))))
-(define mk-not-impl/immut (mk-not-impl "immutable set"))
-(define mk-not-impl/mut (mk-not-impl "mutable set"))
+(define mk-not-impl/immut (mk-not-impl "mutation" "immutable set"))
+(define mk-not-impl/mut (mk-not-impl "non-mutation" "mutable set"))
 
 (serializable-struct immutable-custom-set custom-set []
   #:methods gen:stream
