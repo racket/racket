@@ -459,13 +459,21 @@
 (define custom-set-constant
   (equal-hash-code "hash code for a set based on a hash table"))
 
-(define (((mk-not-impl meth-descrip struct-descrip) method-name) s . args)
+(define (((mk-not-allowed #:immut [immut #t]) method-name) s . args)
   (raise
    (exn:fail:support
-    (format "~a: ~a operation not available for ~a: ~e" method-name meth-descrip struct-descrip s)
+    (format 
+     (string-append "~a:\n"
+                    "expected: ~a\n"
+                    "given ~a: ~e\n"
+                    "argument position: 1st")
+     method-name
+     (if immut "(not/c set-mutable?)" "set-mutable?")
+     (if immut "mutable set" "immutable set")
+     s)
     (current-continuation-marks))))
-(define mk-not-impl/immut (mk-not-impl "mutation" "immutable set"))
-(define mk-not-impl/mut (mk-not-impl "non-mutation" "mutable set"))
+(define mk-not-allowed/immut (mk-not-allowed #:immut #f))
+(define mk-not-allowed/mut (mk-not-allowed #:immut #t))
 
 (serializable-struct immutable-custom-set custom-set []
   #:methods gen:stream
@@ -489,19 +497,19 @@
    (define set-first custom-set-first)
    (define set-rest custom-set-rest)
    (define set-add custom-set-add)
-   (define set-add! (mk-not-impl/immut 'set-add!))
+   (define set-add! (mk-not-allowed/immut 'set-add!))
    (define set-remove custom-set-remove)
-   (define set-remove! (mk-not-impl/immut 'set-remove!))
+   (define set-remove! (mk-not-allowed/immut 'set-remove!))
    (define set-clear custom-set-clear)
-   (define set-clear! (mk-not-impl/immut 'set-clear!))
+   (define set-clear! (mk-not-allowed/immut 'set-clear!))
    (define set-union custom-set-union)
-   (define set-union! (mk-not-impl/immut 'set-union!))
+   (define set-union! (mk-not-allowed/immut 'set-union!))
    (define set-intersect custom-set-intersect)
-   (define set-intersect! (mk-not-impl/immut 'set-intersect!))
+   (define set-intersect! (mk-not-allowed/immut 'set-intersect!))
    (define set-subtract custom-set-subtract)
-   (define set-subtract! (mk-not-impl/immut 'set-subtract!))
+   (define set-subtract! (mk-not-allowed/immut 'set-subtract!))
    (define set-symmetric-difference custom-set-symmetric-difference)
-   (define set-symmetric-difference! (mk-not-impl/immut 'set-symmetric-difference!))]
+   (define set-symmetric-difference! (mk-not-allowed/immut 'set-symmetric-difference!))]
   )
 
 (serializable-struct imperative-custom-set custom-set []
@@ -520,20 +528,20 @@
    (define set->stream custom-set->stream)
    (define in-set custom-in-set)
    (define set-first custom-set-first)
-   (define set-rest (mk-not-impl/mut 'set-rest))
-   (define set-add (mk-not-impl/mut 'set-add))
+   (define set-rest (mk-not-allowed/mut 'set-rest))
+   (define set-add (mk-not-allowed/mut 'set-add))
    (define set-add! custom-set-add!)
-   (define set-remove (mk-not-impl/mut 'set-remove))
+   (define set-remove (mk-not-allowed/mut 'set-remove))
    (define set-remove! custom-set-remove!)
-   (define set-clear (mk-not-impl/mut 'set-clear))
+   (define set-clear (mk-not-allowed/mut 'set-clear))
    (define set-clear! custom-set-clear!)
-   (define set-union (mk-not-impl/mut 'set-union))
+   (define set-union (mk-not-allowed/mut 'set-union))
    (define set-union! custom-set-union!)
-   (define set-intersect (mk-not-impl/mut 'set-intersect))
+   (define set-intersect (mk-not-allowed/mut 'set-intersect))
    (define set-intersect! custom-set-intersect!)
-   (define set-subtract (mk-not-impl/mut 'set-subtract))
+   (define set-subtract (mk-not-allowed/mut 'set-subtract))
    (define set-subtract! custom-set-subtract!)
-   (define set-symmetric-difference (mk-not-impl/mut 'set-symmetric-difference))
+   (define set-symmetric-difference (mk-not-allowed/mut 'set-symmetric-difference))
    (define set-symmetric-difference! custom-set-symmetric-difference!)])
 
 (serializable-struct weak-custom-set imperative-custom-set [])
