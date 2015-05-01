@@ -226,7 +226,7 @@
 (define (fallback-copy s)
   (cond
     [(set-implements? s 'set-copy-clear 'set-add!)
-     (define s2 (set-clear s))
+     (define s2 (set-copy-clear s))
      (for ([x (*in-set s)])
        (set-add! s2 x))
      s2]
