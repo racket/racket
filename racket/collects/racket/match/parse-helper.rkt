@@ -136,21 +136,16 @@
                                   (when (> (length acc) (length ps))
                                      (raise-syntax-error
                                        'match
-                                       (format
-                                         "~a structure ~a: expected ~a but got ~a; ~a ~a"
-                                         "insufficient number of fields for"
-                                         (syntax->datum struct-name) (length acc)
-                                         (length ps)
-                                         "missing fields"
-                                         (list-tail
-                                           (map (lambda (field)
-                                             (string->symbol
-                                               (substring (symbol->string (syntax->datum field))
-                                                 (add1 (string-length
-                                                   (symbol->string (syntax->datum struct-name)))))))
-                                             acc)
-                                           (length ps)))
-                                     stx pats)))
+                                       (format "~a structure ~a: expected ~a but got ~a; ~a ~a"
+                                               "insufficient number of fields for"
+                                               (syntax->datum struct-name) (length acc)
+                                               (length ps)
+                                               "missing fields"
+                                               (list-tail
+                                                 (for/list [(i acc)]
+                                                           (symbol->string (syntax->datum i)))
+                                                 (length ps)))
+                                       stx pats)))
                                 (map parse ps))]
                              [else (raise-syntax-error
                                     'match
