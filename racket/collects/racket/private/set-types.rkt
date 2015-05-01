@@ -5,6 +5,7 @@
          racket/pretty
          racket/sequence
          (only-in racket/syntax format-symbol)
+         (only-in racket/generic exn:fail:support)
          (for-syntax racket/base racket/syntax))
 
 (provide set seteq seteqv
@@ -458,6 +459,14 @@
 (define custom-set-constant
   (equal-hash-code "hash code for a set based on a hash table"))
 
+(define (((mk-not-impl struct-descrip) method-name) s . args)
+  (raise
+   (exn:fail:support
+    (format "~a: method not implemented for ~a ~e" method-name struct-descrip s)
+    (current-continuation-marks))))
+(define mk-not-impl/immut (mk-not-impl "immutable set"))
+(define mk-not-impl/mut (mk-not-impl "mutable set"))
+
 (serializable-struct immutable-custom-set custom-set []
   #:methods gen:stream
   [(define stream-empty? custom-set-empty?)
@@ -480,12 +489,20 @@
    (define set-first custom-set-first)
    (define set-rest custom-set-rest)
    (define set-add custom-set-add)
+   (define set-add! (mk-not-impl/immut 'set-add!))
    (define set-remove custom-set-remove)
+   (define set-remove! (mk-not-impl/immut 'set-remove!))
    (define set-clear custom-set-clear)
+   (define set-clear! (mk-not-impl/immut 'set-clear!))
    (define set-union custom-set-union)
+   (define set-union! (mk-not-impl/immut 'set-union!))
    (define set-intersect custom-set-intersect)
+   (define set-intersect! (mk-not-impl/immut 'set-intersect!))
    (define set-subtract custom-set-subtract)
-   (define set-symmetric-difference custom-set-symmetric-difference)])
+   (define set-subtract! (mk-not-impl/immut 'set-subtract!))
+   (define set-symmetric-difference custom-set-symmetric-difference)
+   (define set-symmetric-difference! (mk-not-impl/immut 'set-symmetric-difference!))]
+  )
 
 (serializable-struct imperative-custom-set custom-set []
   #:methods gen:set
@@ -503,12 +520,20 @@
    (define set->stream custom-set->stream)
    (define in-set custom-in-set)
    (define set-first custom-set-first)
+   (define set-rest (mk-not-impl/mut 'set-rest))
+   (define set-add (mk-not-impl/mut 'set-add))
    (define set-add! custom-set-add!)
+   (define set-remove (mk-not-impl/mut 'set-remove))
    (define set-remove! custom-set-remove!)
+   (define set-clear (mk-not-impl/mut 'set-clear))
    (define set-clear! custom-set-clear!)
+   (define set-union (mk-not-impl/mut 'set-union))
    (define set-union! custom-set-union!)
+   (define set-intersect (mk-not-impl/mut 'set-intersect))
    (define set-intersect! custom-set-intersect!)
+   (define set-subtract (mk-not-impl/mut 'set-subtract))
    (define set-subtract! custom-set-subtract!)
+   (define set-symmetric-difference (mk-not-impl/mut 'set-symmetric-difference))
    (define set-symmetric-difference! custom-set-symmetric-difference!)])
 
 (serializable-struct weak-custom-set imperative-custom-set [])
