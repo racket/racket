@@ -25,24 +25,25 @@ Conversely, you should use @rkt[] (or even @rkt/gui[]) when you just want a
 @; -----------------------------------------------------------------------------
 @section{Library Interfaces}
 
-As the set of modules for a library grows, you may find that not all
-features and modules are likely to be used by all programs that use
-your library. If, by default, your library includes all features, then
-you can cause unnecessary mental stress and runtime cost for features
-that the programs do not actually use. In building the Racket
-language, we've found it useful to separate out libraries into
-different layers so users can decide which bundles they need.
+Imagine you are working on a library. You start with one module, but before
+you know it the set of modules grows to a decent size. Client programs are
+unlikely to use all of your library's exports and modules. If, by default,
+your library includes all features, you may cause unnecessary mental stress
+and run-time cost that clients do not actually use. 
 
-In Racket, the practice is to make the default (i.e. the most
-prominent name) the module that includes "everything", namely
-@rkt[]. Then, if users wish to have a smaller set of bindings, they
-can choose to use @rkt/base[], which gives an explicit name to the
-basic foundation of the library. Finally, some features are not even
-included in @rkt[], such as @racketmodname[racket/require], and must
-be required specially in all programs.
+In building the Racket language, we have found it useful to factor
+libraries into different layers so that client programs can selectively
+import from these bundles. The specific Racket practice is to use the most
+prominent name as the default for the module that includes everything. When
+it comes to languages, this is the role of @rkt[]. A programmer who wishes
+to depend on a small part of the language chooses to @rkt/base[] instead;
+this name refers to the basic foundation of the language. Finally, some of
+Racket's constructs are not even included in @rkt[]---consider
+@racketmodname[racket/require] for example---and must be required
+explicitly in programs.
 
-Other libraries in Racket choose the default name to be the small core
-and give a special name for including everything.
+Other Racket libraries choose to use the default name for the small
+core. Special names then refer to the complete library. 
 
 We encourage library developers to think critically about these
 decisions and decide on a practice that fits their taste and
@@ -52,22 +53,19 @@ hierarchy:
 
 @itemlist[
 
-@item{@racket[library/kernel] -- The bare minimal conceievable for
-the library to be usable. (Most libraries will not need this level.)}
+@item{@racket[library/kernel], the bare minimal conceievable for the
+library to be usable;}
 
-@item{@racket[library/base] -- A basic set of functionality.}
+@item{@racket[library/base], a basic set of functionality.}
 
-@item{@racket[library] -- An appropriate "default" of functionality
-corresponding to either @racket[library/base] or
-@racket[library/full].}
+@item{@racket[library], an appropriate "default" of functionality
+corresponding to either @racket[library/base] or @racket[library/full].}
 
-@item{@racket[library/full] -- All available functionality.}
-
-]
-
-If all Racket developers use similar names and think deeply about
-these decisions, we can make it easier for Racket users to make wise
-dependency decisions.
+@item{@racket[library/full], the full library functionality.}  
+] 
+If all Racket developers use similar names and think deeply about these
+decisions, we can make it easier for Racket users to make wise dependency
+decisions.
 
 Finally, the advice of the previous section, to use @rkt/base[] when
 building a library, generalizes to other libraries: by being more
