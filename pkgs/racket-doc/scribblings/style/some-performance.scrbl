@@ -63,9 +63,11 @@ corresponding to either @racket[library/base] or @racket[library/full].}
 
 @item{@racket[library/full], the full library functionality.}  
 ] 
-If all Racket developers use similar names and think deeply about these
-decisions, we can make it easier for Racket users to make wise dependency
-decisions.
+Keep two considerations in mind as you decide which parts of your library
+should be in which files: dependency and logical ordering.  The smaller
+files should depend on fewer dependencies. Try to organize the levels so
+that, in principle, the larger libraries can be implemented in terms of the
+public interfaces of the smaller ones. 
 
 Finally, the advice of the previous section, to use @rkt/base[] when
 building a library, generalizes to other libraries: by being more
