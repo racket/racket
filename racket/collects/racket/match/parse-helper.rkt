@@ -139,7 +139,7 @@
                                                (length ps)
                                                "missing fields"
                                                (list-tail
-                                                 (for/list [(i acc)]
+                                                 (for/list [(i (in-list acc))]
                                                            (symbol->string (syntax->datum i)))
                                                  (length ps)))
                                        stx pats)))
