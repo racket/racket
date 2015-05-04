@@ -897,11 +897,15 @@ for @nonterm{key}.
  @item{@DFlag{scope-dir} @nonterm{dir} --- Same as for @command-ref{install}.}
  ]
 
- The valid @nonterm{key}s are:
+ The valid @nonterm{key}s and corresponding @nonterm{val}s are:
  @itemlist[
   @item{@exec{name} --- A string for the installation's name, which is used by @exec{user}
         @tech{package scope} and defaults to the Racket version.}
-  @item{@exec{catalogs} --- A list of URLs for @tech{package catalogs}.}
+  @item{@exec{catalogs} --- A list of URLs for @tech{package catalogs}. An empty-string
+        @nonterm{val} is replaced by the sequence of catalogs for the default configuration.
+        A @nonterm{val} that does not start with alphabetic characters followed by @litchar{://}
+        is treated as a path relative to the configuration directory (as
+        reported by @racket[find-config-dir]).}
   @item{@exec{default-scope} --- Either @exec{installation} or @exec{user}.
         The value of this key at @exec{user} scope (possibly defaulting from
         @exec{installation} scope) is
