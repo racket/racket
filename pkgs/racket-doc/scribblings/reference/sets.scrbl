@@ -397,7 +397,8 @@ set, and so it preserves any contract on the given set. The
 @racket[set-copy-clear] function produces a new set without any
 contracts.
 
-Has no fallback.
+The @racket[set-copy-clear] function must call concrete set constructors
+and thus has no generic fallback.
 }
 
 @defproc[(set-clear [st generic-set?]) (and/c generic-set? set-empty?)]{
