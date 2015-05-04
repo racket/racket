@@ -14,10 +14,14 @@
 (define catalog-relative-path (build-path 'up "share" "pkgs-catalog"))
 (define catalog-relative-path-str (path->string catalog-relative-path))
 
-(command-line
- #:args
- ()
- (void))
+(define-values (default-src-catalog src-catalog)
+  (command-line
+   #:args
+   (default-src-catalog src-catalog)
+   (values default-src-catalog src-catalog)))
+
+(define src-catalog-is-default?
+  (equal? src-catalog default-src-catalog))
 
 (when (file-exists? config-file-path)
   (call-with-input-file*
@@ -25,16 +29,31 @@
    (lambda (i)
      (define r (read i))
      (define l (hash-ref r 'catalogs #f))
-     (unless (and (list? l)
-                  ((length l) . >= . 1)
-                  (equal? (car l) catalog-relative-path-str))
+     (define starts-as-expected?
+       (and (list? l)
+            ((length l) . >= . 1)
+            (equal? (car l) catalog-relative-path-str)))
+     (define has-src-catalog?
+       (member (if src-catalog-is-default? #f src-catalog)
+               l))
+     (unless (and starts-as-expected?
+                  has-src-catalog?)
        (error 'pkgs-catalog
-              (~a "config file exists, but does not have a definition of `catalogs' that starts as expected\n"
+              (~a "config file exists, but with a mismatched `catalogs';\n"
+                  " the existing configuration does not ~a\n"
                   "  config file: ~a\n"
-                  "  expected initial element: ~s\n"
+                  "  expected ~acatalog: ~s\n"
                   "  possible solution: delete the config file")
-                config-file-path
-                catalog-relative-path-str)))))
+              (if (not starts-as-expected?)
+                  "start as expected"
+                  "include the specified catalog")
+              config-file-path
+              (if (not starts-as-expected?)
+                  "initial "
+                  "")
+              (if (not starts-as-expected?)
+                  catalog-relative-path-str
+                  src-catalog))))))
 
 (unless (file-exists? config-file-path)
   (printf "Writing ~a\n" config-file-path)
@@ -42,7 +61,12 @@
    config-file-path
    (lambda (o)
      (write (hash 'catalogs
-                  (list catalog-relative-path-str #f)
+                  (cons catalog-relative-path-str
+                        (append
+                         (if src-catalog-is-default?
+                             '()
+                             (list src-catalog))
+                         (list #f)))
                   'installation-name
                   "development"
                   'default-scope

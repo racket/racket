@@ -32,6 +32,7 @@ WIN32_PLAIN_RACKET = racket\racket
 PLAIN_RACO = racket/bin/racket -N raco -l- raco
 WIN32_PLAIN_RACO = racket\racket -N raco -l- raco
 
+DEFAULT_SRC_CATALOG = http://pkgs.racket-lang.org
 
 MACOSX_CHECK_ARGS = -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
 MACOSX_CHECK = $(PLAIN_RACKET) -G build/config $(MACOSX_CHECK_ARGS)
@@ -112,6 +113,7 @@ cpus-unix-style:
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
 	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' $(UNIX_BASE_ARGS)
+	$(MAKE) set-src-catalog
 	$(MAKE) local-catalog
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
 	cd racket/src/build; $(MAKE) fix-paths
@@ -127,6 +129,10 @@ LOC_CATALOG = build/local/pkgs-catalog
 local-catalog:
 	"$(DESTDIR)$(PREFIX)/bin/racket" -l- pkg/dirs-catalog --check-metadata $(LOC_CATALOG) pkgs
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg catalog-copy --force --from-config $(LOC_CATALOG) $(UNIX_CATALOG)
+
+set-src-catalog:
+	if [ ! "$(SRC_CATALOG)" = "$(DEFAULT_SRC_CATALOG)" ] ; \
+	 then "$(DESTDIR)$(PREFIX)/bin/raco" pkg config -i --set catalogs "$(SRC_CATALOG)" ""; fi
 
 # ------------------------------------------------------------
 # Base build
@@ -177,7 +183,7 @@ racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 # side of its definition.
 
 # Catalog for package sources:
-SRC_CATALOG = http://pkgs.racket-lang.org/
+SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
 
 # A URL embedded in documentation for remote searches, where a Racket
 # version and search key are added as query fields to the URL, and ""
@@ -318,7 +324,7 @@ PKGS_CONFIG = -U -G build/config racket/src/pkgs-config.rkt
 
 pkgs-catalog:
 	$(PLAIN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs
-	$(PLAIN_RACKET) $(PKGS_CONFIG)
+	$(PLAIN_RACKET) $(PKGS_CONFIG) "$(DEFAULT_SRC_CATALOG)" "$(SRC_CATALOG)"
 	$(PLAIN_RACKET) racket/src/pkgs-check.rkt racket/share/pkgs-catalog
 
 win32-pkgs-catalog:
