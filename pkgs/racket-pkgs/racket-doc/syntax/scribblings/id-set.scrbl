@@ -1,18 +1,30 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label syntax/id-set racket/set))
+@(require "common.rkt"
+          (for-label syntax/id-set
+                     racket/set
+                     (only-in racket/stream gen:stream)))
 
 @title[#:tag "idset"]{Sets with Identifier Keys}
 
 @defmodule[syntax/id-set]
 
-This module provides two implementations of @deftech{identifier sets}:
+This module provides @deftech{identifier sets}:
 sets with identifier keys that use identifier-specific
-comparisons instead of @racket[eq?] or @racket[equal?]. Identifier
-sets are available in both mutable and immutable variants and 
-implement the @racket[gen:set], @racket[gen:stream], 
+comparisons instead of @racket[eq?] or @racket[equal?].
+
+This module implements two kinds of identifier sets: one via
+@racket[free-identifier=?] and one via @racket[bound-identifier=?].
+Each are available in both mutable and immutable variants and 
+implement the @racket[gen:set],
+@racket[gen:stream], 
 @racket[prop:sequence], and @racket[gen:equal+hash] 
-generic interfaces. They are implemented using @tech{identifier tables},
-in the same way that a @tech{hash set} is implemented with a @tech{hash table}.
+generic interfaces.
+
+Identifier sets are implemented using @tech{identifier tables},
+in the same way that
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{hash sets}
+are implemented with
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{hash tables}.
 
 
 @section{Sets for @racket[free-identifier=?]}
