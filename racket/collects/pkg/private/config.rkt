@@ -144,7 +144,11 @@
                    key
                    (format-list (cons val more-vals)))]
        [(list* (and key "catalogs") val)
-        (update-pkg-cfg! 'catalogs val)]
+        (update-pkg-cfg! 'catalogs
+                         (for/list ([s (in-list val)])
+                           (cond
+                            [(equal? s "") #f]
+                            [else s])))]
        [(list (and key "default-scope") val)
         (unless (member val '("installation" "user"))
           (pkg-error (~a "invalid value for config key\n"
