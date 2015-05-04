@@ -193,12 +193,18 @@ After you've built and installed minimal Racket, you could install
 packages via the package-catalog server, completely ignoring the
 content of "pkgs".
 
-If you want to install packages manually out of the "pkgs", the
-`local-catalog' target creates a catalog as "racket/local/catalog" that
-merges the currently configured catalog's content with pointers to the
-packages in "pkgs". A Unix-style build works that way: it builds and
-installs minimal Racket, and then it installs packags out of a catalog
-that is created by `make local-catalog'.
+If you want to install packages manually out of the "pkgs" directory,
+the `local-catalog' target creates a catalog as "racket/local/catalog"
+that merges the currently configured catalog's content with pointers
+to the packages in "pkgs". A Unix-style build works that way: it
+builds and installs minimal Racket, and then it installs packags out
+of a catalog that is created by `make local-catalog'.
+
+To add a package catalog that is used after the content of "pkgs" but
+before the default package catalogs, specify the catalog's URL as the
+`SRC_CATALOG' makefile variable:
+
+  make .... SRC_CATALOG=<url>
 
 Linking Packages for In-place Development Mode
 ----------------------------------------------
@@ -217,7 +223,7 @@ packages. The configuration adjustment is made only if no
 configuration file "racket/etc/config.rktd" exists already.
 
 All other packages (as specified by `PKGS') are installed via the
-default package catalog. They are installed in installation scope, but
+configured package catalog. They are installed in installation scope, but
 the content of "racket/share/pkgs" is not meant to be edited. To
 reinstall a package in a mode suitable for editing and manipulation
 with Git tools, use
