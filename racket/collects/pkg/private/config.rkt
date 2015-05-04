@@ -67,23 +67,21 @@
    [else
     (match k
       ['catalogs
-       (if (member #f v)
-           ;; Replace #f with default URLs, relative path
-           ;; with absolute path:
-           (apply append (for/list ([i (in-list v)])
-                           (cond
-                            [(not i) (get-default)]
-                            [(regexp-match? #rx"^[a-z]+://" i)
-                             (list i)]
-                            [else
-                             ;; If it doesn't look like a URL, then treat it as
-                             ;; a path (potentially relative to the configuration file):
-                             (list
-                              (url->string
-                               (path->url
-                                (simple-form-path
-                                 (path->complete-path i (path->complete-path (pkg-dir #t)))))))])))
-           v)]
+       ;; Replace #f with default URLs, relative path
+       ;; with absolute path:
+       (apply append (for/list ([i (in-list v)])
+                       (cond
+                        [(not i) (get-default)]
+                        [(regexp-match? #rx"^[a-z]+://" i)
+                         (list i)]
+                        [else
+                         ;; If it doesn't look like a URL, then treat it as
+                         ;; a path (potentially relative to the configuration file):
+                         (list
+                          (url->string
+                           (path->url
+                            (simple-form-path
+                             (path->complete-path i (path->complete-path (pkg-dir #t)))))))])))]
       [_ v])]))
 
 (define (update-pkg-cfg! key val)
