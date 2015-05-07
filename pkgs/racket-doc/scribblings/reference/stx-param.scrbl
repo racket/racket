@@ -80,6 +80,21 @@ the target's value.
          (if t then else)))]))
 ]}
 
+@defform[(syntax-parameterize-rename ([id id-expr] ...) body-expr ...+)]{
+
+Like @racket[syntax-parameterize], but each @racket[id] is bound to
+@racket[(make-rename-transformer id-expr).
+
+@defexamples[#:eval the-eval
+(define-syntax-parameter it (syntax-rules ()))
+
+(define-syntax aif
+  (syntax-rules ()
+    [(aif test then else)
+     (let ([t test])
+       (syntax-parameterize-rename ([it #'t])
+         (if t then else)))]))
+]}
 @; ----------------------------------------------------------------------
 
 @section{Syntax Parameter Inspection}
