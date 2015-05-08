@@ -17,6 +17,7 @@
          not/c
          =/c >=/c <=/c </c >/c between/c
          integer-in
+         char-in
          real-in
          natural-number/c
          string-len/c
@@ -549,6 +550,16 @@
   (if (= start end)
       (and/c start exact?)
       (integer-in-ctc start end)))
+
+(define (char-in a b)
+  (check-two-args 'char-in a b char? char?)
+  (let* ([x (char->integer a)]
+         [y (char->integer b)]
+         [ctc (integer-in x y)])
+    (flat-named-contract
+     `(char-in ,a ,b)
+     (λ (c) (and (char? c)
+                 (ctc (char->integer c)))))))
 
 (define/final-prop (real-in start end)
   (check-two-args 'real-in start end real? real?)
