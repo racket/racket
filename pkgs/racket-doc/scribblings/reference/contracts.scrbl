@@ -253,6 +253,12 @@ An alias for @racket[between/c].}
 Returns a flat contract that requires the input to be an exact integer
 between @racket[j] and @racket[k], inclusive.}
 
+@defproc[(char-in [a char?] [b char?]) flat-contract?]{
+
+Returns a flat contract that requires the input to be a character whose
+code point number is between the code point numbers of @racket[a] and
+@racket[b], inclusive.}
+
 
 @defthing[natural-number/c flat-contract?]{
 
