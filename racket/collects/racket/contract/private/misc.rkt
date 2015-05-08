@@ -553,13 +553,7 @@
 
 (define (char-in a b)
   (check-two-args 'char-in a b char? char?)
-  (let* ([x (char->integer a)]
-         [y (char->integer b)]
-         [ctc (integer-in x y)])
-    (flat-named-contract
-     `(char-in ,a ,b)
-     (λ (c) (and (char? c)
-                 (ctc (char->integer c)))))))
+  (char-in/c a b))
 
 (define/final-prop (real-in start end)
   (check-two-args 'real-in start end real? real?)
