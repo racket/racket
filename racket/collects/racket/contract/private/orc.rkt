@@ -79,7 +79,7 @@
           (p-app val)))))
 
 (define (blame-add-or-context blame)
-  (blame-add-context blame "a disjunct of"))
+  (blame-add-context blame "a part of the or/c of"))
 
 (define (single-or/c-first-order ctc)
   (let ([pred (single-or/c-pred ctc)]
@@ -231,7 +231,7 @@
          [first-order-checks (map (λ (x) (contract-first-order x)) ho-contracts)]
          [predicates (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))])
     (λ (blame)
-      (define disj-blame (blame-add-context blame "a disjunct of"))
+      (define disj-blame (blame-add-context blame "a part of the or/c of"))
       (define partial-contracts
         (for/list ([c-proc (in-list c-procs)])
           (c-proc disj-blame)))

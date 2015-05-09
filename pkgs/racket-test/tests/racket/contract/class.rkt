@@ -2529,9 +2529,14 @@
                        (regexp-match? #rx"expected: boolean[?]" (exn-message exn))
                        (regexp-match? #rx"given: 1" (exn-message exn))))]
         [promised-produced?
-         (λ (exn) (and (regexp-match? #rx"callback: broke its contract" (exn-message exn))
-                       (regexp-match? #rx"promised: boolean[?]" (exn-message exn))
-                       (regexp-match? #rx"produced: 1" (exn-message exn))))])
+         (λ (exn)
+           (define ans
+             (and (regexp-match? #rx"callback: broke its own contract" (exn-message exn))
+                  (regexp-match? #rx"promised: boolean[?]" (exn-message exn))
+                  (regexp-match? #rx"produced: 1" (exn-message exn))))
+           (unless ans
+             (printf "~a\n" (exn-message exn)))
+           ans)])
     (contract-error-test
      'blame-important1
      '(send (new (contract (class/c [callback (->m boolean? void)])
