@@ -2101,5 +2101,18 @@
                      m))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that `set!` works right in forced subform expansion:
+
+(let ()
+  (define (time-print-mixin t%)
+    (define start-time #f)
+    (class t%
+      (super-new)
+      (define/override (m)
+        (set! start-time 1)
+        (super m))))
+  (void time-print-mixin))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
