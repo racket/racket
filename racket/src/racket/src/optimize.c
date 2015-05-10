@@ -1616,12 +1616,13 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
   expected = data->num_params;
 
   if (!expected) {
-    info = optimize_info_add_frame(info, 0, 0, 0);
-    info->inline_fuel >>= 1;
-    p = scheme_optimize_expr(p, info, context);
-    info->next->single_result = info->single_result;
-    info->next->preserves_marks = info->preserves_marks;
-    optimize_info_done(info, NULL);
+    sub_info = optimize_info_add_frame(info, 0, 0, 0);
+    sub_info->inline_fuel >>= 1;
+    p = scheme_optimize_expr(p, sub_info, context);
+    info->single_result = sub_info->single_result;
+    info->preserves_marks = sub_info->preserves_marks;
+    optimize_info_done(sub_info, NULL);
+    merge_types(sub_info, info, 0);
 
     return replace_tail_inside(p, le_prev, orig);
   }
@@ -1678,7 +1679,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
       lh->body = (Scheme_Object *)lv;
     prev = lv;
   }
-
+  
   if (prev)
     prev->body = p;
   else
@@ -1692,6 +1693,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
   info->single_result = sub_info->single_result;
   info->preserves_marks = sub_info->preserves_marks;
   optimize_info_done(sub_info, NULL);
+  merge_types(sub_info, info, 0);
 
   return replace_tail_inside(p, le_prev, orig);
 }
@@ -1909,8 +1911,10 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 		     scheme_optimize_context_to_string(info->context));
           le = apply_inlined(le, data, sub_info, argc, app, app2, app3, context,
                              id_offset, orig_le, prev);
-          if (id_offset)
+          if (id_offset) {
             optimize_info_done(sub_info, NULL);
+            merge_types(sub_info, info, id_offset);
+          }
           return le;
 	} else {
           LOG_INLINE(fprintf(stderr, "No inline %s\n", scheme_write_to_string(data->name ? data->name : scheme_false, NULL)));
@@ -3925,7 +3929,8 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta)
   i = scheme_hash_tree_next(types, -1);
   while (i != -1) {
     scheme_hash_tree_index(types, i, &pos, &pred);
-    add_type(info, SCHEME_INT_VAL(pos)+delta, pred);
+    if (SCHEME_INT_VAL(pos)+delta >= 0)
+      add_type(info, SCHEME_INT_VAL(pos)+delta, pred);
     i = scheme_hash_tree_next(types, i);
   }
 }
@@ -5440,6 +5445,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
             info->single_result = sub_info->single_result;
             info->preserves_marks = sub_info->preserves_marks;
             optimize_info_done(sub_info, NULL);
+            merge_types(sub_info, info, 1);
           }
 
           return form;
@@ -5460,11 +5466,12 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           /* Just drop the let */
           return scheme_optimize_expr(clv->value, info, context);
 	} else {
-          info = optimize_info_add_frame(info, 1, 0, 0);
-          body = scheme_optimize_expr(clv->value, info, context);
-          info->next->single_result = info->single_result;
-          info->next->preserves_marks = info->preserves_marks;
-          optimize_info_done(info, NULL);
+          sub_info = optimize_info_add_frame(info, 1, 0, 0);
+          body = scheme_optimize_expr(clv->value, sub_info, context);
+          info->single_result = sub_info->single_result;
+          info->preserves_marks = sub_info->preserves_marks;
+          optimize_info_done(sub_info, NULL);
+          merge_types(sub_info, info, 1);
           return body;
 	}
       }
@@ -6221,6 +6228,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
        quadratic work here, so use up shift fuel: */
     if (body_info->shift_fuel) {
       optimize_info_done(body_info, NULL);
+      merge_types(body_info, info, -head->count);
       info->shift_fuel--;
       body = head->body;
       for (j = head->num_clauses; j--; ) {
@@ -6233,6 +6241,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   /* Optimized away all clauses? */
   if (!head->num_clauses) {
     optimize_info_done(body_info, NULL);
+    merge_types(body_info, info, -head->count);
     return head->body;
   }
 
@@ -6298,6 +6307,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   }
 
   optimize_info_done(body_info, NULL);
+  merge_types(body_info, info, -head->count);
 
   return form;
 }

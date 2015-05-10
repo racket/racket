@@ -1261,12 +1261,41 @@
 (test-comp '(lambda (f l) (f l) #t)
            '(lambda (f l) (f l) (procedure? f)))
 
+(test-comp '(lambda (z) (let ([o #f]) (car z)) #t)
+           '(lambda (z) (let ([o #f]) (car z)) (pair? z)))
+(test-comp '(lambda (z) (let ([o (random)]) (car z)) #t)
+           '(lambda (z) (let ([o (random)]) (car z)) (pair? z)))
+(test-comp '(lambda (z) (let ([o z]) (list (car o) o o)) #t)
+           '(lambda (z) (let ([o z]) (list (car o) o o)) (pair? z)))
+(test-comp '(lambda (z) (let ([o z] [x (random)]) (list (car o) x x)) #t)
+           '(lambda (z) (let ([o z] [x (random)]) (list (car o) x x)) (pair? z)))
+(test-comp '(lambda (z) (let ([f (lambda () (car z))]) (f) #t))
+           '(lambda (z) (let ([f (lambda () (car z))]) (f) (pair? z))))
+(test-comp '(lambda (z) (let ([f (lambda () (car z))]) (f)) #t)
+           '(lambda (z) (let ([f (lambda () (car z))]) (f)) (pair? z)))
+(test-comp '(lambda (z) (let ([f (lambda (i) (car z))]) (f 0) #t))
+           '(lambda (z) (let ([f (lambda (i) (car z))]) (f 0) (pair? z))))
+(test-comp '(lambda (z) (let ([f (lambda (i) (car z))]) (f 0)) #t)
+           '(lambda (z) (let ([f (lambda (i) (car z))]) (f 0)) (pair? z)))
+(test-comp '(lambda (z) (let ([f (lambda (i) (car i))]) (f z) #t))
+           '(lambda (z) (let ([f (lambda (i) (car i))]) (f z) (pair? z))))
+(test-comp '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) #t)
+           '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) (pair? z)))
+
 ; Test the map primitive instead of the redefined version in private/map.rkt 
 (test-comp '(module ? '#%kernel
               (display #t)
               (display (lambda (f l) (map f l) #t)))
            '(module ? '#%kernel
               (display (primitive? map))
+              (display (lambda (f l) (map f l) (procedure? f)))))
+
+; Test the map version in private/map.rkt
+(test-comp '(module ? racket/base
+              #;(display #f)
+              (display (lambda (f l) (map f l) #t)))
+           '(module ? racket/base
+              #;(display (primitive? map))
               (display (lambda (f l) (map f l) (procedure? f)))))
 
 (test-comp '(lambda (w z) (vector? (list->vector w)))
