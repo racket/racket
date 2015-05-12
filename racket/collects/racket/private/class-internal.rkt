@@ -3982,7 +3982,7 @@ An example
     [(_ name obj)
      (identifier? (syntax name))
      (with-syntax ([localized (localize (syntax name))])
-       (syntax (get-field/proc `localized obj)))]
+       (syntax/loc stx (get-field/proc `localized obj)))]
     [(_ name obj)
      (raise-syntax-error
       'get-field "expected a field name as first argument"
