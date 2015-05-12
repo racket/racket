@@ -382,7 +382,7 @@
                prev]
               [(or (planet? p)
                    (and (submod? p) (planet? (cadr p))))
-               ;; skip `quote` module paths
+               ;; skip `planet` module paths
                prev]
               [else
                (when prev
