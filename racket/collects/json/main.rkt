@@ -116,7 +116,7 @@
   ;; Reading a string *could* have been nearly trivial using the racket
   ;; reader, except that it won't handle a "\/"...
   (define (read-string)
-    (define result (open-output-string))
+    (define result (open-output-bytes))
     (let loop ()
       (define esc
         (let loop ()
@@ -127,7 +127,7 @@
             [(= c 92) (read-bytes 1 i)] ;; 92 = \
             [else (write-byte c result) (loop)])))
       (cond
-        [(not esc) (get-output-string result)]
+        [(not esc) (bytes->string/utf-8 (get-output-bytes result))]
         [(assoc esc '([#"b" . #"\b"] [#"n" . #"\n"] [#"r" . #"\r"]
                       [#"f" . #"\f"] [#"t" . #"\t"]
                       [#"\\" . #"\\"] [#"\"" . #"\""] [#"/" . #"/"]))
