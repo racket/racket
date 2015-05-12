@@ -13,5 +13,6 @@
                      "net-lib"
                      "racket-test"
                      "rackunit-lib"
+                     "sandbox-lib"
                      "web-server-lib"))
 (define update-implies '("net-lib"))

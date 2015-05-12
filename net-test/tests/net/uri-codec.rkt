@@ -1,5 +1,5 @@
 #lang racket
-(require net/uri-codec tests/eli-tester)
+(require net/uri-codec tests/eli-tester racket/sandbox)
 
 (provide tests)
 (module+ main (tests))
@@ -97,6 +97,9 @@
         (uri-path-segment-unreserved-decode "M~(@%3B%20")   =>  "M~(@; "
         (uri-encode "æçè") => "%C3%A6%C3%A7%C3%A8"
         (uri-encode "Kidô senkan Nadeshiko") => "Kid%C3%B4%20senkan%20Nadeshiko"
+
+        do (memory-tests)
+        do (random-tests)
         ))
 
 ;; tests adapted from Noel Welsh's original test suite
@@ -157,5 +160,30 @@
    => '([key1 . "value 1"] [key2 . "value 2"])
 
    ))
+
+(define (memory-tests)
+  ;; Test that encode/decode don't take excessive memory
+  (define STRING-SIZE #e1e6)
+  (define MB-LIMIT 10)
+  (define big-string
+    (build-string
+     STRING-SIZE
+     (lambda (i) (integer->char (+ (char->integer #\a) (random 26))))))
+  (define (roundtrip s)
+    (define encoded (form-urlencoded-encode s))
+    (form-urlencoded-decode encoded))
+  (test (call-with-limits 10 MB-LIMIT
+          (lambda () (roundtrip big-string)))
+        => big-string))
+
+(define (random-tests)
+  (define (random-string length)
+    (build-string length (lambda (i) (integer->char (add1 (random 255))))))
+  (define (roundtrip s)
+    (define encoded (form-urlencoded-encode s))
+    (form-urlencoded-decode encoded))
+  (for ([i 1000])
+    (define s (random-string #e1e3))
+    (test (roundtrip s) => s)))
 
 (module+ test (require (submod ".." main))) ; for raco test & drdr
