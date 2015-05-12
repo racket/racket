@@ -119,6 +119,9 @@
         (string->jsexpr "") => eof
         (string->jsexpr " \t\r\n") => eof
 
+        ;; Invalid UTF-8 input.
+        (bytes->jsexpr #"\"\377\377\377\"") =error> exn:fail:contract?
+
         ;; More string escapes:
         (string->jsexpr @T{ "hel\"lo" }) => "hel\"lo"
         (string->jsexpr @T{ "\\//\\\\//" }) => "\\//\\\\//"

@@ -116,18 +116,22 @@
   ;; Reading a string *could* have been nearly trivial using the racket
   ;; reader, except that it won't handle a "\/"...
   (define (read-string)
-    (let loop ([l* '()])
-      ;; note: use a string regexp to extract utf-8-able text
-      (define m (cdr (or (regexp-try-match #rx"^([^\"\\]*)(\"|\\\\(.))" i)
-                         (err "unterminated string"))))
-      (define l (if ((bytes-length (car m)) . > . 0) (cons (car m) l*) l*))
-      (define esc (caddr m))
+    (define result (open-output-bytes))
+    (let loop ()
+      (define esc
+        (let loop ()
+          (define c (read-byte i))
+          (cond
+            [(eof-object? c) (err "unterminated string")]
+            [(= c 34) #f]               ;; 34 = "
+            [(= c 92) (read-bytes 1 i)] ;; 92 = \
+            [else (write-byte c result) (loop)])))
       (cond
-        [(not esc) (bytes->string/utf-8 (apply bytes-append (reverse l)))]
+        [(not esc) (bytes->string/utf-8 (get-output-bytes result))]
         [(assoc esc '([#"b" . #"\b"] [#"n" . #"\n"] [#"r" . #"\r"]
                       [#"f" . #"\f"] [#"t" . #"\t"]
                       [#"\\" . #"\\"] [#"\"" . #"\""] [#"/" . #"/"]))
-         => (λ (m) (loop (cons (cdr m) l)))]
+         => (λ (m) (write-bytes (cdr m) result) (loop))]
         [(equal? esc #"u")
          (let* ([e (or (regexp-try-match #px#"^[a-fA-F0-9]{4}" i)
                        (err "bad string \\u escape"))]
@@ -144,7 +148,8 @@
                    (err "bad string \\u escape, ~a"
                         "bad second half of a UTF16 pair")))
                e)) ; single \u escape
-           (loop (cons (string->bytes/utf-8 (string (integer->char e*))) l)))]
+           (write-string (string (integer->char e*)) result)
+           (loop))]
         [else (err "bad string escape: \"~a\"" esc)])))
   ;;
   (define (read-list what end-rx read-one)
