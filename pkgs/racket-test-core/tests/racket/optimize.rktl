@@ -1369,16 +1369,54 @@
                 (list l l))))
 
 (test-comp '(lambda (w z)
-              (list (if (pair? w)
-                        (car z)
-                        (car w))
+              (list (if (pair? w) (car w) (car z))
                     (cdr w)))
            '(lambda (w z)
-              (list (if (pair? w)
-                        (car z)
-                        (car w))
+              (list (if (pair? w) (car w) (car z))
                     (unsafe-cdr w)))
            #f)
+
+(test-comp '(lambda (w z)
+              (list (if z (car z) (car w))
+                    (cdr w)))
+           '(lambda (w z)
+              (list (if z (car z) (car w))
+                    (unsafe-cdr w)))
+           #f)
+
+(test-comp '(lambda (w z)
+              (list (if (pair? w) (car z) (car w))
+                    (cdr w)))
+           '(lambda (w z)
+              (list (if (pair? w) (car z) (car w))
+                    (unsafe-cdr w))))
+
+(test-comp '(lambda (w z)
+              (list (if z (car w) (cdr w))
+                    (cdr w)))
+           '(lambda (w z)
+              (list (if z (car w) (cdr w))
+                    (unsafe-cdr w))))
+
+(test-comp '(lambda (w z x)
+              (list (car x) (if z (car w) (cdr w)) (car x)))
+           '(lambda (w z x)
+              (list (car x) (if z (car w) (cdr w)) (unsafe-car x))))
+
+(test-comp '(lambda (w z x)
+              (list (car x) (if z (car w) 2) (car x)))
+           '(lambda (w z x)
+              (list (car x) (if z (car w) 2) (unsafe-car x))))
+
+(test-comp '(lambda (w z x)
+              (list (car x) (if z 1 (cdr w)) (car x)))
+           '(lambda (w z x)
+              (list (car x) (if z 1 (cdr w)) (unsafe-car x))))
+
+(test-comp '(lambda (w z x)
+              (list (car x) (if z 1 2) (car x)))
+           '(lambda (w z x)
+              (list (car x) (if z 1 2) (unsafe-car x))))
 
 (test-comp '(lambda (w)
               (list
@@ -4603,7 +4641,7 @@
           (read (open-input-bytes (get-output-bytes o))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check that an unsufe opertion's argument is
+;; Check that an unsafe opertion's argument is
 ;; not "optimized" away if it's a use of
 ;; a variable before definition:
 

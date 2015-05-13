@@ -3930,6 +3930,47 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta)
   }
 }
 
+Scheme_Hash_Tree *intersect_and_merge_types(Scheme_Hash_Tree *t_types, Scheme_Hash_Tree *f_types,
+                                            Scheme_Hash_Tree *base_types)
+/* return (union (intersetion t_type f_types) base_types) 
+   in case a key is already in base_type, the value is not modified*/
+{
+  Scheme_Object *pos, *t_pred, *f_pred, *base_pred;
+  intptr_t i;
+
+  if (!t_types || !f_types)
+    return base_types;
+
+  if (base_types  && (SAME_OBJ(f_types, base_types) || SAME_OBJ(t_types, base_types)))
+    return base_types;
+
+  if (f_types->count > t_types->count) {
+    Scheme_Object *swap = f_types;
+    f_types = t_types;
+    t_types = swap;
+  }
+
+  i = scheme_hash_tree_next(f_types, -1);
+  while (i != -1) {
+    scheme_hash_tree_index(f_types, i, &pos, &f_pred);
+    t_pred = scheme_hash_tree_get(t_types, pos);
+    if (t_pred && SAME_OBJ(t_pred, f_pred)) {
+      if (base_types)
+        base_pred = scheme_hash_tree_get(base_types, pos);
+      else
+        base_pred = NULL;
+
+      if (!base_pred) {
+        if (!base_types)
+          base_types = scheme_make_hash_tree(0);
+        base_types = scheme_hash_tree_set(base_types, pos, f_pred);
+      }
+    }
+    i = scheme_hash_tree_next(f_types, i);
+  }
+  return base_types;
+}
+
 static int relevant_predicate(Scheme_Object *pred)
 {
   /* Relevant predicates need to be disjoint for try_reduce_predicate(),
@@ -4151,7 +4192,8 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     info->single_result = then_single_result;
     if (then_kclock > info->kclock)
       info->kclock = then_kclock;
-    info->types = init_types; /* could try to take an intersection here ... */
+    init_types = intersect_and_merge_types(then_types, info->types, init_types);
+    info->types = init_types;
   }
 
   if (then_sclock > info->sclock)
