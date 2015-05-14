@@ -506,8 +506,9 @@
     (delete-directory rktdir)))
 
 (define (skip-dot-files!)
-  (current-skip-filter ; skip all dot-names
-   (lambda (p) (regexp-match? #rx"^[.]" (basename p)))))
+  (current-skip-filter
+   ;; skip all dot-names, except ".LOCK..."
+   (lambda (p) (regexp-match? #rx"^[.](?!LOCK)" (basename p)))))
 
 (define (make-install-copytree)
   (define copytree (move/copy-tree #f))
