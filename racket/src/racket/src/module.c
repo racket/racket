@@ -8009,15 +8009,23 @@ static Scheme_Object *shift_require_phase(Scheme_Object *e, Scheme_Object *phase
                           scheme_make_pair(phase, l));
 }
 
-static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t phase,
+static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t rel_phase,
                                         Scheme_Object *scope, intptr_t scope_phase)
 {
-  Scheme_Object *e = module_path;
+  Scheme_Object *e = module_path, *r;
 
-  if (phase != 0) {
-    e = shift_require_phase(e, scheme_make_integer(phase), 1);
+  if (rel_phase != 0) {
+    e = shift_require_phase(e, scheme_make_integer(rel_phase), 1);
   }
-  e = scheme_make_pair(require_stx, scheme_make_pair(e, scheme_null));
+  if (scope_phase == 0)
+    r = require_stx;
+  else {
+    r = scheme_datum_to_syntax(scheme_intern_symbol("#%require"),
+                               scheme_false,
+                               sys_wraps_phase(scope_phase),
+                               0, 0);
+  }
+  e = scheme_make_pair(r, scheme_make_pair(e, scheme_null));
   e = scheme_datum_to_syntax(e, scheme_false, scheme_false, 0, 0);
 
   e = scheme_stx_add_scope(e, scope, scheme_make_integer(scope_phase));

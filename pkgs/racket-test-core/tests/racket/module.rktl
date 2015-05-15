@@ -1472,4 +1472,22 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module force-local-expand-of-body racket/base
+  (require (for-syntax racket/base))
+  (provide (rename-out [mb #%module-begin])
+           (except-out (all-from-out racket/base) #%module-begin))
+  
+  (define-syntax (mb stx)
+    (syntax-case stx ()
+      [(_ . b)
+       (local-expand #`(#%module-begin . b) (syntax-local-context) null)])))
+
+(module use-local-require-at-phase-1 'force-local-expand-of-body
+  (require (for-syntax racket/base))
+  
+  (begin-for-syntax
+    (local-require (only-in racket [+ ++]))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
