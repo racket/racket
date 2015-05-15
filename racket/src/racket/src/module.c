@@ -8088,14 +8088,24 @@ static Scheme_Object *shift_require_phase(Scheme_Object *e, Scheme_Object *phase
                           scheme_make_pair(phase, l));
 }
 
-static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t phase, Scheme_Object *mark)
+static Scheme_Object *make_require_form(Scheme_Object *module_path,
+                                        intptr_t abs_phase, intptr_t rel_phase,
+                                        Scheme_Object *mark)
 {
-  Scheme_Object *e = module_path;
+  Scheme_Object *e = module_path, *r;
 
-  if (phase != 0) {
-    e = shift_require_phase(e, scheme_make_integer(phase), 1);
+  if (rel_phase != 0) {
+    e = shift_require_phase(e, scheme_make_integer(rel_phase), 1);
   }
-  e = scheme_make_pair(require_stx, scheme_make_pair(e, scheme_null));
+  if (abs_phase == 0)
+    r = require_stx;
+  else {
+    r = scheme_datum_to_syntax(scheme_intern_symbol("#%require"),
+                               scheme_false,
+                               scheme_sys_wraps_phase_worker(abs_phase),
+                               0, 0);
+  }
+  e = scheme_make_pair(r, scheme_make_pair(e, scheme_null));
   e = scheme_datum_to_syntax(e, scheme_false, scheme_false, 0, 0);
 
   e = scheme_add_remove_mark(e, mark);
@@ -8125,7 +8135,7 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
     *_ref_expr = e;
   }
 
-  e = make_require_form(module_path, phase - env->phase, mark);
+  e = make_require_form(module_path, env->phase, phase - env->phase, mark);
 
   parse_requires(e, env->phase, base_modidx, env, for_m,
                  rns, post_ex_rns,
@@ -12808,7 +12818,7 @@ Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path,
 {
   Scheme_Object *form;
 
-  form = make_require_form(module_path, phase, mark);
+  form = make_require_form(module_path, phase, phase, mark);
 
   do_require_execute(cenv->genv, form);
 
