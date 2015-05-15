@@ -180,6 +180,7 @@
                [else (raise-argument-error 'supported-name
                                            'contract-str
                                            self-name)]))
+
            (define-generic-method
              method-name
              method-signature
@@ -190,10 +191,7 @@
                    [(prop:pred self-name)
                     (vector-ref (accessor-name self-name) 'method-index)]
                    [(default-disp-name self-name) default-by-method]
-                   ...
-                   [else (raise-argument-error 'method-name
-                                               'contract-str
-                                               self-name)])
+                   ...)
                  fallback)
              original)
            ...
@@ -384,6 +382,22 @@
 (define default-arg
   (gensym 'default-arg))
 
+       
+;; Converts 0-based index to an ordinal string
+;; 0 => 1st
+;; 1 => 2nd
+(define (pos->ord n)
+  (define n/1base (add1 n))
+  (string-append
+   (number->string n/1base)
+   (case n/1base
+     [(11 12 13) "th"]
+     [else (case (remainder n/1base 10)
+             [(1) "st"]
+             [(2) "nd"]
+             [(3) "rd"]
+             [else "th"])])))
+
 (define-syntax (define-generic-method stx)
   (syntax-case stx ()
     [(_ method-name
@@ -400,8 +414,71 @@
                                      #'proc-name
                                      #'self-name
                                      #'method-signature))
+
+       ; compute extra error info for default method
+       (define-values (req req-kw opt opt-kw rest)
+         (parse-method-signature #'method-signature))
+
+       ;; (0-based) pos of the "self" argument, for error reporting purposes;
+       ;; method signature already checked so self-name is in signature
+       (define self-i
+         (for/first
+           ([(id i) (in-indexed req)] #:when (free-identifier=? id #'self-name))
+           i))
+
+       ; removes the lst element at (0-based) index pos
+       (define (remove-at lst pos)
+         (let loop ([i 0] [lst lst])
+           (cond [(null? lst) '()]
+                 [else (if (= i pos)
+                           (cdr lst)
+                           (cons (car lst) (loop (add1 i) (cdr lst))))])))
+       (define (stx-drop-last stx)
+         (reverse (cdr (reverse (syntax->list stx)))))
+         
+       (define/with-syntax (req-name ...) req)
+       (define/with-syntax ((reqkw-key reqkw-val) ...) req-kw)
+       (define/with-syntax (opt-name ...) opt)
+       (define/with-syntax ((optkw-key optkw-val) ...) opt-kw)
+       (define/with-syntax arg-labels/restargs ; labels for args
+         #'((symbol->string 'req-name) ... 
+            (string-append (symbol->string 'opt-name) " (optional)") ...
+            (string-append "#:" (keyword->string 'reqkw-key)) ...
+            (string-append "#:" (keyword->string 'optkw-key) " (optional)")  ...
+            "rest args"))
+       (define/with-syntax arg-labels ; drop restargs if none
+         (if rest #'arg-labels/restargs (stx-drop-last #'arg-labels/restargs)))
+       (define/with-syntax arg-vals/restargs ; arg values
+         #`(req-name ... opt-name ... reqkw-val ... optkw-val ... #,rest))
+       (define/with-syntax arg-vals ; drop restargs if none
+         (if rest #'arg-vals/restargs (stx-drop-last #'arg-vals/restargs)))
+       (define/with-syntax bad-arg ; only the bad arg
+         (list-ref (stx->list #'arg-vals) self-i))
+       (define/with-syntax other-arg-labels ; other arg labels
+         (remove-at (stx->list #'arg-labels) self-i))
+       (define/with-syntax other-args ; other args
+         (remove-at (stx->list #'arg-vals) self-i))
+       (define/with-syntax (other-labels+args ...) ; other args interleaved
+         (apply append (stx-map list #'other-arg-labels #'other-args)))
+       (define/with-syntax err-fmt-str
+         (string-append "contract violation:\n"
+                        "expected: ~a\n"
+                        "given: ~v\n"
+                        (if (null? (syntax->list #'other-arg-labels))
+                            "argument position: ~a"
+                            (string-append "argument position: ~a\n"
+                                           "other arguments...:"))))
+       (define/with-syntax contract-str
+         (format "~s?" (syntax-e #'self-name)))
+       (define/with-syntax self-i-stx self-i)
+       
        #'(define (method-name . method-formals)
            (define proc-name proc)
+           (when (void? proc-name)
+             (raise-arguments-error
+              'method-name
+              (format err-fmt-str 'contract-str bad-arg (pos->ord self-i-stx))
+              other-labels+args ...))
            (unless proc-name
              (raise-support-error 'method-name self-name))
            method-apply))]))

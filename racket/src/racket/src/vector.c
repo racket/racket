@@ -29,9 +29,11 @@
 /* globals */
 READ_ONLY Scheme_Object *scheme_vector_proc;
 READ_ONLY Scheme_Object *scheme_vector_p_proc;
+READ_ONLY Scheme_Object *scheme_make_vector_proc;
 READ_ONLY Scheme_Object *scheme_vector_immutable_proc;
 READ_ONLY Scheme_Object *scheme_vector_ref_proc;
 READ_ONLY Scheme_Object *scheme_vector_set_proc;
+READ_ONLY Scheme_Object *scheme_list_to_vector_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_vector_length_proc;
 
 /* locals */
@@ -78,12 +80,11 @@ scheme_init_vector (Scheme_Env *env)
   scheme_add_global_constant("vector?", p, env);
   scheme_vector_p_proc = p;
 
-  scheme_add_global_constant("make-vector", 
-			     scheme_make_immed_prim(make_vector, 
-						    "make-vector", 
-						    1, 2), 
-			     env);
-  
+  REGISTER_SO(scheme_make_vector_proc);
+  p = scheme_make_immed_prim(make_vector, "make-vector", 1, 2);
+  scheme_add_global_constant("make-vector", p, env);
+  scheme_make_vector_proc = p;
+
   REGISTER_SO(scheme_vector_proc);
   p = scheme_make_immed_prim(vector, "vector", 0, -1);
   scheme_vector_proc = p;
@@ -128,11 +129,14 @@ scheme_init_vector (Scheme_Env *env)
 						    "vector->list", 
 						    1, 1), 
 			     env);
-  scheme_add_global_constant("list->vector", 
-			     scheme_make_immed_prim(list_to_vector, 
-						    "list->vector", 
-						    1, 1), 
-			     env);
+
+  REGISTER_SO(scheme_list_to_vector_proc);
+  p = scheme_make_immed_prim(list_to_vector, 
+                             "list->vector", 
+                             1, 1);
+  scheme_list_to_vector_proc = p;
+  scheme_add_global_constant("list->vector", p, env);
+  
   scheme_add_global_constant("vector-fill!", 
 			     scheme_make_immed_prim(vector_fill, 
 						    "vector-fill!", 

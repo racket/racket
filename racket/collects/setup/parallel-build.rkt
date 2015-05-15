@@ -136,10 +136,9 @@
           (define (retry) (get-job workerid))
           (define (build-job cc file last)
             (values
-              (list cc file last) 
-              (list (->bytes (cc-name cc)) 
-                    (dir->bytes (cc-path cc))
-                    (->bytes file)
+              (list cc file last)
+              (list (->bytes (cc-name cc))
+                    (->bytes (build-path (cc-path cc) file))
                     options)))
           (match cc
             [(list)
@@ -223,9 +222,10 @@
           (match result-type
             [(list 'LOCK fn) (lm/lock lock-mgr fn wrkr) #f]
             [(list 'UNLOCK fn) (lm/unlock lock-mgr fn) #f]
-            [(list 'ERROR msg) (handler id 'error work msg out err) 
-                               (set! results #f)
-                               #t]
+            [(list 'ERROR long-msg short-msg)
+             (handler id 'error work long-msg out err)
+             (set! results #f)
+             #t]
             [(list 'LOG level msg data)
              (when (log-level? pb-logger level)
                (log-message pb-logger level msg (parallel-compile-event id data)))
@@ -250,8 +250,8 @@
            (define-values (dir file b) (split-path hd))
            (set! filelist tail)
            (handler workerid 'start hd "" "" "")
-           (values hd (list (->bytes hd) (dir->bytes dir) (->bytes file) null))]
-          [(list) null]))
+           (values hd (list (->bytes hd) (->bytes (path->complete-path hd)) null))]))
+
       (define/public (has-jobs?) (not (null? filelist)))
       (define/public (jobs-cnt) (length filelist))
       (define/public (get-results) results)
@@ -273,10 +273,10 @@
 
       (define cmc (make-caching-managed-compile-zo))
       (match-message-loop
-        [(list name _dir _file options)
-          (DEBUG_COMM (eprintf "COMPILING ~a ~a ~a ~a\n" worker-id name _file _dir))
-          (define dir (bytes->path _dir))
-          (define file (bytes->path _file))
+        [(list name _full-file options)
+          (DEBUG_COMM (eprintf "COMPILING ~a ~a ~a\n" worker-id name _full-file))
+          (define full-file (bytes->path _full-file))
+          (define-values (dir file _) (split-path full-file))
           (define out-str-port (open-output-string))
           (define err-str-port (open-output-string))
           (define cip (current-input-port))
@@ -290,7 +290,7 @@
           (define (lock-client cmd fn)
            (match cmd
              ['lock
-               (DEBUG_COMM (eprintf "REQUESTING LOCK ~a ~a ~a ~a\n" worker-id name _file _dir))
+               (DEBUG_COMM (eprintf "REQUESTING LOCK ~a ~a ~a\n" worker-id name _full-file))
                (match (send/recv (list (list 'LOCK (path->bytes fn)) "" ""))
                  [(list 'locked) #t]
                  [(list 'compiled) #f]
@@ -298,7 +298,7 @@
                  [x (send/error (format "DIDNT MATCH B ~v\n" x))]
                  [else (send/error (format "DIDNT MATCH B\n"))])]
              ['unlock 
-               (DEBUG_COMM (eprintf "UNLOCKING ~a ~a ~a ~a\n" worker-id name _file _dir))
+               (DEBUG_COMM (eprintf "UNLOCKING ~a ~a ~a\n" worker-id name _full-file))
               (send/msg (list (list 'UNLOCK (path->bytes fn)) "" ""))]
              [x (send/error (format "DIDNT MATCH C ~v\n" x))]
              [else (send/error (format "DIDNT MATCH C\n"))]))
@@ -382,7 +382,7 @@
                prev]
               [(or (planet? p)
                    (and (submod? p) (planet? (cadr p))))
-               ;; skip `quote` module paths
+               ;; skip `planet` module paths
                prev]
               [else
                (when prev

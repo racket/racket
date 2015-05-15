@@ -312,10 +312,16 @@ destination of the link, and it counts as a file for replacing any
 existing @racket[new].}
 
 
-@defproc[(file-or-directory-modify-seconds [path path-string?]
-                                           [secs-n (or/c exact-integer? #f) #f]
-                                           [fail-thunk (-> any) (lambda () (raise (make-exn:fail:filesystem ....)))])
-         any]{
+@defproc*[([(file-or-directory-modify-seconds [path path-string?]
+                                              [secs-n #f #f])
+            exact-integer?]
+           [(file-or-directory-modify-seconds [path path-string?]
+                                              [secs-n exact-integer?])
+            void?]
+           [(file-or-directory-modify-seconds [path path-string?]
+                                              [secs-n (or/c exact-integer? #f) #f]
+                                              [fail-thunk (-> any) (lambda () (raise (make-exn:fail:filesystem ....)))])
+            any])]{
 
 @index['("file modification date and time")]{Returns}
 the file or directory's last modification date in seconds
@@ -329,9 +335,10 @@ the modification date is returned for a file.
 If @racket[secs-n] is provided and not @racket[#f], the access and
 modification times of @racket[path] are set to the given time.
 
-On error (e.g., if no such file exists), @racket[fail-thunk] is
-called, and the default @racket[fail-thunk] raises
-@racket[exn:fail:filesystem].}
+On error (e.g., if no such file exists), then @racket[fail-thunk] is
+called (through a tail call) to produce the result of the
+@racket[file-or-directory-modify-seconds] call. If @racket[fail-thunk] is
+not provided, an error raises @racket[exn:fail:filesystem].}
 
 
 @defproc*[([(file-or-directory-permissions [path path-string?] [mode #f #f]) (listof (or/c 'read 'write 'execute))]

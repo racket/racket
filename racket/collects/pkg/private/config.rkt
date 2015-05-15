@@ -67,23 +67,21 @@
    [else
     (match k
       ['catalogs
-       (if (member #f v)
-           ;; Replace #f with default URLs, relative path
-           ;; with absolute path:
-           (apply append (for/list ([i (in-list v)])
-                           (cond
-                            [(not i) (get-default)]
-                            [(regexp-match? #rx"^[a-z]+://" i)
-                             (list i)]
-                            [else
-                             ;; If it doesn't look like a URL, then treat it as
-                             ;; a path (potentially relative to the configuration file):
-                             (list
-                              (url->string
-                               (path->url
-                                (simple-form-path
-                                 (path->complete-path i (path->complete-path (pkg-dir #t)))))))])))
-           v)]
+       ;; Replace #f with default URLs, relative path
+       ;; with absolute path:
+       (apply append (for/list ([i (in-list v)])
+                       (cond
+                        [(not i) (get-default)]
+                        [(regexp-match? #rx"^[a-z]+://" i)
+                         (list i)]
+                        [else
+                         ;; If it doesn't look like a URL, then treat it as
+                         ;; a path (potentially relative to the configuration file):
+                         (list
+                          (url->string
+                           (path->url
+                            (simple-form-path
+                             (path->complete-path i (path->complete-path (pkg-dir #t)))))))])))]
       [_ v])]))
 
 (define (update-pkg-cfg! key val)
@@ -146,7 +144,11 @@
                    key
                    (format-list (cons val more-vals)))]
        [(list* (and key "catalogs") val)
-        (update-pkg-cfg! 'catalogs val)]
+        (update-pkg-cfg! 'catalogs
+                         (for/list ([s (in-list val)])
+                           (cond
+                            [(equal? s "") #f]
+                            [else s])))]
        [(list (and key "default-scope") val)
         (unless (member val '("installation" "user"))
           (pkg-error (~a "invalid value for config key\n"

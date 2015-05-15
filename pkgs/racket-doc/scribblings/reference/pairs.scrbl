@@ -1084,7 +1084,7 @@ building the intermediate list.
 @defproc[(count [proc procedure?] [lst list?] ...+)
          exact-nonnegative-integer?]{
 
-Returns @racket[(length (filter proc lst ...))], but without building
+Returns @racket[(length (filter-map proc lst ...))], but without building
 the intermediate list.
 
 @mz-examples[#:eval list-eval

@@ -1007,7 +1007,7 @@
        (eval '(require 'pce1-bug)))
    (λ (x)
      (and (exn:fail:contract:blame? x)
-          (regexp-match #rx"the-defined-variable1: broke its contract" (exn-message x)))))
+          (regexp-match #rx"the-defined-variable1: broke its own contract" (exn-message x)))))
   
   (contract-error-test
    'contract-error-test9

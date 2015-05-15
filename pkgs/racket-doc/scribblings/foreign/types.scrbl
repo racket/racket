@@ -821,7 +821,7 @@ specifications:
 
 ]
 
-@history[#:changed "6.2.0.2" @elem{Added the @racket[#:retry] option.}]}
+@history[#:changed "6.2" @elem{Added the @racket[#:retry] option.}]}
 
 @defproc[(function-ptr [ptr-or-proc (or cpointer? procedure?)]
                        [fun-type ctype?])

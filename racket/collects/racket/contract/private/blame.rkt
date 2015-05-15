@@ -226,6 +226,10 @@
               [(eq? 'expected fst) (if (blame/important-original? blame)
                                        "promised"
                                        "expected")]
+              [(eq? 'received: fst) (add-indent
+                                     (if (blame/important-original? blame)
+                                         "supplied:"
+                                         "received:"))]
               [else fst]))
           (define new-so-far
             (if (or last-ended-in-whitespace?
@@ -269,7 +273,7 @@
   
   (define self-or-not
     (if (blame/important-original? blme)
-        "broke its contract"
+        "broke its own contract"
         "contract violation"))
   
   (define start-of-message

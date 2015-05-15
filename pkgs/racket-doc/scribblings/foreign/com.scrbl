@@ -9,7 +9,7 @@
 The @racketmodname[ffi/com] and @racketmodname[ffi/unsafe/com]
 libraries support COM interaction in two layers. The safe upper layer
 provides functions for creating COM objects and dynamically
-constructing method calls based on COM automatiion (i.e., reflective
+constructing method calls based on COM automation (i.e., reflective
 information provided by the object). The unsafe lower layer provides a
 syntactic form and functions for working more directly with COM
 objects and interfaces.

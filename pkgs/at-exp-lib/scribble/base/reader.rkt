@@ -26,8 +26,11 @@
     (case key
       [(color-lexer)
        (dynamic-require 'syntax-color/scribble-lexer 'scribble-inside-lexer)]
-       [(definitions-text-surrogate)
-        'scribble/private/indentation]
+      [(definitions-text-surrogate)
+       'scribble/private/indentation]
+      [(drracket:indentation)
+       (dynamic-require 'scribble/private/indentation 'determine-spaces)]
+      [(drracket:default-extension) "scrbl"]
       [else (default key defval)])))
 
 ;; Settings that apply to Scribble-renderable docs:

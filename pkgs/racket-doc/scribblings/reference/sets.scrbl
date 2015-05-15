@@ -285,7 +285,8 @@ As an example, implementing the following methods would guarantee that all the m
           @item{@racket[set-remove]}
           @item{@racket[set-remove!]}
           @item{@racket[set-first]}
-          @item{@racket[set-empty?]}]
+          @item{@racket[set-empty?]}
+          @item{@racket[set-copy-clear]}]
 
 There may be other such subsets of methods that would guarantee at least a fallback for every method.
 
@@ -381,7 +382,7 @@ Produces a new, mutable set of the same type and with the same elements as
 @racket[st].
 
 Supported for any @racket[st] that @supp{supports} @racket[set->stream] and 
-either @impl{implements} @racket[set-copy-clear] and @racket[set-add!].
+@impl{implements} @racket[set-copy-clear] and @racket[set-add!].
 
 }
 
@@ -396,14 +397,13 @@ set, and so it preserves any contract on the given set. The
 @racket[set-copy-clear] function produces a new set without any
 contracts.
 
-Supported for any @racket[st] that @impl{implements} @racket[set-remove] and @supp{supports}
-@racket[set->stream].
-
+The @racket[set-copy-clear] function must call concrete set constructors
+and thus has no generic fallback.
 }
 
 @defproc[(set-clear [st generic-set?]) (and/c generic-set? set-empty?)]{
 
-Produces set by removing all elements of @racket[st].
+Produces a set like @racket[st] but with all elements removed.
 
 Supported for any @racket[st] that @impl{implements} @racket[set-remove] and @supp{supports}
 @racket[set->stream].

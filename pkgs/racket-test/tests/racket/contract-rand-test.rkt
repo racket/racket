@@ -42,6 +42,8 @@
 
 (check-not-exn (λ () (test-contract-generation (integer-in 0 100))))
 (check-not-exn (λ () (test-contract-generation (integer-in 0 (expt 2 1000)))))
+(check-not-exn (λ () (test-contract-generation (char-in #\a #\z))))
+(check-not-exn (λ () (test-contract-generation #\a)))
 (check-not-exn (λ () (test-contract-generation (between/c 1 100))))
 (check-not-exn (λ () (test-contract-generation (between/c 1.0 100.0))))
 (check-not-exn (λ () (test-contract-generation (listof integer?))))

@@ -4,6 +4,7 @@
          racket/fasl
          racket/path
          racket/promise
+         racket/contract
          setup/dirs
          setup/getinfo
          "private/doc-path.rkt"
@@ -167,3 +168,38 @@
                  #:demand-source (make-key->source db-path no-user? no-main? quiet-fail?
                                                    register-shutdown!))
       (load-xref (get-reader-thunks no-user? no-main? quiet-fail? (make-hash)))))
+
+
+
+(provide
+ (contract-out
+  [get-current-doc-state (-> doc-state?)]
+  [doc-state-changed? (-> doc-state? boolean?)]
+  [doc-state? (-> any/c boolean?)]))
+
+(define docindex.sqlite "docindex.sqlite")
+
+(struct doc-state (table))
+(define (get-current-doc-state)
+  (doc-state
+   (for/hash ([dir (in-list (get-doc-search-dirs))])
+     (define pth (build-path dir docindex.sqlite))
+     (values dir
+             (and (file-exists? pth)
+                  (file-or-directory-modify-seconds pth))))))
+(define (doc-state-changed? a-doc-state)
+  (define ht (doc-state-table a-doc-state))
+  (define dirs (get-doc-search-dirs))
+  (cond
+    [(same-as-sets? dirs (hash-keys ht))
+     (for/or ([dir (in-list dirs)])
+       (define old (hash-ref ht dir))
+       (define pth (build-path dir docindex.sqlite))
+       (define new (and (file-exists? pth)
+                        (file-or-directory-modify-seconds pth)))
+       (not (equal? old new)))]
+    [else #t]))
+
+(define (same-as-sets? l1 l2)
+  (and (andmap (λ (x1) (member x1 l2)) l1)
+       (andmap (λ (x2) (member x2 l1)) l2)))

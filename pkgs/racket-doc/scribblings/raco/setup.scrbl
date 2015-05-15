@@ -1795,6 +1795,29 @@ collections, omitting documentation that is installed in the main
 installation or in a user-specific location, respectively, if
 @racket[no-main?] or @racket[no-user?] is @racket[#t].}
 
+
+@defproc[(get-current-doc-state) doc-state?]{
+ Records the time stamps of files that are touched whenever the
+ documentation is changed.
+ 
+ @history[#:added "1.2"]
+}
+
+@defproc[(doc-state-changed? [doc-state doc-state?]) boolean?]{
+ Returns @racket[#t] when the time stamps of the files in
+ @racket[doc-state] changed (or new files appeared) and @racket[#f] otherwise.
+
+ If the result is @racket[#t], then the documentation in this installation of
+ Racket has changed and otherwise it hasn't.
+
+ @history[#:added "1.2"]
+}
+@defproc[(doc-state? [v any/c]) boolean?]{
+ A predicate to recognize the result of @racket[get-current-doc-state].
+ 
+ @history[#:added "1.2"]
+}
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "materialize-user-docs"]{API for Materializing User-Specific Documentation}

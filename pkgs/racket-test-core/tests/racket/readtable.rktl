@@ -3,8 +3,9 @@
 
 (Section 'readtable)
 
-(require (only-in racket/port 
-                  [relocate-input-port relocate-input-port]))
+(require (only-in racket/port
+                  relocate-input-port
+                  input-port-append))
 (define (shift-rt-port p deltas)
   (let ([p (relocate-input-port p 
 				(add1 (car deltas))
@@ -165,34 +166,77 @@
 	  (for-each try-as-plain (string->list "()[]{}|\\ \r\n\t\v',\"#")))
 
 	;; Check /recursive functions with pre char and initial readtable
-	(for-each
-	 (lambda (base-readtable swap?)
-	   (for-each
-	    (lambda (read/recursive)
-	      (let ([t (make-readtable #f 
-				       #\~ 'terminating-macro (lambda (ch port src line col pos)
-								(define read/rec
-								  (if src
-								      (lambda (port char readtable)
-									(read-syntax/recursive 
-									 src port
-									 char readtable))
-								      read/recursive))
-								(if (eq? (char=? #\! (peek-char port)) (not swap?))
-								    (read/rec port #\( base-readtable)
-								    (read/rec port #\{ base-readtable))))])
-		(parameterize ([current-readtable t])
-		  (test-read "~!a (b))" `((!a (b))))
-		  (test-read "~?a (b)}" `((?a (b)))))))
-	    (list read/recursive (lambda (port char readtable)
-				   (read-syntax/recursive 'ok port char readtable)))))
-	 (list #f (make-readtable #f
-				  #\! 'terminating-macro (lambda (ch port src line col pos) (error 'ack))
-				  #\? 'terminating-macro (lambda (ch port src line col pos) (error 'ack))
-				  #\( #\{ #f
-				  #\{ #\( #f))
-	 (list #f #t))
-	
+        (for-each
+         (lambda (base-readtable swap?)
+           (for-each
+            (lambda (read/recursive)
+              (let ([t (make-readtable #f
+                                       #\~ 'terminating-macro (lambda (ch port src line col pos)
+                                                                ;; Use `read/recur` or `read-syntax/recur`:
+                                                                (define read/rec
+                                                                  (if src
+                                                                      (lambda (port char readtable graph?)
+                                                                        (read-syntax/recursive
+                                                                         src port
+                                                                         char readtable graph?))
+                                                                      read/recursive))
+                                                                (define (parse-vector ch port src line col pos)
+                                                                  ;; We want to add a `(` to the front of `port`; that's
+                                                                  ;; complicated if we also want to preserve source locations
+                                                                  (define p2 (input-port-append #f
+                                                                                                (open-input-string "(")
+                                                                                                port))
+                                                                  (define-values (line col pos) (port-next-location port))
+                                                                  (define p3 (if line
+                                                                                 (begin
+                                                                                   (port-count-lines! p2)
+                                                                                   (relocate-input-port p2
+                                                                                                        line
+                                                                                                        (max 0 (sub1 col))
+                                                                                                        (max 1 (sub1 pos))))
+                                                                                 p2))
+                                                                  (when line
+                                                                    (port-count-lines! p3))
+                                                                  (read/rec p3
+                                                                            #\#
+                                                                            (make-readtable #f #\> #\) #f)
+                                                                            #t))
+                                                                ;; Recursive read depends on next character and test mode
+                                                                (define next-char (peek-char port))
+                                                                (cond
+                                                                 [(or (char=? next-char #\h)
+                                                                      (char=? next-char #\<))
+                                                                  (read/rec port #\# (make-readtable base-readtable
+                                                                                                     #\< #\( #f
+                                                                                                     #\> #\) #f
+                                                                                                     #\< 'dispatch-macro parse-vector)
+                                                                            #t)]
+                                                                 [else
+                                                                  (if (eq? (eq? (char=? #\! next-char)
+                                                                                (not swap?))
+                                                                           (not swap?))
+                                                                      (read/rec port #\( base-readtable #t)
+                                                                      (read/rec port #\{ base-readtable #t))])))])
+                (parameterize ([current-readtable t])
+                  (test-read "~!a (b))" `((!a (b))))
+                  (test-read "~?a (b)}" `((?a (b))))
+                  (test-read "~?a (b)}" `((?a (b))))
+                  (test-read "~<a b c)" '(#(a b c)))
+                  (test-read "~hash<<a . b > (c . d)>" '(#hash((a . b) (c . d))))
+                  (test-read "~hash<<a . (<) > ((>) . d)>" '(#hash((a . (<)) ((>) . d))))
+                  (test-read "~<a b c >" '(#(a b c))))))
+            (list read/recursive (lambda (port char readtable graph?)
+                                   (read-syntax/recursive 'ok port char readtable graph?)))))
+         (list #f (make-readtable #f
+                                  #\! 'terminating-macro (lambda (ch port src line col pos) (error 'ack))
+                                  #\? 'terminating-macro (lambda (ch port src line col pos) (error 'ack))
+                                  #\( #\{ #f
+                                  #\{ #\( #f
+                                  #\) #\} #f
+                                  #\} #\) #f))
+
+         (list #f #t))
+
 	(void)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

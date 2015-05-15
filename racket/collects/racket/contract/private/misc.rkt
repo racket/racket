@@ -17,6 +17,7 @@
          not/c
          =/c >=/c <=/c </c >/c between/c
          integer-in
+         char-in
          real-in
          natural-number/c
          string-len/c
@@ -549,6 +550,10 @@
   (if (= start end)
       (and/c start exact?)
       (integer-in-ctc start end)))
+
+(define (char-in a b)
+  (check-two-args 'char-in a b char? char?)
+  (char-in/c a b))
 
 (define/final-prop (real-in start end)
   (check-two-args 'real-in start end real? real?)

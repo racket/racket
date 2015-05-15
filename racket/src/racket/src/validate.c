@@ -1574,6 +1574,14 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       if (result) {
         r = is_functional_nonfailing_rator(app->rator, 1, expected_results, _st_ht);
+        if (!r
+            && SAME_OBJ(app->rator, scheme_make_vector_proc)
+            && (expected_results == 1 || expected_results == -1)
+            && (SCHEME_INTP(app->rand) 
+                && (SCHEME_INT_VAL(app->rand) >= 0)
+                && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand)))) {
+          r = 1;
+        }
         result = validate_join(result, r);
       }
     }
@@ -1612,7 +1620,15 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       if (result) {
         r = is_functional_nonfailing_rator(app->rator, 2, expected_results, _st_ht);
-        result = validate_join(r, result);
+        if (!r
+            && SAME_OBJ(app->rator, scheme_make_vector_proc)
+            && (expected_results == 1 || expected_results == -1)
+            && (SCHEME_INTP(app->rand1)
+                && (SCHEME_INT_VAL(app->rand1) >= 0)
+                && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand1)))) {
+          r = 1;
+        }
+         result = validate_join(r, result);
       }
     }
     break;

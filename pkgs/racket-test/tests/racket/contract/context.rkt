@@ -94,13 +94,13 @@
                                     'neg))
                   1))
   
-  (context-test '("a disjunct of")
+  (context-test '("a part of the or/c of")
                 '(contract (or/c 1 (-> number? number?))
                            3
                            'pos
                            'neg))
   
-  (context-test '("the range of" "a disjunct of")
+  (context-test '("the range of" "a part of the or/c of")
                 '((contract (or/c 1 (-> number? number?) (-> number? boolean? number?))
                             (λ (x) #f)
                             'pos

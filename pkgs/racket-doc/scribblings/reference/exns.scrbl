@@ -806,8 +806,11 @@ context when printing the error message.}
            #:inspector #f]{
 
 Raised asynchronously (when enabled) in response to a break request.
-The @racket[continuation] field can be used by a handler to resume the
-interrupted computation.}
+The @racket[continuation] field can be used to resume the interrupted
+computation in the @tech{uncaught-exception handler} or
+@racket[call-with-exception-handler] (but @emph{not}
+@racket[with-handlers] because it escapes from the exception context
+before evaluating any predicates or handlers).}
 
 @defstruct[(exn:break:hang-up exn:break) ()
            #:inspector #f]{

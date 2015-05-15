@@ -372,7 +372,7 @@
                    (super-go the-obj si_c si_inited? init-args null null)
                    (init the-obj super-go si_c si_inited? init-args init-args))))))
         
-        c))))
+        (copy-seals cls c)))))
 
 (define (internal-class/c-proj internal-ctc)
   (define dynamic-features
@@ -707,7 +707,7 @@
                  (super-go the-obj si_c si_inited? init-args null null)
                  (init the-obj super-go si_c si_inited? init-args init-args)))))
         
-        c))))
+        (copy-seals cls c)))))
 
 (define (blame-add-init-context blame name)
   (blame-add-context blame
@@ -1633,4 +1633,4 @@
           (define p-neg ((contract-projection c) (blame-add-field-context blame f #:swap? #t)))
           (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))
     
-    c))
+    (copy-seals cls c)))

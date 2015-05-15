@@ -159,33 +159,46 @@ See more in PR8831.
                (and (= 1 (string-length s))
                     (eq? char (string-ref s 0))))))
       str
-      (string-append* (for/list ([byte (in-bytes (string->bytes/utf-8 str))])
-                        (if (< byte ascii-size)
-                            (vector-ref table byte)
-                            (number->hex-string byte))))))
+      (let ([out (open-output-string)])
+        (for ([byte (in-bytes (string->bytes/utf-8 str))])
+          (cond [(< byte ascii-size)
+                 (write-string (vector-ref table byte) out)]
+                [else
+                 (write-string (number->hex-string byte) out)]))
+        (get-output-string out))))
 
 ;; vector string -> string
 (define (decode table str)
   (define max-ascii (integer->char ascii-size))
-  ;; internal-decode : list -> listof[byte]
-  (define (internal-decode l)
-    (if (null? l) '()
-        (let* ([c (car l)] [l (cdr l)]
-               [hex (and (equal? #\% c) (pair? l) (pair? (cdr l))
-                         (string->number (string (car l) (cadr l)) 16))]
-               [rest (internal-decode (if hex (cddr l) l))])
-          (cond [hex (cons hex rest)]
-                [(char<? c max-ascii) (cons (vector-ref table (char->integer c))
-                                            rest)]
-                ;; This should probably error, but strings to be decoded might
-                ;; come from misbehaving sources; maybe it's better to add some
-                ;; parameter for a permissive mode; one source of such bad URLs
-                ;; is user-defined strings where the string is entered directly
-                ;; and not properly encoded -- similar justification to
-                ;; browsers accepting unencoded chars in manually entered URLs.
-                [else (append (bytes->list (string->bytes/utf-8 (string c)))
-                              rest)]))))
-  (bytes->string/utf-8 (apply bytes (internal-decode (string->list str)))))
+  (define in (open-input-string str))
+  (define out (open-output-bytes))
+  (let loop ()
+    (define c (read-char in))
+    (unless (eof-object? c)
+      (cond [(eqv? c #\%)
+             (define hex (read-string 2 in))
+             (define hex-n (and (string? hex) (string->number hex 16)))
+             (cond [(exact-nonnegative-integer? hex-n) ;; not negative, fractional
+                    ;; Note: write as byte to support multi-byte Unicode chars
+                    (write-byte hex-n out)]
+                   [else
+                    ;; Pass through failed %-escapes as-is, for compatibility with
+                    ;; previous version of code.
+                    (write-char #\% out)
+                    (when (string? hex)
+                      (write-string hex out))])]
+            [(char<? c max-ascii)
+             (write-char (integer->char (vector-ref table (char->integer c))) out)]
+            [else
+             ;; This should probably error, but strings to be decoded might
+             ;; come from misbehaving sources; maybe it's better to add some
+             ;; parameter for a permissive mode; one source of such bad URLs
+             ;; is user-defined strings where the string is entered directly
+             ;; and not properly encoded -- similar justification to
+             ;; browsers accepting unencoded chars in manually entered URLs.
+             (write-char c out)])
+      (loop)))
+  (get-output-string out))
 
 ;; Utility for defining codecs
 (define-syntax-rule (define-codecs [encoder decoder mapping] ...)

@@ -136,8 +136,11 @@ supertype.
 (define p (3d-posn 1 2 3))
 p
 (posn? p)
-(posn-x p)
 (3d-posn-z p)
+(code:comment "a 3d-posn has an x field, but there is no 3d-posn-x selector:")
+(3d-posn-x p)
+(code:comment "use the supertype's posn-x selector to access the x field:")
+(posn-x p)
 ]
 
 @; ------------------------------------------------------------

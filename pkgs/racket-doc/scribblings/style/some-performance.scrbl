@@ -23,6 +23,58 @@ Conversely, you should use @rkt[] (or even @rkt/gui[]) when you just want a
  almost all the batteries, and @rkt/gui[] adds the rest of the GUI base.
 
 @; -----------------------------------------------------------------------------
+@section{Library Interfaces}
+
+Imagine you are working on a library. You start with one module, but before
+you know it the set of modules grows to a decent size. Client programs are
+unlikely to use all of your library's exports and modules. If, by default,
+your library includes all features, you may cause unnecessary mental stress
+and run-time cost that clients do not actually use. 
+
+In building the Racket language, we have found it useful to factor
+libraries into different layers so that client programs can selectively
+import from these bundles. The specific Racket practice is to use the most
+prominent name as the default for the module that includes everything. When
+it comes to languages, this is the role of @rkt[]. A programmer who wishes
+to depend on a small part of the language chooses to @rkt/base[] instead;
+this name refers to the basic foundation of the language. Finally, some of
+Racket's constructs are not even included in @rkt[]---consider
+@racketmodname[racket/require] for example---and must be required
+explicitly in programs.
+
+Other Racket libraries choose to use the default name for the small
+core. Special names then refer to the complete library. 
+
+We encourage library developers to think critically about these
+decisions and decide on a practice that fits their taste and
+understanding of the users of their library. We encourage developers
+to use the following names for different places on the "size"
+hierarchy:
+
+@itemlist[
+
+@item{@racket[library/kernel], the bare minimal conceievable for the
+library to be usable;}
+
+@item{@racket[library/base], a basic set of functionality.}
+
+@item{@racket[library], an appropriate "default" of functionality
+corresponding to either @racket[library/base] or @racket[library/full].}
+
+@item{@racket[library/full], the full library functionality.}  
+] 
+Keep two considerations in mind as you decide which parts of your library
+should be in which files: dependency and logical ordering.  The smaller
+files should depend on fewer dependencies. Try to organize the levels so
+that, in principle, the larger libraries can be implemented in terms of the
+public interfaces of the smaller ones. 
+
+Finally, the advice of the previous section, to use @rkt/base[] when
+building a library, generalizes to other libraries: by being more
+specific in your dependencies, you are a responsible citizen and
+enable others to have a small (transitive) dependency set.
+
+@; -----------------------------------------------------------------------------
 @section{Macros: Space and Performance}
 
 Macros copy code. Also, Racket is really a tower of macro-implemented

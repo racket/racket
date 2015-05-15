@@ -46,7 +46,9 @@ prefixed to the beginning of @racket[in]'s stream for the read. (To
 prefix multiple characters, use @racket[input-port-append].)
 
 The @racket[readtable] argument is used for top-level parsing to
-satisfy the read request; recursive parsing within the read (e.g., to
+satisfy the read request, including various delimiters of a built-in
+top-level form (such as parentheses and @litchar{.} for reading a hash
+table); recursive parsing within the read (e.g., to
 read the elements of a list) instead uses the current readtable as
 determined by the @racket[current-readtable] parameter.  A reader
 macro might call @racket[read/recursive] with a character and
@@ -71,7 +73,12 @@ same outermost @racket[read], it will be replaced with the actual read
 value before the outermost @racket[read] returns.
 
 See @secref["readtables"] for an extended example that uses
-@racket[read/recursive].}
+@racket[read/recursive].
+
+@history[#:changed "6.2" @elem{Adjusted use of @racket[readtable] to
+                               more consistently apply to the delimiters of
+                               a built-in form.}]}
+
 
 @defproc[(read-syntax/recursive [source-name any/c (object-name in)]
                                 [in input-port? (current-input-port)]
@@ -102,7 +109,11 @@ using @racket[read-syntax/recursive] within the dynamic extent of
 when the input stream starts with a comment (after whitespace).
 
 See @secref["readtables"] for an extended example that uses
-@racket[read-syntax/recursive].}
+@racket[read-syntax/recursive].
+
+@history[#:changed "6.2" @elem{Adjusted use of @racket[readtable]
+                               in the same way as for
+                               @racket[read/recursive].}]}
 
 
 @defproc[(read-language [in input-port? (current-input-port)]
