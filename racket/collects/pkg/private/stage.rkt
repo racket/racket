@@ -710,6 +710,11 @@
                                      (define (strip-ending-newline s)
                                        (regexp-replace #rx"\n$" s ""))
                                      (log-pkg-debug (strip-ending-newline (apply format fmt args))))
+                   #:initial-error (lambda ()
+                                     (pkg-error (~a "Git checkout initial protocol failed;\n"
+                                                    " the given URL might not refer to a Git repository\n"
+                                                    "  given URL: ~a")
+                                                pkg-url-str))
                    #:transport (string->symbol (url-scheme pkg-url)))]
     [(github)
      (match-define (list* user repo branch path)
