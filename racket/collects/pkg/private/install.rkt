@@ -817,6 +817,7 @@
                      #:update-cache [update-cache (make-hash)]
                      #:catalog-lookup-cache [catalog-lookup-cache (make-hash)]
                      #:remote-checksum-cache [remote-checksum-cache (make-hash)]
+                     #:check-pkg-early? [check-pkg-early? #t]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
                      #:use-trash? [use-trash? #f]
@@ -839,7 +840,9 @@
                                                    download-printf)
          given-descs))
 
-  (define db (read-pkg-db))
+  (define db (and (or check-pkg-early?
+                      skip-installed?)
+                  (read-pkg-db)))
 
   (define filtered-descs
     (remove-duplicates
@@ -884,6 +887,7 @@
                        #:update-cache update-cache
                        #:catalog-lookup-cache catalog-lookup-cache
                        #:remote-checksum-cache remote-checksum-cache
+                       #:check-pkg-early? #f
                        #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
                        #:updating? updating?
                        #:quiet? quiet?
@@ -1269,6 +1273,7 @@
       #:update-cache update-cache
       #:catalog-lookup-cache catalog-lookup-cache
       #:remote-checksum-cache remote-checksum-cache
+      #:check-pkg-early? #f
       #:quiet? quiet?
       #:use-trash? use-trash?
       #:from-command-line? from-command-line?
@@ -1295,7 +1300,9 @@
       (if (pkg-desc? d)
           (or (pkg-desc-name d)
               (package-source->name (pkg-desc-source d)
-                                    (pkg-desc-type d)))
+                                    (if (eq? 'clone (pkg-desc-type d))
+                                        'name
+                                        (pkg-desc-type d))))
           (package-source->name d)))
     (define info (package-info name wanted? #:db db))
     (when (and info

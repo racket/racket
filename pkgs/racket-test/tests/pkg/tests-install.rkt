@@ -148,6 +148,12 @@
    (shelly-install "redundant packages ignored"
                    (~a tmp-dir"pkg-test1/ "tmp-dir"pkg-test1/")
                    $ "racket -e '(require pkg-test1)'")
+   
+   (shelly-install "already-installed error before no-such-file error"
+                   "test-pkgs/pkg-test1/"
+                   $ "raco pkg install no-such-dir/pkg-test1.zip"
+                   =exit> 1
+                   =stderr> #rx"already installed")
 
    (shelly-case
     "conflicting package names disallowed"
