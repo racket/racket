@@ -904,7 +904,9 @@ Threads are created explicitly by functions such as @racket[thread].
 In terms of the evaluation model, each step in evaluation actually consists of multiple concurrent
 expressions, up to one per thread, rather than a single expression. The expressions all
 share the same objects and top-level variables, so that they can
-communicate through shared state. Most evaluation steps involve a
+communicate through shared state, and sequential consistency is
+guaranteed (i.e., the result is consistent with some global sequence
+imposed on all evaluation steps across threads). Most evaluation steps involve a
 single step in a single expression, but certain synchronization
 primitives require multiple threads to progress together in one step.
 
