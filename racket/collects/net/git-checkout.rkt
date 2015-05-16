@@ -30,6 +30,7 @@
                       #:status-printf [status-printf (lambda args
                                                        (apply printf args)
                                                        (flush-output))]
+                      #:initial-error [initial-error #f]
                       #:tmp-dir [given-tmp-dir #f]
                       #:clean-tmp-dir? [clean-tmp-dir? (not given-tmp-dir)]
                       #:verify-server? [verify? #t]
@@ -69,7 +70,7 @@
           ;; Parse server's initial reply
           (define server-capabilities (parse-server-capabilities (car pkts)))
           (define refs ; (list (list <name> <ID>) ...)
-            (parse-initial-refs pkts))
+            (parse-initial-refs pkts initial-error))
           
           ;; Find the commits needed for `ref`:
           (define-values (ref-commit    ; #f or an ID string
@@ -296,13 +297,15 @@
 ;; parse-initial-refs : (listof bytes) -> (listof (list bytes string))
 ;;  In each element of the returned list, first item is
 ;;  the branch or tag name, second is the ID
-(define (parse-initial-refs pkts)
+(define (parse-initial-refs pkts initial-error)
   (filter
    values
    (for/list ([pkt (in-list pkts)])
      (define m (regexp-match #px#"^([0-9a-fA-F]{40})[ \t]([^\0\n]+)[\0\n]" pkt))
-     (unless m (error 'git-checkout "could not parse ref pkt\n  pkt: ~s"
-                      pkt))
+     (unless m 
+       (when initial-error (initial-error))
+       (error 'git-checkout "could not parse ref pkt\n  pkt: ~s"
+              pkt))
      (define name (caddr m))
      (define id (bytes->string/utf-8 (cadr m)))
      (cond
