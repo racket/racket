@@ -838,18 +838,25 @@
     (map (convert-clone-name-to-clone-repo/install catalog-lookup-cache
                                                    download-printf)
          given-descs))
-  
+
+  (define db (read-pkg-db))
+
   (define filtered-descs
     (remove-duplicates
      (if (not skip-installed?)
          descs
-         (let ([db (read-pkg-db)])
-           (filter (lambda (d)
-                     (define pkg-name (desc->name d))
-                     (define i (hash-ref db pkg-name #f))
-                     (or (not i) (pkg-info-auto? i)))
-                   descs)))
+         (filter (lambda (d)
+                   (define pkg-name (desc->name d))
+                   (define i (hash-ref db pkg-name #f))
+                   (or (not i) (pkg-info-auto? i)))
+                 descs))
      pkg-desc=?))
+
+  (unless (or updating?
+              skip-installed?
+              force)
+    (early-check-for-installed filtered-descs db #:wanted? #f))
+
   (define-values (new-descs done-descs done-infos clone-behavior repo-descs
                             extra-updating)
     (adjust-to-normalize-repos filtered-descs old-descs old-infos
@@ -1178,8 +1185,9 @@
   (define pkgs (cond
                 [all-mode? (hash-keys db)]
                 [else
-                 (unless skip-uninstalled?
-                   (ensure-installed in-pkgs db))
+                 (unless (or skip-uninstalled?
+                             force?)
+                   (early-check-for-installed in-pkgs db #:wanted? #t))
                  in-pkgs]))
   (define update-cache (make-hash))
   (define catalog-lookup-cache (make-hash))
@@ -1281,7 +1289,7 @@
 
 ;; ----------------------------------------
 
-(define (ensure-installed in-pkgs db)
+(define (early-check-for-installed in-pkgs db #:wanted? wanted?)
   (for ([d (in-list in-pkgs)])
     (define name
       (if (pkg-desc? d)
@@ -1289,7 +1297,13 @@
               (package-source->name (pkg-desc-source d)
                                     (pkg-desc-type d)))
           (package-source->name d)))
-    (void (package-info name #:db db))))
+    (define info (package-info name wanted? #:db db))
+    (when (and info
+               (not wanted?)
+               (not (pkg-info-auto? info)))
+      (pkg-error (~a "package is already installed\n"
+                     "  package: ~a")
+                 name))))
 
 ;; ----------------------------------------
 
