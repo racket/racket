@@ -403,9 +403,17 @@
                             (url-like "MANIFEST")
                             port->lines))
                          (unless manifest
+                           (define suggest-git (suggested-git-path pkg-url given-type))
                            (pkg-error (~a "could not find MANIFEST for package source\n"
-                                          "  source: ~a")
-                                      pkg))
+                                          "  source: ~a~a")
+                                      pkg
+                                      (if suggest-git
+                                          (~a "\n"
+                                              "  possible solution:\n"
+                                              "   If the URL is intended to refer to a Git repository, use\n"
+                                              "     " suggest-git "\n"
+                                              "   so that the URL ends in \".git\"")
+                                          "")))
                          (for ([f (in-list manifest)])
                            (download-file! (url-like f)
                                            (path-like f)
@@ -847,3 +855,26 @@
                          (file->bytes share-file)))
         ;; This file would be redundant, so drop it
         (delete-file pkg-file)))))
+
+
+;; ----------------------------------------
+
+(define (suggested-git-path pkg-url given-type)
+  (define p (url-path pkg-url))
+  (define drop-n
+    (if (and ((length p) . >= . 1)
+             (equal? "" (path/param-path (last p))))
+        2
+        1))
+  (and (not given-type)
+       ((length p) . >= . drop-n)
+       (let ([e (list-ref p (- (length p) drop-n))])
+         (url->string
+          (struct-copy url pkg-url [path (append
+                                          (drop-right p drop-n)
+                                          (list
+                                           (path/param
+                                            (string-append
+                                             (path/param-path e)
+                                             ".git")
+                                            (path/param-param e))))])))))
