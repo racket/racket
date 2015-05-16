@@ -1177,7 +1177,10 @@
   (define all-mode? (and all? (empty? in-pkgs)))
   (define pkgs (cond
                 [all-mode? (hash-keys db)]
-                [else in-pkgs]))
+                [else
+                 (unless skip-uninstalled?
+                   (ensure-installed in-pkgs db))
+                 in-pkgs]))
   (define update-cache (make-hash))
   (define catalog-lookup-cache (make-hash))
   (define remote-checksum-cache (make-hash))
@@ -1275,6 +1278,18 @@
                                    (not (ormap pkg-desc-extra-path in-pkgs)))
       #:pull-behavior pull-behavior
       to-update)]))
+
+;; ----------------------------------------
+
+(define (ensure-installed in-pkgs db)
+  (for ([d (in-list in-pkgs)])
+    (define name
+      (if (pkg-desc? d)
+          (or (pkg-desc-name d)
+              (package-source->name (pkg-desc-source d)
+                                    (pkg-desc-type d)))
+          (package-source->name d)))
+    (void (package-info name #:db db))))
 
 ;; ----------------------------------------
 
