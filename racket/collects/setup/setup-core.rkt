@@ -1658,13 +1658,17 @@
         (unless (avoid-main-installation)
           (tidy-libs #f
                      (find-target-dir)
-                     (find-lib-dir)
+                     (if receipt-at-dest?
+                         (find-target-dir)
+                         (find-lib-dir))
                      installed-libs
                      ccs-to-compile))
         (when (make-user)
           (tidy-libs #t
                      (find-user-target-dir)
-                     (find-user-lib-dir)
+                     (if receipt-at-dest?
+                         (find-user-target-dir)
+                         (find-user-lib-dir))
                      installed-libs
                      ccs-to-compile)))
       (for-each fixup-lib (hash-keys dests)))
@@ -1713,9 +1717,9 @@
             (write-receipt-hash receipt-path ht)))
         lib-key))
 
-    (define (tidy-libs user? target-dir lib-dir installed-libs ccs-to-compile)
-      (clean-previous-delete-failures lib-dir path->relative-string/*)
-      (define receipt-path (build-path lib-dir receipt-file))
+    (define (tidy-libs user? target-dir receipt-dir installed-libs ccs-to-compile)
+      (clean-previous-delete-failures receipt-dir path->relative-string/*)
+      (define receipt-path (build-path receipt-dir receipt-file))
       (define ht (read-receipt-hash receipt-path))
       (define ht2 (for/fold ([ht (hash)]) ([(k v) (in-hash ht)])
                     (define coll-path (and (pair? v)
