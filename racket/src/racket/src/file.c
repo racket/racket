@@ -913,10 +913,14 @@ Scheme_Object *scheme_path_to_char_string(Scheme_Object *p)
 
 static Scheme_Object *path_to_string(int argc, Scheme_Object **argv)
 {
-  if (!SCHEME_PATHP(argv[0]))
-    scheme_wrong_contract("path->string", "path?", 0, argc, argv);
+  Scheme_Object *maybe_path = argv[0];
+  if(!(SCHEME_PATHP(maybe_path)
+       || SAME_OBJ(maybe_path,up_symbol)
+       || SAME_OBJ(maybe_path,same_symbol))) {
+    scheme_wrong_contract("path->string", "(or/c path? 'up 'same)", 0, argc, argv);
+  }
 
-  return scheme_path_to_char_string(argv[0]);
+  return scheme_path_to_char_string(scheme_build_path(argc,argv));
 }
 
 static Scheme_Object *path_to_bytes(int argc, Scheme_Object **argv)

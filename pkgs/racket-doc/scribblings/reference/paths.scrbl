@@ -97,7 +97,7 @@ For information on how byte strings encode paths, see
 @secref["unixpathrep"] and @secref["windowspathrep"].}
 
 
-@defproc[(path->string [path path?]) string?]{
+@defproc[(path->string [path (or/c path? 'up 'same)]) string?]{
 
 Produces a string that represents @racket[path] by decoding
 @racket[path]'s byte-string encoding using the current locale
