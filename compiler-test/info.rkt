@@ -14,5 +14,5 @@
                      "compatibility-lib"
                      "gui-lib"
                      "htdp-lib"
-                     "plai"))
+                     "plai-lib"))
 (define update-implies '("compiler-lib"))
