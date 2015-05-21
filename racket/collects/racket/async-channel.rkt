@@ -209,9 +209,7 @@
                            val '(expected "an async channel" given: "~e") val))))
 
 (define ((async-channel/c-first-order ctc) val)
-  (define elem-ctc (base-async-channel/c-content ctc))
-  (and (async-channel? val)
-       (contract-first-order-passes? elem-ctc val)))
+  (async-channel? val))
 
 (define (async-channel/c-stronger? a b)
   (contract-stronger? (base-async-channel/c-content a) (base-async-channel/c-content b)))
@@ -251,7 +249,7 @@
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name async-channel/c-name
-   #:first-order async-channel?
+   #:first-order async-channel/c-first-order
    #:stronger async-channel/c-stronger?
    #:val-first-projection (ho-val-first-projection chaperone-async-channel)
    #:projection (ho-projection chaperone-async-channel)))
@@ -261,7 +259,7 @@
   #:property prop:contract
   (build-contract-property
    #:name async-channel/c-name
-   #:first-order async-channel?
+   #:first-order async-channel/c-first-order
    #:stronger async-channel/c-stronger?
    #:val-first-projection (ho-val-first-projection impersonate-async-channel)
    #:projection (ho-projection impersonate-async-channel)))
