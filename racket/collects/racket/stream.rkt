@@ -27,6 +27,7 @@
          in-stream
 
          stream
+         stream*
          stream->list
          stream-length
          stream-ref
@@ -57,6 +58,13 @@
      empty-stream)
     ((_ hd tl ...)
      (stream-cons hd (stream tl ...)))))
+
+(define-syntax stream*
+  (syntax-rules ()
+    [(_ hd tl)
+     (stream-cons hd tl)]
+    [(_ hd tl ...)
+     (stream-cons hd (stream* tl ...))]))
 
 (define (stream->list s)
   (for/list ([v (in-stream s)]) v))
