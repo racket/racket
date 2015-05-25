@@ -203,7 +203,7 @@
   
   (test/spec-passed/result
    'and/c-isnt
-   '(and (regexp-match #rx"isn't: even?"
+   '(and (regexp-match #rx"promised: even?"
                        (with-handlers ((exn:fail? exn-message))
                          (contract (and/c integer? even? positive?)
                                    -3

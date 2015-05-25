@@ -491,6 +491,11 @@
                                  'pos 'neg)
                        save-file))
   
+  (context-test '("an and/c case of")
+                '(contract (and/c integer? positive?)
+                           5.9
+                           'pos 'neg))
+  
   (let* ([blame-pos (contract-eval '(make-blame (srcloc #f #f #f #f #f)
                                                 #f
                                                 (λ () 'integer?)
