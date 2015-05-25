@@ -861,7 +861,7 @@
 
 (define (get-timeout p)
   ;; assumes `(check-info p)` has been called and `p` is normalized
-  (hash-ref timeouts p +inf.0))
+  (hash-ref timeouts p (or default-timeout +inf.0)))
 
 (define (get-lock-name p)
   ;; assumes `(check-info p)` has been called and `p` is normalized
