@@ -138,15 +138,13 @@
         (cond
           [(null? predicates) val]
           [else
-           (if ((car predicates) val)
-               (loop (cdr predicates) (cdr ctcs))
-               (raise-blame-error 
-                blame
-                val
-                '(expected: "~s" given: "~e\n  which isn't: ~s")
-                (contract-name ctc)
-                val
-                (contract-name (car ctcs))))])))))
+           (cond
+             [((car predicates) val)
+              (loop (cdr predicates) (cdr ctcs))]
+             [else
+              (define ctc1-proj (contract-projection (car ctcs)))
+              (define new-blame (blame-add-context blame "an and/c case of"))
+              ((ctc1-proj new-blame) val)])])))))
 
 (define (first-order-val-first-and-proj ctc)
   (define predicates (first-order-and/c-predicates ctc))
@@ -158,16 +156,13 @@
         (cond
           [(null? predicates) (λ (neg-party) val)]
           [else
-           (if ((car predicates) val)
-               (loop (cdr predicates) (cdr ctcs))
-               (λ (neg-party)
-                 (raise-blame-error
-                  blame  #:missing-party neg-party
-                  val
-                  '(expected: "~s" given: "~e\n  which isn't: ~s")
-                  (contract-name ctc)
-                  val
-                  (contract-name (car ctcs)))))])))))
+           (cond
+             [((car predicates) val)
+              (loop (cdr predicates) (cdr ctcs))]
+             [else
+              (define ctc1-val-first-proj (get/build-val-first-projection (car ctcs)))
+              (define new-blame (blame-add-context blame "an and/c case of"))
+              ((ctc1-val-first-proj new-blame) val)])])))))
 
 (define (and-stronger? this that)
   (and (base-and/c? that)
