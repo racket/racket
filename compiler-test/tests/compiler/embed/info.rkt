@@ -16,3 +16,5 @@
 (define test-omit-paths '("embed-me9.rkt"
                           "embed-planet-1"
                           "embed-planet-2"))
+
+(define test-timeouts '(("test.rkt" 600)))
