@@ -908,4 +908,5 @@ We should also test deep continuations.
 
 (module+ test
   (module config info
-    (define random? #t)))
+    (define random? #t)
+    (define timeout 200)))
