@@ -29,11 +29,11 @@ errors to a logger named @racket['net/url].
 
 @section{URL Structure}
 
-@declare-exporting[net/url-structs net/url]
+@declare-exporting[net/url-structs net/url-string net/url]
 
 @defmodule*/no-declare[(net/url-structs)]{The URL structure types are
 provided by the @racketmodname[net/url-structs] library, and
-re-exported by @racketmodname[net/url].}
+re-exported by @racketmodname[net/url] and @racketmodname[net/url-string].}
 
 @; ----------------------------------------
 
@@ -93,12 +93,11 @@ A pair that joins a path segment with its params in a URL.}
 
 @; ----------------------------------------
 
-@section{URL Functions}
+@section{URL Parsing Functions}
 
-An HTTP connection is created as a @deftech{pure port} or a
-@deftech{impure port}.  A pure port is one from which the MIME headers
-have been removed, so that what remains is purely the first content
-fragment. An impure port is one that still has its MIME headers.
+@defmodule*/no-declare[(net/url-string)]{The functions used to convert strings and
+paths to from URL structure types and back again are provided by the
+ @racketmodname[net/url-string] library, and re-exported by @racketmodname[net/url].}
 
 @defproc[(string->url [str (or/c (not/c #rx"^([^:/?#]*):")
                                  #rx"^[a-zA-Z][a-zA-Z0-9+.-]*:")])
@@ -227,6 +226,14 @@ Internally, @racket['recommended] mode uses
 @racket[uri-path-segment-unreserved-encode] and
 @racket[uri-unreserved-encode].}
 
+@; ----------------------------------------
+
+@section{URL Functions}
+
+An HTTP connection is created as a @deftech{pure port} or a
+@deftech{impure port}.  A pure port is one from which the MIME headers
+have been removed, so that what remains is purely the first content
+fragment. An impure port is one that still has its MIME headers.
 
 @deftogether[(
 @defproc[(get-pure-port [URL url?]
