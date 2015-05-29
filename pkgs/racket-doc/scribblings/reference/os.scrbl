@@ -14,3 +14,4 @@
 @include-section["envvars.scrbl"]
 @include-section["runtime.scrbl"]
 @include-section["cmdline.scrbl"]
+@include-section["os-lib.scrbl"]
