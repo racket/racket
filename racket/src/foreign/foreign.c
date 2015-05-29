@@ -1185,7 +1185,7 @@ XFORM_NONGCING static intptr_t ctype_sizeof(Scheme_Object *type)
   case FOREIGN_double: return sizeof(double);
   case FOREIGN_longdouble: return sizeof(mz_long_double);
   case FOREIGN_doubleS: return sizeof(double);
-  case FOREIGN_bool: return sizeof(int);
+  case FOREIGN_bool: return SIZEOF_BOOL;
   case FOREIGN_stdbool: return sizeof(stdbool);
   case FOREIGN_string_ucs_4: return sizeof(mzchar*);
   case FOREIGN_string_utf_16: return sizeof(unsigned short*);
@@ -2148,13 +2148,13 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_bool:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(int)<sizeof(intptr_t) && ret_loc) {
+      if (SIZEOF_BOOL<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(intptr_t)-sizeof(int));
+        delta += (sizeof(intptr_t)-SIZEOF_BOOL);
       }
 #     endif /* SCHEME_BIG_ENDIAN */
 #     ifdef FFI_CALLBACK_NEED_INT_CLEAR
-      if (sizeof(int)<sizeof(intptr_t) && ret_loc) {
+      if (SIZEOF_BOOL<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
       }
 #     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
