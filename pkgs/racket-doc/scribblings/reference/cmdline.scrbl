@@ -1,5 +1,7 @@
 #lang scribble/doc
-@(require "mz.rkt" (for-label racket/cmdline))
+@(require "mz.rkt"
+          (for-label racket/cmdline)
+          (only-in scribble/core element))
 
 @title{Command-Line Parsing}
 
@@ -104,7 +106,7 @@ A normal flag specification has four parts:
  @racketvalfont{"-}@racketvarfont{x}@racketvalfont{"} or
  @racketvalfont{"+}@racketvarfont{x}@racketvalfont{"} for some
  character @racketvarfont{x}, or
- @racketvalfont{"--}@racketvarfont{x}@racketvalfont{"} or
+ @racketvalfont[@element[#f]{"--}]@racketvarfont{x}@racketvalfont{"} or
  @racketvalfont{"++}@racketvarfont{x}@racketvalfont{"} for some
  sequence of characters @racketvarfont{x}. An @racketvarfont{x} cannot
  contain only digits or digits plus a single decimal point, since
