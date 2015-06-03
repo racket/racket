@@ -6,8 +6,8 @@
 
 @title[#:tag "expand"]{@exec{raco expand}: Macro Expansion}
 
-The @exec{raco expand} command macro expands the contents of
-the given source files. Also see @racket[expand].
+The @exec{raco expand} command macro-expands and pretty-prints the
+contents of the given source files. See also @racket[expand].
 
 Command-line flags:
 
