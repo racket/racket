@@ -37,9 +37,9 @@
                             [(eq? (car l) 'd) `(cons/c any/c ,(loop (cdr l)))]))]
               [equiv (let loop ([l xs])
                        (cond
-                         [(null? l) 'p]
-                         [(eq? (car l) 'a) `(car ,(loop (cdr l)))]
-                         [(eq? (car l) 'd) `(cdr ,(loop (cdr l)))]))])
+                         [(null? l) 'v]
+                         [(eq? (car l) 'a) #`(car #,(loop (cdr l)))]
+                         [(eq? (car l) 'd) #`(cdr #,(loop (cdr l)))]))])
           (with-syntax ([name name]
                         [contract (let loop ([c contract] [pos 0])
                                     (if (pair? c)
@@ -56,9 +56,9 @@
                                       (datum->syntax #'here c
                                                      (list (syntax-source stx) 1 pos (add1 pos) 1))))]
                         [example (let ([ex #'example-arg])
-                                   (datum->syntax #f
+                                   (datum->syntax #'here
                                                   (list
-                                                   (datum->syntax #f
+                                                   (datum->syntax #'here
                                                                   name
                                                                   (vector (syntax-source ex)
                                                                           (syntax-line ex)
@@ -73,7 +73,7 @@
                                                           (+ (syntax-span ex) 4))))]
                         [equiv equiv])
             #'(defproc (name [v contract]) any/c
-                "Returns " (to-element 'equiv) (mz-examples example)))))]))
+                "Returns " (racket equiv) "." (mz-examples example)))))]))
 
 
 @title[#:tag "pairs"]{Pairs and Lists}
