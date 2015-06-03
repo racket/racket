@@ -8,6 +8,7 @@
     ("decompile" compiler/commands/decompile "decompile bytecode" #f)
     ("test" compiler/commands/test "run tests associated with files/directories" 15)
     ("expand" compiler/commands/expand "macro-expand source" #f)
+    ("read" compiler/commands/read "read and pretty-print source" #f)
     ("distribute" compiler/commands/exe-dir "prepare executable(s) in a directory for distribution" #f)
     ("demodularize" compiler/demodularizer/batch "produce a whole program from a single module" #f)))
 
