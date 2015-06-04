@@ -244,7 +244,7 @@ each element in the sequence.
 
   @interaction[#:eval sequence-evaluator
     (define (histogram vector-of-words)
-      (define a-hash (hash))
+      (define a-hash (make-hash))
       (for ([word (in-vector vector-of-words)])
         (hash-set! a-hash word (add1 (hash-ref a-hash word 0))))
       a-hash)
