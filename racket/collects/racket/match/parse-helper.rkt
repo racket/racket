@@ -37,8 +37,8 @@
                     (parse (quasisyntax/loc stx (quote #,e)))))]
     [(quote bx)
      (box? (syntax-e #'bx))
-     (make-Box (parse (quasisyntax/loc 
-                       stx 
+     (make-Box (parse (quasisyntax/loc
+                       stx
                        (quote #,(unbox (syntax-e #'bx))))))]
     [(quote v)
      (or (parse-literal (syntax-e #'v))
@@ -51,7 +51,7 @@
 ;; rest : the syntax for the rest
 ;; pred? : recognizer for the parsed data structure (such as list?)
 ;; to-list: function to convert the value to a list
-(define (dd-parse parse p dd rest pred? #:to-list [to-list #'values] #:mutable [mutable? #f])
+(define (dd-parse parse p dd rest pred? #:to-list [to-list #f] #:mutable [mutable? #f])
   (define count (ddk? dd))
   (define min (and (number? count) count))
   (define pat (parameterize ([match-...-nesting (add1 (match-...-nesting))])
@@ -61,7 +61,10 @@
               (not min) ;; if we have a count, better generate general code
               (Null? rest-pat)
               (or (Var? pat) (Dummy? pat)))
-         (make-And (list (make-Pred pred?) (make-App to-list (list pat))))]
+         (make-OrderedAnd (list (make-Pred pred?)
+                                (if to-list
+                                    (make-App to-list (list pat))
+                                    pat)))]
         [else (make-GSeq (list (list pat))
                          (list min)
                          ;; no upper bound
@@ -95,7 +98,7 @@
                                5)])
           (cond [(equal? super #t) (values #t '())] ;; no super type exists
                 [(equal? super #f) (values #f '())] ;; super type is unknown
-                [else 
+                [else
                  (let-values ([(complete? lineage) (get-lineage super)])
                    (values complete?
                            (cons super lineage)))])))
@@ -111,12 +114,12 @@
                           [(not (car acc)) (cdr acc)]
                           [else acc])])
           (make-Struct pred
-                       (syntax-property 
-                        pred 
+                       (syntax-property
+                        pred
                         'disappeared-use (list struct-name))
                        lineage (and (checked-struct-info? v) complete?)
                        acc
-                       (cond [(eq? '_ (syntax-e pats))                            
+                       (cond [(eq? '_ (syntax-e pats))
                               (map make-Dummy acc)]
                              [(syntax->list pats)
                               =>
@@ -136,7 +139,7 @@
                                     stx pats)])))))))
 
 (define (trans-match pred transformer pat)
-  (make-And (list (make-Pred pred) (make-App transformer (list pat)))))
+  (make-OrderedAnd (list (make-Pred pred) (make-App transformer (list pat)))))
 
 ;; transform a match-expander application
 ;; parse : stx -> pattern
@@ -157,7 +160,7 @@
     (define introducer (make-syntax-introducer))
     (parameterize ([current-match-introducer introducer])
       (let* ([mstx (introducer (syntax-local-introduce stx))]
-             [mresult (if (procedure-arity-includes? transformer 2) 
+             [mresult (if (procedure-arity-includes? transformer 2)
                           (transformer expander* mstx)
                           (transformer mstx))]
              [result (syntax-local-introduce (introducer mresult))])
@@ -205,7 +208,7 @@
 ;; (listof pat) syntax -> void
 ;; ps is never null
 ;; check that all the ps bind the same set of variables
-(define (all-vars ps stx)  
+(define (all-vars ps stx)
   (let* ([first-vars (bound-vars (car ps))]
          [l (length ps)]
          [ht (make-free-identifier-mapping)])

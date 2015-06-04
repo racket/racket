@@ -38,7 +38,7 @@
      (identifier? #'v)
      (Var (rearm #'v))]
     [(and p ...)
-     (And (map rearm+parse (syntax->list #'(p ...))))]
+     (OrderedAnd (map rearm+parse (syntax->list #'(p ...))))]
     [(or)
      (Not (Dummy stx))]
     [(or p ps ...)
@@ -48,7 +48,7 @@
     [(not p ...)
      ;; nots are conjunctions of negations
      (let ([ps (map (compose Not rearm+parse) (syntax->list #'(p ...)))])
-       (And ps))]
+       (OrderedAnd ps))]
     [(regexp r)
      (trans-match #'matchable?
                   (rearm #'(lambda (e) (regexp-match r e)))
@@ -163,7 +163,7 @@
     [(? p q1 qs ...)
      (OrderedAnd 
       (list (Pred (rearm #'p))
-            (And (map rearm+parse (syntax->list #'(q1 qs ...))))))]
+            (OrderedAnd (map rearm+parse (syntax->list #'(q1 qs ...))))))]
     [(? p)
      (Pred (rearm #'p))]
     [(app f ps ...) ;; only make a list for more than one pattern

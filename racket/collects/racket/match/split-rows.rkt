@@ -21,6 +21,21 @@
                (loop/var (cons r matched-rows) prev-mats rs)]
               [else
                (split-rows rows (cons (reverse matched-rows) prev-mats))]))))
+
+  (define (loop/pred matched-rows prev-mats rows orig)
+    (if (null? rows)
+      (reverse (cons (reverse matched-rows) prev-mats))
+      (let* ([r (car rows)]
+             [p (Row-first-pat r)]
+             [rs (cdr rows)])
+        (cond [(Row-unmatch r)
+               (split-rows rows (cons (reverse matched-rows) prev-mats))]
+              [(and (Pred? p) (equal? p orig))
+               ;; use the custom equality on Pred structs
+               (loop/pred (cons r matched-rows) prev-mats rs orig)]
+              [else
+               (split-rows rows (cons (reverse matched-rows) prev-mats))]))))
+
   (define (loop/con matched-rows prev-mats struct-key rows)
     (if (null? rows)
       (reverse (cons (reverse matched-rows) prev-mats))
@@ -63,6 +78,8 @@
              (loop/var (list r) acc rs)]
             [(Exact? p)
              (loop/exact (list r) acc rs)]
+            [(Pred? p)
+             (loop/pred (list r) acc rs p)]
             [(CPat? p)
              (if (Struct? p)
                (begin
