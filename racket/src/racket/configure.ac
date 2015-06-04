@@ -539,10 +539,31 @@ if test "${enable_ios}" != "" ; then
   SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
   SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
 fi
-    
+
+
 if test "${enable_oskit}" = "no" ; then
+  # Auto-set CC, CPP, etc.
+  
+  if test "${CFLAGS}${CC}${CPP}" = "" ; then
+    starts_out_default=yes
+  else
+    starts_out_default=no
+  fi
+  
   AC_PROG_CC
   AC_PROG_CPP
+
+  if test "$starts_out_default" = "yes" ; then
+    if test "$GCC" = "yes" ; then
+      # Auto selection of C compiler picked GCC, so we
+      # assume it also picked the GNU preprocessor; move
+      # auto-picked CFLAGS to PREFLAGS so that compilation
+      # and preprocessing are in sync (e.g., for optimization flags)
+      PREFLAGS="${CFLAGS} ${PREFLAGS}"
+      CPPFLAGS="${CFLAGS} ${CPPFLAGS}"
+      CFLAGS=""
+    fi
+  fi
   if test "$AS" = '' ; then 
     AS="${ac_tool_prefix}as"
     as_was_set=no
