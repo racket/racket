@@ -27,7 +27,7 @@ If the definition is ill-formed, a syntax error is raised. If
 an expression context. The default value of @racket[check-context?] is
 @racket[#t].
 
-If @racket[opt-kws?] is @racket[#t], then arguments of the form
+If @racket[opt+kws?] is @racket[#t], then arguments of the form
 @racket[[id expr]], @racket[keyword id], and @racket[keyword [id
 expr]] are allowed, and they are preserved in the expansion.}
 
