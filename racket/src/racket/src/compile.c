@@ -383,11 +383,49 @@ static void bad_form(Scheme_Object *form, int l)
 		      l - 1, (l != 2) ? "s" : "");
 }
 
+static Scheme_Object *simplify_inferred_name(Scheme_Object *name);
+
+static Scheme_Object *simplify_inferred_name_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *name = (Scheme_Object *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  return (void *)simplify_inferred_name(name);
+}
+
+
+static Scheme_Object *simplify_inferred_name(Scheme_Object *name)
+{
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+
+      p->ku.k.p1 = (void *)name;
+
+      return scheme_handle_stack_overflow(simplify_inferred_name_k);
+    }
+  }
+
+  if (SCHEME_PAIRP(name)) {
+    Scheme_Object *name_car = SCHEME_CAR(name), *name_cdr = SCHEME_CDR(name);
+    name_car = simplify_inferred_name(name_car);
+    name_cdr = simplify_inferred_name(name_cdr);
+    if (SAME_OBJ(name_car, name_cdr))
+      return name_car;
+  }
+
+  return name;
+}
+
 Scheme_Object *scheme_check_name_property(Scheme_Object *code, Scheme_Object *current_val)
 {
   Scheme_Object *name;
 
   name = scheme_stx_property(code, inferred_name_symbol, NULL);
+  name = simplify_inferred_name(name);
   if (name && SCHEME_SYMBOLP(name))
     return name;
   else
@@ -551,6 +589,7 @@ Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Comp_Env *e
   Scheme_Object *name;
 
   name = scheme_stx_property(code, inferred_name_symbol, NULL);
+  name = simplify_inferred_name(name);
   if (name && SCHEME_SYMBOLP(name)) {
     name = combine_name_with_srcloc(name, code, 0);
   } else if (name && SCHEME_VOIDP(name)) {

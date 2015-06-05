@@ -1101,6 +1101,13 @@ property value of @|void-const| hides a name that would otherwise be
 inferred from context (perhaps because a binding identifier's was 
 automatically generated and should not be exposed).
 
+To support the propagation and merging of consistent properties during
+expansions, the value of the @racket['inferred-name] property can be a
+tree formed with @racket[cons] where all of the leaves are the same.
+For example, @racket[(cons 'name 'name)] is equivalent to
+@racket['name], and @racket[(cons (void) (void))] is equivalent to
+@|void-const|.
+
 When an inferred name is not available, but a source location is
 available, a name is constructed using the source location
 information. Inferred and property-assigned names are also available
