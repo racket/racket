@@ -505,7 +505,7 @@ static uintptr_t adjust_stack_base(uintptr_t bnd) {
       while (fgets(buf, 256, f)) {
 	int len;
 	len = strlen(buf);
-	if ((len > 8) && !strcmp("[stack]\n", buf + len - 8)) {
+	if ((len > 8) && !strcmp("[stack]\n", buf XFORM_OK_PLUS len XFORM_OK_MINUS 8)) {
 	  uintptr_t p = 0;
 	  int i;
 	  /* find separator: */
