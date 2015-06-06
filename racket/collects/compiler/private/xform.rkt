@@ -371,6 +371,11 @@
                          (cond
                            [(not simple)
                             (cond
+                              [(regexp-match-positions char-complex s p)
+                               => (lambda (m)
+                                    (loop (cdar m)
+                                          (cons (character (subbytes s (caar m) (cdar m)))
+                                                result)))]
                               [(regexp-match-positions symbol-complex s p)
                                => (lambda (m)
                                     (loop (cdar m)
@@ -380,11 +385,6 @@
                                => (lambda (m)
                                     (loop (cdar m)
                                           (cons (number (subbytes s (caar m) (cdar m)))
-                                                result)))]
-                              [(regexp-match-positions char-complex s p)
-                               => (lambda (m)
-                                    (loop (cdar m)
-                                          (cons (character (subbytes s (caar m) (cdar m)))
                                                 result)))]
                               [(regexp-match-positions string-complex s p)
                                => (lambda (m)
