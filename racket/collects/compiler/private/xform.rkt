@@ -204,7 +204,7 @@
 
 	(define (character? s)
 	  (and (symbol? s)
-	       (regexp-match #rx"'[\\]?.'" (symbol->string s))))
+	       (regexp-match #rx"'[\\]?.+'" (symbol->string s))))
         
         (define (mk-string s)
           (count-newlines s)
@@ -246,8 +246,8 @@
                   (seqs "0" (one+/ D) IS) ;; octal
                   (seqs (one+/ D) IS))))  ;; integer
         
-        (define char-complex (trans (seqs (maybe L) "'([^\\']|\\\\.)+'")))
-        (define string-complex (trans (seqs (maybe L) "\"([^\\\"]|\\\\.)*\"")))
+        (define char-complex (trans "'([^\\']|\\\\.)+'"))
+        (define string-complex (trans "\"([^\\\"]|\\\\.)*\""))
         
         (define simple-table (make-vector 256 #f))
         
@@ -371,11 +371,6 @@
                          (cond
                            [(not simple)
                             (cond
-                              [(regexp-match-positions char-complex s p)
-                               => (lambda (m)
-                                    (loop (cdar m)
-                                          (cons (character (subbytes s (caar m) (cdar m)))
-                                                result)))]
                               [(regexp-match-positions symbol-complex s p)
                                => (lambda (m)
                                     (loop (cdar m)
@@ -385,6 +380,11 @@
                                => (lambda (m)
                                     (loop (cdar m)
                                           (cons (number (subbytes s (caar m) (cdar m)))
+                                                result)))]
+                              [(regexp-match-positions char-complex s p)
+                               => (lambda (m)
+                                    (loop (cdar m)
+                                          (cons (character (subbytes s (caar m) (cdar m)))
                                                 result)))]
                               [(regexp-match-positions string-complex s p)
                                => (lambda (m)
