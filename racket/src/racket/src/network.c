@@ -78,6 +78,16 @@ static int mzerrno = 0;
 # define mz_AFNOSUPPORT EAFNOSUPPORT
 #endif
 
+#ifdef CANT_SET_SOCKET_BUFSIZE
+# undef SET_SOCKET_BUFFSIZE_ON_CREATE
+#endif
+
+#ifdef SET_SOCKET_BUFFSIZE_ON_CREATE
+# define mzWHEN_SET_SOCKBUF_SIZE(x) x
+#else
+# define mzWHEN_SET_SOCKBUF_SIZE(x) /* empty */
+#endif
+
 #ifdef USE_WINSOCK_TCP
 # include <process.h>
 # include <winsock2.h>
@@ -1855,11 +1865,9 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	    unsigned long ioarg = 1;
 	    ioctlsocket(s, FIONBIO, &ioarg);
 #else
-	    int size = TCP_SOCKSENDBUF_SIZE;
+	    mzWHEN_SET_SOCKBUF_SIZE(int size = TCP_SOCKSENDBUF_SIZE);
 	    fcntl(s, F_SETFL, MZ_NONBLOCKING);
-# ifndef CANT_SET_SOCKET_BUFSIZE
-	    setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int));
-# endif
+	    mzWHEN_SET_SOCKBUF_SIZE(setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int)));
 #endif
 	    status = connect(s, addr->ai_addr, addr->ai_addrlen);
 #ifdef USE_UNIX_SOCKETS_TCP
@@ -2441,10 +2449,8 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
     Scheme_Tcp *tcp;
     
 #  ifdef USE_UNIX_SOCKETS_TCP
-    int size = TCP_SOCKSENDBUF_SIZE;
-#   ifndef CANT_SET_SOCKET_BUFSIZE
-    setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int));
-#   endif
+    mzWHEN_SET_SOCKBUF_SIZE(int size = TCP_SOCKSENDBUF_SIZE);
+    mzWHEN_SET_SOCKBUF_SIZE(setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int)));
 #  endif
 
     tcp = make_tcp_port_data(s, 2);
