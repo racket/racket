@@ -960,3 +960,15 @@ property, @racket[#f] otherwise.}
          (exn:missing-module? . -> . module-path?)]{
 
 Returns the @tech{module path}-getting procedure associated with @racket[v].}
+
+@;------------------------------------------------------------------------
+@section{Additional Exception Functions}
+
+@note-lib-only[racket/exn]
+
+@defproc[(exn->string [exn (or/c exn? any/c)]) string?]{
+
+Formats @racket[exn] as a string. If @racket[exn] is an @racket[exn?],
+collects and returns the output from the current
+@racket[(error-display-handler)]; otherwise, simply converts
+@racket[exn] to a string using @racket[(format "~s\n" exn)].}
