@@ -8,17 +8,10 @@
 (provide import-clause/contract export-clause/contract body-clause/contract dep-clause
          import-clause/c export-clause/c body-clause/c)
 
-;; This pattern is extremely permissive, but it allows for
-;; the unit machinery to give better error mesages rather
-;; than resulting in parse failures
-(define-syntax-class sig-id
-  #:attributes ()
-  (pattern x))
-
 (define-syntax-class sig-spec #:literals (prefix rename only except)
   #:attributes ((name 0))
   #:transparent
-  (pattern name:sig-id)
+  (pattern name)
   (pattern (prefix i:identifier s:sig-spec)
            #:with name #'s.name)
   (pattern (rename s:sig-spec [int:identifier ext:identifier] ...)
@@ -38,8 +31,8 @@
 (define-syntax-class tagged-sig-id #:literals (tag)
   #:attributes ()
   #:transparent
-  (pattern s:sig-id)
-  (pattern (tag i:identifier s:sig-id)))
+  (pattern s)
+  (pattern (tag i:identifier s)))
 
 (define-syntax-class unit/c-clause
   #:auto-nested-attributes

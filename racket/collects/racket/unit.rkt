@@ -1899,6 +1899,7 @@
                            (build-unit-from-context sig))
                      "missing unit name and signature"))
 
+;; A marker used when the result of invoking a unit should not be contracted
 (define-for-syntax no-invoke-contract (gensym))
 (define-for-syntax (build-unit/contract stx)
   (syntax-parse stx

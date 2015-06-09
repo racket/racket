@@ -727,10 +727,10 @@ the unit value must declare initialization dependencies that are a subset of
 those specified in the unit contract. Any identifier which is not listed
 for a given signature is left alone. Variables used in a given
 @racket[contract] expression first refer to other variables in the same
-signature, and then to the context of the @racket[unit/c] expression.}
+signature, and then to the context of the @racket[unit/c] expression.
 If a body contract is specified then the result of invoking the unit value
 is wrapped with the given contract, if no body contract is supplied then
-no wrapping occurs when the unit value is invoked.
+no wrapping occurs when the unit value is invoked.}
 
 @defform/subs[#:literals (import export values)
               (define-unit/contract unit-id
