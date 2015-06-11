@@ -9,7 +9,7 @@
 @; to associate `history` to the right package:
 @(declare-exporting compiler/commands/read)
 
-The @exec{raco expand} command @racket[read]s and pretty-prints the
+The @exec{raco read} command @racket[read]s and pretty-prints the
 contents of the given files. This command is useful for showing
 how a @tt{#reader} or @hash-lang[]-based reader extension converts
 input to an S-expression. It is also useful for pretty-printing a term
