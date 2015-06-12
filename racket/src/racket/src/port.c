@@ -496,12 +496,10 @@ ROSYM static Scheme_Object *SIGQUIT_symbol;
 ROSYM static Scheme_Object *SIGILL_symbol;
 ROSYM static Scheme_Object *SIGTRAP_symbol;
 ROSYM static Scheme_Object *SIGABRT_symbol;
-ROSYM static Scheme_Object *SIGEMT_symbol;
 ROSYM static Scheme_Object *SIGFPE_symbol;
 ROSYM static Scheme_Object *SIGKILL_symbol;
 ROSYM static Scheme_Object *SIGBUS_symbol;
 ROSYM static Scheme_Object *SIGSEGV_symbol;
-ROSYM static Scheme_Object *SIGSYS_symbol;
 ROSYM static Scheme_Object *SIGPIPE_symbol;
 ROSYM static Scheme_Object *SIGALRM_symbol;
 ROSYM static Scheme_Object *SIGTERM_symbol;
@@ -518,7 +516,6 @@ ROSYM static Scheme_Object *SIGXFSZ_symbol;
 ROSYM static Scheme_Object *SIGVTALRM_symbol;
 ROSYM static Scheme_Object *SIGPROF_symbol;
 ROSYM static Scheme_Object *SIGWINCH_symbol;
-ROSYM static Scheme_Object *SIGINFO_symbol;
 ROSYM static Scheme_Object *SIGUSR1_symbol;
 ROSYM static Scheme_Object *SIGUSR2_symbol;
 
@@ -570,12 +567,10 @@ scheme_init_port (Scheme_Env *env)
   REGISTER_SO(SIGILL_symbol);
   REGISTER_SO(SIGTRAP_symbol);
   REGISTER_SO(SIGABRT_symbol);
-  REGISTER_SO(SIGEMT_symbol);
   REGISTER_SO(SIGFPE_symbol);
   REGISTER_SO(SIGKILL_symbol);
   REGISTER_SO(SIGBUS_symbol);
   REGISTER_SO(SIGSEGV_symbol);
-  REGISTER_SO(SIGSYS_symbol);
   REGISTER_SO(SIGPIPE_symbol);
   REGISTER_SO(SIGALRM_symbol);
   REGISTER_SO(SIGTERM_symbol);
@@ -592,7 +587,6 @@ scheme_init_port (Scheme_Env *env)
   REGISTER_SO(SIGVTALRM_symbol);
   REGISTER_SO(SIGPROF_symbol);
   REGISTER_SO(SIGWINCH_symbol);
-  REGISTER_SO(SIGINFO_symbol);
   REGISTER_SO(SIGUSR1_symbol);
   REGISTER_SO(SIGUSR2_symbol);
 
@@ -615,12 +609,10 @@ scheme_init_port (Scheme_Env *env)
   SIGILL_symbol = scheme_intern_symbol("SIGILL");
   SIGTRAP_symbol = scheme_intern_symbol("SIGTRAP");
   SIGABRT_symbol = scheme_intern_symbol("SIGABRT");
-  SIGEMT_symbol = scheme_intern_symbol("SIGEMT");
   SIGFPE_symbol = scheme_intern_symbol("SIGFPE");
   SIGKILL_symbol = scheme_intern_symbol("SIGKILL");
   SIGBUS_symbol = scheme_intern_symbol("SIGBUS");
   SIGSEGV_symbol = scheme_intern_symbol("SIGSEGV");
-  SIGSYS_symbol = scheme_intern_symbol("SIGSYS");
   SIGPIPE_symbol = scheme_intern_symbol("SIGPIPE");
   SIGALRM_symbol = scheme_intern_symbol("SIGALRM");
   SIGTERM_symbol = scheme_intern_symbol("SIGTERM");
@@ -637,7 +629,6 @@ scheme_init_port (Scheme_Env *env)
   SIGVTALRM_symbol = scheme_intern_symbol("SIGVTALRM");
   SIGPROF_symbol = scheme_intern_symbol("SIGPROF");
   SIGWINCH_symbol = scheme_intern_symbol("SIGWINCH");
-  SIGINFO_symbol = scheme_intern_symbol("SIGINFO");
   SIGUSR1_symbol = scheme_intern_symbol("SIGUSR1");
   SIGUSR2_symbol = scheme_intern_symbol("SIGUSR2");
 
@@ -9575,8 +9566,6 @@ static Scheme_Object *do_subprocess_signal(Scheme_Object *_sp, Scheme_Object *si
           sig_name = SIGTRAP;
     } else if (SAME_OBJ(SIGABRT_symbol, sig)) {
           sig_name = SIGABRT;
-    } else if (SAME_OBJ(SIGEMT_symbol, sig)) {
-          sig_name = SIGEMT;
     } else if (SAME_OBJ(SIGFPE_symbol, sig)) {
           sig_name = SIGFPE;
     } else if (SAME_OBJ(SIGKILL_symbol, sig)) {
@@ -9585,8 +9574,6 @@ static Scheme_Object *do_subprocess_signal(Scheme_Object *_sp, Scheme_Object *si
           sig_name = SIGBUS;
     } else if (SAME_OBJ(SIGSEGV_symbol, sig)) {
           sig_name = SIGSEGV;
-    } else if (SAME_OBJ(SIGSYS_symbol, sig)) {
-          sig_name = SIGSYS;
     } else if (SAME_OBJ(SIGPIPE_symbol, sig)) {
           sig_name = SIGPIPE;
     } else if (SAME_OBJ(SIGALRM_symbol, sig)) {
@@ -9619,8 +9606,6 @@ static Scheme_Object *do_subprocess_signal(Scheme_Object *_sp, Scheme_Object *si
           sig_name = SIGPROF;
     } else if (SAME_OBJ(SIGWINCH_symbol, sig)) {
           sig_name = SIGWINCH;
-    } else if (SAME_OBJ(SIGINFO_symbol, sig)) {
-          sig_name = SIGINFO;
     } else if (SAME_OBJ(SIGUSR1_symbol, sig)) {
           sig_name = SIGUSR1;
     } else if (SAME_OBJ(SIGUSR2_symbol, sig)) {
