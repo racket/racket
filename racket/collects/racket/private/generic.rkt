@@ -5,7 +5,7 @@
                      syntax/stx
                      syntax/boundmap)
          "generic-methods.rkt"
-         (only-in racket/function arity-includes?))
+         (only-in racket/private/arity arity-includes?))
 
 (provide define-primitive-generics
          define-primitive-generics/derived
