@@ -430,6 +430,7 @@ static void flush_if_output_fds(Scheme_Object *o, Scheme_Close_Custodian_Client 
 static Scheme_Object *subprocess(int c, Scheme_Object *args[]);
 static Scheme_Object *subprocess_status(int c, Scheme_Object *args[]);
 static Scheme_Object *subprocess_kill(int c, Scheme_Object *args[]);
+static Scheme_Object *subprocess_signal(int c, Scheme_Object *args[]);
 static Scheme_Object *subprocess_pid(int c, Scheme_Object *args[]);
 static Scheme_Object *subprocess_p(int c, Scheme_Object *args[]);
 static Scheme_Object *subprocess_wait(int c, Scheme_Object *args[]);
@@ -488,6 +489,39 @@ ROSYM static Scheme_Object *append_symbol, *error_symbol, *update_symbol, *can_u
 ROSYM static Scheme_Object *replace_symbol, *truncate_symbol, *truncate_replace_symbol;
 ROSYM static Scheme_Object *must_truncate_symbol;
 
+// SIGNAL symbols
+ROSYM static Scheme_Object *SIGHUP_symbol;
+ROSYM static Scheme_Object *SIGINT_symbol;
+ROSYM static Scheme_Object *SIGQUIT_symbol;
+ROSYM static Scheme_Object *SIGILL_symbol;
+ROSYM static Scheme_Object *SIGTRAP_symbol;
+ROSYM static Scheme_Object *SIGABRT_symbol;
+ROSYM static Scheme_Object *SIGEMT_symbol;
+ROSYM static Scheme_Object *SIGFPE_symbol;
+ROSYM static Scheme_Object *SIGKILL_symbol;
+ROSYM static Scheme_Object *SIGBUS_symbol;
+ROSYM static Scheme_Object *SIGSEGV_symbol;
+ROSYM static Scheme_Object *SIGSYS_symbol;
+ROSYM static Scheme_Object *SIGPIPE_symbol;
+ROSYM static Scheme_Object *SIGALRM_symbol;
+ROSYM static Scheme_Object *SIGTERM_symbol;
+ROSYM static Scheme_Object *SIGURG_symbol;
+ROSYM static Scheme_Object *SIGSTOP_symbol;
+ROSYM static Scheme_Object *SIGTSTP_symbol;
+ROSYM static Scheme_Object *SIGCONT_symbol;
+ROSYM static Scheme_Object *SIGCHLD_symbol;
+ROSYM static Scheme_Object *SIGTTIN_symbol;
+ROSYM static Scheme_Object *SIGTTOU_symbol;
+ROSYM static Scheme_Object *SIGIO_symbol;
+ROSYM static Scheme_Object *SIGXCPU_symbol;
+ROSYM static Scheme_Object *SIGXFSZ_symbol;
+ROSYM static Scheme_Object *SIGVTALRM_symbol;
+ROSYM static Scheme_Object *SIGPROF_symbol;
+ROSYM static Scheme_Object *SIGWINCH_symbol;
+ROSYM static Scheme_Object *SIGINFO_symbol;
+ROSYM static Scheme_Object *SIGUSR1_symbol;
+ROSYM static Scheme_Object *SIGUSR2_symbol;
+
 ROSYM Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 
 ROSYM static Scheme_Object *exact_symbol;
@@ -529,6 +563,39 @@ scheme_init_port (Scheme_Env *env)
   REGISTER_SO(can_update_symbol);
   REGISTER_SO(must_truncate_symbol);
 
+  // SIGNAL symbols
+  REGISTER_SO(SIGHUP_symbol);
+  REGISTER_SO(SIGINT_symbol);
+  REGISTER_SO(SIGQUIT_symbol);
+  REGISTER_SO(SIGILL_symbol);
+  REGISTER_SO(SIGTRAP_symbol);
+  REGISTER_SO(SIGABRT_symbol);
+  REGISTER_SO(SIGEMT_symbol);
+  REGISTER_SO(SIGFPE_symbol);
+  REGISTER_SO(SIGKILL_symbol);
+  REGISTER_SO(SIGBUS_symbol);
+  REGISTER_SO(SIGSEGV_symbol);
+  REGISTER_SO(SIGSYS_symbol);
+  REGISTER_SO(SIGPIPE_symbol);
+  REGISTER_SO(SIGALRM_symbol);
+  REGISTER_SO(SIGTERM_symbol);
+  REGISTER_SO(SIGURG_symbol);
+  REGISTER_SO(SIGSTOP_symbol);
+  REGISTER_SO(SIGTSTP_symbol);
+  REGISTER_SO(SIGCONT_symbol);
+  REGISTER_SO(SIGCHLD_symbol);
+  REGISTER_SO(SIGTTIN_symbol);
+  REGISTER_SO(SIGTTOU_symbol);
+  REGISTER_SO(SIGIO_symbol);
+  REGISTER_SO(SIGXCPU_symbol);
+  REGISTER_SO(SIGXFSZ_symbol);
+  REGISTER_SO(SIGVTALRM_symbol);
+  REGISTER_SO(SIGPROF_symbol);
+  REGISTER_SO(SIGWINCH_symbol);
+  REGISTER_SO(SIGINFO_symbol);
+  REGISTER_SO(SIGUSR1_symbol);
+  REGISTER_SO(SIGUSR2_symbol);
+
   text_symbol = scheme_intern_symbol("text");
   binary_symbol = scheme_intern_symbol("binary");
   module_symbol = scheme_intern_symbol("module");
@@ -540,6 +607,39 @@ scheme_init_port (Scheme_Env *env)
   update_symbol = scheme_intern_symbol("update");
   can_update_symbol = scheme_intern_symbol("can-update");
   must_truncate_symbol = scheme_intern_symbol("must-truncate");
+
+  // SIGNAL symbols
+  SIGHUP_symbol = scheme_intern_symbol("SIGHUP");
+  SIGINT_symbol = scheme_intern_symbol("SIGINT");
+  SIGQUIT_symbol = scheme_intern_symbol("SIGQUIT");
+  SIGILL_symbol = scheme_intern_symbol("SIGILL");
+  SIGTRAP_symbol = scheme_intern_symbol("SIGTRAP");
+  SIGABRT_symbol = scheme_intern_symbol("SIGABRT");
+  SIGEMT_symbol = scheme_intern_symbol("SIGEMT");
+  SIGFPE_symbol = scheme_intern_symbol("SIGFPE");
+  SIGKILL_symbol = scheme_intern_symbol("SIGKILL");
+  SIGBUS_symbol = scheme_intern_symbol("SIGBUS");
+  SIGSEGV_symbol = scheme_intern_symbol("SIGSEGV");
+  SIGSYS_symbol = scheme_intern_symbol("SIGSYS");
+  SIGPIPE_symbol = scheme_intern_symbol("SIGPIPE");
+  SIGALRM_symbol = scheme_intern_symbol("SIGALRM");
+  SIGTERM_symbol = scheme_intern_symbol("SIGTERM");
+  SIGURG_symbol = scheme_intern_symbol("SIGURG");
+  SIGSTOP_symbol = scheme_intern_symbol("SIGSTOP");
+  SIGTSTP_symbol = scheme_intern_symbol("SIGTSTP");
+  SIGCONT_symbol = scheme_intern_symbol("SIGCONT");
+  SIGCHLD_symbol = scheme_intern_symbol("SIGCHLD");
+  SIGTTIN_symbol = scheme_intern_symbol("SIGTTIN");
+  SIGTTOU_symbol = scheme_intern_symbol("SIGTTOU");
+  SIGIO_symbol = scheme_intern_symbol("SIGIO");
+  SIGXCPU_symbol = scheme_intern_symbol("SIGXCPU");
+  SIGXFSZ_symbol = scheme_intern_symbol("SIGXFSZ");
+  SIGVTALRM_symbol = scheme_intern_symbol("SIGVTALRM");
+  SIGPROF_symbol = scheme_intern_symbol("SIGPROF");
+  SIGWINCH_symbol = scheme_intern_symbol("SIGWINCH");
+  SIGINFO_symbol = scheme_intern_symbol("SIGINFO");
+  SIGUSR1_symbol = scheme_intern_symbol("SIGUSR1");
+  SIGUSR2_symbol = scheme_intern_symbol("SIGUSR2");
 
   REGISTER_SO(scheme_none_symbol);
   REGISTER_SO(scheme_line_symbol);
@@ -634,6 +734,7 @@ scheme_init_port (Scheme_Env *env)
   scheme_add_global_constant("subprocess", scheme_make_prim_w_arity2(subprocess, "subprocess", 4, -1, 4, 4), env);
   scheme_add_global_constant("subprocess-status", scheme_make_prim_w_arity(subprocess_status, "subprocess-status", 1, 1), env);
   scheme_add_global_constant("subprocess-kill", scheme_make_prim_w_arity(subprocess_kill, "subprocess-kill", 2, 2), env);
+  scheme_add_global_constant("subprocess-signal", scheme_make_prim_w_arity(subprocess_signal, "subprocess-signal", 2, 2), env);
   scheme_add_global_constant("subprocess-pid", scheme_make_prim_w_arity(subprocess_pid, "subprocess-pid", 1, 1), env);
   scheme_add_global_constant("subprocess?", scheme_make_prim_w_arity(subprocess_p, "subprocess?", 1, 1), env);
   scheme_add_global_constant("subprocess-wait", scheme_make_prim_w_arity(subprocess_wait, "subprocess-wait", 1, 1), env);
@@ -9416,6 +9517,150 @@ static Scheme_Object *do_subprocess_kill(Scheme_Object *_sp, Scheme_Object *kill
   return NULL;
 }
 
+
+
+
+static Scheme_Object *do_subprocess_signal(Scheme_Object *_sp, Scheme_Object *sig, int can_error)
+{
+  Scheme_Subprocess *sp = (Scheme_Subprocess *)_sp;
+
+#if defined(UNIX_PROCESSES)
+# if defined(MZ_PLACES_WAITPID)
+  {
+    int status;
+
+    if (sp->done)
+      return scheme_void;
+
+    scheme_wait_suspend();
+
+    /* Don't allow group checking, because we don't want to wait
+       on a group if we haven't already: */
+    if (scheme_get_child_status(sp->pid, 0, 0, &status)) {
+      sp->status = status;
+      sp->done = 1;
+      child_mref_done(sp);
+      scheme_wait_resume();
+      scheme_ended_child();
+      return scheme_void;
+    }
+  }
+# else
+  {
+    System_Child *sc = (System_Child *)sp->handle;
+
+    /* Don't pass sp->pid, because we don't want to wait
+       on a group if we haven't already: */
+    check_child_done(0);
+    if (sc->done) {
+      child_mref_done(sp);
+      return scheme_void;
+    }
+  }
+# define scheme_wait_resume() /* empty */
+# endif
+
+  while (1) {
+    int sig_name;
+
+    if (SAME_OBJ(SIGHUP_symbol, sig)) {
+          sig_name = SIGHUP;
+    } else if (SAME_OBJ(SIGINT_symbol, sig)) {
+          sig_name = SIGINT;
+    } else if (SAME_OBJ(SIGQUIT_symbol, sig)) {
+          sig_name = SIGQUIT;
+    } else if (SAME_OBJ(SIGILL_symbol, sig)) {
+          sig_name = SIGILL;
+    } else if (SAME_OBJ(SIGTRAP_symbol, sig)) {
+          sig_name = SIGTRAP;
+    } else if (SAME_OBJ(SIGABRT_symbol, sig)) {
+          sig_name = SIGABRT;
+    } else if (SAME_OBJ(SIGEMT_symbol, sig)) {
+          sig_name = SIGEMT;
+    } else if (SAME_OBJ(SIGFPE_symbol, sig)) {
+          sig_name = SIGFPE;
+    } else if (SAME_OBJ(SIGKILL_symbol, sig)) {
+          sig_name = SIGKILL;
+    } else if (SAME_OBJ(SIGBUS_symbol, sig)) {
+          sig_name = SIGBUS;
+    } else if (SAME_OBJ(SIGSEGV_symbol, sig)) {
+          sig_name = SIGSEGV;
+    } else if (SAME_OBJ(SIGSYS_symbol, sig)) {
+          sig_name = SIGSYS;
+    } else if (SAME_OBJ(SIGPIPE_symbol, sig)) {
+          sig_name = SIGPIPE;
+    } else if (SAME_OBJ(SIGALRM_symbol, sig)) {
+          sig_name = SIGALRM;
+    } else if (SAME_OBJ(SIGTERM_symbol, sig)) {
+          sig_name = SIGTERM;
+    } else if (SAME_OBJ(SIGURG_symbol, sig)) {
+          sig_name = SIGURG;
+    } else if (SAME_OBJ(SIGSTOP_symbol, sig)) {
+          sig_name = SIGSTOP;
+    } else if (SAME_OBJ(SIGTSTP_symbol, sig)) {
+          sig_name = SIGTSTP;
+    } else if (SAME_OBJ(SIGCONT_symbol, sig)) {
+          sig_name = SIGCONT;
+    } else if (SAME_OBJ(SIGCHLD_symbol, sig)) {
+          sig_name = SIGCHLD;
+    } else if (SAME_OBJ(SIGTTIN_symbol, sig)) {
+          sig_name = SIGTTIN;
+    } else if (SAME_OBJ(SIGTTOU_symbol, sig)) {
+          sig_name = SIGTTOU;
+    } else if (SAME_OBJ(SIGIO_symbol, sig)) {
+          sig_name = SIGIO;
+    } else if (SAME_OBJ(SIGXCPU_symbol, sig)) {
+          sig_name = SIGXCPU;
+    } else if (SAME_OBJ(SIGXFSZ_symbol, sig)) {
+          sig_name = SIGXFSZ;
+    } else if (SAME_OBJ(SIGVTALRM_symbol, sig)) {
+          sig_name = SIGVTALRM;
+    } else if (SAME_OBJ(SIGPROF_symbol, sig)) {
+          sig_name = SIGPROF;
+    } else if (SAME_OBJ(SIGWINCH_symbol, sig)) {
+          sig_name = SIGWINCH;
+    } else if (SAME_OBJ(SIGINFO_symbol, sig)) {
+          sig_name = SIGINFO;
+    } else if (SAME_OBJ(SIGUSR1_symbol, sig)) {
+          sig_name = SIGUSR1;
+    } else if (SAME_OBJ(SIGUSR2_symbol, sig)) {
+          sig_name = SIGUSR2;
+    } else {
+      scheme_raise_exn(MZEXN_FAIL, 
+                     "subprocess-signal: operation failed\n"
+                     "  unknown signal");
+    }
+
+    if (sp->is_group) {
+      if (!killpg(sp->pid, sig_name)) {
+        scheme_wait_resume();
+        return scheme_void;
+      }
+    } else {
+      if (!kill(sp->pid, sig_name)) {
+        scheme_wait_resume();
+        return scheme_void;
+      }
+    }
+    
+    if (errno != EINTR)
+      break;
+    /* Otherwise we were interrupted. Try `kill' again. */
+  }
+
+  scheme_wait_resume();
+#endif
+
+  if (can_error)
+    scheme_raise_exn(MZEXN_FAIL, 
+                     "subprocess-signal: operation failed\n"
+                     "  system error: %E", errno);
+
+  return NULL;
+}
+
+
+
 static void kill_subproc(Scheme_Object *o, void *data)
 {
   (void)do_subprocess_kill(o, scheme_true, 0);
@@ -9437,7 +9682,24 @@ static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
 #else
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
 		   "%s: " NOT_SUPPORTED_STR,
-		   "subprocess-wait");
+		   "subprocess-kill");
+  return NULL;
+#endif
+}
+
+static Scheme_Object *subprocess_signal(int argc, Scheme_Object **argv)
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_subprocess_type))
+    scheme_wrong_contract("subprocess-signal", "subprocess?", 0, argc, argv);
+  if (!SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_symbol_type))
+    scheme_wrong_contract("subprocess-signal", "symbol", 0, argc, argv);
+
+#if defined(UNIX_PROCESSES) || defined(WINDOWS_PROCESSES)
+  return do_subprocess_signal(argv[0], argv[1], 1);
+#else
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
+		   "%s: " NOT_SUPPORTED_STR,
+		   "subprocess-signal");
   return NULL;
 #endif
 }
