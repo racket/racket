@@ -562,6 +562,38 @@ returns the @racket[not] of @racket[proc]'s result.
 (map (negate =) '(1 2 3) '(1 1 1))
 ]}
 
+@defproc[((conjoin [f (-> A ... boolean?)] ...) [x A] ...) boolean?]{
+
+Combines calls to each function with @racket[and].  Equivalent to
+@racket[(and (f x ...) ...)]
+
+@defexamples[
+#:eval fun-eval
+(define f (conjoin exact? integer?))
+(f 1)
+(f 1.0)
+(f 1/2)
+(f 0.5)
+]
+
+}
+
+@defproc[((disjoin [f (-> A ... boolean?)] ...) [x A] ...) boolean?]{
+
+Combines calls to each function with @racket[or].  Equivalent to
+@racket[(or (f x ...) ...)]
+
+@defexamples[
+#:eval fun-eval
+(define f (disjoin exact? integer?))
+(f 1)
+(f 1.0)
+(f 1/2)
+(f 0.5)
+]
+
+}
+
 @defproc*[([(curry [proc procedure?]) procedure?]
            [(curry [proc procedure?] [v any/c] ...+) any/c])]{
 
