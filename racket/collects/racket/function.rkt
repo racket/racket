@@ -96,40 +96,56 @@
 (define conjoin
   (case-lambda*
    [(f ... 8)
-    (make-intermediate-procedure
-     'conjoined
-      [(x (... ...) 2) (and (f x (... ...)) ...)]
-      [xs (and (apply f xs) ...)]
-      #:keyword
-      [(keys vals . args)
-       (and (keyword-apply f keys vals args) ...)])]
+    (begin
+      (for ([f* (in-list (list f ...))])
+        (unless (procedure? f*)
+          (raise-argument-error 'conjoin "procedure?" f*)))
+      (make-intermediate-procedure
+       'conjoined
+       [(x (... ...) 2) (and (f x (... ...)) ...)]
+       [xs (and (apply f xs) ...)]
+       #:keyword
+       [(keys vals . args)
+        (and (keyword-apply f keys vals args) ...)]))]
    [fs
-    (make-intermediate-procedure
-     'conjoined
-     [(x ... 2) (andmap (lambda (f) (f x ...)) fs)]
-     [xs (andmap (lambda (f) (apply f xs)) fs)]
-     #:keyword
-     [(keys vals . args)
-      (andmap (lambda (f) (keyword-apply f keys vals args)) fs)])]))
+    (begin
+      (for ([f* (in-list fs)])
+        (unless (procedure? f*)
+          (raise-argument-error 'conjoin "procedure?" f*)))
+      (make-intermediate-procedure
+       'conjoined
+       [(x ... 2) (andmap (lambda (f) (f x ...)) fs)]
+       [xs (andmap (lambda (f) (apply f xs)) fs)]
+       #:keyword
+       [(keys vals . args)
+        (andmap (lambda (f) (keyword-apply f keys vals args)) fs)]))]))
 
 (define disjoin
   (case-lambda*
    [(f ... 8)
-    (make-intermediate-procedure
-     'disjoined
-      [(x (... ...) 2) (or (f x (... ...)) ...)]
-      [xs (or (apply f xs) ...)]
-      #:keyword
-      [(keys vals . args)
-       (or (keyword-apply f keys vals args) ...)])]
+    (begin
+      (for ([f* (in-list (list f ...))])
+        (unless (procedure? f*)
+          (raise-argument-error 'conjoin "procedure?" f*)))
+      (make-intermediate-procedure
+       'disjoined
+       [(x (... ...) 2) (or (f x (... ...)) ...)]
+       [xs (or (apply f xs) ...)]
+       #:keyword
+       [(keys vals . args)
+        (or (keyword-apply f keys vals args) ...)]))]
    [fs
-    (make-intermediate-procedure
-     'disjoined
-     [(x ... 2) (ormap (lambda (f) (f x ...)) fs)]
-     [xs (ormap (lambda (f) (apply f xs)) fs)]
-     #:keyword
-     [(keys vals . args)
-      (ormap (lambda (f) (keyword-apply f keys vals args)) fs)])]))
+    (begin
+      (for ([f* (in-list fs)])
+        (unless (procedure? f*)
+          (raise-argument-error 'conjoin "procedure?" f*)))
+      (make-intermediate-procedure
+       'disjoined
+       [(x ... 2) (ormap (lambda (f) (f x ...)) fs)]
+       [xs (ormap (lambda (f) (apply f xs)) fs)]
+       #:keyword
+       [(keys vals . args)
+        (ormap (lambda (f) (keyword-apply f keys vals args)) fs)]))]))
 
 (define-syntax (make-intermediate-procedure stx)
   (syntax-case stx [quote]
