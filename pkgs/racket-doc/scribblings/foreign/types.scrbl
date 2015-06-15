@@ -1122,6 +1122,9 @@ The resulting bindings are as follows:
  @item{@racketidfont{set-}@racketvarfont{id}@racketidfont{-}@racket[field-id]@racketidfont{!}
   : a mutator function for each @racket[field-id].}
 
+ @item{@racketvarfont{id}@racketidfont{-}@racket[field-id]@racketidfont{-pointer} : an accessor
+  function for each @racket[field-id] that returns a pointer to the field.}
+
  @item{@racketvarfont{id}: structure-type information compatible with
   @racket[struct-out] or @racket[match] (but not @racket[struct] or 
   @racket[define-struct]);
@@ -1320,7 +1323,8 @@ expects arguments for both the super fields and the new ones:
 ]
 
 @history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}
-         #:changed "6.1.1.8" @elem{Added @racket[#:offset] for fields.}]}
+         #:changed "6.1.1.8" @elem{Added @racket[#:offset] for fields.}
+         #:changed "6.2.0.4" @elem{Added pointer accessor for fields.}]}
 
 @; ------------------------------------------------------------
 
