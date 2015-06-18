@@ -25,9 +25,13 @@
     bs))
 
 (define (->bytes str)
-  (if (string? str)
-      (string->bytes/utf-8 str)
-      str))
+  (cond
+    [(string? str)
+     (string->bytes/utf-8 str)]
+    [(not str)
+     #""]
+    [else
+     str]))
 
 (define (read-bytes-line/not-eof ip kind)
   (define bs (read-bytes-line ip kind))
