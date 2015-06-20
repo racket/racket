@@ -35,6 +35,8 @@
 (test 4 stream-ref one-to-four 3)
 (test 2 'stream (stream-length (stream 1 (/ 0))))
 (test 'a 'stream (stream-first (stream 'a (/ 0))))
+(test 2 'stream* (stream-length (stream* 1 (stream (/ 0)))))
+(test 'a 'stream* (stream-first (stream* 'a (stream (/ 0)))))
 
 ;; make sure stream operations work on lists
 (test #t stream-empty? '())
