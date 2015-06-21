@@ -131,4 +131,22 @@
                    5))
              #rx"^(?!.*unmentionable)")
 
+; Test use of the 'inferred-name syntax property
+(define-syntax (named-thunk1 stx)
+  (syntax-case stx ()
+    [(_ v)
+     (syntax-property #'(lambda () 1) 'inferred-name (eval #'v))]))
+
+(test 'one object-name (let ([tmp (named-thunk1 'one)]) tmp))
+(test #t src-name? (object-name (let ([tmp (named-thunk1 (void))]) tmp)))
+(test 'tmp object-name (let ([tmp (named-thunk1 #f)]) tmp))
+(test 'tmp object-name (let ([tmp (named-thunk1 1)]) tmp))
+(test 'tmp object-name (let ([tmp (named-thunk1 "one")]) tmp))
+
+(test 'one object-name (let ([tmp (named-thunk1 (cons 'one 'one))]) tmp))
+(test #t src-name? (object-name (let ([tmp (named-thunk1 (cons (void) (void)))]) tmp)))
+(test 'tmp object-name (let ([tmp (named-thunk1 (cons #f #f))]) tmp))
+(test 'tmp object-name (let ([tmp (named-thunk1 (cons 1 1))]) tmp))
+(test 'tmp object-name (let ([tmp (named-thunk1 (cons "one" "one"))]) tmp))
+
 (report-errs)
