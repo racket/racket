@@ -3,8 +3,8 @@
 
 (load-relative "loadtest.rktl")
 
-(require scheme/class)
-(require scheme/unit)
+(require racket/class)
+(require racket/unit)
 
 (Section 'names)
 
