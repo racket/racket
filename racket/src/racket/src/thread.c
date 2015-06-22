@@ -5779,15 +5779,17 @@ static void add_transitive_resume(Scheme_Thread *promote_to, Scheme_Thread *p)
     promote_to->transitive_resumes = (Scheme_Object *)ht;
   } else {
     /* Purge ht entries for threads that are now dead: */
-    Scheme_Hash_Table *gone= NULL;
+    Scheme_Hash_Table *gone = NULL;
+    Scheme_Object *b;
     int i;
 
     ht = (Scheme_Hash_Table *)promote_to->transitive_resumes;
     for (i = ht->size; i--; ) {
       if (ht->vals[i]) {
-	if (!SCHEME_PTR_VAL(ht->keys[i])
-            || (SAME_TYPE(SCHEME_TYPE(ht->keys[i]), scheme_weak_box_type)
-                && !SCHEME_WEAK_BOX_VAL(ht->vals[i]))) {
+        b = SCHEME_PTR_VAL(ht->keys[i]);
+	if (!b
+            || (SAME_TYPE(SCHEME_TYPE(b), scheme_weak_box_type)
+                && !SCHEME_WEAK_BOX_VAL(b))) {
 	  /* This one is dead */
 	  if (!gone)
 	    gone = scheme_make_hash_table(SCHEME_hash_ptr);
