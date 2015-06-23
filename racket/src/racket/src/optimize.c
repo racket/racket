@@ -3950,7 +3950,7 @@ Scheme_Hash_Tree *intersect_and_merge_types(Scheme_Hash_Tree *t_types, Scheme_Ha
     return base_types;
 
   if (f_types->count > t_types->count) {
-    Scheme_Object *swap = f_types;
+    Scheme_Hash_Tree *swap = f_types;
     f_types = t_types;
     t_types = swap;
   }
