@@ -7842,6 +7842,14 @@ static int check_already_required(Scheme_Hash_Table *required, Scheme_Object *na
   return 0;
 }
 
+static void warn_previously_required(Scheme_Object *modname, Scheme_Object *name)
+{
+  scheme_log(NULL, SCHEME_LOG_WARNING, 0,
+             "warning: defined identifier is already imported: %S in module: %D",
+             SCHEME_STX_VAL(name),
+             modname);
+}
+
 static void propagate_imports(Module_Begin_Expand_State *bxs,
                               Module_Begin_Expand_State *super_bxs,
                               Scheme_Object *rn,
@@ -8960,7 +8968,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	    }
 
             if (check_already_required(required, name)) {
-              /* allow definition of previously imported */
+              warn_previously_required(env->genv->module->modname, orig_name);
             }
 
 	    /* Not syntax: */
@@ -9061,7 +9069,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
               }
 
               if (check_already_required(required, name)) {
-                /* allow definition of previously imported */
+                warn_previously_required(oenv->genv->module->modname, orig_name);
               }
 
               if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name)) {
