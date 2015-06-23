@@ -127,7 +127,6 @@
 (syntax-test #'(module m racket/base (#%require (rename n n not-there))))
 (syntax-test #'(module m racket/base (#%require (rename n n m extra))))
 
-(syntax-test #'(module m racket/base (#%require racket/base) (define car 5)))
 (syntax-test #'(module m racket/base (define x 6) (define x 5)))
 (syntax-test #'(module m racket/base (define x 10) (define-syntax x 10)))
 (syntax-test #'(module m racket/base (define-syntax x 10) (define x 10)))
@@ -141,6 +140,15 @@
   (provide car))
 
 (test 5 dynamic-require ''_shadow_ 'car)
+
+;; Ok to redefine imported:
+(module defines-car-that-overrides-import racket/base (#%require racket/base) (define car 5) (provide car))
+(module defines-car-that-overrides-import/stx racket/base (#%require racket/base (for-syntax racket/base)) (define-syntax (car stx) #'6) (provide car))
+(test 5 dynamic-require ''defines-car-that-overrides-import 'car)
+(test 6 dynamic-require ''defines-car-that-overrides-import/stx 'car)
+;; Can't redefine multiple times or import after definition:
+(syntax-test #'(module m racket/base (#%require racket/base) (define car 5) (define car 5)))
+(syntax-test #'(module m racket/base (define car 5) (#%require racket/base)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

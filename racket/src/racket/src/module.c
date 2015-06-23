@@ -8959,11 +8959,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	      return NULL;
 	    }
 
-	    /* Not required: */
-	    if (check_already_required(required, name)) {
-	      scheme_wrong_syntax(who, orig_name, e, "identifier is already imported");
-	      return NULL;
-	    }
+            if (check_already_required(required, name)) {
+              /* allow definition of previously imported */
+            }
 
 	    /* Not syntax: */
 	    if (scheme_lookup_in_table(env->genv->syntax, (const char *)name)) {
@@ -9062,10 +9060,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                 return NULL;
               }
 
-              /* Not required: */
               if (check_already_required(required, name)) {
-                scheme_wrong_syntax(who, orig_name, e, "identifier is already imported");
-                return NULL;
+                /* allow definition of previously imported */
               }
 
               if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name)) {
