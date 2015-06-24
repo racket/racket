@@ -3208,6 +3208,132 @@ void do_ptr_finalizer(void *p, void *finalizer)
 }
 
 /*****************************************************************************/
+/* FFI named locks */
+
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *ffi_lock_ht);
+
+#ifdef MZ_PRECISE_GC
+static Scheme_Object *make_vector_in_master(int count, Scheme_Object *val) {
+  Scheme_Object *vec;
+  void *original_gc;
+  original_gc = GC_switch_to_master_gc();
+  vec = scheme_make_vector(count, val);
+  GC_switch_back_from_master(original_gc);
+  return vec;
+}
+#endif
+
+static void *name_to_ffi_lock(Scheme_Object *bstr)
+{
+  Scheme_Object *lock;
+
+  if (!ffi_lock_ht) {
+    REGISTER_SO(ffi_lock_ht);
+    ffi_lock_ht = scheme_make_hash_table_equal();
+  }
+
+  lock = scheme_hash_get(ffi_lock_ht, bstr);
+  if (!lock) {
+#   ifdef MZ_USE_PLACES
+    /* implement the lock with a compare-and-swap with fallback (on
+       contention) to a place channel; this strategy has minimal
+       overhead when there's no contention, which is good for avoiding
+       a penalty in the common case of a single place (but it's probably
+       not the best strategy for a contended lock) */
+    void *lock_box, *old_lock_box;
+
+    lock_box = scheme_register_process_global(SCHEME_BYTE_STR_VAL(bstr), NULL);
+    if (!lock_box) {
+      lock = scheme_place_make_async_channel();
+      lock = make_vector_in_master(2, lock);
+      SCHEME_VEC_ELS(lock)[1] = scheme_make_integer(-1);
+      lock_box = scheme_malloc_immobile_box(lock);
+      old_lock_box = scheme_register_process_global(SCHEME_BYTE_STR_VAL(bstr), lock_box);
+      if (old_lock_box) {
+        scheme_free_immobile_box(lock_box);
+        lock_box = old_lock_box;
+      }
+    }
+    lock = *(Scheme_Object **)lock_box;
+#   else /* MZ_USE_PLACES undefined */
+    lock = scheme_make_sema(1);
+#   endif /* MZ_USE_PLACES */
+    scheme_hash_set(ffi_lock_ht, bstr, lock);
+  }
+
+  return lock;
+}
+
+static void wait_ffi_lock(Scheme_Object *lock)
+{
+# ifdef MZ_USE_PLACES
+  while (1) {
+    if (mzrt_cas((uintptr_t*)&(SCHEME_VEC_ELS(lock)[1]),
+                 (uintptr_t)scheme_make_integer(-1),
+                 (uintptr_t)scheme_make_integer(scheme_current_place_id))) {
+      /* obtained lock the fast way */
+      break;
+    } else {
+      Scheme_Object *owner, *new_val;
+      owner = SCHEME_VEC_ELS(lock)[1];
+      if (SCHEME_INT_VAL(owner) != -1) {
+        if (SCHEME_INT_VAL(owner) < -1) {
+          /* other processes waiting, and now there's one more: */
+          new_val = scheme_make_integer(SCHEME_INT_VAL(owner)-1);
+        } else {
+          /* notify owner that another process is now waiting: */
+          new_val = scheme_make_integer(-2);
+        }
+        if (mzrt_cas((uintptr_t*)&(SCHEME_VEC_ELS(lock)[1]),
+                     (uintptr_t)owner,
+                     (uintptr_t)new_val)) {
+          /* wait for lock the slow way - without blocking other Racket threads */
+          (void)scheme_place_async_channel_receive(SCHEME_VEC_ELS(lock)[0]);
+
+          /* not waiting anymore: */
+          while (1) {
+            owner = SCHEME_VEC_ELS(lock)[1];
+            if (SCHEME_INT_VAL(owner) == -2) {
+              /* no other processes waiting */
+              new_val = scheme_make_integer(scheme_current_place_id);
+            } else {
+              /* one less process waiting */
+              new_val = scheme_make_integer(SCHEME_INT_VAL(owner)+1);
+            }
+            if (mzrt_cas((uintptr_t*)&(SCHEME_VEC_ELS(lock)[1]),
+                         (uintptr_t)owner,
+                         (uintptr_t)new_val)) {
+              break;
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+# else /* MZ_USE_PLACES undefined */
+  scheme_wait_sema(lock, 0);
+# endif /* MZ_USE_PLACES */
+}
+
+static void release_ffi_lock(void *lock)
+{
+# ifdef MZ_USE_PLACES
+  if (mzrt_cas((uintptr_t *)&(SCHEME_VEC_ELS(lock)[1]),
+               (uintptr_t)scheme_make_integer(scheme_current_place_id),
+               (uintptr_t)scheme_make_integer(-1))) {
+    /* released lock with no other process waiting */
+  } else {
+    /* assert: SCHEME_VEC_ELS(lock)[1] holds a negative
+       number corresponding to the number of waiting processes */
+    scheme_place_async_channel_send(SCHEME_VEC_ELS(lock)[0], scheme_false);
+  }
+# else /* MZ_USE_PLACES undefined */
+  scheme_post_sema(lock);
+# endif /* MZ_USE_PLACES */
+}
+
+/*****************************************************************************/
 /* Calling foreign function objects */
 
 #define MAX_QUICK_ARGS 16
@@ -3385,8 +3511,9 @@ static Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object
   ffi_cif       *cif    = (ffi_cif*)(SCHEME_VEC_ELS(data)[4]);
   intptr_t      cfoff   = SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[5]);
   int           save_errno = SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[6]);
+  Scheme_Object *lock = SCHEME_VEC_ELS(data)[7];
 #ifdef MZ_USE_PLACES
-  int           orig_place = SCHEME_TRUEP(SCHEME_VEC_ELS(data)[7]);
+  int           orig_place = SCHEME_TRUEP(SCHEME_VEC_ELS(data)[8]);
 #endif
   int           nargs /* = cif->nargs, after checking cif */;
   /* When the foreign function is called, we need an array (ivals) of nargs
@@ -3459,6 +3586,9 @@ static Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object
     newp = NULL;
   }
 
+  if (SCHEME_TRUEP(lock))
+    wait_ffi_lock(lock);
+
 #ifdef MZ_USE_PLACES
   if (orig_place)
     ffi_call_in_orig_place(cif, c_func, cfoff,
@@ -3469,6 +3599,9 @@ static Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object
     finish_ffi_call(cif, c_func, cfoff,
                     nargs, ivals, avalues,
                     offsets, p);
+
+  if (SCHEME_TRUEP(lock))
+    release_ffi_lock(lock);
 
   /* Use `data' to make sure it's kept alive (as far as the GC is concerned)
      until the foreign call returns: */
@@ -3546,11 +3679,12 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
   GC_CAN_IGNORE ffi_type *rtype, **atypes;
   GC_CAN_IGNORE ffi_cif *cif;
   int i, nargs, save_errno;
+  Scheme_Object *lock = scheme_false;
 # ifdef MZ_USE_PLACES
   int orig_place;
-# define FFI_CALL_VEC_SIZE 8
+# define FFI_CALL_VEC_SIZE 9
 # else /* MZ_USE_PLACES undefined */
-# define FFI_CALL_VEC_SIZE 7
+# define FFI_CALL_VEC_SIZE 8
 # endif /* MZ_USE_PLACES */
   cp = unwrap_cpointer_property(argv[0]);
   if (!SCHEME_FFIANYPTRP(cp))
@@ -3586,6 +3720,13 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
   if (argc > 5) orig_place = SCHEME_TRUEP(argv[5]);
   else orig_place = 0;
 # endif /* MZ_USE_PLACES */
+  if (argc > 6) {
+    if (!SCHEME_FALSEP(argv[6])) {
+      if (!SCHEME_CHAR_STRINGP(argv[6]))
+        scheme_wrong_contract(MYNAME, "(or/c string? #f)", 4, argc, argv);
+      lock = name_to_ffi_lock(scheme_char_string_to_byte_string(argv[6]));
+    }
+  }
   if (SCHEME_FFIOBJP(cp))
     name = scheme_make_byte_string(((ffi_obj_struct*)(cp))->name);
   else
@@ -3609,8 +3750,9 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
   SCHEME_VEC_ELS(data)[4] = (Scheme_Object*)cif;
   SCHEME_VEC_ELS(data)[5] = scheme_make_integer(ooff);
   SCHEME_VEC_ELS(data)[6] = scheme_make_integer(save_errno);
+  SCHEME_VEC_ELS(data)[7] = lock;
 # ifdef MZ_USE_PLACES
-  SCHEME_VEC_ELS(data)[7] = (orig_place ? scheme_true : scheme_false);
+  SCHEME_VEC_ELS(data)[8] = (orig_place ? scheme_true : scheme_false);
 # endif /* MZ_USE_PLACES */
   scheme_register_finalizer(data, free_fficall_data, cif, NULL, NULL);
   a[0] = data;
@@ -4305,7 +4447,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global_constant("make-sized-byte-string",
     scheme_make_noncm_prim(foreign_make_sized_byte_string, "make-sized-byte-string", 2, 2), menv);
   scheme_add_global_constant("ffi-call",
-    scheme_make_noncm_prim(foreign_ffi_call, "ffi-call", 3, 6), menv);
+    scheme_make_noncm_prim(foreign_ffi_call, "ffi-call", 3, 7), menv);
   scheme_add_global_constant("ffi-callback",
     scheme_make_noncm_prim(foreign_ffi_callback, "ffi-callback", 3, 6), menv);
   scheme_add_global_constant("saved-errno",
@@ -4654,7 +4796,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global_constant("make-sized-byte-string",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-sized-byte-string", 2, 2), menv);
   scheme_add_global_constant("ffi-call",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call", 3, 6), menv);
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call", 3, 7), menv);
   scheme_add_global_constant("ffi-callback",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback", 3, 6), menv);
   scheme_add_global_constant("saved-errno",

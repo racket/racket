@@ -474,6 +474,7 @@ the later case, the result is the @racket[ctype]).}
                       [#:abi abi (or/c #f 'default 'stdcall 'sysv) #f]
                       [#:atomic? atomic? any/c #f]
                       [#:async-apply async-apply (or/c #f ((-> any/c) . -> . any/c) box?) #f]
+                      [#:lock-name lock-name (or/c string? #f) #f]
                       [#:in-original-place? in-original-place? any/c #f]
                       [#:save-errno save-errno (or/c #f 'posix 'windows) #f]
                       [#:wrapper wrapper (or/c #f (procedure? . -> . procedure?))
@@ -535,6 +536,12 @@ For @tech{callouts} to foreign functions with the generated type:
        @tech{callout} is invoked, and it can return different results
        (for example, grabbing a value stored in an ``output'' pointer
        and returning multiple values).}
+
+ @item{If @racket[lock-name] is not @racket[#f], then a process-wide
+       lock with the given name is held during the foreign call. In a
+       build that supports parallel places, @racket[lock-name] is
+       registered via @cpp{scheme_register_process_global}, so choose
+       names that are suitably distinct.}
 
  @item{If @racket[in-original-place?] is true, then when a foreign
        @tech{callout} procedure with the generated type is called in
@@ -692,7 +699,8 @@ For @tech{callbacks} to Racket functions with the generated type:
        is not used.}
 
 ]
-}
+
+@history[#:changed "6.2.0.5" @elem{Added the @racket[#:lock-name] argument.}]}
 
 @defform/subs[#:literals (->> :: :)
               (_fun fun-option ... maybe-args type-spec ... ->> type-spec
@@ -702,6 +710,7 @@ For @tech{callbacks} to Racket functions with the generated type:
                            (code:line #:keep keep-expr)
                            (code:line #:atomic? atomic?-expr)
                            (code:line #:async-apply async-apply-expr)
+                           (code:line #:lock-name lock-name-expr)
                            (code:line #:in-original-place? in-original-place?-expr)
                            (code:line #:retry (retry-id [arg-id init-expr]))]
                [maybe-args code:blank
@@ -821,7 +830,8 @@ specifications:
 
 ]
 
-@history[#:changed "6.2" @elem{Added the @racket[#:retry] option.}]}
+@history[#:changed "6.2" @elem{Added the @racket[#:retry] option.}
+         #:changed "6.2.0.5" @elem{Added the @racket[#:lock-name] option.}]}
 
 @defproc[(function-ptr [ptr-or-proc (or cpointer? procedure?)]
                        [fun-type ctype?])
