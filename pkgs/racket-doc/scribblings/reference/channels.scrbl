@@ -15,10 +15,9 @@ often, then the thread eventually participates in a transaction.
 
 In addition to its use with channel-specific procedures, a channel can
 be used as a @tech{synchronizable event} (see @secref["sync"]).  A
-channel is @tech{ready for synchronization} when @racket[make-channel]
-is ready when @racket[channel-get] would not block; the channel's
-@tech{synchronization result} is the same as the @racket[channel-get]
-result.
+channel is @tech{ready for synchronization} when @racket[channel-get]
+would not block; the channel's @tech{synchronization result} is the
+same as the @racket[channel-get] result.
 
 For buffered asynchronous channels, see @secref["async-channel"].
 
