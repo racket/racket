@@ -2386,6 +2386,16 @@ static Scheme_Object *make_vector_in_master(int count, Scheme_Object *val) {
   GC_switch_back_from_master(original_gc);
   return vec;
 }
+
+static void **malloc_immobile_box_in_master(Scheme_Object *v)
+{
+  void **imm;
+  void *original_gc;
+  original_gc = GC_switch_to_master_gc();
+  imm = scheme_malloc_immobile_box(v);
+  GC_switch_back_from_master(original_gc);
+  return imm;
+}
 #endif
 
 static void *name_to_ffi_lock(Scheme_Object *bstr)
@@ -2412,7 +2422,7 @@ static void *name_to_ffi_lock(Scheme_Object *bstr)
         lock = scheme_place_make_async_channel();
         lock = make_vector_in_master(2, lock);
         SCHEME_VEC_ELS(lock)[1] = scheme_make_integer(-1);
-        lock_box = scheme_malloc_immobile_box(lock);
+        lock_box = malloc_immobile_box_in_master(lock);
         old_lock_box = scheme_register_process_global(SCHEME_BYTE_STR_VAL(bstr), lock_box);
         if (old_lock_box) {
           scheme_free_immobile_box(lock_box);
