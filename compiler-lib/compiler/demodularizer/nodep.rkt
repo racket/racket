@@ -18,7 +18,7 @@
   (define idx-map (make-hash))
   (parameterize ([ZOS (make-hash)]
                  [MODULE-IDX-MAP idx-map]
-                 [PHASE*MODULE-CACHE (make-hash)])
+                 [PHASE*MODULE-CACHE (make-hasheq)])
     (define (get-modvar-rewrite modidx)
       (define pth (mpi->path* modidx))
       (hash-ref idx-map pth
