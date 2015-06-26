@@ -204,7 +204,7 @@
 
 	(define (character? s)
 	  (and (symbol? s)
-	       (regexp-match #rx"'[\\]?.'" (symbol->string s))))
+	       (regexp-match #rx"'[\\]?.+'" (symbol->string s))))
         
         (define (mk-string s)
           (count-newlines s)
@@ -246,8 +246,8 @@
                   (seqs "0" (one+/ D) IS) ;; octal
                   (seqs (one+/ D) IS))))  ;; integer
         
-        (define char-complex (trans (seqs (maybe L) "'([^\\']|\\\\.)+'")))
-        (define string-complex (trans (seqs (maybe L) "\"([^\\\"]|\\\\.)*\"")))
+        (define char-complex (trans "'([^\\']|\\\\.)+'"))
+        (define string-complex (trans "\"([^\\\"]|\\\\.)*\""))
         
         (define simple-table (make-vector 256 #f))
         

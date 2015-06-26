@@ -244,7 +244,7 @@ each element in the sequence.
 
   @interaction[#:eval sequence-evaluator
     (define (histogram vector-of-words)
-      (define a-hash (hash))
+      (define a-hash (make-hash))
       (for ([word (in-vector vector-of-words)])
         (hash-set! a-hash word (add1 (hash-ref a-hash word 0))))
       a-hash)
@@ -826,6 +826,12 @@ stream, but plain lists can be used as streams, and functions such as
 @defform[(stream expr ...)]{
   A shorthand for nested @racket[stream-cons]es ending with
   @racket[empty-stream].
+}
+
+@defform[(stream* expr ...)]{
+  A shorthand for nested @racket[stream-cons]es, but the final @racket[expr]
+  must be a stream, and it is used as the rest of the stream instead of
+  @racket[empty-stream]. Similar to @racket[list*] but for streams.
 }
 
 @defproc[(in-stream [s stream?]) sequence?]{

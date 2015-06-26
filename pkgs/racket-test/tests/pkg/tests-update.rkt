@@ -75,6 +75,12 @@
     (finally
      (delete-directory/files tmp2-dir)))
 
+   (shelly-case
+    "not installed error before file-not-found error"
+    $ "raco pkg update --user no-such-file.zip"
+    =exit> 1
+    =stderr> #rx"not currently installed")
+
    (shelly-wind
     $ "mkdir -p test-pkgs/update-test"
     $ "cp -f test-pkgs/pkg-test1.zip test-pkgs/update-test/pkg-test1.zip"

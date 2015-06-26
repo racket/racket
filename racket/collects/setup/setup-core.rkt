@@ -176,12 +176,18 @@
                                                           [(path? cc)
                                                            (path->relative-string/setup cc #:cache pkg-path-cache)]
                                                           [else cc]))
-        (let ([msg (if (exn? x)
-                       (format-error x #:long? #f #:to-string? #t #:cache pkg-path-cache)
-                       ;; `x` is a pair of long and short strings:
-                       (cdr x))])
-          (unless (null? x) (for ([str (in-list (regexp-split #rx"\n" msg))])
-                              (setup-fprintf port #f "  ~a" str))))
+        (let ([msg (cond
+                    [(exn? x)
+                     (format-error x #:long? #f #:to-string? #t #:cache pkg-path-cache)]
+                    [(not x)
+                     ;; No error; just output
+                     #f]
+                    [else
+                     ;; `x` is a pair of strings, long and short forms of the error:
+                     (cdr x)])])
+          (when x
+            (for ([str (in-list (regexp-split #rx"\n" msg))])
+              (setup-fprintf port #f "  ~a" str))))
         (unless (zero? (string-length out)) (eprintf "STDOUT:\n~a=====\n" out))
         (unless (zero? (string-length err)) (eprintf "STDERR:\n~a=====\n" err)))))
 
@@ -1652,13 +1658,17 @@
         (unless (avoid-main-installation)
           (tidy-libs #f
                      (find-target-dir)
-                     (find-lib-dir)
+                     (if receipt-at-dest?
+                         (find-target-dir)
+                         (find-lib-dir))
                      installed-libs
                      ccs-to-compile))
         (when (make-user)
           (tidy-libs #t
                      (find-user-target-dir)
-                     (find-user-lib-dir)
+                     (if receipt-at-dest?
+                         (find-user-target-dir)
+                         (find-user-lib-dir))
                      installed-libs
                      ccs-to-compile)))
       (for-each fixup-lib (hash-keys dests)))
@@ -1707,9 +1717,9 @@
             (write-receipt-hash receipt-path ht)))
         lib-key))
 
-    (define (tidy-libs user? target-dir lib-dir installed-libs ccs-to-compile)
-      (clean-previous-delete-failures lib-dir path->relative-string/*)
-      (define receipt-path (build-path lib-dir receipt-file))
+    (define (tidy-libs user? target-dir receipt-dir installed-libs ccs-to-compile)
+      (clean-previous-delete-failures receipt-dir path->relative-string/*)
+      (define receipt-path (build-path receipt-dir receipt-file))
       (define ht (read-receipt-hash receipt-path))
       (define ht2 (for/fold ([ht (hash)]) ([(k v) (in-hash ht)])
                     (define coll-path (and (pair? v)

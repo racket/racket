@@ -1261,12 +1261,41 @@
 (test-comp '(lambda (f l) (f l) #t)
            '(lambda (f l) (f l) (procedure? f)))
 
+(test-comp '(lambda (z) (let ([o #f]) (car z)) #t)
+           '(lambda (z) (let ([o #f]) (car z)) (pair? z)))
+(test-comp '(lambda (z) (let ([o (random)]) (car z)) #t)
+           '(lambda (z) (let ([o (random)]) (car z)) (pair? z)))
+(test-comp '(lambda (z) (let ([o z]) (list (car o) o o)) #t)
+           '(lambda (z) (let ([o z]) (list (car o) o o)) (pair? z)))
+(test-comp '(lambda (z) (let ([o z] [x (random)]) (list (car o) x x)) #t)
+           '(lambda (z) (let ([o z] [x (random)]) (list (car o) x x)) (pair? z)))
+(test-comp '(lambda (z) (let ([f (lambda () (car z))]) (f) #t))
+           '(lambda (z) (let ([f (lambda () (car z))]) (f) (pair? z))))
+(test-comp '(lambda (z) (let ([f (lambda () (car z))]) (f)) #t)
+           '(lambda (z) (let ([f (lambda () (car z))]) (f)) (pair? z)))
+(test-comp '(lambda (z) (let ([f (lambda (i) (car z))]) (f 0) #t))
+           '(lambda (z) (let ([f (lambda (i) (car z))]) (f 0) (pair? z))))
+(test-comp '(lambda (z) (let ([f (lambda (i) (car z))]) (f 0)) #t)
+           '(lambda (z) (let ([f (lambda (i) (car z))]) (f 0)) (pair? z)))
+(test-comp '(lambda (z) (let ([f (lambda (i) (car i))]) (f z) #t))
+           '(lambda (z) (let ([f (lambda (i) (car i))]) (f z) (pair? z))))
+(test-comp '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) #t)
+           '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) (pair? z)))
+
 ; Test the map primitive instead of the redefined version in private/map.rkt 
 (test-comp '(module ? '#%kernel
               (display #t)
               (display (lambda (f l) (map f l) #t)))
            '(module ? '#%kernel
               (display (primitive? map))
+              (display (lambda (f l) (map f l) (procedure? f)))))
+
+; Test the map version in private/map.rkt
+(test-comp '(module ? racket/base
+              #;(display #f)
+              (display (lambda (f l) (map f l) #t)))
+           '(module ? racket/base
+              #;(display (primitive? map))
               (display (lambda (f l) (map f l) (procedure? f)))))
 
 (test-comp '(lambda (w z) (vector? (list->vector w)))
@@ -1369,16 +1398,54 @@
                 (list l l))))
 
 (test-comp '(lambda (w z)
-              (list (if (pair? w)
-                        (car z)
-                        (car w))
+              (list (if (pair? w) (car w) (car z))
                     (cdr w)))
            '(lambda (w z)
-              (list (if (pair? w)
-                        (car z)
-                        (car w))
+              (list (if (pair? w) (car w) (car z))
                     (unsafe-cdr w)))
            #f)
+
+(test-comp '(lambda (w z)
+              (list (if z (car z) (car w))
+                    (cdr w)))
+           '(lambda (w z)
+              (list (if z (car z) (car w))
+                    (unsafe-cdr w)))
+           #f)
+
+(test-comp '(lambda (w z)
+              (list (if (pair? w) (car z) (car w))
+                    (cdr w)))
+           '(lambda (w z)
+              (list (if (pair? w) (car z) (car w))
+                    (unsafe-cdr w))))
+
+(test-comp '(lambda (w z)
+              (list (if z (car w) (cdr w))
+                    (cdr w)))
+           '(lambda (w z)
+              (list (if z (car w) (cdr w))
+                    (unsafe-cdr w))))
+
+(test-comp '(lambda (w z x)
+              (list (car x) (if z (car w) (cdr w)) (car x)))
+           '(lambda (w z x)
+              (list (car x) (if z (car w) (cdr w)) (unsafe-car x))))
+
+(test-comp '(lambda (w z x)
+              (list (car x) (if z (car w) 2) (car x)))
+           '(lambda (w z x)
+              (list (car x) (if z (car w) 2) (unsafe-car x))))
+
+(test-comp '(lambda (w z x)
+              (list (car x) (if z 1 (cdr w)) (car x)))
+           '(lambda (w z x)
+              (list (car x) (if z 1 (cdr w)) (unsafe-car x))))
+
+(test-comp '(lambda (w z x)
+              (list (car x) (if z 1 2) (car x)))
+           '(lambda (w z x)
+              (list (car x) (if z 1 2) (unsafe-car x))))
 
 (test-comp '(lambda (w)
               (list
@@ -4603,7 +4670,7 @@
           (read (open-input-bytes (get-output-bytes o))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check that an unsufe opertion's argument is
+;; Check that an unsafe opertion's argument is
 ;; not "optimized" away if it's a use of
 ;; a variable before definition:
 
@@ -4770,5 +4837,35 @@
   (test '(#t #t) map variable-reference? v))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check correct use of shift in reduction of non-#f variables in Boolean contexts 
+
+; Due to a bad coordinates use, the optimizer confused f-two with unused-pair, 
+; and in a Boolean context reduced f-two to #t. See 16ce8fd90d.
+; The right number of let's is difficult to calculate, so we generate
+; many variations. Before the fix, this test produced an error when n was 16.
+
+(for ([n (in-range 30)])
+  (define many-lets (for/fold ([many-lets '(void)]) ([i (in-range n)])
+                      `(let ([f 0]) ,many-lets)))
+  (test-comp `(let ()
+                (define ignored (lambda () ,many-lets))
+                (let ([f-two (not (zero? (random 1)))]
+                      [unused-pair (cons 0 0)])
+                  (if (let ([f-one #f])
+                        (if f-one f-one f-two))
+                    (displayln (list 'yes f-two ,n))
+                    111111)))
+             `(let ()
+                (define ignored (lambda () ,many-lets))
+                (let ([f-two (not (zero? (random 1)))]
+                      [unused-pair (cons 0 0)])
+                  (if (let ([f-one #f])
+                        (if f-one f-one f-two))
+                    (displayln (list 'yes f-two ,n))
+                    222222)))
+             #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 (report-errs)

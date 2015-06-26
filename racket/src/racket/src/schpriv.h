@@ -4195,6 +4195,8 @@ intptr_t scheme_check_overflow(intptr_t n, intptr_t m, intptr_t a);
 Scheme_Object *scheme_make_environment_variables(Scheme_Hash_Tree *ht);
 void *scheme_environment_variables_to_block(Scheme_Object *env, int *_need_free);
 
+int scheme_compare_equal(void *v1, void *v2);
+
 /*========================================================================*/
 /*                           places                                       */
 /*========================================================================*/
@@ -4338,6 +4340,10 @@ void scheme_place_set_memory_use(intptr_t amt);
 void scheme_place_check_memory_use();
 void scheme_clear_place_ifs_stack();
 
-int scheme_compare_equal(void *v1, void *v2);
+#ifdef MZ_USE_PLACES
+Scheme_Object *scheme_place_make_async_channel();
+void scheme_place_async_channel_send(Scheme_Object *ch, Scheme_Object *uo);
+Scheme_Object *scheme_place_async_channel_receive(Scheme_Object *ch);
+#endif
 
 #endif /* __mzscheme_private__ */

@@ -817,6 +817,7 @@
                      #:update-cache [update-cache (make-hash)]
                      #:catalog-lookup-cache [catalog-lookup-cache (make-hash)]
                      #:remote-checksum-cache [remote-checksum-cache (make-hash)]
+                     #:check-pkg-early? [check-pkg-early? #t]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
                      #:use-trash? [use-trash? #f]
@@ -838,18 +839,27 @@
     (map (convert-clone-name-to-clone-repo/install catalog-lookup-cache
                                                    download-printf)
          given-descs))
-  
+
+  (define db (and (or check-pkg-early?
+                      skip-installed?)
+                  (read-pkg-db)))
+
   (define filtered-descs
     (remove-duplicates
      (if (not skip-installed?)
          descs
-         (let ([db (read-pkg-db)])
-           (filter (lambda (d)
-                     (define pkg-name (desc->name d))
-                     (define i (hash-ref db pkg-name #f))
-                     (or (not i) (pkg-info-auto? i)))
-                   descs)))
+         (filter (lambda (d)
+                   (define pkg-name (desc->name d))
+                   (define i (hash-ref db pkg-name #f))
+                   (or (not i) (pkg-info-auto? i)))
+                 descs))
      pkg-desc=?))
+
+  (unless (or updating?
+              skip-installed?
+              force)
+    (early-check-for-installed filtered-descs db #:wanted? #f))
+
   (define-values (new-descs done-descs done-infos clone-behavior repo-descs
                             extra-updating)
     (adjust-to-normalize-repos filtered-descs old-descs old-infos
@@ -877,6 +887,7 @@
                        #:update-cache update-cache
                        #:catalog-lookup-cache catalog-lookup-cache
                        #:remote-checksum-cache remote-checksum-cache
+                       #:check-pkg-early? #f
                        #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
                        #:updating? updating?
                        #:quiet? quiet?
@@ -1177,7 +1188,11 @@
   (define all-mode? (and all? (empty? in-pkgs)))
   (define pkgs (cond
                 [all-mode? (hash-keys db)]
-                [else in-pkgs]))
+                [else
+                 (unless (or skip-uninstalled?
+                             force?)
+                   (early-check-for-installed in-pkgs db #:wanted? #t))
+                 in-pkgs]))
   (define update-cache (make-hash))
   (define catalog-lookup-cache (make-hash))
   (define remote-checksum-cache (make-hash))
@@ -1258,6 +1273,7 @@
       #:update-cache update-cache
       #:catalog-lookup-cache catalog-lookup-cache
       #:remote-checksum-cache remote-checksum-cache
+      #:check-pkg-early? #f
       #:quiet? quiet?
       #:use-trash? use-trash?
       #:from-command-line? from-command-line?
@@ -1275,6 +1291,26 @@
                                    (not (ormap pkg-desc-extra-path in-pkgs)))
       #:pull-behavior pull-behavior
       to-update)]))
+
+;; ----------------------------------------
+
+(define (early-check-for-installed in-pkgs db #:wanted? wanted?)
+  (for ([d (in-list in-pkgs)])
+    (define name
+      (if (pkg-desc? d)
+          (or (pkg-desc-name d)
+              (package-source->name (pkg-desc-source d)
+                                    (if (eq? 'clone (pkg-desc-type d))
+                                        'name
+                                        (pkg-desc-type d))))
+          (package-source->name d)))
+    (define info (package-info name wanted? #:db db))
+    (when (and info
+               (not wanted?)
+               (not (pkg-info-auto? info)))
+      (pkg-error (~a "package is already installed\n"
+                     "  package: ~a")
+                 name))))
 
 ;; ----------------------------------------
 

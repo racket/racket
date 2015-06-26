@@ -3078,6 +3078,18 @@ static void async_channel_refcount(Scheme_Place_Async_Channel *ch, int for_send,
   mzrt_mutex_unlock(ch->lock);
 }
 
+Scheme_Object *scheme_place_make_async_channel()
+{
+  Scheme_Place_Async_Channel *ch;
+  ch = place_async_channel_create();
+
+  /* we don't allocate a bi channel, so claim an implicit sender and receiver: */
+  async_channel_refcount(ch, 0, 1);
+  async_channel_refcount(ch, 1, 1);
+
+  return (Scheme_Object *)ch;
+}
+
 static void bi_channel_refcount(Scheme_Place_Bi_Channel *ch, int delta)
 {
   async_channel_refcount(ch->link->sendch, 1, delta);
@@ -3369,6 +3381,10 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
   mzrt_mutex_unlock(ch->lock);
 }
 
+void scheme_place_async_channel_send(Scheme_Object *ch, Scheme_Object *uo) {
+  place_async_send((Scheme_Place_Async_Channel *)ch, uo);
+}
+
 static void place_object_inc_refcount(Scheme_Object *o) {
   Scheme_Place_Object *place_obj;
   place_obj = (Scheme_Place_Object *) o;
@@ -3398,6 +3414,9 @@ static void lock_and_register_place_object_with_channel(Scheme_Place_Async_Chann
   Scheme_Object *avail_vector;
 
   mzrt_mutex_lock(ch->lock);
+
+  if (ch->count)
+    return; /* no need for a wakeup signal, since data is available */
 
   /* loop in case we need to release the lock temporarily to allocate: */
   while (1) {
@@ -3483,8 +3502,8 @@ static void lock_and_register_place_object_with_channel(Scheme_Place_Async_Chann
   }
 }
 
-static Scheme_Object *scheme_place_async_try_receive_raw(Scheme_Place_Async_Channel *ch, void **msg_memory_ptr,
-                                                         int *_no_writers) 
+static Scheme_Object *place_async_try_receive_raw(Scheme_Place_Async_Channel *ch, void **msg_memory_ptr,
+                                                  int *_no_writers) 
 /* The result must not be retained past extraction from `*msg_memory_ptr'! */
 {
   Scheme_Object *msg = NULL;
@@ -3532,12 +3551,12 @@ static void cleanup_msg_memmory(void *thread) {
   }
 }
 
-static Scheme_Object *scheme_place_async_try_receive(Scheme_Place_Async_Channel *ch, int *_no_writers) {
+static Scheme_Object *place_async_try_receive(Scheme_Place_Async_Channel *ch, int *_no_writers) {
   Scheme_Object *msg = NULL;
   Scheme_Thread *p = scheme_current_thread;
   GC_CAN_IGNORE void *msg_memory;
   BEGIN_ESCAPEABLE(cleanup_msg_memmory, p);
-  msg = scheme_place_async_try_receive_raw(ch, &msg_memory, _no_writers);
+  msg = place_async_try_receive_raw(ch, &msg_memory, _no_writers);
   if (msg) {
     p->place_channel_msg_in_flight = msg_memory;
     msg = scheme_places_deserialize(msg, msg_memory);
@@ -3587,8 +3606,8 @@ static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo) {
     ch = (Scheme_Place_Bi_Channel *)so;
   }
 
-  msg = scheme_place_async_try_receive_raw((Scheme_Place_Async_Channel *) ch->link->recvch, 
-                                           &msg_memory, &no_writers);
+  msg = place_async_try_receive_raw((Scheme_Place_Async_Channel *) ch->link->recvch, 
+                                    &msg_memory, &no_writers);
   if (msg != NULL) {
     Scheme_Object **msg_holder;
     Scheme_Thread *p = ((Syncing *)(sinfo->current_syncing))->thread;
@@ -3621,7 +3640,7 @@ static Scheme_Object *place_async_receive(Scheme_Place_Async_Channel *ch) {
   int no_writers = 0;
 
   while (1) {
-    msg = scheme_place_async_try_receive(ch, &no_writers);
+    msg = place_async_try_receive(ch, &no_writers);
     if (msg) 
       break;
     else {
@@ -3629,13 +3648,16 @@ static Scheme_Object *place_async_receive(Scheme_Place_Async_Channel *ch) {
         /* No writers are left for this channel, so suspend the thread */
         scheme_wait_sema(scheme_make_sema(0), 0);
       }
-
       scheme_thread_block(0);
       scheme_block_until((Scheme_Ready_Fun) scheme_place_async_ch_ready, NULL, (Scheme_Object *) ch, 0);
     }
   }
 
   return msg;
+}
+
+Scheme_Object *scheme_place_async_channel_receive(Scheme_Object *ch) {
+  return place_async_receive((Scheme_Place_Async_Channel *)ch);
 }
 
 /*========================================================================*/

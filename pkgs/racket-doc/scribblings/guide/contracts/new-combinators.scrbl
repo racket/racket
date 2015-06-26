@@ -67,13 +67,13 @@ The new argument specifies who is to be blamed for
 positive and negative contract violations.
 
 Contracts, in this system, are always
-established between two parties. One party provides some
-value according to the contract, and the other consumes the
-value, also according to the contract. The first is called
-the ``positive'' person and the second the ``negative''. So,
+established between two parties. One party, called the server, provides some
+value according to the contract, and the other, the client, consumes the
+value, also according to the contract. The server is called
+the positive position and the client the negative position. So,
 in the case of just the integer contract, the only thing
 that can go wrong is that the value provided is not an
-integer. Thus, only the positive party can ever accrue
+integer. Thus, only the positive party (the server) can ever accrue
 blame.  The @racket[raise-blame-error] function always blames
 the positive party.
 
@@ -114,16 +114,19 @@ This technique is not merely a cheap trick to get the example to work,
 however. The reversal of the positive and the negative is a
 natural consequence of the way functions behave. That is,
 imagine the flow of values in a program between two
-modules. First, one module defines a function, and then that
-module is required by another. So far, the function itself
+modules. First, one module (the server) defines a function, and then that
+module is required by another (the client). So far, the function itself
 has to go from the original, providing module to the
 requiring module. Now, imagine that the providing module
 invokes the function, supplying it an argument. At this
 point, the flow of values reverses. The argument is
 traveling back from the requiring module to the providing
-module! And finally, when the function produces a result,
+module! The client is ``serving'' the argument to the server,
+and the server is receiving that value as a client.
+And finally, when the function produces a result,
 that result flows back in the original
-direction. Accordingly, the contract on the domain reverses
+direction from server to client.
+Accordingly, the contract on the domain reverses
 the positive and the negative blame parties, just like the flow
 of values reverses.
 

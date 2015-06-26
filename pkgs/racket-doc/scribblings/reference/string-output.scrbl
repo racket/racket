@@ -33,7 +33,14 @@ if @racket[start-pos] or @racket[end-pos] is out-of-range for
 @racket[str].
 
 The result is the number of characters written to @racket[out], which
-is always @racket[(- end-pos start-pos)].}
+is always @racket[(- end-pos start-pos)].
+
+If @racket[str] is mutable, mutations after @racket[write-string]
+returns do not affect the characters written to @racket[out]. (This
+independence from mutation is not a special property of
+@racket[write-string], but instead generally true of output
+functions.)}
+
 
 @defproc[(write-bytes [bstr bytes?]
                       [out output-port? (current-output-port)]

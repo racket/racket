@@ -452,13 +452,14 @@
                       #:keep        [keep    #t]
                       #:atomic?     [atomic? #f]
                       #:in-original-place? [orig-place? #f]
+                      #:lock-name   [lock-name #f]
                       #:async-apply [async-apply #f]
                       #:save-errno  [errno   #f])
-  (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? async-apply errno))
+  (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? async-apply errno lock-name))
 
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
-(define (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? async-apply errno)
+(define (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? async-apply errno lock-name)
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
@@ -471,7 +472,7 @@
                                   (if (or (null? x) (pair? x)) (cons cb x) cb)))]
                      [(procedure? keep) (keep cb)])
                cb)))
-      (lambda (x) (and x (wrap (ffi-call x itypes otype abi errno orig-place?))))))
+      (lambda (x) (and x (wrap (ffi-call x itypes otype abi errno orig-place? lock-name))))))
   (if wrapper (make-it wrapper) (make-it begin)))
 
 ;; Syntax for the special _fun type:
@@ -494,7 +495,8 @@
 
 (provide _fun)
 (define-for-syntax _fun-keywords
-  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f] [#:in-original-place? ,#'#f]
+  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f]
+    [#:in-original-place? ,#'#f] [#:lock-name ,#'#f]
     [#:async-apply ,#'#f] [#:save-errno ,#'#f]
     [#:retry #f]))
 (define-syntax (_fun stx)
@@ -658,7 +660,8 @@
                              #,(kwd-ref '#:atomic?)
                              #,(kwd-ref '#:in-original-place?)
                              #,(kwd-ref '#:async-apply)
-                             #,(kwd-ref '#:save-errno)))])
+                             #,(kwd-ref '#:save-errno)
+                             #,(kwd-ref '#:lock-name)))])
       (if (or (caddr output) input-names (ormap caddr inputs)
               (ormap (lambda (x) (not (car x))) inputs)
               (pair? bind) (pair? pre) (pair? post))

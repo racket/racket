@@ -7734,16 +7734,24 @@ static int check_already_required(Scheme_Hash_Table *required,
 
   vec = scheme_hash_get(required, binding);
   if (vec) {
-    if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7])
-        && prep_required_id(vec)
+    if (prep_required_id(vec)
         && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[6], id, scheme_make_integer(phase))) {
       scheme_hash_set(required, binding, NULL);
-      return 0;
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7]))
+        return 0;
+      return 1;
     }
-    return 1;
   }
 
   return 0;
+}
+
+static void warn_previously_required(Scheme_Object *modname, Scheme_Object *name)
+{
+  scheme_log(NULL, SCHEME_LOG_WARNING, 0,
+             "warning: defined identifier is already imported: %S in module: %D",
+             SCHEME_STX_VAL(name),
+             modname);
 }
 
 static int check_already_defined(Scheme_Object *name, Scheme_Env *genv)
@@ -8894,10 +8902,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                          && check_already_defined(SCHEME_VEC_ELS(binding)[1], env->genv)) {
                 scheme_wrong_syntax(who, orig_name, e, "duplicate definition for identifier");
                 return NULL;
-              } else if (check_already_required(required, name, phase, binding)) {
-                scheme_wrong_syntax(who, orig_name, e, "identifier is already imported");
-                return NULL;
-              }
+              } else if (check_already_required(required, name, phase, binding))
+                warn_previously_required(env->genv->module->modname, orig_name);
             }
 
             /* Generate symbol for this binding: */
@@ -9002,10 +9008,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                   scheme_wrong_syntax(who, orig_name, e, 
                                       "duplicate definition for identifier");
                   return NULL;
-                } else if (check_already_required(required, name, phase, binding)) {
-                  scheme_wrong_syntax(who, orig_name, e, "identifier is already imported");
-                  return NULL;
-                }
+                } else if (check_already_required(required, name, phase, binding))
+                  warn_previously_required(oenv->genv->module->modname, orig_name);
               }
 
               /* Generate symbol for this binding: */

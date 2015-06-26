@@ -365,6 +365,7 @@ typedef struct Thread_Local_Variables {
   void *scheme_inotify_server_;
   struct Scheme_Object *configuration_callback_cache_[2];
   struct FFI_Orig_Place_Call *cached_orig_place_todo_;
+  struct Scheme_Hash_Table *ffi_lock_ht_;
   struct Scheme_Object *scheme_sys_wraps0_;
   struct Scheme_Object *scheme_sys_wraps1_;
   struct Scheme_Object *scheme_module_stx_;
@@ -757,6 +758,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_inotify_server XOA (scheme_get_thread_local_variables()->scheme_inotify_server_)
 #define configuration_callback_cache XOA (scheme_get_thread_local_variables()->configuration_callback_cache_)
 #define cached_orig_place_todo XOA (scheme_get_thread_local_variables()->cached_orig_place_todo_)
+#define ffi_lock_ht XOA (scheme_get_thread_local_variables()->ffi_lock_ht_)
 #define scheme_sys_wraps0 XOA (scheme_get_thread_local_variables()->scheme_sys_wraps0_)
 #define scheme_sys_wraps1 XOA (scheme_get_thread_local_variables()->scheme_sys_wraps1_)
 #define scheme_module_stx XOA (scheme_get_thread_local_variables()->scheme_module_stx_)

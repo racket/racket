@@ -374,7 +374,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    documentation, instead of defaulting to the source file's name
    (sans extension), where @racket[#f] means to use the default; a
    non-@racket[#f] value for @racket[_name] must fit the grammar
-   of a colelction-name element as checked by 
+   of a collection-name element as checked by 
    @racket[collection-name-element?]. If a
    document's list contains a fifth item, @racket[_out-k], it is used
    a hint for the number of files to use for the document's
@@ -639,7 +639,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
    On Windows, deleting a previously installed foreign library may be
    complicated by a lock on the file, if it is in use. To compensate,
-   @exec{raco setup} deletes a foriegn-library file by first renaming
+   @exec{raco setup} deletes a foreign-library file by first renaming
    the file to have the prefix @filepath{raco-setup-delete-}; it then
    attempts to delete the renamed file and merely issues a warning on
    a failure to delete the renamed file. Meanwhile, in modes where
@@ -1207,7 +1207,7 @@ function for installing a single @filepath{.plt} file.
   @envvar{PLTCOLLECTS} setting or change to the parameter may cause
   them to be omitted. Any other path in
   @racket[(current-library-collection-paths)] is treated as
-  user-specific. The dierctories indicated by the returned paths may
+  user-specific. The directories indicated by the returned paths may
   or may not exist.}
 
 @defproc[(find-config-dir) (or/c path? #f)]{
@@ -1280,7 +1280,7 @@ function for installing a single @filepath{.plt} file.
 @defproc[(get-lib-search-dirs) (listof path?)]{
   Returns a list of paths to search for foreign libraries. Unless it is
   configured otherwise, the result includes any non-@racket[#f] result of
-  @racket[(find-lib-dir)] and
+  @racket[(find-lib-dir)]
   and @racket[(find-user-lib-dir)]---but the latter is included only if the
   value of the @racket[use-user-specific-search-paths] parameter
   is @racket[#t].
@@ -1526,7 +1526,7 @@ function for installing a single @filepath{.plt} file.
 The Racket installation tree can usually be moved around the filesystem.
 To support this, care must be taken to avoid absolute paths.  The
 following two APIs cover two aspects of this: a way to convert a path to
-a value that is relative to the @filepath{collets} tree, and a way to
+a value that is relative to the @filepath{collects} tree, and a way to
 display such paths (e.g., in error messages).
 
 @subsection{Representing Collection-Based Paths}
@@ -1559,7 +1559,7 @@ is a pair that starts with @racket['collects], then it is converted
 back to a path using @racket[collection-file-path].}
 
 @defproc[(path->module-path [path path-string?]
-                            [#:cache cache (or/c #f (and/c hash? (not/c imutable?)))])
+                            [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
          (or/c path-string? module-path?)]{
 
 Like @racket[path->collects-relative], but the result is either

@@ -224,7 +224,12 @@ declarations for @racket[A] and @racket[B]. However, a syntactic form
 that produces syntax definitions must be defined before it is used.
 
 No identifier can be imported or defined more than once at any
-@tech{phase level} within a single module. Every exported identifier must be imported or
+@tech{phase level} within a single module, except that a definition
+via @racket[define-values] or @racket[define-syntaxes] can shadow a
+preceding import via @racket[#%require]; unless the shadowed import is
+from the module's initial @racket[module-path], a warning is logged
+to the initial logger.
+Every exported identifier must be imported or
 defined. No expression can refer to a @tech{top-level variable}.
 A @racket[module*] form in which the enclosing module's bindings are visible
 (i.e., a nested @racket[module*] with @racket[#f] instead of a @racket[module-path])
@@ -287,7 +292,10 @@ See also @secref["module-eval-model"] and @secref["mod-parse"].
       (quack (sub1 n)))))
 ]
 
-@history[#:changed "6.3" @elem{Dropped the use of @racket['submodule]
+@history[#:changed "6.2.0.4" @elem{Changed @racket[define-syntaxes]
+                                   and @racket[define-values] to
+                                   shadow any preceding import.}
+         #:changed "6.3" @elem{Dropped the use of @racket['submodule]
                                @tech{syntax property} values on nested
                                @racket[module] or @racket[module*]
                                forms.}]}

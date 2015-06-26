@@ -15,13 +15,16 @@
 (define vars-seen (make-parameter null))
 
 (define (hash-on f elems #:equal? [eql #t])
-  (define ht (if eql (make-hash) (make-hasheq)))
+  (define-values (ht ref set!)
+    (case eql
+      [(#t) (values (make-hash) hash-ref hash-set!)]
+      [(#f) (values (make-hasheq) hash-ref hash-set!)]))
   ;; put all the elements e in the ht, indexed by (f e)
   (for ([r
          ;; they need to be in the original order when they come out
          (reverse elems)])
     (define k (f r))
-    (hash-set! ht k (cons r (hash-ref ht k (lambda () null)))))
+    (set! ht k (cons r (ref ht k (lambda () null)))))
   ht)
 
 ;; generate a clause of kind k
@@ -33,8 +36,7 @@
                                  (map (lambda (row)
                                         (define-values (p ps)
                                           (Row-split-pats row))
-                                        (define p* (Atom-p p))
-                                        (make-Row (cons p* ps)
+                                        (make-Row (cons (make-Dummy #f) ps)
                                                   (Row-rhs row)
                                                   (Row-unmatch row)
                                                   (Row-vars-seen row)))
@@ -63,22 +65,13 @@
      (compile-con-pat (list #'unsafe-car #'unsafe-cdr) #'pair?
                       (lambda (p) (list (Pair-a p) (Pair-d p))))]
     [(eq? 'mpair k)
-     ; XXX These should be unsafe-mcar* when mpairs have chaperones
      (compile-con-pat (list #'unsafe-mcar #'unsafe-mcdr) #'mpair?
                       (lambda (p) (list (MPair-a p) (MPair-d p))))]
-    [(eq? 'string k)  (constant-pat #'string?)]
-    [(eq? 'number k)  (constant-pat #'number?)]
-    [(eq? 'symbol k)  (constant-pat #'symbol?)]
-    [(eq? 'keyword k) (constant-pat #'keyword?)]
-    [(eq? 'char k)    (constant-pat #'char?)]
-    [(eq? 'bytes k)   (constant-pat #'bytes?)]
-    [(eq? 'regexp k)  (constant-pat #'regexp?)]
-    [(eq? 'boolean k) (constant-pat #'boolean?)]
     [(eq? 'null k)    (constant-pat #'null?)]
     ;; vectors are handled specially
     ;; because each arity is like a different constructor
     [(eq? 'vector k)
-     (let ([ht (hash-on (lambda (r) 
+     (let ([ht (hash-on (lambda (r)
                           (length (Vector-ps (Row-first-pat r)))) rows)])
        (with-syntax ([(clauses ...)
                       (hash-map
@@ -116,6 +109,7 @@
                       accs)]
             [pred (Struct-pred s)])
        (compile-con-pat accs pred Struct-ps))]
+    [(syntax? k) (constant-pat k)]
     [else (error 'match-compile "bad key: ~a" k)]))
 
 
@@ -148,7 +142,7 @@
             (lambda (row)
               (define-values (p ps) (Row-split-pats row))
               (define v (Var-v p))
-              (define seen (Row-vars-seen row))              
+              (define seen (Row-vars-seen row))
               ;; a new row with the rest of the patterns
               (cond
                 ;; if this was a wild-card variable, don't bind
@@ -158,17 +152,27 @@
                                       (Row-vars-seen row))]
                 ;; if we've seen this variable before, check that it's equal to
                 ;; the one we saw
-                [(for/or ([e seen])
-                         (let ([v* (car e)] [id (cdr e)])
-                           (and (bound-identifier=? v v*) id)))                 
+                [(for/or ([e (in-list seen)])
+                   (let ([v* (car e)] [id (cdr e)])
+                     (and (bound-identifier=? v v*) (or id (list v v*)))))
                  =>
                  (lambda (id)
-                   (make-Row ps
-                             #`(if ((match-equality-test) #,x #,id)
-                                 #,(Row-rhs row)
-                                 (fail))
-                             (Row-unmatch row)
-                             seen))]
+                   (if (identifier? id)
+                       (make-Row ps
+                                 #`(if ((match-equality-test) #,x #,id)
+                                       #,(Row-rhs row)
+                                       (fail))
+                                 (Row-unmatch row)
+                                 seen)
+                       (begin
+                         (log-error "non-linear pattern used in `match` with ... at ~a and ~a"
+                                    (car id) (cadr id)) 
+                         (let ([v* (free-identifier-mapping-get
+                                    (current-renaming) v (lambda () v))])
+                           (make-Row ps
+                                     #`(let ([#,v* #,x]) #,(Row-rhs row))
+                                     (Row-unmatch row)
+                                     (cons (cons v x) (Row-vars-seen row)))))))]
                 ;; otherwise, bind the matched variable to x, and add it to the
                 ;; list of vars we've seen
                 [else (let ([v* (free-identifier-mapping-get
@@ -200,7 +204,7 @@
             [qs (Or-ps (car pats))]
             ;; the variables bound by this pattern - they're the same for the
             ;; whole list
-            [vars 
+            [vars
              (for/list ([bv (bound-vars (car qs))]
                         #:when (for/and ([seen-var seen])
                                         (not (free-identifier=? bv (car seen-var)))))
@@ -246,7 +250,7 @@
                          esc))))]
     ;; the And rule
     [(And? first)
-     ;; we only handle 1-row Ands 
+     ;; we only handle 1-row Ands
      ;; this is all the mixture rule should give us
      (unless (null? (cdr block))
        (error 'compile-one "And block with multiple rows: ~a" block))
@@ -290,21 +294,18 @@
                                          (Row-vars-seen row)))
                          #'f))))]
     [(Pred? first)
-     ;; multiple preds iff they have the identical predicate
-     (with-syntax ([pred? (Pred-pred first)]
-                   [body (compile* xs
-                                   (map (lambda (row)
-                                          (define-values (_1 ps)
-                                            (Row-split-pats row))
-                                          (make-Row ps
-                                                    (Row-rhs row)
-                                                    (Row-unmatch row)
-                                                    (Row-vars-seen row)))
-                                        block)
-                                   esc)])
-       #`(cond [(pred? #,x) body] [else (#,esc)]))]
-     ;; Generalized sequences... slightly tested
+     ;; put all the rows in the hash, indexed by their Pred pattern
+     ;; we use the pattern so that it can have a custom equal+hash
+     (define ht (hash-on (lambda (r) (Row-first-pat r)) block #:equal? #t))
+     (with-syntax ([(clauses ...)
+                    (hash-map
+                     ht (lambda (k v)
+                          (gen-clause (Pred-pred k) v x xs esc)))])
+       #`(cond clauses ... [else (#,esc)]))]
+    ;; Generalized sequences... slightly tested
     [(GSeq? first)
+     (unless (null? (cdr block))
+       (error 'compile-one "GSeq block with multiple rows: ~a" block))
      (let* ([headss (GSeq-headss first)]
             [mins (GSeq-mins first)]
             [maxs (GSeq-maxs first)]
@@ -327,6 +328,12 @@
             [head-idss
              (for/list ([heads headss])
                (apply append (map bound-vars heads)))]
+            [heads-seen
+             (map (lambda (x) (cons x #f))
+                  (apply append (map bound-vars heads)))]
+            [tail-seen
+             (map (lambda (x) (cons x x))
+                  (bound-vars tail))]
             [hid-argss (map generate-temporaries head-idss)]
             [head-idss* (map generate-temporaries head-idss)]
             [hid-args (apply append hid-argss)]
@@ -368,8 +375,11 @@
                                       (cdr vars)
                                       (list (make-Row rest-pats k
                                                       (Row-unmatch (car block))
-                                                      (Row-vars-seen
-                                                       (car block))))
+                                                      (append
+                                                       heads-seen
+                                                       tail-seen
+                                                       (Row-vars-seen
+                                                        (car block)))))
                                       #'fail-tail))])])
            (parameterize ([current-renaming
                            (for/fold ([ht (copy-mapping (current-renaming))])
@@ -399,8 +409,10 @@
                               (list (make-Row (list tail)
                                               #`tail-rhs
                                               (Row-unmatch (car block))
-                                              (Row-vars-seen
-                                               (car block)))))
+                                              (append
+                                               heads-seen
+                                               (Row-vars-seen
+                                                (car block))))))
                              #'failkv))))))]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
@@ -409,7 +421,7 @@
     (if (stx-null? clauses)
       body
       (quasisyntax (let* #,clauses #,body))))
-  (cond 
+  (cond
    ;; if there are no rows, then just call the esc continuation
    [(null? rows) #`(#,esc)]
     ;; if we have no variables, there are no more patterns to match
@@ -461,8 +473,8 @@
                               ;; esc
                               [c (compile-one vars (car blocks) esc)])
                   ;; then compile the rest, with our name as the esc
-                  (loop (cdr blocks) 
-                        #'f 
+                  (loop (cdr blocks)
+                        #'f
                         (cons #`[f #,(syntax-property
                                       #'(lambda () c)
                                       'typechecker:called-in-tail-position #t)]

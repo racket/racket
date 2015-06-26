@@ -29,7 +29,7 @@
    (for*/list ([dir (find-relevant-directories (list tag) 'all-available)]
                [d (let ([info-proc (get-info/full dir)])
                     (if info-proc
-                        (info-proc tag)
+                        (info-proc tag (λ () '()))
                         '()))])
      (unless (and (list? d) (pair? d))
        (error 'xref "bad scribblings entry: ~e" d))

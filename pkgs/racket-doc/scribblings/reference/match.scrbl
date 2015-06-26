@@ -290,7 +290,8 @@ In more detail, patterns match as follows:
  @item{@racket[(#,(racketidfont "and") _pat ...)] --- matches if all
        of the @racket[_pat]s match.  This pattern is often used as
        @racket[(#,(racketidfont "and") _id _pat)] to bind @racket[_id]
-       to the entire value that matches @racket[pat].
+       to the entire value that matches @racket[pat]. The @racket[_pat]s are
+       matched in the order that they appear.
 
        @examples[
        #:eval match-eval
@@ -344,6 +345,11 @@ In more detail, patterns match as follows:
        application and an @racketidfont{and} pattern.  However,
        @racketidfont{?}, unlike @racketidfont{and}, guarantees that
        @racket[_expr] is matched before any of the @racket[_pat]s.
+
+       @margin-note{The @racket[_expr] procedure may be called more than once
+       on identical input (although this happens only rarely),
+       and the order in which calls to @racket[_expr] are
+       made should not be relied upon.}
 
        @examples[
        #:eval match-eval
